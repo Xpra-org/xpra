@@ -155,7 +155,13 @@ def do_run_glcheck(opts, show=False) -> dict[str, Any]:
         logging.root.setLevel(logging.WARN)
     try:
         from xpra.opengl.window import get_gl_client_window_module, test_gl_client_window
+        from xpra.util.parsing import FALSE_OPTIONS
         opengl_str = (opts.opengl or "").lower()
+        # the probe must always probe, no matter how `opengl` is configured:
+        # a disabled value (ie: "no" / "false", the default on macOS) would otherwise
+        # short-circuit backend selection and return no data at all
+        if opengl_str.split(":")[0] in FALSE_OPTIONS:
+            opengl_str = "auto"
         opengl_props, gl_client_window_module = get_gl_client_window_module(opengl_str)
         log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
         if gl_client_window_module and (opengl_props.get("safe", False) or opengl_str.startswith("force")):
