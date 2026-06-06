@@ -58,7 +58,6 @@ import json
 import hmac
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
 
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.util.objects import typedict
@@ -157,7 +156,7 @@ class Authenticator(SysAuthenticator):
         try:
             with urlopen(request, timeout=OAUTH_TIMEOUT) as response:  # nosec B310
                 response_data = response.read()
-        except (HTTPError, URLError, OSError) as e:
+        except OSError as e:
             log("oauth introspection request failed", exc_info=True)
             log.warn("Warning: oauth authentication failed")
             log.warn(" token introspection request failed: %s", e)

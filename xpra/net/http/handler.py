@@ -406,10 +406,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def verify_basic_authentication(self, auth: str) -> tuple[bool, str]:
         b64str = auth.split("Basic ", 1)[1]
         import base64
-        import binascii
         try:
             s = base64.b64decode(b64str).decode("utf8")
-        except (ValueError, UnicodeDecodeError, binascii.Error):
+        except (ValueError, UnicodeDecodeError):
             s = ""
         if s.find(":") < 0:
             return False, "invalid authentication format"
