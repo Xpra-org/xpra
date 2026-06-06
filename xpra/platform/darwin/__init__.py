@@ -12,12 +12,23 @@ def do_init() -> None:
     for x in list(sys.argv):
         if x.startswith("-psn_"):
             sys.argv.remove(x)
-    if os.environ.get("XPRA_HIDE_DOCK", "") == "1":
-        from xpra.util.thread import check_main_thread
-        check_main_thread()
-        from AppKit import NSApp
-        # NSApplicationActivationPolicyAccessory = 1
-        NSApp.setActivationPolicy_(1)
+    hide_dock()
+
+
+def hide_dock() -> None:
+    # short-lived subprocesses (ie: the OpenGL probe, the splash screen, ...)
+    # set `XPRA_HIDE_DOCK` so they don't steal a dock icon:
+    if os.environ.get("XPRA_HIDE_DOCK", "") != "1":
+        return
+    from xpra.util.thread import check_main_thread
+    check_main_thread()
+    # `NSApp` is nil until the shared application exists, and `Gtk.init()`
+    # resets the activation policy back to "regular" (showing a dock icon),
+    # so use `sharedApplication()` (never nil) and expect this to be called
+    # again *after* Gtk has been initialized - see `gtk_init_check`:
+    from AppKit import NSApplication
+    # NSApplicationActivationPolicyAccessory = 1
+    NSApplication.sharedApplication().setActivationPolicy_(1)
 
 
 def do_init_env() -> None:
