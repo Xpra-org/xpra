@@ -401,7 +401,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         # increase the back-off for any token sent again in a short time,
         # more so for clients that need the targets, and even more for greedy clients
         # (which also require us to collect the contents):
-        scale = 4 if self._greedy_client else 2 if self._want_targets else 1
+        scale = 1
+        if self._want_targets:
+            scale *= 2
+        if self._greedy_client:
+            scale *= 2
         if self._emit_token_backoff <= 0:
             self._emit_token_backoff = min(TOKEN_BACKOFF_MAX, TOKEN_BACKOFF_DELAY * scale)
         else:
