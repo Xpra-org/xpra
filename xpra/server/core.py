@@ -1331,7 +1331,8 @@ class ServerCore(GLibServer):
 
     def get_http_scripts(self) -> dict[str, Callable[[str], HttpResponse]]:
         # loose coupling with xpra.server.subsystem.http:
-        return getattr(self, "_http_scripts", {})
+        http = self.get_subsystem("http")
+        return getattr(http, "scripts", {})
 
     def is_timedout(self, protocol: SocketProtocol) -> bool:
         v = not protocol.is_closed() and protocol in self._potential_protocols
