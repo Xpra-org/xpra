@@ -8,6 +8,7 @@ from typing import Iterable
 from collections.abc import Sequence
 
 from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.util.env import envint
 from xpra.util.str_fn import csv
 from xpra.log import Logger
 
@@ -47,6 +48,9 @@ MP3_ID3V2 = MP3 + "+" + ID3V2
 
 AUDIO_DATA_PACKET = "sound-data" if BACKWARDS_COMPATIBLE else "audio-data"
 AUDIO_CONTROL_PACKET = "sound-control" if BACKWARDS_COMPATIBLE else "audio-control"
+AUDIO_KEEPALIVE_PACKET = "audio-keepalive"
+AUDIO_KEEPALIVE_INTERVAL = envint("XPRA_AUDIO_KEEPALIVE_INTERVAL", 5)
+AUDIO_KEEPALIVE_TIMEOUT = envint("XPRA_AUDIO_KEEPALIVE_TIMEOUT", 10)
 
 
 # used for parsing codec names specified on the command line:

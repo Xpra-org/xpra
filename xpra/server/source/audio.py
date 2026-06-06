@@ -10,7 +10,10 @@ from time import monotonic, sleep
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.audio.common import AUDIO_DATA_PACKET
+from xpra.audio.common import (
+    AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET,
+)
+from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.net.compression import Compressed
 from xpra.server.source.stub import StubClientConnection
 from xpra.common import SizedBuffer, may_notify_client
@@ -47,7 +50,7 @@ class FakeSink:
         log("FakeSink.cleanup%s ignored", args)
 
 
-class AudioConnection(StubClientConnection):
+class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
 
     PREFIX = "audio"
 
@@ -86,6 +89,7 @@ class AudioConnection(StubClientConnection):
         self.audio_encoders: Sequence[str] = ()
         self.audio_receive = False
         self.audio_send = False
+        self.init_audio_keepalive_state()
         self.audio_fade_timer = 0
         self.new_stream_timers: dict[Popen, int] = {}
         self.wants_audio_capabilities = False            # flag indicating that the client wants 'audio-capabilities'
@@ -121,6 +125,7 @@ class AudioConnection(StubClientConnection):
     def cleanup(self) -> None:
         log("%s.cleanup()", self)
         self.cancel_audio_fade_timer()
+        self.cancel_audio_keepalive_timers()
         self.stop_sending_audio()
         self.stop_receiving_audio()
         self.stop_new_stream_notifications()
@@ -166,6 +171,7 @@ class AudioConnection(StubClientConnection):
         self.audio_encoders = audio.strtupleget("encoders", ())
         self.audio_receive = audio.boolget("receive")
         self.audio_send = audio.boolget("send")
+        self.parse_audio_keepalive_caps(audio)
         log("pulseaudio id=%s, cookie-hash=%s, server=%s",
             self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server)
         log("audio decoders=%s, encoders=%s, receive=%s, send=%s",
@@ -193,6 +199,7 @@ class AudioConnection(StubClientConnection):
             "receive": self.supports_microphone and len(self.microphone_codecs) > 0,
             "async": True,
         })
+        audio_caps.update(self.get_audio_keepalive_caps())
         log("get_audio_caps()=%s", audio_caps)
         return audio_caps
 
@@ -326,6 +333,8 @@ class AudioConnection(StubClientConnection):
             self.audio_source_sequence += 1
             ss.cleanup()
         self.call_update_av_sync_delay()
+        if not self.audio_sink:
+            self.cancel_audio_keepalive_timers()
 
     def send_eos(self, codec: str, sequence: int = 0) -> None:
         log("send_eos(%s, %s)", codec, sequence)
@@ -422,7 +431,21 @@ class AudioConnection(StubClientConnection):
         sequence = audio_source.sequence
         if sequence >= 0:
             metadata["sequence"] = sequence
+        if not self.audio_keepalive_may_send(audio_source.codec, metadata):
+            return
         self.send(AUDIO_DATA_PACKET, *packet_data, synchronous=False, will_have_more=True)
+        self.schedule_audio_keepalive_check()
+
+    def send_audio_keepalive_packet(self, timestamp: int) -> None:
+        self.send_async(AUDIO_KEEPALIVE_PACKET, timestamp)
+
+    @staticmethod
+    def audio_keepalive_timer_add(delay: int, fn) -> int:
+        return GLib.timeout_add(delay, fn)
+
+    @staticmethod
+    def audio_keepalive_timer_remove(timer: int) -> None:
+        GLib.source_remove(timer)
 
     def stop_receiving_audio(self) -> None:
         ss = self.audio_sink
@@ -430,6 +453,8 @@ class AudioConnection(StubClientConnection):
         if ss:
             self.audio_sink = None
             ss.cleanup()
+        if not self.audio_source:
+            self.cancel_audio_keepalive_timers()
 
     ##########################################################################
     # audio control commands:
@@ -535,6 +560,7 @@ class AudioConnection(StubClientConnection):
             codec, len(data or []), metadata, packet_metadata, self.audio_sink)
         if self.is_closed():
             return
+        self.update_latest_received_audio_timestamp(typedict(metadata))
         if self.audio_sink is not None and codec != self.audio_sink.codec:
             log.info("audio codec changed from %s to %s", self.audio_sink.codec, codec)
             self.audio_sink.cleanup()

@@ -8,7 +8,10 @@ from time import sleep
 from typing import Any
 from collections.abc import Callable, Sequence, Iterable
 
-from xpra.audio.common import AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET
+from xpra.audio.common import (
+    AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET, AUDIO_KEEPALIVE_PACKET,
+)
+from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
@@ -89,7 +92,7 @@ def get_pa_info() -> dict:
     return {}
 
 
-class AudioClient(StubClientMixin):
+class AudioClient(AudioKeepaliveMixin, StubClientMixin):
     """
     Utility mixin for clients that handle audio
     """
@@ -125,6 +128,7 @@ class AudioClient(StubClientMixin):
         self.server_audio_encoders: Sequence[str] = ()
         self.server_audio_receive: bool = False
         self.server_audio_send: bool = False
+        self.init_audio_keepalive_state()
         self.queue_used_sent: int = 0
         self.wants_audio_capabilities = False            # flag indicating that the server wants 'audio-capabilities'
         # duplicated from ServerInfo mixin:
@@ -223,6 +227,7 @@ class AudioClient(StubClientMixin):
         return audio_properties
 
     def cleanup(self) -> None:
+        self.cancel_audio_keepalive_timers()
         self.stop_all_audio()
 
     def stop_all_audio(self) -> None:
@@ -262,6 +267,7 @@ class AudioClient(StubClientMixin):
             "send": self.microphone_allowed,
             "receive": self.speaker_allowed,
         }
+        caps.update(self.get_audio_keepalive_caps())
         # make mypy happy about the type: convert typedict to dict with string keys
         sp: dict[str, Any] = {str(k): v for k, v in self.audio_properties.items()}
         if FULL_INFO < 2:
@@ -313,6 +319,7 @@ class AudioClient(StubClientMixin):
         self.server_audio_encoders = audio.strtupleget("encoders")
         self.server_audio_receive = audio.boolget("receive")
         self.server_audio_send = audio.boolget("send")
+        self.parse_audio_keepalive_caps(audio)
         log("pulseaudio id=%s, server=%s", self.server_pulseaudio_id, self.server_pulseaudio_server)
         log("audio decoders=%s, audio encoders=%s, receive=%s, send=%s",
             csv(self.server_audio_decoders), csv(self.server_audio_encoders),
@@ -325,6 +332,8 @@ class AudioClient(StubClientMixin):
             # call via idle_add because we may query X11 properties
             # to find the pulseaudio server:
             self.idle_add(self.start_sending_audio)
+        if self.audio_keepalive_enabled():
+            self.schedule_audio_keepalive()
 
     def suspend_audio(self, _client) -> None:
         self.audio_resume_restart = bool(self.audio_sink)
@@ -470,6 +479,8 @@ class AudioClient(StubClientMixin):
         })
         self.audio_source_sequence += 1
         ss.cleanup()
+        if not self.audio_sink:
+            self.cancel_audio_keepalive_timers()
 
     def start_receiving_audio(self) -> None:
         """ ask the server to start sending audio and emit the client signal """
@@ -527,6 +538,8 @@ class AudioClient(StubClientMixin):
         log("stop_receiving_audio(%s) calling %s", tell_server, ss.cleanup)
         ss.cleanup()
         log("stop_receiving_audio(%s) done", tell_server)
+        if not self.audio_source:
+            self.cancel_audio_keepalive_timers()
 
     def audio_sink_state_changed(self, audio_sink, state: str) -> None:
         if audio_sink != self.audio_sink:
@@ -644,7 +657,10 @@ class AudioClient(StubClientMixin):
         for x in packet_metadata:
             self.audio_out_bytecount += len(x)
         metadata["sequence"] = audio_source.sequence
+        if not self.audio_keepalive_may_send(audio_source.codec, metadata):
+            return
         self.send_audio_data(audio_source, data, metadata, packet_metadata)
+        self.schedule_audio_keepalive_check()
 
     def send_audio_data(self, audio_source, data: bytes,
                         metadata: dict, packet_metadata: Sequence[SizedBuffer]) -> None:
@@ -653,6 +669,18 @@ class AudioClient(StubClientMixin):
         pmetadata = Compressed("packet metadata", packet_metadata)
         packet_data = [codec, Compressed(codec, data), metadata, pmetadata]
         self.send(AUDIO_DATA_PACKET, *packet_data)
+
+    def send_audio_keepalive_packet(self, timestamp: int) -> None:
+        self.send(AUDIO_KEEPALIVE_PACKET, timestamp)
+
+    def audio_keepalive_timer_add(self, delay: int, fn) -> int:
+        return self.timeout_add(delay, fn)
+
+    def audio_keepalive_timer_remove(self, timer: int) -> None:
+        self.source_remove(timer)
+
+    def _process_audio_keepalive(self, packet: Packet) -> None:
+        self.audio_keepalive(packet.get_u64(1))
 
     def send_audio_sync(self, v: int) -> None:
         if self.server_av_sync:
@@ -670,6 +698,7 @@ class AudioClient(StubClientMixin):
         codec = packet.get_str(1)
         data = packet.get_buffer(2)
         metadata = typedict(packet.get_dict(3))
+        self.update_latest_received_audio_timestamp(metadata)
         # the server may send packet_metadata, which is pushed before the actual audio data:
         packet_metadata = ()
         if len(packet) > 4:
@@ -742,4 +771,5 @@ class AudioClient(StubClientMixin):
         # this handler can run directly from the network thread:
         self.add_packets(f"{AudioClient.PREFIX}-data")
         self.add_packets(f"{AudioClient.PREFIX}-capabilities", main_thread=True)
+        self.add_packets(AUDIO_KEEPALIVE_PACKET)
         self.add_legacy_alias("sound-data", f"{AudioClient.PREFIX}-data")

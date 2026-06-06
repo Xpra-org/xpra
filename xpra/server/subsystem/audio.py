@@ -9,6 +9,7 @@ from typing import Any
 from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
+from xpra.audio.common import AUDIO_KEEPALIVE_PACKET
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.util.env import first_time, envint
@@ -175,11 +176,16 @@ class AudioServer(StubSubsystem):
         if ss := self.get_server_source(proto):
             ss.client_audio_capabilities(packet.get_dict(1))
 
+    def _process_audio_keepalive(self, proto, packet: Packet) -> None:
+        if ss := self.get_server_source(proto):
+            ss.audio_keepalive(packet.get_u64(1))
+
     def init_packet_handlers(self) -> None:
         if self.supports_speaker or self.supports_microphone:
             self.add_packets(f"{AudioServer.PREFIX}-control", main_thread=True)
             self.add_packets(f"{AudioServer.PREFIX}-data")
             self.add_packets(f"{AudioServer.PREFIX}-capabilities", main_thread=True)
+            self.add_packets(AUDIO_KEEPALIVE_PACKET)
             self.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")
             self.add_legacy_alias("sound-data", f"{AudioServer.PREFIX}-data")
 
