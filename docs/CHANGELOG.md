@@ -23,6 +23,7 @@
   * [native MS Windows DirectShow webcam backend](https://github.com/Xpra-org/xpra/issues/3336)
   * [native macOS CoreMedia webcam backend](https://github.com/Xpra-org/xpra/issues/1231)
 * ✨ Features:
+  * [clipboard rate limiting](https://github.com/Xpra-org/xpra/issues/2404)
   * [audio keepalive](https://github.com/Xpra-org/xpra/issues/4913)
   * [virtual monitors for MS Windows shadow servers](https://github.com/Xpra-org/xpra/issues/4909)
   * [`expand` server for MS Windows](https://github.com/Xpra-org/xpra/issues/4911)
