@@ -118,6 +118,48 @@ def snap_to_increment(w: int, h: int, hints: dict, nearest: bool = False) -> tup
     return w, h
 
 
+def calculate_moveresize_data(direction: int | MoveResize, wx: int, wy: int, ww: int, wh: int,
+                              dx: int, dy: int, minw: int, minh: int,
+                              maxw: int, maxh: int) -> tuple[tuple, int, int]:
+    if direction in (MoveResize.SIZE_BOTTOMRIGHT, MoveResize.SIZE_BOTTOM, MoveResize.SIZE_BOTTOMLEFT):
+        # height will be set to: wh+dy
+        dy = max(minh - wh, dy)
+        dy = min(maxh - wh, dy)
+    elif direction in (MoveResize.SIZE_TOPRIGHT, MoveResize.SIZE_TOP, MoveResize.SIZE_TOPLEFT):
+        # height will be set to: wh-dy
+        dy = min(wh - minh, dy)
+        dy = max(wh - maxh, dy)
+    if direction in (MoveResize.SIZE_BOTTOMRIGHT, MoveResize.SIZE_RIGHT, MoveResize.SIZE_TOPRIGHT):
+        # width will be set to: ww+dx
+        dx = max(minw - ww, dx)
+        dx = min(maxw - ww, dx)
+    elif direction in (MoveResize.SIZE_BOTTOMLEFT, MoveResize.SIZE_LEFT, MoveResize.SIZE_TOPLEFT):
+        # width will be set to: ww-dx
+        dx = min(ww - minw, dx)
+        dx = max(ww - maxw, dx)
+    if direction == MoveResize.MOVE:
+        data = (wx + dx, wy + dy), ()
+    elif direction == MoveResize.SIZE_BOTTOMRIGHT:
+        data = (), (ww + dx, wh + dy)
+    elif direction == MoveResize.SIZE_BOTTOM:
+        data = (), (ww, wh + dy)
+    elif direction == MoveResize.SIZE_BOTTOMLEFT:
+        data = (wx + dx, wy), (ww - dx, wh + dy)
+    elif direction == MoveResize.SIZE_RIGHT:
+        data = (), (ww + dx, wh)
+    elif direction == MoveResize.SIZE_LEFT:
+        data = (wx + dx, wy), (ww - dx, wh)
+    elif direction == MoveResize.SIZE_TOPRIGHT:
+        data = (wx, wy + dy), (ww + dx, wh - dy)
+    elif direction == MoveResize.SIZE_TOP:
+        data = (wx, wy + dy), (ww, wh - dy)
+    elif direction == MoveResize.SIZE_TOPLEFT:
+        data = (wx + dx, wy + dy), (ww - dx, wh - dy)
+    else:
+        data = ()
+    return data, dx, dy
+
+
 GDK_MOVERESIZE_MAP = {int(d): we for d, we in {
     MoveResize.SIZE_TOPLEFT: Gdk.WindowEdge.NORTH_WEST,
     MoveResize.SIZE_TOP: Gdk.WindowEdge.NORTH,
@@ -1037,44 +1079,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             maxh = self.geometry_hints.get("max_height", 2 ** 15)
             geomlog("%s: min=%ix%i, max=%ix%i, window=%ix%i, delta=%ix%i",
                     dirstr, minw, minh, maxw, maxh, ww, wh, dx, dy)
-            if direction in (MoveResize.SIZE_BOTTOMRIGHT, MoveResize.SIZE_BOTTOM, MoveResize.SIZE_BOTTOMLEFT):
-                # height will be set to: wh+dy
-                dy = max(minh - wh, dy)
-                dy = min(maxh - wh, dy)
-            elif direction in (MoveResize.SIZE_TOPRIGHT, MoveResize.SIZE_TOP, MoveResize.SIZE_TOPLEFT):
-                # height will be set to: wh-dy
-                dy = min(wh - minh, dy)
-                dy = max(wh - maxh, dy)
-            if direction in (MoveResize.SIZE_BOTTOMRIGHT, MoveResize.SIZE_RIGHT, MoveResize.SIZE_TOPRIGHT):
-                # width will be set to: ww+dx
-                dx = max(minw - ww, dx)
-                dx = min(maxw - ww, dx)
-            elif direction in (MoveResize.SIZE_BOTTOMLEFT, MoveResize.SIZE_LEFT, MoveResize.SIZE_TOPLEFT):
-                # width will be set to: ww-dx
-                dx = min(ww - minw, dx)
-                dx = max(ww - maxw, dx)
-            # calculate move + resize:
-            if direction == MoveResize.MOVE:
-                data = (wx + dx, wy + dy), ()
-            elif direction == MoveResize.SIZE_BOTTOMRIGHT:
-                data = (), (ww + dx, wh + dy)
-            elif direction == MoveResize.SIZE_BOTTOM:
-                data = (), (ww, wh + dy)
-            elif direction == MoveResize.SIZE_BOTTOMLEFT:
-                data = (wx + dx, wy), (ww - dx, wh + dy)
-            elif direction == MoveResize.SIZE_RIGHT:
-                data = (), (ww + dx, wh)
-            elif direction == MoveResize.SIZE_LEFT:
-                data = (wx + dx, wy), (ww - dx, wh)
-            elif direction == MoveResize.SIZE_TOPRIGHT:
-                data = (wx, wy + dy), (ww + dx, wh - dy)
-            elif direction == MoveResize.SIZE_TOP:
-                data = (wx, wy + dy), (ww, wh - dy)
-            elif direction == MoveResize.SIZE_TOPLEFT:
-                data = (wx + dx, wy + dy), (ww - dx, wh - dy)
-            else:
-                # not handled yet!
-                data = ()
+            data, dx, dy = calculate_moveresize_data(direction, wx, wy, ww, wh,
+                                                     dx, dy, minw, minh, maxw, maxh)
             geomlog("%s for window %ix%i: started at %s, now at %s, delta=%s, button=%s, buttons=%s, data=%s",
                     dirstr, ww, wh, (x_root, y_root), (x, y), (dx, dy), button, buttons, data)
             if data:

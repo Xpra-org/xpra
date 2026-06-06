@@ -8,7 +8,42 @@
 
 import unittest
 
-from xpra.client.gtk3.window.base import snap_to_increment
+from xpra.constants import MoveResize
+from xpra.client.gtk3.window.base import calculate_moveresize_data, snap_to_increment
+
+
+class TestCalculateMoveResizeData(unittest.TestCase):
+
+    def test_directions(self):
+        expected = {
+            MoveResize.MOVE: ((17, 29), ()),
+            MoveResize.SIZE_BOTTOMRIGHT: ((), (107, 89)),
+            MoveResize.SIZE_BOTTOM: ((), (100, 89)),
+            MoveResize.SIZE_BOTTOMLEFT: ((17, 20), (93, 89)),
+            MoveResize.SIZE_RIGHT: ((), (107, 80)),
+            MoveResize.SIZE_LEFT: ((17, 20), (93, 80)),
+            MoveResize.SIZE_TOPRIGHT: ((10, 29), (107, 71)),
+            MoveResize.SIZE_TOP: ((10, 29), (100, 71)),
+            MoveResize.SIZE_TOPLEFT: ((17, 29), (93, 71)),
+        }
+        for direction, data in expected.items():
+            with self.subTest(direction=direction):
+                assert calculate_moveresize_data(direction, 10, 20, 100, 80,
+                                                 7, 9, 1, 1, 500, 500) == (data, 7, 9)
+
+    def test_clamping(self):
+        assert calculate_moveresize_data(MoveResize.SIZE_BOTTOM, 10, 20, 100, 80,
+                                         7, -100, 70, 50, 120, 90) == (((), (100, 50)), 7, -30)
+        assert calculate_moveresize_data(MoveResize.SIZE_TOP, 10, 20, 100, 80,
+                                         7, 100, 70, 50, 120, 90) == (((10, 50), (100, 50)), 7, 30)
+        assert calculate_moveresize_data(MoveResize.SIZE_RIGHT, 10, 20, 100, 80,
+                                         -100, 9, 70, 50, 120, 90) == (((), (70, 80)), -30, 9)
+        assert calculate_moveresize_data(MoveResize.SIZE_LEFT, 10, 20, 100, 80,
+                                         -100, 9, 70, 50, 120, 90) == (((-10, 20), (120, 80)), -20, 9)
+
+    def test_unhandled_direction(self):
+        assert calculate_moveresize_data(MoveResize.CANCEL, 10, 20, 100, 80,
+                                         7, 9, 1, 1, 500, 500) == ((), 7, 9)
 
 
 class TestSnapToIncrement(unittest.TestCase):
