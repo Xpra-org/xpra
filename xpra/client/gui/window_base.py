@@ -420,14 +420,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             ignorewarnings(self.set_opacity, opacity)
 
         if "has-alpha" in metadata:
-            new_alpha = metadata.boolget("has-alpha")
-            if new_alpha != self._has_alpha:
-                # win32 without opengl can't do transparency,
-                # so it triggers too many warnings
-                log_fn = alphalog.debug if WIN32 else alphalog.warn
-                log_fn("Warning: window %#x changed its transparency attribute", self.wid)
-                log_fn(" from %s to %s, behaviour is undefined", self._has_alpha, new_alpha)
-                self._has_alpha = new_alpha
+            self.alpha(metadata.boolget("has-alpha"))
 
         if "maximized" in metadata:
             self.set_maximized(metadata.boolget("maximized"))
@@ -439,14 +432,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             self.set_iconic(metadata.boolget("iconic"))
 
         if "decorations" in metadata:
-            decorated = metadata.boolget("decorations", True)
-            was_decorated = self.get_decorated()
-            if WIN32 and decorated != was_decorated:
-                log.info("decorations flag toggled, now %s, re-initializing window", decorated)
-                GLib.idle_add(self._client.reinit_window, self.wid, self)
-            else:
-                self.set_decorated(metadata.boolget("decorations"))
-                self.apply_geometry_hints(self.geometry_hints)
+            self.set_decorations(metadata.boolget("decorations", True))
 
         if "above" in metadata:
             self.set_above(metadata.boolget("above"))
@@ -499,8 +485,8 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
 
         if "content-type" in metadata:
             self.content_type = metadata.strget("content-type")
-            if self._backing:
-                self._backing.content_type = self.content_type
+            if b := self._backing:
+                b.content_type = self.content_type
 
         if "actions" in metadata:
             self._actions = metadata.strtupleget("actions")
@@ -543,6 +529,15 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
     def set_opaque_region(self, rectangles: tuple | None) -> None:
         pass  # see gtk client window base
 
+    def set_decorations(self, decorated: bool) -> None:
+        was_decorated = self.get_decorated()
+        if WIN32 and decorated != was_decorated:
+            log.info("decorations flag toggled, now %s, re-initializing window", decorated)
+            GLib.idle_add(self._client.reinit_window, self.wid, self)
+        else:
+            self.set_decorated(decorated)
+            self.apply_geometry_hints(self.geometry_hints)
+
     def set_iconic(self, iconified: bool) -> None:
         if self._iconified != iconified:
             self._iconified = iconified
@@ -553,6 +548,15 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
 
     def set_fullscreen(self, fullscreen: bool) -> None:
         """ see gtk3 window for implementation """
+
+    def set_has_alpha(self, alpha: bool) -> None:
+        if alpha != self._has_alpha:
+            # win32 without opengl can't do transparency,
+            # so it triggers too many warnings
+            log_fn = alphalog.debug if WIN32 else alphalog.warn
+            log_fn("Warning: window %#x changed its transparency attribute", self.wid)
+            log_fn(" from %s to %s, behaviour is undefined", self._has_alpha, alpha)
+            self._has_alpha = alpha
 
     def set_maximized(self, maximized: bool) -> None:
         if maximized != self._maximized:
