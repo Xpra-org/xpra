@@ -206,6 +206,19 @@ class ShadowServer(ShadowServerBase):
         device = attrs.get("device", "")
         if device:
             self._init_device(device)
+        elif GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT) == 0:
+            raise InitException("all the monitors must use the same display format")
+        # TODO: deal with those messages?
+        # el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
+        # these are bound to callbacks in the client,
+        # but on the server we just ignore them:
+        el = get_win32_event_listener(True)
+        el.ignore_events.update({
+            win32con.WM_ACTIVATEAPP: "WM_ACTIVATEAPP",
+            win32con.WM_MOVE: "WM_MOVE",
+            win32con.WM_INPUTLANGCHANGE: "WM_INPUTLANGCHANGE",
+            win32con.WM_WININICHANGE: "WM_WININICHANGE",
+        })
 
     def _init_device(self, device: str) -> None:
         """Parse a device specifier (e.g. 'vdd:3') and resolve to a monitor name."""
@@ -237,20 +250,6 @@ class ShadowServer(ShadowServerBase):
     def get_cursor_subsystem_class(self) -> type:
         from xpra.platform.win32.shadow_cursor import Win32ShadowCursorManager
         return Win32ShadowCursorManager
-
-        if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT) == 0:
-            raise InitException("all the monitors must use the same display format")
-        # TODO: deal with those messages?
-        # el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
-        # these are bound to callbacks in the client,
-        # but on the server we just ignore them:
-        el = get_win32_event_listener(True)
-        el.ignore_events.update({
-            win32con.WM_ACTIVATEAPP: "WM_ACTIVATEAPP",
-            win32con.WM_MOVE: "WM_MOVE",
-            win32con.WM_INPUTLANGCHANGE: "WM_INPUTLANGCHANGE",
-            win32con.WM_WININICHANGE: "WM_WININICHANGE",
-        })
 
     def init(self, opts) -> None:
         self.pixel_depth = int(opts.pixel_depth) or 32
