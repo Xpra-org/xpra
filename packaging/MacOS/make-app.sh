@@ -257,13 +257,20 @@ if [ "${GSTREAMER_VIDEO}" == "0" ]; then
 	rm -fr "${PYDIR}/xpra/codecs/gstreamer"
 fi
 
-for module in "AVFoundation" "pkg_resources" "gi" "cffi" "OpenGL" "zeroconf"; do
+for module in "AVFoundation" "pkg_resources" "gi" "cffi" "OpenGL" "OpenGL_accelerate" "zeroconf"; do
   echo "- ${module}"
-  # py2app mishandles sub-packages whose '__init__' is a compiled extension
-  # (ie: 'zeroconf._services', whose '__init__.cpython-*.so' makes py2app emit a
-  #  flat '_services.pyc' and drop 'zeroconf._services.info' and its siblings),
-  # so wipe py2app's copy and bring in the source package verbatim instead:
-  rm -fr "${PYDIR}/${module}"
+  # py2app's modulegraph only follows imports it can see in Python source, so it
+  # mishandles packages whose structure lives in compiled extensions:
+  #  - 'zeroconf._services' has a compiled '__init__.cpython-*.so', which makes
+  #    py2app emit a flat '_services.pyc' and drop the '.info' siblings;
+  #  - 'OpenGL_accelerate.formathandler' is referenced only via Cython 'cimport'
+  #    (never from any '.py'), so py2app drops it, leaving the other accelerate
+  #    extensions to subclass a missing 'FormatHandler' base and fail at import
+  #    with 'KeyError: __reduce_cython__'.
+  # Wipe py2app's copy and bring in the source package verbatim instead, loaded
+  # in place (the normal loader resolves the cross-module cimport, unlike the
+  # 'lib-dynload' 'imp.load_dynamic' stubs):
+  rm -fr "${PYDIR}/${module}" "${FRAMEWORKS_DIR}/lib-dynload/${module}"
 	rsync -rplt "${SITELIB}/${module}" "${PYDIR}/"
 done
 if [ "$STRIP_OPENGL" == "1" ]; then
