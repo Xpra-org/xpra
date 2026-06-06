@@ -5,16 +5,18 @@
 
 import sys
 
+from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import print_nested_dict
 from xpra.x11.bindings.display_source import init_display_source
 from xpra.x11.bindings.record import RecordBindings   # pylint: disable=no-name-in-module
 
 
-def main() -> None:
+def main() -> ExitCode:
     init_display_source()
     record = RecordBindings()
     print_nested_dict(record.get_info())
     record.record()
+    return ExitCode.OK
 
 
 if __name__ == "__main__":

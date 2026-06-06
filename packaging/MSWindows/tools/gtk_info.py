@@ -7,14 +7,14 @@
 import sys
 
 
-def main() -> int:
+def main(args: list[str]) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("GTK-Info", "GTK Info"):
         from xpra.gtk import info
-        return info.main()
+        return info.main(args)
 
 
 if __name__ == "__main__":
-    v = main()
+    v = main(sys.argv)
     sys.exit(v)

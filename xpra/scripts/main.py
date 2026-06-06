@@ -853,7 +853,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         return do_run_client(app)
     if mode == "keyboard":
         from xpra.platform import keyboard
-        return keyboard.main()
+        return keyboard.main(cmdline)
     if mode == "root-size":
         from xpra.gtk.util import get_root_size
         sys.stdout.write("%ix%i\n" % get_root_size((0, 0)))
@@ -861,14 +861,14 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
     if mode == "gtk-info":
         check_gtk("gtk-info")
         from xpra.gtk import info
-        return info.main()
+        return info.main(cmdline)
     if mode == "gui-info":
         check_gtk("gui-info")
         from xpra.platform import gui as platform_gui
-        return platform_gui.main()
+        return platform_gui.main(cmdline)
     if mode == "network-info":
         from xpra.net import net_util
-        return net_util.main()
+        return net_util.main(cmdline)
     if mode == "crypto-info":
         from xpra.net import crypto
         return crypto.main()
@@ -884,13 +884,13 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         return packet_encoding.main()
     if mode == "path-info":
         from xpra.platform import paths
-        return paths.main()
+        return paths.main(cmdline)
     if mode == "printing-info":
         from xpra.platform import printing
         return printing.main(args)
     if mode == "version-info":
         from xpra.scripts import version
-        return version.main()
+        return version.main(cmdline)
     if mode == "version-check":
         return run_version_check(args)
     if mode == "toolbox":
