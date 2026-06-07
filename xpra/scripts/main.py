@@ -1240,6 +1240,11 @@ def basic_client_features():
 
 
 def get_client_app(cmdline: list[str], opts, extra_args: list[str], mode: str):
+    app, extra_args, run_args = create_client_app(opts, extra_args, mode)
+    return connect_client_app(app, cmdline, opts, extra_args, mode, run_args)
+
+
+def create_client_app(opts, extra_args: list[str], mode: str):
     validate_encryption(opts)
     if not find_spec("xpra.client"):
         raise InitExit(ExitCode.COMPONENT_MISSING, "`xpra-client` is not installed")
@@ -1344,6 +1349,10 @@ def get_client_app(cmdline: list[str], opts, extra_args: list[str], mode: str):
         app.start_new_session = sns
     else:
         app = get_client_gui_app(opts, request_mode, extra_args, mode)
+    return app, extra_args, run_args
+
+
+def connect_client_app(app, cmdline: list[str], opts, extra_args: list[str], mode: str, run_args: list[str]):
     try:
         if mode != "listen":
             may_show_progress(app, 60, "connecting to server")
