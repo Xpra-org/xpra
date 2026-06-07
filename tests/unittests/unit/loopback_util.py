@@ -108,6 +108,30 @@ class LoopbackTest(unittest.TestCase):
         cli.mixin.send = to_server
         cli.mixin.send_now = to_server
 
+        # Some client subsystems (notably pointer) do not call send() directly:
+        # they queue packets for the network thread and trigger a flush via
+        # have_more(). Emulate the protocol's next_packet() drain so those
+        # packets reach the server too. The queues live on the assembled client
+        # base in production, so create them here if the subsystem expects them.
+        if not hasattr(cli.mixin, "_priority_packets"):
+            cli.mixin._priority_packets = []
+        if not hasattr(cli.mixin, "_ordinary_packets"):
+            cli.mixin._ordinary_packets = []
+
+        def have_more() -> None:
+            while cli.mixin._priority_packets:
+                p = cli.mixin._priority_packets.pop(0)
+                to_server(p[0], *p[1:])
+            while cli.mixin._ordinary_packets:
+                p = cli.mixin._ordinary_packets.pop(0)
+                to_server(p[0], *p[1:])
+            mp = getattr(cli.mixin, "_mouse_position", None)
+            if mp is not None:
+                cli.mixin._mouse_position = None
+                to_server(mp[0], *mp[1:])
+
+        cli.mixin.have_more = have_more
+
         # server source -> client subsystem packet handler.
         # client handlers take just (packet); strip will_have_more/synchronous:
         def to_client(packet_type, *args, **_kwargs):

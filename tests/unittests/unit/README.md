@@ -90,6 +90,19 @@ Recurring accommodations, with examples:
   `StubClientConnection`.
 - **Capability preconditions**: some sources reject empty caps (e.g. `encoding`
   raises if the client declares no encodings) — provide the minimal caps.
+- **Queued sends (not `send()`)**: a few client subsystems (e.g. `pointer`) don't
+  call `send()` — they append to `_ordinary_packets` / `_mouse_position` and flush
+  via `have_more()`. The harness drains those queues in `_wire`, so driving e.g.
+  `send_mouse_position` still works; nothing special is needed in the test.
+- **`opts.uid`/`opts.gid`**: server subsystems that don't override `init()` fall
+  back to `StubSubsystem.init`, which reads `opts.uid`/`opts.gid` — include them in
+  `server_opts` (see `power`, `pointer`).
+- **Module-level `BACKWARDS_COMPATIBLE`**: when forcing it off to pin a modern
+  packet name, patch it with `start()` + `addCleanup(stop)` (not a `with` scoped to
+  `connect()`) so it stays patched while the test body sends (see `clipboard`).
+- **Server handler is a stub**: some server `_process_*` handlers only log (the
+  real work lives elsewhere, e.g. window models) — pick a path with an observable
+  effect. The window pair uses the bell path for this reason.
 
 ## Coverage
 
@@ -102,3 +115,8 @@ Recurring accommodations, with examples:
 | encoding     | client→server           | quality/speed dispatch to window source|
 | logging      | client→server           | remote logging into server sink        |
 | cursor       | server→client           | cursor-data build + decode             |
+| power        | client→server           | suspend/resume re-emitted on source    |
+| command      | client→server           | start-command dispatch (mocked spawn)  |
+| pointer      | client→server           | mouse position recorded on source      |
+| window-bell  | server→client           | bell packet build + decode             |
+| clipboard    | server→client           | status-toggle (no GTK helper)          |
