@@ -298,9 +298,9 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             window.record("move-resize", geometry=(x, y, w, h))
 
     def _process_window_resized(self, packet: Packet) -> None:
-        wid = int(packet[1])
-        w = int(packet[2])
-        h = int(packet[3])
+        wid = packet.get_wid()
+        w = packet.get_u32(2)
+        h = packet.get_u32(3)
         if window := self.get_window(wid):
             x, y = window.geometry[:2]
             window.geometry = (x, y, w, h)
@@ -338,7 +338,10 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         height = packet.get_u16(5)
         coding = packet.get_str(6)
         # mmap can send a tuple, otherwise it's a buffer, see #4496:
-        data = packet[7]
+        if BACKWARDS_COMPATIBLE:
+            data = packet[7]
+        else:
+            data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)
         rowstride = packet.get_u32(9)
         options = {}

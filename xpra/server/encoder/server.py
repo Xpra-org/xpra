@@ -257,6 +257,7 @@ class EncoderServer(ServerBase):
             return
         seq = packet.get_u64(1)
         metadata = packet.get_dict(2)
+        # can be a pixel buffer, or a list of pixel buffers for planar images:
         pixels = packet[3]
         options = packet.get_dict(4)
         send_opts = packet.get_dict(5)

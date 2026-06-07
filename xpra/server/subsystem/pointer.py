@@ -560,7 +560,7 @@ class PointerManager(StubSubsystem):
         props: dict[str, Any] = {}
         device_id = -1
         if len(packet) >= 6:
-            device_id = packet[5]
+            device_id = packet.get_i64(5)
         if self.process_mouse_common(proto, device_id, wid, pdata, props):
             self._update_modifiers(proto, wid, modifiers)
         self._maybe_record_drag_scroll(wid, pdata)
@@ -577,7 +577,7 @@ class PointerManager(StubSubsystem):
         distance = packet.get_i64(3)
         pointer = packet.get_ints(4)
         modifiers = packet.get_strs(5)
-        # _buttons = packet[6]
+        # buttons = packet.get_ints(6)
         device_id = -1
         props = {}
         self.record_wheel_event(wid, button)

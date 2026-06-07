@@ -84,7 +84,6 @@ class ControlHandler(StubSubsystem):
     def _process_control_request(self, protocol, packet: Packet) -> None:
         """ client sent a command request through its normal channel """
         assert len(packet) >= 2, "invalid command request packet (too small!)"
-        # packet[0] = "control"
         # this may end up calling do_handle_command_request via the adapter
         code, msg = self.process_control_command(protocol, *packet[1:])
         log("command request returned: %s (%s)", code, msg)

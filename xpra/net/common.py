@@ -69,6 +69,9 @@ class Packet(Sequence):
     def __getitem__(self, i):
         return self.data[i]
 
+    def __str__(self):
+        return str(self.data[0])
+
     def __repr__(self):
         return repr(self.data)
 

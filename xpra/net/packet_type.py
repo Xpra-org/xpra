@@ -66,6 +66,12 @@ DISPLAY_REQUEST_ICON: Final[str] = "display-request-icon"
 DISPLAY_SCREENSHOT: Final[str] = "screenshot" if BACKWARDS_COMPATIBLE else "display-screenshot"
 DISPLAY_ICON: Final[str] = "display-icon"
 
+NOTIFICATION_SHOW: Final[str] = "notify_show" if BACKWARDS_COMPATIBLE else "notification-show"
+NOTIFICATION_CLOSE: Final[str] = "notify_close" if BACKWARDS_COMPATIBLE else "notification-close"
+NOTIFICATION_STATUS: Final[str] = "set-notify" if BACKWARDS_COMPATIBLE else "notification-status"
+
+BELL_SET: Final[str] = "set-bell" if BACKWARDS_COMPATIBLE else "bell-set"
+
 INFO_REQUEST: Final[str] = "info-request"
 INFO_RESPONSE: Final[str] = "info-response"
 

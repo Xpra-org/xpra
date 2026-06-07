@@ -119,7 +119,7 @@ class InfoServer(StubSubsystem):
 
         subsystems: Sequence[str] = []
         # if len(packet>=2):
-        #    uuid = packet[1]
+        #    uuid = packet.get_str(1)
         if len(packet) >= 4:
             subsystems = packet.get_strs(3)
 

@@ -424,7 +424,7 @@ class KeyboardManager(StubSubsystem):
             return
         kc = ss.keyboard_config
         if kc:
-            kc.sync = bool(packet[1])
+            kc.sync = packet.get_bool(1)
             log("toggled keyboard-sync to %s for %s", kc.sync, ss)
 
     def _keys_changed(self) -> None:

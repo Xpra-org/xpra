@@ -169,6 +169,7 @@ class NotificationClient(StubClientMixin):
         actions: Sequence[str] = ()
         hints = {}
         if len(packet) >= 10:
+            # IconData or ()
             icon = packet[9]
         if len(packet) >= 12:
             actions = packet.get_strs(10)

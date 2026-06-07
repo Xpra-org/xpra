@@ -13,12 +13,14 @@ creates a minimal `ClientConnection` for it.
 import uuid
 from typing import Any
 
+from xpra.common import SizedBuffer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitCode
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.client import XpraClientBase
 from xpra.log import Logger
+from xpra.util.str_fn import memoryview_to_bytes
 
 log = Logger("webcam")
 
@@ -105,14 +107,12 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
     # ------------------------------------------------------------------
     # Packet handlers — dispatched on the GLib main loop by XpraClientBase
 
-    def _process_webcam_frame(self, packet) -> None:
+    def _process_webcam_frame(self, packet: Packet) -> None:
         try:
-            encoding = packet[3]
-            data = packet[6]
-            if hasattr(data, "data"):
-                data = data.data
+            encoding = packet.get_str(3)
+            data = packet.get_buffer(6)
             log("webcam frame: %s", encoding)
-            self._update_frame(encoding, bytes(data))
+            self._update_frame(encoding, data)
         except Exception as e:
             log.error("Error processing webcam frame: %s", e)
 
@@ -127,8 +127,8 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
         self.quit(ExitCode.OK)
         return False
 
-    def _update_frame(self, encoding: str, data: bytes) -> None:
-        self._pixbuf = get_pixbuf(encoding, data)
+    def _update_frame(self, encoding: str, data: SizedBuffer) -> None:
+        self._pixbuf = get_pixbuf(encoding, memoryview_to_bytes(data))
         if self._pixbuf:
             w, h = self._pixbuf.get_width(), self._pixbuf.get_height()
             self._window.resize(w, h)

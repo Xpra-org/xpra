@@ -280,7 +280,7 @@ class ClipboardProtocolHelperCore:
         target_data = None
         if proxy._can_receive:
             if len(packet) >= 3:
-                targets = self.local_targets(packet[2])
+                targets = self.local_targets(packet.get_strs(2))
             if len(packet) >= 8:
                 target = packet.get_str(3)
                 dtype = packet.get_str(4)
@@ -296,12 +296,12 @@ class ClipboardProtocolHelperCore:
         # older versions always claimed the selection when the token is received:
         claim = True
         if len(packet) >= 10:
-            claim = bool(packet[8])
+            claim = packet.get_bool(8)
             # clients can now also change the greedy flag on the fly,
             # this is needed for clipboard direction restrictions:
             # the client may want to be notified of clipboard changes, just like a greedy client
-            proxy._greedy_client = bool(packet[9])
-        synchronous_client = len(packet) >= 11 and bool(packet[10])
+            proxy._greedy_client = packet.get_bool(9)
+        synchronous_client = len(packet) >= 11 and packet.get_bool(10)
         proxy.got_token(targets, target_data, claim, synchronous_client)
 
     def local_targets(self, remote_targets: Iterable[str]) -> Sequence[str]:
@@ -518,7 +518,7 @@ class ClipboardProtocolHelperCore:
         self.progress_cb(-1, pending)
 
     def _process_clipboard_enable_selections(self, packet: Packet) -> None:
-        selections = tuple(packet[1])
+        selections = packet.get_strs(1)
         self.enable_selections(selections)
 
     def process_clipboard_packet(self, packet: Packet) -> None:

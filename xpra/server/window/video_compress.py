@@ -2353,8 +2353,9 @@ class WindowVideoSource(WindowSource):
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         free_image_wrapper(image)
 
-    def do_schedule_auto_refresh(self, encoding: str, scroll_data, region, client_options: dict, options: typedict) -> None:
+    def do_schedule_auto_refresh(self, encoding: str, region, client_options: dict, options: typedict) -> None:
         # for scroll encoding, data is a LargeStructure wrapper:
+        scroll_data = client_options.get("scroll", ())
         if scroll_data:
             if not self.refresh_regions:
                 return
@@ -2382,7 +2383,7 @@ class WindowVideoSource(WindowSource):
             # if there are non-scroll packets following this one, they will
             # and if not then we're OK anyway
             return
-        super().do_schedule_auto_refresh(encoding, scroll_data, region, client_options, options)
+        super().do_schedule_auto_refresh(encoding, region, client_options, options)
 
     def video_fallback(self, image: ImageWrapper, options, warn=False, info="") -> tuple:
         if warn and first_time(f"non-video-{self.wid:#x}"):

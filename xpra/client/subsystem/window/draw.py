@@ -100,7 +100,7 @@ class WindowDraw(StubClientMixin):
             if packet is None:
                 log("draw queue found exit marker")
                 break
-            with log.trap_error(f"Error processing {packet[0]} packet"):
+            with log.trap_error(f"Error processing {packet} packet"):
                 self._do_draw(packet)
                 sleep(0)
         self._draw_thread = None
@@ -110,7 +110,7 @@ class WindowDraw(StubClientMixin):
         """ this runs from the draw thread above """
         wid = packet.get_wid()
         window = self.get_window(wid)
-        if packet[0] == "eos":
+        if packet.get_type() == "eos":
             if window:
                 window.eos()
             return
@@ -119,8 +119,11 @@ class WindowDraw(StubClientMixin):
         width = packet.get_u16(4)
         height = packet.get_u16(5)
         coding = packet.get_str(6)
-        # mmap can send a tuple, otherwise it's a buffer, see #4496:
-        data = packet[7]
+        if BACKWARDS_COMPATIBLE:
+            # mmap can send a tuple, otherwise it's a buffer, see #4496:
+            data = packet[7]
+        else:
+            data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)
         rowstride = packet.get_u32(9)
         if not window:

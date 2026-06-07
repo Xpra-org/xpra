@@ -368,7 +368,7 @@ class FileTransferHandler(FileTransferAttributes):
     def _process_file_send_chunk(self, packet: Packet) -> None:
         chunk_id = packet.get_str(1)
         chunk = packet.get_u32(2)
-        file_data: SizedBuffer = packet[3]
+        file_data: SizedBuffer = packet.get_buffer(3)
         has_more = packet.get_bool(4)
         # if len(file_data)<1024:
         #    from xpra.util.str_fn import hexstr

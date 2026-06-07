@@ -20,10 +20,7 @@ def verify_packet(packet) -> bool:
     if not isinstance(packet, Packet):
         verify_error("invalid type for packet: %s", type(packet))
         return False
-    tree = [f"{packet[0]!r} packet"]
-    if not isinstance(packet[0], str):
-        verify_error("packet type is not a string: %s", packet[0])
-        return False
+    tree = [f"{packet} packet"]
     return do_verify_packet(tree, packet)
 
 

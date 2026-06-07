@@ -218,13 +218,13 @@ class ClipboardManager(StubSubsystem):
         if not ss:
             # protocol has been dropped!
             return
+        self.may_record("server", *packet)
         packet_type = packet.get_type()
-        self.may_record("server", packet_type, *packet[1:])
         if packet_type == "clipboard-status" or (BACKWARDS_COMPATIBLE and packet_type == "set-clipboard-enabled"):
             self._process_clipboard_status(proto, packet)
             return
         if self.client != ss:
-            log("the clipboard packet '%s' does not come from the clipboard owner!", packet[0])
+            log("the clipboard packet %r does not come from the clipboard owner!", packet_type)
             log(" owner is %s, request from %s", self.client, ss)
             return
         if not ss.clipboard_enabled:

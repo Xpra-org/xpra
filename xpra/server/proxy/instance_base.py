@@ -24,7 +24,7 @@ from xpra.util.parsing import str_to_bool, parse_number
 from xpra.os_util import get_hex_uuid, gi_import, get_machine_id
 from xpra.exit_codes import ExitValue
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer, strtobytes, nicestr
+from xpra.util.str_fn import csv, Ellipsizer, nicestr
 from xpra.util.env import envint, envbool
 from xpra.util.version import XPRA_VERSION, vparts
 from xpra.log import Logger
@@ -279,7 +279,7 @@ class ProxyInstance:
     ################################################################################
 
     def queue_client_packet(self, packet: Packet) -> None:
-        log("queueing client packet: %s (queue size=%s)", packet[0], self.client_packets.qsize())
+        log("queueing client packet: %s (queue size=%s)", packet, self.client_packets.qsize())
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
 
@@ -334,7 +334,7 @@ class ProxyInstance:
         return replace_packet_item(packet, index, Compressed(description, packet[index]))
 
     def queue_server_packet(self, packet: Packet) -> None:
-        log("queueing server packet: %s (queue size=%s)", packet[0], self.server_packets.qsize())
+        log("queueing server packet: %s (queue size=%s)", packet, self.server_packets.qsize())
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
 
@@ -513,12 +513,12 @@ class ProxyInstance:
             return
         # client may have already responded to the challenge,
         # so we have to handle authentication from this end
-        server_salt = strtobytes(packet[1])
+        server_salt = packet.get_bytes(1)
         length = len(server_salt)
-        digest = str(packet[3])
+        digest = packet.get_str(3)
         salt_digest = "xor"
         if len(packet) >= 5:
-            salt_digest = str(packet[4])
+            salt_digest = packet.get_str(4)
         if salt_digest in ("xor", "des"):
             self.stop(None, f"server uses legacy salt digest {salt_digest!r}")
             return

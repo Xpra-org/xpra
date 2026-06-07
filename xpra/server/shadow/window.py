@@ -67,7 +67,8 @@ class ShadowWindowServer(WindowServer):
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         self.refresh_window_area(window, 0, 0, w, h)
         if len(packet) >= 7:
-            self._set_client_properties(proto, wid, window, packet[6])
+            props = packet.get_dict(6)
+            self._set_client_properties(proto, wid, window, props)
         # the refresh state machine lives on the variant:
         self.server.start_refresh(wid)
 

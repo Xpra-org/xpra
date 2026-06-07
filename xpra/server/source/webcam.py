@@ -6,7 +6,7 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.common import noop
+from xpra.common import noop, SizedBuffer
 from xpra.os_util import POSIX, OSX
 from xpra.util.objects import typedict
 from xpra.util.env import envint
@@ -242,7 +242,7 @@ class WebcamConnection(StubClientConnection):
             log.error("Error stopping virtual webcam device: %s", e)
             log("%s.clean()", exc_info=True)
 
-    def process_webcam_frame(self, device_id, frame_no: int, encoding: str, w: int, h: int, data, options: dict) -> bool:
+    def process_webcam_frame(self, device_id, frame_no: int, encoding: str, w: int, h: int, data: SizedBuffer, options: dict) -> bool:
         webcam = self.webcam_forwarding_devices.get(device_id)
         pending = self.webcam_pending_clients.get(device_id)
         log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, options=%s, webcam=%s, pending=%s",

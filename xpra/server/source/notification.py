@@ -6,6 +6,8 @@
 from typing import Any
 from collections.abc import Sequence, Callable
 
+from xpra.notification.common import IconData
+from xpra.net.packet_type import NOTIFICATION_SHOW, NOTIFICATION_CLOSE
 from xpra.util.objects import typedict
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.constants import NotificationID
@@ -71,7 +73,7 @@ class NotificationConnection(StubClientConnection):
     def notify(self, dbus_id: str, nid: int, app_name: str, replaces_nid: int, app_icon: str,
                summary: str, body: str,
                actions: Sequence[str], hints: dict, expire_timeout: int,
-               icon, user_callback: Callable | None = None) -> bool:
+               icon: IconData | None, user_callback: Callable | None = None) -> bool:
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         log("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:
@@ -83,15 +85,13 @@ class NotificationConnection(StubClientConnection):
             return False
         if user_callback:
             self.notification_callbacks[nid] = user_callback
-        packet_type = "notify_show" if BACKWARDS_COMPATIBLE else "notification-show"
         if self.hello_sent:
             # Warning: actions and hints are send last because they were added later (in version 2.3)
-            self.send_async(packet_type, dbus_id, nid, app_name, replaces_nid, app_icon,
-                            summary, body, expire_timeout, icon or b"", tuple(actions), hints)
+            self.send_async(NOTIFICATION_SHOW, dbus_id, nid, app_name, replaces_nid, app_icon,
+                            summary, body, expire_timeout, icon or (), tuple(actions), hints)
         return True
 
     def notify_close(self, nid: int) -> None:
         if not self.send_notifications or self.suspended or not self.hello_sent:
             return
-        packet_type = "notify_close" if BACKWARDS_COMPATIBLE else "notification-close"
-        self.send_more(packet_type, nid)
+        self.send_more(NOTIFICATION_CLOSE, nid)

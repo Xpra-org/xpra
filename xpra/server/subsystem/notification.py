@@ -144,7 +144,7 @@ class NotificationForwarder(StubSubsystem):
     def _process_notification_status(self, proto, packet: Packet) -> None:
         assert self.enabled, "cannot toggle notifications: the feature is disabled"
         if ss := self.get_server_source(proto):
-            ss.send_notifications = bool(packet[1])
+            ss.send_notifications = packet.get_bool(1)
 
     def _process_notification_close(self, proto, packet: Packet) -> None:
         assert self.enabled

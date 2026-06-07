@@ -283,7 +283,7 @@ class EncodingServer(StubSubsystem):
             return
         if len(packet) >= 3:
             # client specified which windows this is for:
-            in_wids = packet[2]
+            in_wids = packet.get_ints(2)
             wids = []
             wid_windows = {}
             for wid in in_wids:
@@ -299,22 +299,22 @@ class EncodingServer(StubSubsystem):
         window._refresh_windows(proto, wid_windows, {})
 
     def _process_quality(self, proto, packet) -> None:
-        self._modify_sq(proto, "quality", packet[1])
+        self._modify_sq(proto, "quality", packet.get_u8(1))
 
     def _process_min_quality(self, proto, packet) -> None:
-        self._modify_sq(proto, "min-quality", packet[1])
+        self._modify_sq(proto, "min-quality", packet.get_u8(1))
 
     def _process_max_quality(self, proto, packet) -> None:
-        self._modify_sq(proto, "max-quality", packet[1])
+        self._modify_sq(proto, "max-quality", packet.get_u8(1))
 
     def _process_speed(self, proto, packet) -> None:
-        self._modify_sq(proto, "speed", packet[1])
+        self._modify_sq(proto, "speed", packet.get_u8(1))
 
     def _process_min_speed(self, proto, packet) -> None:
-        self._modify_sq(proto, "min-speed", packet[1])
+        self._modify_sq(proto, "min-speed", packet.get_u8(1))
 
     def _process_max_speed(self, proto, packet) -> None:
-        self._modify_sq(proto, "max-speed", packet[1])
+        self._modify_sq(proto, "max-speed", packet.get_u8(1))
 
     def _modify_sq(self, proto, attr: str, value: int) -> None:
         """ modify speed or quality attributes """
@@ -336,7 +336,7 @@ class EncodingServer(StubSubsystem):
         ss = self.get_server_source(proto)
         if not ss:
             return
-        updates = packet[1]
+        updates = packet.get_dict(1)
         for attr, value in updates.items():
             if attr not in ENCODING_OPTIONS:
                 log.warn(f"Warning: {attr!r} is not a valid encoding option")

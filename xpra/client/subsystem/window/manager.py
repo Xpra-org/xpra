@@ -183,7 +183,7 @@ class WindowManagerClient(StubClientMixin):
         y = packet.get_i16(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
-        metadata = self.cook_metadata(True, packet[6])
+        metadata = self.cook_metadata(True, packet.get_dict(6))
         # newer versions use metadata only:
         override_redirect |= metadata.boolget("override-redirect", False)
         if override_redirect and self.modal_windows:
@@ -464,7 +464,7 @@ class WindowManagerClient(StubClientMixin):
         ah = max(1, self.sy(h))
         resize_counter = -1
         if len(packet) > 6:
-            resize_counter = int(packet[6])
+            resize_counter = packet.get_u64(6)
         window = self.get_window(wid)
         geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s",
                 packet[1:], window, wid, (ax, ay, aw, ah))
@@ -472,14 +472,14 @@ class WindowManagerClient(StubClientMixin):
             window.move_resize(ax, ay, aw, ah, resize_counter)
 
     def _process_window_resized(self, packet: Packet) -> None:
-        wid = int(packet[1])
-        w = int(packet[2])
-        h = int(packet[3])
+        wid = packet.get_wid()
+        w = packet.get_u32(2)
+        h = packet.get_u32(3)
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
         resize_counter = -1
         if len(packet) > 4:
-            resize_counter = int(packet[4])
+            resize_counter = packet.get_u64(4)
         window = self.get_window(wid)
         geomlog("_process_window_resized%s resizing window %s (wid=%#x) to %s", packet[1:], window, wid, (aw, ah))
         if window:

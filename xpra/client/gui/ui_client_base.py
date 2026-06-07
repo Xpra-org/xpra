@@ -17,7 +17,7 @@ from xpra.common import noerr, may_notify_client
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
 from xpra.net.common import Packet, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC
+from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, BELL_SET
 from xpra.os_util import gi_import
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
@@ -376,12 +376,12 @@ class UIXpraClient(ClientBaseClass):
 
     def send_notify_enabled(self) -> None:
         assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
-        self.send("set-notify", self.notifications_enabled)
+        self.send(NOTIFICATION_STATUS, self.notifications_enabled)
 
     def send_bell_enabled(self) -> None:
         assert self.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
         assert self.server_bell, "cannot toggle bell: the feature is disabled by the server"
-        self.send("set-bell", self.bell_enabled)
+        self.send(BELL_SET, self.bell_enabled)
 
     def send_cursors_enabled(self) -> None:
         assert self.client_supports_cursors, "cannot toggle cursors: the feature is disabled by the client"

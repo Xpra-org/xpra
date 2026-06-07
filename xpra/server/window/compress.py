@@ -2276,24 +2276,19 @@ class WindowSource(WindowIconSource):
             self.cancel_refresh_timer()
             return
         encoding = packet.get_str(6)
-        data = packet[7]
         x = packet.get_i16(2)
         y = packet.get_i16(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
         region = rectangle(x, y, w, h)
         client_options = packet.get_dict(10)         # info about this packet from the encoder
-        # don't keep hold of the compressed data when calling `do_schedule_auto_refresh`,
-        # the only thing we need from it is the scroll data:
-        scroll_data = ()
-        if encoding == "scroll" and hasattr(data, "data"):
-            scroll_data = data.data
-        self.do_schedule_auto_refresh(encoding, scroll_data, region, client_options, options)
+        self.do_schedule_auto_refresh(encoding, region, client_options, options)
 
-    def do_schedule_auto_refresh(self, encoding: str, scroll_data, region, client_options: dict, options: typedict) -> None:
+    def do_schedule_auto_refresh(self, encoding: str, region, client_options: dict, options: typedict) -> None:
         if self.encoding == "stream":
             # streaming mode doesn't use refresh
             return
+        # scroll_data = client_options.get("scroll", ())
         if encoding.startswith("png"):
             actual_quality = 100
             lossy = self.image_depth > 32 or self.image_depth == 30
@@ -2557,7 +2552,6 @@ class WindowSource(WindowIconSource):
         w = packet.get_u16(4)
         h = packet.get_u16(5)
         coding = packet.get_str(6)
-        data = packet[7]    # packet.get_buffer(7) bit not for scroll.. see #4496
         damage_packet_sequence = packet.get_u64(8)
         stride = packet.get_u32(9)
         client_options = packet.get_dict(10)
@@ -2588,12 +2582,15 @@ class WindowSource(WindowIconSource):
         }
         if coding == "scroll":
             # special case because scroll data is not binary!
-            data = json.dumps(data.data, indent="\t").encode("latin1")
-        elif isinstance(data, Compressed):
-            if isinstance(data, LevelCompressed):
-                index_info["level"] = data.level
-                index_info["compressed"] = data.algorithm
-            data = memoryview_to_bytes(data.data)
+            scroll = client_options.get("scroll", ())
+            data = json.dumps(scroll, indent="\t").encode("latin1")
+        else:
+            data = packet[7]    # packet.get_buffer(7) but not for scroll.. see #4496
+            if isinstance(data, Compressed):
+                if isinstance(data, LevelCompressed):
+                    index_info["level"] = data.level
+                    index_info["compressed"] = data.algorithm
+                data = memoryview_to_bytes(data.data)
         index = self.screen_updates_index
 
         update_filename = f"{index}.{coding}"

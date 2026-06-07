@@ -234,7 +234,7 @@ class LoggingManager(StubSubsystem):
         if counter > 0:
             prefix += "%3i " % counter
         if len(packet) >= 4:
-            dtime = packet[3]
+            dtime = packet.get_u64(3)
             prefix += "@%02i.%03i " % ((dtime // 1000) % 60, dtime % 1000)
         try:
             for line in dmsg.splitlines():
