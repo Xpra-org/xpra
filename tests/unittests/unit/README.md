@@ -117,3 +117,27 @@ Recurring accommodations, with examples:
 | pointer      | client→server           | mouse position recorded on source      |
 | window-bell  | server→client           | bell packet build + decode             |
 | clipboard    | server→client           | status-toggle (no GTK helper)          |
+
+## Auth handshake loopback
+
+A separate harness in `unit/auth/auth_loopback_util.py` covers the authentication
+handshake. It is not a packet subsystem, so it does not use `loopback_util.py`:
+the server side is a `SysAuthenticator` (`xpra/auth/*`) and the client side is the
+`ChallengeClient` mixin (`xpra/client/base/challenge.py`).
+
+`challenge_roundtrip(handler, authenticator)` builds the real `challenge` packet
+from the authenticator, runs it through the real client dispatch
+(`do_process_challenge` → `send_challenge_reply` → `send_hello`, captured), then
+feeds the captured `challenge_response` back into `authenticator.authenticate`.
+This catches drift between the client's salt/digest computation and the server's
+`authenticate_hmac` verification — which `unit/server/auth_test.py` (hand-rolls the
+client math) and `unit/auth/auth_handlers_test.py` (handlers in isolation) miss.
+
+`unit/auth/auth_loopback_test.py` covers the hmac pairs that flow through the real
+client end-to-end: `uri`/`env`/`file`/`prompt` handlers ↔ `password`/`env`/`file`
+auth, plus negatives (wrong password, missing credential).
+
+Deferred: **scram** — the client `send_challenge_reply` cannot send raw SCRAM
+responses (`gendigest` returns `b""` for `SCRAM-*` and there is no scram code under
+`xpra/client/`); its stage exchange is covered directly by `auth_scram_test.py`.
+`kerberos`/`gss`/`fido2`/`u2f` need external services or hardware tokens.
