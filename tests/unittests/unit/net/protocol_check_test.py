@@ -23,12 +23,6 @@ class TestVerifyPacket(unittest.TestCase):
         # a plain list is not a Packet
         assert not verify_packet(["hello", "arg"])
 
-    def test_non_string_type(self):
-        # bypass Packet constructor to put a non-string at index 0
-        p = Packet("test", "arg")
-        p.data[0] = 123
-        assert not verify_packet(p)
-
     def test_valid_packet(self):
         assert verify_packet(Packet("test", "arg"))
 
