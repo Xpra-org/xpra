@@ -41,11 +41,11 @@ for x in cx-freeze gssapi; do
 done
 $PACMAN ${XPKG}amf-headers
 
-#dependencies of browser_cookie3 and pycuda,
+#dependencies of browser_cookie3, scramp and pycuda,
 #best to manage them via pacman rather than have them installed via pip,
 #so we get automatic updates:
 #(pycryptodome* is not yet available for aarch64?)
-for x in mako markupsafe typing_extensions platformdirs pip pycryptodome pycryptodomex keyring idna; do
+for x in mako markupsafe typing_extensions platformdirs pip pycryptodome pycryptodomex keyring idna matplotlib tornado; do
 	$PACMAN ${XPKG}python-${x}
 done
 $PACMAN ${XPKG}cython
