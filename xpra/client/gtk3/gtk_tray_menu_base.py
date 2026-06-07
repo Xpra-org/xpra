@@ -1283,7 +1283,7 @@ class GTKTrayMenuBase(MenuHelper):
         self._call_non_OR_windows({"deiconify" : (), "present" : ()})
 
     def make_raisewindowsmenuitem(self):
-        return self.handshake_menuitem("Raise Windows", "raise.png", None, self._raise_all_windows())
+        return self.handshake_menuitem("Raise Windows", "raise.png", None, self._raise_all_windows)
 
     def _minimize_all_windows(self, *_args):
         self._call_non_OR_windows({"iconify" : ()})
