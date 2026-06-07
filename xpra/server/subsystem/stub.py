@@ -9,7 +9,6 @@ from collections.abc import Callable
 
 from xpra.net.constants import ConnectionMessage
 from xpra.util.signal_emitter import SignalEmitter
-from xpra.os_util import getuid, getgid
 from xpra.util.objects import typedict
 from xpra.common import noop
 from xpra.os_util import WIN32
@@ -20,8 +19,6 @@ class StubSubsystem(SignalEmitter):
     Base class for server subsystems.
     Defines the default interface methods that each subsystem may override.
     """
-    uid = getuid()
-    gid = getgid()
     # every concrete subsystem should declare a non-empty PREFIX,
     # used as the key in `Server.subsystems`:
     PREFIX: str = ""
