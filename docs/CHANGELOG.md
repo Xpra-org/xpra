@@ -15,6 +15,7 @@
   * [`asyncio` loop exit fix](https://github.com/Xpra-org/xpra/pull/4891)
   * [longer session connection timeout for ssh sessions](https://github.com/Xpra-org/xpra/issues/4904)
   * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
+  * [`scram`] authentication](https://github.com/Xpra-org/xpra/issues/1771)
 * 🌈 Encodings:
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
   * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)
@@ -33,6 +34,7 @@
   * [basic bash shell completion](https://github.com/Xpra-org/xpra/issues/2375)
   * [Wayland scaled subsurfaces](https://github.com/Xpra-org/xpra/issues/4878)
   * [per-client readonly sessions](https://github.com/Xpra-org/xpra/issues/3468)
+  * [client-server "loopback" tests](https://github.com/Xpra-org/xpra/issues/2357)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
