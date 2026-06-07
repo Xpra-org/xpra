@@ -17,7 +17,7 @@ exit
 
 %global pypi_name wheel
 Name:           %{py3rpmname}-%{pypi_name}
-Release:        1%{?dist}
+Release:        2%{?dist}
 Version:        0.47.0
 Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
@@ -48,6 +48,9 @@ if [ "${sha256}" != "cc72bd1009ba0cf63922e28f94d9d83b920aa2bb28f798a31d0691b02fa
 	exit 1
 fi
 %autosetup -n %{pypi_name}-%{version} -p1
+# centos9's old setuptools cannot parse the PEP 639 SPDX license string,
+# convert it to the legacy table form which both old and new setuptools accept:
+sed -i 's/^license = "MIT"$/license = {text = "MIT"}/' pyproject.toml
 
 
 %build
@@ -83,6 +86,9 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 
 
 %changelog
+* Mon Jun 08 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-2
+- convert PEP 639 SPDX license string to legacy table form for centos9's old setuptools
+
 * Fri May 08 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-1
 - new upstream release
 
