@@ -134,7 +134,7 @@ class typedict(dict):
         if k in self:
             return super().get(k, default)
         # try to locate this value in a nested dictionary:
-        if k.find(".") > 0:
+        if isinstance(k, str) and k.find(".") > 0:
             prefix, k = k.split(".", 1)
             if prefix in self:
                 v = super().get(prefix)
