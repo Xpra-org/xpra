@@ -4,9 +4,11 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from time import monotonic
 
 from xpra.os_util import gi_import
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.util.env import envint
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import Ellipsizer
 from xpra.server.source.menu import MenuConnection
@@ -16,6 +18,8 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("menu")
+
+MENU_SEND_DELAY = envint("XPRA_MENU_SEND_DELAY", 5)
 
 
 def do_send_menu_data(ss, menu) -> None:
@@ -44,13 +48,16 @@ class MenuServer(StubSubsystem):
         StubSubsystem.__init__(self, server)
         self.provider = None
         self.enabled: bool = False
+        self.send_menu_timer = 0
+        self.last_menu_sent = 0.0
+        self.pending_menu: dict[str, Any] = {}
 
     def init(self, opts) -> None:
         self.enabled = opts.start_new_commands
         if self.enabled:
             from xpra.server.menu_provider import get_menu_provider
             self.provider = get_menu_provider()
-            self.provider.on_reload.append(self.send_updated_menu)
+            self.provider.on_reload.append(self.schedule_send_menu)
 
     def setup(self) -> None:
         if self.provider:
@@ -60,6 +67,8 @@ class MenuServer(StubSubsystem):
         self.provider.setup()
 
     def cleanup(self) -> None:
+        self.cancel_send_menu_timer()
+        self.pending_menu = {}
         if mp := self.provider:
             self.provider = None
             mp.cleanup()
@@ -89,11 +98,33 @@ class MenuServer(StubSubsystem):
         menu = self._get_menu_data() or {}
         do_send_menu_data(ss, menu)
 
-    def send_updated_menu(self, menu) -> None:
+    def cancel_send_menu_timer(self) -> None:
+        if smt := self.send_menu_timer:
+            self.send_menu_timer = 0
+            GLib.source_remove(smt)
+
+    def schedule_send_menu(self, menu: dict) -> None:
+        self.pending_menu = menu
+        if self.send_menu_timer:
+            return
+        elapsed = round(monotonic() - self.last_menu_sent)
+        delay = max(0, MENU_SEND_DELAY - elapsed)
+        log("schedule_send_menu(%s) delay=%s", Ellipsizer(menu), delay)
+        if delay <= 0:
+            self.send_updated_menu()
+            return
+        self.send_menu_timer = GLib.timeout_add(int(delay * 1000), self.send_updated_menu)
+
+    def send_updated_menu(self) -> bool:
+        self.send_menu_timer = 0
+        menu = self.pending_menu
+        self.pending_menu = {}
+        self.last_menu_sent = monotonic()
         log("send_updated_menu(%s)", Ellipsizer(menu))
         menu_sources = self.get_sources_by_type(MenuConnection)
         for source in menu_sources:
             do_send_menu_data(source, menu)
+        return False
 
     def get_info(self, _proto) -> dict[str, Any]:
         mp = self.provider
