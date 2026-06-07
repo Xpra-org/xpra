@@ -126,7 +126,9 @@ class AuthenticationManager(StubSubsystem):
         log.warn(f" {wmsg}")
         GLib.timeout_add(1000, self.server.disconnect_client, proto, msg)
 
-    def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
+    def init_authenticators(self, proto: SocketProtocol, c: typedict) -> bool:
+        # returns True if the connection is ready for authentication,
+        # False if verify_auth should stop (connection closed or authenticator setup failed)
         remote = {}
         for key in ("hostname", "uuid", "session-id", "username", "name"):
             v = c.strget(key)
@@ -135,7 +137,7 @@ class AuthenticationManager(StubSubsystem):
         conn = proto._conn
         if not conn or proto.is_closed():
             log(f"connection {proto} is already closed")
-            return
+            return False
         if not proto.authenticators:
             socktype = conn.socktype_wrapped
             try:
@@ -143,32 +145,35 @@ class AuthenticationManager(StubSubsystem):
             except ValueError as e:
                 log(f"instantiating authenticator for {socktype}", exc_info=True)
                 self.auth_failed(proto, str(e))
-                return
+                return False
             except Exception as e:
                 log(f"instantiating authenticator for {socktype}", exc_info=True)
                 log.error(f"Error instantiating authenticators for {proto.socket_type} connection:")
                 log.estr(e)
                 self.auth_failed(proto, str(e))
-                return
+                return False
+        return True
 
-        digest_modes = c.strtupleget("digest", ("hmac",))
-        salt_digest_modes = c.strtupleget("salt-digest", ("xor",))
-        # client may have requested encryption:
-        auth_caps: dict[str, Any] = {}
+    def setup_encryption(self, proto: SocketProtocol, c: typedict) -> dict[str, Any] | None:
         try:
             from xpra.server.subsystem.encryption import setup_encryption
-            auth_caps = setup_encryption(proto, c)
-            if auth_caps is None:
-                return
+            return setup_encryption(proto, c)
+        except ValueError as e:
+            log.error("Error setting up encryption")
+            log.estr(e)
+            return None
         except ImportError as e:
             log(f"unable to call setup_encryption: {e}")
+            return {}
 
-        def send_fake_challenge() -> None:
-            # fake challenge so the client will send the real hello:
-            salt: bytes = get_salt()
-            digest: str = choose_digest(digest_modes)
-            salt_digest: str = choose_digest(salt_digest_modes)
-            self.send_challenge(proto, salt, auth_caps, digest, salt_digest)
+    def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
+        if not self.init_authenticators(proto, c):
+            return
+        digest_modes = c.strtupleget("digest", ("hmac",))
+        salt_digest_modes = c.strtupleget("salt-digest", ("xor",))
+        auth_caps: dict[str, Any] = self.setup_encryption(proto, c)
+        if auth_caps is None:
+            return
 
         # skip the authentication module we have "passed" already:
         remaining_authenticators = tuple(x for x in proto.authenticators if not x.passed)
@@ -179,85 +184,15 @@ class AuthenticationManager(StubSubsystem):
             if authenticator not in remaining_authenticators:
                 log(f"authenticator[{index}]={authenticator} (already passed)")
                 continue
-
-            def fail(msg: str | ConnectionMessage) -> None:
-                self.auth_failed(proto, msg, authenticator)
-
-            req = authenticator.requires_challenge()
-            csent = authenticator.challenge_sent
-            log(f"authenticator[{index}]={authenticator}, requires-challenge={req}, challenge-sent={csent}")
-            if not req:
-                # this authentication module does not need a challenge
-                # (ie: "peercred", "exec" or "none")
-                if not authenticator.authenticate(c):
-                    fail("authentication failed")
-                    return
-                authenticator.passed = True
-                log(f"authentication passed for {authenticator} (no challenge needed)")
-                continue
-            if not csent:
-                # we'll re-schedule this when we call send_challenge()
-                # as the authentication module is free to take its time
-                self.server.cancel_verify_connection_accepted(proto)
-                # note: we may have received a challenge_response from a previous auth module's challenge
-                try:
-                    salt, digest = authenticator.get_challenge(digest_modes)
-                except (AttributeError, ValueError, NameError) as e:
-                    log.warn("Warning: unable to generate an authentication challenge")
-                    log.warn(" %s", e)
-                    fail("authentication challenge processing error")
-                    return
-                if not (salt or digest):
-                    if authenticator.requires_challenge():
-                        fail("invalid state, unexpected challenge response")
-                        return
-                    log.warn(f"Warning: authentication module {authenticator!r} does not require any credentials")
-                    log.warn(f" but the client {proto} supplied them")
-                    # fake challenge so the client will send the real hello:
-                    send_fake_challenge()
-                    return
-                actual_digest = digest.split(":", 1)[0]
-                log(f"get_challenge({digest_modes})={hexstr(salt)}, {digest}")
-                countinfo = ""
-                if len(proto.authenticators) > 1:
-                    countinfo += f" ({index + 1} of {len(proto.authenticators)})"
-                log.info(f"Authentication required by {authenticator!r} authenticator module{countinfo}")
-                log.info(
-                    f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")
-                if actual_digest not in digest_modes:
-                    fail(f"cannot proceed without {actual_digest!r} digest support")
-                    return
-                salt_digest: str = authenticator.choose_salt_digest(salt_digest_modes)
-                log(f"{authenticator}.choose_salt_digest({salt_digest_modes})={salt_digest!r}")
-                if salt_digest in ("xor", "des"):
-                    fail(f"insecure salt digest {salt_digest!r} rejected")
-                    return
-                log(f"{authenticator!r} sending challenge {authenticator.prompt!r}")
-                self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
+            if self.verify_authenticator(proto, c, index, authenticator,
+                                         auth_caps, digest_modes, salt_digest_modes):
+                # a challenge was sent or authentication failed
                 return
-            if not authenticator.authenticate(c):
-                fail(ConnectionMessage.AUTHENTICATION_FAILED)
-                return
-            next_challenge = authenticator.get_next_challenge()
-            if next_challenge:
-                salt, digest, prompt = next_challenge
-                if salt and digest:
-                    actual_digest = digest.split(":", 1)[0]
-                    if actual_digest not in digest_modes:
-                        fail(f"cannot proceed without {actual_digest!r} digest support")
-                        return
-                    salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
-                    if salt_digest in ("xor", "des"):
-                        fail(f"insecure salt digest {salt_digest!r} rejected")
-                        return
-                    self.server.cancel_verify_connection_accepted(proto)
-                    self.send_challenge(proto, salt, auth_caps, digest, salt_digest, prompt)
-                    return
         client_expects_challenge = c.strget("challenge")
         if client_expects_challenge:
             log.warn("Warning: client expects an authentication challenge,")
             log.warn(" sending a fake one")
-            send_fake_challenge()
+            self.send_fake_challenge(proto, auth_caps, digest_modes, salt_digest_modes)
             return
         log(f"all {len(proto.authenticators)} authentication modules passed")
         capabilities = packet.get_dict(1)
@@ -265,6 +200,88 @@ class AuthenticationManager(StubSubsystem):
         proto.clean_authenticators()
         # continue processing hello packet in UI thread:
         GLib.idle_add(self.server.call_hello_oked, proto, c, auth_caps)
+
+    def send_fake_challenge(self, proto: SocketProtocol, auth_caps: dict,
+                            digest_modes, salt_digest_modes) -> None:
+        # fake challenge so the client will send the real hello:
+        salt: bytes = get_salt()
+        digest: str = choose_digest(digest_modes)
+        salt_digest: str = choose_digest(salt_digest_modes)
+        self.send_challenge(proto, salt, auth_caps, digest, salt_digest)
+
+    def verify_authenticator(self, proto: SocketProtocol, c: typedict, index: int, authenticator,
+                             auth_caps: dict, digest_modes, salt_digest_modes) -> bool:
+        # returns True if `verify_auth` should stop (a challenge was sent or authentication failed),
+        # False if this authenticator passed and verification can move on to the next one
+        conn = proto._conn
+
+        def fail(msg: str | ConnectionMessage) -> bool:
+            self.auth_failed(proto, msg, authenticator)
+            return True
+
+        req = authenticator.requires_challenge()
+        csent = authenticator.challenge_sent
+        log(f"authenticator[{index}]={authenticator}, requires-challenge={req}, challenge-sent={csent}")
+        if not req:
+            # this authentication module does not need a challenge
+            # (ie: "peercred", "exec" or "none")
+            if not authenticator.authenticate(c):
+                return fail("authentication failed")
+            authenticator.passed = True
+            log(f"authentication passed for {authenticator} (no challenge needed)")
+            return False
+        if not csent:
+            # we'll re-schedule this when we call send_challenge()
+            # as the authentication module is free to take its time
+            self.server.cancel_verify_connection_accepted(proto)
+            # note: we may have received a challenge_response from a previous auth module's challenge
+            try:
+                salt, digest = authenticator.get_challenge(digest_modes)
+            except (AttributeError, ValueError, NameError) as e:
+                log.warn("Warning: unable to generate an authentication challenge")
+                log.warn(" %s", e)
+                return fail("authentication challenge processing error")
+            if not (salt or digest):
+                if authenticator.requires_challenge():
+                    return fail("invalid state, unexpected challenge response")
+                log.warn(f"Warning: authentication module {authenticator!r} does not require any credentials")
+                log.warn(f" but the client {proto} supplied them")
+                # fake challenge so the client will send the real hello:
+                self.send_fake_challenge(proto, auth_caps, digest_modes, salt_digest_modes)
+                return True
+            actual_digest = digest.split(":", 1)[0]
+            log(f"get_challenge({digest_modes})={hexstr(salt)}, {digest}")
+            countinfo = ""
+            if len(proto.authenticators) > 1:
+                countinfo += f" ({index + 1} of {len(proto.authenticators)})"
+            log.info(f"Authentication required by {authenticator!r} authenticator module{countinfo}")
+            log.info(
+                f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")
+            if actual_digest not in digest_modes:
+                return fail(f"cannot proceed without {actual_digest!r} digest support")
+            salt_digest: str = authenticator.choose_salt_digest(salt_digest_modes)
+            log(f"{authenticator}.choose_salt_digest({salt_digest_modes})={salt_digest!r}")
+            if salt_digest in ("xor", "des"):
+                return fail(f"insecure salt digest {salt_digest!r} rejected")
+            log(f"{authenticator!r} sending challenge {authenticator.prompt!r}")
+            self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
+            return True
+        if not authenticator.authenticate(c):
+            return fail(ConnectionMessage.AUTHENTICATION_FAILED)
+        next_challenge = authenticator.get_next_challenge()
+        if next_challenge:
+            salt, digest, prompt = next_challenge
+            if salt and digest:
+                actual_digest = digest.split(":", 1)[0]
+                if actual_digest not in digest_modes:
+                    return fail(f"cannot proceed without {actual_digest!r} digest support")
+                salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
+                if salt_digest in ("xor", "des"):
+                    return fail(f"insecure salt digest {salt_digest!r} rejected")
+                self.server.cancel_verify_connection_accepted(proto)
+                self.send_challenge(proto, salt, auth_caps, digest, salt_digest, prompt)
+                return True
+        return False
 
     def get_authenticator_info(self, si: dict) -> None:
         for socktype, auth_classes in self.auth_classes.items():
