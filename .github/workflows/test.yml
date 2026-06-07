@@ -20,7 +20,7 @@ jobs:
                 libturbojpeg-dev libwebp-dev python3-pil \
                 libx264-dev libvpx-dev libyuv-dev libavif-dev libopenh264-dev libaom-dev \
                 python3-dbus python3-cryptography \
-                python3-netifaces \
+                python3-netifaces python3-scramp \
                 python3-opengl \
                 openssh-client sshpass python3-paramiko \
                 python3-setproctitle python3-xdg \
