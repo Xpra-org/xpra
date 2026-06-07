@@ -25,6 +25,7 @@ from xpra.net.common import (
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID
+from xpra.util.thread import is_main_thread
 from xpra.util.version import get_version_info
 from xpra.net.digest import get_salt
 from xpra.client.base.factory import get_client_base_classes
@@ -398,7 +399,10 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
 
     def warn_and_quit(self, exit_code: ExitValue, message: str) -> None:
         log.warn(message)
-        self.quit(exit_code)
+        if is_main_thread():
+            self.quit(exit_code)
+        else:
+            self.idle_add(self.quit, exit_code)
 
     def send_shutdown_server(self) -> None:
         assert self.server_client_shutdown
@@ -486,14 +490,14 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             caps = typedict(hello_data)
             netlog("processing hello from server: %s", Ellipsizer(caps))
             if not self.server_connection_established(caps):
-                self.idle_add(self.warn_and_quit, ExitCode.FAILURE, "failed to establish connection")
+                self.warn_and_quit(ExitCode.FAILURE, "failed to establish connection")
                 return
             self.cancel_verify_connected_timer()
             self.connection_accepted(caps)
         except Exception as e:
             netlog.error("Error processing hello packet from server", exc_info=True)
             netlog("hello data: %s", packet)
-            self.idle_add(self.warn_and_quit, ExitCode.FAILURE, f"error processing hello packet from server: {e}")
+            self.warn_and_quit(ExitCode.FAILURE, f"error processing hello packet from server: {e}")
 
     def server_connection_established(self, caps: typedict) -> bool:
         assert caps and self._protocol
