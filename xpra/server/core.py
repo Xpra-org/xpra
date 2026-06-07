@@ -488,6 +488,10 @@ class ServerCore(GLibServer):
 
     def init_html_proxy(self, opts) -> None:
         httplog(f"init_html_proxy(..) options: html={opts.html!r}")
+        www_dir = self.parse_html_option(opts)
+        self.init_www_dir(www_dir)
+
+    def parse_html_option(self, opts) -> str:
         # opts.html can contain a boolean, "auto" or the path to the webroot
         www_dir = ""
         html = opts.html or ""
@@ -531,6 +535,9 @@ class ServerCore(GLibServer):
                 httplog.error(" the html server will not be available")
             self._html = False
             self.websocket_upgrade = False
+        return www_dir
+
+    def init_www_dir(self, www_dir: str) -> None:
         # make sure we have the web root:
         from xpra.platform.paths import get_resources_dir
         if self._html is False:
@@ -540,20 +547,20 @@ class ServerCore(GLibServer):
         else:
             # this is the default value which will be shown in the warning if we don't find a valid one:
             self._www_dir = os.path.abspath(os.path.join(get_resources_dir(), "www"))
-            dirs: dict[str, str] = {
-                get_resources_dir(): "html5",
-                get_resources_dir(): "www",
-                get_app_dir(): "www",
-            }
+            www_dirs: list[tuple[str, ...]] = [
+                (get_resources_dir(), "html5"),
+                (get_resources_dir(), "www"),
+                (get_app_dir(), "www"),
+            ]
             if POSIX:
                 xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS)
                 for d in xdg_data_dirs.split(":"):
-                    dirs[d] = "www"
+                    www_dirs.append((d, "www"))
                 for d in ("/usr/share/xpra", "/usr/local/share/xpra"):
-                    dirs[d] = "www"
-                dirs["/var/www/xpra"] = "www"
-            for ad, d in dirs.items():
-                www_dir = os.path.abspath(os.path.join(ad, d))
+                    www_dirs.append((d, "www"))
+                www_dirs.append(("/var/www/xpra/www", ))
+            for parts in www_dirs:
+                www_dir = os.path.abspath(os.path.join(*parts))
                 if os.path.exists(www_dir):
                     self._www_dir = www_dir
                     httplog("found html5 client in '%s'", www_dir)
