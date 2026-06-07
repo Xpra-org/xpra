@@ -379,7 +379,7 @@ cdef memoryview argbdata_to_rgba(const unsigned int* argb, const int argb_len):
     with nogil:
         for i in range(mi):
             p = argb[i]
-            rgba[i] = p>>8 | (p&0xff)<<24
+            rgba[i] = p>>8 | p<<24      #rotate right by 8 bits
     return memoryview(output_buf)
 
 
