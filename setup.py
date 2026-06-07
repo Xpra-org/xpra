@@ -267,6 +267,7 @@ gtk3_ENABLED = DEFAULT and client_ENABLED
 cairo_ENABLED = DEFAULT
 ism_ext_ENABLED = DEFAULT and gtk3_ENABLED and data_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
+vulkan_ENABLED = False  # DEFAULT and client_ENABLED and pkg_config_exists("vulkan")
 has_pam_headers = has_header_file("security", isdir=True) or pkg_config_exists("pam", "pam_misc")
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and LINUX and has_pam_headers
 peercred_ENABLED = OSX or sys.platform.lower().find("bsd") >= 0
@@ -792,6 +793,7 @@ def install_dev_env_command() -> list[str]:
             "x11": ("pkgconfig(xkbfile)", "pkgconfig(xtst)", "pkgconfig(xcomposite)",
                     "pkgconfig(xdamage)", "pkgconfig(xres)", "pkgconfig(xfixes)", "pkgconfig(xrandr)",
                     ),
+            "vulkan": ("pkgconfig(vulkan)", "pkgconfig(x11)", ),
             "Xdummy": ("xorg-x11-drv-dummy", ),
             "proc": ("procps-ng-devel" if is_Fedora() else "pkgconfig(libprocps)", ),
             "sd_listen": ("pkgconfig(libsystemd)", ),
@@ -2840,6 +2842,10 @@ tace(OSX, "xpra.platform.darwin.gdk3_bindings,xpra/platform/darwin/transparency_
          "-ObjC",
          "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/",
          "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/"))
+
+toggle_packages(vulkan_ENABLED, "xpra.vulkan")
+tace(vulkan_ENABLED, "xpra.vulkan.renderer", "vulkan")
+tace(vulkan_ENABLED and x11_ENABLED, "xpra.vulkan.x11", "vulkan,x11")
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:

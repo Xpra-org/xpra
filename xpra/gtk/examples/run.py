@@ -28,6 +28,7 @@ ALL_EXAMPLES = (
     "window-states", "window-title",
     "window-transient",
     "opengl",
+    "vulkan",
     "view-keyboard", "view-clipboard",
 )
 

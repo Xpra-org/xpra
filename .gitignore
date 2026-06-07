@@ -171,6 +171,7 @@ tests/unittests/test-file*
 /xpra/scripts/*.c
 /xpra/server/*/*.c
 /xpra/server/*.c
+/xpra/vulkan/*.c
 /xpra/x11/gtk/bindings.c
 /xpra/x11/gtk/common.c
 /xpra/x11/gtk/display_source.c
