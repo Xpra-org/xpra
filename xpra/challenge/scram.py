@@ -91,6 +91,11 @@ class Handler(AuthenticationHandler):
     def get_channel_binding(self):
         return get_channel_binding(self.protocol, self.channel_binding_name)
 
+    def get_scram_channel_binding(self, mechanism: str):
+        if mechanism.endswith(PLUS_SUFFIX):
+            return self.get_channel_binding()
+        return None
+
     def get_password(self, prompt: str) -> str:
         if self.password:
             return str(self.password)
@@ -134,7 +139,7 @@ class Handler(AuthenticationHandler):
         if not password:
             return b""
         self.scram_client = ScramClient((mechanism,), self.get_username(), password,
-                                        channel_binding=self.get_channel_binding())
+                                        channel_binding=self.get_scram_channel_binding(mechanism))
         self.scram_stage = "server-first"
         self.done = False
         return self.scram_client.get_client_first().encode("ascii")

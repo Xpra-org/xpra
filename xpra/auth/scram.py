@@ -122,6 +122,11 @@ class Authenticator(SysAuthenticator):
     def get_channel_binding(self):
         return get_channel_binding(self.connection, self.channel_binding_name)
 
+    def get_scram_channel_binding(self):
+        if self.scram_mechanism.endswith(PLUS_SUFFIX):
+            return self.get_channel_binding()
+        return None
+
     def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         if self.challenge_sent:
             log.error("challenge already sent!")
@@ -174,7 +179,7 @@ class Authenticator(SysAuthenticator):
     def handle_client_first(self, response: bytes) -> bool:
         from scramp import ScramMechanism
         mechanism = ScramMechanism(self.scram_mechanism)
-        self.scram_server = mechanism.make_server(self.auth_fn, channel_binding=self.get_channel_binding())
+        self.scram_server = mechanism.make_server(self.auth_fn, channel_binding=self.get_scram_channel_binding())
         self.scram_server.set_client_first(response.decode("ascii"))
         server_first = self.scram_server.get_server_first().encode("ascii")
         self.scram_stage = "client-final"
