@@ -252,7 +252,7 @@ cdef memoryview rgbdata_to_bgrx(const unsigned char *rgb, const int rgb_len):
     cdef unsigned int p
     with nogil:
         while di < mi:
-            bgrx[di] = rgb[si] + (rgb[si+1]<<8) + (rgb[si+2]<<16)
+            bgrx[di] = rgb[si] | (rgb[si+1]<<8) | (rgb[si+2]<<16)
             di += 1
             si += 3
     return memoryview(output_buf)
@@ -541,7 +541,7 @@ cdef memoryview do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
     cdef unsigned int* argb_out = <unsigned int*> output_buf.get_mem()
     cdef int i                                  #@DuplicateSignature
     with nogil:
-        for 0 <= i < argb_len / 4:
+        for 0 <= i < argb_len // 4:
             argb = buf[i]
             a = (argb >> 24) & 0xff
             r = (argb >> 16) & 0xff
