@@ -94,9 +94,6 @@ Recurring accommodations, with examples:
   call `send()` — they append to `_ordinary_packets` / `_mouse_position` and flush
   via `have_more()`. The harness drains those queues in `_wire`, so driving e.g.
   `send_mouse_position` still works; nothing special is needed in the test.
-- **`opts.uid`/`opts.gid`**: server subsystems that don't override `init()` fall
-  back to `StubSubsystem.init`, which reads `opts.uid`/`opts.gid` — include them in
-  `server_opts` (see `power`, `pointer`).
 - **Module-level `BACKWARDS_COMPATIBLE`**: when forcing it off to pin a modern
   packet name, patch it with `start()` + `addCleanup(stop)` (not a `with` scoped to
   `connect()`) so it stays patched while the test body sends (see `clipboard`).

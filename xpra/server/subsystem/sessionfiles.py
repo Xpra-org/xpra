@@ -116,6 +116,8 @@ class SessionFilesServer(StubSubsystem):
 
     def __init__(self, server):
         StubSubsystem.__init__(self, server)
+        self.uid = 0
+        self.gid = 0
         self.config_contents = ""
         self.mode = ""
         self.sessions_dir = ""
@@ -130,7 +132,8 @@ class SessionFilesServer(StubSubsystem):
         ]
 
     def init(self, opts) -> None:
-        super().init(opts)
+        self.uid = opts.uid
+        self.gid = opts.gid
 
     def late_cleanup(self, stop=True) -> None:
         if stop:

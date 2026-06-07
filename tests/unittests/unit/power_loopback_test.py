@@ -27,11 +27,7 @@ def _client_opts():
 
 
 def _server_opts():
-    opts = AdHocStruct()
-    # SuspendServer does not override init(), so the StubSubsystem base reads:
-    opts.uid = 0
-    opts.gid = 0
-    return opts
+    return AdHocStruct()
 
 
 class PowerLoopbackTest(LoopbackTest):

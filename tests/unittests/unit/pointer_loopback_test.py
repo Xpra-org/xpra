@@ -29,8 +29,6 @@ def _client_opts():
 
 def _server_opts():
     opts = AdHocStruct()
-    opts.uid = 0
-    opts.gid = 0
     opts.input_devices = "auto"
     return opts
 

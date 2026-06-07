@@ -35,8 +35,6 @@ def _client_opts():
 
 def _server_opts():
     opts = AdHocStruct()
-    opts.uid = 0
-    opts.gid = 0
     opts.start_new_commands = True
     opts.exit_with_children = False
     opts.terminate_children = False

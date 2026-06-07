@@ -34,8 +34,6 @@ def _client_opts():
 
 def _server_opts():
     opts = AdHocStruct()
-    opts.uid = 0
-    opts.gid = 0
     opts.min_size = "0x0"
     opts.max_size = "0x0"
     return opts

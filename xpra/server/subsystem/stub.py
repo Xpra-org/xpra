@@ -85,8 +85,6 @@ class StubSubsystem(SignalEmitter):
         Options are usually obtained by parsing the command line,
         or using a default configuration object.
         """
-        self.uid = opts.uid
-        self.gid = opts.gid
 
     def init_state(self) -> None:
         """

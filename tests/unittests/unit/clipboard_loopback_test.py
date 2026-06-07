@@ -37,8 +37,6 @@ def _client_opts():
 
 def _server_opts():
     opts = AdHocStruct()
-    opts.uid = 0
-    opts.gid = 0
     opts.clipboard = "yes"
     opts.clipboard_direction = "both"
     opts.clipboard_filter_file = ""
