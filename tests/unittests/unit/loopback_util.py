@@ -117,8 +117,10 @@ class LoopbackTest(unittest.TestCase):
             assert handler, "no client packet handler for %r" % packet_type
             handler(Packet(packet_type, *args))
 
-        src = srv.source
-        src.send = to_client
-        src.send_now = to_client
-        src.send_async = to_client
-        src.send_more = to_client
+        # server -> client wiring is only possible when a source object exists:
+        if srv.source is not None:
+            src = srv.source
+            src.send = to_client
+            src.send_now = to_client
+            src.send_async = to_client
+            src.send_more = to_client
