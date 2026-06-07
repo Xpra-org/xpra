@@ -61,7 +61,7 @@ class Packet(Sequence):
         for i, x in enumerate(data):
             if not isinstance(x, PacketElementTypes):
                 raise TypeError("invalid packet element %r at index %i of packet %r" % (type(x), i + 1, packet_type))
-        self.data = [packet_type] + list(data)
+        self.data = tuple([packet_type] + list(data))
 
     def __len__(self):
         return len(self.data)

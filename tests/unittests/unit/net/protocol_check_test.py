@@ -28,8 +28,7 @@ class TestVerifyPacket(unittest.TestCase):
 
     def test_nested_none(self):
         # None nested inside a valid packet structure
-        p = Packet("test", "arg")
-        p.data.append(None)
+        p = Packet("test", [None])
         assert not verify_packet(p)
 
 

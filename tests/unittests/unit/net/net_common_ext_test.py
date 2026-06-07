@@ -26,6 +26,18 @@ class TestPacketGetType(unittest.TestCase):
             Packet(123, {})
 
 
+class TestPacketData(unittest.TestCase):
+
+    def test_data_is_immutable(self):
+        from xpra.net.common import Packet
+        p = Packet("hello", "arg")
+        assert p.data == ("hello", "arg")
+        with self.assertRaises(TypeError):
+            p.data[0] = "other"
+        with self.assertRaises(AttributeError):
+            p.data.append("other")
+
+
 class TestPacketGetWid(unittest.TestCase):
 
     def test_valid_wid(self):
