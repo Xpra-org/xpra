@@ -41,11 +41,11 @@ for x in cx-freeze gssapi; do
 done
 $PACMAN ${XPKG}amf-headers
 
-#dependencies of browser_cookie3, scramp and pycuda,
+#dependencies of browser_cookie3 and pycuda,
 #best to manage them via pacman rather than have them installed via pip,
 #so we get automatic updates:
 #(pycryptodome* is not yet available for aarch64?)
-for x in mako markupsafe typing_extensions platformdirs pip pycryptodome pycryptodomex keyring idna matplotlib tornado; do
+for x in mako markupsafe typing_extensions platformdirs pip pycryptodome pycryptodomex keyring idna; do
 	$PACMAN ${XPKG}python-${x}
 done
 $PACMAN ${XPKG}cython
@@ -62,6 +62,27 @@ python -c "import zipfile; zipfile.ZipFile('verpatch.nupkg').extract('lib/win/ve
 mv lib/win/verpatch.exe "$MINGW_PREFIX/bin/"
 rmdir lib/win && rmdir lib
 rm "verpatch.nupkg"
+
+# VA-API Compatibility Pack (libva.dll + vaon12_drv_video.dll):
+VACP_VERSION="1.0.2"
+VACP_ID="microsoft.direct3d.videoaccelerationcompatibilitypack"
+curl -sL "https://api.nuget.org/v3-flatcontainer/${VACP_ID}/${VACP_VERSION}/${VACP_ID}.${VACP_VERSION}.nupkg" \
+    -o "vacp.nupkg"
+case "${MSYSTEM_CARCH}" in
+    aarch64) NUGET_ARCH="arm64" ;;
+    *)       NUGET_ARCH="x64"   ;;
+esac
+python -c "
+import zipfile
+src = 'build/native/${NUGET_ARCH}/bin/'
+with zipfile.ZipFile('vacp.nupkg') as z:
+    for name in z.namelist():
+        if name.startswith(src) and not name.endswith('/'):
+            z.extract(name, '.')
+            print('extracted', name)
+"
+mv "build/native/${NUGET_ARCH}/bin/"* "$MINGW_PREFIX/bin/"
+rm -rf build "vacp.nupkg"
 
 pushd mingw-w64-pdfium-bin
 rm ./mingw-*-pdfium-bin-*.pkg.tar.*

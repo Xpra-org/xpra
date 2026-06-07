@@ -331,7 +331,10 @@ mf_decoder_ENABLED      = DEFAULT and WIN32
 vpl_ENABLED             = DEFAULT and has_header_file("vpl/mfxvideo.h")
 vpl_decoder_ENABLED     = vpl_ENABLED
 vpl_encoder_ENABLED     = vpl_ENABLED
-libva_ENABLED           = DEFAULT and LINUX and pkg_config_version("1.0", "libva") and pkg_config_exists("libva-drm")
+libva_ENABLED           = DEFAULT and pkg_config_version("1.0", "libva") and (
+    (LINUX and pkg_config_exists("libva-drm")) or
+    (WIN32 and pkg_config_exists("libva-win32"))
+)
 libva_encoder_ENABLED   = libva_ENABLED
 libva_decoder_ENABLED   = libva_ENABLED
 remote_encoder_ENABLED  = DEFAULT
@@ -2216,6 +2219,8 @@ if WIN32:
             add_console_exe("packaging/MSWindows/tools/lib_delegate.py", "gstreamer.ico", "gst-inspect-1.0")
             add_data_files("lib/", (shutil.which("gst-inspect-1.0.exe"), ))
             add_console_exe("fs/bin/xpra", "speaker.ico", "Xpra_Audio")
+        if libva_ENABLED:
+            do_add_DLLs("", "vaon12_drv_video")
         if printing_ENABLED:
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
             do_add_DLLs("", "pdfium")
@@ -2355,6 +2360,7 @@ if WIN32:
     if codecs_ENABLED:
         external_includes.append("decimal")
         external_includes.append("_pydecimal")
+        external_includes.append("xpra.codecs.vacommon")
 
     external_includes.append("cairo")
     external_includes.append("certifi")
@@ -3125,10 +3131,10 @@ if vpl_encoder_ENABLED:
 toggle_packages(libva_ENABLED, "xpra.codecs.libva")
 if libva_encoder_ENABLED:
     ace("xpra.codecs.libva.encoder,xpra/codecs/libva/va_encode.c",
-        "libva,libva-drm")
+        "libva,libva-win32" if WIN32 else "libva,libva-drm")
 if libva_decoder_ENABLED:
     ace("xpra.codecs.libva.decoder,xpra/codecs/libva/va_decode.c",
-        "libva,libva-drm")
+        "libva,libva-win32" if WIN32 else "libva,libva-drm")
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
 toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
 toggle_packages(remote_encoder_ENABLED, "xpra.codecs.remote")

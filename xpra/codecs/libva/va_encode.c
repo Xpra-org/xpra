@@ -9,12 +9,17 @@
 #include "va_common.h"
 
 #include <va/va.h>
-#include <va/va_drm.h>
 #include <va/va_enc_h264.h>
 #include <va/va_enc_vp8.h>
 #include <va/va_enc_vp9.h>
 
+#ifdef _WIN32
+#include <io.h>     /* close() */
+#else
 #include <dirent.h>
+#include <unistd.h>
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -22,7 +27,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 #define LIBVA_IDR_INTERVAL 60
 #define LIBVA_LOG2_MAX_FRAME_NUM_MINUS4 4
@@ -587,7 +591,8 @@ static int try_device(const char *device) {
     vp8_ok = vp8_encode_supported(display);
     vp9_ok = vp9_encode_supported(display);
     vaTerminate(display);
-    close(fd);
+    if (fd >= 0)
+        close(fd);
     if (h264_ok || vp8_ok || vp9_ok) {
         snprintf(g_device, sizeof(g_device), "%s", device);
         snprintf(g_vendor, sizeof(g_vendor), "%s", vendor);
@@ -612,6 +617,19 @@ static int try_device(const char *device) {
     return h264_ok || vp8_ok || vp9_ok;
 }
 
+#ifdef _WIN32
+LibVAEncodeStatus libva_encode_startup(void) {
+    g_error[0] = 0;
+    if (try_device("")) {
+        libva_log("libva encode startup: using (%s)", g_vendor);
+        return LIBVA_ENC_OK;
+    }
+    if (!g_error[0])
+        snprintf(g_error, sizeof(g_error), "no VA-API adapter found");
+    libva_log("libva encode startup: no VA-API H.264, VP8 or VP9 CQP encoder found: %s", g_error);
+    return LIBVA_ENC_NOT_AVAILABLE;
+}
+#else
 LibVAEncodeStatus libva_encode_startup(void) {
     const char *env_device = getenv("XPRA_LIBVA_DEVICE");
     DIR *dir;
@@ -653,6 +671,7 @@ LibVAEncodeStatus libva_encode_startup(void) {
     libva_log("libva encode startup: no VA-API H.264, VP8 or VP9 CQP encoder found: %s", g_error);
     return LIBVA_ENC_NOT_AVAILABLE;
 }
+#endif
 
 void libva_encode_shutdown(void) {
     libva_log("libva encode shutdown");

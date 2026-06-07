@@ -8,13 +8,17 @@
 #define XPRA_LIBVA_COMMON_H
 
 #include <va/va.h>
+#ifdef _WIN32
+#include <va/va_win32.h>
+#else
 #include <va/va_drm.h>
-
 #include <fcntl.h>
+#include <unistd.h>
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 typedef enum {
     LIBVA_CODEC_H264 = 0,
@@ -134,6 +138,35 @@ static inline int entrypoint_supported(const VAEntrypoint *entrypoints, int nent
     return 0;
 }
 
+#ifdef _WIN32
+static inline int libva_open_display(const char *device, int *fd_out, VADisplay *display_out,
+                                     int *major_out, int *minor_out,
+                                     char *vendor, size_t vendor_size,
+                                     char *error, size_t error_size) {
+    VADisplay display;
+    VAStatus status;
+    const char *vstr;
+
+    (void)device;
+    *fd_out = -1;
+    *display_out = NULL;
+    display = vaGetDisplayWin32(NULL);
+    if (!display) {
+        snprintf(error, error_size, "vaGetDisplayWin32 failed");
+        return 0;
+    }
+    status = vaInitialize(display, major_out, minor_out);
+    if (status != VA_STATUS_SUCCESS) {
+        snprintf(error, error_size, "vaInitialize failed: %s (%d)",
+                 vaErrorStr(status), (int)status);
+        return 0;
+    }
+    vstr = vaQueryVendorString(display);
+    snprintf(vendor, vendor_size, "%s", vstr ? vstr : "");
+    *display_out = display;
+    return 1;
+}
+#else
 static inline int libva_open_display(const char *device, int *fd_out, VADisplay *display_out,
                                      int *major_out, int *minor_out,
                                      char *vendor, size_t vendor_size,
@@ -166,5 +199,6 @@ static inline int libva_open_display(const char *device, int *fd_out, VADisplay 
     *display_out = display;
     return 1;
 }
+#endif
 
 #endif /* XPRA_LIBVA_COMMON_H */

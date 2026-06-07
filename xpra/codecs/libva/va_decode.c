@@ -13,11 +13,16 @@
 #include <va/va_dec_vp8.h>
 #include <va/va_dec_vp9.h>
 
+#ifdef _WIN32
+#include <io.h>     /* close() */
+#else
 #include <dirent.h>
+#include <unistd.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 #define LIBVA_LOG2_MAX_FRAME_NUM_MINUS4 4
 #define LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 4
@@ -378,7 +383,8 @@ static int try_device(const char *device) {
         snprintf(g_error, sizeof(g_error), "vaQueryConfigProfiles failed: %s (%d)",
                  vaErrorStr(status), (int)status);
         vaTerminate(display);
-        close(fd);
+        if (fd >= 0)
+            close(fd);
         return 0;
     }
 
@@ -413,7 +419,8 @@ static int try_device(const char *device) {
         vp9_444 = vld_supported(display, VAProfileVP9Profile1, VA_RT_FORMAT_YUV444);
 
     vaTerminate(display);
-    close(fd);
+    if (fd >= 0)
+        close(fd);
     if (h264_420 || h264_444 || vp8_420 || vp9_420 || vp9_444) {
         snprintf(g_device, sizeof(g_device), "%s", device);
         snprintf(g_vendor, sizeof(g_vendor), "%s", vendor);
@@ -432,6 +439,16 @@ static int try_device(const char *device) {
     return h264_420 || h264_444 || vp8_420 || vp9_420 || vp9_444;
 }
 
+#ifdef _WIN32
+LibVADecodeStatus libva_decode_startup(void) {
+    g_error[0] = 0;
+    if (try_device(""))
+        return LIBVA_DEC_OK;
+    if (!g_error[0])
+        snprintf(g_error, sizeof(g_error), "no VA-API adapter found");
+    return LIBVA_DEC_NOT_AVAILABLE;
+}
+#else
 LibVADecodeStatus libva_decode_startup(void) {
     const char *env_device = getenv("XPRA_LIBVA_DEVICE");
     DIR *dir;
@@ -465,6 +482,7 @@ LibVADecodeStatus libva_decode_startup(void) {
         snprintf(g_error, sizeof(g_error), "no VA-API render node found");
     return LIBVA_DEC_NOT_AVAILABLE;
 }
+#endif
 
 void libva_decode_shutdown(void) {
     libva_log("libva decode shutdown");
