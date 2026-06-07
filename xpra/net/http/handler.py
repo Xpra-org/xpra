@@ -408,7 +408,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         import base64
         try:
             s = base64.b64decode(b64str).decode("utf8")
-        except (ValueError, UnicodeDecodeError):
+        except ValueError:
             s = ""
         if s.find(":") < 0:
             return False, "invalid authentication format"
