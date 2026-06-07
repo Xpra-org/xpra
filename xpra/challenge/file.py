@@ -28,8 +28,8 @@ class Handler(AuthenticationHandler):
     def __repr__(self):
         return "file"
 
-    def get_digest(self) -> str:
-        return ""
+    def get_digests(self) -> tuple:
+        return ()
 
     def handle(self, challenge: bytes, digest: str, prompt: str) -> bytes:  # pylint: disable=unused-argument
         log("handle(..) password_file=%s", self.password_file)

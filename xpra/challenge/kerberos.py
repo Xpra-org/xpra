@@ -36,8 +36,8 @@ class Handler(AuthenticationHandler):
     def __repr__(self):
         return "kerberos"
 
-    def get_digest(self) -> str:
-        return "kerberos"
+    def get_digests(self) -> tuple[str]:
+        return ("kerberos",)
 
     def handle(self, challenge: bytes, digest: str, prompt: str):  # pylint: disable=unused-argument
         if not digest.startswith("kerberos:"):

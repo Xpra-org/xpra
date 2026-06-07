@@ -4,13 +4,17 @@
 # later version. See the file COPYING for details.
 
 from abc import ABCMeta, abstractmethod
+from collections.abc import Sequence
 
 
 class AuthenticationHandler(metaclass=ABCMeta):
 
     @abstractmethod
-    def get_digest(self) -> str:
+    def get_digests(self) -> Sequence[str]:
         raise NotImplementedError()
+
+    def is_done(self) -> bool:
+        return True
 
     @abstractmethod
     def handle(self, challenge: bytes, digest: str, prompt: str):

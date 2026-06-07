@@ -24,8 +24,8 @@ class Handler(AuthenticationHandler):
     def __repr__(self):
         return "prompt"
 
-    def get_digest(self) -> str:
-        return ""
+    def get_digests(self) -> tuple:
+        return ()
 
     def handle(self, challenge: bytes, digest: str, prompt: str = "password"):  # pylint: disable=unused-argument
         digest_type = digest.split(":", 1)[0]

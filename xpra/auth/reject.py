@@ -26,6 +26,9 @@ class Authenticator:
         self.challenge_sent = True
         return get_salt(), choose_digest(digests)
 
+    def get_next_challenge(self) -> tuple[()]:
+        return ()
+
     def choose_salt_digest(self, digest_modes: Sequence[str]) -> str:
         return choose_digest(digest_modes)
 

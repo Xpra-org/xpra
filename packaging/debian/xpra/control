@@ -186,6 +186,7 @@ Suggests: xpra-codecs-nvidia (= ${binary:Version})
 # authentication:
         ,python3-kerberos
         ,python3-gssapi
+        ,python3-scramp
 # keycloak authentication:
         ,python3-oauthlib
 Description: tool to detach/reattach running X programs,

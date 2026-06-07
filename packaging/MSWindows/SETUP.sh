@@ -51,7 +51,7 @@ done
 $PACMAN ${XPKG}cython
 $PACMAN openssl-devel
 #these need to be converted to PKGBUILD:
-for x in browser-cookie3 pyaes pbkdf2 pytools; do
+for x in browser-cookie3 pyaes pbkdf2 pytools scramp; do
 	pip3 install --break-system-packages $x
 done
 # to keep these libraries updated, you may need:

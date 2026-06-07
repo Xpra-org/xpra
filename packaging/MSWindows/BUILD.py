@@ -60,7 +60,7 @@ BUILD_CUDA_KERNEL = "packaging\\MSWindows\\BUILD_CUDA_KERNEL.BAT"
 EXTRA_PYTHON_MODULES = [
     "unittest", "psutil", "pynvml",
     "browser_cookie3",
-    "gssapi", "ldap", "ldap3", "pyu2f", "sqlite3",
+    "gssapi", "ldap", "ldap3", "pyu2f", "scramp", "sqlite3",
 ]
 
 

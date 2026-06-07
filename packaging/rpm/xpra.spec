@@ -208,6 +208,7 @@ Recommends:			%{py3rpmname}-paramiko
 Suggests:			%{py3rpmname}-pyyaml
 Suggests:			%{py3rpmname}-kerberos
 Suggests:			%{py3rpmname}-gssapi
+Suggests:			%{py3rpmname}-scramp
 Suggests:			%{py3rpmname}-ldap
 Suggests:			%{py3rpmname}-ldap3
 Suggests:           %{py3rpmname}-cpuinfo
@@ -572,6 +573,7 @@ Suggests:			tcp_wrappers-libs
 Suggests:			%{py3rpmname}-ldap3
 Suggests:			%{py3rpmname}-ldap
 Suggests:			%{py3rpmname}-oauthlib
+Suggests:			%{py3rpmname}-scramp
 %if 0%{?fedora}%{?el10}
 BuildRequires:		pkgconfig(libproc2)
 %else

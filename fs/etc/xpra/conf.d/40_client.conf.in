@@ -11,7 +11,7 @@ opengl = %(opengl)s
 # How we handle server authentication requests:
 #challenge-handlers=none
 #challenge-handlers=env,file
-#challenge-handlers=env,file,kerberos,gss,u2f,prompt
+#challenge-handlers=env,file,scram,kerberos,gss,u2f,prompt
 challenge-handlers=all
 
 # Client window title:

@@ -43,6 +43,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [password](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/password.py)                   | matches against a password given as a module option, ie: `auth=password,value=mysecret` | alternative to file module                                                          |
 | [multifile](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/multifile.py)                 | matches usernames and passwords against an authentication file                          | proxy: see password-file below                                                      |
 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/file.py)                           | compares the password against the contents of a password file, see password-file below  | simple password authentication                                                      |
+| [scram](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/scram.py)                         | SCRAM authentication using `python-scramp`                                              | supports plaintext files and SCRAM stored-key records                               |
 | [pam](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/pam.py)                             | linux PAM authentication                                                                | Linux system authentication                                                         |
 | [win32](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/win32.py)                         | win32security authentication                                                            | MS Windows system authentication                                                    |
 | `sys`                                                                                            | system authentication                                                                   | virtual module which will choose win32 or pam authentication automatically          |
@@ -119,6 +120,7 @@ xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt -
 |-------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
 | [env](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/env.py)           | `name` specifies the environment variable containing the password<br/>defaults to `XPRA_PASSWORD`        |
 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/file.py)         | `filename` specifies the file containing the passowrd                                                    |
+| [scram](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/scram.py)       | SCRAM password proof handler using `python-scramp`; `legacy-sha1=yes` enables SCRAM-SHA-1                |
 | [gss](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/gss.py)           | use `gss-services` to specify the name of the security context                                           |
 | [kerberos](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/kerberos.py) | `kerberos-services` specifies the valid kerberos services to connect to<br/>the wildcard `*` may be used |
 | [prompt](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/prompt.py)     | GUI clients should see a dialog, console users a text prompt                                             |
@@ -260,7 +262,7 @@ The steps below assume that the client and server have been configured to use au
 * if the server is not configured for authentication, the client connection should be accepted and a warning will be printed
 * if the client is not configured for authentication, a password dialog may show up, and the connection will fail with an authentication error if the correct value is not supplied
 * if multiple authentication modules are specified, the client may bring up multiple authentication dialogs
-* how the client handles the challenges sent by the server can be configured using the `challenge-handlers` option, by default the client will try the following handlers in the specified order: `uri` (whatever password may have been specified in the connection string), `file` (if the `password-file` option was used), `env` (if the environment variable is present), `kerberos`, `gss`, `keycloak`, `u2f` and finally `prompt`
+* how the client handles the challenges sent by the server can be configured using the `challenge-handlers` option, by default the client will try the following handlers in the specified order: `uri` (whatever password may have been specified in the connection string), `file` (if the `password-file` option was used), `env` (if the environment variable is present), `scram`, `kerberos`, `gss`, `keycloak`, `u2f` and finally `prompt`
 </details>
 <details>
   <summary>module and platform specific notes</summary>
@@ -290,6 +292,8 @@ The methods most commonly overridden:
 | Method                                  | Default                                                                                                  | When to override                                                                                                       |
 |-----------------------------------------|----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | `requires_challenge()`                  | returns `True`                                                                                           | Return `False` for modules that authenticate out of band (e.g. `peercred`, `hosts`, `http-header`).                    |
+| `get_challenge(digests)`                | Generates a salt and chooses the strongest compatible digest                                             | Override when the module requires a named non-HMAC digest or custom challenge payload.                                 |
+| `get_next_challenge()`                  | returns `()`                                                                                             | Override for multi-step challenge protocols. Return `(challenge, digest, prompt)` while another client response is needed. |
 | `get_passwords()` / `get_password()`    | `get_passwords` returns `(get_password(),)`; `get_password` returns `""`                                 | Override one of them to provide the expected password(s) — used by HMAC challenge verification.                        |
 | `do_authenticate(caps)`                 | Validates the challenge response and calls `authenticate_check`                                          | Override for non-HMAC flows (e.g. challenge/response over a different transport, third-party token verification).      |
 | `authenticate_hmac(caps)`               | Verifies the HMAC challenge against `get_passwords()` results                                            | Override if you need to perform extra checks after a successful HMAC match.                                            |
@@ -303,6 +307,22 @@ Helpers in [`xpra/auth/common.py`](https://github.com/Xpra-org/xpra/blob/master/
 * `get_auth_exec_env(display="auto")` — environment dictionary suitable for spawning helper processes (used by `exec` and `otpscreen`)
 
 Authenticator instances are constructed by [`auth_helper.get_auth_module()`](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/auth_helper.py), which parses the `auth=NAME(opt=value,...)` syntax and imports `xpra.auth.<name>`. Each socket can chain multiple authenticators; the first one to require a challenge issues it and subsequent ones either verify additional caps or contribute to `get_sessions()`.
+
+Multi-step authenticators keep their state on the `Authenticator` instance. After `authenticate(caps)` succeeds, the server calls `get_next_challenge()`: return `()` when the authenticator is complete, or return `(challenge_bytes, digest_name, prompt)` to send another `challenge` packet. The next client response arrives in `caps["challenge_response"]` and is processed by the same authenticator.
+
+</details>
+<details>
+  <summary>Writing a new client challenge handler</summary>
+
+A new client-side challenge handler is a Python file in [`xpra/challenge/`](https://github.com/Xpra-org/xpra/tree/master/xpra/challenge) that defines a class named `Handler` implementing `AuthenticationHandler`.
+
+| Method                    | Default                                      | When to override                                                                                       |
+|---------------------------|----------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `get_digests()`           | abstract                                     | Return the digest names handled by this module, or `()` for generic password handlers.                 |
+| `handle(challenge, digest, prompt)` | abstract                            | Return the response bytes/value for the server challenge, or a false value if the handler cannot answer. |
+| `is_done()`               | returns `True`                               | Return `False` for multi-step handlers that must keep state and handle the next challenge packet.      |
+
+For multi-step handlers, keep protocol state on the handler instance. When `handle()` returns a response and `is_done()` is `False`, the client keeps that handler at the front of the handler list so the next server challenge is routed back to it.
 
 </details>
 <details>

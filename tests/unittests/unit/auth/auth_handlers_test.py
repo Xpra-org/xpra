@@ -38,7 +38,7 @@ class AuthHandlersTest(unittest.TestCase):
             assert not r, f"expected {h.handle}({kwargs}) to fail but it returned {r} (handler class={handler_class})"
         else:
             assert r == result, f"expected password value {result!r} but got {r}"
-            h.get_digest()
+            h.get_digests()
         return h
 
     def test_prompt(self):

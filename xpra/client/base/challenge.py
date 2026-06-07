@@ -31,7 +31,7 @@ ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
 ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 
 ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
-                                        "uri,file,env,kerberos,gss,fido2,u2f,prompt,prompt,prompt,prompt").split(",")
+                                        "uri,file,env,scram,kerberos,gss,fido2,u2f,prompt,prompt,prompt,prompt").split(",")
 
 
 class ChallengeClient(StubClientMixin):
@@ -63,11 +63,11 @@ class ChallengeClient(StubClientMixin):
 
     def get_caps(self) -> dict[str, Any]:
         digests = list(get_digests())
-        # add "kerberos", "gss" and "u2f" digests if enabled:
+        # add challenge-handler digests if enabled:
         for handler in self.challenge_handlers:
-            digest = handler.get_digest()
-            if digest and digest not in digests:
-                digests.append(digest)
+            for digest in handler.get_digests():
+                if digest and digest not in digests:
+                    digests.append(digest)
         caps = {
             "salt-digest": get_salt_digests()
         }
@@ -163,6 +163,8 @@ class ChallengeClient(StubClientMixin):
                 value = handler.handle(challenge=challenge, digest=digest, prompt=prompt)
                 log(f"{handler.handle}({packet})={obsc(value)}")
                 if value:
+                    if not handler.is_done():
+                        self.challenge_handlers.insert(0, handler)
                     self.send_challenge_reply(packet, value)
                     # stop since we have sent the reply
                     return
@@ -187,7 +189,8 @@ class ChallengeClient(StubClientMixin):
         digest_type = digest.split(":")[0]  # ie: "kerberos:value" -> "kerberos"
         index = 0
         for i, handler in enumerate(self.challenge_handlers):
-            if handler.get_digest() == digest_type:
+            digests = tuple(handler.get_digests())
+            if digest in digests or digest_type in digests:
                 index = i
                 break
         return self.challenge_handlers.pop(index)

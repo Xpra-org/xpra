@@ -16,8 +16,8 @@ class Handler(AuthenticationHandler):
     def __repr__(self):
         return "env"
 
-    def get_digest(self) -> str:
-        return ""
+    def get_digests(self) -> tuple:
+        return ()
 
     def handle(self, challenge: bytes, digest: str, prompt: str) -> str:  # pylint: disable=unused-argument
         return os.environ.get(self.var_name, "")

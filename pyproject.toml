@@ -84,6 +84,7 @@ cli = [
     "ldap",
     "oauthlib",
     "pyu2f",
+    "scramp",
 ]
 
 

@@ -25,8 +25,8 @@ class Handler(AuthenticationHandler):
     def __repr__(self):
         return "u2f"
 
-    def get_digest(self) -> str:
-        return "u2f"
+    def get_digests(self) -> tuple[str]:
+        return ("u2f",)
 
     def handle(self, challenge: bytes, digest: str, prompt: str) -> (
             tuple[bytes, bytes] | None):  # pylint: disable=unused-argument

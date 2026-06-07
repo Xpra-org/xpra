@@ -2307,6 +2307,7 @@ if WIN32:
     external_includes += [
         "pyu2f",
         "fido2",
+        "scramp",
         "mmap",
         "comtypes", "comtypes.stream",      # used by webcam, netdev_query, taskbar progress (file-transfers), etc
         "wmi", "win32com",
@@ -2641,7 +2642,7 @@ else:
     if OSX:
         # pyobjc needs email.parser
         external_includes += ["email", "uu", "urllib", "objc", "cups", "six"]
-        external_includes += ["kerberos", "future", "pyu2f", "paramiko", "nacl"]
+        external_includes += ["kerberos", "future", "pyu2f", "scramp", "paramiko", "nacl"]
         if yaml_ENABLED:
             external_includes.append("yaml")
         if webcam_ENABLED:

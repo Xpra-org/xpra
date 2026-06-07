@@ -77,6 +77,7 @@ See [authentication modules](../Usage/Authentication.md)
 | [python-ldap](https://www.python-ldap.org)                 | https://pypi.org/project/python-ldap/ | LDAP     | server           | [#1691](https://github.com/Xpra-org/xpra/issues/1691) |
 | [python-ldap3](https://github.com/cannatag/ldap3)          | https://pypi.org/project/ldap3/       | LDAP v3  | server           | [#1691](https://github.com/Xpra-org/xpra/issues/1691) |
 | [pyu2f](https://github.com/google/pyu2f)                   | https://pypi.org/project/pyu2f/       | U2F      | server           | [#1789](https://github.com/Xpra-org/xpra/issues/1789) |
+| [python-scramp](https://github.com/tlocke/scramp)          | https://pypi.org/project/scramp/      | SCRAM    | client + server  | optional SCRAM authentication                         |
 </details>
 
 <details>

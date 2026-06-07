@@ -21,8 +21,8 @@ class Handler(AuthenticationHandler):
     def __repr__(self):
         return "gss"
 
-    def get_digest(self) -> str:
-        return "gss"
+    def get_digests(self) -> tuple[str]:
+        return ("gss",)
 
     def handle(self, challenge: bytes, digest: str, prompt: str):  # pylint: disable=unused-argument
         if not digest.startswith("gss:"):

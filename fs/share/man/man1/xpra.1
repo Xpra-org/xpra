@@ -782,7 +782,7 @@ which order. This option may be repeated to specify multiple handlers,
 which can be useful if the server sends more than one authentication
 challenge.
 The default value is: \fIall\fP which corresponds to:
-\fIuri,file,env,kerberos,gss,u2f,prompt\fP.
+\fIuri,file,env,scram,kerberos,gss,u2f,prompt\fP.
 .RS
 .IP \fBuri\fP
 Use the password specified on the connection string, if any.
@@ -795,6 +795,8 @@ password filename specified with the \fIpassword-file\fP switch.
 Use the password specified using the environment variable
 specified using the \fIname\fP option, which defaults to
 \fIXPRA_PASSWORD\fP if unspecified.
+.IP \fBscram\fP
+SCRAM password proof handler using python-scramp.
 .IP \fBkerberos\fP
 Requests a kerberos token for the service specified.
 .IP \fBgss\fP

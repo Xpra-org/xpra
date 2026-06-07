@@ -172,6 +172,9 @@ ignore_missing_imports = True
 [mypy-pyu2f.*]
 ignore_missing_imports = True
 
+[mypy-scramp.*]
+ignore_missing_imports = True
+
 [mypy-browser_cookie3.*]
 ignore_missing_imports = True
 
@@ -205,4 +208,3 @@ ignore_missing_imports = True
 
 [mypy-AppKit.*]
 ignore_missing_imports = True
-

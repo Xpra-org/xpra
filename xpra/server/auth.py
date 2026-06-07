@@ -238,6 +238,21 @@ class AuthenticationManager(StubSubsystem):
             if not authenticator.authenticate(c):
                 fail(ConnectionMessage.AUTHENTICATION_FAILED)
                 return
+            next_challenge = authenticator.get_next_challenge()
+            if next_challenge:
+                salt, digest, prompt = next_challenge
+                if salt and digest:
+                    actual_digest = digest.split(":", 1)[0]
+                    if actual_digest not in digest_modes:
+                        fail(f"cannot proceed without {actual_digest!r} digest support")
+                        return
+                    salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
+                    if salt_digest in ("xor", "des"):
+                        fail(f"insecure salt digest {salt_digest!r} rejected")
+                        return
+                    self.server.cancel_verify_connection_accepted(proto)
+                    self.send_challenge(proto, salt, auth_caps, digest, salt_digest, prompt)
+                    return
         client_expects_challenge = c.strget("challenge")
         if client_expects_challenge:
             log.warn("Warning: client expects an authentication challenge,")
