@@ -497,10 +497,6 @@ cdef class DXGICapture:
         if height == 0:
             height = self._height
 
-        # Shadow server passes global desktop coordinates; translate to output-local.
-        x -= self._output_x
-        y -= self._output_y
-
         # Clamp to output dimensions
         if x < 0:
             width += x
@@ -593,6 +589,24 @@ def get_capture_instance(output_index: int = 0) -> DXGICapture:
     capture = DXGICapture(output_index)
     capture.init_context()
     return capture
+
+
+def get_capture_for_monitor(x: int, y: int) -> DXGICapture | None:
+    """
+    Find and return a fully-initialised DXGICapture for the output whose
+    desktop position matches (x, y).  Returns None if no output matches.
+    Captures work in local (monitor-relative) coordinates.
+    """
+    for output_index in range(8):
+        try:
+            capture = DXGICapture(output_index)
+            capture.init_context()
+            if capture._output_x == x and capture._output_y == y:
+                return capture
+            capture.clean()
+        except RuntimeError:
+            break   # no more outputs on this adapter
+    return None
 
 
 def main(argv) -> int:

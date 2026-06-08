@@ -50,7 +50,7 @@ class ShadowDisplayMixin:
     def get_display_description(self) -> str:
         descr = super().get_display_description()
         try:
-            models = self.subsystems["window"].models()
+            models = self.get_subsystem("window").models()
         except (AttributeError, KeyError) as e:
             log(f"no screen info: {e}")
             return descr

@@ -71,6 +71,7 @@ class ShadowServerBase(ServerBase):
         # noinspection PyArgumentList
         ServerBase.__init__(self)
         self.capture = capture
+        self._captures: list = []
         self.window_matches: list[str] = []
         self.mapped = []
         self.pulseaudio: bool = False
@@ -142,9 +143,10 @@ class ShadowServerBase(ServerBase):
         self.cleanup_capture()
 
     def cleanup_capture(self) -> None:
-        if capture := self.capture:
-            self.capture = None
-            capture.clean()
+        captures, self._captures = self._captures, []
+        self.capture = None
+        for c in captures:
+            c.clean()
 
     def guess_session_name(self, procs=()) -> None:
         log("guess_session_name(%s)", procs)
@@ -295,17 +297,16 @@ class ShadowServerBase(ServerBase):
             GLib.source_remove(t)
 
     def refresh(self) -> bool:
-        log("refresh() mapped=%s, capture=%s", self.mapped, self.capture)
+        log("refresh() mapped=%s, captures=%s", self.mapped, self._captures)
         if not self.mapped:
             self.refresh_timer = 0
             return False
         self.refresh_window_models()
-        if self.capture:
+        if self._captures:
             try:
-                if not self.capture.refresh():
-                    # capture doesn't have any screen updates,
-                    # so we can skip calling damage
-                    # (this shortcut is only used with nvfbc)
+                # Refresh all captures; if none report new content skip damage.
+                updates = [c.refresh() for c in self._captures]
+                if not any(updates):
                     return True
             except TransientCodecException as tce:
                 log("refresh()", exc_info=True)
@@ -385,6 +386,22 @@ class ShadowServerBase(ServerBase):
 
     def setup_capture(self):
         raise NotImplementedError()
+
+    def setup_monitor_capture(self, index: int, title: str, x: int, y: int, w: int, h: int):
+        """
+        Return a capture instance for one monitor.  Captures work in local
+        (monitor-relative) coordinates: (0, 0) is always the monitor's top-left.
+
+        Default implementation creates a single shared capture via setup_capture()
+        (backward-compatible for platforms that capture the whole virtual desktop).
+        Subclasses override this to return a per-monitor capture instance.
+        """
+        if not self.capture:
+            self.capture = self.setup_capture()
+            if not self.capture:
+                raise RuntimeError("failed to instantiate a capture backend")
+            log.info(f"capture using {self.capture.get_type()}")
+        return self.capture
 
     def get_root_window_model_class(self) -> type:
         from xpra.server.shadow.root_window_model import CaptureWindowModel
@@ -475,10 +492,6 @@ class ShadowServerBase(ServerBase):
 
     def make_capture_window_models(self) -> list:
         screenlog("make_capture_window_models() display_options=%s", self.display_options)
-        self.capture = self.setup_capture()
-        if not self.capture:
-            raise RuntimeError("failed to instantiate a capture backend")
-        log.info(f"capture using {self.capture.get_type()}")
         model_class = self.get_root_window_model_class()
         models = []
         display_name = self.get_display_name()
@@ -506,8 +519,10 @@ class ShadowServerBase(ServerBase):
             if not geometries:
                 rw, rh = self.get_display_size()
                 geometries = ((0, 0, rw, rh), )
-            for geometry in geometries:
-                model = model_class(self.capture, display_name, geometry)
+            for i, geometry in enumerate(geometries):
+                x, y, w, h = geometry
+                capture = self._make_monitor_capture(i, display_name, x, y, w, h)
+                model = model_class(capture, display_name, geometry)
                 models.append(model)
             return models
         found = []
@@ -523,7 +538,8 @@ class ShadowServerBase(ServerBase):
                 screenlog.info(" skipped monitor %s", plug_name or title)
                 continue
             geometry = (x, y, width, height)
-            model = model_class(self.capture, title, geometry)
+            capture = self._make_monitor_capture(i, title, x, y, width, height)
+            model = model_class(capture, title, geometry)
             models.append(model)
             screenlog("monitor %i: %10s geometry=%s, scale factor=%s", i, title, geometry, scale_factor)
         screenlog("make_capture_window_models()=%s", models)
@@ -531,6 +547,13 @@ class ShadowServerBase(ServerBase):
             screenlog.warn("Warning: no monitors found matching %r", match_str)
             screenlog.warn(" only found: %s", csv(found))
         return models
+
+    def _make_monitor_capture(self, index: int, title: str, x: int, y: int, w: int, h: int):
+        """Call setup_monitor_capture() and register the result in self._captures."""
+        capture = self.setup_monitor_capture(index, title, x, y, w, h)
+        if capture not in self._captures:
+            self._captures.append(capture)
+        return capture
 
     def get_shadow_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
         gtk = self.get_subsystem("gtk")

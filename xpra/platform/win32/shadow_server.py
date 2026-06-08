@@ -6,7 +6,7 @@
 import os
 import re
 from typing import Any
-from collections.abc import Sequence, Callable
+from collections.abc import Sequence
 from ctypes import create_unicode_buffer, byref, c_ulong
 from ctypes.wintypes import RECT
 
@@ -15,7 +15,7 @@ from xpra.util.env import envbool
 from xpra.constants import XPRA_APP_ID
 from xpra.net.common import Packet
 from xpra.scripts.config import InitException
-from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
+from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_display_size
@@ -48,155 +48,106 @@ GDI = envbool("XPRA_SHADOW_GDI", True)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
 
-def check_dxgi() -> bool:
-    if not DXGI:
-        return False
-    from xpra.platform.win32.d3d11.capture import get_capture_instance
-    if not get_capture_instance:
-        raise ImportError("get_capture_instance")
-    return DXGI
-
-
-def check_gstreamer_d3d11() -> bool:
-    from xpra.util.system import is_VirtualBox
-    return not is_VirtualBox()
-
-
-def check_gstreamer_dx9() -> bool:
-    return True
-
-
-def check_gstreamer_gdi() -> bool:
-    # we don't want to be using GStreamer for GDI capture
-    return False
-
-
-def get_gstreamer_capture_elements() -> Sequence[str]:
-    if "XPRA_GSTREAMER_CAPTURE_ELEMENTS" in os.environ:
-        elements = os.environ.get("XPRA_GSTREAMER_CAPTURE_ELEMENTS", "").split(",")
-    else:
-        elements = []
-        for element, check in {
-            "d3d11screencapturesrc" : check_gstreamer_d3d11,
-            "dx9screencapsrc": check_gstreamer_dx9,
-            "gdiscreencapsrc": check_gstreamer_gdi,
-        }.items():
-            if envbool("XPRA_GSTREAMER_CAPTURE_"+element.upper(), False) or check():
-                elements.append(element)
-    log(f"get_gstreamer_capture_elements()={elements}")
-    return elements
-
-
-GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = get_gstreamer_capture_elements()
-
-
-def check_gstreamer() -> bool:
-    if not GSTREAMER:
-        return False
-    from xpra.gstreamer.common import has_plugins, import_gst
-    import_gst()
-    return any(has_plugins(element) for element in GSTREAMER_CAPTURE_ELEMENTS)
-
-
-def check_nvfbc() -> bool:
+def _check_nvfbc() -> bool:
     if not NVFBC:
         return False
     from xpra.codecs.nvidia.nvfbc.capture import get_capture_instance
     if not get_capture_instance:
-        # cythonized code can bind None for missing imports
         raise ImportError("get_capture_instance")
-    return NVFBC
+    return True
 
 
-def check_gdi() -> bool:
-    return GDI
+def _check_dxgi() -> bool:
+    if not DXGI:
+        return False
+    from xpra.platform.win32.d3d11.capture import get_capture_for_monitor
+    if not get_capture_for_monitor:
+        raise ImportError("get_capture_for_monitor")
+    return True
 
 
-def check_gtk() -> bool:
+def _check_gstreamer() -> bool:
+    if not GSTREAMER:
+        return False
+    from xpra.gstreamer.common import has_plugins, import_gst
+    import_gst()
+    return any(has_plugins(el) for el in _get_gstreamer_elements())
+
+
+def _check_gdi() -> bool:
+    return bool(GDI)
+
+
+def _check_gtk() -> bool:
     from xpra.gtk import signals
     if not signals:
-        # cythonized code can bind None for missing imports
         raise ImportError("xpra.gtk.signals")
     return True
 
 
-SHADOW_OPTIONS = {
-    "auto": lambda: True,
-    "nvfbc": check_nvfbc,
-    "dxgi": check_dxgi,
-    "gstreamer": check_gstreamer,
-    "gdi": check_gdi,
-    "gtk": check_gtk,
+SHADOW_OPTIONS: dict = {
+    "auto":      lambda: True,
+    "dxgi":      _check_dxgi,
+    "gdi":       _check_gdi,
+    "nvfbc":     _check_nvfbc,
+    "gstreamer": _check_gstreamer,
+    "gtk":       _check_gtk,
 }
 
 
-def setup_nvfbc_capture(w: int, h: int, pixel_depth=32):
+def _setup_nvfbc_capture(w: int, h: int, pixel_depth: int = 32):
     if not NVFBC:
         return None
     from xpra.codecs.nvidia.nvfbc.capture import get_capture_instance
     capture = get_capture_instance()
     try:
-        pixel_format = {
-            24: "RGB",
-            32: "BGRX",
-            30: "r210",
-        }[pixel_depth]
+        pixel_format = {24: "RGB", 32: "BGRX", 30: "r210"}[pixel_depth]
         capture.init_context(w, h, pixel_format)
-        # this will test the capture and ensure we can call get_image()
         capture.refresh()
         return capture
     except Exception as e:
         log("NvFBC_Capture", exc_info=True)
         log.warn("Warning: NvFBC screen capture initialization failed:")
-        for x in str(e).replace(". ", ":").split(":"):
-            if x.strip() and x != "nvfbc":
-                log.warn(" %s", x.strip())
+        for part in str(e).replace(". ", ":").split(":"):
+            if part.strip() and part != "nvfbc":
+                log.warn(" %s", part.strip())
         return None
 
 
-def setup_gstreamer_capture(w: int, h: int, pixel_depth=32):
-    from xpra.codecs.gstreamer.capture import Capture
-    for el in GSTREAMER_CAPTURE_ELEMENTS:
+def _get_gstreamer_elements() -> Sequence[str]:
+    if "XPRA_GSTREAMER_CAPTURE_ELEMENTS" in os.environ:
+        return os.environ.get("XPRA_GSTREAMER_CAPTURE_ELEMENTS", "").split(",")
+    elements = []
+    for element, enabled in {
+        "d3d11screencapturesrc": True,
+        "dx9screencapsrc": True,
+        "gdiscreencapsrc": False,   # prefer direct GDI path
+    }.items():
+        if envbool("XPRA_GSTREAMER_CAPTURE_" + element.upper(), enabled):
+            elements.append(element)
+    return elements
+
+
+GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = _get_gstreamer_elements()
+
+
+def _setup_gstreamer_capture(w: int, h: int, pixel_depth: int = 32):
+    from xpra.gstreamer.common import has_plugins, import_gst
+    import_gst()
+    for el in _get_gstreamer_elements():
+        if not has_plugins(el):
+            continue
         log(f"testing gstreamer capture using {el}")
         try:
+            from xpra.codecs.gstreamer.capture import Capture
             capture = Capture(el, pixel_format="BGRX", width=w, height=h)
             capture.start()
-            image = capture.get_image(0, 0, w, h)
-            if image:
+            if capture.get_image(0, 0, w, h):
                 log(f"using gstreamer element {el}")
                 return capture
         except Exception:
             log(f"gstreamer failed to capture the screen using {el}", exc_info=True)
     return None
-
-
-# noinspection PyUnusedLocal
-def setup_dxgi_capture(w: int, h: int, pixel_depth=32):
-    from xpra.platform.win32.d3d11.capture import get_capture_instance
-    capture = get_capture_instance(output_index=0)
-    capture.refresh()
-    return capture
-
-
-# noinspection PyUnusedLocal
-def setup_gdi_capture(w: int, h: int, pixel_depth=32):
-    from xpra.platform.win32.gdi_screen_capture import GDICapture
-    return GDICapture()
-
-
-# noinspection PyUnusedLocal
-def setup_gtk_capture(w: int, h: int, pixel_depth=32):
-    from xpra.gtk.capture import GTKImageCapture
-    return GTKImageCapture(None)
-
-
-CAPTURE_BACKENDS: dict[str, Callable] = {
-    "nvfbc": setup_nvfbc_capture,
-    "dxgi": setup_dxgi_capture,
-    "gstreamer": setup_gstreamer_capture,
-    "gdi": setup_gdi_capture,
-    "gtk": setup_gtk_capture,
-}
 
 
 class ShadowServer(ShadowServerBase):
@@ -526,7 +477,8 @@ class ShadowServer(ShadowServerBase):
             geometry = (x, y, width, height)
             if plug not in existing:
                 vddlog.info("adding shadow window for monitor %r at %ix%i+%i+%i", plug, width, height, x, y)
-                model = model_class(self.capture, plug, geometry)
+                capture = self._make_monitor_capture(len(existing), plug, x, y, width, height)
+                model = model_class(capture, plug, geometry)
                 window_sub._add_new_window(model)
                 continue
             wid, model = existing[plug]
@@ -543,7 +495,8 @@ class ShadowServer(ShadowServerBase):
                 # size-constraints reach the client cleanly:
                 vddlog.info("monitor %r resolution changed: %s -> %s, recreating window", plug, old, geometry)
                 window_sub._remove_window(model)
-                window_sub._add_new_window(model_class(self.capture, plug, geometry))
+                capture = self._make_monitor_capture(len(existing), plug, x, y, width, height)
+                window_sub._add_new_window(model_class(capture, plug, geometry))
 
     def _process_configure_monitor(self, _proto, packet: Packet) -> None:
         if not self._vdd_multimonitor:
@@ -607,22 +560,81 @@ class ShadowServer(ShadowServerBase):
         w, h = get_display_size()
         return 0, 0, w, h
 
+    def setup_monitor_capture(self, index: int, title: str, x: int, y: int, w: int, h: int):
+        """
+        Per-monitor capture dispatch.  DXGI is tried first (by desktop position),
+        with a per-monitor GDI fallback.  Full-desktop backends (nvfbc, gstreamer)
+        are routed through the base-class shared-capture path.
+        """
+        backend = self.backend.lower()
+
+        # Full-desktop backends: delegate to shared-capture path (global coords).
+        if backend not in ("auto", "dxgi", "gdi"):
+            return super().setup_monitor_capture(index, title, x, y, w, h)
+
+        if DXGI and backend in ("auto", "dxgi"):
+            try:
+                from xpra.platform.win32.d3d11.capture import get_capture_for_monitor
+                capture = get_capture_for_monitor(x, y)
+                if capture:
+                    capture.refresh()
+                    log.info("monitor %r at (%i,%i): capture using %s", title, x, y, capture.get_type())
+                    return capture
+            except Exception:
+                log("DXGI capture failed for monitor %r at (%i,%i)", title, x, y, exc_info=True)
+            if backend == "dxgi":
+                raise RuntimeError(f"DXGI capture unavailable for monitor {title!r} at ({x},{y})")
+
+        if GDI and backend in ("auto", "gdi"):
+            from xpra.platform.win32.gdi_screen_capture import GDICapture
+            capture = GDICapture(offset_x=x, offset_y=y)
+            log.info("monitor %r at (%i,%i): capture using %s", title, x, y, capture.get_type())
+            return capture
+
+        raise RuntimeError(f"no capture backend available for monitor {title!r}")
+
     def setup_capture(self):
+        """Full-desktop capture used by nvfbc / gstreamer explicit-backend mode."""
         x, y, w, h = self.get_monitor_geometry()
-        capture = try_setup_capture(CAPTURE_BACKENDS, self.backend, w, h, self.pixel_depth)
-        log("setup_capture() %s monitor=%r origin=(%i,%i) size=%ix%i: %s",
-            self.backend, self.monitor_device or "all", x, y, w, h, capture)
-        return capture
+        backend = self.backend.lower()
+        if backend in ("nvfbc", "auto") and NVFBC:
+            capture = _setup_nvfbc_capture(w, h, self.pixel_depth)
+            if capture:
+                log.info("capture using NvFBC")
+                return capture
+        if backend in ("gstreamer", "auto") and GSTREAMER:
+            capture = _setup_gstreamer_capture(w, h, self.pixel_depth)
+            if capture:
+                log.info("capture using GStreamer")
+                return capture
+        if backend in ("gtk", "auto"):
+            try:
+                from xpra.gtk.capture import GTKImageCapture
+                capture = GTKImageCapture(None)
+                log.info("capture using GTK")
+                return capture
+            except ImportError:
+                pass
+        raise RuntimeError(f"no full-desktop capture backend available (backend={self.backend!r})")
 
     def get_root_window_model_class(self) -> type:
         if SEAMLESS:
             from xpra.platform.win32.shadow.model import SeamlessCaptureWindowModel
             return SeamlessCaptureWindowModel
-        return CaptureWindowModel
+        from xpra.platform.win32.shadow.model import PerMonitorCaptureWindowModel
+        return PerMonitorCaptureWindowModel
 
     def makeDynamicWindowModels(self):
         from xpra.platform.win32.shadow.model import Win32ShadowModel
         assert self.window_matches
+        # Ensure a full-virtual-desktop GDI capture exists.
+        # Win32ShadowModel.get_image() adds the global window origin before calling
+        # capture.get_image(), so offset=0 (full virtual desktop) is correct here.
+        if not self.capture:
+            from xpra.platform.win32.gdi_screen_capture import GDICapture
+            self.capture = GDICapture()
+            if self.capture not in self._captures:
+                self._captures.append(self.capture)
         ourpid = os.getpid()
         taskbar = FindWindowA("Shell_TrayWnd", None)
         windows: dict[int, tuple[str, tuple[int, int, int, int]]] = {}

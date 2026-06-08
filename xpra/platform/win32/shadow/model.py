@@ -11,6 +11,23 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 
+class PerMonitorCaptureWindowModel(CaptureWindowModel):
+    """
+    Shadow window model for per-monitor capture backends (DXGI, per-monitor GDI).
+
+    Each model owns a capture instance that works in local (monitor-relative)
+    coordinates: (0, 0) is always the monitor's top-left corner.  No global
+    offset is added before calling get_image().
+    """
+
+    def get_image(self, x: int, y: int, width: int, height: int):
+        image = self.capture.get_image(x, y, width, height)
+        if image and (x > 0 or y > 0):
+            image.set_target_x(x)
+            image.set_target_y(y)
+        return image
+
+
 class SeamlessCaptureWindowModel(CaptureWindowModel):
 
     def __init__(self, capture, title, geometry):

@@ -100,7 +100,9 @@ RGB_FORMATS = {
 
 class GDICapture:
 
-    def __init__(self):
+    def __init__(self, offset_x: int = 0, offset_y: int = 0):
+        self.offset_x = offset_x
+        self.offset_y = offset_y
         self.metrics = None
         self.wnd, self.dc, self.memdc = None, None, None
         self.bit_depth = 32
@@ -165,7 +167,7 @@ class GDICapture:
 
     def get_image(self, x: int = 0, y: int = 0, width: int = 0, height: int = 0) -> ImageWrapper | None:
         start = time.time()
-        x, y, width, height = self.get_capture_coords(x, y, width, height)
+        x, y, width, height = self.get_capture_coords(x + self.offset_x, y + self.offset_y, width, height)
         if not self.dc:
             self.wnd = GetDesktopWindow()
             if not self.wnd:
