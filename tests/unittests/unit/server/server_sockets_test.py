@@ -5,10 +5,11 @@
 # later version. See the file COPYING for details.
 
 import os
+import socket
 import shutil
 import unittest
 import tempfile
-from time import monotonic
+from time import monotonic, sleep
 from subprocess import Popen
 
 from xpra.util.str_fn import repr_ellipsized
@@ -99,6 +100,24 @@ class ServerSocketsTest(ServerTestUtil):
             r = server_proc.poll()
             raise Exception(f"server failed to start with args={args}, returned {estr(r)}")
         return server_proc
+
+    def wait_for_ports(self, server, ports, host="127.0.0.1", timeout=CONNECT_WAIT):
+        # wait until the server has actually bound and is listening on all `ports`:
+        # the `start_server` grace period only checks that the process did not exit,
+        # not that socket setup (which can lag under load) has completed.
+        start = monotonic()
+        for port in ports:
+            while True:
+                try:
+                    with socket.create_connection((host, port), timeout=1):
+                        break
+                except OSError:
+                    if pollwait(server, 0) is not None:
+                        raise Exception(f"server terminated while waiting for port {port}, "
+                                        f"returned {estr(server.poll())}")
+                    if monotonic() - start > timeout:
+                        raise Exception(f"timed out waiting for server to listen on port {port}")
+                    sleep(0.1)
 
     def _test_connect(self, server_args=(), client_args=(), password=b"", uri_prefix=DISPLAY_PREFIX, exit_code=0):
         display_no = self.find_free_display_no()
@@ -269,6 +288,10 @@ class ServerSocketsTest(ServerTestUtil):
                     server_args.append(f"--bind-{bind_mode}=0.0.0.0:{bind_port},auth=allow")
                 log("starting test ssl server on %s", display)
                 server = self.start_server(display, *server_args)
+                # wait for the server to actually bind and listen on all ports
+                # (under load, startup can take longer than the `start_server` grace period,
+                # and connecting too early gets `ECONNREFUSED`):
+                self.wait_for_ports(server, proto_ports.values())
 
                 openssl_cmd = self.which("openssl")
                 # test it with openssl client:
