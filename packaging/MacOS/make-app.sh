@@ -21,6 +21,7 @@ STRIP_GSTREAMER="${STRIP_GSTREAMER:=$STRIP_DEFAULT}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_GSTREAMER}"
 GSTREAMER_VIDEO="${GSTREAMER_VIDEO:=0}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
+STRIP_TESTS="${STRIP_TESTS:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 LIGHT="${LIGHT:=0}"
 if [ "${CLIENT_ONLY}" == "1" ]; then
@@ -442,6 +443,11 @@ groff -mandoc -Thtml < "${XPRA_SRC_DIR}/fs/share/man/man1/xpra_launcher.1" > "${
 
 echo "*******************************************************************************"
 echo "Hacks"
+
+if [ "${STRIP_TESTS}" == "1" ]; then
+  echo "- remove tests"
+  rm -fr "${PYDIR}/test" "${PYDIR}/unittest"
+fi
 
 echo "- move GTK css"
 ln -sf "share/xpra/css" "${RSCDIR}/css"
