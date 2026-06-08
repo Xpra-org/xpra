@@ -9,6 +9,7 @@
 #define MF_DECODE_H
 
 #include <stdint.h>
+#include "mf_common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,12 +43,6 @@ typedef struct {
 MFDecodeStatus mf_decode_startup(void);
 void           mf_decode_shutdown(void);
 
-/* Supported codec identifiers */
-#define MF_CODEC_H264  0
-#define MF_CODEC_HEVC  1
-#define MF_CODEC_VP9   2
-#define MF_CODEC_AV1   3
-
 /* Lifecycle */
 MFDecodeStatus mf_decoder_create(MFDecoder **out, int codec, int width, int height);
 void           mf_decoder_destroy(MFDecoder *dec);
@@ -74,7 +69,6 @@ const char*    mf_decoder_get_last_error(MFDecoder *dec);
 
 /* Logging callback — set before calling any other functions.
    The C layer calls this for diagnostic messages. */
-typedef void (*mf_log_fn)(const char *msg);
 void           mf_decode_set_log(mf_log_fn fn);
 
 #ifdef __cplusplus

@@ -328,6 +328,7 @@ amf_encoder_ENABLED     = amf_ENABLED
 vt_ENABLED              = OSX
 vt_encoder_ENABLED      = vt_ENABLED
 mf_decoder_ENABLED      = DEFAULT and WIN32
+mf_encoder_ENABLED      = DEFAULT and WIN32
 dxgi_ENABLED            = DEFAULT and WIN32
 vpl_ENABLED             = DEFAULT and has_header_file("vpl/mfxvideo.h")
 vpl_decoder_ENABLED     = vpl_ENABLED
@@ -383,6 +384,7 @@ ENCODER_SWITCHES = [
     "enc_x264", "openh264_encoder", "nvenc", "nvjpeg_encoder",
     "vpx_encoder", "webp_encoder", "pillow_encoder",
     "amf_encoder",
+    "mf_encoder",
     "vt_encoder",
     "vpl_encoder",
     "libva_encoder",
@@ -1779,6 +1781,7 @@ def clean() -> None:
     PROTECTED = [
         "xpra/buffers/memalign.c",
         "xpra/codecs/mf/mf_decode.c",
+        "xpra/codecs/mf/mf_encode.c",
         "xpra/codecs/vpl/vpl_decode.c",
         "xpra/codecs/vpl/vpl_encode.c",
         "xpra/codecs/libva/va_decode.c",
@@ -3118,10 +3121,13 @@ if vt_encoder_ENABLED:
             "-framework", "CoreVideo",
             "-framework", "CoreFoundation",
         ))
-toggle_packages(mf_decoder_ENABLED, "xpra.codecs.mf")
+toggle_packages(mf_decoder_ENABLED or mf_encoder_ENABLED, "xpra.codecs.mf")
 if mf_decoder_ENABLED:
     ace("xpra.codecs.mf.decoder,xpra/codecs/mf/mf_decode.c",
         extra_link_args=("-lmfplat", "-lmfuuid", "-lole32", "-ld3d11", "-ldxguid"))
+if mf_encoder_ENABLED:
+    ace("xpra.codecs.mf.encoder,xpra/codecs/mf/mf_encode.c",
+        extra_link_args=("-lmfplat", "-lmfuuid", "-lole32"))
 toggle_packages(vpl_decoder_ENABLED or vpl_encoder_ENABLED, "xpra.codecs.vpl")
 if vpl_decoder_ENABLED or vpl_encoder_ENABLED:
     ace("xpra.codecs.vpl.common")
