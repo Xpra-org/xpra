@@ -328,6 +328,7 @@ amf_encoder_ENABLED     = amf_ENABLED
 vt_ENABLED              = OSX
 vt_encoder_ENABLED      = vt_ENABLED
 mf_decoder_ENABLED      = DEFAULT and WIN32
+dxgi_ENABLED            = DEFAULT and WIN32
 vpl_ENABLED             = DEFAULT and has_header_file("vpl/mfxvideo.h")
 vpl_decoder_ENABLED     = vpl_ENABLED
 vpl_encoder_ENABLED     = vpl_ENABLED
@@ -470,7 +471,7 @@ SWITCHES += [
     "shadow", "proxy", "rfb", "quic", "http", "ssh", "ssl",
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
-    "win32_tools", "websockets_browser_cookie",
+    "win32_tools", "dxgi", "websockets_browser_cookie",
     "yaml",
     "wireshark",
 ]
@@ -3104,8 +3105,10 @@ if amf_ENABLED:
         print(f"using default amf args: {amf_kwargs}")
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.common", **amf_kwargs)
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
-    toggle_packages(WIN32, "xpra.platform.win32.d3d11")
-    tace(WIN32, "xpra.platform.win32.d3d11.device")
+    toggle_packages(dxgi_ENABLED, "xpra.platform.win32.d3d11")
+    tace(dxgi_ENABLED, "xpra.platform.win32.d3d11.device")
+    tace(dxgi_ENABLED, "xpra.platform.win32.d3d11.capture",
+         extra_link_args=("-ld3d11", "-ldxgi", "-ldxguid"))
 toggle_packages(vt_ENABLED, "xpra.codecs.vt")
 if vt_encoder_ENABLED:
     ace("xpra.codecs.vt.encoder",

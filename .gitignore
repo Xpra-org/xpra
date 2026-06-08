@@ -168,6 +168,7 @@ tests/unittests/test-file*
 /xpra/platform/*/*.c
 /xpra/platform/*/*.cpp
 /xpra/platform/*.c
+/xpra/platform/win32/d3d11/*.c
 /xpra/scripts/*.c
 /xpra/server/*/*.c
 /xpra/server/*.c
