@@ -120,7 +120,7 @@ def get_specs() -> Sequence[VideoSpec]:
         specs.append(VideoSpec(
             encoding=encoding,
             input_colorspace="YUV420P",
-            output_colorspaces=("NV12", ),
+            output_colorspaces=("YUV420P", ),
             has_lossless_mode=False,
             codec_class=Encoder,
             codec_type=get_type(),
