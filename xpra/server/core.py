@@ -62,6 +62,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, nicestr, strtobytes, hexstr
 from xpra.util.env import envint, envbool, envfloat, first_time, restore_script_env
 from xpra.log import Logger
+from xpra.scripts.config import InitExit
 
 # pylint: disable=import-outside-toplevel
 
@@ -864,6 +865,9 @@ class ServerCore(GLibServer):
     def handle_new_connection(self, listener: SocketListener, conn) -> None:
         try:
             self.do_handle_new_connection(listener, conn)
+        except InitExit as e:
+            netlog("handle_new_connection(%s, %s) failed: %s", listener, conn, e, exc_info=True)
+            force_close_connection(conn)
         except ValueError as e:
             sock = conn._socket
             self.new_conn_err(conn, sock, conn.socktype, conn.remote, "", str(e))
