@@ -17,7 +17,7 @@
 Summary: D-Bus Python3 Bindings
 Name:    %{py3rpmname}-dbus
 Version: 1.4.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 
 License: MIT
 URL:     http://www.freedesktop.org/wiki/Software/DBusBindings/
@@ -51,6 +51,10 @@ export DBUS_PYTHON_USE_AUTOTOOLS=1
 export PYTHON="%{python3}"
 export PYTHON_VERSION="%{python3_version}"
 NOCONFIGURE=1 ./autogen.sh
+# automake 1.16.1 (RHEL8) ships a py-compile that imports the 'imp' module,
+# which was removed in Python 3.12 - alias it to importlib.util instead
+# (importlib.util.cache_from_source is a drop-in for imp.cache_from_source):
+sed -i 's/import sys, os, py_compile, imp/import sys, os, py_compile, importlib.util as imp/' py-compile
 %configure PYTHON="%{python3}"
 make
 
@@ -79,6 +83,9 @@ rm -fv %{buildroot}%{_libdir}/pkgconfig/dbus-python.pc
 %endif
 
 %changelog
+* Mon Jun 08 2026 Antoine Martin <antoine@xpra.org> - 1.4.0-2
+- fix build on RHEL8 with Python 3.12: automake's py-compile uses removed 'imp' module
+
 * Fri May 08 2026 Antoine Martin <antoine@xpra.org> - 1.4.0-1
 - new upstream release
 
