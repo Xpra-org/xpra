@@ -46,7 +46,11 @@ def select_log_file(log_dir: str, log_file: str, display_name: str) -> str:
             # we have 'display_name', or we just don't need it:
             return v
     if display_name:
-        logpath = norm_makepath(log_dir, display_name) + ".log"
+        session_dir = os.environ.get("XPRA_SESSION_DIR", "")
+        if log_dir == session_dir:
+            logpath = os.path.join(log_dir, "server.log")
+        else:
+            logpath = norm_makepath(log_dir, f"{display_name}.log")
     else:
         logpath = os.path.join(log_dir, f"tmp_{os.getpid()}.log")
     return logpath
