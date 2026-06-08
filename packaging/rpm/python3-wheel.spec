@@ -17,7 +17,7 @@ exit
 
 %global pypi_name wheel
 Name:           %{py3rpmname}-%{pypi_name}
-Release:        2%{?dist}
+Release:        3%{?dist}
 Version:        0.47.0
 Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
@@ -62,6 +62,9 @@ PYTHONPATH="%{buildroot}%{python3_sitelib}" %{python3} ./setup.py install --pref
 # we don't want that unusable egg directory
 mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/%{pypi_name} %{buildroot}%{python3_sitelib}/ || true
 rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
+# setuptools may pull in 'packaging' as a build-time dependency and drop it as
+# a standalone egg - we don't ship it (wheel bundles its own vendored copy):
+rm -fr %{buildroot}%{python3_sitelib}/packaging*egg
 # various files we don't care about,
 # that may get generated on some build variants:
 rm -fr %{buildroot}%{python3_sitelib}/__pycache__
@@ -86,6 +89,9 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 
 
 %changelog
+* Mon Jun 08 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-3
+- remove 'packaging' egg pulled in by setuptools to fix unpackaged-files failure
+
 * Mon Jun 08 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-2
 - convert PEP 639 SPDX license string to legacy table form for centos9's old setuptools
 
