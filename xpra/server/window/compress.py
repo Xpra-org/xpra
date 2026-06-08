@@ -9,7 +9,7 @@ import os
 from math import sqrt, ceil
 from collections import deque
 from dataclasses import dataclass
-from time import monotonic
+from time import monotonic, sleep
 from contextlib import nullcontext
 from typing import ContextManager, Any
 from collections.abc import Callable, Iterable, Sequence
@@ -2932,10 +2932,15 @@ class WindowSource(WindowIconSource):
         data = image.get_pixels()
         if not data:
             raise RuntimeError(f"failed to get pixels from {image}")
-        mmap_data = self._mmap.write_data(data)
-        # elapsed = monotonic()-start+0.000000001 # make sure never zero!
-        # log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
-        #    len(data), 1000*elapsed)
+        for i in range(5):
+            mmap_data = self._mmap.write_data(data)
+            # elapsed = monotonic()-start+0.000000001 # make sure never zero!
+            # log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
+            #    len(data), 1000*elapsed)
+            if mmap_data:
+                break
+            # busy wait in encode thread is OK for mmap:
+            sleep((1 + i * i) / 1000)
         if not mmap_data:
             return ()
         self.global_statistics.mmap_bytes_sent += len(data)
