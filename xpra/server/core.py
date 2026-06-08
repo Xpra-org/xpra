@@ -27,7 +27,7 @@ from xpra.net.common import (
     is_request_allowed, pretty_socket, has_websocket_handler, HttpResponse, Packet,
     FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
 )
-from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, ConnectionMessage
+from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, IP_SOCKTYPES, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -688,7 +688,15 @@ class ServerCore(GLibServer):
             netlog(" add_listen_socket: %s", listener)
             GLib.idle_add(self.add_listen_socket, listener)
             address = listener.address
-            if listener.socktype == "socket" and address:
+            socktype = listener.socktype
+            if socktype in IP_SOCKTYPES and isinstance(address, (tuple, list)) and len(address) >= 2:
+                host, port = address[0], address[1]
+                log.info("listening on %s at %s:%s", socktype, host or "*", port)
+                if host in ("", "*", "0.0.0.0", "::", "::/0"):
+                    # wildcard address: show every interface address it resolved to
+                    for ip in get_all_ips():
+                        log.info("  %s://%s:%s", socktype, ip, port)
+            if socktype == "socket" and address:
                 if address.startswith("@"):
                     # abstract sockets can't be 'touch'ed
                     continue
