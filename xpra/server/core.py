@@ -1040,6 +1040,8 @@ class ServerCore(ServerBaseClass):
                 return False, None, b""
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl", socket_options=socket_options)
             conn.socktype_wrapped = socktype
+            from xpra.net.tls.socket import ssl_handshake
+            ssl_handshake(sock)
             # we cannot peek on SSL sockets, just clear the unencrypted data:
             http = False
             ssl_mode = (socket_options.get("ssl-mode", "") or self.ssl_mode).lower()
