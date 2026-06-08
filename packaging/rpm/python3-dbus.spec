@@ -31,6 +31,7 @@ BuildRequires: %{py3rpmname}-setuptools
 BuildRequires: %{py3rpmname}-wheel
 BuildRequires: autoconf-archive
 BuildRequires: automake
+BuildRequires: make
 BuildRequires: libtool
 
 
@@ -51,10 +52,12 @@ export DBUS_PYTHON_USE_AUTOTOOLS=1
 export PYTHON="%{python3}"
 export PYTHON_VERSION="%{python3_version}"
 NOCONFIGURE=1 ./autogen.sh
+%if 0%{?el8}
 # automake 1.16.1 (RHEL8) ships a py-compile that imports the 'imp' module,
 # which was removed in Python 3.12 - alias it to importlib.util instead
 # (importlib.util.cache_from_source is a drop-in for imp.cache_from_source):
-sed -i 's/import sys, os, py_compile, imp/import sys, os, py_compile, importlib.util as imp/' py-compile
+sed -i 's/import sys, os, py_compile, imp/import sys, os, py_compile, importlib.util as imp/' $(find . -name py-compile)
+%endif
 %configure PYTHON="%{python3}"
 make
 
