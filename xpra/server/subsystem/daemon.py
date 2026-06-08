@@ -81,7 +81,8 @@ class DaemonServer(StubSubsystem):
                     self.errwrite(f"failed to chown the log file {self.log_filename!r}")
                     self.errwrite(f" {e!r}")
         self.stdout, self.stderr = redirect_std_to_log(logfd)
-        self.errwrite(f"Entering daemon mode; any further errors will be reported to:\n  {self.log_filename!r}")
+        self.errwrite("Entering daemon mode; any further errors will be reported to:")
+        self.errwrite(f"  {self.log_filename!r}")
         os.environ["XPRA_SERVER_LOG"] = self.log_filename
         return self.log_dir
 
