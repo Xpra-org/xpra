@@ -83,7 +83,6 @@ def redirect_std_to_log(logfd: int) -> tuple:
 
 
 def daemonize() -> None:
-    os.chdir("/")
     if os.fork():
         os._exit(0)  # pylint: disable=protected-access
     os.setsid()
