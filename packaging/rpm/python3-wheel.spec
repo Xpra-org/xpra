@@ -17,7 +17,7 @@ exit
 
 %global pypi_name wheel
 Name:           %{py3rpmname}-%{pypi_name}
-Release:        1%{?dist}
+Release:        3%{?dist}
 Version:        0.47.0
 Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
@@ -48,6 +48,9 @@ if [ "${sha256}" != "cc72bd1009ba0cf63922e28f94d9d83b920aa2bb28f798a31d0691b02fa
 	exit 1
 fi
 %autosetup -n %{pypi_name}-%{version} -p1
+# centos9's old setuptools cannot parse the PEP 639 SPDX license string,
+# convert it to the legacy table form which both old and new setuptools accept:
+sed -i 's/^license = "MIT"$/license = {text = "MIT"}/' pyproject.toml
 
 
 %build
@@ -59,6 +62,15 @@ PYTHONPATH="%{buildroot}%{python3_sitelib}" %{python3} ./setup.py install --pref
 # we don't want that unusable egg directory
 mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/%{pypi_name} %{buildroot}%{python3_sitelib}/ || true
 rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
+%if 0%{?el8}
+# on el8 the old python3.12-setuptools (< 70.1) lacks an integrated bdist_wheel,
+# so wheel falls back to its own _bdist_wheel which does "from packaging import
+# tags" - but no 'packaging' is available for this python. setuptools drops it
+# here as a standalone egg, so install it alongside wheel instead of discarding
+# it, otherwise downstream "from wheel.bdist_wheel import ..." fails:
+mv %{buildroot}%{python3_sitelib}/packaging*egg/packaging %{buildroot}%{python3_sitelib}/ || true
+rm -fr %{buildroot}%{python3_sitelib}/packaging*egg
+%endif
 # various files we don't care about,
 # that may get generated on some build variants:
 rm -fr %{buildroot}%{python3_sitelib}/__pycache__
@@ -80,9 +92,20 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 %doc README.rst
 %{_bindir}/%{pypi_name}*
 %{python3_sitelib}/%{pypi_name}/
+%if 0%{?el8}
+# 'packaging' is required by wheel at runtime and not available separately
+# for this python on el8, so it is shipped here (see %%install):
+%{python3_sitelib}/packaging/
+%endif
 
 
 %changelog
+* Mon Jun 08 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-3
+- ship 'packaging' on el8 (required by wheel at runtime, no separate package there)
+
+* Mon Jun 08 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-2
+- convert PEP 639 SPDX license string to legacy table form for centos9's old setuptools
+
 * Fri May 08 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-1
 - new upstream release
 
