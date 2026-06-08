@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import struct
 from typing import Any
 from io import BytesIO
 from collections.abc import Sequence, Callable
@@ -251,6 +252,22 @@ def w_to_utf8(data):
     return b
 
 
+def parse_CF_HDROP(data: bytes) -> list[str]:
+    # parse a Windows ``CF_HDROP`` clipboard payload into a list of file paths.
+    # the data starts with a ``DROPFILES`` structure:
+    #   DWORD pFiles;  // byte offset to the file list
+    #   POINT pt;      // 2 x LONG  (8 bytes, unused here)
+    #   BOOL  fNC;     //           (4 bytes, unused here)
+    #   BOOL  fWide;   // file names are UTF-16 when true, otherwise ANSI
+    if len(data) < 20:
+        raise ValueError(f"CF_HDROP data too short: {len(data)} bytes")
+    offset, fwide = struct.unpack_from("<I12xI", data)
+    names = data[offset:]
+    # the names are NUL-separated and the list is terminated by a double NUL:
+    text = names.decode("utf-16-le" if fwide else "mbcs", "replace")
+    return [name for name in text.split("\0") if name]
+
+
 def data_to_bitmap(img_data) -> HBITMAP:
     from PIL import Image
     buf = BytesIO(img_data)
@@ -368,6 +385,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 # if any(x in fnames for x in ("CF_DIB", "CF_BITMAP", "CF_DIBV5")):
                 if "CF_DIBV5" in fnames:
                     targets += ["image/png", "image/jpeg"]
+                if win32con.CF_HDROP in formats:
+                    targets.append("text/uri-list")
                 log("targets(%s)=%s", csv(fnames), csv(targets))
                 got_contents("ATOM", 32, targets)
                 return True
@@ -391,6 +410,17 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
             img_format = target.split("/")[-1].upper()  # ie: "PNG" or "JPEG"
             self.get_clipboard_image(img_format, got_image, nodata)
+            return
+        if target == "text/uri-list":
+            def got_uris(paths) -> None:
+                log("got_uris(%s)", paths)
+                from urllib.request import pathname2url
+                # RFC 2483 text/uri-list: CRLF separated file:// URIs:
+                uri_list = "\r\n".join("file:" + pathname2url(path) for path in paths)
+                data = filter_data(dtype=target, dformat=8, data=uri_list.encode("utf-8"))
+                got_contents(target, 8, data)
+
+            self.get_clipboard_uris(got_uris, nodata)
             return
         if target not in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
             # we don't know how to handle this target,
@@ -478,6 +508,36 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 GlobalUnlock(data)
 
         self.with_clipboard_lock(got_clipboard_lock, errback)
+
+    def get_clipboard_uris(self, callback: Callable[[list[str]], None], errback: Callable[[str], None]):
+        def get_uris() -> bool:
+            if win32con.CF_HDROP not in get_clipboard_formats():
+                errback("no CF_HDROP format available")
+                return True
+            data_handle = GetClipboardData(win32con.CF_HDROP)
+            log("GetClipboardData(CF_HDROP)=%#x", data_handle or 0)
+            if not data_handle:
+                log("no CF_HDROP data handle (may try again)")
+                return False
+            size = GlobalSize(data_handle)
+            data = GlobalLock(data_handle)
+            if not data:
+                log("failed to lock CF_HDROP handle %#x (may try again)", data_handle)
+                return False
+            try:
+                hdrop = bytes((c_char * size).from_address(data))
+            finally:
+                GlobalUnlock(data)
+            try:
+                paths = parse_CF_HDROP(hdrop)
+            except ValueError as e:
+                log("parse_CF_HDROP(%s)", Ellipsizer(hdrop), exc_info=True)
+                errback(str(e))
+                return True
+            callback(paths)
+            return True
+
+        self.with_clipboard_lock(get_uris, errback)
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         # the remote end now owns the clipboard
