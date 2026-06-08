@@ -862,7 +862,7 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         return LIBVA_ENC_ERROR;
     }
 
-    libva_log("libva %s encoder create: %dx%d surface=%dx%d level=%d poc=%d aud-tail=%d quality=%d speed=%d qp=%d qindex=%d device=%s vendor=%s",
+    libva_log("libva %s encoder create: %dx%d surface=%dx%d level=%d poc=%d aud=%d quality=%d speed=%d qp=%d qindex=%d device=%s vendor=%s",
               codec_name(enc->codec), width, height, enc->surface_width, enc->surface_height,
               enc->codec == LIBVA_CODEC_H264 ? h264_level_idc(enc) : 0,
               enc->codec == LIBVA_CODEC_H264 ? LIBVA_H264_POC_TYPE : 0,
@@ -970,22 +970,26 @@ static LibVAEncodeStatus append_coded_buffer(LibVAEncoder *enc, VABufferID coded
     return LIBVA_ENC_OK;
 }
 
-static LibVAEncodeStatus append_h264_trailing_aud(LibVAEncoder *enc, LibVAEncodedFrame *frame, int next_is_idr) {
+static LibVAEncodeStatus prepend_h264_aud(LibVAEncoder *enc, LibVAEncodedFrame *frame, int is_idr) {
     uint8_t aud[8];
     int aud_size;
 
     if (!enc || enc->codec != LIBVA_CODEC_H264 || !frame || !frame->data)
         return LIBVA_ENC_OK;
-    aud_size = make_aud(aud, sizeof(aud), next_is_idr);
+    /* an AUD must be the first NAL unit of the access unit it delimits:
+     * a trailing AUD logically belongs to the next access unit and makes
+     * low-latency decoders (openh264 DecodeFrameNoDelay) hold the frame back */
+    aud_size = make_aud(aud, sizeof(aud), is_idr);
     if (aud_size <= 0)
         return LIBVA_ENC_ERROR;
     if ((size_t)frame->size + (size_t)aud_size > enc->bitstream_size) {
         snprintf(enc->last_error, sizeof(enc->last_error),
-                 "not enough room for trailing H.264 AUD: %d + %d > %zu",
+                 "not enough room for leading H.264 AUD: %d + %d > %zu",
                  frame->size, aud_size, enc->bitstream_size);
         return LIBVA_ENC_ERROR;
     }
-    memcpy(enc->bitstream_data + frame->size, aud, (size_t)aud_size);
+    memmove(enc->bitstream_data + aud_size, enc->bitstream_data, (size_t)frame->size);
+    memcpy(enc->bitstream_data, aud, (size_t)aud_size);
     frame->size += aud_size;
     return LIBVA_ENC_OK;
 }
@@ -1257,7 +1261,7 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     destroy_buffers(enc, buffers, nbuf);
     if (estatus != LIBVA_ENC_OK)
         return estatus;
-    estatus = append_h264_trailing_aud(enc, frame, (enc->frames + 1) % LIBVA_IDR_INTERVAL == 0);
+    estatus = prepend_h264_aud(enc, frame, is_idr);
     if (estatus != LIBVA_ENC_OK)
         return estatus;
     log_h264_nals(enc, frame);
