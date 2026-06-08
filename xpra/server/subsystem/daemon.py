@@ -45,11 +45,14 @@ class DaemonServer(StubSubsystem):
         self.log_file = str(opts.log_file or "")
         self.uid = int(opts.uid)
         self.gid = int(opts.gid)
-        if pidfile and (pidfile != self.pidfile or not self.pidinode):
-            self.pidfile = pidfile
-            self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
-        else:
-            self.pidfile = pidfile
+        self.pidfile = pidfile
+
+    def errwrite(self, msg: str):
+        noerr(self.stderr.write, f"{msg}\n")
+        noerr(self.stderr.flush)
+
+    def write_pid(self) -> None:
+        self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
 
     def setup_log(self, start_vfb: bool, log_to_file: bool, display_name: str,
                   extra_expand: dict[str, str]) -> str:
@@ -75,12 +78,10 @@ class DaemonServer(StubSubsystem):
                 try:
                     os.fchown(logfd, self.uid, self.gid)
                 except OSError as e:
-                    noerr(self.stderr.write, f"failed to chown the log file {self.log_filename!r}\n")
-                    noerr(self.stderr.write, f" {e!r}\n")
-                    noerr(self.stderr.flush)
+                    self.errwrite(f"failed to chown the log file {self.log_filename!r}")
+                    self.errwrite(f" {e!r}")
         self.stdout, self.stderr = redirect_std_to_log(logfd)
-        noerr(self.stderr.write, f"Entering daemon mode; any further errors will be reported to:\n  {self.log_filename!r}\n")
-        noerr(self.stderr.flush)
+        self.errwrite(f"Entering daemon mode; any further errors will be reported to:\n  {self.log_filename!r}")
         os.environ["XPRA_SERVER_LOG"] = self.log_filename
         return self.log_dir
 
@@ -104,19 +105,16 @@ class DaemonServer(StubSubsystem):
         if not self.log_dir_option or self.log_dir_option.lower() == "auto":
             self.log_dir = session_dir
         if self.daemon and old_session_dir != session_dir:
-            noerr(self.stderr.write, f"Actual session directory is now: {session_dir!r}\n")
-            noerr(self.stderr.flush)
+            self.errwrite(f"Actual session directory is now: {session_dir!r}")
 
     def display_name_changed(self, display_name: str) -> None:
         if WIN32 and os.environ.get("XPRA_LOG_FILENAME"):
             os.environ["XPRA_SERVER_LOG"] = os.environ["XPRA_LOG_FILENAME"]
         if not self.daemon:
             return
-        stderr = self.stderr
         if self.display_name != display_name:
             # This may be used by scripts, let's try not to change it.
-            noerr(stderr.write, f"Actual display used: {display_name}\n")
-            noerr(stderr.flush)
+            self.errwrite(f"Actual display used: {display_name}")
         from xpra.util.daemon import select_log_file
         username = get_username_for_uid(self.uid)
         new_log_filename = osexpand(select_log_file(self.log_dir, self.log_file, display_name),
@@ -133,10 +131,9 @@ class DaemonServer(StubSubsystem):
                 except OSError:
                     pass
             os.environ["XPRA_SERVER_LOG"] = new_log_filename
-            noerr(stderr.write, f"Actual log file name is now: {new_log_filename!r}\n")
-            noerr(stderr.flush)
+            self.errwrite(f"Actual log file name is now: {new_log_filename!r}")
         noerr(self.stdout.close)
-        noerr(stderr.close)
+        noerr(self.stderr.close)
         self.log_filename = new_log_filename
         self.display_name = display_name
 

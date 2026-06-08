@@ -32,7 +32,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import POSIX, WIN32, OSX, getuid, get_hex_uuid
 from xpra.util.str_fn import nicestr, csv
 from xpra.util.io import stderr_print
-from xpra.util.env import envbool, envint, get_saved_env, get_saved_env_var, OSEnvContext
+from xpra.util.env import envbool, envint, osexpand, get_saved_env, get_saved_env_var, OSEnvContext
 from xpra.util.child_reaper import get_child_reaper
 from xpra.platform.dotxpra import DotXpra
 
@@ -588,9 +588,13 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         daemon.init(opts)
         extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
         daemon.setup_log(start_vfb, log_to_file, display_name, extra_expand)
+        daemon.write_pid()
     else:
         from xpra.server.subsystem.daemon import DaemonServer
         DaemonServer.get_server_log_dir(start_vfb, log_to_file, opts.log_dir or "")
+        from xpra.util.pid import write_pidfile
+        pidfile = osexpand(opts.pidfile)
+        write_pidfile(os.path.normpath(pidfile))
     log("env=%s", os.environ)
 
     progress(30, "creating network sockets")

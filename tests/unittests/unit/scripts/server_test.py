@@ -54,7 +54,7 @@ class TestMain(unittest.TestCase):
             assert DaemonServer.get_server_log_dir(True, False, "auto") == "/session"
             assert os.environ["XPRA_LOG_DIR"] == "/session"
 
-    def test_daemon_init_is_idempotent(self):
+    def test_daemon_init_does_not_write_pidfile(self):
         from xpra.server.subsystem.daemon import DaemonServer
         opts = SimpleNamespace(
             pidfile="/tmp/xpra-test.pid",
@@ -68,6 +68,8 @@ class TestMain(unittest.TestCase):
         with patch("xpra.server.subsystem.daemon.write_pidfile", return_value=123) as write_pidfile:
             daemon.init(opts)
             daemon.init(opts)
+            write_pidfile.assert_not_called()
+            daemon.write_pid()
         write_pidfile.assert_called_once_with("/tmp/xpra-test.pid")
         assert daemon.daemon is True
         assert daemon.pidinode == 123
