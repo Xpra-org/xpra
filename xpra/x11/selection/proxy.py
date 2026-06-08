@@ -451,6 +451,10 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
 
         def got_targets(dtype: str, dformat: int, data: Any) -> None:
+            if not dtype:
+                log("get targets failed, so we don't own the clipboard any more")
+                # don't emit the token:
+                return
             assert dtype == "ATOM" and dformat == 32
             self.targets = xatoms_to_strings(data)
             log("got_targets: %s", self.targets)
