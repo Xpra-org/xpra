@@ -62,9 +62,15 @@ PYTHONPATH="%{buildroot}%{python3_sitelib}" %{python3} ./setup.py install --pref
 # we don't want that unusable egg directory
 mv %{buildroot}%{python3_sitelib}/%{pypi_name}*egg/%{pypi_name} %{buildroot}%{python3_sitelib}/ || true
 rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}*egg
-# setuptools may pull in 'packaging' as a build-time dependency and drop it as
-# a standalone egg - we don't ship it (wheel bundles its own vendored copy):
+%if 0%{?el8}
+# on el8 the old python3.12-setuptools (< 70.1) lacks an integrated bdist_wheel,
+# so wheel falls back to its own _bdist_wheel which does "from packaging import
+# tags" - but no 'packaging' is available for this python. setuptools drops it
+# here as a standalone egg, so install it alongside wheel instead of discarding
+# it, otherwise downstream "from wheel.bdist_wheel import ..." fails:
+mv %{buildroot}%{python3_sitelib}/packaging*egg/packaging %{buildroot}%{python3_sitelib}/ || true
 rm -fr %{buildroot}%{python3_sitelib}/packaging*egg
+%endif
 # various files we don't care about,
 # that may get generated on some build variants:
 rm -fr %{buildroot}%{python3_sitelib}/__pycache__
@@ -86,11 +92,16 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 %doc README.rst
 %{_bindir}/%{pypi_name}*
 %{python3_sitelib}/%{pypi_name}/
+%if 0%{?el8}
+# 'packaging' is required by wheel at runtime and not available separately
+# for this python on el8, so it is shipped here (see %%install):
+%{python3_sitelib}/packaging/
+%endif
 
 
 %changelog
 * Mon Jun 08 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-3
-- remove 'packaging' egg pulled in by setuptools to fix unpackaged-files failure
+- ship 'packaging' on el8 (required by wheel at runtime, no separate package there)
 
 * Mon Jun 08 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-2
 - convert PEP 639 SPDX license string to legacy table form for centos9's old setuptools
