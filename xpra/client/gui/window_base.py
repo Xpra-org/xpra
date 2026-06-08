@@ -420,7 +420,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             ignorewarnings(self.set_opacity, opacity)
 
         if "has-alpha" in metadata:
-            self.alpha(metadata.boolget("has-alpha"))
+            self.set_has_alpha(metadata.boolget("has-alpha"))
 
         if "maximized" in metadata:
             self.set_maximized(metadata.boolget("maximized"))
