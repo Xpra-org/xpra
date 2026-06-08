@@ -7,7 +7,7 @@ import os
 import sys
 
 from xpra.os_util import POSIX
-from xpra.platform.dotxpra import norm_makepath
+from xpra.platform.dotxpra import norm_makefilename
 from xpra.scripts.config import InitException
 from xpra.util.env import shellsub
 from xpra.util.io import get_util_logger
@@ -50,7 +50,7 @@ def select_log_file(log_dir: str, log_file: str, display_name: str) -> str:
         if log_dir == session_dir:
             logpath = os.path.join(log_dir, "server.log")
         else:
-            logpath = norm_makepath(log_dir, f"{display_name}.log")
+            logpath = os.path.join(log_dir, norm_makefilename(f"{display_name}.log"))
     else:
         logpath = os.path.join(log_dir, f"tmp_{os.getpid()}.log")
     return logpath

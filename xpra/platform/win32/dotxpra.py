@@ -18,7 +18,7 @@ PIPE_ROOT = "\\\\"
 PIPE_PATH = "%s.\\pipe\\" % PIPE_ROOT
 
 
-def norm_makepath(dirpath: str, name: str):
+def norm_makefilename(name: str):
     return PIPE_PATH + PIPE_PREFIX + name.lstrip(":")
 
 
@@ -43,7 +43,7 @@ class DotXpra:
         return [self.socket_path(local_display_name)]
 
     def socket_path(self, local_display_name: str) -> str:
-        return norm_makepath("", local_display_name)
+        return norm_makefilename(local_display_name)
 
     def get_display_state(self, display: str) -> SocketState:
         return self.get_server_state(PIPE_PREFIX + display)

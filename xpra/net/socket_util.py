@@ -749,7 +749,7 @@ def can_use_socket_path(path: str, uid: int, gid: int) -> bool:
 
 def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotxpra,
                        uid: int, gid: int) -> dict[str, dict[str, Any]]:
-    from xpra.platform.dotxpra import norm_makepath, strip_display_prefix
+    from xpra.platform.dotxpra import norm_makefilename, strip_display_prefix
     log = get_network_logger()
     sockpaths = {}
     log(f"get_bind_sockpaths: bind={bind}, dotxpra={dotxpra}")
@@ -798,7 +798,7 @@ def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotx
                 sockpath = os.path.abspath(sockpath)
                 if not os.path.exists(sockpath):
                     os.makedirs(sockpath)
-                sockpath = norm_makepath(sockpath, display_name)
+                sockpath = os.path.join(sockpath, norm_makefilename(display_name))
             elif not os.path.isabs(sockpath):
                 sockpath = dotxpra.socket_path(sockpath)
             sockpaths[sockpath] = options

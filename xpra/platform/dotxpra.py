@@ -20,8 +20,8 @@ from xpra.platform import platform_import
 DISPLAY_PREFIX = ":"
 
 
-def norm_makepath(dirpath: str, name: str) -> str:
-    return os.path.join(dirpath, PREFIX + strip_display_prefix(name))
+def norm_makefilename(name: str) -> str:
+    return PREFIX + strip_display_prefix(name)
 
 
 def strip_display_prefix(s: str) -> str:
@@ -86,11 +86,11 @@ class DotXpra:
         return osexpand(path, self.username, uid=self.uid, gid=self.gid)
 
     def norm_socket_paths(self, local_display_name: str) -> list[str]:
-        return [norm_makepath(x, local_display_name) for x in self._sockdirs]
+        return [os.path.join(x, norm_makefilename(local_display_name)) for x in self._sockdirs]
 
     def socket_path(self, local_display_name: str) -> str:
         sockdir = self._sockdirs[0] if self._sockdirs else "undefined"
-        return norm_makepath(sockdir, local_display_name)
+        return os.path.join(sockdir, norm_makefilename(local_display_name))
 
     def get_server_state(self, sockpath: str, timeout=5) -> SocketState:
         saved_sockpath = sockpath
@@ -260,4 +260,4 @@ class DotXpra:
 platform_import(globals(), "dotxpra", False,
                 "DotXpra",
                 "DISPLAY_PREFIX",
-                "norm_makepath")
+                "norm_makefilename")
