@@ -241,12 +241,19 @@ class ShadowServer(ShadowServerBase):
         """
         try:
             from xpra.platform.win32.parsecvdd import query_device_status, DeviceStatus
+        except ImportError as e:
+            screenlog("parsecvdd is not available: %s", e)
+            return
+        try:
             status = query_device_status()
-        except Exception:
-            screenlog("VDD availability probe failed", exc_info=True)
+        except Exception as e:
+            screenlog("query_device_status", exc_info=True)
+            screenlog.error("Error: VDD availability probe failed")
+            screenlog.estr(e)
             return
         if status != DeviceStatus.OK:
-            vddlog("Parsec VDD not available (status=%s), monitor add/remove disabled", status.name)
+            vddlog.info("Parsec VDD not available (status=%s), monitor add/remove disabled", status.name)
+            vddlog.info(" you may want to install https://github.com/nomi-san/parsec-vdd to support virtual monitors")
             return
         self._vdd_multimonitor = True
         vddlog.info("Parsec VDD detected: clients can add and remove virtual monitors")
