@@ -43,8 +43,18 @@ GLib = gi_import("GLib")
 
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
 NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
+DXGI = envbool("XPRA_SHADOW_DXGI", True)
 GDI = envbool("XPRA_SHADOW_GDI", True)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
+
+
+def check_dxgi() -> bool:
+    if not DXGI:
+        return False
+    from xpra.platform.win32.d3d11.capture import get_capture_instance
+    if not get_capture_instance:
+        raise ImportError("get_capture_instance")
+    return DXGI
 
 
 def check_gstreamer_d3d11() -> bool:
@@ -113,6 +123,7 @@ def check_gtk() -> bool:
 SHADOW_OPTIONS = {
     "auto": lambda: True,
     "nvfbc": check_nvfbc,
+    "dxgi": check_dxgi,
     "gstreamer": check_gstreamer,
     "gdi": check_gdi,
     "gtk": check_gtk,
@@ -160,6 +171,14 @@ def setup_gstreamer_capture(w: int, h: int, pixel_depth=32):
 
 
 # noinspection PyUnusedLocal
+def setup_dxgi_capture(w: int, h: int, pixel_depth=32):
+    from xpra.platform.win32.d3d11.capture import get_capture_instance
+    capture = get_capture_instance(output_index=0)
+    capture.refresh()
+    return capture
+
+
+# noinspection PyUnusedLocal
 def setup_gdi_capture(w: int, h: int, pixel_depth=32):
     from xpra.platform.win32.gdi_screen_capture import GDICapture
     return GDICapture()
@@ -173,6 +192,7 @@ def setup_gtk_capture(w: int, h: int, pixel_depth=32):
 
 CAPTURE_BACKENDS: dict[str, Callable] = {
     "nvfbc": setup_nvfbc_capture,
+    "dxgi": setup_dxgi_capture,
     "gstreamer": setup_gstreamer_capture,
     "gdi": setup_gdi_capture,
     "gtk": setup_gtk_capture,

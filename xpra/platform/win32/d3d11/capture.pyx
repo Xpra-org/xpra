@@ -245,6 +245,22 @@ cdef extern from *:
         }
     }
 
+    /* ---- Desktop position of a DXGI output ---- */
+    typedef struct { int x; int y; } OutputPos;
+
+    static OutputPos xpra_get_output_pos(void *output1)
+    {
+        DXGI_OUTPUT_DESC desc;
+        OutputPos pos = {0, 0};
+        HRESULT hr = ((IDXGIOutput *)output1)->lpVtbl->GetDesc(
+            (IDXGIOutput *)output1, &desc);
+        if (SUCCEEDED(hr)) {
+            pos.x = desc.DesktopCoordinates.left;
+            pos.y = desc.DesktopCoordinates.top;
+        }
+        return pos;
+    }
+
     /* ---- HRESULT helpers ---- */
     typedef struct { HRESULT hr; } HROnly;
     """
@@ -290,6 +306,11 @@ cdef extern from *:
     void xpra_unmap_staging(void *context, void *staging)
     void xpra_com_release(void *obj)
 
+    ctypedef struct OutputPos:
+        int x
+        int y
+    OutputPos xpra_get_output_pos(void *output1)
+
 
 # DXGI format -> (pixel_format_string, bit_depth)
 # DXGI_FORMAT values as integers to avoid cimport dependency on device.pyx
@@ -330,11 +351,15 @@ cdef class DXGICapture:
     cdef int      _depth
     cdef int      _has_frame
     cdef int      _output_index
+    cdef int      _output_x      # left edge of this output in the virtual desktop
+    cdef int      _output_y      # top edge of this output in the virtual desktop
     cdef uint32_t _dxgi_format
     cdef str      _pixel_format
 
     def __init__(self, output_index: int = 0):
         self._output_index = output_index
+        self._output_x = 0
+        self._output_y = 0
         self._has_frame = 0
 
     def __repr__(self) -> str:
@@ -359,6 +384,10 @@ cdef class DXGICapture:
             raise RuntimeError("failed to get IDXGIOutput1 for output %d: %#x" % (
                 self._output_index, <unsigned int> hr))
 
+        cdef OutputPos pos = xpra_get_output_pos(output1)
+        self._output_x = pos.x
+        self._output_y = pos.y
+
         hr = xpra_duplicate_output(output1, self._device, &self._duplication)
         xpra_com_release(output1)
         if hr or not self._duplication:
@@ -374,8 +403,9 @@ cdef class DXGICapture:
             raise RuntimeError("unsupported DXGI format: %d" % desc.format)
         self._pixel_format, self._depth = fmt_info
 
-        log("DXGI output %d: %dx%d format=%d -> %s depth=%d",
+        log("DXGI output %d: %dx%d at (%d,%d) format=%d -> %s depth=%d",
             self._output_index, self._width, self._height,
+            self._output_x, self._output_y,
             desc.format, self._pixel_format, self._depth)
 
         hr = xpra_create_staging(self._device,
@@ -397,6 +427,8 @@ cdef class DXGICapture:
             "type":         "dxgi",
             "width":        self._width,
             "height":       self._height,
+            "x":            self._output_x,
+            "y":            self._output_y,
             "pixel-format": self._pixel_format,
             "depth":        self._depth,
             "output":       self._output_index,
@@ -464,6 +496,10 @@ cdef class DXGICapture:
             width = self._width
         if height == 0:
             height = self._height
+
+        # Shadow server passes global desktop coordinates; translate to output-local.
+        x -= self._output_x
+        y -= self._output_y
 
         # Clamp to output dimensions
         if x < 0:
