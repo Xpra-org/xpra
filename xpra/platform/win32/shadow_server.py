@@ -251,9 +251,12 @@ class ShadowServer(ShadowServerBase):
             screenlog.error("Error: VDD availability probe failed")
             screenlog.estr(e)
             return
-        if status != DeviceStatus.OK:
-            vddlog.info("Parsec VDD not available (status=%s), monitor add/remove disabled", status.name)
+        if status == DeviceStatus.NOT_INSTALLED:
+            vddlog.info("Parsec VDD is not available", status.name)
             vddlog.info(" you may want to install https://github.com/nomi-san/parsec-vdd to support virtual monitors")
+            return
+        if status != DeviceStatus.OK:
+            vddlog.warn("Warning: Parsec VDD not available (status=%s), monitor add/remove disabled", status.name)
             return
         self._vdd_multimonitor = True
         vddlog.info("Parsec VDD detected: clients can add and remove virtual monitors")

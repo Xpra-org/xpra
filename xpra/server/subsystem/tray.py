@@ -11,7 +11,7 @@ from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.env import SilenceWarningsContext
 from xpra.common import noop
 from xpra.constants import XPRA_APP_ID
-from xpra.os_util import POSIX, OSX, gi_import
+from xpra.os_util import POSIX, OSX, gi_import, WIN32
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -131,10 +131,31 @@ class TrayMenu(StubSubsystem):
         self.add_tray_menu_items(tray_menu)
         tray_menu.append(traymenuitem("Exit", "quit.png", cb=self.tray_exit_callback))
         tray_menu.append(traymenuitem("Close Menu", "close.png", cb=self.close_tray_menu))
+        if WIN32 and not self.parsec_vdd_installed():
+            # parsec-vdd provides virtual monitor support on win32,
+            # if it is not installed offer a menu entry pointing to its releases page:
+            def open_parsec_vdd(*_args) -> None:
+                import webbrowser  # pylint: disable=import-outside-toplevel
+                webbrowser.open_new_tab("https://github.com/nomi-san/parsec-vdd/releases")
+            tray_menu.append(traymenuitem("Add Virtual Monitor Support", "display.png",
+                                          tooltip="Install parsec-vdd to enable virtual monitors",
+                                          cb=open_parsec_vdd))
         # maybe add: session info, clipboard, sharing, etc
         # control: disconnect clients
         tray_menu.connect("deactivate", self.tray_menu_deactivated)
         return tray_menu
+
+    def parsec_vdd_installed(self) -> bool:
+        # pylint: disable=import-outside-toplevel
+        try:
+            from xpra.platform.win32.parsecvdd import query_device_status, DeviceStatus
+            status = query_device_status()
+            log("parsec-vdd device status=%s", status)
+            return status != DeviceStatus.NOT_INSTALLED
+        except Exception:
+            log("failed to query parsec-vdd device status", exc_info=True)
+            # assume it is installed so we don't show a misleading menu entry:
+            return True
 
     def add_tray_menu_items(self, tray_menu):
         if not features.window:
