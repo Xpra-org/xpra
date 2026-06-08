@@ -54,6 +54,60 @@ class TestMain(unittest.TestCase):
             assert DaemonServer.get_server_log_dir(True, False, "auto") == "/session"
             assert os.environ["XPRA_LOG_DIR"] == "/session"
 
+    def test_daemon_init_is_idempotent(self):
+        from xpra.server.subsystem.daemon import DaemonServer
+        opts = SimpleNamespace(
+            pidfile="/tmp/xpra-test.pid",
+            daemon=True,
+            log_dir="auto",
+            log_file="",
+            uid=os.getuid(),
+            gid=os.getgid(),
+        )
+        daemon = DaemonServer()
+        with patch("xpra.server.subsystem.daemon.write_pidfile", return_value=123) as write_pidfile:
+            daemon.init(opts)
+            daemon.init(opts)
+        write_pidfile.assert_called_once_with("/tmp/xpra-test.pid")
+        assert daemon.daemon is True
+        assert daemon.pidinode == 123
+
+    def test_daemon_session_dir_changed_logs_final_dir(self):
+        from xpra.server.subsystem.daemon import DaemonServer
+        daemon = DaemonServer()
+        daemon.daemon = True
+        daemon.session_dir = "/run/user/1000/xpra/S123"
+        daemon.stderr = StringIO()
+        daemon.session_dir_changed("/run/user/1000/xpra/42")
+        assert daemon.log_dir == "/run/user/1000/xpra/42"
+        assert daemon.stderr.getvalue() == "Actual session directory is now: '/run/user/1000/xpra/42'\n"
+
+    def test_non_daemon_session_dir_changed_is_quiet(self):
+        from xpra.server.subsystem.daemon import DaemonServer
+        daemon = DaemonServer()
+        daemon.session_dir = "/run/user/1000/xpra/S123"
+        daemon.stderr = StringIO()
+        daemon.session_dir_changed("/run/user/1000/xpra/42")
+        assert daemon.stderr.getvalue() == ""
+
+    def test_daemon_display_name_changed_reports_display(self):
+        from xpra.server.subsystem.daemon import DaemonServer
+
+        class NonClosingStringIO(StringIO):
+            def close(self):
+                pass
+
+        daemon = DaemonServer()
+        daemon.daemon = True
+        daemon.display_name = "S123"
+        daemon.log_filename = "/run/user/1000/xpra/42/log"
+        daemon.stdout = NonClosingStringIO()
+        daemon.stderr = NonClosingStringIO()
+        with patch("xpra.server.subsystem.daemon.get_username_for_uid", return_value="user"), \
+                patch("xpra.util.daemon.select_log_file", return_value=daemon.log_filename):
+            daemon.display_name_changed(":42")
+        assert daemon.stderr.getvalue() == "Actual display used: :42\n"
+
     def test_setup_pam_session_disabled(self):
         with patch("xpra.server.subsystem.process.POSIX", True), \
                 patch("xpra.server.subsystem.process.envbool", return_value=False):

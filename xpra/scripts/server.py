@@ -583,6 +583,9 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
 
     log_to_file = opts.daemon or envbool("XPRA_LOG_TO_FILE")
     if daemon := app.get_subsystem("daemon"):
+        # The daemon subsystem normally gets initialized by app.init(), but we
+        # need its opts.daemon state before VFB display-name callbacks fire.
+        daemon.init(opts)
         extra_expand = {"TIMESTAMP": datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
         daemon.setup_log(start_vfb, log_to_file, display_name, extra_expand)
     else:

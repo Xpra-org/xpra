@@ -30,6 +30,7 @@ class DaemonServer(StubSubsystem):
         self.log_dir = ""
         self.log_filename = ""
         self.display_name = ""
+        self.session_dir = ""
         self.uid = 0
         self.gid = 0
         self.extra_expand: dict[str, str] = {}
@@ -38,19 +39,23 @@ class DaemonServer(StubSubsystem):
 
     def init(self, opts) -> None:
         log("DaemonServer.init(%s)", opts)
-        self.pidfile = osexpand(opts.pidfile)
+        pidfile = osexpand(opts.pidfile)
         self.daemon = bool(opts.daemon)
         self.log_dir_option = str(opts.log_dir or "")
         self.log_file = str(opts.log_file or "")
         self.uid = int(opts.uid)
         self.gid = int(opts.gid)
-        if self.pidfile:
+        if pidfile and (pidfile != self.pidfile or not self.pidinode):
+            self.pidfile = pidfile
             self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
+        else:
+            self.pidfile = pidfile
 
     def setup_log(self, start_vfb: bool, log_to_file: bool, display_name: str,
                   extra_expand: dict[str, str]) -> str:
         self.display_name = display_name
         self.extra_expand = extra_expand
+        self.session_dir = os.environ.get("XPRA_SESSION_DIR", "")
         self.log_dir = self.get_server_log_dir(start_vfb, log_to_file, self.log_dir_option)
         if not log_to_file:
             os.environ.pop("XPRA_SERVER_LOG", None)
@@ -94,8 +99,13 @@ class DaemonServer(StubSubsystem):
         self.log_dir = log_dir
 
     def session_dir_changed(self, session_dir: str) -> None:
+        old_session_dir = self.session_dir
+        self.session_dir = session_dir
         if not self.log_dir_option or self.log_dir_option.lower() == "auto":
             self.log_dir = session_dir
+        if self.daemon and old_session_dir != session_dir:
+            noerr(self.stderr.write, f"Actual session directory is now: {session_dir!r}\n")
+            noerr(self.stderr.flush)
 
     def display_name_changed(self, display_name: str) -> None:
         if WIN32 and os.environ.get("XPRA_LOG_FILENAME"):
