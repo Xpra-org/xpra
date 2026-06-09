@@ -1,0 +1,16 @@
+# default python3:
+fake-cuda
+xorg-x11-drv-dummy
+gstreamer1-plugin-timestamp
+
+
+# default python:
+python3-cython
+python3-pycuda
+python3-pynvml
+python3-pyu2f
+python3-uinput
+python3-pylsqpack
+python3-aioquic
+python3-pyopengl
+xpra
