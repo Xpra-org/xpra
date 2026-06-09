@@ -21,13 +21,13 @@
 %define python3_version                3.8
 
 Name:           python3-gobject
-Version:        3.55.3
+Version:        3.56.3
 Release:        1%{?dist}
 Summary:        Python bindings for GObject Introspection
 
 License:        LGPL-2.1-or-later
 URL:            https://wiki.gnome.org/Projects/PyGObject
-Source0:        https://download.gnome.org/sources/pygobject/3.55/pygobject-%{version}.tar.gz
+Source0:        https://download.gnome.org/sources/pygobject/3.56/pygobject-%{version}.tar.gz
 
 BuildRequires:  pkgconfig(cairo-gobject)
 BuildRequires:  pkgconfig(glib-2.0) >= %{glib2_version}
@@ -71,7 +71,7 @@ This package contains files required to embed PyGObject
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "14f52750312bd689dde3a75e968849e3e16c4a0803f1c7734dffb00a1c847af9" ]; then
+if [ "${sha256}" != "12760e4a0e3d04b6eb95e06f7a27e362c826d567ea613373a92c003b6c70d2d6" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -105,5 +105,8 @@ fi
 %{_libdir}/pkgconfig/pygobject-3.0.pc
 
 %changelog
+* Tue Jun 09 2026 Antoine Martin <antoine@xpra.org> - 3.56.3-1
+- move to the latest stable release (3.55.x is a GNOME development series)
+
 * Sat Sep 16 2023 Antoine Martin <antoine@xpra.org> - 3.44.1-2
 - Fedora variant
