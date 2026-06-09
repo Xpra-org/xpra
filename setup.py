@@ -829,19 +829,41 @@ def add_build_info(*args) -> None:
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 
+def newest_source_mtime() -> float:
+    # the mtime of the most recently modified file tracked in the source tree,
+    # or -1 if it cannot be determined (ie: `git` is unavailable or this is not a checkout)
+    from subprocess import run
+    r = run(["git", "ls-files", "-z"], capture_output=True)
+    if r.returncode != 0 or not r.stdout:
+        return -1.0
+    newest = 0.0
+    for path in r.stdout.split(b"\0"):
+        if path:
+            try:
+                newest = max(newest, os.path.getmtime(os.fsdecode(path)))
+            except OSError:
+                continue
+    return newest
+
+
 def prepare_xpra_sdist(sources_dir: str, log_file: str, env: dict[str, str]) -> None:
     # `xpra` builds from its own source archive: create it with `sdist` and stage it
     # in the rpmbuild `SOURCES` directory so that `rpmspec` / `rpmbuild` can find it.
     # the xpra spec derives its release revision from `src_info.py` inside this archive,
     # so the archive must be present *before* we query the package names with `rpmspec`.
-    print(f"* xpra: creating source archive (sdist, logging to {log_file!r})")
-    cmd = [sys.executable, "./setup.py", "sdist", "--formats=xztar"]
-    if not run_to_logfile(cmd, log_file, env):
-        show_logfile(log_file)
-        raise RuntimeError("failed to create xpra source archive using %r" % shlex.join(cmd))
     src_xz = os.path.join("dist", f"xpra-{XPRA_VERSION}.tar.xz")
-    if not os.path.exists(src_xz):
-        raise RuntimeError(f"cannot find source archive {src_xz!r}")
+    newest = newest_source_mtime()
+    if os.path.exists(src_xz) and newest >= 0 and os.path.getmtime(src_xz) > newest:
+        # nothing in the source tree has changed since the archive was built:
+        print(f"* xpra: source archive {src_xz!r} is up to date, skipping sdist")
+    else:
+        print(f"* xpra: creating source archive (sdist, logging to {log_file!r})")
+        cmd = [sys.executable, "./setup.py", "sdist", "--formats=xztar"]
+        if not run_to_logfile(cmd, log_file, env):
+            show_logfile(log_file)
+            raise RuntimeError("failed to create xpra source archive using %r" % shlex.join(cmd))
+        if not os.path.exists(src_xz):
+            raise RuntimeError(f"cannot find source archive {src_xz!r}")
     os.makedirs(sources_dir, exist_ok=True)
     print(f"* xpra: copying {src_xz!r} to {sources_dir!r}")
     shutil.copy(src_xz, sources_dir)
