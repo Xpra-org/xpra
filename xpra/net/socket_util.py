@@ -1160,7 +1160,7 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
         try:
             context.num_tickets = 0
         except (ValueError, AttributeError):
-            log("failed to disable TLS session tickets", exc_info=True)
+            ssllog("failed to disable TLS session tickets", exc_info=True)
     else:
         context.check_hostname = check_hostname
     context.verify_mode = ssl_cert_reqs
