@@ -211,7 +211,7 @@ cdef class Decoder:
         assert self.context != NULL
         cdef double start = monotonic()
         cdef const uint8_t *src
-        cdef Py_ssize_t src_len
+        cdef Py_ssize_t src_len = 0
         cdef de265_error r = DE265_OK
         with buffer_context(data) as bc:
             src = <const uint8_t*> (<uintptr_t> int(bc))
