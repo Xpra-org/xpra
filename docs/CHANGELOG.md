@@ -6,6 +6,7 @@
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
   * [new macOS screen capture backend](https://github.com/Xpra-org/xpra/issues/1872)
   * [setup scripts for pycuda](https://github.com/Xpra-org/xpra/issues/2400)
+  * [automatic RPM package scripts](https://github.com/Xpra-org/xpra/issues/4920)
 * 🖧 Network:
   * [proxy registration](https://github.com/Xpra-org/xpra/issues/2125)
   * [automatic session proxying](https://github.com/Xpra-org/xpra/issues/4902)
