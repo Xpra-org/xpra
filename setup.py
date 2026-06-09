@@ -882,8 +882,11 @@ def build_packages() -> int:
     dnf = "dnf-3" if shutil.which("dnf-3") else "dnf"
     sudo = [] if os.geteuid() == 0 else ["sudo"]
     # environment variables accumulated from `KEY=value` manifest lines,
-    # exposed to every build step from that point onwards:
+    # exposed to every build step from that point onwards.
+    # `manifest_vars` keeps track of the names we set, so that we can ask `sudo`
+    # to preserve them (ie: `%{getenv:PYTHON3}` would otherwise be lost across `sudo`):
     env = os.environ.copy()
+    manifest_vars: set[str] = set()
     xpra_source_ready = False
     with open(list_path, encoding="utf-8") as f:
         lines = f.read().splitlines()
@@ -896,9 +899,11 @@ def build_packages() -> int:
             if value:
                 print(f"* setting {varname}={value}")
                 env[varname] = value
+                manifest_vars.add(varname)
             else:
                 print(f"* clearing {varname}")
                 env.pop(varname, None)
+                manifest_vars.discard(varname)
             continue
         spec = os.path.join(specs_dir, f"{entry}.spec")
         if not os.path.exists(spec):
@@ -923,7 +928,13 @@ def build_packages() -> int:
             if run(sudo + ["-v"]).returncode != 0:
                 raise RuntimeError("failed to obtain sudo privileges for installing build dependencies")
         print(f"  - installing build dependencies (logging to {log_file!r})")
-        if not run_to_logfile(sudo + [dnf, "builddep", "-y", spec], log_file, env):
+        builddep = list(sudo)
+        if sudo and manifest_vars:
+            # `sudo` resets the environment, so preserve the variables we set
+            # (ie: `PYTHON3`, which the spec reads via `%{getenv:PYTHON3}`):
+            builddep.append("--preserve-env=" + ",".join(sorted(manifest_vars)))
+        builddep += [dnf, "builddep", "-y", spec]
+        if not run_to_logfile(builddep, log_file, env):
             print(f"  - installing build dependencies for {entry!r} failed:")
             show_logfile(log_file)
             return 1
