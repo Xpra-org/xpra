@@ -1535,6 +1535,9 @@ class ServerCore:
                 return False, None, None
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl", socket_options=socket_options)
             conn.socktype_wrapped = socktype
+            if envbool("XPRA_SSL_EARLY_HANDSHAKE", True):
+                from xpra.net.socket_util import ssl_handshake
+                ssl_handshake(ssl_conn._socket)
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             http = False
             if ssl_mode=="tcp":
