@@ -91,6 +91,7 @@ def parse_command_line(argv: list[str]):
     add("service", help="build the system service", default=ARCH != "aarch64")
     add("docs", help="generate the documentation", default=ARCH != "aarch64")
     add("html5", help="bundle the `xpra-html5` client")
+    add("qt6-client", help="build the Qt6 client", default=False)
     add("x11", help="include X11 bindings", default=False)
     add("manual", help="bundle the user manual")
     add("numpy", help="bundle `numpy`")
@@ -148,15 +149,16 @@ def get_build_args(args) -> list[str]:
             "csc_cython",
             "win32_tools",
             "docs",
-            "qt6_client",
             "websockets_browser_cookie",
             "service",
             "yaml",
         ):
             xpra_args.append(f"--without-{option}")
         xpra_args.append("--with-Os")
-    else:
+    if args.qt6_client:
         xpra_args.append("--with-qt6_client")
+    else:
+        xpra_args.append("--without-qt6_client")
     if not args.printing:
         xpra_args.append("--without-printing")
     if not args.cuda:
