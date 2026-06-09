@@ -1150,7 +1150,18 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
 
     context = ssl.SSLContext(proto)
     context.set_ciphers(ciphers)
-    if not server_side:
+    if server_side:
+        # Don't send TLS 1.3 post-handshake `NewSessionTicket` messages:
+        # we never resume sessions, and sending them races with the peer's
+        # first application write - the peer's read thread mutates the SSL
+        # object (processing the tickets) at the same time as its write thread
+        # calls `SSL_write`, and OpenSSL is not safe for that concurrency,
+        # which can silently drop the peer's first packet.
+        try:
+            context.num_tickets = 0
+        except (ValueError, AttributeError):
+            log("failed to disable TLS session tickets", exc_info=True)
+    else:
         context.check_hostname = check_hostname
     context.verify_mode = ssl_cert_reqs
     context.verify_flags = ssl_verify_flags
