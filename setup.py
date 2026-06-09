@@ -869,6 +869,18 @@ def prepare_xpra_sdist(sources_dir: str, log_file: str, env: dict[str, str]) -> 
     shutil.copy(src_xz, sources_dir)
 
 
+def stage_rpm_patches(sources_dir: str) -> None:
+    # copy the patches referenced by the spec files into the rpmbuild `SOURCES`
+    # directory so that `rpmbuild` can apply them during `%prep`:
+    patches = sorted(glob(os.path.join("packaging", "rpm", "patches", "*.patch")))
+    if not patches:
+        return
+    os.makedirs(sources_dir, exist_ok=True)
+    print(f"* copying {len(patches)} patch(es) to {sources_dir!r}")
+    for patch in patches:
+        shutil.copy(patch, sources_dir)
+
+
 def build_packages() -> int:
     if not LINUX or not is_RPM():
         print("the 'packages' subcommand is currently only supported on RPM based distributions")
@@ -879,6 +891,7 @@ def build_packages() -> int:
     os.makedirs(log_dir, exist_ok=True)
     rpms_dir = get_rpm_macro("%{_rpmdir}") or os.path.expanduser("~/rpmbuild/RPMS")
     sources_dir = get_rpm_macro("%{_sourcedir}") or os.path.expanduser("~/rpmbuild/SOURCES")
+    stage_rpm_patches(sources_dir)
     dnf = "dnf-3" if shutil.which("dnf-3") else "dnf"
     sudo = [] if os.geteuid() == 0 else ["sudo"]
     # environment variables accumulated from `KEY=value` manifest lines,
