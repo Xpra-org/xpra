@@ -711,6 +711,209 @@ def build_package() -> int:
     return 1
 
 
+def get_os_release() -> dict[str, str]:
+    from xpra.util.system import load_os_release_file
+    info: dict[str, str] = {}
+    for line in load_os_release_file().splitlines():
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        info[key.strip()] = value.strip().strip('"')
+    return info
+
+
+def get_rpm_distro_arch() -> tuple[str, str, str]:
+    # work out the `(distro, variant, arch)` tuple used to locate
+    # a build manifest in `packaging/rpm/distros/*.list`,
+    # ie: ("centos", "stream9", "arm64") -> "centos-stream9-arm64.list"
+    info = get_os_release()
+    distro_id = info.get("ID", "").lower()
+    # map the os-release `ID` to the name used by the manifests:
+    distro = {
+        "centos": "centos",
+        "fedora": "fedora",
+        "almalinux": "almalinux",
+        "rocky": "rockylinux",
+        "ol": "oraclelinux",
+        "rhel": "almalinux",        # build RHEL using the AlmaLinux manifests
+    }.get(distro_id, distro_id)
+    # major version only, ie: "9.5" -> "9":
+    version = info.get("VERSION_ID", "").split(".")[0]
+    if distro == "centos" and "stream" in info.get("NAME", "").lower():
+        variant = f"stream{version}"
+    else:
+        variant = version
+    # map the machine architecture to the manifest naming:
+    arch = {
+        "aarch64": "arm64",
+    }.get(os.uname().machine, os.uname().machine)
+    return distro, variant, arch
+
+
+def find_rpm_package_list() -> str:
+    distro, variant, arch = get_rpm_distro_arch()
+    print(f"* identifying package list for distro={distro!r}, variant={variant!r}, arch={arch!r}")
+    distros_dir = os.path.join("packaging", "rpm", "distros")
+    # from the most specific manifest name to the least specific:
+    candidates = []
+    if distro and variant and arch:
+        candidates.append(f"{distro}-{variant}-{arch}")
+    if distro and variant:
+        candidates.append(f"{distro}-{variant}")
+    if distro and arch:
+        candidates.append(f"{distro}-{arch}")
+    if arch:
+        candidates.append(arch)
+    if distro:
+        candidates.append(distro)
+    candidates.append("default")
+    for name in candidates:
+        path = os.path.join(distros_dir, f"{name}.list")
+        if os.path.exists(path):
+            print(f"* using package list {path!r}")
+            return path
+        print(f"  ({path!r} not found)")
+    tried = ", ".join(f"{name}.list" for name in candidates)
+    raise RuntimeError(f"no matching package list found in {distros_dir!r}, tried: {tried}")
+
+
+def run_to_logfile(cmd: list[str], log_file: str, env: dict[str, str], append=False) -> bool:
+    from subprocess import run
+    with open(log_file, "ab" if append else "wb") as f:
+        f.write(("$ %s\n" % shlex.join(cmd)).encode("utf-8"))
+        f.flush()
+        return run(cmd, stdout=f, stderr=f, env=env).returncode == 0
+
+
+def show_logfile(log_file: str) -> None:
+    try:
+        with open(log_file, encoding="utf-8", errors="replace") as f:
+            sys.stderr.write(f.read())
+    except OSError:
+        pass
+
+
+def get_rpm_macro(macro: str) -> str:
+    from subprocess import run
+    r = run(["rpm", "--eval", macro], capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def get_spec_binary_rpms(spec: str, env: dict[str, str]) -> list[str]:
+    # the binary RPM file stems this spec file would produce,
+    # excluding the `debuginfo`, `debugsource` and `-doc-` subpackages,
+    # ie: ["python3-fido2-2.2.0-1.x86_64"]
+    # (the environment is passed through so that `%{getenv:PYTHON3}` and friends are honoured)
+    from subprocess import run
+    cmd = ["rpmspec", "-q", "--rpms", "--qf", "%{name}-%{version}-%{release}.%{arch}\n", spec]
+    r = run(cmd, capture_output=True, text=True, env=env)
+    if r.returncode != 0:
+        return []
+    rpms = []
+    for line in r.stdout.splitlines():
+        nvra = line.strip()
+        if nvra and not any(x in nvra for x in ("debuginfo", "debugsource", "-doc-")):
+            rpms.append(nvra)
+    return rpms
+
+
+def missing_rpms(rpms: Sequence[str], rpms_dir: str) -> list[str]:
+    # the subset of `rpms` for which no matching `.rpm` file exists under `rpms_dir`
+    # (which contains per-architecture subdirectories, ie: `RPMS/x86_64`, `RPMS/noarch`):
+    return [nvra for nvra in rpms if not glob(os.path.join(rpms_dir, "**", f"{nvra}.rpm"), recursive=True)]
+
+
+def add_build_info(*args) -> None:
+    cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
+    r = subprocess.Popen(cmd).wait(TIMEOUT * (1 + 10 * OSX))
+    assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
+
+
+def prepare_xpra_sdist(sources_dir: str, log_file: str, env: dict[str, str]) -> None:
+    # `xpra` builds from its own source archive: create it with `sdist` and stage it
+    # in the rpmbuild `SOURCES` directory so that `rpmspec` / `rpmbuild` can find it.
+    # the xpra spec derives its release revision from `src_info.py` inside this archive,
+    # so the archive must be present *before* we query the package names with `rpmspec`.
+    print(f"* xpra: creating source archive (sdist, logging to {log_file!r})")
+    cmd = [sys.executable, "./setup.py", "sdist", "--formats=xztar"]
+    if not run_to_logfile(cmd, log_file, env):
+        show_logfile(log_file)
+        raise RuntimeError("failed to create xpra source archive using %r" % shlex.join(cmd))
+    src_xz = os.path.join("dist", f"xpra-{XPRA_VERSION}.tar.xz")
+    if not os.path.exists(src_xz):
+        raise RuntimeError(f"cannot find source archive {src_xz!r}")
+    os.makedirs(sources_dir, exist_ok=True)
+    print(f"* xpra: copying {src_xz!r} to {sources_dir!r}")
+    shutil.copy(src_xz, sources_dir)
+
+
+def build_packages() -> int:
+    if not LINUX or not is_RPM():
+        print("the 'packages' subcommand is currently only supported on RPM based distributions")
+        return 1
+    list_path = find_rpm_package_list()
+    specs_dir = os.path.join("packaging", "rpm")
+    log_dir = os.path.abspath(os.path.join("build", "packages"))
+    os.makedirs(log_dir, exist_ok=True)
+    rpms_dir = get_rpm_macro("%{_rpmdir}") or os.path.expanduser("~/rpmbuild/RPMS")
+    sources_dir = get_rpm_macro("%{_sourcedir}") or os.path.expanduser("~/rpmbuild/SOURCES")
+    dnf = "dnf-3" if shutil.which("dnf-3") else "dnf"
+    sudo = [] if os.geteuid() == 0 else ["sudo"]
+    # environment variables accumulated from `KEY=value` manifest lines,
+    # exposed to every build step from that point onwards:
+    env = os.environ.copy()
+    xpra_source_ready = False
+    with open(list_path, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+    for line in lines:
+        entry = line.strip()
+        if not entry or entry.startswith("#"):
+            continue
+        if "=" in entry:
+            varname, value = (part.strip() for part in entry.split("=", 1))
+            if value:
+                print(f"* setting {varname}={value}")
+                env[varname] = value
+            else:
+                print(f"* clearing {varname}")
+                env.pop(varname, None)
+            continue
+        spec = os.path.join(specs_dir, f"{entry}.spec")
+        if not os.path.exists(spec):
+            raise RuntimeError(f"spec file {spec!r} for package {entry!r} does not exist")
+        if entry == "xpra" and not xpra_source_ready:
+            # record the build info, then stage the source archive before querying / building:
+            add_build_info()
+            prepare_xpra_sdist(sources_dir, os.path.join(log_dir, "xpra-sdist.log"), env)
+            xpra_source_ready = True
+        # skip packages that have already been built:
+        expected = get_spec_binary_rpms(spec, env)
+        if expected:
+            missing = missing_rpms(expected, rpms_dir)
+            if not missing:
+                print(f"* {entry:<32}: already built ({len(expected)} package(s) present), skipping")
+                continue
+            print(f"* {entry}: {len(missing)} of {len(expected)} package(s) missing: {', '.join(missing)}")
+        log_file = os.path.join(log_dir, f"{entry}.log")
+        if sudo:
+            # prime sudo (visible prompt) so the redirected `builddep` step does not hang on a hidden one:
+            from subprocess import run
+            if run(sudo + ["-v"]).returncode != 0:
+                raise RuntimeError("failed to obtain sudo privileges for installing build dependencies")
+        print(f"  - installing build dependencies (logging to {log_file!r})")
+        if not run_to_logfile(sudo + [dnf, "builddep", "-y", spec], log_file, env):
+            print(f"  - installing build dependencies for {entry!r} failed:")
+            show_logfile(log_file)
+            return 1
+        print(f"  - building package (logging to {log_file!r})")
+        if not run_to_logfile(["rpmbuild", "-ba", spec], log_file, env, append=True):
+            print(f"  - building {entry!r} failed:")
+            show_logfile(log_file)
+            return 1
+        print("  - done")
+    return 0
+
+
 def install_dev_env() -> int:
     cmd = install_dev_env_command()
     if not cmd:
@@ -999,6 +1202,9 @@ if "dev-env" in sys.argv:
 if "package" in sys.argv:
     sys.exit(build_package())
 
+if "packages" in sys.argv:
+    sys.exit(build_packages())
+
 if "install-repo" in sys.argv:
     install_repo()
     sys.exit(0)
@@ -1025,6 +1231,7 @@ if len(sys.argv) < 2:
         "pdf-doc",
         "dev-env",
         "package",
+        "packages",
         "install-repo",
         "install-lts-repo",
         "install-beta-repo",
@@ -1827,12 +2034,6 @@ def clean() -> None:
     for x in CLEAN_DIRS:
         dirname = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
         os.rmdir(dirname)
-
-
-def add_build_info(*args) -> None:
-    cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
-    r = subprocess.Popen(cmd).wait(TIMEOUT * (1 + 10 * OSX))
-    assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 
 if "install" in sys.argv or "build" in sys.argv:
