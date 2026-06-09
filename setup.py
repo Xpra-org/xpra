@@ -181,12 +181,8 @@ def pkg_config_version(req_version: str, pkgname: str) -> bool:
     while out[-1].isalpha() or out[-1]==".":
         out = out[:-1]
     # pylint: disable=import-outside-toplevel
-    try:
-        from packaging.version import parse
-        return parse(out) >= parse(req_version)
-    except ImportError:
-        from distutils.version import LooseVersion  # pylint: disable=deprecated-module
-        return LooseVersion(out) >= LooseVersion(req_version)
+    from xpra.util.version import parse_version
+    return parse_version(out) >= parse_version(req_version)
 
 
 argv = sys.argv + list(filter(len, os.environ.get("XPRA_EXTRA_BUILD_ARGS", "").split(" ")))
