@@ -329,7 +329,7 @@ dxgi_ENABLED            = DEFAULT and WIN32
 vpl_ENABLED             = DEFAULT and has_header_file("vpl/mfxvideo.h")
 vpl_decoder_ENABLED     = vpl_ENABLED
 vpl_encoder_ENABLED     = vpl_ENABLED
-libva_ENABLED           = DEFAULT and pkg_config_version("1.0", "libva") and (
+libva_ENABLED           = DEFAULT and pkg_config_version("1.18", "libva") and (
     (LINUX and pkg_config_exists("libva-drm")) or
     (WIN32 and pkg_config_exists("libva-win32"))
 )

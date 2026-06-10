@@ -273,9 +273,9 @@ Requires:           libaom
 BuildRequires:		libvpl-devel
 Requires:			libvpl
 Recommends:			intel-vpl-gpu-rt
-%endif
 BuildRequires:		libva-devel
 Requires:			libva
+%endif
 %ifnarch %{riscv}
 BuildRequires:		pkgconfig(openh264)
 Requires:			openh264
@@ -848,9 +848,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/v4l2
 %if ! 0%{?el8}
 %{python3_sitearch}/xpra/codecs/vpl
+%{python3_sitearch}/xpra/codecs/libva
 %endif
 %{python3_sitearch}/xpra/codecs/vpx
-%{python3_sitearch}/xpra/codecs/libva
 %{python3_sitearch}/xpra/codecs/webp
 %{python3_sitearch}/xpra/codecs/remote
 %ifnarch %{riscv}
