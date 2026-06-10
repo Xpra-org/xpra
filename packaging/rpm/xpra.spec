@@ -269,9 +269,11 @@ BuildRequires:		pkgconfig(libyuv)
 Requires:			libyuv
 BuildRequires:      libaom-devel
 Requires:           libaom
+%if ! 0%{?el8}
 BuildRequires:		libvpl-devel
 Requires:			libvpl
 Recommends:			intel-vpl-gpu-rt
+%endif
 BuildRequires:		libva-devel
 Requires:			libva
 %ifnarch %{riscv}
@@ -844,7 +846,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/jpeg
 %{python3_sitearch}/xpra/codecs/libyuv
 %{python3_sitearch}/xpra/codecs/v4l2
+%if ! 0%{?el8}
 %{python3_sitearch}/xpra/codecs/vpl
+%endif
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/libva
 %{python3_sitearch}/xpra/codecs/webp
