@@ -103,9 +103,6 @@ library.
 Summary:        Development files for embedding PyGObject introspection support
 Requires:       %{py3rpmname}-gobject%{?_isa} = %{version}-%{release}
 Requires:       gobject-introspection-devel%{?_isa}
-%if "%{getenv:PYTHON3}" != ""
-Requires:       python3-gobject-devel
-%endif
 
 %description -n %{py3rpmname}-gobject-devel
 This package contains files required to embed PyGObject
@@ -125,6 +122,11 @@ sed -i "s/meson_version : '>= 0.64.0'/meson_version : '>= 0.63.0'/" meson.build
 
 %install
 %meson_install
+%if "%{getenv:PYTHON3}" != ""
+rm -f %{buildroot}%{_includedir}/pygobject-3.0/pygobject.h
+rm -f %{buildroot}%{_libdir}/pkgconfig/pygobject-3.0.pc
+rmdir --ignore-fail-on-non-empty %{buildroot}%{_includedir}/pygobject-3.0/
+%endif
 
 
 %files -n %{py3rpmname}-gobject
