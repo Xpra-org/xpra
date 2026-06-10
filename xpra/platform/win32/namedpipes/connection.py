@@ -206,7 +206,7 @@ def connect_to_namedpipe(pipe_name: str, timeout=10) -> HANDLE:
         err = GetLastError()
         log("CreateFileA(..) error=%s", err)
         if err == ERROR_PIPE_BUSY:
-            if WaitNamedPipeA(pipe_name, timeout * 10000) == 0:
+            if WaitNamedPipeA(strtobytes(pipe_name), timeout * 10000) == 0:
                 raise RuntimeError("timeout waiting for named pipe '%s'" % pipe_name)
         else:
             raise RuntimeError("cannot open named pipe '%s': %s" % (pipe_name, FormatMessageSystem(err)))
