@@ -21,7 +21,7 @@ from xpra.platform.win32.common import (
     SECURITY_ATTRIBUTES, CreateEventA,
 )
 from xpra.platform.win32.namedpipes.common import (
-    OVERLAPPED, INFINITE, WAIT_STR, INVALID_HANDLE,
+    OVERLAPPED, INFINITE, WAIT_STR, INVALID_HANDLE, INVALID_HANDLE_VALUE,
     SECURITY_DESCRIPTOR, TOKEN_USER, TOKEN_PRIMARY_GROUP,
     CreateNamedPipeA, ConnectNamedPipe,
     WaitForSingleObject, GetLastError,
@@ -117,10 +117,17 @@ class NamedPipeListener(Thread):
         self.security_descriptor = None
         return ExitCode.OK
 
+    @staticmethod
+    def _is_invalid(handle) -> bool:
+        # In Python 3.12+ ctypes instances no longer compare equal to plain Python ints,
+        # so comparing against INVALID_HANDLE (c_void_p) is broken when handle is an int
+        # returned by a ctypes function.  Check both the ctypes sentinel and its int value.
+        return handle in (None, INVALID_HANDLE, INVALID_HANDLE_VALUE)
+
     def do_run(self) -> None:
         pipe_handle = INVALID_HANDLE
         while not self.exit_loop:
-            if pipe_handle == INVALID_HANDLE:
+            if self._is_invalid(pipe_handle):
                 try:
                     pipe_handle = self.CreatePipeHandle()
                 except Exception as e:
@@ -130,7 +137,7 @@ class NamedPipeListener(Thread):
                     log.estr(e)
                     return
                 log("CreatePipeHandle()=%s", pipe_handle)
-                if pipe_handle == INVALID_HANDLE:
+                if self._is_invalid(pipe_handle):
                     log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
                     err: int = GetLastError()
                     log.error(" '%s' (%i)", FormatMessageSystem(err).rstrip("\n\r."), err)
@@ -171,14 +178,14 @@ class NamedPipeListener(Thread):
                 if self.exit_loop:
                     break
             # from now on, the pipe_handle will be managed elsewhere:
-            if pipe_handle != INVALID_HANDLE:
+            if not self._is_invalid(pipe_handle):
                 self.new_connection_cb("named-pipe", self, pipe_handle)
                 pipe_handle = INVALID_HANDLE
         self.close_handle(pipe_handle)
 
     def close_handle(self, pipe_handle: HANDLE) -> None:
         log("CloseHandle(%s)", pipe_handle)
-        if pipe_handle == INVALID_HANDLE:
+        if self._is_invalid(pipe_handle):
             return
         try:
             CloseHandle(pipe_handle)
