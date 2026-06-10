@@ -14,16 +14,17 @@ import sys
 import shlex
 import shutil
 import os.path
+import struct
 import subprocess
 from glob import glob
 from time import sleep
 from collections.abc import Sequence
 
-if sys.version_info < (3, 10):
-    raise RuntimeError("xpra no longer supports Python versions older than 3.10")
-
 # required for PEP 517
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+import xpra
+assert xpra
 
 try:
     from distutils.core import setup
@@ -39,10 +40,163 @@ except ImportError as e:
         print("you must install setuptools to run this script")
         sys.exit(1)
 
-import xpra
-from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
-from xpra.util.system import is_distribution_variant, get_linux_distribution, is_DEB, is_RPM, is_Arch, is_free_threaded
-from xpra.util.io import load_binary_file, get_status_output
+
+def check_python_version() -> None:
+    if sys.version_info < (3, 10):
+        raise RuntimeError("xpra no longer supports Python versions older than 3.10")
+
+
+WIN32 = sys.platform.startswith("win")
+OSX = sys.platform.startswith("darwin")
+LINUX = sys.platform.startswith("linux")
+NETBSD = sys.platform.startswith("netbsd")
+OPENBSD = sys.platform.startswith("openbsd")
+FREEBSD = sys.platform.startswith("freebsd")
+POSIX = os.name == "posix"
+BITS = struct.calcsize(b"P") * 8
+_os_release_file_data = None
+_linux_distribution = ("", "", "")
+
+
+def getuid() -> int:
+    if POSIX:
+        return os.getuid()
+    return 0
+
+
+def load_binary_file(filename) -> bytes:
+    if not filename or not os.path.exists(filename):
+        return b""
+    try:
+        with open(filename, "rb") as f:
+            return f.read()
+    except OSError:
+        return b""
+
+
+def get_status_output(*args, **kwargs) -> "tuple[int, str, str]":
+    kwargs.update({
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+        "universal_newlines": True,
+    })
+    try:
+        p = subprocess.Popen(*args, **kwargs)
+    except Exception:
+        return -1, "", ""
+    stdout, stderr = p.communicate()
+    return p.returncode, stdout, stderr
+
+
+def command_string(cmd: Sequence) -> str:
+    return " ".join(shlex.quote(str(x)) for x in cmd)
+
+
+def load_os_release_file() -> str:
+    global _os_release_file_data
+    if _os_release_file_data is None:
+        try:
+            _os_release_file_data = load_binary_file("/etc/os-release").decode() or ""
+        except (OSError, UnicodeDecodeError):
+            _os_release_file_data = ""
+    return _os_release_file_data
+
+
+def is_distribution_variant(variant="Debian") -> bool:
+    if not POSIX:
+        return False
+    try:
+        v = load_os_release_file()
+        return any(line.find(variant) >= 0 for line in v.splitlines() if line.startswith("NAME="))
+    except Exception:
+        pass
+    try:
+        d = get_linux_distribution()[0]
+        if d == variant:
+            return True
+        if variant == "RedHat" and d.startswith(variant):
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def is_Debian() -> bool:
+    return is_distribution_variant("Debian")
+
+
+def is_Ubuntu() -> bool:
+    return is_distribution_variant("Ubuntu")
+
+
+def is_LinuxMint() -> bool:
+    return is_distribution_variant("Linux Mint")
+
+
+def is_DEB() -> bool:
+    return is_Debian() or is_Ubuntu() or is_LinuxMint()
+
+
+def is_RPM() -> bool:
+    return any(is_distribution_variant(x) for x in (
+        "Fedora", "RedHat", "AlmaLinux", "Rocky Linux", "CentOS", "openSUSE", "Oracle Linux",
+    ))
+
+
+def is_Arch() -> bool:
+    if not POSIX:
+        return False
+    try:
+        v = load_os_release_file()
+        if not v:
+            return False
+        os_release = {}
+        for line in v.splitlines():
+            if not line or "=" not in line:
+                continue
+            k, vstr = line.split("=", 1)
+            os_release[k] = vstr.strip().strip('"')
+        distro_id = os_release.get("ID", "").lower()
+        if distro_id in ("arch", "manjaro"):
+            return True
+        id_like = os_release.get("ID_LIKE", "").lower().split()
+        return any(x in id_like for x in ("arch", "archlinux"))
+    except Exception:
+        pass
+    return is_distribution_variant("Arch") or is_distribution_variant("Manjaro")
+
+
+def get_linux_distribution() -> "tuple[str, str, str]":
+    global _linux_distribution
+    if LINUX and _linux_distribution == ("", "", ""):
+        r, out, _ = get_status_output(["lsb_release", "-a"])
+        if r == 0 and out:
+            d = {}
+            for line in out.splitlines():
+                parts = line.rstrip("\n\r").split(":", 1)
+                if len(parts) == 2:
+                    d[parts[0].lower().replace(" ", "_")] = parts[1].strip()
+            _linux_distribution = (
+                d.get("distributor_id", "unknown"),
+                d.get("release", "unknown"),
+                d.get("codename", "unknown"),
+            )
+        else:
+            try:
+                import platform
+                _linux_distribution = platform.linux_distribution()  # pylint: disable=deprecated-method, no-member
+            except Exception:
+                _linux_distribution = ("unknown", "unknown", "unknown")
+    return _linux_distribution
+
+
+def is_free_threaded() -> bool:
+    import sysconfig
+    if sysconfig.get_config_var("Py_GIL_DISABLED") == 1:
+        return True
+    if hasattr(sys, "_is_gil_enabled"):
+        return not sys._is_gil_enabled()
+    return False
 
 
 def warn(msg: str) -> None:
@@ -114,11 +268,11 @@ if "pkg-info" in sys.argv:
     def write_PKG_INFO() -> None:
         with open("PKG-INFO", "wb") as f:
             pkg_info_values = setup_options.copy()
-            pkg_info_values |= {
+            pkg_info_values.update({
                 "metadata_version": "1.1",
                 "summary": description,
                 "home_page": url,
-            }
+            })
             for k in (
                 "Metadata-Version", "Name", "Version", "Summary", "Home-page",
                 "Author", "Author-email", "License", "Download-URL", "Description"
@@ -180,9 +334,16 @@ def pkg_config_version(req_version: str, pkgname: str) -> bool:
     # ie: "0.163.x" or "0.164.3094M"
     while out[-1].isalpha() or out[-1]==".":
         out = out[:-1]
-    # pylint: disable=import-outside-toplevel
-    from xpra.util.version import parse_version
     return parse_version(out) >= parse_version(req_version)
+
+
+def parse_version(version: str) -> "tuple[int, ...]":
+    parts = []
+    for vpart in re.split(r"[^0-9]+", version):
+        if not vpart:
+            continue
+        parts.append(int(vpart))
+    return tuple(parts)
 
 
 argv = sys.argv + list(filter(len, os.environ.get("XPRA_EXTRA_BUILD_ARGS", "").split(" ")))
@@ -614,6 +775,7 @@ def du(path: str) -> int:
 
 
 def build_package() -> int:
+    check_python_version()
     if not LINUX:
         raise RuntimeError("packaging is not implemented here yet, use platform specific scripts instead")
     if not (is_RPM() or is_DEB() or is_Arch()):
@@ -637,11 +799,11 @@ def build_package() -> int:
             print("  (the actual package build step will run as your regular user)")
         cmd.insert(0, "sudo")
     if run(cmd).returncode != 0:
-        raise RuntimeError("failed to install dev-env using %r" % shlex.join(cmd))
+        raise RuntimeError("failed to install dev-env using %r" % command_string(cmd))
     print("* creating source archive")
     cmd = ["python3", "./setup.py", "sdist", "--formats=xztar"]
     if run(cmd).returncode != 0:
-        raise RuntimeError("failed to install create sdist source using %r" % shlex.join(cmd))
+        raise RuntimeError("failed to install create sdist source using %r" % command_string(cmd))
     src_xz = f"./dist/xpra-{XPRA_VERSION}.tar.xz"
     if not os.path.exists(src_xz):
         raise RuntimeError(f"cannot find {src_xz!r}")
@@ -675,7 +837,7 @@ def build_package() -> int:
         env.setdefault("MAKEPKG_CONF", "/etc/makepkg.conf")
         cmd = [makepkg, "-f", "--nosign"]
         if run(cmd, cwd=arch_dir, env=env).returncode != 0:
-            raise RuntimeError("failed to generate Arch package using %r" % shlex.join(cmd))
+            raise RuntimeError("failed to generate Arch package using %r" % command_string(cmd))
         pkgs = [x for x in os.listdir(arch_dir) if x.endswith((".pkg.tar.zst", ".pkg.tar.xz"))]
         if not pkgs:
             raise RuntimeError(f"cannot find generated Arch package in {arch_dir!r}")
@@ -693,7 +855,7 @@ def build_package() -> int:
         shutil.copy(src_xz, sources_dir)
         cmd = ["rpmbuild", "-ba", "./packaging/rpm/xpra.spec"]
         if run(cmd).returncode != 0:
-            raise RuntimeError("failed to generate RPM package with %r" % shlex.join(cmd))
+            raise RuntimeError("failed to generate RPM package with %r" % command_string(cmd))
         return 0
 
     if is_DEB():
@@ -701,15 +863,14 @@ def build_package() -> int:
         shutil.copy(src_xz, deb_src)
         cmd = ["debuild", "-us", "-uc", "-b"]
         if run(cmd).returncode != 0:
-            raise RuntimeError("failed to generate RPM package with %r" % shlex.join(cmd))
+            raise RuntimeError("failed to generate RPM package with %r" % command_string(cmd))
         return 0
     print("sorry, your distribution is not supported by this subcommand")
     return 1
 
 
-def get_os_release() -> dict[str, str]:
-    from xpra.util.system import load_os_release_file
-    info: dict[str, str] = {}
+def get_os_release() -> "dict[str, str]":
+    info = {}
     for line in load_os_release_file().splitlines():
         if not line or line.startswith("#") or "=" not in line:
             continue
@@ -718,7 +879,7 @@ def get_os_release() -> dict[str, str]:
     return info
 
 
-def get_rpm_distro_arch() -> tuple[str, str, str]:
+def get_rpm_distro_arch() -> "tuple[str, str, str]":
     # work out the `(distro, variant, arch)` tuple used to locate
     # a build manifest in `packaging/rpm/distros/*.list`,
     # ie: ("centos", "stream9", "arm64") -> "centos-stream9-arm64.list"
@@ -773,10 +934,10 @@ def find_rpm_package_list() -> str:
     raise RuntimeError(f"no matching package list found in {distros_dir!r}, tried: {tried}")
 
 
-def run_to_logfile(cmd: list[str], log_file: str, env: dict[str, str], append=False) -> bool:
+def run_to_logfile(cmd: "list[str]", log_file: str, env: "dict[str, str]", append=False) -> bool:
     from subprocess import run
     with open(log_file, "ab" if append else "wb") as f:
-        f.write(("$ %s\n" % shlex.join(cmd)).encode("utf-8"))
+        f.write(("$ %s\n" % command_string(cmd)).encode("utf-8"))
         f.flush()
         return run(cmd, stdout=f, stderr=f, env=env).returncode == 0
 
@@ -785,7 +946,7 @@ def rpmbuild_repo_url(rpms_dir: str) -> str:
     return "file://" + os.path.abspath(os.path.expanduser(rpms_dir))
 
 
-def update_rpmbuild_repo(rpms_dir: str, log_file: str, env: dict[str, str], append=True) -> bool:
+def update_rpmbuild_repo(rpms_dir: str, log_file: str, env: "dict[str, str]", append=True) -> bool:
     createrepo = shutil.which("createrepo") or shutil.which("createrepo_c")
     if not createrepo:
         raise RuntimeError("cannot find `createrepo` or `createrepo_c` for updating the local RPM repository")
@@ -803,27 +964,25 @@ def show_logfile(log_file: str) -> None:
 
 
 def get_rpm_macro(macro: str) -> str:
-    from subprocess import run
-    r = run(["rpm", "--eval", macro], capture_output=True, text=True)
-    return r.stdout.strip() if r.returncode == 0 else ""
+    r, out, _ = get_status_output(["rpm", "--eval", macro])
+    return out.strip() if r == 0 else ""
 
 
-def get_spec_filed_packages(spec: str, env: dict[str, str]) -> set[str] | None:
+def get_spec_filed_packages(spec: str, env: "dict[str, str]") -> "set[str] | None":
     # the names of the (sub)packages that have a `%files` section in the
     # macro-expanded spec, and which `rpmbuild` will therefore actually produce.
     # a package declared with `%package` (or the main `Name:`) but *without* a
     # `%files` section is never built, even though `rpmspec --rpms` still lists it.
     # returns `None` if this cannot be determined (so callers do not filter):
-    from subprocess import run
-    main = run(["rpmspec", "-q", "--srpm", "--qf", "%{name}", spec], capture_output=True, text=True, env=env)
-    if main.returncode != 0:
+    r, out, _ = get_status_output(["rpmspec", "-q", "--srpm", "--qf", "%{name}", spec], env=env)
+    if r != 0:
         return None
-    mainname = main.stdout.strip()
-    expanded = run(["rpmspec", "-P", spec], capture_output=True, text=True, env=env)
-    if expanded.returncode != 0:
+    mainname = out.strip()
+    r, expanded, _ = get_status_output(["rpmspec", "-P", spec], env=env)
+    if r != 0:
         return None
-    names: set[str] = set()
-    for line in expanded.stdout.splitlines():
+    names = set()
+    for line in expanded.splitlines():
         if not line.startswith("%files"):
             continue
         # `%files [-n NAME] [-f FILELIST] [SUFFIX]`:
@@ -849,22 +1008,21 @@ def get_spec_filed_packages(spec: str, env: dict[str, str]) -> set[str] | None:
     return names
 
 
-def get_spec_binary_rpms(spec: str, env: dict[str, str]) -> list[str]:
+def get_spec_binary_rpms(spec: str, env: "dict[str, str]") -> "list[str]":
     # the binary RPM file stems this spec file would produce,
     # excluding the `debuginfo`, `debugsource` and `-doc-` subpackages,
     # ie: ["python3-fido2-2.2.0-1.x86_64"]
     # (the environment is passed through so that `%{getenv:PYTHON3}` and friends are honoured)
-    from subprocess import run
     # only the packages that have a `%files` section are actually built,
     # so ignore container packages (ie: `pycairo`, `pygobject3`) that have none -
     # otherwise they would always be reported as "missing" and rebuilt every time:
     filed = get_spec_filed_packages(spec, env)
     cmd = ["rpmspec", "-q", "--rpms", "--qf", "%{name} %{name}-%{version}-%{release}.%{arch}\n", spec]
-    r = run(cmd, capture_output=True, text=True, env=env)
-    if r.returncode != 0:
+    r, out, _ = get_status_output(cmd, env=env)
+    if r != 0:
         return []
     rpms = []
-    for line in r.stdout.splitlines():
+    for line in out.splitlines():
         parts = line.split(None, 1)
         if len(parts) != 2:
             continue
@@ -877,7 +1035,7 @@ def get_spec_binary_rpms(spec: str, env: dict[str, str]) -> list[str]:
     return rpms
 
 
-def missing_rpms(rpms: Sequence[str], rpms_dir: str) -> list[str]:
+def missing_rpms(rpms: "Sequence[str]", rpms_dir: str) -> "list[str]":
     # the subset of `rpms` for which no matching `.rpm` file exists under `rpms_dir`
     # (which contains per-architecture subdirectories, ie: `RPMS/x86_64`, `RPMS/noarch`):
     return [nvra for nvra in rpms if not glob(os.path.join(rpms_dir, "**", f"{nvra}.rpm"), recursive=True)]
@@ -892,12 +1050,15 @@ def add_build_info(*args) -> None:
 def newest_source_mtime() -> float:
     # the mtime of the most recently modified file tracked in the source tree,
     # or -1 if it cannot be determined (ie: `git` is unavailable or this is not a checkout)
-    from subprocess import run
-    r = run(["git", "ls-files", "-z"], capture_output=True)
-    if r.returncode != 0 or not r.stdout:
+    try:
+        p = subprocess.Popen(["git", "ls-files", "-z"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except Exception:
+        return -1.0
+    out, _ = p.communicate()
+    if p.returncode != 0 or not out:
         return -1.0
     newest = 0.0
-    for path in r.stdout.split(b"\0"):
+    for path in out.split(b"\0"):
         if path:
             try:
                 newest = max(newest, os.path.getmtime(os.fsdecode(path)))
@@ -906,7 +1067,7 @@ def newest_source_mtime() -> float:
     return newest
 
 
-def prepare_xpra_sdist(sources_dir: str, log_file: str, env: dict[str, str]) -> None:
+def prepare_xpra_sdist(sources_dir: str, log_file: str, env: "dict[str, str]") -> None:
     # `xpra` builds from its own source archive: create it with `sdist` and stage it
     # in the rpmbuild `SOURCES` directory so that `rpmspec` / `rpmbuild` can find it.
     # the xpra spec derives its release revision from `src_info.py` inside this archive,
@@ -921,7 +1082,7 @@ def prepare_xpra_sdist(sources_dir: str, log_file: str, env: dict[str, str]) -> 
         cmd = [sys.executable, "./setup.py", "sdist", "--formats=xztar"]
         if not run_to_logfile(cmd, log_file, env):
             show_logfile(log_file)
-            raise RuntimeError("failed to create xpra source archive using %r" % shlex.join(cmd))
+            raise RuntimeError("failed to create xpra source archive using %r" % command_string(cmd))
         if not os.path.exists(src_xz):
             raise RuntimeError(f"cannot find source archive {src_xz!r}")
     os.makedirs(sources_dir, exist_ok=True)
@@ -959,7 +1120,7 @@ def build_packages() -> int:
     # `manifest_vars` keeps track of the names we set, so that we can ask `sudo`
     # to preserve them (ie: `%{getenv:PYTHON3}` would otherwise be lost across `sudo`):
     env = os.environ.copy()
-    manifest_vars: set[str] = set()
+    manifest_vars = set()
     xpra_source_ready = False
     with open(list_path, encoding="utf-8") as f:
         lines = f.read().splitlines()
@@ -1052,7 +1213,7 @@ def install_dev_env() -> int:
     os.execv(exe, cmd)
 
 
-def install_dev_env_command() -> list[str]:
+def install_dev_env_command() -> "list[str]":
     if WIN32:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         setup_script = os.path.join(script_dir, "packaging", "MSWindows", "SETUP.sh")
@@ -1061,7 +1222,7 @@ def install_dev_env_command() -> list[str]:
         print(f"'dev-env' subcommand is not supported on {sys.platform!r}")
         return []
 
-    def add_flags(cmd: list[str], flag_to_pkgs: dict[str, Sequence[str]]) -> list[str]:
+    def add_flags(cmd: "list[str]", flag_to_pkgs: "dict[str, Sequence[str]]") -> "list[str]":
         for flag_str, pkg_names in flag_to_pkgs.items():
             flags = flag_str.split("|")
             if any(globals()[f"{flag}_ENABLED"] for flag in flags):
@@ -1223,7 +1384,7 @@ def install_repo(repo_variant="") -> None:
         print(f"'install{repo_variant}-repo' subcommand is not supported on {sys.platform!r}")
         sys.exit(1)
     distro = get_linux_distribution()
-    setup_cmds: list[list[str]] = []
+    setup_cmds = []
 
     if is_Arch():
         print("'install%s-repo' is not needed on Arch based distributions" % repo_variant)
@@ -1309,6 +1470,10 @@ if HELP:
     show_help()
     sys.exit(0)
 
+if "--help-commands" in sys.argv:
+    setup(**setup_options)
+    sys.exit(0)
+
 if "doc" in sys.argv:
     convert_docs("html")
     sys.exit(0)
@@ -1366,6 +1531,8 @@ if sys.argv[1] == "unittests":
     os.execv("./tests/unittests/run", ["run"] + sys.argv[2:])
 assert "unittests" not in sys.argv, sys.argv
 
+if not HELP and "--help-commands" not in sys.argv and "clean" not in sys.argv and "sdist" not in sys.argv:
+    check_python_version()
 
 if "clean" not in sys.argv and "sdist" not in sys.argv:
     def show_switch_info() -> None:
@@ -1495,7 +1662,7 @@ def add_packages(*pkgs: str) -> None:
             packages.append(x)
     excluded = tuple(pkg for pkg in pkgs if any(pkg.startswith(exclude) for exclude in excludes))
     if excluded:
-        print(f"add_packages({pkgs}) {excluded=} using {excludes=}")
+        print(f"add_packages({pkgs}) excluded={excluded!r} using excludes={excludes!r}")
     add_modules(*filtered_pkgs)
 
 
@@ -1510,7 +1677,7 @@ def add_modules(*mods: str) -> None:
         modules.append(v)
     excluded = tuple(mod for mod in mods if any(mod.startswith(exclude) for exclude in excludes))
     if excluded:
-        print(f"add_modules({mods}) {excluded=} using {excludes=}")
+        print(f"add_modules({mods}) excluded={excluded!r} using excludes={excludes!r}")
     do_add_modules(add, *mods)
 
 
@@ -1690,7 +1857,7 @@ def CC_is_clang() -> bool:
 clang_version = None
 
 
-def get_clang_version() -> tuple[int, ...]:
+def get_clang_version() -> "tuple[int, ...]":
     global clang_version
     if clang_version is not None:
         return clang_version
@@ -1719,7 +1886,7 @@ def get_clang_version() -> tuple[int, ...]:
 _gcc_version = None
 
 
-def get_gcc_version() -> tuple[int, ...]:
+def get_gcc_version() -> "tuple[int, ...]":
     global _gcc_version
     if _gcc_version is not None:
         return _gcc_version
@@ -1745,7 +1912,7 @@ def get_gcc_version() -> tuple[int, ...]:
     return _gcc_version
 
 
-def vernum(s) -> tuple[int, ...]:
+def vernum(s) -> "tuple[int, ...]":
     return tuple(int(v) for v in s.split("-", 1)[0].split("."))
 
 
@@ -1795,7 +1962,7 @@ def add_pkgconfig(kw: dict, *pkgs_options):
             print(f"pkg_config_cmd={pkg_config_cmd}")
         r, pkg_config_out, err = get_status_output(pkg_config_cmd)
         if r!=0:
-            raise ValueError("ERROR: call to %r failed (err=%s)" % (shlex.join(pkg_config_cmd), err))
+            raise ValueError("ERROR: call to %r failed (err=%s)" % (command_string(pkg_config_cmd), err))
         if verbose_ENABLED:
             print(f"pkg-config output: {pkg_config_out!r}")
         add_pkgconfig_tokens(kw, pkg_config_out, add_to)
@@ -1889,7 +2056,7 @@ pkgconfig = exec_pkgconfig
 #*******************************************************************************
 
 
-def get_base_conf_dir(install_dir: str, stripbuildroot=True) -> list[str]:
+def get_base_conf_dir(install_dir: str, stripbuildroot=True) -> "list[str]":
     # in some cases we want to strip the buildroot (to generate paths in the config file)
     # but in other cases we want the buildroot path (when writing out the config files)
     # and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
@@ -1953,7 +2120,7 @@ def get_conf_dir(install_dir: str, stripbuildroot=True) -> str:
     return os.path.join(*dirs)
 
 
-def detect_xorg_setup(install_dir="") -> Sequence[str]:
+def detect_xorg_setup(install_dir="") -> "Sequence[str]":
     # pylint: disable=import-outside-toplevel
     from xpra.scripts import config
     config.debug = config.warn
@@ -1961,7 +2128,7 @@ def detect_xorg_setup(install_dir="") -> Sequence[str]:
     return config.detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
 
 
-def detect_xdummy_setup(install_dir="") -> Sequence:
+def detect_xdummy_setup(install_dir="") -> "Sequence":
     # pylint: disable=import-outside-toplevel
     from xpra.scripts import config
     config.debug = config.warn
@@ -1969,7 +2136,7 @@ def detect_xdummy_setup(install_dir="") -> Sequence:
     return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
 
-def convert_templates(install_dir: str, subs: dict[str, str], subdirs: Sequence[str] = ()) -> None:
+def convert_templates(install_dir: str, subs: "dict[str, str]", subdirs: "Sequence[str]" = ()) -> None:
     dirname = os.path.join("fs", "etc", "xpra", *subdirs)
     # get conf dir for install, without stripping the build root
     target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
@@ -2183,7 +2350,7 @@ if modules_ENABLED:
     add_modules("xpra.build_info")
 
 
-def glob_recurse(srcdir: str) -> dict[str, list[str]]:
+def glob_recurse(srcdir: str) -> "dict[str, list[str]]":
     m = {}
     for root, _, files in os.walk(srcdir):
         for f in files:
@@ -2827,7 +2994,7 @@ else:
                 print(f"  root_prefix={root_prefix!r}")
             return root_prefix
 
-        def copytodir(self, src: str, dst_dir: str, dst_name="", chmod=0o644, subs: dict | None=None) -> None:
+        def copytodir(self, src: str, dst_dir: str, dst_name="", chmod=0o644, subs: "dict | None"=None) -> None:
             # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
             # convert absolute paths:
             dst_prefix = self.actual_root_prefix if dst_dir.startswith("/") else self.actual_install_dir
@@ -2966,11 +3133,11 @@ else:
                 if audio_ENABLED:
                     self.dirtodir("fs/etc/xpra/pulse", "/etc/xpra/pulse")
     # add build_conf to build step
-    cmdclass |= {
+    cmdclass.update({
         'build'        : build_override,
         'build_conf'   : build_conf,
         'install_data' : install_data_override,
-    }
+    })
 
     if OSX:
         # pyobjc needs email.parser
@@ -3679,18 +3846,18 @@ if ext_modules:
         Options.docstrings = False
         Options.buffer_max_dims = 3
     if strict_ENABLED and verbose_ENABLED:
-        compiler_directives |= {
+        compiler_directives.update({
             # "warn.undeclared"       : True,
             # "warn.maybe_uninitialized" : True,
             "warn.unused"           : True,
             "warn.unused_result"    : True,
-        }
+        })
     if cython_tracing_ENABLED:
-        compiler_directives |= {
+        compiler_directives.update({
             "linetrace" : True,
             "binding" : True,
             "profile" : True,
-        }
+        })
 
     nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or WIN32 or OSX or ARM or RISCV or sys.version_info >= (3, 14)) else os.cpu_count()))
     setup_options["ext_modules"] = cythonize(ext_modules,

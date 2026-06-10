@@ -22,13 +22,13 @@ SRC_INFO_FILE = "xpra/src_info.py"
 BUILD_INFO_FILE = "xpra/build_info.py"
 
 
-def update_properties(props: dict[str, Any], filename: str) -> None:
+def update_properties(props: "dict[str, Any]", filename: str) -> None:
     eprops = get_properties(filename)
     eprops.update(props)
     save_properties(eprops, filename)
 
 
-def save_properties(props: dict[str, Any], filename: str) -> None:
+def save_properties(props: "dict[str, Any]", filename: str) -> None:
     if os.path.exists(filename):
         try:
             os.unlink(filename)
@@ -43,7 +43,7 @@ def save_properties(props: dict[str, Any], filename: str) -> None:
             print(pair)
 
 
-def get_properties(filename: str) -> dict[str, Any]:
+def get_properties(filename: str) -> "dict[str, Any]":
     props = dict()
     if not os.path.exists(filename):
         return props
@@ -77,7 +77,7 @@ def get_cpuinfo() -> str:
     return "unknown"
 
 
-def get_status_output(*args, **kwargs) -> tuple[int, bytes, bytes]:
+def get_status_output(*args, **kwargs) -> "tuple[int, bytes, bytes]":
     kwargs["stdout"] = PIPE
     kwargs["stderr"] = STDOUT
     try:
@@ -89,7 +89,7 @@ def get_status_output(*args, **kwargs) -> tuple[int, bytes, bytes]:
     return p.returncode, stdout, stderr
 
 
-def get_output_lines(cmd, valid_exit_code=0) -> Sequence[str]:
+def get_output_lines(cmd, valid_exit_code=0) -> "Sequence[str]":
     try:
         returncode, stdout, stderr = get_status_output(cmd, shell=True)
         if returncode != valid_exit_code:
@@ -209,7 +209,7 @@ def jhbuild(*args: str) -> str:
     return out.decode()
 
 
-def get_build_props() -> dict[str, Any]:
+def get_build_props() -> "dict[str, Any]":
     props = {}
     source_epoch = os.environ.get("SOURCE_DATE_EPOCH", "")
     if source_epoch:
@@ -251,7 +251,7 @@ def get_build_props() -> dict[str, Any]:
     return props
 
 
-def get_libs() -> dict[str, Any]:
+def get_libs() -> "dict[str, Any]":
     # record pkg-config versions:
     PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
     libs: dict[str, Any] = {}
@@ -292,7 +292,7 @@ def get_libs() -> dict[str, Any]:
     return libs
 
 
-def get_python_libs() -> dict[str, Any]:
+def get_python_libs() -> "dict[str, Any]":
     # we could potentially limit this data collection to win32 and macos?
     python_libs: dict[str, Any] = {}
     returncode, out, _ = get_status_output(["pip3", "freeze"])
@@ -333,7 +333,7 @@ def record_build_info() -> None:
     save_properties(props, BUILD_INFO_FILE)
 
 
-def get_jhbuild_package_list() -> list[str]:
+def get_jhbuild_package_list() -> "list[str]":
     output = jhbuild("list")
     packages = []
     for line in output.split("\n"):
@@ -343,7 +343,7 @@ def get_jhbuild_package_list() -> list[str]:
     return packages
 
 
-def get_jhbuild_package_info(name: str) -> dict[str, str]:
+def get_jhbuild_package_info(name: str) -> "dict[str, str]":
     output = jhbuild("info", name)
     props: dict[str, str] = {}
     for line in output.split("\n"):
