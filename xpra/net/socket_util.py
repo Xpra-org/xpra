@@ -202,8 +202,13 @@ def add_listen_socket(listener: SocketListener, server, new_connection_cb: Calla
         # ugly that we have different ways of starting sockets,
         # TODO: abstract this into the socket class
         if socktype == "named-pipe":
-            # named pipe listener uses a thread:
-            listener.socket.new_connection_cb = new_connection_cb
+            # named pipe listener uses a thread, and calls back from that thread with
+            # (socktype, np_listener, handle).  The server / client `_new_connection`
+            # expects (SocketListener, handle) instead, so bridge the two here where
+            # the SocketListener wrapper is in scope:
+            def np_new_connection(_socktype, _np_listener, handle) -> bool:
+                return new_connection_cb(listener, handle)
+            listener.socket.new_connection_cb = np_new_connection
             listener.socket.start()
             return None
         if socktype == "quic":
@@ -873,14 +878,16 @@ def setup_local_sockets(bind, socket_dirs, session_dir: str,
 
     if WIN32:
         try:
-            from xpra.platform.win32.namedpipes.listener import NamedPipeListener
+            from xpra.platform.win32.namedpipes.listener import NamedPipeListener, DEFAULT_REMOTE
             from xpra.platform.win32.dotxpra import PIPE_PATH
             for sockpath, options in sockpaths.items():
-                npl = NamedPipeListener(sockpath)
+                remote_opt = options.get("remote")
+                remote = DEFAULT_REMOTE if remote_opt is None else str(remote_opt).lower() in TRUE_OPTIONS
+                npl = NamedPipeListener(sockpath, remote=remote)
                 ppath = sockpath
                 if ppath.startswith(PIPE_PATH):
                     ppath = ppath[len(PIPE_PATH):]
-                log.info(f"created named pipe '{ppath}'")
+                log.info(f"created named pipe '{ppath}'%s" % (" (remote access enabled)" if remote else ""))
                 defs.append(SocketListener("named-pipe", npl, sockpath, options, npl.stop, noop))
             return defs
         except Exception:

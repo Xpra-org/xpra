@@ -25,7 +25,7 @@ from xpra.platform.win32.namedpipes.common import (
     SECURITY_DESCRIPTOR, TOKEN_USER, TOKEN_PRIMARY_GROUP,
     CreateNamedPipeA, ConnectNamedPipe,
     WaitForSingleObject, GetLastError,
-    SetSecurityDescriptorDacl, SetSecurityDescriptorSacl,
+    SetSecurityDescriptorDacl,
     InitializeSecurityDescriptor,
     OpenProcessToken, GetTokenInformation,
     SetSecurityDescriptorOwner, SetSecurityDescriptorGroup,
@@ -44,6 +44,9 @@ from xpra.platform.win32.constants import (
 log = Logger("network", "named-pipe", "win32")
 
 UNRESTRICTED = envbool("XPRA_NAMED_PIPE_UNRESTRICTED", False)
+# allow remote (SMB / IPC$) clients by default?
+# this only takes effect when the bind option `remote=yes` is not specified explicitly
+DEFAULT_REMOTE = envbool("XPRA_NAMED_PIPE_REMOTE", False)
 
 ERROR_INSUFFICIENT_BUFFER = 122
 
@@ -71,6 +74,7 @@ TokenPrimaryGroup = 0x5
 WinWorldSid = 1
 WinLocalSid = 2
 WinAnonymousSid = 13
+WinAuthenticatedUserSid = 17
 
 STANDARD_RIGHTS_ALL = 0x001F0000
 SPECIFIC_RIGHTS_ALL = 0x0000FFFF
@@ -78,16 +82,19 @@ GENERIC_ALL = 0x10000000
 
 
 class NamedPipeListener(Thread):
-    def __init__(self, pipe_name: str, new_connection_cb: Callable = noop):
-        log("NamedPipeListener(%s, %s)", pipe_name, new_connection_cb)
+    def __init__(self, pipe_name: str, new_connection_cb: Callable = noop, remote: bool = DEFAULT_REMOTE):
+        log("NamedPipeListener(%s, %s, remote=%s)", pipe_name, new_connection_cb, remote)
         self.pipe_name = pipe_name
         if new_connection_cb != noop:
             self.new_connection_cb = new_connection_cb
+        self.remote = remote
         self.exit_loop = False
         super().__init__(name="NamedPipeListener-%s" % pipe_name)
         self.daemon = True
         self.security_attributes: SECURITY_ATTRIBUTES | None = None
         self.security_descriptor: SECURITY_DESCRIPTOR | None = None
+        self._acl_buffer = None
+        self._acl_sids: list = []
         self.token_process = HANDLE()
         cur_proc = GetCurrentProcess()
         log("GetCurrentProcess()=%#x", cur_proc)
@@ -115,6 +122,8 @@ class NamedPipeListener(Thread):
             CloseHandle(tp)
         self.security_attributes = None
         self.security_descriptor = None
+        self._acl_buffer = None
+        self._acl_sids = []
         return ExitCode.OK
 
     @staticmethod
@@ -243,42 +252,51 @@ class NamedPipeListener(Thread):
         log("SetSecurityDescriptorGroup: %s", SD)
         SA = SECURITY_ATTRIBUTES()
         log("CreatePipeSecurityObject() SECURITY_ATTRIBUTES=%s", SA)
-        if not UNRESTRICTED:
-            SA.descriptor = SD
+        # decide which extra principals (beyond the creator) are granted access:
+        if UNRESTRICTED:
+            # grant 'Everyone' (World) - wide open, including anonymous logons
+            allow_sid_types: list[int] = [WinWorldSid]
+        elif self.remote:
+            # grant 'Authenticated Users' so SMB / IPC$ clients can connect remotely.
+            # remote callers are authenticated by the SMB server (Kerberos/NTLM) before
+            # they reach the pipe, and then again by xpra's own authentication modules.
+            allow_sid_types = [WinAuthenticatedUserSid]
+        else:
+            # local only: leave lpSecurityDescriptor NULL so the pipe gets the token's
+            # default DACL (creator + LocalSystem).  This denies remote (SMB) clients.
             SA.bInheritHandle = False
             return SA
-        if not SetSecurityDescriptorSacl(byref(SD), False, None, False):
-            raise OSError()
-        if not SetSecurityDescriptorDacl(byref(SD), True, None, False):
-            raise OSError()
-        # this doesn't work - and I don't know why:
-        # SECURITY_NT_AUTHORITY = 5
-        # sia_anonymous = SID_IDENTIFIER_AUTHORITY((0, 0, 0, 0, 0, SECURITY_NT_AUTHORITY))
-        # log("SID_IDENTIFIER_AUTHORITY(SECURITY_NT_AUTHORITY)=%s", sia_anonymous)
-        # sid_allow = SID()
-        # log("empty SID: %s", sid_allow)
-        # if not AllocateAndInitializeSid(byref(sia_anonymous), 1,
-        #                         SECURITY_ANONYMOUS_LOGON_RID, 0, 0, 0, 0, 0, 0, 0,
-        #                         byref(sid_allow),
-        #                         ):
-        #    raise WindowsError()
-        #    log("AllocateAndInitializeSid(..) sid_anonymous=%s", sid_allow)
-        sid_allow = SID()
-        sid_size = DWORD(sizeof(SID))
-        sid_type = WinWorldSid
+        self._apply_allow_dacl(SD, user, allow_sid_types)
+        SA.nLength = sizeof(SECURITY_ATTRIBUTES)
+        SA.lpSecurityDescriptor = cast(pointer(SD), c_void_p)
+        SA.bInheritHandle = True
+        self.security_attributes = SA
+        return SA
+
+    def _apply_allow_dacl(self, SD: SECURITY_DESCRIPTOR, user, sid_types: list) -> None:
+        """build a DACL granting full access to the creator plus each well-known SID type,
+        and attach it to the security descriptor *SD*."""
         SECURITY_MAX_SID_SIZE = 68
         assert sizeof(SID) >= SECURITY_MAX_SID_SIZE
-        if not CreateWellKnownSid(sid_type, None, byref(sid_allow), byref(sid_size)):
-            log.error("error=%s", GetLastError())
-            raise OSError()
-        assert sid_size.value <= SECURITY_MAX_SID_SIZE
-        log("CreateWellKnownSid(..) sid_allow=%s, sid_size=%s", sid_allow, sid_size)
+        # build the well-known SIDs we want to allow:
+        allow_sids = []
+        total_sid_len = GetLengthSid(user.SID)
+        for sid_type in sid_types:
+            sid = SID()
+            sid_size = DWORD(sizeof(SID))
+            if not CreateWellKnownSid(sid_type, None, byref(sid), byref(sid_size)):
+                log.error("CreateWellKnownSid(%s) error=%s", sid_type, GetLastError())
+                raise OSError()
+            assert sid_size.value <= SECURITY_MAX_SID_SIZE
+            log("CreateWellKnownSid(%s)=%s, size=%s", sid_type, sid, sid_size.value)
+            allow_sids.append(sid)
+            total_sid_len += GetLengthSid(byref(sid))
 
+        # one ACE for the creator, plus one for each well-known SID:
+        n_aces = 1 + len(allow_sids)
         acl_size = sizeof(ACL)
-        acl_size += 2 * (sizeof(ACCESS_ALLOWED_ACE) - sizeof(DWORD))
-        acl_size += GetLengthSid(byref(sid_allow))
-        acl_size += GetLengthSid(byref(user.SID.contents))
-        # acl_size += GetLengthSid(user.SID)
+        acl_size += n_aces * (sizeof(ACCESS_ALLOWED_ACE) - sizeof(DWORD))
+        acl_size += total_sid_len
         acl_data = create_string_buffer(acl_size)
         acl = cast(acl_data, POINTER(ACL)).contents
         log("acl_size=%s, acl_data=%s, acl=%s", acl_size, acl_data, acl)
@@ -287,27 +305,16 @@ class NamedPipeListener(Thread):
         log("InitializeAcl(..) acl=%s", acl)
 
         rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
-        add_sid = user.SID
-        r = AddAccessAllowedAce(byref(acl), ACL_REVISION, rights, add_sid)
-        if r == 0:
-            err = GetLastError()
-            log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
-            raise OSError()
-
-        rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
-        add_sid = byref(sid_allow)
-        r = AddAccessAllowedAce(byref(acl), ACL_REVISION, rights, add_sid)
-        if r == 0:
-            err = GetLastError()
-            log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
-            raise OSError()
+        for add_sid in [user.SID] + [byref(s) for s in allow_sids]:
+            if AddAccessAllowedAce(byref(acl), ACL_REVISION, rights, add_sid) == 0:
+                err = GetLastError()
+                log("AddAccessAllowedAce(%s)=%s", add_sid, ACL_ERRORS.get(err, err))
+                raise OSError()
         if not SetSecurityDescriptorDacl(byref(SD), True, byref(acl), False):
             raise OSError()
-        SA.nLength = sizeof(SECURITY_ATTRIBUTES)
-        SA.lpSecurityDescriptor = cast(pointer(SD), c_void_p)
-        SA.bInheritHandle = True
-        self.security_attributes = SA
-        return SA
+        # keep the ACL buffer and SIDs alive until the pipe handle is created:
+        self._acl_buffer = acl_data
+        self._acl_sids = allow_sids
 
 
 def main() -> None:

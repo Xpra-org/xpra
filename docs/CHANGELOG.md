@@ -18,6 +18,7 @@
   * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
   * [`scram`] authentication](https://github.com/Xpra-org/xpra/issues/1771)
   * [serialized SSL socket access](https://github.com/Xpra-org/xpra/issues/4919)
+  * [support remote UNC named-pipe URLs](https://github.com/Xpra-org/xpra/issues/1454)
 * 🌈 Encodings:
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
   * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)

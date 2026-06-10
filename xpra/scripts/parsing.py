@@ -547,15 +547,41 @@ def parse_display_name(opts, display_name: str, cmdline=(),
             raise RuntimeError(f"{protocol} is not supported on this platform")
         add_credentials()
         add_query()
-        pipe_name = parsed.netloc
-        from xpra.platform.win32.dotxpra import PIPE_PREFIX
-        if not pipe_name.startswith(PIPE_PREFIX):
-            pipe_name = f"{PIPE_PREFIX}{pipe_name}"
+        from xpra.platform.win32.dotxpra import PIPE_PREFIX, PIPE_ROOT
+        raw_path = parsed.path or ""
+        combined = parsed.netloc + raw_path
+
+        def with_prefix(name: str) -> str:
+            return name if name.startswith(PIPE_PREFIX) else f"{PIPE_PREFIX}{name}"
+
+        # an explicit host (anything other than "" or ".") routes over SMB / IPC$,
+        # even for 127.0.0.1 or the local hostname - that is what makes remote
+        # access testable on a single machine.
+        if "\\pipe\\" in combined.lower() or combined.startswith("\\"):
+            # a full UNC path was given (urlparse mangles the backslashes into netloc):
+            # \\HOST\pipe\Xpra\Main  (or \\.\pipe\... for local)
+            unc = combined.lstrip("\\")
+            named_pipe = PIPE_ROOT + unc
+            host = unc.split("\\", 1)[0] if unc else "."
+            local = host in ("", ".")
+        elif parsed.netloc and raw_path.strip("/"):
+            # remote form: named-pipe://HOST/Main
+            host = parsed.netloc
+            pipe_name = with_prefix(raw_path.strip("/"))
+            local = host in ("", ".")
+            named_pipe = pipe_name if local else f"{PIPE_ROOT}{host}\\pipe\\{pipe_name}"
+        else:
+            # local form: named-pipe://Main
+            host = ""
+            local = True
+            named_pipe = with_prefix(parsed.netloc)
+        if host and not local:
+            desc["host"] = host
         desc.update(
             {
-                "local": True,
+                "local": local,
                 "display": "DISPLAY",
-                "named-pipe": pipe_name,
+                "named-pipe": named_pipe,
             }
         )
         opts.display = display_name

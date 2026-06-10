@@ -247,6 +247,8 @@ ALIASES: dict[str, str] = {
     "macos": "osx",
     "notification": "notify",
     "authentication": "auth",
+    "namedpipe": "named-pipe",
+    "namedpipes": "named-pipe",
 }
 
 # noinspection PyPep8
