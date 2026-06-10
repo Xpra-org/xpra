@@ -795,21 +795,72 @@ def get_rpm_macro(macro: str) -> str:
     return r.stdout.strip() if r.returncode == 0 else ""
 
 
+def get_spec_filed_packages(spec: str, env: dict[str, str]) -> set[str] | None:
+    # the names of the (sub)packages that have a `%files` section in the
+    # macro-expanded spec, and which `rpmbuild` will therefore actually produce.
+    # a package declared with `%package` (or the main `Name:`) but *without* a
+    # `%files` section is never built, even though `rpmspec --rpms` still lists it.
+    # returns `None` if this cannot be determined (so callers do not filter):
+    from subprocess import run
+    main = run(["rpmspec", "-q", "--srpm", "--qf", "%{name}", spec], capture_output=True, text=True, env=env)
+    if main.returncode != 0:
+        return None
+    mainname = main.stdout.strip()
+    expanded = run(["rpmspec", "-P", spec], capture_output=True, text=True, env=env)
+    if expanded.returncode != 0:
+        return None
+    names: set[str] = set()
+    for line in expanded.stdout.splitlines():
+        if not line.startswith("%files"):
+            continue
+        # `%files [-n NAME] [-f FILELIST] [SUFFIX]`:
+        # `-n NAME` gives an absolute name, a bare `SUFFIX` means `%{name}-SUFFIX`,
+        # and no argument at all refers to the main package (`%{name}`):
+        args = shlex.split(line[len("%files"):])
+        name: str = ""
+        suffix = ""
+        i = 0
+        while i < len(args):
+            arg = args[i]
+            if arg == "-n":
+                i += 1
+                name = args[i] if i < len(args) else name
+            elif arg == "-f":
+                i += 1
+            elif not arg.startswith("-"):
+                suffix = arg
+            i += 1
+        if not name:
+            name = f"{mainname}-{suffix}" if suffix else mainname
+        names.add(name)
+    return names
+
+
 def get_spec_binary_rpms(spec: str, env: dict[str, str]) -> list[str]:
     # the binary RPM file stems this spec file would produce,
     # excluding the `debuginfo`, `debugsource` and `-doc-` subpackages,
     # ie: ["python3-fido2-2.2.0-1.x86_64"]
     # (the environment is passed through so that `%{getenv:PYTHON3}` and friends are honoured)
     from subprocess import run
-    cmd = ["rpmspec", "-q", "--rpms", "--qf", "%{name}-%{version}-%{release}.%{arch}\n", spec]
+    # only the packages that have a `%files` section are actually built,
+    # so ignore container packages (ie: `pycairo`, `pygobject3`) that have none -
+    # otherwise they would always be reported as "missing" and rebuilt every time:
+    filed = get_spec_filed_packages(spec, env)
+    cmd = ["rpmspec", "-q", "--rpms", "--qf", "%{name} %{name}-%{version}-%{release}.%{arch}\n", spec]
     r = run(cmd, capture_output=True, text=True, env=env)
     if r.returncode != 0:
         return []
     rpms = []
     for line in r.stdout.splitlines():
-        nvra = line.strip()
-        if nvra and not any(x in nvra for x in ("debuginfo", "debugsource", "-doc-")):
-            rpms.append(nvra)
+        parts = line.split(None, 1)
+        if len(parts) != 2:
+            continue
+        name, nvra = parts
+        if any(x in nvra for x in ("debuginfo", "debugsource", "-doc-")):
+            continue
+        if filed is not None and name not in filed:
+            continue
+        rpms.append(nvra)
     return rpms
 
 
@@ -927,9 +978,9 @@ def build_packages() -> int:
         if expected:
             missing = missing_rpms(expected, rpms_dir)
             if not missing:
-                print(f"* {entry:<32}: already built ({len(expected)} package(s) present), skipping")
+                print(f"* {entry:<32}: already built, {len(expected)} package(s) present")
                 continue
-            print(f"* {entry}: {len(missing)} of {len(expected)} package(s) missing: {', '.join(missing)}")
+            print(f"* {entry:32}: {len(missing)} of {len(expected)} package(s) missing: {', '.join(missing)}")
         log_file = os.path.join(log_dir, f"{entry}.log")
         if sudo:
             # prime sudo (visible prompt) so the redirected `builddep` step does not hang on a hidden one:
