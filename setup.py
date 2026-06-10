@@ -1178,6 +1178,9 @@ def build_packages() -> int:
             f"--enablerepo={local_repo}",
             f"--setopt={local_repo}.gpgcheck=0",
             f"--setopt={local_repo}.repo_gpgcheck=0",
+            # the local repo is regenerated every build, so never trust the
+            # `/var/cache/dnf` metadata copy (it would advertise stale/removed RPMs):
+            f"--setopt={local_repo}.metadata_expire=0",
             "builddep", "-y", spec,
         ]
         if not run_to_logfile(builddep, log_file, env, append=True):
