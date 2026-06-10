@@ -17,10 +17,11 @@
   * [longer session connection timeout for ssh sessions](https://github.com/Xpra-org/xpra/issues/4904)
   * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
   * [`scram`] authentication](https://github.com/Xpra-org/xpra/issues/1771)
+  * [serialized SSL socket access](https://github.com/Xpra-org/xpra/issues/4919)
 * 🌈 Encodings:
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
   * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)
-  * [`libva` encoder](https://github.com/Xpra-org/xpra/issues/4628)
+  * [`libva` encoder](https://github.com/Xpra-org/xpra/issues/4628)[ and decoder](https://github.com/Xpra-org/xpra/issues/4907)
   * [macOS `VideoToolbox` encoder](https://github.com/Xpra-org/xpra/issues/4908)
   * [native MS Windows DirectShow webcam backend](https://github.com/Xpra-org/xpra/issues/3336)
   * [native macOS CoreMedia webcam backend](https://github.com/Xpra-org/xpra/issues/1231)
