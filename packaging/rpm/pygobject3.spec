@@ -112,6 +112,7 @@ if [ "${sha256}" != "%{pygobject_sha256}" ]; then
 	exit 1
 fi
 %autosetup -n pygobject-%{version} -p1
+sed -i "s/meson_version : '>= 0.64.0'/meson_version : '>= 0.63.0'/" meson.build
 
 %build
 %meson -Dpython=%{python3} -Dtests=false
