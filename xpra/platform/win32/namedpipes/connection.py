@@ -21,7 +21,7 @@ from xpra.platform.win32.common import (
     IO_ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING,
     )
 from xpra.platform.win32.namedpipes.common import (
-    OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE,
+    OVERLAPPED, WAIT_STR, INVALID_HANDLE, INVALID_HANDLE_VALUE,
     INFINITE,
     CreateEventA, CreateFileA,
     ReadFile, WriteFile, SetEvent,
@@ -201,8 +201,11 @@ def connect_to_namedpipe(pipe_name, timeout=10):
             raise RuntimeError("timeout waiting for named pipe '%s'" % pipe_name)
         pipe_handle = CreateFileA(strtobytes(pipe_name), GENERIC_READ | GENERIC_WRITE,
                                   0, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0)
-        log("CreateFileA(%s)=%#x", pipe_name, pipe_handle)
-        if pipe_handle!=INVALID_HANDLE_VALUE:
+        log("CreateFileA(%s)=%s", pipe_name, pipe_handle)
+        # Compare by integer value: in Python 3.12+ ctypes instances no longer compare
+        # equal to plain Python ints, so comparing against INVALID_HANDLE (c_void_p) is
+        # broken.  INVALID_HANDLE_VALUE is the plain-int sentinel.
+        if pipe_handle not in (None, INVALID_HANDLE, INVALID_HANDLE_VALUE):
             break
         err = GetLastError()
         log("CreateFileA(..) error=%s", err)
