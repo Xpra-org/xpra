@@ -40,7 +40,7 @@ from xpra.platform.info import get_name, get_username
 from xpra.os_util import (
     get_machine_id, get_user_uuid, register_SIGUSR_signals,
     filedata_nocrlf, force_quit,
-    SIGNAMES, BITS,
+    SIGNAMES, BITS, is_main_thread,
     strtobytes, bytestostr, hexstr, use_gui_prompt,
     parse_encoded_bin_data,
     )
@@ -684,8 +684,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def warn_and_quit(self, exit_code:int, message:str):
         log.warn(message)
-        self.quit(exit_code)
-
+        if is_main_thread():
+            self.quit(exit_code)
+        else:
+            self.idle_add(self.quit, exit_code)
 
     def send_shutdown_server(self) -> None:
         assert self.server_client_shutdown
