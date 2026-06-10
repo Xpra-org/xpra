@@ -12,8 +12,8 @@
 %define package_prefix %{py3rpmname}-
 %undefine __pythondist_requires
 %undefine __python_requires
-%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
 %if 0%{?el8}
@@ -78,6 +78,8 @@ Summary:        Python 3 bindings for GObject Introspection base package
 Requires:       gobject-introspection%{?_isa} >= %{gobject_introspection_version}
 %if 0%{?el8}
 Requires:       %{py3rpmname}-gobject-base-noarch = %{version}-%{release}
+%else
+Obsoletes:      %{py3rpmname}-gobject-base-noarch < %{version}-%{release}
 %endif
 Requires:       %{py3rpmname}
 
@@ -101,6 +103,9 @@ library.
 Summary:        Development files for embedding PyGObject introspection support
 Requires:       %{py3rpmname}-gobject%{?_isa} = %{version}-%{release}
 Requires:       gobject-introspection-devel%{?_isa}
+%if "%{getenv:PYTHON3}" != ""
+Requires:       python3-gobject-devel
+%endif
 
 %description -n %{py3rpmname}-gobject-devel
 This package contains files required to embed PyGObject
@@ -153,9 +158,11 @@ sed -i "s/meson_version : '>= 0.64.0'/meson_version : '>= 0.63.0'/" meson.build
 %endif
 
 %files -n %{py3rpmname}-gobject-devel
+%if "%{getenv:PYTHON3}" == ""
 %dir %{_includedir}/pygobject-3.0/
 %{_includedir}/pygobject-3.0/pygobject.h
 %{_libdir}/pkgconfig/pygobject-3.0.pc
+%endif
 
 %changelog
 * Tue Jun 09 2026 Antoine Martin <antoine@xpra.org> - 3.50.2-1
