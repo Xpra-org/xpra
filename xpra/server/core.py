@@ -14,7 +14,7 @@ import threading
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from types import FrameType
-from typing import Any, NoReturn
+from typing import Any, NoReturn, TYPE_CHECKING
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_CLOSE, CONNECTION_LOST, GIBBERISH, INVALID
@@ -36,9 +36,12 @@ from xpra.net.socket_util import (
     parse_bind_options, create_sockets, check_ssh_upgrades,
 )
 from xpra.net.bytestreams import (
-    Connection, SSLSocketConnection, SocketConnection,
+    Connection, SocketConnection,
     set_socket_timeout, log_new_connection, SOCKET_TIMEOUT
 )
+if TYPE_CHECKING:
+    # imported lazily at runtime (pulls in `ssl`); only needed here for type hints:
+    from xpra.net.tls.connection import SSLSocketConnection
 from xpra.net.net_util import get_network_caps, import_netifaces, get_all_ips
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -999,7 +1002,8 @@ class ServerCore(GLibServer):
             t = GLib.timeout_add(rfb_upgrade * 1000, rfb.try_upgrade_to_rfb, proto)
             rfb.socket_rfb_upgrade_timer[proto] = t
 
-    def ssl_wrap(self, conn, socket_options: dict[str, Any]) -> SSLSocketConnection | None:
+    def ssl_wrap(self, conn, socket_options: dict[str, Any]) -> "SSLSocketConnection | None":
+        from xpra.net.tls.connection import SSLSocketConnection
         sock = conn._socket
         socktype = conn.socktype
         ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
@@ -1196,6 +1200,7 @@ class ServerCore(GLibServer):
             sock = self._ssl_wrap_socket(socktype, sock, socket_options)
             if sock is None:
                 return False, None, b""
+            from xpra.net.tls.connection import SSLSocketConnection
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl", socket_options=socket_options)
             conn.socktype_wrapped = socktype
             from xpra.net.tls.socket import ssl_handshake
@@ -1601,6 +1606,7 @@ class ServerCore(GLibServer):
             self.disconnect_protocol(proto, "failed to upgrade socket to ssl")
             force_close_connection(conn)
             return
+        from xpra.net.tls.connection import SSLSocketConnection
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, "ssl", socket_options=options)
         ssl_conn.socktype_wrapped = socktype
         protocol_class = get_server_protocol_class(new_socktype)

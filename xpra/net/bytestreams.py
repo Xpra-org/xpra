@@ -15,7 +15,7 @@ from xpra.exit_codes import ExitCode
 from xpra.net.common import ConnectionClosedException, get_peercred_info, FULL_INFO, pretty_socket
 from xpra.net.constants import IP_SOCKTYPES, TCP_SOCKTYPES, IP_OPTIONS, TCP_OPTIONS, SOCKET_OPTIONS
 from xpra.util.str_fn import csv
-from xpra.util.env import hasenv, envint, envbool, SilenceWarningsContext
+from xpra.util.env import hasenv, envint, envbool
 from xpra.util.thread import start_thread
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
 from xpra.log import Logger
@@ -391,6 +391,10 @@ class SocketConnection(Connection):
     def write(self, buf, _packet_type: str = "") -> int:
         return self._write(self._socket.send, buf)
 
+    def set_timeout(self, timeout) -> None:
+        self.timeout = timeout or 0
+        self._socket.settimeout(timeout)
+
     def close(self) -> None:
         s = self._socket
         log(f"{self}.close() socket={s}")
@@ -641,74 +645,11 @@ class SocketPeekWrapper:
         return self.socket.recv_into(buf)
 
 
-class SSLSocketConnection(SocketConnection):
-    SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
-    SSL_ERROR_MESSAGES = ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD")
-
-    def read(self, n: int) -> bytes:
-        buf = self._read(self._socket.recv, n)
-        if not buf:
-            return buf
-        # TLS 1.3 may have more decrypted data already in the SSL buffer
-        # that won't make the socket fd readable again (pending() > 0).
-        # Drain it now to avoid blocking on the next recv() call.
-        pending = getattr(self._socket, "pending", None)
-        if pending:
-            extra = pending()
-            if extra > 0:
-                buf += self._read(self._socket.recv, extra)
-        return buf
-
-    def can_retry(self, e) -> bool | str:
-        if getattr(e, "library", "") == "SSL":
-            reason = getattr(e, "reason", "")
-            if reason in SSLSocketConnection.SSL_ERROR_MESSAGES:
-                log("SSL library error, message: %r", reason)
-                return False
-            log("SSL library exception: %s, reason=%r", e, reason)
-        message = e.args[0]
-        if message in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
-            log("SSL timeout will be retried, messsage: %r", message)
-            return True
-        code = getattr(e, "code", None)
-        if code in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
-            log("SSL timeout will be retried, code: %r", code)
-            return True
-        return super().can_retry(e)
-
-    def get_info(self) -> dict[str, Any]:
-        i = super().get_info()
-        i["ssl"] = True
-        for k, fn in {
-            "compression": "compression",
-            "alpn-protocol": "selected_alpn_protocol",
-            "npn-protocol": "selected_npn_protocol",
-            "version": "version",
-        }.items():
-            sfn = getattr(self._socket, fn, None)
-            if sfn:
-                with SilenceWarningsContext(DeprecationWarning):
-                    v = sfn()
-                if v is not None:
-                    i[k] = v
-        cipher_fn = getattr(self._socket, "cipher", None)
-        if cipher_fn:
-            cipher = cipher_fn()
-            if cipher:
-                i["cipher"] = {
-                    "name": cipher[0],
-                    "protocol": cipher[1],
-                    "bits": cipher[2],
-                }
-        return i
-
-
 def set_socket_timeout(conn, timeout=None) -> None:
     # FIXME: this is ugly, but less intrusive than the alternative?
     if isinstance(conn, SocketConnection):
-        sock = conn._socket
-        log("set_socket_timeout(%s, %s) applied to %s", conn, timeout, sock)
-        conn._socket.settimeout(timeout)
+        log("set_socket_timeout(%s, %s) applied to %s", conn, timeout, conn._socket)
+        conn.set_timeout(timeout)
     else:
         log("set_socket_timeout(%s, %s) ignored for %s", conn, timeout, type(conn))
 

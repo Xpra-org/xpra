@@ -66,7 +66,7 @@ class SSLUpgradeClient(StubClientMixin):
         ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
         ssl_handshake(ssl_sock)
         log("ssl handshake complete")
-        from xpra.net.bytestreams import SSLSocketConnection
+        from xpra.net.tls.connection import SSLSocketConnection
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, new_socktype)
         self._protocol = self.make_protocol(ssl_conn)
         self._protocol.start()
