@@ -605,7 +605,7 @@ class ShadowServer(ShadowServerBase):
 
     def setup_capture(self):
         """Full-desktop capture used by nvfbc / gstreamer explicit-backend mode."""
-        x, y, w, h = self.get_monitor_geometry()
+        w, h = self.get_monitor_geometry()[2:4]
         backend = self.backend.lower()
         if backend in ("nvfbc", "auto") and NVFBC:
             capture = _setup_nvfbc_capture(w, h, self.pixel_depth)
