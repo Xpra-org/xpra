@@ -781,6 +781,19 @@ def run_to_logfile(cmd: list[str], log_file: str, env: dict[str, str], append=Fa
         return run(cmd, stdout=f, stderr=f, env=env).returncode == 0
 
 
+def rpmbuild_repo_url(rpms_dir: str) -> str:
+    return "file://" + os.path.abspath(os.path.expanduser(rpms_dir))
+
+
+def update_rpmbuild_repo(rpms_dir: str, log_file: str, env: dict[str, str], append=True) -> bool:
+    createrepo = shutil.which("createrepo") or shutil.which("createrepo_c")
+    if not createrepo:
+        raise RuntimeError("cannot find `createrepo` or `createrepo_c` for updating the local RPM repository")
+    os.makedirs(rpms_dir, exist_ok=True)
+    print(f"  - updating RPM repository metadata in {rpms_dir!r}")
+    return run_to_logfile([createrepo, rpms_dir], log_file, env, append=append)
+
+
 def show_logfile(log_file: str) -> None:
     try:
         with open(log_file, encoding="utf-8", errors="replace") as f:
@@ -987,20 +1000,36 @@ def build_packages() -> int:
             from subprocess import run
             if run(sudo + ["-v"]).returncode != 0:
                 raise RuntimeError("failed to obtain sudo privileges for installing build dependencies")
+        local_repo = "xpra-local-rpmbuild"
+        if not update_rpmbuild_repo(rpms_dir, log_file, env, append=False):
+            print(f"  - updating local RPM repository before {entry!r} failed:")
+            show_logfile(log_file)
+            return 1
         print(f"  - installing build dependencies (logging to {log_file!r})")
         builddep = list(sudo)
         if sudo and manifest_vars:
             # `sudo` resets the environment, so preserve the variables we set
             # (ie: `PYTHON3`, which the spec reads via `%{getenv:PYTHON3}`):
             builddep.append("--preserve-env=" + ",".join(sorted(manifest_vars)))
-        builddep += [dnf, "builddep", "-y", spec]
-        if not run_to_logfile(builddep, log_file, env):
+        builddep += [
+            dnf,
+            f"--repofrompath={local_repo},{rpmbuild_repo_url(rpms_dir)}",
+            f"--enablerepo={local_repo}",
+            f"--setopt={local_repo}.gpgcheck=0",
+            f"--setopt={local_repo}.repo_gpgcheck=0",
+            "builddep", "-y", spec,
+        ]
+        if not run_to_logfile(builddep, log_file, env, append=True):
             print(f"  - installing build dependencies for {entry!r} failed:")
             show_logfile(log_file)
             return 1
         print(f"  - building package (logging to {log_file!r})")
         if not run_to_logfile(["rpmbuild", "-ba", spec], log_file, env, append=True):
             print(f"  - building {entry!r} failed:")
+            show_logfile(log_file)
+            return 1
+        if not update_rpmbuild_repo(rpms_dir, log_file, env):
+            print(f"  - updating local RPM repository for {entry!r} failed:")
             show_logfile(log_file)
             return 1
         print("  - done")
