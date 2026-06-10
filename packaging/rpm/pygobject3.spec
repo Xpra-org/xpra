@@ -133,12 +133,13 @@ sed -i "s/meson_version : '>= 0.64.0'/meson_version : '>= 0.63.0'/" meson.build
 %license COPYING
 %doc NEWS
 %dir %{python3_sitearch}/gi/
-%{python3_sitearch}/gi/overrides/
-%{python3_sitearch}/gi/repository/
+%dir %{python3_sitelib}/gi/
+%{python3_sitelib}/gi/overrides/
+%{python3_sitelib}/gi/repository/
 %pycached %{python3_sitearch}/gi/*.py
 %{python3_sitearch}/gi/_gi.*.so
 %{python3_sitearch}/PyGObject-*.dist-info/
-%{python3_sitearch}/pygtkcompat/
+%{python3_sitelib}/pygtkcompat/
 %endif
 
 %if 0%{?el8}
