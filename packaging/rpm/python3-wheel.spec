@@ -70,7 +70,7 @@ rm -fr %{buildroot}%{python3_sitelib}/packaging*egg
 rm -fr %{buildroot}%{python3_sitelib}/__pycache__
 rm -f %{buildroot}%{python3_sitelib}/easy-install.pth
 rm -f %{buildroot}%{python3_sitelib}/site.py
-rm -f %{buildroot}%{python3_sitelib}/%{pypi_name}-*.egg-info
+rm -fr %{buildroot}%{python3_sitelib}/%{pypi_name}-*.egg-info
 # setuptools and / or pkg_resources generate an unusable mess,
 # so use this wrapper instead:
 mkdir -p %{buildroot}%{_bindir} >& /dev/null
