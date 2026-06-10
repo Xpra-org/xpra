@@ -37,19 +37,46 @@ def _read_exactly(conn, n: int) -> bytes:
 
 def _mp_echo_client(pipe_name: str, payload: bytes, result_q, timeout: int = 15) -> None:
     """Subprocess worker: connect, write *payload*, read it back, report result."""
+    import threading
     try:
         from xpra.platform.win32.namedpipes.connection import connect_to_namedpipe, NamedPipeConnection
         handle = connect_to_namedpipe(pipe_name, timeout=timeout)
         conn = NamedPipeConnection(pipe_name, handle, {})
-        conn.write(payload, "test")
-        received = b""
-        while len(received) < len(payload):
-            chunk = conn.read(len(payload) - len(received))
-            if not chunk:
-                break
-            received += chunk
+
+        # Run writes and reads on separate threads to avoid cross-process deadlock.
+        # _pipe_write calls FlushFileBuffers after each chunk; if writes and reads
+        # are sequential the server's echo-FlushFileBuffers can block indefinitely
+        # waiting for a client read that hasn't started yet.
+        received_parts: list = []
+        read_err: list = []
+
+        def _reader() -> None:
+            total = 0
+            try:
+                while total < len(payload):
+                    chunk = conn.read(len(payload) - total)
+                    if not chunk:
+                        break
+                    received_parts.append(chunk)
+                    total += len(chunk)
+            except Exception as e:
+                read_err.append(str(e))
+
+        rt = threading.Thread(target=_reader, daemon=True)
+        rt.start()
+
+        _CHUNK = 65536
+        off = 0
+        while off < len(payload):
+            conn.write(payload[off:off + _CHUNK], "test")
+            off += _CHUNK
+
+        rt.join(timeout=30)
         conn.close()
-        result_q.put(("ok", received))
+        if read_err:
+            result_q.put(("error", read_err[0]))
+        else:
+            result_q.put(("ok", b"".join(received_parts)))
     except Exception as e:
         result_q.put(("error", str(e)))
 
@@ -481,24 +508,35 @@ class TestNamedPipeMultiprocess(unittest.TestCase):
         return s
 
     def _run_clients(self, target, args_list, per_proc_timeout: int = 20) -> list:
-        """Launch len(args_list) subprocesses, each running target(*args), and collect results."""
+        """Launch len(args_list) subprocesses, each running target(*args), and collect results.
+
+        Drains the result queue WHILE processes run.  If the main thread does
+        p.join() before reading, a large result payload fills the queue's
+        internal pipe and the subprocess stalls in atexit cleanup — deadlock.
+        """
         q: multiprocessing.Queue = multiprocessing.Queue()
         procs = []
         for args in args_list:
             p = multiprocessing.Process(target=target, args=(*args, q))
             p.start()
             procs.append(p)
+
+        # Collect results while subprocesses are alive (prevents queue-pipe deadlock)
+        results: list = []
+        deadline = time.time() + per_proc_timeout
+        while len(results) < len(procs) and time.time() < deadline:
+            try:
+                results.append(q.get(timeout=1.0))
+            except Exception:
+                if not any(p.is_alive() for p in procs):
+                    break
+
+        # Now join; processes should finish quickly once results are drained
         for p in procs:
-            p.join(timeout=per_proc_timeout)
+            p.join(timeout=10)
             if p.is_alive():
                 p.terminate()
                 self.fail("Subprocess did not finish in time")
-        results = []
-        for _ in range(len(args_list)):
-            try:
-                results.append(q.get(timeout=3))
-            except Exception:
-                break
         return results
 
     def test_single_subprocess_echo(self):
