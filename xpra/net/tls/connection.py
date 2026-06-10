@@ -32,7 +32,6 @@ class SSLSocketConnection(SocketConnection):
         # for the socket: `_ssl_io` waits for readiness using select() with the lock
         # released, and only holds the lock for the (non-blocking) SSL call itself.
         self._ssl_lock = RLock()
-        self._nonblocking = False
 
     def set_timeout(self, timeout) -> None:
         # keep the socket non-blocking: `_ssl_io` drives readiness using select()
@@ -43,10 +42,15 @@ class SSLSocketConnection(SocketConnection):
         # perform an SSL socket operation serialized via `_ssl_lock`, waiting for
         # socket readiness outside the lock so a blocked reader never stalls a
         # concurrent writer (and vice versa).
-        if not self._nonblocking:
-            self.get_raw_socket().setblocking(False)
-            self._nonblocking = True
         raw = self.get_raw_socket()
+        if raw.gettimeout() != 0.0:
+            # `_ssl_io` requires a non-blocking socket so it can wait via select()
+            # with the lock released. Other code shares this socket and may have put
+            # it back into blocking mode (e.g. `set_socket_timeout` / a direct
+            # `settimeout()` after a protocol-detection peek), so re-assert it here:
+            # `gettimeout()` is a cheap cached attribute read and `setblocking()`
+            # only runs the syscall when the mode actually needs changing.
+            raw.setblocking(False)
         timeout = self.timeout or SOCKET_TIMEOUT
         wait_read = isread
         while self.active:

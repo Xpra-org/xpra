@@ -21,12 +21,14 @@ class TestSSLSocketConnection(unittest.TestCase):
     def _make_conn(self, mock_ssl_sock=None):
         from xpra.net.tls.connection import SSLSocketConnection
         sock = mock_ssl_sock or MagicMock()
+        # `_ssl_io` checks `gettimeout()` to decide whether to force non-blocking;
+        # report "already non-blocking" so it leaves the (mock) socket alone:
+        sock.gettimeout.return_value = 0.0
         conn = SSLSocketConnection.__new__(SSLSocketConnection)
         # minimal Connection/SocketConnection state
         conn._socket = sock
         # state normally set up by SSLSocketConnection.__init__:
         conn._ssl_lock = threading.RLock()
-        conn._nonblocking = True
         conn.timeout = 0
         conn.active = True
         conn.socktype = "ssl"
@@ -187,7 +189,6 @@ class TestSSLSocketConnectionConcurrency(unittest.TestCase):
         conn = SSLSocketConnection.__new__(SSLSocketConnection)
         conn._socket = fake_sock
         conn._ssl_lock = threading.RLock()
-        conn._nonblocking = True
         conn.timeout = 10
         conn.active = True
         return conn
@@ -201,6 +202,9 @@ class TestSSLSocketConnectionConcurrency(unittest.TestCase):
         class FakeSSL:
             def fileno(self):
                 return r_fd
+
+            def gettimeout(self):
+                return 0.0  # already non-blocking
 
             def setblocking(self, _b):
                 pass
@@ -246,6 +250,9 @@ class TestSSLSocketConnectionConcurrency(unittest.TestCase):
             def fileno(self):
                 return r_fd
 
+            def gettimeout(self):
+                return 0.0  # already non-blocking
+
             def setblocking(self, _b):
                 pass
 
@@ -259,6 +266,40 @@ class TestSSLSocketConnectionConcurrency(unittest.TestCase):
         n = conn._ssl_io(False, conn._socket.send, b"payload")
         self.assertEqual(n, len(b"payload"))
         self.assertEqual(len(calls), 2)
+
+    def test_reasserts_nonblocking_after_external_settimeout(self):
+        # the socket is shared: core.py calls `settimeout()` on it (blocking mode)
+        # *after* a protocol-detection peek has already used the connection. `_ssl_io`
+        # must re-assert non-blocking on every call - otherwise the SSL op would block
+        # inside `_ssl_lock` and stall the other direction (issue #4918 regression).
+        r_fd, w_fd = os.pipe()
+        self.addCleanup(os.close, r_fd)
+        self.addCleanup(os.close, w_fd)
+        os.write(w_fd, b"x")  # make select() return at once if it is ever reached
+
+        # the socket starts in blocking mode with a timeout, as left by settimeout():
+        state = {"timeout": 20.0, "setblocking": []}
+
+        class FakeSSL:
+            def fileno(self):
+                return r_fd
+
+            def gettimeout(self):
+                return state["timeout"]
+
+            def setblocking(self, blocking):
+                state["setblocking"].append(blocking)
+                state["timeout"] = None if blocking else 0.0
+
+            def recv_into(self, _buf):
+                # only safe to reach once non-blocking has been (re-)asserted:
+                assert state["timeout"] == 0.0, "recv_into ran while still in blocking mode"
+                return 5
+
+        conn = self._make_conn(FakeSSL())
+        n = conn._ssl_io(True, conn._socket.recv_into, bytearray(16))
+        self.assertEqual(n, 5)
+        self.assertIn(False, state["setblocking"], "_ssl_io did not force the socket non-blocking")
 
 
 def main():
