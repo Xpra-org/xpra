@@ -950,43 +950,61 @@ def show_desktop(b) -> None:
         log.warn("failed to call show_desktop(%s): %s", b, e)
 
 
+def _enrich_monitors_dpi(monitors_info: dict[int, Any]) -> None:
+    # try to get more precise physical size / DPI data by querying WMI using comtypes:
+    from xpra.platform.win32.comtypes_util import CIMV2_Query
+    with CIMV2_Query("SELECT * FROM Win32_DesktopMonitor") as res:
+        index = 0
+        for monitor in res:
+            dminfo = {k: monitor.Properties_[k].Value for k in (
+                "DeviceID", "MonitorManufacturer", "MonitorType",
+                "ScreenWidth", "ScreenHeight",
+                "PixelsPerXLogicalInch", "PixelsPerYLogicalInch",
+            )}
+            log(f"Win32_DesktopMonitor {index}: {dminfo}")
+            manufacturer = dminfo["MonitorManufacturer"]
+            model = dminfo["MonitorType"]
+            # find this monitor entry in the gtk info:
+            mmatch = None
+            for monitor_info in monitors_info.values():
+                if monitor_info.get("manufacturer") == manufacturer and monitor_info.get("model") == model:
+                    mmatch = monitor_info
+                    break
+            if mmatch:
+                dpix = dminfo["PixelsPerXLogicalInch"]
+                dpiy = dminfo["PixelsPerYLogicalInch"]
+                # get the screen size from gtk because Win32_DesktopMonitor can be None!
+                width = dminfo["ScreenWidth"] or mmatch["geometry"][2]
+                height = dminfo["ScreenHeight"] or mmatch["geometry"][3]
+                if dpix > 0 and dpiy > 0 and width > 0 and height > 0:
+                    mmatch.update({
+                        "dpi-x": dpix,
+                        "dpi-y": dpiy,
+                        "width-mm": round(width * 25.4 / dpix),
+                        "height-mm": round(height * 25.4 / dpiy),
+                    })
+            index += 1
+
+
 def get_monitors_info(xscale=1.0, yscale=1.0) -> dict[int, Any]:
     from xpra.gtk.info import get_monitors_info
     monitors_info = get_monitors_info(xscale, yscale)
+    # colour depth of the desktop: Windows composites all monitors at the same depth,
+    # so this is reported for every monitor. Per-monitor HDR / colourspace would require
+    # DXGI (`IDXGIOutput6::GetDesc1`) or `QueryDisplayConfig` and is left as a follow-up:
+    try:
+        depth = _get_device_caps(win32con.BITSPIXEL)
+    except Exception:
+        log("failed to query the desktop colour depth", exc_info=True)
+        depth = 0
+    if depth > 0:
+        for minfo in monitors_info.values():
+            minfo["depth"] = depth
     if MONITOR_DPI:
-        # try to get more precise data by querying the DPI using comtypes:
-        from xpra.platform.win32.comtypes_util import CIMV2_Query
-        with CIMV2_Query("SELECT * FROM Win32_DesktopMonitor") as res:
-            index = 0
-            for monitor in res:
-                dminfo = {k: monitor.Properties_[k].Value for k in (
-                    "DeviceID", "MonitorManufacturer", "MonitorType",
-                    "ScreenWidth", "ScreenHeight",
-                    "PixelsPerXLogicalInch", "PixelsPerYLogicalInch",
-                )}
-                log(f"Win32_DesktopMonitor {index}: {dminfo}")
-                manufacturer = dminfo["MonitorManufacturer"]
-                model = dminfo["MonitorType"]
-                # find this monitor entry in the gtk info:
-                mmatch = None
-                for monitor_info in monitors_info.values():
-                    if monitor_info.get("manufacturer") == manufacturer and monitor_info.get("model") == model:
-                        mmatch = monitor_info
-                        break
-                if mmatch:
-                    dpix = dminfo["PixelsPerXLogicalInch"]
-                    dpiy = dminfo["PixelsPerYLogicalInch"]
-                    # get the screen size from gtk because Win32_DesktopMonitor can be None!
-                    width = dminfo["ScreenWidth"] or mmatch["geometry"][2]
-                    height = dminfo["ScreenHeight"] or mmatch["geometry"][3]
-                    if dpix > 0 and dpiy > 0 and width > 0 and height > 0:
-                        mmatch.update({
-                            "dpi-x": dpix,
-                            "dpi-y": dpiy,
-                            "width-mm": round(width * 25.4 / dpix),
-                            "height-mm": round(height * 25.4 / dpiy),
-                        })
-                index += 1
+        try:
+            _enrich_monitors_dpi(monitors_info)
+        except Exception:
+            log("failed to query per-monitor DPI via WMI", exc_info=True)
     return monitors_info
 
 

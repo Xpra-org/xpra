@@ -390,6 +390,69 @@ def get_displays_info() -> dict[str, Any]:
     return info
 
 
+def get_nsscreen_for_display(adid):
+    # NSScreen exposes the CGDirectDisplayID via deviceDescription()["NSScreenNumber"]:
+    try:
+        for screen in NSScreen.screens():
+            desc = screen.deviceDescription()
+            if desc and int(desc["NSScreenNumber"]) == int(adid):
+                return screen
+    except Exception:
+        log("failed to match NSScreen for display %#x", adid, exc_info=True)
+    return None
+
+
+def add_monitor_colour_info(minfo: dict[str, Any], adid) -> None:
+    # colourspace name from the display's colour space:
+    try:
+        cs = CG.CGDisplayCopyColorSpace(adid)
+    except Exception:
+        cs = None
+        log("CGDisplayCopyColorSpace(%#x) failed", adid, exc_info=True)
+    if cs:
+        name = get_colorspace_info(cs).get("name")
+        if name:
+            minfo["colourspace"] = name
+    # colour depth and HDR (EDR) capability from the matching NSScreen:
+    screen = get_nsscreen_for_display(adid)
+    if screen is not None:
+        try:
+            from AppKit import NSBitsPerPixelFromDepth
+            depth = int(NSBitsPerPixelFromDepth(screen.depth()))
+            if depth > 0:
+                minfo["depth"] = depth
+        except Exception:
+            log("failed to query colour depth for display %#x", adid, exc_info=True)
+        try:
+            # > 1.0 means the display can show extended dynamic range (HDR) content:
+            edr = screen.maximumPotentialExtendedDynamicRangeColorComponentValue()
+            minfo["hdr"] = bool(edr and edr > 1.0)
+        except Exception:
+            log("failed to query EDR/HDR capability for display %#x", adid, exc_info=True)
+
+
+def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any]:
+    # start from the gtk / GdkMonitor based info (geometry, refresh-rate, ...)
+    # and enrich each monitor with colour information from CoreGraphics / AppKit.
+    # (the full per-display ICC profile is sent separately, see `get_display_icc_info`)
+    from xpra.gtk.info import get_monitors_info as gtk_get_monitors_info
+    monitors_info = gtk_get_monitors_info(xscale, yscale)
+    try:
+        err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
+    except Exception:
+        log("CGGetActiveDisplayList failed", exc_info=True)
+        return monitors_info
+    if err or not no:
+        return monitors_info
+    # match by active-display index, as `get_display_icc_info` does:
+    for i, adid in enumerate(active_displays):
+        minfo = monitors_info.get(i)
+        if minfo is None:
+            continue
+        add_monitor_colour_info(minfo, adid)
+    return monitors_info
+
+
 def get_info() -> dict[str, Any]:
     from xpra.platform.gui import get_info_base
     i = get_info_base()

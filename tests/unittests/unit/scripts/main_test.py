@@ -18,11 +18,12 @@ from xpra.util.io import pollwait
 from xpra.util.objects import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.common import noop, noerr
-from xpra.scripts.config import InitException
+from xpra.scripts.config import InitException, InitExit
 from xpra.scripts.main import (
     nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
     isdisplaytype,
     check_display,
+    _monitors_args,
 )
 from xpra.scripts.picker import find_session_by_name
 from xpra.scripts.args import find_mode_pos, strip_attach_extra_positional_args
@@ -66,6 +67,16 @@ class TestMain(unittest.TestCase):
     def test_check_display(self):
         #only implemented properly on MacOS
         check_display()
+
+    def test_monitors_args(self):
+        with OSEnvContext():
+            os.environ["DISPLAY"] = ":7"
+            assert _monitors_args([], require_monitor_data=False) == (":7", "-")
+            assert _monitors_args(["out.json"], require_monitor_data=False) == (":7", "out.json")
+            assert _monitors_args([":8"], require_monitor_data=False) == (":8", "-")
+            assert _monitors_args([":8", "out.json"], require_monitor_data=False) == (":8", "out.json")
+            with self.assertRaises(InitExit):
+                _monitors_args([], require_monitor_data=True)
 
     def test_find_mode_pos(self):
         for args in ([], [100], ["hello", "world"]):
