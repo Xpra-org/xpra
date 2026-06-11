@@ -45,6 +45,46 @@ class TestRFB(unittest.TestCase):
             s.damage(1, window, 0, 0, 2, 2, {"polling" : protocol is None})
             assert s.is_closed()
 
+    def test_rfb_source_damage_batching(self):
+        sent = []
+        p = AdHocStruct()
+        p.send = sent.append
+        p.queue_size = lambda : 0
+
+        image_calls = []
+        window = AdHocStruct()
+
+        def get_image(x, y, w, h):
+            image_calls.append((x, y, w, h))
+            stride = (w + 8) * 4
+            pixels = b"0" * stride * h
+            return ImageWrapper(x, y, w, h, pixels, "BGRX", 24, stride, 4)
+
+        window.get_image = get_image
+        window.acknowledge_changes = noop
+
+        s = RFBSource(p, True)
+        try:
+            s.damage(1, window, 1, 2, 3, 4, {"polling": True})
+            self.assertEqual(image_calls, [])
+            self.assertEqual(s.damage_rectangles, [])
+
+            s.request_update(0, 0, 100, 100)
+            s.damage(1, window, 1, 2, 3, 4, {"polling": True})
+            self.assertEqual(image_calls, [])
+            self.assertEqual(s.damage_rectangles, [(1, 2, 3, 4)])
+            self.assertNotEqual(s.damage_timer, 0)
+
+            s.damage(1, window, 10, 20, 5, 6, {"polling": True})
+            self.assertEqual(len(s.damage_rectangles), 2)
+
+            s.cancel_damage_timer()
+            s.process_damage()
+            self.assertEqual(image_calls, [(1, 2, 14, 24)])
+            self.assertEqual(s.damage_rectangles, [])
+        finally:
+            s.close()
+
 
 def main():
     unittest.main()

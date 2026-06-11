@@ -34,7 +34,7 @@
   * [`expand` server for MS Windows](https://github.com/Xpra-org/xpra/issues/4911)
   * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885)
   * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)
-  * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256)
+  * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256) [including rate control](https://github.com/Xpra-org/xpra/issues/1949)
   * [basic bash shell completion](https://github.com/Xpra-org/xpra/issues/2375)
   * [Wayland scaled subsurfaces](https://github.com/Xpra-org/xpra/issues/4878)
   * [per-client readonly sessions](https://github.com/Xpra-org/xpra/issues/3468)

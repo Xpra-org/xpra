@@ -9,6 +9,7 @@ from threading import Event
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.os_util import gi_import
 from xpra.net.rfb.const import RFBEncoding, RFBServerMessage
 from xpra.net.rfb.encode import (
     make_header, raw_encode_image, tight_encode_image, tight_png_image, rgb222_encode_image, zlib_encode_image,
@@ -24,9 +25,12 @@ from xpra.log import Logger
 
 log = Logger("rfb")
 
+GLib = gi_import("GLib")
+
 counter = AtomicInteger()
 
 RFB_ENCODE_QUEUE_MAX_SIZE = 2
+RFB_DAMAGE_DELAY = 20
 
 
 def nocursordata(*_args) -> tuple:
@@ -68,6 +72,7 @@ class RFBSource(PointerSource):
         "zlib_compressor",
         "continuous_updates", "cu_rect", "pending_request",
         "last_pointer_pos",
+        "damage_timer", "damage_rectangles", "damage_wid", "damage_window",
         "encode_queue", "encode_thread", "pixel_format_generation",
     )
 
@@ -98,6 +103,10 @@ class RFBSource(PointerSource):
         self.cu_rect: tuple[int, int, int, int] | None = None
         self.pending_request: tuple[int, int, int, int] | None = None
         self.last_pointer_pos: tuple[int, int] | None = None
+        self.damage_timer = 0
+        self.damage_rectangles: list[tuple[int, int, int, int]] = []
+        self.damage_wid = 0
+        self.damage_window = None
         self.encode_queue: SimpleQueue[None | tuple[int, int, Any, int, int, int, int]] = SimpleQueue()
         self.encode_thread = start_thread(self.encode_loop, f"rfb-encode-{self.uuid}", daemon=True)
 
@@ -109,6 +118,8 @@ class RFBSource(PointerSource):
             "readonly": self.effective_readonly(),
             "quality": self.quality,
             "speed": self.speed,
+            "damage-timer": self.damage_timer,
+            "damage-rectangles": len(self.damage_rectangles),
             "encode-queue": self.encode_queue.qsize(),
         }
 
@@ -205,6 +216,9 @@ class RFBSource(PointerSource):
         if self.close_event.is_set():
             return
         self.close_event.set()
+        self.cancel_damage_timer()
+        self.damage_rectangles = []
+        self.damage_window = None
         self.encode_queue.put(None)
 
     def set_default_keymap(self):
@@ -284,14 +298,64 @@ class RFBSource(PointerSource):
         # is outstanding. Direct calls from FramebufferUpdateRequest(inc=0)
         # arrive without options.polling and always go through.
         if polling and not self.continuous_updates:
-            if self.pending_request is None:
+            if self.pending_request is None and not self.damage_rectangles:
                 return
-            self.pending_request = None
+            if self.pending_request:
+                self.pending_request = None
+        self.add_damage_rectangle(_wid, window, x, y, w, h)
+
+    def add_damage_rectangle(self, wid: int, window, x: int, y: int, w: int, h: int) -> None:
+        if w <= 0 or h <= 0:
+            return
+        schedule = not self.damage_rectangles
+        self.damage_rectangles.append((x, y, w, h))
+        self.damage_wid = wid
+        self.damage_window = window
+        if schedule:
+            self.schedule_damage()
+
+    def schedule_damage(self, delay: int = RFB_DAMAGE_DELAY) -> None:
+        if self.damage_timer or self.is_closed():
+            return
+        self.damage_timer = GLib.timeout_add(max(1, delay), self.process_damage_timer)
+
+    def cancel_damage_timer(self) -> None:
+        if timer := self.damage_timer:
+            self.damage_timer = 0
+            GLib.source_remove(timer)
+
+    def process_damage_timer(self) -> bool:
+        self.damage_timer = 0
+        self.process_damage()
+        return False
+
+    def process_damage(self) -> None:
+        if self.is_closed():
+            return
+        damage = self.damage_rectangles
+        if not damage:
+            return
+        p = self.protocol
+        if p is None:
+            self.damage_rectangles = []
+            self.damage_window = None
+            return
+        if p.queue_size() >= 2 or self.encode_queue.qsize() >= RFB_ENCODE_QUEUE_MAX_SIZE:
+            self.schedule_damage()
+            return
+        x = min(dx for dx, _dy, _dw, _dh in damage)
+        y = min(dy for _dx, dy, _dw, _dh in damage)
+        w = max(dx + dw for dx, _dy, dw, _dh in damage) - x
+        h = max(dy + dh for _dx, dy, _dw, dh in damage) - y
+        wid = self.damage_wid
+        window = self.damage_window
+        self.damage_rectangles = []
+        self.damage_window = None
         image = window.get_image(x, y, w, h)
         window.acknowledge_changes()
         if image is None:
             return
-        self.encode_queue.put((self.pixel_format_generation, _wid, image, x, y, w, h))
+        self.encode_queue.put((self.pixel_format_generation, wid, image, x, y, w, h))
 
     def encode_loop(self) -> None:
         while True:
