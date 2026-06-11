@@ -548,6 +548,7 @@ cdef class Encoder:
         cdef int i
         cdef unsigned int width = image.get_width()
         cdef unsigned int height = image.get_height()
+        assert self.context!=NULL, "encoder is closed"
         assert width>=self.width
         assert height>=self.height
         assert image.get_pixel_format()=="YUV420P", "expected YUV420P but got %s" % image.get_pixel_format()
