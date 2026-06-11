@@ -31,6 +31,8 @@ counter = AtomicInteger()
 
 RFB_ENCODE_QUEUE_MAX_SIZE = 2
 RFB_DAMAGE_DELAY = 20
+RFB_DAMAGE_DELAY_MIN = 10
+RFB_DAMAGE_DELAY_MAX = 100
 
 
 def nocursordata(*_args) -> tuple:
@@ -72,7 +74,7 @@ class RFBSource(PointerSource):
         "zlib_compressor",
         "continuous_updates", "cu_rect", "pending_request",
         "last_pointer_pos",
-        "damage_timer", "damage_rectangles", "damage_wid", "damage_window",
+        "damage_delay", "damage_timer", "damage_rectangles", "damage_wid", "damage_window",
         "encode_queue", "encode_thread", "pixel_format_generation",
     )
 
@@ -103,6 +105,7 @@ class RFBSource(PointerSource):
         self.cu_rect: tuple[int, int, int, int] | None = None
         self.pending_request: tuple[int, int, int, int] | None = None
         self.last_pointer_pos: tuple[int, int] | None = None
+        self.damage_delay = RFB_DAMAGE_DELAY
         self.damage_timer = 0
         self.damage_rectangles: list[tuple[int, int, int, int]] = []
         self.damage_wid = 0
@@ -118,6 +121,7 @@ class RFBSource(PointerSource):
             "readonly": self.effective_readonly(),
             "quality": self.quality,
             "speed": self.speed,
+            "damage-delay": self.damage_delay,
             "damage-timer": self.damage_timer,
             "damage-rectangles": len(self.damage_rectangles),
             "encode-queue": self.encode_queue.qsize(),
@@ -160,6 +164,13 @@ class RFBSource(PointerSource):
         log("RFB encodings: %s, quality=%i, speed=%i", csv(self.encodings), self.quality, self.speed)
         if unknown_encodings:
             log("RFB %i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
+
+    def set_refresh_rate(self, refresh_rate: int) -> None:
+        if refresh_rate <= 0:
+            self.damage_delay = RFB_DAMAGE_DELAY
+        else:
+            self.damage_delay = max(RFB_DAMAGE_DELAY_MIN, min(RFB_DAMAGE_DELAY_MAX, 1000 // refresh_rate))
+        log("RFB damage delay set to %ims for refresh rate %s", self.damage_delay, refresh_rate)
 
     def set_pixel_format(self, pixel_format: Sequence[int]) -> None:
         # bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
@@ -314,9 +325,11 @@ class RFBSource(PointerSource):
         if schedule:
             self.schedule_damage()
 
-    def schedule_damage(self, delay: int = RFB_DAMAGE_DELAY) -> None:
+    def schedule_damage(self, delay: int = 0) -> None:
         if self.damage_timer or self.is_closed():
             return
+        if delay <= 0:
+            delay = self.damage_delay
         self.damage_timer = GLib.timeout_add(max(1, delay), self.process_damage_timer)
 
     def cancel_damage_timer(self) -> None:

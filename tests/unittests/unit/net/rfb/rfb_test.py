@@ -85,6 +85,26 @@ class TestRFB(unittest.TestCase):
         finally:
             s.close()
 
+    def test_rfb_source_refresh_rate_delay(self):
+        p = AdHocStruct()
+        p.send = noop
+        p.queue_size = lambda : 0
+
+        s = RFBSource(p, True)
+        try:
+            s.set_refresh_rate(50)
+            self.assertEqual(s.damage_delay, 20)
+            s.set_refresh_rate(60)
+            self.assertEqual(s.damage_delay, 16)
+            s.set_refresh_rate(200)
+            self.assertEqual(s.damage_delay, 10)
+            s.set_refresh_rate(1)
+            self.assertEqual(s.damage_delay, 100)
+            s.set_refresh_rate(0)
+            self.assertEqual(s.damage_delay, 20)
+        finally:
+            s.close()
+
 
 def main():
     unittest.main()

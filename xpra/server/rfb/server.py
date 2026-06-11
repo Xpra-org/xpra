@@ -180,6 +180,10 @@ class RFBServer(StubSubsystem):
         GLib.idle_add(self._accept_rfb_source, source)
 
     def _accept_rfb_source(self, source):
+        if display := self.get_subsystem("display"):
+            default_refresh_rate = display.DEFAULT_REFRESH_RATE // 1000
+            refresh_rate = display.get_refresh_rate_for_value(default_refresh_rate or 50)
+            source.set_refresh_rate(refresh_rate)
         if cursor := self.get_subsystem("cursor"):
             source.get_cursor_data_cb = cursor.get_cursor_data
         source.send_cursor()
