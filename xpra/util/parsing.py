@@ -477,11 +477,16 @@ def adjust_monitor_refresh_rate(refresh_rate: str, mdef: dict[int, dict]) -> dic
         # make a copy, don't modify in place!
         # (as this may be called multiple times on the same input dict)
         mprops = dict(monitor)
-        if refresh_rate != "auto":
-            value = int(monitor.get("refresh-rate", DEFAULT_REFRESH_RATE))
-            value = get_refresh_rate_for_value(refresh_rate, value, 1000)
-            if value:
-                mprops["refresh-rate"] = value
+        # keep `refresh-rate` as the real value reported by the monitor,
+        # and expose the value adjusted by the `--refresh-rate` option as `refresh-rate.cooked`
+        # (consumers that drive an actual display should prefer the cooked value):
+        real = int(monitor.get("refresh-rate", DEFAULT_REFRESH_RATE))
+        if refresh_rate and refresh_rate != "auto":
+            cooked = get_refresh_rate_for_value(refresh_rate, real, 1000)
+        else:
+            cooked = real
+        if cooked:
+            mprops["refresh-rate.cooked"] = cooked
         adjusted[i] = mprops
     return adjusted
 
@@ -506,6 +511,7 @@ def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
             "geometry": td.inttupleget,
             "primary": td.boolget,
             "refresh-rate": td.intget,
+            "refresh-rate.cooked": td.intget,
             "scale-factor": td.intget,
             "width-mm": td.intget,
             "height-mm": td.intget,
@@ -514,6 +520,11 @@ def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
             "subpixel-layout": td.strget,
             "workarea": td.inttupleget,
             "name": td.strget,
+            # color information (filled in incrementally, per platform):
+            "depth": td.intget,
+            "colorspace": td.strget,
+            "hdr": td.boolget,
+            "icc": td.dictget,
         }
         for attr, conv in aconv.items():
             v = conv(attr)

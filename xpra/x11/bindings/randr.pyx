@@ -1170,7 +1170,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         if m.get("primary", False):
                             primary = i
                         x, y, width, height = m["geometry"]
-                        vrefresh = m.get("refresh-rate", 0)
+                        # prefer the cooked rate (adjusted by the `--refresh-rate` option),
+                        # falling back to the real rate when no cooked value is present:
+                        vrefresh = m.get("refresh-rate.cooked") or m.get("refresh-rate", 0)
                         if vrefresh <= 0:
                             vrefresh = DEFAULT_REFRESH_RATE
                         if vrefresh < 1000:

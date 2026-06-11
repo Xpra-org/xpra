@@ -334,7 +334,7 @@ class DisplayClient(StubClientMixin):
 
     def send_icc_data(self) -> None:
         if SYNC_ICC and (not BACKWARDS_COMPATIBLE or "configure-display" in self.server_packet_types):
-            # it is now safe to send the colourspace data if we have any:
+            # it is now safe to send the colorspace data if we have any:
             icc = self.get_icc_info()
             dicc = self.get_display_icc_info()
             if icc or dicc:
@@ -576,7 +576,8 @@ class DisplayClient(StubClientMixin):
         log("get_screen_settings() scaled: xdpi=%s, ydpi=%s", xdpi, ydpi)
         vrefresh = self.get_vrefresh()
         log("get_screen_settings() vrefresh=%s", vrefresh)
-        monitors = self.get_monitors_info()
+        # expose both the real and the cooked per-monitor refresh rate, as in the hello caps:
+        monitors = adjust_monitor_refresh_rate(self.refresh_rate, self.get_monitors_info())
         return root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh, monitors
 
     def update_screen_size(self) -> None:

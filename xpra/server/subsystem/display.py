@@ -329,8 +329,9 @@ class DisplayManager(StubSubsystem):
 
     def get_client_refresh_rate(self, ss) -> int:
         vrefresh = []
-        # use the refresh-rate value from the monitors
-        # (value is pre-multiplied by 1000!)
+        # use the real refresh-rate value from the monitors
+        # (value is pre-multiplied by 1000!) and apply our own `--refresh-rate`
+        # policy below - the client only cooks the value it applies to its own display:
         if ss.monitors:
             for mdef in ss.monitors.values():
                 v = mdef.get("refresh-rate", 0)

@@ -12,7 +12,7 @@ log = Logger("score")
 GPU_BIAS = envint("XPRA_GPU_BIAS", 100)
 MIN_FPS_COST = envint("XPRA_MIN_FPS_COST", 4)
 
-# any colourspace conversion will lose at least some quality (due to rounding)
+# any colorspace conversion will lose at least some quality (due to rounding)
 # (so add 0.2 to the value we get from calculating the degradation using get_subsampling_divs)
 SUBSAMPLING_QUALITY_LOSS = {
     "NV12": 186,

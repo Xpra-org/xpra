@@ -460,27 +460,37 @@ class TestGetRefreshRateForValue(unittest.TestCase):
 
 class TestAdjustMonitorRefreshRate(unittest.TestCase):
 
-    def test_auto_unchanged(self):
+    def test_auto_keeps_real_and_cooks_to_same(self):
         mdef = {0: {"refresh-rate": 60000}}
         result = adjust_monitor_refresh_rate("auto", mdef)
+        # the real value is preserved and the cooked value matches it:
         self.assertEqual(result[0]["refresh-rate"], 60000)
+        self.assertEqual(result[0]["refresh-rate.cooked"], 60000)
 
-    def test_explicit_rate(self):
+    def test_explicit_rate_keeps_real_adds_cooked(self):
         mdef = {0: {"refresh-rate": 60000}}
         result = adjust_monitor_refresh_rate("30", mdef)
-        # 30 * 1000 = 30000
-        self.assertEqual(result[0]["refresh-rate"], 30000)
+        # the real value is preserved, the cooked value is adjusted (30 * 1000):
+        self.assertEqual(result[0]["refresh-rate"], 60000)
+        self.assertEqual(result[0]["refresh-rate.cooked"], 30000)
+
+    def test_percent_cooked(self):
+        mdef = {0: {"refresh-rate": 60000}}
+        result = adjust_monitor_refresh_rate("50%", mdef)
+        self.assertEqual(result[0]["refresh-rate"], 60000)
+        self.assertEqual(result[0]["refresh-rate.cooked"], 30000)
 
     def test_does_not_modify_original(self):
         mdef = {0: {"refresh-rate": 60000}}
         adjust_monitor_refresh_rate("30", mdef)
         self.assertEqual(mdef[0]["refresh-rate"], 60000)
+        self.assertNotIn("refresh-rate.cooked", mdef[0])
 
     def test_multiple_monitors(self):
-        mdef = {0: {"refresh-rate": 60000}, 1: {"refresh-rate": 60000}}
-        result = adjust_monitor_refresh_rate("30", mdef)
-        self.assertIn(0, result)
-        self.assertIn(1, result)
+        mdef = {0: {"refresh-rate": 60000}, 1: {"refresh-rate": 50000}}
+        result = adjust_monitor_refresh_rate("50%", mdef)
+        self.assertEqual(result[0]["refresh-rate.cooked"], 30000)
+        self.assertEqual(result[1]["refresh-rate.cooked"], 25000)
 
 
 class TestGetDefaultVideoMaxSize(unittest.TestCase):
@@ -544,6 +554,29 @@ class TestValidatedMonitorData(unittest.TestCase):
 
     def test_empty(self):
         self.assertEqual(validated_monitor_data({}), {})
+
+    def test_cooked_refresh_rate_preserved(self):
+        monitors = {0: {"refresh-rate": 60000, "refresh-rate.cooked": 30000}}
+        result = validated_monitor_data(monitors)
+        self.assertEqual(result[0]["refresh-rate"], 60000)
+        self.assertEqual(result[0]["refresh-rate.cooked"], 30000)
+
+    def test_colour_attributes_round_trip(self):
+        monitors = {
+            0: {
+                "geometry": (0, 0, 1920, 1080),
+                "depth": 30,
+                "colorspace": "Display-P3",
+                "hdr": True,
+                "icc": {"source": "test", "data": b"abc"},
+            }
+        }
+        result = validated_monitor_data(monitors)
+        m = result[0]
+        self.assertEqual(m["depth"], 30)
+        self.assertEqual(m["colorspace"], "Display-P3")
+        self.assertTrue(m["hdr"])
+        self.assertEqual(m["icc"].get("source"), "test")
 
 
 def main():
