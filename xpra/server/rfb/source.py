@@ -92,10 +92,9 @@ class RFBSource(PointerSource):
         self.get_cursor_data_cb = nocursordata
         self.last_cursor_sent = ()
         self.zlib_compressor = None
-        # default to push-mode: preserves prior behaviour for viewers that
-        # never send EnableContinuousUpdates. A viewer that opts out (by
-        # sending message 150 with enable=0) switches us to request-driven.
-        self.continuous_updates = True
+        # default to request-driven mode. Clients that support the continuous
+        # updates extension can opt into push updates with message 150.
+        self.continuous_updates = False
         self.cu_rect: tuple[int, int, int, int] | None = None
         self.pending_request: tuple[int, int, int, int] | None = None
         self.last_pointer_pos: tuple[int, int] | None = None

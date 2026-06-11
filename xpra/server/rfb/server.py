@@ -291,8 +291,8 @@ class RFBServer(StubSubsystem):
             GLib.idle_add(source.damage, wid, model, x, y, w, h)
             return
         # incremental request: record the rect; the next polling damage
-        # event will flush it. If continuous updates are enabled (the default)
-        # the polling damage path is already pushing, so this is a no-op.
+        # event will flush it. If continuous updates are enabled, the
+        # polling damage path may already be pushing updates.
         source.request_update(x, y, w, h)
 
     def _process_rfb_EnableContinuousUpdates(self, proto, packet):
