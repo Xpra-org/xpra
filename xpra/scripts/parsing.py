@@ -14,6 +14,7 @@ import shlex
 import os.path
 import optparse
 import warnings
+from fnmatch import fnmatch
 from urllib import parse
 from typing import Any, NoReturn
 from collections.abc import Callable, Sequence
@@ -483,7 +484,7 @@ def parse_display_name(error_cb: Callable, opts, display_name: str, cmdline=(),
             except ValueError:
                 vnc_uri += "/"
             args.append(vnc_uri)
-        ssh_desc = get_ssh_display_attributes(args, opts.ssh)
+        ssh_desc = get_ssh_display_attributes(args, opts.ssh, getattr(opts, "mode", ""))
         desc.update(ssh_desc)
         ssh = parse_ssh_option(opts.ssh)
         full_ssh = ssh + get_ssh_args(desc, ssh)
@@ -609,7 +610,33 @@ def parse_ssh_option(ssh_setting: str) -> list[str]:
     return ssh_cmd
 
 
-def get_ssh_display_attributes(args, ssh_option="auto") -> dict[str, Any]:
+# command and query modes that just run a single request through the proxy
+# and have no session that needs the ssh agent:
+# for these, agent forwarding should not be enabled by default
+# (an explicit `-A`, `XPRA_SSH_AGENT=1` or `paramiko:agent=yes` is still honoured).
+# `fnmatch` patterns are used so that whole families (ie: `list-*`, `*-info`) are covered,
+# even for modes that don't support the ssh transport yet:
+NO_SSH_AGENT_MODES = (
+    "run",
+    "stop", "exit",
+    "list", "list-*",
+    "request-*",
+    "setup-ssl", "show-ssl",
+    "showconfig", "showsetting",
+    "help",
+    "info", "*-info",
+    "version", "id", "sbom",
+    "control",
+    "print", "send-file",
+)
+
+
+def mode_needs_ssh_agent(mode: str) -> bool:
+    # unknown / empty modes keep the historical default of enabling agent forwarding:
+    return not any(fnmatch(mode, pattern) for pattern in NO_SSH_AGENT_MODES)
+
+
+def get_ssh_display_attributes(args, ssh_option="auto", mode="") -> dict[str, Any]:
     # ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
     ssh_cmd = ssh[0].lower()
@@ -624,7 +651,8 @@ def get_ssh_display_attributes(args, ssh_option="auto") -> dict[str, Any]:
         if ssh_option.find(":") > 0:
             paramiko_config = parse_simple_dict(ssh_option.split(":", 1)[1])
             desc["paramiko-config"] = paramiko_config
-        agent_forwarding |= paramiko_config.get("agent", "yes").lower() in TRUE_OPTIONS
+        default_agent = "yes" if mode_needs_ssh_agent(mode) else "no"
+        agent_forwarding |= paramiko_config.get("agent", default_agent).lower() in TRUE_OPTIONS
         paramiko_config["agent"] = str(agent_forwarding)
     elif is_putty:
         desc["is_putty"] = True
