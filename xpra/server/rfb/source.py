@@ -17,6 +17,7 @@ from xpra.net.rfb.encode import (
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.server.source.stub import PointerSource
 from xpra.server.window.compress import free_image_wrapper  # pylint: disable=import-outside-toplevel
+from xpra.util.rectangle import rectangle, add_rectangle, merge_all
 from xpra.util.objects import AtomicInteger
 from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import csv, memoryview_to_bytes
@@ -33,6 +34,15 @@ RFB_ENCODE_QUEUE_MAX_SIZE = 2
 RFB_DAMAGE_DELAY = 20
 RFB_DAMAGE_DELAY_MIN = 10
 RFB_DAMAGE_DELAY_MAX = 100
+RFB_MIN_WINDOW_REGION_SIZE = 1024
+RFB_MAX_SMALL_REGIONS = 40
+RFB_MAX_BYTES_PERCENT = 60
+RFB_SMALL_PACKET_COST = 1024
+RFB_TINY_REGION_SIZE = 4096
+RFB_LOW_QUALITY = 50
+
+ENCODE_REGION = tuple[Any, int, int, int, int, RFBEncoding]
+ENCODE_ITEM = None | tuple[int, int, tuple[ENCODE_REGION, ...]]
 
 
 def nocursordata(*_args) -> tuple:
@@ -107,10 +117,10 @@ class RFBSource(PointerSource):
         self.last_pointer_pos: tuple[int, int] | None = None
         self.damage_delay = RFB_DAMAGE_DELAY
         self.damage_timer = 0
-        self.damage_rectangles: list[tuple[int, int, int, int]] = []
+        self.damage_rectangles: list[rectangle] = []
         self.damage_wid = 0
         self.damage_window = None
-        self.encode_queue: SimpleQueue[None | tuple[int, int, Any, int, int, int, int]] = SimpleQueue()
+        self.encode_queue: SimpleQueue[ENCODE_ITEM] = SimpleQueue()
         self.encode_thread = start_thread(self.encode_loop, f"rfb-encode-{self.uuid}", daemon=True)
 
     def get_info(self) -> dict[str, Any]:
@@ -319,7 +329,7 @@ class RFBSource(PointerSource):
         if w <= 0 or h <= 0:
             return
         schedule = not self.damage_rectangles
-        self.damage_rectangles.append((x, y, w, h))
+        add_rectangle(self.damage_rectangles, rectangle(x, y, w, h))
         self.damage_wid = wid
         self.damage_window = window
         if schedule:
@@ -356,19 +366,69 @@ class RFBSource(PointerSource):
         if p.queue_size() >= 2 or self.encode_queue.qsize() >= RFB_ENCODE_QUEUE_MAX_SIZE:
             self.schedule_damage()
             return
-        x = min(dx for dx, _dy, _dw, _dh in damage)
-        y = min(dy for _dx, dy, _dw, _dh in damage)
-        w = max(dx + dw for dx, _dy, dw, _dh in damage) - x
-        h = max(dy + dh for _dx, dy, _dw, dh in damage) - y
         wid = self.damage_wid
         window = self.damage_window
         self.damage_rectangles = []
         self.damage_window = None
-        image = window.get_image(x, y, w, h)
-        window.acknowledge_changes()
-        if image is None:
+        self.send_regions(wid, window, damage)
+
+    def get_window_dimensions(self, window, regions: Sequence[rectangle]) -> tuple[int, int]:
+        if get_dimensions := getattr(window, "get_dimensions", None):
+            return get_dimensions()
+        full = merge_all(regions)
+        return full.x + full.width, full.y + full.height
+
+    def send_regions(self, wid: int, window, regions: Sequence[rectangle]) -> None:
+        ww, wh = self.get_window_dimensions(window, regions)
+        if ww <= 0 or wh <= 0:
             return
-        self.encode_queue.put((self.pixel_format_generation, wid, image, x, y, w, h))
+        unique_regions = []
+        for region in regions:
+            if region not in unique_regions:
+                unique_regions.append(region)
+        regions = tuple(unique_regions)
+
+        def full_window_update(cause: str) -> tuple[rectangle, ...]:
+            log("send_regions: using full window update %sx%s: %s", ww, wh, cause)
+            return (rectangle(0, 0, ww, wh),)
+
+        if len(regions) > RFB_MAX_SMALL_REGIONS:
+            regions = full_window_update(f"too many regions: {len(regions)}")
+        elif ww * wh <= RFB_MIN_WINDOW_REGION_SIZE:
+            regions = full_window_update(f"small window: {ww}x{wh}")
+        elif len(regions) > 1:
+            merge_threshold = ww * wh * RFB_MAX_BYTES_PERCENT // 100
+            pixel_count = sum(r.width * r.height for r in regions)
+            packet_cost = pixel_count + RFB_SMALL_PACKET_COST * len(regions)
+            if packet_cost >= merge_threshold:
+                regions = full_window_update(f"bytes cost ({packet_cost}) too high (max {merge_threshold})")
+            else:
+                merged = merge_all(regions)
+                merged_pixel_count = merged.width * merged.height
+                merged_packet_cost = merged_pixel_count + RFB_SMALL_PACKET_COST
+                log("send_regions: merged=%s, merged_cost=%s, packet_cost=%s, pixels=%s",
+                    merged, merged_packet_cost, packet_cost, pixel_count)
+                if merged_packet_cost < packet_cost or merged_pixel_count < pixel_count:
+                    regions = (merged,)
+
+        if not regions:
+            return
+        if len(regions) == 1:
+            merged = regions[0]
+            if merged.x <= 1 and merged.y <= 1 and abs(ww - merged.width) < 2 and abs(wh - merged.height) < 2:
+                regions = full_window_update("merged region covers almost the whole window")
+
+        encode_regions = []
+        window.acknowledge_changes()
+        for region in regions:
+            image = window.get_image(region.x, region.y, region.width, region.height)
+            if image is None:
+                continue
+            encoding = self.get_region_encoding(region.width, region.height)
+            encode_regions.append((image, region.x, region.y, region.width, region.height, encoding))
+        if not encode_regions:
+            return
+        self.encode_queue.put((self.pixel_format_generation, wid, tuple(encode_regions)))
 
     def encode_loop(self) -> None:
         while True:
@@ -376,9 +436,9 @@ class RFBSource(PointerSource):
             if item is None:
                 return
             try:
-                generation, wid, image, x, y, w, h = item
+                generation, wid, regions = item
                 if not self.is_closed() and generation == self.pixel_format_generation:
-                    self.encode_damage(wid, image, x, y, w, h)
+                    self.encode_regions(wid, regions)
             except Exception as e:
                 if self.is_closed():
                     log("ignoring RFB encoding error calling %s because the source is already closed:", item)
@@ -387,11 +447,45 @@ class RFBSource(PointerSource):
                     log.error("Error during RFB encoding:", exc_info=True)
                 del e
             finally:
-                free_rfb_image(item[2])
+                for region in item[2]:
+                    free_rfb_image(region[0])
 
-    def encode_damage(self, _wid: int, image, x: int, y: int, w: int, h: int) -> None:
+    def get_region_encoding(self, w: int, h: int) -> RFBEncoding:
+        if self.pixel_format[:2] != (32, 24):
+            return RFBEncoding.RAW
+        pixels = w * h
+        encodings = self.encodings
+        if pixels <= RFB_TINY_REGION_SIZE and RFBEncoding.ZLIB in encodings:
+            return RFBEncoding.ZLIB
+        if RFBEncoding.TIGHT in encodings and 0 < self.quality <= RFB_LOW_QUALITY:
+            return RFBEncoding.TIGHT
+        if RFBEncoding.TIGHT_PNG in encodings:
+            return RFBEncoding.TIGHT_PNG
+        if RFBEncoding.TIGHT in encodings:
+            return RFBEncoding.TIGHT
+        if RFBEncoding.ZLIB in encodings:
+            return RFBEncoding.ZLIB
+        return RFBEncoding.RAW
+
+    def encode_regions(self, _wid: int, regions: Sequence[ENCODE_REGION]) -> None:
         if self.is_closed():
             return
+        encoded_regions: list[tuple[bytes, ...]] = []
+        for image, x, y, w, h, encoding in regions:
+            packets = self.encode_region(image, x, y, w, h, encoding)
+            if packets:
+                encoded_regions.append((packets[0][4:],) + tuple(packets[1:]))
+        if not encoded_regions:
+            return
+        packets = [struct.pack(b"!BBH", RFBServerMessage.FRAMEBUFFERUPDATE, 0, len(encoded_regions))]
+        for encoded in encoded_regions:
+            packets.extend(encoded)
+        self.send_many(*packets)
+
+    def encode_region(self, image, x: int, y: int, w: int, h: int,
+                      encoding: RFBEncoding = RFBEncoding.RAW) -> Sequence[bytes]:
+        if self.is_closed():
+            return ()
         encode = raw_encode_image
         kwargs = {}
         if self.pixel_format[:2] != (32, 24):
@@ -400,23 +494,20 @@ class RFBSource(PointerSource):
                 encode = rgb222_encode_image
             else:
                 log("damage: unsupported client pixel format: %s", self.pixel_format)
-                return
-        elif RFBEncoding.TIGHT_PNG in self.encodings:
+                return ()
+        elif encoding == RFBEncoding.TIGHT_PNG:
             encode = tight_png_image
             kwargs = {"speed": self.speed}
-        elif RFBEncoding.TIGHT in self.encodings:
+        elif encoding == RFBEncoding.TIGHT:
             encode = tight_encode_image
             kwargs = {"quality": self.quality, "speed": self.speed}
-        elif RFBEncoding.ZLIB in self.encodings:
+        elif encoding == RFBEncoding.ZLIB:
             encode = zlib_encode_image
             if self.zlib_compressor is None:
                 import zlib  # pylint: disable=import-outside-toplevel
                 self.zlib_compressor = zlib.compressobj(1)
             kwargs = {"compressor": self.zlib_compressor}
-        packets = encode(image, x, y, w, h, **kwargs)
-        if not packets:
-            return
-        self.send_many(*packets)
+        return encode(image, x, y, w, h, **kwargs)
 
     def send_many(self, *packets: bytes):
         # merge small packets together:
