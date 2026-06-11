@@ -192,14 +192,11 @@ class RFBServer(StubSubsystem):
             if keyboard:
                 source.keyboard_config = keyboard.get_keyboard_config()
                 keyboard.set_keymap(source)
-        model = self._get_rfb_desktop_model()
-        window = self.server.get_subsystem("window")
-        w, h = model.get_dimensions()
-        source.damage(window.get_wid(model), model, 0, 0, w, h)
         # ugly weak dependency,
         # shadow servers need to be told to start the refresh timer:
         start_refresh = getattr(self.server, "start_refresh", None)
         if start_refresh:
+            window = self.server.get_subsystem("window")
             for wid in tuple(window.get_models().values()):
                 start_refresh(wid)  # pylint: disable=not-callable
 
