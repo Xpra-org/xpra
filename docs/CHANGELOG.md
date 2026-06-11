@@ -16,7 +16,7 @@
   * [`asyncio` loop exit fix](https://github.com/Xpra-org/xpra/pull/4891)
   * [longer session connection timeout for ssh sessions](https://github.com/Xpra-org/xpra/issues/4904)
   * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
-  * [`scram`] authentication](https://github.com/Xpra-org/xpra/issues/1771)
+  * [`scram` authentication](https://github.com/Xpra-org/xpra/issues/1771)
   * [serialized SSL socket access](https://github.com/Xpra-org/xpra/issues/4919)
   * [support remote UNC named-pipe URLs](https://github.com/Xpra-org/xpra/issues/1454)
 * 🌈 Encodings:
