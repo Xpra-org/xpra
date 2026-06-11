@@ -195,3 +195,25 @@ class DisplayConnection(StubClientConnection):
                 "height-mm": round(m[6]),
             }
         return mdef
+
+    def get_client_workarea(self):
+        """ the usable area of the client's display (excluding panels / taskbars), as a single rectangle.
+            modern clients: the bounding box of the per-monitor workareas (the `monitors` dict);
+            legacy clients: the screen-wide workarea from `screen_sizes`. """
+        from xpra.util.rectangle import rectangle
+        rects = []
+        for mdef in (self.monitors or {}).values():
+            wa = mdef.get("workarea")
+            if wa and len(wa) == 4 and wa[2] > 0 and wa[3] > 0:
+                rects.append(wa)
+        if rects:
+            x = min(r[0] for r in rects)
+            y = min(r[1] for r in rects)
+            w = max(r[0] + r[2] for r in rects) - x
+            h = max(r[1] + r[3] for r in rects) - y
+            return rectangle(x, y, w, h)
+        # legacy "screen_sizes" data (pre-monitors clients): one screen-wide workarea
+        for display in self.screen_sizes:
+            if isinstance(display, (list, tuple)) and len(display) >= 10 and display[8] > 0 and display[9] > 0:
+                return rectangle(*display[6:10])
+        return None

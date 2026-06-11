@@ -177,7 +177,8 @@ class DisplayClient(StubClientMixin):
             log.info(" desktop size is %sx%s:", u_root_w, u_root_h)
             log_screen_sizes(u_root_w, u_root_h, ss)
         if self.xscale != 1 or self.yscale != 1:
-            caps["screen_sizes.unscaled"] = ss
+            if BACKWARDS_COMPATIBLE:
+                caps["screen_sizes.unscaled"] = ss
             caps["desktop_size.unscaled"] = u_root_w, u_root_h
             if self.log_screen_info:
                 root_w, root_h = self.cp(u_root_w, u_root_h)
@@ -191,7 +192,9 @@ class DisplayClient(StubClientMixin):
                 log_screen_sizes(root_w, root_h, sss)
         else:
             sss = ss
-        caps["screen_sizes"] = sss
+        if BACKWARDS_COMPATIBLE:
+            # legacy per-screen tuples; modern servers use the `monitors` dict instead:
+            caps["screen_sizes"] = sss
         monitors = self.get_monitors_info()
         caps["monitors"] = adjust_monitor_refresh_rate(self.refresh_rate, monitors)
         caps.update(self.get_screen_caps())

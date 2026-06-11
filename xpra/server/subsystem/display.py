@@ -465,23 +465,15 @@ class DisplayManager(StubSubsystem):
         workarea = rectangle(0, 0, maxw, maxh)
         display_sources = self.get_sources_by_type(DisplayConnection)
         for ss in display_sources:
-            screen_sizes = ss.screen_sizes
-            log("calculate_workarea() screen_sizes(%s)=%s", ss, screen_sizes)
-            if not screen_sizes:
+            # derived from the `monitors` dict (modern clients) or `screen_sizes` (legacy):
+            client_workarea = ss.get_client_workarea()
+            log("calculate_workarea() workarea(%s)=%s", ss, client_workarea)
+            if not client_workarea:
                 continue
-            for display in screen_sizes:
-                # avoid error with old/broken clients:
-                if not display or not isinstance(display, (list, tuple)):
-                    continue
-                # display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
-                if len(display) >= 10:
-                    work_x, work_y, work_w, work_h = display[6:10]
-                    display_workarea = rectangle(work_x, work_y, work_w, work_h)
-                    log("calculate_workarea() found %s for display %s", display_workarea, display[0])
-                    workarea = workarea.intersection_rect(display_workarea)
-                    if not workarea:
-                        log.warn("Warning: failed to calculate workarea")
-                        log.warn(" as intersection of %s and %s", (maxw, maxh), (work_x, work_y, work_w, work_h))
+            workarea = workarea.intersection_rect(client_workarea)
+            if not workarea:
+                log.warn("Warning: failed to calculate workarea")
+                log.warn(" as intersection of %s and %s", (maxw, maxh), client_workarea)
         # sanity checks:
         log("calculate_workarea(%s, %s) workarea=%s", maxw, maxh, workarea)
         max_dim = 32768 - 8192
