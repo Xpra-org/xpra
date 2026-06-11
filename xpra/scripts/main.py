@@ -137,6 +137,7 @@ STDOUT_SUBCOMMANDS = (
     "webcam",
     "showconfig",
     "root-size",
+    "monitor-info",
 )
 CLIENT_SUBCOMMANDS = (
     "attach", "listen", "detach",
@@ -1585,11 +1586,9 @@ def make_progress_process(title="Xpra") -> Popen | None:
     return progress_process
 
 
-def _monitors_args(args: list[str]) -> tuple[str, str]:
+def _monitors_args(args: list[str], require_monitor_data: bool = True) -> tuple[str, str]:
     from xpra.log import consume_verbose_argv
     consume_verbose_argv(args, "screen", "randr")
-    if not args:
-        raise InitExit(ExitCode.FILE_NOT_FOUND, "monitor data is missing")
     jsondata = ""
     display = ""
     for arg in args:
@@ -1602,7 +1601,9 @@ def _monitors_args(args: list[str]) -> tuple[str, str]:
                 raise InitExit(ExitCode.FAILURE, "duplicated monitor data on command line")
             jsondata = arg
     if not jsondata:
-        raise InitExit(ExitCode.FAILURE, "missing JSON monitor data argument")
+        if require_monitor_data:
+            raise InitExit(ExitCode.FAILURE, "missing JSON monitor data argument")
+        jsondata = "-"
     display = display or os.environ.get("DISPLAY", "")
     if not display and not (WIN32 or OSX):
         raise InitExit(ExitCode.FAILURE, "missing display argument")
@@ -1612,7 +1613,7 @@ def _monitors_args(args: list[str]) -> tuple[str, str]:
 def run_monitor_info(options, args: list[str]) -> int:
     # should we honour desktop scaling here?
     # parse_scaling(options.desktop_scaling, w, h)
-    display, jsondata = _monitors_args(args)
+    display, jsondata = _monitors_args(args, require_monitor_data=False)
     if display:
         from xpra.gtk.util import verify_gdk_display
         verify_gdk_display(display)
