@@ -33,7 +33,7 @@ from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, MIN_VREFRESH, MAX_VRE
 from xpra.gtk.cursors import cursor_types, get_default_cursor
 from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow
-from xpra.gtk.info import get_monitors_info, get_screen_sizes, get_average_monitor_refresh_rate
+from xpra.gtk.info import get_screen_sizes, get_average_monitor_refresh_rate
 from xpra.gtk.widget import scaled_image, label, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
@@ -47,6 +47,9 @@ from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
     get_window_frame_sizes, get_window_frame_size,
     system_bell, get_wm_name, get_fixed_cursor_size,
+    # use the platform version so per-monitor info is enriched (colour, dpi, ...)
+    # on platforms that override it (win32, macos); it delegates to `xpra.gtk.info` otherwise:
+    get_monitors_info,
 )
 from xpra.log import Logger
 
