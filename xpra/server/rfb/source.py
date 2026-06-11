@@ -84,7 +84,7 @@ class RFBSource(PointerSource):
         "zlib_compressor",
         "continuous_updates", "cu_rect", "pending_request",
         "last_pointer_pos",
-        "damage_delay", "damage_timer", "damage_rectangles", "damage_wid", "damage_window",
+        "damage_delay", "damage_timer", "damage_rectangles", "damage_clip", "damage_wid", "damage_window",
         "encode_queue", "encode_thread", "pixel_format_generation",
     )
 
@@ -118,6 +118,7 @@ class RFBSource(PointerSource):
         self.damage_delay = RFB_DAMAGE_DELAY
         self.damage_timer = 0
         self.damage_rectangles: list[rectangle] = []
+        self.damage_clip: rectangle | None = None
         self.damage_wid = 0
         self.damage_window = None
         self.encode_queue: SimpleQueue[ENCODE_ITEM] = SimpleQueue()
@@ -239,6 +240,7 @@ class RFBSource(PointerSource):
         self.close_event.set()
         self.cancel_damage_timer()
         self.damage_rectangles = []
+        self.damage_clip = None
         self.damage_window = None
         self.encode_queue.put(None)
 
@@ -318,18 +320,37 @@ class RFBSource(PointerSource):
         # service unsolicited (polling) damage when a FramebufferUpdateRequest
         # is outstanding. Direct calls from FramebufferUpdateRequest(inc=0)
         # arrive without options.polling and always go through.
+        region = rectangle(x, y, w, h)
         if polling and not self.continuous_updates:
             if self.pending_request is None and not self.damage_rectangles:
                 return
             if self.pending_request:
+                self.add_damage_clip(rectangle(*self.pending_request))
                 self.pending_request = None
-        self.add_damage_rectangle(_wid, window, x, y, w, h)
+            if self.damage_clip:
+                if not (region := region.intersection_rect(self.damage_clip)):
+                    return
+        elif polling and self.continuous_updates and self.cu_rect:
+            if not (region := region.intersection(*self.cu_rect)):
+                return
+        elif not polling and not self.continuous_updates and not self.damage_rectangles:
+            # A non-incremental FramebufferUpdateRequest is already limited to
+            # the requested rect. Use it as the batch clip so any polling damage
+            # that arrives before the timer fires cannot expand the reply.
+            self.damage_clip = region
+        self.add_damage_rectangle(_wid, window, region)
 
-    def add_damage_rectangle(self, wid: int, window, x: int, y: int, w: int, h: int) -> None:
-        if w <= 0 or h <= 0:
+    def add_damage_clip(self, clip: rectangle) -> None:
+        if not self.damage_clip:
+            self.damage_clip = clip
+            return
+        self.damage_clip = merge_all((self.damage_clip, clip))
+
+    def add_damage_rectangle(self, wid: int, window, region: rectangle) -> None:
+        if region.width <= 0 or region.height <= 0:
             return
         schedule = not self.damage_rectangles
-        add_rectangle(self.damage_rectangles, rectangle(x, y, w, h))
+        add_rectangle(self.damage_rectangles, region)
         self.damage_wid = wid
         self.damage_window = window
         if schedule:
@@ -361,6 +382,7 @@ class RFBSource(PointerSource):
         p = self.protocol
         if p is None:
             self.damage_rectangles = []
+            self.damage_clip = None
             self.damage_window = None
             return
         if p.queue_size() >= 2 or self.encode_queue.qsize() >= RFB_ENCODE_QUEUE_MAX_SIZE:
@@ -369,6 +391,7 @@ class RFBSource(PointerSource):
         wid = self.damage_wid
         window = self.damage_window
         self.damage_rectangles = []
+        self.damage_clip = None
         self.damage_window = None
         self.send_regions(wid, window, damage)
 

@@ -88,6 +88,46 @@ class TestRFB(unittest.TestCase):
         finally:
             s.close()
 
+    def test_rfb_source_damage_request_clip(self):
+        p = AdHocStruct()
+        p.send = noop
+        p.queue_size = lambda: 0
+
+        window = AdHocStruct()
+        s = RFBSource(p, True)
+        try:
+            s.request_update(10, 10, 20, 20)
+            s.damage(1, window, 0, 0, 20, 20, {"polling": True})
+            self.assertEqual([r.get_geometry() for r in s.damage_rectangles], [(10, 10, 10, 10)])
+            self.assertEqual(s.damage_clip.get_geometry(), (10, 10, 20, 20))
+
+            s.damage(1, window, 25, 25, 20, 20, {"polling": True})
+            self.assertEqual([r.get_geometry() for r in s.damage_rectangles],
+                             [(10, 10, 10, 10), (25, 25, 5, 5)])
+
+            s.damage(1, window, 0, 40, 5, 5, {"polling": True})
+            self.assertEqual([r.get_geometry() for r in s.damage_rectangles],
+                             [(10, 10, 10, 10), (25, 25, 5, 5)])
+        finally:
+            s.close()
+
+    def test_rfb_source_continuous_updates_clip(self):
+        p = AdHocStruct()
+        p.send = noop
+        p.queue_size = lambda: 0
+
+        window = AdHocStruct()
+        s = RFBSource(p, True)
+        try:
+            s.set_continuous_updates(True, 10, 10, 20, 20)
+            s.damage(1, window, 0, 0, 20, 20, {"polling": True})
+            self.assertEqual([r.get_geometry() for r in s.damage_rectangles], [(10, 10, 10, 10)])
+
+            s.damage(1, window, 0, 40, 5, 5, {"polling": True})
+            self.assertEqual([r.get_geometry() for r in s.damage_rectangles], [(10, 10, 10, 10)])
+        finally:
+            s.close()
+
     def test_rfb_source_damage_regions(self):
         p = AdHocStruct()
         p.send = noop
