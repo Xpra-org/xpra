@@ -233,6 +233,7 @@ cdef class Decoder:
         cdef unsigned char* src
         cdef int src_len = 0
         cdef uint8_t *yuv[3]
+        assert self.context!=NULL, "decoder is closed"
         start = monotonic()
         with buffer_context(data) as bc:
             src = <unsigned char*> (<uintptr_t> int(bc))
