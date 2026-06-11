@@ -821,6 +821,7 @@ def get_usage() -> list[str]:
         "list-sessions",
         "list-windows",
         "displays",
+        "monitor-info [filename] [DISPLAY]",
         "encoding",
         "path-info",
     ]
