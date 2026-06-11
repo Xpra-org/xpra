@@ -98,6 +98,8 @@ struct VPLEncoder {
     int             use_icq;        /* 1 if ICQ rate-control is in use; 0 = CQP */
     int             next_qp;        /* per-frame mfxEncodeCtrl.QP override (CQP only); 0 = use configured */
     int             is_hw;
+    mfxSyncPoint    pending_sync;   /* syncp awaiting drain; non-NULL only on the
+                                       error path between submit and a clean sync */
     mfxStatus       last_sts;
     char            last_error[128];
 };
@@ -345,6 +347,14 @@ void vpl_encoder_destroy(VPLEncoder *enc) {
     if (!enc)
         return;
     if (enc->session) {
+        /* Drain any frame still owned by the async scheduler before we free the
+           bitstream/surface buffers it copies into. MFXVideoENCODE_Close does
+           not reliably wait for a sync point the app never retrieved, which is
+           how a teardown during resize can race the worker thread. */
+        if (enc->pending_sync) {
+            MFXVideoCORE_SyncOperation(enc->session, enc->pending_sync, 1000);
+            enc->pending_sync = NULL;
+        }
         MFXVideoENCODE_Close(enc->session);
         MFXClose(enc->session);
     }
@@ -430,7 +440,13 @@ retry:
     if (sts == MFX_ERR_NOT_ENOUGH_BUFFER) {
         return set_error(enc, sts, "EncodeFrameAsync(not_enough_buffer)");
     }
-    if (sts != MFX_ERR_NONE && sts != MFX_ERR_NONE_PARTIAL_OUTPUT) {
+    /* Positive sts is a warning (e.g. MFX_WRN_INCOMPATIBLE_VIDEO_PARAM == 5):
+       the frame was still accepted and a sync point produced, so output is
+       available - fall through and sync it. A warning with no syncp is handled
+       by the !syncp check below. Only negative codes are real errors.
+       Never return here while a syncp is live, or the async worker keeps
+       copying into enc->bitstream_data after we free it on teardown. */
+    if (sts < MFX_ERR_NONE && sts != MFX_ERR_NONE_PARTIAL_OUTPUT) {
         return set_error(enc, sts, "EncodeFrameAsync");
     }
     if (!syncp) {
@@ -438,11 +454,16 @@ retry:
         return VPL_ENC_NEED_MORE_INPUT;
     }
 
+    enc->pending_sync = syncp;
     sts = MFXVideoCORE_SyncOperation(enc->session, syncp, 5000);
     t2 = usec_now();
     if (sts != MFX_ERR_NONE) {
+        /* Leave pending_sync set: on timeout the frame may still be executing,
+           so vpl_encoder_destroy() must drain it before freeing the buffers
+           the async worker copies into. */
         return set_error(enc, sts, "SyncOperation");
     }
+    enc->pending_sync = NULL;
 
     frame->data = bs.Data + bs.DataOffset;
     frame->size = (int)bs.DataLength;
