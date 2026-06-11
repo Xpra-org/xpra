@@ -593,6 +593,9 @@ def DotXpra(*args, **kwargs):
 def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
+    # keep the (normalized) mode on the options so that subsystems which only get `opts`
+    # (ie: `parse_display_name`) can adjust their behaviour, ie: ssh agent forwarding:
+    options.mode = mode
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
     if args and mode in ("seamless", "desktop", "monitor"):
         # all args that aren't specifying a connection will be interpreted as a start-child command:
