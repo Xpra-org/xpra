@@ -95,10 +95,11 @@ def stat_display_socket(socket_path: str, timeout=VERIFY_SOCKET_TIMEOUT) -> dict
     return {}
 
 
-def guess_display(current_display, uid: int = getuid(), gid: int = getgid(), sessions_dir="") -> str:
+def guess_display(current_display, uid: int = getuid(), gid: int = getgid(), sessions_dir="", backend="") -> str:
     """
     try to find the one "real" active display
     either X11 or wayland displays used by real user sessions
+    (the `backend` restricts the search to `x11` or `wayland` displays when specified)
     """
     MAX_X11_DISPLAY_NO = 10
     args = tuple(x for x in (uid, gid) if x is not None)
@@ -120,8 +121,8 @@ def guess_display(current_display, uid: int = getuid(), gid: int = getgid(), ses
         return dinfo(display).get("state", "") != "LIVE" or dinfo(display).get("wmname").find("xpra") < 0
 
     while True:
-        displays = list(find_displays(MAX_X11_DISPLAY_NO, *args).keys())
-        log(f"find_displays({MAX_X11_DISPLAY_NO}, {args})={displays}")
+        displays = list(find_displays(MAX_X11_DISPLAY_NO, *args, backend=backend).keys())
+        log(f"find_displays({MAX_X11_DISPLAY_NO}, {args}, {backend=})={displays}")
         if current_display and current_display not in displays:
             displays.append(current_display)
         all_displays = all_displays or displays
@@ -154,14 +155,18 @@ def guess_display(current_display, uid: int = getuid(), gid: int = getgid(), ses
         args = args[:-1]
 
 
-def find_displays(max_display_no=0, uid: int = getuid(), gid: int = getgid()) -> dict[str, Any]:
+def find_displays(max_display_no=0, uid: int = getuid(), gid: int = getgid(), backend: str = "") -> dict[str, Any]:
     if OSX or WIN32:
         return {"Main": {}}
+    # honour the backend when specified: `x11` excludes wayland displays and vice versa
+    # (`auto` and unspecified backends match both):
+    backend = (backend or "").lower()
     displays = {}
-    if find_spec("xpra.x11"):
+    if backend in ("", "all", "auto", "x11") and find_spec("xpra.x11"):
         displays = find_x11_display_sockets(max_display_no=max_display_no)
-    # add wayland displays:
-    displays.update(find_wayland_display_sockets(uid, gid))
+    if backend in ("", "all", "auto", "wayland"):
+        # add wayland displays:
+        displays.update(find_wayland_display_sockets(uid, gid))
     # now verify that the sockets are usable
     # and filter out by uid and gid if requested:
     display_info = {}
@@ -298,8 +303,8 @@ def exec_wminfo(display) -> dict[str, str]:
     return wminfo
 
 
-def get_displays_info(dotxpra=None, display_names=None, sessions_dir="") -> dict[str, Any]:
-    displays = get_displays(dotxpra, display_names)
+def get_displays_info(dotxpra=None, display_names=None, sessions_dir="", backend="") -> dict[str, Any]:
+    displays = get_displays(dotxpra, display_names, backend=backend)
     log = Logger("util")
     log(f"get_displays({display_names})={displays}")
     displays_info: dict[str, Any] = {}
@@ -394,7 +399,7 @@ def get_x11_display_info(display, sessions_dir="") -> dict[str, Any]:
     return display_info
 
 
-def get_displays(dotxpra=None, display_names=None) -> dict[str, Any]:
+def get_displays(dotxpra=None, display_names=None, backend="") -> dict[str, Any]:
     if OSX or WIN32:
         return {"Main": {}}
     log = Logger("util")
@@ -404,7 +409,7 @@ def get_displays(dotxpra=None, display_names=None) -> dict[str, Any]:
     if dotxpra:
         from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
         xpra_sessions = get_xpra_sessions(dotxpra)
-    displays = find_displays()
+    displays = find_displays(backend=backend)
     log(f"find_displays()={displays}")
     # filter out:
     displays = {

@@ -1382,6 +1382,9 @@ def connect_client_app(app, cmdline: list[str], opts, extra_args: list[str], mod
             # don't try to connect to a server using the xpra protocol which may not exist,
             # the ssh command will do what is needed by calling `_proxy_run`:
             display_desc["proxy_command"] = ["_proxy_run"]
+            if opts.backend and opts.backend.lower() != "auto":
+                # forward the backend to the remote `_proxy_run` subcommand so that it can honour it:
+                display_desc["display_as_args"].append(f"--backend={opts.backend}")
             display_desc["display_as_args"] += run_args
             connect_or_fail(display_desc, opts)
             return FakeClientApp()
@@ -2388,7 +2391,8 @@ def run_proxy_run(options, script_file: str, cmdline: list[str], args: list[str]
     if not display_desc and not display_args:
         # try harder, maybe there is a single display that isn't managed by an xpra session:
         displays = get_displays_info(display_names=display_args if display_args else None,
-                                     sessions_dir=options.sessions_dir)
+                                     sessions_dir=options.sessions_dir,
+                                     backend=options.backend)
         if len(displays) == 1:
             display_desc = tuple(displays.values())[0]
 
