@@ -10,7 +10,7 @@ import tempfile
 import os
 import unittest
 
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, WIN32
 from xpra.net.socket_util import (
     validate_abstract_socketpath,
     looks_like_xpra_packet,
@@ -564,6 +564,7 @@ class TestCreateAbstractSocket(unittest.TestCase):
 
 class TestAddListenSocketNamedPipe(unittest.TestCase):
 
+    @unittest.skipUnless(WIN32, "named pipes only on win32")
     def test_named_pipe_sets_callback_and_starts(self):
         from unittest.mock import MagicMock
         from xpra.net.socket_util import add_listen_socket, SocketListener
