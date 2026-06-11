@@ -12,10 +12,40 @@ from xpra.util.objects import AdHocStruct
 from xpra.codecs.image import ImageWrapper
 from xpra.common import noop
 from xpra.net.rfb.const import RFBEncoding
-from xpra.server.rfb.source import RFBSource
+from xpra.net.rfb.protocol import RFBProtocol
+from xpra.server.rfb.source import RFB_WRITE_QUEUE_MAX_BYTES, RFBSource
 
 
 class TestRFB(unittest.TestCase):
+
+    def test_rfb_protocol_write_backlog(self):
+        class Conn:
+            def write(self, buf):
+                return len(buf)
+
+            def close(self):
+                pass
+
+        class WriteThread:
+            name = "write"
+
+            def is_alive(self):
+                return False
+
+        p = RFBProtocol(Conn(), noop)
+        p.start_write_thread = lambda: setattr(p, "_write_thread", WriteThread())
+        p.send(b"abc")
+        p.send(b"defg")
+        self.assertEqual(p.queue_size(), 2)
+        self.assertEqual(p.queue_byte_size(), 7)
+        self.assertEqual(p.pending_write_bytes(), 7)
+
+        p._write()
+        self.assertEqual(p.queue_size(), 1)
+        self.assertEqual(p.queue_byte_size(), 4)
+        self.assertEqual(p.pending_write_bytes(), 4)
+        self.assertEqual(p.output_bytecount, 3)
+        self.assertEqual(p.get_info()["write"]["last"]["bytes"], 3)
 
     def test_rfb_source(self):
         # fake protocol:
@@ -85,6 +115,18 @@ class TestRFB(unittest.TestCase):
             s.process_damage()
             self.assertEqual(image_calls, [(1, 2, 14, 24)])
             self.assertEqual(s.damage_rectangles, [])
+        finally:
+            s.close()
+
+    def test_rfb_source_write_byte_backlog(self):
+        p = AdHocStruct()
+        p.send = noop
+        p.queue_size = lambda: 0
+        p.pending_write_bytes = lambda: RFB_WRITE_QUEUE_MAX_BYTES
+
+        s = RFBSource(p, True)
+        try:
+            self.assertTrue(s.has_backlog())
         finally:
             s.close()
 

@@ -7,7 +7,8 @@ import os
 import struct
 from time import monotonic
 from socket import error as socket_error
-from collections.abc import Callable, Sequence
+from typing import Any
+from collections.abc import Callable
 from queue import Queue
 
 from xpra.os_util import gi_import
@@ -50,6 +51,11 @@ class RFBProtocol:
         self.input_raw_packetcount = 0
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
+        self.output_bytecount = 0
+        self._write_queue_bytes = 0
+        self._write_current_bytes = 0
+        self._write_last_bytecount = 0
+        self._write_last_duration = 0.0
         self._closed = False
         self._packet_parser = self._parse_protocol_handshake
         self._write_thread = None
@@ -150,10 +156,23 @@ class RFBProtocol:
     def get_threads(self) -> tuple:
         return tuple(x for x in (self._write_thread, self._read_thread) if x is not None)
 
-    def get_info(self, *_args) -> dict[str, Sequence[int] | dict[str, bool]]:
+    def get_info(self, *_args) -> dict[str, Any]:
         info: dict[str, tuple | dict] = {
             "protocol": PROTOCOL_VERSION,
             "thread": dict((thread.name, thread.is_alive()) for thread in self.get_threads()),
+            "write": {
+                "queue": {
+                    "size": self.queue_size(),
+                    "bytes": self.queue_byte_size(),
+                },
+                "current-bytes": self._write_current_bytes,
+                "pending-bytes": self.pending_write_bytes(),
+                "last": {
+                    "bytes": self._write_last_bytecount,
+                    "duration": self._write_last_duration,
+                },
+                "bytes": self.output_bytecount,
+            },
         }
         return info
 
@@ -171,18 +190,25 @@ class RFBProtocol:
     def queue_size(self) -> int:
         return self._write_queue.qsize()
 
+    def queue_byte_size(self) -> int:
+        return self._write_queue_bytes
+
+    def pending_write_bytes(self) -> int:
+        return self._write_queue_bytes + self._write_current_bytes
+
     def send(self, rfbdata) -> None:
         if self._closed:
             log("connection is closed already, not sending packet")
             return
+        size = len(rfbdata)
         if log.is_debug_enabled():
-            size = len(rfbdata)
             lstr = str(size) if size <= 16 else std_unit(size)
             log(f"send({lstr} bytes: %s..)", hexstr(rfbdata[:16]))
         if self.log:
             self.log.write(f"send: {hexstr(rfbdata)}\n")
         if self._write_thread is None:
             self.start_write_thread()
+        self._write_queue_bytes += size
         self._write_queue.put(rfbdata)
 
     def start_write_thread(self) -> None:
@@ -219,14 +245,25 @@ class RFBProtocol:
             log("write thread: empty marker, exiting")
             self.close()
             return False
+        bytecount = len(buf)
+        self._write_queue_bytes = max(0, self._write_queue_bytes - bytecount)
         con = self._conn
         if not con:
             return False
+        self._write_current_bytes = bytecount
+        start = monotonic()
+        written_bytes = 0
         while buf and not self._closed:
             written = con.write(buf)
             if written:
+                written_bytes += written
                 buf = buf[written:]
+                self._write_current_bytes = len(buf)
                 self.output_raw_packetcount += 1
+        self._write_current_bytes = 0
+        self._write_last_bytecount = written_bytes
+        self._write_last_duration = monotonic() - start
+        self.output_bytecount += written_bytes
         self.output_packetcount += 1
         return True
 
@@ -330,4 +367,6 @@ class RFBProtocol:
         # make all the queue based threads exit by adding the empty marker:
         owq = self._write_queue
         self._write_queue = exit_queue()
+        self._write_queue_bytes = 0
+        self._write_current_bytes = 0
         force_flush_queue(owq)

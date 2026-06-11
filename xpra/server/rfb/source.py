@@ -18,6 +18,7 @@ from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
 from xpra.server.source.stub import PointerSource
 from xpra.server.window.compress import free_image_wrapper  # pylint: disable=import-outside-toplevel
 from xpra.util.rectangle import rectangle, add_rectangle, merge_all
+from xpra.util.env import envint
 from xpra.util.objects import AtomicInteger
 from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import csv, memoryview_to_bytes
@@ -31,6 +32,8 @@ GLib = gi_import("GLib")
 counter = AtomicInteger()
 
 RFB_ENCODE_QUEUE_MAX_SIZE = 2
+RFB_WRITE_QUEUE_MAX_SIZE = 2
+RFB_WRITE_QUEUE_MAX_BYTES = envint("XPRA_RFB_WRITE_QUEUE_MAX_BYTES", 8 * 1024 * 1024)
 RFB_DAMAGE_DELAY = 20
 RFB_DAMAGE_DELAY_MIN = 10
 RFB_DAMAGE_DELAY_MAX = 100
@@ -136,6 +139,8 @@ class RFBSource(PointerSource):
             "damage-timer": self.damage_timer,
             "damage-rectangles": len(self.damage_rectangles),
             "encode-queue": self.encode_queue.qsize(),
+            "write-queue": self.queue_size(),
+            "write-queue-bytes": self.pending_write_bytes(),
         }
 
     def effective_readonly(self) -> bool:
@@ -308,8 +313,7 @@ class RFBSource(PointerSource):
 
     def damage(self, _wid: int, window, x: int, y: int, w: int, h: int, options=None) -> None:
         polling = options and options.get("polling", False)
-        p = self.protocol
-        if polling and (p is None or p.queue_size() >= 2 or self.encode_queue.qsize() >= RFB_ENCODE_QUEUE_MAX_SIZE):
+        if polling and self.has_backlog():
             # very basic RFB update rate control,
             # if there are packets waiting already
             # we'll just process the next polling update instead:
@@ -385,7 +389,7 @@ class RFBSource(PointerSource):
             self.damage_clip = None
             self.damage_window = None
             return
-        if p.queue_size() >= 2 or self.encode_queue.qsize() >= RFB_ENCODE_QUEUE_MAX_SIZE:
+        if self.has_backlog():
             self.schedule_damage()
             return
         wid = self.damage_wid
@@ -394,6 +398,27 @@ class RFBSource(PointerSource):
         self.damage_clip = None
         self.damage_window = None
         self.send_regions(wid, window, damage)
+
+    def queue_size(self) -> int:
+        if p := self.protocol:
+            return p.queue_size()
+        return 0
+
+    def pending_write_bytes(self) -> int:
+        if p := self.protocol:
+            if pending_write_bytes := getattr(p, "pending_write_bytes", None):
+                return pending_write_bytes()
+        return 0
+
+    def has_backlog(self) -> bool:
+        p = self.protocol
+        if p is None:
+            return True
+        if self.queue_size() >= RFB_WRITE_QUEUE_MAX_SIZE:
+            return True
+        if self.pending_write_bytes() >= RFB_WRITE_QUEUE_MAX_BYTES:
+            return True
+        return self.encode_queue.qsize() >= RFB_ENCODE_QUEUE_MAX_SIZE
 
     def get_window_dimensions(self, window, regions: Sequence[rectangle]) -> tuple[int, int]:
         if get_dimensions := getattr(window, "get_dimensions", None):
