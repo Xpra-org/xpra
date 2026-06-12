@@ -377,10 +377,6 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             title = self._get_window_title(metadata)
             self.set_title(title)
 
-        if "locale" in metadata:
-            locale = metadata.get("locale", "")
-            self.set_locale(locale)
-
         if "icon-title" in metadata:
             icon_title = metadata.strget("icon-title")
             self.set_icon_name(icon_title)
@@ -394,87 +390,22 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             self._set_initial_position = sc.boolget("set-initial-position", self._set_initial_position)
             self.set_size_constraints(sc, self.max_window_size)
 
-        if "set-initial-position" in metadata:
-            # this should be redundant - but we keep it here for consistency
-            self._set_initial_position = metadata.boolget("set-initial-position")
-
-        if "transient-for" in metadata:
-            self.apply_transient_for(metadata.intget("transient-for"))
-
-        if "modal" in metadata:
-            self.set_modal(metadata.boolget("modal"))
-
-        # apply window-type hint if window has not been mapped yet:
-        if "window-type" in metadata:
-            self.set_window_type(metadata.strtupleget("window-type"))
-
-        if "role" in metadata:
-            self.set_role(metadata.strget("role"))
-
-        if "xid" in metadata:
-            self.set_xid(metadata.strget("xid"))
-
         if "opacity" in metadata:
             opacity = metadata.intget("opacity", -1)
             opacity = 1 if opacity < 0 else min(1, opacity // 0xffffffff)
             ignorewarnings(self.set_opacity, opacity)
 
-        if "has-alpha" in metadata:
-            self.set_has_alpha(metadata.boolget("has-alpha"))
+        if "content-type" in metadata:
+            self.content_type = metadata.strget("content-type")
+            if b := self._backing:
+                b.content_type = self.content_type
 
-        if "maximized" in metadata:
-            self.set_maximized(metadata.boolget("maximized"))
+        if "transient-for" in metadata:
+            self.apply_transient_for(metadata.intget("transient-for"))
 
-        if "fullscreen" in metadata:
-            self.set_fullscreen(metadata.boolget("fullscreen"))
-
-        if "iconic" in metadata:
-            self.set_iconic(metadata.boolget("iconic"))
-
-        if "decorations" in metadata:
-            self.set_decorations(metadata.boolget("decorations", True))
-
-        if "above" in metadata:
-            self.set_above(metadata.boolget("above"))
-
-        if "below" in metadata:
-            self.set_below(metadata.boolget("below"))
-
-        if "shaded" in metadata:
-            self.set_shaded(metadata.boolget("shaded"))
-
-        if "sticky" in metadata:
-            self.set_sticky(metadata.boolget("sticky"))
-
-        if "skip-taskbar" in metadata:
-            self.set_skip_taskbar(metadata.boolget("skip-taskbar"))
-
-        if "skip-pager" in metadata:
-            self.set_skip_pager(metadata.boolget("skip-pager"))
-
-        if "focused" in metadata:
-            self.set_focused(metadata.boolget("focused"))
-
-        if "opaque-region" in metadata:
-            self.set_opaque_region(metadata.tupleget("opaque-region"))
-
-        if "workspace" in metadata:
-            self.set_workspace(metadata.intget("workspace"))
-
-        if "bypass-compositor" in metadata:
-            self.set_bypass_compositor(metadata.intget("bypass-compositor"))
-
-        if "strut" in metadata:
-            self.set_strut(metadata.dictget("strut", {}))
-
-        if "fullscreen-monitors" in metadata:
-            self.set_fullscreen_monitors(metadata.inttupleget("fullscreen-monitors"))
-
-        if "shape" in metadata:
-            self.set_shape(metadata.dictget("shape", {}))
-
-        if "command" in metadata:
-            self.set_command(metadata.strget("command"))
+        if "set-initial-position" in metadata:
+            # this should be redundant - but we keep it here for consistency
+            self._set_initial_position = metadata.boolget("set-initial-position")
 
         if "x11-property" in metadata:
             attr = metadata.tupleget("x11-property")
@@ -483,13 +414,51 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
                 if not is_wm_property(name):
                     self.set_x11_property(name, ptype, value)
 
-        if "content-type" in metadata:
-            self.content_type = metadata.strget("content-type")
-            if b := self._backing:
-                b.content_type = self.content_type
+        standard_properties: dict[str, type] = {
+            "locale": str,
+            "modal": bool,
+            "role": str,
+            "xid": str,
+            "has-alpha": bool,
+            "maximized": bool,
+            "fullscreen": bool,
+            "iconic": bool,
+            "decorations": bool,
+            "above": bool,
+            "below": bool,
+            "shaded": bool,
+            "sticky": bool,
+            "skip-taskbar": bool,
+            "skip-pager": bool,
+            "focused": bool,
+            "workspace": int,
+            "bypass-compositor": int,
+            "strut": dict,
+            "shape": dict,
+            "command": str,
+            "actions": tuple[str],
+            "fullscreen-monitors": tuple[int],
+            "opaque-region": tuple,
+            "window-type": tuple[str],
+        }
+        getters: dict[type, Callable] = {
+            str: typedict.strget,
+            bool: typedict.boolget,
+            int: typedict.intget,
+            dict: typedict.dictget,
+            tuple[str]: typedict.strtupleget,
+            tuple[int]: typedict.inttupleget,
+            tuple: typedict.tupleget,
+        }
+        for prop, ptype in standard_properties.items():
+            if prop in metadata:
+                getter = getters[ptype]
+                value = getter(metadata, prop)
+                setter = getattr(self, "set_" + prop.replace("-", "_"))
+                setter(value)
 
-        if "actions" in metadata:
-            self._actions = metadata.strtupleget("actions")
+    def set_actions(self, actions: tuple[str, ...]) -> None:
+        self._actions = actions
 
     def set_x11_property(self, *x11_property) -> None:
         pass  # see gtk client window base
