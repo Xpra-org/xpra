@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Protocol, TypeAlias, overload
 from collections.abc import Callable
 from abc import abstractmethod
 
@@ -11,6 +11,7 @@ from xpra.util.str_fn import strtobytes, bytestostr, repr_ellipsized
 from xpra.util.io import get_util_logger
 
 ScreenshotData: TypeAlias = tuple[int, int, str, int, bytes]
+_DICTGET_DEFAULT = object()
 
 
 class Scheduler(Protocol):
@@ -196,7 +197,21 @@ class typedict(dict):
     def boolget(self, k: str, default: bool = False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k: str | int, default: dict | None = None) -> dict:
+    @overload
+    def dictget(self, k: str | int) -> dict:
+        ...
+
+    @overload
+    def dictget(self, k: str | int, default: dict) -> dict:
+        ...
+
+    @overload
+    def dictget(self, k: str | int, default: None) -> dict | None:
+        ...
+
+    def dictget(self, k: str | int, default: Any = _DICTGET_DEFAULT) -> dict | None:
+        if default is _DICTGET_DEFAULT:
+            default = {}
         return self.conv_get(k, default, checkdict)
 
     def intpair(self, k: str, default_value: tuple[int, int] | None = None) -> tuple[int, int] | None:

@@ -125,6 +125,12 @@ class TestTypedict(unittest.TestCase):
     def test_dictget(self):
         d = typedict({"nested": {}})
         self._test_values_type(d, d.dictget, [dict])
+        self.assertEqual(d.dictget("missing"), {})
+        self.assertEqual(d.dictget("nested.missing"), {})
+        self.assertIsNone(d.dictget("missing", default=None))
+        self.assertEqual(d.dictget("missing", default={"default": True}), {"default": True})
+        self.assertEqual(typedict({"not-a-dict": "value"}).dictget("not-a-dict"), {})
+        self.assertIsNone(typedict({"not-a-dict": "value"}).dictget("not-a-dict", default=None))
 
     #def intpair(self, k, default_value=None):
     #def strtupleget(self, k, default_value=[]):
