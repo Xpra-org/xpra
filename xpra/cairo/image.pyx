@@ -172,9 +172,7 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
                         for x in range(iwidth):
                             srci = x*3 + y*stride
                             dsti = x*4 + y*istride
-                            cdata[dsti + 0] = cbuf[srci + 0]     #B
-                            cdata[dsti + 1] = cbuf[srci + 1]     #G
-                            cdata[dsti + 2] = cbuf[srci + 2]     #R
+                            memcpy(<void*> (cdata + dsti), <const void*> (cbuf + srci), 3)
                             cdata[dsti + 3] = 0xff               #X
             elif rgb_format=="RGB":
                 with nogil:
@@ -196,9 +194,7 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
                             for x in range(width):
                                 srci = x*4 + y*stride
                                 dsti = x*4 + y*istride
-                                cdata[dsti + 0] = cbuf[srci + 0]     #B
-                                cdata[dsti + 1] = cbuf[srci + 1]     #G
-                                cdata[dsti + 2] = cbuf[srci + 2]     #R
+                                memcpy(<void*> (cdata + dsti), <const void*> (cbuf + srci), 3)
                                 cdata[dsti + 3] = 0xff               #X
             elif rgb_format in ("RGBX", "RGBA"):
                 with nogil:
@@ -236,10 +232,10 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
                 with nogil:
                     for y in range(height):
                         for x in range(width):
-                            cdata[x*4 + 0 + y*istride] = cbuf[x*4 + 0 + y*stride]    #B
-                            cdata[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #G
-                            cdata[x*4 + 2 + y*istride] = cbuf[x*4 + 2 + y*stride]    #R
-                            cdata[x*4 + 3 + y*istride] = 0xff                        #A
+                            srci = x*4 + y*stride
+                            dsti = x*4 + y*istride
+                            memcpy(<void*> (cdata + dsti), <const void*> (cbuf + srci), 3)
+                            cdata[dsti + 3] = 0xff                                   #A
             elif rgb_format == "RGB":
                 with nogil:
                     for y in range(height):
@@ -252,10 +248,10 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
                 with nogil:
                     for y in range(height):
                         for x in range(width):
-                            cdata[x*4 + 0 + y*istride] = cbuf[x*3 + 0 + y*stride]    #B
-                            cdata[x*4 + 1 + y*istride] = cbuf[x*3 + 1 + y*stride]    #G
-                            cdata[x*4 + 2 + y*istride] = cbuf[x*3 + 2 + y*stride]    #R
-                            cdata[x*4 + 3 + y*istride] = 0xff                        #A
+                            srci = x*3 + y*stride
+                            dsti = x*4 + y*istride
+                            memcpy(<void*> (cdata + dsti), <const void*> (cbuf + srci), 3)
+                            cdata[dsti + 3] = 0xff                                   #A
             else:
                 raise ValueError(f"unhandled pixel format for ARGB32: {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_RGB30:
