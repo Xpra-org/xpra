@@ -13,6 +13,7 @@
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
+%define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
 %if 0%{?el8}
@@ -77,6 +78,8 @@ Summary:        Python 3 bindings for GObject Introspection base package
 Requires:       gobject-introspection%{?_isa} >= %{gobject_introspection_version}
 %if 0%{?el8}
 Requires:       %{py3rpmname}-gobject-base-noarch = %{version}-%{release}
+%else
+Obsoletes:      %{py3rpmname}-gobject-base-noarch < %{version}-%{release}
 %endif
 Requires:       %{py3rpmname}
 
@@ -111,6 +114,7 @@ if [ "${sha256}" != "%{pygobject_sha256}" ]; then
 	exit 1
 fi
 %autosetup -n pygobject-%{version} -p1
+sed -i "s/meson_version : '>= 0.64.0'/meson_version : '>= 0.63.0'/" meson.build
 
 %build
 %meson -Dpython=%{python3} -Dtests=false
@@ -118,6 +122,11 @@ fi
 
 %install
 %meson_install
+%if "%{getenv:PYTHON3}" != ""
+rm -f %{buildroot}%{_includedir}/pygobject-3.0/pygobject.h
+rm -f %{buildroot}%{_libdir}/pkgconfig/pygobject-3.0.pc
+rmdir --ignore-fail-on-non-empty %{buildroot}%{_includedir}/pygobject-3.0/
+%endif
 
 
 %files -n %{py3rpmname}-gobject
@@ -131,12 +140,13 @@ fi
 %license COPYING
 %doc NEWS
 %dir %{python3_sitearch}/gi/
-%{python3_sitearch}/gi/overrides/
-%{python3_sitearch}/gi/repository/
+%dir %{python3_sitelib}/gi/
+%{python3_sitelib}/gi/overrides/
+%{python3_sitelib}/gi/repository/
 %pycached %{python3_sitearch}/gi/*.py
 %{python3_sitearch}/gi/_gi.*.so
 %{python3_sitearch}/PyGObject-*.dist-info/
-%{python3_sitearch}/pygtkcompat/
+%{python3_sitelib}/pygtkcompat/
 %endif
 
 %if 0%{?el8}
@@ -150,9 +160,11 @@ fi
 %endif
 
 %files -n %{py3rpmname}-gobject-devel
+%if "%{getenv:PYTHON3}" == ""
 %dir %{_includedir}/pygobject-3.0/
 %{_includedir}/pygobject-3.0/pygobject.h
 %{_libdir}/pkgconfig/pygobject-3.0.pc
+%endif
 
 %changelog
 * Tue Jun 09 2026 Antoine Martin <antoine@xpra.org> - 3.50.2-1
