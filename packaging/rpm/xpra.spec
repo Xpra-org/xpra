@@ -267,8 +267,15 @@ BuildRequires:		libva-devel
 Requires:			libva
 %endif
 %ifnarch %{riscv}
+%if 0%{?rhel}
+#on EL clones we link our own private 'xpra-openh264' library so that it never
+#conflicts with the distro 'openh264' / 'noopenh264' packages (see #4626):
+BuildRequires:		xpra-openh264-devel
+Requires:			xpra-openh264
+%else
 BuildRequires:		pkgconfig(openh264)
 Requires:			openh264
+%endif
 %endif
 #not available yet:
 #BuildRequires:		libevdi-devel

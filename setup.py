@@ -457,7 +457,10 @@ codecs_ENABLED          = DEFAULT
 encoders_ENABLED        = codecs_ENABLED
 decoders_ENABLED        = codecs_ENABLED
 enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
-openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", "openh264")
+OPENH264_PKG_CONFIG     = os.environ.get("XPRA_OPENH264_PKG_CONFIG")
+if not OPENH264_PKG_CONFIG:
+    OPENH264_PKG_CONFIG = "xpra-openh264" if pkg_config_exists("xpra-openh264") else "openh264"
+openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", OPENH264_PKG_CONFIG)
 openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
 aom_ENABLED             = DEFAULT and pkg_config_version("3.0", "aom")
@@ -3558,8 +3561,8 @@ tace(drm_ENABLED, "xpra.codecs.drm.drm", "libdrm")
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.x264")
 tace(enc_x264_ENABLED, "xpra.codecs.x264.encoder", "x264")
 toggle_packages(openh264_ENABLED, "xpra.codecs.openh264")
-tace(openh264_decoder_ENABLED, "xpra.codecs.openh264.decoder", "openh264", language="c++")
-tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", "openh264", language="c++")
+tace(openh264_decoder_ENABLED, "xpra.codecs.openh264.decoder", OPENH264_PKG_CONFIG, language="c++")
+tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", OPENH264_PKG_CONFIG, language="c++")
 toggle_packages(aom_ENABLED, "xpra.codecs.aom")
 tace(aom_ENABLED, "xpra.codecs.aom.api", "aom", language="c++")
 tace(aom_ENABLED, "xpra.codecs.aom.decoder", "aom", language="c++")
