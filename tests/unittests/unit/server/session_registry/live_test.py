@@ -55,6 +55,21 @@ class TestLiveRegistry(unittest.TestCase):
         caps = typedict({"session-name": "alpha"})
         self.assertEqual(r.lookup(FakeAuth(), client_caps=caps), s)
 
+    def test_lookup_by_nested_session_name(self):
+        r = Registry()
+        s = make_session("u1", "alpha", [":10"])
+        r.register(s)
+        caps = typedict({"session": {"name": "alpha"}})
+        self.assertEqual(r.lookup(FakeAuth(), client_caps=caps), s)
+
+    def test_lookup_by_nested_session_display(self):
+        r = Registry(**{"lookup-by": "display"})
+        r.register(make_session("u1", "alpha", [":10"]))
+        s = make_session("u2", "beta", [":20"])
+        r.register(s)
+        caps = typedict({"session": {"name": "ignored-in-display-mode", "display": ":20"}})
+        self.assertEqual(r.lookup(FakeAuth(), client_caps=caps), s)
+
     def test_lookup_by_uuid_via_default_matcher(self):
         # default lookup-by is session-name, but uuid is accepted as a fallback
         r = Registry()
@@ -90,12 +105,10 @@ class TestLiveRegistry(unittest.TestCase):
 
     def test_lookup_by_uuid_strict(self):
         r = Registry(**{"lookup-by": "uuid"})
-        s = make_session("u1", "alpha", [":10"])
+        r.register(make_session("u1", "alpha", [":10"]))
+        s = make_session("u2", "beta", [":20"])
         r.register(s)
-        caps = typedict({"uuid": "u1"})
-        # In strict uuid mode the lookup reads the `uuid` cap (the live
-        # backend's lookup tries session-name then display then uuid; uuid is
-        # always consulted as the canonical id).
+        caps = typedict({"session": {"uuid": "u2"}})
         self.assertEqual(r.lookup(FakeAuth(), client_caps=caps), s)
 
     def test_rejects_invalid_lookup_by(self):

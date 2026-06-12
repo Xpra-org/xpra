@@ -81,12 +81,13 @@ class Registry(SessionRegistry):
         sessions = self.list_sessions()
         if not sessions:
             return None
-        requested = self._request_hint(client_caps)
+        requested = self._request_hints(client_caps)
         log("%s.lookup(%s) requested=%r among %i session(s)", self, authenticator, requested, len(sessions))
         if requested:
-            for s in sessions:
-                if self._matches(s, requested):
-                    return s
+            for hint in requested:
+                for s in sessions:
+                    if self._matches(s, hint):
+                        return s
             # an explicit hint that doesn't match is a miss, not a fallback
             return None
         # no usable hint: auto-select only if there is exactly one
@@ -95,29 +96,37 @@ class Registry(SessionRegistry):
         return None
 
     @staticmethod
-    def _request_hint(client_caps: Optional[typedict]) -> str:
+    def _request_hints(client_caps: Optional[typedict]) -> list[str]:
         """
-        Extract the session identifier the connecting client wants.
+        Extract the session identifiers the connecting client wants.
 
-        Today the only cap a stock client actually forwards in a useful
-        shape is `display` — populated from the `--display=NAME` flag.
-        The `session-name` cap is read first as forward-compatibility
-        (no current client sends it, but it's the canonical key once they
-        do). We deliberately do NOT consult the `uuid` cap: clients send
-        their own uuid there for tracking, which has nothing to do with
-        which registered session they want to reach. We also skip the
-        `display` cap when its value is not a plain string — the GTK
-        client in backwards-compatible mode overloads it with its
-        display-metrics sub-dict rather than the target name.
+        Prefer the new `session` sub-dict sent by XpraClientBase, then
+        keep accepting legacy top-level `session-name` and `display`.
+        We deliberately do NOT consult the top-level `uuid` cap: clients
+        send their own uuid there for tracking, which has nothing to do
+        with which registered session they want to reach. We also skip
+        the legacy `display` cap when its value is not a plain string:
+        the GTK client in backwards-compatible mode overloads it with
+        its display-metrics sub-dict rather than the target name.
         """
+        hints: list[str] = []
+
+        def add(v: str) -> None:
+            if v and v not in hints:
+                hints.append(v)
+
         if client_caps is None:
-            return ""
-        if v := client_caps.strget("session-name"):
-            return v
+            return hints
+        session = client_caps.dictget("session")
+        if session:
+            sd = typedict(session)
+            for key in ("name", "uuid", "display"):
+                add(sd.strget(key))
+        add(client_caps.strget("session-name"))
         raw = client_caps.get("display")
         if BACKWARDS_COMPATIBLE and isinstance(raw, str):
-            return str(raw)
-        return ""
+            add(str(raw))
+        return hints
 
     def _matches(self, session: Session, requested: str) -> bool:
         if self.lookup_by == "uuid":
