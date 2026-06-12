@@ -1,29 +1,29 @@
 %define _disable_source_fetch 0
-%define COMMIT 47ddac2996378c34aab9318f0d218303b1d282e7
-%define __cmake_in_source_build 1
-%global _default_patch_fuzz 2
+%global git_commit 6067afde563c3946eebd94f146b3824ab7a97a9c
+%global git_date 20260213
+%global git_short 6067afd
 
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-# found in ./README.chromium :
-Release:	0.1899.r2785.47ddac299.1%{?dist}
-License:	BSD
+Release:	0.62.%{git_date}git%{git_short}.1%{?dist}
+License:	BSD-3-Clause
 URL:		https://chromium.googlesource.com/libyuv/libyuv
-Source0:	https://xpra.org/src/libyuv-0.1899.r2785.tar.xz
+VCS:		git:%{url}
+Source0:	%{url}/+archive/%{git_commit}.tar.gz
 # Fedora-specific. Upstream isn't interested in these patches.
 Patch1:		libyuv-0001-Use-a-proper-so-version.patch
-# I don't know how to fix this properly and I don't care:
-Patch7:		libyuv-0007-nojpeg.patch
-BuildRequires:	make
+Patch2:		libyuv-0002-Link-against-shared-library.patch
+Patch3:		libyuv-0003-Use-GNUInstallDirs-during-installation.patch
+Patch4:		libyuv-0004-Use-CTest-switches-for-testing.patch
+Patch5:		libyuv-0005-arch-s390x-disable-little-endian-tests.patch
+Patch6:		libyuv-0006-Don-t-install-tools-and-static-lib.patch
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
+BuildRequires:	pkgconfig(libjpeg)
 %if 0%{?el8}
 #CentOS 8 ships cmake with broken dependencies, fix it:
 BuildRequires:	libarchive
-%endif
-%if !0%{?el8}%{?el9}%{?el10}
-BuildRequires:	gtest-devel
 %endif
 
 
@@ -46,12 +46,21 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "9c357dd2fa7ab21ad9dfd0e430d47941964dda4a2b6c766991380e6d4b7c3630" ]; then
+if [ "${sha256}" != "d52af2c387463d9cabb16db99a4a6ff4f4b26592f8591a9114f3f390ec4e0c65" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 
-%autosetup -p1 -n libyuv-0.1899.r2785
+%if 0%{?fedora} || 0%{?el8} || 0%{?el9}
+echo "**********************************************************************"
+echo "*** WARNING: this bundled libyuv package is meant for RHEL 10 only. ***"
+echo "*** Fedora and RHEL 8 / 9 should use the distribution or EPEL RPM.  ***"
+echo "*** Sleeping for 20 seconds so you can abort this build.            ***"
+echo "**********************************************************************"
+sleep 20
+%endif
+
+%autosetup -p1 -c -n %{name}-%{version}
 
 cat > %{name}.pc << EOF
 prefix=%{_prefix}
@@ -67,25 +76,20 @@ EOF
 
 
 %build
-LIBYUV_DISABLE_JPEG=1 %cmake .
-CXX_FLAGS="${CXX_FLAGS} -lm" LIBYUV_DISABLE_JPEG=1 %make_build
+%cmake -DBUILD_TESTING=OFF
+%cmake_build
 
 
 %install
-%make_install
+%cmake_install
 
-mkdir -p %{buildroot}%{_libdir}/pkgconfig
-cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
-rm -fr %{buildroot}/usr/lib/debug
-mv %{buildroot}/usr/lib/* %{buildroot}%{_libdir}/
+install -D -p -m 0644 %{name}.pc %{buildroot}%{_libdir}/pkgconfig/%{name}.pc
 
 
 %files
 %license LICENSE
 %doc AUTHORS PATENTS README.md
-%{_bindir}/yuvconvert
 %{_libdir}/%{name}.so.*
-%{_libdir}/%{name}.a
 
 
 %files devel
@@ -96,6 +100,10 @@ mv %{buildroot}/usr/lib/* %{buildroot}%{_libdir}/
 
 
 %changelog
+* Thu Jun 11 2026 Antoine Martin <totaam@xpra.org> - 0-0.62.20260213git6067afd.1
+- update to the Fedora Rawhide libyuv snapshot
+- use Fedora's current packaging patch stack
+
 * Thu Feb 20 2025 Antoine Martin <totaam@xpra.org> - 0-0.1899.r2785.47ddac299.1
 - new upstream git snapshot
 - remove outdated patches
