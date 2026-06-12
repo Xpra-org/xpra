@@ -92,7 +92,7 @@ class EncodeClient(ClientBaseClass):
         return super().server_connection_established(c)
 
     def _process_encodings(self, packet: Packet) -> None:
-        encodings = typedict(packet.get_dict(1)).dictget("encodings").get("core", ())
+        encodings = typedict(typedict(packet.get_dict(1)).dictget("encodings")).strtupleget("core", ())
         common = tuple(set(self.encodings) & set(encodings))
         log("server encodings=%s, common=%s", encodings, common)
 
