@@ -147,6 +147,48 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
                    int width, int height) nogil
 
 
+cdef extern from *:
+    """
+    #include <libyuv/version.h>
+    #include <libyuv/convert_from_argb.h>
+    #ifndef LIBYUV_VERSION
+    #define LIBYUV_VERSION 0
+    #endif
+    static inline int xpra_libyuv_has_ARGBToJ444(void) {
+    #if LIBYUV_VERSION >= 1910
+        return 1;
+    #else
+        return 0;
+    #endif
+    }
+    static inline int xpra_ARGBToJ444(const uint8_t* src_argb, int src_stride_argb,
+                                      uint8_t* dst_y, int dst_stride_y,
+                                      uint8_t* dst_u, int dst_stride_u,
+                                      uint8_t* dst_v, int dst_stride_v,
+                                      int width, int height) {
+    #if LIBYUV_VERSION >= 1910
+        return libyuv::ARGBToJ444(src_argb, src_stride_argb,
+                                  dst_y, dst_stride_y,
+                                  dst_u, dst_stride_u,
+                                  dst_v, dst_stride_v,
+                                  width, height);
+    #else
+        return libyuv::ARGBToI444(src_argb, src_stride_argb,
+                                  dst_y, dst_stride_y,
+                                  dst_u, dst_stride_u,
+                                  dst_v, dst_stride_v,
+                                  width, height);
+    #endif
+    }
+    """
+    int xpra_libyuv_has_ARGBToJ444()
+    int xpra_ARGBToJ444(const uint8_t* src_argb, int src_stride_argb,
+                        uint8_t* dst_y, int dst_stride_y,
+                        uint8_t* dst_u, int dst_stride_u,
+                        uint8_t* dst_v, int dst_stride_v,
+                        int width, int height) nogil
+
+
 cdef extern from "libyuv/scale.h" namespace "libyuv":
     ctypedef enum FilterMode:
         kFilterNone
@@ -246,6 +288,10 @@ def get_version() -> Tuple[int, int]:
     return (1, 0)
 
 
+def has_argb_to_j444() -> bool:
+    return bool(xpra_libyuv_has_ARGBToJ444())
+
+
 #hardcoded for now:
 MAX_WIDTH = 32768
 MAX_HEIGHT = 32768
@@ -261,6 +307,7 @@ COLORSPACES: Dict[str, Sequence[str]] = {
 def get_info() -> Dict[str, Any]:
     return {
         "version"           : get_version(),
+        "ARGBToJ444"        : has_argb_to_j444(),
         "formats"           : COLORSPACES,
         "max-size"          : (MAX_WIDTH, MAX_HEIGHT),
     }
@@ -1179,16 +1226,24 @@ cdef class Converter:
                                             out_planes[2], self.out_stride[2],
                                             width, height)
             elif self.dst_format=="YUV444P":
-                # we can't handle full-range here as there is no `ARGBToJ444`
-                # we always supply full range RGB, so we can just update the metadata:
-                fn_name = "ARGBToI444"
-                full_range = False
-                with nogil:
-                    result = ARGBToI444(src, stride,
-                                        out_planes[0], self.out_stride[0],
-                                        out_planes[1], self.out_stride[1],
-                                        out_planes[2], self.out_stride[2],
-                                        width, height)
+                if full_range and xpra_libyuv_has_ARGBToJ444():
+                    fn_name = "ARGBToJ444"
+                    with nogil:
+                        result = xpra_ARGBToJ444(src, stride,
+                                                 out_planes[0], self.out_stride[0],
+                                                 out_planes[1], self.out_stride[1],
+                                                 out_planes[2], self.out_stride[2],
+                                                 width, height)
+                else:
+                    # Older libyuv snapshots lack ARGBToJ444.
+                    fn_name = "ARGBToI444"
+                    full_range = False
+                    with nogil:
+                        result = ARGBToI444(src, stride,
+                                            out_planes[0], self.out_stride[0],
+                                            out_planes[1], self.out_stride[1],
+                                            out_planes[2], self.out_stride[2],
+                                            width, height)
             else:
                 raise RuntimeError(f"unexpected src format {self.src_format}")
         if result!=0:

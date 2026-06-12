@@ -136,8 +136,9 @@ class Test_CSC_Colorspace(unittest.TestCase):
         for cs_range in ("studio", "full"):
             for yuv in ("420", "444"):
                 if mod_out == "csc_libyuv" and yuv == "444" and cs_range == "full":
-                    # not implemented in libyuv!
-                    continue
+                    csc_mod = loader.load_codec(mod_out)
+                    if not csc_mod or not getattr(csc_mod, "has_argb_to_j444", lambda: False)():
+                        continue
                 self._test_RGB_to_YUV(mod_out, mod_in, rgb_format, f"YUV{yuv}P", cs_range)
 
     def test_BGRX_to_YUV(self):
