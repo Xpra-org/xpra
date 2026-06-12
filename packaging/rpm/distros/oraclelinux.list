@@ -2,7 +2,6 @@ fake-cuda
 libfakeXinerama
 xorg-x11-drv-dummy
 gstreamer1-plugin-timestamp
-libyuv
 nasm
 python3-Cython
 python3-pynvml
