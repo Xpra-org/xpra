@@ -29,7 +29,7 @@ Summary:        A fast multidimensional array facility for Python
 # Everything is BSD except for class SafeEval in numpy/lib/utils.py which is Python
 License:        BSD-3-Clause AND Apache-2.0
 URL:            http://www.numpy.org/
-Source0:        https://files.pythonhosted.org/packages/65/6e/09db70a523a96d25e115e71cc56a6f9031e7b8cd166c1ac8438307c14058/numpy-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/n/numpy/numpy-%{version}.tar.gz
 
 %description
 NumPy is a general-purpose array-processing package designed to
