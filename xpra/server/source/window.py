@@ -149,7 +149,7 @@ class WindowsConnection(StubClientConnection):
         self.system_tray = c.boolget("system_tray")
         self.window_metadata_supported = c.strtupleget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
         log("metadata supported=%s", self.window_metadata_supported)
-        self.window_frame_sizes = wcaps.dictget("frame_sizes", {})
+        self.window_frame_sizes = wcaps.dictget("frame_sizes")
         self.window_min_size = wcaps.inttupleget("min-size", (0, 0))
         self.window_max_size = wcaps.inttupleget("max-size", (0, 0))
         self.window_restack = wcaps.boolget("restack", False)

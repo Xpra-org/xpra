@@ -112,7 +112,7 @@ class AESClient(StubClientMixin):
         return True
 
     def set_server_encryption(self, caps: typedict, key: bytes) -> bool:
-        caps = typedict(caps.dictget("encryption") or {})
+        caps = typedict(caps.dictget("encryption"))
         cipher = caps.strget("cipher")
         cipher_mode = caps.strget("mode", DEFAULT_MODE)
         cipher_iv = caps.strget("iv")

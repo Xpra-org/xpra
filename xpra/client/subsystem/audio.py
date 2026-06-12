@@ -293,7 +293,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_av_sync = c.boolget("av-sync.enabled")
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
-        audio = typedict(c.dictget("audio") or {})
+        audio = typedict(c.dictget("audio"))
         log("audio capabilities: %s", audio)
         if audio.boolget("async"):
             if self.audio_properties:

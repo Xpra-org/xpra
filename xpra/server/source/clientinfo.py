@@ -91,7 +91,7 @@ class ClientInfoConnection(StubClientConnection):
         self.client_wm_name = c.strget("wm_name")
         self.client_session_type = c.strget("session-type")
         self.client_session_type_full = c.strget("session-type.full")
-        self.client_opengl = typedict(c.dictget("opengl") or {})
+        self.client_opengl = typedict(c.dictget("opengl"))
         self.proxy_hostname = c.strget("proxy.hostname")
         self.proxy_platform = c.strget("proxy.platform")
         self.proxy_release = c.strget("proxy.platform.sysrelease")

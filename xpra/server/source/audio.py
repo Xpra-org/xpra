@@ -160,7 +160,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
 
     def parse_client_caps(self, c: typedict) -> None:
         """ if available in the hello packet, parse audio capabilities straight away """
-        audio = typedict(c.dictget(AudioConnection.PREFIX) or {})
+        audio = typedict(c.dictget(AudioConnection.PREFIX))
         self.parse_audio_caps(audio)
 
     def parse_audio_caps(self, audio: typedict) -> None:

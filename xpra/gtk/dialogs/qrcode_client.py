@@ -58,7 +58,7 @@ class QRCodeClient(InfoXpraClient):
         self.exit_code = 0
         addr_types: dict[tuple[str, int], list[str]] = {}
         for socktype in ("ws", "wss"):
-            sockdefs = typedict(sockets.dictget(socktype, {}))
+            sockdefs = typedict(sockets.dictget(socktype))
             addresses = sockdefs.tupleget("addresses", ())
             for address in addresses:
                 try:

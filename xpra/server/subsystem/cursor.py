@@ -44,7 +44,7 @@ class CursorManager(StubSubsystem):
         if windows_clients > 0:
             self.size = 24
         else:
-            caps = typedict(c.dictget("cursor") or {})
+            caps = typedict(c.dictget("cursor"))
             if caps:
                 default_cursor_size = caps.inttupleget("default", (0, 0))
                 self.size = max(0, default_cursor_size[0], default_cursor_size[1])

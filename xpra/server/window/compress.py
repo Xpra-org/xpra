@@ -263,7 +263,7 @@ class WindowSource(WindowIconSource):
         self.client_refresh_encodings: Sequence[str] = encoding_options.strtupleget("auto_refresh_encodings")
         self.max_soft_expired: int = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps: bool = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
-        self.decoder_speed = typedict(self.encoding_options.dictget("decoder-speed") or {})
+        self.decoder_speed = typedict(self.encoding_options.dictget("decoder-speed"))
         self.batch_config = batch_config
         # auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay

@@ -56,7 +56,7 @@ class BandwidthConnection(StubClientConnection):
         self.bandwidth_detection = bandwidth.detection
 
     def parse_client_caps(self, c: typedict) -> None:
-        self.client_connection_data = c.dictget("connection-data", {})
+        self.client_connection_data = c.dictget("connection-data")
         ccd = typedict(self.client_connection_data)
         self.adapter_type = ccd.strget("adapter-type")
         self.jitter = ccd.intget("jitter", 0)

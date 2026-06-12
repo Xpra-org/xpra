@@ -56,7 +56,7 @@ def setup_encryption(proto: SocketProtocol, c: typedict) -> dict[str, Any] | Non
         log("setup_encryption failed: %s", msg)
         raise ValueError(msg)
 
-    c = typedict(c.dictget("encryption") or {})
+    c = typedict(c.dictget("encryption"))
     cipher = c.strget("cipher").upper()
     log(f"setup_encryption(..) for cipher={cipher!r} : {c}")
     if not cipher:

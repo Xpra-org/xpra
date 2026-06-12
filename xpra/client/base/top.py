@@ -170,10 +170,10 @@ def get_proxy_info_str(proxy_info: dict) -> str:
     if not proxy_info:
         return ""
     td = typedict(proxy_info)
-    proxy_platform_info = typedict(td.dictget("platform", {}))
+    proxy_platform_info = typedict(td.dictget("platform"))
     proxy_platform = proxy_platform_info.strget("")
     proxy_release = proxy_platform_info.strget("release")
-    proxy_build_info = typedict(td.dictget("build", {}))
+    proxy_build_info = typedict(td.dictget("build"))
     proxy_version = proxy_build_info.strget("version")
     proxy_distro = td.strget("linux_distribution")
     return " via: %s proxy version %s" % (
@@ -631,7 +631,7 @@ class TopSessionClient(InfoTimerClient):
         build = self.slidictget("server", "build")
         vstr = caps_to_version(build)
         mode = server_info.strget("mode", "server")
-        python_info = self.td(server_info.dictget("python", {}))
+        python_info = self.td(server_info.dictget("python"))
         bits = python_info.intget("bits", 0)
         bitsstr = "" if bits == 0 else f" {bits}-bit"
         server_str = f"Xpra {mode} server version {vstr}{bitsstr}"
@@ -743,7 +743,7 @@ class TopSessionClient(InfoTimerClient):
     def dictget(self, dictinstance, *parts) -> typedict:
         d = dictinstance
         for part in parts:
-            d = self.td(d.dictget(part, {}))
+            d = self.td(d.dictget(part))
         return d
 
     def get_client_info(self, ci: typedict) -> tuple:
@@ -767,8 +767,8 @@ class TopSessionClient(InfoTimerClient):
             audio_info.append(self._audio_info(ci, mode))
         audio_info.append(self._avsync_info(ci))
         # batch delay / latency:
-        b_info = self.td(ci.dictget("batch", {}))
-        bi_info = self.td(b_info.dictget("delay", {}))
+        b_info = self.td(ci.dictget("batch"))
+        bi_info = self.td(b_info.dictget("delay"))
         bcur = bi_info.intget("cur")
         bavg = bi_info.intget("avg")
         batch_info = f"batch delay: {bcur} ({bavg})"
@@ -784,15 +784,15 @@ class TopSessionClient(InfoTimerClient):
             bl_color = RED
         batch_latency = batch_info.ljust(24) + f"latency: {lcur} ({lavg})"
         # speed / quality:
-        edict = self.td(ci.dictget("encoding") or {})
+        edict = self.td(ci.dictget("encoding"))
         qs_info = ""
         qs_color = GREEN
         if edict:
-            if sinfo := self.td(edict.dictget("speed") or {}):
+            if sinfo := self.td(edict.dictget("speed")):
                 cur = sinfo.intget("cur")
                 avg = sinfo.intget("avg")
                 qs_info = f"speed: {cur}% (avg: f{avg}%)"
-            if qinfo := self.td(edict.dictget("quality") or {}):
+            if qinfo := self.td(edict.dictget("quality")):
                 qs_info = qs_info.ljust(24)
                 cur = qinfo.intget("cur")
                 avg = qinfo.intget("avg")

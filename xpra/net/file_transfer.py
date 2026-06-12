@@ -272,7 +272,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.init_attributes()
 
     def parse_file_transfer_caps(self, c: typedict) -> None:
-        fc = typedict(c.dictget("file") or {})
+        fc = typedict(c.dictget("file"))
         filelog("parse_file_transfer_caps: %s", fc)
         # v5 with "file" namespace:
         self.remote_file_transfer = fc.boolget("enabled")
@@ -287,7 +287,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.dump_remote_file_caps()
 
     def parse_printer_caps(self, c: typedict) -> None:
-        fc = typedict(c.dictget("file" if BACKWARDS_COMPATIBLE else "printer") or {})
+        fc = typedict(c.dictget("file" if BACKWARDS_COMPATIBLE else "printer"))
         self.remote_printing = fc.boolget("printing")
         self.remote_printing_ask = fc.boolget("printing-ask")
 
@@ -669,7 +669,7 @@ class FileTransferHandler(FileTransferAttributes):
             delfile()
             return
         try:
-            job_options = options.dictget("options", {})
+            job_options = options.dictget("options")
             job_options["copies"] = copies
             job = print_files(printer, [filename], title, job_options)
         except Exception as e:

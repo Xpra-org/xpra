@@ -419,7 +419,7 @@ class WindowServer(StubSubsystem):
             return
         eventslog("process_buffer_refresh for windows: %s options=%s, client_properties=%s",
                   wid_windows, options, client_properties)
-        batch_props = options.dictget("batch", {})
+        batch_props = options.dictget("batch")
         if batch_props or client_properties:
             # change batch config and/or client properties
             self.update_batch_config(proto, wid_windows, typedict(batch_props), client_properties)

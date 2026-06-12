@@ -195,7 +195,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def parse_layout(self, props: typedict) -> int:
         """ used by both process_hello and process_keymap """
         if BACKWARDS_COMPATIBLE:
-            keymap_dict = typedict(props.dictget("keymap") or {}) or props
+            keymap_dict = typedict(props.dictget("keymap")) or props
         else:
             keymap_dict = props
         layout = keymap_dict.strget("layout", "us")
@@ -215,7 +215,7 @@ class KeyboardConfig(KeyboardConfigBase):
         super().parse_options(props)
         modded = {}
         # clients version 4.4 and later use a 'keymap' substructure:
-        keymap_dict = typedict(props.dictget("keymap") or {})
+        keymap_dict = typedict(props.dictget("keymap"))
 
         def parse_option(name, parse_fn, old_parse_fn, *parse_args):
             cv = getattr(self, name)

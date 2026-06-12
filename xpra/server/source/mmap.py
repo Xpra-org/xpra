@@ -49,7 +49,7 @@ class MMAP_Connection(StubClientConnection):
             return bool(mmap_caps)
         for prefix in ("", "read", "write"):
             if prefix:
-                area_caps = typedict(mmap_caps.dictget(prefix) or {})
+                area_caps = typedict(mmap_caps.dictget(prefix))
             else:
                 # older versions supply a single unprefixed area:
                 area_caps = mmap_caps
@@ -142,8 +142,8 @@ class MMAP_Connection(StubClientConnection):
             self.mmap_supported = False
             return
         tdcaps = typedict(mmap_caps)
-        read_caps = tdcaps.dictget("write", {})
-        write_caps = tdcaps.dictget("read", {})
+        read_caps = tdcaps.dictget("write")
+        write_caps = tdcaps.dictget("read")
         if BACKWARDS_COMPATIBLE and not write_caps:
             # also try the legacy unprefixed lookup for the client's 'read' area:
             write_caps = mmap_caps

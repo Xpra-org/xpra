@@ -127,7 +127,7 @@ class StartNewCommand:
     def category_changed(self, *args) -> None:
         category = self.category_combo.get_active_text()
         update_config("category", category)
-        entries = typedict(typedict(self.menu.dictget(category, {})).dictget("Entries", {}))
+        entries = typedict(typedict(self.menu.dictget(category)).dictget("Entries"))
         log("category_changed(%s) category=%s, entries=%s", args, category, entries)
         self.command_combo.get_model().clear()
         index = -1
@@ -142,13 +142,13 @@ class StartNewCommand:
         if not self.entry:
             return
         category = self.category_combo.get_active_text()
-        entries = typedict(typedict(self.menu.dictget(category, {})).dictget("Entries", {}))
+        entries = typedict(typedict(self.menu.dictget(category)).dictget("Entries"))
         if command_name := self.command_combo.get_active_text():
             update_config("command", command_name)
         log("command_changed(%s) category=%s, entries=%s, command_name=%s", args, category, entries, command_name)
         command = ""
         if entries and command_name:
-            command_props = typedict(typedict(entries).dictget(command_name, {}))
+            command_props = typedict(typedict(entries).dictget(command_name))
             log("command properties=%s", command_props)
             command = typedict(command_props).strget("command")
         self.entry.set_text(command)

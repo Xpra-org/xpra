@@ -229,7 +229,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         return True
 
     def _process_encodings(self, packet: Packet) -> None:
-        encodings = typedict(packet.get_dict(1)).dictget("encodings", {}).get("core", ())
+        encodings = typedict(packet.get_dict(1)).dictget("encodings").get("core", ())
         common = tuple(set(self.encodings) & set(encodings))
         log("server encodings=%s, common=%s", encodings, common)
 

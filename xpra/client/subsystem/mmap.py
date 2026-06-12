@@ -168,7 +168,7 @@ class MmapClient(StubClientMixin):
 
     # noinspection PyUnreachableCode
     def parse_server_capabilities(self, c: typedict) -> bool:
-        mmap_caps = typedict(c.dictget("mmap") or {})
+        mmap_caps = typedict(c.dictget("mmap"))
         log(f"mmap.parse_server_capabilities(..) {mmap_caps=}")
         if not self.mmap_supported or not mmap_caps:
             self.clean_areas()

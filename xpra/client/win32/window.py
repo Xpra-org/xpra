@@ -414,7 +414,7 @@ class ClientWindow(GObject.GObject):
         if "title" in metadata:
             SetWindowTextW(self.hwnd, metadata.strget("title", ""))
         if "size-constraints" in metadata:
-            self.size_constraints = typedict(metadata.dictget("size-constraints", {}))
+            self.size_constraints = typedict(metadata.dictget("size-constraints"))
         # if "transient-for" in metadata:
         #    self.apply_transient_for(metadata.intget("transient-for"))
         # set parent?

@@ -116,7 +116,7 @@ def connect_to_quic(display_desc: dict[str, Any]):
     host = desc.strget("host")
     port = desc.intget("port")
     path = "/" + desc.strget("display", "")
-    ssl_options = typedict(desc.dictget("ssl-options", {}))
+    ssl_options = typedict(desc.dictget("ssl-options"))
     ssl_server_verify_mode = ssl_options.strget("server-verify-mode")
     ssl_ca_certs = ssl_options.strget("ca-certs")
     ssl_cert = ssl_options.strget("cert")

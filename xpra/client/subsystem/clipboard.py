@@ -149,7 +149,7 @@ class ClipboardClient(StubClientMixin):
     def parse_server_capabilities(self, c: typedict) -> bool:
         if not self.client_supports_clipboard:
             return True
-        caps = c.dictget("clipboard") or {}
+        caps = c.dictget("clipboard")
         self.parse_clipboard_capabilities(typedict(caps))
         if self.server_clipboard and self.clipboard_helper:
             self.configure_clipboard()

@@ -638,7 +638,7 @@ class RunClient(CommandConnectClient):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")
 
     def do_command(self, caps: typedict) -> None:
-        cr = typedict(caps.dictget("run_response") or {})
+        cr = typedict(caps.dictget("run_response"))
         if not cr:
             self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support run command")
             return
@@ -705,7 +705,7 @@ class PrintClient(SendCommandConnectClient):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")
 
     def do_command(self, caps: typedict) -> None:
-        printer = typedict(caps.dictget("printer", {}))
+        printer = typedict(caps.dictget("printer"))
         if printer or not BACKWARDS_COMPATIBLE:
             info = printer.strget("info", "unknown")
             code = printer.intget("code", ExitCode.FAILURE)

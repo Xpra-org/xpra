@@ -221,7 +221,7 @@ class WindowReplay:
             self.event_info(etype, msg)
         if etype == "new":
             geom: tuple[int, int, int, int] = event.inttupleget("geometry", (0, 0, 1, 1))
-            metadata = typedict(event.dictget("metadata", {}))
+            metadata = typedict(event.dictget("metadata"))
             if self.window:
                 self.window.update_metadata(metadata)
                 self.window.move_resize(*geom)
@@ -241,7 +241,7 @@ class WindowReplay:
             x, y, width, height = event.inttupleget("geometry", (0, 0, 1, 1))
             coding = event.strget("encoding", "")
             rowstride = event.intget("rowstride", 0)
-            options = typedict(event.dictget("options", {}))
+            options = typedict(event.dictget("options"))
             self.window.draw_region(x, y, width, height, coding, data, rowstride, options, [])
         elif etype == "cursor-default":
             self.window.set_cursor_data(())
@@ -267,7 +267,7 @@ class WindowReplay:
             if button and distance:
                 event_info(f"button {button} moved {distance}")
         elif etype in ("key-event", "key"):
-            name = event.dictget("key", {}).get("name", "")
+            name = event.dictget("key").get("name", "")
             event_info("key: %r" % name)
         elif etype == "clipboard":
             log("clipboard: %s", event.get("data"))
@@ -278,14 +278,14 @@ class WindowReplay:
         elif etype == "sync":
             log("sync point")
             geometry = event.inttupleget("geometry", (0, 0, 1, 1))
-            metadata = typedict(event.dictget("metadata", {}))
-            cursor = event.dictget("cursor-data", {})
+            metadata = typedict(event.dictget("metadata"))
+            cursor = event.dictget("cursor-data")
             if cursor:
                 self.window.set_cursor_data(to_cursor_data(typedict(cursor)))
             self.window.update_metadata(metadata)
             self.window.move_resize(*geometry)
         elif etype == "metadata":
-            metadata = typedict(event.dictget("metadata", {}))
+            metadata = typedict(event.dictget("metadata"))
             log("metadata: %s", metadata)
             self.window.update_metadata(metadata)
         elif etype == "resize":

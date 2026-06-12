@@ -30,7 +30,7 @@ class PingConnection(StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         if caps.boolget("ping"):
             return True
-        if typedict(caps.dictget("network") or {}).intget("pings") > 0:
+        if typedict(caps.dictget("network")).intget("pings") > 0:
             return True
         if BACKWARDS_COMPATIBLE:
             return caps.boolget("ping-echo-sourceid")  # legacy clients

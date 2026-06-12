@@ -82,7 +82,7 @@ class DisplayConnection(StubClientConnection):
                 log.info("legacy `display` caps not supported")
                 return
         else:
-            display_caps = c.dictget("display", {})
+            display_caps = c.dictget("display")
             if not BACKWARDS_COMPATIBLE and not display_caps:
                 raise ValueError("missing display capabilities")
             self.resize_events = typedict(display_caps).boolget("resize-events", True)
@@ -101,13 +101,13 @@ class DisplayConnection(StubClientConnection):
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.desktop_fullscreen = c.boolget("desktop-fullscreen")
         self.set_screen_sizes(c.tupleget("screen_sizes"))
-        self.set_monitors(c.dictget("monitors") or {})
+        self.set_monitors(c.dictget("monitors"))
         desktop_names = tuple(str(x) for x in c.tupleget("desktop.names"))
         self.set_desktops(c.intget("desktops", 1), desktop_names)
         self.show_desktop_allowed = c.boolget("show-desktop")
-        self.icc = c.dictget("icc", {})
-        self.display_icc = c.dictget("display-icc", {})
-        self.opengl_props = c.dictget("opengl", {})
+        self.icc = c.dictget("icc")
+        self.display_icc = c.dictget("display-icc")
+        self.opengl_props = c.dictget("opengl")
         self.display_record = c.boolget("record", False) and is_recording_allowed(self, "display")
 
     def set_monitors(self, monitors: dict[int, dict]) -> None:

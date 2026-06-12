@@ -201,7 +201,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             # this ensures that we will set size-constraints and honour max_window_size:
             metadata["size-constraints"] = {}
         # initialize gravity early:
-        sc = typedict(metadata.dictget("size-constraints", {}))
+        sc = typedict(metadata.dictget("size-constraints"))
         self.window_gravity = OVERRIDE_GRAVITY or sc.intget("gravity", DEFAULT_GRAVITY)
         self.set_decorated(metadata.boolget("decorations", True))
 
@@ -385,7 +385,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             self.reset_icon()
 
         if "size-constraints" in metadata:
-            sc = typedict(metadata.dictget("size-constraints", {}))
+            sc = typedict(metadata.dictget("size-constraints"))
             self.size_constraints = sc
             self._set_initial_position = sc.boolget("set-initial-position", self._set_initial_position)
             self.set_size_constraints(sc, self.max_window_size)

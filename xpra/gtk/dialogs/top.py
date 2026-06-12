@@ -378,7 +378,7 @@ class TopSessionGUI(Gtk.Window):
         def sldict(*parts) -> typedict:
             d = info
             for part in parts:
-                d = typedict(d.dictget(part) or {})
+                d = typedict(d.dictget(part))
             return d
 
         def td(d) -> typedict:
@@ -394,7 +394,7 @@ class TopSessionGUI(Gtk.Window):
         build = sldict("server", "build")
         vstr = caps_to_version(build)
         mode = server_info.strget("mode", "server")
-        python_info = td(server_info.dictget("python") or {})
+        python_info = td(server_info.dictget("python"))
         bits = python_info.intget("bits", 0)
         bitsstr = f" {bits}-bit" if bits else ""
         proxy_str = self._proxy_str(sldict("proxy"))
@@ -520,10 +520,10 @@ class TopSessionGUI(Gtk.Window):
     def _proxy_str(self, proxy_info: typedict) -> str:
         if not proxy_info:
             return ""
-        proxy_platform_info = typedict(proxy_info.dictget("platform") or {})
+        proxy_platform_info = typedict(proxy_info.dictget("platform"))
         proxy_platform = proxy_platform_info.strget("")
         proxy_release = proxy_platform_info.strget("release")
-        proxy_build_info = typedict(proxy_info.dictget("build") or {})
+        proxy_build_info = typedict(proxy_info.dictget("build"))
         proxy_version = proxy_build_info.strget("version")
         proxy_distro = proxy_info.strget("linux_distribution")
         return " via: %s proxy version %s" % (
@@ -578,11 +578,11 @@ class TopSessionGUI(Gtk.Window):
         gl_info = self._gl_info(ci.dictget("opengl"))
         audio_parts = [self._audio_info(ci, mode, td) for mode in ("speaker", "microphone")]
         audio_parts.append(self._avsync_info(ci, td))
-        b_info = td(ci.dictget("batch") or {})
-        bi_info = td(b_info.dictget("delay") or {})
+        b_info = td(ci.dictget("batch"))
+        bi_info = td(b_info.dictget("delay"))
         bcur = bi_info.intget("cur")
         bavg = bi_info.intget("avg")
-        pl = td(td(td(ci.dictget("connection") or {}).dictget("client") or {}).dictget("ping_latency") or {})
+        pl = td(td(td(ci.dictget("connection")).dictget("client")).dictget("ping_latency"))
         lcur = pl.intget("cur")
         lavg = pl.intget("avg")
         lmin = pl.intget("min")
@@ -592,15 +592,15 @@ class TopSessionGUI(Gtk.Window):
         elif bcur > 50 or (lcur > 20 and lcur > 2 * lmin):
             bl_color = YELLOW
         batch_latency = f"batch delay: {bcur} ({bavg})".ljust(24) + f"latency: {lcur} ({lavg})"
-        edict = td(ci.dictget("encoding") or {})
+        edict = td(ci.dictget("encoding"))
         qs_info = ""
         qs_color = GREEN
         if edict:
-            if sinfo := td(edict.dictget("speed") or {}):
+            if sinfo := td(edict.dictget("speed")):
                 cur = sinfo.intget("cur")
                 avg = sinfo.intget("avg")
                 qs_info = f"speed: {cur}% (avg: {avg}%)"
-            if qinfo := td(edict.dictget("quality") or {}):
+            if qinfo := td(edict.dictget("quality")):
                 cur = qinfo.intget("cur")
                 avg = qinfo.intget("avg")
                 qs_info = qs_info.ljust(24) + f"quality: {cur}% (avg: {avg}%)"
@@ -619,7 +619,7 @@ class TopSessionGUI(Gtk.Window):
         return [(s, c) for s, c in rows if s]
 
     def _audio_info(self, ci: typedict, mode: str, td) -> str:
-        minfo = td(ci.dictget(f"audio.{mode}") or ci.dictget(f"sound.{mode}") or {})
+        minfo = td(ci.dictget(f"audio.{mode}") or ci.dictget(f"sound.{mode}"))
         if not minfo:
             return f"{mode} off"
         descr = minfo.strget("codec_description") or minfo.strget("codec") or minfo.strget("state", "unknown")
@@ -629,13 +629,13 @@ class TopSessionGUI(Gtk.Window):
         return ainfo
 
     def _avsync_info(self, ci: typedict, td) -> str:
-        avsf = td(self.client.server_last_info.dictget("features") or {}).dictget("av-sync") or {}
+        avsf = td(self.client.server_last_info.dictget("features")).dictget("av-sync")
         avsf = typedict(avsf)
         if not avsf or not avsf.boolget("", False):
             return "av-sync: not supported by server"
         if not avsf.boolget("enabled", False):
             return "av-sync: disabled by server"
-        avsi = td(ci.dictget("av-sync") or {})
+        avsi = td(ci.dictget("av-sync"))
         if not avsi.boolget("", False):
             return "av-sync: disabled by client"
         return "av-sync: enabled - video delay: %ims" % avsi.intget("total", 0)

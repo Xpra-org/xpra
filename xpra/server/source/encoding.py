@@ -324,7 +324,7 @@ class EncodingsConnection(StubClientConnection):
         self.core_encodings = eopts.strtupleget("core") or c.strtupleget("encodings.core", self.encodings)
         if not self.core_encodings:
             raise ClientException("client failed to specify any supported encodings")
-        self.full_csc_modes = eopts.dictget("full_csc_modes") or {}
+        self.full_csc_modes = eopts.dictget("full_csc_modes")
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
 
         self.window_icon_encodings = eopts.strtupleget("window-icon") or c.strtupleget("encodings.window-icon")
