@@ -195,9 +195,18 @@ BuildRequires:		pkgconfig(libyuv)
 Requires:			libyuv
 BuildRequires:		pkgconfig(libavif)
 Requires:			libavif
-%if 0%{?fedora}
+%ifnarch riscv64
+%if 0%{?rhel}
+#on EL clones we link our own private 'xpra-openh264' library so that it never
+#conflicts with the distro 'openh264' / 'noopenh264' packages (see #4626):
+BuildRequires:		xpra-openh264-devel
+Requires:			xpra-openh264
+%else
 BuildRequires:		pkgconfig(openh264)
 Requires:			openh264
+%endif
+%endif
+%if 0%{?fedora}
 BuildRequires:		pkgconfig(spng)
 Requires:			libspng
 %endif
@@ -588,8 +597,10 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/v4l2
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/webp
-%if 0%{?fedora}
+%ifnarch riscv64
 %{python3_sitearch}/xpra/codecs/openh264
+%endif
+%if 0%{?fedora}
 %{python3_sitearch}/xpra/codecs/spng
 %endif
 
