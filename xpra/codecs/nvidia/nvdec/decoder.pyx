@@ -518,6 +518,7 @@ cdef class Decoder:
     cdef object event
     cdef object buffer
     cdef object image
+    cdef bint full_range
 
     cdef object __weakref__
 
@@ -688,6 +689,9 @@ cdef class Decoder:
         cdef CUVIDPICPARAMS pic
         try:
             self.image = None
+            # honoured by get_output_image (called from the parser callback);
+            # TODO: read it from the bitstream via CUVIDEOFORMAT.video_signal_description.video_full_range_flag
+            self.full_range = options.boolget("full-range", True)
             stream = options.get("stream", None)
             if stream:
                 self.stream = <CUstream> (<uintptr_t> stream.handle)
@@ -775,7 +779,8 @@ cdef class Decoder:
             copy(aligned=False)
             rowstrides = [yuv_pitch, yuv_pitch]
             image = ImageWrapper(0, 0, self.width, self.height,
-                                 yuv_buf, "NV12", 24, rowstrides, 3, ImageWrapper.PLANAR_2)
+                                 yuv_buf, "NV12", 24, rowstrides, 3, ImageWrapper.PLANAR_2,
+                                 full_range=self.full_range)
             self.frames += 1
             self.event.set()
             return image

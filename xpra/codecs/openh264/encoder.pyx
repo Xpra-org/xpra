@@ -418,6 +418,7 @@ cdef class Encoder:
     cdef unsigned int width
     cdef unsigned int height
     cdef object src_format
+    cdef uint8_t full_range
     cdef uint8_t ready
     cdef object file
 
@@ -435,6 +436,7 @@ cdef class Encoder:
         self.width = width
         self.height = height
         self.src_format = src_format
+        self.full_range = options.boolget("full-range", True)
         self.frames = 0
         self.init_encoder(options)
         gen = generation.increase()
@@ -474,8 +476,10 @@ cdef class Encoder:
         param.iPicWidth     = self.width
         param.iPicHeight    = self.height
         param.iRCMode       = RC_OFF_MODE
-        # assume that the images we will be encoding are in YUV420P full-range:
-        param.sSpatialLayers[0].bFullRange = True
+        # signal the colour range used by the images we will be encoding,
+        # so that the decoder can recover it from the bitstream (SPS VUI):
+        param.sSpatialLayers[0].bVideoSignalTypePresent = True
+        param.sSpatialLayers[0].bFullRange = self.full_range
         #param.iTargetBitrate = 5000000
         with nogil:
             r = self.context.InitializeExt(&param)
@@ -586,7 +590,8 @@ cdef class Encoder:
             raise RuntimeError(f"openh264 failed to encode frame, error {r}")
         client_options = {
             "frame": self.frames,
-            "full-range": image.get_full_range(),
+            # the range is fixed at init and written into the bitstream (SPS VUI):
+            "full-range": bool(self.full_range),
         }
         if frame_info.eFrameType == videoFrameTypeInvalid:
             raise ValueError("invalid frame type")

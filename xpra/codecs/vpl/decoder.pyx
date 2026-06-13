@@ -455,7 +455,13 @@ cdef class Decoder:
             frame.us_submit, frame.us_sync, frame.us_map, us_copy,
             payload_bytes / 1048576.0)
 
-        full_range = options.boolget("full-range")
+        # the colour range is taken from the bitstream (frame.full_range),
+        # but the client option can override it
+        # (note: oneVPL does not expose the range yet - see vpl_decode.c - so this currently
+        # relies on the override):
+        full_range = bool(frame.full_range)
+        if "full-range" in options:
+            full_range = options.boolget("full-range")
         # ImageWrapper handles non-tight rowstrides natively; GL upload uses GL_UNPACK_ROW_LENGTH.
         return ImageWrapper(0, 0, self.width, self.height,
                             (pixels, ), pixel_format, 32, (frame.stride, ), 4,

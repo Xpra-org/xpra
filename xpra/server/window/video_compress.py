@@ -2051,6 +2051,9 @@ class WindowVideoSource(WindowSource):
             options["scaled-height"] = enc_height*n//d
         options["dst-formats"] = dst_formats
         options["datagram"] = self.datagram
+        # the encoder consumes images in the range the csc was asked to produce,
+        # so that it can signal it in the bitstream from the very first frame:
+        options["full-range"] = encoder_spec.full_range
 
         ve.init_context(encoding, enc_width, enc_height, enc_in_format, typedict(options))
         # record new actual limits:

@@ -577,7 +577,9 @@ cdef class Encoder:
         self.height = height
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
-        self.full_range = 0
+        # the range is written into the SPS VUI (b_fullrange) at encoder setup;
+        # it is updated from the image range if it changes (see compress_image):
+        self.full_range = options.boolget("full-range", False)
         #self.opencl = USE_OPENCL and width>=32 and height>=32
         self.content_types = options.strtupleget("content-types", ())      #ie: ("video", )
         self.b_frames = 0 if MB_INFO else options.intget("b-frames", 0)

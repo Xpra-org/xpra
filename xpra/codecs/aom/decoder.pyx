@@ -250,7 +250,11 @@ cdef class Decoder:
         if image.monochrome:
             log("monochrome image")
         # aom_chroma_sample_position chroma_sample_position
+        # the colour range is carried in the bitstream,
+        # but allow the client options to override it:
         full_range = image.range == AOM_CR_FULL_RANGE
+        if "full-range" in options:
+            full_range = options.boolget("full-range")
         if image.w < self.width or image.h < self.height:
             log.error("Error: image size %ix%i does not match expected size %ix%i",
                       image.w, image.h, self.width, self.height)

@@ -27,11 +27,8 @@ TEST_LUMA_COLORS = {
     "white": "ffffffff",
 }
 
-# Video decoders which read the colour range from the encoded bitstream
-# instead of honouring the "full-range" decode option passed by the caller.
-# For these, the option must be *ignored* and the result is whatever the
-# sample stream was encoded with (all our samples are studio-range):
-BITSTREAM_RANGE_DECODERS = ("dec_aom", )
+# All our compressed sample streams are encoded studio-range:
+SAMPLE_FULL_RANGE = False
 
 # Codecs which do not signal the colour range at all
 # (there is nothing to verify and exercising them here is slow/flaky):
@@ -215,56 +212,68 @@ class FullRangeEncoderTest(unittest.TestCase):
 
 
 class FullRangeDecoderTest(unittest.TestCase):
-    """ verify that the video decoders apply the colour range:
-        most honour the "full-range" decode option,
-        a few derive it from the encoded bitstream instead """
+    """ verify that the video decoders derive the colour range from the bitstream,
+        while letting the "full-range" client option override it """
 
-    def test_video_decoders(self):
+    def test_option_overrides_bitstream(self):
+        # the "full-range" decode option must always win, both ways:
         tested: list[str] = []
         skipped: list[str] = []
+        for dec_name, dec_mod in self._decoders():
+            decoded_any = False
+            for encoding, cs, size, frames in self._samples(dec_mod):
+                ok = True
+                for full_range in (True, False):
+                    image = self._decode(dec_mod, dec_name, encoding, cs, size, frames,
+                                         {"full-range": full_range}, skipped)
+                    if image is None:
+                        ok = False
+                        break
+                    self.assertEqual(
+                        bool(image.get_full_range()), full_range,
+                        f"{dec_name}: {encoding} produced full-range={bool(image.get_full_range())}"
+                        f" when decoding with the full-range={full_range} option")
+                if ok:
+                    decoded_any = True
+            if decoded_any:
+                tested.append(dec_name)
+        self._report("option override", tested, skipped)
+
+    def test_bitstream_range_without_option(self):
+        # with no override, the range must come from the bitstream;
+        # all our sample streams are studio-range:
+        tested: list[str] = []
+        skipped: list[str] = []
+        for dec_name, dec_mod in self._decoders():
+            decoded_any = False
+            for encoding, cs, size, frames in self._samples(dec_mod):
+                image = self._decode(dec_mod, dec_name, encoding, cs, size, frames, {}, skipped)
+                if image is None:
+                    continue
+                decoded_any = True
+                self.assertEqual(
+                    bool(image.get_full_range()), SAMPLE_FULL_RANGE,
+                    f"{dec_name}: {encoding} studio-range sample decoded as"
+                    f" full-range={bool(image.get_full_range())} without an override option")
+            if decoded_any:
+                tested.append(dec_name)
+        self._report("bitstream range", tested, skipped)
+
+    def _decoders(self):
         for dec_name in loader.DECODER_VIDEO_CODECS:
             if dec_name in NO_RANGE_CODECS:
                 continue
             dec_mod = loader.load_codec(dec_name)
-            if not dec_mod:
-                continue
-            from_bitstream = dec_name in BITSTREAM_RANGE_DECODERS
-            decoded_any = False
-            for spec in dec_mod.get_specs():
-                encoding = spec.encoding
-                cs = spec.input_colorspace
-                size, frames = self._find_sample(dec_mod, encoding, cs)
-                if not frames:
-                    continue
-                results = {}
-                for full_range in (True, False):
-                    image = self._decode(dec_mod, dec_name, encoding, cs, size, frames, full_range, skipped)
-                    if image is None:
-                        results = {}
-                        break
-                    results[full_range] = bool(image.get_full_range())
-                if not results:
-                    continue
-                decoded_any = True
-                if from_bitstream:
-                    # the option must be ignored: both runs yield the stream's range:
-                    self.assertEqual(
-                        results[True], results[False],
-                        f"{dec_name}: {encoding} colour range changed with the decode option"
-                        f" but should come from the bitstream ({results})")
-                else:
-                    for full_range, got in results.items():
-                        self.assertEqual(
-                            got, full_range,
-                            f"{dec_name}: {encoding} produced full-range={got}"
-                            f" when decoding with the full-range={full_range} option")
-            if decoded_any:
-                tested.append(dec_name)
-        print(f"tested full-range handling with decoders: {sorted_nicely(tested)}")
-        if skipped:
-            print(f"skipped (unavailable at runtime): {sorted_nicely(skipped)}")
-        if not tested:
-            self.skipTest("no video decoder able to decode the sample data")
+            if dec_mod:
+                yield dec_name, dec_mod
+
+    def _samples(self, dec_mod):
+        for spec in dec_mod.get_specs():
+            encoding = spec.encoding
+            cs = spec.input_colorspace
+            size, frames = self._find_sample(dec_mod, encoding, cs)
+            if frames:
+                yield encoding, cs, size, frames
 
     def _find_sample(self, dec_mod, encoding: str, cs: str):
         data = TEST_COMPRESSED_DATA.get(encoding, {}).get(cs, {})
@@ -280,7 +289,7 @@ class FullRangeDecoderTest(unittest.TestCase):
                 return size, data[size]
         return None, ()
 
-    def _decode(self, dec_mod, dec_name, encoding: str, cs: str, size, frames, full_range: bool, skipped: list):
+    def _decode(self, dec_mod, dec_name, encoding: str, cs: str, size, frames, extra_options: dict, skipped: list):
         w, h = size
         decoder = None
         try:
@@ -289,7 +298,7 @@ class FullRangeDecoderTest(unittest.TestCase):
             image = None
             for data, frame_options in frames:
                 options = typedict(dict(frame_options))
-                options["full-range"] = full_range
+                options.update(extra_options)
                 image = decoder.decompress_image(data, options)
             if image is None:
                 skipped.append(f"{dec_name}:{encoding}:{cs} (no image)")
@@ -301,6 +310,13 @@ class FullRangeDecoderTest(unittest.TestCase):
         finally:
             if decoder:
                 decoder.clean()
+
+    def _report(self, what: str, tested, skipped) -> None:
+        print(f"tested {what} with decoders: {sorted_nicely(tested)}")
+        if skipped:
+            print(f"skipped (unavailable at runtime): {sorted_nicely(skipped)}")
+        if not tested:
+            self.skipTest("no video decoder able to decode the sample data")
 
 
 def main():

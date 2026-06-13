@@ -398,6 +398,7 @@ cdef class Encoder:
     cdef object profile_name
     cdef object pixel_format
     cdef uint8_t lossless
+    cdef uint8_t full_range
     cdef uint8_t support_roi
     #statistics, etc:
     cdef double time
@@ -526,6 +527,8 @@ cdef class Encoder:
         self.update_bitrate()
 
         options = options or typedict()
+        # the colour range we will consume and signal in the bitstream (VUI):
+        self.full_range = options.boolget("full-range", True)
         #the pixel format we feed into the encoder
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.profile_name = self._get_profile(options)
@@ -948,7 +951,7 @@ cdef class Encoder:
         cdef NV_ENC_CONFIG_H264_VUI_PARAMETERS *vui = &h264.h264VUIParameters
         vui.videoSignalTypePresentFlag = 1          # videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present
         vui.videoFormat = 0                         # 0=Component
-        vui.videoFullRangeFlag = 1
+        vui.videoFullRangeFlag = self.full_range
         vui.colourDescriptionPresentFlag = 0
         #vui.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
         #vui.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
@@ -965,7 +968,7 @@ cdef class Encoder:
         cdef NV_ENC_CONFIG_HEVC_VUI_PARAMETERS *vui = &hevc.hevcVUIParameters
         vui.videoSignalTypePresentFlag = 1          # videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present
         vui.videoFormat = 0                         # 0=Component
-        vui.videoFullRangeFlag = 1
+        vui.videoFullRangeFlag = self.full_range
         vui.colourDescriptionPresentFlag = 0
         #vui.colourPrimaries = 1
         #vui.transferCharacteristics = 1
@@ -997,7 +1000,7 @@ cdef class Encoder:
         av1.colorPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_BT709
         av1.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709
         av1.matrixCoefficients = NV_ENC_VUI_MATRIX_COEFFS_BT709
-        av1.colorRange = 1  # full-range=1
+        av1.colorRange = self.full_range  # 1=full-range, 0=studio/limited
         av1.chromaSamplePosition = 0
         av1.outputBitDepth = NV_ENC_BIT_DEPTH_8
         av1.inputBitDepth = NV_ENC_BIT_DEPTH_8

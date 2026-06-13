@@ -337,8 +337,13 @@ cdef class Decoder:
         cdef double elapsed = 1000*(monotonic()-start)
         log("%s frame %4i decoded in %3ims, colorspace=%s, format=%s",
             self.encoding, self.frames, elapsed, VPX_COLOR_SPACES.get(img.cs, img.cs), self.dst_format)
+        # the colour range is carried in the bitstream (vpx_image_t.range),
+        # but allow the client options to override it:
+        cdef int full_range = img.range == VPX_CR_FULL_RANGE
+        if "full-range" in options:
+            full_range = options.boolget("full-range")
         image = ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3)
-        image.set_full_range(options.boolget("full-range", True))
+        image.set_full_range(bool(full_range))
         return image
 
     def codec_error_str(self) -> str:

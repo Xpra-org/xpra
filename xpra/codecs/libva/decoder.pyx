@@ -309,6 +309,8 @@ cdef class Decoder:
         log("libva decoded %s %8d bytes into %dx%d %s in %dms submit=%dus sync=%dus map=%dus copy=%dus",
             self.encoding, src_len, frame.width, frame.height, pixel_format, (elapsed + 500) // 1000,
             frame.us_submit, frame.us_sync, frame.us_map, frame.us_copy)
+        # VA-API does not expose the decoded colour range (va_decode.c parses but
+        # discards the VP9 color_range bit), so we rely on the client option:
         return ImageWrapper(0, 0, self.width, self.height,
                             pixels, pixel_format, frame.depth, strides,
                             frame.bytes_per_pixel, planes,

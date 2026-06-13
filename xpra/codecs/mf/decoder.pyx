@@ -274,7 +274,11 @@ cdef class Decoder:
             frame.us_input, frame.us_output, frame.us_extract, us_copy,
             (y_size + uv_size) / 1048576.0)
 
-        full_range = options.boolget("full-range")
+        # the colour range comes from the bitstream (frame.full_range, populated from
+        # the MF nominal range), but the client option can override it:
+        full_range = bool(frame.full_range)
+        if "full-range" in options:
+            full_range = options.boolget("full-range")
         return ImageWrapper(0, 0, self.width, self.height,
                             pixels, "NV12", 24, strides, 2,
                             ImageWrapper.PLANAR_2,
