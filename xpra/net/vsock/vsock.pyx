@@ -6,11 +6,20 @@
 #cython: boundscheck=False, wraparound=False
 
 import socket as pysocket
+import os
+from libc.errno cimport errno       # pylint: disable=syntax-error
 from libc.string cimport memset   # pylint: disable=syntax-error
 
 
 cdef extern from "unistd.h":
     int close(int fd)
+
+cdef extern from "fcntl.h":
+    int O_RDONLY
+    int open(const char *pathname, int flags)
+
+cdef extern from "sys/ioctl.h":
+    int ioctl(int fd, unsigned long request, ...)
 
 cdef extern from "sys/socket.h":
     int AF_VSOCK
@@ -27,6 +36,8 @@ cdef extern from "sys/socket.h":
 
 
 cdef extern from "linux/vm_sockets.h":
+    unsigned long IOCTL_VM_SOCKETS_GET_LOCAL_CID
+
     unsigned int VMADDR_CID_ANY
     unsigned int VMADDR_CID_HYPERVISOR
     unsigned int VMADDR_CID_HOST
@@ -70,9 +81,39 @@ SOCK_TYPES = {
               }
 
 
+def get_local_cid(int fd=-1) -> int:
+    cdef int vsockfd = fd
+    cdef bint close_fd = False
+    cdef unsigned int cid = 0
+    cdef int err
+
+    if vsockfd < 0:
+        vsockfd = open(b"/dev/vsock", O_RDONLY)
+        if vsockfd < 0:
+            err = errno
+            raise OSError(err, os.strerror(err), "/dev/vsock")
+        close_fd = True
+
+    try:
+        if ioctl(vsockfd, IOCTL_VM_SOCKETS_GET_LOCAL_CID, &cid) < 0:
+            err = errno
+            raise OSError(err, os.strerror(err))
+        return cid
+    except OSError as e:
+        from xpra.log import Logger
+        log = Logger("network", "vsock")
+        log(f"ioctl({vsockfd}, IOCTL_VM_SOCKETS_GET_LOCAL_CID)", exc_info=True)
+        log.error("Error: unable to get local cid")
+        log.estr(e)
+        return -1
+    finally:
+        if close_fd:
+            close(vsockfd)
+
+
 def bind_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_HOST, port=VMADDR_PORT_ANY):
     from xpra.log import Logger
-    log = Logger("network")
+    log = Logger("network", "vsock")
     log("server_socket(%s)", (SOCK_TYPES.get(sock_type, sock_type), CID_TYPES.get(cid, cid), port))
     assert sock_type in (SOCK_STREAM, SOCK_DGRAM), "invalid socket type %s" % sock_type
     #assert cid in (VMADDR_CID_ANY, VMADDR_CID_HYPERVISOR, VMADDR_CID_HOST), "invalid cid %s" % cid

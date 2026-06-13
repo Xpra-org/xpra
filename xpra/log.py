@@ -380,6 +380,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "asyncio"       : "asyncio",
         "quic"          : "QUIC",
         "ping"          : "ping",
+        "vsock"         : "vsock",
     },
     "Server": {
         "server"        : "All server code",
