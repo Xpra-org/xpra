@@ -9,7 +9,9 @@ from xpra.exit_codes import ExitValue
 from xpra.scripts.config import XpraConfig
 from xpra.gtk.dialogs.sessions_gui import SessionsGUI
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
-from xpra.net.session_discovery import SessionEndpoint, mdns_txt_to_dict, normalize_mdns_host
+from xpra.net.session_discovery import (
+    SessionEndpoint, mdns_txt_to_dict, normalize_mdns_host, vsock_endpoint_from_txt,
+)
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.log import Logger, consume_verbose_argv
@@ -76,7 +78,7 @@ class mdns_sessions(SessionsGUI):
         # strip service from hostname:
         # (win32 servers add it? why!?)
         host = normalize_mdns_host(host, stype, domain, text_rec.get("mode", ""))
-        self.endpoints.append(SessionEndpoint(
+        endpoint = SessionEndpoint(
             source="mdns",
             interface=interface,
             protocol=protocol,
@@ -87,7 +89,10 @@ class mdns_sessions(SessionsGUI):
             address=address,
             port=port,
             text=text_rec,
-        ))
+        )
+        self.endpoints.append(endpoint)
+        if vsock_endpoint := vsock_endpoint_from_txt(endpoint):
+            self.endpoints.append(vsock_endpoint)
         GLib.idle_add(self.populate_table)
 
 

@@ -174,6 +174,35 @@ def endpoint_uri(password: str, endpoint: SessionEndpoint) -> str:
     return get_uri(password, *endpoint.as_record_tuple())
 
 
+def vsock_endpoint_from_txt(endpoint: SessionEndpoint) -> SessionEndpoint | None:
+    vsock = endpoint.typed_text.strget("vsock")
+    if not vsock or ":" not in vsock:
+        return None
+    cid, port_str = vsock.rsplit(":", 1)
+    if not cid:
+        return None
+    try:
+        port = int(port_str)
+    except ValueError:
+        return None
+    if port <= 0:
+        return None
+    text = dict(endpoint.text)
+    text["mode"] = "vsock"
+    return SessionEndpoint(
+        source=endpoint.source,
+        interface=endpoint.interface,
+        protocol=endpoint.protocol,
+        name=endpoint.name,
+        stype=endpoint.stype,
+        domain=endpoint.domain,
+        host=endpoint.host,
+        address=cid,
+        port=port,
+        text=text,
+    )
+
+
 def get_uri(password: str, interface, protocol, name: str, stype: str, domain, host: str,
             address, port: int, text) -> str:
     dstr = ""
@@ -214,7 +243,7 @@ def get_uri(password: str, interface, protocol, name: str, stype: str, domain, h
     else:
         uri += address
     if port > 0:
-        if DEFAULT_PORTS.get(mode, 0) != port:  # NOSONAR @SuppressWarnings("python:S1066")
+        if mode == "vsock" or DEFAULT_PORTS.get(mode, 0) != port:  # NOSONAR @SuppressWarnings("python:S1066")
             uri += f":{port}"
     if protocol not in ("socket", "named-pipe"):
         uri += "/"

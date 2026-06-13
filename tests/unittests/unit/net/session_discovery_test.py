@@ -13,6 +13,7 @@ from xpra.net.session_discovery import (
     mdns_txt_to_dict,
     normalize_mdns_host,
     session_group_key,
+    vsock_endpoint_from_txt,
 )
 
 
@@ -120,6 +121,26 @@ class TestSessionGrouping(unittest.TestCase):
         endpoint = make_endpoint(username="alice", display=":10")
 
         self.assertEqual(endpoint_uri("", endpoint), "tcp://alice@192.0.2.1/10")
+
+    def test_vsock_endpoint_from_txt(self):
+        endpoint = make_endpoint(username="alice", display=":10", uuid="u1")
+        endpoint.text["vsock"] = "7:14500"
+
+        vsock_endpoint = vsock_endpoint_from_txt(endpoint)
+
+        self.assertIsNotNone(vsock_endpoint)
+        self.assertEqual(vsock_endpoint.address, "7")
+        self.assertEqual(vsock_endpoint.port, 14500)
+        self.assertEqual(vsock_endpoint.mode, "vsock")
+        self.assertEqual(vsock_endpoint.uuid, "u1")
+        self.assertEqual(session_group_key(vsock_endpoint), session_group_key(endpoint))
+        self.assertEqual(endpoint_uri("", vsock_endpoint), "vsock://alice@7:14500/10")
+
+    def test_vsock_endpoint_from_txt_rejects_invalid_values(self):
+        for value in ("", "7", ":14500", "7:notaport", "7:0"):
+            endpoint = make_endpoint()
+            endpoint.text["vsock"] = value
+            self.assertIsNone(vsock_endpoint_from_txt(endpoint))
 
 
 def main():
