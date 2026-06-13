@@ -685,6 +685,19 @@ class ServerCore(GLibServer):
             return self.ssh_upgrade
         return False
 
+    @staticmethod
+    def get_vsock_endpoint(address) -> tuple:
+        cid, port = address[0], address[1]
+        try:
+            from xpra.net.vsock.vsock import CID_ANY, CID_TYPES, get_local_cid  # pylint: disable=no-name-in-module
+        except ImportError:
+            return cid, port
+        if cid == CID_ANY:
+            local_cid = get_local_cid()
+            if local_cid >= 0:
+                cid = local_cid
+        return CID_TYPES.get(cid, cid), port
+
     def start_listen_sockets(self) -> None:
         # All right, we're ready to accept customers:
         netlog("start_listen_sockets() sockets=%s", self.sockets)
@@ -700,6 +713,10 @@ class ServerCore(GLibServer):
                     # wildcard address: show every interface address it resolved to
                     for ip in get_all_ips():
                         log.info("  %s://%s:%s", socktype, ip, port)
+            if socktype == "vsock" and isinstance(address, (tuple, list)) and len(address) >= 2:
+                cid, port = self.get_vsock_endpoint(address)
+                log.info("listening on %s at %s:%s", socktype, cid, port)
+                log.info("  %s://%s:%s", socktype, cid, port)
             if socktype == "socket" and address:
                 if address.startswith("@"):
                     # abstract sockets can't be 'touch'ed

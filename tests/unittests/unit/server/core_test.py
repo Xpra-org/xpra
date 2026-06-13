@@ -5,9 +5,11 @@
 # later version. See the file COPYING for details.
 
 import unittest
+import sys
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+from xpra.net.socket_util import SocketListener
 from xpra.server.core import ServerCore
 
 
@@ -24,6 +26,28 @@ class TestServerCore(unittest.TestCase):
         assert result == "ssh-conn"
         make_ssh.assert_called_once()
         assert make_ssh.call_args.kwargs["display_name"] == ":42"
+
+    def test_start_listen_sockets_shows_vsock_endpoint(self):
+        server = ServerCore.__new__(ServerCore)
+        server.sockets = [
+            SocketListener("vsock", object(), (0xffffffff, 10000), {}, lambda: None, lambda: None),
+        ]
+        server.unix_socket_paths = []
+        vsock_mod = SimpleNamespace(
+            CID_ANY=0xffffffff,
+            CID_TYPES={0xffffffff: "ANY"},
+            get_local_cid=lambda: 7,
+        )
+
+        with patch.dict(sys.modules, {"xpra.net.vsock.vsock": vsock_mod}):
+            with patch("xpra.server.core.GLib.idle_add") as idle_add:
+                log = SimpleNamespace(info=Mock())
+                with patch("xpra.server.core.log", log):
+                    server.start_listen_sockets()
+
+        idle_add.assert_called_once_with(server.add_listen_socket, server.sockets[0])
+        log.info.assert_any_call("listening on %s at %s:%s", "vsock", 7, 10000)
+        log.info.assert_any_call("  %s://%s:%s", "vsock", 7, 10000)
 
 
 def main():
