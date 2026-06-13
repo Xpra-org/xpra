@@ -160,7 +160,15 @@ def connect_to_tcp(display_desc: dict[str, Any]):
         if not sock:
             raise RuntimeError(f"failed to wrap socket {raw_sock} as {dtype!r}")
         ssl_handshake(sock)
-        conn._socket = sock
+        # The read and write threads share this single OpenSSL object, which is not
+        # safe for concurrent use. Wrap it in an `SSLSocketConnection`, which serializes
+        # the SSL calls (issue #4918): a plain `SocketConnection` lets the two threads
+        # call `SSL_read` and `SSL_write` at the same time, corrupting the record stream
+        # - typically the client's first packet (the `hello`) is silently dropped, the
+        # server then times out the login and the connection fails intermittently.
+        from xpra.net.tls.connection import SSLSocketConnection
+        conn = SSLSocketConnection(sock, conn.local, conn.remote, conn.endpoint, dtype,
+                                   socket_options=display_desc)
         conn.timeout = timeout
 
     # wrap in a websocket:

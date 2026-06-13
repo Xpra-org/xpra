@@ -302,6 +302,46 @@ class TestSSLSocketConnectionConcurrency(unittest.TestCase):
         self.assertIn(False, state["setblocking"], "_ssl_io did not force the socket non-blocking")
 
 
+# ---------------------------------------------------------------------------
+# connect_to_tcp must produce a thread-safe SSL connection (issue #4918)
+# ---------------------------------------------------------------------------
+
+class TestConnectToTcpSSL(unittest.TestCase):
+
+    def _connect(self, dtype: str):
+        from xpra.net import connect as connect_mod
+        raw_sock = MagicMock()
+        raw_sock.getsockname.return_value = ("127.0.0.1", 12345)
+        raw_sock.getpeername.return_value = ("127.0.0.1", 443)
+        ssl_sock = MagicMock()
+        ssl_sock.getsockname.return_value = ("127.0.0.1", 12345)
+        ssl_sock.getpeername.return_value = ("127.0.0.1", 443)
+        display_desc = {
+            "type": dtype,
+            "display_name": f"{dtype}://127.0.0.1:443/",
+            "host": "127.0.0.1",
+            "port": 443,
+            "ssl-options": {},
+        }
+        with patch.object(connect_mod, "retry_socket_connect", return_value=raw_sock), \
+                patch("xpra.net.tls.socket.ssl_wrap_socket", return_value=ssl_sock), \
+                patch("xpra.net.tls.socket.ssl_handshake"):
+            return connect_mod.connect_to_tcp(display_desc), ssl_sock
+
+    def test_ssl_socket_is_wrapped_in_SSLSocketConnection(self):
+        # The read and write threads share one OpenSSL object, which is not safe for
+        # concurrent use. `connect_to_tcp` must wrap the SSL socket in an
+        # `SSLSocketConnection` (which serializes the SSL calls via `_ssl_lock`); a
+        # plain `SocketConnection` lets the threads call `SSL_read`/`SSL_write` at the
+        # same time and corrupts the record stream (the `hello` packet gets dropped).
+        from xpra.net.tls.connection import SSLSocketConnection
+        conn, ssl_sock = self._connect("ssl")
+        self.assertIsInstance(conn, SSLSocketConnection)
+        self.assertIs(conn._socket, ssl_sock)
+        # the serialization lock must be present:
+        self.assertTrue(hasattr(conn, "_ssl_lock"))
+
+
 def main():
     unittest.main()
 
