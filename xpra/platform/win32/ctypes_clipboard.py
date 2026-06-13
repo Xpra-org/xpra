@@ -268,6 +268,59 @@ def parse_CF_HDROP(data: bytes) -> list[str]:
     return [name for name in text.split("\0") if name]
 
 
+# the name of the registered Windows "HTML Format" clipboard format:
+CF_HTML_NAME = b"HTML Format"
+
+
+def parse_CF_HTML(data: bytes) -> bytes:
+    # extract the HTML fragment from a Windows ``CF_HTML`` clipboard payload.
+    # the payload starts with a textual header of ``Key:Value\r\n`` lines
+    # which carries byte offsets into the (always UTF-8 encoded) payload:
+    #   StartHTML / EndHTML          : the whole ``<html>..</html>`` document
+    #   StartFragment / EndFragment  : the copied fragment within that document
+    def get_offset(key: bytes) -> int:
+        pos = data.find(key + b":")
+        if pos < 0:
+            return -1
+        pos += len(key) + 1
+        end = data.find(b"\n", pos)
+        if end < 0:
+            return -1
+        try:
+            return int(data[pos:end])
+        except ValueError:
+            return -1
+    # prefer the fragment, fall back to the whole document:
+    start = get_offset(b"StartFragment")
+    end = get_offset(b"EndFragment")
+    if start < 0 or end < 0:
+        start = get_offset(b"StartHTML")
+        end = get_offset(b"EndHTML")
+    if start < 0 or end < start or end > len(data):
+        raise ValueError("no valid HTML offsets found in CF_HTML data")
+    return data[start:end]
+
+
+def wrap_CF_HTML(html: bytes) -> bytes:
+    # wrap an HTML fragment in the Windows ``CF_HTML`` clipboard format:
+    # a textual header carrying byte offsets, then a minimal HTML document.
+    header = ("Version:0.9\r\n"
+              "StartHTML:%010i\r\n"
+              "EndHTML:%010i\r\n"
+              "StartFragment:%010i\r\n"
+              "EndFragment:%010i\r\n")
+    pre = b"<html><body><!--StartFragment-->"
+    post = b"<!--EndFragment--></body></html>"
+    # the offsets are fixed-width, so the header length does not depend on them:
+    header_len = len(header % (0, 0, 0, 0))
+    start_html = header_len
+    start_fragment = start_html + len(pre)
+    end_fragment = start_fragment + len(html)
+    end_html = end_fragment + len(post)
+    head = header % (start_html, end_html, start_fragment, end_fragment)
+    return head.encode("latin1") + pre + html + post
+
+
 def data_to_bitmap(img_data) -> HBITMAP:
     from PIL import Image
     buf = BytesIO(img_data)
@@ -332,6 +385,22 @@ class Win32ClipboardProxy(ClipboardProxyCore):
     def clear(self):
         self.with_clipboard_lock(empty_clipboard, clear_error)
 
+    def get_targets_for_formats(self, formats: Sequence[int]) -> list[str]:
+        fnames = format_names(formats)
+        targets: list[str] = []
+        if win32con.CF_UNICODETEXT in formats:
+            targets += ["text/plain;charset=utf-8", "UTF8_STRING", "CF_UNICODETEXT"]
+        if win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
+            targets += ["TEXT", "STRING", "text/plain"]
+        # if any(x in fnames for x in ("CF_DIB", "CF_BITMAP", "CF_DIBV5")):
+        if "CF_DIBV5" in fnames:
+            targets += ["image/png", "image/jpeg"]
+        if win32con.CF_HDROP in formats:
+            targets.append("text/uri-list")
+        if CF_HTML_NAME.decode("latin1") in fnames:
+            targets.append("text/html")
+        return targets
+
     def do_emit_token(self):
         if not self._greedy_client:
             # send just the token
@@ -342,7 +411,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         # so we have to get the clipboard lock
 
         def send_token(formats: Sequence[int]) -> None:
-            # default target:
+            targets = self.get_targets_for_formats(formats)
+            # default payload target (prefer plain text, then image):
             target = "UTF8_STRING"
             if formats:
                 tnames = format_names(formats)
@@ -354,7 +424,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     target = "image/png"
 
             def got_contents(dtype: str, dformat: int, data: Any) -> None:
-                packet_data = ([target], (target, dtype, dformat, data))
+                packet_data = (targets or [target], (target, dtype, dformat, data))
                 self.send_clipboard_token_handler(self, packet_data)
 
             self.get_contents(target, got_contents)
@@ -376,18 +446,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if target == "TARGETS":
             def got_clipboard_lock() -> bool:
                 formats = get_clipboard_formats()
-                fnames = format_names(formats)
-                targets = []
-                if win32con.CF_UNICODETEXT in formats:
-                    targets += ["text/plain;charset=utf-8", "UTF8_STRING", "CF_UNICODETEXT"]
-                if win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
-                    targets += ["TEXT", "STRING", "text/plain"]
-                # if any(x in fnames for x in ("CF_DIB", "CF_BITMAP", "CF_DIBV5")):
-                if "CF_DIBV5" in fnames:
-                    targets += ["image/png", "image/jpeg"]
-                if win32con.CF_HDROP in formats:
-                    targets.append("text/uri-list")
-                log("targets(%s)=%s", csv(fnames), csv(targets))
+                targets = self.get_targets_for_formats(formats)
+                log("targets(%s)=%s", csv(format_names(formats)), csv(targets))
                 got_contents("ATOM", 32, targets)
                 return True
 
@@ -421,6 +481,14 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 got_contents(target, 8, data)
 
             self.get_clipboard_uris(got_uris, nodata)
+            return
+        if target == "text/html":
+            def got_html(html_data) -> None:
+                log("got_html(%i bytes)", len(html_data))
+                html_data = filter_data(dtype=target, dformat=8, data=html_data)
+                got_contents(target, 8, html_data)
+
+            self.get_clipboard_html(got_html, nodata)
             return
         if target not in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
             # we don't know how to handle this target,
@@ -539,6 +607,37 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         self.with_clipboard_lock(get_uris, errback)
 
+    def get_clipboard_html(self, callback: Callable[[bytes], None], errback: Callable[[str], None]):
+        def get_html() -> bool:
+            fmt = RegisterClipboardFormatA(LPCSTR(CF_HTML_NAME + b"\0"))
+            if not fmt or fmt not in get_clipboard_formats():
+                errback("no HTML clipboard format available")
+                return True
+            data_handle = GetClipboardData(fmt)
+            log("GetClipboardData(HTML Format)=%#x", data_handle or 0)
+            if not data_handle:
+                log("no HTML Format data handle (may try again)")
+                return False
+            size = GlobalSize(data_handle)
+            data = GlobalLock(data_handle)
+            if not data:
+                log("failed to lock HTML Format handle %#x (may try again)", data_handle)
+                return False
+            try:
+                cf_html = bytes((c_char * size).from_address(data))
+            finally:
+                GlobalUnlock(data)
+            try:
+                html = parse_CF_HTML(cf_html)
+            except ValueError as e:
+                log("parse_CF_HTML(%s)", Ellipsizer(cf_html), exc_info=True)
+                errback(str(e))
+                return True
+            callback(html)
+            return True
+
+        self.with_clipboard_lock(get_html, errback)
+
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         # the remote end now owns the clipboard
         self.cancel_emit_token()
@@ -579,6 +678,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             if image_formats:
                 # request it:
                 self.send_clipboard_request_handler(self, self._selection, image_formats[0])
+        elif dformat == 8 and dtype == "text/html":
+            log("we got HTML data: %s", Ellipsizer(data))
+            self.set_clipboard_html(data)
         elif dformat == 8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", Ellipsizer(data))
             if dtype.lower().find("utf8") >= 0:
@@ -643,6 +745,52 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log.warn("Warning: failed to copy image data to the clipboard")
 
         self.with_clipboard_lock(got_clipboard_lock, nolock)
+
+    def set_clipboard_html(self, html_data) -> None:
+        if isinstance(html_data, str):
+            html_data = html_data.encode("utf8")
+        cf_html = wrap_CF_HTML(html_data)
+        fmt = RegisterClipboardFormatA(LPCSTR(CF_HTML_NAME + b"\0"))
+        if not fmt:
+            set_err("failed to register the 'HTML Format' clipboard format")
+            return
+        l = len(cf_html)
+        buf = GlobalAlloc(GMEM_MOVEABLE, l)
+        if not buf:
+            set_err("failed to allocate %i bytes of global memory" % l)
+            return
+        locked = GlobalLock(buf)
+        if not locked:
+            set_err("failed to lock buffer %#x" % buf)
+            GlobalFree(buf)
+            return
+        try:
+            src = create_string_buffer(cf_html, l)
+            memmove(locked, cast(byref(src), c_void_p), l)
+        finally:
+            GlobalUnlock(locked)
+
+        def set_clipboard_data() -> bool:
+            r = EmptyClipboard()
+            log("EmptyClipboard()=%s", r)
+            if not r:
+                set_err("failed to empty the clipboard")
+                return False
+            r = SetClipboardData(fmt, buf)
+            if not r:
+                e = WinError(GetLastError())
+                log("SetClipboardData(HTML Format, %i bytes)=%s (%s)", l, r, e)
+                return False
+            log("SetClipboardData(HTML Format, %i bytes)=%s", l, r)
+            return True
+
+        def set_clipboard_error(error_text="") -> None:
+            log("set_clipboard_error(%s)", error_text)
+            if error_text:
+                log.warn("Warning: failed to set HTML clipboard data")
+                log.warn(" %s", error_text)
+
+        self.with_clipboard_lock(set_clipboard_data, set_clipboard_error)
 
     def get_clipboard_text(self, utf8, callback: Callable[[str | bytes], []], errback: Callable[[str], []]):
         def get_text() -> bool:
