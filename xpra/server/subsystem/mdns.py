@@ -41,6 +41,7 @@ class MdnsServer(StubSubsystem):
         StubSubsystem.__init__(self, server)
         self.enabled = False
         self.publishers = {}
+        self.extra_info = {}
         self.display = os.environ.get("DISPLAY", "")
 
     def init(self, opts) -> None:
@@ -134,7 +135,8 @@ class MdnsServer(StubSubsystem):
         return tuple(socktypes)
 
     def get_mdns_info(self) -> dict[str, Any]:
-        mdns_info = {
+        mdns_info = self.extra_info.copy()
+        mdns_info |= {
             "display": self.display,
             "username": get_username(),
             "uuid": self.get_subsystem("id").uuid,

@@ -92,6 +92,7 @@ SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
 SSL_PEEK = envbool("XPRA_SSL_PEEK", True)
+VSOCK_MDNS = envbool("XPRA_VSOCK_MDNS", True)
 
 ENV_BLOCKLIST = ("LS_COLORS", )
 
@@ -717,6 +718,8 @@ class ServerCore(GLibServer):
                 cid, port = self.get_vsock_endpoint(address)
                 log.info("listening on %s at %s:%s", socktype, cid, port)
                 log.info("  %s://%s:%s", socktype, cid, port)
+                if VSOCK_MDNS and (mdns := self.get_subsystem("mdns")):
+                    mdns.extra_info["vsock"] = f"{cid}:{port}"
             if socktype == "socket" and address:
                 if address.startswith("@"):
                     # abstract sockets can't be 'touch'ed

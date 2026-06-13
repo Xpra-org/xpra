@@ -33,6 +33,8 @@ class TestServerCore(unittest.TestCase):
             SocketListener("vsock", object(), (0xffffffff, 10000), {}, lambda: None, lambda: None),
         ]
         server.unix_socket_paths = []
+        mdns = SimpleNamespace(extra_info={})
+        server.subsystems = {"mdns": mdns}
         vsock_mod = SimpleNamespace(
             CID_ANY=0xffffffff,
             CID_TYPES={0xffffffff: "ANY"},
@@ -48,6 +50,7 @@ class TestServerCore(unittest.TestCase):
         idle_add.assert_called_once_with(server.add_listen_socket, server.sockets[0])
         log.info.assert_any_call("listening on %s at %s:%s", "vsock", 7, 10000)
         log.info.assert_any_call("  %s://%s:%s", "vsock", 7, 10000)
+        self.assertEqual(mdns.extra_info["vsock"], "7:10000")
 
 
 def main():
