@@ -1266,12 +1266,15 @@ cdef class Converter:
         cdef const unsigned char *Vbuf = <const unsigned char *> py_buf[2].buf
 
         cdef unsigned int x, y
+        cdef unsigned int hw, hh
+        hw = width // 2
+        hh = height // 2
         with nogil:
             for y in range(height):
                 for x in range(width):
                     Y16[y * Ystride_out + x] = <unsigned short> Ybuf[y * Ystride_in + x] << 8
-            for y in range(height // 2):
-                for x in range(width // 2):
+            for y in range(hh):
+                for x in range(hw):
                     U16[y * Ustride_out + x] = <unsigned short> Ubuf[y * Ustride_in + x] << 8
                     V16[y * Vstride_out + x] = <unsigned short> Vbuf[y * Vstride_in + x] << 8
         for i in range(3):
