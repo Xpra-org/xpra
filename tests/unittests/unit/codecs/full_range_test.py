@@ -613,6 +613,80 @@ class OptionMemoryRoundtripTest(unittest.TestCase):
         return frames
 
 
+class BitstreamRangeChangeTest(unittest.TestCase):
+    """ when the colour range changes mid-stream, h264 encoders must re-emit the SPS
+        (as a keyframe) so a decoder relying on the bitstream alone tracks the change """
+
+    RANGES = (True, True, False, False, True)
+
+    PAIRS = (
+        ("enc_x264", "dec_openh264"),
+        ("enc_x264", "dec_libva"),
+        ("enc_openh264", "dec_openh264"),
+        ("enc_openh264", "dec_libva"),
+    )
+
+    def test_range_change_in_bitstream(self):
+        tested: list[str] = []
+        skipped: list[str] = []
+        for enc_name, dec_name in self.PAIRS:
+            enc_mod = loader.load_codec(enc_name)
+            dec_mod = loader.load_codec(dec_name)
+            if not enc_mod or not dec_mod:
+                continue
+            spec = find_spec(enc_mod.get_specs(), "YUV420P", "YUV420P")
+            if not spec or spec.encoding != "h264":
+                continue
+            if self._check(spec, dec_mod, skipped):
+                tested.append(f"{enc_name}->{dec_name}")
+        print(f"tested mid-stream range change via the bitstream: {sorted_nicely(tested)}")
+        if skipped:
+            print(f"skipped (unavailable at runtime): {sorted_nicely(skipped)}")
+        if not tested:
+            self.skipTest("no h264 encoder/decoder pair available")
+
+    def _check(self, spec, dec_mod, skipped) -> bool:
+        w, h = TEST_SIZE
+        label = f"{spec.codec_type}->{dec_mod.get_type()}"
+        encoder = spec.codec_class()
+        datas = []
+        try:
+            encoder.init_context("h264", w, h, "YUV420P", typedict({
+                "full-range": self.RANGES[0],
+                "dst-formats": ["YUV420P"],
+            }))
+            for fr in self.RANGES:
+                image = make_test_image("YUV420P", w, h)
+                image.set_full_range(fr)
+                out = encoder.compress_image(image, typedict())
+                datas.append(out[0] if out else b"")
+        except Exception as e:
+            skipped.append(f"{label} (encode: {e})")
+            return False
+        finally:
+            encoder.clean()
+        # decode each frame WITHOUT the option: the range must come from the bitstream:
+        decoder = dec_mod.Decoder()
+        try:
+            decoder.init_context("h264", w, h, "YUV420P", typedict())
+            for fr, data in zip(self.RANGES, datas):
+                if not data:
+                    continue
+                decoded = decoder.decompress_image(data, typedict())
+                if decoded is None:
+                    continue
+                self.assertEqual(
+                    bool(decoded.get_full_range()), fr,
+                    f"{label}: image range {fr} was not recovered from the bitstream"
+                    f" (got {bool(decoded.get_full_range())})")
+        except Exception as e:
+            skipped.append(f"{label} (decode: {e})")
+            return False
+        finally:
+            decoder.clean()
+        return True
+
+
 def main():
     unittest.main()
 

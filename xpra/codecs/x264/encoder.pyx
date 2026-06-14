@@ -655,6 +655,16 @@ cdef class Encoder:
         log("x264 params: %s", self.get_param_info(&param))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
+    cdef void reinit_encoder(self):
+        # close and reopen the context so the SPS VUI is regenerated with the current
+        # colour range (self.full_range); the next encoded frame will be a fresh keyframe:
+        cdef x264_t *context = self.context
+        if context != NULL:
+            self.context = NULL
+            x264_encoder_close(context)
+        self.need_reconfig = 0
+        self.init_encoder(typedict())
+
     cdef void tune_param(self, x264_param_t *param, options: typedict) noexcept:
         param.i_lookahead_threads = 0
         if MIN_SLICED_THREADS_SPEED>0 and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
@@ -912,13 +922,14 @@ cdef class Encoder:
         if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
 
-        # the range is written into the SPS VUI; if the image range changes, reconfigure
-        # the encoder (and tell the client to rebuild its csc via the "full-range" option):
+        # the range is written into the SPS VUI at encoder-open and x264 cannot reconfigure it,
+        # so if the image range changes we reopen the encoder to emit a fresh SPS (a new IDR
+        # frame) carrying the updated range (the client is also told via the "full-range" option):
         cdef int full_range = image.get_full_range()
         cdef int range_changed = full_range != self.full_range
         if range_changed:
             self.full_range = full_range
-            self.need_reconfig = 1
+            self.reinit_encoder()
 
         options = typedict(options or {})
         content_types = options.strtupleget("content-types", ()) or self.content_types

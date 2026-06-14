@@ -494,6 +494,17 @@ cdef class Encoder:
         for i in range(param.iSpatialLayerNum):
             log("spatial layer %i bFullRange=%s", i, param.sSpatialLayers[i].bFullRange)
 
+    cdef void reinit_encoder(self):
+        # close and reopen the encoder so the SPS is regenerated with the current colour
+        # range (self.full_range); the next encoded frame will be a fresh keyframe:
+        cdef ISVCEncoder *context = self.context
+        if context != NULL:
+            self.context = NULL
+            with nogil:
+                context.Uninitialize()
+                WelsDestroySVCEncoder(context)
+        self.init_encoder(typedict())
+
     def clean(self) -> None:
         log("openh264 close context %#x", <uintptr_t> self.context)
         cdef ISVCEncoder *context = self.context
@@ -552,10 +563,14 @@ cdef class Encoder:
         assert self.context!=NULL, "encoder is closed"
         assert width>=self.width
         assert height>=self.height
-        # track the image colour range (signalled to the client via the "full-range" option):
+        # the range is written into the SPS at encoder-open and cannot be changed on the fly,
+        # so if the image range changes we reopen the encoder to emit a fresh SPS (a new IDR
+        # frame) carrying it (the client is also told via the "full-range" option):
         cdef int image_range = image.get_full_range()
         cdef int range_changed = image_range != self.full_range
         self.full_range = image_range
+        if range_changed:
+            self.reinit_encoder()
         if image.get_pixel_format()!="YUV420P":
             raise ValueError("expected YUV420P but got %s" % image.get_pixel_format())
         pixels = image.get_pixels()
