@@ -28,7 +28,8 @@ from xpra.net import compression
 from xpra.util.objects import typedict
 
 N = 10
-QUALITY = 100
+QUALITYS_LOSSY = (1, 50, 99, 100)
+QUALITYS_LOSSLESS = (100,)
 SPEED = 100
 
 try:
@@ -49,6 +50,22 @@ class CorpusImage:
     @property
     def stride(self) -> int:
         return self.width * len(self.pixel_format)
+
+
+@dataclass(frozen=True)
+class BenchmarkResult:
+    scenario: str
+    label: str
+    codec: str
+    encoding: str
+    quality: int | None
+    width: int
+    height: int
+    mps: float
+    ratio: float
+    compressed_size: int
+    raw_size: int
+    extra: str = ""
 
 
 def load_monospace_font(size: int):
@@ -174,6 +191,18 @@ def load_corpus() -> list[CorpusImage]:
         yield CorpusImage(str(rel), rgba.width, rgba.height, pixel_format, pixels, has_alpha)
 
 
+def scenario_for(spec: CorpusImage) -> str:
+    if spec.label.startswith("xterm:"):
+        return "text"
+    if spec.label.startswith("fs/share/"):
+        return "icons-alpha" if spec.has_alpha else "icons"
+    if spec.label.startswith("docs/images/screenshots/"):
+        return "screenshots"
+    if spec.label.startswith("docs/images/"):
+        return "docs-images"
+    return "other"
+
+
 def make_image(spec: CorpusImage) -> ImageWrapper:
     return ImageWrapper(
         0, 0, spec.width, spec.height,
@@ -226,11 +255,67 @@ def benchmark_encoder(module, encoding: str, spec: CorpusImage, options: dict[st
     return compressed_size, end - start, size, client_options
 
 
-def print_result(label: str, codec: str, encoding: str, spec: CorpusImage, compressed_size: int, duration: float, raw_size: int, extra: str = "") -> None:
+def print_result(label: str, codec: str, encoding: str, spec: CorpusImage, compressed_size: int, duration: float, raw_size: int,
+                 quality: int | None = None, extra: str = "") -> None:
     mps = (spec.width * spec.height * N) / duration / 1024 / 1024 if duration > 0 else 0.0
     ratio = 100.0 * compressed_size / raw_size if raw_size else 0.0
+    qstr = "-" if quality is None else str(quality)
     suffix = f"  {extra}" if extra else ""
-    print(f"{label:28} {codec:10} {encoding:10} {spec.width:5}x{spec.height:<5} {mps:9.1f} MPixels/s  {compressed_size:8} B  {ratio:6.2f}%{suffix}")
+    print(f"{label:28} {codec:10} {encoding:10} q={qstr:>3} {spec.width:5}x{spec.height:<5} {mps:9.1f} MPixels/s  {compressed_size:8} B  {ratio:6.2f}%{suffix}")
+
+
+def family_key(result: BenchmarkResult) -> tuple[str, str]:
+    return result.codec, result.encoding
+
+
+def best_rows_by_family(rows: list[BenchmarkResult], metric) -> list[BenchmarkResult]:
+    best: dict[tuple[str, str], BenchmarkResult] = {}
+    for row in rows:
+        key = family_key(row)
+        current = best.get(key)
+        if current is None or metric(row) < metric(current):
+            best[key] = row
+    return list(best.values())
+
+
+def print_summary(results: list[BenchmarkResult], title: str, predicate) -> None:
+    if not results:
+        return
+    print(f"\n{title}")
+    scenarios = sorted({r.scenario for r in results})
+    for scenario in scenarios:
+        rows = [r for r in results if r.scenario == scenario and predicate(r)]
+        if not rows:
+            continue
+        print(f"\n{scenario}")
+        print("  best size")
+        size_rows = best_rows_by_family(rows, lambda x: (x.ratio, -x.mps, x.quality or -1))
+        for r in sorted(size_rows, key=lambda x: (x.ratio, -x.mps, x.codec, x.encoding, x.quality or -1))[:5]:
+            q = "-" if r.quality is None else str(r.quality)
+            print(f"    {r.codec:10} {r.encoding:10} q={q:>3}  {r.ratio:6.2f}%  {r.mps:9.1f} MPixels/s")
+        print("  best speed")
+        speed_rows = best_rows_by_family(rows, lambda x: (-x.mps, x.ratio, x.quality or -1))
+        for r in sorted(speed_rows, key=lambda x: (-x.mps, x.ratio, x.codec, x.encoding, x.quality or -1))[:5]:
+            q = "-" if r.quality is None else str(r.quality)
+            print(f"    {r.codec:10} {r.encoding:10} q={q:>3}  {r.mps:9.1f} MPixels/s  {r.ratio:6.2f}%")
+
+    print()
+
+
+def is_practical_high_quality(result: BenchmarkResult) -> bool:
+    return result.quality is None or result.quality >= 99
+
+
+def is_low_quality(result: BenchmarkResult) -> bool:
+    return result.scenario != "text" and result.quality is not None and result.quality <= 50
+
+
+def qualities_for(scenario: str, codec_name: str, encoding: str) -> tuple[int, ...]:
+    if scenario == "text":
+        return QUALITYS_LOSSLESS
+    if codec_name == "pillow" and encoding in ("png", "png/L", "png/P"):
+        return QUALITYS_LOSSLESS
+    return QUALITYS_LOSSY
 
 
 def main(argv: list[str]) -> int:
@@ -256,7 +341,9 @@ def main(argv: list[str]) -> int:
     if not corpus:
         raise RuntimeError("no benchmark images were discovered")
 
+    results: list[BenchmarkResult] = []
     for spec in corpus:
+        scenario = scenario_for(spec)
         alpha = "alpha" if spec.has_alpha else "opaque"
         print(f"\n{spec.label}  {spec.width}x{spec.height}  {alpha}  {spec.pixel_format}")
         for codec_name, module in codec_specs:
@@ -266,7 +353,10 @@ def main(argv: list[str]) -> int:
                 except Exception as e:
                     print(f"{codec_name:10} skipped: {e}")
                     continue
-                print_result(spec.label, codec_name, "lz4", spec, compressed_size, duration, raw_size)
+                mps = (spec.width * spec.height * N) / duration / 1024 / 1024 if duration > 0 else 0.0
+                ratio = 100.0 * compressed_size / raw_size if raw_size else 0.0
+                print_result(spec.label, codec_name, "lz4", spec, compressed_size, duration, raw_size, quality=None)
+                results.append(BenchmarkResult(scenario, spec.label, codec_name, "lz4", None, spec.width, spec.height, mps, ratio, compressed_size, raw_size))
                 continue
 
             if not module:
@@ -275,21 +365,27 @@ def main(argv: list[str]) -> int:
 
             encodings = tuple(module.get_encodings())
             for encoding in encodings:
-                try:
-                    compressed_size, duration, raw_size, client_options = benchmark_encoder(
-                        module, encoding, spec, {
-                            "quality": QUALITY,
-                            "speed": SPEED,
-                            "alpha": True,
-                        },
-                    )
-                except Exception as e:
-                    print(f"{codec_name:10} {encoding:10} skipped: {e}")
-                    continue
-                extra = ""
-                if client_options:
-                    extra = str(client_options)
-                print_result(spec.label, codec_name, encoding, spec, compressed_size, duration, raw_size, extra=extra)
+                for quality in qualities_for(scenario, codec_name, encoding):
+                    try:
+                        compressed_size, duration, raw_size, client_options = benchmark_encoder(
+                            module, encoding, spec, {
+                                "quality": quality,
+                                "speed": SPEED,
+                                "alpha": True,
+                            },
+                        )
+                    except Exception as e:
+                        print(f"{codec_name:10} {encoding:10} q={quality:<3} skipped: {e}")
+                        continue
+                    extra = ""
+                    if client_options:
+                        extra = str(client_options)
+                    print_result(spec.label, codec_name, encoding, spec, compressed_size, duration, raw_size, quality=quality, extra=extra)
+                    mps = (spec.width * spec.height * N) / duration / 1024 / 1024 if duration > 0 else 0.0
+                    ratio = 100.0 * compressed_size / raw_size if raw_size else 0.0
+                    results.append(BenchmarkResult(scenario, spec.label, codec_name, encoding, quality, spec.width, spec.height, mps, ratio, compressed_size, raw_size, extra=extra))
+    print_summary(results, "Summary: practical quality (q>=99)", is_practical_high_quality)
+    print_summary(results, "Summary: low quality (q<=50)", is_low_quality)
     return 0
 
 
