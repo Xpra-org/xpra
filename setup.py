@@ -2290,6 +2290,7 @@ def clean() -> None:
     # these files would match the pattern of generated files, but they are not, so protect them:
     PROTECTED = [
         "xpra/buffers/memalign.c",
+        "xpra/codecs/jph/jph.cpp",
         "xpra/codecs/mf/mf_decode.c",
         "xpra/codecs/mf/mf_encode.c",
         "xpra/codecs/vpl/vpl_decode.c",
