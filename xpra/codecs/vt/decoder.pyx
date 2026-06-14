@@ -159,6 +159,66 @@ H264_PARAMETER_SETS = (7, 8)            # SPS, PPS
 H265_PARAMETER_SETS = (32, 33, 34)      # VPS, SPS, PPS
 
 
+# the VideoToolbox / CoreMedia OSStatus error codes this decoder can hit,
+# so that log messages name the failure rather than showing a bare integer:
+OSSTATUS_ERRORS: Dict[int, str] = {
+    -12210: "kVTVideoDecoderAuthorizationErr",
+    -12900: "kVTPropertyNotSupportedErr",
+    -12902: "kVTParameterErr",
+    -12903: "kVTInvalidSessionErr",
+    -12904: "kVTAllocationFailedErr",
+    -12906: "kVTCouldNotFindVideoDecoderErr",
+    -12907: "kVTCouldNotCreateInstanceErr",
+    -12909: "kVTVideoDecoderBadDataErr",
+    -12910: "kVTVideoDecoderUnsupportedDataFormatErr",
+    -12911: "kVTVideoDecoderMalfunctionErr",
+    -12913: "kVTVideoDecoderNotAvailableNowErr",
+    -12916: "kVTFormatDescriptionChangeNotSupportedErr",
+    # CMBlockBuffer:
+    -12700: "kCMBlockBufferStructureAllocationFailedErr",
+    -12701: "kCMBlockBufferBlockAllocationFailedErr",
+    -12702: "kCMBlockBufferBadCustomBlockSourceErr",
+    -12703: "kCMBlockBufferBadOffsetParameterErr",
+    -12704: "kCMBlockBufferBadLengthParameterErr",
+    -12705: "kCMBlockBufferBadPointerParameterErr",
+    -12706: "kCMBlockBufferEmptyBBufErr",
+    -12707: "kCMBlockBufferUnallocatedBlockErr",
+    -12708: "kCMBlockBufferInsufficientSpaceErr",
+    # CMFormatDescription:
+    -12710: "kCMFormatDescriptionError_InvalidParameter",
+    -12711: "kCMFormatDescriptionError_AllocationFailed",
+    -12712: "kCMFormatDescriptionError_ValueNotAvailable",
+    # CMSampleBuffer:
+    -12730: "kCMSampleBufferError_AllocationFailed",
+    -12731: "kCMSampleBufferError_RequiredParameterMissing",
+    -12743: "kCMSampleBufferError_InvalidMediaFormat",
+}
+
+
+def fourcc_str(code: int) -> str:
+    if not code:
+        return ""
+    try:
+        chars = bytes(((code >> 24) & 0xFF, (code >> 16) & 0xFF, (code >> 8) & 0xFF, code & 0xFF))
+        if all(32 <= c < 127 for c in chars):
+            return chars.decode("ascii")
+    except ValueError:
+        pass
+    return f"{code:#x}"
+
+
+def osstatus_str(status: int) -> str:
+    name = OSSTATUS_ERRORS.get(status)
+    if name:
+        return f"{status} ({name})"
+    # positive statuses are often FourCC codes - render them if printable:
+    if status > 0:
+        fourcc = fourcc_str(status)
+        if not fourcc.startswith("0x"):
+            return f"{status} ({fourcc!r})"
+    return str(status)
+
+
 MAX_WIDTH, MAX_HEIGHT = (4096, 4096)
 
 
@@ -310,6 +370,8 @@ cdef class Decoder:
             "encoding"      : self.encoding,
             "colorspace"    : self.colorspace,
             "full-range"    : bool(self.full_range),
+            "pixel-format"  : fourcc_str(self.pixel_format),
+            "session"       : self.session != NULL,
         }
         return info
 
@@ -356,7 +418,7 @@ cdef class Decoder:
         else:
             r = CMVideoFormatDescriptionCreateFromH264ParameterSets(NULL, count, ptrs, sizes, 4, &fmt)
         if r != 0 or fmt == NULL:
-            raise RuntimeError(f"failed to create {self.encoding} format description, error {r}")
+            raise RuntimeError(f"failed to create {self.encoding} format description, error {osstatus_str(r)}")
         return fmt
 
     cdef void make_session(self):
@@ -389,7 +451,7 @@ cdef class Decoder:
         log("VTDecompressionSessionCreate()=%i session=%#x", r, <uintptr_t> self.session)
         if r != 0 or self.session == NULL:
             self.session = NULL
-            raise RuntimeError(f"failed to create VideoToolbox decompression session, error {r}")
+            raise RuntimeError(f"failed to create VideoToolbox decompression session, error {osstatus_str(r)}")
 
     cdef void update_format_description(self, list param_sets) except *:
         cdef CMFormatDescriptionRef new_fmt = self.make_format_description(param_sets)
@@ -473,16 +535,16 @@ cdef class Decoder:
             r = CMBlockBufferCreateWithMemoryBlock(NULL, NULL, total, NULL, NULL, 0, total,
                                                    kCMBlockBufferAssureMemoryNowFlag, &bb)
         if r != 0 or bb == NULL:
-            raise RuntimeError(f"failed to create CMBlockBuffer, error {r}")
+            raise RuntimeError(f"failed to create CMBlockBuffer, error {osstatus_str(r)}")
         try:
             with nogil:
                 r = CMBlockBufferReplaceDataBytes(src, bb, 0, total)
             if r != 0:
-                raise RuntimeError(f"failed to fill CMBlockBuffer, error {r}")
+                raise RuntimeError(f"failed to fill CMBlockBuffer, error {osstatus_str(r)}")
             with nogil:
                 r = CMSampleBufferCreateReady(NULL, bb, self.format_desc, 1, 0, NULL, 1, &sample_size, &sample)
             if r != 0 or sample == NULL:
-                raise RuntimeError(f"failed to create CMSampleBuffer, error {r}")
+                raise RuntimeError(f"failed to create CMSampleBuffer, error {osstatus_str(r)}")
             try:
                 self.free_frame_image()
                 self.frame_error = 0
@@ -496,9 +558,9 @@ cdef class Decoder:
         finally:
             CFRelease(bb)
         if r != 0:
-            raise RuntimeError(f"VideoToolbox failed to decode frame, error {r}")
+            raise RuntimeError(f"VideoToolbox failed to decode frame, error {osstatus_str(r)}")
         if self.frame_error:
-            raise RuntimeError(f"VideoToolbox decode callback error {self.frame_error}")
+            raise RuntimeError(f"VideoToolbox decode callback error {osstatus_str(self.frame_error)}")
         if self.frame_image == NULL:
             raise RuntimeError("VideoToolbox produced no image")
         return self.copy_image()
