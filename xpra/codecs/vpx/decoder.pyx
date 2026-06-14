@@ -187,6 +187,7 @@ cdef class Decoder:
     cdef vpx_img_fmt_t pixfmt
     cdef object dst_format
     cdef object encoding
+    cdef int full_range
     cdef object file
 
     cdef object __weakref__
@@ -200,6 +201,9 @@ cdef class Decoder:
         self.encoding = encoding
         self.dst_format = colorspace
         self.pixfmt = get_vpx_colorspace(self.dst_format)
+        # vp8 has no colour-range syntax in the bitstream, so we remember the range
+        # signalled in the client options across frames (default to studio):
+        self.full_range = False
         self.width = width
         self.height = height
         try:
@@ -334,14 +338,18 @@ cdef class Decoder:
 
             pixels.append(memoryview(output_buf))
         cdef double elapsed = 1000*(monotonic()-start)
-        # the colour range is carried in the bitstream (vpx_image_t.range);
-        # VP8 has no range syntax so libvpx reports studio there
         self.frames += 1
         log("%s frame %4i decoded in %3ims, colorspace=%s, format=%s",
             self.encoding, self.frames, elapsed, VPX_COLOR_SPACES.get(img.cs, img.cs), self.dst_format)
-        full_range = options.boolget("full-range", img.range == VPX_CR_FULL_RANGE)
+        # vp9 signals the colour range in the bitstream (color_config), but vp8 has no
+        # range syntax - so for vp8 we reuse the range from an earlier frame's options;
+        # the client option always takes precedence when present:
+        if "full-range" in options:
+            self.full_range = options.boolget("full-range")
+        elif self.encoding == "vp9":
+            self.full_range = bool(img.range == VPX_CR_FULL_RANGE)
         return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3,
-                            full_range=full_range)
+                            full_range=bool(self.full_range))
 
     def codec_error_str(self) -> str:
         return vpx_codec_error(self.context).decode("latin1")

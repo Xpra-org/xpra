@@ -510,6 +510,109 @@ class FirstFrameOnlyTest(unittest.TestCase):
             self.skipTest("no encoder available")
 
 
+class OptionMemoryRoundtripTest(unittest.TestCase):
+    """ with BACKWARDS_COMPATIBLE off the colour range is only signalled on the first frame;
+        the decoder must remember it for the following frames. This is essential for vp8,
+        which has no colour-range syntax in its bitstream at all. """
+
+    # (encoder, encoding, input cs, decoder, output cs):
+    COMBOS = (
+        ("enc_vpx", "vp8", "YUV420P", "dec_vpx", "YUV420P"),
+        ("enc_vpx", "vp9", "YUV420P", "dec_vpx", "YUV420P"),
+        ("enc_x264", "h264", "YUV420P", "dec_openh264", "YUV420P"),
+        ("enc_openh264", "h264", "YUV420P", "dec_openh264", "YUV420P"),
+        # libva also has no vp8 range syntax, so it must remember the range too:
+        ("enc_vpx", "vp8", "YUV420P", "dec_libva", "YUV420P"),
+        ("enc_vpx", "vp9", "YUV420P", "dec_libva", "YUV420P"),
+        ("enc_x264", "h264", "YUV420P", "dec_libva", "YUV420P"),
+    )
+
+    def test_decoder_remembers_range(self):
+        tested: list[str] = []
+        skipped: list[str] = []
+        for enc_name, encoding, in_cs, dec_name, out_cs in self.COMBOS:
+            enc_mod = loader.load_codec(enc_name)
+            dec_mod = loader.load_codec(dec_name)
+            if not enc_mod or not dec_mod:
+                continue
+            spec = None
+            for s in enc_mod.get_specs():
+                if s.encoding == encoding and s.input_colorspace == in_cs and out_cs in s.output_colorspaces:
+                    spec = s
+                    break
+            if not spec:
+                continue
+            if self._check(enc_mod, dec_mod, spec, encoding, in_cs, out_cs, skipped):
+                tested.append(f"{enc_name}->{dec_name}:{encoding}")
+        print(f"tested first-frame-only option memory: {sorted_nicely(tested)}")
+        if skipped:
+            print(f"skipped (unavailable at runtime): {sorted_nicely(skipped)}")
+        if not tested:
+            self.skipTest("no encoder/decoder pair available")
+
+    def _check(self, enc_mod, dec_mod, spec, encoding, in_cs, out_cs, skipped) -> bool:
+        w, h = TEST_SIZE
+        label = f"{spec.codec_type}->{dec_mod.get_type()}:{encoding}"
+        ok = False
+        for full_range in (True, False):
+            saved = enc_mod.BACKWARDS_COMPATIBLE
+            enc_mod.BACKWARDS_COMPATIBLE = False
+            try:
+                frames = self._encode(spec, encoding, in_cs, full_range)
+            except Exception as e:
+                skipped.append(f"{label} (encode: {e})")
+                return ok
+            finally:
+                enc_mod.BACKWARDS_COMPATIBLE = saved
+            if len(frames) < 2:
+                skipped.append(f"{label} (only {len(frames)} frame(s))")
+                return ok
+            # with BACKWARDS_COMPATIBLE off, the option is sent on the first frame only:
+            self.assertIn("full-range", frames[0][1],
+                          f"{label}: the first frame should carry the 'full-range' option")
+            self.assertNotIn("full-range", frames[-1][1],
+                             f"{label}: later frames should not repeat the 'full-range' option")
+            decoder = dec_mod.Decoder()
+            try:
+                decoder.init_context(encoding, w, h, out_cs, typedict())
+                for i, (data, copts) in enumerate(frames):
+                    decoded = decoder.decompress_image(data, typedict(copts))
+                    if decoded is None:
+                        continue
+                    self.assertEqual(
+                        bool(decoded.get_full_range()), full_range,
+                        f"{label}: frame {i} (carried option: {'full-range' in copts}) decoded as"
+                        f" full_range={bool(decoded.get_full_range())} but expected {full_range}")
+            except Exception as e:
+                skipped.append(f"{label} (decode: {e})")
+                return ok
+            finally:
+                decoder.clean()
+            ok = True
+        return ok
+
+    def _encode(self, spec, encoding, in_cs, full_range):
+        w, h = TEST_SIZE
+        encoder = spec.codec_class()
+        frames = []
+        try:
+            encoder.init_context(encoding, w, h, in_cs, typedict({
+                "full-range": full_range,
+                "dst-formats": list(spec.output_colorspaces),
+                "quality": 50,
+                "speed": 50,
+            }))
+            for _ in range(4):
+                image = make_test_image(in_cs, w, h)
+                image.set_full_range(full_range)
+                data, copts = encoder.compress_image(image, typedict())
+                if data:
+                    frames.append((data, copts))
+        finally:
+            encoder.clean()
+        return frames
+
+
 def main():
     unittest.main()
 

@@ -195,6 +195,7 @@ cdef class Decoder:
     cdef int height
     cdef object colorspace
     cdef object encoding
+    cdef int full_range
 
     cdef object __weakref__
 
@@ -209,6 +210,9 @@ cdef class Decoder:
         self.width = width
         self.height = height
         self.frames = 0
+        # vp8 has no colour-range syntax in the bitstream, so we remember the range
+        # signalled in the client options across frames (default to studio):
+        self.full_range = False
 
         cdef bytes encoding_bytes = encoding.encode("latin-1")
         cdef bytes colorspace_bytes = colorspace.encode("latin-1")
@@ -309,15 +313,18 @@ cdef class Decoder:
         log("libva decoded %s %8d bytes into %dx%d %s in %dms submit=%dus sync=%dus map=%dus copy=%dus",
             self.encoding, src_len, frame.width, frame.height, pixel_format, (elapsed + 500) // 1000,
             frame.us_submit, frame.us_sync, frame.us_map, frame.us_copy)
-        # the colour range is parsed from the bitstream headers (h264 SPS VUI / vp9
-        # color_config) by va_decode.c, with the client option able to override it
-        # (resolve before bumping self.frames so the first frame is frame 0):
-        full_range = options.boolget("full-range", frame.full_range)
         self.frames += 1
+        # va_decode.c parses the colour range from the bitstream headers for h264 (SPS VUI)
+        # and vp9 (color_config), but vp8 has no range syntax - so for vp8 we reuse the range
+        # from an earlier frame's options; the client option always takes precedence:
+        if "full-range" in options:
+            self.full_range = options.boolget("full-range")
+        elif self.encoding != "vp8":
+            self.full_range = bool(frame.full_range)
         return ImageWrapper(0, 0, self.width, self.height,
                             pixels, pixel_format, frame.depth, strides,
                             frame.bytes_per_pixel, planes,
-                            full_range=full_range)
+                            full_range=bool(self.full_range))
 
 
 def selftest(full=False) -> None:
