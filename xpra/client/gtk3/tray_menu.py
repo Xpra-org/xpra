@@ -604,7 +604,8 @@ class GTKTrayMenu(GTKMenuHelper):
         menu = Gtk.Menu()
 
         def populate_picturemenu() -> None:
-            menu.append(self.make_bandwidthlimitmenuitem())
+            if bw := self.make_bandwidthlimitmenuitem():
+                menu.append(bw)
             if self.client.windows_enabled and len(self.client.get_encodings()) > 1:
                 menu.append(self.make_encodingsmenuitem())
             if self.client.can_scale:
@@ -618,6 +619,9 @@ class GTKTrayMenu(GTKMenuHelper):
         return picture_menu_item
 
     def make_bandwidthlimitmenuitem(self) -> Gtk.ImageMenuItem:
+        if not hasattr(self.client, "bandwidth_server_limit") or not hasattr(self.client, "bandwidth_limit"):
+            return None
+
         bandwidth_limit_menu_item = self.menuitem("Bandwidth Limit", "bandwidth_limit.png")
         menu = Gtk.Menu()
         menuitems = {}
