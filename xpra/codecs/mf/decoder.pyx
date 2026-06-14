@@ -222,9 +222,9 @@ cdef class Decoder:
 
     def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
         cdef MFDecodedFrame frame
-        cdef MFDecodeStatus status
-        cdef const uint8_t *src
-        cdef int src_len
+        cdef MFDecodeStatus status = MF_DEC_OK
+        cdef const uint8_t *src = NULL
+        cdef int src_len = 0
         cdef int new_w, new_h
 
         assert self.context != NULL, "decoder is closed"
