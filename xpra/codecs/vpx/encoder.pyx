@@ -647,7 +647,7 @@ cdef class Encoder:
             # (every frame when staying backwards compatible):
             if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
                 client_options["full-range"] = bool(full_range)
-            return self.do_compress_image(pic_in, strides, full_range), client_options
+            return self.do_compress_image(pic_in, strides, full_range, range_changed), client_options
         finally:
             for i in range(3):
                 if py_buf[i].buf:
@@ -662,7 +662,7 @@ cdef class Encoder:
                 free(active_map_data)
                 active_map_data = NULL
 
-    cdef bytes do_compress_image(self, uint8_t *pic_in[3], int strides[3], int full_range):
+    cdef bytes do_compress_image(self, uint8_t *pic_in[3], int strides[3], int full_range, int range_changed=0):
         #actual compression (no gil):
         cdef vpx_codec_iter_t iter = NULL
         cdef int flags = 0
@@ -694,7 +694,9 @@ cdef class Encoder:
             raise ValueError(f"invalid colorspace {self.src_format!r}")
 
         image.bps = 0
-        if self.frames==0:
+        # vp9 only writes the colour range (color_config) on keyframes, so force one when
+        # the range changes - otherwise the bitstream keeps advertising the old range:
+        if self.frames==0 or (range_changed and self.encoding == "vp9"):
             flags |= VPX_EFLAG_FORCE_KF
         #deadline based on speed (also affects quality...)
         cdef unsigned long deadline

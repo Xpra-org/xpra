@@ -614,44 +614,52 @@ class OptionMemoryRoundtripTest(unittest.TestCase):
 
 
 class BitstreamRangeChangeTest(unittest.TestCase):
-    """ when the colour range changes mid-stream, h264 encoders must re-emit the SPS
-        (as a keyframe) so a decoder relying on the bitstream alone tracks the change """
+    """ when the colour range changes mid-stream, the encoder must re-emit the header as a
+        keyframe (h264 SPS / vp9 color_config) so a decoder relying on the bitstream alone
+        tracks the change """
 
     RANGES = (True, True, False, False, True)
 
+    # (encoder, encoding, decoder):
     PAIRS = (
-        ("enc_x264", "dec_openh264"),
-        ("enc_x264", "dec_libva"),
-        ("enc_openh264", "dec_openh264"),
-        ("enc_openh264", "dec_libva"),
+        ("enc_x264", "h264", "dec_openh264"),
+        ("enc_x264", "h264", "dec_libva"),
+        ("enc_openh264", "h264", "dec_openh264"),
+        ("enc_openh264", "h264", "dec_libva"),
+        ("enc_vpx", "vp9", "dec_vpx"),
+        ("enc_vpx", "vp9", "dec_libva"),
     )
 
     def test_range_change_in_bitstream(self):
         tested: list[str] = []
         skipped: list[str] = []
-        for enc_name, dec_name in self.PAIRS:
+        for enc_name, encoding, dec_name in self.PAIRS:
             enc_mod = loader.load_codec(enc_name)
             dec_mod = loader.load_codec(dec_name)
             if not enc_mod or not dec_mod:
                 continue
-            spec = find_spec(enc_mod.get_specs(), "YUV420P", "YUV420P")
-            if not spec or spec.encoding != "h264":
+            spec = None
+            for s in enc_mod.get_specs():
+                if s.encoding == encoding and s.input_colorspace == "YUV420P" and "YUV420P" in s.output_colorspaces:
+                    spec = s
+                    break
+            if not spec:
                 continue
-            if self._check(spec, dec_mod, skipped):
-                tested.append(f"{enc_name}->{dec_name}")
+            if self._check(spec, encoding, dec_mod, skipped):
+                tested.append(f"{enc_name}->{dec_name}:{encoding}")
         print(f"tested mid-stream range change via the bitstream: {sorted_nicely(tested)}")
         if skipped:
             print(f"skipped (unavailable at runtime): {sorted_nicely(skipped)}")
         if not tested:
-            self.skipTest("no h264 encoder/decoder pair available")
+            self.skipTest("no encoder/decoder pair available")
 
-    def _check(self, spec, dec_mod, skipped) -> bool:
+    def _check(self, spec, encoding, dec_mod, skipped) -> bool:
         w, h = TEST_SIZE
-        label = f"{spec.codec_type}->{dec_mod.get_type()}"
+        label = f"{spec.codec_type}->{dec_mod.get_type()}:{encoding}"
         encoder = spec.codec_class()
         datas = []
         try:
-            encoder.init_context("h264", w, h, "YUV420P", typedict({
+            encoder.init_context(encoding, w, h, "YUV420P", typedict({
                 "full-range": self.RANGES[0],
                 "dst-formats": ["YUV420P"],
             }))
@@ -668,7 +676,7 @@ class BitstreamRangeChangeTest(unittest.TestCase):
         # decode each frame WITHOUT the option: the range must come from the bitstream:
         decoder = dec_mod.Decoder()
         try:
-            decoder.init_context("h264", w, h, "YUV420P", typedict())
+            decoder.init_context(encoding, w, h, "YUV420P", typedict())
             for fr, data in zip(self.RANGES, datas):
                 if not data:
                     continue
