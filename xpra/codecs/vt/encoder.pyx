@@ -21,6 +21,7 @@ from xpra.log import Logger
 log = Logger("encoder", "videotoolbox")
 
 from xpra.codecs.image import ImageWrapper
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import VideoSpec
