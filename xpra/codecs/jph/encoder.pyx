@@ -130,7 +130,6 @@ cdef tuple do_encode(object image, object options):
     may_save_image("jph", cdata, monotonic())
     return cdata, {
         "quality": quality,
-        "full-range": image.get_full_range(),
     }, width, height
 
 
