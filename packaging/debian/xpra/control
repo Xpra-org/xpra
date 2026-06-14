@@ -39,7 +39,6 @@ Build-Depends: debhelper (>= 8)
               ,python-gi-dev
               ,gcc
 # only needed for building the CUDA kernels instead of gcc >= 14:
-#oracular:              ,clang-19
 #trixie:              ,clang-19
 #forky:              ,clang-19
 #sid:              ,clang-19
@@ -309,8 +308,6 @@ Depends: xpra-common (= ${binary:Version})
         ,libyuv0
 #jammy:              ,libopenh264-6
 #noble:              ,libopenh264-7
-#oracular:              ,libopenh264-7
-#plucky:              ,libopenh264-8
 #questing:              ,libopenh264-8
 #resolute:              ,libopenh264-8
 #bookworm:              ,libopenh264-7
@@ -318,8 +315,6 @@ Depends: xpra-common (= ${binary:Version})
 #forky:              ,libopenh264-8
 #sid:              ,libopenh264-8
 #noble:              ,libdav1d7
-#oracular:              ,libdav1d7
-#plucky:              ,libdav1d7
 #questing:              ,libdav1d7
 #resolute:              ,libdav1d7
 #bookworm:              ,libdav1d6
@@ -345,8 +340,6 @@ Depends: xpra-codecs (= ${binary:Version})
         ,${python3:Depends}
 #jammy:              ,libavif13
 #noble:              ,libavif16
-#oracular:              ,libavif16
-#plucky:              ,libavif16
 #questing:              ,libavif16
 #resolute:              ,libavif16
 #bookworm:              ,libavif15
