@@ -85,3 +85,18 @@ def decompress_to_yuv(data: SizedBuffer, options: typedict = None) -> ImageWrapp
 
 def selftest(full=False) -> None:
     log("jph selftest")
+    from xpra.codecs.checks import TEST_PICTURES
+    for size, samples in TEST_PICTURES["jph"].items():
+        w, h = size
+        for data, options in samples:
+            img = decompress(data, typedict(options))
+            assert img.get_width()==w and img.get_height()==h
+            assert len(img.get_pixels())>0
+            img.free()
+            if full:
+                try:
+                    v = decompress(data[:len(data)//2], typedict(options))
+                except Exception:
+                    pass
+                else:
+                    raise RuntimeError("should not be able to decompress incomplete jph data, but got %s" % v)
