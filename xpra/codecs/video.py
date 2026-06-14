@@ -25,6 +25,7 @@ log = Logger("codec", "video")
 CODEC_TO_MODULE: dict[str, str] = {
     "enc_amf"       : "amf.encoder",
     "enc_vt"        : "vt.encoder",
+    "dec_vt"        : "vt.decoder",
     "enc_vpx"       : "vpx.encoder",
     "dec_vpx"       : "vpx.decoder",
     "dec_aom"       : "aom.decoder",

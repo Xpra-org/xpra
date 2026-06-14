@@ -37,7 +37,7 @@ NOWARN = [
     "dec_avif", "enc_avif",
     "dec_jph", "enc_jph",
     "enc_amf",
-    "enc_vt",
+    "dec_vt", "enc_vt",
     "dec_mf", "enc_mf",
     "dec_vpl", "enc_vpl",
     "dec_libva", "enc_libva",
