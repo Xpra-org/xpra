@@ -141,6 +141,7 @@ class ShadowServerBase(ServerBase):
             self.stop_refresh(wid)
         self.cleanup_notifier()
         self.cleanup_capture()
+        super().cleanup()
 
     def cleanup_capture(self) -> None:
         captures, self._captures = self._captures, []
