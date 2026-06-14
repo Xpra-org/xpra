@@ -210,9 +210,9 @@ cdef class Decoder:
         self.width = width
         self.height = height
         self.frames = 0
-        # vp8 has no colour-range syntax in the bitstream, so we remember the range
-        # signalled in the client options across frames (default to studio):
-        self.full_range = False
+        # modern mode omits steady-state full-range=True, so missing metadata defaults to
+        # full-range until the bitstream or an explicit option says otherwise.
+        self.full_range = True
 
         cdef bytes encoding_bytes = encoding.encode("latin-1")
         cdef bytes colorspace_bytes = colorspace.encode("latin-1")

@@ -333,7 +333,7 @@ cdef class Encoder:
         if self.delayed:
             self.delayed = max(0, self.delayed - 1)
             client_options["delayed"] = self.delayed
-        if BACKWARDS_COMPATIBLE or self.frames == 0 or self.full_range != full_range:
+        if BACKWARDS_COMPATIBLE or self.full_range != full_range or (self.frames == 0 and not full_range):
             client_options["full-range"] = full_range
         self.frames += 1
         return bdata, client_options

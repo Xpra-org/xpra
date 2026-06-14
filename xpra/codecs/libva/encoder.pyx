@@ -355,7 +355,7 @@ cdef class Encoder:
         client_options = {
             "frame": int(self.frames),
         }
-        if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
+        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not image_range):
             client_options["full-range"] = bool(image_range)
         frame_type = frame_type_name(frame.frame_type)
         if frame_type:

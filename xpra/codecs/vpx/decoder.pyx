@@ -203,9 +203,9 @@ cdef class Decoder:
         self.encoding = encoding
         self.dst_format = colorspace
         self.pixfmt = get_vpx_colorspace(self.dst_format)
-        # vp8 has no colour-range syntax in the bitstream, so we remember the range
-        # signalled in the client options across frames (default to studio):
-        self.full_range = False
+        # modern mode omits steady-state full-range=True, so missing metadata defaults to
+        # full-range until the bitstream or an explicit option says otherwise.
+        self.full_range = True
         self.width = width
         self.height = height
         try:

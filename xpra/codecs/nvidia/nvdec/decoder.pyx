@@ -533,6 +533,7 @@ cdef class Decoder:
         self.colorspace = colorspace
         self.width = width
         self.height = height
+        self.full_range = True
         self.event = Event()        #set each time the data has been parsed / processed
         self.stream = <CUstream> 0
         self.buffer = None
@@ -689,9 +690,12 @@ cdef class Decoder:
         cdef CUVIDPICPARAMS pic
         try:
             self.image = None
-            # honoured by get_output_image (called from the parser callback);
+            # honoured by get_output_image (called from the parser callback); when modern mode
+            # omits steady-state full-range=True we keep the prior/default value unless an
+            # explicit option overrides it.
             # TODO: read it from the bitstream via CUVIDEOFORMAT.video_signal_description.video_full_range_flag
-            self.full_range = options.boolget("full-range", True)
+            if "full-range" in options:
+                self.full_range = options.boolget("full-range")
             stream = options.get("stream", None)
             if stream:
                 self.stream = <CUstream> (<uintptr_t> stream.handle)

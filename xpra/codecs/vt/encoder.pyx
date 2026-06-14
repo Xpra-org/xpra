@@ -440,7 +440,7 @@ cdef class Encoder:
             "frame"         : int(self.frames),
             "csc"           : OUTPUT_COLORSPACE[self.src_format],
         }
-        if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
+        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not self.full_range):
             client_options["full-range"] = bool(self.full_range)
         if self.frame_keyframe:
             client_options["type"] = "IDR"

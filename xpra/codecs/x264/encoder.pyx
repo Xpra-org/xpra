@@ -1092,9 +1092,9 @@ cdef class Encoder:
             # "speed"     : max(0, min(100, speed)),
             "csc"       : self.csc_format,
         }
-        # the range is in the bitstream (SPS VUI); send it in the client options on the first
-        # frame and whenever it changes (every frame when staying backwards compatible):
-        if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
+        # modern mode omits steady-state full-range=True: only studio-range starts
+        # and all range transitions are signalled explicitly.
+        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not self.full_range):
             client_options["full-range"] = bool(self.full_range)
         if slice_type!="P":
             client_options["type"] = slice_type

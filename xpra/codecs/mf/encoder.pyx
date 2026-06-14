@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from xpra.codecs.constants import VideoSpec, EncodingNotSupported
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 log = Logger("encoder", "mf")
 
@@ -142,6 +143,7 @@ cdef class Encoder:
     cdef int height
     cdef object encoding
     cdef object src_format
+    cdef bint full_range
 
     cdef object __weakref__
 
@@ -155,6 +157,7 @@ cdef class Encoder:
         self.width      = width
         self.height     = height
         self.frames     = 0
+        self.full_range = options.boolget("full-range", True)
         cdef int codec = CODECS[encoding]
         cdef MFEncodeStatus status = mf_encoder_create(&self.context, codec, width, height)
         if status != MF_ENC_OK:
@@ -269,8 +272,10 @@ cdef class Encoder:
             raise RuntimeError("mf encode error: %s (detail: %s, hr=0x%08X)" % (
                 mf_encode_status_str(status).decode("latin-1"), detail, last_hr))
 
+        cdef bint full_range = image.get_full_range()
+        cdef bint range_changed = full_range != self.full_range
+        self.full_range = full_range
         data = bytes(frame.data[:frame.data_len])
-        self.frames += 1
 
         log("mf encoded %8d bytes %dx%d keyframe=%s (input=%dus output=%dus)",
             frame.data_len, width, height, bool(frame.is_keyframe),
@@ -278,10 +283,12 @@ cdef class Encoder:
 
         client_options: Dict[str, Any] = {
             "frame"     : int(self.frames),
-            "full-range": image.get_full_range(),
         }
+        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not full_range):
+            client_options["full-range"] = bool(full_range)
         if frame.is_keyframe:
             client_options["type"] = "IDR"
+        self.frames += 1
         return data, client_options
 
 

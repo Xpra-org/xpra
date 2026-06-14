@@ -644,9 +644,9 @@ cdef class Encoder:
                 #"quality"  : min(99+self.lossless, self.quality),
                 #"speed"    : self.speed,
             }
-            # send the range on the first frame and whenever it changes
-            # (every frame when staying backwards compatible):
-            if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
+            # modern mode omits steady-state full-range=True: only studio-range starts
+            # and all range transitions are signalled explicitly.
+            if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not full_range):
                 client_options["full-range"] = bool(full_range)
             return self.do_compress_image(pic_in, strides, full_range, range_changed), client_options
         finally:
