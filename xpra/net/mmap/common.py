@@ -20,8 +20,8 @@ Utility functions for communicating via mmap
 """
 
 
-def get_socket_group(socket_filename) -> int:
-    if isinstance(socket_filename, str) and os.path.exists(socket_filename):
+def get_socket_group(socket_filename: str) -> int:
+    if socket_filename and os.path.exists(socket_filename):
         s = os.stat(socket_filename)
         return s.st_gid
     log.warn(f"Warning: missing valid socket filename {socket_filename!r} to set mmap group")
