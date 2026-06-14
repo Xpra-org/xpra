@@ -1180,6 +1180,7 @@ class WindowSource(WindowIconSource):
         grayscale = self.encoding == "grayscale"
         alpha = self._want_alpha or self.is_tray
         quality = options.get("quality", 0)
+        speed = options.get("speed", 50)
         if self._lossless_threshold_base < quality < 100 and self._fixed_quality <= 0:
             quality = self._fixed_max_quality
         if w*h < self._rgb_auto_threshold and not grayscale and not self.has_shape:
@@ -1197,7 +1198,7 @@ class WindowSource(WindowIconSource):
             if webp and (not lossy or w*h <= WEBP_EFFICIENCY_CUTOFF):
                 return "webp"
             if lossy or not TRUE_LOSSLESS:
-                if quality < 25 and jph and not alpha:
+                if quality < 50 and jph and not alpha and speed < 50:
                     return "jph"
                 if jpeg and not alpha:
                     return "jpeg"
