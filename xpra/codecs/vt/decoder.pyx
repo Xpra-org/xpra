@@ -32,6 +32,7 @@ from xpra.util.objects import typedict
 
 from libc.stdint cimport uint8_t, int32_t, uintptr_t
 
+from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
 from xpra.codecs.vt.vt cimport *  # noqa: F403 (shared CoreFoundation/CoreVideo/CoreMedia declarations + FourCC enum)
 
 
@@ -240,14 +241,14 @@ def get_specs() -> Sequence[VideoSpec]:
     return specs
 
 
-def parse_nals(raw: bytes) -> list:
+cdef list parse_nals(const uint8_t* raw, Py_ssize_t n):
     """ split an Annex-B buffer into a list of NAL units.
 
-    Each list element is a `bytes` object holding one NAL unit body (the
-    start code is stripped). The caller classifies them into parameter sets
-    (SPS/PPS, plus VPS for h265) and picture NAL units.
+    `raw` points at the compressed frame (borrowed - valid only for the duration
+    of the call). Each returned list element is a `bytes` object holding one NAL
+    unit body (the start code is stripped). The caller classifies them into
+    parameter sets (SPS/PPS, plus VPS for h265) and picture NAL units.
     """
-    cdef Py_ssize_t n = len(raw)
     # locate every start code (3 or 4 bytes) and record (start, body_offset):
     starts = []
     cdef Py_ssize_t i = 0
@@ -265,6 +266,7 @@ def parse_nals(raw: bytes) -> list:
     nals = []
     cdef Py_ssize_t count = len(starts)
     cdef Py_ssize_t idx
+    cdef Py_ssize_t body_start, body_end
     for idx in range(count):
         body_start = starts[idx][1]
         body_end = starts[idx + 1][0] if idx + 1 < count else n
@@ -478,8 +480,12 @@ cdef class Decoder:
         if "full-range" in options:
             self.full_range = options.boolget("full-range")
 
-        raw = bytes(data)
-        nals = parse_nals(raw)
+        # read the compressed frame straight from the input buffer (no copy);
+        # parse_nals slices out each NAL body (a `bytes`) while the buffer is held:
+        cdef Py_ssize_t raw_len
+        with buffer_context(data) as bc:
+            raw_len = len(bc)
+            nals = parse_nals(<const uint8_t*> (<uintptr_t> int(bc)), raw_len)
 
         # classify the NAL units into parameter sets and picture NALs:
         hevc = (self.encoding == "h265")
@@ -520,7 +526,7 @@ cdef class Decoder:
 
         self.frames += 1
         log("vt decompress_image: %i bytes -> %ix%i in %.1fms",
-            len(raw), self.width, self.height, 1000 * (monotonic() - start))
+            raw_len, self.width, self.height, 1000 * (monotonic() - start))
         return image
 
     cdef object do_decompress(self, bytes avcc):
