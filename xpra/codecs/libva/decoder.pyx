@@ -55,6 +55,7 @@ cdef extern from "va_decode.h":
         int      height
         int      depth
         int      bytes_per_pixel
+        int      full_range
         LibVADecodeFormat format
         int      us_submit
         int      us_sync
@@ -309,12 +310,15 @@ cdef class Decoder:
         log("libva decoded %s %8d bytes into %dx%d %s in %dms submit=%dus sync=%dus map=%dus copy=%dus",
             self.encoding, src_len, frame.width, frame.height, pixel_format, (elapsed + 500) // 1000,
             frame.us_submit, frame.us_sync, frame.us_map, frame.us_copy)
-        # VA-API does not expose the decoded colour range (va_decode.c parses but
-        # discards the VP9 color_range bit), so we rely on the client option:
+        # the colour range is parsed from the bitstream headers (h264 SPS VUI / vp9
+        # color_config) by va_decode.c, but the client option can override it:
+        full_range = bool(frame.full_range)
+        if "full-range" in options:
+            full_range = options.boolget("full-range")
         return ImageWrapper(0, 0, self.width, self.height,
                             pixels, pixel_format, frame.depth, strides,
                             frame.bytes_per_pixel, planes,
-                            full_range=options.boolget("full-range"))
+                            full_range=full_range)
 
 
 def selftest(full=False) -> None:

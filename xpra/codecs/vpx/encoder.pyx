@@ -92,6 +92,8 @@ cdef extern from "vpx/vpx_encoder.h":
     #function to enable/disable periodic Q boost:
     int VP9E_SET_FRAME_PERIODIC_BOOST
     int VP9E_SET_LOSSLESS
+    #function to set the colour range (0=studio, 1=full):
+    int VP9E_SET_COLOR_RANGE
     #vpx_enc_pass:
     int VPX_RC_ONE_PASS
     int VPX_RC_FIRST_PASS
@@ -566,6 +568,10 @@ cdef class Encoder:
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
         cdef int full_range = int(image.get_full_range())
+        if self.encoding == "vp9":
+            # signal the range in the VP9 bitstream color_config;
+            # setting vpx_image_t.range alone is not enough for libvpx to write it:
+            self.codec_control("color range", VP9E_SET_COLOR_RANGE, full_range)
         pf = image.get_pixel_format().replace("A", "X")
         if pf != self.src_format:
             raise ValueError(f"expected {self.src_format} but got {image.get_pixel_format()}")

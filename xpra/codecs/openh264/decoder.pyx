@@ -10,6 +10,7 @@ from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
+from xpra.codecs.h264_util import get_video_full_range
 from xpra.util.objects import typedict
 from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper
@@ -164,6 +165,7 @@ cdef class Decoder:
     cdef int width
     cdef int height
     cdef object colorspace
+    cdef bint full_range
 
     cdef object __weakref__
 
@@ -174,6 +176,7 @@ cdef class Decoder:
         self.width = width
         self.height = height
         self.colorspace = colorspace
+        self.full_range = True
         self.frames = 0
         cdef long r = WelsCreateDecoder(&self.context)
         if r:
@@ -267,7 +270,14 @@ cdef class Decoder:
             yuv[2][:uvstride*(height//2)],
         )
         log(f"openh264 decoded {src_len:8} bytes into {width}x{height} YUV420P in {int((end-start)*1000):3}ms")
-        full_range = options.boolget("full-range")
+        # openh264 does not expose the colour range, so parse it from the bitstream (SPS VUI);
+        # it only appears on keyframes, so remember it across frames - but let the option override:
+        sps_full_range = get_video_full_range(data)
+        if sps_full_range is not None:
+            self.full_range = sps_full_range
+        full_range = self.full_range
+        if "full-range" in options:
+            full_range = options.boolget("full-range")
         return ImageWrapper(0, 0, self.width, self.height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3, full_range=full_range)
 
 

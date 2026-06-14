@@ -34,6 +34,18 @@ SAMPLE_FULL_RANGE = False
 # (there is nothing to verify and exercising them here is slow/flaky):
 NO_RANGE_CODECS = ("enc_gstreamer", "dec_gstreamer")
 
+# (encoder, encoding, input colorspace, decoder, output colorspace) combinations
+# that carry the colour range through the bitstream from end to end
+# (so the decoder recovers it without being told via the client options):
+BITSTREAM_ROUNDTRIPS = (
+    ("enc_vpx", "vp9", "YUV420P", "dec_vpx", "YUV420P"),
+    ("enc_vpx", "vp9", "YUV420P", "dec_libva", "YUV420P"),
+    ("enc_x264", "h264", "YUV420P", "dec_openh264", "YUV420P"),
+    ("enc_x264", "h264", "YUV420P", "dec_libva", "YUV420P"),
+    ("enc_openh264", "h264", "YUV420P", "dec_openh264", "YUV420P"),
+    ("enc_openh264", "h264", "YUV420P", "dec_libva", "YUV420P"),
+)
+
 TEST_SIZE = 128, 128
 
 
@@ -317,6 +329,129 @@ class FullRangeDecoderTest(unittest.TestCase):
             print(f"skipped (unavailable at runtime): {sorted_nicely(skipped)}")
         if not tested:
             self.skipTest("no video decoder able to decode the sample data")
+
+
+class FullRangeRoundtripTest(unittest.TestCase):
+    """ verify the colour range survives a real encode -> decode round-trip
+        through the bitstream alone (no "full-range" option on the decode side) """
+
+    def test_bitstream_roundtrip(self):
+        tested: list[str] = []
+        skipped: list[str] = []
+        for enc_name, encoding, in_cs, dec_name, out_cs in BITSTREAM_ROUNDTRIPS:
+            enc_mod = loader.load_codec(enc_name)
+            dec_mod = loader.load_codec(dec_name)
+            if not enc_mod or not dec_mod:
+                continue
+            spec = self._find_spec(enc_mod, encoding, in_cs, out_cs)
+            if not spec:
+                continue
+            if self._roundtrip(spec, encoding, in_cs, dec_mod, out_cs, skipped):
+                tested.append(f"{enc_name}->{dec_name}:{encoding}")
+        print(f"tested bitstream colour-range round-trip: {sorted_nicely(tested)}")
+        if skipped:
+            print(f"skipped (unavailable at runtime): {sorted_nicely(skipped)}")
+        if not tested:
+            self.skipTest("no encoder/decoder pair able to round-trip the range via the bitstream")
+
+    def _find_spec(self, enc_mod, encoding, in_cs, out_cs):
+        for spec in enc_mod.get_specs():
+            if spec.encoding == encoding and spec.input_colorspace == in_cs and out_cs in spec.output_colorspaces:
+                return spec
+        return None
+
+    def _roundtrip(self, spec, encoding, in_cs, dec_mod, out_cs, skipped) -> bool:
+        w, h = TEST_SIZE
+        label = f"{spec.codec_type}->{dec_mod.get_type()}:{encoding}"
+        ok = False
+        for full_range in (True, False):
+            datas = self._encode(spec, encoding, in_cs, full_range, skipped, label)
+            if not datas:
+                return ok
+            decoded = self._decode_no_option(dec_mod, encoding, out_cs, w, h, datas, skipped, label)
+            if decoded is None:
+                return ok
+            self.assertEqual(
+                bool(decoded.get_full_range()), full_range,
+                f"{label}: encoded full-range={full_range} but the bitstream decoded as"
+                f" {bool(decoded.get_full_range())}")
+            ok = True
+        return ok
+
+    def _encode(self, spec, encoding, in_cs, full_range, skipped, label):
+        w, h = TEST_SIZE
+        encoder = spec.codec_class()
+        try:
+            encoder.init_context(encoding, w, h, in_cs, typedict({
+                "full-range": full_range,
+                "dst-formats": list(spec.output_colorspaces),
+                "quality": 50,
+                "speed": 50,
+            }))
+            datas = []
+            for _ in range(3):  # ensure we have a decodable keyframe
+                image = make_test_image(in_cs, w, h)
+                image.set_full_range(full_range)
+                out = encoder.compress_image(image, typedict())
+                if out and out[0]:
+                    datas.append(out[0])
+            return datas
+        except Exception as e:
+            skipped.append(f"{label} (encode: {e})")
+            return []
+        finally:
+            encoder.clean()
+
+    def _decode_no_option(self, dec_mod, encoding, out_cs, w, h, datas, skipped, label):
+        decoder = dec_mod.Decoder()
+        try:
+            decoder.init_context(encoding, w, h, out_cs, typedict())
+            decoded = None
+            for data in datas:
+                # deliberately pass no "full-range" option: the range must come from the bitstream
+                decoded = decoder.decompress_image(data, typedict())
+            if decoded is None:
+                skipped.append(f"{label} (no image)")
+            return decoded
+        except Exception as e:
+            skipped.append(f"{label} (decode: {e})")
+            return None
+        finally:
+            decoder.clean()
+
+
+class H264FullRangeParserTest(unittest.TestCase):
+    """ verify the standalone H.264 SPS parser recovers video_full_range_flag """
+
+    def test_parses_encoder_sps(self):
+        from xpra.codecs.h264_util import get_video_full_range
+        w, h = TEST_SIZE
+        tested: list[str] = []
+        for enc_name in ("enc_x264", "enc_openh264"):
+            enc_mod = loader.load_codec(enc_name)
+            if not enc_mod:
+                continue
+            for full_range in (True, False):
+                encoder = enc_mod.Encoder()
+                encoder.init_context("h264", w, h, "YUV420P",
+                                     typedict({"full-range": full_range, "dst-formats": ["YUV420P"]}))
+                image = make_test_image("YUV420P", w, h)
+                image.set_full_range(full_range)
+                data = encoder.compress_image(image, typedict())[0]
+                encoder.clean()
+                self.assertEqual(
+                    get_video_full_range(data), full_range,
+                    f"{enc_name}: SPS parsed range does not match encoded full-range={full_range}")
+            tested.append(enc_name)
+        print(f"tested H.264 SPS parsing with: {sorted_nicely(tested)}")
+        if not tested:
+            self.skipTest("no H.264 encoder available")
+
+    def test_no_sps_returns_none(self):
+        from xpra.codecs.h264_util import get_video_full_range
+        # empty input, and a stream with only a (non-SPS) coded-slice NAL:
+        self.assertIsNone(get_video_full_range(b""))
+        self.assertIsNone(get_video_full_range(b"\x00\x00\x01\x41\x9a\x00"))
 
 
 def main():

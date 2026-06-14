@@ -72,6 +72,8 @@ struct LibVADecoder {
     int             vpx_golden_surface;
     int             vpx_alt_surface;
     VASurfaceID     vp9_refs[8];
+    int             full_range;     /* colour range from the last parsed bitstream headers */
+    int             vp9_color_range;
     int             vp9_bit_depth;
     int             vp9_subsampling_x;
     int             vp9_subsampling_y;
@@ -113,6 +115,7 @@ struct H264Params {
     int frame_mbs_only_flag;
     int mb_adaptive_frame_field_flag;
     int direct_8x8_inference_flag;
+    int video_full_range_flag;
     int entropy_coding_mode_flag;
     int weighted_pred_flag;
     int weighted_bipred_idc;
@@ -232,6 +235,7 @@ struct VP9BitReader {
 struct VP9FrameInfo {
     int profile;
     int bit_depth;
+    int color_range;
     int subsampling_x;
     int subsampling_y;
     int frame_type;
@@ -852,6 +856,29 @@ static int parse_h264_sps(const uint8_t *nal, int size, struct H264Params *param
     if (!params->frame_mbs_only_flag)
         params->mb_adaptive_frame_field_flag = (int)br_bits(&br, 1);
     params->direct_8x8_inference_flag = (int)br_bits(&br, 1);
+    /* continue into the VUI to recover the colour range (video_full_range_flag);
+     * br handles emulation-prevention bytes and returns 0 past the end of the RBSP: */
+    if (br_bits(&br, 1)) {            /* frame_cropping_flag */
+        br_ue(&br);                   /* frame_crop_left_offset */
+        br_ue(&br);                   /* frame_crop_right_offset */
+        br_ue(&br);                   /* frame_crop_top_offset */
+        br_ue(&br);                   /* frame_crop_bottom_offset */
+    }
+    params->video_full_range_flag = 0;    /* default (studio) when not signalled */
+    if (br_bits(&br, 1)) {            /* vui_parameters_present_flag */
+        if (br_bits(&br, 1)) {        /* aspect_ratio_info_present_flag */
+            if ((int)br_bits(&br, 8) == 255) {  /* aspect_ratio_idc == Extended_SAR */
+                br_bits(&br, 16);     /* sar_width */
+                br_bits(&br, 16);     /* sar_height */
+            }
+        }
+        if (br_bits(&br, 1))          /* overscan_info_present_flag */
+            br_bits(&br, 1);          /* overscan_appropriate_flag */
+        if (br_bits(&br, 1)) {        /* video_signal_type_present_flag */
+            br_bits(&br, 3);          /* video_format */
+            params->video_full_range_flag = (int)br_bits(&br, 1);
+        }
+    }
     params->valid_sps = 1;
     return 1;
 }
@@ -1161,6 +1188,7 @@ static LibVADecodeStatus map_output(LibVADecoder *dec, VASurfaceID surface,
     }
 
     memset(frame, 0, sizeof(*frame));
+    frame->full_range = dec->full_range;
     frame->width = w;
     frame->height = h;
     frame->depth = dec->output_444 ? 24 : 24;
@@ -1690,13 +1718,14 @@ static int vp9_read_color_config(struct VP9BitReader *br, struct VP9FrameInfo *i
         info->bit_depth = vp9_bit(br) ? 12 : 10;
     color_space = vp9_bits(br, 3);
     if (color_space != 7) {
-        vp9_bit(br);                  /* color_range */
+        info->color_range = vp9_bit(br);   /* 0=studio, 1=full */
         if (info->profile == 1 || info->profile == 3) {
             info->subsampling_x = vp9_bit(br);
             info->subsampling_y = vp9_bit(br);
             vp9_bit(br);              /* reserved */
         }
     } else if (info->profile == 1 || info->profile == 3) {
+        info->color_range = 1;             /* CS_RGB (sRGB) is always full range */
         info->subsampling_x = 0;
         info->subsampling_y = 0;
         vp9_bit(br);                  /* reserved */
@@ -1734,6 +1763,7 @@ static void load_vp9_state(LibVADecoder *dec, struct VP9FrameInfo *info) {
     /* color_config (bit depth / chroma subsampling) is only signalled in key and
      * intra-only frames; inter frames inherit it from the previous decoded frame. */
     info->bit_depth = dec->vp9_bit_depth;
+    info->color_range = dec->vp9_color_range;
     info->subsampling_x = dec->vp9_subsampling_x;
     info->subsampling_y = dec->vp9_subsampling_y;
     memcpy(info->loop_filter_ref_deltas, dec->vp9_loop_filter_ref_deltas,
@@ -1747,6 +1777,8 @@ static void load_vp9_state(LibVADecoder *dec, struct VP9FrameInfo *info) {
 
 static void save_vp9_state(LibVADecoder *dec, const struct VP9FrameInfo *info) {
     dec->vp9_bit_depth = info->bit_depth;
+    dec->vp9_color_range = info->color_range;
+    dec->full_range = info->color_range;
     dec->vp9_subsampling_x = info->subsampling_x;
     dec->vp9_subsampling_y = info->subsampling_y;
     memcpy(dec->vp9_loop_filter_ref_deltas, info->loop_filter_ref_deltas,
@@ -2128,6 +2160,7 @@ static LibVADecodeStatus h264_decoder_decode(LibVADecoder *dec,
         return set_message(dec, LIBVA_DEC_ERROR, "missing H.264 decoder parameters");
     params = *dec->h264_params;
     parse_h264_params(data, data_len, &params);
+    dec->full_range = params.video_full_range_flag;
     nslices = collect_h264_slices(data, data_len, &params, slices,
                                   (int)(sizeof(slices) / sizeof(slices[0])));
     if (nslices <= 0)

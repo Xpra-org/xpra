@@ -40,6 +40,7 @@ typedef struct {
     int      height;
     int      depth;
     int      bytes_per_pixel;
+    int      full_range;        /* colour range parsed from the bitstream (1=full, 0=studio) */
     LibVADecodeFormat format;
     int      us_submit;
     int      us_sync;
