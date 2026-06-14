@@ -125,6 +125,7 @@ struct VPLDecoder {
     int             reset_pending;
     mfxStatus       last_sts;
     char            last_error[128];
+    int             full_range;     /* colour range (video_full_range_flag) from the bitstream VUI */
 };
 
 /* ── error helpers ──────────────────────────────────────────────────── */
@@ -531,8 +532,27 @@ VPLDecodeStatus vpl_decoder_reset(VPLDecoder *dec, int width, int height,
 static VPLDecodeStatus lazy_init(VPLDecoder *dec, mfxBitstream *bs) {
     mfxStatus sts;
 
+    /* Attach mfxExtVideoSignalInfo so DecodeHeader recovers the VUI colour range
+       (video_full_range_flag) from the bitstream - this is the documented way to
+       retrieve the video signal type from a oneVPL decoder. It is detached again
+       immediately afterwards because dec->param is reused for Init/Reset below,
+       which don't need it. If the implementation doesn't fill it in, VideoFullRange
+       stays 0 (studio), i.e. the previous behaviour. */
+    mfxExtVideoSignalInfo vsi;
+    memset(&vsi, 0, sizeof(vsi));
+    vsi.Header.BufferId = MFX_EXTBUFF_VIDEO_SIGNAL_INFO;
+    vsi.Header.BufferSz = sizeof(vsi);
+    mfxExtBuffer *ext_params[1] = { &vsi.Header };
+    dec->param.ExtParam = ext_params;
+    dec->param.NumExtParam = 1;
+
     /* parse SPS/PPS from bitstream to fill FrameInfo */
     sts = MFXVideoDECODE_DecodeHeader(dec->session, bs, &dec->param);
+
+    /* detach the stack ext buffer before dec->param is reused for Init/Reset */
+    dec->param.ExtParam = NULL;
+    dec->param.NumExtParam = 0;
+
     if (sts == MFX_ERR_MORE_DATA) {
         vpl_log("vpl lazy_init: need more data for header");
         return VPL_DEC_NEED_MORE_INPUT;
@@ -540,6 +560,7 @@ static VPLDecodeStatus lazy_init(VPLDecoder *dec, mfxBitstream *bs) {
     if (sts != MFX_ERR_NONE && sts != MFX_WRN_PARTIAL_ACCELERATION) {
         return set_error(dec, sts, "DecodeHeader");
     }
+    dec->full_range = vsi.VideoFullRange ? 1 : 0;
 
     /* verify the stream is actually 444 */
     if (dec->param.mfx.FrameInfo.ChromaFormat != MFX_CHROMAFORMAT_YUV444) {
@@ -696,8 +717,9 @@ static VPLDecodeStatus extract_frame(VPLDecoder *dec, mfxFrameSurface1 *surface,
         return VPL_DEC_ERROR;
     }
 
-    /* check nominal range */
-    frame->full_range = 0;  /* oneVPL doesn't expose this directly; rely on encoder hint */
+    /* colour range recovered from the bitstream VUI at DecodeHeader time, persisted
+       across frames like the other stream parameters (see lazy_init) */
+    frame->full_range = dec->full_range;
 
     /* keep surface mapped; store for cleanup on next decode call */
     surface->FrameInterface->AddRef(surface);
