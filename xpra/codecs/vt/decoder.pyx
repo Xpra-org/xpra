@@ -30,7 +30,6 @@ from xpra.common import SizedBuffer
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 
-from libc.stdlib cimport malloc, free
 from libc.stdint cimport uint8_t, int32_t, uintptr_t
 
 from xpra.codecs.vt.vt cimport *  # noqa: F403 (shared CoreFoundation/CoreVideo/CoreMedia declarations + FourCC enum)
@@ -112,6 +111,8 @@ cdef extern from "VideoToolbox/VideoToolbox.h":
                                                void* sourceFrameRefCon,
                                                VTDecodeInfoFlags* infoFlagsOut) nogil
     OSStatus VTDecompressionSessionWaitForAsynchronousFrames(VTDecompressionSessionRef session) nogil
+    Boolean VTDecompressionSessionCanAcceptFormatDescription(VTDecompressionSessionRef session,
+                                                             CMFormatDescriptionRef newFormatDescription) nogil
     void VTDecompressionSessionInvalidate(VTDecompressionSessionRef session) nogil
 
 
@@ -231,6 +232,7 @@ cdef class Decoder:
     cdef OSType pixel_format
     cdef object encoding
     cdef object colorspace
+    cdef object param_sets
     cdef unsigned long frames
     cdef int full_range
     cdef uint8_t ready
@@ -249,6 +251,7 @@ cdef class Decoder:
             raise ValueError(f"invalid colorspace {colorspace!r}, must be one of: {csv(COLORSPACES)}")
         self.encoding = encoding
         self.colorspace = colorspace
+        self.param_sets = None
         self.width = width
         self.height = height
         self.frames = 0
@@ -293,6 +296,7 @@ cdef class Decoder:
         self.height = 0
         self.encoding = ""
         self.colorspace = ""
+        self.param_sets = None
 
     def __dealloc__(self):
         self.clean()
@@ -330,31 +334,27 @@ cdef class Decoder:
         return "vt"
 
     cdef CMFormatDescriptionRef make_format_description(self, list param_sets) except NULL:
+        # h264/h265 only ever carry a handful of parameter sets (VPS/SPS/PPS),
+        # so a small fixed-size array on the stack avoids a per-keyframe malloc:
         cdef size_t count = len(param_sets)
         if count == 0:
             raise ValueError("no parameter sets to build a format description")
-        cdef const uint8_t** ptrs = <const uint8_t**> malloc(count * sizeof(uint8_t*))
-        cdef size_t* sizes = <size_t*> malloc(count * sizeof(size_t))
-        if ptrs == NULL or sizes == NULL:
-            free(ptrs)
-            free(sizes)
-            raise MemoryError("failed to allocate parameter set arrays")
+        if count > 16:
+            raise ValueError(f"too many parameter sets: {count}")
+        cdef const uint8_t* ptrs[16]
+        cdef size_t sizes[16]
         cdef CMFormatDescriptionRef fmt = NULL
         cdef OSStatus r = 0
         cdef size_t i
         cdef bytes ps
-        try:
-            for i in range(count):
-                ps = param_sets[i]
-                ptrs[i] = <const uint8_t*> (<const char*> ps)
-                sizes[i] = len(ps)
-            if self.encoding == "h265":
-                r = CMVideoFormatDescriptionCreateFromHEVCParameterSets(NULL, count, ptrs, sizes, 4, NULL, &fmt)
-            else:
-                r = CMVideoFormatDescriptionCreateFromH264ParameterSets(NULL, count, ptrs, sizes, 4, &fmt)
-        finally:
-            free(ptrs)
-            free(sizes)
+        for i in range(count):
+            ps = param_sets[i]
+            ptrs[i] = <const uint8_t*> (<const char*> ps)
+            sizes[i] = len(ps)
+        if self.encoding == "h265":
+            r = CMVideoFormatDescriptionCreateFromHEVCParameterSets(NULL, count, ptrs, sizes, 4, NULL, &fmt)
+        else:
+            r = CMVideoFormatDescriptionCreateFromH264ParameterSets(NULL, count, ptrs, sizes, 4, &fmt)
         if r != 0 or fmt == NULL:
             raise RuntimeError(f"failed to create {self.encoding} format description, error {r}")
         return fmt
@@ -391,6 +391,24 @@ cdef class Decoder:
             self.session = NULL
             raise RuntimeError(f"failed to create VideoToolbox decompression session, error {r}")
 
+    cdef void update_format_description(self, list param_sets) except *:
+        cdef CMFormatDescriptionRef new_fmt = self.make_format_description(param_sets)
+        # if we already have a session, try to keep it: VideoToolbox can often
+        # accept a new format description (same resolution / profile) without a
+        # full session teardown:
+        cdef CMFormatDescriptionRef old_fmt
+        if self.session != NULL and VTDecompressionSessionCanAcceptFormatDescription(self.session, new_fmt):
+            old_fmt = self.format_desc
+            self.format_desc = new_fmt
+            if old_fmt != NULL:
+                CFRelease(old_fmt)
+            log("vt: reused existing session with updated format description")
+            return
+        # otherwise rebuild from scratch (free_session also releases format_desc):
+        self.free_session()
+        self.format_desc = new_fmt
+        self.make_session()
+
     def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         cdef double start = monotonic()
         if not self.ready:
@@ -417,11 +435,13 @@ cdef class Decoder:
                 picture_nals.append(nal)
 
         # (re)build the format description and session when parameter sets arrive
-        # (the encoder only sends them on keyframes):
-        if param_sets:
-            self.free_session()
-            self.format_desc = self.make_format_description(param_sets)
-            self.make_session()
+        # (the encoder only sends them on keyframes). Most keyframes resend the
+        # same SPS/PPS, so skip all VideoToolbox work when they are unchanged, and
+        # otherwise keep the existing session if it can accept the new format
+        # description - recreating a decompression session is expensive:
+        if param_sets and param_sets != self.param_sets:
+            self.update_format_description(param_sets)
+            self.param_sets = param_sets
         if self.session == NULL:
             raise RuntimeError("no VideoToolbox session: first frame must be a keyframe with parameter sets")
         if not picture_nals:
@@ -500,23 +520,24 @@ cdef class Decoder:
         cdef uint8_t* y_ptr
         cdef uint8_t* uv_ptr
         cdef size_t y_stride, uv_stride, y_height, uv_height
+        cdef CVReturn lock = CVPixelBufferLockBaseAddress(img, kCVPixelBufferLock_ReadOnly)
+        if lock != 0:
+            self.free_frame_image()
+            raise RuntimeError(f"failed to lock CVPixelBuffer, error {lock}")
         try:
-            CVPixelBufferLockBaseAddress(img, kCVPixelBufferLock_ReadOnly)
-            try:
-                nplanes = CVPixelBufferGetPlaneCount(img)
-                if nplanes != 2:
-                    raise RuntimeError(f"expected 2 planes (NV12) but got {nplanes}")
-                y_ptr = <uint8_t*> CVPixelBufferGetBaseAddressOfPlane(img, 0)
-                y_stride = CVPixelBufferGetBytesPerRowOfPlane(img, 0)
-                y_height = CVPixelBufferGetHeightOfPlane(img, 0)
-                uv_ptr = <uint8_t*> CVPixelBufferGetBaseAddressOfPlane(img, 1)
-                uv_stride = CVPixelBufferGetBytesPerRowOfPlane(img, 1)
-                uv_height = CVPixelBufferGetHeightOfPlane(img, 1)
-                y_plane = y_ptr[:y_stride * y_height]
-                uv_plane = uv_ptr[:uv_stride * uv_height]
-            finally:
-                CVPixelBufferUnlockBaseAddress(img, kCVPixelBufferLock_ReadOnly)
+            nplanes = CVPixelBufferGetPlaneCount(img)
+            if nplanes != 2:
+                raise RuntimeError(f"expected 2 planes (NV12) but got {nplanes}")
+            y_ptr = <uint8_t*> CVPixelBufferGetBaseAddressOfPlane(img, 0)
+            y_stride = CVPixelBufferGetBytesPerRowOfPlane(img, 0)
+            y_height = CVPixelBufferGetHeightOfPlane(img, 0)
+            uv_ptr = <uint8_t*> CVPixelBufferGetBaseAddressOfPlane(img, 1)
+            uv_stride = CVPixelBufferGetBytesPerRowOfPlane(img, 1)
+            uv_height = CVPixelBufferGetHeightOfPlane(img, 1)
+            y_plane = y_ptr[:y_stride * y_height]
+            uv_plane = uv_ptr[:uv_stride * uv_height]
         finally:
+            CVPixelBufferUnlockBaseAddress(img, kCVPixelBufferLock_ReadOnly)
             self.free_frame_image()
         pixels = (y_plane, uv_plane)
         strides = (y_stride, uv_stride)
