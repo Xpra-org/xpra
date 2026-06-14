@@ -110,7 +110,7 @@ cdef tuple do_encode(object image, object options):
     cdef size_t out_size = 0
     cdef char error[1024]
     error[0] = 0
-    cdef int r
+    cdef int r = 0
     cdef const uint8_t *src
     cdef uint32_t stride = image.get_rowstride()
     cdef int quality = options.intget("quality", 100)
