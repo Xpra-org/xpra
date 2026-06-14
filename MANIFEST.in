@@ -2,6 +2,8 @@ include COPYING README.md
 include xpra/buffers/memalign.h
 include xpra/buffers/memalign.c
 include xpra/buffers/xxh3.h
+include xpra/codecs/jph/jph.cpp
+include xpra/codecs/jph/jph.h
 include xpra/codecs/libva/va_common.h
 include xpra/codecs/libva/va_decode.c
 include xpra/codecs/libva/va_decode.h
@@ -10,6 +12,8 @@ include xpra/codecs/libva/va_encode.h
 include xpra/codecs/libva/va_vpx_tables.h
 include xpra/codecs/mf/mf_decode.c
 include xpra/codecs/mf/mf_decode.h
+include xpra/codecs/mf/mf_encode.c
+include xpra/codecs/mf/mf_encode.h
 include xpra/codecs/vpl/vpl_decode.c
 include xpra/codecs/vpl/vpl_decode.h
 include xpra/codecs/vpl/vpl_encode.c
@@ -21,8 +25,10 @@ include xpra/platform/darwin/nsevent_glue.h
 include xpra/platform/darwin/transparency_glue.h
 include xpra/platform/win32/setappid.cpp
 include xpra/platform/win32/setappid.h
+include xpra/platform/win32/d3d11/*.c
 include xpra/x11/gtk/gdk_x11_macros.c
 include xpra/x11/gtk/gdk_x11_macros.h
+include xpra/vulkan/*.c
 prune html5
 recursive-include fs *
 recursive-include docs *
