@@ -243,18 +243,18 @@ cdef class Encoder:
             self.quality = quality
         else:
             quality = self.quality
+        client_options = {}
         pfstr = image.get_pixel_format()
         if pfstr in ("YUV420P", "YUV422P", "YUV444P"):
             cdata = encode_yuv(self.compressor, image, quality, self.grayscale)
+            if not image.get_full_range():
+                client_options["full-range"] = False
         else:
             cdata = encode_rgb(self.compressor, image, quality, self.grayscale)
         if not cdata:
             return None
         now = monotonic()
         may_save_image("jpeg", cdata, now)
-        client_options = {
-            "full-range": image.get_full_range(),
-        }
         if self.encoding == "jpega":
             from xpra.codecs.argb.argb import alpha
             a = alpha(image)
