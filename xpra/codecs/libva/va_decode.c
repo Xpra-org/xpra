@@ -2123,10 +2123,12 @@ static LibVADecodeStatus vp9_decoder_decode(LibVADecoder *dec,
     t2 = usec_now();
     if (status != VA_STATUS_SUCCESS)
         return set_error(dec, status, "vaSyncSurface");
+    /* update the decoder state (incl. the colour range) before mapping the output,
+     * so that map_output reports this frame's range and not the previous one's: */
+    save_vp9_state(dec, &info);
     dstatus = map_output(dec, surface, frame);
     if (dstatus != LIBVA_DEC_OK)
         return dstatus;
-    save_vp9_state(dec, &info);
     for (int i = 0; i < 8; i++) {
         if (info.refresh_frame_flags & (1 << i))
             dec->vp9_refs[i] = surface;
