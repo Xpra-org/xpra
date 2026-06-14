@@ -525,6 +525,10 @@ class OptionMemoryRoundtripTest(unittest.TestCase):
         ("enc_vpx", "vp8", "YUV420P", "dec_libva", "YUV420P"),
         ("enc_vpx", "vp9", "YUV420P", "dec_libva", "YUV420P"),
         ("enc_x264", "h264", "YUV420P", "dec_libva", "YUV420P"),
+        # the libva encoder takes NV12 input and now signals the range in the SPS VUI,
+        # so with the option sent on the first frame only the rest comes from the bitstream:
+        ("enc_libva", "h264", "NV12", "dec_libva", "YUV420P"),
+        ("enc_libva", "h264", "NV12", "dec_openh264", "YUV420P"),
     )
 
     def test_decoder_remembers_range(self):
@@ -620,32 +624,34 @@ class BitstreamRangeChangeTest(unittest.TestCase):
 
     RANGES = (True, True, False, False, True)
 
-    # (encoder, encoding, decoder):
+    # (encoder, encoding, encoder input colorspace, decoder):
     PAIRS = (
-        ("enc_x264", "h264", "dec_openh264"),
-        ("enc_x264", "h264", "dec_libva"),
-        ("enc_openh264", "h264", "dec_openh264"),
-        ("enc_openh264", "h264", "dec_libva"),
-        ("enc_vpx", "vp9", "dec_vpx"),
-        ("enc_vpx", "vp9", "dec_libva"),
+        ("enc_x264", "h264", "YUV420P", "dec_openh264"),
+        ("enc_x264", "h264", "YUV420P", "dec_libva"),
+        ("enc_openh264", "h264", "YUV420P", "dec_openh264"),
+        ("enc_openh264", "h264", "YUV420P", "dec_libva"),
+        ("enc_libva", "h264", "NV12", "dec_libva"),
+        ("enc_libva", "h264", "NV12", "dec_openh264"),
+        ("enc_vpx", "vp9", "YUV420P", "dec_vpx"),
+        ("enc_vpx", "vp9", "YUV420P", "dec_libva"),
     )
 
     def test_range_change_in_bitstream(self):
         tested: list[str] = []
         skipped: list[str] = []
-        for enc_name, encoding, dec_name in self.PAIRS:
+        for enc_name, encoding, in_cs, dec_name in self.PAIRS:
             enc_mod = loader.load_codec(enc_name)
             dec_mod = loader.load_codec(dec_name)
             if not enc_mod or not dec_mod:
                 continue
             spec = None
             for s in enc_mod.get_specs():
-                if s.encoding == encoding and s.input_colorspace == "YUV420P" and "YUV420P" in s.output_colorspaces:
+                if s.encoding == encoding and s.input_colorspace == in_cs and "YUV420P" in s.output_colorspaces:
                     spec = s
                     break
             if not spec:
                 continue
-            if self._check(spec, encoding, dec_mod, skipped):
+            if self._check(spec, encoding, in_cs, dec_mod, skipped):
                 tested.append(f"{enc_name}->{dec_name}:{encoding}")
         print(f"tested mid-stream range change via the bitstream: {sorted_nicely(tested)}")
         if skipped:
@@ -653,18 +659,18 @@ class BitstreamRangeChangeTest(unittest.TestCase):
         if not tested:
             self.skipTest("no encoder/decoder pair available")
 
-    def _check(self, spec, encoding, dec_mod, skipped) -> bool:
+    def _check(self, spec, encoding, in_cs, dec_mod, skipped) -> bool:
         w, h = TEST_SIZE
         label = f"{spec.codec_type}->{dec_mod.get_type()}:{encoding}"
         encoder = spec.codec_class()
         datas = []
         try:
-            encoder.init_context(encoding, w, h, "YUV420P", typedict({
+            encoder.init_context(encoding, w, h, in_cs, typedict({
                 "full-range": self.RANGES[0],
-                "dst-formats": ["YUV420P"],
+                "dst-formats": list(spec.output_colorspaces),
             }))
             for fr in self.RANGES:
-                image = make_test_image("YUV420P", w, h)
+                image = make_test_image(in_cs, w, h)
                 image.set_full_range(fr)
                 out = encoder.compress_image(image, typedict())
                 datas.append(out[0] if out else b"")

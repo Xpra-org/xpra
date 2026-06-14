@@ -103,6 +103,7 @@ struct LibVAEncoder {
     int             ref_surface_index;
     int             ref_frame_num;
     int             ref_poc_lsb;
+    int             full_range;     /* colour range to signal in the headers (video_full_range_flag) */
     int             last_status;
     char            last_error[256];
     char            device[256];
@@ -322,7 +323,10 @@ static int make_sps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     bw_bit(&bw, 1);                   /* vui_parameters_present_flag */
     bw_bit(&bw, 0);                   /* aspect_ratio_info_present_flag */
     bw_bit(&bw, 0);                   /* overscan_info_present_flag */
-    bw_bit(&bw, 0);                   /* video_signal_type_present_flag */
+    bw_bit(&bw, 1);                   /* video_signal_type_present_flag */
+    bw_bits(&bw, 5, 3);               /* video_format = 5 (unspecified) */
+    bw_bit(&bw, enc->full_range ? 1 : 0);  /* video_full_range_flag */
+    bw_bit(&bw, 0);                   /* colour_description_present_flag */
     bw_bit(&bw, 0);                   /* chroma_loc_info_present_flag */
     bw_bit(&bw, 1);                   /* timing_info_present_flag */
     bw_bits(&bw, 1, 32);              /* num_units_in_tick */
@@ -795,6 +799,7 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
     enc->ref_surface_index = 0;
     enc->ref_frame_num = 0;
     enc->ref_poc_lsb = 0;
+    enc->full_range = 0;
     enc->last_status = VA_STATUS_SUCCESS;
     snprintf(enc->device, sizeof(enc->device), "%s", g_device);
 
@@ -1553,9 +1558,17 @@ static LibVAEncodeStatus vp9_encoder_encode(LibVAEncoder *enc,
 LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
                                        const uint8_t *y, int y_stride,
                                        const uint8_t *uv, int uv_stride,
+                                       int full_range,
                                        LibVAEncodedFrame *frame) {
     if (!enc)
         return LIBVA_ENC_ERROR;
+    if (full_range != enc->full_range) {
+        /* the colour range is written into the headers (h264 SPS VUI) only on keyframes,
+           so restart the GOP to emit a fresh IDR/keyframe that carries the new range: */
+        enc->full_range = full_range;
+        enc->frames = 0;
+        enc->have_reference = 0;
+    }
     switch (enc->codec) {
         case LIBVA_CODEC_H264:
             return h264_encoder_encode(enc, y, y_stride, uv, uv_stride, frame);

@@ -21,6 +21,7 @@ from xpra.codecs.constants import VideoSpec, EncodingNotSupported
 from xpra.codecs.vacommon import config_libva_logging
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict, AtomicInteger
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("encoder", "libva")
@@ -80,6 +81,7 @@ cdef extern from "va_encode.h":
     LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
                                            const uint8_t *y, int y_stride,
                                            const uint8_t *uv, int uv_stride,
+                                           int full_range,
                                            LibVAEncodedFrame *frame) nogil
 
     int               libva_encoder_get_width(LibVAEncoder *enc)
@@ -175,6 +177,7 @@ cdef class Encoder:
     cdef int height
     cdef int quality
     cdef int speed
+    cdef int full_range
     cdef object src_format
     cdef object encoding
     cdef object file
@@ -199,6 +202,7 @@ cdef class Encoder:
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
         self.frames = 0
+        self.full_range = options.boolget("full-range", True)
 
         cdef bytes encoding_bytes = encoding.encode("latin-1")
         cdef const char *encoding_name = encoding_bytes
@@ -314,6 +318,9 @@ cdef class Encoder:
         assert len(strides) == 2, "NV12 image rowstride does not have 2 values"
         cdef int y_stride = strides[0]
         cdef int uv_stride = strides[1]
+        cdef int image_range = image.get_full_range()
+        cdef int range_changed = image_range != self.full_range
+        self.full_range = image_range
 
         start = monotonic()
         memset(&y_buf, 0, sizeof(Py_buffer))
@@ -327,6 +334,7 @@ cdef class Encoder:
                 status = libva_encoder_encode(self.context,
                                               <const uint8_t *> y_buf.buf, y_stride,
                                               <const uint8_t *> uv_buf.buf, uv_stride,
+                                              image_range,
                                               &frame)
         finally:
             if uv_buf.buf:
@@ -346,8 +354,9 @@ cdef class Encoder:
             f.write(bdata)
         client_options = {
             "frame": int(self.frames),
-            "full-range": image.get_full_range(),
         }
+        if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
+            client_options["full-range"] = bool(image_range)
         frame_type = frame_type_name(frame.frame_type)
         if frame_type:
             client_options["type"] = frame_type

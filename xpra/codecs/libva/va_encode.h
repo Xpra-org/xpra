@@ -56,6 +56,7 @@ void              libva_encoder_destroy(LibVAEncoder *enc);
 LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
                                        const uint8_t *y, int y_stride,
                                        const uint8_t *uv, int uv_stride,
+                                       int full_range,
                                        LibVAEncodedFrame *frame);
 
 int               libva_encoder_get_width(LibVAEncoder *enc);
