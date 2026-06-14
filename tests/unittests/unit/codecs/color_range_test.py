@@ -201,6 +201,15 @@ class TestColorRange(unittest.TestCase):
             yuv_image = decompress_to_yuv(data, dec_options)
             assert yuv_image
             yuv_format = yuv_image.get_pixel_format()
+            if not yuv_format.startswith("YUV"):
+                # some codecs decode straight to RGB even on the YUV path
+                # (eg: lossless avif uses the identity matrix, so the planes hold R'G'B'):
+                tolerance = enc_options["tolerance"]
+                if not cmp_images(image, yuv_image, tolerance + 2):
+                    raise RuntimeError(f"decoder {dec_name} from {enc_name} produced an image that differs with {enc_options=}"
+                                       f" (decoded straight to {yuv_format})")
+                self.test_info.add(f"{enc_name:12}  {encoding:12}  {dec_name:12}  {yuv_format:12}  (direct rgb)")
+                continue
             # find a csc module to convert this back to rgb:
             for csc_name in csc_modules:
                 csc_mod = loader.load_codec(csc_name)
