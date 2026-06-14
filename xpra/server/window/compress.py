@@ -1190,12 +1190,15 @@ class WindowSource(WindowIconSource):
         jpeg = "jpeg" in co and w >= 2 and h >= 2
         jpega = "jpega" in co and w >= 2 and h >= 2
         webp = "webp" in co and 16383 >= w >= 2 and 16383 >= h >= 2 and not grayscale
+        jph = "jph" in co and not grayscale
         avif = "avif" in co
         lossy = quality < 100
-        if depth in (24, 32) and (jpeg or jpega or webp or avif):
+        if depth in (24, 32) and (jpeg or jpega or webp or avif or jph):
             if webp and (not lossy or w*h <= WEBP_EFFICIENCY_CUTOFF):
                 return "webp"
             if lossy or not TRUE_LOSSLESS:
+                if quality < 25 and jph and not alpha:
+                    return "jph"
                 if jpeg and not alpha:
                     return "jpeg"
                 if jpega and alpha:
@@ -1204,6 +1207,8 @@ class WindowSource(WindowIconSource):
                 return "webp"
             if avif:
                 return "avif"
+            if jph:
+                return "jph"
         elif depth > 24 and "rgb32" in co and self.client_bit_depth > 24 and self.client_bit_depth != 32:
             # the only encoding that can do higher bit depth at present
             # (typically r210 which is actually rgb30+2)
