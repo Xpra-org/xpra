@@ -480,6 +480,10 @@ jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif")
 avif_encoder_ENABLED    = avif_ENABLED
 avif_decoder_ENABLED    = avif_ENABLED
+OPENJPH_PKG_CONFIG      = "libopenjph" if pkg_config_exists("libopenjph") else "openjph"
+jph_ENABLED             = DEFAULT and pkg_config_exists(OPENJPH_PKG_CONFIG)
+jph_encoder_ENABLED     = jph_ENABLED
+jph_decoder_ENABLED     = jph_ENABLED
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
 vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
@@ -548,7 +552,7 @@ ENCODER_SWITCHES = [
     "vt_encoder",
     "vpl_encoder",
     "libva_encoder",
-    "jpeg_encoder", "avif_encoder",
+    "jpeg_encoder", "avif_encoder", "jph_encoder",
     "argb_encoder",
     "remote_encoder",
 ]
@@ -560,7 +564,7 @@ DECODER_SWITCHES = [
     "libva_decoder",
     "de265_decoder",
     "vpx_decoder", "webp_decoder", "pillow_decoder",
-    "jpeg_decoder", "avif_decoder",
+    "jpeg_decoder", "avif_decoder", "jph_decoder",
 ]
 CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "cuda_kernels", "cuda_rebuild",
@@ -568,7 +572,7 @@ CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "openh264",
     "vpx", "webp",
     "pillow",
-    "avif", "argb",
+    "avif", "jph", "argb",
     "de265",
     "v4l2", "evdi", "drm",
     "csc_cython", "csc_libyuv", "pytorch",
@@ -587,6 +591,7 @@ SWITCH_ALIAS = {
     "vt": ("vt_encoder", ),
     "webp": ("webp_encoder", "webp_decoder"),
     "avif": ("avif_encoder", "avif_decoder"),
+    "jph": ("jph_encoder", "jph_decoder"),
     "de265": ("de265_decoder", ),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
     "vpl": ("vpl_decoder", "vpl_encoder"),
@@ -1285,6 +1290,7 @@ def install_dev_env_command() -> "list[str]":
             "evdi": ("libevdi-devel", ),
             "enc_x264": ("pkgconfig(x264)", ),
             "avif": ("pkgconfig(libavif)", ),
+            "jph": ("pkgconfig(openjph)", ),
             "nvidia": ("cuda", ),
             "docs": ("pandoc", ),
             "tests": ("gstreamer1", "gstreamer1-plugins-good", "pulseaudio", "pulseaudio-utils", "desktop-file-utils", "xclip", ),
@@ -1322,6 +1328,7 @@ def install_dev_env_command() -> "list[str]":
             "de265": ("libde265-dev", ),
             "webp": ("libwebp-dev", ),
             "jpeg_decoder|jpeg_encoder": ("libturbojpeg-dev", ),
+            "jph": ("libopenjph-dev", ),
             "gtk3": ("libgtk-3-dev", "python-gi-dev"),
             "cairo": ("python3-cairo-dev", ),
             "sd_listen": ("python-gi-dev", ),
@@ -1360,6 +1367,7 @@ def install_dev_env_command() -> "list[str]":
             "evdi": ("evdi", ),
             "enc_x264": ("x264", ),
             "avif": ("libavif", ),
+            "jph": ("openjph", ),
             "nvidia": ("cuda", ),
             "docs": ("pandoc", ),
             "tests": (
@@ -2513,6 +2521,7 @@ if WIN32:
                 'p11-kit',
                 'jpeg', 'png16', 'rsvg',
                 'webp', "webpdecoder",
+                'openjph',
                 'tiff',
             )
         if gtk3_ENABLED:
@@ -3584,6 +3593,9 @@ tace(jpeg_decoder_ENABLED, "xpra.codecs.jpeg.decoder", "libturbojpeg")
 toggle_packages(avif_ENABLED, "xpra.codecs.avif")
 tace(avif_encoder_ENABLED, "xpra.codecs.avif.encoder", "libavif")
 tace(avif_decoder_ENABLED, "xpra.codecs.avif.decoder", "libavif")
+toggle_packages(jph_ENABLED, "xpra.codecs.jph")
+tace(jph_encoder_ENABLED, "xpra.codecs.jph.encoder,xpra/codecs/jph/jph.cpp", OPENJPH_PKG_CONFIG, language="c++")
+tace(jph_decoder_ENABLED, "xpra.codecs.jph.decoder,xpra/codecs/jph/jph.cpp", OPENJPH_PKG_CONFIG, language="c++")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
 tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.converter", "libyuv", language="c++")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")

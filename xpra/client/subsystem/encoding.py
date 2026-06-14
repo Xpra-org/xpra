@@ -46,7 +46,7 @@ def get_core_encodings() -> Sequence[str]:
     """
     # we always support rgb:
     core_encodings = ["rgb24", "rgb32"]
-    for codec in ("dec_pillow", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif"):
+    for codec in ("dec_pillow", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif", "dec_jph"):
         if has_codec(codec):
             c = get_codec(codec)
             encs = c.get_encodings()
@@ -149,6 +149,8 @@ class Encodings(StubClientMixin):
             load_codec("dec_webp")
         if "avif" in ae:
             load_codec("dec_avif")
+        if "jph" in ae:
+            load_codec("dec_jph")
         vh = getVideoHelper()
         vh.set_modules(video_decoders=self.video_decoders, csc_modules=self.csc_modules)
         vh.init()
@@ -274,6 +276,8 @@ class Encodings(StubClientMixin):
             full_csc_modes["jpeg"] = ["BGRX", "BGRA", "YUV420P"]
         if has_codec("dec_jpeg"):
             full_csc_modes["jpega"] = ["BGRA", "RGBA"]
+        if has_codec("dec_jph"):
+            full_csc_modes["jph"] = ["BGRX"]
         log("supported full csc_modes=%s", full_csc_modes)
         caps["full_csc_modes"] = full_csc_modes
 

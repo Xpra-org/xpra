@@ -22,6 +22,7 @@ DEFAULT_BOX_COLORS: dict[str, str] = {
     "mpeg4"     : "black",
     "scroll"    : "brown",
     "avif"      : "cyan",
+    "jph"       : "steelblue",
     "padding"   : "lime",
 }
 
@@ -44,6 +45,7 @@ BOX_COLORS: dict[str, tuple[float, float, float, float]] = {
     "vp8"       : (0.0,                 0.501953125,            0.0,                ALPHA),
     "vp9"       : (0.901947021484375,   0.901947021484375,      0.980377197265625,  ALPHA),
     "avif"      : (0,                   1.0,                    1.0,                ALPHA),
+    "jph"       : (0.27450980392156865,  0.5098039215686274,     0.7058823529411765, ALPHA),
     "padding"   : (0,                   1.0,                    0,                  ALPHA),
 }
 

@@ -205,6 +205,7 @@ class WindowBackingBase:
         self.jpeg_decoder = get_codec("dec_jpeg")
         self.webp_decoder = get_codec("dec_webp")
         self.avif_decoder = get_codec("dec_avif")
+        self.jph_decoder = get_codec("dec_jph")
         self.nvjpeg_decoder = get_codec("dec_nvjpeg")
         self.nvdec_decoder = get_codec("nvdec")
         self.cuda_context = None
@@ -513,6 +514,7 @@ class WindowBackingBase:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
         full_csc_modes["webp"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA")]
         full_csc_modes["jpeg"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA", "YUV420P")]
+        full_csc_modes["jph"] = [x for x in rgb_modes if x == "BGRX"]
         if self._alpha_enabled:
             # this would not match any target rgb modes anyway,
             # best not to have it in the list at all:
@@ -571,6 +573,11 @@ class WindowBackingBase:
                    options: typedict, callbacks: PaintCallbacks):
         img = self.avif_decoder.decompress(img_data, options)
         self.paint_image_wrapper("avif", img, x, y, width, height, options, callbacks)
+
+    def paint_jph(self, img_data, x: int, y: int, width: int, height: int,
+                  options: typedict, callbacks: PaintCallbacks) -> None:
+        img = self.jph_decoder.decompress(img_data, options)
+        self.paint_image_wrapper("jph", img, x, y, width, height, options, callbacks)
 
     def paint_pillow(self, coding: str, img_data, x: int, y: int, width: int, height: int,
                      options: typedict, callbacks: PaintCallbacks) -> None:
@@ -967,6 +974,8 @@ class WindowBackingBase:
                 self.paint_jpega(img_data, x, y, width, height, options, callbacks)
             elif self.avif_decoder and coding == "avif":
                 self.paint_avif(img_data, x, y, width, height, options, callbacks)
+            elif self.jph_decoder and coding == "jph":
+                self.paint_jph(img_data, x, y, width, height, options, callbacks)
             elif coding == "webp":
                 self.paint_webp(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:

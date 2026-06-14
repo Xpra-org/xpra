@@ -33,7 +33,7 @@ ENCODINGS_WITH_SPEED = (
     "scroll",
 )
 ENCODINGS_WITH_QUALITY = (
-    "jpeg", "webp",
+    "jpeg", "webp", "jph",
     "h264", "vp8", "vp9",
     "scroll",
 )
@@ -99,6 +99,8 @@ class EncodingServer(StubSubsystem):
         if "jpeg" in ae or "jpega" in ae:
             # try to load the fast jpeg encoders:
             load_codec("enc_jpeg")
+        if "jph" in ae:
+            load_codec("enc_jph")
         # enc_avif is loaded lazily in `threaded_encoding_setup` below —
         # the AVIF encoder pulls in `libavif` + ~6 MB of allocations and
         # is rarely used as the default, so we don't pay the cost on
@@ -135,6 +137,8 @@ class EncodingServer(StubSubsystem):
             load_codec("enc_nvjpeg")
         if "avif" in self.allowed_encodings:
             load_codec("enc_avif")
+        if "jph" in self.allowed_encodings:
+            load_codec("enc_jph")
         if self.video:
             # load video codecs:
             getVideoHelper().init()
@@ -231,7 +235,7 @@ class EncodingServer(StubSubsystem):
             log("pillow encodings: %s", pil_encs)
             for encoding in pil_encs:
                 add_encoding(encoding)
-        for codec_name in ("enc_avif", "enc_jpeg", "enc_nvjpeg"):
+        for codec_name in ("enc_avif", "enc_jph", "enc_jpeg", "enc_nvjpeg"):
             codec = get_codec(codec_name)
             if codec:
                 add_encodings(*codec.get_encodings())
@@ -251,7 +255,7 @@ class EncodingServer(StubSubsystem):
         self.core_encodings = preforder(core_encs)
         self.lossless_mode_encodings = preforder(lossless)
         self.lossless_encodings = preforder(enc for enc in core_encs
-                                            if (enc.startswith("png") or enc.startswith("rgb") or enc == "webp"))
+                                            if (enc.startswith("png") or enc.startswith("rgb") or enc in ("webp", "jph")))
         log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s",
             self.allowed_encodings, encs, core_encs, self.lossless_encodings)
         self.default_encoding = self.encodings[0]

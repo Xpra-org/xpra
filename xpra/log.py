@@ -323,6 +323,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "argb"          : "ARGB encoder",
         "pillow"        : "Pillow encoder and decoder",
         "jpeg"          : "JPEG codec",
+        "jph"           : "JPH codec",
         "vpx"           : "libvpx encoder and decoder",
         "amf"           : "amf encoder",
         "nvjpeg"        : "nvidia nvjpeg hardware encoder",

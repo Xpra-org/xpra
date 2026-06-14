@@ -447,6 +447,7 @@ class WindowSource(WindowIconSource):
             add("enc_webp")
             add("enc_jpeg")
             add("enc_avif")
+            add("enc_jph")
             # prefer nvjpeg over all the other jpeg encoders:
             log("init_encoders() cuda_device_context=%s", self.cuda_device_context)
             if self.cuda_device_context:

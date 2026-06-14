@@ -35,6 +35,7 @@ NOWARN = [
     "filter_torch",
     "filter_pillow",
     "dec_avif", "enc_avif",
+    "dec_jph", "enc_jph",
     "enc_amf",
     "enc_vt",
     "dec_mf", "enc_mf",
@@ -77,13 +78,13 @@ def gfilt(generator) -> tuple[str, ...]:
 FILTERS: Sequence[str] = gfilt(f"filter_{x}" for x in ("torch", "pillow"))
 CSC_CODECS: Sequence[str] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
 ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
-    "rgb", "pillow", "webp", "jpeg", "nvjpeg", "avif",
+    "rgb", "pillow", "webp", "jpeg", "nvjpeg", "avif", "jph",
 ))
 ENCODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("enc", x) for x in (
     "vpx", "x264", "openh264", "nvenc", "vpl", "libva", "gstreamer", "amf", "vt", "remote",
 ))
 DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
-    "pillow", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
+    "pillow", "webp", "jpeg", "nvjpeg", "avif", "jph", "gstreamer",
 ))
 DECODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("dec", x) for x in (
     "vpl", "mf", "nvdec", "libva", "vpx", "openh264", "aom", "de265",
@@ -258,6 +259,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "enc_webp"      : ("webp encoder",      "webp",         "encoder", "encode"),
     "enc_jpeg"      : ("JPEG encoder",      "jpeg",         "encoder", "encode"),
     "enc_avif"      : ("avif encoder",      "avif",         "encoder", "encode"),
+    "enc_jph"       : ("JPH encoder",       "jph",          "encoder", "encode"),
     "enc_nvjpeg"    : ("nvjpeg encoder",    "nvidia.nvjpeg", "encoder", "encode"),
     # video encoders:
     "enc_vpx"       : ("vpx encoder",       "vpx",          "encoder", "Encoder"),
@@ -281,6 +283,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress_to_rgb,decompress_to_yuv"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb,decompress_to_yuv"),
     "dec_avif"      : ("avif decoder",      "avif",         "decoder", "decompress"),
+    "dec_jph"       : ("JPH decoder",       "jph",          "decoder", "decompress"),
     "dec_nvjpeg"    : ("nvjpeg decoder",    "nvidia.nvjpeg", "decoder", "decompress"),
     # video decoders:
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
@@ -437,6 +440,7 @@ def get_encoding_name(encoding: str) -> str:
         "jpeg"    : "JPEG",
         "jpega"   : "JPEG with alpha",
         "avif"    : "AVIF",
+        "jph"     : "JPH",
         "av1"     : "AV1",
         "rgb"     : " + ".join(get_rgb_compression_options()) + " (24/32bpp)",
     }
@@ -468,6 +472,7 @@ def get_encoding_help(encoding: str) -> str:
         "jpeg"    : "JPEG lossy compression",
         "jpega"   : "JPEG lossy compression, with alpha channel",
         "avif"    : "AVIF: AV1 Image File Format",
+        "jph"     : "JPH: JPEG 2000 / HTJ2K image compression",
         "av1"     : "AV1: AOMedia Video 1",
         "rgb"     : f"Raw RGB pixels, lossless {compressors_str}(24bpp or 32bpp for transparency)",
         "scroll"  : "motion vectors, supplemented with picture codecs",

@@ -18,7 +18,7 @@ $PACMAN ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plug
 #Intel oneVPL: HEVC 4:4:4 hardware decode on Intel GPUs:
 $PACMAN ${XPKG}libvpl
 #more codecs:
-$PACMAN ${XPKG}libde265 ${XPKG}libx264 ${XPKG}libvpx ${XPKG}openh264 ${XPKG}dav1d ${XPKG}aom ${XPKG}libwebp
+$PACMAN ${XPKG}libde265 ${XPKG}libx264 ${XPKG}libvpx ${XPKG}openh264 ${XPKG}dav1d ${XPKG}aom ${XPKG}libwebp ${XPKG}openjph
 #network layer libraries:
 $PACMAN ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium
 #pinentry is not available for aarch64 yet:

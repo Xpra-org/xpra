@@ -255,6 +255,8 @@ BuildRequires:		pkgconfig(libwebp)
 Requires:			libwebp
 BuildRequires:		pkgconfig(libturbojpeg)
 Requires:			turbojpeg
+BuildRequires:		pkgconfig(openjph)
+Requires:			libopenjph
 BuildRequires:		pkgconfig(libyuv)
 Requires:			libyuv
 BuildRequires:      libaom-devel
@@ -841,6 +843,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/drm
 #/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/jpeg
+%{python3_sitearch}/xpra/codecs/jph
 %{python3_sitearch}/xpra/codecs/libyuv
 %{python3_sitearch}/xpra/codecs/v4l2
 %if ! 0%{?el8}

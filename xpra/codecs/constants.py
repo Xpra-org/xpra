@@ -31,19 +31,19 @@ FAST_DECODE_MIN_SPEED: int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 PREFERRED_ENCODING_ORDER: Sequence[str] = (
     "h265", "av1", "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
-    "webp", "png", "png/P", "png/L", "avif",
+    "webp", "png", "png/P", "png/L", "avif", "jph",
     "rgb", "rgb24", "rgb32", "jpeg", "jpega",
     "scroll",
     "grayscale",
     "stream",
 )
 
-PSEUDO_LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jpeg", "jpega")
+PSEUDO_LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jph", "jpeg", "jpega")
 
-TRUE_LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "webp", "avif")
+TRUE_LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jph")
 
 PREFERRED_REFRESH_ENCODING_ORDER: Sequence[str] = (
-    "webp", "avif", "png", "png/P", "png/L", "rgb", "rgb24", "rbg32", "jpeg", "jpega",
+    "webp", "avif", "jph", "png", "png/P", "png/L", "rgb", "rgb24", "rbg32", "jpeg", "jpega",
 )
 STREAM_ENCODINGS: Sequence[str] = (
     "h265", "av1", "h264", "vp9", "vp8", "mpeg4",
@@ -53,7 +53,7 @@ STREAM_ENCODINGS: Sequence[str] = (
 # encoding order for edges (usually one pixel high or wide):
 EDGE_ENCODING_ORDER: Sequence[str] = (
     "rgb24", "rgb32",
-    "png", "webp",
+    "png", "webp", "jph",
     "png/P", "png/L", "rgb", "jpeg", "jpega",
 )
 
@@ -62,7 +62,7 @@ HELP_ORDER: Sequence[str] = (
     "stream",
     "grayscale",
     "h265", "av1", "h264", "vp8", "vp9", "mpeg4",
-    "png", "png/P", "png/L", "webp", "avif",
+    "png", "png/P", "png/L", "webp", "avif", "jph",
     "rgb", "jpeg", "jpega",
     "scroll",
 )

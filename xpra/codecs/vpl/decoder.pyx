@@ -252,6 +252,7 @@ cdef class Decoder:
     cdef int height
     cdef object colorspace
     cdef object encoding
+    cdef int full_range
 
     cdef object __weakref__
 
@@ -269,6 +270,9 @@ cdef class Decoder:
         self.width = width
         self.height = height
         self.frames = 0
+        # oneVPL does not expose the colour range from the bitstream, so we remember the
+        # range signalled in the client options across frames (default to studio):
+        self.full_range = False
 
         cdef VPLDecodeStatus status
         cdef VPLDecoder *cached = NULL
@@ -455,18 +459,16 @@ cdef class Decoder:
             frame.us_submit, frame.us_sync, frame.us_map, us_copy,
             payload_bytes / 1048576.0)
 
-        # the colour range is taken from the bitstream (frame.full_range),
-        # but the client option can override it
-        # (note: oneVPL does not expose the range yet - see vpl_decode.c - so this currently
-        # relies on the override):
-        full_range = bool(frame.full_range)
+        # oneVPL does not expose the colour range from the bitstream (vpl_decode.c always
+        # reports studio), so we reuse the range from an earlier frame's options; the client
+        # option always takes precedence when present:
         if "full-range" in options:
-            full_range = options.boolget("full-range")
+            self.full_range = options.boolget("full-range")
         # ImageWrapper handles non-tight rowstrides natively; GL upload uses GL_UNPACK_ROW_LENGTH.
         return ImageWrapper(0, 0, self.width, self.height,
                             (pixels, ), pixel_format, 32, (frame.stride, ), 4,
                             ImageWrapper.PACKED,
-                            full_range=full_range)
+                            full_range=bool(self.full_range))
 
 
 def selftest(full=False) -> None:
