@@ -135,7 +135,9 @@ def decompress(data: bytes, options: typedict, yuv=False) -> ImageWrapper:
                     size = image.yuvRowBytes[i]*height//ydiv
                     planes.append(image.yuvPlanes[i][:size])
                     strides.append(image.yuvRowBytes[i])
-                return ImageWrapper(0, 0, width, height, planes, yuv_format, 24, strides, planes=ImageWrapper.PLANAR_3)
+                return ImageWrapper(0, 0, width, height, planes, yuv_format, 24, strides,
+                                    planes=ImageWrapper.PLANAR_3,
+                                    full_range=image.yuvRange == AVIF_RANGE_FULL)
 
             # * decoder->image alpha data (alphaRange, alphaPlane, alphaRowBytes)
             # * this frame's sequence timing
