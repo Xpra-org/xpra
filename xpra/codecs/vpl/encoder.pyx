@@ -9,6 +9,7 @@
 #cython: wraparound=False
 
 import os
+from threading import RLock
 from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
@@ -157,11 +158,15 @@ cdef class Encoder:
     cdef object src_format
     cdef object encoding
     cdef object file
+    cdef object lock
     cdef uint8_t ready
     cdef int delayed
     cdef int full_range
 
     cdef object __weakref__
+
+    def __cinit__(self):
+        self.lock = RLock()
 
     def init_context(self, encoding: str, int width, int height, src_format: str,
                      options: typedict) -> None:
@@ -257,16 +262,17 @@ cdef class Encoder:
         # the heavier MFXVideoENCODE_Reset path that pass 2 will add.
         if pct < 0 or pct > 100:
             raise ValueError("invalid quality percentage: %s" % pct)
-        if self.context == NULL:
-            return
-        if pct == self.quality:
-            return
-        # Mirror x264: ignore sub-5pt jitter, but always honour transitions
-        # to/from the boundary so a user-pinned high or low quality lands.
-        if abs(self.quality - pct) <= 4 and pct not in (0, 100) and self.quality not in (0, 100):
-            return
-        self.quality = pct
-        vpl_encoder_set_quality(self.context, pct)
+        with self.lock:
+            if self.context == NULL:
+                return
+            if pct == self.quality:
+                return
+            # Mirror x264: ignore sub-5pt jitter, but always honour transitions
+            # to/from the boundary so a user-pinned high or low quality lands.
+            if abs(self.quality - pct) <= 4 and pct not in (0, 100) and self.quality not in (0, 100):
+                return
+            self.quality = pct
+            vpl_encoder_set_quality(self.context, pct)
 
     def __repr__(self):
         if not self.ready:
@@ -277,23 +283,25 @@ cdef class Encoder:
         self.clean()
 
     def clean(self) -> None:
-        cdef VPLEncoder *context = self.context
-        if context != NULL:
-            log("vpl encoder close context %#x", <uintptr_t> context)
-            self.context = NULL
-            with nogil:
-                vpl_encoder_destroy(context)
-        self.ready = 0
-        self.frames = 0
-        self.width = 0
-        self.height = 0
-        self.src_format = ""
-        self.encoding = ""
-        self.delayed = 0
-        f = self.file
-        if f:
-            self.file = None
-            f.close()
+        cdef VPLEncoder *context
+        with self.lock:
+            context = self.context
+            if context != NULL:
+                log("vpl encoder close context %#x", <uintptr_t> context)
+                self.context = NULL
+                with nogil:
+                    vpl_encoder_destroy(context)
+            self.ready = 0
+            self.frames = 0
+            self.width = 0
+            self.height = 0
+            self.src_format = ""
+            self.encoding = ""
+            self.delayed = 0
+            f = self.file
+            if f:
+                self.file = None
+                f.close()
 
     def get_info(self) -> Dict[str, Any]:
         info = get_info()
@@ -335,77 +343,82 @@ cdef class Encoder:
         cdef Py_buffer y_buf
         cdef Py_buffer uv_buf
         cdef VPLEncodeStatus status = VPL_ENC_ERROR
+        cdef int requested_quality
+        cdef int y_stride
+        cdef int uv_stride
 
-        assert self.context != NULL, "encoder is closed"
-        assert image.get_width() >= self.width
-        assert image.get_height() >= self.height
-        if image.get_pixel_format() != "NV12":
-            raise ValueError("expected NV12 but got %s" % image.get_pixel_format())
+        with self.lock:
+            assert self.context != NULL, "encoder is closed"
+            assert image.get_width() >= self.width
+            assert image.get_height() >= self.height
+            if image.get_pixel_format() != "NV12":
+                raise ValueError("expected NV12 but got %s" % image.get_pixel_format())
 
-        cdef int requested_quality = options.intget("quality", -1)
-        if requested_quality >= 0:
-            self.set_encoding_quality(requested_quality)
+            requested_quality = options.intget("quality", -1)
+            if requested_quality >= 0:
+                self.set_encoding_quality(requested_quality)
 
-        pixels = image.get_pixels()
-        strides = image.get_rowstride()
-        assert len(pixels) == 2, "NV12 image pixels does not have 2 planes"
-        assert len(strides) == 2, "NV12 image rowstride does not have 2 values"
-        cdef int y_stride = strides[0]
-        cdef int uv_stride = strides[1]
+            pixels = image.get_pixels()
+            strides = image.get_rowstride()
+            assert len(pixels) == 2, "NV12 image pixels does not have 2 planes"
+            assert len(strides) == 2, "NV12 image rowstride does not have 2 values"
+            y_stride = strides[0]
+            uv_stride = strides[1]
 
-        start = monotonic()
-        memset(&y_buf, 0, sizeof(Py_buffer))
-        memset(&uv_buf, 0, sizeof(Py_buffer))
-        try:
-            if PyObject_GetBuffer(pixels[0], &y_buf, PyBUF_ANY_CONTIGUOUS):
-                raise ValueError("failed to read NV12 Y plane from %s" % type(pixels[0]))
-            if PyObject_GetBuffer(pixels[1], &uv_buf, PyBUF_ANY_CONTIGUOUS):
-                raise ValueError("failed to read NV12 UV plane from %s" % type(pixels[1]))
-            with nogil:
-                status = vpl_encoder_encode(self.context,
-                                            <const uint8_t *> y_buf.buf, y_stride,
-                                            <const uint8_t *> uv_buf.buf, uv_stride,
-                                            &frame)
-        finally:
-            if uv_buf.buf:
-                PyBuffer_Release(&uv_buf)
-            if y_buf.buf:
-                PyBuffer_Release(&y_buf)
+            start = monotonic()
+            memset(&y_buf, 0, sizeof(Py_buffer))
+            memset(&uv_buf, 0, sizeof(Py_buffer))
+            try:
+                if PyObject_GetBuffer(pixels[0], &y_buf, PyBUF_ANY_CONTIGUOUS):
+                    raise ValueError("failed to read NV12 Y plane from %s" % type(pixels[0]))
+                if PyObject_GetBuffer(pixels[1], &uv_buf, PyBUF_ANY_CONTIGUOUS):
+                    raise ValueError("failed to read NV12 UV plane from %s" % type(pixels[1]))
+                with nogil:
+                    status = vpl_encoder_encode(self.context,
+                                                <const uint8_t *> y_buf.buf, y_stride,
+                                                <const uint8_t *> uv_buf.buf, uv_stride,
+                                                &frame)
+            finally:
+                if uv_buf.buf:
+                    PyBuffer_Release(&uv_buf)
+                if y_buf.buf:
+                    PyBuffer_Release(&y_buf)
 
-        if status == VPL_ENC_NEED_MORE_INPUT:
-            self.delayed += 1
-            return b"", {"frame": int(self.frames), "delayed": self.delayed}
+            if status == VPL_ENC_NEED_MORE_INPUT:
+                self.delayed += 1
+                return b"", {"frame": int(self.frames), "delayed": self.delayed}
 
-        if status != VPL_ENC_OK:
-            detail = vpl_encoder_get_last_error(self.context).decode("utf-8", "replace")
-            last_sts = vpl_encoder_get_last_status(self.context)
-            raise RuntimeError("vpl encode error: %s (detail: %s, sts=%d)" % (
-                vpl_encode_status_str(status).decode("latin-1"), detail, last_sts))
+            if status != VPL_ENC_OK:
+                detail = vpl_encoder_get_last_error(self.context).decode("utf-8", "replace")
+                last_sts = vpl_encoder_get_last_status(self.context)
+                raise RuntimeError("vpl encode error: %s (detail: %s, sts=%d)" % (
+                    vpl_encode_status_str(status).decode("latin-1"), detail, last_sts))
 
-        bdata, client_options = self._make_result(&frame, image.get_full_range())
-        elapsed = int((monotonic() - start) * 1000000)
-        log("vpl encoded %dx%d frame %i as %s: %i bytes in %dms copy=%dus submit=%dus sync=%dus",
-            self.width, self.height, self.frames, client_options.get("type", ""),
-            len(bdata), (elapsed + 500) // 1000,
-            frame.us_copy, frame.us_submit, frame.us_sync)
-        return bdata, client_options
+            bdata, client_options = self._make_result(&frame, image.get_full_range())
+            elapsed = int((monotonic() - start) * 1000000)
+            log("vpl encoded %dx%d frame %i as %s: %i bytes in %dms copy=%dus submit=%dus sync=%dus",
+                self.width, self.height, self.frames, client_options.get("type", ""),
+                len(bdata), (elapsed + 500) // 1000,
+                frame.us_copy, frame.us_submit, frame.us_sync)
+            return bdata, client_options
 
     def flush(self, delayed: int = 0) -> Tuple[bytes, Dict]:
         cdef VPLEncodedFrame frame
         cdef VPLEncodeStatus status
-        if self.context == NULL:
-            return b"", {}
-        with nogil:
-            status = vpl_encoder_flush(self.context, &frame)
-        if status == VPL_ENC_NEED_MORE_INPUT:
-            self.delayed = 0
-            return b"", {"delayed": 0}
-        if status != VPL_ENC_OK:
-            detail = vpl_encoder_get_last_error(self.context).decode("utf-8", "replace")
-            last_sts = vpl_encoder_get_last_status(self.context)
-            raise RuntimeError("vpl flush error: %s (detail: %s, sts=%d)" % (
-                vpl_encode_status_str(status).decode("latin-1"), detail, last_sts))
-        return self._make_result(&frame, self.full_range)
+        with self.lock:
+            if self.context == NULL:
+                return b"", {}
+            with nogil:
+                status = vpl_encoder_flush(self.context, &frame)
+            if status == VPL_ENC_NEED_MORE_INPUT:
+                self.delayed = 0
+                return b"", {"delayed": 0}
+            if status != VPL_ENC_OK:
+                detail = vpl_encoder_get_last_error(self.context).decode("utf-8", "replace")
+                last_sts = vpl_encoder_get_last_status(self.context)
+                raise RuntimeError("vpl flush error: %s (detail: %s, sts=%d)" % (
+                    vpl_encode_status_str(status).decode("latin-1"), detail, last_sts))
+            return self._make_result(&frame, self.full_range)
 
 
 def selftest(full=False) -> None:

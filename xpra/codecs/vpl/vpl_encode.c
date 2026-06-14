@@ -243,19 +243,6 @@ static void fill_params(VPLEncoder *enc, mfxVideoParam *param, int use_icq) {
     }
 }
 
-static int query_icq(VPLEncoder *enc) {
-    mfxVideoParam in, out;
-    mfxStatus sts;
-
-    fill_params(enc, &in, 1);
-    memset(&out, 0, sizeof(out));
-    sts = MFXVideoENCODE_Query(enc->session, &in, &out);
-    if (sts == MFX_ERR_NONE || sts == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM) {
-        return out.mfx.RateControlMethod == MFX_RATECONTROL_ICQ;
-    }
-    return 0;
-}
-
 static VPLEncodeStatus allocate_buffers(VPLEncoder *enc) {
     size_t surface_size = (size_t)enc->pitch * enc->height * 3 / 2;
     size_t bs_size = (size_t)enc->param.mfx.BufferSizeInKB * 1000;
@@ -282,6 +269,7 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
     VPLEncoder *enc;
     mfxStatus sts;
     int use_icq;
+    int attempt;
 
     if (!out)
         return VPL_ENC_ERROR;
@@ -309,13 +297,25 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
         return VPL_ENC_NOT_AVAILABLE;
     }
 
-    use_icq = query_icq(enc);
-    enc->use_icq = use_icq;
-    fill_params(enc, &enc->param, use_icq);
-    vpl_log("vpl encoder create: %dx%d quality=%d speed=%d rc=%s",
-            width, height, quality, speed, use_icq ? "ICQ" : "CQP");
+    /* Do not probe ICQ with MFXVideoENCODE_Query here: some libmfxhw
+       versions crash inside the driver on a fresh VPL encode session.
+       Try ICQ directly first, then fall back to broadly supported CQP. */
+    sts = MFX_ERR_UNSUPPORTED;
+    for (attempt = 0; attempt < 2; attempt++) {
+        use_icq = (attempt == 0);
+        enc->use_icq = use_icq;
+        fill_params(enc, &enc->param, use_icq);
+        vpl_log("vpl encoder create: %dx%d quality=%d speed=%d rc=%s",
+                width, height, quality, speed, use_icq ? "ICQ" : "CQP");
 
-    sts = MFXVideoENCODE_Init(enc->session, &enc->param);
+        sts = MFXVideoENCODE_Init(enc->session, &enc->param);
+        if (sts == MFX_ERR_NONE || sts == MFX_WRN_PARTIAL_ACCELERATION ||
+            sts == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM) {
+            break;
+        }
+        if (use_icq)
+            vpl_log("vpl encoder ICQ init failed: mfxStatus %d, trying CQP", (int)sts);
+    }
     if (sts != MFX_ERR_NONE && sts != MFX_WRN_PARTIAL_ACCELERATION &&
         sts != MFX_WRN_INCOMPATIBLE_VIDEO_PARAM) {
         set_error(enc, sts, "MFXVideoENCODE_Init");
