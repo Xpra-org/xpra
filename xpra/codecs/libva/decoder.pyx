@@ -305,16 +305,15 @@ cdef class Decoder:
             planes = ImageWrapper.PLANAR_2
         elif frame.nplanes == 3:
             planes = ImageWrapper.PLANAR_3
-        self.frames += 1
         elapsed = int((monotonic() - start) * 1000000)
         log("libva decoded %s %8d bytes into %dx%d %s in %dms submit=%dus sync=%dus map=%dus copy=%dus",
             self.encoding, src_len, frame.width, frame.height, pixel_format, (elapsed + 500) // 1000,
             frame.us_submit, frame.us_sync, frame.us_map, frame.us_copy)
         # the colour range is parsed from the bitstream headers (h264 SPS VUI / vp9
-        # color_config) by va_decode.c, but the client option can override it:
-        full_range = bool(frame.full_range)
-        if "full-range" in options:
-            full_range = options.boolget("full-range")
+        # color_config) by va_decode.c, with the client option able to override it
+        # (resolve before bumping self.frames so the first frame is frame 0):
+        full_range = options.boolget("full-range", frame.full_range)
+        self.frames += 1
         return ImageWrapper(0, 0, self.width, self.height,
                             pixels, pixel_format, frame.depth, strides,
                             frame.bytes_per_pixel, planes,

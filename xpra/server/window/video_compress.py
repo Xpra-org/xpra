@@ -1917,6 +1917,7 @@ class WindowVideoSource(WindowSource):
                 csclog.error(" %s:", ve)
                 print_nested_dict(ve.get_info(), "  ", print_fn=csclog.error)
                 return False
+            # TODO: also check for unlikely `ColorRange` changes
 
             # encoder will take its input from csc:
             encoder_src_width = csce.get_dst_width()

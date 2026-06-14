@@ -15,6 +15,7 @@ log = Logger("encoder", "vpx")
 
 from xpra.codecs.constants import VideoSpec, get_subsampling_divs
 from xpra.codecs.image import ImageWrapper
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.env import envint, envbool
 from xpra.util.objects import AtomicInteger, typedict
@@ -333,6 +334,7 @@ cdef class Encoder:
     cdef int speed
     cdef int quality
     cdef int lossless
+    cdef int full_range
     cdef object last_frame_times
     cdef object file
 
@@ -360,6 +362,8 @@ cdef class Encoder:
         self.speed = options.intget("speed", 50)
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         self.lossless = 0
+        # the initial colour range (may be updated per-image):
+        self.full_range = options.boolget("full-range", True)
         self.frames = 0
         self.last_frame_times = deque(maxlen=200)
         self.pixfmt = get_vpx_colorspace(self.src_format)
@@ -567,9 +571,11 @@ cdef class Encoder:
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
-        cdef int full_range = int(image.get_full_range())
+        # track the image colour range and signal it in the VP9 bitstream color_config:
+        cdef int full_range = image.get_full_range()
+        cdef int range_changed = full_range != self.full_range
+        self.full_range = full_range
         if self.encoding == "vp9":
-            # signal the range in the VP9 bitstream color_config;
             # setting vpx_image_t.range alone is not enough for libvpx to write it:
             self.codec_control("color range", VP9E_SET_COLOR_RANGE, full_range)
         pf = image.get_pixel_format().replace("A", "X")
@@ -631,13 +637,17 @@ cdef class Encoder:
                     active_map.rows = mb_h
                     active_map.cols = mb_w
                     vpx_codec_control_active_map(self.context, VP8E_SET_ACTIVEMAP, &active_map)
-            return self.do_compress_image(pic_in, strides, full_range), {
+            client_options = {
                 "csc"       : self.src_format,
                 "frame"     : int(self.frames),
-                "full-range" : bool(full_range),
                 #"quality"  : min(99+self.lossless, self.quality),
                 #"speed"    : self.speed,
             }
+            # send the range on the first frame and whenever it changes
+            # (every frame when staying backwards compatible):
+            if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
+                client_options["full-range"] = bool(full_range)
+            return self.do_compress_image(pic_in, strides, full_range), client_options
         finally:
             for i in range(3):
                 if py_buf[i].buf:

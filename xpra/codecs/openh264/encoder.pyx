@@ -14,6 +14,7 @@ from xpra.log import Logger
 log = Logger("encoder", "openh264")
 
 from xpra.codecs.image import ImageWrapper
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import VideoSpec
@@ -551,6 +552,10 @@ cdef class Encoder:
         assert self.context!=NULL, "encoder is closed"
         assert width>=self.width
         assert height>=self.height
+        # track the image colour range (signalled to the client via the "full-range" option):
+        cdef int image_range = image.get_full_range()
+        cdef int range_changed = image_range != self.full_range
+        self.full_range = image_range
         if image.get_pixel_format()!="YUV420P":
             raise ValueError("expected YUV420P but got %s" % image.get_pixel_format())
         pixels = image.get_pixels()
@@ -590,9 +595,11 @@ cdef class Encoder:
             raise RuntimeError(f"openh264 failed to encode frame, error {r}")
         client_options = {
             "frame": self.frames,
-            # the range is fixed at init and written into the bitstream (SPS VUI):
-            "full-range": bool(self.full_range),
         }
+        # send the range on the first frame and whenever it changes
+        # (every frame when staying backwards compatible):
+        if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
+            client_options["full-range"] = bool(self.full_range)
         if frame_info.eFrameType == videoFrameTypeInvalid:
             raise ValueError("invalid frame type")
         elif frame_info.eFrameType == videoFrameTypeIDR:

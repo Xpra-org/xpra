@@ -6,6 +6,8 @@
 
 import unittest
 
+from xpra.codecs.constants import ColorRange
+
 from xpra.util.objects import typedict
 from xpra.util.str_fn import memoryview_to_bytes, sorted_nicely
 from xpra.codecs import loader
@@ -447,11 +449,65 @@ class H264FullRangeParserTest(unittest.TestCase):
         if not tested:
             self.skipTest("no H.264 encoder available")
 
-    def test_no_sps_returns_none(self):
+    def test_no_sps_returns_unknown(self):
         from xpra.codecs.h264_util import get_video_full_range
         # empty input, and a stream with only a (non-SPS) coded-slice NAL:
-        self.assertIsNone(get_video_full_range(b""))
-        self.assertIsNone(get_video_full_range(b"\x00\x00\x01\x41\x9a\x00"))
+        self.assertEqual(get_video_full_range(b""), ColorRange.UNKNOWN)
+        self.assertEqual(get_video_full_range(b"\x00\x00\x01\x41\x9a\x00"), ColorRange.UNKNOWN)
+
+
+class FirstFrameOnlyTest(unittest.TestCase):
+    """ with BACKWARDS_COMPATIBLE off, the colour range is sent in the client options
+        of the first frame only (the decoder recovers it from the bitstream afterwards) """
+
+    def test_encoder_sends_range_once(self):
+        w, h = TEST_SIZE
+        tested: list[str] = []
+        for enc_name, encoding, in_cs in (
+            ("enc_x264", "h264", "YUV420P"),
+            ("enc_openh264", "h264", "YUV420P"),
+            ("enc_vpx", "vp9", "YUV420P"),
+        ):
+            enc_mod = loader.load_codec(enc_name)
+            if not enc_mod:
+                continue
+            spec = None
+            for s in enc_mod.get_specs():
+                if s.encoding == encoding and s.input_colorspace == in_cs:
+                    spec = s
+                    break
+            if not spec:
+                continue
+            # the encoders read BACKWARDS_COMPATIBLE from their own module namespace:
+            saved = enc_mod.BACKWARDS_COMPATIBLE
+            enc_mod.BACKWARDS_COMPATIBLE = False
+            try:
+                encoder = spec.codec_class()
+                encoder.init_context(encoding, w, h, in_cs,
+                                     typedict({"full-range": True, "dst-formats": list(spec.output_colorspaces)}))
+                frames = 0
+                with_flag = 0
+                for _ in range(5):
+                    image = make_test_image(in_cs, w, h)
+                    image.set_full_range(True)
+                    out = encoder.compress_image(image, typedict())
+                    if not out:
+                        continue
+                    frames += 1
+                    if "full-range" in out[1]:
+                        with_flag += 1
+                encoder.clean()
+            finally:
+                enc_mod.BACKWARDS_COMPATIBLE = saved
+            self.assertGreaterEqual(frames, 2, f"{enc_name}: need at least 2 frames to test")
+            self.assertEqual(
+                with_flag, 1,
+                f"{enc_name}: with BACKWARDS_COMPATIBLE off, 'full-range' should appear in exactly"
+                f" one frame's client options, but it appeared in {with_flag} of {frames}")
+            tested.append(enc_name)
+        print(f"tested first-frame-only signalling with: {sorted_nicely(tested)}")
+        if not tested:
+            self.skipTest("no encoder available")
 
 
 def main():

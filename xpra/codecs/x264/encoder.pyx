@@ -17,6 +17,7 @@ from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.image import ImageWrapper
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.codecs.constants import VideoSpec, get_profile, get_x264_quality, get_x264_preset
 from collections import deque
 
@@ -577,9 +578,8 @@ cdef class Encoder:
         self.height = height
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
-        # the range is written into the SPS VUI (b_fullrange) at encoder setup;
-        # it is updated from the image range if it changes (see compress_image):
-        self.full_range = options.boolget("full-range", False)
+        # the initial range (written into the SPS VUI); it may be updated per-image:
+        self.full_range = options.boolget("full-range", True)
         #self.opencl = USE_OPENCL and width>=32 and height>=32
         self.content_types = options.strtupleget("content-types", ())      #ie: ("video", )
         self.b_frames = 0 if MB_INFO else options.intget("b-frames", 0)
@@ -912,8 +912,11 @@ cdef class Encoder:
         if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
 
+        # the range is written into the SPS VUI; if the image range changes, reconfigure
+        # the encoder (and tell the client to rebuild its csc via the "full-range" option):
         cdef int full_range = image.get_full_range()
-        if full_range != self.full_range:
+        cdef int range_changed = full_range != self.full_range
+        if range_changed:
             self.full_range = full_range
             self.need_reconfig = 1
 
@@ -1013,13 +1016,13 @@ cdef class Encoder:
                 pic_in.img.i_plane = 3
             pic_in.img.i_csp = self.colorspace
             pic_in.i_pts = image.get_timestamp()-self.first_frame_timestamp
-            return self.do_compress_image(&pic_in, quality, speed)
+            return self.do_compress_image(&pic_in, quality, speed, range_changed)
         finally:
             for i in range(3):
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
 
-    cdef object do_compress_image(self, x264_picture_t *pic_in, int quality=-1, int speed=-1):
+    cdef object do_compress_image(self, x264_picture_t *pic_in, int quality=-1, int speed=-1, int range_changed=0):
         cdef x264_nal_t *nals = NULL
         cdef int i_nals = 0
         cdef x264_picture_t pic_out
@@ -1077,8 +1080,11 @@ cdef class Encoder:
             # "quality"   : max(0, min(100, quality)),
             # "speed"     : max(0, min(100, speed)),
             "csc"       : self.csc_format,
-            "full-range" : bool(self.full_range),
         }
+        # the range is in the bitstream (SPS VUI); send it in the client options on the first
+        # frame and whenever it changes (every frame when staying backwards compatible):
+        if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
+            client_options["full-range"] = bool(self.full_range)
         if slice_type!="P":
             client_options["type"] = slice_type
         if self.delayed_frames>0:

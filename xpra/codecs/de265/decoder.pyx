@@ -291,14 +291,14 @@ cdef class Decoder:
                                f"{de265_get_image_width(image, 0)}x{de265_get_image_height(image, 0)} "
                                f"instead of {self.width}x{self.height}")
 
-        self.frames += 1
         self.colorspace = pixel_format
         cdef double elapsed = 1000 * (monotonic() - start)
         log("de265 decoded %i bytes into %ix%i %s in %ims",
             src_len, self.width, self.height, pixel_format, int(elapsed))
-        full_range = bool(de265_get_image_full_range_flag(image))
-        if "full-range" in options:
-            full_range = options.boolget("full-range")
+        # the colour range comes from the bitstream (VUI), with the option able to override it
+        # (resolve before bumping self.frames so the first frame is frame 0):
+        full_range = options.boolget("full-range", de265_get_image_full_range_flag(image))
+        self.frames += 1
         return ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, 24,
                             pystrides, bytesperpixel=1, planes=PlanarFormat.PLANAR_3, full_range=full_range)
 

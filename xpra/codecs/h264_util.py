@@ -10,7 +10,7 @@ Minimal H.264 Annex-B parser, just enough to recover the colour range
 Some decoder libraries (ie: openh264) do not expose this flag through their API,
 but the SPS is present in the bitstream we feed them, so we can parse it ourselves.
 """
-
+from xpra.codecs.constants import ColorRange
 from xpra.common import SizedBuffer
 from xpra.log import Logger
 
@@ -83,7 +83,7 @@ def _skip_scaling_list(br: BitReader, size: int) -> None:
         last_scale = last_scale if next_scale == 0 else next_scale
 
 
-def parse_sps_full_range(rbsp: SizedBuffer) -> bool | None:
+def parse_sps_full_range(rbsp: SizedBuffer) -> ColorRange:
     """
     Parse an H.264 SPS RBSP (without the 1-byte NAL header) and return its
     VUI `video_full_range_flag`, or None if the SPS carries no video signal type.
@@ -128,7 +128,7 @@ def parse_sps_full_range(rbsp: SizedBuffer) -> bool | None:
         br.read_ue()                    # frame_crop_top_offset
         br.read_ue()                    # frame_crop_bottom_offset
     if not br.read_bit():               # vui_parameters_present_flag
-        return None
+        return ColorRange.UNKNOWN
     if br.read_bit():                   # aspect_ratio_info_present_flag
         if br.read_bits(8) == 255:      # aspect_ratio_idc == Extended_SAR
             br.read_bits(16)            # sar_width
@@ -136,9 +136,9 @@ def parse_sps_full_range(rbsp: SizedBuffer) -> bool | None:
     if br.read_bit():                   # overscan_info_present_flag
         br.read_bit()                   # overscan_appropriate_flag
     if not br.read_bit():               # video_signal_type_present_flag
-        return None
+        return ColorRange.UNKNOWN
     br.read_bits(3)                     # video_format
-    return bool(br.read_bit())          # video_full_range_flag
+    return ColorRange.FULL if bool(br.read_bit()) else ColorRange.STUDIO          # video_full_range_flag
 
 
 def iter_annexb_nals(data: SizedBuffer):
@@ -162,7 +162,7 @@ def iter_annexb_nals(data: SizedBuffer):
         yield mv[nal_start] & 0x1f, mv[nal_start + 1:n]
 
 
-def get_video_full_range(data: SizedBuffer) -> bool | None:
+def get_video_full_range(data: SizedBuffer) -> ColorRange:
     """
     Return the colour range signalled by the first SPS in an H.264 Annex-B stream,
     or None if there is no SPS (ie: a non-keyframe) or it carries no video signal type.
@@ -175,4 +175,4 @@ def get_video_full_range(data: SizedBuffer) -> bool | None:
                 break                   # the SPS always precedes the coded slices
     except Exception as e:
         log("get_video_full_range(%i bytes) parsing failed: %s", len(data), e)
-    return None
+    return ColorRange.UNKNOWN

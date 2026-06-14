@@ -270,7 +270,7 @@ cdef class Encoder:
         self.height = height
         self.src_format = src_format
         self.frames = 0
-        self.full_range = options.boolget("full-range", src_format in ("YUV420P", "NV12"))
+        self.full_range = options.boolget("full-range", True)
         if src_format == "YUV420P":
             self.pixel_format = kCVPixelFormatType_420YpCbCr8Planar
         elif src_format == "NV12":
@@ -367,7 +367,7 @@ cdef class Encoder:
             "height"        : self.height,
             "encoding"      : self.encoding,
             "src_format"    : self.src_format,
-            "full-range"    : bool(self.full_range),
+            "full-range"    : self.full_range,
         }
         return info
 
@@ -496,8 +496,10 @@ cdef class Encoder:
         client_options = {
             "frame"         : int(self.frames),
             "csc"           : OUTPUT_COLORSPACE[self.src_format],
-            "full-range"    : bool(self.full_range),
         }
+        full_range = image.get_full_range()
+        if BACKWARDS_COMPATIBLE or self.frames == 0 or full_range != self.full_range:
+            client_options["full-range"] = full_range
         if self.frame_keyframe:
             client_options["type"] = "IDR"
         if self.frames == 0:

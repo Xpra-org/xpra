@@ -15,6 +15,7 @@ from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
 from xpra.codecs.image import ImageWrapper
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.log import Logger
 
@@ -158,6 +159,7 @@ cdef class Encoder:
     cdef object file
     cdef uint8_t ready
     cdef int delayed
+    cdef int full_range
 
     cdef object __weakref__
 
@@ -179,6 +181,7 @@ cdef class Encoder:
         self.speed = options.intget("speed", 50)
         self.frames = 0
         self.delayed = 0
+        self.full_range = options.boolget("full-range", True)
 
         cdef VPLEncodeStatus status
         with nogil:
@@ -308,7 +311,7 @@ cdef class Encoder:
             info["hardware"] = bool(vpl_encoder_is_hardware(self.context))
         return info
 
-    cdef tuple _make_result(self, VPLEncodedFrame *frame):
+    cdef tuple _make_result(self, VPLEncodedFrame *frame, full_range=False):
         bdata = frame.data[:frame.size]
         f = self.file
         if f:
@@ -322,6 +325,8 @@ cdef class Encoder:
         if self.delayed:
             self.delayed = max(0, self.delayed - 1)
             client_options["delayed"] = self.delayed
+        if BACKWARDS_COMPATIBLE or self.frames == 0 or self.full_range != full_range:
+            client_options["full-range"] = full_range
         self.frames += 1
         return bdata, client_options
 
@@ -377,8 +382,7 @@ cdef class Encoder:
             raise RuntimeError("vpl encode error: %s (detail: %s, sts=%d)" % (
                 vpl_encode_status_str(status).decode("latin-1"), detail, last_sts))
 
-        bdata, client_options = self._make_result(&frame)
-        client_options["full-range"] = image.get_full_range()
+        bdata, client_options = self._make_result(&frame, image.get_full_range())
         elapsed = int((monotonic() - start) * 1000000)
         log("vpl encoded %dx%d frame %i as %s: %i bytes in %dms copy=%dus submit=%dus sync=%dus",
             self.width, self.height, self.frames, client_options.get("type", ""),
@@ -401,7 +405,7 @@ cdef class Encoder:
             last_sts = vpl_encoder_get_last_status(self.context)
             raise RuntimeError("vpl flush error: %s (detail: %s, sts=%d)" % (
                 vpl_encode_status_str(status).decode("latin-1"), detail, last_sts))
-        return self._make_result(&frame)
+        return self._make_result(&frame, self.full_range)
 
 
 def selftest(full=False) -> None:

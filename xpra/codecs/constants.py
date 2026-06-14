@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from enum import IntEnum
 from typing import Any
 from weakref import WeakSet
 from dataclasses import dataclass, field, asdict
@@ -106,6 +107,12 @@ PIXEL_SUBSAMPLING : dict[str, Sequence[tuple[int, int]]] = {
     "XYUV"      : ((1, 1), ),
     "Y410"      : ((1, 1), ),
 }
+
+
+class ColorRange(IntEnum):
+    UNKNOWN = -1
+    STUDIO = 0
+    FULL = 1
 
 
 def get_subsampling(pixel_format: str) -> str:

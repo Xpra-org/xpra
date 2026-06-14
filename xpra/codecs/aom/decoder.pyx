@@ -250,11 +250,7 @@ cdef class Decoder:
         if image.monochrome:
             log("monochrome image")
         # aom_chroma_sample_position chroma_sample_position
-        # the colour range is carried in the bitstream,
-        # but allow the client options to override it:
-        full_range = image.range == AOM_CR_FULL_RANGE
-        if "full-range" in options:
-            full_range = options.boolget("full-range")
+        # the colour range is carried in the bitstream, with the option able to override it:
         if image.w < self.width or image.h < self.height:
             log.error("Error: image size %ix%i does not match expected size %ix%i",
                       image.w, image.h, self.width, self.height)
@@ -282,6 +278,7 @@ cdef class Decoder:
             self.show_planes(pyplanes, pystrides)
 
         self.frames += 1
+        full_range = options.boolget("full-range", image.range == AOM_CR_FULL_RANGE)
         wrapper = ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, depth,
                                pystrides, planes=PlanarFormat.PLANAR_3, bytesperpixel=Bpp, full_range=full_range)
         self.image_wrapper = weakref.ref(wrapper)

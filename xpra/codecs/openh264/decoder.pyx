@@ -9,7 +9,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, ColorRange
 from xpra.codecs.h264_util import get_video_full_range
 from xpra.util.objects import typedict
 from xpra.common import SizedBuffer
@@ -270,15 +270,16 @@ cdef class Decoder:
             yuv[2][:uvstride*(height//2)],
         )
         log(f"openh264 decoded {src_len:8} bytes into {width}x{height} YUV420P in {int((end-start)*1000):3}ms")
-        # openh264 does not expose the colour range, so parse it from the bitstream (SPS VUI);
-        # it only appears on keyframes, so remember it across frames - but let the option override:
-        sps_full_range = get_video_full_range(data)
-        if sps_full_range is not None:
-            self.full_range = sps_full_range
-        full_range = self.full_range
         if "full-range" in options:
-            full_range = options.boolget("full-range")
-        return ImageWrapper(0, 0, self.width, self.height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3, full_range=full_range)
+            self.full_range = options.boolget("full-range")
+        else:
+            # openh264 does not expose the colour range, so parse it from the bitstream (SPS VUI);
+            # it only appears on keyframes, so we save it under `self.full_range`
+            bitstream = get_video_full_range(data)
+            if bitstream != ColorRange.UNKNOWN:
+                self.full_range = bitstream == ColorRange.FULL
+        self.frames += 1
+        return ImageWrapper(0, 0, self.width, self.height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3, full_range=bool(self.full_range))
 
 
 def selftest(full=False) -> None:
