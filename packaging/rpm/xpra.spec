@@ -856,6 +856,7 @@ rm -rf $RPM_BUILD_ROOT
 %ifnarch %{riscv}
 %{python3_sitearch}/xpra/codecs/openh264
 %endif
+%pycached %{python3_sitearch}/xpra/codecs/h264_util.py
 
 %files -n %{package_prefix}-codecs-extras
 %ifnarch %{riscv}
