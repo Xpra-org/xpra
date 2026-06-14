@@ -491,6 +491,7 @@ amf_ENABLED             = pkg_config_version("1.0", "amf") or has_header_file("A
 amf_encoder_ENABLED     = amf_ENABLED
 vt_ENABLED              = OSX
 vt_encoder_ENABLED      = vt_ENABLED
+vt_decoder_ENABLED      = vt_ENABLED
 mf_decoder_ENABLED      = DEFAULT and WIN32
 mf_encoder_ENABLED      = DEFAULT and WIN32
 dxgi_ENABLED            = DEFAULT and WIN32
@@ -560,6 +561,7 @@ DECODER_SWITCHES = [
     "openh264_decoder",
     "nvdec", "nvjpeg_decoder",
     "mf_decoder",
+    "vt_decoder",
     "vpl_decoder",
     "libva_decoder",
     "de265_decoder",
@@ -588,7 +590,7 @@ SWITCH_ALIAS = {
     "pillow": ("pillow_encoder", "pillow_decoder"),
     "vpx": ("vpx_encoder", "vpx_decoder"),
     "amf": ("amf_encoder", ),
-    "vt": ("vt_encoder", ),
+    "vt": ("vt_encoder", "vt_decoder"),
     "webp": ("webp_encoder", "webp_decoder"),
     "avif": ("avif_encoder", "avif_decoder"),
     "jph": ("jph_encoder", "jph_decoder"),
@@ -3622,14 +3624,16 @@ if amf_ENABLED:
     tace(dxgi_ENABLED, "xpra.platform.win32.d3d11.capture",
          extra_link_args=("-ld3d11", "-ldxgi", "-ldxguid"))
 toggle_packages(vt_ENABLED, "xpra.codecs.vt")
+VT_FRAMEWORKS = (
+    "-framework", "VideoToolbox",
+    "-framework", "CoreMedia",
+    "-framework", "CoreVideo",
+    "-framework", "CoreFoundation",
+)
 if vt_encoder_ENABLED:
-    ace("xpra.codecs.vt.encoder",
-        extra_link_args=(
-            "-framework", "VideoToolbox",
-            "-framework", "CoreMedia",
-            "-framework", "CoreVideo",
-            "-framework", "CoreFoundation",
-        ))
+    ace("xpra.codecs.vt.encoder", extra_link_args=VT_FRAMEWORKS)
+if vt_decoder_ENABLED:
+    ace("xpra.codecs.vt.decoder", extra_link_args=VT_FRAMEWORKS)
 toggle_packages(mf_decoder_ENABLED or mf_encoder_ENABLED, "xpra.codecs.mf")
 if mf_decoder_ENABLED:
     ace("xpra.codecs.mf.decoder,xpra/codecs/mf/mf_decode.c",
