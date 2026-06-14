@@ -79,10 +79,6 @@ def decompress_to_rgb(data: SizedBuffer, options: typedict = None) -> ImageWrapp
     return decompress(data, options)
 
 
-def decompress_to_yuv(data: SizedBuffer, options: typedict = None) -> ImageWrapper:
-    raise NotImplementedError("jph decoder does not support YUV output")
-
-
 def selftest(full=False) -> None:
     log("jph selftest")
     from xpra.codecs.checks import TEST_PICTURES
