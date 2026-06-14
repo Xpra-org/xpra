@@ -7,7 +7,7 @@
 set -e
 
 DISTRO="${DISTRO:-ubuntu}"
-RELEASE="${RELEASE:-plucky}"
+RELEASE="${RELEASE:-resolute}"
 IMAGE_NAME="${IMAGE_NAME:-apps}"
 CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
 CLEAN="${CLEAN:-1}"

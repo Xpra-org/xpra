@@ -64,7 +64,7 @@ AUDIO=0 CODECS=0 ./xvfb.sh
 ## [desktop](./desktop.sh)
 
 This container runs a lightweight desktop environment based on `LXDE`.  \
-The default image configuration is based on [Ubuntu Plucky](https://releases.ubuntu.com/plucky/),
+The default image configuration is based on [Ubuntu Resolute Raccoon](https://releases.ubuntu.com/resolute/),
 but other Debian and Ubuntu releases can also be used.
 
 ## Pod
