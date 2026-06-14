@@ -26,6 +26,8 @@
   * [macOS `VideoToolbox` encoder](https://github.com/Xpra-org/xpra/issues/4908)
   * [native MS Windows DirectShow webcam backend](https://github.com/Xpra-org/xpra/issues/3336)
   * [native macOS CoreMedia webcam backend](https://github.com/Xpra-org/xpra/issues/1231)
+  * [`YUV422` support with `vp9`](https://github.com/Xpra-org/xpra/issues/4928)
+  * [colorspace synchronization in video bitstream](https://github.com/Xpra-org/xpra/issues/4926)
 * ✨ Features:
   * [clipboard rate limiting](https://github.com/Xpra-org/xpra/issues/2404)
   * [clipboard support for URIs on MS Windows](https://github.com/Xpra-org/xpra/issues/4917)
