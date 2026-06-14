@@ -333,6 +333,8 @@ def decompress_to_yuv(data: SizedBuffer, options: typedict) -> WebpImageWrapper:
             show_plane_range("YUV"[i], planes[i], w // xdiv, strides[i], h // ydiv)
 
     img = WebpImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
+    # libwebp's YUV decode API only exposes fixed YUV420/YUVA output and does not carry
+    # a full-range flag or range metadata, so treat decoded WebP YUV as studio-range.
     img.set_full_range(False)
     img.cython_buffer = <uintptr_t> buf
     return img
