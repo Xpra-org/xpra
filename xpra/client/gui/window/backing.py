@@ -50,6 +50,10 @@ _PIL_font = None
 FONT_SIZE = envint("XPRA_FPS_FONT_SIZE", 32)
 
 
+def rangestr(full_range) -> str:
+    return "full-range" if full_range else "studio-range"
+
+
 def load_pillow_font():
     # we don't need a lock for this global: load_pillow_font() is only called from rgba_text(),
     # which is only ever called from update_fps() and this runs in the UI thread:
@@ -185,6 +189,7 @@ class WindowBackingBase:
         self._backing = None
         self._video_decoder: VideoDecoder | None = None
         self._csc_decoder: ColorspaceConverter | None = None
+        self._csc_full_range = True         # the colour range the csc decoder was built for
         self._decoder_lock = Lock()
         self._PIL_encodings = []
         self.default_paint_box_line_width = PAINT_BOX or 1
@@ -866,11 +871,19 @@ class WindowBackingBase:
         # as some video formats like vpx can forward transparency
         # also we could skip the csc step in some cases:
         pixel_format = img.get_pixel_format()
+        # the csc step converts YUV back to RGB and must use the decoded colour range:
+        full_range = img.get_full_range()
         cd = self._csc_decoder
         csc_width = width if PREFER_CSC_SCALING else enc_width
         csc_height = height if PREFER_CSC_SCALING else enc_height
         if cd is not None:
-            if cd.get_src_format() != pixel_format:
+            if self._csc_full_range != full_range:
+                videolog("do_video_paint csc: colour range changed from %s to %s",
+                         self._csc_full_range, full_range)
+                log.warn(f"Warning: the {coding} bitstream signals {rangestr(full_range)}")
+                log.warn(f" but the stream is being decoded as {rangestr(self._csc_full_range)}")
+                self.do_clean_csc_decoder()
+            elif cd.get_src_format() != pixel_format:
                 videolog("do_video_paint csc: switching src format from %s to %s",
                          cd.get_src_format(), pixel_format)
                 self.do_clean_csc_decoder()
@@ -890,10 +903,13 @@ class WindowBackingBase:
             # use higher quality csc to compensate for lower quality source
             # (which generally means that we downscaled via YUV422P or lower)
             # or when upscaling the video:
+            # drive the csc from the decoded colour range (which may not be in the per-frame options):
+            options["full-range"] = full_range
             cd = self.make_csc(enc_width, enc_height, pixel_format,
                                csc_width, csc_height, target_rgb_formats, options)
-            videolog("do_video_paint new csc decoder: %s", cd)
+            videolog("do_video_paint new csc decoder: %s (full-range=%s)", cd, full_range)
             self._csc_decoder = cd
+            self._csc_full_range = full_range
         rgb_format = cd.get_dst_format()
         rgb = cd.convert_image(img)
         videolog("do_video_paint rgb using %s.convert_image(%s)=%s", cd, img, rgb)
