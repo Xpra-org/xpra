@@ -53,6 +53,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NV_ENC_PIC_FLAG_EOS, NV_ENC_PIC_FLAG_FORCEIDR, NV_ENC_PIC_FLAG_OUTPUT_SPSPPS,
     NV_ENCODE_API_FUNCTION_LIST,
     NV_ENC_INITIALIZE_PARAMS, NV_ENC_INITIALIZE_PARAMS_VER,
+    NV_ENC_RECONFIGURE_PARAMS, NV_ENC_RECONFIGURE_PARAMS_VER,
     NV_ENC_REGISTERED_PTR,
     NV_ENC_BUFFER_FORMAT, NV_ENC_BUFFER_FORMAT_UNDEFINED,
     NV_ENC_CONFIG, NV_ENC_CONFIG_VER,
@@ -803,6 +804,27 @@ cdef class Encoder:
             if params.encodeConfig!=NULL:
                 free(params.encodeConfig)
             free(params)
+
+    cdef void reconfigure_encoder(self):
+        # rebuild the init params/config (which bakes self.full_range into the SPS VUI) and
+        # reconfigure the live session so a fresh SPS with the updated video_full_range_flag
+        # is emitted; resetEncoder + forceIDR make the next frame a self-contained IDR:
+        cdef NV_ENC_RECONFIGURE_PARAMS reconfig
+        assert memset(&reconfig, 0, sizeof(NV_ENC_RECONFIGURE_PARAMS))!=NULL
+        self.init_params(self.codec, &reconfig.reInitEncodeParams)
+        reconfig.version = NV_ENC_RECONFIGURE_PARAMS_VER
+        reconfig.resetEncoder = 1
+        reconfig.forceIDR = 1
+        cdef NVENCSTATUS r
+        try:
+            if DEBUG_API:
+                log("nvEncReconfigureEncoder(%#x)", <uintptr_t> self.context)
+            with nogil:
+                r = self.functionList.nvEncReconfigureEncoder(self.context, &reconfig)
+            raiseNVENC(r, "reconfiguring encoder for colour range change")
+        finally:
+            if reconfig.reInitEncodeParams.encodeConfig!=NULL:
+                free(reconfig.reInitEncodeParams.encodeConfig)
 
     cdef void dump_caps(self, codec_name, GUID codec):
         #test all caps:
@@ -1590,6 +1612,13 @@ cdef class Encoder:
         assert input_size>0, "invalid input size %i" % input_size
 
         cdef double start = monotonic()
+        # if the colour range changed, reconfigure the encoder so the SPS VUI is updated
+        # (and force an IDR below) - the range is otherwise baked in at init time:
+        cdef int range_changed = self.full_range != full_range
+        if range_changed:
+            self.full_range = full_range
+            if self.frames > 0:
+                self.reconfigure_encoder()
         if DEBUG_API:
             log("nvEncEncodePicture(%#x)", <uintptr_t> &pic)
         memset(&pic, 0, sizeof(NV_ENC_PIC_PARAMS))
@@ -1602,8 +1631,8 @@ cdef class Encoder:
         pic.inputBuffer = input
         pic.outputBitstream = self.bitstreamBuffer
         #pic.pictureType: required when enablePTD is disabled
-        if self.frames==0:
-            #only the first frame needs to be IDR (as we never lose frames)
+        if self.frames==0 or range_changed:
+            #the first frame, or a colour-range change, needs an IDR carrying a fresh SPS:
             pic.pictureType = NV_ENC_PIC_TYPE_IDR
             pic.encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR
         else:
@@ -1700,7 +1729,7 @@ cdef class Encoder:
             "frame"     : int(self.frames),
             "pts"       : int(timestamp-self.first_frame_timestamp),
         }
-        if BACKWARDS_COMPATIBLE or self.frames == 0 or self.full_range != full_range:
+        if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
             client_options["full-range"] = full_range
         if self.kernel_name:
             client_options["csc-type"] = f"cuda:{self.kernel_name}"
