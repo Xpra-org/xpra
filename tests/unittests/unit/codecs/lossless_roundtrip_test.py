@@ -29,6 +29,7 @@ LOSSLESS_COMBOS = (
     ("enc_pillow", "webp", "dec_pillow"),
     ("enc_webp", "webp", "dec_webp"),
     ("enc_jph", "jph", "dec_jph"),
+    ("enc_avif", "avif", "dec_avif"),
 )
 
 # a single large picture from the documentation screenshots:

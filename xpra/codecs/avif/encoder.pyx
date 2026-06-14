@@ -15,6 +15,7 @@ from xpra.codecs.avif.avif cimport (
     AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH,
     AVIF_QUANTIZER_LOSSLESS, AVIF_QUANTIZER_BEST_QUALITY, AVIF_QUANTIZER_WORST_QUALITY,
     AVIF_RANGE_LIMITED, AVIF_RANGE_FULL,
+    AVIF_MATRIX_COEFFICIENTS_IDENTITY,
     avifResult,
     avifRWData,
     AVIF_PIXEL_FORMAT_NONE, AVIF_PIXEL_FORMAT_YUV400,
@@ -125,6 +126,7 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     AVIF_QUANTIZER_BEST_QUALITY
     cdef int speed = options.intget("speed", 50)
     cdef int quality = options.intget("quality", 50)
+    cdef uint8_t lossless = quality >= 100 and not grayscale
     #AVIF_QUANTIZER_BEST_QUALITY 0
     #AVIF_QUANTIZER_WORST_QUALITY 63
     qrange = 20
@@ -136,22 +138,31 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
         rgb.pixels = <uint8_t*> (<uintptr_t> int(bc))
         log("avif.encode(%s, %s, %s) pixels=%#x", coding, image, options, int(bc))
         try:
-            if image.get_full_range():
-                avif_image.yuvRange = AVIF_RANGE_FULL
-            else:
-                avif_image.yuvRange = AVIF_RANGE_LIMITED
-            if grayscale:
-                avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV400
-                client_options["subsampling"] = "YUV400"
-            elif quality>80:
+            if lossless:
+                # encode the R/G/B channels directly, with no YCbCr transform (identity
+                # matrix) at full range and 4:4:4, so the round-trip is bit-exact - the
+                # quantizer is already 0 at quality=100:
+                avif_image.matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_IDENTITY
                 avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV444
+                avif_image.yuvRange = AVIF_RANGE_FULL
                 client_options["subsampling"] = "YUV444"
-            elif quality>50:
-                avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV422
-                client_options["subsampling"] = "YUV422"
             else:
-                avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV420
-                client_options["subsampling"] = "YUV420"
+                if image.get_full_range():
+                    avif_image.yuvRange = AVIF_RANGE_FULL
+                else:
+                    avif_image.yuvRange = AVIF_RANGE_LIMITED
+                if grayscale:
+                    avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV400
+                    client_options["subsampling"] = "YUV400"
+                elif quality>80:
+                    avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV444
+                    client_options["subsampling"] = "YUV444"
+                elif quality>50:
+                    avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV422
+                    client_options["subsampling"] = "YUV422"
+                else:
+                    avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV420
+                    client_options["subsampling"] = "YUV420"
             r = avifImageRGBToYUV(avif_image, &rgb)
             log("avifImageRGBToYUV()=%i for %s", r, AVIF_PIXEL_FORMAT.get(avif_image.yuvFormat))
             check(r, "Failed to convert to YUV(A)")
