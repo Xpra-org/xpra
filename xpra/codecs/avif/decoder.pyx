@@ -23,6 +23,7 @@ from xpra.codecs.avif.avif cimport (
     AVIF_PIXEL_FORMAT_NONE, AVIF_PIXEL_FORMAT_YUV444, AVIF_PIXEL_FORMAT_YUV422,
     AVIF_PIXEL_FORMAT_YUV420, AVIF_PIXEL_FORMAT_YUV400,
     AVIF_RANGE_LIMITED, AVIF_RANGE_FULL,
+    AVIF_MATRIX_COEFFICIENTS_IDENTITY,
     AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH,
     #AVIF_STRICT_ENABLED,
 )
@@ -123,7 +124,10 @@ def decompress(data: bytes, options: typedict, yuv=False) -> ImageWrapper:
             # * All decoder->image YUV pixel data (yuvFormat, yuvPlanes, yuvRange, yuvChromaSamplePosition, yuvRowBytes)
             log("avif parsed: %ux%u (%ubpc) yuvFormat=%s, yuvRange=%s",
                 width, height, image.depth, AVIF_PIXEL_FORMAT.get(image.yuvFormat), AVIF_RANGE.get(image.yuvRange))
-            if yuv:
+            # the identity matrix (lossless mode) stores R'G'B' directly in the 'YUV' planes:
+            # there is no YCbCr transform to undo, so this planar data must not be handed to
+            # the YUV->RGB shaders / CSC modules - decode it straight to RGB instead below:
+            if yuv and image.matrixCoefficients != AVIF_MATRIX_COEFFICIENTS_IDENTITY:
                 #do we still need to copy if image.imageOwnsYUVPlanes?
                 #could we keep the decoder context alive until the image is freed instead?
                 yuv_format = "%sP" % AVIF_PIXEL_FORMAT.get(image.yuvFormat) #ie: YUV420P
@@ -153,6 +157,10 @@ def decompress(data: bytes, options: typedict, yuv=False) -> ImageWrapper:
             pixels = getbuf(width*4*height, 0)
             rgb.pixels = <uint8_t *> pixels.get_mem()
             rgb.rowBytes = stride
+            if rgb.ignoreAlpha:
+                # 'ignoreAlpha' leaves the unused 'X' byte untouched: make it opaque (0xff),
+                # to match the BGRX padding convention used everywhere else in xpra:
+                memset(rgb.pixels, 0xff, width*4*height)
             rgb.alphaPremultiplied = 1
             r = avifImageYUVToRGB(image, &rgb)
             check(r, "Conversion from YUV failed")
