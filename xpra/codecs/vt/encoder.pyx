@@ -246,6 +246,7 @@ cdef class Encoder:
     cdef object src_format
     cdef unsigned long frames
     cdef int full_range
+    cdef object init_options
     cdef uint8_t ready
     cdef object file
     # set by the output callback for each encoded frame:
@@ -272,13 +273,8 @@ cdef class Encoder:
         self.src_format = src_format
         self.frames = 0
         self.full_range = options.boolget("full-range", True)
-        if src_format == "YUV420P":
-            self.pixel_format = kCVPixelFormatType_420YpCbCr8Planar
-        elif src_format == "NV12":
-            self.pixel_format = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange if self.full_range \
-                else kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
-        else:
-            self.pixel_format = kCVPixelFormatType_32BGRA
+        self.init_options = options
+        self.set_pixel_format()
         self.init_encoder(options)
         gen = generation.increase()
         if SAVE_TO_FILE:
@@ -325,6 +321,29 @@ cdef class Encoder:
             r = VTCompressionSessionPrepareToEncodeFrames(self.session)
         if r != 0:
             raise RuntimeError(f"failed to prepare VideoToolbox encoder, error {r}")
+
+    cdef void set_pixel_format(self):
+        # the bitstream colour range (video_full_range_flag) is carried by the input pixel
+        # buffer format - only NV12 has distinct full / video range fourccs here:
+        if self.src_format == "YUV420P":
+            self.pixel_format = kCVPixelFormatType_420YpCbCr8Planar
+        elif self.src_format == "NV12":
+            self.pixel_format = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange if self.full_range \
+                else kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+        else:
+            self.pixel_format = kCVPixelFormatType_32BGRA
+
+    cdef void reinit_encoder(self):
+        # close and reopen the compression session so VideoToolbox regenerates the SPS with
+        # the colour range derived from the (updated) input pixel buffer format; the next
+        # encoded frame will be a fresh keyframe:
+        cdef VTCompressionSessionRef session = self.session
+        if session != NULL:
+            self.session = NULL
+            with nogil:
+                VTCompressionSessionInvalidate(session)
+                CFRelease(session)
+        self.init_encoder(self.init_options)
 
     cdef void set_int_property(self, CFStringRef key, int value):
         cdef int32_t v = value
@@ -464,6 +483,16 @@ cdef class Encoder:
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
         cdef double start = monotonic()
+        # VideoToolbox derives the bitstream colour range from the input pixel buffer format,
+        # which is fixed when the session is created - so on a range change we update the pixel
+        # format and reopen the session to emit a fresh SPS (the next frame is then a keyframe):
+        cdef int image_range = image.get_full_range()
+        cdef int range_changed = image_range != self.full_range
+        if range_changed:
+            self.full_range = image_range
+            if self.src_format == "NV12":
+                self.set_pixel_format()
+                self.reinit_encoder()
         cdef CVPixelBufferRef pixbuf = self.make_pixel_buffer(image)
 
         self.frame_data = None
@@ -498,9 +527,8 @@ cdef class Encoder:
             "frame"         : int(self.frames),
             "csc"           : OUTPUT_COLORSPACE[self.src_format],
         }
-        full_range = image.get_full_range()
-        if BACKWARDS_COMPATIBLE or self.frames == 0 or full_range != self.full_range:
-            client_options["full-range"] = full_range
+        if BACKWARDS_COMPATIBLE or self.frames == 0 or range_changed:
+            client_options["full-range"] = bool(self.full_range)
         if self.frame_keyframe:
             client_options["type"] = "IDR"
         if self.frames == 0:
