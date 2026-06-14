@@ -28,7 +28,7 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_codec_ctx_t,
     vpx_codec_error, vpx_codec_destroy,
     vpx_codec_version_str, vpx_codec_build_config,
-    VPX_IMG_FMT_I420, VPX_IMG_FMT_I444, VPX_IMG_FMT_HIGHBITDEPTH,
+    VPX_IMG_FMT_I420, VPX_IMG_FMT_I422, VPX_IMG_FMT_I444, VPX_IMG_FMT_HIGHBITDEPTH,
     VPX_CS_UNKNOWN, VPX_CS_BT_601, VPX_CS_BT_709,
     VPX_CS_SMPTE_170, VPX_CS_SMPTE_240, VPX_CS_BT_2020,
     VPX_CS_RESERVED, VPX_CS_SRGB,
@@ -98,7 +98,7 @@ cdef extern from "vpx/vpx_decoder.h":
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES : Dict[str, Sequence[str]] = {
     "vp8"   : ("YUV420P", ),
-    "vp9"   : ("YUV420P", "YUV444P"),
+    "vp9"   : ("YUV420P", "YUV422P", "YUV444P"),
 }
 CODECS = tuple(COLORSPACES.keys())
 
@@ -172,6 +172,8 @@ cdef inline const vpx_codec_iface_t  *make_codec_dx(encoding):
 
 
 cdef inline vpx_img_fmt_t get_vpx_colorspace(colorspace) noexcept:
+    if colorspace == "YUV422P":
+        return VPX_IMG_FMT_I422
     if colorspace == "YUV444P":
         return VPX_IMG_FMT_I444
     return VPX_IMG_FMT_I420
@@ -309,6 +311,8 @@ cdef class Decoder:
             expected = self.dst_format
             if img.fmt == VPX_IMG_FMT_I444:
                 self.dst_format = "YUV444P"
+            elif img.fmt == VPX_IMG_FMT_I422:
+                self.dst_format = "YUV422P"
             elif img.fmt == VPX_IMG_FMT_I420:
                 self.dst_format = "YUV420P"
             else:

@@ -26,6 +26,7 @@ cdef extern from "vpx/vpx_codec.h":
 
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
+    cdef int VPX_IMG_FMT_I422
     cdef int VPX_IMG_FMT_I444
     cdef int VPX_IMG_FMT_I44416
     cdef int VPX_IMG_FMT_HIGHBITDEPTH

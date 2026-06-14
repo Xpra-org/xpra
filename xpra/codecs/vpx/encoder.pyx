@@ -26,7 +26,7 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_codec_ctx_t,
     vpx_codec_error, vpx_codec_destroy,
     vpx_codec_version_str, vpx_codec_build_config,
-    VPX_IMG_FMT_I420, VPX_IMG_FMT_I444, VPX_IMG_FMT_I44416,
+    VPX_IMG_FMT_I420, VPX_IMG_FMT_I422, VPX_IMG_FMT_I444, VPX_IMG_FMT_I44416,
     vpx_image_t,
     VPX_CS_BT_709, VPX_CR_FULL_RANGE, VPX_CR_STUDIO_RANGE,
     vpx_codec_err_to_string, vpx_codec_control_,
@@ -196,7 +196,7 @@ COLORSPACES: Dict[str, Sequence[str]] = {
     "vp8": ("YUV420P", ),
 }
 if VPX_ENCODER_ABI_VERSION>=23 and not OSX:
-    COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
+    COLORSPACES["vp9"] = ("YUV420P", "YUV422P", "YUV444P", "YUV444P10")
 CODECS = tuple(COLORSPACES.keys())
 
 #as of libvpx 1.8:
@@ -271,16 +271,15 @@ def get_specs() -> Sequence[VideoSpec]:
 
     for encoding in get_encodings():
         max_w, max_h = MAX_SIZE[encoding]
-        if encoding=="vp8":
-            has_lossless_mode = False
-            speed = 50
-            quality = 50
-        else:
-            has_lossless_mode = in_cs.startswith("YUV444P")
-            speed = 40
-            quality = 50 + 50*int(has_lossless_mode)
-
         for in_cs in COLORSPACES[encoding]:
+            if encoding=="vp8":
+                has_lossless_mode = False
+                speed = 50
+                quality = 50
+            else:
+                has_lossless_mode = in_cs.startswith("YUV444P")
+                speed = 40
+                quality = 50 + 50*int(has_lossless_mode)
             out_cs = in_cs
             if in_cs == "YUV444P10":
                 out_cs = "r210"
@@ -301,6 +300,8 @@ def get_specs() -> Sequence[VideoSpec]:
 cdef inline vpx_img_fmt_t get_vpx_colorspace(colorspace: str) except -1:
     if colorspace == "YUV420P":
         return VPX_IMG_FMT_I420
+    if colorspace == "YUV422P":
+        return VPX_IMG_FMT_I422
     if colorspace == "YUV444P":
         return VPX_IMG_FMT_I444
     if colorspace == "YUV444P10":
@@ -383,7 +384,7 @@ cdef class Encoder:
 
         self.update_cfg()
         self.cfg.g_usage = USAGE_STREAM_FROM_SERVER
-        if self.src_format=="YUV444P":
+        if self.src_format in ("YUV422P", "YUV444P"):
             self.cfg.g_profile = 1
             self.cfg.g_bit_depth = 8
         elif self.src_format=="YUV444P10":
@@ -687,6 +688,9 @@ cdef class Encoder:
         if self.src_format=="YUV420P":
             image.x_chroma_shift = 1
             image.y_chroma_shift = 1
+        elif self.src_format=="YUV422P":
+            image.x_chroma_shift = 1
+            image.y_chroma_shift = 0
         elif self.src_format.startswith("YUV444P"):
             image.x_chroma_shift = 0
             image.y_chroma_shift = 0
