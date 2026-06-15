@@ -6,13 +6,22 @@
 """
 DXGI Desktop Duplication capture backend.
 
-Uses IDXGIOutputDuplication (Windows 8+) to capture the desktop into a
-D3D11 staging texture which is then read back to CPU memory on demand.
+Uses IDXGIOutputDuplication (Windows 8+) to capture the desktop.
+Two textures are maintained:
+
+  _gpu_tex  — D3D11_USAGE_DEFAULT, GPU-only.  Populated every refresh().
+              Exposed via DXGIImageWrapper.get_gpu_buffer() for GPU encoders
+              (e.g. the MF VideoProcessor CSC path) that never need CPU pixels.
+
+  _staging  — D3D11_USAGE_STAGING, CPU-readable.  Populated *lazily* inside
+              _do_map() only when get_pixels() is actually called.
 
 Flow per frame:
-  refresh() -> AcquireNextFrame -> CopyResource(staging) -> ReleaseFrame
-  get_image() -> DXGIImageWrapper (no CPU copy yet)
-  DXGIImageWrapper.may_download() -> Map staging -> memcpy -> Unmap
+  refresh()  -> AcquireNextFrame -> CopyResource(_gpu_tex, src) -> ReleaseFrame
+  get_image() -> DXGIImageWrapper (neither GPU nor CPU copy yet)
+  DXGIImageWrapper.get_gpu_buffer() -> _gpu_tex ptr (zero-copy GPU path)
+  DXGIImageWrapper.may_download()   -> CopyResource(staging, gpu_tex)
+                                     -> Map staging -> memcpy -> Unmap
 """
 
 import time
@@ -213,6 +222,26 @@ cdef extern from *:
             (ID3D11Device *)device, &desc, NULL, (ID3D11Texture2D **)out_staging);
     }
 
+    /* ---- Create GPU-only (DEFAULT usage) texture for GPU encoder path ---- */
+    static HRESULT xpra_create_gpu_tex(void *device, UINT w, UINT h,
+                                        DXGI_FORMAT fmt, void **out_tex)
+    {
+        D3D11_TEXTURE2D_DESC desc = {0};
+        desc.Width              = w;
+        desc.Height             = h;
+        desc.MipLevels          = 1;
+        desc.ArraySize          = 1;
+        desc.Format             = fmt;
+        desc.SampleDesc.Count   = 1;
+        desc.SampleDesc.Quality = 0;
+        desc.Usage              = D3D11_USAGE_DEFAULT;
+        desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+        desc.CPUAccessFlags     = 0;
+        desc.MiscFlags          = 0;
+        return ((ID3D11Device *)device)->lpVtbl->CreateTexture2D(
+            (ID3D11Device *)device, &desc, NULL, (ID3D11Texture2D **)out_tex);
+    }
+
     /* ---- Map staging texture ---- */
     static MapResult xpra_map_staging(void *context, void *staging)
     {
@@ -302,6 +331,8 @@ cdef extern from *:
     void xpra_flush(void *context)
     int  xpra_create_staging(void *device, unsigned int w, unsigned int h,
                               unsigned int fmt, void **out_staging)
+    int  xpra_create_gpu_tex(void *device, unsigned int w, unsigned int h,
+                              unsigned int fmt, void **out_tex)
     MapResult xpra_map_staging(void *context, void *staging)
     void xpra_unmap_staging(void *context, void *staging)
     void xpra_com_release(void *obj)
@@ -344,7 +375,8 @@ cdef class DXGICapture:
     cdef void *_device      # ID3D11Device*
     cdef void *_context     # ID3D11DeviceContext*
     cdef void *_duplication # IDXGIOutputDuplication*
-    cdef void *_staging     # ID3D11Texture2D*
+    cdef void *_gpu_tex     # ID3D11Texture2D* — D3D11_USAGE_DEFAULT, for GPU encoder path
+    cdef void *_staging     # ID3D11Texture2D* — D3D11_USAGE_STAGING, for CPU readback
 
     cdef int      _width
     cdef int      _height
@@ -408,6 +440,16 @@ cdef class DXGICapture:
             self._output_x, self._output_y,
             desc.format, self._pixel_format, self._depth)
 
+        # GPU texture (DEFAULT usage) — populated every refresh(); never CPU-mapped.
+        # GPU encoders (e.g. MF VideoProcessor) read directly from this texture.
+        hr = xpra_create_gpu_tex(self._device,
+                                  self._width, self._height, self._dxgi_format,
+                                  &self._gpu_tex)
+        if hr or not self._gpu_tex:
+            raise RuntimeError("CreateTexture2D(gpu_tex) failed: %#x" % <unsigned int> hr)
+        log("GPU texture created at %#x", <uintptr_t> self._gpu_tex)
+
+        # Staging texture (STAGING usage) — CPU-readable; populated lazily in _do_map().
         hr = xpra_create_staging(self._device,
                                   self._width, self._height, self._dxgi_format,
                                   &self._staging)
@@ -473,11 +515,13 @@ cdef class DXGICapture:
             log.warn("Warning: failed to QI desktop resource as ID3D11Texture2D: %#x", <unsigned int> hr)
             return False
 
-        # GPU-side copy: desktop texture -> our staging texture
-        xpra_copy_resource(self._context, self._staging, src_texture)
+        # GPU-side copy: desktop texture -> _gpu_tex (DEFAULT, GPU-only).
+        # _staging is NOT touched here; it is populated lazily in _do_map()
+        # only when a CPU pixel readback is actually requested.
+        xpra_copy_resource(self._context, self._gpu_tex, src_texture)
         xpra_com_release(src_texture)
 
-        # Release the duplication frame immediately; staging is now independent
+        # Release the duplication frame immediately; _gpu_tex is now independent
         xpra_release_frame(self._duplication)
         xpra_flush(self._context)
 
@@ -512,6 +556,7 @@ cdef class DXGICapture:
             return None
 
         cdef uintptr_t ctx_ptr     = <uintptr_t> self._context
+        cdef uintptr_t gpu_ptr     = <uintptr_t> self._gpu_tex
         cdef uintptr_t staging_ptr = <uintptr_t> self._staging
         cdef int bpp               = self._depth // 8
         cdef int full_width        = self._width
@@ -522,7 +567,8 @@ cdef class DXGICapture:
         rowstride    = width * bpp
 
         def map_pixels():
-            return _do_map(ctx_ptr, staging_ptr,
+            # Lazily copies gpu_tex -> staging, then maps staging and reads back.
+            return _do_map(ctx_ptr, staging_ptr, gpu_ptr,
                            cap_x, cap_y, cap_w, cap_h,
                            full_width, bpp)
 
@@ -534,7 +580,7 @@ cdef class DXGICapture:
             x, y, width, height,
             pixel_format, depth, rowstride,
             map_pixels, do_unmap,
-            staging_ptr,
+            gpu_ptr,         # DEFAULT texture ptr — usable by GPU encoders
         )
 
     def clean(self) -> None:
@@ -543,6 +589,8 @@ cdef class DXGICapture:
         self._duplication = NULL
         xpra_com_release(self._staging)
         self._staging = NULL
+        xpra_com_release(self._gpu_tex)
+        self._gpu_tex = NULL
         xpra_com_release(self._context)
         self._context = NULL
         xpra_com_release(self._device)
@@ -554,10 +602,14 @@ cdef class DXGICapture:
 # Map / unmap helpers — called from DXGIImageWrapper closures
 # ---------------------------------------------------------------------------
 
-def _do_map(uintptr_t ctx_ptr, uintptr_t staging_ptr,
+def _do_map(uintptr_t ctx_ptr, uintptr_t staging_ptr, uintptr_t gpu_ptr,
             int x, int y, int width, int height,
             int full_width, int bpp) -> bytes:
-    """Map the staging texture and copy the requested rectangle to bytes."""
+    """Lazily copy gpu_tex -> staging (if gpu_ptr given), then map and read back."""
+    if gpu_ptr:
+        # gpu_ptr is a D3D11_USAGE_DEFAULT texture populated by refresh().
+        # Copy it to the CPU-readable staging texture before mapping.
+        xpra_copy_resource(<void *> ctx_ptr, <void *> staging_ptr, <void *> gpu_ptr)
     cdef MapResult mr = xpra_map_staging(<void *> ctx_ptr, <void *> staging_ptr)
     if mr.hr:
         raise RuntimeError("Map(staging) failed: %#x" % <unsigned int> mr.hr)

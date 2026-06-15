@@ -427,26 +427,16 @@ static MFEncodeStatus try_get_encoded(MFEncoder *enc, MFEncodedFrame *frame) {
     return MF_ENC_OK;
 }
 
-MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
-                                  const uint8_t *y_data, int y_stride,
-                                  const uint8_t *u_data, int u_stride,
-                                  const uint8_t *v_data, int v_stride,
-                                  int width, int height,
-                                  MFEncodedFrame *frame) {
+/* ── shared inner encode — NV12 buffer already in enc->nv12_buf ──── */
+
+static MFEncodeStatus do_encode_nv12(MFEncoder *enc, MFEncodedFrame *frame) {
     HRESULT hr;
     IMFSample      *in_sample = NULL;
     IMFMediaBuffer *in_mbuf   = NULL;
     BYTE           *buf_ptr   = NULL;
     long long       t0, t1, t2;
 
-    memset(frame, 0, sizeof(*frame));
-
-    /* YUV420P → NV12 */
-    yuv420p_to_nv12(enc->nv12_buf, enc->nv12_stride,
-                    y_data, y_stride, u_data, u_stride, v_data, v_stride,
-                    width, height);
-
-    /* wrap NV12 data in an MF sample */
+    /* wrap the pre-converted NV12 scratch buffer in an MF sample */
     t0 = enc_usec_now();
     hr = MFCreateMemoryBuffer((DWORD)enc->nv12_buf_size, &in_mbuf);
     if (FAILED(hr)) return set_enc_error(enc, hr, "MFCreateMemoryBuffer(input)");
@@ -480,6 +470,19 @@ MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
     frame->us_input  = (int)(t1 - t0);
     frame->us_output = (int)(t2 - t1);
     return st;
+}
+
+MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
+                                  const uint8_t *y_data, int y_stride,
+                                  const uint8_t *u_data, int u_stride,
+                                  const uint8_t *v_data, int v_stride,
+                                  int width, int height,
+                                  MFEncodedFrame *frame) {
+    memset(frame, 0, sizeof(*frame));
+    yuv420p_to_nv12(enc->nv12_buf, enc->nv12_stride,
+                    y_data, y_stride, u_data, u_stride, v_data, v_stride,
+                    width, height);
+    return do_encode_nv12(enc, frame);
 }
 
 /* ── destroy ─────────────────────────────────────────────────────── */

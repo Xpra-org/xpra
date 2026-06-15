@@ -215,53 +215,19 @@ cdef class Encoder:
     def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
         cdef MFEncodedFrame frame
         cdef MFEncodeStatus status
-        cdef Py_buffer py_buf[3]
-        cdef int i
-        cdef const uint8_t *y_ptr
-        cdef const uint8_t *u_ptr
-        cdef const uint8_t *v_ptr
-        cdef int y_stride, u_stride, v_stride
 
         assert self.context != NULL, "encoder is closed"
-
-        if image.get_pixel_format() != "YUV420P":
-            raise ValueError("expected YUV420P but got %s" % image.get_pixel_format())
 
         cdef int width  = image.get_width()
         cdef int height = image.get_height()
         assert width  == self.width,  "width mismatch: %d vs %d"  % (width,  self.width)
         assert height == self.height, "height mismatch: %d vs %d" % (height, self.height)
 
-        pixels  = image.get_pixels()
-        strides = image.get_rowstride()
-        assert len(pixels)  == 3, "expected 3 planes, got %d"  % len(pixels)
-        assert len(strides) == 3, "expected 3 strides, got %d" % len(strides)
+        pf = image.get_pixel_format()
+        if pf != "YUV420P":
+            raise ValueError("expected YUV420P but got %s" % pf)
 
-        y_stride = strides[0]
-        u_stride = strides[1]
-        v_stride = strides[2]
-
-        for i in range(3):
-            memset(&py_buf[i], 0, sizeof(Py_buffer))
-
-        try:
-            for i in range(3):
-                if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                    raise ValueError("failed to read pixel plane %d from %s" % (i, type(pixels[i])))
-            y_ptr = <const uint8_t *> py_buf[0].buf
-            u_ptr = <const uint8_t *> py_buf[1].buf
-            v_ptr = <const uint8_t *> py_buf[2].buf
-
-            with nogil:
-                status = mf_encoder_encode(self.context,
-                                           y_ptr, y_stride,
-                                           u_ptr, u_stride,
-                                           v_ptr, v_stride,
-                                           width, height, &frame)
-        finally:
-            for i in range(3):
-                if py_buf[i].buf:
-                    PyBuffer_Release(&py_buf[i])
+        status = self._compress_yuv420p(image, width, height, &frame)
 
         if status == MF_ENC_NEED_MORE_INPUT:
             return b"", {"delayed": 1}
@@ -290,6 +256,48 @@ cdef class Encoder:
             client_options["type"] = "IDR"
         self.frames += 1
         return data, client_options
+
+    cdef MFEncodeStatus _compress_yuv420p(self, image, int width, int height,
+                                           MFEncodedFrame *frame):
+        """Pin the three YUV420P planes and call the C encoder without holding the GIL."""
+        cdef Py_buffer py_buf[3]
+        cdef int i
+        cdef const uint8_t *y_ptr
+        cdef const uint8_t *u_ptr
+        cdef const uint8_t *v_ptr
+        cdef int y_stride, u_stride, v_stride
+        cdef MFEncodeStatus status
+
+        pixels  = image.get_pixels()
+        strides = image.get_rowstride()
+        assert len(pixels)  == 3, "expected 3 planes for YUV420P, got %d"  % len(pixels)
+        assert len(strides) == 3, "expected 3 strides for YUV420P, got %d" % len(strides)
+
+        y_stride = strides[0]
+        u_stride = strides[1]
+        v_stride = strides[2]
+
+        for i in range(3):
+            memset(&py_buf[i], 0, sizeof(Py_buffer))
+
+        try:
+            for i in range(3):
+                if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                    raise ValueError("failed to read pixel plane %d from %s" % (i, type(pixels[i])))
+            y_ptr = <const uint8_t *> py_buf[0].buf
+            u_ptr = <const uint8_t *> py_buf[1].buf
+            v_ptr = <const uint8_t *> py_buf[2].buf
+            with nogil:
+                status = mf_encoder_encode(self.context,
+                                           y_ptr, y_stride,
+                                           u_ptr, u_stride,
+                                           v_ptr, v_stride,
+                                           width, height, frame)
+        finally:
+            for i in range(3):
+                if py_buf[i].buf:
+                    PyBuffer_Release(&py_buf[i])
+        return status
 
 
 def selftest(full=False) -> None:

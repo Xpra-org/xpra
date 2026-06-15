@@ -13,27 +13,37 @@ log = Logger("shadow", "win32", "d3d11")
 
 class DXGIImageWrapper(ImageWrapper):
     """
-    Wraps a D3D11 staging texture that has already been GPU-copied from the
-    desktop duplication surface.  CPU pixel data is obtained lazily via
-    may_download() so GPU-capable encoders can bypass the readback entirely.
+    Wraps a captured DXGI frame.  Two zero-copy paths are supported:
+
+    GPU path (no CPU involvement):
+      get_gpu_buffer() returns the D3D11_USAGE_DEFAULT texture pointer
+      (_gpu_ptr).  GPU encoders (e.g. MF VideoProcessor) read from it
+      directly without any CPU readback.
+
+    CPU path (lazy):
+      get_pixels() / may_download() triggers a GPU->staging copy followed
+      by Map/memcpy/Unmap.  The staging texture is only touched when this
+      path is taken.
 
     Lifecycle:
-      - Constructed by DXGICapture.get_image() holding a pointer to the
-        staging texture and a MapPixels callable.
-      - may_download() maps the texture, copies to bytes, unmaps.
-      - free() calls the unmap callable if download was never done.
+      - Constructed by DXGICapture.get_image().
+      - may_download() maps the staging texture, copies pixels to bytes,
+        unmaps.  Sets _mapped=True while the staging is live, False after.
+      - free() calls _unmap only if the staging is currently mapped
+        (_mapped=True), avoiding Unmap calls on a never-mapped texture.
     """
 
     def __init__(self, x: int, y: int, width: int, height: int,
                  pixel_format: str, depth: int, rowstride: int,
-                 map_pixels,        # callable() -> memoryview | bytes, or raises
-                 unmap,             # callable() — always called after map_pixels
-                 staging_ptr: int = 0):
+                 map_pixels,        # callable() -> bytes, or raises
+                 unmap,             # callable() — called after map_pixels
+                 gpu_ptr: int = 0):
         super().__init__(x, y, width, height, None, pixel_format, depth, rowstride,
                          depth // 8, ImageWrapper.PACKED, thread_safe=False)
         self._map_pixels = map_pixels
         self._unmap = unmap
-        self._staging_ptr = staging_ptr
+        self._gpu_ptr = gpu_ptr
+        self._mapped = False   # True only while staging texture is mapped
 
     def __repr__(self) -> str:
         return "DXGIImageWrapper(%dx%d %s)" % (self.width, self.height, self.pixel_format)
@@ -46,11 +56,15 @@ class DXGIImageWrapper(ImageWrapper):
         start = monotonic()
         try:
             data = self._map_pixels()
+            self._mapped = True     # staging is now mapped (Map succeeded)
             self.pixels = bytes(data)
         finally:
-            if self._unmap:
+            # Unmap only if Map actually succeeded; if _map_pixels raised,
+            # _mapped is still False and the staging was never mapped.
+            if self._unmap and self._mapped:
                 self._unmap()
-                self._unmap = None
+                self._mapped = False
+            self._unmap = None
             self._map_pixels = None
         elapsed = monotonic() - start
         nbytes = len(self.pixels)
@@ -62,7 +76,11 @@ class DXGIImageWrapper(ImageWrapper):
             self.pixel_format, nbytes, int(1000 * elapsed), mbs)
 
     def get_gpu_buffer(self):
-        return self._staging_ptr or None
+        """Return the D3D11_USAGE_DEFAULT texture pointer, or None.
+        This texture is GPU-accessible and can be fed directly to GPU
+        encoders (e.g. ID3D11VideoProcessor, MF VideoProcessorMFT).
+        It is NOT CPU-mapped and does not require any staging copy."""
+        return self._gpu_ptr or None
 
     def has_pixels(self) -> bool:
         return self.pixels is not None
@@ -84,12 +102,16 @@ class DXGIImageWrapper(ImageWrapper):
         return True
 
     def free(self) -> None:
-        if self._unmap:
+        # Only unmap if the staging texture is currently mapped.
+        # If may_download() was never called, _mapped is False and the
+        # staging was never mapped — calling Unmap would be incorrect.
+        if self._unmap and self._mapped:
             try:
                 self._unmap()
             except Exception:
                 log("DXGIImageWrapper.free() unmap error", exc_info=True)
-            self._unmap = None
+        self._unmap = None
         self._map_pixels = None
-        self._staging_ptr = 0
+        self._mapped = False
+        self._gpu_ptr = 0
         super().free()
