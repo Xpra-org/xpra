@@ -48,6 +48,8 @@ cdef extern from "CoreFoundation/CoreFoundation.h":
     CFDictionaryRef CFDictionaryCreate(CFAllocatorRef allocator, const void** keys, const void** values,
                                        CFIndex numValues, const CFDictionaryKeyCallBacks* keyCallBacks,
                                        const CFDictionaryValueCallBacks* valueCallBacks) nogil
+    # "null" allocator: CoreMedia references the memory block without owning or freeing it
+    CFAllocatorRef kCFAllocatorNull
 
 
 cdef extern from "CoreVideo/CoreVideo.h":
@@ -57,15 +59,12 @@ cdef extern from "CoreVideo/CoreVideo.h":
 cdef extern from "CoreMedia/CoreMedia.h":
     ctypedef unsigned int CMBlockBufferFlags
     ctypedef long CMItemCount
-    int kCMBlockBufferAssureMemoryNowFlag
     OSStatus CMBlockBufferCreateWithMemoryBlock(CFAllocatorRef structureAllocator, void* memoryBlock,
                                                 size_t blockLength, CFAllocatorRef blockAllocator,
                                                 const void* customBlockSource,
                                                 size_t offsetToData, size_t dataLength,
                                                 CMBlockBufferFlags flags,
                                                 CMBlockBufferRef* blockBufferOut) nogil
-    OSStatus CMBlockBufferReplaceDataBytes(const void* sourceBytes, CMBlockBufferRef destinationBuffer,
-                                           size_t offsetIntoDestination, size_t dataLength) nogil
     OSStatus CMSampleBufferCreateReady(CFAllocatorRef allocator, CMBlockBufferRef dataBuffer,
                                        CMFormatDescriptionRef formatDescription,
                                        CMItemCount numSamples, CMItemCount numSampleTimingEntries,
@@ -539,23 +538,22 @@ cdef class Decoder:
         return image
 
     cdef object do_decompress(self, bytes avcc):
-        cdef const uint8_t* src = <const uint8_t*> (<const char*> avcc)
+        cdef void* src = <void*> (<const char*> avcc)
         cdef size_t total = len(avcc)
         cdef CMBlockBufferRef bb = NULL
         cdef CMSampleBufferRef sample = NULL
         cdef size_t sample_size = total
         cdef VTDecodeInfoFlags flags = 0
         cdef OSStatus r = 0
+        # reference the AVCC buffer in place (kCFAllocatorNull = don't copy/own/free it):
+        # `avcc` stays alive for the whole call and the decode is synchronous
+        # (WaitForAsynchronousFrames below), so VideoToolbox never sees freed memory.
         with nogil:
-            r = CMBlockBufferCreateWithMemoryBlock(NULL, NULL, total, NULL, NULL, 0, total,
-                                                   kCMBlockBufferAssureMemoryNowFlag, &bb)
+            r = CMBlockBufferCreateWithMemoryBlock(NULL, src, total, kCFAllocatorNull, NULL, 0, total,
+                                                   0, &bb)
         if r != 0 or bb == NULL:
             raise RuntimeError(f"failed to create CMBlockBuffer, error {osstatus_str(r)}")
         try:
-            with nogil:
-                r = CMBlockBufferReplaceDataBytes(src, bb, 0, total)
-            if r != 0:
-                raise RuntimeError(f"failed to fill CMBlockBuffer, error {osstatus_str(r)}")
             with nogil:
                 r = CMSampleBufferCreateReady(NULL, bb, self.format_desc, 1, 0, NULL, 1, &sample_size, &sample)
             if r != 0 or sample == NULL:
