@@ -16,7 +16,6 @@
 # Decoded frames come back as NV12 CVPixelBuffers which we copy into a plain
 # (CPU) ImageWrapper, like the other xpra video decoders.
 
-import struct
 from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
@@ -31,6 +30,8 @@ from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 
 from libc.stdint cimport uint8_t, int32_t, uintptr_t
+from libc.string cimport memcpy
+from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
 from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
 from xpra.codecs.vt.vt cimport *  # noqa: F403 (shared CoreFoundation/CoreVideo/CoreMedia declarations + FourCC enum)
@@ -241,15 +242,19 @@ def get_specs() -> Sequence[VideoSpec]:
     return specs
 
 
-cdef list parse_nals(const uint8_t* raw, Py_ssize_t n):
-    """ split an Annex-B buffer into a list of NAL units.
+cdef tuple split_annexb(const uint8_t* raw, Py_ssize_t n, bint hevc):
+    """ split an Annex-B frame into parameter sets and a ready-to-decode AVCC buffer.
 
     `raw` points at the compressed frame (borrowed - valid only for the duration
-    of the call). Each returned list element is a `bytes` object holding one NAL
-    unit body (the start code is stripped). The caller classifies them into
-    parameter sets (SPS/PPS, plus VPS for h265) and picture NAL units.
+    of the call). Returns `(param_sets, avcc)` where:
+      - `param_sets` is a list of `bytes`, one per SPS/PPS (plus VPS for h265),
+        used to (re)build the CMVideoFormatDescription on keyframes;
+      - `avcc` is a single `bytes` holding the picture NAL units in AVCC layout
+        (each prefixed by its 4-byte big-endian length), built in one pass so the
+        picture data is copied exactly once.
     """
-    # locate every start code (3 or 4 bytes) and record (start, body_offset):
+    param_set_types = H265_PARAMETER_SETS if hevc else H264_PARAMETER_SETS
+    # locate every start code (3 or 4 bytes) and record (start_code_pos, body_offset):
     starts = []
     cdef Py_ssize_t i = 0
     while i + 3 <= n:
@@ -263,16 +268,41 @@ cdef list parse_nals(const uint8_t* raw, Py_ssize_t n):
                 i += 4
                 continue
         i += 1
-    nals = []
+
+    # classify each NAL: parameter sets are copied out (small, keyframe-only),
+    # picture NALs are recorded and their AVCC size accumulated:
+    param_sets = []
+    cdef list picture = []      # (body_start, body_end) of each picture NAL
+    cdef Py_ssize_t total = 0
     cdef Py_ssize_t count = len(starts)
-    cdef Py_ssize_t idx
-    cdef Py_ssize_t body_start, body_end
+    cdef Py_ssize_t idx, bs, be
+    cdef int nal_type
     for idx in range(count):
-        body_start = starts[idx][1]
-        body_end = starts[idx + 1][0] if idx + 1 < count else n
-        if body_end > body_start:
-            nals.append(raw[body_start:body_end])
-    return nals
+        bs = starts[idx][1]
+        be = starts[idx + 1][0] if idx + 1 < count else n
+        if be <= bs:
+            continue
+        nal_type = ((raw[bs] >> 1) & 0x3F) if hevc else (raw[bs] & 0x1F)
+        if nal_type in param_set_types:
+            param_sets.append(raw[bs:be])
+        else:
+            picture.append((bs, be))
+            total += 4 + (be - bs)
+
+    # build the AVCC buffer in one shot (4-byte big-endian length prefix per NAL):
+    cdef bytes avcc = PyBytes_FromStringAndSize(NULL, total)
+    cdef uint8_t* dst = <uint8_t*> PyBytes_AS_STRING(avcc)
+    cdef Py_ssize_t off = 0
+    cdef Py_ssize_t blen
+    for bs, be in picture:
+        blen = be - bs
+        dst[off + 0] = <uint8_t> ((blen >> 24) & 0xFF)
+        dst[off + 1] = <uint8_t> ((blen >> 16) & 0xFF)
+        dst[off + 2] = <uint8_t> ((blen >> 8) & 0xFF)
+        dst[off + 3] = <uint8_t> (blen & 0xFF)
+        memcpy(dst + off + 4, raw + bs, blen)
+        off += 4 + blen
+    return param_sets, avcc
 
 
 # the decompression callback runs on a VideoToolbox internal thread:
@@ -480,27 +510,13 @@ cdef class Decoder:
         if "full-range" in options:
             self.full_range = options.boolget("full-range")
 
-        # read the compressed frame straight from the input buffer (no copy);
-        # parse_nals slices out each NAL body (a `bytes`) while the buffer is held:
+        # read the compressed frame straight from the input buffer (no copy) and,
+        # in a single pass, split it into parameter sets and the AVCC picture data:
+        cdef bint hevc = (self.encoding == "h265")
         cdef Py_ssize_t raw_len
         with buffer_context(data) as bc:
             raw_len = len(bc)
-            nals = parse_nals(<const uint8_t*> (<uintptr_t> int(bc)), raw_len)
-
-        # classify the NAL units into parameter sets and picture NALs:
-        hevc = (self.encoding == "h265")
-        param_set_types = H265_PARAMETER_SETS if hevc else H264_PARAMETER_SETS
-        param_sets = []
-        picture_nals = []
-        for nal in nals:
-            if not nal:
-                continue
-            b0 = nal[0]
-            nal_type = ((b0 >> 1) & 0x3F) if hevc else (b0 & 0x1F)
-            if nal_type in param_set_types:
-                param_sets.append(nal)
-            else:
-                picture_nals.append(nal)
+            param_sets, avcc = split_annexb(<const uint8_t*> (<uintptr_t> int(bc)), raw_len, hevc)
 
         # (re)build the format description and session when parameter sets arrive
         # (the encoder only sends them on keyframes). Most keyframes resend the
@@ -512,15 +528,8 @@ cdef class Decoder:
             self.param_sets = param_sets
         if self.session == NULL:
             raise RuntimeError("no VideoToolbox session: first frame must be a keyframe with parameter sets")
-        if not picture_nals:
+        if not avcc:
             raise RuntimeError("no picture data in frame")
-
-        # convert the picture NALs from Annex-B to AVCC (4-byte big-endian length prefix):
-        parts = []
-        for nal in picture_nals:
-            parts.append(struct.pack(">I", len(nal)))
-            parts.append(nal)
-        avcc = b"".join(parts)
 
         image = self.do_decompress(avcc)
 
