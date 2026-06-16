@@ -6,40 +6,11 @@
 # authentication from a file containing a list of entries of the form:
 # username|password|uid|gid|displays|env_options|session_options
 
-from xpra.auth.common import SessionData, parse_uid, parse_gid
+from xpra.auth.common import SessionData, AuthLine, parse_filedata
 from xpra.auth.file_auth_base import log, FileAuthenticatorBase
 from xpra.util.str_fn import hexstr
-from xpra.util.parsing import parse_str_dict
 from xpra.util.objects import typedict
 from xpra.net.digest import verify_digest
-
-AuthLine = tuple[str, str, int, int, list[str], dict[str, str], dict[str, str]]
-
-
-def parse_auth_line(line: str) -> AuthLine:
-    ldata = line.split("|")
-    if len(ldata) < 2:
-        raise ValueError(f"not enough fields: {len(ldata)}, minimum is 2")
-    log(f"found {len(ldata)} fields")
-    # parse fields:
-    username = ldata[0]
-    password = ldata[1]
-    if len(ldata) >= 5:
-        uid = parse_uid(ldata[2])
-        gid = parse_gid(ldata[3])
-        displays = ldata[4].split(",")
-    else:
-        # this will use the default value, usually "nobody":
-        uid = parse_uid(None)
-        gid = parse_gid(None)
-        displays = []
-    env_options: dict[str, str] = {}
-    session_options: dict[str, str] = {}
-    if len(ldata) >= 6:
-        env_options = parse_str_dict(ldata[5], ";")
-    if len(ldata) >= 7:
-        session_options = parse_str_dict(ldata[6], ";")
-    return username, password, uid, gid, displays, env_options, session_options
 
 
 class Authenticator(FileAuthenticatorBase):
@@ -50,32 +21,7 @@ class Authenticator(FileAuthenticatorBase):
         self.sessions: SessionData | None = None
 
     def parse_filedata(self, data: str) -> dict[str, AuthLine]:
-        if not data:
-            return {}
-        auth_data: dict[str, AuthLine] = {}
-        i = 0
-        for line in data.splitlines():
-            i += 1
-            line = line.strip()
-            log(f"line {i}: {line!r}")
-            if not line or line.startswith("#"):
-                continue
-            try:
-                v = parse_auth_line(line)
-                if v:
-                    username = v[0]
-                    if username in auth_data:
-                        log.error(f"Error: duplicate entry for username {username!r} in {self.password_filename!r}")
-                    else:
-                        auth_data[username] = v
-            except Exception as e:
-                log("parsing error", exc_info=True)
-                log.error(f"Error parsing password file {self.password_filename!r} at line {i}:")
-                log.error(f" {line!r}")
-                log.estr(e)
-                continue
-        log(f"parsed auth data from file {self.password_filename!r}: {auth_data}")
-        return auth_data
+        return parse_filedata(data, self.password_filename, reject_duplicates=True)
 
     def get_auth_info(self) -> AuthLine | None:
         self.load_password_file()

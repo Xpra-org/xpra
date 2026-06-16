@@ -7,7 +7,7 @@ import base64
 import os.path
 from collections.abc import Sequence
 
-from xpra.auth.common import SessionData, parse_uid, parse_gid
+from xpra.auth.common import SessionData, parse_uid, parse_gid, parse_filedata
 from xpra.auth.file_auth_base import stat_filetime
 from xpra.auth.sys_auth_base import SysAuthenticator
 from xpra.net.digest import get_salt
@@ -250,31 +250,10 @@ class Authenticator(SysAuthenticator):
         return self.password_filedata
 
     def parse_filedata(self, data: str) -> str | dict[str, AuthEntry]:
-        data = data.strip()
-        if not data:
-            return ""
-        lines = [x.strip() for x in data.splitlines() if x.strip() and not x.strip().startswith("#")]
-        if not any("|" in x for x in lines):
-            return "\n".join(lines)
-        auth_data: dict[str, AuthEntry] = {}
-        for line in lines:
-            fields = line.split("|")
-            if len(fields) < 2:
-                continue
-            username, credential = fields[:2]
-            uid = parse_uid(fields[2] if len(fields) >= 3 else None)
-            gid = parse_gid(fields[3] if len(fields) >= 4 else None)
-            displays = fields[4].split(",") if len(fields) >= 5 and fields[4] else []
-            env_options: dict[str, str] = {}
-            session_options: dict[str, str] = {}
-            if len(fields) >= 6 and fields[5]:
-                from xpra.util.parsing import parse_str_dict
-                env_options = parse_str_dict(fields[5], ";")
-            if len(fields) >= 7 and fields[6]:
-                from xpra.util.parsing import parse_str_dict
-                session_options = parse_str_dict(fields[6], ";")
-            auth_data[username] = credential, uid, gid, displays, env_options, session_options
-        return auth_data
+        parsed = parse_filedata(data, self.password_filename, allow_plain=True)
+        if isinstance(parsed, str):
+            return parsed
+        return {username: entry[1:] for username, entry in parsed.items()}
 
     def get_sessions(self) -> SessionData | None:
         return self.sessions or super().get_sessions()

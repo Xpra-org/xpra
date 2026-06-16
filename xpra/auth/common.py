@@ -10,8 +10,10 @@ from typing import TypeAlias
 from xpra.util.env import get_saved_env
 from xpra.auth.sys_auth_base import log, DEFAULT_UID, DEFAULT_GID
 from xpra.os_util import POSIX
+from xpra.util.parsing import parse_str_dict
 
 SessionData: TypeAlias = tuple[int, int, list[str], dict[str, str], dict[str, str]]
+AuthLine: TypeAlias = tuple[str, str, int, int, list[str], dict[str, str], dict[str, str]]
 
 
 def parse_uid(v) -> int:
@@ -63,3 +65,55 @@ def get_auth_exec_env(display="auto") -> dict[str, str]:
     elif display:
         env["DISPLAY"] = display
     return env
+
+
+def parse_auth_line(line: str) -> AuthLine:
+    fields = line.split("|")
+    if len(fields) < 2:
+        raise ValueError(f"not enough fields: {len(fields)}, minimum is 2")
+    log(f"found {len(fields)} fields")
+    username = fields[0]
+    password = fields[1]
+    if len(fields) >= 5:
+        uid = parse_uid(fields[2])
+        gid = parse_gid(fields[3])
+        displays = fields[4].split(",")
+    else:
+        uid = parse_uid(None)
+        gid = parse_gid(None)
+        displays = []
+    env_options: dict[str, str] = {}
+    session_options: dict[str, str] = {}
+    if len(fields) >= 6:
+        env_options = parse_str_dict(fields[5], ";")
+    if len(fields) >= 7:
+        session_options = parse_str_dict(fields[6], ";")
+    return username, password, uid, gid, displays, env_options, session_options
+
+
+def parse_filedata(data: str, password_filename: str = "", allow_plain: bool = False,
+                   reject_duplicates: bool = False) -> str | dict[str, AuthLine]:
+    data = data.strip()
+    if not data:
+        return "" if allow_plain else {}
+    lines = [x.strip() for x in data.splitlines() if x.strip() and not x.strip().startswith("#")]
+    if allow_plain and not any("|" in x for x in lines):
+        return "\n".join(lines)
+    auth_data: dict[str, AuthLine] = {}
+    for i, line in enumerate(lines, start=1):
+        log(f"line {i}: {line!r}")
+        try:
+            entry = parse_auth_line(line)
+        except Exception as e:
+            log("parsing error", exc_info=True)
+            log.error(f"Error parsing password file {password_filename!r} at line {i}:")
+            log.error(f" {line!r}")
+            log.estr(e)
+            continue
+        username = entry[0]
+        if reject_duplicates and username in auth_data:
+            log.error(f"Error: duplicate entry for username {username!r} in {password_filename!r}")
+            continue
+        auth_data[username] = entry
+    log(f"parsed auth data from file {password_filename!r}: {auth_data}")
+    return auth_data
