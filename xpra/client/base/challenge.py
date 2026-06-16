@@ -235,7 +235,8 @@ class ChallengeClient(StubClientMixin):
         if digest in ("xor", "des"):
             # verify that the connection is already encrypted,
             # or that it will be configured for encryption in `send_challenge_reply`:
-            encrypted = p.is_sending_encrypted() or bool(self.get_encryption())
+            get_encryption = getattr(self, "get_encryption", noop)
+            encrypted = p.is_sending_encrypted() or bool(get_encryption())
             local = self.display_desc.get("local", False)
             log(f"{digest} challenge, encrypted={encrypted}, local={local}")
             if local and ALLOW_LOCALHOST_PASSWORDS:
