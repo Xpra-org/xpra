@@ -14,6 +14,7 @@
 #include <va/va_dec_vp9.h>
 
 #ifdef _WIN32
+#include <windows.h>
 #include <io.h>     /* close() */
 #else
 #include <dirent.h>
@@ -298,9 +299,16 @@ static void libva_log(const char *fmt, ...) {
 }
 
 static long long usec_now(void) {
+#ifdef _WIN32
+    LARGE_INTEGER freq, count;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&count);
+    return (long long)(count.QuadPart * 1000000LL / freq.QuadPart);
+#else
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+#endif
 }
 
 static LibVADecodeStatus set_error(LibVADecoder *dec, VAStatus status, const char *context) {
