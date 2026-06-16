@@ -10,6 +10,7 @@ from threading import RLock
 from collections.abc import Callable
 
 from xpra.net.common import no_packet, Packet
+from xpra.clipboard.targets import TEXT_TARGETS
 from xpra.net.rfb.protocol import RFBProtocol
 from xpra.net.rfb.const import (
     RFBEncoding, RFBClientMessage, RFBServerMessage, RFBAuth,
@@ -58,6 +59,7 @@ class RFBClientProtocol(RFBProtocol):
             "button-action": self.send_button_action,
             "key-action": self.send_key_action,
             "configure-window": self.track_window,
+            "clipboard-token": self.send_clipboard_token,
         }
         self.send_lock = RLock()
         super().__init__(conn, process_packet_cb, scheduler=scheduler)
@@ -134,6 +136,36 @@ class RFBClientProtocol(RFBProtocol):
             return
         pressed = packet[3]
         self.send_struct(b"!BBHI", RFBClientMessage.KeyEvent, pressed, 0, keysym)
+
+    def send_clipboard_token(self, packet) -> None:
+        # ["clipboard-token", selection, targets, target, dtype, dformat, wire-encoding, wire-data, claim, greedy]
+        if len(packet) < 8:
+            # a bare token (just claiming the selection) carries no data to forward
+            return
+        target = packet[3]
+        dformat = packet[5]
+        wire_encoding = packet[6]
+        wire_data = packet[7]
+        if target not in TEXT_TARGETS or dformat != 8 or wire_encoding != "bytes":
+            log("ignoring non-text clipboard token (target=%s, format=%s, encoding=%s)",
+                target, dformat, wire_encoding)
+            return
+        # large values are wrapped in a Compressible, which exposes the bytes as `.data`:
+        if not isinstance(wire_data, (bytes, bytearray, memoryview)):
+            wire_data = getattr(wire_data, "data", b"")
+        wire_data = bytes(wire_data)
+        try:
+            text = wire_data.decode("utf8")
+        except UnicodeDecodeError:
+            text = wire_data.decode("latin1")
+        log("clipboard token -> ClientCutText (%i characters)", len(text))
+        self.send_client_cut_text(text)
+
+    def send_client_cut_text(self, text: str) -> None:
+        # RFB cut text is latin1 with no carriage returns:
+        data = text.replace("\r", "").encode("latin1", "replace")
+        header = struct.pack(b"!BBBBI", RFBClientMessage.ClientCutText, 0, 0, 0, len(data))
+        self.send(header + data)
 
     def track_window(self, packet) -> None:
         log("track_window(%s)", packet)
@@ -260,6 +292,16 @@ class RFBClientProtocol(RFBProtocol):
             "session-name": session_name,
             "desktop_size": (w, h),
             "protocol": "rfb",
+            # advertise a (text-only) clipboard so the client forwards local
+            # clipboard changes to us, which we relay as RFB ClientCutText:
+            "clipboard": {
+                "enabled": True,
+                "direction": "both",
+                "selections": ("CLIPBOARD", ),
+                "greedy": True,
+                "want_targets": ("UTF8_STRING", "STRING", "TEXT", "text/plain", "text/plain;charset=utf-8"),
+                "preferred-targets": ("UTF8_STRING", "STRING", "TEXT", "text/plain"),
+            },
         }))
         # simulate an xpra window packet:
         metadata = {
