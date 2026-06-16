@@ -386,9 +386,18 @@ class RFBClientProtocol(RFBProtocol):
         if len(packet) < header_size + length:
             return 0
         text = packet[header_size:header_size + length].decode("latin1")
-        log("server cut text: %r", text)
-        # TODO: forward to the clipboard subsystem
+        log("server cut text: %i characters", length)
+        self.set_client_clipboard(text)
         return header_size + length
+
+    def set_client_clipboard(self, text: str) -> None:
+        # deliver the server's clipboard to the local clipboard by synthesizing an
+        # incoming clipboard token that carries the text inline (as utf8 bytes);
+        # the dispatcher routes this UI packet to the main thread for us:
+        data = text.encode("utf8")
+        token = Packet("clipboard-token", "CLIPBOARD", ("UTF8_STRING", ),
+                       "UTF8_STRING", "UTF8_STRING", 8, "bytes", data, True, False)
+        self._process_packet_cb(self, token)
 
     def _parse_bell(self, _packet) -> int:
         log("bell")
