@@ -87,7 +87,6 @@ class RFBClientProtocol(RFBProtocol):
         if not check_wid(packet[1]):
             return
         x, y = packet[2][:2]
-        # modifiers = packet.get_strs(3)
         buttons = packet[4]
         button_mask = 0
         for i in range(8):
@@ -174,24 +173,6 @@ class RFBClientProtocol(RFBProtocol):
         self.position = packet[2], packet[3]
         log("window offset: %s", self.position)
         # ["configure-window", self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
-        # ['configure-window', 1, 0, 37, 1280, 1024,
-        #    {'encodings.rgb_formats': ['BGRA', 'BGRX', 'RGBA', 'RGBX', 'BGR', 'RGB', 'r210', 'BGR565'],
-        #     'encoding.transparency': False,
-        #     'encoding.full_csc_modes': {
-        #         'h264': ['ARGB', 'BGRA', 'BGRX', 'GBRP', 'GBRP10', 'GBRP9LE',
-        #                  'RGB', 'XRGB', 'YUV420P', 'YUV422P', 'YUV444P', 'YUV444P10', 'r210'],
-        #         'vp8': ['YUV420P'], 'h265': ['BGRX', 'GBRP', 'GBRP10', 'GBRP9LE',
-        #                  'RGB', 'XRGB', 'YUV420P', 'YUV422P', 'YUV444P', 'YUV444P10', 'r210'],
-        #         'mpeg4': ['YUV420P'],
-        #         'mpeg1': ['YUV420P'],
-        #         'mpeg2': ['YUV420P'],
-        #         'vp9': ['YUV420P', 'YUV444P', 'YUV444P10'],
-        #         'webp': ['BGRA', 'BGRX', 'RGBA', 'RGBX']
-        #     },
-        #     'encoding.send-window-size': True,
-        #     'encoding.render-size': (1280, 1024),
-        #     'encoding.scrolling': True},
-        #     0, {}, False, 1, (4582, 1055), ['mod2']))
 
     def handshake_complete(self) -> None:
         log.info("RFB connected to %s", self._conn.target)
@@ -274,7 +255,7 @@ class RFBClientProtocol(RFBProtocol):
         # do we have enough to parse that too?
         if len(packet) < ci_size + name_size:
             return 0
-        # w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = client_init[:12]
+        # we only use the first 6 fields; the colour masks/shifts are pinned via SetPixelFormat:
         w, h, bpp, depth, bigendian, truecolor = client_init[:6]
         self.dimensions = w, h
         sn = packet[ci_size:ci_size + name_size]
@@ -310,10 +291,8 @@ class RFBClientProtocol(RFBProtocol):
                 "maximum-size": (w, h),
                 "minimum-size": (w, h),
             },
-            # "set-initial-position" : False,
             "window-type": ("NORMAL",),
             "has-alpha": False,
-            # "decorations" : True,
             "content-type": "desktop",
         }
         client_properties = {}

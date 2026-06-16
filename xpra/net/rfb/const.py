@@ -6,7 +6,6 @@
 from struct import Struct
 from enum import IntEnum
 
-# merge header and packet if packet is smaller than:
 PIXEL_FORMAT: bytes = b"BBBBHHHBBBBBB"
 CLIENT_INIT: bytes = b"!HH" + PIXEL_FORMAT + b"I"
 
@@ -69,7 +68,6 @@ class RFBServerMessage(IntEnum):
     SERVERCUTTEXT = 3
     # optional:
     RESIZEFRAMEBUFFER1 = 4
-    KEYFRAMEUPDATE = 4
     FILETRANSFER = 7
     TEXTCHAT = 11
     KEEPALIVE = 13
