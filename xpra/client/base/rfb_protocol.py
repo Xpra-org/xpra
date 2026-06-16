@@ -10,7 +10,10 @@ from collections.abc import Callable
 
 from xpra.net.common import no_packet, Packet
 from xpra.net.rfb.protocol import RFBProtocol
-from xpra.net.rfb.const import RFBEncoding, RFBClientMessage, RFBAuth, CLIENT_INIT, AUTH_STR, RFB_KEYS
+from xpra.net.rfb.const import (
+    RFBEncoding, RFBClientMessage, RFBServerMessage, RFBAuth,
+    CLIENT_INIT, AUTH_STR, SERVER_PACKET_TYPE_STR, RFB_KEYS,
+)
 from xpra.util.objects import Scheduler
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
 from xpra.log import Logger
@@ -272,18 +275,61 @@ class RFBClientProtocol(RFBProtocol):
 
     def _parse_rfb_packet(self, packet) -> int:
         log("parse_rfb_packet(%s)", repr_ellipsized(packet))
-        if len(packet) <= 4:
+        if len(packet) < 1:
             return 0
-        if packet[:2] != struct.pack(b"!BB", 0, 0):
-            # self.invalid("unknown packet", packet)
-            log.warn("Warning: unknown packet")
-            log.warn(" %s", repr_ellipsized(packet))
+        msgtype = packet[0]
+        if msgtype == RFBServerMessage.FRAMEBUFFERUPDATE:
+            return self._parse_framebuffer_update(packet)
+        if msgtype == RFBServerMessage.SERVERCUTTEXT:
+            return self._parse_server_cut_text(packet)
+        if msgtype == RFBServerMessage.BELL:
+            return self._parse_bell(packet)
+        if msgtype == RFBServerMessage.SETCOLORMAPENTRIES:
+            return self._parse_set_colourmap(packet)
+        # we cannot know the length of an unknown message, so we cannot skip it:
+        self.invalid("unsupported RFB server message %s (%r)" % (
+            msgtype, SERVER_PACKET_TYPE_STR.get(msgtype, msgtype)), packet)
+        return 0
+
+    def _parse_framebuffer_update(self, packet) -> int:
+        # message-type (u8), padding (u8), number-of-rectangles (u16)
+        if len(packet) < 4:
             return 0
         self.rectangles = struct.unpack(b"!H", packet[2:4])[0]
         log("%i rectangles coming up", self.rectangles)
         if self.rectangles > 0:
             self._packet_parser = self._parse_rectangle
         return 4
+
+    def _parse_server_cut_text(self, packet) -> int:
+        # message-type (u8), padding (3 x u8), length (u32), text (latin1)
+        header_size = 8
+        if len(packet) < header_size:
+            return 0
+        length = struct.unpack(b"!I", packet[4:8])[0]
+        if len(packet) < header_size + length:
+            return 0
+        text = packet[header_size:header_size + length].decode("latin1")
+        log("server cut text: %r", text)
+        # TODO: forward to the clipboard subsystem
+        return header_size + length
+
+    def _parse_bell(self, _packet) -> int:
+        log("bell")
+        self._process_packet_cb(self, Packet("bell", WID, 0, 100, 0, 0, 0, 0, ""))
+        return 1
+
+    def _parse_set_colourmap(self, packet) -> int:
+        # message-type (u8), padding (u8), first-colour (u16), number-of-colours (u16), then 6 bytes per colour
+        header_size = 6
+        if len(packet) < header_size:
+            return 0
+        ncolours = struct.unpack(b"!H", packet[4:6])[0]
+        size = header_size + ncolours * 6
+        if len(packet) < size:
+            return 0
+        log("ignoring %i colourmap entries (truecolor)", ncolours)
+        return size
 
     def _parse_rectangle(self, packet) -> int:
         header_size = struct.calcsize(b"!HHHHi")
