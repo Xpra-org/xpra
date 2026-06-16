@@ -90,13 +90,15 @@ class RFBClientProtocol(RFBProtocol):
         pressed = packet.get_bool(3)
         x, y = packet.get_ints(4)[:2]
         button_mask = 0
-        if pressed:
-            button_mask |= 2 ** button
         if len(packet) >= 7:
+            # the full set of currently pressed buttons is authoritative:
             buttons = packet.get_ints(6)
             for i in range(8):
                 if i + 1 in buttons:
                     button_mask |= 2 ** i
+        elif pressed:
+            # no button list: derive from this button (RFB bit 0 == button 1):
+            button_mask |= 2 ** (button - 1)
         self.do_send_pointer_event(button_mask, x, y)
 
     def do_send_pointer_event(self, button_mask, x, y) -> None:
