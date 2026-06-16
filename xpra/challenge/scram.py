@@ -116,7 +116,12 @@ class Handler(AuthenticationHandler):
         return self.display_desc.strget("username") or get_username()
 
     def handle(self, challenge: bytes, digest: str, prompt: str):
-        mechanism, stage = self.parse_digest(digest)
+        if not digest.lower().startswith("scram"):
+            return b""
+        try:
+            mechanism, stage = self.parse_digest(digest)
+        except ValueError:
+            pass
         if stage == "client-first":
             return self.handle_client_first(mechanism, prompt)
         if stage == "server-first":
