@@ -7,6 +7,7 @@
 
 set -e
 
+SCRIPT_DIR="$(dirname "$0")"
 export XPKG="${MINGW_PACKAGE_PREFIX}-"
 PACMAN=${PACMAN:-"pacman --noconfirm --needed -S"}
 #PACMAN="echo pacman"
@@ -84,8 +85,8 @@ with zipfile.ZipFile('vacp.nupkg') as z:
 mv "build/native/${NUGET_ARCH}/bin/"* "$MINGW_PREFIX/bin/"
 rm -rf build "vacp.nupkg"
 
-pushd mingw-w64-pdfium-bin
-rm ./mingw-*-pdfium-bin-*.pkg.tar.*
+pushd "${SCRIPT_DIR}/mingw-w64-pdfium-bin"
+rm -f ./mingw-*-pdfium-bin-*.pkg.tar.*
 makepkg -sCLf
 pacman --noconfirm -U ./mingw-*-pdfium-bin-*.pkg.tar.*
 popd
@@ -117,7 +118,7 @@ if [[ ! -f "$ARCHIVE" ]]; then
     curl -fL -o "$ARCHIVE" "$DOWNLOAD_URL"
 fi
 echo "Installing Pandoc ${PANDOC_VERSION} to ${INSTALL_DIR}..."
-$PACMAN ${XPKG}unzip
+$PACMAN unzip
 unzip -o "$ARCHIVE" "pandoc-${PANDOC_VERSION}/pandoc.exe" -d pandoc_tmp
 mv "pandoc_tmp/pandoc-${PANDOC_VERSION}/pandoc.exe" "${MINGW_PREFIX}/bin/"
 rm -rf pandoc_tmp
