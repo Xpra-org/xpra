@@ -11,9 +11,9 @@ from typing import Any
 from collections.abc import Callable
 from queue import Queue
 
-from xpra.os_util import gi_import
 from xpra.util.str_fn import repr_ellipsized, hexstr
 from xpra.util.env import envint
+from xpra.util.objects import Scheduler
 from xpra.util.thread import make_thread, start_thread
 from xpra.util.stats import std_unit
 from xpra.net.protocol.socket_handler import force_flush_queue, exit_queue
@@ -22,8 +22,6 @@ from xpra.net.common import Packet, ConnectionClosedException  # @UndefinedVaria
 from xpra.net.bytestreams import ABORT
 from xpra.net.rfb.const import RFBClientMessage, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("network", "protocol", "rfb")
 
@@ -36,9 +34,14 @@ PROTOCOL_VERSION = (3, 8)
 class RFBProtocol:
     TYPE = "rfb"
 
-    def __init__(self, conn, process_packet_cb, data=b""):
+    def __init__(self, conn, process_packet_cb, data=b"", scheduler: Scheduler=None):
         if not conn:
             raise ValueError(f"no connection: {conn}")
+        if scheduler is None:
+            from xpra.util.glib_scheduler import GLibScheduler
+            scheduler = GLibScheduler()
+        self.idle_add = scheduler.idle_add
+        self.timeout_add = scheduler.timeout_add
         self.start_time = monotonic()
         self._conn = conn
         self._process_packet_cb = process_packet_cb
@@ -181,7 +184,7 @@ class RFBProtocol:
             if not self._closed:
                 self._read_thread.start()
 
-        GLib.idle_add(start_network_read_thread)
+        self.idle_add(start_network_read_thread)
 
     def send_disconnect(self, *_args, **_kwargs) -> None:
         # no such packet in RFB, just close
@@ -280,7 +283,7 @@ class RFBProtocol:
             log("read thread: eof")
             # give time to the parse thread to call close itself,
             # so it has time to parse and process the last packet received
-            GLib.timeout_add(1000, self.close)
+            self.timeout_add(1000, self.close)
             return False
         if self.log:
             self.log.write(f"receive: {hexstr(buf)}\n")
@@ -304,7 +307,7 @@ class RFBProtocol:
         log.error(f"Error: {message}", exc_info=ei)
         if exc:
             log.error(f" {exc}", exc_info=exc_info)
-        GLib.idle_add(self._connection_lost, message)
+        self.idle_add(self._connection_lost, message)
 
     def _connection_lost(self, message="", exc_info=False) -> bool:
         log(f"connection lost: {message}", exc_info=exc_info)
@@ -314,9 +317,9 @@ class RFBProtocol:
     def invalid(self, msg, data) -> None:
         log("invalid(%s, %r)", msg, data)
         self._packet_parser = self._parse_invalid
-        GLib.idle_add(self._process_packet_cb, self, Packet(INVALID, msg, data))
+        self.idle_add(self._process_packet_cb, self, Packet(INVALID, msg, data))
         # Then hang up:
-        GLib.timeout_add(1000, self._connection_lost, msg)
+        self.timeout_add(1000, self._connection_lost, msg)
 
     # delegates to invalid_header()
     def invalid_header(self, proto, data, msg="") -> None:
@@ -340,7 +343,7 @@ class RFBProtocol:
         if self._closed:
             return
         self._closed = True
-        # GLib.idle_add(self._process_packet_cb, self, [CONNECTION_LOST])
+        # self.idle_add(self._process_packet_cb, self, [CONNECTION_LOST])
         if c:
             try:
                 log(f"RFBProtocol.close() calling {c.close}")
@@ -350,7 +353,7 @@ class RFBProtocol:
             self._conn = None
         self.terminate_queue_threads()
         self._process_packet_cb(self, Packet(CONNECTION_LOST))
-        GLib.idle_add(self.clean)
+        self.idle_add(self.clean)
         if log_file := self.log:
             self.log = None
             log_file.close()

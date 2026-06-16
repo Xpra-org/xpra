@@ -4,16 +4,16 @@
 # later version. See the file COPYING for details.
 
 import struct
+from typing import Any
 from threading import RLock
 from collections.abc import Callable
 
-from xpra.os_util import gi_import
+from xpra.net.common import no_packet, Packet
 from xpra.net.rfb.protocol import RFBProtocol
 from xpra.net.rfb.const import RFBEncoding, RFBClientMessage, RFBAuth, CLIENT_INIT, AUTH_STR, RFB_KEYS
+from xpra.util.objects import Scheduler
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("network", "protocol", "rfb")
 
@@ -29,8 +29,11 @@ def check_wid(wid) -> bool:
 
 class RFBClientProtocol(RFBProtocol):
 
-    def __init__(self, conn, process_packet_cb, next_packet):
-        self.next_packet = next_packet
+    def __init__(self, conn,
+                 process_packet_cb: Callable[[Any, Packet], None],
+                 get_packet_cb: Callable[[], tuple[Packet, bool, bool]] = no_packet,
+                 scheduler: Scheduler = None):
+        self.next_packet = get_packet_cb
         self.rectangles = 0
         self.position = 0, 0
         # translate xpra packets into rfb packets:
@@ -41,7 +44,7 @@ class RFBClientProtocol(RFBProtocol):
             "configure-window": self.track_window,
         }
         self.send_lock = RLock()
-        super().__init__(conn, process_packet_cb)
+        super().__init__(conn, process_packet_cb, scheduler=scheduler)
 
     def source_has_more(self) -> None:
         log("source_has_more()")
@@ -51,16 +54,10 @@ class RFBClientProtocol(RFBProtocol):
             while True:
                 pdata = self.next_packet()
                 rfbdata = pdata[0]
-                start_send_cb = pdata[1]
-                end_send_cb = pdata[2]
-                has_more = pdata[5]
-                if start_send_cb:
-                    start_send_cb()
+                has_more = pdata[2]
                 log("packet: %s", rfbdata[0])
                 if handler := self._rfb_converters.get(rfbdata[0]):
                     handler(rfbdata)
-                if end_send_cb:
-                    end_send_cb()
                 if not has_more:
                     break
         finally:
@@ -86,14 +83,14 @@ class RFBClientProtocol(RFBProtocol):
             return
         # ["button-action", wid, button, pressed, (x, y), modifiers, buttons]
         # ['button-action', 1, 1, False, (2768, 257), ['mod2'], [1]]
-        button = packet[2]
-        pressed = packet[3]
-        x, y = packet[4]
+        button = packet.get_u8(2)
+        pressed = packet.get_bool(3)
+        x, y = packet.get_ints(4)[:2]
         button_mask = 0
         if pressed:
             button_mask |= 2 ** button
         if len(packet) >= 7:
-            buttons = packet[6]
+            buttons = packet.get_ints(6)
             for i in range(8):
                 if i + 1 in buttons:
                     button_mask |= 2 ** i
@@ -189,7 +186,7 @@ class RFBClientProtocol(RFBProtocol):
         # the password will be obtained from the client's challenge handlers,
         # which may prompt the user.
         # (see client base for details)
-        self._process_packet_cb(self, ["challenge", challenge, auth_caps, "des", "none"])
+        self._process_packet_cb(self, Packet("challenge", challenge, auth_caps, "des", "none"))
         return 16
 
     def send_challenge_reply(self, challenge_response) -> None:
@@ -235,11 +232,11 @@ class RFBClientProtocol(RFBProtocol):
             self.invalid("server is not true color", packet)
             return 0
         # simulate hello:
-        self._process_packet_cb(self, ["hello", {
+        self._process_packet_cb(self, Packet("hello", {
             "session-name": session_name,
             "desktop_size": (w, h),
             "protocol": "rfb",
-        }])
+        }))
         # simulate an xpra window packet:
         metadata = {
             "title": session_name,
@@ -254,7 +251,7 @@ class RFBClientProtocol(RFBProtocol):
             "content-type": "desktop",
         }
         client_properties = {}
-        self._process_packet_cb(self, ["new-window", WID, 0, 0, w, h, metadata, client_properties])
+        self._process_packet_cb(self, Packet("new-window", WID, 0, 0, w, h, metadata, client_properties))
         self._packet_parser = self._parse_rfb_packet
         self.send_set_encodings()
 
@@ -264,21 +261,23 @@ class RFBClientProtocol(RFBProtocol):
             self.send_refresh_request(0, 0, 0, w, h)
             return True
 
-        GLib.timeout_add(1000, request_refresh)
+        self.timeout_add(1000, request_refresh)
         return ci_size + name_size
 
     def send_set_encodings(self) -> None:
-        self.send_struct("!BBHi", RFBClientMessage.SetEncodings, 0, 1, RFBEncoding.RAW)
+        self.send_struct(b"!BBHi", RFBClientMessage.SetEncodings, 0, 1, RFBEncoding.RAW)
 
     def send_refresh_request(self, incremental, x, y, w, h) -> None:
-        self.send_struct("!BBHHHH", RFBClientMessage.FramebufferUpdateRequest, incremental, x, y, w, h)
+        self.send_struct(b"!BBHHHH", RFBClientMessage.FramebufferUpdateRequest, incremental, x, y, w, h)
 
     def _parse_rfb_packet(self, packet) -> int:
         log("parse_rfb_packet(%s)", repr_ellipsized(packet))
         if len(packet) <= 4:
             return 0
         if packet[:2] != struct.pack(b"!BB", 0, 0):
-            self.invalid("unknown packet", packet)
+            # self.invalid("unknown packet", packet)
+            log.warn("Warning: unknown packet")
+            log.warn(" %s", repr_ellipsized(packet))
             return 0
         self.rectangles = struct.unpack(b"!H", packet[2:4])[0]
         log("%i rectangles coming up", self.rectangles)
@@ -298,13 +297,13 @@ class RFBClientProtocol(RFBProtocol):
             return 0
         log("screen update: %s", (x, y, w, h))
         pixels = packet[header_size:header_size + w * h * 4]
-        draw = ["draw", WID, x, y, w, h, "rgb32", pixels, 0, w * 4, {}]
+        draw = Packet("draw", WID, x, y, w, h, "rgb32", pixels, 0, w * 4, {})
         self._process_packet_cb(self, draw)
         self.rectangles -= 1
         if self.rectangles == 0:
             self._packet_parser = self._parse_rfb_packet
         return header_size + w * h * 4
 
-    def send_struct(self, fmt, *args) -> None:
+    def send_struct(self, fmt: bytes, *args) -> None:
         packet = struct.pack(fmt, *args)
         self.send(packet)

@@ -194,6 +194,10 @@ class ConnectionClosedException(Exception):
     pass
 
 
+def no_packet() -> tuple[Packet, bool, bool]:
+    return Packet("closed"), False, False
+
+
 def get_log_packets(exclude=False) -> Sequence[str]:
     lp = os.environ.get("XPRA_LOG_PACKETS", "")
     if not lp:

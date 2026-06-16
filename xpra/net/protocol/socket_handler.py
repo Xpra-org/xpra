@@ -35,7 +35,7 @@ from xpra.net.protocol.header import (
     FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE,
 )
 from xpra.net.common import (
-    ConnectionClosedException, may_log_packet,
+    ConnectionClosedException, may_log_packet, no_packet,
     Packet, NetPacketType, PacketElement, BACKWARDS_COMPATIBLE,
 )
 from xpra.net.constants import MAX_PACKET_SIZE
@@ -89,10 +89,6 @@ def force_flush_queue(q: Queue) -> None:
         q.put_nowait(None)
     except Full:
         log("force_flush_queue(%s)", q, exc_info=True)
-
-
-def no_packet() -> tuple[Packet, bool, bool]:
-    return Packet("closed"), False, False
 
 
 @dataclass
