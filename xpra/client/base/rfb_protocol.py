@@ -340,7 +340,7 @@ class RFBClientProtocol(RFBProtocol):
 
     def _parse_rectangle(self, packet) -> int:
         header_size = struct.calcsize(b"!HHHHi")
-        if len(packet) <= header_size:
+        if len(packet) < header_size:
             return 0
         x, y, w, h, encoding = struct.unpack(b"!HHHHi", packet[:header_size])
         if encoding != RFBEncoding.RAW:
