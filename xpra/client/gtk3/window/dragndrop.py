@@ -139,16 +139,20 @@ class DragNDropWindow(GtkStubWindow):
         if self.is_readonly():
             return
 
-        def got_file_info(gfile, result, arg=None):
-            log("got_file_info(%s, %s, %s)", gfile, result, arg)
-            file_info = gfile.query_info_finish(result)
-            basename = gfile.get_basename()
-            ctype = file_info.get_content_type()
-            size = file_info.get_size()
-            log("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
+        try:
+            filesize = os.stat(filename).st_size
+        except OSError:
+            filesize = -1
+        else:
+            if not self._file_handler.check_file_size("upload", filename, filesize):
+                file_done_cb(filename)
+                return
+        try:
+            gfile = Gio.File.new_for_path(path=filename)
 
             def got_file_data(gfile, result, user_data=None) -> None:
                 _, data, entity = gfile.load_contents_finish(result)
+                basename = gfile.get_basename()
                 filesize = len(data)
                 log("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
                 file_done_cb(filename)
@@ -159,15 +163,6 @@ class DragNDropWindow(GtkStubWindow):
             cancellable = None
             user_data = (filename, True)
             gfile.load_contents_async(cancellable, got_file_data, user_data)
-
-        try:
-            gfile = Gio.File.new_for_path(path=filename)
-            # basename = gf.get_basename()
-            FILE_QUERY_INFO_NONE = 0
-            G_PRIORITY_DEFAULT = 0
-            cancellable = None
-            gfile.query_info_async("standard::*", FILE_QUERY_INFO_NONE, G_PRIORITY_DEFAULT,
-                                   cancellable, got_file_info, None)
         except Exception as e:
             log("file upload for %s:", filename, exc_info=True)
             log.error("Error: cannot upload '%s':", filename)
