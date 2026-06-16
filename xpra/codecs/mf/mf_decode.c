@@ -799,6 +799,13 @@ MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
     /* try to pull output */
     {
         MFDecodeStatus st = try_get_output(dec, frame);
+        if (st == MF_DEC_NEED_MORE_INPUT) {
+            /* Hardware AV1/HEVC MFTs often buffer one frame of latency.
+               A drain flushes the pipeline without discarding reference frames. */
+            mf_log("mf: need more input, draining pipeline");
+            IMFTransform_ProcessMessage(dec->transform, MFT_MESSAGE_COMMAND_DRAIN, 0);
+            st = try_get_output(dec, frame);
+        }
         t_output_done = usec_now();
         frame->us_input = (int)(t_input_done - t_start);
         frame->us_output = (int)(t_output_done - t_input_done) - frame->us_extract;

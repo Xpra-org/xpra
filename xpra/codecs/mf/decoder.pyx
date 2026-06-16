@@ -57,7 +57,7 @@ cdef extern from "mf_decode.h":
     MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
                                       const uint8_t *data, int data_len,
                                       MFDecodedFrame *frame) nogil
-    MFDecodeStatus mf_decoder_flush(MFDecoder *dec, MFDecodedFrame *frame)
+    MFDecodeStatus mf_decoder_flush(MFDecoder *dec, MFDecodedFrame *frame) nogil
     void           mf_decoder_get_output_size(MFDecoder *dec, int *width, int *height)
     int            mf_decoder_is_hardware(MFDecoder *dec)
     const char*    mf_decode_status_str(MFDecodeStatus status)
@@ -220,6 +220,26 @@ cdef class Decoder:
         if self.context:
             info["hardware"] = bool(mf_decoder_is_hardware(self.context))
         return info
+
+    def flush(self) -> ImageWrapper | None:
+        cdef MFDecodedFrame frame
+        cdef MFDecodeStatus status
+        assert self.context != NULL, "decoder is closed"
+        with nogil:
+            status = mf_decoder_flush(self.context, &frame)
+        if status == MF_DEC_NEED_MORE_INPUT:
+            return None
+        if status != MF_DEC_OK:
+            return None
+        cdef int y_size = frame.y_stride * frame.height
+        cdef int uv_size = frame.uv_stride * (frame.height // 2)
+        y_plane = frame.y_data[:y_size]
+        uv_plane = frame.uv_data[:uv_size]
+        return ImageWrapper(0, 0, self.width, self.height,
+                            (y_plane, uv_plane), "NV12", 24,
+                            (frame.y_stride, frame.uv_stride), 2,
+                            ImageWrapper.PLANAR_2,
+                            full_range=bool(frame.full_range))
 
     def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         cdef MFDecodedFrame frame
