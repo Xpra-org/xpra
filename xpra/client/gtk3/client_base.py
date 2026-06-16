@@ -682,8 +682,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def file_upload_dialog_response(self, dialog, v) -> None:
         def close_file_upload_dialog() -> None:
-            dialog.close()
-            self.sub_dialogs.pop("file-upload")
+            if fu_dialog := self.sub_dialogs.pop("file-upload", None):
+                fu_dialog.close()
 
         if v not in (Gtk.ResponseType.OK, Gtk.ResponseType.ACCEPT):
             filelog(f"dialog response code {v}")
