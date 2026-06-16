@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import zlib
 import struct
 from typing import Any
 from threading import RLock
@@ -12,7 +13,7 @@ from xpra.net.common import no_packet, Packet
 from xpra.net.rfb.protocol import RFBProtocol
 from xpra.net.rfb.const import (
     RFBEncoding, RFBClientMessage, RFBServerMessage, RFBAuth,
-    CLIENT_INIT, AUTH_STR, SERVER_PACKET_TYPE_STR, RFB_KEYS,
+    CLIENT_INIT, PIXEL_FORMAT, AUTH_STR, SERVER_PACKET_TYPE_STR, ENCODING_STR, RFB_KEYS,
 )
 from xpra.util.objects import Scheduler
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
@@ -21,6 +22,15 @@ from xpra.log import Logger
 log = Logger("network", "protocol", "rfb")
 
 WID = 1
+
+# the pixel format we request from the server: 32-bit little-endian BGRX
+# (bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, gshift, bshift)
+PIXEL_FORMAT_BGRX = (32, 24, 0, 1, 255, 255, 255, 16, 8, 0)
+# the matching name we tag RAW draw packets with:
+RGB_FORMAT = "BGRX"
+
+# tight: data shorter than this many bytes is sent uncompressed (TIGHT_MIN_TO_COMPRESS):
+TIGHT_MIN_TO_COMPRESS = 12
 
 
 def check_wid(wid) -> bool:
@@ -40,6 +50,8 @@ class RFBClientProtocol(RFBProtocol):
         self.rectangles = 0
         self.position = 0, 0
         self.dimensions = 0, 0
+        # the 4 persistent zlib streams used by the tight encoding:
+        self.zlib_streams: list = [None, None, None, None]
         # translate xpra packets into rfb packets:
         self._rfb_converters: dict[str, Callable] = {
             "pointer-position": self.send_pointer_position,
@@ -265,14 +277,25 @@ class RFBClientProtocol(RFBProtocol):
         client_properties = {}
         self._process_packet_cb(self, Packet("new-window", WID, 0, 0, w, h, metadata, client_properties))
         self._packet_parser = self._parse_rfb_packet
+        self.send_set_pixel_format()
         self.send_set_encodings()
         # request the whole framebuffer once;
         # subsequent (incremental) requests are sent each time we finish an update:
         self.request_screen_update(0)
         return ci_size + name_size
 
+    def send_set_pixel_format(self) -> None:
+        # pin a known pixel format so RAW rectangles have an unambiguous layout;
+        # servers that honour this will then match what we tag our draw packets with:
+        self.send_struct(b"!BBBB" + PIXEL_FORMAT,
+                         RFBClientMessage.SetPixelFormat, 0, 0, 0,
+                         *PIXEL_FORMAT_BGRX, 0, 0, 0)
+
     def send_set_encodings(self) -> None:
-        self.send_struct(b"!BBHi", RFBClientMessage.SetEncodings, 0, 1, RFBEncoding.RAW)
+        # advertise TIGHT (JPEG) first, with RAW as the fallback:
+        encodings = (RFBEncoding.TIGHT, RFBEncoding.RAW)
+        self.send_struct(b"!BBH" + b"i" * len(encodings),
+                         RFBClientMessage.SetEncodings, 0, len(encodings), *encodings)
 
     def request_screen_update(self, incremental: int) -> None:
         w, h = self.dimensions
@@ -347,21 +370,224 @@ class RFBClientProtocol(RFBProtocol):
         if len(packet) < header_size:
             return 0
         x, y, w, h, encoding = struct.unpack(b"!HHHHi", packet[:header_size])
-        if encoding != RFBEncoding.RAW:
-            self.invalid(f"invalid encoding: {encoding}", packet)
+        body = packet[header_size:]
+        if encoding == RFBEncoding.RAW:
+            consumed = self._parse_raw_rectangle(x, y, w, h, body)
+        elif encoding == RFBEncoding.TIGHT:
+            consumed = self._parse_tight_rectangle(x, y, w, h, body)
+        else:
+            self.invalid("unsupported encoding: %s" % ENCODING_STR.get(encoding, encoding), packet)
             return 0
-        if len(packet) < header_size + w * h * 4:
+        if consumed < 0:
+            # the rectangle body is not fully buffered yet:
             return 0
-        log("screen update: %s", (x, y, w, h))
-        pixels = packet[header_size:header_size + w * h * 4]
-        draw = Packet("draw", WID, x, y, w, h, "rgb32", pixels, 0, w * 4, {})
-        self._process_packet_cb(self, draw)
         self.rectangles -= 1
         if self.rectangles == 0:
             self._packet_parser = self._parse_rfb_packet
             # the update is complete: ask for the next changes
             self.request_screen_update(1)
-        return header_size + w * h * 4
+        return header_size + consumed
+
+    def _parse_raw_rectangle(self, x: int, y: int, w: int, h: int, body) -> int:
+        size = w * h * 4
+        if len(body) < size:
+            return -1
+        log("raw screen update: %s", (x, y, w, h))
+        pixels = body[:size]
+        draw = Packet("draw", WID, x, y, w, h, "rgb32", pixels, 0, w * 4, {"rgb_format": RGB_FORMAT})
+        self._process_packet_cb(self, draw)
+        return size
+
+    def _parse_tight_rectangle(self, x: int, y: int, w: int, h: int, body) -> int:
+        # the rectangle starts with a compression-control byte:
+        #   bits 0-3: which zlib streams to reset
+        #   high nibble 0x8 -> fill, 0x9 -> jpeg, bit 7 clear -> basic (zlib) compression
+        if len(body) < 1:
+            return -1
+        control = body[0]
+        reset = control & 0x0F
+        comp = control >> 4
+        if comp == 0x08:
+            return self._parse_tight_fill(x, y, w, h, body, 1, reset)
+        if comp == 0x09:
+            return self._parse_tight_jpeg(x, y, w, h, body, 1, reset)
+        if comp & 0x08:
+            self.invalid("unsupported tight compression 0x%02x" % control, body)
+            return -1
+        # basic compression: optional filter-id byte, then (maybe zlib-compressed) pixel data
+        # bits 4-5 select the zlib stream, bit 6 signals an explicit filter-id:
+        stream_id = comp & 0x03
+        pos = 1
+        filter_id = 0
+        if comp & 0x04:
+            if len(body) < pos + 1:
+                return -1
+            filter_id = body[pos]
+            pos += 1
+        if filter_id == 0:      # copy
+            return self._parse_tight_copy(x, y, w, h, body, pos, stream_id, reset)
+        if filter_id == 1:      # palette
+            return self._parse_tight_palette(x, y, w, h, body, pos, stream_id, reset)
+        if filter_id == 2:      # gradient
+            return self._parse_tight_gradient(x, y, w, h, body, pos, stream_id, reset)
+        self.invalid("unsupported tight filter %i" % filter_id, body)
+        return -1
+
+    def _parse_tight_fill(self, x, y, w, h, body, pos, reset) -> int:
+        # a single TPIXEL (3 bytes, R-G-B) that fills the whole rectangle:
+        if len(body) < pos + 3:
+            return -1
+        self._tight_reset_streams(reset)
+        rgb = bytes(body[pos:pos + 3]) * (w * h)
+        self._draw_rgb(x, y, w, h, rgb)
+        return pos + 3
+
+    def _parse_tight_jpeg(self, x, y, w, h, body, pos, reset) -> int:
+        length, length_size = self._parse_tight_length(body, pos)
+        if length < 0:
+            return -1
+        start = pos + length_size
+        if len(body) < start + length:
+            return -1
+        self._tight_reset_streams(reset)
+        jpeg_data = bytes(body[start:start + length])
+        log("tight jpeg update: %i bytes for %s", length, (x, y, w, h))
+        draw = Packet("draw", WID, x, y, w, h, "jpeg", jpeg_data, 0, 0, {})
+        self._process_packet_cb(self, draw)
+        return start + length
+
+    def _parse_tight_copy(self, x, y, w, h, body, pos, stream_id, reset) -> int:
+        rgb, newpos = self._tight_read_data(body, pos, stream_id, reset, w * h * 3)
+        if rgb is None:
+            return -1
+        self._draw_rgb(x, y, w, h, rgb)
+        return newpos
+
+    def _parse_tight_palette(self, x, y, w, h, body, pos, stream_id, reset) -> int:
+        if len(body) < pos + 1:
+            return -1
+        num_colors = body[pos] + 1
+        pos += 1
+        palette_size = num_colors * 3
+        if len(body) < pos + palette_size:
+            return -1
+        palette = bytes(body[pos:pos + palette_size])
+        pos += palette_size
+        # 2 colors -> 1 bit per pixel (rows padded to a byte), otherwise 1 byte per pixel:
+        row_size = (w + 7) // 8 if num_colors <= 2 else w
+        data, newpos = self._tight_read_data(body, pos, stream_id, reset, row_size * h)
+        if data is None:
+            return -1
+        rgb = self._tight_depalette(data, w, h, num_colors, palette, row_size)
+        self._draw_rgb(x, y, w, h, rgb)
+        return newpos
+
+    def _parse_tight_gradient(self, x, y, w, h, body, pos, stream_id, reset) -> int:
+        data, newpos = self._tight_read_data(body, pos, stream_id, reset, w * h * 3)
+        if data is None:
+            return -1
+        rgb = self._tight_degradient(data, w, h)
+        self._draw_rgb(x, y, w, h, rgb)
+        return newpos
+
+    def _draw_rgb(self, x, y, w, h, rgb) -> None:
+        # tight pixel data is in R,G,B order, 3 bytes per pixel:
+        draw = Packet("draw", WID, x, y, w, h, "rgb24", rgb, 0, w * 3, {"rgb_format": "RGB"})
+        self._process_packet_cb(self, draw)
+
+    def _tight_reset_streams(self, reset: int) -> None:
+        for i in range(4):
+            if reset & (1 << i):
+                self.zlib_streams[i] = None
+
+    def _tight_read_data(self, body, pos: int, stream_id: int, reset: int, size: int):
+        # reads `size` uncompressed bytes; returns (data, new-position), or (None, pos) if incomplete.
+        # data below TIGHT_MIN_TO_COMPRESS is sent uncompressed, otherwise it is a
+        # compact-length prefix followed by that many bytes from the zlib stream:
+        if size < TIGHT_MIN_TO_COMPRESS:
+            if len(body) < pos + size:
+                return None, pos
+            self._tight_reset_streams(reset)
+            return bytes(body[pos:pos + size]), pos + size
+        length, length_size = self._parse_tight_length(body, pos)
+        if length < 0:
+            return None, pos
+        start = pos + length_size
+        if len(body) < start + length:
+            return None, pos
+        self._tight_reset_streams(reset)
+        stream = self.zlib_streams[stream_id]
+        if stream is None:
+            stream = self.zlib_streams[stream_id] = zlib.decompressobj()
+        data = stream.decompress(bytes(body[start:start + length]))
+        if len(data) != size:
+            log.warn("Warning: tight zlib produced %i bytes, expected %i", len(data), size)
+        return data, start + length
+
+    @staticmethod
+    def _tight_depalette(data, w, h, num_colors, palette, row_size) -> bytes:
+        out = bytearray(w * h * 3)
+        o = 0
+        if num_colors <= 2:
+            for yy in range(h):
+                rowstart = yy * row_size
+                for xx in range(w):
+                    bit = (data[rowstart + (xx >> 3)] >> (7 - (xx & 7))) & 1
+                    p = bit * 3
+                    out[o] = palette[p]
+                    out[o + 1] = palette[p + 1]
+                    out[o + 2] = palette[p + 2]
+                    o += 3
+        else:
+            for i in range(w * h):
+                p = data[i] * 3
+                out[o] = palette[p]
+                out[o + 1] = palette[p + 1]
+                out[o + 2] = palette[p + 2]
+                o += 3
+        return bytes(out)
+
+    @staticmethod
+    def _tight_degradient(data, w, h) -> bytes:
+        # reverse the gradient prediction: actual = (residual + clamp(left + up - upleft)) % 256
+        out = bytearray(w * h * 3)
+        stride = w * 3
+        for yy in range(h):
+            for xx in range(w):
+                for c in range(3):
+                    i = yy * stride + xx * 3 + c
+                    left = out[i - 3] if xx > 0 else 0
+                    up = out[i - stride] if yy > 0 else 0
+                    upleft = out[i - 3 - stride] if (xx > 0 and yy > 0) else 0
+                    pred = left + up - upleft
+                    if pred < 0:
+                        pred = 0
+                    elif pred > 255:
+                        pred = 255
+                    out[i] = (data[i] + pred) & 0xFF
+        return bytes(out)
+
+    @staticmethod
+    def _parse_tight_length(body, offset: int) -> tuple[int, int]:
+        # tight "compact" length: 1 to 3 bytes, 7 bits each, high bit signals continuation;
+        # returns (length, number-of-bytes-used), or (-1, 0) if more data is needed
+        if len(body) < offset + 1:
+            return -1, 0
+        b0 = body[offset]
+        length = b0 & 0x7F
+        if not b0 & 0x80:
+            return length, 1
+        if len(body) < offset + 2:
+            return -1, 0
+        b1 = body[offset + 1]
+        length |= (b1 & 0x7F) << 7
+        if not b1 & 0x80:
+            return length, 2
+        if len(body) < offset + 3:
+            return -1, 0
+        b2 = body[offset + 2]
+        length |= (b2 & 0x7F) << 14
+        return length, 3
 
     def send_struct(self, fmt: bytes, *args) -> None:
         packet = struct.pack(fmt, *args)
