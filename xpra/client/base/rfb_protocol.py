@@ -155,11 +155,16 @@ class RFBClientProtocol(RFBProtocol):
 
     def _parse_security_handshake(self, packet) -> int:
         log("parse_security_handshake(%s)", hexstr(packet))
+        if len(packet) < 1:
+            return 0
         n = struct.unpack(b"B", packet[:1])[0]
         if n == 0:
             self._internal_error("cannot parse security handshake " + hexstr(packet))
             return 0
-        security_types = struct.unpack(b"B" * n, packet[1:])
+        if len(packet) < 1 + n:
+            # wait until we have all the security types:
+            return 0
+        security_types = struct.unpack(b"B" * n, packet[1:1 + n])
         st = []
         for v in security_types:
             try:
