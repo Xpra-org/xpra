@@ -39,6 +39,7 @@ class RFBClientProtocol(RFBProtocol):
         self.next_packet = get_packet_cb
         self.rectangles = 0
         self.position = 0, 0
+        self.dimensions = 0, 0
         # translate xpra packets into rfb packets:
         self._rfb_converters: dict[str, Callable] = {
             "pointer-position": self.send_pointer_position,
@@ -231,6 +232,7 @@ class RFBClientProtocol(RFBProtocol):
             return 0
         # w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = client_init[:12]
         w, h, bpp, depth, bigendian, truecolor = client_init[:6]
+        self.dimensions = w, h
         sn = packet[ci_size:ci_size + name_size]
         try:
             session_name = sn.decode("utf8")
@@ -264,18 +266,17 @@ class RFBClientProtocol(RFBProtocol):
         self._process_packet_cb(self, Packet("new-window", WID, 0, 0, w, h, metadata, client_properties))
         self._packet_parser = self._parse_rfb_packet
         self.send_set_encodings()
-
-        # self.send_refresh_request(0, 0, 0, w, h)
-
-        def request_refresh() -> bool:
-            self.send_refresh_request(0, 0, 0, w, h)
-            return True
-
-        self.timeout_add(1000, request_refresh)
+        # request the whole framebuffer once;
+        # subsequent (incremental) requests are sent each time we finish an update:
+        self.request_screen_update(0)
         return ci_size + name_size
 
     def send_set_encodings(self) -> None:
         self.send_struct(b"!BBHi", RFBClientMessage.SetEncodings, 0, 1, RFBEncoding.RAW)
+
+    def request_screen_update(self, incremental: int) -> None:
+        w, h = self.dimensions
+        self.send_refresh_request(incremental, 0, 0, w, h)
 
     def send_refresh_request(self, incremental, x, y, w, h) -> None:
         self.send_struct(b"!BBHHHH", RFBClientMessage.FramebufferUpdateRequest, incremental, x, y, w, h)
@@ -306,6 +307,9 @@ class RFBClientProtocol(RFBProtocol):
         log("%i rectangles coming up", self.rectangles)
         if self.rectangles > 0:
             self._packet_parser = self._parse_rectangle
+        else:
+            # empty update: request the next one straight away
+            self.request_screen_update(1)
         return 4
 
     def _parse_server_cut_text(self, packet) -> int:
@@ -355,6 +359,8 @@ class RFBClientProtocol(RFBProtocol):
         self.rectangles -= 1
         if self.rectangles == 0:
             self._packet_parser = self._parse_rfb_packet
+            # the update is complete: ask for the next changes
+            self.request_screen_update(1)
         return header_size + w * h * 4
 
     def send_struct(self, fmt: bytes, *args) -> None:
