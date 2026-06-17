@@ -52,6 +52,7 @@ class RFBClientProtocol(RFBProtocol):
         self.position = 0, 0
         self.dimensions = 0, 0
         self.cursor_serial = 0
+        self.desktop_resized = False
         # the 4 persistent zlib streams used by the tight encoding:
         self.zlib_streams: list = [None, None, None, None]
         # translate xpra packets into rfb packets:
@@ -316,8 +317,11 @@ class RFBClientProtocol(RFBProtocol):
                          *PIXEL_FORMAT_BGRX, 0, 0, 0)
 
     def send_set_encodings(self) -> None:
-        # advertise the cursor pseudo-encoding, then TIGHT (JPEG) with RAW as the fallback:
-        encodings = (RFBEncoding.CURSOR, RFBEncoding.TIGHT, RFBEncoding.RAW)
+        # advertise the cursor and desktop-size pseudo-encodings, then TIGHT (JPEG) with RAW as the fallback:
+        encodings = (
+            RFBEncoding.CURSOR, RFBEncoding.DESKTOPSIZE, RFBEncoding.EXTENDEDDESKTOPSIZE,
+            RFBEncoding.TIGHT, RFBEncoding.RAW,
+        )
         self.send_struct(b"!BBH" + b"i" * len(encodings),
                          RFBClientMessage.SetEncodings, 0, len(encodings), *encodings)
 
@@ -410,6 +414,10 @@ class RFBClientProtocol(RFBProtocol):
             consumed = self._parse_tight_rectangle(x, y, w, h, body)
         elif encoding == RFBEncoding.CURSOR:
             consumed = self._parse_cursor(x, y, w, h, body)
+        elif encoding == RFBEncoding.DESKTOPSIZE:
+            consumed = self._parse_desktop_size(x, y, w, h, body)
+        elif encoding == RFBEncoding.EXTENDEDDESKTOPSIZE:
+            consumed = self._parse_extended_desktop_size(x, y, w, h, body)
         else:
             self.invalid("unsupported encoding: %s" % ENCODING_STR.get(encoding, encoding), packet)
             return 0
@@ -420,7 +428,9 @@ class RFBClientProtocol(RFBProtocol):
         if self.rectangles == 0:
             self._packet_parser = self._parse_rfb_packet
             # the update is complete: ask for the next changes
-            self.request_screen_update(1)
+            # (a full update if the desktop was just resized, otherwise incremental)
+            self.request_screen_update(0 if self.desktop_resized else 1)
+            self.desktop_resized = False
         return header_size + consumed
 
     def _parse_raw_rectangle(self, x: int, y: int, w: int, h: int, body) -> int:
@@ -462,6 +472,39 @@ class RFBClientProtocol(RFBProtocol):
         cursor = Packet("cursor-data", "raw", w, h, x, y, self.cursor_serial, bytes(bgra), "")
         self._process_packet_cb(self, cursor)
         return total
+
+    def _parse_desktop_size(self, x: int, y: int, w: int, h: int, body) -> int:
+        # DesktopSize pseudo-encoding: w,h are the new framebuffer size; no data follows
+        self._resize_desktop(w, h)
+        return 0
+
+    def _parse_extended_desktop_size(self, x: int, y: int, w: int, h: int, body) -> int:
+        # ExtendedDesktopSize: w,h are the new size; the body is a screen layout we skip over:
+        # number-of-screens (u8), padding (3 bytes), then 16 bytes per screen
+        if len(body) < 4:
+            return -1
+        screens = body[0]
+        size = 4 + screens * 16
+        if len(body) < size:
+            return -1
+        self._resize_desktop(w, h)
+        return size
+
+    def _resize_desktop(self, w: int, h: int) -> None:
+        if (w, h) == self.dimensions:
+            return
+        log.info("RFB desktop resized to %ix%i", w, h)
+        self.dimensions = w, h
+        self.desktop_resized = True
+        # lift the fixed size-constraints to the new size, then move/resize the window:
+        metadata = {
+            "size-constraints": {
+                "maximum-size": (w, h),
+                "minimum-size": (w, h),
+            },
+        }
+        self._process_packet_cb(self, Packet("window-metadata", WID, metadata))
+        self._process_packet_cb(self, Packet("window-move-resize", WID, 0, 0, w, h))
 
     def _parse_tight_rectangle(self, x: int, y: int, w: int, h: int, body) -> int:
         # the rectangle starts with a compression-control byte:
