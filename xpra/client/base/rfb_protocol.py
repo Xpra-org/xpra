@@ -13,8 +13,8 @@ from xpra.net.common import no_packet, Packet
 from xpra.clipboard.targets import TEXT_TARGETS
 from xpra.net.rfb.protocol import RFBProtocol, PROTOCOL_VERSION
 from xpra.net.rfb.const import (
-    RFBEncoding, RFBClientMessage, RFBServerMessage, RFBAuth,
-    CLIENT_INIT, PIXEL_FORMAT, AUTH_STR, SERVER_PACKET_TYPE_STR, ENCODING_STR, RFB_KEYS,
+    RFBEncoding, RFBClientMessage, RFBServerMessage, RFBAuth, RFBVeNCrypt,
+    CLIENT_INIT, PIXEL_FORMAT, AUTH_STR, VENCRYPT_STR, SERVER_PACKET_TYPE_STR, ENCODING_STR, RFB_KEYS,
 )
 from xpra.util.objects import Scheduler
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
@@ -282,7 +282,11 @@ class RFBClientProtocol(RFBProtocol):
                 pass
             st.append(v)
         log("parse_security_handshake(%s) security_types=%s", hexstr(packet), [AUTH_STR.get(v, v) for v in st])
-        if not st or RFBAuth.NONE in st:
+        # prefer VeNCrypt (TLS) when offered, since it encrypts the session;
+        # otherwise fall back to None (no prompt) and finally VNC (password):
+        if RFBAuth.VeNCrypt in st:
+            auth_type = RFBAuth.VeNCrypt
+        elif not st or RFBAuth.NONE in st:
             auth_type = RFBAuth.NONE
         elif RFBAuth.VNC in st:
             auth_type = RFBAuth.VNC
@@ -291,7 +295,10 @@ class RFBClientProtocol(RFBProtocol):
             return 0
         # tell the server which type we picked, then move on to its data:
         self.send_struct(b"B", auth_type)
-        if auth_type == RFBAuth.VNC:
+        if auth_type == RFBAuth.VeNCrypt:
+            # VeNCrypt runs its own version + sub-type negotiation before TLS:
+            self._packet_parser = self._parse_vencrypt_version
+        elif auth_type == RFBAuth.VNC:
             self._packet_parser = self._parse_vnc_security_challenge
         elif self.protocol_version >= (3, 8):
             # 3.8 always sends a SecurityResult, even for None:
@@ -300,6 +307,136 @@ class RFBClientProtocol(RFBProtocol):
             # 3.7 with no authentication: straight to ClientInit
             self.send_client_init()
         return 1 + n
+
+    def _parse_vencrypt_version(self, packet) -> int:
+        # VeNCrypt: the server announces the highest version it supports as 2 bytes;
+        # we require 0.2 (the version that uses the u32 sub-type list):
+        if len(packet) < 2:
+            return 0
+        server_version = (packet[0], packet[1])
+        log("VeNCrypt server version %i.%i", *server_version)
+        if server_version < (0, 2):
+            self._internal_error("unsupported VeNCrypt version %i.%i" % server_version)
+            return 0
+        # tell the server which version we want to use:
+        self.send_struct(b"BB", 0, 2)
+        self._packet_parser = self._parse_vencrypt_ack
+        return 2
+
+    def _parse_vencrypt_ack(self, packet) -> int:
+        # a single byte acknowledging the version we chose (0 == agreed):
+        if len(packet) < 1:
+            return 0
+        if packet[0] != 0:
+            self._internal_error("the server rejected the VeNCrypt version")
+            return 0
+        self._packet_parser = self._parse_vencrypt_subtypes
+        return 1
+
+    def _parse_vencrypt_subtypes(self, packet) -> int:
+        # a count byte followed by that many u32 sub-types; we only support the X509
+        # variants (the server presents a certificate we verify against ssl-options),
+        # running None or VNC authentication inside the TLS tunnel:
+        if len(packet) < 1:
+            return 0
+        n = packet[0]
+        if n == 0:
+            self._internal_error("the server offered no VeNCrypt sub-types")
+            return 0
+        size = 1 + n * 4
+        if len(packet) < size:
+            return 0
+        subtypes = struct.unpack(b"!" + b"I" * n, packet[1:size])
+        log("VeNCrypt sub-types: %s", csv(VENCRYPT_STR.get(v, v) for v in subtypes))
+        # prefer X509None (no password prompt) over X509Vnc:
+        chosen = 0
+        for st in (RFBVeNCrypt.X509NONE, RFBVeNCrypt.X509VNC):
+            if st in subtypes:
+                chosen = st
+                break
+        if not chosen:
+            self._internal_error("no supported VeNCrypt sub-types in %s (only X509 is supported)" %
+                                 csv(VENCRYPT_STR.get(v, v) for v in subtypes))
+            return 0
+        if len(packet) > size:
+            # the server must wait for our TLS ClientHello before sending anything more;
+            # extra bytes here would be read past the plaintext boundary and break the upgrade:
+            self._internal_error("unexpected data following the VeNCrypt sub-type list")
+            return 0
+        # request the sub-type; the server acknowledges it with one byte before TLS starts.
+        # routing the ack through the normal read loop guarantees the sub-type has been
+        # flushed (and acked) before we send the TLS ClientHello, avoiding any write race:
+        self._vencrypt_subtype = chosen
+        self.send_struct(b"!I", chosen)
+        self._packet_parser = self._parse_vencrypt_subtype_ack
+        return size
+
+    def _parse_vencrypt_subtype_ack(self, packet) -> int:
+        # the server acknowledges the chosen sub-type with a single byte (non-zero == OK),
+        # then waits for us to initiate the TLS handshake:
+        if len(packet) < 1:
+            return 0
+        if packet[0] == 0:
+            self._internal_error("the server rejected the VeNCrypt sub-type")
+            return 0
+        if len(packet) > 1:
+            # nothing should arrive before our TLS ClientHello:
+            self._internal_error("unexpected data following the VeNCrypt sub-type ack")
+            return 0
+        self._upgrade_to_tls(self._vencrypt_subtype)
+        return 1
+
+    def _upgrade_to_tls(self, subtype: int) -> None:
+        log("upgrading to TLS using VeNCrypt %s", VENCRYPT_STR.get(subtype, subtype))
+        conn = self._conn
+        try:
+            from xpra.net.tls.socket import ssl_wrap_socket, ssl_handshake
+            from xpra.net.tls.connection import SSLSocketConnection
+        except ImportError as e:
+            self._internal_error("cannot use TLS for VeNCrypt: %s" % e)
+            return
+        # the TLS handshake reads and writes directly on the socket, so it needs to block:
+        raw_sock = conn.get_raw_socket()
+        raw_sock.setblocking(True)
+        # wrap the socket and perform the TLS handshake, reusing xpra's SSL machinery:
+        ssl_options = {k.replace("-", "_"): v for k, v in (conn.options.get("ssl-options") or {}).items()}
+        ssl_options["server_side"] = False
+        if not ssl_options.get("server_hostname"):
+            # SNI / hostname-verification target: prefer the configured host,
+            # falling back to the peer address (an empty value is rejected by wrap_socket):
+            host = conn.options.get("host", "")
+            if not host:
+                remote = getattr(conn, "remote", None)
+                if isinstance(remote, (tuple, list)) and remote:
+                    host = str(remote[0])
+            ssl_options["server_hostname"] = host or "localhost"
+        try:
+            ssl_sock = ssl_wrap_socket(raw_sock, **ssl_options)
+            if not ssl_sock:
+                self._internal_error("failed to wrap the socket for TLS")
+                return
+            ssl_handshake(ssl_sock)
+        except Exception as e:
+            log("_upgrade_to_tls(%s)", subtype, exc_info=True)
+            self._internal_error("TLS handshake failed: %s" % e)
+            return
+        # the read and write threads share this OpenSSL object, which is not safe for
+        # concurrent use, so we wrap it in an SSLSocketConnection that serializes the
+        # SSL calls (see issue #4918):
+        ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint,
+                                       conn.socktype, socket_options=conn.options)
+        ssl_conn.target = conn.target
+        ssl_conn.timeout = conn.timeout
+        self._conn = ssl_conn
+        log.info("RFB connection upgraded to TLS: %s", ssl_sock.version())
+        # continue with the inner authentication, now inside the TLS tunnel:
+        if subtype == RFBVeNCrypt.X509VNC:
+            self._packet_parser = self._parse_vnc_security_challenge
+        elif self.protocol_version >= (3, 8):
+            # the inner None type still produces a SecurityResult on 3.8:
+            self._packet_parser = self._parse_security_result
+        else:
+            self.send_client_init()
 
     def _parse_vnc_security_challenge(self, packet) -> int:
         if len(packet) < 16:

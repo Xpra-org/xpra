@@ -167,6 +167,23 @@ for i in range(128, 255):
 for i in range(30, 35):
     AUTH_STR[i] = "Apple"
 
+
+class RFBVeNCrypt(IntEnum):
+    # VeNCrypt sub-types (u32), negotiated after selecting RFBAuth.VeNCrypt;
+    # each value pairs a transport (Plain/TLS-anon/X509) with an inner auth:
+    PLAIN = 256
+    TLSNONE = 257
+    TLSVNC = 258
+    TLSPLAIN = 259
+    X509NONE = 260
+    X509VNC = 261
+    X509PLAIN = 262
+    TLSSASL = 263
+    X509SASL = 264
+
+
+VENCRYPT_STR: dict[int, str] = {e.value: e.name for e in RFBVeNCrypt}
+
 RFB_KEYNAMES: dict[int, str] = {
     0xff08: "BackSpace",
     0xff09: "Tab",

@@ -448,6 +448,119 @@ class TestRFBClient(unittest.TestCase):
         proto._parse_security_handshake(struct.pack(b"!BI", 0, len(reason)) + reason)
         self.assertEqual(len(proto.idle_calls), 1)  # _internal_error -> connection lost
 
+    # -- VeNCrypt -----------------------------------------------------------
+
+    def test_security_handshake_prefers_vencrypt(self):
+        # offered None(1), VNC(2) and VeNCrypt(19) -> VeNCrypt wins (it encrypts):
+        proto = self._proto()
+        consumed = proto._parse_security_handshake(struct.pack(b"!BBBB", 3, 1, 2, 19))
+        self.assertEqual(consumed, 4)
+        self.assertEqual(proto.sent[0], struct.pack(b"!B", 19))
+        self.assertEqual(proto._packet_parser, proto._parse_vencrypt_version)
+
+    def test_vencrypt_version(self):
+        proto = self._proto()
+        consumed = proto._parse_vencrypt_version(bytes([0, 2]))
+        self.assertEqual(consumed, 2)
+        self.assertEqual(proto.sent[0], bytes([0, 2]))   # we request 0.2
+        self.assertEqual(proto._packet_parser, proto._parse_vencrypt_ack)
+
+    def test_vencrypt_version_newer_ok(self):
+        proto = self._proto()
+        proto._parse_vencrypt_version(bytes([0, 3]))
+        self.assertEqual(proto.sent[0], bytes([0, 2]))   # still clamp our request to 0.2
+        self.assertEqual(proto._packet_parser, proto._parse_vencrypt_ack)
+
+    def test_vencrypt_version_too_old(self):
+        proto = self._proto()
+        proto._parse_vencrypt_version(bytes([0, 1]))
+        self.assertEqual(len(proto.idle_calls), 1)       # _internal_error
+        self.assertEqual(proto.sent, [])
+
+    def test_vencrypt_version_incomplete(self):
+        proto = self._proto()
+        self.assertEqual(proto._parse_vencrypt_version(bytes([0])), 0)
+
+    def test_vencrypt_ack_ok(self):
+        proto = self._proto()
+        consumed = proto._parse_vencrypt_ack(bytes([0]))
+        self.assertEqual(consumed, 1)
+        self.assertEqual(proto._packet_parser, proto._parse_vencrypt_subtypes)
+
+    def test_vencrypt_ack_rejected(self):
+        proto = self._proto()
+        proto._parse_vencrypt_ack(bytes([1]))
+        self.assertEqual(len(proto.idle_calls), 1)
+
+    def test_vencrypt_subtypes_picks_x509none(self):
+        from xpra.net.rfb.const import RFBVeNCrypt
+        proto = self._proto()
+        # offered X509Vnc and X509None -> X509None preferred (no password):
+        body = struct.pack(b"!B", 2) + struct.pack(b"!II", RFBVeNCrypt.X509VNC, RFBVeNCrypt.X509NONE)
+        consumed = proto._parse_vencrypt_subtypes(body)
+        self.assertEqual(consumed, len(body))
+        # the chosen sub-type is sent, then we wait for the server's ack before TLS:
+        self.assertEqual(proto.sent[0], struct.pack(b"!I", RFBVeNCrypt.X509NONE))
+        self.assertEqual(proto._vencrypt_subtype, RFBVeNCrypt.X509NONE)
+        self.assertEqual(proto._packet_parser, proto._parse_vencrypt_subtype_ack)
+
+    def test_vencrypt_subtypes_picks_x509vnc(self):
+        from xpra.net.rfb.const import RFBVeNCrypt
+        proto = self._proto()
+        body = struct.pack(b"!B", 1) + struct.pack(b"!I", RFBVeNCrypt.X509VNC)
+        proto._parse_vencrypt_subtypes(body)
+        self.assertEqual(proto.sent[0], struct.pack(b"!I", RFBVeNCrypt.X509VNC))
+        self.assertEqual(proto._vencrypt_subtype, RFBVeNCrypt.X509VNC)
+        self.assertEqual(proto._packet_parser, proto._parse_vencrypt_subtype_ack)
+
+    def test_vencrypt_subtypes_anon_tls_unsupported(self):
+        from xpra.net.rfb.const import RFBVeNCrypt
+        proto = self._proto()
+        # only the anon-TLS variants are offered: not supported in this slice -> error
+        body = struct.pack(b"!B", 2) + struct.pack(b"!II", RFBVeNCrypt.TLSNONE, RFBVeNCrypt.TLSVNC)
+        proto._parse_vencrypt_subtypes(body)
+        self.assertEqual(proto.sent, [])
+        self.assertEqual(len(proto.idle_calls), 1)
+
+    def test_vencrypt_subtypes_none_offered(self):
+        proto = self._proto()
+        proto._parse_vencrypt_subtypes(struct.pack(b"!B", 0))
+        self.assertEqual(len(proto.idle_calls), 1)
+
+    def test_vencrypt_subtypes_incomplete(self):
+        from xpra.net.rfb.const import RFBVeNCrypt
+        proto = self._proto()
+        # claims 2 sub-types but only one u32 present:
+        body = struct.pack(b"!B", 2) + struct.pack(b"!I", RFBVeNCrypt.X509NONE)
+        self.assertEqual(proto._parse_vencrypt_subtypes(body), 0)
+        self.assertEqual(proto.sent, [])
+
+    def test_vencrypt_subtypes_trailing_data_rejected(self):
+        from xpra.net.rfb.const import RFBVeNCrypt
+        proto = self._proto()
+        # a valid sub-type list with unexpected trailing bytes (would break the TLS upgrade):
+        body = struct.pack(b"!B", 1) + struct.pack(b"!I", RFBVeNCrypt.X509NONE) + b"\xff\xff"
+        proto._parse_vencrypt_subtypes(body)
+        self.assertEqual(proto.sent, [])
+        self.assertEqual(len(proto.idle_calls), 1)
+
+    def test_vencrypt_subtype_ack_ok(self):
+        from xpra.net.rfb.const import RFBVeNCrypt
+        proto = self._proto()
+        proto._vencrypt_subtype = RFBVeNCrypt.X509NONE
+        upgraded = []
+        proto._upgrade_to_tls = upgraded.append
+        consumed = proto._parse_vencrypt_subtype_ack(bytes([1]))
+        self.assertEqual(consumed, 1)
+        self.assertEqual(upgraded, [RFBVeNCrypt.X509NONE])
+
+    def test_vencrypt_subtype_ack_rejected(self):
+        proto = self._proto()
+        proto._vencrypt_subtype = 260
+        proto._upgrade_to_tls = lambda *a: None
+        proto._parse_vencrypt_subtype_ack(bytes([0]))
+        self.assertEqual(len(proto.idle_calls), 1)
+
     # -- protocol version negotiation ---------------------------------------
 
     def test_version_negotiation_38(self):

@@ -35,6 +35,7 @@ jobs:
                 libxxhash-dev libqrencode-dev \
                 python3-coverage \
                 openssl \
+                tigervnc-standalone-server tigervnc-viewer \
                 x11-xserver-utils dbus-x11
 
     - name: Install less buggy Cython
