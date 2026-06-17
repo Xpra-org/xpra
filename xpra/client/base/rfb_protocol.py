@@ -51,6 +51,7 @@ class RFBClientProtocol(RFBProtocol):
         self.rectangles = 0
         self.position = 0, 0
         self.dimensions = 0, 0
+        self.cursor_serial = 0
         # the 4 persistent zlib streams used by the tight encoding:
         self.zlib_streams: list = [None, None, None, None]
         # translate xpra packets into rfb packets:
@@ -283,6 +284,8 @@ class RFBClientProtocol(RFBProtocol):
                 "want_targets": ("UTF8_STRING", "STRING", "TEXT", "text/plain", "text/plain;charset=utf-8"),
                 "preferred-targets": ("UTF8_STRING", "STRING", "TEXT", "text/plain"),
             },
+            # we render the cursor locally from the RFB Cursor pseudo-encoding:
+            "cursor": {"enabled": True},
         }))
         # simulate an xpra window packet:
         metadata = {
@@ -313,8 +316,8 @@ class RFBClientProtocol(RFBProtocol):
                          *PIXEL_FORMAT_BGRX, 0, 0, 0)
 
     def send_set_encodings(self) -> None:
-        # advertise TIGHT (JPEG) first, with RAW as the fallback:
-        encodings = (RFBEncoding.TIGHT, RFBEncoding.RAW)
+        # advertise the cursor pseudo-encoding, then TIGHT (JPEG) with RAW as the fallback:
+        encodings = (RFBEncoding.CURSOR, RFBEncoding.TIGHT, RFBEncoding.RAW)
         self.send_struct(b"!BBH" + b"i" * len(encodings),
                          RFBClientMessage.SetEncodings, 0, len(encodings), *encodings)
 
@@ -405,6 +408,8 @@ class RFBClientProtocol(RFBProtocol):
             consumed = self._parse_raw_rectangle(x, y, w, h, body)
         elif encoding == RFBEncoding.TIGHT:
             consumed = self._parse_tight_rectangle(x, y, w, h, body)
+        elif encoding == RFBEncoding.CURSOR:
+            consumed = self._parse_cursor(x, y, w, h, body)
         else:
             self.invalid("unsupported encoding: %s" % ENCODING_STR.get(encoding, encoding), packet)
             return 0
@@ -427,6 +432,36 @@ class RFBClientProtocol(RFBProtocol):
         draw = Packet("draw", WID, x, y, w, h, "rgb32", pixels, 0, w * 4, {"rgb_format": RGB_FORMAT})
         self._process_packet_cb(self, draw)
         return size
+
+    def _parse_cursor(self, x: int, y: int, w: int, h: int, body) -> int:
+        # RFB Cursor pseudo-encoding: x,y are the hotspot; the body is w*h pixels
+        # (in our BGRX format) followed by a 1-bpp, byte-aligned transparency mask:
+        pixel_size = w * h * 4
+        mask_stride = (w + 7) // 8
+        total = pixel_size + mask_stride * h
+        if len(body) < total:
+            return -1
+        if w == 0 or h == 0:
+            # an empty cursor: nothing to display
+            return total
+        pixels = body[:pixel_size]
+        mask = body[pixel_size:total]
+        # combine the BGRX pixels with the mask into a BGRA cursor image:
+        bgra = bytearray(pixel_size)
+        for row in range(h):
+            mask_row = row * mask_stride
+            for col in range(w):
+                i = (row * w + col) * 4
+                bgra[i] = pixels[i]          # B
+                bgra[i + 1] = pixels[i + 1]  # G
+                bgra[i + 2] = pixels[i + 2]  # R
+                opaque = (mask[mask_row + (col >> 3)] >> (7 - (col & 7))) & 1
+                bgra[i + 3] = 0xFF if opaque else 0
+        self.cursor_serial += 1
+        log("cursor update: %ix%i, hotspot=%s", w, h, (x, y))
+        cursor = Packet("cursor-data", "raw", w, h, x, y, self.cursor_serial, bytes(bgra), "")
+        self._process_packet_cb(self, cursor)
+        return total
 
     def _parse_tight_rectangle(self, x: int, y: int, w: int, h: int, body) -> int:
         # the rectangle starts with a compression-control byte:
