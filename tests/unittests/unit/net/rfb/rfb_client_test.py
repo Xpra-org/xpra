@@ -57,6 +57,10 @@ class TestRFBClient(unittest.TestCase):
     def _proto(self, dimensions=(64, 64)):
         # build a protocol instance without a connection or threads:
         proto = object.__new__(RFBClientProtocol)
+        proto.protocol_version = (3, 8)
+        proto.share = False
+        proto._closed = False
+        proto._conn = type("_Conn", (), {"target": "test"})()
         proto.dimensions = dimensions
         proto.position = (0, 0)
         proto.cursor_serial = 0
@@ -419,6 +423,119 @@ class TestRFBClient(unittest.TestCase):
         self.assertEqual(consumed, 2)
         self.assertEqual(proto.sent[0], struct.pack(b"!B", 1))
         self.assertEqual(proto._packet_parser, proto._parse_security_result)
+
+    def test_security_handshake_none_37_skips_result(self):
+        # RFB 3.7 with None must go straight to ClientInit (no SecurityResult):
+        proto = self._proto()
+        proto.protocol_version = (3, 7)
+        consumed = proto._parse_security_handshake(struct.pack(b"!BB", 1, 1))
+        self.assertEqual(consumed, 2)
+        # selected type byte, then the ClientInit shared-flag byte:
+        self.assertEqual(proto.sent, [struct.pack(b"!B", 1), struct.pack(b"!B", 0)])
+        self.assertEqual(proto._packet_parser, proto._parse_client_init)
+
+    def test_security_handshake_vnc(self):
+        proto = self._proto()
+        consumed = proto._parse_security_handshake(struct.pack(b"!BB", 1, 2))
+        self.assertEqual(consumed, 2)
+        self.assertEqual(proto.sent[0], struct.pack(b"!B", 2))
+        self.assertEqual(proto._packet_parser, proto._parse_vnc_security_challenge)
+
+    def test_security_handshake_failure_reason(self):
+        # n==0 means failure, followed by a u32-length-prefixed reason:
+        proto = self._proto()
+        reason = b"too many attempts"
+        proto._parse_security_handshake(struct.pack(b"!BI", 0, len(reason)) + reason)
+        self.assertEqual(len(proto.idle_calls), 1)  # _internal_error -> connection lost
+
+    # -- protocol version negotiation ---------------------------------------
+
+    def test_version_negotiation_38(self):
+        proto = self._proto()
+        consumed = proto._parse_protocol_handshake(b"RFB 003.008\n")
+        self.assertEqual(consumed, 12)
+        self.assertEqual(proto.protocol_version, (3, 8))
+        self.assertEqual(proto.sent[0], b"RFB 003.008\n")
+        self.assertEqual(proto._packet_parser, proto._parse_security_handshake)
+
+    def test_version_negotiation_37(self):
+        proto = self._proto()
+        proto._parse_protocol_handshake(b"RFB 003.007\n")
+        self.assertEqual(proto.protocol_version, (3, 7))
+        self.assertEqual(proto.sent[0], b"RFB 003.007\n")
+        self.assertEqual(proto._packet_parser, proto._parse_security_handshake)
+
+    def test_version_negotiation_33(self):
+        proto = self._proto()
+        proto._parse_protocol_handshake(b"RFB 003.003\n")
+        self.assertEqual(proto.protocol_version, (3, 3))
+        self.assertEqual(proto.sent[0], b"RFB 003.003\n")
+        # 3.3 uses the single-u32 security handshake:
+        self.assertEqual(proto._packet_parser, proto._parse_security_handshake_33)
+
+    def test_version_negotiation_clamps_to_max(self):
+        # Apple Remote Desktop announces 003.889; we cap at our maximum (3.8):
+        proto = self._proto()
+        proto._parse_protocol_handshake(b"RFB 003.889\n")
+        self.assertEqual(proto.protocol_version, (3, 8))
+        self.assertEqual(proto.sent[0], b"RFB 003.008\n")
+
+    def test_version_negotiation_unknown_minor_rounds_down(self):
+        # a non-standard 3.5 rounds down to the highest version we know (3.3):
+        proto = self._proto()
+        proto._parse_protocol_handshake(b"RFB 003.005\n")
+        self.assertEqual(proto.protocol_version, (3, 3))
+        self.assertEqual(proto.sent[0], b"RFB 003.003\n")
+
+    def test_version_negotiation_incomplete(self):
+        proto = self._proto()
+        self.assertEqual(proto._parse_protocol_handshake(b"RFB 003"), 0)
+        self.assertEqual(proto.sent, [])
+
+    def test_version_negotiation_bad_header(self):
+        proto = self._proto()
+        proto._parse_protocol_handshake(b"XXX 003.008\n")
+        # rejected: parser switched to the invalid sink, nothing sent
+        self.assertEqual(proto._packet_parser, proto._parse_invalid)
+
+    def test_version_negotiation_too_old(self):
+        # older than 3.3 is unsupported -> rejected with a reason
+        proto = self._proto()
+        proto._parse_protocol_handshake(b"RFB 003.002\n")
+        self.assertEqual(proto._packet_parser, proto._parse_invalid)
+
+    # -- RFB 3.3 security handshake -----------------------------------------
+
+    def test_security_handshake_33_none(self):
+        # 3.3 None: server sends type as u32, no client reply, straight to ClientInit
+        proto = self._proto()
+        proto.protocol_version = (3, 3)
+        consumed = proto._parse_security_handshake_33(struct.pack(b"!I", 1))
+        self.assertEqual(consumed, 4)
+        # only the ClientInit shared-flag byte is sent (no selected-type byte):
+        self.assertEqual(proto.sent, [struct.pack(b"!B", 0)])
+        self.assertEqual(proto._packet_parser, proto._parse_client_init)
+
+    def test_security_handshake_33_vnc(self):
+        proto = self._proto()
+        proto.protocol_version = (3, 3)
+        consumed = proto._parse_security_handshake_33(struct.pack(b"!I", 2))
+        self.assertEqual(consumed, 4)
+        self.assertEqual(proto.sent, [])  # no reply byte in 3.3
+        self.assertEqual(proto._packet_parser, proto._parse_vnc_security_challenge)
+
+    def test_security_handshake_33_failure(self):
+        # type 0 == failure, followed by a reason string:
+        proto = self._proto()
+        proto.protocol_version = (3, 3)
+        reason = b"no"
+        proto._parse_security_handshake_33(struct.pack(b"!II", 0, len(reason)) + reason)
+        self.assertEqual(len(proto.idle_calls), 1)
+
+    def test_security_handshake_33_incomplete(self):
+        proto = self._proto()
+        proto.protocol_version = (3, 3)
+        self.assertEqual(proto._parse_security_handshake_33(b"\x00\x00\x00"), 0)
 
 
 def main():

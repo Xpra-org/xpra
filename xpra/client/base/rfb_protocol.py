@@ -11,7 +11,7 @@ from collections.abc import Callable
 
 from xpra.net.common import no_packet, Packet
 from xpra.clipboard.targets import TEXT_TARGETS
-from xpra.net.rfb.protocol import RFBProtocol
+from xpra.net.rfb.protocol import RFBProtocol, PROTOCOL_VERSION
 from xpra.net.rfb.const import (
     RFBEncoding, RFBClientMessage, RFBServerMessage, RFBAuth,
     CLIENT_INIT, PIXEL_FORMAT, AUTH_STR, SERVER_PACKET_TYPE_STR, ENCODING_STR, RFB_KEYS,
@@ -33,6 +33,10 @@ RGB_FORMAT = "BGRX"
 # tight: data shorter than this many bytes is sent uncompressed (TIGHT_MIN_TO_COMPRESS):
 TIGHT_MIN_TO_COMPRESS = 12
 
+# the RFB protocol versions we know how to negotiate, highest first;
+# anything the server offers is clamped down to the best of these:
+RFB_VERSIONS = ((3, 8), (3, 7), (3, 3))
+
 
 def check_wid(wid) -> bool:
     if wid != WID:
@@ -48,6 +52,8 @@ class RFBClientProtocol(RFBProtocol):
                  get_packet_cb: Callable[[], tuple[Packet, bool, bool]] = no_packet,
                  scheduler: Scheduler = None):
         self.next_packet = get_packet_cb
+        # negotiated during the protocol handshake (see _parse_protocol_handshake):
+        self.protocol_version = PROTOCOL_VERSION
         self.rectangles = 0
         self.position = 0, 0
         self.dimensions = 0, 0
@@ -176,10 +182,83 @@ class RFBClientProtocol(RFBProtocol):
         log("window offset: %s", self.position)
         # ["configure-window", self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
 
+    def _parse_protocol_handshake(self, packet) -> int:
+        # the server announces its version, e.g. b'RFB 003.008\n';
+        # we reply (in send_protocol_handshake) with the best version we both support:
+        log("parse_protocol_handshake(%s)", packet)
+        if len(packet) < 12:
+            return 0
+        if not packet.startswith(b"RFB ") or packet[11:12] != b"\n":
+            self.invalid_header(self, packet, "invalid RFB protocol handshake header")
+            return 0
+        try:
+            server_version = tuple(int(x) for x in packet[4:11].split(b"."))
+        except ValueError:
+            self.invalid_header(self, packet, "invalid RFB protocol version %r" % packet[4:11])
+            return 0
+        # clamp to our maximum, then pick the highest version we know that is no newer:
+        target = min(server_version, PROTOCOL_VERSION)
+        for v in RFB_VERSIONS:
+            if v <= target:
+                self.protocol_version = v
+                break
+        else:
+            msg = b"unsupported protocol version"
+            log.error("Error: %s %s", msg.decode(), server_version)
+            self.send(struct.pack(b"!BI", 0, len(msg)) + msg)
+            self.invalid(msg, packet)
+            return 0
+        log("RFB server version %s, negotiated %s", server_version, self.protocol_version)
+        self.handshake_complete()
+        return 12
+
+    def send_protocol_handshake(self) -> None:
+        self.send(b"RFB %03i.%03i\n" % self.protocol_version)
+
     def handshake_complete(self) -> None:
-        log.info("RFB connected to %s", self._conn.target)
-        self._packet_parser = self._parse_security_handshake
+        log.info("RFB connected to %s using protocol version %i.%i",
+                 self._conn.target, *self.protocol_version)
+        if self.protocol_version < (3, 7):
+            # RFB 3.3: the server dictates a single security type
+            self._packet_parser = self._parse_security_handshake_33
+        else:
+            # RFB 3.7+: negotiated security type
+            self._packet_parser = self._parse_security_handshake
         self.send_protocol_handshake()
+
+    def _read_reason(self, packet, offset: int) -> str:
+        # a u32 length-prefixed string used to explain handshake failures:
+        if len(packet) < offset + 4:
+            return ""
+        rlen = struct.unpack(b"!I", packet[offset:offset + 4])[0]
+        return packet[offset + 4:offset + 4 + rlen].decode("latin1", "replace")
+
+    def _parse_security_handshake_33(self, packet) -> int:
+        # RFB 3.3: the server picks the security type and sends it as a single u32;
+        # the client does not reply with a chosen type (unlike 3.7+):
+        log("parse_security_handshake_33(%s)", hexstr(packet))
+        if len(packet) < 4:
+            return 0
+        auth_type = struct.unpack(b"!I", packet[:4])[0]
+        try:
+            auth_type = RFBAuth(auth_type)
+        except ValueError:
+            pass
+        log("security type=%s", AUTH_STR.get(auth_type, auth_type))
+        if auth_type == RFBAuth.INVALID:
+            # failure, followed by a reason string:
+            reason = self._read_reason(packet, 4)
+            self._internal_error("connection refused: %s" % (reason or "unknown reason"))
+            return 0
+        if auth_type == RFBAuth.NONE:
+            # no challenge and (in 3.3) no SecurityResult: straight to ClientInit
+            self.send_client_init()
+            return 4
+        if auth_type == RFBAuth.VNC:
+            self._packet_parser = self._parse_vnc_security_challenge
+            return 4
+        self._internal_error("unsupported security type %r" % (AUTH_STR.get(auth_type, auth_type)))
+        return 0
 
     def _parse_security_handshake(self, packet) -> int:
         log("parse_security_handshake(%s)", hexstr(packet))
@@ -187,7 +266,9 @@ class RFBClientProtocol(RFBProtocol):
             return 0
         n = struct.unpack(b"B", packet[:1])[0]
         if n == 0:
-            self._internal_error("cannot parse security handshake " + hexstr(packet))
+            # RFB 3.7+ failure: a reason string follows the zero count
+            reason = self._read_reason(packet, 1)
+            self._internal_error("security handshake failed: %s" % (reason or hexstr(packet)))
             return 0
         if len(packet) < 1 + n:
             # wait until we have all the security types:
@@ -203,15 +284,21 @@ class RFBClientProtocol(RFBProtocol):
         log("parse_security_handshake(%s) security_types=%s", hexstr(packet), [AUTH_STR.get(v, v) for v in st])
         if not st or RFBAuth.NONE in st:
             auth_type = RFBAuth.NONE
-            # go straight to the result:
-            self._packet_parser = self._parse_security_result
         elif RFBAuth.VNC in st:
             auth_type = RFBAuth.VNC
-            self._packet_parser = self._parse_vnc_security_challenge
         else:
             self._internal_error("no supported security types in %r" % csv(AUTH_STR.get(v, v) for v in st))
             return 0
+        # tell the server which type we picked, then move on to its data:
         self.send_struct(b"B", auth_type)
+        if auth_type == RFBAuth.VNC:
+            self._packet_parser = self._parse_vnc_security_challenge
+        elif self.protocol_version >= (3, 8):
+            # 3.8 always sends a SecurityResult, even for None:
+            self._packet_parser = self._parse_security_result
+        else:
+            # 3.7 with no authentication: straight to ClientInit
+            self.send_client_init()
         return 1 + n
 
     def _parse_vnc_security_challenge(self, packet) -> int:
@@ -236,15 +323,21 @@ class RFBClientProtocol(RFBProtocol):
     def _parse_security_result(self, packet) -> int:
         if len(packet) < 4:
             return 0
-        r = struct.unpack(b"I", packet[:4])[0]
+        r = struct.unpack(b"!I", packet[:4])[0]
         if r != 0:
-            self._internal_error(f"authentication denied, server returned {r}")
+            # 3.8 failures carry a reason string after the result code:
+            reason = self._read_reason(packet, 4) if self.protocol_version >= (3, 8) else ""
+            self._internal_error("authentication denied, server returned %i%s" %
+                                 (r, (": " + reason) if reason else ""))
             return 0
         log("parse_security_result(%s) success", hexstr(packet))
-        self._packet_parser = self._parse_client_init
-        share = False
-        self.send_struct(b"B", bool(share))
+        self.send_client_init()
         return 4
+
+    def send_client_init(self) -> None:
+        # ClientInit is a single shared-flag byte; the server replies with ServerInit:
+        self._packet_parser = self._parse_client_init
+        self.send_struct(b"B", bool(self.share))
 
     def _parse_client_init(self, packet) -> int:
         log("_parse_client_init(%s)", packet)
