@@ -1,6 +1,6 @@
 # ![Network](../images/icons/connect.png) Network
 
-See also: [protocol](Protocol.md), [authentication](../Usage/Authentication.md), [encryption](Encryption.md) and [multicast DNS](Multicast-DNS.md)
+See also: [protocol](Protocol.md), [authentication](../Usage/Authentication.md), [encryption](Encryption.md), [RFB / VNC](RFB.md) and [multicast DNS](Multicast-DNS.md)
 
 ## Connection Types
 | Type                 | Bind option  | Availability                                                                 | Information                                                                                         |
@@ -11,7 +11,7 @@ See also: [protocol](Protocol.md), [authentication](../Usage/Authentication.md),
 | [SSH](SSH.md)        | `bind-ssh`   | All                                                                          |
 | `WebSocket`          | `bind-ws`    | All                                                                          |
 | `Secure WebSocket`   | `bind-wss`   | All                                                                          |
-| `RFB`                | `bind-rfb`   | [desktop](../Usage/Desktop.md) and [shadow](../Usage/Shadow.md) servers only | Allows VNC clients to connect                                                                       |
+| [RFB](RFB.md)        | `bind-rfb`   | [desktop](../Usage/Desktop.md) and [shadow](../Usage/Shadow.md) servers only | Allows VNC clients to connect; xpra can also connect *to* a VNC server with `vnc://`                |
 | `unix domain socket` | `bind`       | Posix                                                                        | Local connections or via [SSH](SSH.md)                                                              |
 | `named-pipe`         | `bind`       | MS Windows                                                                   | [#1150](https://github.com/Xpra-org/xpra/issues/1150)                                               |
 | `vsock`              | `bind-vsock` | Linux                                                                        | host - guest virtual machines connections - see [#983](https://github.com/Xpra-org/xpra/issues/983) |
@@ -85,10 +85,10 @@ More network information is available elsewhere in the "Session Info" dialog or 
 
 ### General
 Tunnels and VPNs can and often do mangle traffic, causing extra latency and
-generally making it more difficult to identify issues.  
+generally making it more difficult to identify issues.
 When investigating connection or latency issues, prefer direct connections that bypass any proxy, VPN, firewall, tunnel, etc
-Then only re-add these potential bottlenecks if the direct connection exhibits the same behaviour.  
-Also prefer plain TCP connections over their WebSocket / SSL / QUIC counterparts - comparing different connection types can also provide useful data points.  
+Then only re-add these potential bottlenecks if the direct connection exhibits the same behaviour.
+Also prefer plain TCP connections over their WebSocket / SSL / QUIC counterparts - comparing different connection types can also provide useful data points.
 Always ensure that there are no major warnings in the server log or client output, these may already point to the root cause (ie: GPU contention, encoding or decoding errors, etc).
 
 
@@ -96,7 +96,7 @@ Always ensure that there are no major warnings in the server log or client outpu
 
 Running `xpra info | grep latency` does capture some important measurements, these differ from network testing tools like `ping`
 because the samples are captured from the application itself, as it is experienced by the software,
-and after traversing all the operating system and library layers that sit between the wire and the software.  
+and after traversing all the operating system and library layers that sit between the wire and the software.
 Comparing these values with the more crude values obtained from `ping`, `tcpping` or `nmap` can already expose significant sources of latency because the application is much more sensitive to system load and memory bandwidth than raw wire data.
 
 `xpra info` is normally used against a server when no address is specified,
