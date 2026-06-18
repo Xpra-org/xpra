@@ -11,12 +11,101 @@ import unittest
 from xpra.util.objects import AdHocStruct
 from xpra.codecs.image import ImageWrapper
 from xpra.common import noop
-from xpra.net.rfb.const import RFBEncoding
-from xpra.net.rfb.protocol import RFBProtocol
+from xpra.net.rfb.const import RFBAuth, RFBEncoding, RFBVeNCrypt
+from xpra.net.rfb.protocol import RFBProtocol, READ_BUFFER_SIZE
+from xpra.server.rfb.protocol import RFBServerProtocol
 from xpra.server.rfb.source import RFB_WRITE_QUEUE_MAX_BYTES, RFBSource
 
 
 class TestRFB(unittest.TestCase):
+
+    def _rfb_server_proto(self, auth=None, ssl_options=None):
+        class Conn:
+            target = "test-target"
+            local = ("127.0.0.1", 10000)
+            remote = ("127.0.0.1", 20000)
+            endpoint = remote
+            socktype = "rfb"
+            options = {}
+            timeout = 1
+
+            def write(self, buf):
+                return len(buf)
+
+            def close(self):
+                pass
+
+        def get_pixelformat():
+            return 640, 480, 32, 24, False, True, 255, 255, 255, 16, 8, 0
+
+        proto = RFBServerProtocol(Conn(), auth, noop, get_pixelformat,
+                                  ssl_options=ssl_options)
+        proto.sent = []
+        proto.send = proto.sent.append
+        return proto
+
+    def test_rfb_server_vencrypt_advertisement(self):
+        proto = self._rfb_server_proto()
+        proto.handshake_complete()
+        self.assertEqual(proto.sent[0], bytes([1, RFBAuth.NONE]))
+
+        proto = self._rfb_server_proto(ssl_options={"cert": "/tmp/cert.pem"})
+        proto.handshake_complete()
+        self.assertEqual(proto.sent[0], bytes([2, RFBAuth.VeNCrypt, RFBAuth.NONE]))
+
+        class Auth:
+            def requires_challenge(self):
+                return True
+
+        proto = self._rfb_server_proto(Auth(), {"cert": "/tmp/cert.pem"})
+        proto.handshake_complete()
+        self.assertEqual(proto.sent[0], bytes([2, RFBAuth.VeNCrypt, RFBAuth.VNC]))
+
+    def test_rfb_server_vencrypt_version_and_subtype(self):
+        proto = self._rfb_server_proto(ssl_options={"cert": "/tmp/cert.pem"})
+        proto.handshake_complete()
+        self.assertEqual(proto._parse_security_handshake(bytes([RFBAuth.VeNCrypt])), 1)
+        self.assertEqual(proto.sent[-1], b"\0\2")
+        self.assertEqual(proto._packet_parser, proto._parse_vencrypt_version)
+
+        self.assertEqual(proto._parse_vencrypt_version(b"\0\2"), 2)
+        self.assertEqual(proto.sent[-2], b"\0")
+        self.assertEqual(proto.sent[-1], b"\1" + struct.pack(b"!I", RFBVeNCrypt.X509NONE))
+        self.assertEqual(proto.read_buffer_size, 4)
+
+        acks = []
+        upgrades = []
+        proto._send_vencrypt_subtype_ack = lambda accepted: acks.append(accepted) or True
+        proto._upgrade_to_tls = lambda: upgrades.append(proto._vencrypt_subtype)
+        self.assertEqual(proto._parse_vencrypt_subtype(struct.pack(b"!I", RFBVeNCrypt.X509NONE)), 4)
+        self.assertEqual(acks, [True])
+        self.assertEqual(upgrades, [RFBVeNCrypt.X509NONE])
+        self.assertEqual(proto.read_buffer_size, READ_BUFFER_SIZE)
+
+    def test_rfb_server_vencrypt_authenticated_subtype(self):
+        class Auth:
+            def requires_challenge(self):
+                return True
+
+            def get_challenge(self, _digests):
+                return b"0123456789abcdef", "des"
+
+        proto = self._rfb_server_proto(Auth(), {"cert": "/tmp/cert.pem"})
+        proto.handshake_complete()
+        proto._parse_security_handshake(bytes([RFBAuth.VeNCrypt]))
+        proto._parse_vencrypt_version(b"\0\2")
+        self.assertEqual(proto.sent[-1], b"\1" + struct.pack(b"!I", RFBVeNCrypt.X509VNC))
+
+    def test_rfb_server_vencrypt_rejects_bad_subtype(self):
+        proto = self._rfb_server_proto(ssl_options={"cert": "/tmp/cert.pem"})
+        proto.handshake_complete()
+        proto._parse_security_handshake(bytes([RFBAuth.VeNCrypt]))
+        proto._parse_vencrypt_version(b"\0\2")
+        acks = []
+        proto._send_vencrypt_subtype_ack = lambda accepted: acks.append(accepted) or True
+        proto._upgrade_to_tls = lambda: self.fail("unexpected TLS upgrade")
+        self.assertEqual(proto._parse_vencrypt_subtype(struct.pack(b"!I", RFBVeNCrypt.X509VNC)), 0)
+        self.assertEqual(acks, [False])
 
     def test_rfb_protocol_write_backlog(self):
         class Conn:

@@ -59,6 +59,7 @@ class RFBProtocol:
         self._write_current_bytes = 0
         self._write_last_bytecount = 0
         self._write_last_duration = 0.0
+        self.read_buffer_size = READ_BUFFER_SIZE
         self._closed = False
         self._packet_parser = self._parse_protocol_handshake
         self._write_thread = None
@@ -214,6 +215,9 @@ class RFBProtocol:
         self._write_queue_bytes += size
         self._write_queue.put(rfbdata)
 
+    def send_struct(self, fmt: bytes, *args) -> None:
+        self.send(struct.pack(fmt, *args))
+
     def start_write_thread(self) -> None:
         log("rfb: starting write thread")
         self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
@@ -277,7 +281,7 @@ class RFBProtocol:
         c = self._conn
         if not c:
             return False
-        buf = c.read(READ_BUFFER_SIZE)
+        buf = c.read(self.read_buffer_size)
         # log("read()=%i bytes (%s)", len(buf or b""), type(buf))
         if not buf:
             log("read thread: eof")

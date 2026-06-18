@@ -109,11 +109,13 @@ class RFBServer(StubSubsystem):
             auth = None
             if len(auths) == 1:
                 auth = auths[0]
+            get_ssl_socket_options = getattr(self.server, "get_ssl_socket_options", None)
+            ssl_options = get_ssl_socket_options(conn.options) if get_ssl_socket_options else {}
             log("creating RFB protocol with authentication=%s", auth)
             return RFBServerProtocol(conn, auth,
                                      self.process_rfb_packet, self.get_rfb_pixelformat,
                                      self.server.session_name or "Xpra Server",
-                                     data)
+                                     data, ssl_options)
 
         p = self.server.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
         log("handle_rfb_connection(%s) protocol=%s", conn, p)
