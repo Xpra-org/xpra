@@ -1,0 +1,920 @@
+# Xpra translation catalog.
+# Copyright (C) 2026 Antoine Martin <antoine@xpra.org>
+# This file is distributed under the same license as the xpra package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: xpra\n"
+"Report-Msgid-Bugs-To: antoine@xpra.org\n"
+"PO-Revision-Date: 2026-06-18 00:00+0000\n"
+"Last-Translator: Xpra <antoine@xpra.org>\n"
+"Language-Team: Thai\n"
+"Language: th\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: xpra/client/gtk3/tray_menu.py:188
+msgid "Information"
+msgstr "ข้อมูล"
+
+#: xpra/client/gtk3/tray_menu.py:213 xpra/gtk/dialogs/session_info.py:732
+msgid "Features"
+msgstr "คุณสมบัติ"
+
+#: xpra/client/gtk3/tray_menu.py:247
+msgid "Allow other clients to connect to this session"
+msgstr "อนุญาตให้ไคลเอนต์อื่นเชื่อมต่อกับเซสชันนี้"
+
+#: xpra/client/gtk3/tray_menu.py:257
+msgid "Sharing is disabled on the server"
+msgstr "การแชร์ถูกปิดใช้งานบนเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:259
+msgid "Sharing cannot be changed on this server"
+msgstr "ไม่สามารถเปลี่ยนการแชร์บนเซิร์ฟเวอร์นี้ได้"
+
+#: xpra/client/gtk3/tray_menu.py:276
+msgid "Prevent other clients from stealing this session"
+msgstr "ป้องกันไม่ให้ไคลเอนต์อื่นแย่งเซสชันนี้"
+
+#: xpra/client/gtk3/tray_menu.py:285
+msgid "Session locking is disabled on this server"
+msgstr "การล็อกเซสชันถูกปิดใช้งานบนเซิร์ฟเวอร์นี้"
+
+#: xpra/client/gtk3/tray_menu.py:287
+msgid "Session locking cannot be toggled on this server"
+msgstr "ไม่สามารถสลับการล็อกเซสชันบนเซิร์ฟเวอร์นี้ได้"
+
+#: xpra/client/gtk3/tray_menu.py:302
+msgid "Read-only"
+msgstr "อ่านอย่างเดียว"
+
+#: xpra/client/gtk3/tray_menu.py:309
+msgid "Disable all mouse and keyboard input"
+msgstr "ปิดใช้งานการป้อนข้อมูลด้วยเมาส์และแป้นพิมพ์ทั้งหมด"
+
+#: xpra/client/gtk3/tray_menu.py:310
+msgid ""
+"Cannot disable readonly mode: the server has locked the session to read only"
+msgstr "ไม่สามารถปิดใช้งานโหมดอ่านอย่างเดียว: เซิร์ฟเวอร์ได้ล็อกเซสชันเป็นอ่านอย่างเดียว"
+
+#: xpra/client/gtk3/tray_menu.py:327 xpra/gtk/dialogs/session_info.py:757
+msgid "Bell"
+msgstr "กระดิ่ง"
+
+#: xpra/client/gtk3/tray_menu.py:335
+msgid "Forward system bell"
+msgstr "ส่งต่อเสียงกระดิ่งของระบบ"
+
+#: xpra/client/gtk3/tray_menu.py:336
+msgid "Cannot forward the system bell: the feature has been disabled"
+msgstr "ไม่สามารถส่งต่อเสียงกระดิ่งของระบบ: คุณสมบัตินี้ถูกปิดใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:352 xpra/gtk/dialogs/session_info.py:758
+msgid "Cursors"
+msgstr "เคอร์เซอร์"
+
+#: xpra/client/gtk3/tray_menu.py:361
+msgid "Forward custom mouse cursors"
+msgstr "ส่งต่อเคอร์เซอร์เมาส์แบบกำหนดเอง"
+
+#: xpra/client/gtk3/tray_menu.py:362
+msgid "Cannot forward mouse cursors: the feature is disabled"
+msgstr "ไม่สามารถส่งต่อเคอร์เซอร์เมาส์: คุณสมบัตินี้ถูกปิดใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:375 xpra/gtk/dialogs/session_info.py:755
+msgid "Notifications"
+msgstr "การแจ้งเตือน"
+
+#: xpra/client/gtk3/tray_menu.py:383
+msgid "Forward system notifications"
+msgstr "ส่งต่อการแจ้งเตือนของระบบ"
+
+#: xpra/client/gtk3/tray_menu.py:384
+msgid "Cannot forward system notifications: the feature is disabled"
+msgstr "ไม่สามารถส่งต่อการแจ้งเตือนของระบบ: คุณสมบัตินี้ถูกปิดใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:426
+msgid "Selection"
+msgstr "การเลือก"
+
+#: xpra/client/gtk3/tray_menu.py:426
+msgid "Choose which remote clipboard to connect to"
+msgstr "เลือกคลิปบอร์ดระยะไกลที่จะเชื่อมต่อ"
+
+#: xpra/client/gtk3/tray_menu.py:470 xpra/gtk/dialogs/session_info.py:753
+msgid "Clipboard"
+msgstr "คลิปบอร์ด"
+
+#: xpra/client/gtk3/tray_menu.py:476
+msgid "Server does not support clipboard synchronization"
+msgstr "เซิร์ฟเวอร์ไม่รองรับการซิงโครไนซ์คลิปบอร์ด"
+
+#: xpra/client/gtk3/tray_menu.py:480
+msgid "Client does not support clipboard synchronization"
+msgstr "ไคลเอนต์ไม่รองรับการซิงโครไนซ์คลิปบอร์ด"
+
+#: xpra/client/gtk3/tray_menu.py:515
+msgid "Keyboard support is not loaded"
+msgstr "ยังไม่ได้โหลดการรองรับแป้นพิมพ์"
+
+#: xpra/client/gtk3/tray_menu.py:520 xpra/client/gtk3/tray_menu.py:539
+msgid "Enable keyboard state synchronization"
+msgstr "เปิดใช้งานการซิงโครไนซ์สถานะแป้นพิมพ์"
+
+#: xpra/client/gtk3/tray_menu.py:531
+msgid "State Synchronization"
+msgstr "การซิงโครไนซ์สถานะ"
+
+#: xpra/client/gtk3/tray_menu.py:540
+msgid "Keyboard support is not available"
+msgstr "ไม่มีการรองรับแป้นพิมพ์"
+
+#: xpra/client/gtk3/tray_menu.py:550
+msgid "Intercept Shortcuts"
+msgstr "ดักจับทางลัด"
+
+#: xpra/client/gtk3/tray_menu.py:563
+msgid "View Shortcuts"
+msgstr "ดูทางลัด"
+
+#: xpra/client/gtk3/tray_menu.py:563
+msgid "Show all active keyboard shortcuts"
+msgstr "แสดงทางลัดแป้นพิมพ์ที่ใช้งานอยู่ทั้งหมด"
+
+#: xpra/client/gtk3/tray_menu.py:567
+msgid "OpenGL"
+msgstr "OpenGL"
+
+#: xpra/client/gtk3/tray_menu.py:568
+msgid "hardware accelerated rendering using OpenGL"
+msgstr "การเรนเดอร์แบบเร่งด้วยฮาร์ดแวร์โดยใช้ OpenGL"
+
+#: xpra/client/gtk3/tray_menu.py:585
+msgid "Modal Windows"
+msgstr "หน้าต่างโมดอล"
+
+#: xpra/client/gtk3/tray_menu.py:586
+msgid "honour modal windows"
+msgstr "เคารพหน้าต่างโมดอล"
+
+#: xpra/client/gtk3/tray_menu.py:604
+msgid "Picture"
+msgstr "ภาพ"
+
+#: xpra/client/gtk3/tray_menu.py:626
+msgid "Bandwidth Limit"
+msgstr "ขีดจำกัดแบนด์วิดท์"
+
+#: xpra/client/gtk3/tray_menu.py:641
+msgid "memory mapped transfers are in use, so bandwidth limits are disabled"
+msgstr "กำลังใช้การถ่ายโอนแบบแมปหน่วยความจำ ดังนั้นขีดจำกัดแบนด์วิดท์จึงถูกปิดใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:667
+#, python-format
+msgid "server set the limit to %sbps"
+msgstr "เซิร์ฟเวอร์ตั้งค่าขีดจำกัดเป็น %sbps"
+
+#: xpra/client/gtk3/tray_menu.py:676 xpra/client/gtk3/tray_menu.py:790
+#: xpra/gtk/dialogs/session_info.py:1005
+msgid "None"
+msgstr "ไม่มี"
+
+#: xpra/client/gtk3/tray_menu.py:700 xpra/client/gtk3/tray_menu.py:709
+msgid "Encoding"
+msgstr "การเข้ารหัส"
+
+#: xpra/client/gtk3/tray_menu.py:700
+msgid "Choose picture data encoding"
+msgstr "เลือกการเข้ารหัสข้อมูลภาพ"
+
+#: xpra/client/gtk3/tray_menu.py:710
+msgid "memory mapped transfers are in use so picture encoding is disabled"
+msgstr "กำลังใช้การถ่ายโอนแบบแมปหน่วยความจำ ดังนั้นการเข้ารหัสภาพจึงถูกปิดใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:758
+msgid "Scaling"
+msgstr "การปรับขนาด"
+
+#: xpra/client/gtk3/tray_menu.py:758
+msgid "Desktop Scaling"
+msgstr "การปรับขนาดเดสก์ท็อป"
+
+#: xpra/client/gtk3/tray_menu.py:815 xpra/client/gtk3/tray_menu.py:826
+msgid "Quality"
+msgstr "คุณภาพ"
+
+#: xpra/client/gtk3/tray_menu.py:815
+msgid "Picture quality"
+msgstr "คุณภาพของภาพ"
+
+#: xpra/client/gtk3/tray_menu.py:854
+msgid "Speed is always 100% with mmap"
+msgstr "ความเร็วจะเป็น 100% เสมอเมื่อใช้ mmap"
+
+#: xpra/client/gtk3/tray_menu.py:857 xpra/client/gtk3/tray_menu.py:907
+#, python-format
+msgid "Not supported with %r encoding"
+msgstr "ไม่รองรับการเข้ารหัส %r"
+
+#: xpra/client/gtk3/tray_menu.py:859
+msgid "Minimum picture quality"
+msgstr "คุณภาพของภาพขั้นต่ำ"
+
+#: xpra/client/gtk3/tray_menu.py:867 xpra/client/gtk3/tray_menu.py:878
+msgid "Speed"
+msgstr "ความเร็ว"
+
+#: xpra/client/gtk3/tray_menu.py:867 xpra/client/gtk3/tray_menu.py:909
+msgid "Encoding latency vs size"
+msgstr "เวลาแฝงการเข้ารหัสเทียบกับขนาด"
+
+#: xpra/client/gtk3/tray_menu.py:905
+msgid "Quality is always 100% with mmap"
+msgstr "คุณภาพจะเป็น 100% เสมอเมื่อใช้ mmap"
+
+#: xpra/client/gtk3/tray_menu.py:914
+msgid "Audio"
+msgstr "เสียง"
+
+#: xpra/client/gtk3/tray_menu.py:936 xpra/gtk/dialogs/session_info.py:924
+#: xpra/gtk/dialogs/session_info.py:1346
+msgid "Speaker"
+msgstr "ลำโพง"
+
+#: xpra/client/gtk3/tray_menu.py:936
+msgid "Forward audio output from the server"
+msgstr "ส่งต่อเอาต์พุตเสียงจากเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:944
+msgid "Speaker forwarding has been disabled"
+msgstr "การส่งต่อลำโพงถูกปิดใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:946
+msgid "Server does not support speaker forwarding"
+msgstr "เซิร์ฟเวอร์ไม่รองรับการส่งต่อลำโพง"
+
+#: xpra/client/gtk3/tray_menu.py:961 xpra/gtk/dialogs/session_info.py:925
+msgid "Microphone"
+msgstr "ไมโครโฟน"
+
+#: xpra/client/gtk3/tray_menu.py:961
+msgid "Forward audio input to the server"
+msgstr "ส่งต่ออินพุตเสียงไปยังเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:969
+msgid "Microphone forwarding has been disabled"
+msgstr "การส่งต่อไมโครโฟนถูกปิดใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:971
+msgid "Server does not support microphone forwarding"
+msgstr "เซิร์ฟเวอร์ไม่รองรับการส่งต่อไมโครโฟน"
+
+#: xpra/client/gtk3/tray_menu.py:1003 xpra/client/gtk3/tray_menu.py:1152
+msgid "On"
+msgstr "เปิด"
+
+#: xpra/client/gtk3/tray_menu.py:1004 xpra/client/gtk3/tray_menu.py:1063
+#: xpra/client/gtk3/tray_menu.py:1148 xpra/client/gtk3/tray_menu.py:1166
+msgid "Off"
+msgstr "ปิด"
+
+#: xpra/client/gtk3/tray_menu.py:1037
+msgid "Video Sync"
+msgstr "การซิงค์วิดีโอ"
+
+#: xpra/client/gtk3/tray_menu.py:1037
+msgid "Synchronize audio and video"
+msgstr "ซิงโครไนซ์เสียงและวิดีโอ"
+
+#: xpra/client/gtk3/tray_menu.py:1068 xpra/client/gtk3/tray_menu.py:1393
+msgid "Auto"
+msgstr "อัตโนมัติ"
+
+#: xpra/client/gtk3/tray_menu.py:1078
+msgid "video-sync is not supported by the server"
+msgstr "เซิร์ฟเวอร์ไม่รองรับการซิงค์วิดีโอ"
+
+#: xpra/client/gtk3/tray_menu.py:1082
+msgid "video-sync requires speaker forwarding"
+msgstr "การซิงค์วิดีโอต้องใช้การส่งต่อลำโพง"
+
+#: xpra/client/gtk3/tray_menu.py:1095
+msgid "Webcam"
+msgstr "เว็บแคม"
+
+#: xpra/client/gtk3/tray_menu.py:1097 xpra/client/gtk3/tray_menu.py:1191
+msgid "Webcam forwarding is disabled"
+msgstr "การส่งต่อเว็บแคมถูกปิดใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:1164
+msgid "No devices found"
+msgstr "ไม่พบอุปกรณ์"
+
+#: xpra/client/gtk3/tray_menu.py:1195
+msgid "Server does not support webcam forwarding"
+msgstr "เซิร์ฟเวอร์ไม่รองรับการส่งต่อเว็บแคม"
+
+#: xpra/client/gtk3/tray_menu.py:1214
+msgid "Keyboard"
+msgstr "แป้นพิมพ์"
+
+#: xpra/client/gtk3/tray_menu.py:1229
+msgid "Layout"
+msgstr "เลย์เอาต์"
+
+#: xpra/client/gtk3/tray_menu.py:1229
+msgid "Select your keyboard layout"
+msgstr "เลือกเลย์เอาต์แป้นพิมพ์ของคุณ"
+
+#: xpra/client/gtk3/tray_menu.py:1378 xpra/client/gtk3/tray_menu.py:1433
+#, python-format
+msgid "%s - Default"
+msgstr "%s - ค่าเริ่มต้น"
+
+#: xpra/client/gtk3/tray_menu.py:1414
+#, python-format
+msgid "Detected %r"
+msgstr "ตรวจพบ %r"
+
+#: xpra/client/gtk3/tray_menu.py:1417
+msgid "No keyboard layouts detected"
+msgstr "ไม่พบเลย์เอาต์แป้นพิมพ์"
+
+#: xpra/client/gtk3/tray_menu.py:1443
+msgid "Monitors"
+msgstr "จอภาพ"
+
+#: xpra/client/gtk3/tray_menu.py:1502 xpra/gtk/dialogs/session_info.py:1107
+msgid "Windows"
+msgstr "หน้าต่าง"
+
+#: xpra/client/gtk3/tray_menu.py:1523
+msgid "Refresh"
+msgstr "รีเฟรช"
+
+#: xpra/client/gtk3/tray_menu.py:1531
+msgid "Re-initialize"
+msgstr "เริ่มต้นใหม่"
+
+#: xpra/client/gtk3/tray_menu.py:1553
+msgid "Raise Windows"
+msgstr "ยกหน้าต่างขึ้นด้านหน้า"
+
+#: xpra/client/gtk3/tray_menu.py:1559
+msgid "Minimize Windows"
+msgstr "ย่อหน้าต่าง"
+
+#: xpra/client/gtk3/tray_menu.py:1575 xpra/client/gtk3/tray_menu.py:1582
+msgid "Hide Windows"
+msgstr "ซ่อนหน้าต่าง"
+
+#: xpra/client/gtk3/tray_menu.py:1580
+msgid "Show Windows"
+msgstr "แสดงหน้าต่าง"
+
+#: xpra/client/gtk3/tray_menu.py:1588 xpra/gtk/dialogs/session_info.py:657
+#: xpra/gtk/dialogs/session_info.py:803
+msgid "Server"
+msgstr "เซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1615
+msgid "Server Commands"
+msgstr "คำสั่งเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1616
+msgid "Commands running on the server"
+msgstr "คำสั่งที่กำลังทำงานบนเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1622
+msgid "Show a list of the commands running on the server"
+msgstr "แสดงรายการคำสั่งที่กำลังทำงานบนเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1629
+msgid "Run Command"
+msgstr "เรียกใช้คำสั่ง"
+
+#: xpra/client/gtk3/tray_menu.py:1630
+msgid "Run a new command on the server"
+msgstr "เรียกใช้คำสั่งใหม่บนเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1636
+msgid "Choose a command to run on the server"
+msgstr "เลือกคำสั่งที่จะเรียกใช้บนเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1637
+msgid "Not supported or enabled on the server"
+msgstr "ไม่รองรับหรือไม่ได้เปิดใช้งานบนเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1643
+msgid "Transfers"
+msgstr "การถ่ายโอน"
+
+#: xpra/client/gtk3/tray_menu.py:1644
+msgid "Files and URLs forwarding"
+msgstr "การส่งต่อไฟล์และ URL"
+
+#: xpra/client/gtk3/tray_menu.py:1650
+msgid "Manage file and URL transfers"
+msgstr "จัดการการถ่ายโอนไฟล์และ URL"
+
+#: xpra/client/gtk3/tray_menu.py:1651
+msgid "The feature is not available"
+msgstr "คุณสมบัตินี้ไม่พร้อมใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:1656
+msgid "Upload File"
+msgstr "อัปโหลดไฟล์"
+
+#: xpra/client/gtk3/tray_menu.py:1662
+msgid "Send a file to the server"
+msgstr "ส่งไฟล์ไปยังเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1668
+msgid "Download File"
+msgstr "ดาวน์โหลดไฟล์"
+
+#: xpra/client/gtk3/tray_menu.py:1681
+msgid "'send-file' subcommand is not supported by the server"
+msgstr "เซิร์ฟเวอร์ไม่รองรับคำสั่งย่อย 'send-file'"
+
+#: xpra/client/gtk3/tray_menu.py:1683
+msgid "Download a file from the server"
+msgstr "ดาวน์โหลดไฟล์จากเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1690
+msgid "Debug Logging"
+msgstr "การบันทึกการดีบัก"
+
+#: xpra/client/gtk3/tray_menu.py:1702
+msgid "Download Server Log"
+msgstr "ดาวน์โหลดบันทึกเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1709
+msgid "Download the server log"
+msgstr "ดาวน์โหลดบันทึกเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1710
+msgid "Unable to download the server log"
+msgstr "ไม่สามารถดาวน์โหลดบันทึกเซิร์ฟเวอร์ได้"
+
+#: xpra/client/gtk3/tray_menu.py:1721
+#, python-format
+msgid "Shutting down the session '%s' may result in data loss,"
+msgstr "การปิดเซสชัน '%s' อาจทำให้ข้อมูลสูญหาย,"
+
+#: xpra/client/gtk3/tray_menu.py:1723
+msgid "Shutting down this session may result in data loss,"
+msgstr "การปิดเซสชันนี้อาจทำให้ข้อมูลสูญหาย,"
+
+#: xpra/client/gtk3/tray_menu.py:1724
+msgid "are you sure you want to proceed?"
+msgstr "คุณแน่ใจหรือไม่ว่าต้องการดำเนินการต่อ?"
+
+#: xpra/client/gtk3/tray_menu.py:1730
+msgid "Shutdown"
+msgstr "ปิดระบบ"
+
+#: xpra/client/gtk3/tray_menu.py:1736
+msgid "Shutdown Session"
+msgstr "ปิดเซสชัน"
+
+#: xpra/client/gtk3/tray_menu.py:1742
+msgid "Disabled by the server"
+msgstr "ถูกปิดใช้งานโดยเซิร์ฟเวอร์"
+
+#: xpra/client/gtk3/tray_menu.py:1744
+msgid "Shutdown this server session"
+msgstr "ปิดเซสชันเซิร์ฟเวอร์นี้"
+
+#: xpra/client/gtk3/tray_menu.py:1753 xpra/gtk/dialogs/gui.py:92
+msgid "Start"
+msgstr "เริ่ม"
+
+#: xpra/client/gtk3/tray_menu.py:1777
+msgid "Starting new commands is disabled"
+msgstr "การเริ่มคำสั่งใหม่ถูกปิดใช้งาน"
+
+#: xpra/client/gtk3/tray_menu.py:1781
+msgid "This server does not support starting new commands"
+msgstr "เซิร์ฟเวอร์นี้ไม่รองรับการเริ่มคำสั่งใหม่"
+
+#: xpra/client/gtk3/tray_menu.py:1785
+msgid "This server does not provide start menu data"
+msgstr "เซิร์ฟเวอร์นี้ไม่มีข้อมูลเมนูเริ่ม"
+
+#: xpra/client/gtk3/tray_menu.py:1869
+msgid "Disconnect"
+msgstr "ตัดการเชื่อมต่อ"
+
+#: xpra/client/gtk3/tray_menu.py:1874
+msgid "Close Menu"
+msgstr "ปิดเมนู"
+
+#: xpra/gtk/dialogs/session_info.py:290
+msgid "Save graph as a PNG image"
+msgstr "บันทึกกราฟเป็นภาพ PNG"
+
+#: xpra/gtk/dialogs/session_info.py:293
+msgid "Save"
+msgstr "บันทึก"
+
+#: xpra/gtk/dialogs/session_info.py:404
+msgid "Session Info"
+msgstr "ข้อมูลเซสชัน"
+
+#: xpra/gtk/dialogs/session_info.py:655
+msgid "Software"
+msgstr "ซอฟต์แวร์"
+
+#: xpra/gtk/dialogs/session_info.py:657 xpra/gtk/dialogs/session_info.py:803
+msgid "Client"
+msgstr "ไคลเอนต์"
+
+#: xpra/gtk/dialogs/session_info.py:658
+msgid "Operating System"
+msgstr "ระบบปฏิบัติการ"
+
+#: xpra/gtk/dialogs/session_info.py:660
+msgid "Revision"
+msgstr "การแก้ไข"
+
+#: xpra/gtk/dialogs/session_info.py:661
+msgid "Build date"
+msgstr "วันที่สร้าง"
+
+#: xpra/gtk/dialogs/session_info.py:743
+msgid "RandR Support"
+msgstr "การรองรับ RandR"
+
+#: xpra/gtk/dialogs/session_info.py:745
+msgid "Client Display"
+msgstr "การแสดงผลไคลเอนต์"
+
+#: xpra/gtk/dialogs/session_info.py:747
+msgid "Client OpenGL"
+msgstr "OpenGL ไคลเอนต์"
+
+#: xpra/gtk/dialogs/session_info.py:748
+msgid "OpenGL Mode"
+msgstr "โหมด OpenGL"
+
+#: xpra/gtk/dialogs/session_info.py:749
+msgid "Window Rendering"
+msgstr "การเรนเดอร์หน้าต่าง"
+
+#: xpra/gtk/dialogs/session_info.py:751
+msgid "Memory Mapped Transfers"
+msgstr "การถ่ายโอนแบบแมปหน่วยความจำ"
+
+#: xpra/gtk/dialogs/session_info.py:800
+msgid "Codecs"
+msgstr "ตัวแปลงสัญญาณ"
+
+#: xpra/gtk/dialogs/session_info.py:809
+msgid "Picture Encodings"
+msgstr "การเข้ารหัสภาพ"
+
+#: xpra/gtk/dialogs/session_info.py:812
+msgid "Speaker Codecs"
+msgstr "ตัวแปลงสัญญาณลำโพง"
+
+#: xpra/gtk/dialogs/session_info.py:815
+msgid "Microphone Codecs"
+msgstr "ตัวแปลงสัญญาณไมโครโฟน"
+
+#: xpra/gtk/dialogs/session_info.py:818
+msgid "Packet Encoders"
+msgstr "ตัวเข้ารหัสแพ็กเก็ต"
+
+#: xpra/gtk/dialogs/session_info.py:821
+msgid "Packet Compressors"
+msgstr "ตัวบีบอัดแพ็กเก็ต"
+
+#: xpra/gtk/dialogs/session_info.py:889
+msgid "Connection"
+msgstr "การเชื่อมต่อ"
+
+#: xpra/gtk/dialogs/session_info.py:895
+msgid "Server Endpoint"
+msgstr "ปลายทางเซิร์ฟเวอร์"
+
+#: xpra/gtk/dialogs/session_info.py:897
+msgid "Server Display"
+msgstr "การแสดงผลเซิร์ฟเวอร์"
+
+#: xpra/gtk/dialogs/session_info.py:898
+msgid "Server Hostname"
+msgstr "ชื่อโฮสต์เซิร์ฟเวอร์"
+
+#: xpra/gtk/dialogs/session_info.py:900
+msgid "Server Platform"
+msgstr "แพลตฟอร์มเซิร์ฟเวอร์"
+
+#: xpra/gtk/dialogs/session_info.py:901
+msgid "Server Load"
+msgstr "โหลดของเซิร์ฟเวอร์"
+
+#: xpra/gtk/dialogs/session_info.py:902
+msgid "Average over 1, 5 and 15 minutes"
+msgstr "ค่าเฉลี่ยในช่วง 1, 5 และ 15 นาที"
+
+#: xpra/gtk/dialogs/session_info.py:903
+msgid "Session Duration"
+msgstr "ระยะเวลาเซสชัน"
+
+#: xpra/gtk/dialogs/session_info.py:906
+msgid "Connection Duration"
+msgstr "ระยะเวลาการเชื่อมต่อ"
+
+#: xpra/gtk/dialogs/session_info.py:907
+msgid "Packets Received"
+msgstr "แพ็กเก็ตที่ได้รับ"
+
+#: xpra/gtk/dialogs/session_info.py:908
+msgid "Bytes Received"
+msgstr "ไบต์ที่ได้รับ"
+
+#: xpra/gtk/dialogs/session_info.py:909
+msgid "Packets Sent"
+msgstr "แพ็กเก็ตที่ส่ง"
+
+#: xpra/gtk/dialogs/session_info.py:910
+msgid "Bytes Sent"
+msgstr "ไบต์ที่ส่ง"
+
+#: xpra/gtk/dialogs/session_info.py:911
+msgid "Encoding + Compression"
+msgstr "การเข้ารหัส + การบีบอัด"
+
+#: xpra/gtk/dialogs/session_info.py:912
+msgid "Connection Type"
+msgstr "ประเภทการเชื่อมต่อ"
+
+#: xpra/gtk/dialogs/session_info.py:913
+msgid "Input Encryption"
+msgstr "การเข้ารหัสขาเข้า"
+
+#: xpra/gtk/dialogs/session_info.py:914
+msgid "Output Encryption"
+msgstr "การเข้ารหัสขาออก"
+
+#: xpra/gtk/dialogs/session_info.py:1047
+msgid "Statistics"
+msgstr "สถิติ"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Latest"
+msgstr "ล่าสุด"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Minimum"
+msgstr "ต่ำสุด"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Average"
+msgstr "เฉลี่ย"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "90 percentile"
+msgstr "เปอร์เซ็นไทล์ที่ 90"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Maximum"
+msgstr "สูงสุด"
+
+#: xpra/gtk/dialogs/session_info.py:1056
+msgid "Server Latency (ms)"
+msgstr "เวลาแฝงเซิร์ฟเวอร์ (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1057
+msgid "The time it takes for the server to respond to pings"
+msgstr "เวลาที่เซิร์ฟเวอร์ใช้ในการตอบสนองต่อ ping"
+
+#: xpra/gtk/dialogs/session_info.py:1060
+msgid "Client Latency (ms)"
+msgstr "เวลาแฝงไคลเอนต์ (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1061
+msgid ""
+"The time it takes for the client to respond to pings, as measured by the "
+"server"
+msgstr "เวลาที่ไคลเอนต์ใช้ในการตอบสนองต่อ ping ตามที่เซิร์ฟเวอร์วัดได้"
+
+#: xpra/gtk/dialogs/session_info.py:1066
+msgid "Batch Delay (MPixels / ms)"
+msgstr "ความล่าช้าของชุด (MPixels / ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1067
+msgid ""
+"How long the server waits for new screen updates to accumulate before "
+"processing them"
+msgstr "ระยะเวลาที่เซิร์ฟเวอร์รอให้การอัปเดตหน้าจอใหม่สะสมก่อนประมวลผล"
+
+#: xpra/gtk/dialogs/session_info.py:1070
+msgid "Damage Latency (ms)"
+msgstr "เวลาแฝงความเสียหาย (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1071
+msgid ""
+"The time it takes to compress a frame and pass it to the OS network layer"
+msgstr "เวลาที่ใช้ในการบีบอัดเฟรมและส่งไปยังชั้นเครือข่ายของระบบปฏิบัติการ"
+
+#: xpra/gtk/dialogs/session_info.py:1074
+msgid "Encoding Quality (pct)"
+msgstr "คุณภาพการเข้ารหัส (%)"
+
+#: xpra/gtk/dialogs/session_info.py:1075
+msgid "Automatic picture quality, average for all the windows"
+msgstr "คุณภาพภาพอัตโนมัติ ค่าเฉลี่ยสำหรับทุกหน้าต่าง"
+
+#: xpra/gtk/dialogs/session_info.py:1078
+msgid "Encoding Speed (pct)"
+msgstr "ความเร็วการเข้ารหัส (%)"
+
+#: xpra/gtk/dialogs/session_info.py:1079
+msgid ""
+"Automatic picture encoding speed (bandwidth vs CPU usage), average for all "
+"the windows"
+msgstr "ความเร็วการเข้ารหัสภาพอัตโนมัติ (แบนด์วิดท์เทียบกับการใช้ CPU) ค่าเฉลี่ยสำหรับทุกหน้าต่าง"
+
+#: xpra/gtk/dialogs/session_info.py:1082
+msgid "Decoding Latency (ms)"
+msgstr "เวลาแฝงการถอดรหัส (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1083
+msgid "How long it takes the client to decode a screen update"
+msgstr "ระยะเวลาที่ไคลเอนต์ใช้ในการถอดรหัสการอัปเดตหน้าจอ"
+
+#: xpra/gtk/dialogs/session_info.py:1086
+msgid "Regions/s"
+msgstr "ภูมิภาค/วินาที"
+
+#: xpra/gtk/dialogs/session_info.py:1087
+msgid ""
+"The number of screen updates per second (includes both partial and full "
+"screen updates)"
+msgstr "จำนวนการอัปเดตหน้าจอต่อวินาที (รวมการอัปเดตทั้งบางส่วนและเต็มหน้าจอ)"
+
+#: xpra/gtk/dialogs/session_info.py:1090
+msgid "Pixels/region"
+msgstr "พิกเซล/ภูมิภาค"
+
+#: xpra/gtk/dialogs/session_info.py:1091
+msgid "The number of pixels per screen update"
+msgstr "จำนวนพิกเซลต่อการอัปเดตหน้าจอ"
+
+#: xpra/gtk/dialogs/session_info.py:1094
+msgid "Pixels/s"
+msgstr "พิกเซล/วินาที"
+
+#: xpra/gtk/dialogs/session_info.py:1095
+msgid "The number of pixels processed per second"
+msgstr "จำนวนพิกเซลที่ประมวลผลต่อวินาที"
+
+#: xpra/gtk/dialogs/session_info.py:1102
+msgid "Regular"
+msgstr "ปกติ"
+
+#: xpra/gtk/dialogs/session_info.py:1102
+msgid "Transient"
+msgstr "ชั่วคราว"
+
+#: xpra/gtk/dialogs/session_info.py:1102
+msgid "Trays"
+msgstr "ถาด"
+
+#: xpra/gtk/dialogs/session_info.py:1112
+msgid "Window Encoders and Renderers"
+msgstr "ตัวเข้ารหัสและตัวเรนเดอร์หน้าต่าง"
+
+#: xpra/gtk/dialogs/session_info.py:1271
+msgid "Graphs"
+msgstr "กราฟ"
+
+#: xpra/gtk/dialogs/session_info.py:1272
+msgid "Bandwidth used"
+msgstr "แบนด์วิดท์ที่ใช้"
+
+#: xpra/gtk/dialogs/session_info.py:1274
+msgid ""
+",\n"
+"and number of pixels rendered"
+msgstr ",\nและจำนวนพิกเซลที่เรนเดอร์"
+
+#: xpra/gtk/dialogs/session_info.py:1332 xpra/gtk/dialogs/session_info.py:1335
+msgid "recv"
+msgstr "รับ"
+
+#: xpra/gtk/dialogs/session_info.py:1332
+msgid "sent"
+msgstr "ส่ง"
+
+#: xpra/gtk/dialogs/session_info.py:1341
+msgid "pixels/s"
+msgstr "พิกเซล/วินาที"
+
+#: xpra/gtk/dialogs/session_info.py:1351
+msgid "Mic"
+msgstr "ไมค์"
+
+#: xpra/gtk/dialogs/session_info.py:1356
+msgid "Bandwidth"
+msgstr "แบนด์วิดท์"
+
+#: xpra/gtk/dialogs/session_info.py:1381
+msgid "network"
+msgstr "เครือข่าย"
+
+#: xpra/gtk/dialogs/session_info.py:1382
+msgid "batch delay"
+msgstr "ความล่าช้าของชุด"
+
+#: xpra/gtk/dialogs/session_info.py:1383
+msgid "encode&send"
+msgstr "เข้ารหัส&ส่ง"
+
+#: xpra/gtk/dialogs/session_info.py:1384
+msgid "decoding"
+msgstr "การถอดรหัส"
+
+#: xpra/gtk/dialogs/session_info.py:1385
+msgid "frame total"
+msgstr "เฟรมทั้งหมด"
+
+#: xpra/gtk/dialogs/session_info.py:1393
+msgid "Latency (ms)"
+msgstr "เวลาแฝง (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1402
+msgid "Max"
+msgstr "สูงสุด"
+
+#: xpra/gtk/dialogs/session_info.py:1403
+msgid "Level"
+msgstr "ระดับ"
+
+#: xpra/gtk/dialogs/session_info.py:1404
+msgid "Min"
+msgstr "ต่ำสุด"
+
+#: xpra/gtk/dialogs/session_info.py:1410
+msgid "Audio Buffer (ms)"
+msgstr "บัฟเฟอร์เสียง (ms)"
+
+#: xpra/gtk/dialogs/gui.py:68 xpra/gtk/dialogs/gui.py:76
+#: xpra/gtk/dialogs/gui.py:90
+msgid "the client is not installed"
+msgstr "ไม่ได้ติดตั้งไคลเอนต์"
+
+#: xpra/gtk/dialogs/gui.py:70
+msgid "the mdns module is not installed"
+msgstr "ไม่ได้ติดตั้งโมดูล mdns"
+
+#: xpra/gtk/dialogs/gui.py:71
+msgid "Browse and connect to local and mDNS sessions"
+msgstr "เรียกดูและเชื่อมต่อกับเซสชันในเครื่องและ mDNS"
+
+#: xpra/gtk/dialogs/gui.py:72
+msgid "Browse"
+msgstr "เรียกดู"
+
+#: xpra/gtk/dialogs/gui.py:77
+msgid ""
+"Connect to an existing session\n"
+"over the network"
+msgstr "เชื่อมต่อกับเซสชันที่มีอยู่\nผ่านเครือข่าย"
+
+#: xpra/gtk/dialogs/gui.py:78
+msgid "Connect"
+msgstr "เชื่อมต่อ"
+
+#: xpra/gtk/dialogs/gui.py:82
+msgid "the shadow server feature is not installed"
+msgstr "ไม่ได้ติดตั้งคุณสมบัติเซิร์ฟเวอร์ shadow"
+
+#: xpra/gtk/dialogs/gui.py:83
+msgid ""
+"Start a shadow server,\n"
+"making this desktop accessible to others\n"
+"(authentication required)"
+msgstr "เริ่มเซิร์ฟเวอร์ shadow,\nทำให้เดสก์ท็อปนี้ผู้อื่นเข้าถึงได้\n(ต้องมีการยืนยันตัวตน)"
+
+#: xpra/gtk/dialogs/gui.py:84
+msgid "Shadow"
+msgstr "Shadow"
+
+#: xpra/gtk/dialogs/gui.py:86
+msgid "Configure"
+msgstr "กำหนดค่า"
+
+#: xpra/gtk/dialogs/gui.py:91
+#, python-format
+msgid "Start a new %sxpra session"
+msgstr "เริ่มเซสชัน xpra ใหม่ %s"
+
+#: xpra/gtk/dialogs/gui.py:91
+msgid "remote "
+msgstr "ระยะไกล"

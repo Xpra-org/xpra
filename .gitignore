@@ -206,3 +206,6 @@ tests/unittests/test-file*
 /xpra/**/*.so
 
 /.mypy_cache/
+
+# compiled gettext translation catalogs (built from .po at build time):
+/fs/share/xpra/locales/**/*.mo

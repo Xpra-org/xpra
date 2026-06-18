@@ -2376,6 +2376,22 @@ def glob_recurse(srcdir: str) -> "dict[str, list[str]]":
     return m
 
 
+def build_locales() -> None:
+    # compile the gettext translation catalogs (.po -> .mo) at build time:
+    pofiles = glob("fs/share/xpra/locales/*/LC_MESSAGES/*.po")
+    if not pofiles:
+        return
+    msgfmt = shutil.which("msgfmt")
+    if not msgfmt:
+        print("Warning: 'msgfmt' not found, translation catalogs will not be installed")
+        return
+    for po in pofiles:
+        mo = po[:-len(".po")] + ".mo"
+        if not os.path.exists(mo) or os.path.getmtime(mo) < os.path.getmtime(po):
+            if subprocess.Popen([msgfmt, "-o", mo, po]).wait() != 0:
+                print(f"Warning: failed to compile translation catalog {po!r}")
+
+
 #*******************************************************************************
 MINGW_PREFIX = ""
 if WIN32:
@@ -3302,6 +3318,12 @@ if data_ENABLED:
     add_data_files(f"{share_xpra}/icons",         ICONS)
     add_data_files(f"{share_xpra}/images",        glob("fs/share/xpra/images/*"))
     add_data_files(f"{share_xpra}/css",           glob("fs/share/xpra/css/*"))
+    # gettext translation catalogs: compile *.po -> *.mo and install the *.mo:
+    build_locales()
+    for langdir, lfiles in glob_recurse("fs/share/xpra/locales").items():
+        mofiles = [f for f in lfiles if f.endswith(".mo")]
+        if mofiles:
+            add_data_files(f"{share_xpra}/locales/{langdir.replace(os.sep, '/')}", mofiles)
 
 #*******************************************************************************
 if cython_ENABLED:

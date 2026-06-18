@@ -1,0 +1,922 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the xpra package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: xpra 6.6\n"
+"Report-Msgid-Bugs-To: antoine@xpra.org\n"
+"POT-Creation-Date: 2026-06-18 23:00+0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: xpra/client/gtk3/tray_menu.py:188
+msgid "Information"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:213 xpra/gtk/dialogs/session_info.py:732
+msgid "Features"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:247
+msgid "Allow other clients to connect to this session"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:257
+msgid "Sharing is disabled on the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:259
+msgid "Sharing cannot be changed on this server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:276
+msgid "Prevent other clients from stealing this session"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:285
+msgid "Session locking is disabled on this server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:287
+msgid "Session locking cannot be toggled on this server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:302
+msgid "Read-only"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:309
+msgid "Disable all mouse and keyboard input"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:310
+msgid ""
+"Cannot disable readonly mode: the server has locked the session to read only"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:327 xpra/gtk/dialogs/session_info.py:757
+msgid "Bell"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:335
+msgid "Forward system bell"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:336
+msgid "Cannot forward the system bell: the feature has been disabled"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:352 xpra/gtk/dialogs/session_info.py:758
+msgid "Cursors"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:361
+msgid "Forward custom mouse cursors"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:362
+msgid "Cannot forward mouse cursors: the feature is disabled"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:375 xpra/gtk/dialogs/session_info.py:755
+msgid "Notifications"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:383
+msgid "Forward system notifications"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:384
+msgid "Cannot forward system notifications: the feature is disabled"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:426
+msgid "Selection"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:426
+msgid "Choose which remote clipboard to connect to"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:470 xpra/gtk/dialogs/session_info.py:753
+msgid "Clipboard"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:476
+msgid "Server does not support clipboard synchronization"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:480
+msgid "Client does not support clipboard synchronization"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:515
+msgid "Keyboard support is not loaded"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:520 xpra/client/gtk3/tray_menu.py:539
+msgid "Enable keyboard state synchronization"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:531
+msgid "State Synchronization"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:540
+msgid "Keyboard support is not available"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:550
+msgid "Intercept Shortcuts"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:563
+msgid "View Shortcuts"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:563
+msgid "Show all active keyboard shortcuts"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:567
+msgid "OpenGL"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:568
+msgid "hardware accelerated rendering using OpenGL"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:585
+msgid "Modal Windows"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:586
+msgid "honour modal windows"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:604
+msgid "Picture"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:626
+msgid "Bandwidth Limit"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:641
+msgid "memory mapped transfers are in use, so bandwidth limits are disabled"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:667
+#, python-format
+msgid "server set the limit to %sbps"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:676 xpra/client/gtk3/tray_menu.py:790
+#: xpra/gtk/dialogs/session_info.py:1005
+msgid "None"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:700 xpra/client/gtk3/tray_menu.py:709
+msgid "Encoding"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:700
+msgid "Choose picture data encoding"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:710
+msgid "memory mapped transfers are in use so picture encoding is disabled"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:758
+msgid "Scaling"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:758
+msgid "Desktop Scaling"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:815 xpra/client/gtk3/tray_menu.py:826
+msgid "Quality"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:815
+msgid "Picture quality"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:854
+msgid "Speed is always 100% with mmap"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:857 xpra/client/gtk3/tray_menu.py:907
+#, python-format
+msgid "Not supported with %r encoding"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:859
+msgid "Minimum picture quality"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:867 xpra/client/gtk3/tray_menu.py:878
+msgid "Speed"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:867 xpra/client/gtk3/tray_menu.py:909
+msgid "Encoding latency vs size"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:905
+msgid "Quality is always 100% with mmap"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:914
+msgid "Audio"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:936 xpra/gtk/dialogs/session_info.py:924
+#: xpra/gtk/dialogs/session_info.py:1346
+msgid "Speaker"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:936
+msgid "Forward audio output from the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:944
+msgid "Speaker forwarding has been disabled"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:946
+msgid "Server does not support speaker forwarding"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:961 xpra/gtk/dialogs/session_info.py:925
+msgid "Microphone"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:961
+msgid "Forward audio input to the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:969
+msgid "Microphone forwarding has been disabled"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:971
+msgid "Server does not support microphone forwarding"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1003 xpra/client/gtk3/tray_menu.py:1152
+msgid "On"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1004 xpra/client/gtk3/tray_menu.py:1063
+#: xpra/client/gtk3/tray_menu.py:1148 xpra/client/gtk3/tray_menu.py:1166
+msgid "Off"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1037
+msgid "Video Sync"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1037
+msgid "Synchronize audio and video"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1068 xpra/client/gtk3/tray_menu.py:1393
+msgid "Auto"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1078
+msgid "video-sync is not supported by the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1082
+msgid "video-sync requires speaker forwarding"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1095
+msgid "Webcam"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1097 xpra/client/gtk3/tray_menu.py:1191
+msgid "Webcam forwarding is disabled"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1164
+msgid "No devices found"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1195
+msgid "Server does not support webcam forwarding"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1214
+msgid "Keyboard"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1229
+msgid "Layout"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1229
+msgid "Select your keyboard layout"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1378 xpra/client/gtk3/tray_menu.py:1433
+#, python-format
+msgid "%s - Default"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1414
+#, python-format
+msgid "Detected %r"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1417
+msgid "No keyboard layouts detected"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1443
+msgid "Monitors"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1502 xpra/gtk/dialogs/session_info.py:1107
+msgid "Windows"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1523
+msgid "Refresh"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1531
+msgid "Re-initialize"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1553
+msgid "Raise Windows"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1559
+msgid "Minimize Windows"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1575 xpra/client/gtk3/tray_menu.py:1582
+msgid "Hide Windows"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1580
+msgid "Show Windows"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1588 xpra/gtk/dialogs/session_info.py:657
+#: xpra/gtk/dialogs/session_info.py:803
+msgid "Server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1615
+msgid "Server Commands"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1616
+msgid "Commands running on the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1622
+msgid "Show a list of the commands running on the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1629
+msgid "Run Command"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1630
+msgid "Run a new command on the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1636
+msgid "Choose a command to run on the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1637
+msgid "Not supported or enabled on the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1643
+msgid "Transfers"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1644
+msgid "Files and URLs forwarding"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1650
+msgid "Manage file and URL transfers"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1651
+msgid "The feature is not available"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1656
+msgid "Upload File"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1662
+msgid "Send a file to the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1668
+msgid "Download File"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1681
+msgid "'send-file' subcommand is not supported by the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1683
+msgid "Download a file from the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1690
+msgid "Debug Logging"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1702
+msgid "Download Server Log"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1709
+msgid "Download the server log"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1710
+msgid "Unable to download the server log"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1721
+#, python-format
+msgid "Shutting down the session '%s' may result in data loss,"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1723
+msgid "Shutting down this session may result in data loss,"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1724
+msgid "are you sure you want to proceed?"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1730
+msgid "Shutdown"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1736
+msgid "Shutdown Session"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1742
+msgid "Disabled by the server"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1744
+msgid "Shutdown this server session"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1753 xpra/gtk/dialogs/gui.py:92
+msgid "Start"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1777
+msgid "Starting new commands is disabled"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1781
+msgid "This server does not support starting new commands"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1785
+msgid "This server does not provide start menu data"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1869
+msgid "Disconnect"
+msgstr ""
+
+#: xpra/client/gtk3/tray_menu.py:1874
+msgid "Close Menu"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:290
+msgid "Save graph as a PNG image"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:293
+msgid "Save"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:404
+msgid "Session Info"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:655
+msgid "Software"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:657 xpra/gtk/dialogs/session_info.py:803
+msgid "Client"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:658
+msgid "Operating System"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:660
+msgid "Revision"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:661
+msgid "Build date"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:743
+msgid "RandR Support"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:745
+msgid "Client Display"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:747
+msgid "Client OpenGL"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:748
+msgid "OpenGL Mode"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:749
+msgid "Window Rendering"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:751
+msgid "Memory Mapped Transfers"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:800
+msgid "Codecs"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:809
+msgid "Picture Encodings"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:812
+msgid "Speaker Codecs"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:815
+msgid "Microphone Codecs"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:818
+msgid "Packet Encoders"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:821
+msgid "Packet Compressors"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:889
+msgid "Connection"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:895
+msgid "Server Endpoint"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:897
+msgid "Server Display"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:898
+msgid "Server Hostname"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:900
+msgid "Server Platform"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:901
+msgid "Server Load"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:902
+msgid "Average over 1, 5 and 15 minutes"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:903
+msgid "Session Duration"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:906
+msgid "Connection Duration"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:907
+msgid "Packets Received"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:908
+msgid "Bytes Received"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:909
+msgid "Packets Sent"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:910
+msgid "Bytes Sent"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:911
+msgid "Encoding + Compression"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:912
+msgid "Connection Type"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:913
+msgid "Input Encryption"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:914
+msgid "Output Encryption"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1047
+msgid "Statistics"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Latest"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Minimum"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Average"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "90 percentile"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Maximum"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1056
+msgid "Server Latency (ms)"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1057
+msgid "The time it takes for the server to respond to pings"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1060
+msgid "Client Latency (ms)"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1061
+msgid ""
+"The time it takes for the client to respond to pings, as measured by the "
+"server"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1066
+msgid "Batch Delay (MPixels / ms)"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1067
+msgid ""
+"How long the server waits for new screen updates to accumulate before "
+"processing them"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1070
+msgid "Damage Latency (ms)"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1071
+msgid ""
+"The time it takes to compress a frame and pass it to the OS network layer"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1074
+msgid "Encoding Quality (pct)"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1075
+msgid "Automatic picture quality, average for all the windows"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1078
+msgid "Encoding Speed (pct)"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1079
+msgid ""
+"Automatic picture encoding speed (bandwidth vs CPU usage), average for all "
+"the windows"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1082
+msgid "Decoding Latency (ms)"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1083
+msgid "How long it takes the client to decode a screen update"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1086
+msgid "Regions/s"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1087
+msgid ""
+"The number of screen updates per second (includes both partial and full "
+"screen updates)"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1090
+msgid "Pixels/region"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1091
+msgid "The number of pixels per screen update"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1094
+msgid "Pixels/s"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1095
+msgid "The number of pixels processed per second"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1102
+msgid "Regular"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1102
+msgid "Transient"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1102
+msgid "Trays"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1112
+msgid "Window Encoders and Renderers"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1271
+msgid "Graphs"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1272
+msgid "Bandwidth used"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1274
+msgid ""
+",\n"
+"and number of pixels rendered"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1332 xpra/gtk/dialogs/session_info.py:1335
+msgid "recv"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1332
+msgid "sent"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1341
+msgid "pixels/s"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1351
+msgid "Mic"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1356
+msgid "Bandwidth"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1381
+msgid "network"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1382
+msgid "batch delay"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1383
+msgid "encode&send"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1384
+msgid "decoding"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1385
+msgid "frame total"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1393
+msgid "Latency (ms)"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1402
+msgid "Max"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1403
+msgid "Level"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1404
+msgid "Min"
+msgstr ""
+
+#: xpra/gtk/dialogs/session_info.py:1410
+msgid "Audio Buffer (ms)"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:68 xpra/gtk/dialogs/gui.py:76
+#: xpra/gtk/dialogs/gui.py:90
+msgid "the client is not installed"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:70
+msgid "the mdns module is not installed"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:71
+msgid "Browse and connect to local and mDNS sessions"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:72
+msgid "Browse"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:77
+msgid ""
+"Connect to an existing session\n"
+"over the network"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:78
+msgid "Connect"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:82
+msgid "the shadow server feature is not installed"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:83
+msgid ""
+"Start a shadow server,\n"
+"making this desktop accessible to others\n"
+"(authentication required)"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:84
+msgid "Shadow"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:86
+msgid "Configure"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:91
+#, python-format
+msgid "Start a new %sxpra session"
+msgstr ""
+
+#: xpra/gtk/dialogs/gui.py:91
+msgid "remote "
+msgstr ""

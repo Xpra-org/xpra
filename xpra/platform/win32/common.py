@@ -33,6 +33,7 @@ PBYTE = POINTER(BYTE)
 HCURSOR = HANDLE
 HICON = HANDLE
 HBRUSH = HANDLE
+LANGID = WORD
 
 
 class CURSORINFO(Structure):
@@ -313,6 +314,9 @@ OpenProcess.argtypes = [DWORD, BOOL, DWORD]
 GetThreadLocale = kernel32.GetThreadLocale
 GetThreadLocale.argtypes = []
 GetThreadLocale.restype = LCID
+GetUserDefaultUILanguage = kernel32.GetUserDefaultUILanguage
+GetUserDefaultUILanguage.argtypes = []
+GetUserDefaultUILanguage.restype = LANGID
 CreateEventA = kernel32.CreateEventA
 CreateEventA.restype = HANDLE
 CreateEventW = kernel32.CreateEventW

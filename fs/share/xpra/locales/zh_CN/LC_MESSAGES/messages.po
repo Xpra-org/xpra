@@ -1,0 +1,920 @@
+# Xpra translation catalog.
+# Copyright (C) 2026 Antoine Martin <antoine@xpra.org>
+# This file is distributed under the same license as the xpra package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: xpra\n"
+"Report-Msgid-Bugs-To: antoine@xpra.org\n"
+"PO-Revision-Date: 2026-06-18 00:00+0000\n"
+"Last-Translator: Xpra <antoine@xpra.org>\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: xpra/client/gtk3/tray_menu.py:188
+msgid "Information"
+msgstr "信息"
+
+#: xpra/client/gtk3/tray_menu.py:213 xpra/gtk/dialogs/session_info.py:732
+msgid "Features"
+msgstr "功能"
+
+#: xpra/client/gtk3/tray_menu.py:247
+msgid "Allow other clients to connect to this session"
+msgstr "允许其他客户端连接到此会话"
+
+#: xpra/client/gtk3/tray_menu.py:257
+msgid "Sharing is disabled on the server"
+msgstr "服务器上已禁用共享"
+
+#: xpra/client/gtk3/tray_menu.py:259
+msgid "Sharing cannot be changed on this server"
+msgstr "无法在此服务器上更改共享设置"
+
+#: xpra/client/gtk3/tray_menu.py:276
+msgid "Prevent other clients from stealing this session"
+msgstr "防止其他客户端抢占此会话"
+
+#: xpra/client/gtk3/tray_menu.py:285
+msgid "Session locking is disabled on this server"
+msgstr "此服务器上已禁用会话锁定"
+
+#: xpra/client/gtk3/tray_menu.py:287
+msgid "Session locking cannot be toggled on this server"
+msgstr "无法在此服务器上切换会话锁定"
+
+#: xpra/client/gtk3/tray_menu.py:302
+msgid "Read-only"
+msgstr "只读"
+
+#: xpra/client/gtk3/tray_menu.py:309
+msgid "Disable all mouse and keyboard input"
+msgstr "禁用所有鼠标和键盘输入"
+
+#: xpra/client/gtk3/tray_menu.py:310
+msgid ""
+"Cannot disable readonly mode: the server has locked the session to read only"
+msgstr "无法禁用只读模式：服务器已将会话锁定为只读"
+
+#: xpra/client/gtk3/tray_menu.py:327 xpra/gtk/dialogs/session_info.py:757
+msgid "Bell"
+msgstr "响铃"
+
+#: xpra/client/gtk3/tray_menu.py:335
+msgid "Forward system bell"
+msgstr "转发系统响铃"
+
+#: xpra/client/gtk3/tray_menu.py:336
+msgid "Cannot forward the system bell: the feature has been disabled"
+msgstr "无法转发系统响铃：该功能已被禁用"
+
+#: xpra/client/gtk3/tray_menu.py:352 xpra/gtk/dialogs/session_info.py:758
+msgid "Cursors"
+msgstr "光标"
+
+#: xpra/client/gtk3/tray_menu.py:361
+msgid "Forward custom mouse cursors"
+msgstr "转发自定义鼠标光标"
+
+#: xpra/client/gtk3/tray_menu.py:362
+msgid "Cannot forward mouse cursors: the feature is disabled"
+msgstr "无法转发鼠标光标：该功能已禁用"
+
+#: xpra/client/gtk3/tray_menu.py:375 xpra/gtk/dialogs/session_info.py:755
+msgid "Notifications"
+msgstr "通知"
+
+#: xpra/client/gtk3/tray_menu.py:383
+msgid "Forward system notifications"
+msgstr "转发系统通知"
+
+#: xpra/client/gtk3/tray_menu.py:384
+msgid "Cannot forward system notifications: the feature is disabled"
+msgstr "无法转发系统通知：该功能已禁用"
+
+#: xpra/client/gtk3/tray_menu.py:426
+msgid "Selection"
+msgstr "选择"
+
+#: xpra/client/gtk3/tray_menu.py:426
+msgid "Choose which remote clipboard to connect to"
+msgstr "选择要连接的远程剪贴板"
+
+#: xpra/client/gtk3/tray_menu.py:470 xpra/gtk/dialogs/session_info.py:753
+msgid "Clipboard"
+msgstr "剪贴板"
+
+#: xpra/client/gtk3/tray_menu.py:476
+msgid "Server does not support clipboard synchronization"
+msgstr "服务器不支持剪贴板同步"
+
+#: xpra/client/gtk3/tray_menu.py:480
+msgid "Client does not support clipboard synchronization"
+msgstr "客户端不支持剪贴板同步"
+
+#: xpra/client/gtk3/tray_menu.py:515
+msgid "Keyboard support is not loaded"
+msgstr "键盘支持未加载"
+
+#: xpra/client/gtk3/tray_menu.py:520 xpra/client/gtk3/tray_menu.py:539
+msgid "Enable keyboard state synchronization"
+msgstr "启用键盘状态同步"
+
+#: xpra/client/gtk3/tray_menu.py:531
+msgid "State Synchronization"
+msgstr "状态同步"
+
+#: xpra/client/gtk3/tray_menu.py:540
+msgid "Keyboard support is not available"
+msgstr "键盘支持不可用"
+
+#: xpra/client/gtk3/tray_menu.py:550
+msgid "Intercept Shortcuts"
+msgstr "拦截快捷键"
+
+#: xpra/client/gtk3/tray_menu.py:563
+msgid "View Shortcuts"
+msgstr "查看快捷键"
+
+#: xpra/client/gtk3/tray_menu.py:563
+msgid "Show all active keyboard shortcuts"
+msgstr "显示所有活动的键盘快捷键"
+
+#: xpra/client/gtk3/tray_menu.py:567
+msgid "OpenGL"
+msgstr "OpenGL"
+
+#: xpra/client/gtk3/tray_menu.py:568
+msgid "hardware accelerated rendering using OpenGL"
+msgstr "使用 OpenGL 的硬件加速渲染"
+
+#: xpra/client/gtk3/tray_menu.py:585
+msgid "Modal Windows"
+msgstr "模态窗口"
+
+#: xpra/client/gtk3/tray_menu.py:586
+msgid "honour modal windows"
+msgstr "遵循模态窗口"
+
+#: xpra/client/gtk3/tray_menu.py:604
+msgid "Picture"
+msgstr "图像"
+
+#: xpra/client/gtk3/tray_menu.py:626
+msgid "Bandwidth Limit"
+msgstr "带宽限制"
+
+#: xpra/client/gtk3/tray_menu.py:641
+msgid "memory mapped transfers are in use, so bandwidth limits are disabled"
+msgstr "正在使用内存映射传输，因此带宽限制已禁用"
+
+#: xpra/client/gtk3/tray_menu.py:667
+#, python-format
+msgid "server set the limit to %sbps"
+msgstr "服务器已将限制设置为 %sbps"
+
+#: xpra/client/gtk3/tray_menu.py:676 xpra/client/gtk3/tray_menu.py:790
+#: xpra/gtk/dialogs/session_info.py:1005
+msgid "None"
+msgstr "无"
+
+#: xpra/client/gtk3/tray_menu.py:700 xpra/client/gtk3/tray_menu.py:709
+msgid "Encoding"
+msgstr "编码"
+
+#: xpra/client/gtk3/tray_menu.py:700
+msgid "Choose picture data encoding"
+msgstr "选择图像数据编码"
+
+#: xpra/client/gtk3/tray_menu.py:710
+msgid "memory mapped transfers are in use so picture encoding is disabled"
+msgstr "正在使用内存映射传输，因此图像编码已禁用"
+
+#: xpra/client/gtk3/tray_menu.py:758
+msgid "Scaling"
+msgstr "缩放"
+
+#: xpra/client/gtk3/tray_menu.py:758
+msgid "Desktop Scaling"
+msgstr "桌面缩放"
+
+#: xpra/client/gtk3/tray_menu.py:815 xpra/client/gtk3/tray_menu.py:826
+msgid "Quality"
+msgstr "质量"
+
+#: xpra/client/gtk3/tray_menu.py:815
+msgid "Picture quality"
+msgstr "图像质量"
+
+#: xpra/client/gtk3/tray_menu.py:854
+msgid "Speed is always 100% with mmap"
+msgstr "使用 mmap 时速度始终为 100%"
+
+#: xpra/client/gtk3/tray_menu.py:857 xpra/client/gtk3/tray_menu.py:907
+#, python-format
+msgid "Not supported with %r encoding"
+msgstr "%r 编码不受支持"
+
+#: xpra/client/gtk3/tray_menu.py:859
+msgid "Minimum picture quality"
+msgstr "最低图像质量"
+
+#: xpra/client/gtk3/tray_menu.py:867 xpra/client/gtk3/tray_menu.py:878
+msgid "Speed"
+msgstr "速度"
+
+#: xpra/client/gtk3/tray_menu.py:867 xpra/client/gtk3/tray_menu.py:909
+msgid "Encoding latency vs size"
+msgstr "编码延迟与大小"
+
+#: xpra/client/gtk3/tray_menu.py:905
+msgid "Quality is always 100% with mmap"
+msgstr "使用 mmap 时质量始终为 100%"
+
+#: xpra/client/gtk3/tray_menu.py:914
+msgid "Audio"
+msgstr "音频"
+
+#: xpra/client/gtk3/tray_menu.py:936 xpra/gtk/dialogs/session_info.py:924
+#: xpra/gtk/dialogs/session_info.py:1346
+msgid "Speaker"
+msgstr "扬声器"
+
+#: xpra/client/gtk3/tray_menu.py:936
+msgid "Forward audio output from the server"
+msgstr "从服务器转发音频输出"
+
+#: xpra/client/gtk3/tray_menu.py:944
+msgid "Speaker forwarding has been disabled"
+msgstr "扬声器转发已被禁用"
+
+#: xpra/client/gtk3/tray_menu.py:946
+msgid "Server does not support speaker forwarding"
+msgstr "服务器不支持扬声器转发"
+
+#: xpra/client/gtk3/tray_menu.py:961 xpra/gtk/dialogs/session_info.py:925
+msgid "Microphone"
+msgstr "麦克风"
+
+#: xpra/client/gtk3/tray_menu.py:961
+msgid "Forward audio input to the server"
+msgstr "将音频输入转发到服务器"
+
+#: xpra/client/gtk3/tray_menu.py:969
+msgid "Microphone forwarding has been disabled"
+msgstr "麦克风转发已被禁用"
+
+#: xpra/client/gtk3/tray_menu.py:971
+msgid "Server does not support microphone forwarding"
+msgstr "服务器不支持麦克风转发"
+
+#: xpra/client/gtk3/tray_menu.py:1003 xpra/client/gtk3/tray_menu.py:1152
+msgid "On"
+msgstr "开"
+
+#: xpra/client/gtk3/tray_menu.py:1004 xpra/client/gtk3/tray_menu.py:1063
+#: xpra/client/gtk3/tray_menu.py:1148 xpra/client/gtk3/tray_menu.py:1166
+msgid "Off"
+msgstr "关"
+
+#: xpra/client/gtk3/tray_menu.py:1037
+msgid "Video Sync"
+msgstr "视频同步"
+
+#: xpra/client/gtk3/tray_menu.py:1037
+msgid "Synchronize audio and video"
+msgstr "同步音频和视频"
+
+#: xpra/client/gtk3/tray_menu.py:1068 xpra/client/gtk3/tray_menu.py:1393
+msgid "Auto"
+msgstr "自动"
+
+#: xpra/client/gtk3/tray_menu.py:1078
+msgid "video-sync is not supported by the server"
+msgstr "服务器不支持视频同步"
+
+#: xpra/client/gtk3/tray_menu.py:1082
+msgid "video-sync requires speaker forwarding"
+msgstr "视频同步需要扬声器转发"
+
+#: xpra/client/gtk3/tray_menu.py:1095
+msgid "Webcam"
+msgstr "网络摄像头"
+
+#: xpra/client/gtk3/tray_menu.py:1097 xpra/client/gtk3/tray_menu.py:1191
+msgid "Webcam forwarding is disabled"
+msgstr "网络摄像头转发已禁用"
+
+#: xpra/client/gtk3/tray_menu.py:1164
+msgid "No devices found"
+msgstr "未找到设备"
+
+#: xpra/client/gtk3/tray_menu.py:1195
+msgid "Server does not support webcam forwarding"
+msgstr "服务器不支持网络摄像头转发"
+
+#: xpra/client/gtk3/tray_menu.py:1214
+msgid "Keyboard"
+msgstr "键盘"
+
+#: xpra/client/gtk3/tray_menu.py:1229
+msgid "Layout"
+msgstr "布局"
+
+#: xpra/client/gtk3/tray_menu.py:1229
+msgid "Select your keyboard layout"
+msgstr "选择您的键盘布局"
+
+#: xpra/client/gtk3/tray_menu.py:1378 xpra/client/gtk3/tray_menu.py:1433
+#, python-format
+msgid "%s - Default"
+msgstr "%s - 默认"
+
+#: xpra/client/gtk3/tray_menu.py:1414
+#, python-format
+msgid "Detected %r"
+msgstr "已检测到 %r"
+
+#: xpra/client/gtk3/tray_menu.py:1417
+msgid "No keyboard layouts detected"
+msgstr "未检测到键盘布局"
+
+#: xpra/client/gtk3/tray_menu.py:1443
+msgid "Monitors"
+msgstr "显示器"
+
+#: xpra/client/gtk3/tray_menu.py:1502 xpra/gtk/dialogs/session_info.py:1107
+msgid "Windows"
+msgstr "窗口"
+
+#: xpra/client/gtk3/tray_menu.py:1523
+msgid "Refresh"
+msgstr "刷新"
+
+#: xpra/client/gtk3/tray_menu.py:1531
+msgid "Re-initialize"
+msgstr "重新初始化"
+
+#: xpra/client/gtk3/tray_menu.py:1553
+msgid "Raise Windows"
+msgstr "提升窗口"
+
+#: xpra/client/gtk3/tray_menu.py:1559
+msgid "Minimize Windows"
+msgstr "最小化窗口"
+
+#: xpra/client/gtk3/tray_menu.py:1575 xpra/client/gtk3/tray_menu.py:1582
+msgid "Hide Windows"
+msgstr "隐藏窗口"
+
+#: xpra/client/gtk3/tray_menu.py:1580
+msgid "Show Windows"
+msgstr "显示窗口"
+
+#: xpra/client/gtk3/tray_menu.py:1588 xpra/gtk/dialogs/session_info.py:657
+#: xpra/gtk/dialogs/session_info.py:803
+msgid "Server"
+msgstr "服务器"
+
+#: xpra/client/gtk3/tray_menu.py:1615
+msgid "Server Commands"
+msgstr "服务器命令"
+
+#: xpra/client/gtk3/tray_menu.py:1616
+msgid "Commands running on the server"
+msgstr "在服务器上运行的命令"
+
+#: xpra/client/gtk3/tray_menu.py:1622
+msgid "Show a list of the commands running on the server"
+msgstr "显示在服务器上运行的命令列表"
+
+#: xpra/client/gtk3/tray_menu.py:1629
+msgid "Run Command"
+msgstr "运行命令"
+
+#: xpra/client/gtk3/tray_menu.py:1630
+msgid "Run a new command on the server"
+msgstr "在服务器上运行新命令"
+
+#: xpra/client/gtk3/tray_menu.py:1636
+msgid "Choose a command to run on the server"
+msgstr "选择要在服务器上运行的命令"
+
+#: xpra/client/gtk3/tray_menu.py:1637
+msgid "Not supported or enabled on the server"
+msgstr "服务器不支持或未启用"
+
+#: xpra/client/gtk3/tray_menu.py:1643
+msgid "Transfers"
+msgstr "传输"
+
+#: xpra/client/gtk3/tray_menu.py:1644
+msgid "Files and URLs forwarding"
+msgstr "文件和 URL 转发"
+
+#: xpra/client/gtk3/tray_menu.py:1650
+msgid "Manage file and URL transfers"
+msgstr "管理文件和 URL 传输"
+
+#: xpra/client/gtk3/tray_menu.py:1651
+msgid "The feature is not available"
+msgstr "该功能不可用"
+
+#: xpra/client/gtk3/tray_menu.py:1656
+msgid "Upload File"
+msgstr "上传文件"
+
+#: xpra/client/gtk3/tray_menu.py:1662
+msgid "Send a file to the server"
+msgstr "向服务器发送文件"
+
+#: xpra/client/gtk3/tray_menu.py:1668
+msgid "Download File"
+msgstr "下载文件"
+
+#: xpra/client/gtk3/tray_menu.py:1681
+msgid "'send-file' subcommand is not supported by the server"
+msgstr "服务器不支持 'send-file' 子命令"
+
+#: xpra/client/gtk3/tray_menu.py:1683
+msgid "Download a file from the server"
+msgstr "从服务器下载文件"
+
+#: xpra/client/gtk3/tray_menu.py:1690
+msgid "Debug Logging"
+msgstr "调试日志记录"
+
+#: xpra/client/gtk3/tray_menu.py:1702
+msgid "Download Server Log"
+msgstr "下载服务器日志"
+
+#: xpra/client/gtk3/tray_menu.py:1709
+msgid "Download the server log"
+msgstr "下载服务器日志"
+
+#: xpra/client/gtk3/tray_menu.py:1710
+msgid "Unable to download the server log"
+msgstr "无法下载服务器日志"
+
+#: xpra/client/gtk3/tray_menu.py:1721
+#, python-format
+msgid "Shutting down the session '%s' may result in data loss,"
+msgstr "关闭会话 '%s' 可能导致数据丢失，"
+
+#: xpra/client/gtk3/tray_menu.py:1723
+msgid "Shutting down this session may result in data loss,"
+msgstr "关闭此会话可能导致数据丢失，"
+
+#: xpra/client/gtk3/tray_menu.py:1724
+msgid "are you sure you want to proceed?"
+msgstr "您确定要继续吗？"
+
+#: xpra/client/gtk3/tray_menu.py:1730
+msgid "Shutdown"
+msgstr "关闭"
+
+#: xpra/client/gtk3/tray_menu.py:1736
+msgid "Shutdown Session"
+msgstr "关闭会话"
+
+#: xpra/client/gtk3/tray_menu.py:1742
+msgid "Disabled by the server"
+msgstr "已被服务器禁用"
+
+#: xpra/client/gtk3/tray_menu.py:1744
+msgid "Shutdown this server session"
+msgstr "关闭此服务器会话"
+
+#: xpra/client/gtk3/tray_menu.py:1753 xpra/gtk/dialogs/gui.py:92
+msgid "Start"
+msgstr "启动"
+
+#: xpra/client/gtk3/tray_menu.py:1777
+msgid "Starting new commands is disabled"
+msgstr "启动新命令已被禁用"
+
+#: xpra/client/gtk3/tray_menu.py:1781
+msgid "This server does not support starting new commands"
+msgstr "此服务器不支持启动新命令"
+
+#: xpra/client/gtk3/tray_menu.py:1785
+msgid "This server does not provide start menu data"
+msgstr "此服务器不提供开始菜单数据"
+
+#: xpra/client/gtk3/tray_menu.py:1869
+msgid "Disconnect"
+msgstr "断开连接"
+
+#: xpra/client/gtk3/tray_menu.py:1874
+msgid "Close Menu"
+msgstr "关闭菜单"
+
+#: xpra/gtk/dialogs/session_info.py:290
+msgid "Save graph as a PNG image"
+msgstr "将图表保存为 PNG 图像"
+
+#: xpra/gtk/dialogs/session_info.py:293
+msgid "Save"
+msgstr "保存"
+
+#: xpra/gtk/dialogs/session_info.py:404
+msgid "Session Info"
+msgstr "会话信息"
+
+#: xpra/gtk/dialogs/session_info.py:655
+msgid "Software"
+msgstr "软件"
+
+#: xpra/gtk/dialogs/session_info.py:657 xpra/gtk/dialogs/session_info.py:803
+msgid "Client"
+msgstr "客户端"
+
+#: xpra/gtk/dialogs/session_info.py:658
+msgid "Operating System"
+msgstr "操作系统"
+
+#: xpra/gtk/dialogs/session_info.py:660
+msgid "Revision"
+msgstr "修订版本"
+
+#: xpra/gtk/dialogs/session_info.py:661
+msgid "Build date"
+msgstr "构建日期"
+
+#: xpra/gtk/dialogs/session_info.py:743
+msgid "RandR Support"
+msgstr "RandR 支持"
+
+#: xpra/gtk/dialogs/session_info.py:745
+msgid "Client Display"
+msgstr "客户端显示"
+
+#: xpra/gtk/dialogs/session_info.py:747
+msgid "Client OpenGL"
+msgstr "客户端 OpenGL"
+
+#: xpra/gtk/dialogs/session_info.py:748
+msgid "OpenGL Mode"
+msgstr "OpenGL 模式"
+
+#: xpra/gtk/dialogs/session_info.py:749
+msgid "Window Rendering"
+msgstr "窗口渲染"
+
+#: xpra/gtk/dialogs/session_info.py:751
+msgid "Memory Mapped Transfers"
+msgstr "内存映射传输"
+
+#: xpra/gtk/dialogs/session_info.py:800
+msgid "Codecs"
+msgstr "编解码器"
+
+#: xpra/gtk/dialogs/session_info.py:809
+msgid "Picture Encodings"
+msgstr "图像编码"
+
+#: xpra/gtk/dialogs/session_info.py:812
+msgid "Speaker Codecs"
+msgstr "扬声器编解码器"
+
+#: xpra/gtk/dialogs/session_info.py:815
+msgid "Microphone Codecs"
+msgstr "麦克风编解码器"
+
+#: xpra/gtk/dialogs/session_info.py:818
+msgid "Packet Encoders"
+msgstr "数据包编码器"
+
+#: xpra/gtk/dialogs/session_info.py:821
+msgid "Packet Compressors"
+msgstr "数据包压缩器"
+
+#: xpra/gtk/dialogs/session_info.py:889
+msgid "Connection"
+msgstr "连接"
+
+#: xpra/gtk/dialogs/session_info.py:895
+msgid "Server Endpoint"
+msgstr "服务器端点"
+
+#: xpra/gtk/dialogs/session_info.py:897
+msgid "Server Display"
+msgstr "服务器显示"
+
+#: xpra/gtk/dialogs/session_info.py:898
+msgid "Server Hostname"
+msgstr "服务器主机名"
+
+#: xpra/gtk/dialogs/session_info.py:900
+msgid "Server Platform"
+msgstr "服务器平台"
+
+#: xpra/gtk/dialogs/session_info.py:901
+msgid "Server Load"
+msgstr "服务器负载"
+
+#: xpra/gtk/dialogs/session_info.py:902
+msgid "Average over 1, 5 and 15 minutes"
+msgstr "1、5 和 15 分钟的平均值"
+
+#: xpra/gtk/dialogs/session_info.py:903
+msgid "Session Duration"
+msgstr "会话持续时间"
+
+#: xpra/gtk/dialogs/session_info.py:906
+msgid "Connection Duration"
+msgstr "连接持续时间"
+
+#: xpra/gtk/dialogs/session_info.py:907
+msgid "Packets Received"
+msgstr "已接收数据包"
+
+#: xpra/gtk/dialogs/session_info.py:908
+msgid "Bytes Received"
+msgstr "已接收字节"
+
+#: xpra/gtk/dialogs/session_info.py:909
+msgid "Packets Sent"
+msgstr "已发送数据包"
+
+#: xpra/gtk/dialogs/session_info.py:910
+msgid "Bytes Sent"
+msgstr "已发送字节"
+
+#: xpra/gtk/dialogs/session_info.py:911
+msgid "Encoding + Compression"
+msgstr "编码 + 压缩"
+
+#: xpra/gtk/dialogs/session_info.py:912
+msgid "Connection Type"
+msgstr "连接类型"
+
+#: xpra/gtk/dialogs/session_info.py:913
+msgid "Input Encryption"
+msgstr "输入加密"
+
+#: xpra/gtk/dialogs/session_info.py:914
+msgid "Output Encryption"
+msgstr "输出加密"
+
+#: xpra/gtk/dialogs/session_info.py:1047
+msgid "Statistics"
+msgstr "统计"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Latest"
+msgstr "最新"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Minimum"
+msgstr "最小"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Average"
+msgstr "平均"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "90 percentile"
+msgstr "90 百分位"
+
+#: xpra/gtk/dialogs/session_info.py:1048
+msgid "Maximum"
+msgstr "最大"
+
+#: xpra/gtk/dialogs/session_info.py:1056
+msgid "Server Latency (ms)"
+msgstr "服务器延迟 (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1057
+msgid "The time it takes for the server to respond to pings"
+msgstr "服务器响应 ping 所需的时间"
+
+#: xpra/gtk/dialogs/session_info.py:1060
+msgid "Client Latency (ms)"
+msgstr "客户端延迟 (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1061
+msgid ""
+"The time it takes for the client to respond to pings, as measured by the "
+"server"
+msgstr "由服务器测量的客户端响应 ping 所需的时间"
+
+#: xpra/gtk/dialogs/session_info.py:1066
+msgid "Batch Delay (MPixels / ms)"
+msgstr "批处理延迟 (兆像素 / ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1067
+msgid ""
+"How long the server waits for new screen updates to accumulate before "
+"processing them"
+msgstr "服务器在处理新屏幕更新之前等待其累积的时间"
+
+#: xpra/gtk/dialogs/session_info.py:1070
+msgid "Damage Latency (ms)"
+msgstr "损坏延迟 (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1071
+msgid ""
+"The time it takes to compress a frame and pass it to the OS network layer"
+msgstr "压缩一帧并将其传递到操作系统网络层所需的时间"
+
+#: xpra/gtk/dialogs/session_info.py:1074
+msgid "Encoding Quality (pct)"
+msgstr "编码质量 (%)"
+
+#: xpra/gtk/dialogs/session_info.py:1075
+msgid "Automatic picture quality, average for all the windows"
+msgstr "自动图像质量，所有窗口的平均值"
+
+#: xpra/gtk/dialogs/session_info.py:1078
+msgid "Encoding Speed (pct)"
+msgstr "编码速度 (%)"
+
+#: xpra/gtk/dialogs/session_info.py:1079
+msgid ""
+"Automatic picture encoding speed (bandwidth vs CPU usage), average for all "
+"the windows"
+msgstr "自动图像编码速度（带宽与 CPU 使用率），所有窗口的平均值"
+
+#: xpra/gtk/dialogs/session_info.py:1082
+msgid "Decoding Latency (ms)"
+msgstr "解码延迟 (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1083
+msgid "How long it takes the client to decode a screen update"
+msgstr "客户端解码屏幕更新所需的时间"
+
+#: xpra/gtk/dialogs/session_info.py:1086
+msgid "Regions/s"
+msgstr "区域/秒"
+
+#: xpra/gtk/dialogs/session_info.py:1087
+msgid ""
+"The number of screen updates per second (includes both partial and full "
+"screen updates)"
+msgstr "每秒屏幕更新的数量（包括部分和全屏更新）"
+
+#: xpra/gtk/dialogs/session_info.py:1090
+msgid "Pixels/region"
+msgstr "像素/区域"
+
+#: xpra/gtk/dialogs/session_info.py:1091
+msgid "The number of pixels per screen update"
+msgstr "每次屏幕更新的像素数"
+
+#: xpra/gtk/dialogs/session_info.py:1094
+msgid "Pixels/s"
+msgstr "像素/秒"
+
+#: xpra/gtk/dialogs/session_info.py:1095
+msgid "The number of pixels processed per second"
+msgstr "每秒处理的像素数"
+
+#: xpra/gtk/dialogs/session_info.py:1102
+msgid "Regular"
+msgstr "常规"
+
+#: xpra/gtk/dialogs/session_info.py:1102
+msgid "Transient"
+msgstr "瞬态"
+
+#: xpra/gtk/dialogs/session_info.py:1102
+msgid "Trays"
+msgstr "托盘"
+
+#: xpra/gtk/dialogs/session_info.py:1112
+msgid "Window Encoders and Renderers"
+msgstr "窗口编码器和渲染器"
+
+#: xpra/gtk/dialogs/session_info.py:1271
+msgid "Graphs"
+msgstr "图表"
+
+#: xpra/gtk/dialogs/session_info.py:1272
+msgid "Bandwidth used"
+msgstr "已用带宽"
+
+#: xpra/gtk/dialogs/session_info.py:1274
+msgid ""
+",\n"
+"and number of pixels rendered"
+msgstr "，\n以及渲染的像素数"
+
+#: xpra/gtk/dialogs/session_info.py:1332 xpra/gtk/dialogs/session_info.py:1335
+msgid "recv"
+msgstr "接收"
+
+#: xpra/gtk/dialogs/session_info.py:1332
+msgid "sent"
+msgstr "发送"
+
+#: xpra/gtk/dialogs/session_info.py:1341
+msgid "pixels/s"
+msgstr "像素/秒"
+
+#: xpra/gtk/dialogs/session_info.py:1351
+msgid "Mic"
+msgstr "麦克风"
+
+#: xpra/gtk/dialogs/session_info.py:1356
+msgid "Bandwidth"
+msgstr "带宽"
+
+#: xpra/gtk/dialogs/session_info.py:1381
+msgid "network"
+msgstr "网络"
+
+#: xpra/gtk/dialogs/session_info.py:1382
+msgid "batch delay"
+msgstr "批处理延迟"
+
+#: xpra/gtk/dialogs/session_info.py:1383
+msgid "encode&send"
+msgstr "编码并发送"
+
+#: xpra/gtk/dialogs/session_info.py:1384
+msgid "decoding"
+msgstr "解码"
+
+#: xpra/gtk/dialogs/session_info.py:1385
+msgid "frame total"
+msgstr "帧总计"
+
+#: xpra/gtk/dialogs/session_info.py:1393
+msgid "Latency (ms)"
+msgstr "延迟 (ms)"
+
+#: xpra/gtk/dialogs/session_info.py:1402
+msgid "Max"
+msgstr "最大"
+
+#: xpra/gtk/dialogs/session_info.py:1403
+msgid "Level"
+msgstr "级别"
+
+#: xpra/gtk/dialogs/session_info.py:1404
+msgid "Min"
+msgstr "最小"
+
+#: xpra/gtk/dialogs/session_info.py:1410
+msgid "Audio Buffer (ms)"
+msgstr "音频缓冲 (ms)"
+
+#: xpra/gtk/dialogs/gui.py:68 xpra/gtk/dialogs/gui.py:76
+#: xpra/gtk/dialogs/gui.py:90
+msgid "the client is not installed"
+msgstr "客户端未安装"
+
+#: xpra/gtk/dialogs/gui.py:70
+msgid "the mdns module is not installed"
+msgstr "mdns 模块未安装"
+
+#: xpra/gtk/dialogs/gui.py:71
+msgid "Browse and connect to local and mDNS sessions"
+msgstr "浏览并连接到本地和 mDNS 会话"
+
+#: xpra/gtk/dialogs/gui.py:72
+msgid "Browse"
+msgstr "浏览"
+
+#: xpra/gtk/dialogs/gui.py:77
+msgid ""
+"Connect to an existing session\n"
+"over the network"
+msgstr "通过网络\n连接到现有会话"
+
+#: xpra/gtk/dialogs/gui.py:78
+msgid "Connect"
+msgstr "连接"
+
+#: xpra/gtk/dialogs/gui.py:82
+msgid "the shadow server feature is not installed"
+msgstr "shadow 服务器功能未安装"
+
+#: xpra/gtk/dialogs/gui.py:83
+msgid ""
+"Start a shadow server,\n"
+"making this desktop accessible to others\n"
+"(authentication required)"
+msgstr "启动 shadow 服务器，\n使此桌面可供他人访问\n（需要身份验证）"
+
+#: xpra/gtk/dialogs/gui.py:84
+msgid "Shadow"
+msgstr "Shadow"
+
+#: xpra/gtk/dialogs/gui.py:86
+msgid "Configure"
+msgstr "配置"
+
+#: xpra/gtk/dialogs/gui.py:91
+#, python-format
+msgid "Start a new %sxpra session"
+msgstr "启动新的%sxpra 会话"
+
+#: xpra/gtk/dialogs/gui.py:91
+msgid "remote "
+msgstr "远程 "

@@ -7,6 +7,7 @@ import sys
 
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
+from xpra.util.i18n import _
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -64,35 +65,31 @@ class GUI(BaseGUIWindow):
     def populate(self) -> None:
         def browse_tooltip() -> str:
             if not has_client():
-                return "the client is not installed"
+                return _("the client is not installed")
             if not has_mdns():
-                return "the mdns module is not installed"
-            return "Browse and connect to local and mDNS sessions"
-        self.ib("Browse", "browse.png", browse_tooltip(), self.browse, sensitive=has_client() and has_mdns())
+                return _("the mdns module is not installed")
+            return _("Browse and connect to local and mDNS sessions")
+        self.ib(_("Browse"), "browse.png", browse_tooltip(), self.browse, sensitive=has_client() and has_mdns())
 
         def connect_tooltip() -> str:
             if not has_client():
-                return "the client is not installed"
-            return "Connect to an existing session\nover the network"
-        self.ib("Connect", "connect.png", connect_tooltip(), self.show_launcher, sensitive=has_client())
+                return _("the client is not installed")
+            return _("Connect to an existing session\nover the network")
+        self.ib(_("Connect"), "connect.png", connect_tooltip(), self.show_launcher, sensitive=has_client())
 
         def shadow_tooltip() -> str:
             if not has_shadow():
-                return "the shadow server feature is not installed"
-            return "\n".join((
-                "Start a shadow server,",
-                "making this desktop accessible to others",
-                "(authentication required)",
-            ))
-        self.ib("Shadow", "server-connected.png", shadow_tooltip(), self.shadow, sensitive=has_shadow())
+                return _("the shadow server feature is not installed")
+            return _("Start a shadow server,\nmaking this desktop accessible to others\n(authentication required)")
+        self.ib(_("Shadow"), "server-connected.png", shadow_tooltip(), self.shadow, sensitive=has_shadow())
 
-        self.ib("Configure", "ticked.png", "", self.configure, sensitive=has_configure())
+        self.ib(_("Configure"), "ticked.png", "", self.configure, sensitive=has_configure())
 
         def start_tooltip() -> str:
             if not has_client():
-                return "the client is not installed"
-            return "Start a new %sxpra session" % ("remote " if not has_server() else "")
-        self.ib("Start", "windows.png", start_tooltip(), self.start, sensitive=has_client())
+                return _("the client is not installed")
+            return _("Start a new %sxpra session") % (_("remote ") if not has_server() else "")
+        self.ib(_("Start"), "windows.png", start_tooltip(), self.start, sensitive=has_client())
 
         grid = Gtk.Grid()
         grid.set_row_homogeneous(True)
