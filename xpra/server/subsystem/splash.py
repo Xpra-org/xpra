@@ -109,6 +109,8 @@ class SplashServer(StubSubsystem):
         self.progress(10, "initializing environment")
 
     def progress(self, pct: int, msg: str) -> None:
+        from xpra.util.i18n import _
+        msg = _(msg)
         self.progress_fn(pct, msg)
 
     def setup(self) -> None:

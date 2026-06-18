@@ -85,16 +85,20 @@ def subsystem_name(c: type) -> str:
     return c.__name__.replace("Server", "").rstrip("_").lower()
 
 
-def may_show_progress(obj, pct: int, text="") -> None:
+def may_show_progress(obj, pct: int, text="", *args) -> None:
+    from xpra.util.i18n import _
+    msg = _(text)
+    if args:
+        msg += ": " + ", ".join(str(v) for v in args)
     show_progress = getattr(obj, "show_progress", noop)
-    show_progress(pct, text)
+    show_progress(pct, msg)
 
 
 def may_notify_client(obj, nid : NotificationID | int, summary, body, *args, **kwargs) -> None:
     notify_client = getattr(obj, "notify_client", notify_to_log)
     notify_client(nid, summary, body, *args, **kwargs)
     # hide splash progress:
-    may_show_progress(obj, 100, f"notification: {summary}")
+    may_show_progress(obj, 100, "notification", summary)
 
 
 def notify_to_log(nid : NotificationID | int, summary, body, *args, **kwargs) -> None:

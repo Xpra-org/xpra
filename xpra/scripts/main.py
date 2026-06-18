@@ -1392,12 +1392,12 @@ def connect_client_app(app, cmdline: list[str], opts, extra_args: list[str], mod
             connect_to_server(app, display_desc, opts)
     except ValueError as e:
         einfo = str(e) or type(e)
-        may_show_progress(app, 100, f"error: {einfo}")
+        may_show_progress(app, 100, "error", einfo)
         app.cleanup()
         raise InitExit(ExitCode.FAILURE, f"invalid value: {einfo}")
     except Exception as e:
         einfo = str(e) or type(e)
-        may_show_progress(app, 100, f"error: {einfo}")
+        may_show_progress(app, 100, "error", einfo)
         app.cleanup()
         raise
     return app
@@ -1452,7 +1452,7 @@ def get_client_gui_app(opts, request_mode: str, extra_args: Sequence[str], mode:
             enable_listen_mode(app, opts)
 
     except Exception as e:
-        may_show_progress(app, 100, f"failure: {e}")
+        may_show_progress(app, 100, "failure", e)
         from xpra.constants import NotificationID
         body = str(e)
         if body.startswith("failed to connect to"):
@@ -1594,7 +1594,9 @@ def make_progress_process(title="Xpra") -> Popen | None:
             return
         stdin = progress_process.stdin
         if stdin:
-            stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
+            from xpra.util.i18n import _
+            text = _(text)
+            stdin.write(("%i:%s\n" % (pct, text)).encode("utf8"))
             stdin.flush()
         if pct == 100:
             # it should exit on its own, but just in case:
@@ -1775,7 +1777,7 @@ def make_client(opts):
                     else:
                         renderer = renderer.split(";", 1)[0]
                     r += f" ({renderer})"
-            may_show_progress(app, 20, f"validating OpenGL: {r}")
+            may_show_progress(app, 20, "validating OpenGL", r)
             message = glinfo.strget("message")
             if message:
                 may_show_progress(app, 21, f" {message}")
@@ -2083,7 +2085,7 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
                 raise
     except Exception as e:
         if app:
-            may_show_progress(app, 100, f"failure: {e}")
+            may_show_progress(app, 100, "failure", e)
         raise
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:

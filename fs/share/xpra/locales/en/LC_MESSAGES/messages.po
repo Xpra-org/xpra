@@ -958,3 +958,123 @@ msgstr "Start a new %sxpra session"
 #: xpra/gtk/dialogs/gui.py:91
 msgid "remote "
 msgstr "remote "
+
+#: xpra/common.py:98
+msgid "notification"
+msgstr "notification"
+
+#: xpra/scripts/main.py:1363 xpra/scripts/main.py:2075
+msgid "connecting to server"
+msgstr "connecting to server"
+
+#: xpra/scripts/main.py:1396 xpra/scripts/main.py:1401
+msgid "error"
+msgstr "error"
+
+#: xpra/scripts/main.py:1416 xpra/scripts/main.py:2058 xpra/client/gtk3/launcher.py:850
+msgid "client configuration"
+msgstr "client configuration"
+
+#: xpra/scripts/main.py:1422 xpra/scripts/main.py:2066
+msgid "connection established"
+msgstr "connection established"
+
+#: xpra/scripts/main.py:1435
+msgid "initializing user interface"
+msgstr "initializing user interface"
+
+#: xpra/scripts/main.py:1437 xpra/scripts/main.py:2060 xpra/client/gtk3/launcher.py:852
+msgid "loading user interface"
+msgstr "loading user interface"
+
+#: xpra/scripts/main.py:1456 xpra/scripts/main.py:2087
+msgid "failure"
+msgstr "failure"
+
+#: xpra/scripts/main.py:1493
+msgid "listening for incoming connections"
+msgstr "listening for incoming connections"
+
+#: xpra/scripts/main.py:1553
+msgid "ready"
+msgstr "ready"
+
+#: xpra/scripts/main.py:1609
+msgid "initializing"
+msgstr "initializing"
+
+#: xpra/scripts/main.py:1755
+msgid "validating OpenGL configuration"
+msgstr "validating OpenGL configuration"
+
+#: xpra/scripts/main.py:1779
+msgid "validating OpenGL"
+msgstr "validating OpenGL"
+
+#: xpra/scripts/main.py:2069
+msgid "starting server"
+msgstr "starting server"
+
+#: xpra/scripts/server.py:573
+msgid "initializing server"
+msgstr "initializing server"
+
+#: xpra/scripts/server.py:601
+msgid "creating network sockets"
+msgstr "creating network sockets"
+
+#: xpra/scripts/server.py:655
+msgid "creating local sockets"
+msgstr "creating local sockets"
+
+#: xpra/scripts/server.py:657
+msgid "finalizing"
+msgstr "finalizing"
+
+#: xpra/scripts/server.py:689 xpra/server/subsystem/splash.py:119
+msgid "running"
+msgstr "running"
+
+#: xpra/server/subsystem/splash.py:101
+msgid "exiting"
+msgstr "exiting"
+
+#: xpra/server/subsystem/splash.py:110
+msgid "initializing environment"
+msgstr "initializing environment"
+
+#: xpra/server/subsystem/xvfb.py:131
+msgid "connecting to the display"
+msgstr "connecting to the display"
+
+#: xpra/server/subsystem/xvfb.py:134
+msgid "connected to the display"
+msgstr "connected to the display"
+
+#: xpra/server/subsystem/xvfb.py:194
+msgid "starting a virtual display"
+msgstr "starting a virtual display"
+
+#: xpra/wayland/subsystem/manager.py:49
+msgid "binding the wayland display socket"
+msgstr "binding the wayland display socket"
+
+#: xpra/client/base/client.py:198
+msgid "terminating"
+msgstr "terminating"
+
+#: xpra/client/base/challenge.py:212
+msgid "challenge prompt"
+msgstr "challenge prompt"
+
+#: xpra/client/gtk3/client_base.py:391
+msgid "authentication"
+msgstr "authentication"
+
+#: xpra/client/gtk3/launcher.py:858
+msgid "Session connected"
+msgstr "Session connected"
+
+#: xpra/client/gtk3/launcher.py:876
+msgid "connecting"
+msgstr "connecting"
