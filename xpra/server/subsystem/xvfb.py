@@ -130,7 +130,7 @@ class XvfbManager(StubSubsystem):
         progress(40, "connecting to the display")
         no_gtk()
         if verify_display(None, display_name, log_errors=False, timeout=1):
-            progress(45, "connected to the display")
+            progress(40, "connected to the display")
             return False, xauth_data, use_display
 
         stat = {}
