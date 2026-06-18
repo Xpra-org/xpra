@@ -958,3 +958,123 @@ msgstr "เริ่มเซสชัน xpra ใหม่ %s"
 #: xpra/gtk/dialogs/gui.py:91
 msgid "remote "
 msgstr "ระยะไกล"
+
+#: xpra/common.py:98
+msgid "notification"
+msgstr "การแจ้งเตือน"
+
+#: xpra/scripts/main.py:1363 xpra/scripts/main.py:2075
+msgid "connecting to server"
+msgstr "กำลังเชื่อมต่อกับเซิร์ฟเวอร์"
+
+#: xpra/scripts/main.py:1396 xpra/scripts/main.py:1401
+msgid "error"
+msgstr "ข้อผิดพลาด"
+
+#: xpra/scripts/main.py:1416 xpra/scripts/main.py:2058 xpra/client/gtk3/launcher.py:850
+msgid "client configuration"
+msgstr "การกำหนดค่าไคลเอนต์"
+
+#: xpra/scripts/main.py:1422 xpra/scripts/main.py:2066
+msgid "connection established"
+msgstr "เชื่อมต่อแล้ว"
+
+#: xpra/scripts/main.py:1435
+msgid "initializing user interface"
+msgstr "กำลังเริ่มต้นส่วนติดต่อผู้ใช้"
+
+#: xpra/scripts/main.py:1437 xpra/scripts/main.py:2060 xpra/client/gtk3/launcher.py:852
+msgid "loading user interface"
+msgstr "กำลังโหลดส่วนติดต่อผู้ใช้"
+
+#: xpra/scripts/main.py:1456 xpra/scripts/main.py:2087
+msgid "failure"
+msgstr "ล้มเหลว"
+
+#: xpra/scripts/main.py:1493
+msgid "listening for incoming connections"
+msgstr "กำลังรอการเชื่อมต่อขาเข้า"
+
+#: xpra/scripts/main.py:1553
+msgid "ready"
+msgstr "พร้อม"
+
+#: xpra/scripts/main.py:1609
+msgid "initializing"
+msgstr "กำลังเริ่มต้น"
+
+#: xpra/scripts/main.py:1755
+msgid "validating OpenGL configuration"
+msgstr "กำลังตรวจสอบการกำหนดค่า OpenGL"
+
+#: xpra/scripts/main.py:1779
+msgid "validating OpenGL"
+msgstr "กำลังตรวจสอบ OpenGL"
+
+#: xpra/scripts/main.py:2069
+msgid "starting server"
+msgstr "กำลังเริ่มเซิร์ฟเวอร์"
+
+#: xpra/scripts/server.py:573
+msgid "initializing server"
+msgstr "กำลังเริ่มต้นเซิร์ฟเวอร์"
+
+#: xpra/scripts/server.py:601
+msgid "creating network sockets"
+msgstr "กำลังสร้างซ็อกเก็ตเครือข่าย"
+
+#: xpra/scripts/server.py:655
+msgid "creating local sockets"
+msgstr "กำลังสร้างซ็อกเก็ตภายในเครื่อง"
+
+#: xpra/scripts/server.py:657
+msgid "finalizing"
+msgstr "กำลังดำเนินการขั้นสุดท้าย"
+
+#: xpra/scripts/server.py:689 xpra/server/subsystem/splash.py:119
+msgid "running"
+msgstr "กำลังทำงาน"
+
+#: xpra/server/subsystem/splash.py:101
+msgid "exiting"
+msgstr "กำลังออก"
+
+#: xpra/server/subsystem/splash.py:110
+msgid "initializing environment"
+msgstr "กำลังเริ่มต้นสภาพแวดล้อม"
+
+#: xpra/server/subsystem/xvfb.py:131
+msgid "connecting to the display"
+msgstr "กำลังเชื่อมต่อกับจอแสดงผล"
+
+#: xpra/server/subsystem/xvfb.py:134
+msgid "connected to the display"
+msgstr "เชื่อมต่อกับจอแสดงผลแล้ว"
+
+#: xpra/server/subsystem/xvfb.py:194
+msgid "starting a virtual display"
+msgstr "กำลังเริ่มจอแสดงผลเสมือน"
+
+#: xpra/wayland/subsystem/manager.py:49
+msgid "binding the wayland display socket"
+msgstr "กำลังผูกซ็อกเก็ตจอแสดงผล Wayland"
+
+#: xpra/client/base/client.py:198
+msgid "terminating"
+msgstr "กำลังยุติ"
+
+#: xpra/client/base/challenge.py:212
+msgid "challenge prompt"
+msgstr "พรอมต์ยืนยันตัวตน"
+
+#: xpra/client/gtk3/client_base.py:391
+msgid "authentication"
+msgstr "การตรวจสอบสิทธิ์"
+
+#: xpra/client/gtk3/launcher.py:858
+msgid "Session connected"
+msgstr "เชื่อมต่อเซสชันแล้ว"
+
+#: xpra/client/gtk3/launcher.py:876
+msgid "connecting"
+msgstr "กำลังเชื่อมต่อ"

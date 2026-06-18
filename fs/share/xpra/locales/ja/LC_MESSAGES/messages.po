@@ -958,3 +958,123 @@ msgstr "新しい%sxpra セッションを開始する"
 #: xpra/gtk/dialogs/gui.py:91
 msgid "remote "
 msgstr "リモート "
+
+#: xpra/common.py:98
+msgid "notification"
+msgstr "通知"
+
+#: xpra/scripts/main.py:1363 xpra/scripts/main.py:2075
+msgid "connecting to server"
+msgstr "サーバーに接続中"
+
+#: xpra/scripts/main.py:1396 xpra/scripts/main.py:1401
+msgid "error"
+msgstr "エラー"
+
+#: xpra/scripts/main.py:1416 xpra/scripts/main.py:2058 xpra/client/gtk3/launcher.py:850
+msgid "client configuration"
+msgstr "クライアント設定"
+
+#: xpra/scripts/main.py:1422 xpra/scripts/main.py:2066
+msgid "connection established"
+msgstr "接続が確立されました"
+
+#: xpra/scripts/main.py:1435
+msgid "initializing user interface"
+msgstr "ユーザーインターフェイスを初期化中"
+
+#: xpra/scripts/main.py:1437 xpra/scripts/main.py:2060 xpra/client/gtk3/launcher.py:852
+msgid "loading user interface"
+msgstr "ユーザーインターフェイスを読み込み中"
+
+#: xpra/scripts/main.py:1456 xpra/scripts/main.py:2087
+msgid "failure"
+msgstr "失敗"
+
+#: xpra/scripts/main.py:1493
+msgid "listening for incoming connections"
+msgstr "着信接続を待機中"
+
+#: xpra/scripts/main.py:1553
+msgid "ready"
+msgstr "準備完了"
+
+#: xpra/scripts/main.py:1609
+msgid "initializing"
+msgstr "初期化中"
+
+#: xpra/scripts/main.py:1755
+msgid "validating OpenGL configuration"
+msgstr "OpenGL 設定を検証中"
+
+#: xpra/scripts/main.py:1779
+msgid "validating OpenGL"
+msgstr "OpenGL を検証中"
+
+#: xpra/scripts/main.py:2069
+msgid "starting server"
+msgstr "サーバーを起動中"
+
+#: xpra/scripts/server.py:573
+msgid "initializing server"
+msgstr "サーバーを初期化中"
+
+#: xpra/scripts/server.py:601
+msgid "creating network sockets"
+msgstr "ネットワークソケットを作成中"
+
+#: xpra/scripts/server.py:655
+msgid "creating local sockets"
+msgstr "ローカルソケットを作成中"
+
+#: xpra/scripts/server.py:657
+msgid "finalizing"
+msgstr "最終処理中"
+
+#: xpra/scripts/server.py:689 xpra/server/subsystem/splash.py:119
+msgid "running"
+msgstr "実行中"
+
+#: xpra/server/subsystem/splash.py:101
+msgid "exiting"
+msgstr "終了中"
+
+#: xpra/server/subsystem/splash.py:110
+msgid "initializing environment"
+msgstr "環境を初期化中"
+
+#: xpra/server/subsystem/xvfb.py:131
+msgid "connecting to the display"
+msgstr "ディスプレイに接続中"
+
+#: xpra/server/subsystem/xvfb.py:134
+msgid "connected to the display"
+msgstr "ディスプレイに接続しました"
+
+#: xpra/server/subsystem/xvfb.py:194
+msgid "starting a virtual display"
+msgstr "仮想ディスプレイを起動中"
+
+#: xpra/wayland/subsystem/manager.py:49
+msgid "binding the wayland display socket"
+msgstr "Wayland ディスプレイソケットをバインド中"
+
+#: xpra/client/base/client.py:198
+msgid "terminating"
+msgstr "終了処理中"
+
+#: xpra/client/base/challenge.py:212
+msgid "challenge prompt"
+msgstr "認証プロンプト"
+
+#: xpra/client/gtk3/client_base.py:391
+msgid "authentication"
+msgstr "認証"
+
+#: xpra/client/gtk3/launcher.py:858
+msgid "Session connected"
+msgstr "セッションに接続しました"
+
+#: xpra/client/gtk3/launcher.py:876
+msgid "connecting"
+msgstr "接続中"
