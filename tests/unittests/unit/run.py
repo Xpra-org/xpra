@@ -58,10 +58,15 @@ def main(args) -> int:
     failed: list[tuple[str, int]] = []
     ignored: list[tuple[str, int]] = []
     skipped: list[str] = []
+    timings: list[tuple[float, str]] = []
 
     def write_summary() -> None:
         write("************************************************************")
         write("test summary:")
+        if timings:
+            write("  slowest tests:")
+            for duration, name in sorted(timings, reverse=True)[:5]:
+                write(f"    - {name}: {duration:.2f} seconds")
         write(f"  successful tests: {len(passed)}")
         write(f"  failed tests: {len(failed)}")
         for name, exit_code in failed:
@@ -107,7 +112,9 @@ def main(args) -> int:
         else:
             passed.append(name)
         T1 = time.monotonic()
-        write(f"ran {name} in {T1 - T0:.2f} seconds\n")
+        duration = T1 - T0
+        timings.append((duration, name))
+        write(f"ran {name} in {duration:.2f} seconds\n")
         return v
 
     def add_recursive(d: str) -> int:
