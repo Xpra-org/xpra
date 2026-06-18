@@ -1,0 +1,4 @@
+interface:
+  display_name: "Xpra Package Changelog"
+  short_description: "Sync Xpra release notes into package changelogs"
+  default_prompt: "Use $xpra-package-changelog to sync the latest Xpra Markdown release notes into RPM and Debian changelogs."
