@@ -54,16 +54,39 @@ def main(args) -> int:
         sys.stdout.write(f"{msg}\n")
         sys.stdout.flush()
 
+    passed: list[str] = []
+    failed: list[tuple[str, int]] = []
+    ignored: list[tuple[str, int]] = []
+    skipped: list[str] = []
+
+    def write_summary() -> None:
+        write("************************************************************")
+        write("test summary:")
+        write(f"  successful tests: {len(passed)}")
+        write(f"  failed tests: {len(failed)}")
+        for name, exit_code in failed:
+            write(f"    - {name} (exit code={exit_code})")
+        if ignored:
+            write(f"  ignored failures: {len(ignored)}")
+            for name, exit_code in ignored:
+                write(f"    - {name} (exit code={exit_code})")
+        if skipped:
+            write(f"  skipped tests: {len(skipped)}")
+            for name in skipped:
+                write(f"    - {name}")
+
     def run_file(p: str) -> int:
         #ie: "~/projects/Xpra/trunk/src/tests/unit/version_util_test.py"
         tfile = os.path.join(unittests_dir, p)
         if not (os.path.isfile(tfile) and tfile.startswith(unittests_dir) and tfile.endswith("test.py")):
             write(f"invalid file skipped: {p}  Expect {unittests_dir}/.../*test.py")
+            skipped.append(p)
             return 0
         #ie: "unit.version_util_test"
         name = p.split(unittests_dir)[-1].split(".py")[0].replace(os.path.sep, ".").lstrip(".")
         if p in skip_slow or name in skip_slow:
             write(f"skipped slow test as requested: {p}")
+            skipped.append(name)
             return 0
         write(f"running {name} from {tfile}\n")
         cmd = run_cmd + [p]
@@ -76,10 +99,13 @@ def main(args) -> int:
             v = 1
         if v != 0 and (p in skip_fail or name in skip_fail):
             write(f"ignore failure {v} as requested: {p}")
+            ignored.append((name, v))
             v = 0
         elif v != 0:
             write(f"failure on {name}, exit code={v}")
-        # else: pass
+            failed.append((name, v))
+        else:
+            passed.append(name)
         T1 = time.monotonic()
         write(f"ran {name} in {T1 - T0:.2f} seconds\n")
         return v
@@ -109,6 +135,7 @@ def main(args) -> int:
             r = run_file(x)
         if r != 0:
             ret = r
+    write_summary()
     return ret
 
 
