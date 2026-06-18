@@ -17,7 +17,7 @@ mapping.
 
 import os
 
-from xpra.auth.multifile import parse_auth_line
+from xpra.auth.common import parse_auth_line
 from xpra.server.session_registry import Session, SessionRegistry
 from xpra.log import Logger
 
