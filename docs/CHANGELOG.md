@@ -1,7 +1,60 @@
 # Changelog
 
-## [5.1.6] 2026-05-13
-* TODO
+## [5.1.6] 2026-06-18
+* Platforms, build and packaging:
+    * [honour pkgconfig file for Gtk build paths](https://github.com/Xpra-org/xpra/commit/cbf056e6374abc873bcdf167710315a9d1393740) + [fixup](https://github.com/Xpra-org/xpra/commit/a36e8331966962aad26cc1cf375734ca97f2ca63)
+    * [MSWindows clients unstable resizing of headerbar windows](https://github.com/Xpra-org/xpra/commit/dad05c198995329cc2fd4b9eb61777d7039ebc5f)
+    * [MS Windows builds should install the qrencode library](https://github.com/Xpra-org/xpra/commit/94a5f6250d10b12eeceebc9c15d4e90f0051cb91)
+    * [don't rely on CPython import side-effects](https://github.com/Xpra-org/xpra/commit/532adc82c25487fd03d8da01efa525f9bb5aef75)
+    * [remove Ubuntu Plucky](https://github.com/Xpra-org/xpra/commit/21462a908d76eadf394a554cd2e939dde842f302), [add Ubuntu Resolute](https://github.com/Xpra-org/xpra/commit/0cc74e2655ddba47911042f90aebfb7b6228a27d)
+    * [update active Fedora releases](https://github.com/Xpra-org/xpra/commit/365ab954fb2bcf47fc46271c90ab0d83fb99a2c2)
+    * [macOS packaging update for newer GStreamer versions](https://github.com/Xpra-org/xpra/commit/076901c07429b776f02386e49a77fd56d00c8280), [newer python-zeroconf](https://github.com/Xpra-org/xpra/commit/f1ff8ed3d93da20a5332504152ea30c4a9734d43)
+    * [macOS source files missing from source distribution](https://github.com/Xpra-org/xpra/commit/a8c61fd6ce819a1591cf649d61d0b2a7d6da9436)
+    * [`GLibUnix` warnings on macOS](https://github.com/Xpra-org/xpra/commit/09d840977ee7edcd386cfd6135fd0183972aa9ee)
+    * [RHEL 10 packaging for libyuv](https://github.com/Xpra-org/xpra/commit/6264a802bb66809bec26faed526b5587d82af421)
+    * [openh264 RPM packaging conflicts](https://github.com/Xpra-org/xpra/commit/fa8d72ca65dbd4de700f2068e443c93dde2fa739)
+* Major:
+    * [`pinentry` error handling](https://github.com/Xpra-org/xpra/commit/88b8b6d0d0a5c3b1a01cbb802d45bbdd3c3c8dfa) [fails to parse output](https://github.com/Xpra-org/xpra/commit/41435fa8dd5479f443b20c948a37266b859dd40e), [fail faster](https://github.com/Xpra-org/xpra/commit/88b8b6d0d0a5c3b1a01cbb802d45bbdd3c3c8dfa)
+    * [use a clean environment for launching clients from the session GUI](https://github.com/Xpra-org/xpra/commit/1094ffb6c0ef0252ccba08136adbd856b68ebe8d)
+    * [do skip query string overrides, as we claim to do](https://github.com/Xpra-org/xpra/commit/e670505f3bb12d38a0af81d397661f811049ae2b)
+    * [RandR parsing error on cloned outputs](https://github.com/Xpra-org/xpra/commit/3f36d58e1547e5f60b1763aa54ab9cb85a2e33e2)
+* Minor:
+    * [openh264 codecs could crash](https://github.com/Xpra-org/xpra/commit/c6505300ee7d80d80d7c0210f838a1eeaf19c653)
+    * [window size-constraints not honoured with OpenGL backend](https://github.com/Xpra-org/xpra/commit/1df4107b4598d6b21874b625fb01033a22259a52)
+    * [broken screenshot subcommand with shadow servers](https://github.com/Xpra-org/xpra/commit/869e5f405c675553cda18bcc61d53b59a5214a56)
+    * [fail fast](https://github.com/Xpra-org/xpra/commit/50258605e810f095fc3508aa636a9018d7aba36d)
+    * [Gtk fails to guess the backend to use for the splash screen](https://github.com/Xpra-org/xpra/commit/81512a3daccd24f65a0f2e0633e8f804cefbacd8)
+    * [headerbar windows missing a title](https://github.com/Xpra-org/xpra/commit/10d535fc2e35a8b07bbaaf65db74c50dfeef7915)
+    * [failure to stop a proxy instance should not propagate](https://github.com/Xpra-org/xpra/commit/7384eed50f40838ee5b4adfd2f78cf65c8df1ad8)
+    * [proxy deadlocks](https://github.com/Xpra-org/xpra/commit/d338b02cc882ad9b58a703629ac43622ac8dff06)
+    * ["raise windows" tray menu entry nonfunctional](https://github.com/Xpra-org/xpra/commit/22e7248bd5da580422b74276e33cb0a8d5a614c6)
+    * [ensure cleanup methods are always called from the correct context](https://github.com/Xpra-org/xpra/commit/a7cd163fb95bbbc441160fdaa437387a81e17d0b)
+* Network:
+    * [closed connections can shortcut out](https://github.com/Xpra-org/xpra/commit/4b07127c5ce2707f679f45f44ea161a906f13fa2)
+    * [incomplete thread cleanup](https://github.com/Xpra-org/xpra/commit/2e0f563ff8242d5a9d0d195f491b4c3118b9f1bc)
+    * [infinite socket path recursion](https://github.com/Xpra-org/xpra/commit/7686e1fd213816ec6460dcd93810ebeec075259f)
+    * [reject more unexpected / tricky SSH agent socket paths](https://github.com/Xpra-org/xpra/commit/b4e2e22bcaa24c81d61ab3a523cb12db9ad833a5)
+    * [allow more time for SSH connections to reach the connected state](https://github.com/Xpra-org/xpra/commit/546b62bb1d864960b62772f93626ce0cfed37ff3)
+    * [honour the timeout provided](https://github.com/Xpra-org/xpra/commit/805be6a59c533ba589a9cdf212e0d257a4df9faf)
+    * [named-pipe fixes and thorough tests](https://github.com/Xpra-org/xpra/commit/2f707d66595c2be3f828a92abfcd0eb2934caa4d) + [fixup](https://github.com/Xpra-org/xpra/commit/c9975f7c4c587b3cde467d8142719cbb127dce67)
+* SSL:
+    * [SSL session ticket caused connection errors](https://github.com/Xpra-org/xpra/commit/d55b97edb9e577d38653ec6f8d2016ea9bf8604f) + [fixup](https://github.com/Xpra-org/xpra/commit/c487aa1c1c199b2cf0aa592f08a1700938f68fbf)
+    * [make test more resilient](https://github.com/Xpra-org/xpra/commit/529ba0da4bcec5b4cc74492219511922867b9657)
+    * [early handshake](https://github.com/Xpra-org/xpra/commit/4efa9097444df59a9e5c8422abbedc773a5b35c4)
+* Keyboard:
+    * [handle lack of keymap more gracefully](https://github.com/Xpra-org/xpra/commit/c2da15e93dc66d2c60e1885ff46c6f0811f725a6)
+* Cosmetic:
+    * [theoretically unsafe path evaluation](https://github.com/Xpra-org/xpra/commit/ee3303fcf6072e39ff786739f514e2717bb19cc5)
+    * [more helpful message for incomplete installation issues](https://github.com/Xpra-org/xpra/commit/6eb9a14b5612b71a78fbfd2ce3f84f5429bb327e)
+    * [server logs errors when processing info requests](https://github.com/Xpra-org/xpra/commit/7dc955042e34799f8e9a5e5ec7fc13eeb3701093)
+    * [return correct type](https://github.com/Xpra-org/xpra/commit/97368ae6d0d5535919340eea449a5d85ed808b5b)
+    * [headerbar enum warnings](https://github.com/Xpra-org/xpra/commit/1a1b99dcf82b6575272b1c06f438b59bb27f7b13)
+    * [redundant / confusing statement](https://github.com/Xpra-org/xpra/commit/824803a237ec91dbf13bdbc512a3be7a7ef840df)
+    * [`monitor` mode should get the same warnings as `desktop`](https://github.com/Xpra-org/xpra/commit/bb22d0a7341a5a7c4caca482e5a8881cf481c5c8)
+    * [key event logging could mess up the log output](https://github.com/Xpra-org/xpra/commit/54e43655f5172c22b77523d4087c906d8db23d64)
+    * [nested dictionary formatting](https://github.com/Xpra-org/xpra/commit/653cce76bb4a04ada15138fff09502fe18cef820)
+    * [static gravity warning is obsolete](https://github.com/Xpra-org/xpra/commit/e4b7863082d637e88580eb22279ac3634dc2ba88)
+    * [hide bandwidth menu when the feature is not available](https://github.com/Xpra-org/xpra/commit/71ff7fea83b9252abf9fc777de61ee69bcf52ec5)
 
 ## [5.1.5] 2026-05-03
 * Platforms, build and packaging:

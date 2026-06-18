@@ -827,8 +827,62 @@ fi
 
 
 %changelog
-* Wed May 13 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
-- TODO
+* Thu Jun 18 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
+- Platforms, build and packaging:
+   honour pkgconfig file for Gtk build paths + fixup
+   MSWindows clients unstable resizing of headerbar windows
+   MS Windows builds should install the qrencode library
+   don't rely on CPython import side-effects
+   remove Ubuntu Plucky, add Ubuntu Resolute
+   update active Fedora releases
+   macOS packaging update for newer GStreamer versions, newer python-zeroconf
+   macOS source files missing from source distribution
+   `GLibUnix` warnings on macOS
+   RHEL 10 packaging for libyuv
+   openh264 RPM packaging conflicts
+- Major:
+   `pinentry` error handling fails to parse output, fail faster
+   use a clean environment for launching clients from the session GUI
+   do skip query string overrides, as we claim to do
+   RandR parsing error on cloned outputs
+- Minor:
+   openh264 codecs could crash
+   window size-constraints not honoured with OpenGL backend
+   broken screenshot subcommand with shadow servers
+   fail fast
+   Gtk fails to guess the backend to use for the splash screen
+   headerbar windows missing a title
+   failure to stop a proxy instance should not propagate
+   proxy deadlocks
+   "raise windows" tray menu entry nonfunctional
+   ensure cleanup methods are always called from the correct context
+- Network:
+   closed connections can shortcut out
+   incomplete thread cleanup
+   infinite socket path recursion
+   reject more unexpected / tricky SSH agent socket paths
+   allow more time for SSH connections to reach the connected state
+   honour the timeout provided
+   named-pipe fixes and thorough tests + fixup
+- SSL:
+   SSL session ticket caused connection errors + fixup
+   make test more resilient
+   early handshake
+- Keyboard:
+   handle lack of keymap more gracefully
+- Cosmetic:
+   theoretically unsafe path evaluation
+   more helpful message for incomplete installation issues
+   server logs errors when processing info requests
+   return correct type
+   headerbar enum warnings
+   redundant / confusing statement
+   `monitor` mode should get the same warnings as `desktop`
+   key event logging could mess up the log output
+   nested dictionary formatting
+   static gravity warning is obsolete
+   hide bandwidth menu when the feature is not available
+
 * Sun May 03 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:
    Ubuntu Noble and earlier fails to install
