@@ -12,6 +12,7 @@ from xpra.util.env import SilenceWarningsContext
 from xpra.common import noop
 from xpra.constants import XPRA_APP_ID
 from xpra.os_util import POSIX, OSX, gi_import, WIN32
+from xpra.util.i18n import _
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -127,18 +128,18 @@ class TrayMenu(StubSubsystem):
             from xpra.gtk.dialogs.about import about  # pylint: disable=import-outside-toplevel
             about()
 
-        tray_menu.append(traymenuitem("About Xpra", "information.png", cb=show_about))
+        tray_menu.append(traymenuitem(_("About Xpra"), "information.png", cb=show_about))
         self.add_tray_menu_items(tray_menu)
-        tray_menu.append(traymenuitem("Exit", "quit.png", cb=self.tray_exit_callback))
-        tray_menu.append(traymenuitem("Close Menu", "close.png", cb=self.close_tray_menu))
+        tray_menu.append(traymenuitem(_("Exit"), "quit.png", cb=self.tray_exit_callback))
+        tray_menu.append(traymenuitem(_("Close Menu"), "close.png", cb=self.close_tray_menu))
         if WIN32 and not self.parsec_vdd_installed():
             # parsec-vdd provides virtual monitor support on win32,
             # if it is not installed offer a menu entry pointing to its releases page:
             def open_parsec_vdd(*_args) -> None:
                 import webbrowser  # pylint: disable=import-outside-toplevel
                 webbrowser.open_new_tab("https://github.com/nomi-san/parsec-vdd/releases")
-            tray_menu.append(traymenuitem("Add Virtual Monitor Support", "display.png",
-                                          tooltip="Install parsec-vdd to enable virtual monitors",
+            tray_menu.append(traymenuitem(_("Add Virtual Monitor Support"), "display.png",
+                                          tooltip=_("Install parsec-vdd to enable virtual monitors"),
                                           cb=open_parsec_vdd))
         # maybe add: session info, clipboard, sharing, etc
         # control: disconnect clients
@@ -169,7 +170,7 @@ class TrayMenu(StubSubsystem):
                 self.server.setting_changed("readonly", ro)
 
         from xpra.gtk.widget import checkitem
-        tray_menu.append(checkitem("Read-only", cb=readonly_toggled, active=self.server.readonly))
+        tray_menu.append(checkitem(_("Read-only"), cb=readonly_toggled, active=self.server.readonly))
 
     def make_tray_widget(self):
         # pylint: disable=import-outside-toplevel

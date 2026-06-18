@@ -8,6 +8,7 @@ from typing import TypeVar
 
 from xpra.common import noop
 from xpra.platform.gui import get_icon_size
+from xpra.util.i18n import _
 from xpra.log import Logger
 
 log = Logger("menu")
@@ -117,12 +118,12 @@ class MenuHelper:
 
     def make_aboutmenuitem(self) -> ImageMenuItem:
         from xpra.gtk.dialogs.about import about
-        return self.menuitem("About Xpra", "xpra.png", cb=about)
+        return self.menuitem(_("About Xpra"), "xpra.png", cb=about)
 
     def make_docsmenuitem(self) -> ImageMenuItem:
         from xpra.scripts.main import show_docs
         from xpra.scripts.config import find_docs_path
-        docs_menuitem = self.menuitem("Documentation", "documentation.png", cb=show_docs)
+        docs_menuitem = self.menuitem(_("Documentation"), "documentation.png", cb=show_docs)
         if not find_docs_path():
             docs_menuitem.set_tooltip_text("documentation not found!")
             self.set_sensitive(docs_menuitem, False)
@@ -143,11 +144,11 @@ class MenuHelper:
             start_thread(run_html5, "open HTML5 client", True, args=(url_options,))
 
         from xpra.scripts.config import find_html5_path
-        html5_menuitem = self.menuitem("HTML5 client", "browser.png", cb=show_html5)
+        html5_menuitem = self.menuitem(_("HTML5 client"), "browser.png", cb=show_html5)
         if not find_html5_path():
             html5_menuitem.set_tooltip_text("html5 client not found!")
             self.set_sensitive(html5_menuitem, False)
         return html5_menuitem
 
     def make_closemenuitem(self) -> ImageMenuItem:
-        return self.menuitem("Close Menu", "close.png", cb=self.close_menu)
+        return self.menuitem(_("Close Menu"), "close.png", cb=self.close_menu)

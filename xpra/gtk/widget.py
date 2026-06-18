@@ -78,8 +78,7 @@ def force_images(widget, *args) -> None:
 
 def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
     """ Utility method for easily creating an ImageMenuItem """
-    menu_item = Gtk.ImageMenuItem()
-    menu_item.set_label(title)
+    menu_item = Gtk.ImageMenuItem(label=title or "")
     if image:
         ignorewarnings(menu_item.set_image, image)
         # force_images(menu_item)

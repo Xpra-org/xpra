@@ -509,7 +509,47 @@ msgstr "Ce serveur ne fournit pas de données de menu démarrer"
 msgid "Disconnect"
 msgstr "Déconnecter"
 
-#: xpra/client/gtk3/tray_menu.py:1874
+#: xpra/client/gtk3/menu_helper.py:443
+msgid "Check for updates"
+msgstr "Rechercher des mises à jour"
+
+#: xpra/client/gtk3/menu_helper.py:457
+msgid "Show QR connection string"
+msgstr "Afficher la chaîne de connexion QR"
+
+#: xpra/client/gtk3/menu_helper.py:464
+msgid "server uri is not shareable"
+msgstr "l'URI du serveur ne peut pas être partagée"
+
+#: xpra/client/gtk3/menu_helper.py:469
+msgid "qrencode library is missing"
+msgstr "la bibliothèque qrencode est manquante"
+
+#: xpra/client/gtk3/menu_helper.py:482
+msgid "Bug Report"
+msgstr "Rapport d'anomalie"
+
+#: xpra/client/gtk3/tray_menu.py:246
+msgid "Sharing"
+msgstr "Partage"
+
+#: xpra/client/gtk3/tray_menu.py:275
+msgid "Lock"
+msgstr "Verrouiller"
+
+#: xpra/client/gui/menu_helper.py:121
+msgid "About Xpra"
+msgstr "À propos de Xpra"
+
+#: xpra/client/gui/menu_helper.py:126
+msgid "Documentation"
+msgstr "Documentation"
+
+#: xpra/client/gui/menu_helper.py:147
+msgid "HTML5 client"
+msgstr "Client HTML5"
+
+#: xpra/client/gui/menu_helper.py:154 xpra/client/gtk3/tray_menu.py:1874
 msgid "Close Menu"
 msgstr "Fermer le menu"
 

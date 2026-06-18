@@ -243,7 +243,7 @@ class GTKTrayMenu(GTKMenuHelper):
             if self.client.server_sharing_toggle:
                 self.client.send_sharing_enabled()
             log("sharing_toggled(%s) readonly=%s", args, self.client.readonly)
-        sharing = checkitem("Sharing", sharing_toggled)
+        sharing = checkitem(_("Sharing"), sharing_toggled)
         sharing.set_tooltip_text(_("Allow other clients to connect to this session"))
         set_sensitive(sharing, False)
 
@@ -272,7 +272,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 self.client.send_lock_enabled()
             log("lock_toggled(%s) lock=%s", args, self.client.client_lock)
 
-        lock = checkitem("Lock", lock_toggled)
+        lock = checkitem(_("Lock"), lock_toggled)
         lock.set_tooltip_text(_("Prevent other clients from stealing this session"))
         set_sensitive(lock, False)
 

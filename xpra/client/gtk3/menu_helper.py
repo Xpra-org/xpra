@@ -17,6 +17,7 @@ from xpra.gtk.widget import scaled_image, menuitem
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.dialogs.about import close_about
 from xpra.platform.paths import get_icon_dir
+from xpra.util.i18n import _
 from xpra.log import Logger
 
 log = Logger("menu")
@@ -439,7 +440,7 @@ class GTKMenuHelper(MenuHelper):
             w.show()
             w.check()
 
-        return self.menuitem("Check for updates", "update.png", cb=show_update_window)
+        return self.menuitem(_("Check for updates"), "update.png", cb=show_update_window)
 
     def make_qrmenuitem(self) -> ImageMenuItem:
         try:
@@ -453,19 +454,19 @@ class GTKMenuHelper(MenuHelper):
             uri = self.client.display_desc.get("display_name")
             show_qr(uri)
 
-        qr_menuitem = self.menuitem("Show QR connection string", "qr.png", cb=show)
+        qr_menuitem = self.menuitem(_("Show QR connection string"), "qr.png", cb=show)
         log("make_qrmenuitem() qrencode.encode_image=%s", encode_image)
         if encode_image:
             def with_connection(*_args) -> None:
                 uri = self.client.display_desc.get("display_name")
                 if not uri or not any(uri.startswith(proto) for proto in ("tcp:", "ws:", "wss:")):
                     set_sensitive(qr_menuitem, False)
-                    qr_menuitem.set_tooltip_text("server uri is not shareable")
+                    qr_menuitem.set_tooltip_text(_("server uri is not shareable"))
 
             self.after_handshake(with_connection)
         else:
             set_sensitive(qr_menuitem, False)
-            qr_menuitem.set_tooltip_text("qrencode library is missing")
+            qr_menuitem.set_tooltip_text(_("qrencode library is missing"))
         return qr_menuitem
 
     def make_sessioninfomenuitem(self) -> ImageMenuItem:
@@ -474,14 +475,14 @@ class GTKMenuHelper(MenuHelper):
             # (which contain the menu widget and are of no interest to the 'show_session_info' function)
             self.show_session_info()
 
-        sessioninfomenuitem = self.handshake_menuitem("Session Info", "statistics.png", cb=show_session_info_cb)
+        sessioninfomenuitem = self.handshake_menuitem(_("Session Info"), "statistics.png", cb=show_session_info_cb)
         return sessioninfomenuitem
 
     def make_bugreportmenuitem(self) -> ImageMenuItem:
-        return self.menuitem("Bug Report", "forward.png", cb=self.show_bug_report)
+        return self.menuitem(_("Bug Report"), "forward.png", cb=self.show_bug_report)
 
     def make_debugmenuitem(self) -> ImageMenuItem:
-        return self.menuitem("Debug Logging", "bugs.png", cb=self.show_debug_config)
+        return self.menuitem(_("Debug Logging"), "bugs.png", cb=self.show_debug_config)
 
     def make_closemenuitem(self) -> ImageMenuItem:
-        return self.menuitem("Close Menu", "close.png", cb=self.close_menu)
+        return self.menuitem(_("Close Menu"), "close.png", cb=self.close_menu)
