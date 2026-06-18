@@ -168,7 +168,7 @@ class WindowsConnection(StubClientConnection):
     # info:
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {
-            "windows": self.window_enabled,
+            "enabled": self.window_enabled,
             "bell": self.window_bell,
             "system-tray": self.system_tray,
             "restack": self.window_restack,
@@ -229,7 +229,7 @@ class WindowsConnection(StubClientConnection):
                     total_time += encoding_time
                 in_latencies += [x * 1000 for _, _, _, x in tuple(ws.statistics.damage_in_latency)]
                 out_latencies += [x * 1000 for _, _, _, x in tuple(ws.statistics.damage_out_latency)]
-            info["window"] = winfo
+            info["windows"] = winfo
             v = 0
             if total_time > 0:
                 v = int(total_pixels / total_time)

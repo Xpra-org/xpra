@@ -1241,9 +1241,11 @@ class SessionInfo(Gtk.Window):
             # multiple clients: client_info is {int: source_info}
             sources = [v for v in client_info.values() if isinstance(v, dict)]
         for source in sources:
-            w = source.get("window")
-            if isinstance(w, dict):
-                window_dict.update(w)
+            window_info = source.get("window")
+            if isinstance(window_info, dict):
+                w = window_info.get("windows", window_info.get("window"))
+                if isinstance(w, dict):
+                    window_dict.update(w)
         if window_dict:
             id_to_window = self.client._id_to_window
             for k, v in window_dict.items():
