@@ -67,6 +67,74 @@ xpra desktop --start=xterm --bind-tcp=0.0.0.0:10000 --rfb-upgrade=5
 
 Use a `vnc://` URL (the `rfb://` scheme is an alias). The default port is `5900`:
 
+### Setting up a test VNC server
+
+To exercise the xpra VNC client it is handy to run a throwaway VNC server with a known
+configuration. The commands below use [TigerVNC](https://tigervnc.org/)'s `Xvnc` and match the
+authentication modes the xpra client supports. `:1` is the X11 display number, which corresponds to
+RFB port `5901` (`5900 + display`); `-localhost` only accepts connections from the same machine.
+
+> **Note:** these command lines are TigerVNC's. Other VNC server implementations (RealVNC, TightVNC,
+> the `Xvnc`/`vncserver` wrappers shipped by some distributions, etc) use different options and
+> defaults - consult their own documentation.
+
+<details>
+  <summary>No authentication</summary>
+
+```shell
+Xvnc :1 -rfbport 5901 -localhost -SecurityTypes None -geometry 1280x720 -desktop test
+```
+Connect with `xpra attach vnc://localhost:5901/`.
+</details>
+
+<details>
+  <summary>VNC password</summary>
+
+Create an obfuscated password file with `vncpasswd` (TigerVNC's `-f` reads the password from stdin
+and writes the file to stdout), then start the server with `VncAuth`:
+```shell
+echo "secret12" | vncpasswd -f > passwd
+Xvnc :1 -rfbport 5901 -localhost -SecurityTypes VncAuth -PasswordFile passwd -geometry 1280x720 -desktop test
+```
+Connect with `xpra attach vnc://localhost:5901/ --password-file=password.txt` (where `password.txt`
+contains the *plaintext* password), or let the client prompt for it.
+</details>
+
+<details>
+  <summary>Encrypted, no password (VeNCrypt / X509None)</summary>
+
+Generate a throwaway self-signed certificate (see also [SSL](SSL.md)), then start the server with
+the `X509None` security type so it negotiates VeNCrypt and presents the certificate:
+```shell
+openssl req -new -x509 -days 1 -nodes -newkey rsa:2048 -keyout key.pem -out cert.pem -subj "/CN=localhost"
+Xvnc :1 -rfbport 5901 -localhost \
+     -SecurityTypes X509None -X509Cert cert.pem -X509Key key.pem \
+     -geometry 1280x720 -desktop test
+```
+Connect with `xpra attach vnc://localhost:5901/ --ssl-ca-certs=cert.pem` (or
+`--ssl-server-verify-mode=none` for a quick test). This is the configuration used by the
+`unit.net.rfb.rfb_vencrypt_test` integration test.
+</details>
+
+<details>
+  <summary>Encrypted with a password (VeNCrypt / X509Vnc)</summary>
+
+Combine a certificate and a password file, using the `X509Vnc` security type (TLS first, then the VNC
+password challenge inside the tunnel):
+```shell
+echo "secret12" | vncpasswd -f > passwd
+Xvnc :1 -rfbport 5901 -localhost \
+     -SecurityTypes X509Vnc -X509Cert cert.pem -X509Key key.pem -PasswordFile passwd \
+     -geometry 1280x720 -desktop test
+```
+Connect with `xpra attach vnc://localhost:5901/ --ssl-ca-certs=cert.pem --password-file=password.txt`.
+</details>
+
+> The `TLS*` security types (`TLSNone`, `TLSVnc`, …) use anonymous-DH TLS without a certificate and
+> are **not** supported by the xpra client - use the `X509*` variants above.
+
+### Connecting
+
 <details>
   <summary>Basic connection</summary>
 
@@ -90,10 +158,10 @@ xpra attach vnc://localhost:5900/ --password-file=password.txt
 <details>
   <summary>Over an encrypted connection (VeNCrypt / TLS)</summary>
 
-If the VNC server offers `VeNCrypt` with an X509 certificate (for example TigerVNC's `Xvnc` started
-with `-SecurityTypes X509None -X509Cert cert.pem -X509Key key.pem`), xpra will negotiate VeNCrypt and
-upgrade the connection to TLS before authenticating - reusing the same [SSL](SSL.md) machinery as the
-rest of xpra. The usual `--ssl-*` options control certificate verification.
+If the VNC server offers `VeNCrypt` with an X509 certificate (see the `X509None` / `X509Vnc` server
+setups above), xpra will negotiate VeNCrypt and upgrade the connection to TLS before authenticating -
+reusing the same [SSL](SSL.md) machinery as the rest of xpra. The usual `--ssl-*` options control
+certificate verification.
 
 For a self-signed certificate you can either verify against its CA file:
 ```shell
