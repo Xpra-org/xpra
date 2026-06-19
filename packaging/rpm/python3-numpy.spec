@@ -22,7 +22,7 @@
 
 Name:           numpy
 Version:        1.26.4
-Release:        1%{?dist}
+Release:        2%{?dist}
 Epoch:          1
 Summary:        A fast multidimensional array facility for Python
 
@@ -57,20 +57,14 @@ Obsoletes:      numpy < 1:1.10.1-3
 
 Requires:       %{python3}
 BuildRequires:  %{python3}-devel
-BuildRequires:  %{python3}-setuptools
-BuildRequires:  %{python3}-Cython
+BuildRequires:  %{python3}-pip
 BuildRequires:  gcc-gfortran
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  lapack-devel
-%if %{with tests}
-BuildRequires:  %{python3}-hypothesis
-BuildRequires:  %{python3}-pytest
-BuildRequires:  %{python3}-test
-BuildRequires:  %{python3}-typing-extensions
-%endif
-BuildRequires: %{blaslib}-devel
-BuildRequires: chrpath
+BuildRequires:  %{blaslib}-devel
+BuildRequires:  pkgconfig
+BuildRequires:  chrpath
 
 %description -n %{python3}-numpy
 NumPy is a general-purpose array-processing package designed to
@@ -101,44 +95,45 @@ if [ "${sha256}" != "2a02aba9ed12e4ac4eb3ea9421c420301a0c6460d9830d74a9df87efa49
 fi
 %autosetup -n %{name}-%{version} -p1
 
-# Force re-cythonization (ifed for PKG-INFO presence in setup.py)
-rm PKG-INFO
-
-# openblas is provided by flexiblas by default; otherwise,
-# Use openblas pthreads as recommended by upstream (see comment in site.cfg.example)
-cat >> site.cfg <<EOF
-[openblas]
-libraries = %{siteblaslib}
-library_dirs = %{_libdir}
-EOF
-
 %build
 %set_build_flags
 
-env OPENBLAS=%{_libdir} \
-    BLAS=%{_libdir} \
-    LAPACK=%{_libdir} CFLAGS="%{optflags}" \
-    %{python3} setup.py build
+# numpy >= 1.26 dropped the distutils-based "setup.py build" (distutils was
+# removed from Python 3.12) and now builds with meson via the meson-python
+# PEP-517 backend.  Build a wheel with build isolation so the pinned build
+# dependencies (meson, meson-python, ninja, Cython) are fetched automatically:
+# the versions packaged for the system are either too old (meson) or
+# incompatible (Cython).  BLAS/LAPACK are located through pkg-config.
+%{python3} -m pip wheel \
+    --verbose \
+    --no-deps \
+    --wheel-dir=dist \
+    --config-settings=setup-args=-Dblas=%{blaslib} \
+    --config-settings=setup-args=-Dlapack=%{blaslib} \
+    .
 
 %install
-#%%{python3} setup.py install -O1 --skip-build --root %%{buildroot}
-# skip-build currently broken, this works around it for now
-env OPENBLAS=%{_libdir} \
-    FFTW=%{_libdir} BLAS=%{_libdir} \
-    LAPACK=%{_libdir} CFLAGS="%{optflags}" \
-    %{python3} setup.py install --root %{buildroot} --prefix=%{_prefix}
+# install the wheel built in %%build (no rebuild, just unpack into the buildroot)
+%{python3} -m pip install \
+    --root %{buildroot} \
+    --prefix %{_prefix} \
+    --no-deps \
+    --no-build-isolation \
+    --no-warn-script-location \
+    --ignore-installed \
+    dist/numpy-*.whl
 rm -f %{buildroot}%{_bindir}/f2py
 rm -f %{buildroot}%{_bindir}/f2py3
 rm -f %{buildroot}%{_bindir}/f2py.numpy
 rm -f %{buildroot}%{_bindir}/f2py%{python3_version}
 rm -fr %{buildroot}%{python3_sitearch}/%{name}/f2py
 
-# distutils from setuptools don't have the patch that was created to avoid standard runpath here
-# we strip it manually instead
+# meson may embed a standard runpath in the compiled extensions, which the
+# rpmbuild check-rpaths QA step rejects; strip it manually if present.
 # ERROR   0001: file '...' contains a standard runpath '/usr/lib64' in [/usr/lib64]
-chrpath --delete %{buildroot}%{python3_sitearch}/numpy/linalg/_umath_linalg.*.so
-chrpath --delete %{buildroot}%{python3_sitearch}/numpy/linalg/lapack_lite.*.so
-chrpath --delete %{buildroot}%{python3_sitearch}/numpy/core/_multiarray_umath.*.so
+chrpath --delete %{buildroot}%{python3_sitearch}/numpy/linalg/_umath_linalg.*.so || :
+chrpath --delete %{buildroot}%{python3_sitearch}/numpy/linalg/lapack_lite.*.so || :
+chrpath --delete %{buildroot}%{python3_sitearch}/numpy/core/_multiarray_umath.*.so || :
 
 
 %files -n %{python3}-numpy
@@ -149,7 +144,6 @@ chrpath --delete %{buildroot}%{python3_sitearch}/numpy/core/_multiarray_umath.*.
 %{python3_sitearch}/%{name}/*.py*
 %{python3_sitearch}/%{name}/*core
 %{python3_sitearch}/%{name}/_utils
-%{python3_sitearch}/%{name}/distutils
 %{python3_sitearch}/%{name}/doc
 %{python3_sitearch}/%{name}/fft
 %{python3_sitearch}/%{name}/lib
@@ -161,8 +155,7 @@ chrpath --delete %{buildroot}%{python3_sitearch}/numpy/core/_multiarray_umath.*.
 %{python3_sitearch}/%{name}/compat
 %{python3_sitearch}/%{name}/matrixlib
 %{python3_sitearch}/%{name}/polynomial
-%{python3_sitearch}/%{name}-*.egg-info
-%exclude %{python3_sitearch}/%{name}/LICENSE.txt
+%{python3_sitearch}/%{name}-*.dist-info
 %{python3_sitearch}/%{name}/__init__.pxd
 %{python3_sitearch}/%{name}/__init__.cython-30.pxd
 %{python3_sitearch}/%{name}/py.typed
@@ -173,6 +166,9 @@ chrpath --delete %{buildroot}%{python3_sitearch}/numpy/core/_multiarray_umath.*.
 
 
 %changelog
+* Wed Jun 10 2026 Antoine Martin <antoine@xpra.org> - 1:1.26.4-2
+- build with meson (meson-python PEP-517 backend) so it builds on Python 3.12
+
 * Tue Feb 06 2024 Antoine Martin <antoine@xpra.org> - 1.26.4-1
 - new upstream release
 
