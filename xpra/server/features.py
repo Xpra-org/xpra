@@ -40,6 +40,7 @@ display = True
 window = True
 cursor = True
 rfb = True
+rdp = True
 http = True
 gtk = True
 tray = True
@@ -124,6 +125,7 @@ def set_server_features(opts, mode: str) -> None:
         features.display = features.window or features.keyboard or features.pointer
         features.cursor = features.display and opts.cursors
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb") and mode in ("desktop", "shadow")
+        features.rdp = (b(opts.rdp_upgrade) or bool(opts.bind_rdp)) and impcheck("server.rdp")
         features.ssh = b(opts.ssh) and impcheck("net.ssh", "server.ssh") and bool(find_spec("paramiko"))
         features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
         features.register = bool(opts.register)
@@ -191,6 +193,7 @@ def enforce_server_features() -> None:
         "window": "xpra.server.subsystem.window,xpra.server.source.window",
         "cursor": "xpra.server.subsystem.cursor,xpra.server.source.cursor",
         "rfb": "xpra.net.rfb,xpra.server.rfb",
+        "rdp": "xpra.net.rdp,xpra.server.rdp",
         "http": "xpra.net.http,xpra.server.subsystem.http",
         "tray": "xpra.server.subsystem.tray",
         "gtk": "xpra.gtk" if not OSX else "",

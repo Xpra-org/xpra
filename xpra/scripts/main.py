@@ -878,6 +878,9 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
     if mode == "network-info":
         from xpra.net import net_util
         return net_util.main(cmdline)
+    if mode == "rdp":
+        from xpra.net.rdp import probe
+        return probe.main(["xpra rdp"] + args)
     if mode == "crypto-info":
         from xpra.net import crypto
         return crypto.main()

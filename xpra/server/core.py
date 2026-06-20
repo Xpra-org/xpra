@@ -1897,6 +1897,9 @@ class ServerCore(GLibServer):
         force_close_connection(conn)
 
     def handle_rdp_connection(self, conn, data: bytes = b"") -> None:
+        if rdp := self.subsystems.get("rdp"):
+            rdp.handle_rdp_connection(conn, data)
+            return
         if data and data[:2] != b"\x03\x00":
             raise ValueError("packet is not valid RDP")
         log.error("Error: RDP protocol is not supported by this server")

@@ -852,6 +852,7 @@ def get_usage() -> list[str]:
         "monitor-info [filename] [DISPLAY]",
         "encoding",
         "path-info",
+        "rdp HOST[:PORT]",
     ]
     if find_html5_path():
         command_options += ["html5"]

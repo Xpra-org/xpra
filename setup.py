@@ -378,6 +378,7 @@ print("INCLUDE_DIRS=%s" % (INCLUDE_DIRS, ))
 shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
 rfb_ENABLED = DEFAULT
+rdp_ENABLED = DEFAULT
 quic_ENABLED = DEFAULT
 ssh_ENABLED = DEFAULT
 ssl_ENABLED = DEFAULT
@@ -3363,6 +3364,7 @@ toggle_packages(proxy_ENABLED, "xpra.server.session_registry")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and rfb_ENABLED, "xpra.server.rfb")
+toggle_packages(server_ENABLED and rdp_ENABLED, "xpra.server.rdp")
 toggle_packages(server_ENABLED or shadow_ENABLED, "xpra.server.subsystem", "xpra.server.source")
 toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(shadow_ENABLED and x11_ENABLED, "xpra.x11.shadow")
@@ -3708,6 +3710,7 @@ toggle_packages(ssh_ENABLED, "xpra.net.ssh", "xpra.net.ssh.paramiko")
 toggle_packages(ssl_ENABLED, "xpra.net.tls")
 toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
+toggle_packages(rdp_ENABLED, "xpra.net.rdp")
 toggle_packages(qrencode_ENABLED, "xpra.net.qrcode")
 tace(qrencode_ENABLED, "xpra.net.qrcode.qrencode", extra_link_args="-lqrencode", extra_compile_args=ECA_WIN32SIGN)
 tace(netdev_ENABLED, "xpra.platform.posix.netdev_query")
@@ -3814,6 +3817,8 @@ if cythonize_more_ENABLED:
         ax("xpra.net.quic")
     if rfb_ENABLED:
         ax("xpra.net.rfb")
+    if rdp_ENABLED:
+        ax("xpra.net.rdp")
     if ssh_ENABLED:
         ax("xpra.net.ssh")
         ax("xpra.net.ssh.paramiko")
@@ -3845,6 +3850,8 @@ if cythonize_more_ENABLED:
             ax("xpra.server.proxy")
         if rfb_ENABLED:
             ax("xpra.server.rfb")
+        if rdp_ENABLED:
+            ax("xpra.server.rdp")
         if shadow_ENABLED:
             ax("xpra.server.shadow")
         if codecs_ENABLED:

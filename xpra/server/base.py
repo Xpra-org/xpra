@@ -141,6 +141,9 @@ class ServerBase(ServerCore):
         if features.rfb:
             from xpra.server.rfb.server import RFBServer
             classes.append(RFBServer)
+        if features.rdp:
+            from xpra.server.rdp.server import RDPServer
+            classes.append(RDPServer)
         if features.window:
             classes.append(self.get_window_subsystem_class())
         if features.keyboard:

@@ -372,6 +372,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "http"          : "HTTP requests",
         "rtc"           : "RTC requests",
         "rfb"           : "RFB Protocol",
+        "rdp"           : "RDP Protocol",
         "mmap"          : "mmap transfers",
         "protocol"      : "Packet input and output (formatting, parsing, sending and receiving)",
         "websocket"     : "WebSocket layer",
