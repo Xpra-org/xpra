@@ -14,6 +14,7 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import repr_ellipsized
+from xpra.util.i18n import _
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.system import platform_name, is_X11
@@ -65,7 +66,7 @@ def sf(w, font="sans 14"):
 
 
 def l(text):  # noqa: E743
-    widget = label(text)
+    widget = label(_(text))
     return sf(widget)
 
 
@@ -79,7 +80,7 @@ def link_btn(link: str, text="", icon_name="question.png"):
         start_thread(open_link, "open-link", True)
 
     icon = get_icon_pixbuf(icon_name)
-    btn = imagebutton("" if icon else text, icon, text, help_clicked, 12, False)
+    btn = imagebutton("" if icon else _(text), icon, _(text), help_clicked, 12, False)
     return btn
 
 
@@ -98,7 +99,7 @@ class StartSession(Gtk.Window):
         self.default_config = get_defaults()
         super().__init__()
         self.set_border_width(20)
-        self.set_title("Start Xpra Session")
+        self.set_title(_("Start Xpra Session"))
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_size_request(640, 300)
         icon = get_icon_pixbuf("xpra.png")
@@ -114,11 +115,11 @@ class StartSession(Gtk.Window):
         hbox = Gtk.HBox(homogeneous=True, spacing=40)
 
         def rb(sibling=None, text="", cb: Callable = noop, tooltip_text="") -> Gtk.RadioButton:
-            btn = Gtk.RadioButton.new_with_label_from_widget(sibling, text)
+            btn = Gtk.RadioButton.new_with_label_from_widget(sibling, _(text))
             if cb != noop:
                 btn.connect("toggled", cb)
             if tooltip_text:
-                btn.set_tooltip_text(tooltip_text)
+                btn.set_tooltip_text(_(tooltip_text))
             sf(btn, "sans 16")
             hbox.add(btn)
             return btn
@@ -144,7 +145,7 @@ class StartSession(Gtk.Window):
         host_box.pack_start(hbox, True, True)
         self.localhost_btn = rb(None, "Local System", self.host_toggled)
         self.remote_btn = rb(self.localhost_btn, "Remote")
-        self.remote_btn.set_tooltip_text("Start sessions on a remote system")
+        self.remote_btn.set_tooltip_text(_("Start sessions on a remote system"))
         self.address_box = Gtk.HBox(homogeneous=False, spacing=0)
         options_box.pack_start(xal(self.address_box), True, True)
         self.mode_combo = sf(Gtk.ComboBoxText())
@@ -155,20 +156,20 @@ class StartSession(Gtk.Window):
         self.mode_combo.connect("changed", self.mode_changed)
         self.username_entry = sf(Gtk.Entry())
         self.username_entry.set_width_chars(12)
-        self.username_entry.set_placeholder_text("Username")
+        self.username_entry.set_placeholder_text(_("Username"))
         self.username_entry.set_max_length(255)
         self.address_box.pack_start(xal(self.username_entry), False)
         self.address_box.pack_start(l("@"), False)
         self.host_entry = sf(Gtk.Entry())
         self.host_entry.set_width_chars(24)
-        self.host_entry.set_placeholder_text("Hostname or IP address")
+        self.host_entry.set_placeholder_text(_("Hostname or IP address"))
         self.host_entry.set_max_length(255)
         self.address_box.pack_start(xal(self.host_entry), False)
         self.address_box.pack_start(label(":"), False)
         self.port_entry = sf(Gtk.Entry())
         self.port_entry.set_text("22")
         self.port_entry.set_width_chars(5)
-        self.port_entry.set_placeholder_text("Port")
+        self.port_entry.set_placeholder_text(_("Port"))
         self.port_entry.set_max_length(5)
         self.address_box.pack_start(xal(self.port_entry, 0), False)
 
@@ -178,9 +179,9 @@ class StartSession(Gtk.Window):
         self.display_entry = sf(Gtk.Entry())
         self.display_entry.connect('changed', self.display_changed)
         self.display_entry.set_width_chars(10)
-        self.display_entry.set_placeholder_text("optional")
+        self.display_entry.set_placeholder_text(_("optional"))
         self.display_entry.set_max_length(10)
-        self.display_entry.set_tooltip_text("To use a specific X11 display number")
+        self.display_entry.set_tooltip_text(_("To use a specific X11 display number"))
         self.display_combo = sf(Gtk.ComboBoxText())
         self.display_box.pack_start(self.display_label, True)
         self.display_box.pack_start(self.display_entry, True, False)
@@ -222,11 +223,11 @@ class StartSession(Gtk.Window):
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         options_box.pack_start(hbox, False)
         self.exit_with_children_cb = sf(Gtk.CheckButton())
-        self.exit_with_children_cb.set_label("exit with application")
+        self.exit_with_children_cb.set_label(_("exit with application"))
         hbox.add(xal(self.exit_with_children_cb, 0.5))
         self.exit_with_children_cb.set_active(True)
         self.exit_with_client_cb = sf(Gtk.CheckButton())
-        self.exit_with_client_cb.set_label("exit with client")
+        self.exit_with_client_cb.set_label(_("exit with client"))
         hbox.add(xal(self.exit_with_client_cb, 0.5))
         self.exit_with_client_cb.set_active(False)
         # session options:
@@ -243,7 +244,7 @@ class StartSession(Gtk.Window):
                 ("Printing", "printer.png", "Printer forwarding options", self.configure_printing),
         ):
             icon = get_icon_pixbuf(icon_name)
-            ib = imagebutton("", icon=icon, tooltip=text or tooltip_text,
+            ib = imagebutton("", icon=icon, tooltip=_(text or tooltip_text),
                              clicked_callback=cb, icon_size=32,
                              label_font="sans 14")
             hbox.pack_start(ib, True, False)
@@ -254,7 +255,7 @@ class StartSession(Gtk.Window):
         vbox.pack_start(hbox, False, True, 20)
 
         def btn(text, tooltip, callback, default=False) -> Gtk.Button:
-            ib = imagebutton(text, tooltip=tooltip, clicked_callback=callback, icon_size=32,
+            ib = imagebutton(_(text), tooltip=_(tooltip), clicked_callback=callback, icon_size=32,
                              default=default, label_font="sans 16")
             hbox.pack_start(ib)
             return ib
@@ -418,7 +419,7 @@ class StartSession(Gtk.Window):
             if xdg and localhost:
                 # we have the xdg menus and the server is local, so we can use them:
                 self.entry_box.hide()
-                self.command_label.set_text("Command:" if seamless else "Desktop Environment:")
+                self.command_label.set_text(_("Command:") if seamless else _("Desktop Environment:"))
                 self.command_box.show_all()
                 if seamless:
                     self.category_box.show()
@@ -431,7 +432,7 @@ class StartSession(Gtk.Window):
                 # remote server (or missing xdg data)
                 self.command_box.hide()
                 self.category_box.hide()
-                self.entry_label.set_text("Command:" if seamless else "Desktop Environment:")
+                self.entry_label.set_text(_("Command:") if seamless else _("Desktop Environment:"))
                 self.entry_box.show_all()
                 has_entry = bool(self.entry.get_text())
                 self.exit_with_children_cb.set_active(has_entry)
@@ -541,8 +542,8 @@ class StartSession(Gtk.Window):
             self.remote_btn.set_active(True)
         can_use_localhost = shadow or not local_shadow_only
         self.localhost_btn.set_sensitive(can_use_localhost)
-        self.localhost_btn.set_tooltip_text("Start sessions on the local system" if can_use_localhost else
-                                            "Cannot start local desktop or seamless sessions on %s" % platform_name())
+        self.localhost_btn.set_tooltip_text(_("Start sessions on the local system") if can_use_localhost else
+                                            _("Cannot start local desktop or seamless sessions on %s") % platform_name())
         self.display_changed()
         self.populate_menus()
         self.entry_changed()
@@ -552,11 +553,11 @@ class StartSession(Gtk.Window):
         localhost = self.localhost_btn.get_active()
         shadow = self.shadow_btn.get_active()
         log("display_changed(%s) display=%s, localhost=%s, shadow=%s", args, display, localhost, shadow)
-        ra_label = "Start the xpra session and attach to it"
+        ra_label = _("Start the xpra session and attach to it")
         self.runattach_btn.set_sensitive(True)
         if shadow and localhost:
             if WIN32 or OSX or (not display or os.environ.get("DISPLAY", "").lstrip(":") == display):
-                ra_label = "Cannot attach this desktop session to itself"
+                ra_label = _("Cannot attach this desktop session to itself")
                 self.runattach_btn.set_sensitive(False)
         self.runattach_btn.set_tooltip_text(ra_label)
 
@@ -674,7 +675,7 @@ class SessionOptions(Gtk.Window):
         super().__init__()
         self.options = options
         self.run_mode = run_mode
-        self.set_title(title)
+        self.set_title(_(title))
         self.set_border_width(20)
         self.set_resizable(True)
         self.set_decorated(True)
@@ -736,7 +737,7 @@ class SessionOptions(Gtk.Window):
         return getattr(self, "%s_options" % fn)
 
     def bool_cb(self, text: str, option_name: str, tooltip_text="", link="") -> Gtk.Switch:
-        self.attach_label(text, tooltip_text, link)
+        self.attach_label(_(text), _(tooltip_text), link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         cb = Gtk.Switch()
@@ -757,7 +758,7 @@ class SessionOptions(Gtk.Window):
         })
 
     def radio_cb(self, text: str, option_name: str, tooltip_text="", link="", options=None) -> Gtk.RadioButton:
-        self.attach_label(text, tooltip_text, link)
+        self.attach_label(_(text), _(tooltip_text), link)
         fn = option_name.replace("-", "_")
         widget_base_name = "%s_widget" % fn
         self.widgets.append(option_name)
@@ -768,7 +769,7 @@ class SessionOptions(Gtk.Window):
         btns = []
         saved_options = {}
         for option, match in options.items():
-            btn = Gtk.RadioButton.new_with_label_from_widget(sibling, option)
+            btn = Gtk.RadioButton.new_with_label_from_widget(sibling, _(option))
             hbox.add(btn)
             setattr(self, "{}_{}".format(widget_base_name, option), btn)
             saved_match = match
@@ -789,13 +790,13 @@ class SessionOptions(Gtk.Window):
         return btns
 
     def combo(self, text: str, option_name: str, options: dict, link="") -> Gtk.ComboBoxText:
-        self.attach_label(text, "", link)
+        self.attach_label(_(text), "", link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         c = Gtk.ComboBoxText()
         index = -1
         for i, (v, vlabel) in enumerate(options.items()):
-            c.append_text(str(vlabel))
+            c.append_text(_(str(vlabel)))
             if index < 0 or v == value:
                 index = i
         if index >= 0:
@@ -809,7 +810,7 @@ class SessionOptions(Gtk.Window):
         return c
 
     def scale(self, text: str, option_name: str, minv=0, maxv=100, marks=None) -> Gtk.Scale:
-        self.attach_label(text)
+        self.attach_label(_(text))
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         c = Gtk.Scale.new(orientation=Gtk.Orientation.HORIZONTAL)
@@ -821,7 +822,7 @@ class SessionOptions(Gtk.Window):
         c.set_valign(Gtk.Align.START)
         if marks:
             for v, mtext in marks.items():
-                c.add_mark(v, Gtk.PositionType.BOTTOM, mtext)
+                c.add_mark(v, Gtk.PositionType.BOTTOM, _(mtext))
         self.grid.attach(c, 1, self.row.get(), 1, 1)
         self._save_widget(fn, c, "scale")
         self.widgets.append(option_name)
@@ -880,7 +881,7 @@ class SessionOptions(Gtk.Window):
         options = self.get_widget_options(fn)
         value = widget.get_active_text()
         for k, v in options.items():
-            if str(v) == value:
+            if _(str(v)) == value:
                 return (k,)
         return (UNSET,)
 
@@ -898,7 +899,7 @@ class SessionOptions(Gtk.Window):
         hbox = Gtk.HBox(homogeneous=False, spacing=0)
         hbox.pack_start(xal(lbl), True, True)
         if link:
-            help_btn = link_btn(link, "About %s" % text)
+            help_btn = link_btn(link, _("About %s") % text)
             hbox.pack_start(help_btn, False)
         self.grid.attach(hbox, 0, int(self.row), 1, 1)
 
@@ -1161,7 +1162,7 @@ class WebcamWindow(SessionOptions):
         if OSX or WIN32:
             cb.set_sensitive(False)
             cb.set_active(False)
-            self.grid.attach(label("Webcam forwarding is not supported on %s" % platform_name()),
+            self.grid.attach(label(_("Webcam forwarding is not supported on %s") % platform_name()),
                              0, self.row.increase(), 2, 1)
         self.vbox.show_all()
 
@@ -1185,7 +1186,7 @@ def main(options=None) -> int:  # pragma: no cover
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
     from xpra.gtk.util import init_display_source, quit_on_signals, gtk_main
-    with program_context("xpra-start-gui", "Xpra Start GUI"):
+    with program_context("xpra-start-gui", _("Xpra Start GUI")):
         enable_color()
         init_display_source(False)
         init()

@@ -26,6 +26,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.system import stop_proc, get_platform_icon_name
 from xpra.os_util import gi_import, WIN32, getuid, getgid
 from xpra.util.env import IgnoreWarningsContext, get_saved_env
+from xpra.util.i18n import _
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -90,6 +91,7 @@ class SessionsGUI(Gtk.Window):
 
     def __init__(self, options, title="Xpra Session Browser"):
         super().__init__()
+        title = _(title)
         self.options = options
         self.exit_code = ExitCode.OK
         self.set_title(title)
@@ -110,7 +112,7 @@ class SessionsGUI(Gtk.Window):
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
         hb.props.title = "Xpra"
-        hb.add(hb_button("About", "help-about", self.show_about))
+        hb.add(hb_button(_("About"), "help-about", self.show_about))
         hb.show_all()
         self.set_titlebar(hb)
 
@@ -130,7 +132,7 @@ class SessionsGUI(Gtk.Window):
         self.vbox.add(self.warning)
 
         self.password_box = Gtk.HBox(homogeneous=False, spacing=10)
-        self.password_label = label("Password:")
+        self.password_label = label(_("Password:"))
         al = Gtk.Alignment(xalign=1, yalign=0.5)
         al.add(self.password_label)
         al.show()
@@ -279,7 +281,7 @@ class SessionsGUI(Gtk.Window):
             self.vbox.remove(self.contents)
             self.contents = None
         if not self.endpoints:
-            self.contents = label("No sessions found")
+            self.contents = label(_("No sessions found"))
             self.vbox.add(self.contents)
             self.contents.show()
             self.set_size_request(440, 200)
@@ -295,7 +297,7 @@ class SessionsGUI(Gtk.Window):
             widget.set_margin_end(5)
             return widget
 
-        for i, text in enumerate(("Host", "Display", "Name", "Icon", "Type", "URI", "Connect", "Open in Browser")):
+        for i, text in enumerate(_(x) for x in ("Host", "Display", "Name", "Icon", "Type", "URI", "Connect", "Open in Browser")):
             grid.attach(l(text), i, 1, 1, 1)
         row = 2
         for key, session in group_session_endpoints(self.endpoints).items():
@@ -407,11 +409,11 @@ class SessionsGUI(Gtk.Window):
                 stop_proc(proc, "client")
                 self.populate()
 
-            btn = imagebutton("Disconnect", icon, clicked_callback=disconnect_client)
-            return label("Already connected with pid=%i" % proc.pid), btn, label("")
+            btn = imagebutton(_("Disconnect"), icon, clicked_callback=disconnect_client)
+            return label(_("Already connected with pid=%i") % proc.pid), btn, label("")
 
         icon = get_icon_pixbuf("browser.png")
-        bopen = imagebutton("Open", icon)
+        bopen = imagebutton(_("Open"), icon)
 
         icon = get_icon_pixbuf("connect.png")
         if len(endpoints) == 1:
@@ -431,7 +433,7 @@ class SessionsGUI(Gtk.Window):
                 uri = endpoint_uri(password, endpoint)
                 self.attach(key, uri)
 
-            btn = imagebutton("Connect", icon, clicked_callback=clicked)
+            btn = imagebutton(_("Connect"), icon, clicked_callback=clicked)
             return label(uri), btn, bopen
 
         # multiple modes / uris
@@ -469,7 +471,7 @@ class SessionsGUI(Gtk.Window):
             self.attach(key, uri)
 
         uri_menu.set_active(0)
-        btn = imagebutton("Connect", icon, clicked_callback=connect)
+        btn = imagebutton(_("Connect"), icon, clicked_callback=connect)
 
         def uri_changed(*_args) -> None:
             uri = uri_menu.get_active_text()
@@ -478,9 +480,9 @@ class SessionsGUI(Gtk.Window):
             if ws:
                 bopen.set_tooltip_text("")
             elif not has_ws:
-                bopen.set_tooltip_text("no 'ws' or 'wss' URIs found")
+                bopen.set_tooltip_text(_("no 'ws' or 'wss' URIs found"))
             else:
-                bopen.set_tooltip_text("select a 'ws' or 'wss' URI")
+                bopen.set_tooltip_text(_("select a 'ws' or 'wss' URI"))
 
         uri_menu.connect("changed", uri_changed)
         uri_changed()
@@ -498,7 +500,7 @@ def do_main(opts) -> ExitValue:
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.gtk.util import quit_on_signals, gtk_main
-    with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
+    with program_context("Xpra-Session-Browser", _("Xpra Session Browser")):
         enable_color()
         quit_on_signals("session-browser")
         gui = SessionsGUI(opts)

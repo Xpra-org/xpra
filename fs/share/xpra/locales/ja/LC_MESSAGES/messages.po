@@ -1078,3 +1078,172 @@ msgstr "セッションに接続しました"
 #: xpra/client/gtk3/launcher.py:876
 msgid "connecting"
 msgstr "接続中"
+
+msgid "Start Xpra Session"
+msgstr "Xpra セッションを開始"
+
+msgid "Start sessions on a remote system"
+msgstr "リモートシステムでセッションを開始"
+
+msgid "Username"
+msgstr "ユーザー名"
+
+msgid "Hostname or IP address"
+msgstr "ホスト名または IP アドレス"
+
+msgid "Port"
+msgstr "ポート"
+
+msgid "optional"
+msgstr "任意"
+
+msgid "To use a specific X11 display number"
+msgstr "特定の X11 ディスプレイ番号を使用"
+
+msgid "exit with application"
+msgstr "アプリケーションとともに終了"
+
+msgid "exit with client"
+msgstr "クライアントとともに終了"
+
+msgid "Command:"
+msgstr "コマンド:"
+
+msgid "Desktop Environment:"
+msgstr "デスクトップ環境:"
+
+msgid "Start sessions on the local system"
+msgstr "ローカルシステムでセッションを開始"
+
+#, python-format
+msgid "Cannot start local desktop or seamless sessions on %s"
+msgstr "%s でローカルデスクトップまたはシームレスセッションを開始できません"
+
+msgid "Start the xpra session and attach to it"
+msgstr "Xpra セッションを開始して接続"
+
+msgid "Cannot attach this desktop session to itself"
+msgstr "このデスクトップセッションを自身に接続できません"
+
+#, python-format
+msgid "About %s"
+msgstr "%s について"
+
+#, python-format
+msgid "Webcam forwarding is not supported on %s"
+msgstr "%s では Web カメラ転送はサポートされません"
+
+msgid "Xpra Start GUI"
+msgstr "Xpra 開始 GUI"
+
+msgid "Xpra Version Check"
+msgstr "Xpra バージョン確認"
+
+msgid "Version Check"
+msgstr "バージョン確認"
+
+msgid "Download"
+msgstr "ダウンロード"
+
+msgid "Show download page"
+msgstr "ダウンロードページを表示"
+
+msgid "Close"
+msgstr "閉じる"
+
+#, python-format
+msgid "Version %s is up to date"
+msgstr "バージョン %s は最新です"
+
+#, python-format
+msgid "A newer version is available: %s"
+msgstr "新しいバージョンがあります: %s"
+
+#, python-format
+msgid "Checking for new versions %s"
+msgstr "新しいバージョンを確認中 %s"
+
+msgid "About"
+msgstr "について"
+
+msgid "Password:"
+msgstr "パスワード:"
+
+msgid "No sessions found"
+msgstr "セッションが見つかりません"
+
+#, python-format
+msgid "Already connected with pid=%i"
+msgstr "PID=%i で接続済み"
+
+msgid "Open"
+msgstr "開く"
+
+msgid "no 'ws' or 'wss' URIs found"
+msgstr "'ws' または 'wss' URI が見つかりません"
+
+msgid "select a 'ws' or 'wss' URI"
+msgstr "'ws' または 'wss' URI を選択"
+
+msgid "Xpra Session Browser"
+msgstr "Xpra セッションブラウザー"
+
+msgid "Configure Xpra's Picture Compression"
+msgstr "Xpra の画像圧縮を設定"
+
+#, python-format
+msgid "Please read <a href='%s'>the documentation</a>."
+msgstr "<a href='%s'>ドキュメント</a>をお読みください。"
+
+msgid "Framerate (Hz)"
+msgstr "フレームレート (Hz)"
+
+#, python-format
+msgid " (default: %s)"
+msgstr " (デフォルト: %s)"
+
+msgid "Configure Xpra's Features"
+msgstr "Xpra の機能を設定"
+
+#, python-format
+msgid "this feature is missing: %s"
+msgstr "この機能がありません: %s"
+
+msgid "Configure Xpra"
+msgstr "Xpra を設定"
+
+#, python-format
+msgid "not available in this build:\n'%s'"
+msgstr "このビルドでは利用できません:\n'%s'"
+
+msgid "Install or remove Xpra Packages"
+msgstr "Xpra パッケージをインストールまたは削除"
+
+msgid "Exit"
+msgstr "終了"
+
+#, python-format
+msgid "Unable to locate the %r command."
+msgstr "%r コマンドが見つかりません。"
+
+msgid "Apply"
+msgstr "適用"
+
+msgid "Configure Xpra Settings"
+msgstr "Xpra 設定を構成"
+
+msgid "Configure Xpra's Shadow Server"
+msgstr "Xpra シャドウサーバーを設定"
+
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgid "Confirm"
+msgstr "確認"
+
+msgid "Configure Xpra's xvfb command"
+msgstr "Xpra の xvfb コマンドを設定"
+
+#, python-format
+msgid "%s not found"
+msgstr "%s が見つかりません"

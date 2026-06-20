@@ -11,13 +11,18 @@ from xpra.util.config import update_config_attribute, with_config
 from xpra.util.io import which
 from xpra.util.system import is_Debian, is_Ubuntu
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.widget import label, setfont
+from xpra.gtk.widget import label as gtk_label, setfont
+from xpra.util.i18n import _
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 log = Logger("gstreamer", "util")
+
+
+def label(text, *args, **kwargs):
+    return gtk_label(_(text), *args, **kwargs)
 
 
 XDUMMY_INFO = [
@@ -88,7 +93,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.buttons: list[Gtk.CheckButton] = []
         size = (800, 554)
         super().__init__(
-            "Configure Xpra's xvfb command",
+            _("Configure Xpra's xvfb command"),
             "monitor.png",
             wm_class=("xpra-configure-vfb-gui", "Xpra Configure vfb GUI"),
             default_size=size,
@@ -117,10 +122,10 @@ class ConfigureGUI(BaseGUIWindow):
                     matched = True
                 if not which(command):
                     available = False
-                    tooltip = f"{command} not found"
+                    tooltip = _("%s not found") % command
             description = details[0]
-            btn = Gtk.CheckButton(label=description)
-            btn.set_tooltip_text(tooltip)
+            btn = Gtk.CheckButton(label=_(description))
+            btn.set_tooltip_text(_(tooltip))
             btn.set_sensitive(available)
             btn.set_active(available and matched)
             btn.xvfb_backend = backend
@@ -137,10 +142,10 @@ class ConfigureGUI(BaseGUIWindow):
         btn_box.set_vexpand(True)
         btn_box.set_valign(Gtk.Align.END)
         self.vbox.add(btn_box)
-        cancel_btn = Gtk.Button.new_with_label("Cancel")
+        cancel_btn = Gtk.Button.new_with_label(_("Cancel"))
         cancel_btn.connect("clicked", self.dismiss)
         btn_box.add(cancel_btn)
-        confirm_btn = Gtk.Button.new_with_label("Save")
+        confirm_btn = Gtk.Button.new_with_label(_("Save"))
         confirm_btn.connect("clicked", self.save_xvfb)
         confirm_btn.set_sensitive(False)
         btn_box.add(confirm_btn)

@@ -1078,3 +1078,172 @@ msgstr "Session connectée"
 #: xpra/client/gtk3/launcher.py:876
 msgid "connecting"
 msgstr "connexion"
+
+msgid "Start Xpra Session"
+msgstr "Démarrer une session Xpra"
+
+msgid "Start sessions on a remote system"
+msgstr "Démarrer des sessions sur un système distant"
+
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+msgid "Hostname or IP address"
+msgstr "Nom d'hôte ou adresse IP"
+
+msgid "Port"
+msgstr "Port"
+
+msgid "optional"
+msgstr "facultatif"
+
+msgid "To use a specific X11 display number"
+msgstr "Pour utiliser un numéro d'affichage X11 spécifique"
+
+msgid "exit with application"
+msgstr "quitter avec l'application"
+
+msgid "exit with client"
+msgstr "quitter avec le client"
+
+msgid "Command:"
+msgstr "Commande :"
+
+msgid "Desktop Environment:"
+msgstr "Environnement de bureau :"
+
+msgid "Start sessions on the local system"
+msgstr "Démarrer des sessions sur le système local"
+
+#, python-format
+msgid "Cannot start local desktop or seamless sessions on %s"
+msgstr "Impossible de démarrer des sessions locales de bureau ou transparentes sur %s"
+
+msgid "Start the xpra session and attach to it"
+msgstr "Démarrer la session Xpra et s'y connecter"
+
+msgid "Cannot attach this desktop session to itself"
+msgstr "Impossible de connecter cette session de bureau à elle-même"
+
+#, python-format
+msgid "About %s"
+msgstr "À propos de %s"
+
+#, python-format
+msgid "Webcam forwarding is not supported on %s"
+msgstr "Le transfert de webcam n'est pas pris en charge sur %s"
+
+msgid "Xpra Start GUI"
+msgstr "Interface de démarrage Xpra"
+
+msgid "Xpra Version Check"
+msgstr "Vérification de la version de Xpra"
+
+msgid "Version Check"
+msgstr "Vérification de la version"
+
+msgid "Download"
+msgstr "Télécharger"
+
+msgid "Show download page"
+msgstr "Afficher la page de téléchargement"
+
+msgid "Close"
+msgstr "Fermer"
+
+#, python-format
+msgid "Version %s is up to date"
+msgstr "La version %s est à jour"
+
+#, python-format
+msgid "A newer version is available: %s"
+msgstr "Une version plus récente est disponible : %s"
+
+#, python-format
+msgid "Checking for new versions %s"
+msgstr "Recherche de nouvelles versions %s"
+
+msgid "About"
+msgstr "À propos"
+
+msgid "Password:"
+msgstr "Mot de passe :"
+
+msgid "No sessions found"
+msgstr "Aucune session trouvée"
+
+#, python-format
+msgid "Already connected with pid=%i"
+msgstr "Déjà connecté avec le PID=%i"
+
+msgid "Open"
+msgstr "Ouvrir"
+
+msgid "no 'ws' or 'wss' URIs found"
+msgstr "Aucune URI 'ws' ou 'wss' trouvée"
+
+msgid "select a 'ws' or 'wss' URI"
+msgstr "Sélectionnez une URI 'ws' ou 'wss'"
+
+msgid "Xpra Session Browser"
+msgstr "Navigateur de sessions Xpra"
+
+msgid "Configure Xpra's Picture Compression"
+msgstr "Configurer la compression d'image de Xpra"
+
+#, python-format
+msgid "Please read <a href='%s'>the documentation</a>."
+msgstr "Veuillez consulter <a href='%s'>la documentation</a>."
+
+msgid "Framerate (Hz)"
+msgstr "Fréquence d'images (Hz)"
+
+#, python-format
+msgid " (default: %s)"
+msgstr " (par défaut : %s)"
+
+msgid "Configure Xpra's Features"
+msgstr "Configurer les fonctionnalités de Xpra"
+
+#, python-format
+msgid "this feature is missing: %s"
+msgstr "Cette fonctionnalité est absente : %s"
+
+msgid "Configure Xpra"
+msgstr "Configurer Xpra"
+
+#, python-format
+msgid "not available in this build:\n'%s'"
+msgstr "Non disponible dans cette version :\n'%s'"
+
+msgid "Install or remove Xpra Packages"
+msgstr "Installer ou supprimer des paquets Xpra"
+
+msgid "Exit"
+msgstr "Quitter"
+
+#, python-format
+msgid "Unable to locate the %r command."
+msgstr "Impossible de trouver la commande %r."
+
+msgid "Apply"
+msgstr "Appliquer"
+
+msgid "Configure Xpra Settings"
+msgstr "Configurer les paramètres de Xpra"
+
+msgid "Configure Xpra's Shadow Server"
+msgstr "Configurer le serveur Shadow de Xpra"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Confirm"
+msgstr "Confirmer"
+
+msgid "Configure Xpra's xvfb command"
+msgstr "Configurer la commande xvfb de Xpra"
+
+#, python-format
+msgid "%s not found"
+msgstr "%s introuvable"

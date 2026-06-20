@@ -1078,3 +1078,172 @@ msgstr "เชื่อมต่อเซสชันแล้ว"
 #: xpra/client/gtk3/launcher.py:876
 msgid "connecting"
 msgstr "กำลังเชื่อมต่อ"
+
+msgid "Start Xpra Session"
+msgstr "เริ่มเซสชัน Xpra"
+
+msgid "Start sessions on a remote system"
+msgstr "เริ่มเซสชันบนระบบระยะไกล"
+
+msgid "Username"
+msgstr "ชื่อผู้ใช้"
+
+msgid "Hostname or IP address"
+msgstr "ชื่อโฮสต์หรือที่อยู่ IP"
+
+msgid "Port"
+msgstr "พอร์ต"
+
+msgid "optional"
+msgstr "ไม่บังคับ"
+
+msgid "To use a specific X11 display number"
+msgstr "เพื่อใช้หมายเลขจอภาพ X11 ที่ระบุ"
+
+msgid "exit with application"
+msgstr "ออกพร้อมแอปพลิเคชัน"
+
+msgid "exit with client"
+msgstr "ออกพร้อมไคลเอนต์"
+
+msgid "Command:"
+msgstr "คำสั่ง:"
+
+msgid "Desktop Environment:"
+msgstr "สภาพแวดล้อมเดสก์ท็อป:"
+
+msgid "Start sessions on the local system"
+msgstr "เริ่มเซสชันบนระบบภายในเครื่อง"
+
+#, python-format
+msgid "Cannot start local desktop or seamless sessions on %s"
+msgstr "ไม่สามารถเริ่มเซสชันเดสก์ท็อปภายในเครื่องหรือแบบไร้รอยต่อบน %s"
+
+msgid "Start the xpra session and attach to it"
+msgstr "เริ่มเซสชัน Xpra และเชื่อมต่อ"
+
+msgid "Cannot attach this desktop session to itself"
+msgstr "ไม่สามารถเชื่อมต่อเซสชันเดสก์ท็อปนี้เข้ากับตัวเอง"
+
+#, python-format
+msgid "About %s"
+msgstr "เกี่ยวกับ %s"
+
+#, python-format
+msgid "Webcam forwarding is not supported on %s"
+msgstr "ไม่รองรับการส่งต่อเว็บแคมบน %s"
+
+msgid "Xpra Start GUI"
+msgstr "GUI เริ่มต้น Xpra"
+
+msgid "Xpra Version Check"
+msgstr "ตรวจสอบเวอร์ชัน Xpra"
+
+msgid "Version Check"
+msgstr "ตรวจสอบเวอร์ชัน"
+
+msgid "Download"
+msgstr "ดาวน์โหลด"
+
+msgid "Show download page"
+msgstr "แสดงหน้าดาวน์โหลด"
+
+msgid "Close"
+msgstr "ปิด"
+
+#, python-format
+msgid "Version %s is up to date"
+msgstr "เวอร์ชัน %s เป็นปัจจุบัน"
+
+#, python-format
+msgid "A newer version is available: %s"
+msgstr "มีเวอร์ชันใหม่กว่า: %s"
+
+#, python-format
+msgid "Checking for new versions %s"
+msgstr "กำลังตรวจสอบเวอร์ชันใหม่ %s"
+
+msgid "About"
+msgstr "เกี่ยวกับ"
+
+msgid "Password:"
+msgstr "รหัสผ่าน:"
+
+msgid "No sessions found"
+msgstr "ไม่พบเซสชัน"
+
+#, python-format
+msgid "Already connected with pid=%i"
+msgstr "เชื่อมต่อแล้วด้วย PID=%i"
+
+msgid "Open"
+msgstr "เปิด"
+
+msgid "no 'ws' or 'wss' URIs found"
+msgstr "ไม่พบ URI 'ws' หรือ 'wss'"
+
+msgid "select a 'ws' or 'wss' URI"
+msgstr "เลือก URI 'ws' หรือ 'wss'"
+
+msgid "Xpra Session Browser"
+msgstr "เบราว์เซอร์เซสชัน Xpra"
+
+msgid "Configure Xpra's Picture Compression"
+msgstr "กำหนดค่าการบีบอัดภาพของ Xpra"
+
+#, python-format
+msgid "Please read <a href='%s'>the documentation</a>."
+msgstr "โปรดอ่าน<a href='%s'>เอกสารประกอบ</a>"
+
+msgid "Framerate (Hz)"
+msgstr "อัตราเฟรม (Hz)"
+
+#, python-format
+msgid " (default: %s)"
+msgstr " (ค่าเริ่มต้น: %s)"
+
+msgid "Configure Xpra's Features"
+msgstr "กำหนดค่าคุณสมบัติของ Xpra"
+
+#, python-format
+msgid "this feature is missing: %s"
+msgstr "ขาดคุณสมบัตินี้: %s"
+
+msgid "Configure Xpra"
+msgstr "กำหนดค่า Xpra"
+
+#, python-format
+msgid "not available in this build:\n'%s'"
+msgstr "ไม่มีในบิลด์นี้:\n'%s'"
+
+msgid "Install or remove Xpra Packages"
+msgstr "ติดตั้งหรือลบแพ็กเกจ Xpra"
+
+msgid "Exit"
+msgstr "ออก"
+
+#, python-format
+msgid "Unable to locate the %r command."
+msgstr "ไม่พบคำสั่ง %r"
+
+msgid "Apply"
+msgstr "นำไปใช้"
+
+msgid "Configure Xpra Settings"
+msgstr "กำหนดค่า Xpra"
+
+msgid "Configure Xpra's Shadow Server"
+msgstr "กำหนดค่าเซิร์ฟเวอร์เงาของ Xpra"
+
+msgid "Cancel"
+msgstr "ยกเลิก"
+
+msgid "Confirm"
+msgstr "ยืนยัน"
+
+msgid "Configure Xpra's xvfb command"
+msgstr "กำหนดค่าคำสั่ง xvfb ของ Xpra"
+
+#, python-format
+msgid "%s not found"
+msgstr "ไม่พบ %s"

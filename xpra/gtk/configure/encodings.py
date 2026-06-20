@@ -7,7 +7,8 @@ from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.configure.common import run_gui
 from xpra.gtk.info import get_average_monitor_refresh_rate
 from xpra.util.config import update_config_attribute, with_config
-from xpra.gtk.widget import label
+from xpra.gtk.widget import label as gtk_label
+from xpra.util.i18n import _
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -17,6 +18,10 @@ GLib = gi_import("GLib")
 log = Logger("util")
 
 
+def label(text, *args, **kwargs):
+    return gtk_label(_(text), *args, **kwargs)
+
+
 def adj1_100(value: int) -> Gtk.Adjustment:
     return Gtk.Adjustment(value=value, lower=1, upper=100, step_increment=5, page_increment=0, page_size=0)
 
@@ -24,7 +29,7 @@ def adj1_100(value: int) -> Gtk.Adjustment:
 def make_scale(adjust, marks: dict) -> Gtk.Scale:
     scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=adjust)
     for value, text in marks.items():
-        scale.add_mark(value=value, position=Gtk.PositionType.TOP, markup=text)
+        scale.add_mark(value=value, position=Gtk.PositionType.TOP, markup=_(text))
     scale.set_digits(0)
     scale.set_draw_value(True)
     scale.set_has_origin(True)
@@ -50,7 +55,7 @@ class ConfigureGUI(BaseGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
         super().__init__(
-            "Configure Xpra's Picture Compression",
+            _("Configure Xpra's Picture Compression"),
             "encoding.png",
             wm_class=("xpra-configure-encodings-gui", "Xpra Configure Encodings GUI"),
             default_size=(640, 500),
@@ -66,13 +71,13 @@ class ConfigureGUI(BaseGUIWindow):
         self.add_widget(label("Configure Xpra's Picture Compression", font="sans 20"))
         url = "https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Encodings.md#tuning"
         self.add_text_lines((
-            f"Please read <a href='{url}'>the documentation</a>.",
+            _("Please read <a href='%s'>the documentation</a>.") % url,
         ))
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
         rate = get_average_monitor_refresh_rate()
-        text = "Framerate (Hz)"
+        text = _("Framerate (Hz)")
         if rate > 0:
-            text += f" (default: {rate})"
+            text += _(" (default: %s)") % rate
         self.add_widget(label(text, font="Sans 14"))
         self.add_widget(label("Lowering the framerate saves bandwidth and CPU time"))
         framerate_combo = Gtk.ComboBoxText()

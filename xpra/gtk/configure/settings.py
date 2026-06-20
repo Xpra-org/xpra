@@ -7,7 +7,8 @@ from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.configure.common import run_gui
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.config import update_config_attribute, with_config
-from xpra.gtk.widget import label
+from xpra.gtk.widget import label as gtk_label
+from xpra.util.i18n import _
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.log import Logger
 
@@ -15,6 +16,11 @@ Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 log = Logger("util")
+
+
+def label(text, tooltip="", **kwargs):
+    return gtk_label(_(text), tooltip=_(tooltip), **kwargs)
+
 
 SETTINGS = [
     ("Splash", "Show the splash screen on launch", "splash", ("yes", "no", "auto")),
@@ -49,7 +55,7 @@ class ConfigureGUI(BaseGUIWindow):
     def __init__(self, parent: Gtk.Window | None = None):
         self.settings_combos: dict[str, Gtk.ComboBoxText] = {}
         super().__init__(
-            "Configure Xpra Settings",
+            _("Configure Xpra Settings"),
             "gears.png",
             wm_class=("xpra-configure-settings-gui", "Xpra Configure Settings GUI"),
             default_size=(640, 500),
@@ -84,22 +90,24 @@ class ConfigureGUI(BaseGUIWindow):
             combo, options = cdata
             config_value = getattr(config, setting.replace("-", "_")) or "auto"
             log(f"{setting}={config_value!r}")
+            values = []
             for index, value in enumerate(options):
                 if not value and config_value:
                     value = config_value
-                combo.append_text(value)
+                values.append(value)
+                combo.append_text(_(value))
                 matches = config_value == value
                 if value in TRUE_OPTIONS:
                     matches |= str(config_value).lower() in TRUE_OPTIONS
                 if value in FALSE_OPTIONS:
                     matches |= str(config_value).lower() in FALSE_OPTIONS
                 combo.set_active(matches)
-            combo.connect("changed", self.setting_changed, setting)
+            combo.connect("changed", self.setting_changed, setting, values)
         return False
 
     @staticmethod
-    def setting_changed(widget, setting: str) -> None:
-        value = widget.get_active_text()
+    def setting_changed(widget, setting: str, values: list[str]) -> None:
+        value = values[widget.get_active()]
         log("setting_changed %s=%s", setting, value)
         update_config_attribute(setting, value)
 

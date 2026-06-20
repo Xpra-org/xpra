@@ -1080,3 +1080,223 @@ msgstr ""
 #: xpra/client/gtk3/launcher.py:876
 msgid "connecting"
 msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:102
+msgid "Start Xpra Session"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:148
+msgid "Start sessions on a remote system"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:159
+msgid "Username"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:165
+msgid "Hostname or IP address"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:172
+msgid "Port"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:182
+msgid "optional"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:184
+msgid "To use a specific X11 display number"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:226
+msgid "exit with application"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:230
+msgid "exit with client"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:422 xpra/gtk/dialogs/start_gui.py:435
+msgid "Command:"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:422 xpra/gtk/dialogs/start_gui.py:435
+msgid "Desktop Environment:"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:545
+msgid "Start sessions on the local system"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:546
+#, python-format
+msgid "Cannot start local desktop or seamless sessions on %s"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:556
+msgid "Start the xpra session and attach to it"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:560
+msgid "Cannot attach this desktop session to itself"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:902
+#, python-format
+msgid "About %s"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:1165
+#, python-format
+msgid "Webcam forwarding is not supported on %s"
+msgstr ""
+
+#: xpra/gtk/dialogs/start_gui.py:1189
+msgid "Xpra Start GUI"
+msgstr ""
+
+#: xpra/gtk/dialogs/update_status.py:36 xpra/gtk/dialogs/update_status.py:163
+msgid "Xpra Version Check"
+msgstr ""
+
+#: xpra/gtk/dialogs/update_status.py:48 xpra/gtk/dialogs/update_status.py:169
+msgid "Version Check"
+msgstr ""
+
+#: xpra/gtk/dialogs/update_status.py:67
+msgid "Download"
+msgstr ""
+
+#: xpra/gtk/dialogs/update_status.py:67
+msgid "Show download page"
+msgstr ""
+
+#: xpra/gtk/dialogs/update_status.py:68
+msgid "Close"
+msgstr ""
+
+#: xpra/gtk/dialogs/update_status.py:97
+#, python-format
+msgid "Version %s is up to date"
+msgstr ""
+
+#: xpra/gtk/dialogs/update_status.py:101
+#, python-format
+msgid "A newer version is available: %s"
+msgstr ""
+
+#: xpra/gtk/dialogs/update_status.py:103
+#, python-format
+msgid "Checking for new versions %s"
+msgstr ""
+
+#: xpra/gtk/dialogs/sessions_gui.py:115
+msgid "About"
+msgstr ""
+
+#: xpra/gtk/dialogs/sessions_gui.py:135
+msgid "Password:"
+msgstr ""
+
+#: xpra/gtk/dialogs/sessions_gui.py:284
+msgid "No sessions found"
+msgstr ""
+
+#: xpra/gtk/dialogs/sessions_gui.py:413
+#, python-format
+msgid "Already connected with pid=%i"
+msgstr ""
+
+#: xpra/gtk/dialogs/sessions_gui.py:416
+msgid "Open"
+msgstr ""
+
+#: xpra/gtk/dialogs/sessions_gui.py:483
+msgid "no 'ws' or 'wss' URIs found"
+msgstr ""
+
+#: xpra/gtk/dialogs/sessions_gui.py:485
+msgid "select a 'ws' or 'wss' URI"
+msgstr ""
+
+#: xpra/gtk/dialogs/sessions_gui.py:503
+msgid "Xpra Session Browser"
+msgstr ""
+
+#: xpra/gtk/configure/encodings.py:58
+msgid "Configure Xpra's Picture Compression"
+msgstr ""
+
+#: xpra/gtk/configure/encodings.py:74
+#, python-format
+msgid "Please read <a href='%s'>the documentation</a>."
+msgstr ""
+
+#: xpra/gtk/configure/encodings.py:78
+msgid "Framerate (Hz)"
+msgstr ""
+
+#: xpra/gtk/configure/encodings.py:80
+#, python-format
+msgid " (default: %s)"
+msgstr ""
+
+#: xpra/gtk/configure/features.py:54
+msgid "Configure Xpra's Features"
+msgstr ""
+
+#: xpra/gtk/configure/features.py:86
+#, python-format
+msgid "this feature is missing: %s"
+msgstr ""
+
+#: xpra/gtk/configure/home.py:33
+msgid "Configure Xpra"
+msgstr ""
+
+#, python-format
+msgid "not available in this build:\n'%s'"
+msgstr ""
+
+#: xpra/gtk/configure/packages.py:64
+msgid "Install or remove Xpra Packages"
+msgstr ""
+
+#: xpra/gtk/configure/packages.py:77 xpra/gtk/configure/packages.py:163
+msgid "Exit"
+msgstr ""
+
+#: xpra/gtk/configure/packages.py:110 xpra/gtk/configure/packages.py:116
+#, python-format
+msgid "Unable to locate the %r command."
+msgstr ""
+
+#: xpra/gtk/configure/packages.py:164
+msgid "Apply"
+msgstr ""
+
+#: xpra/gtk/configure/settings.py:57
+msgid "Configure Xpra Settings"
+msgstr ""
+
+#: xpra/gtk/configure/shadow.py:99
+msgid "Configure Xpra's Shadow Server"
+msgstr ""
+
+#: xpra/gtk/configure/shadow.py:151 xpra/gtk/configure/vfb.py:145
+msgid "Cancel"
+msgstr ""
+
+#: xpra/gtk/configure/shadow.py:154
+msgid "Confirm"
+msgstr ""
+
+#: xpra/gtk/configure/vfb.py:96
+msgid "Configure Xpra's xvfb command"
+msgstr ""
+
+#: xpra/gtk/configure/vfb.py:125
+#, python-format
+msgid "%s not found"
+msgstr ""

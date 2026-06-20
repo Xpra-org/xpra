@@ -12,13 +12,18 @@ from xpra.util.system import is_distribution_variant
 from xpra.util.thread import start_thread
 from xpra.util.io import get_status_output, which
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.widget import label
+from xpra.gtk.widget import label as gtk_label
+from xpra.util.i18n import _
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 log = Logger("util")
+
+
+def label(text, tooltip="", **kwargs):
+    return gtk_label(_(text), tooltip=_(tooltip), **kwargs)
 
 
 SUPPORTED_RPM_DISTROS = ("Fedora", "CentOS", "RedHat", "AlmaLinux", "RockyLinux", "OracleLinux")
@@ -56,7 +61,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.current_state: dict[str, bool] = {}
         self.apply_button = None
         super().__init__(
-            "Install or remove Xpra Packages",
+            _("Install or remove Xpra Packages"),
             "package.png",
             wm_class=("xpra-configure-packages-gui", "Xpra Configure Packages GUI"),
             default_size=(640, 500),
@@ -69,7 +74,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.add_widget(label("Install or remove xpra packages", font="sans 20"))
 
         def fail(messages: Iterable[str]) -> None:
-            self.populate_form(messages, ("Exit", self.dismiss))
+            self.populate_form(tuple(_(x) for x in messages), (_("Exit"), self.dismiss))
         if not self.terminal:
             fail((
                 "Unable to locate a terminal application to use.",
@@ -102,13 +107,13 @@ class ConfigureGUI(BaseGUIWindow):
         pkgcmd_path = which(pkgcmd)
         if not pkgcmd_path:
             fail((
-                f"Unable to locate the {pkgcmd!r} command.",
+                _("Unable to locate the %r command.") % pkgcmd,
                 ""))
             return
         querycmd_path = which(querycmd)
         if not querycmd_path:
             fail((
-                f"Unable to locate the {querycmd!r} command.",
+                _("Unable to locate the %r command.") % querycmd,
                 ""))
             return
         lines = (
@@ -144,7 +149,7 @@ class ConfigureGUI(BaseGUIWindow):
                 }.items()
         ):
             pkg = package.lower().replace(" ", "-")
-            lbl = label(package, tooltip=description)
+            lbl = label(_(package), tooltip=_(description))
             lbl.set_hexpand(True)
             # this causes the Switch to be displayed wrong!
             # lbl.set_halign(Gtk.Align.START)
@@ -155,8 +160,8 @@ class ConfigureGUI(BaseGUIWindow):
             self.package_switch[pkg] = switch
 
         self.apply_button = self.add_buttons(
-            ("Exit", self.dismiss),
-            ("Apply", self.apply),
+            (_("Exit"), self.dismiss),
+            (_("Apply"), self.apply),
         )[1]
         self.apply_button.set_sensitive(False)
 

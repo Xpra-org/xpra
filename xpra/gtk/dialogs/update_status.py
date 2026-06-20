@@ -17,6 +17,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.util import gtk_main
 from xpra.log import Logger, consume_verbose_argv
 from xpra.util.thread import check_main_thread
+from xpra.util.i18n import _
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -32,7 +33,7 @@ class UpdateStatusWindow:
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)
         self.window.set_default_size(400, 200)
-        self.window.set_title("Xpra Version Check")
+        self.window.set_title(_("Xpra Version Check"))
 
         icon = get_icon_pixbuf("update.png")
         if icon:
@@ -44,7 +45,7 @@ class UpdateStatusWindow:
 
         # Label:
         self.progress = 0
-        self.label = label("Version Check", font="sans 14")
+        self.label = label(_("Version Check"), font="sans 14")
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.label)
         vbox.add(al)
@@ -63,8 +64,8 @@ class UpdateStatusWindow:
             hbox.pack_start(btn)
             return btn
 
-        btn("Download", "Show download page", self.download, "download.png")
-        btn("Close", "", self.close, "quit.png")
+        btn(_("Download"), _("Show download page"), self.download, "download.png")
+        btn(_("Close"), "", self.close, "quit.png")
 
         def accel_close(*_args) -> None:
             self.close()
@@ -93,13 +94,13 @@ class UpdateStatusWindow:
     def update_label(self) -> bool:
         if self.newer_version is False:
             from xpra import __version__ as version_str
-            self.label.set_label("Version %s is up to date" % version_str)
+            self.label.set_label(_("Version %s is up to date") % version_str)
             return False
         if self.newer_version:
             version_str = ".".join(str(x) for x in self.newer_version)
-            self.label.set_label("A newer version is available: %s" % version_str)
+            self.label.set_label(_("A newer version is available: %s") % version_str)
             return False
-        self.label.set_label("Checking for new versions %s" % (["-", "\\", "|", "/"][self.progress % 4]))
+        self.label.set_label(_("Checking for new versions %s") % (["-", "\\", "|", "/"][self.progress % 4]))
         self.progress += 1
         return True
 
@@ -159,13 +160,13 @@ def get_update_status_window() -> UpdateStatusWindow:
 def main(argv) -> int:
     from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready
-    with program_context("Xpra-Version-Check", "Xpra Version Check"):
+    with program_context("Xpra-Version-Check", _("Xpra Version Check")):
         consume_verbose_argv(argv, "all")
 
         from xpra.util.glib import register_os_signals
         app = UpdateStatusWindow()
         app.close = app.quit
-        register_os_signals(app.quit, "Version Check")
+        register_os_signals(app.quit, _("Version Check"))
         try:
             gui_ready()
             app.show()

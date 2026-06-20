@@ -9,13 +9,18 @@ from xpra.os_util import gi_import
 from xpra.gtk.configure.common import run_gui
 from xpra.util.config import update_config_env, get_config_env
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.widget import label, setfont
+from xpra.gtk.widget import label as gtk_label, setfont
+from xpra.util.i18n import _
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 log = Logger("gstreamer", "util")
+
+
+def label(text, *args, **kwargs):
+    return gtk_label(_(text), *args, **kwargs)
 
 
 SHADOW_BACKENDS: dict[str, Sequence[str]] = {
@@ -91,7 +96,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.buttons: list[Gtk.CheckButton] = []
         size = (800, 554)
         super().__init__(
-            "Configure Xpra's Shadow Server",
+            _("Configure Xpra's Shadow Server"),
             "shadow.png",
             wm_class=("xpra-configure-shadow-gui", "Xpra Configure Shadow GUI"),
             default_size=size,
@@ -125,8 +130,8 @@ class ConfigureGUI(BaseGUIWindow):
                 tooltip = "unknown backend"
             else:
                 description = details[0]
-            btn = Gtk.CheckButton(label=description)
-            btn.set_tooltip_text(tooltip)
+            btn = Gtk.CheckButton(label=_(description))
+            btn.set_tooltip_text(_(tooltip))
             btn.set_sensitive(available)
             btn.set_active(available and backend == current_setting)
             btn.shadow_backend = backend
@@ -143,10 +148,10 @@ class ConfigureGUI(BaseGUIWindow):
         btn_box.set_vexpand(True)
         btn_box.set_valign(Gtk.Align.END)
         self.vbox.add(btn_box)
-        cancel_btn = Gtk.Button.new_with_label("Cancel")
+        cancel_btn = Gtk.Button.new_with_label(_("Cancel"))
         cancel_btn.connect("clicked", self.dismiss)
         btn_box.add(cancel_btn)
-        confirm_btn = Gtk.Button.new_with_label("Confirm")
+        confirm_btn = Gtk.Button.new_with_label(_("Confirm"))
         confirm_btn.connect("clicked", self.save_shadow)
         confirm_btn.set_sensitive(False)
         btn_box.add(confirm_btn)

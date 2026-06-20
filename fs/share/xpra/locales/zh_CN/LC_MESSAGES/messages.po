@@ -1078,3 +1078,172 @@ msgstr "会话已连接"
 #: xpra/client/gtk3/launcher.py:876
 msgid "connecting"
 msgstr "正在连接"
+
+msgid "Start Xpra Session"
+msgstr "启动 Xpra 会话"
+
+msgid "Start sessions on a remote system"
+msgstr "在远程系统上启动会话"
+
+msgid "Username"
+msgstr "用户名"
+
+msgid "Hostname or IP address"
+msgstr "主机名或 IP 地址"
+
+msgid "Port"
+msgstr "端口"
+
+msgid "optional"
+msgstr "可选"
+
+msgid "To use a specific X11 display number"
+msgstr "使用指定的 X11 显示号"
+
+msgid "exit with application"
+msgstr "随应用程序退出"
+
+msgid "exit with client"
+msgstr "随客户端退出"
+
+msgid "Command:"
+msgstr "命令："
+
+msgid "Desktop Environment:"
+msgstr "桌面环境："
+
+msgid "Start sessions on the local system"
+msgstr "在本地系统上启动会话"
+
+#, python-format
+msgid "Cannot start local desktop or seamless sessions on %s"
+msgstr "无法在 %s 上启动本地桌面或无缝会话"
+
+msgid "Start the xpra session and attach to it"
+msgstr "启动 Xpra 会话并连接"
+
+msgid "Cannot attach this desktop session to itself"
+msgstr "无法将此桌面会话连接到自身"
+
+#, python-format
+msgid "About %s"
+msgstr "关于 %s"
+
+#, python-format
+msgid "Webcam forwarding is not supported on %s"
+msgstr "%s 上不支持网络摄像头转发"
+
+msgid "Xpra Start GUI"
+msgstr "Xpra 启动界面"
+
+msgid "Xpra Version Check"
+msgstr "Xpra 版本检查"
+
+msgid "Version Check"
+msgstr "版本检查"
+
+msgid "Download"
+msgstr "下载"
+
+msgid "Show download page"
+msgstr "显示下载页面"
+
+msgid "Close"
+msgstr "关闭"
+
+#, python-format
+msgid "Version %s is up to date"
+msgstr "版本 %s 已是最新"
+
+#, python-format
+msgid "A newer version is available: %s"
+msgstr "有更新版本可用：%s"
+
+#, python-format
+msgid "Checking for new versions %s"
+msgstr "正在检查新版本 %s"
+
+msgid "About"
+msgstr "关于"
+
+msgid "Password:"
+msgstr "密码："
+
+msgid "No sessions found"
+msgstr "未找到会话"
+
+#, python-format
+msgid "Already connected with pid=%i"
+msgstr "已连接，PID=%i"
+
+msgid "Open"
+msgstr "打开"
+
+msgid "no 'ws' or 'wss' URIs found"
+msgstr "未找到“ws”或“wss”URI"
+
+msgid "select a 'ws' or 'wss' URI"
+msgstr "选择“ws”或“wss”URI"
+
+msgid "Xpra Session Browser"
+msgstr "Xpra 会话浏览器"
+
+msgid "Configure Xpra's Picture Compression"
+msgstr "配置 Xpra 图像压缩"
+
+#, python-format
+msgid "Please read <a href='%s'>the documentation</a>."
+msgstr "请阅读<a href='%s'>文档</a>。"
+
+msgid "Framerate (Hz)"
+msgstr "帧率 (Hz)"
+
+#, python-format
+msgid " (default: %s)"
+msgstr " (默认：%s)"
+
+msgid "Configure Xpra's Features"
+msgstr "配置 Xpra 功能"
+
+#, python-format
+msgid "this feature is missing: %s"
+msgstr "缺少此功能：%s"
+
+msgid "Configure Xpra"
+msgstr "配置 Xpra"
+
+#, python-format
+msgid "not available in this build:\n'%s'"
+msgstr "此构建中不可用：\n'%s'"
+
+msgid "Install or remove Xpra Packages"
+msgstr "安装或删除 Xpra 软件包"
+
+msgid "Exit"
+msgstr "退出"
+
+#, python-format
+msgid "Unable to locate the %r command."
+msgstr "无法找到 %r 命令。"
+
+msgid "Apply"
+msgstr "应用"
+
+msgid "Configure Xpra Settings"
+msgstr "配置 Xpra 设置"
+
+msgid "Configure Xpra's Shadow Server"
+msgstr "配置 Xpra 影子服务器"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Confirm"
+msgstr "确认"
+
+msgid "Configure Xpra's xvfb command"
+msgstr "配置 Xpra 的 xvfb 命令"
+
+#, python-format
+msgid "%s not found"
+msgstr "未找到 %s"

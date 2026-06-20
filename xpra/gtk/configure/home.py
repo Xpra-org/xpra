@@ -10,7 +10,8 @@ from xpra.gtk.configure.common import run_gui
 from xpra.os_util import LINUX, POSIX, OSX
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.css_overrides import add_screen_css
-from xpra.gtk.widget import label
+from xpra.gtk.widget import label as gtk_label
+from xpra.util.i18n import _
 
 
 CSS = b"""
@@ -20,12 +21,16 @@ button {
 """
 
 
+def label(text, *args, **kwargs):
+    return gtk_label(_(text), *args, **kwargs)
+
+
 class HomeGUI(BaseGUIWindow):
 
     def __init__(self):
         add_screen_css(CSS)
         super().__init__(
-            "Configure Xpra",
+            _("Configure Xpra"),
             "toolbox.png",
             wm_class=("xpra-configure-gui", "Xpra Configure GUI"),
             default_size=(480, 300),
@@ -61,8 +66,8 @@ class HomeGUI(BaseGUIWindow):
 
         sensitive = not req_module or bool(find_spec(req_module))
         if not sensitive:
-            tooltip = f"not available in this build:\n'{tooltip}'"
-        self.ib(title, icon_name, tooltip, callback=callback, sensitive=sensitive)
+            tooltip = _("not available in this build:\n'%s'") % _(tooltip)
+        self.ib(_(title), icon_name, _(tooltip), callback=callback, sensitive=sensitive)
 
 
 def main(_args) -> int:

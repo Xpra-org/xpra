@@ -1078,3 +1078,172 @@ msgstr "세션 연결됨"
 #: xpra/client/gtk3/launcher.py:876
 msgid "connecting"
 msgstr "연결 중"
+
+msgid "Start Xpra Session"
+msgstr "Xpra 세션 시작"
+
+msgid "Start sessions on a remote system"
+msgstr "원격 시스템에서 세션 시작"
+
+msgid "Username"
+msgstr "사용자 이름"
+
+msgid "Hostname or IP address"
+msgstr "호스트 이름 또는 IP 주소"
+
+msgid "Port"
+msgstr "포트"
+
+msgid "optional"
+msgstr "선택 사항"
+
+msgid "To use a specific X11 display number"
+msgstr "특정 X11 디스플레이 번호 사용"
+
+msgid "exit with application"
+msgstr "응용 프로그램과 함께 종료"
+
+msgid "exit with client"
+msgstr "클라이언트와 함께 종료"
+
+msgid "Command:"
+msgstr "명령:"
+
+msgid "Desktop Environment:"
+msgstr "데스크톱 환경:"
+
+msgid "Start sessions on the local system"
+msgstr "로컬 시스템에서 세션 시작"
+
+#, python-format
+msgid "Cannot start local desktop or seamless sessions on %s"
+msgstr "%s에서 로컬 데스크톱 또는 심리스 세션을 시작할 수 없음"
+
+msgid "Start the xpra session and attach to it"
+msgstr "Xpra 세션을 시작하고 연결"
+
+msgid "Cannot attach this desktop session to itself"
+msgstr "이 데스크톱 세션을 자기 자신에게 연결할 수 없음"
+
+#, python-format
+msgid "About %s"
+msgstr "%s 정보"
+
+#, python-format
+msgid "Webcam forwarding is not supported on %s"
+msgstr "%s에서 웹캠 전달이 지원되지 않음"
+
+msgid "Xpra Start GUI"
+msgstr "Xpra 시작 GUI"
+
+msgid "Xpra Version Check"
+msgstr "Xpra 버전 확인"
+
+msgid "Version Check"
+msgstr "버전 확인"
+
+msgid "Download"
+msgstr "다운로드"
+
+msgid "Show download page"
+msgstr "다운로드 페이지 표시"
+
+msgid "Close"
+msgstr "닫기"
+
+#, python-format
+msgid "Version %s is up to date"
+msgstr "버전 %s은(는) 최신 상태임"
+
+#, python-format
+msgid "A newer version is available: %s"
+msgstr "더 새로운 버전 사용 가능: %s"
+
+#, python-format
+msgid "Checking for new versions %s"
+msgstr "새 버전 확인 중 %s"
+
+msgid "About"
+msgstr "정보"
+
+msgid "Password:"
+msgstr "암호:"
+
+msgid "No sessions found"
+msgstr "세션을 찾을 수 없음"
+
+#, python-format
+msgid "Already connected with pid=%i"
+msgstr "PID=%i로 이미 연결됨"
+
+msgid "Open"
+msgstr "열기"
+
+msgid "no 'ws' or 'wss' URIs found"
+msgstr "'ws' 또는 'wss' URI를 찾을 수 없음"
+
+msgid "select a 'ws' or 'wss' URI"
+msgstr "'ws' 또는 'wss' URI 선택"
+
+msgid "Xpra Session Browser"
+msgstr "Xpra 세션 브라우저"
+
+msgid "Configure Xpra's Picture Compression"
+msgstr "Xpra 그림 압축 구성"
+
+#, python-format
+msgid "Please read <a href='%s'>the documentation</a>."
+msgstr "<a href='%s'>문서</a>를 읽어 보십시오."
+
+msgid "Framerate (Hz)"
+msgstr "프레임 속도(Hz)"
+
+#, python-format
+msgid " (default: %s)"
+msgstr " (기본값: %s)"
+
+msgid "Configure Xpra's Features"
+msgstr "Xpra 기능 구성"
+
+#, python-format
+msgid "this feature is missing: %s"
+msgstr "이 기능이 누락됨: %s"
+
+msgid "Configure Xpra"
+msgstr "Xpra 구성"
+
+#, python-format
+msgid "not available in this build:\n'%s'"
+msgstr "이 빌드에서 사용할 수 없음:\n'%s'"
+
+msgid "Install or remove Xpra Packages"
+msgstr "Xpra 패키지 설치 또는 제거"
+
+msgid "Exit"
+msgstr "종료"
+
+#, python-format
+msgid "Unable to locate the %r command."
+msgstr "%r 명령을 찾을 수 없음."
+
+msgid "Apply"
+msgstr "적용"
+
+msgid "Configure Xpra Settings"
+msgstr "Xpra 설정 구성"
+
+msgid "Configure Xpra's Shadow Server"
+msgstr "Xpra 쉐도우 서버 구성"
+
+msgid "Cancel"
+msgstr "취소"
+
+msgid "Confirm"
+msgstr "확인"
+
+msgid "Configure Xpra's xvfb command"
+msgstr "Xpra xvfb 명령 구성"
+
+#, python-format
+msgid "%s not found"
+msgstr "%s을(를) 찾을 수 없음"

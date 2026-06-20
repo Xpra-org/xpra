@@ -7,7 +7,8 @@ from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.util.parsing import str_to_bool
 from xpra.gtk.configure.common import run_gui
 from xpra.util.config import update_config_attribute, with_config
-from xpra.gtk.widget import label
+from xpra.gtk.widget import label as gtk_label
+from xpra.util.i18n import _
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -15,6 +16,11 @@ Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 log = Logger("util")
+
+
+def label(text, tooltip="", **kwargs):
+    return gtk_label(_(text), tooltip=_(tooltip), **kwargs)
+
 
 FEATURES = (
     ("Audio", "Audio forwarding: speaker and microphone", "xpra.audio"),
@@ -46,7 +52,7 @@ class ConfigureGUI(BaseGUIWindow):
     def __init__(self, parent: Gtk.Window | None = None):
         self.subsystem_switch: dict[str, Gtk.Switch] = {}
         super().__init__(
-            "Configure Xpra's Features",
+            _("Configure Xpra's Features"),
             "features.png",
             wm_class=("xpra-configure-features-gui", "Xpra Configure Features GUI"),
             default_size=(640, 500),
@@ -78,7 +84,7 @@ class ConfigureGUI(BaseGUIWindow):
                 tooltip = ""
             except ImportError as e:
                 found = False
-                tooltip = f"this feature is missing: {e}"
+                tooltip = _("this feature is missing: %s") % e
             grid.attach(plabel(subsystem, tooltip, found), 0, i, 1, 1)
             grid.attach(plabel(description, tooltip, found, font="sans 10"), 1, i, 1, 1)
             switch = Gtk.Switch()

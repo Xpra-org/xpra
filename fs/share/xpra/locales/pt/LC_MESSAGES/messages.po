@@ -1078,3 +1078,172 @@ msgstr "Sessão ligada"
 #: xpra/client/gtk3/launcher.py:876
 msgid "connecting"
 msgstr "a ligar"
+
+msgid "Start Xpra Session"
+msgstr "Iniciar sessão Xpra"
+
+msgid "Start sessions on a remote system"
+msgstr "Iniciar sessões num sistema remoto"
+
+msgid "Username"
+msgstr "Nome de utilizador"
+
+msgid "Hostname or IP address"
+msgstr "Nome do anfitrião ou endereço IP"
+
+msgid "Port"
+msgstr "Porta"
+
+msgid "optional"
+msgstr "opcional"
+
+msgid "To use a specific X11 display number"
+msgstr "Para usar um número de ecrã X11 específico"
+
+msgid "exit with application"
+msgstr "sair com a aplicação"
+
+msgid "exit with client"
+msgstr "sair com o cliente"
+
+msgid "Command:"
+msgstr "Comando:"
+
+msgid "Desktop Environment:"
+msgstr "Ambiente de trabalho:"
+
+msgid "Start sessions on the local system"
+msgstr "Iniciar sessões no sistema local"
+
+#, python-format
+msgid "Cannot start local desktop or seamless sessions on %s"
+msgstr "Não é possível iniciar sessões locais de ambiente de trabalho ou integradas em %s"
+
+msgid "Start the xpra session and attach to it"
+msgstr "Iniciar a sessão Xpra e ligar-se a ela"
+
+msgid "Cannot attach this desktop session to itself"
+msgstr "Não é possível ligar esta sessão de ambiente de trabalho a si própria"
+
+#, python-format
+msgid "About %s"
+msgstr "Sobre %s"
+
+#, python-format
+msgid "Webcam forwarding is not supported on %s"
+msgstr "O encaminhamento da câmara Web não é suportado em %s"
+
+msgid "Xpra Start GUI"
+msgstr "Interface de início do Xpra"
+
+msgid "Xpra Version Check"
+msgstr "Verificação da versão do Xpra"
+
+msgid "Version Check"
+msgstr "Verificação da versão"
+
+msgid "Download"
+msgstr "Transferir"
+
+msgid "Show download page"
+msgstr "Mostrar página de transferência"
+
+msgid "Close"
+msgstr "Fechar"
+
+#, python-format
+msgid "Version %s is up to date"
+msgstr "A versão %s está atualizada"
+
+#, python-format
+msgid "A newer version is available: %s"
+msgstr "Está disponível uma versão mais recente: %s"
+
+#, python-format
+msgid "Checking for new versions %s"
+msgstr "A procurar novas versões %s"
+
+msgid "About"
+msgstr "Sobre"
+
+msgid "Password:"
+msgstr "Palavra-passe:"
+
+msgid "No sessions found"
+msgstr "Nenhuma sessão encontrada"
+
+#, python-format
+msgid "Already connected with pid=%i"
+msgstr "Já ligado com PID=%i"
+
+msgid "Open"
+msgstr "Abrir"
+
+msgid "no 'ws' or 'wss' URIs found"
+msgstr "Nenhum URI 'ws' ou 'wss' encontrado"
+
+msgid "select a 'ws' or 'wss' URI"
+msgstr "Selecione um URI 'ws' ou 'wss'"
+
+msgid "Xpra Session Browser"
+msgstr "Navegador de sessões Xpra"
+
+msgid "Configure Xpra's Picture Compression"
+msgstr "Configurar a compressão de imagem do Xpra"
+
+#, python-format
+msgid "Please read <a href='%s'>the documentation</a>."
+msgstr "Consulte <a href='%s'>a documentação</a>."
+
+msgid "Framerate (Hz)"
+msgstr "Taxa de fotogramas (Hz)"
+
+#, python-format
+msgid " (default: %s)"
+msgstr " (predefinição: %s)"
+
+msgid "Configure Xpra's Features"
+msgstr "Configurar as funcionalidades do Xpra"
+
+#, python-format
+msgid "this feature is missing: %s"
+msgstr "Esta funcionalidade está em falta: %s"
+
+msgid "Configure Xpra"
+msgstr "Configurar Xpra"
+
+#, python-format
+msgid "not available in this build:\n'%s'"
+msgstr "Não disponível nesta compilação:\n'%s'"
+
+msgid "Install or remove Xpra Packages"
+msgstr "Instalar ou remover pacotes Xpra"
+
+msgid "Exit"
+msgstr "Sair"
+
+#, python-format
+msgid "Unable to locate the %r command."
+msgstr "Não foi possível encontrar o comando %r."
+
+msgid "Apply"
+msgstr "Aplicar"
+
+msgid "Configure Xpra Settings"
+msgstr "Configurar as definições do Xpra"
+
+msgid "Configure Xpra's Shadow Server"
+msgstr "Configurar o servidor de sombra do Xpra"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Confirm"
+msgstr "Confirmar"
+
+msgid "Configure Xpra's xvfb command"
+msgstr "Configurar o comando xvfb do Xpra"
+
+#, python-format
+msgid "%s not found"
+msgstr "%s não encontrado"
