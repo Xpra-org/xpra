@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.util.objects import typedict
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub import StubClientConnection
 
@@ -18,7 +19,7 @@ class FileConnection(FileTransferHandler, StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return bool("file" in caps or caps.boolget("file-transfer"))
+        return bool("file" in caps or BACKWARDS_COMPATIBLE and caps.boolget("file-transfer"))
 
     def parse_client_caps(self, c: typedict) -> None:
         FileTransferHandler.parse_file_transfer_caps(self, c)

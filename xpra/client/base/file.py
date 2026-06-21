@@ -46,11 +46,15 @@ class FileMixin(StubClientMixin, FileTransferHandler):
     def get_caps(self) -> dict[str, Any]:
         return {"file": self.get_file_transfer_features()}
 
+    def get_info(self) -> dict[str, Any]:
+        return {"file-transfers": FileTransferHandler.get_info(self)}
+
     def cleanup(self) -> None:
         # we must clean printing before FileTransferHandler, which turns the printing flag off!
         FileTransferHandler.cleanup(self)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.parse_file_transfer_caps(c)
-        self.remote_request_file = c.boolget("request-file", False)
+        fc = typedict(c.dictget("file"))
+        self.remote_request_file = fc.boolget("request-file", c.boolget("request-file", False))
         return True
