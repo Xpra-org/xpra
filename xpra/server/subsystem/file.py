@@ -84,7 +84,7 @@ class FileServer(StubServerMixin):
     def _process_file_data_request(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
-            log.warn("Warning: invalid client source for send-file-request packet")
+            log.warn("Warning: invalid client source for file-data-request packet")
             return
         ss._process_file_data_request(packet)
 
@@ -98,7 +98,7 @@ class FileServer(StubServerMixin):
     def _process_file_request(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
-            log.warn("Warning: invalid client source for send-data-response packet")
+            log.warn("Warning: invalid client source for file-request packet")
             return
         argf = packet.get_str(1)
         if argf == "${XPRA_SERVER_LOG}" and not os.environ.get("XPRA_SERVER_LOG"):
@@ -126,6 +126,11 @@ class FileServer(StubServerMixin):
                                   icon_name="file")
                 return
         data = load_binary_file(filename)
+        if not data:
+            may_notify_client(ss, NotificationID.FILETRANSFER,
+                              "File cannot be read", "The requested file cannot be read:\n%s" % filename,
+                              icon_name="file")
+            return
         ss.send_file(filename, "", data, len(data), openit=openit, options={"request-file": (argf, openit)})
 
     def init_packet_handlers(self) -> None:
@@ -134,8 +139,8 @@ class FileServer(StubServerMixin):
             self.add_legacy_alias("send-file", "file-send")
             self.add_legacy_alias("ack-file-chunk", "file-ack-chunk")
             self.add_legacy_alias("send-file-chunk", "file-send-chunk")
-            self.add_legacy_alias("send-data-request", "file-date-request")
-            self.add_legacy_alias("send-data-response", "file-date-response")
+            self.add_legacy_alias("send-data-request", "file-data-request")
+            self.add_legacy_alias("send-data-response", "file-data-response")
 
             self.add_packets("file-send", "file-ack-chunk", "file-send-chunk",
                              "file-data-request", "file-data-response")
@@ -169,13 +174,15 @@ class FileServer(StubServerMixin):
 
     def control_command_print(self, filename: str, printer="", client_uuids="*",
                               maxbitrate=0, title="", *options_strs) -> str:
-        # FIXME: printer and bitrate are ignored
+        # FIXME: bitrate is ignored
         # parse options into a dict:
         options = {}
         for arg in options_strs:
             argp = arg.split("=", 1)
             if len(argp) == 2 and len(argp[0]) > 0:
                 options[argp[0]] = argp[1]
+        options["printer"] = printer
+        options["title"] = title
         return self.do_control_file_command("print", client_uuids, filename, "printing", (True, True, options))
 
     def do_control_file_command(self, command_type: str, client_uuids, filename: str, source_flag_name, send_file_args) -> str:
