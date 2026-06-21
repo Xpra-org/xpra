@@ -4,7 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import math
 import unittest
+
+try:
+    import numpy
+except ImportError:
+    numpy = None
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import hexstr, memoryview_to_bytes, repr_ellipsized
@@ -27,6 +33,49 @@ def cmpe(info: str, p1, p2, tolerance=2):
     delta = cmpp(p1, p2)
     if delta > tolerance:
         raise ValueError(f"{info} delta={delta}")
+
+
+def plane_energy(p1, p2, Bpp: int = 1) -> tuple[int, int]:
+    # sum of squared signal and squared error (noise), comparing Bpp-byte samples:
+    n = min(len(p1), len(p2)) // Bpp
+    dtype = numpy.uint8 if Bpp == 1 else numpy.uint16
+    a1 = numpy.frombuffer(bytes(p1[:n * Bpp]), dtype=dtype).astype(numpy.int64)
+    a2 = numpy.frombuffer(bytes(p2[:n * Bpp]), dtype=dtype).astype(numpy.int64)
+    return int((a1 * a1).sum()), int(((a2 - a1) ** 2).sum())
+
+
+def snr_db(signal: int, noise: int) -> float:
+    # signal-to-noise ratio in decibels:
+    if noise <= 0:
+        return float("inf")
+    return 10 * math.log10(signal / noise)
+
+
+def to_bytes(pixels) -> bytes:
+    # coerce pixel data (bytes, memoryview or MemBuf) to bytes via the buffer protocol:
+    return memoryview(pixels).tobytes()
+
+
+def zero_channel(data, index: int, Bpp: int):
+    # zero a single channel (ie: the unused 'X' byte) so it is ignored:
+    if index < 0:
+        return data
+    d = bytearray(data)
+    for p in range(index, len(d), Bpp):
+        d[p] = 0
+    return d
+
+
+def make_textured_rgb(rgb_format: str, w: int, h: int):
+    # reuse make_test_image for the geometry, then replace the flat pixels
+    # with a deterministic XOR texture (multi-frequency: edges and gradients),
+    # so that the lossy RGB->YUV->RGB roundtrip introduces measurable noise:
+    image = make_test_image(rgb_format, w, h, ())
+    stride = image.get_rowstride()
+    xx = numpy.arange(stride, dtype=numpy.int64).reshape(1, stride)
+    yy = numpy.arange(h, dtype=numpy.int64).reshape(h, 1)
+    image.set_pixels(((xx ^ yy) & 0xFF).astype(numpy.uint8).tobytes())
+    return image
 
 
 def mod_check(mod_name: str, in_csc: str, out_csc: str):
@@ -82,13 +131,19 @@ class Test_CSC_Colorspace(unittest.TestCase):
                             color_name="",
                             in_csc="BGRX", out_csc="YUV420P",
                             pixel="00000000", expected=(),
-                            options=typedict()) -> None:
+                            options=typedict(), textured=False) -> float:
         csc_mod = mod_check(mod_out, in_csc, out_csc)
         csc_out = csc_mod.Converter()
         csc_out.init_context(width, height, in_csc,
                              width, height, out_csc, options)
-        in_image = make_test_image(in_csc, width, height, pixel)
-        in_pixels = h2b(pixel) * width * height
+        if textured:
+            # textured input: a flat colour would roundtrip near-losslessly,
+            # so we use a textured image and measure the signal-to-noise ratio:
+            in_image = make_textured_rgb(in_csc, width, height)
+            in_pixels = to_bytes(in_image.get_pixels())
+        else:
+            in_image = make_test_image(in_csc, width, height, pixel)
+            in_pixels = h2b(pixel) * width * height
         out_image = csc_out.convert_image(in_image)
         csc_out.clean()
         assert out_image.get_planes() >= len(expected)
@@ -113,10 +168,18 @@ class Test_CSC_Colorspace(unittest.TestCase):
                             width, height, in_csc, options)
         roundtrip_image = csc_in.convert_image(out_image)
         csc_in.clean()
-        roundtrip_pixels = memoryview(roundtrip_image.get_pixels())
-        pixel_bytes = memoryview_to_bytes(roundtrip_pixels)
-        cmpe(f"roundtrip {mod_out}-{mod_in} {info} mismatch, expected %s but got %s" % (pstr(in_pixels), pstr(pixel_bytes)),
-             in_pixels, pixel_bytes, tolerance=2 + 2*int(not options.boolget("full-range")))
+        roundtrip_pixels = to_bytes(roundtrip_image.get_pixels())
+        if not textured:
+            cmpe(f"roundtrip {mod_out}-{mod_in} {info} mismatch, expected %s but got %s" % (
+                pstr(in_pixels), pstr(roundtrip_pixels)),
+                in_pixels, roundtrip_pixels, tolerance=2 + 2*int(not options.boolget("full-range")))
+            return 0.0
+        # signal-to-noise ratio of the roundtrip, ignoring the unused 'X' channel:
+        xi = in_csc.find("X")
+        Bpp = len(in_csc)
+        signal, noise = plane_energy(zero_channel(in_pixels, xi, Bpp),
+                                     zero_channel(roundtrip_pixels, xi, Bpp))
+        return snr_db(signal, noise)
 
     def _test_RGB_to_YUV(self, mod_out, mod_in, in_csc="BGRX", out_csc="YUV420P", cs_range="full"):
         width = height = 32
@@ -151,6 +214,38 @@ class Test_CSC_Colorspace(unittest.TestCase):
         if len(found) >= 2:
             self.do_test_RGB_to_YUV(found[0], found[1], "BGRX")
             self.do_test_RGB_to_YUV(found[1], found[0], "BGRX")
+
+    def test_BGRX_to_YUV_snr(self):
+        # textured RGB -> YUV -> RGB roundtrip: the conversion is lossy,
+        # so instead of verifying exact values we report the signal-to-noise ratio:
+        if numpy is None:
+            self.skipTest("numpy is required to compute the signal-to-noise ratio")
+        modules = [mod for mod in loader.CSC_CODECS if loader.load_codec(mod)]
+        results = {}
+        for mod in modules:
+            for cs_range in ("studio", "full"):
+                options = typedict({"full-range": cs_range == "full"})
+                for yuv in ("420", "444"):
+                    out_csc = f"YUV{yuv}P"
+                    if mod == "csc_libyuv" and yuv == "444" and cs_range == "full":
+                        csc_mod = loader.load_codec(mod)
+                        if not csc_mod or not getattr(csc_mod, "has_argb_to_j444", lambda: False)():
+                            continue
+                    try:
+                        snr = self._do_test_RGB_to_YUV(mod, mod, 256, 256,
+                                                       in_csc="BGRX", out_csc=out_csc,
+                                                       options=options, textured=True)
+                    except ValueError:
+                        # this module does not support this colorspace combination:
+                        continue
+                    results[(mod, out_csc, cs_range)] = snr
+        self.assertTrue(results, "no CSC modules exercised")
+        print("\nBGRX -> YUV -> BGRX signal-to-noise ratio (textured):")
+        for key in sorted(results):
+            mod, out_csc, cs_range = key
+            snr = results[key]
+            value = "lossless" if snr == float("inf") else f"{snr:5.1f} dB"
+            print(f"  {f'{mod} BGRX->{out_csc} {cs_range}':40} : {value}")
 
 
 def main():
