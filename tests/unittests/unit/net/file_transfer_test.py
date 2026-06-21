@@ -45,6 +45,11 @@ class TestBasename(unittest.TestCase):
     def test_no_sep(self):
         assert basename("justfilename.txt") == "justfilename.txt"
 
+    def test_unicode(self):
+        filename = "r\u00e9sum\u00e9-\u65e5\u672c\u8a9e-\U0001f4c4.txt"
+        assert basename(f"/downloads/{filename}") == filename
+        assert basename(f"C:\\downloads\\{filename}") == filename
+
 
 class TestSafeOpenDownloadFile(unittest.TestCase):
 
@@ -91,6 +96,15 @@ class TestSafeOpenDownloadFile(unittest.TestCase):
             os.close(fd)
         finally:
             os.unlink(filename)
+
+    def test_unicode_filename(self):
+        basefilename = "r\u00e9sum\u00e9-\u65e5\u672c\u8a9e-\U0001f4c4.pdf"
+        with tempfile.TemporaryDirectory() as download_dir, \
+             patch("xpra.platform.paths.get_download_dir", return_value=download_dir):
+            filename, fd = safe_open_download_file(basefilename, "application/pdf")
+            os.close(fd)
+            self.assertEqual(os.path.basename(filename), basefilename)
+            self.assertTrue(os.path.exists(filename))
 
 
 class TestDigestMismatch(unittest.TestCase):
@@ -1219,6 +1233,15 @@ class TestFileTransferLoopback(unittest.TestCase):
         self.assertFalse(self.sender.send_chunks_in_progress)
         self.assertFalse(self.receiver.receive_chunks_in_progress)
         self.assertGreater(len([p for p in self.sender.sent if p[0] == "file-send-chunk"]), 1)
+
+    def test_unicode_filename_transfer(self):
+        self.sender.file_chunks = self.sender.remote_file_chunks = 7
+        filename = "r\u00e9sum\u00e9-\u65e5\u672c\u8a9e-\U0001f4c4.bin"
+        data = b"unicode filename payload"
+        self.assertTrue(self.sender.send_file(filename, "", data, len(data)))
+        downloaded_name, downloaded_data, _options = self.receiver.downloads[0]
+        self.assertEqual(downloaded_name, f"received-{filename}")
+        self.assertEqual(downloaded_data, data)
 
     def test_approval_then_transfer(self):
         self.sender.remote_file_transfer_ask = True

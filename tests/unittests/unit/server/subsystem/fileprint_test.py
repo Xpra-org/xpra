@@ -136,6 +136,27 @@ class FileServerBehaviorTest(unittest.TestCase):
             options={"request-file": (f.name, True)},
         )
 
+    def test_unicode_filename_request_and_control(self):
+        source = self.make_source()
+        self.owner.source = source
+        self.owner._server_sources = {source.uuid: source}
+        filename = "r\u00e9sum\u00e9-\u65e5\u672c\u8a9e-\U0001f4c4.txt"
+        data = b"unicode filename"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, filename)
+            with open(path, "wb") as f:
+                f.write(data)
+
+            self.server._process_file_request(None, Packet("file-request", path, False))
+            source.send_file.assert_called_once_with(
+                path, "", data, len(data), openit=False,
+                options={"request-file": (path, False)},
+            )
+
+            source.send_file.reset_mock()
+            self.server.control_command_send_file(path, "false", source.uuid)
+            source.send_file.assert_called_once_with(path, "", data, len(data), False, False)
+
     def test_request_file_missing_and_server_log_unset(self):
         source = self.make_source()
         self.owner.source = source
