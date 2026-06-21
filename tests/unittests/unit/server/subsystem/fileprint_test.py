@@ -124,6 +124,11 @@ class FileServerBehaviorTest(unittest.TestCase):
         self.assertEqual(self.owner.legacy_aliases["send-data-request"], "file-data-request")
         self.assertEqual(self.owner.legacy_aliases["send-data-response"], "file-data-response")
 
+    def test_request_file_feature_is_namespaced(self):
+        features = self.server.get_server_features(None)
+        self.assertTrue(features["file"]["enabled"])
+        self.assertTrue(features["file"]["request-file"])
+
     def test_request_file_success(self):
         source = self.make_source()
         self.owner.source = source

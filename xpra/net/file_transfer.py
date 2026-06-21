@@ -302,6 +302,18 @@ class FileTransferHandler(FileTransferAttributes):
 
     def parse_file_transfer_caps(self, c: typedict) -> None:
         fc = typedict(c.dictget("file"))
+        if not fc and BACKWARDS_COMPATIBLE:
+            fc = typedict({
+                "enabled": c.boolget("file-transfer"),
+                "ask": c.boolget("file-transfer-ask"),
+                "size-limit": c.intget("file-size-limit"),
+                "chunks": c.intget("file-chunks"),
+                "open": c.boolget("open-files"),
+                "open-ask": c.boolget("open-files-ask"),
+                "open-url": c.boolget("open-url"),
+                "open-url-ask": c.boolget("open-url-ask"),
+                "ask-timeout": c.intget("file-ask-timeout", SEND_REQUEST_TIMEOUT),
+            })
         filelog("parse_file_transfer_caps: %s", fc)
         # v5 with "file" namespace:
         self.remote_file_transfer = fc.boolget("enabled")
