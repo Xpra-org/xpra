@@ -9,13 +9,7 @@ import unittest
 from xpra.os_util import getuid, getgid
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.server.subsystem.stub import StubSubsystem
-
-
-class FakeServer:
-    """ minimal server stand-in so StubSubsystem delegators have a target """
-
-    def __init__(self):
-        self.subsystems: dict = {}
+from unit.server.subsystem.servermixintest_util import FakeServerBase
 
 
 class StubSubsystemTest(unittest.TestCase):
@@ -24,7 +18,7 @@ class StubSubsystemTest(unittest.TestCase):
         opts = AdHocStruct()
         opts.uid = getuid()
         opts.gid = getgid()
-        x = StubSubsystem(FakeServer())
+        x = StubSubsystem(FakeServerBase())
         x.init(opts)
         x.init_state()
         x.setup()

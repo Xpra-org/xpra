@@ -12,24 +12,22 @@ from unittest.mock import patch
 
 from xpra.server.subsystem.id import IDServer
 from xpra.server.subsystem.info import InfoServer
+from unit.server.subsystem.servermixintest_util import FakeServerBase
 
 
-class FakeServer:
+class FakeServer(FakeServerBase):
     session_type = "seamless"
     session_name = "test-session"
 
     def __init__(self):
+        super().__init__()
         self.hello_request_handlers = {}
-        self.subsystems = {}
         self.start_time = time()
         self._html = False
         self.websocket_upgrade = False
         self._www_dir = ""
         self._http_headers_dirs = []
         self._default_packet_handlers = {}
-
-    def get_subsystem(self, prefix: str):
-        return self.subsystems.get(prefix)
 
     def get_socket_info(self) -> dict:
         return {}

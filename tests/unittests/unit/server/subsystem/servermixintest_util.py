@@ -14,6 +14,20 @@ from xpra.util.signal_emitter import SignalEmitter
 from xpra.server.source.stub import StubClientConnection
 
 
+class FakeServerBase:
+    """Minimal server stand-in for subsystem unit tests.
+
+    Provides the `subsystems` registry that subsystems and source classes
+    look their peers up through, plus the common `get_subsystem` accessor.
+    """
+
+    def __init__(self):
+        self.subsystems: dict = {}
+
+    def get_subsystem(self, prefix: str):
+        return self.subsystems.get(prefix)
+
+
 class ServerMixinTest(unittest.TestCase, SignalEmitter):
 
     @classmethod

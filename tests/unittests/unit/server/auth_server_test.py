@@ -7,13 +7,14 @@
 import unittest
 from unittest.mock import MagicMock
 
+from unit.server.subsystem.servermixintest_util import FakeServerBase
+
 
 def make_server():
     """Return an AuthenticationManager instance wired up with minimal server stubs."""
     from xpra.server.auth import AuthenticationManager
 
-    class FakeServer:
-        subsystems: dict = {}
+    class FakeServer(FakeServerBase):
 
         def call_hello_oked(self, proto, c, auth_caps):
             pass

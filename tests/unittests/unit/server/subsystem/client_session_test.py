@@ -10,6 +10,7 @@ from unittest.mock import patch
 from xpra.net.common import Packet
 from xpra.server.subsystem.client_session import ClientSessionServer
 from xpra.util.objects import typedict
+from unit.server.subsystem.servermixintest_util import FakeServerBase
 
 
 class FakeSource:
@@ -47,10 +48,10 @@ class FakeConnection(FakeSource):
         pass
 
 
-class FakeServer:
+class FakeServer(FakeServerBase):
 
     def __init__(self):
-        self.subsystems = {}
+        super().__init__()
         self.dispatched = []
         self.cleaned = []
         self.emitted = []

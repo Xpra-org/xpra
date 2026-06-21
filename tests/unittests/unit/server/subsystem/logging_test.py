@@ -11,7 +11,7 @@ from xpra.net.common import Packet
 from xpra.util.objects import AdHocStruct
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.subsystem import logging
-from unit.server.subsystem.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest, FakeServerBase
 
 
 class nostr():
@@ -55,8 +55,7 @@ class InputMixinTest(ServerMixinTest):
             raise Exception("invalid type was allowed: %s" % (nostr, ))
 
     def test_invalid(self) -> None:
-        class FakeServer:
-            subsystems: dict = {}
+        class FakeServer(FakeServerBase):
 
             @staticmethod
             def get_server_source(_proto):
