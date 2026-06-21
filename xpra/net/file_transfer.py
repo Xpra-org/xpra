@@ -230,6 +230,15 @@ def get_open_env() -> dict[str, str]:
     return env
 
 
+def write_file_data(fd: int, data: SizedBuffer) -> None:
+    view = memoryview(data)
+    while view:
+        written = os.write(fd, view)
+        if written <= 0:
+            raise OSError("failed to write file data")
+        view = view[written:]
+
+
 class FileTransferHandler(FileTransferAttributes):
     """
         Utility class for receiving files and optionally printing them,
@@ -259,9 +268,18 @@ class FileTransferHandler(FileTransferAttributes):
         for t in self.pending_send_data_timers.values():
             GLib.source_remove(t)
         self.pending_send_data_timers = {}
+        for v in self.send_chunks_in_progress.values():
+            if v.timer:
+                GLib.source_remove(v.timer)
+        self.send_chunks_in_progress = {}
         for v in self.receive_chunks_in_progress.values():
             if v.timer:
                 GLib.source_remove(v.timer)
+            if os.path.exists(v.filename):
+                try:
+                    os.unlink(v.filename)
+                except OSError as e:
+                    filelog.error("Error: failed to delete incomplete download %r: %s", v.filename, e)
         self.receive_chunks_in_progress = {}
         for x in tuple(self.file_descriptors):
             try:
@@ -327,7 +345,7 @@ class FileTransferHandler(FileTransferAttributes):
         chunk_state.timer = 0  # this timer has been used
         if chunk_state.chunk == chunk_no:
             filelog.error(f"Error: chunked file transfer f{chunk_id} timed out")
-            self.receive_chunks_in_progress.pop(chunk_id, None)
+            self.cancel_file(chunk_id, "chunked file transfer timed out", chunk_no)
 
     def cancel_download(self, send_id: str, message="Cancelled") -> None:
         filelog("cancel_download(%s, %s)", send_id, message)
@@ -347,6 +365,7 @@ class FileTransferHandler(FileTransferAttributes):
                 chunk_state.timer = 0
                 GLib.source_remove(timer)
             osclose(chunk_state.fd)
+            self.file_descriptors.discard(chunk_state.fd)
 
             # remove this transfer after a little while,
             # so in-flight packets won't cause errors
@@ -386,13 +405,6 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error(f"Error: {message}")
             self.cancel_file(chunk_id, message, chunk)
             if chunk_state:
-                osclose(chunk_state.fd)
-                filename = chunk_state.filename
-                if filename and os.path.exists(filename):
-                    try:
-                        os.unlink(filename)
-                    except OSError:
-                        filelog.error(f"Error: failed to delete uploaded file {filename!r}")
                 progress(-1, message)
 
         if not chunk_state:
@@ -411,7 +423,7 @@ class FileTransferHandler(FileTransferAttributes):
         # update chunk number:
         chunk_state.chunk = chunk
         try:
-            os.write(fd, file_data)
+            write_file_data(fd, file_data)
             if chunk_state.digest:
                 chunk_state.digest.update(file_data)
             chunk_state.written += len(file_data)
@@ -440,8 +452,6 @@ class FileTransferHandler(FileTransferAttributes):
             return
 
         # we have received all the packets
-        self.receive_chunks_in_progress.pop(chunk_id, None)
-        osclose(fd)
         filename = chunk_state.filename
         options = chunk_state.options
         filelog(f"file {filename!r} complete")
@@ -458,6 +468,9 @@ class FileTransferHandler(FileTransferAttributes):
             error(f"expected a file of {chunk_state.filesize} bytes, got {chunk_state.written}")
             return
 
+        self.receive_chunks_in_progress.pop(chunk_id, None)
+        osclose(fd)
+        self.file_descriptors.discard(fd)
         progress(chunk_state.written)
         elapsed = monotonic() - chunk_state.start
         filelog("%i bytes received in %i chunks, took %ims", chunk_state.filesize, chunk, elapsed * 1000)
@@ -519,6 +532,11 @@ class FileTransferHandler(FileTransferAttributes):
             limstr = std_unit(self.file_size_limit)
             cancel(f"file {basefilename!r} is too large: {fstr}B, the file size limit is {limstr}B")
             return
+        if chunk_id and chunk_id in self.receive_chunks_in_progress:
+            message = f"file transfer id {chunk_id!r} is already in use"
+            log.error(f"Error: {message}")
+            self.send("ack-file-chunk", chunk_id, False, message, 0)
+            return
 
         args = (send_id, "file", basefilename, printit, openit)
         acceptit, printit, openit = self.accept_data(*args)
@@ -555,10 +573,11 @@ class FileTransferHandler(FileTransferAttributes):
                 except OSError:
                     log.error(f"Error: failed to close {fd=} used for file transfer")
                 else:
-                    try:
-                        self.file_descriptors.remove(fd)
-                    except KeyError:
-                        pass
+                    self.file_descriptors.discard(fd)
+            try:
+                os.unlink(filename)
+            except OSError as e:
+                log.error("Error: failed to delete incomplete download %r: %s", filename, e)
 
         digest: hashlib._Hash | None = None
         for hash_fn in ("sha512", "sha384", "sha256", "sha224", "sha1"):
@@ -596,12 +615,12 @@ class FileTransferHandler(FileTransferAttributes):
                 return
             log("%s digest matches: %s", digest.name, expected_digest)
         try:
-            os.write(fd, file_data)
+            write_file_data(fd, file_data)
         except OSError as e:
             error(f"failed to write file data: {e}")
             return
-        finally:
-            osclose(fd)
+        osclose(fd)
+        self.file_descriptors.discard(fd)
         self.transfer_progress_update(False, send_id, monotonic() - start, filesize, filesize, None)
         self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
@@ -929,12 +948,11 @@ class FileTransferHandler(FileTransferAttributes):
         except KeyError:
             filelog.warn(f"Warning: cannot find send-file entry for {send_id!r}")
             return
+        self.pending_send_data.pop(send_id, None)
         if accept == DENY:
             filelog.info("the request to send %s '%s' has been denied", spd.datatype, spd.url)
-            self.pending_send_data.pop(send_id, None)
             return
         if accept not in (ACCEPT, OPEN):
-            self.pending_send_data.pop(send_id, None)
             raise ValueError(f"unknown value for send-data response: {accept!r}")
         if spd.datatype == "file":
             if accept == ACCEPT:

@@ -1019,6 +1019,237 @@ class TestProcessFileAckChunk(unittest.TestCase):
         assert state.chunk == 1
 
 
+class _LoopbackHandler(_FullHandler):
+
+    def __init__(self, download_dir):
+        super().__init__()
+        self.download_dir = download_dir
+        self.peer = None
+        self.downloads = []
+        self.held_packet_types = set()
+        self.held_packets = []
+        self.approve_requests = True
+        self.corrupt_file_data = False
+
+    def send(self, packet_type, *args):
+        from xpra.net.compression import Compressed
+
+        self.sent.append((packet_type,) + args)
+        parts = [x.data if isinstance(x, Compressed) else x for x in args]
+        if self.corrupt_file_data and packet_type == "send-file" and parts[5]:
+            parts[5] = bytes(parts[5][:-1]) + bytes([parts[5][-1] ^ 0xFF])
+            self.corrupt_file_data = False
+        packet = Packet(packet_type, *parts)
+        if packet_type in self.held_packet_types:
+            self.held_packets.append(packet)
+        else:
+            self.peer.receive(packet)
+
+    def receive(self, packet):
+        handlers = {
+            "send-file": self._process_file_send,
+            "file-send-chunk": self._process_file_send_chunk,
+            "ack-file-chunk": self._process_file_ack_chunk,
+            "file-data-request": self._process_file_data_request,
+            "file-data-response": self._process_file_data_response,
+        }
+        handlers[packet.get_type()](packet)
+
+    def flush_held_packets(self):
+        packets, self.held_packets = self.held_packets, []
+        for packet in packets:
+            self.peer.receive(packet)
+
+    def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
+        if self.approve_requests:
+            self.files_accepted[send_id] = openit
+        cb_answer(self.approve_requests)
+
+    def process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options):
+        with open(filename, "rb") as f:
+            self.downloads.append((os.path.basename(filename), f.read(), options))
+
+
+class TestFileTransferLoopback(unittest.TestCase):
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.sender = _LoopbackHandler(self.tmpdir.name)
+        self.receiver = _LoopbackHandler(self.tmpdir.name)
+        self.sender.peer = self.receiver
+        self.receiver.peer = self.sender
+        self.glib_patcher = patch("xpra.net.file_transfer.GLib")
+        self.glib = self.glib_patcher.start()
+        self.glib.timeout_add.side_effect = range(1, 1000)
+
+        def open_download_file(basefilename, _mimetype):
+            path = os.path.join(self.tmpdir.name, f"received-{basename(basefilename)}")
+            return path, os.open(path, os.O_CREAT | os.O_RDWR | os.O_EXCL, 0o600)
+
+        self.safe_open_patcher = patch("xpra.net.file_transfer.safe_open_download_file",
+                                       side_effect=open_download_file)
+        self.safe_open_patcher.start()
+
+    def tearDown(self):
+        self.sender.cleanup()
+        self.receiver.cleanup()
+        self.safe_open_patcher.stop()
+        self.glib_patcher.stop()
+        self.tmpdir.cleanup()
+
+    def test_non_chunked_transfer(self):
+        self.sender.file_chunks = self.sender.remote_file_chunks = 0
+        data = b"complete non-chunked payload"
+        self.assertTrue(self.sender.send_file("payload.bin", "", data, len(data)))
+        self.assertEqual(self.receiver.downloads[0][1], data)
+        self.assertFalse(self.receiver.file_descriptors)
+
+    def test_chunked_transfer(self):
+        self.sender.file_chunks = self.sender.remote_file_chunks = 7
+        data = b"chunked payload spanning several packets"
+        self.assertTrue(self.sender.send_file("payload.bin", "", data, len(data)))
+        self.assertEqual(self.receiver.downloads[0][1], data)
+        self.assertFalse(self.sender.send_chunks_in_progress)
+        self.assertFalse(self.receiver.receive_chunks_in_progress)
+        self.assertGreater(len([p for p in self.sender.sent if p[0] == "file-send-chunk"]), 1)
+
+    def test_approval_then_transfer(self):
+        self.sender.remote_file_transfer_ask = True
+        self.receiver.file_transfer_ask = True
+        data = b"approved"
+        self.assertTrue(self.sender.send_file("approved.bin", "", data, len(data)))
+        self.assertEqual(self.receiver.downloads[0][1], data)
+        self.assertFalse(self.sender.pending_send_data)
+        self.assertFalse(self.sender.pending_send_data_timers)
+
+    def test_denied_transfer(self):
+        self.sender.remote_file_transfer_ask = True
+        self.receiver.file_transfer_ask = True
+        self.receiver.approve_requests = False
+        self.assertTrue(self.sender.send_file("denied.bin", "", b"denied", 6))
+        self.assertFalse(self.receiver.downloads)
+        self.assertFalse(self.sender.pending_send_data)
+        self.assertFalse(self.sender.pending_send_data_timers)
+
+    def test_receiver_cancellation(self):
+        self.sender.file_chunks = self.sender.remote_file_chunks = 4
+        self.sender.held_packet_types.add("file-send-chunk")
+        self.assertTrue(self.sender.send_file("cancel.bin", "", b"cancel this transfer", 20))
+        chunk_id, state = next(iter(self.receiver.receive_chunks_in_progress.items()))
+        path = state.filename
+        self.receiver.cancel_download(state.send_id, "test cancellation")
+        self.assertTrue(state.cancelled)
+        self.assertNotIn(chunk_id, self.sender.send_chunks_in_progress)
+        self.assertNotIn(state.fd, self.receiver.file_descriptors)
+        self.assertFalse(os.path.exists(path))
+        self.sender.flush_held_packets()
+        self.assertFalse(self.receiver.downloads)
+
+    def test_checksum_rejection(self):
+        self.sender.file_chunks = self.sender.remote_file_chunks = 0
+        self.sender.corrupt_file_data = True
+        self.assertTrue(self.sender.send_file("corrupt.bin", "", b"checksum", 8))
+        self.assertFalse(self.receiver.downloads)
+        self.assertFalse(self.receiver.file_descriptors)
+        self.assertFalse(os.path.exists(os.path.join(self.tmpdir.name, "received-corrupt.bin")))
+
+
+class TestFileTransferFaults(unittest.TestCase):
+
+    def test_partial_write_is_completed(self):
+        h = _FullHandler()
+        data = b"partial-write"
+        fd, path = tempfile.mkstemp()
+        os.close(fd)
+        fd = os.open(path, os.O_RDWR | os.O_TRUNC)
+        real_write = os.write
+        calls = 0
+
+        def partial_write(write_fd, write_data):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                size = max(1, len(write_data) // 2)
+                return real_write(write_fd, write_data[:size])
+            return real_write(write_fd, write_data)
+
+        packet = Packet("send-file", "partial.bin", "", False, False,
+                        len(data), data, {})
+        with patch("xpra.net.file_transfer.safe_open_download_file", return_value=(path, fd)), \
+             patch("xpra.net.file_transfer.os.write", side_effect=partial_write), \
+             patch.object(h, "process_downloaded_file") as processed:
+            h._process_file_send(packet)
+        with open(path, "rb") as f:
+            self.assertEqual(f.read(), data)
+        self.assertGreater(calls, 1)
+        processed.assert_called_once()
+        self.assertFalse(h.file_descriptors)
+        os.unlink(path)
+
+    def test_zero_length_write_cleans_up(self):
+        h = _FullHandler()
+        fd, path = tempfile.mkstemp()
+        packet = Packet("send-file", "zero.bin", "", False, False, 4, b"data", {})
+        with patch("xpra.net.file_transfer.safe_open_download_file", return_value=(path, fd)), \
+             patch("xpra.net.file_transfer.os.write", return_value=0), \
+             patch.object(h, "process_downloaded_file") as processed:
+            h._process_file_send(packet)
+        processed.assert_not_called()
+        self.assertFalse(os.path.exists(path))
+        self.assertFalse(h.file_descriptors)
+
+    def test_chunk_write_failure_cancels_and_cleans_up(self):
+        h = _FullHandler()
+        state, path = _make_receive_state(h, filesize=4)
+        h.file_descriptors.add(state.fd)
+        packet = Packet("file-send-chunk", "cid1", 1, b"data", False)
+        with patch("xpra.net.file_transfer.os.write", side_effect=OSError("disk full")), \
+             patch("xpra.net.file_transfer.GLib"):
+            h._process_file_send_chunk(packet)
+        self.assertTrue(state.cancelled)
+        self.assertFalse(os.path.exists(path))
+        self.assertNotIn(state.fd, h.file_descriptors)
+        self.assertTrue(any(p[0] == "ack-file-chunk" and p[2] is False for p in h.sent))
+
+    def test_receive_timeout_cleans_up(self):
+        h = _FullHandler()
+        state, path = _make_receive_state(h, filesize=4)
+        state.timer = 7
+        h.file_descriptors.add(state.fd)
+        with patch("xpra.net.file_transfer.GLib") as glib:
+            h._check_chunk_receiving("cid1", 0)
+        self.assertTrue(state.cancelled)
+        self.assertEqual(state.timer, 0)
+        self.assertFalse(os.path.exists(path))
+        self.assertNotIn(state.fd, h.file_descriptors)
+        glib.source_remove.assert_not_called()
+
+    def test_duplicate_chunk_id_preserves_existing_transfer(self):
+        h = _FullHandler()
+        state, path = _make_receive_state(h)
+        packet = Packet("send-file", "duplicate.bin", "", False, False, 100, b"",
+                        {"file-chunk-id": "cid1"})
+        with patch("xpra.net.file_transfer.safe_open_download_file") as safe_open:
+            h._process_file_send(packet)
+        safe_open.assert_not_called()
+        self.assertIs(h.receive_chunks_in_progress["cid1"], state)
+        self.assertTrue(any(p[0] == "ack-file-chunk" and p[2] is False for p in h.sent))
+        os.close(state.fd)
+        os.unlink(path)
+
+    def test_truncated_final_chunk_cleans_up(self):
+        h = _FullHandler()
+        state, path = _make_receive_state(h, filesize=10)
+        h.file_descriptors.add(state.fd)
+        packet = Packet("file-send-chunk", "cid1", 1, b"short", False)
+        with patch("xpra.net.file_transfer.GLib"):
+            h._process_file_send_chunk(packet)
+        self.assertTrue(state.cancelled)
+        self.assertFalse(os.path.exists(path))
+        self.assertNotIn(state.fd, h.file_descriptors)
+        self.assertFalse(any(x[2] >= 0 for x in h.progress))
+
+
 def main():
     unittest.main()
 
