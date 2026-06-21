@@ -36,7 +36,7 @@ from xpra.codecs.aom.api cimport (
     aom_codec_dec_cfg_t, aom_codec_dec_init_ver, aom_codec_decode ,aom_codec_destroy,
     aom_codec_get_frame, aom_codec_iter_t, aom_image_t, aom_img_plane_width,
     aom_codec_error_detail,
-    aom_img_plane_height, aom_img_fmt_t, AOM_BITS_8, AOM_CR_FULL_RANGE,
+    aom_img_plane_height, aom_img_fmt_t, AOM_BITS_8, AOM_BITS_10, AOM_CR_FULL_RANGE,
     AOM_DECODER_ABI_VERSION, AOM_CODEC_OK, AOM_CODEC_MEM_ERROR,
     AOM_CODEC_ABI_MISMATCH, AOM_CODEC_INCAPABLE, AOM_CODEC_UNSUP_BITSTREAM,
     AOM_CODEC_UNSUP_FEATURE, AOM_CODEC_CORRUPT_FRAME, AOM_CODEC_INVALID_PARAM
@@ -94,7 +94,9 @@ def get_encodings() -> Sequence[str]:
 
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
-COLORSPACES = ("YUV420P", "YUV422P", "YUV444P", "YUV420P16", "YUV422P16", "YUV444P16", "NV12")
+COLORSPACES = ("YUV420P", "YUV422P", "YUV444P",
+               "YUV420P10", "YUV422P10", "YUV444P10",
+               "YUV420P16", "YUV422P16", "YUV444P16", "NV12")
 
 
 def get_specs() -> Sequence[VideoSpec]:
@@ -234,14 +236,20 @@ cdef class Decoder:
             log.error("Error retrieving frame: %s", err)
             raise RuntimeError(err)
 
+        cdef int bit_depth = image.bit_depth
         pixel_format = get_format_str(image.fmt)
-        log("got aom av1 image at %#x, pixel format %s", <uintptr_t> image, pixel_format)
+        # a 16-bit container holding 10-bit samples is exposed as "P10":
+        if bit_depth == AOM_BITS_10 and pixel_format.endswith("P16"):
+            pixel_format = pixel_format[:-3] + "P10"
+        log("got aom av1 image at %#x, pixel format %s (bit depth %i)", <uintptr_t> image, pixel_format, bit_depth)
         if pixel_format not in COLORSPACES:
             raise RuntimeError(f"Unsupported image format %r" % pixel_format)
-        Bpp = 6 if pixel_format.endswith("P16") else 3
-        if image.bit_depth != AOM_BITS_8:
-            raise RuntimeError("image bit depth %i is not supported yet" % image.bit_depth)
-        depth = Bpp * image.bit_depth
+        if bit_depth not in (AOM_BITS_8, AOM_BITS_10):
+            raise RuntimeError("image bit depth %i is not supported yet" % bit_depth)
+        # bytes per sample: 2 for the 16-bit (P10/P16) containers, 1 otherwise:
+        cdef int bytes_per_sample = 2 if bit_depth > AOM_BITS_8 else 1
+        Bpp = 3 * bytes_per_sample
+        depth = Bpp * 8
 
         # expose these eventually:
         # aom_color_primaries color_primaries

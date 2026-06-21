@@ -71,13 +71,13 @@ SAMPLE_YUV420P_IMAGES = {
     "white": (0xFF, 0x80, 0x80),
     "blue": (0x29, 0xEF, 0x6E),
 }
-# 10-bit studio-swing samples: make_test_image fills both bytes of each
-# 16-bit sample identically, so each component below becomes 0xVVVV:
+# 10-bit samples (0..0x3FF), stored as 16-bit little-endian by make_test_image.
+# These are the 8-bit studio-swing values scaled up by 4 (<<2):
 SAMPLE_YUV420P10_IMAGES = {
     # colour name : (Y, U, V),
-    "black": (0x00, 0x80, 0x80),
-    "white": (0xFF, 0x80, 0x80),
-    "blue": (0x29, 0xEF, 0x6E),
+    "black": (0x000, 0x200, 0x200),
+    "white": (0x3FC, 0x200, 0x200),
+    "blue": (0x0A4, 0x3BC, 0x1B8),
 }
 SAMPLE_NV12_IMAGES = {
     # colour name : (Y, UV),

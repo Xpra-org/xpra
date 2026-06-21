@@ -28,7 +28,7 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_codec_ctx_t,
     vpx_codec_error, vpx_codec_destroy,
     vpx_codec_version_str, vpx_codec_build_config,
-    VPX_IMG_FMT_I420, VPX_IMG_FMT_I422, VPX_IMG_FMT_I444, VPX_IMG_FMT_HIGHBITDEPTH,
+    VPX_IMG_FMT_I420, VPX_IMG_FMT_I422, VPX_IMG_FMT_I444, VPX_IMG_FMT_I42016, VPX_IMG_FMT_HIGHBITDEPTH,
     VPX_CS_UNKNOWN, VPX_CS_BT_601, VPX_CS_BT_709,
     VPX_CS_SMPTE_170, VPX_CS_SMPTE_240, VPX_CS_BT_2020,
     VPX_CS_RESERVED, VPX_CS_SRGB,
@@ -98,7 +98,7 @@ cdef extern from "vpx/vpx_decoder.h":
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 COLORSPACES : Dict[str, Sequence[str]] = {
     "vp8"   : ("YUV420P", ),
-    "vp9"   : ("YUV420P", "YUV422P", "YUV444P"),
+    "vp9"   : ("YUV420P", "YUV422P", "YUV444P", "YUV420P10"),
 }
 CODECS = tuple(COLORSPACES.keys())
 
@@ -176,6 +176,8 @@ cdef inline vpx_img_fmt_t get_vpx_colorspace(colorspace) noexcept:
         return VPX_IMG_FMT_I422
     if colorspace == "YUV444P":
         return VPX_IMG_FMT_I444
+    if colorspace == "YUV420P10":
+        return VPX_IMG_FMT_I42016
     return VPX_IMG_FMT_I420
 
 
@@ -315,6 +317,8 @@ cdef class Decoder:
                 self.dst_format = "YUV422P"
             elif img.fmt == VPX_IMG_FMT_I420:
                 self.dst_format = "YUV420P"
+            elif img.fmt == VPX_IMG_FMT_I42016:
+                self.dst_format = "YUV420P10"
             else:
                 raise RuntimeError("unexpected image pixel format %s" % img.fmt)
             log.warn(f"Warning: expected {expected} but got {self.dst_format}")
@@ -352,7 +356,10 @@ cdef class Decoder:
             self.full_range = options.boolget("full-range")
         elif self.encoding == "vp9":
             self.full_range = bool(img.range == VPX_CR_FULL_RANGE)
-        return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3,
+        # 10-bit samples are stored in 16-bit containers (2 bytes per sample):
+        cdef int bytesperpixel = 2 if self.dst_format.endswith("P10") else 1
+        cdef int depth = 30 if bytesperpixel == 2 else 24
+        return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), depth, strides, bytesperpixel, ImageWrapper.PLANAR_3,
                             full_range=bool(self.full_range))
 
     def codec_error_str(self) -> str:

@@ -26,7 +26,7 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_codec_ctx_t,
     vpx_codec_error, vpx_codec_destroy,
     vpx_codec_version_str, vpx_codec_build_config,
-    VPX_IMG_FMT_I420, VPX_IMG_FMT_I422, VPX_IMG_FMT_I444, VPX_IMG_FMT_I44416,
+    VPX_IMG_FMT_I420, VPX_IMG_FMT_I422, VPX_IMG_FMT_I444, VPX_IMG_FMT_I42016, VPX_IMG_FMT_I44416,
     vpx_image_t,
     VPX_CS_BT_709, VPX_CR_FULL_RANGE, VPX_CR_STUDIO_RANGE,
     vpx_codec_err_to_string, vpx_codec_control_,
@@ -196,7 +196,7 @@ COLORSPACES: Dict[str, Sequence[str]] = {
     "vp8": ("YUV420P", ),
 }
 if VPX_ENCODER_ABI_VERSION>=23 and not OSX:
-    COLORSPACES["vp9"] = ("YUV420P", "YUV422P", "YUV444P", "YUV444P10")
+    COLORSPACES["vp9"] = ("YUV420P", "YUV422P", "YUV444P", "YUV420P10", "YUV444P10")
 CODECS = tuple(COLORSPACES.keys())
 
 #as of libvpx 1.8:
@@ -304,6 +304,8 @@ cdef inline vpx_img_fmt_t get_vpx_colorspace(colorspace: str) except -1:
         return VPX_IMG_FMT_I422
     if colorspace == "YUV444P":
         return VPX_IMG_FMT_I444
+    if colorspace == "YUV420P10":
+        return VPX_IMG_FMT_I42016
     if colorspace == "YUV444P10":
         return VPX_IMG_FMT_I44416
     raise ValueError(f"invalid colorspace {colorspace!r}")
@@ -387,7 +389,13 @@ cdef class Encoder:
         if self.src_format in ("YUV422P", "YUV444P"):
             self.cfg.g_profile = 1
             self.cfg.g_bit_depth = 8
+        elif self.src_format=="YUV420P10":
+            # vp9 profile 2: 10/12-bit 4:2:0
+            self.cfg.g_profile = 2
+            self.cfg.g_bit_depth = 10
+            flags |= VPX_CODEC_USE_HIGHBITDEPTH
         elif self.src_format=="YUV444P10":
+            # vp9 profile 3: 10/12-bit 4:2:2 / 4:4:4
             self.cfg.g_profile = 3
             self.cfg.g_bit_depth = 10
             flags |= VPX_CODEC_USE_HIGHBITDEPTH
@@ -685,10 +693,10 @@ cdef class Encoder:
         image.d_h = self.height
         #this is the chroma shift for YUV420P:
         #both X and Y are downscaled by 2^1
-        if self.src_format=="YUV420P":
+        if self.src_format.startswith("YUV420P"):
             image.x_chroma_shift = 1
             image.y_chroma_shift = 1
-        elif self.src_format=="YUV422P":
+        elif self.src_format.startswith("YUV422P"):
             image.x_chroma_shift = 1
             image.y_chroma_shift = 0
         elif self.src_format.startswith("YUV444P"):

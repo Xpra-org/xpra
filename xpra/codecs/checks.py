@@ -368,10 +368,15 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values: Sequence[in
         Bpp = roundup(depth, 8)//8
         nplanes = 2 if pixel_format == "NV12" else 3
         strides = tuple(w//divs[i][0]*Bpp for i in range(nplanes))
-        sizes = tuple(strides[i]*h//divs[i][1]*Bpp for i in range(nplanes))
+        sizes = tuple(strides[i]*h//divs[i][1] for i in range(nplanes))
         if plane_values:
-            planes = tuple(struct.pack(b"B", plane_value) * sizes[i]
-                           for i, plane_value in enumerate(plane_values[:nplanes]))
+            if Bpp == 2:
+                # 10/16-bit: pack each plane value as a 16-bit little-endian sample
+                planes = tuple(struct.pack(b"<H", plane_value) * (sizes[i]//2)
+                               for i, plane_value in enumerate(plane_values[:nplanes]))
+            else:
+                planes = tuple(struct.pack(b"B", plane_value) * sizes[i]
+                               for i, plane_value in enumerate(plane_values[:nplanes]))
         else:
             planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
         return makeimage(planes, rowstride=strides, planes=nplanes)
