@@ -367,8 +367,10 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values: Sequence[in
             depth = 8
         Bpp = roundup(depth, 8)//8
         nplanes = 2 if pixel_format == "NV12" else 3
-        strides = tuple(w//divs[i][0]*Bpp for i in range(nplanes))
-        sizes = tuple(strides[i]*h//divs[i][1] for i in range(nplanes))
+        # subsampled (chroma) planes round the dimensions up, so that odd sizes
+        # produce a `ceil(w/2)` wide plane (matching what the codecs expect):
+        strides = tuple(roundup(w, divs[i][0])//divs[i][0]*Bpp for i in range(nplanes))
+        sizes = tuple(strides[i]*(roundup(h, divs[i][1])//divs[i][1]) for i in range(nplanes))
         if plane_values:
             if Bpp == 2:
                 # 10/16-bit: pack each plane value as a 16-bit little-endian sample

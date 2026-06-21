@@ -118,7 +118,9 @@ SAMPLE_IMAGES = {
 TEST_SIZES = (
     (128, 128),
     (512, 512),
-    #(255, 257),
+    # odd dimensions: only tested for codecs that accept them as-is;
+    # codecs requiring even dimensions skip this size (see the masking below):
+    (255, 257),
 )
 
 
@@ -152,12 +154,14 @@ class Test_Roundtrip(unittest.TestCase):
                         #find decoders for the output colorspaces the encoder will generate:
                         for out_csc in enc_spec.output_colorspaces:
                             for decoder_spec in decs.get(out_csc, ()):
-                                #apply mask to sizes:
-                                sizes = []
-                                for width, height in TEST_SIZES:
-                                    width = (width & enc_spec.width_mask)
-                                    height = (height & enc_spec.height_mask)
-                                    sizes.append((width, height))
+                                #only test a size that the codec accepts as-is:
+                                #a codec may require even dimensions (mask 0xFFFE),
+                                #in which case the odd test size (255x257) is skipped
+                                #rather than silently masked to a different even size:
+                                width_mask = enc_spec.width_mask & decoder_spec.width_mask
+                                height_mask = enc_spec.height_mask & decoder_spec.height_mask
+                                sizes = [(width, height) for width, height in TEST_SIZES
+                                         if width == (width & width_mask) and height == (height & height_mask)]
                                 self._test(encoding,
                                            enc_spec.codec_class,
                                            decoder_spec.codec_class,
