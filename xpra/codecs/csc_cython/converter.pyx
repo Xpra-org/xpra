@@ -581,7 +581,8 @@ cdef class Converter:
             self.convert_image_function = self.YUV444P10_to_r210
         elif src_format=="YUV444P" and (dst_format=="BGRX" or dst_format=="RGBX"):
             assert_no_scaling()
-            allocate_rgb(3)
+            # BGRX / RGBX are 4 bytes per pixel (YUV444P_to_BGRX_copy writes 4):
+            allocate_rgb(4)
             self.convert_image_function = self.YUV444P_to_RGB
         elif src_format=="GBRP10" and dst_format=="r210":
             assert_no_scaling()
