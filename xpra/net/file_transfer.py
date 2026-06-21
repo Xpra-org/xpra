@@ -700,8 +700,8 @@ class FileTransferHandler(FileTransferAttributes):
             if DELETE_PRINTER_FILE:
                 try:
                     os.unlink(filename)
-                except OSError:
-                    printlog("failed to delete print job file '%s'", filename)
+                except OSError as e:
+                    printlog.error("Error: failed to delete print job file %r: %s", filename, e)
 
         if not printer:
             printlog.error("Error: the printer name is missing")
@@ -731,7 +731,13 @@ class FileTransferHandler(FileTransferAttributes):
         start = monotonic()
 
         def check_printing_finished() -> bool:
-            done = printing_finished(job)
+            try:
+                done = printing_finished(job)
+            except Exception as e:
+                printlog("printing_finished(%s)", job, exc_info=True)
+                printlog.error("Error: failed to query print job %s: %s", job, e)
+                delfile()
+                return False
             printlog("printing_finished(%s)=%s", job, done)
             if done:
                 delfile()
@@ -763,12 +769,24 @@ class FileTransferHandler(FileTransferAttributes):
 
     def exec_open_command(self, url: str) -> None:
         filelog("exec_open_command(%s)", url)
+        if not self.open_command:
+            filelog.error("Error: cannot open %r: no open command is configured", url)
+            return
         try:
             import shlex  # pylint: disable=import-outside-toplevel
-            command = shlex.split(self.open_command) + [url]
         except ImportError as e:
             filelog("exec_open_command(%s) no shlex: %s", url, e)
             command = self.open_command.split(" ")
+        else:
+            try:
+                command = shlex.split(self.open_command)
+            except (TypeError, ValueError) as e:
+                filelog.error("Error: cannot parse open command %r: %s", self.open_command, e)
+                return
+        if not command:
+            filelog.error("Error: cannot open %r: the open command is empty", url)
+            return
+        command.append(url)
         filelog("exec_open_command(%s) command=%s", url, command)
         try:
             # pylint: disable=consider-using-with

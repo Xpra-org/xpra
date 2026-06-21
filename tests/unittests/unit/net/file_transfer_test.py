@@ -1033,6 +1033,22 @@ class TestProcessDownloadedFile(unittest.TestCase):
             h.process_downloaded_file("/tmp/f.txt", "raw", False, True, 100, typedict())
             m.assert_called_once()
 
+    def test_do_process_print_takes_precedence(self):
+        h = _FullHandler()
+        with patch.object(h, "_print_file") as print_file, \
+             patch.object(h, "_open_file") as open_file:
+            h.do_process_downloaded_file("/tmp/f.txt", "raw", True, True, 100, typedict())
+        print_file.assert_called_once()
+        open_file.assert_not_called()
+
+    def test_do_process_open_honors_current_setting(self):
+        h = _FullHandler()
+        for enabled in (False, True):
+            with self.subTest(enabled=enabled), patch.object(h, "_open_file") as open_file:
+                h.open_files = enabled
+                h.do_process_downloaded_file("/tmp/f.txt", "raw", False, True, 100, typedict())
+                self.assertEqual(open_file.called, enabled)
+
 
 # ---------------------------------------------------------------------------
 # _print_file
@@ -1076,6 +1092,157 @@ class TestPrintFile(unittest.TestCase):
             h._print_file(path, "application/pdf",
                           typedict({"printer": "MyPrinter", "title": "My Doc"}))
             m_print.assert_called_once()
+
+    def test_print_submission_exception_deletes_file(self):
+        h = _FullHandler()
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with patch("xpra.platform.printing.get_printers", return_value={"Printer": {}}), \
+             patch("xpra.platform.printing.print_files", side_effect=RuntimeError("print failed")), \
+             patch("xpra.platform.printing.printing_finished"):
+            h._print_file(path, "application/pdf", typedict({"printer": "Printer"}))
+        self.assertFalse(os.path.exists(path))
+
+    def test_invalid_print_job_deletes_file(self):
+        h = _FullHandler()
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with patch("xpra.platform.printing.get_printers", return_value={"Printer": {}}), \
+             patch("xpra.platform.printing.print_files", return_value=0), \
+             patch("xpra.platform.printing.printing_finished"):
+            h._print_file(path, "application/pdf", typedict({"printer": "Printer"}))
+        self.assertFalse(os.path.exists(path))
+
+    def test_pending_print_completes_from_timer(self):
+        h = _FullHandler()
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with patch("xpra.net.file_transfer.GLib") as glib, \
+             patch("xpra.platform.printing.get_printers", return_value={"Printer": {}}), \
+             patch("xpra.platform.printing.print_files", return_value=1), \
+             patch("xpra.platform.printing.printing_finished", side_effect=(False, True)):
+            h._print_file(path, "application/pdf", typedict({"printer": "Printer"}))
+            self.assertTrue(os.path.exists(path))
+            callback = glib.timeout_add.call_args.args[1]
+            self.assertFalse(callback())
+        self.assertFalse(os.path.exists(path))
+
+    def test_pending_print_times_out(self):
+        from xpra.net.file_transfer import PRINT_JOB_TIMEOUT
+
+        h = _FullHandler()
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with patch("xpra.net.file_transfer.GLib") as glib, \
+             patch("xpra.net.file_transfer.monotonic", side_effect=(0, 0, PRINT_JOB_TIMEOUT + 1)), \
+             patch("xpra.platform.printing.get_printers", return_value={"Printer": {}}), \
+             patch("xpra.platform.printing.print_files", return_value=1), \
+             patch("xpra.platform.printing.printing_finished", return_value=False):
+            h._print_file(path, "application/pdf", typedict({"printer": "Printer"}))
+            callback = glib.timeout_add.call_args.args[1]
+            self.assertFalse(callback())
+        self.assertFalse(os.path.exists(path))
+
+    def test_print_status_exception_deletes_file(self):
+        h = _FullHandler()
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with patch("xpra.platform.printing.get_printers", return_value={"Printer": {}}), \
+             patch("xpra.platform.printing.print_files", return_value=1), \
+             patch("xpra.platform.printing.printing_finished", side_effect=RuntimeError("status failed")):
+            h._print_file(path, "application/pdf", typedict({"printer": "Printer"}))
+        self.assertFalse(os.path.exists(path))
+
+    def test_print_file_deletion_policy(self):
+        h = _FullHandler()
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with patch("xpra.net.file_transfer.DELETE_PRINTER_FILE", False), \
+             patch("xpra.platform.printing.get_printers", return_value={}), \
+             patch("xpra.platform.printing.print_files"):
+            h._print_file(path, "application/pdf", typedict())
+        self.assertTrue(os.path.exists(path))
+        os.unlink(path)
+
+    def test_print_file_deletion_failure_is_logged(self):
+        h = _FullHandler()
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with patch("xpra.platform.printing.get_printers", return_value={}), \
+             patch("xpra.platform.printing.print_files"), \
+             patch("xpra.net.file_transfer.os.unlink", side_effect=OSError("unlink failed")), \
+             patch("xpra.net.file_transfer.printlog") as printlog:
+            h._print_file(path, "application/pdf", typedict())
+        self.assertTrue(any("delete" in str(call).lower() for call in printlog.error.call_args_list))
+        os.unlink(path)
+
+
+class TestOpenCommand(unittest.TestCase):
+
+    def test_invalid_open_commands_are_rejected(self):
+        for open_command in (None, "", "'unterminated"):
+            with self.subTest(open_command=open_command):
+                h = _FullHandler()
+                h.open_command = open_command
+                with patch("xpra.net.file_transfer.subprocess.Popen") as popen:
+                    h.exec_open_command("/tmp/file.txt")
+                popen.assert_not_called()
+
+    def test_open_process_launch_failure(self):
+        h = _FullHandler()
+        h.open_command = "viewer --new-window"
+        with patch("xpra.net.file_transfer.subprocess.Popen", side_effect=OSError("launch failed")) as popen, \
+             patch("xpra.net.file_transfer.get_child_reaper") as child_reaper:
+            h.exec_open_command("/tmp/file.txt")
+        popen.assert_called_once()
+        child_reaper.assert_not_called()
+
+    def test_open_process_registration_and_failure_callback(self):
+        from xpra.net.file_transfer import WIN32
+
+        h = _FullHandler()
+        h.open_command = "viewer --new-window"
+        proc = MagicMock()
+        proc.poll.return_value = 1
+        reaper = MagicMock()
+        with patch("xpra.net.file_transfer.subprocess.Popen", return_value=proc) as popen, \
+             patch("xpra.net.file_transfer.get_child_reaper", return_value=reaper), \
+             patch("xpra.net.file_transfer.filelog") as filelog:
+            h.exec_open_command("/tmp/file.txt")
+            command = ["viewer", "--new-window", "/tmp/file.txt"]
+            popen.assert_called_once()
+            self.assertEqual(popen.call_args.args[0], command)
+            self.assertEqual(popen.call_args.kwargs["env"]["XPRA_XDG_OPEN"], "1")
+            self.assertEqual(popen.call_args.kwargs["shell"], WIN32)
+            registration = reaper.add_process.call_args.args
+            self.assertEqual(registration[:5], (proc, "Open file /tmp/file.txt", command, True, True))
+            callback = registration[5]
+            callback()
+        self.assertTrue(filelog.warn.called)
+
+    def test_open_process_success_callback(self):
+        h = _FullHandler()
+        proc = MagicMock()
+        proc.poll.return_value = 0
+        reaper = MagicMock()
+        with patch("xpra.net.file_transfer.subprocess.Popen", return_value=proc), \
+             patch("xpra.net.file_transfer.get_child_reaper", return_value=reaper), \
+             patch("xpra.net.file_transfer.filelog") as filelog:
+            h.exec_open_command("/tmp/file.txt")
+            reaper.add_process.call_args.args[-1]()
+        filelog.warn.assert_not_called()
+
+    def test_open_url_platform_paths(self):
+        h = _FullHandler()
+        with patch("xpra.net.file_transfer.POSIX", True), \
+             patch.object(h, "exec_open_command") as open_command:
+            h._open_url("https://example.com")
+        open_command.assert_called_once_with("https://example.com")
+
+        with patch("xpra.net.file_transfer.POSIX", False), \
+             patch("webbrowser.open_new_tab") as open_tab:
+            h._open_url("https://example.com")
+        open_tab.assert_called_once_with("https://example.com")
 
 
 # ---------------------------------------------------------------------------
