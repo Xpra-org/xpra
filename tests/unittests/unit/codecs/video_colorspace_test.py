@@ -5,9 +5,15 @@
 # later version. See the file COPYING for details.
 
 import sys
+import math
 import unittest
 import binascii
 from contextlib import nullcontext
+
+try:
+    import numpy
+except ImportError:
+    numpy = None
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import hexstr
@@ -46,6 +52,57 @@ def maxdelta(p1, p2) -> int:
         v2 = p2[i]
         d = max(d, abs(v2 - v1))
     return d
+
+
+def plane_energy(p1, p2, Bpp: int = 1) -> tuple[int, int]:
+    # sum of squared signal and squared error (noise),
+    # comparing samples of `Bpp` bytes each (16-bit samples are little-endian):
+    n = min(len(p1), len(p2)) // Bpp
+    dtype = numpy.uint8 if Bpp == 1 else numpy.uint16
+    a1 = numpy.frombuffer(bytes(p1[:n * Bpp]), dtype=dtype).astype(numpy.int64)
+    a2 = numpy.frombuffer(bytes(p2[:n * Bpp]), dtype=dtype).astype(numpy.int64)
+    signal = int((a1 * a1).sum())
+    noise = int(((a2 - a1) ** 2).sum())
+    return signal, noise
+
+
+def snr_db(signal: int, noise: int) -> float:
+    # signal-to-noise ratio in decibels:
+    if noise <= 0:
+        return float("inf")
+    return 10 * math.log10(signal / noise)
+
+
+def _texture_plane(stride: int, rows: int, Bpp: int, depth: int) -> bytes:
+    # a deterministic XOR texture (multi-frequency: edges and gradients),
+    # masked to the bit depth, so lossy compression has real detail to lose:
+    samples = stride // Bpp
+    mask = (1 << depth) - 1
+    xx = numpy.arange(samples, dtype=numpy.int64).reshape(1, samples)
+    yy = numpy.arange(rows, dtype=numpy.int64).reshape(rows, 1)
+    dtype = numpy.uint8 if Bpp == 1 else numpy.uint16
+    return ((xx ^ yy) & mask).astype(dtype).tobytes()
+
+
+def make_textured_image(pixel_format: str, w: int, h: int):
+    # reuse make_test_image for the correct plane geometry,
+    # then replace the (flat) plane buffers with a textured pattern:
+    image = make_test_image(pixel_format, w, h, ())
+    strides = image.get_rowstride()
+    if image.get_planes() == ImageWrapper.PACKED:
+        image.set_pixels(_texture_plane(strides, h, 1, 8))
+        return image
+    try:
+        depth = int(pixel_format.split("P")[1])     # ie: YUV420P10 -> 10
+    except (IndexError, ValueError):
+        depth = 8
+    Bpp = (depth + 7) // 8
+    pixels = list(image.get_pixels())
+    for i, plane in enumerate(pixels):
+        rows = len(plane) // strides[i]
+        pixels[i] = _texture_plane(strides[i], rows, Bpp, depth)
+    image.set_pixels(tuple(pixels))
+    return image
 
 
 def zeroout(data, i: int, bpp: int):
@@ -127,6 +184,26 @@ TEST_SIZES = (
 class Test_Roundtrip(unittest.TestCase):
 
     def test_all(self):
+        # high quality: verify the roundtrip is within MAX_DELTA
+        self._run_all(quality=100, verify=True)
+
+    def test_lossy_snr(self):
+        # at low quality the roundtrip is lossy and would exceed MAX_DELTA,
+        # so instead of verifying we present the signal-to-noise ratio:
+        if numpy is None:
+            self.skipTest("numpy is required to compute the signal-to-noise ratio")
+        for quality in (10, 50):
+            results = self._run_all(quality=quality, verify=False)
+            self.assertTrue(results, f"no codecs exercised at quality={quality}%")
+            print(f"\nsignal-to-noise ratio at quality={quality}%:")
+            for key in sorted(results):
+                encoding, codec_type, csc, size = key
+                signal, noise = results[key]
+                label = f"{encoding} {codec_type} {csc} {size}"
+                value = "lossless" if noise <= 0 else f"{snr_db(signal, noise):5.1f} dB"
+                print(f"  {label:54} : {value}")
+
+    def _run_all(self, quality: int = 100, verify: bool = True) -> dict:
         vh = getVideoHelper()
         vh.enable_all_modules()
         vh.init()
@@ -142,6 +219,7 @@ class Test_Roundtrip(unittest.TestCase):
             options["cuda-device-context"] = ctx
         except (ImportError, RuntimeError):
             pass
+        results: dict = {}
         with ctx:
             for encoding in common:
                 encs = vh.get_encoder_specs(encoding)
@@ -168,37 +246,58 @@ class Test_Roundtrip(unittest.TestCase):
                                            options,
                                            in_csc,
                                            out_csc,
-                                           sizes)
+                                           sizes,
+                                           quality=quality,
+                                           verify=verify,
+                                           codec_type=enc_spec.codec_type,
+                                           results=results)
+        return results
 
     def _test(self, encoding, encoder_class, decoder_class, options, in_csc="YUV420P", out_csc="YUV420P",
-              sizes=TEST_SIZES):
+              sizes=TEST_SIZES, quality=100, verify=True, codec_type="", results=None):
         sample_images = SAMPLE_IMAGES.get(in_csc)
         log(f"SAMPLE_IMAGES[{in_csc}]={sample_images}")
         if not sample_images:
             print(f"skipping {in_csc}: no test image available")
             return
+        # high quality verifies each flat colour sample;
+        # the lossy SNR path uses a single textured image instead:
+        colours = list(sample_images.items()) if verify else [("textured", None)]
         for width, height in sizes:
-            for colour, pixeldata in sample_images.items():
+            signal = noise = 0
+            for colour, pixeldata in colours:
                 try:
-                    self._test_data(encoding, encoder_class, decoder_class,
-                                    options, in_csc, out_csc, colour,
-                                    pixeldata, width, height)
+                    s, n = self._test_data(encoding, encoder_class, decoder_class,
+                                           options, in_csc, out_csc, colour,
+                                           pixeldata, width, height,
+                                           quality=quality, verify=verify)
                 except Exception:
                     print(f"error with {colour} {encoding} image via {encoder_class} and {decoder_class}")
                     raise
+                signal += s
+                noise += n
+            if results is not None:
+                #accumulate the signal-to-noise energy over all the test colours:
+                key = (encoding, codec_type, f"{in_csc}->{out_csc}", f"{width}x{height}")
+                rsignal, rnoise = results.get(key, (0, 0))
+                results[key] = (rsignal + signal, rnoise + noise)
 
     def _test_data(self, encoding, encoder_class, decoder_class,
                    options, in_csc="YUV420P", out_csc="YUV420P", colour="?",
-                   pixeldata=None, width=128, height=128):
+                   pixeldata=None, width=128, height=128, quality=100, verify=True):
         log("test%s" % ((encoding, encoder_class, decoder_class, options, in_csc, out_csc, colour,
-                         len(pixeldata), width, height),))
+                         len(pixeldata or ()), width, height),))
         encoder = encoder_class()
         options = typedict(options or {})
-        options["quality"] = 100
+        options["quality"] = quality
         options["speed"] = 0
         options["dst-formats"] = (out_csc,)
         encoder.init_context(encoding, width, height, in_csc, options)
-        in_image = make_test_image(in_csc, width, height, pixeldata)
+        if verify:
+            in_image = make_test_image(in_csc, width, height, pixeldata)
+        else:
+            # lossy mode: use a textured image so the loss is measurable:
+            in_image = make_textured_image(in_csc, width, height)
         saved_pixels = in_image.get_pixels()
         in_image.clone_pixel_data()
         in_pixels = in_image.get_pixels()
@@ -216,11 +315,13 @@ class Test_Roundtrip(unittest.TestCase):
         if decoder.get_type() == "nvdec":
             # uses GPU pycuda DeviceAllocation buffers,
             # which we can't compare directly
-            return
+            return 0, 0
         out_pixels = out_image.get_pixels()
 
         out_csc = out_image.get_pixel_format()
         md = 0
+        # signal-to-noise energy accumulated when not verifying (lossy mode):
+        signal = noise = 0
         if in_csc.startswith("YUV") or in_csc == "NV12":
             nplanes = out_image.get_planes()
             if in_csc != out_csc:
@@ -254,6 +355,12 @@ class Test_Roundtrip(unittest.TestCase):
                     p1 = out_stride * y
                     p2 = p1 + (width // xdiv) * Bpp
                     out_rowdata = out_pdata[p1:p2]
+                    if not verify:
+                        #lossy: accumulate signal/noise instead of comparing:
+                        s, n = plane_energy(in_rowdata, out_rowdata, Bpp)
+                        signal += s
+                        noise += n
+                        continue
                     err = cmpp(saved_rowdata, in_rowdata)
                     if err:
                         index, v1, v2 = err
@@ -280,17 +387,18 @@ class Test_Roundtrip(unittest.TestCase):
                         raise Exception(msg)
                     md = max(md, maxdelta(in_rowdata, out_rowdata))
         elif in_image.get_planes() == ImageWrapper.PACKED:
-            # verify the encoder hasn't modified anything:
-            err = cmpp(saved_pixels, in_pixels)
-            if err:
-                index, v1, v2 = err
-                log.warn("the encoder unexpectedly modified the input buffer!")
-                msg = " ".join((
-                    f"expected {hex(v1)} but got {hex(v2)}",
-                    f"for {width}x{height} of {in_csc}",
-                    f"with {encoding} encoded using {encoder_class}",
-                ))
-                raise Exception(msg)
+            if verify:
+                # verify the encoder hasn't modified anything:
+                err = cmpp(saved_pixels, in_pixels)
+                if err:
+                    index, v1, v2 = err
+                    log.warn("the encoder unexpectedly modified the input buffer!")
+                    msg = " ".join((
+                        f"expected {hex(v1)} but got {hex(v2)}",
+                        f"for {width}x{height} of {in_csc}",
+                        f"with {encoding} encoded using {encoder_class}",
+                    ))
+                    raise Exception(msg)
             if in_csc == out_csc:
                 compare = {"direct": out_image}
             else:
@@ -300,7 +408,7 @@ class Test_Roundtrip(unittest.TestCase):
                 csc_specs = vh.get_csc_specs(out_csc).get(in_csc)
                 if not csc_specs:
                     log.warn(f"Warning: unable to convert {out_csc} output back to {in_csc} to compare")
-                    return
+                    return signal, noise
                 compare = {}
                 for i, csc_spec in enumerate(csc_specs):
                     csc = csc_spec.codec_class()
@@ -326,6 +434,12 @@ class Test_Roundtrip(unittest.TestCase):
                 for y in range(height):
                     in_rowdata = zeroout(in_pixels[in_stride * y:in_stride * y + in_width], xi, Bppi)
                     out_rowdata = zeroout(out_pixels[out_stride * y:out_stride * y + out_width], xo, Bppo)
+                    if not verify:
+                        #lossy: accumulate signal/noise instead of comparing:
+                        s, n = plane_energy(in_rowdata, out_rowdata)
+                        signal += s
+                        noise += n
+                        continue
                     err = cmpp(in_rowdata, out_rowdata)
                     if err:
                         index, v1, v2 = err
@@ -342,6 +456,7 @@ class Test_Roundtrip(unittest.TestCase):
         else:
             raise ValueError(f"don't know how to compare {in_image}")
         log(f" max delta={md}")
+        return signal, noise
 
 
 def main():
