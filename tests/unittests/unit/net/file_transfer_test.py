@@ -381,6 +381,51 @@ class TestFileTransferHandler(unittest.TestCase):
         self.assertFalse(openit)
         fth.cleanup()
 
+    def test_accept_data_authorization_matrix(self):
+        cases = (
+            ("file enabled", {"file_transfer": True}, "file", False, False, (True, False, False)),
+            ("file disabled", {}, "file", False, False, (False, False, False)),
+            ("file ask", {"file_transfer": True, "file_transfer_ask": True},
+             "file", False, False, (False, False, False)),
+            ("print enabled", {"printing": True}, "file", True, True, (True, True, False)),
+            ("print disabled", {"file_transfer": True}, "file", True, False, (False, False, False)),
+            ("print ask", {"printing": True, "printing_ask": True},
+             "file", True, False, (False, False, False)),
+            ("open enabled", {"file_transfer": True, "open_files": True},
+             "file", False, True, (True, False, True)),
+            ("open disabled", {"file_transfer": True}, "file", False, True, (True, False, False)),
+            ("open ask", {"file_transfer": True, "open_files": True, "open_files_ask": True},
+             "file", False, True, (True, False, False)),
+            ("url enabled", {"open_url": True}, "url", False, True, (True, False, True)),
+            ("url disabled", {}, "url", False, True, (False, False, False)),
+            ("url ask", {"open_url": True, "open_url_ask": True},
+             "url", False, True, (False, False, False)),
+            ("unknown type", {"file_transfer": True}, "other", False, False, (False, False, False)),
+        )
+        for name, attributes, dtype, printit, openit, expected in cases:
+            with self.subTest(name):
+                fth = MinimalFTH()
+                for key, value in attributes.items():
+                    setattr(fth, key, value)
+                self.assertEqual(fth.accept_data("sid", dtype, "item", printit, openit), expected)
+                fth.cleanup()
+
+    def test_process_open_url_authorization_matrix(self):
+        cases = (
+            ("disabled", False, False, False),
+            ("enabled", True, False, True),
+            ("ask without approval", True, True, False),
+        )
+        for name, enabled, ask, expected_open in cases:
+            with self.subTest(name):
+                fth = MinimalFTH()
+                fth.open_url = enabled
+                fth.open_url_ask = ask
+                with patch.object(fth, "_open_url") as open_url:
+                    fth._process_open_url(Packet("open-url", "https://example.com", "sid"))
+                self.assertEqual(open_url.called, expected_open)
+                fth.cleanup()
+
     # ------------------------------------------------------------------
     # send_open_url
 
@@ -531,6 +576,45 @@ class TestFileTransferHandler(unittest.TestCase):
         opts = typedict({"request-file": ("f.txt", True)})
         fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
         self.assertTrue(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
+        fth.cleanup()
+
+    def test_data_request_authorization_matrix(self):
+        cases = (
+            ("file ask", {"file_transfer": True, "file_transfer_ask": True},
+             "file", False, False, "ask"),
+            ("file disabled", {}, "file", False, False, "deny"),
+            ("unneeded file request", {"file_transfer": True}, "file", False, False, "deny"),
+            ("print ask", {"printing": True, "printing_ask": True},
+             "file", True, True, "ask"),
+            ("print ask without transfers", {"printing": True, "printing_ask": True},
+             "file", True, False, "ask"),
+            ("print disabled", {"file_transfer": True}, "file", True, False, "deny"),
+            ("open ask", {"file_transfer": True, "open_files": True, "open_files_ask": True},
+             "file", False, True, "ask"),
+            ("open disabled", {"file_transfer": True}, "file", False, True, "deny"),
+            ("url ask", {"open_url": True, "open_url_ask": True},
+             "url", False, True, "ask"),
+            ("url disabled", {}, "url", False, True, "deny"),
+        )
+        for name, attributes, dtype, printit, openit, expected in cases:
+            with self.subTest(name):
+                fth = MinimalFTH()
+                for key, value in attributes.items():
+                    setattr(fth, key, value)
+                with patch.object(fth, "ask_data_request") as ask:
+                    fth.do_process_file_data_request(
+                        dtype, "sid", "/path/item", 100, printit, openit, typedict(),
+                    )
+                self.assertEqual(ask.called, expected == "ask")
+                denied = any(p[0] == "file-data-response" and p[2] is False for p in fth.sent)
+                self.assertEqual(denied, expected == "deny")
+                fth.cleanup()
+
+    def test_default_ask_data_request_denies(self):
+        fth = MinimalFTH()
+        answers = []
+        fth.ask_data_request(answers.append, "sid", "file", "item", 100, False, False)
+        self.assertEqual(answers, [False])
         fth.cleanup()
 
 # ---------------------------------------------------------------------------
@@ -749,6 +833,29 @@ class TestProcessFileSend(unittest.TestCase):
         pkt = self._pkt(filesize=100, data=b"x" * 100)
         with patch("xpra.net.file_transfer.GLib"):
             h._process_file_send(pkt)
+
+    def test_print_rejected_when_printing_disabled(self):
+        h = _FullHandler()
+        h.printing = False
+        h.file_transfer = False
+        pkt = self._pkt(printit=True)
+        with patch("xpra.net.file_transfer.safe_open_download_file") as safe_open:
+            h._process_file_send(pkt)
+        safe_open.assert_not_called()
+
+    def test_print_accepted_without_file_transfer(self):
+        h = _FullHandler()
+        h.printing = True
+        h.file_transfer = False
+        pkt = self._pkt(printit=True)
+        tmp_fd, tmp_path = tempfile.mkstemp()
+        with patch("xpra.net.file_transfer.safe_open_download_file",
+                   return_value=(tmp_path, tmp_fd)), \
+             patch.object(h, "process_downloaded_file") as processed:
+            h._process_file_send(pkt)
+        processed.assert_called_once()
+        self.assertTrue(processed.call_args.args[2])
+        os.unlink(tmp_path)
 
     def test_non_chunked_calls_process_downloaded(self):
         h = _FullHandler()

@@ -488,14 +488,21 @@ class FileTransferHandler(FileTransferAttributes):
                 self.file_transfer, self.file_transfer_ask)
         filelog("accept_data: open-files=%s, open-files-ask=%s",
                 self.open_files, self.open_files_ask)
+        if dtype == "url":
+            if not self.open_url or self.open_url_ask:
+                return False, False, False
+            return True, False, True
+        if dtype != "file":
+            return False, False, False
         req = self.files_accepted.pop(send_id, None)
         filelog("accept_data: files_accepted[%s]=%s", send_id, req)
         if req is not None:
             return True, False, req
         if printit:
             if not self.printing or self.printing_ask:
-                printit = False
-        elif not self.file_transfer or self.file_transfer_ask:
+                return False, False, False
+            return True, True, False
+        if not self.file_transfer or self.file_transfer_ask:
             return False, False, False
         if openit and (not self.open_files or self.open_files_ask):
             # we can't ask in this implementation,
@@ -542,7 +549,7 @@ class FileTransferHandler(FileTransferAttributes):
         acceptit, printit, openit = self.accept_data(*args)
         filelog("%s%s=%s", self.accept_data, args, (acceptit, printit, openit))
         if not acceptit:
-            ftype = "printing" if printit else "transfer"
+            ftype = "printing" if args[3] else "transfer"
             cancel(f"{ftype} rejected for file {basefilename!r}")
             return
 
@@ -901,16 +908,23 @@ class FileTransferHandler(FileTransferAttributes):
                 cb_answer(True)
                 return
         if dtype == "file":
-            if not self.file_transfer:
-                cb_answer(False)
-                return
             url = os.path.basename(url)
             if printit:
+                if not self.printing:
+                    cb_answer(False)
+                    return
                 ask = self.printing_ask
-            elif openit:
-                ask = self.file_transfer_ask or self.open_files_ask
             else:
-                ask = self.file_transfer_ask
+                if not self.file_transfer:
+                    cb_answer(False)
+                    return
+                if openit:
+                    if not self.open_files:
+                        cb_answer(False)
+                        return
+                    ask = self.file_transfer_ask or self.open_files_ask
+                else:
+                    ask = self.file_transfer_ask
         elif dtype == "url":
             if not self.open_url:
                 cb_answer(False)
@@ -934,8 +948,7 @@ class FileTransferHandler(FileTransferAttributes):
                          printit: bool, openit: bool) -> None:
         # subclasses may prompt the user here instead
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))
-        v = self.accept_data(send_id, dtype, url, printit, openit)
-        cb_answer(v[0])
+        cb_answer(False)
 
     def _process_file_data_response(self, packet: Packet) -> None:
         send_id = packet.get_str(1)
