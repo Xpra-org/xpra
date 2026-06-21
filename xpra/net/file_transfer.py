@@ -407,6 +407,9 @@ class FileTransferHandler(FileTransferAttributes):
         if chunk_state.chunk + 1 != chunk:
             error("chunk number mismatch")
             return
+        if not file_data:
+            error("empty file chunk")
+            return
 
         # update chunk number:
         chunk_state.chunk = chunk
@@ -421,6 +424,9 @@ class FileTransferHandler(FileTransferAttributes):
 
         if chunk_state.written > chunk_state.filesize:
             error("more data received than specified in the file size!")
+            return
+        if has_more and chunk_state.written == chunk_state.filesize:
+            error("more chunks requested after the declared file size was reached")
             return
 
         self.send("ack-file-chunk", chunk_id, True, "", chunk)
@@ -547,7 +553,7 @@ class FileTransferHandler(FileTransferAttributes):
 
         try:
             filename, fd = safe_open_download_file(basefilename, mimetype)
-        except OSError as e:
+        except (OSError, ValueError) as e:
             log("cannot save file %s / %s", basefilename, mimetype, exc_info=True)
             cancel(f"failed to save downloaded file: {e}")
             return
