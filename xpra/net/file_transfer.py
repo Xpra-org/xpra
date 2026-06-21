@@ -283,6 +283,9 @@ class FileTransferHandler(FileTransferAttributes):
         for v in self.receive_chunks_in_progress.values():
             if v.timer:
                 GLib.source_remove(v.timer)
+            if v.fd in self.file_descriptors:
+                osclose(v.fd)
+                self.file_descriptors.discard(v.fd)
             if os.path.exists(v.filename):
                 try:
                     os.unlink(v.filename)
@@ -350,10 +353,12 @@ class FileTransferHandler(FileTransferAttributes):
         if chunk_state.cancelled:
             # transfer has been cancelled
             return
+        if chunk_state.chunk != chunk_no:
+            # this timeout belongs to an older chunk
+            return
         chunk_state.timer = 0  # this timer has been used
-        if chunk_state.chunk == chunk_no:
-            filelog.error(f"Error: chunked file transfer f{chunk_id} timed out")
-            self.cancel_file(chunk_id, "chunked file transfer timed out", chunk_no)
+        filelog.error(f"Error: chunked file transfer f{chunk_id} timed out")
+        self.cancel_file(chunk_id, "chunked file transfer timed out", chunk_no)
 
     def cancel_download(self, send_id: str, message="Cancelled") -> None:
         filelog("cancel_download(%s, %s)", send_id, message)
@@ -1056,11 +1061,13 @@ class FileTransferHandler(FileTransferAttributes):
         if not chunk_state:
             # transfer already removed
             return
+        if chunk_state.chunk != chunk_no:
+            # this timeout belongs to an older chunk
+            return
         chunk_state.timer = 0  # timer has fired
-        if chunk_state.chunk == chunk_no:
-            filelog.error(f"Error: chunked file transfer {chunk_id} timed out")
-            filelog.error(f" on chunk {chunk_no}")
-            self.cancel_sending(chunk_id)
+        filelog.error(f"Error: chunked file transfer {chunk_id} timed out")
+        filelog.error(f" on chunk {chunk_no}")
+        self.cancel_sending(chunk_id)
 
     def cancel_sending(self, chunk_id: str) -> None:
         chunk_state = self.send_chunks_in_progress.pop(chunk_id, None)

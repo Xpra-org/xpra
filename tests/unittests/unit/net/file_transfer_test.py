@@ -1560,6 +1560,139 @@ class TestReceiveChunkStateMachine(unittest.TestCase):
                 self.assertFalse(handler.file_descriptors)
 
 
+class TestFileTransferTimersAndLimits(unittest.TestCase):
+
+    def test_stale_receive_timeout_preserves_current_timer(self):
+        handler = _FullHandler()
+        state, path = _make_receive_state(handler)
+        state.chunk = 2
+        state.timer = 99
+        with patch.object(handler, "cancel_file") as cancel:
+            handler._check_chunk_receiving("cid1", 1)
+        cancel.assert_not_called()
+        self.assertEqual(state.timer, 99)
+        os.close(state.fd)
+        os.unlink(path)
+
+    def test_stale_send_timeout_preserves_current_timer(self):
+        handler = _FullHandler()
+        state = _make_send_state(handler)
+        state.chunk = 2
+        state.timer = 99
+        with patch.object(handler, "cancel_sending") as cancel:
+            handler._check_chunk_sending("scid1", 1)
+        cancel.assert_not_called()
+        self.assertEqual(state.timer, 99)
+
+    def test_current_send_timeout_cancels(self):
+        handler = _FullHandler()
+        state = _make_send_state(handler)
+        state.chunk = 2
+        state.timer = 99
+        with patch.object(handler, "cancel_sending") as cancel:
+            handler._check_chunk_sending("scid1", 2)
+        cancel.assert_called_once_with("scid1")
+        self.assertEqual(state.timer, 0)
+
+    def test_receive_chunk_replaces_timer(self):
+        handler = _FullHandler()
+        state, path = _make_receive_state(handler, filesize=4)
+        state.timer = 7
+        with patch("xpra.net.file_transfer.GLib") as glib:
+            glib.timeout_add.return_value = 8
+            handler._process_file_send_chunk(
+                Packet("file-send-chunk", "cid1", 1, b"ab", True),
+            )
+        glib.source_remove.assert_called_once_with(7)
+        self.assertEqual(state.timer, 8)
+        os.close(state.fd)
+        os.unlink(path)
+
+    def test_send_chunk_replaces_timer(self):
+        handler = _FullHandler()
+        state = _make_send_state(handler, data=b"abcd")
+        state.chunk_size = 2
+        state.timer = 7
+        with patch("xpra.net.file_transfer.GLib") as glib:
+            glib.timeout_add.return_value = 8
+            handler._process_file_ack_chunk(Packet("ack-file-chunk", "scid1", True, "", 0))
+        glib.source_remove.assert_called_once_with(7)
+        self.assertEqual(state.timer, 8)
+        self.assertEqual(state.chunk, 1)
+
+    def test_cancellation_during_chunk_ack(self):
+        handler = _FullHandler()
+        state, path = _make_receive_state(handler, filesize=4)
+        handler.file_descriptors.add(state.fd)
+
+        def send(packet_type, *parts):
+            if packet_type == "ack-file-chunk" and parts[1] is True:
+                handler.cancel_file("cid1", "cancelled during acknowledgement", 1)
+
+        with patch.object(handler, "send", side_effect=send), \
+             patch("xpra.net.file_transfer.GLib") as glib:
+            handler._process_file_send_chunk(
+                Packet("file-send-chunk", "cid1", 1, b"ab", True),
+            )
+        self.assertTrue(state.cancelled)
+        self.assertFalse(os.path.exists(path))
+        self.assertNotIn(state.fd, handler.file_descriptors)
+        glib.timeout_add.assert_called_once()
+
+    def test_cleanup_closes_before_unlink_and_removes_all_timers(self):
+        handler = _FullHandler()
+        receive_state, path = _make_receive_state(handler)
+        receive_state.timer = 7
+        handler.file_descriptors.add(receive_state.fd)
+        send_state = _make_send_state(handler)
+        send_state.timer = 8
+        handler.pending_send_data_timers["pending"] = 9
+        real_unlink = os.unlink
+
+        def checked_unlink(filename):
+            with self.assertRaises(OSError):
+                os.fstat(receive_state.fd)
+            real_unlink(filename)
+
+        with patch("xpra.net.file_transfer.GLib") as glib, \
+             patch("xpra.net.file_transfer.os.unlink", side_effect=checked_unlink):
+            handler.cleanup()
+        self.assertCountEqual((x.args[0] for x in glib.source_remove.call_args_list), (7, 8, 9))
+        self.assertFalse(os.path.exists(path))
+        self.assertFalse(handler.file_descriptors)
+        self.assertFalse(handler.receive_chunks_in_progress)
+        self.assertFalse(handler.send_chunks_in_progress)
+
+    def test_receive_concurrency_limit_cleans_new_file(self):
+        from xpra.net.file_transfer import MAX_CONCURRENT_FILES
+
+        handler = _FullHandler()
+        handler.receive_chunks_in_progress.update(
+            {f"active-{i}": MagicMock() for i in range(MAX_CONCURRENT_FILES)}
+        )
+        fd, path = tempfile.mkstemp()
+        packet = Packet("send-file", "limited.bin", "", False, False, 4, b"",
+                        {"file-chunk-id": "new-transfer"})
+        with patch("xpra.net.file_transfer.safe_open_download_file", return_value=(path, fd)), \
+             patch("xpra.net.file_transfer.GLib"):
+            handler._process_file_send(packet)
+        self.assertFalse(os.path.exists(path))
+        self.assertNotIn(fd, handler.file_descriptors)
+        self.assertTrue(any(p[0] == "ack-file-chunk" and p[2] is False for p in handler.sent))
+
+    def test_send_concurrency_limit_rejects_new_transfer(self):
+        from xpra.net.file_transfer import MAX_CONCURRENT_FILES
+
+        handler = _FullHandler()
+        handler.file_chunks = handler.remote_file_chunks = 2
+        handler.send_chunks_in_progress.update(
+            {f"active-{i}": MagicMock() for i in range(MAX_CONCURRENT_FILES)}
+        )
+        with patch("xpra.net.file_transfer.GLib"), self.assertRaises(RuntimeError):
+            handler.do_send_file("limited.bin", "", b"data", 4)
+        self.assertFalse(handler.sent)
+
+
 def main():
     unittest.main()
 
