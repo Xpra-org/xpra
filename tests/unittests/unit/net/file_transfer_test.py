@@ -5,7 +5,9 @@
 # later version. See the file COPYING for details.
 
 import os
+import errno
 import itertools
+import stat
 import unittest
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -106,6 +108,91 @@ class TestSafeOpenDownloadFile(unittest.TestCase):
             os.close(fd)
             self.assertEqual(os.path.basename(filename), basefilename)
             self.assertTrue(os.path.exists(filename))
+
+    def test_special_names_stay_in_download_directory(self):
+        with tempfile.TemporaryDirectory() as download_dir, \
+             patch("xpra.platform.paths.get_download_dir", return_value=download_dir):
+            for basefilename in ("", ".", "..", "../..", "/"):
+                with self.subTest(basefilename=basefilename):
+                    filename, fd = safe_open_download_file(basefilename, "")
+                    os.close(fd)
+                    self.assertEqual(os.path.commonpath((download_dir, filename)), download_dir)
+                    self.assertTrue(os.path.basename(filename).startswith("download"))
+
+    def test_remote_paths_are_reduced_to_basename(self):
+        with tempfile.TemporaryDirectory() as download_dir, \
+             patch("xpra.platform.paths.get_download_dir", return_value=download_dir):
+            filename, fd = safe_open_download_file("../../outside.txt", "")
+            os.close(fd)
+            self.assertEqual(filename, os.path.join(download_dir, "outside.txt"))
+
+    def test_collisions_preserve_extension(self):
+        with tempfile.TemporaryDirectory() as download_dir, \
+             patch("xpra.platform.paths.get_download_dir", return_value=download_dir):
+            os.mkdir(os.path.join(download_dir, "report.pdf"))
+            filename, fd = safe_open_download_file("report.pdf", "application/pdf")
+            os.close(fd)
+            self.assertEqual(filename, os.path.join(download_dir, "report-1.pdf"))
+
+    def test_symlink_collisions_are_not_followed(self):
+        with tempfile.TemporaryDirectory() as root:
+            download_dir = os.path.join(root, "downloads")
+            os.mkdir(download_dir)
+            victim = os.path.join(root, "victim")
+            with open(victim, "wb") as f:
+                f.write(b"do not overwrite")
+            link = os.path.join(download_dir, "report.pdf")
+            try:
+                os.symlink(victim, link)
+            except OSError as e:
+                self.skipTest(f"symlinks are unavailable: {e}")
+            with patch("xpra.platform.paths.get_download_dir", return_value=download_dir):
+                filename, fd = safe_open_download_file("report.pdf", "application/pdf")
+                os.close(fd)
+            self.assertEqual(filename, os.path.join(download_dir, "report-1.pdf"))
+            with open(victim, "rb") as f:
+                self.assertEqual(f.read(), b"do not overwrite")
+
+    def test_broken_symlink_collision_is_not_replaced(self):
+        with tempfile.TemporaryDirectory() as download_dir:
+            link = os.path.join(download_dir, "broken.txt")
+            try:
+                os.symlink(os.path.join(download_dir, "missing-target"), link)
+            except OSError as e:
+                self.skipTest(f"symlinks are unavailable: {e}")
+            with patch("xpra.platform.paths.get_download_dir", return_value=download_dir):
+                filename, fd = safe_open_download_file("broken.txt", "")
+                os.close(fd)
+            self.assertTrue(os.path.islink(link))
+            self.assertEqual(filename, os.path.join(download_dir, "broken-1.txt"))
+
+    def test_creation_race_uses_next_available_name(self):
+        real_open = os.open
+        raced = False
+
+        def racing_open(filename, flags, mode=0o777):
+            nonlocal raced
+            if not raced:
+                raced = True
+                race_fd = real_open(filename, flags, mode)
+                os.close(race_fd)
+                raise FileExistsError(errno.EEXIST, "simulated creation race", filename)
+            return real_open(filename, flags, mode)
+
+        with tempfile.TemporaryDirectory() as download_dir, \
+             patch("xpra.platform.paths.get_download_dir", return_value=download_dir), \
+             patch("xpra.net.file_transfer.os.open", side_effect=racing_open):
+            filename, fd = safe_open_download_file("race.txt", "")
+            os.close(fd)
+            self.assertEqual(filename, os.path.join(download_dir, "race-1.txt"))
+
+    @unittest.skipUnless(os.name == "posix", "POSIX permissions required")
+    def test_created_file_permissions(self):
+        with tempfile.TemporaryDirectory() as download_dir, \
+             patch("xpra.platform.paths.get_download_dir", return_value=download_dir):
+            filename, fd = safe_open_download_file("private.txt", "")
+            os.close(fd)
+            self.assertEqual(stat.S_IMODE(os.stat(filename).st_mode), 0o644)
 
 
 class TestDigestMismatch(unittest.TestCase):

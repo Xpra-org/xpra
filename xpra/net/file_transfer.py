@@ -73,31 +73,39 @@ def basename(filename: str) -> str:
 
 def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str, int]:
     from xpra.platform.paths import get_download_dir  # pylint: disable=import-outside-toplevel
-    dd = os.path.expanduser(get_download_dir())
-    filename = os.path.abspath(os.path.join(dd, basename(basefilename)))
+    dd = os.path.abspath(os.path.expanduser(get_download_dir()))
+    safe_basename = basename(basefilename)
+    if safe_basename in ("", ".", ".."):
+        safe_basename = "download"
+    filename = os.path.abspath(os.path.join(dd, safe_basename))
+    if os.path.commonpath((dd, filename)) != dd:
+        raise ValueError(f"download path {filename!r} escapes download directory {dd!r}")
     ext = MIMETYPE_EXTS.get(mimetype)
     if ext and not filename.endswith("." + ext):
         # on some platforms (win32),
         # we want to force an extension
         # so that the file manager can display them properly when you double-click on them
         filename += "." + ext
-    # make sure we use a filename that does not exist already:
+    # Atomically select a filename that does not exist already.
     root, ext = os.path.splitext(filename)
-    base = 0
-    while os.path.exists(filename):
-        filelog(f"cannot save file as {filename!r}: file already exists")
-        base += 1
-        filename = f"{root}-{base}{ext}"
-    filelog("safe_open_download_file(%s, %s) will use %r", basefilename, mimetype, filename)
     flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
     try:
         flags |= os.O_BINARY  # @UndefinedVariable (win32 only)
     except AttributeError:
         pass
-    with umask_context(0o133):
-        fd = os.open(filename, flags)
-    filelog(f"using {filename=!r}, {fd=}")
-    return filename, fd
+    base = 0
+    while True:
+        try:
+            with umask_context(0o133):
+                fd = os.open(filename, flags)
+        except FileExistsError:
+            filelog(f"cannot save file as {filename!r}: file already exists")
+            base += 1
+            filename = f"{root}-{base}{ext}"
+        else:
+            filelog("safe_open_download_file(%s, %s) will use %r", basefilename, mimetype, filename)
+            filelog(f"using {filename=!r}, {fd=}")
+            return filename, fd
 
 
 @dataclass
