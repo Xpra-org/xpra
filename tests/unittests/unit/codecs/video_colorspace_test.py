@@ -71,6 +71,14 @@ SAMPLE_YUV420P_IMAGES = {
     "white": (0xFF, 0x80, 0x80),
     "blue": (0x29, 0xEF, 0x6E),
 }
+# 10-bit studio-swing samples: make_test_image fills both bytes of each
+# 16-bit sample identically, so each component below becomes 0xVVVV:
+SAMPLE_YUV420P10_IMAGES = {
+    # colour name : (Y, U, V),
+    "black": (0x00, 0x80, 0x80),
+    "white": (0xFF, 0x80, 0x80),
+    "blue": (0x29, 0xEF, 0x6E),
+}
 SAMPLE_NV12_IMAGES = {
     # colour name : (Y, UV),
     "black": (0x00, 0x80),
@@ -96,6 +104,7 @@ SAMPLE_XRGB_IMAGES = {
 }
 SAMPLE_IMAGES = {
     "YUV420P": SAMPLE_YUV420P_IMAGES,
+    "YUV420P10": SAMPLE_YUV420P10_IMAGES,
     "YUV422P": SAMPLE_YUV420P_IMAGES,
     "YUV444P": SAMPLE_YUV420P_IMAGES,
     "NV12": SAMPLE_NV12_IMAGES,
@@ -217,7 +226,12 @@ class Test_Roundtrip(unittest.TestCase):
                 else:
                     raise ValueError(f"YUV output colorspace {out_csc} differs from input colorspace {in_csc}")
             divs = get_subsampling_divs(in_csc)
-            log(f"comparing {in_csc} and {out_csc}: {nplanes=}, {divs=} {out_image=} from {decoder=}")
+            try:
+                depth = int(in_csc.split("P")[1])       # ie: YUV420P10 -> 10
+            except (IndexError, ValueError):
+                depth = 8
+            Bpp = (depth + 7) // 8                       # 8-bit -> 1, 10-bit -> 2
+            log(f"comparing {in_csc} and {out_csc}: {nplanes=}, {divs=}, {Bpp=} {out_image=} from {decoder=}")
             for i in range(nplanes):
                 plane = get_plane_name(out_csc, i)
                 # extract plane to compare:
@@ -230,11 +244,11 @@ class Test_Roundtrip(unittest.TestCase):
                 # compare lines at a time since the rowstride may be different:
                 for y in range(height // ydiv):
                     p1 = in_stride * y
-                    p2 = p1 + width // xdiv
+                    p2 = p1 + (width // xdiv) * Bpp
                     saved_rowdata = saved_pdata[p1:p2]
                     in_rowdata = in_pdata[p1:p2]
                     p1 = out_stride * y
-                    p2 = p1 + width // xdiv
+                    p2 = p1 + (width // xdiv) * Bpp
                     out_rowdata = out_pdata[p1:p2]
                     err = cmpp(saved_rowdata, in_rowdata)
                     if err:
