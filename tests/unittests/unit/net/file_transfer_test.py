@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import itertools
 import unittest
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -1378,6 +1379,98 @@ class TestFileTransferFaults(unittest.TestCase):
         self.assertFalse(os.path.exists(path))
         self.assertNotIn(state.fd, h.file_descriptors)
         self.assertFalse(any(x[2] >= 0 for x in h.progress))
+
+
+class TestMalformedFileTransferPackets(unittest.TestCase):
+
+    def test_truncated_and_invalid_packet_fields(self):
+        cases = (
+            ("truncated file", "_process_file_send", Packet("send-file"), IndexError),
+            ("truncated chunk", "_process_file_send_chunk", Packet("file-send-chunk", "cid"), IndexError),
+            ("negative chunk", "_process_file_send_chunk",
+             Packet("file-send-chunk", "cid", -1, b"data", False), ValueError),
+            ("oversized ack chunk", "_process_file_ack_chunk",
+             Packet("ack-file-chunk", "cid", True, "", 2**32), ValueError),
+            ("invalid response", "_process_file_data_response",
+             Packet("file-data-response", "sid", 128), ValueError),
+            ("truncated request", "_process_file_data_request",
+             Packet("file-data-request", "file"), IndexError),
+            ("truncated URL", "_process_open_url", Packet("open-url"), IndexError),
+            ("invalid options", "_process_file_send",
+             Packet("send-file", "file", "", False, False, 4, b"data", b"options"), TypeError),
+            ("invalid UTF-8 filename", "_process_file_send",
+             Packet("send-file", b"\xff", "", False, False, 4, b"data", {}), UnicodeDecodeError),
+        )
+        for name, handler_name, packet, error_type in cases:
+            with self.subTest(name):
+                handler = _FullHandler()
+                with self.assertRaises(error_type):
+                    getattr(handler, handler_name)(packet)
+                self.assertFalse(handler.file_descriptors)
+                self.assertFalse(handler.receive_chunks_in_progress)
+                self.assertFalse(handler.send_chunks_in_progress)
+
+    def test_embedded_nul_filename_is_rejected_and_cleaned_up(self):
+        handler = _FullHandler()
+        packet = Packet("send-file", "invalid\0name", "", False, False, 4, b"data", {})
+        with tempfile.TemporaryDirectory() as download_dir, \
+             patch("xpra.platform.paths.get_download_dir", return_value=download_dir), \
+             patch.object(handler, "process_downloaded_file") as processed:
+            handler._process_file_send(packet)
+            self.assertFalse(os.listdir(download_dir))
+        processed.assert_not_called()
+        self.assertFalse(handler.file_descriptors)
+
+
+class TestReceiveChunkStateMachine(unittest.TestCase):
+
+    def run_sequence(self, sequence, filesize):
+        handler = _FullHandler()
+        state, path = _make_receive_state(handler, filesize=filesize)
+        handler.file_descriptors.add(state.fd)
+        with patch("xpra.net.file_transfer.GLib") as glib, \
+             patch.object(handler, "process_downloaded_file") as processed:
+            glib.timeout_add.side_effect = range(1, 100)
+            for chunk, data, has_more in sequence:
+                handler._process_file_send_chunk(
+                    Packet("file-send-chunk", "cid1", chunk, data, has_more),
+                )
+        return handler, state, path, processed
+
+    def test_chunk_order_permutations(self):
+        for order in itertools.permutations((1, 2, 3)):
+            with self.subTest(order=order):
+                sequence = tuple(
+                    (chunk, bytes([chunk]), index < 2)
+                    for index, chunk in enumerate(order)
+                )
+                handler, state, path, processed = self.run_sequence(sequence, 3)
+                if order == (1, 2, 3):
+                    processed.assert_called_once()
+                    self.assertFalse(state.cancelled)
+                    self.assertFalse(handler.receive_chunks_in_progress)
+                    os.unlink(path)
+                else:
+                    processed.assert_not_called()
+                    self.assertTrue(state.cancelled)
+                    self.assertFalse(os.path.exists(path))
+                self.assertFalse(handler.file_descriptors)
+
+    def test_malformed_chunk_sequences(self):
+        cases = (
+            ("empty intermediate chunk", ((1, b"", True),), 4),
+            ("more chunks after declared size", ((1, b"data", True),), 4),
+            ("repeated chunk", ((1, b"ab", True), (1, b"cd", False)), 4),
+            ("overflow", ((1, b"excess", False),), 4),
+            ("truncated final chunk", ((1, b"abc", False),), 4),
+        )
+        for name, sequence, filesize in cases:
+            with self.subTest(name):
+                handler, state, path, processed = self.run_sequence(sequence, filesize)
+                processed.assert_not_called()
+                self.assertTrue(state.cancelled)
+                self.assertFalse(os.path.exists(path))
+                self.assertFalse(handler.file_descriptors)
 
 
 def main():
