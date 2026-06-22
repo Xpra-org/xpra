@@ -8,15 +8,27 @@ from libc.stdint cimport uint32_t, uint64_t
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
 cdef extern from "pipewire/pipewire.h":
-    ctypedef struct pw_thread_loop
-    ctypedef struct pw_context
-    ctypedef struct pw_core
-    ctypedef struct pw_stream
-    ctypedef struct pw_buffer
-    ctypedef struct pw_properties
-    ctypedef struct spa_pod
-    ctypedef struct spa_hook
-    ctypedef struct spa_pod_builder
+    # these are all plain `struct foo` in the PipeWire / SPA headers (no typedefs),
+    # so they must be declared with `cdef struct` (emits `struct foo`) rather than
+    # `ctypedef struct` (which would emit a bare `foo` that the C compiler can't resolve):
+    cdef struct pw_thread_loop:
+        pass
+    cdef struct pw_context:
+        pass
+    cdef struct pw_core:
+        pass
+    cdef struct pw_stream:
+        pass
+    cdef struct pw_buffer:
+        pass
+    cdef struct pw_properties:
+        pass
+    cdef struct spa_pod:
+        pass
+    cdef struct spa_hook:
+        pass
+    cdef struct spa_pod_builder:
+        pass
 
     void pw_init(int *argc, char ***argv)
     pw_thread_loop *pw_thread_loop_new(const char *name, const void *props)
