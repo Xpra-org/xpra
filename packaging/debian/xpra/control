@@ -343,6 +343,8 @@ Depends: xpra-common (= ${binary:Version})
               ,libaom3
               ,libvpl2
               ,libva2
+# pipewire is optional: the codec just won't load if the library is missing
+Recommends: libpipewire-0.3-0
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia (= ${binary:Version})
           ,xpra-codecs-amd (= ${binary:Version})

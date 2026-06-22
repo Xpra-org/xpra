@@ -5,6 +5,7 @@ usr/lib/python3*/*/xpra/codecs/jpeg
 usr/lib/python3*/*/xpra/codecs/x264
 usr/lib/python3*/*/xpra/codecs/openh264
 usr/lib/python3*/*/xpra/codecs/libyuv
+usr/lib/python3*/*/xpra/codecs/pipewire
 usr/lib/python3*/*/xpra/codecs/v4l2
 usr/lib/python3*/*/xpra/codecs/vpx
 usr/lib/python3*/*/xpra/codecs/webp

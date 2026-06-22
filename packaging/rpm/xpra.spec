@@ -12,7 +12,7 @@
 AutoReqProv: no
 autoreq: no
 autoprov: no
-%global __requires_exclude ^(libnvjpeg|libnvidia-).*\\.so.*$
+%global __requires_exclude ^(libnvjpeg|libnvidia-|libpipewire).*\\.so.*$
 %global __requires_exclude %__requires_exclude|^/usr/bin/python.*$
 
 %if 0%{?fedora}%{?el10}
@@ -249,6 +249,8 @@ Suggests:			%{package_prefix}-client
 BuildRequires:		pkgconfig(libdrm)
 BuildRequires:		pkgconfig(libpipewire-0.3)
 Requires:			libdrm
+#pipewire is optional: the codec just won't load if the library is missing
+Recommends:			pipewire-libs
 BuildRequires:		pkgconfig(vpx)
 Requires:			libvpx
 Obsoletes:          libvpx-xpra < 1.8
@@ -832,6 +834,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/jpeg
 %{python3_sitearch}/xpra/codecs/jph
 %{python3_sitearch}/xpra/codecs/libyuv
+%{python3_sitearch}/xpra/codecs/pipewire
 %{python3_sitearch}/xpra/codecs/v4l2
 %if ! 0%{?el8}
 %{python3_sitearch}/xpra/codecs/vpl
