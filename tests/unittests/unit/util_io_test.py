@@ -7,6 +7,7 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import Mock, patch
 
 from xpra.os_util import POSIX
 from xpra.util.io import (
@@ -16,6 +17,11 @@ from xpra.util.io import (
     umask_context,
     find_in_PATH,
     which,
+    get_status_output,
+    get_proc_cmdline,
+    path_permission_info,
+    find_lib,
+    osclose,
 )
 
 
@@ -200,6 +206,43 @@ class TestWhich(unittest.TestCase):
     def test_always_returns_string(self):
         result = which("python3")
         self.assertIsInstance(result, str)
+
+
+class TestProcessAndPathHelpers(unittest.TestCase):
+
+    def test_status_output(self):
+        self.assertEqual(get_status_output(("sh", "-c", "printf out; printf err >&2; exit 3")), (3, "out", "err"))
+        with patch("subprocess.Popen", side_effect=OSError("bad")):
+            self.assertEqual(get_status_output(("missing",)), (-1, "", ""))
+
+    def test_proc_cmdline(self):
+        with patch("xpra.util.io.os.path.exists", return_value=True), \
+                patch("xpra.util.io.load_binary_file", return_value=b"python\0script.py\0"):
+            self.assertEqual(get_proc_cmdline(123), ("python", "script.py"))
+        self.assertEqual(get_proc_cmdline(0), ())
+
+    def test_permission_info_and_library_lookup(self):
+        with tempfile.NamedTemporaryFile() as filename:
+            info = path_permission_info(filename.name)
+            self.assertEqual(len(info), 2)
+            self.assertIn("permissions", info[0])
+        self.assertIn("failed to query", path_permission_info("/missing")[0])
+        with tempfile.TemporaryDirectory() as directory:
+            library = os.path.join(directory, "libtest.so")
+            open(library, "wb").close()
+            with patch.dict(os.environ, {"LD_LIBRARY_PATH": directory}):
+                self.assertEqual(find_lib("libtest.so"), library)
+
+    def test_osclose(self):
+        rfd, wfd = os.pipe()
+        osclose(rfd, wfd, 0)
+        for fd in (rfd, wfd):
+            with self.assertRaises(OSError):
+                os.fstat(fd)
+        logger = Mock()
+        with patch("xpra.util.io.get_util_logger", return_value=logger):
+            osclose(rfd)
+        logger.error.assert_called_once()
 
 
 def main():

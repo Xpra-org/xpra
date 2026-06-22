@@ -16,6 +16,7 @@ except ImportError:
     rectangle = None
 
 
+@unittest.skipUnless(video_subregion and rectangle, "video subregion dependencies are unavailable")
 class TestVideoSubregion(unittest.TestCase):
 
     def test_eq(self):
