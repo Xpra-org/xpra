@@ -318,9 +318,12 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         sock = socket_connect(proxy_host, proxy_port)
         if not sock:
             fail(f"SSH proxy transport failed to connect to {proxy_host}:{proxy_port}")
+        # use the proxy host's own ssh config, not the target host's:
+        proxy_config = ssh_lookup("*")
+        proxy_config.update(ssh_lookup(proxy_host))
         middle_transport = do_connect(sock, proxy_host, proxy_port,
                                       proxy_username, proxy_password,
-                                      ssh_lookup(host) or ssh_lookup("*"),
+                                      proxy_config,
                                       proxy_keys,
                                       paramiko_config)
         log("Opening proxy channel")
