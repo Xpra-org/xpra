@@ -197,6 +197,54 @@ def load_ssh_config() -> SSHConfig:
     return ssh_config
 
 
+def stripped_config(config: dict, key: str, default_value):
+    # paramiko does not strip comments from configs:
+    # https://github.com/Xpra-org/xpra/issues/4503
+    value = config.get(key, default_value)
+    if isinstance(value, str):
+        value = value.split("#", 1)[0]
+    elif isinstance(value, list):
+        value = [str(v).split("#", 1)[0] for v in value]
+    return value
+
+
+def parse_proxyjump(value: str) -> list[dict]:
+    # parse an OpenSSH `ProxyJump` value into an ordered list of jump host descriptors.
+    # the value is a comma separated list of `[user@]host[:port]` entries;
+    # the special value `none` (or an empty string) disables jumping.
+    jumphosts: list[dict] = []
+    value = (value or "").split("#", 1)[0].strip()
+    if not value or value.lower() == "none":
+        return jumphosts
+    for hop in value.split(","):
+        hop = hop.strip()
+        if not hop:
+            continue
+        username, sep, hostpart = hop.rpartition("@")
+        if not sep:
+            username = ""
+        host = hostpart
+        port = 0
+        portstr = ""
+        if host.startswith("["):
+            # bracketed (IPv6) literal: `[addr]` or `[addr]:port`
+            end = host.find("]")
+            if end >= 0:
+                rest = host[end + 1:]
+                host = host[1:end]
+                if rest.startswith(":"):
+                    portstr = rest[1:]
+        elif host.count(":") == 1:
+            host, _, portstr = host.rpartition(":")
+        if portstr:
+            try:
+                port = int(portstr)
+            except ValueError:
+                raise InitExit(ExitCode.SSH_FAILURE, f"invalid port in ProxyJump host {hop!r}") from None
+        jumphosts.append({"host": host, "port": port, "username": username})
+    return jumphosts
+
+
 def connect_to(display_desc: dict) -> SSHSocketConnection:
     log(f"connect_to({display_desc})")
     # plain socket attributes:
@@ -235,12 +283,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     # paramiko does not strip comments from configs:
     # https://github.com/Xpra-org/xpra/issues/4503
     def safeget(key: str, default_value: str | int | list) -> Any:
-        value = host_config.get(key, default_value)
-        if isinstance(value, str):
-            value = value.split("#", 1)[0]
-        elif isinstance(value, list):
-            value = [str(v).split("#", 1)[0] for v in value]
-        return value
+        return stripped_config(host_config, key, default_value)
 
     def configvalue(key: str, default_value):
         # if the paramiko config has a setting, honour it:
@@ -312,36 +355,82 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
 
     keys = get_keyfiles()
     from xpra.net.socket_util import socket_connect
-    if "proxy_host" in display_desc:
-        proxy_host = display_desc["proxy_host"]
-        proxy_port = int(display_desc.get("proxy_port", 22))
-        proxy_username = display_desc.get("proxy_username", username) or default_username
-        proxy_password = display_desc.get("proxy_password", password)
-        proxy_keys = get_keyfiles("proxy_key")
-        sock = socket_connect(proxy_host, proxy_port)
-        if not sock:
-            fail(f"SSH proxy transport failed to connect to {proxy_host}:{proxy_port}")
-        middle_transport = do_connect(sock, proxy_host, proxy_port,
-                                      proxy_username, proxy_password,
-                                      ssh_lookup(host) or ssh_lookup("*"),
-                                      proxy_keys,
-                                      paramiko_config)
-        log("Opening proxy channel")
-        chan_to_middle = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
-        transport = do_connect(chan_to_middle, host, port,
+
+    def hop_keyfiles(hop_config: dict, keyfile: str) -> list[str]:
+        keyfiles = list(stripped_config(hop_config, "identityfile", []))
+        if keyfile:
+            keyfiles.insert(0, keyfile)
+        if not str_to_bool(stripped_config(hop_config, "identitiesonly", False), False):
+            keyfiles += get_default_keyfiles()
+        return keyfiles
+
+    def connect_jumphosts(jumphosts: list[dict]):
+        # connect through each jump host in turn, chaining `direct-tcpip` channels,
+        # and return the transport of the last jump host:
+        transport = None
+        for hop in jumphosts:
+            hop_host = hop["host"]
+            hop_config = ssh_lookup("*")
+            hop_config.update(ssh_lookup(hop_host))
+            real_host = stripped_config(hop_config, "hostname", hop_host)
+            hop_username = hop.get("username") or stripped_config(hop_config, "user", "") or default_username
+            hop_port = hop.get("port") or stripped_config(hop_config, "port", 0) or 22
+            try:
+                hop_port = int(hop_port)
+            except (TypeError, ValueError):
+                raise InitExit(ExitCode.SSH_FAILURE,
+                               f"invalid ssh port for jump host {hop_host!r}: {hop_port!r}") from None
+            keyfiles = hop_keyfiles(hop_config, hop.get("key", ""))
+            if transport is None:
+                log("opening socket connection to jump host %r:%i", real_host, hop_port)
+                sock = socket_connect(real_host, hop_port)
+                if not sock:
+                    fail(f"SSH proxy transport failed to connect to {real_host}:{hop_port}")
+            else:
+                log("opening proxy channel to jump host %r:%i", real_host, hop_port)
+                sock = transport.open_channel("direct-tcpip", (real_host, hop_port), ("localhost", 0))
+            transport = do_connect(sock, real_host, hop_port,
+                                   hop_username, hop.get("password", ""),
+                                   hop_config, keyfiles, paramiko_config)
+        return transport
+
+    def connect_via_jumphosts(jumphosts: list[dict]):
+        middle_transport = connect_jumphosts(jumphosts)
+        log("opening channel to %r:%i through %i jump host(s)", host, port, len(jumphosts))
+        chan_to_target = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
+        transport = do_connect(chan_to_target, host, port,
                                username or default_username, password,
-                               host_config,
-                               keys,
-                               paramiko_config)
+                               host_config, keys, paramiko_config)
         chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config)
-        peername = (proxy_host, proxy_port)
-        conn = SSHProxyCommandConnection(chan, peername, peername, {"host": proxy_host, "port": proxy_port})
+        first = jumphosts[0]
+        first_port = int(first.get("port") or 22)
+        peername = (first["host"], first_port)
+        conn = SSHProxyCommandConnection(chan, peername, peername, {"host": first["host"], "port": first_port})
         to_str = host_target_string("ssh", username or default_username, host, port, display)
-        proxy_str = host_target_string("ssh", proxy_username, proxy_host, proxy_port)
-        conn.target = f"{to_str} via {proxy_str}"
+        via_str = " via ".join(
+            host_target_string("ssh", hop.get("username", ""), hop["host"], int(hop.get("port") or 22))
+            for hop in jumphosts
+        )
+        conn.target = f"{to_str} via {via_str}"
         conn.timeout = SOCKET_TIMEOUT
         conn.start_stderr_reader()
         return conn
+
+    # an explicit proxy host (from the connection URI / launcher) takes precedence,
+    # just like an explicit `-o ProxyCommand` overrides a config `ProxyJump` with the native ssh client:
+    if "proxy_host" in display_desc:
+        return connect_via_jumphosts([{
+            "host": display_desc["proxy_host"],
+            "port": int(display_desc.get("proxy_port", 22)),
+            "username": display_desc.get("proxy_username", username) or default_username,
+            "password": display_desc.get("proxy_password", password),
+            "key": display_desc.get("proxy_key", ""),
+        }])
+
+    jumphosts = parse_proxyjump(configvalue("proxyjump", ""))
+    if jumphosts:
+        log(f"found ProxyJump jump hosts for {host!r}: {jumphosts}")
+        return connect_via_jumphosts(jumphosts)
 
     # plain TCP connection to the server,
     # we open it then give the socket to paramiko:
