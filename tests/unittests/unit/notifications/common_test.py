@@ -7,6 +7,7 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from xpra.notification import common
 from unit.test_util import silence_error
