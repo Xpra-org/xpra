@@ -20,6 +20,8 @@ METRICS = {
     "encode_ms": "Encode latency (ms)",
     "roundtrip_ms": "Round-trip latency (ms)",
     "csc_ms": "CSC latency (ms)",
+    "snr_db": "SNR (dB)",
+    "compression_ratio": "Compression ratio",
 }
 WIDTH = 1400
 HEIGHT = 680
@@ -39,10 +41,10 @@ def load_results(filename: Path) -> list[dict]:
     return document["results"]
 
 
-def color(encoder_index: int, quality: int) -> str:
-    """Keep one hue per encoder and darken it as quality increases."""
+def color(encoder_index: int, intensity: int) -> str:
+    """Keep one hue per encoder and darken it as the selected setting increases."""
     hue = ENCODER_HUES[encoder_index % len(ENCODER_HUES)]
-    lightness = 84 - round(max(0, min(100, quality)) * 0.46)
+    lightness = 84 - round(max(0, min(100, intensity)) * 0.46)
     return f"hsl({hue} 72% {lightness}%)"
 
 
@@ -51,11 +53,14 @@ def finite_rows(rows: list[dict], metric: str) -> list[dict]:
     for row in rows:
         try:
             speed = float(row["speed"])
-            value = float(row[metric])
-            quality = int(row["quality"])
-        except (KeyError, TypeError, ValueError):
+            quality = float(row["quality"])
+            if metric == "compression_ratio":
+                value = float(row["width"]) * float(row["height"]) * 4 / float(row["bytes_per_frame"])
+            else:
+                value = float(row[metric])
+        except (KeyError, TypeError, ValueError, ZeroDivisionError):
             continue
-        if math.isfinite(speed) and math.isfinite(value):
+        if math.isfinite(speed) and math.isfinite(quality) and math.isfinite(value):
             valid.append(row | {"speed": speed, metric: value, "quality": quality})
     return valid
 
@@ -83,14 +88,20 @@ def render_svg(encoding: str, rows: list[dict], metric: str) -> str:
         for encoder, pipelines in pipelines_by_encoder.items()
         for index, pipeline in enumerate(pipelines)
     }
+    quality_plot = metric in ("snr_db", "compression_ratio")
+    x_field = "quality" if quality_plot else "speed"
+    shade_field = "speed" if quality_plot else "quality"
+    x_label = "Quality setting" if quality_plot else "Speed setting"
+    shade_label = "speed" if quality_plot else "quality"
+    shade_prefix = "s" if quality_plot else "q"
     series = defaultdict(list)
     for row in rows:
-        key = str(row["encoder"]), str(row.get("pipeline", "")), int(row["quality"])
+        key = str(row["encoder"]), str(row.get("pipeline", "")), int(row[shade_field])
         series[key].append(row)
     canvas_height = max(HEIGHT, 115 + 20 * len(series))
 
-    x_min = min(0.0, min(row["speed"] for row in rows))
-    x_max = max(100.0, max(row["speed"] for row in rows))
+    x_min = min(0.0, min(row[x_field] for row in rows))
+    x_max = max(100.0, max(row[x_field] for row in rows))
     y_max = max(row[metric] for row in rows)
     y_max = max(0.001, y_max * 1.1)
     plot_width = PLOT_RIGHT - PLOT_LEFT
@@ -102,7 +113,7 @@ def render_svg(encoding: str, rows: list[dict], metric: str) -> str:
     def sy(value: float) -> float:
         return PLOT_BOTTOM - value / y_max * plot_height
 
-    title = f"{encoding}: speed setting vs {METRICS[metric].lower()}"
+    title = f"{encoding}: {x_label.lower()} vs {METRICS[metric].lower()}"
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{canvas_height}" '
         f'viewBox="0 0 {WIDTH} {canvas_height}" role="img">',
@@ -131,26 +142,26 @@ def render_svg(encoding: str, rows: list[dict], metric: str) -> str:
         f'<line class="axis" x1="{PLOT_LEFT}" y1="{PLOT_BOTTOM}" x2="{PLOT_RIGHT}" y2="{PLOT_BOTTOM}"/>',
         f'<line class="axis" x1="{PLOT_LEFT}" y1="{PLOT_TOP}" x2="{PLOT_LEFT}" y2="{PLOT_BOTTOM}"/>',
         f'<text class="axis-label" x="{(PLOT_LEFT + PLOT_RIGHT) / 2:.1f}" y="{HEIGHT - 25}" '
-        'text-anchor="middle">Speed setting</text>',
+        f'text-anchor="middle">{x_label}</text>',
         f'<text class="axis-label" transform="translate(22 {(PLOT_TOP + PLOT_BOTTOM) / 2:.1f}) rotate(-90)" '
         f'text-anchor="middle">{escape(METRICS[metric])}</text>',
-        '<text class="axis-label" x="800" y="62">Encoder / quality</text>',
+        f'<text class="axis-label" x="800" y="62">Encoder / {shade_label}</text>',
     ))
 
     legend_y = 88
-    for encoder, pipeline, quality in sorted(series):
-        points = sorted(series[(encoder, pipeline, quality)], key=lambda row: row["speed"])
-        shade = color(encoder_index[encoder], quality)
+    for encoder, pipeline, intensity in sorted(series):
+        points = sorted(series[(encoder, pipeline, intensity)], key=lambda row: row[x_field])
+        shade = color(encoder_index[encoder], intensity)
         dash = DASHES[pipeline_index[(encoder, pipeline)] % len(DASHES)]
         dash_attr = f' stroke-dasharray="{dash}"' if dash else ""
-        coords = " ".join(f'{sx(row["speed"]):.1f},{sy(row[metric]):.1f}' for row in points)
+        coords = " ".join(f'{sx(row[x_field]):.1f},{sy(row[metric]):.1f}' for row in points)
         parts.append(f'<polyline points="{coords}" fill="none" stroke="{shade}" stroke-width="3"{dash_attr}/>')
         for row in points:
-            parts.append(f'<circle cx="{sx(row["speed"]):.1f}" cy="{sy(row[metric]):.1f}" r="4" '
+            parts.append(f'<circle cx="{sx(row[x_field]):.1f}" cy="{sy(row[metric]):.1f}" r="4" '
                          f'fill="{shade}" stroke="white" stroke-width="1"/>')
         parts.append(f'<line x1="800" y1="{legend_y - 4}" x2="832" y2="{legend_y - 4}" '
                      f'stroke="{shade}" stroke-width="3"{dash_attr}/>')
-        label = f"{encoder}, q={quality}"
+        label = f"{encoder}, {shade_prefix}={intensity}"
         if len(pipelines_by_encoder[encoder]) > 1:
             label += f", {pipeline}"
         parts.append(f'<text class="legend" x="840" y="{legend_y}">{escape(label)}</text>')
@@ -168,7 +179,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("input", type=Path, help="JSON produced by benchmark_video_encoders.py")
     parser.add_argument("--output-dir", type=Path, default=Path("codec-graphs"))
     parser.add_argument("--metric", choices=tuple(METRICS), default="encode_ms",
-                        help="latency value to plot (default: encode_ms)")
+                        help="value to plot (default: encode_ms)")
     parser.add_argument("--encodings", default="", help="comma-separated encoding filter")
     args = parser.parse_args(argv)
     try:
