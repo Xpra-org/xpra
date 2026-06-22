@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from ast import literal_eval
 from enum import IntEnum
 from typing import Any
 from collections.abc import Callable, Sequence
@@ -44,22 +45,25 @@ def control_get_sources(server, client_uuids_str="*"):
     return sources
 
 
-def parse_4intlist(v) -> list:
+def parse_4intlist(v) -> list[list[int]]:
     if not v:
         return []
-    intlist = []
-    # ie: v = " (0,10,100,20), (200,300,20,20)"
-    while v:
-        v = v.strip().strip(",").strip()  # ie: "(0,10,100,20)"
-        lp = v.find("(")
-        assert lp == 0, "invalid leading characters: %s" % v[:lp]
-        rp = v.find(")")
-        assert (lp + 1) < rp
-        item = v[lp + 1:rp].strip()  # "0,10,100,20"
-        items = [int(x) for x in item]  # 0,10,100,20
-        assert len(items) == 4, f"expected 4 numbers but got {len(items)}"
-        intlist.append(items)
-    return intlist
+    try:
+        value = literal_eval(str(v).strip())
+    except (SyntaxError, ValueError) as e:
+        raise ValueError(f"invalid list of rectangles: {v!r}") from e
+    if isinstance(value, tuple) and len(value) == 4 and all(type(x) is int for x in value):
+        value = (value,)
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"expected a list of rectangles, not {type(value).__name__}")
+    rectangles = []
+    for item in value:
+        if not isinstance(item, (list, tuple)) or len(item) != 4:
+            raise ValueError(f"expected 4 numbers but got {item!r}")
+        if not all(type(x) is int for x in item):
+            raise ValueError(f"rectangle values must be integers: {item!r}")
+        rectangles.append(list(item))
+    return rectangles
 
 
 def parse_boolean_value(v):

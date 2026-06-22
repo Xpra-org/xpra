@@ -22,6 +22,52 @@ from xpra.server.window.content_guesser import (
 
 class TestContentGuesser(unittest.TestCase):
 
+    def test_parsers_reject_bad_entries_and_split_parent(self):
+        defs = parse_content_types(("missing separators", "title:[=text", "title:ok=text"))
+        self.assertEqual({value for value in defs["title"].values()}, {("ok", "text")})
+        self.assertEqual(content_guesser.parse_content_parent(("bash: text", "invalid", "python:video")),
+                         {"bash": "text", "python": "video"})
+
+    def test_command_and_parent_guessing(self):
+        class FakeWindow:
+            values = {"command": "/usr/bin/vlc --fullscreen", "ppid": 123}
+
+            def get_property_names(self):
+                return tuple(self.values)
+
+            def get_property(self, name):
+                return self.values[name]
+
+        window = FakeWindow()
+        with patch.object(content_guesser, "POSIX", True), patch.object(content_guesser, "OSX", False), \
+                patch.object(content_guesser, "load_command_to_type", return_value={"vlc": "video"}):
+            self.assertEqual(content_guesser.guess_content_type_from_command(window), "video")
+        with patch.object(content_guesser, "get_proc_cmdline", return_value=["/usr/bin/bash"]), \
+                patch.object(content_guesser, "get_parent_to_type", return_value={"bash": "text"}):
+            self.assertEqual(content_guesser.guess_content_type_from_parent(window), "text")
+            self.assertEqual(content_guesser.guess_content_from_parent_pid(123), "text")
+
+    def test_guess_precedence_and_multiple_types(self):
+        window = object()
+        with patch.object(content_guesser, "GUESS_CONTENT", True), \
+                patch.object(content_guesser, "guess_content_type_from_defs", return_value="audio+video"), \
+                patch.object(content_guesser, "guess_content_type_from_command", return_value="text"), \
+                patch.object(content_guesser, "guess_content_type_from_parent", return_value=""):
+            self.assertEqual(content_guesser.guess_content_type(window), ("audio", "video"))
+        with patch.object(content_guesser, "GUESS_CONTENT", False), \
+                patch.object(content_guesser, "DEFAULT_CONTENT_TYPE", "text"):
+            self.assertEqual(content_guesser.guess_content_type(window), ("text",))
+
+    def test_command_category_mapping(self):
+        menu = {"Media": {"Entries": {
+            "Player": {"Exec": "/usr/bin/vlc --started-from-file", "Categories": ["AudioVideo"]},
+        }}}
+        provider = unittest.mock.Mock()
+        provider.get_menu_data.return_value = menu
+        with patch.object(content_guesser, "load_categories_to_type", return_value={"audio": "audio+video"}), \
+                patch("xpra.server.menu_provider.get_menu_provider", return_value=provider):
+            self.assertEqual(content_guesser.do_load_command_to_type(), {"vlc": "audio+video"})
+
     def test_merge_defs_nested_preserves_both_sides(self):
         # nested {prop: {key: value}} dicts must merge inner dicts,
         # not replace them — otherwise rules from one file/dir wipe another.
