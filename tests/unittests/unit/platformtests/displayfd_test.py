@@ -9,9 +9,19 @@ import tempfile
 import unittest
 
 from xpra.util.io import load_binary_file
-from xpra.platform.displayfd import write_displayfd, read_displayfd
+from xpra.platform.displayfd import write_displayfd, read_displayfd, parse_displayfd
 
 class DisplayFDTest(unittest.TestCase):
+
+    def test_parse(self):
+        errors = []
+        self.assertEqual(parse_displayfd(b"42\n", errors.append), 42)
+        self.assertEqual(errors, [])
+        for value in (b"", b"42", b"invalid\n", b"-1\n", b"65536\n"):
+            with self.subTest(value=value):
+                errors.clear()
+                self.assertEqual(parse_displayfd(value, errors.append), -1)
+                self.assertTrue(errors)
 
     def test_pipe_roundtrip(self):
         r_pipe, w_pipe = os.pipe()
