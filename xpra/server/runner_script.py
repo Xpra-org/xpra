@@ -45,7 +45,7 @@ def xpra_env_shell_script(socket_dirs: list[str] | tuple[str, ...], env: dict[st
     if socket_dir:
         script.append('if [ -z "${XPRA_SOCKET_DIR}" ]; then')
         qdir = sh_quotemeta(os.path.expanduser(socket_dir))
-        script.append(f'    XPRA_SOCKET_DIR="{qdir}"; export XPRA_SOCKET_DIR')
+        script.append(f'    XPRA_SOCKET_DIR={qdir}; export XPRA_SOCKET_DIR')
         script.append('fi')
     script.append("")
     return "\n".join(script)
