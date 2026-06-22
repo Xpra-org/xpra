@@ -96,6 +96,7 @@ struct VPLEncoder {
     int             quality;
     int             speed;
     VPLEncodeProfile profile;
+    int             low_power;
     int             use_icq;        /* 1 if ICQ rate-control is in use; 0 = CQP */
     int             next_qp;        /* per-frame mfxEncodeCtrl.QP override (CQP only); 0 = use configured */
     int             is_hw;
@@ -227,6 +228,7 @@ static void fill_params(VPLEncoder *enc, mfxVideoParam *param, int use_icq) {
 
     param->mfx.CodecId = MFX_CODEC_AVC;
     param->mfx.CodecProfile = vpl_profile_id(enc->profile);
+    param->mfx.LowPower = enc->low_power ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
     param->mfx.TargetUsage = 1 + (clamp_int(enc->speed, 0, 100) * 6 + 50) / 100;
     param->mfx.GopPicSize = 0;
     param->mfx.GopRefDist = 1;
@@ -279,7 +281,8 @@ static VPLEncodeStatus allocate_buffers(VPLEncoder *enc) {
 }
 
 VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
-                                   int quality, int speed, VPLEncodeProfile profile) {
+                                   int quality, int speed, VPLEncodeProfile profile,
+                                   int low_power) {
     VPLEncoder *enc;
     mfxStatus sts;
     int use_icq;
@@ -303,6 +306,7 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
     enc->quality = quality;
     enc->speed = speed;
     enc->profile = profile;
+    enc->low_power = !!low_power;
     enc->is_hw = 1;
     enc->last_sts = MFX_ERR_NONE;
 
@@ -321,8 +325,9 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
         use_icq = (attempt == 0);
         enc->use_icq = use_icq;
         fill_params(enc, &enc->param, use_icq);
-        vpl_log("vpl encoder create: %dx%d quality=%d speed=%d profile=%d rc=%s",
-                width, height, quality, speed, (int)profile, use_icq ? "ICQ" : "CQP");
+        vpl_log("vpl encoder create: %dx%d quality=%d speed=%d profile=%d low-power=%d rc=%s",
+                width, height, quality, speed, (int)profile, enc->low_power,
+                use_icq ? "ICQ" : "CQP");
 
         sts = MFXVideoENCODE_Init(enc->session, &enc->param);
         if (sts == MFX_ERR_NONE || sts == MFX_WRN_PARTIAL_ACCELERATION ||

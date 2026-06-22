@@ -65,7 +65,8 @@ cdef extern from "vpl_encode.h":
     VPLEncodeStatus vpl_encode_startup()
     void            vpl_encode_shutdown()
     VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
-                                        int quality, int speed, VPLEncodeProfile profile) nogil
+                                        int quality, int speed, VPLEncodeProfile profile,
+                                        int low_power) nogil
     void            vpl_encoder_destroy(VPLEncoder *enc) nogil
     VPLEncodeStatus vpl_encoder_encode(VPLEncoder *enc,
                                         const uint8_t *y, int y_stride,
@@ -141,6 +142,7 @@ def get_info() -> Dict[str, Any]:
         "formats": ("NV12", ),
         "profiles": ("constrained-baseline", "main", "high"),
         "default-profile": "main",
+        "default-low-power": False,
     }
 
 
@@ -179,6 +181,7 @@ cdef class Encoder:
     cdef int height
     cdef int quality
     cdef int speed
+    cdef int low_power
     cdef object profile
     cdef object src_format
     cdef object encoding
@@ -210,6 +213,7 @@ cdef class Encoder:
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
         self.profile = get_vpl_profile(options)
+        self.low_power = options.boolget("h264.low-power", False)
         self.frames = 0
         self.delayed = 0
         self.full_range = options.boolget("full-range", True)
@@ -217,7 +221,8 @@ cdef class Encoder:
         cdef VPLEncodeStatus status
         cdef VPLEncodeProfile profile_id = PROFILE_IDS[self.profile]
         with nogil:
-            status = vpl_encoder_create(&self.context, width, height, self.quality, self.speed, profile_id)
+            status = vpl_encoder_create(&self.context, width, height, self.quality,
+                                        self.speed, profile_id, self.low_power)
         if status != VPL_ENC_OK:
             raise RuntimeError("failed to create VPL encoder (%dx%d): %s" % (
                 width, height, vpl_encode_status_str(status).decode("latin-1")))
@@ -230,8 +235,8 @@ cdef class Encoder:
             log.info("saving h264 stream to %r", filename)
 
         self.ready = 1
-        log("vpl h264 %s profile encoder initialized: hardware=%s",
-            self.profile, bool(vpl_encoder_is_hardware(self.context)))
+        log("vpl h264 %s profile encoder initialized: hardware=%s, low-power=%s",
+            self.profile, bool(vpl_encoder_is_hardware(self.context)), bool(self.low_power))
 
     def is_ready(self) -> bool:
         return bool(self.ready)
@@ -342,6 +347,7 @@ cdef class Encoder:
             "quality"   : self.quality,
             "speed"     : self.speed,
             "profile"   : self.profile,
+            "low-power" : bool(self.low_power),
             "delayed"   : self.delayed,
         }
         if self.context:
