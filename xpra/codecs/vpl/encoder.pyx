@@ -14,7 +14,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, get_profile
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AtomicInteger
@@ -49,6 +49,11 @@ cdef extern from "vpl_encode.h":
         VPL_ENC_FRAME_I
         VPL_ENC_FRAME_P
 
+    ctypedef enum VPLEncodeProfile:
+        VPL_ENC_PROFILE_CONSTRAINED_BASELINE
+        VPL_ENC_PROFILE_MAIN
+        VPL_ENC_PROFILE_HIGH
+
     ctypedef struct VPLEncodedFrame:
         uint8_t *data
         int      size
@@ -60,7 +65,7 @@ cdef extern from "vpl_encode.h":
     VPLEncodeStatus vpl_encode_startup()
     void            vpl_encode_shutdown()
     VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
-                                        int quality, int speed) nogil
+                                        int quality, int speed, VPLEncodeProfile profile) nogil
     void            vpl_encoder_destroy(VPLEncoder *enc) nogil
     VPLEncodeStatus vpl_encoder_encode(VPLEncoder *enc,
                                         const uint8_t *y, int y_stride,
@@ -89,6 +94,23 @@ cdef str frame_type_name(VPLEncodeFrameType frame_type):
 
 
 generation = AtomicInteger()
+PROFILE_IDS = {
+    "baseline": VPL_ENC_PROFILE_CONSTRAINED_BASELINE,
+    "constrained-baseline": VPL_ENC_PROFILE_CONSTRAINED_BASELINE,
+    "main": VPL_ENC_PROFILE_MAIN,
+    "high": VPL_ENC_PROFILE_HIGH,
+}
+
+
+def get_vpl_profile(options: typedict) -> str:
+    profile = get_profile(options, default_profile="main")
+    if profile not in PROFILE_IDS:
+        log.warn("Warning: %r is not a valid VPL H.264 profile", profile)
+        log.warn(" valid profiles are: %s", ", ".join(PROFILE_IDS))
+        return "main"
+    if profile == "baseline":
+        return "constrained-baseline"
+    return profile
 
 
 def init_module(options: dict = None) -> None:
@@ -117,6 +139,8 @@ def get_info() -> Dict[str, Any]:
         "version": get_version(),
         "type": "vpl",
         "formats": ("NV12", ),
+        "profiles": ("constrained-baseline", "main", "high"),
+        "default-profile": "main",
     }
 
 
@@ -155,6 +179,7 @@ cdef class Encoder:
     cdef int height
     cdef int quality
     cdef int speed
+    cdef object profile
     cdef object src_format
     cdef object encoding
     cdef object file
@@ -184,13 +209,15 @@ cdef class Encoder:
         self.height = height
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
+        self.profile = get_vpl_profile(options)
         self.frames = 0
         self.delayed = 0
         self.full_range = options.boolget("full-range", True)
 
         cdef VPLEncodeStatus status
+        cdef VPLEncodeProfile profile_id = PROFILE_IDS[self.profile]
         with nogil:
-            status = vpl_encoder_create(&self.context, width, height, self.quality, self.speed)
+            status = vpl_encoder_create(&self.context, width, height, self.quality, self.speed, profile_id)
         if status != VPL_ENC_OK:
             raise RuntimeError("failed to create VPL encoder (%dx%d): %s" % (
                 width, height, vpl_encode_status_str(status).decode("latin-1")))
@@ -203,7 +230,8 @@ cdef class Encoder:
             log.info("saving h264 stream to %r", filename)
 
         self.ready = 1
-        log("vpl h264 encoder initialized: hardware=%s", bool(vpl_encoder_is_hardware(self.context)))
+        log("vpl h264 %s profile encoder initialized: hardware=%s",
+            self.profile, bool(vpl_encoder_is_hardware(self.context)))
 
     def is_ready(self) -> bool:
         return bool(self.ready)
@@ -313,6 +341,7 @@ cdef class Encoder:
             "encoding"  : self.encoding,
             "quality"   : self.quality,
             "speed"     : self.speed,
+            "profile"   : self.profile,
             "delayed"   : self.delayed,
         }
         if self.context:
@@ -335,6 +364,8 @@ cdef class Encoder:
             client_options["delayed"] = self.delayed
         if BACKWARDS_COMPATIBLE or self.full_range != full_range or (self.frames == 0 and not full_range):
             client_options["full-range"] = full_range
+        if self.frames == 0:
+            client_options["profile"] = self.profile
         self.frames += 1
         return bdata, client_options
 

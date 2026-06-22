@@ -32,6 +32,12 @@ typedef enum {
     VPL_ENC_FRAME_P       = 3,
 } VPLEncodeFrameType;
 
+typedef enum {
+    VPL_ENC_PROFILE_CONSTRAINED_BASELINE = 0,
+    VPL_ENC_PROFILE_MAIN                 = 1,
+    VPL_ENC_PROFILE_HIGH                 = 2,
+} VPLEncodeProfile;
+
 typedef struct {
     uint8_t *data;
     int      size;
@@ -45,7 +51,7 @@ VPLEncodeStatus vpl_encode_startup(void);
 void            vpl_encode_shutdown(void);
 
 VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
-                                   int quality, int speed) ;
+                                   int quality, int speed, VPLEncodeProfile profile);
 void            vpl_encoder_destroy(VPLEncoder *enc);
 
 VPLEncodeStatus vpl_encoder_encode(VPLEncoder *enc,

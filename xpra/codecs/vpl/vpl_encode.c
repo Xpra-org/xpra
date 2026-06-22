@@ -95,6 +95,7 @@ struct VPLEncoder {
     int             frames;
     int             quality;
     int             speed;
+    VPLEncodeProfile profile;
     int             use_icq;        /* 1 if ICQ rate-control is in use; 0 = CQP */
     int             next_qp;        /* per-frame mfxEncodeCtrl.QP override (CQP only); 0 = use configured */
     int             is_hw;
@@ -103,6 +104,19 @@ struct VPLEncoder {
     mfxStatus       last_sts;
     char            last_error[128];
 };
+
+static mfxU16 vpl_profile_id(VPLEncodeProfile profile) {
+    switch (profile) {
+    case VPL_ENC_PROFILE_CONSTRAINED_BASELINE:
+        return MFX_PROFILE_AVC_CONSTRAINED_BASELINE;
+    case VPL_ENC_PROFILE_MAIN:
+        return MFX_PROFILE_AVC_MAIN;
+    case VPL_ENC_PROFILE_HIGH:
+        return MFX_PROFILE_AVC_HIGH;
+    default:
+        return 0;
+    }
+}
 
 static int roundup(int n, int m) {
     return (n + m - 1) & ~(m - 1);
@@ -212,7 +226,7 @@ static void fill_params(VPLEncoder *enc, mfxVideoParam *param, int use_icq) {
     param->AsyncDepth = 1;
 
     param->mfx.CodecId = MFX_CODEC_AVC;
-    param->mfx.CodecProfile = MFX_PROFILE_AVC_CONSTRAINED_BASELINE;
+    param->mfx.CodecProfile = vpl_profile_id(enc->profile);
     param->mfx.TargetUsage = 1 + (clamp_int(enc->speed, 0, 100) * 6 + 50) / 100;
     param->mfx.GopPicSize = 0;
     param->mfx.GopRefDist = 1;
@@ -265,7 +279,7 @@ static VPLEncodeStatus allocate_buffers(VPLEncoder *enc) {
 }
 
 VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
-                                   int quality, int speed) {
+                                   int quality, int speed, VPLEncodeProfile profile) {
     VPLEncoder *enc;
     mfxStatus sts;
     int use_icq;
@@ -275,7 +289,8 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
         return VPL_ENC_ERROR;
     *out = NULL;
 
-    if (width <= 0 || height <= 0 || (width & 1) || (height & 1))
+    if (width <= 0 || height <= 0 || (width & 1) || (height & 1) ||
+        !vpl_profile_id(profile))
         return VPL_ENC_ERROR;
 
     enc = (VPLEncoder *)calloc(1, sizeof(VPLEncoder));
@@ -287,6 +302,7 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
     enc->pitch = roundup(width, 32);
     enc->quality = quality;
     enc->speed = speed;
+    enc->profile = profile;
     enc->is_hw = 1;
     enc->last_sts = MFX_ERR_NONE;
 
@@ -305,8 +321,8 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
         use_icq = (attempt == 0);
         enc->use_icq = use_icq;
         fill_params(enc, &enc->param, use_icq);
-        vpl_log("vpl encoder create: %dx%d quality=%d speed=%d rc=%s",
-                width, height, quality, speed, use_icq ? "ICQ" : "CQP");
+        vpl_log("vpl encoder create: %dx%d quality=%d speed=%d profile=%d rc=%s",
+                width, height, quality, speed, (int)profile, use_icq ? "ICQ" : "CQP");
 
         sts = MFXVideoENCODE_Init(enc->session, &enc->param);
         if (sts == MFX_ERR_NONE || sts == MFX_WRN_PARTIAL_ACCELERATION ||
