@@ -1,7 +1,22 @@
 # Changelog
 
 ## [6.5.1] 2026-06-22
-* TODO
+* 🔧 Platforms, build and packaging:
+  * none yet
+* 📁 File-transfers:
+  * [better parsing compatibility](https://github.com/Xpra-org/xpra/commit/387888e818c1e293764aed74baf99bfb05cabc62)
+  * [legacy packet names, preserve printer and title, etc](https://github.com/Xpra-org/xpra/commit/044a3f537ef7dc5eb1d1e417afcd909549cd3f99)
+  * [tighten file transfer authorization](https://github.com/Xpra-org/xpra/commit/427460b0665aca8ecf5174088d044c843e8a21b9)
+  * [reject malformed file transfer input](https://github.com/Xpra-org/xpra/commit/8207fe92b21d6dec4b147fe4f598748ad54cc22c)
+* 🌈 Encodings:
+  * [buffer overflow in fallback Cython CSC module](https://github.com/Xpra-org/xpra/commit/b11c671e6120601a78eabb6ebfd603008eb4b3ca)
+  * [codec module availability detection](https://github.com/Xpra-org/xpra/commit/34172f00730d8052c2f0c6b60958631412a7a3ac)
+* 💄 Cosmetic:
+  * [no need to try to use invalid displayfd values](https://github.com/Xpra-org/xpra/commit/bba5afe758bc4a24a0371caacc3d2e1d944b95fd)
+  * [socket directory double-quoted in runner script](https://github.com/Xpra-org/xpra/commit/08e11148c640a7a611016466b19c704832958331)
+  * [message shows incorrect mmap limit](https://github.com/Xpra-org/xpra/commit/c5ab361728fe6e2f2ae78ee74f8f6d38554cf35d)
+  * [logging error when notification icon parsing fails](https://github.com/Xpra-org/xpra/commit/2ada4e51b412181d850c560ee58baaa86700b840)
+  * [notification theme icon default size](https://github.com/Xpra-org/xpra/commit/f9dee0e034f54e5051ecf3b8438f2586292f10fd)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
