@@ -18,6 +18,7 @@
   * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
   * [`scram` authentication](https://github.com/Xpra-org/xpra/issues/1771)
   * [serialized SSL socket access](https://github.com/Xpra-org/xpra/issues/4919)
+  * [`ProxyJump` support with paramiko ssh backend](https://github.com/Xpra-org/xpra/commit/2167c90e98555d4d62d62924fdb868eba5f96888)
   * [support remote UNC named-pipe URLs](https://github.com/Xpra-org/xpra/issues/1454)
   * [much improved RFB support](https://github.com/Xpra-org/xpra/issues/4933)
 * 🌈 Encodings:
