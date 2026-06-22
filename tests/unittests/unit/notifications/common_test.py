@@ -32,6 +32,15 @@ class TestCommon(unittest.TestCase):
         self.assertNotIn("image_data", hints)
         self.assertNotIn("image-path", hints)
 
+    def test_decompress_image_data(self):
+        icon = common.image_data(common.PIL_Image().new("RGBA", (2, 3), (1, 2, 3, 4)))
+        result = common.decompress_image_data(icon)
+        self.assertEqual(result[:6], (2, 3, 8, True, 8, 4))
+        self.assertEqual(len(result[6]), 24)
+        with silence_error(common):
+            self.assertEqual(common.decompress_image_data(("png", 1, 1, b"invalid")),
+                             (0, 0, 0, False, 0, 0, bytearray()))
+
     def test_parse_image_data(self):
         p = common.parse_image_data
         with silence_error(common):

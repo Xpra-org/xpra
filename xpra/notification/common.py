@@ -252,7 +252,7 @@ def decompress_image_data(icon_data: IconData) -> tuple[int, int, int, bool, int
         pixel_data = bytearray(img.tobytes("raw", img.mode))
         return w, h, rowstride, has_alpha, 8, channels, pixel_data
     except Exception as e:
-        log("parse_hints(%s) error on image-data=%s", h, image_data, exc_info=True)
+        log("decompress_image_data(%s)", icon_data, exc_info=True)
         log.error("Error parsing notification image:")
         log.estr(e)
         return 0, 0, 0, False, 0, 0, bytearray()
