@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.5.1] 2026-06-22
+* TODO
+
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
   * [use `wasapi2` on MS Windows](https://github.com/Xpra-org/xpra/issues/4735)

@@ -79,7 +79,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.5
+Version:			6.5.1
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1094,6 +1094,8 @@ fi
 
 
 %changelog
+* Mon Jun 22 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
+- TODO
 * Wed May 06 2026 Antoine Martin <antoine@xpra.org> 6.5-10
 - Platforms, build and packaging:
    use `wasapi2` on MS Windows
