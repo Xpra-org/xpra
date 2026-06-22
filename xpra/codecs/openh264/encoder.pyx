@@ -471,7 +471,7 @@ cdef class Encoder:
     def is_ready(self) -> bool:
         return bool(self.ready)
 
-    cdef void init_encoder(self):
+    cdef void init_encoder(self) except *:
         cdef int r = 0
         with nogil:
             r = WelsCreateSVCEncoder(&self.context)
@@ -538,7 +538,7 @@ cdef class Encoder:
         else:
             log("openh264 quality set to %i (qp=%i)", quality, qp)
 
-    cdef void reinit_encoder(self):
+    cdef void reinit_encoder(self) except *:
         # close and reopen the encoder so the SPS is regenerated with the current colour
         # range (self.full_range); the next encoded frame will be a fresh keyframe:
         cdef ISVCEncoder *context = self.context
@@ -653,6 +653,13 @@ cdef class Encoder:
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
         if r:
+            # an encode error leaves the openh264 context unusable: SetOption is then
+            # rejected (error 4) and every later EncodeFrame fails too. The common cause
+            # is error 3 (cmMallocMemeError): incompressible content at a low QP produces
+            # a frame larger than openh264's fixed output buffer (sized at ~1x the raw
+            # frame). Reopen the context so the next frame works, and let the caller fall
+            # back to a non-video encoder for this frame:
+            self.reinit_encoder()
             raise RuntimeError(f"openh264 failed to encode frame, error {r}")
         cdef int is_idr = frame_info.eFrameType == videoFrameTypeIDR
         client_options = {
