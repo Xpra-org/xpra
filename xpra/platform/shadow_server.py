@@ -3,13 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 from xpra.platform import platform_import
 
 SHADOW_OPTIONS: dict[str, Callable[[], bool]] = {}
-
-GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = ()
 
 
 def ShadowServer(*_args):  # pragma: no cover
@@ -19,5 +17,4 @@ def ShadowServer(*_args):  # pragma: no cover
 platform_import(globals(), "shadow_server", True,
                 "ShadowServer",
                 "SHADOW_OPTIONS",
-                "GSTREAMER_CAPTURE_ELEMENTS",
                 )

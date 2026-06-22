@@ -173,18 +173,11 @@ class ConfigureGUI(BaseGUIWindow):
                 add_message("install at least one plugin from: " + csv(want))
                 add_message("then you can run this tool again")
                 return
-            try:
-                from xpra.platform.shadow_server import GSTREAMER_CAPTURE_ELEMENTS
-            except ImportError:
-                pass
-            else:
-                want |= set(GSTREAMER_CAPTURE_ELEMENTS)
             missing = tuple(want - pset)
             if missing:
                 add_message("some useful extra plugins you may want to install: " + csv(missing))
 
             GLib.timeout_add(STEP_DELAY * 6, self.add_buttons,
-                             ("configure shadow mode", self.configure_shadow),
                              ("configure encoding", self.configure_encoding),
                              ("configure decoding", self.configure_decoding),
                              )
@@ -195,9 +188,6 @@ class ConfigureGUI(BaseGUIWindow):
         log.error("Error: this is not implemented yet!")
 
     def configure_decoding(self, *_args) -> None:
-        log.error("Error: this is not implemented yet!")
-
-    def configure_shadow(self, *_args) -> None:
         log.error("Error: this is not implemented yet!")
 
 

@@ -20,6 +20,7 @@ Build-Depends: debhelper (>= 8)
 # so we can't rely on it and we use the one that comes with CUDA instead:
 #              ,libnvjpeg10 [amd64]
               ,libdrm-dev
+              ,libpipewire-0.3-dev
 # even unstable ships an oudated version!
 # (hopefully this can be enabled some day)
 #              ,libevdi0-dev
@@ -369,7 +370,6 @@ Depends: xpra-codecs (= ${binary:Version})
 Recommends:
         ,gstreamer-plugins-ugly
         ,gstreamer1.0-vaapi
-        ,gstreamer1.0-pipewire
         ,python3-gst-1.0
 Suggests: python3-torchvision
 Description: Extra picture and video codecs

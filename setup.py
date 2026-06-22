@@ -471,6 +471,7 @@ pillow_ENABLED          = DEFAULT
 pillow_encoder_ENABLED  = pillow_ENABLED
 pillow_decoder_ENABLED  = pillow_ENABLED
 dmabuf_ENABLED          = DEFAULT and POSIX
+pipewire_ENABLED        = DEFAULT and LINUX and cython_ENABLED and pkg_config_exists("libpipewire-0.3")
 argb_ENABLED            = DEFAULT
 argb_encoder_ENABLED    = argb_ENABLED
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
@@ -581,6 +582,7 @@ CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "csc_cython", "csc_libyuv", "pytorch",
     "gstreamer", "gstreamer_audio", "gstreamer_video",
     "dmabuf",
+    "pipewire",
 ]
 # some switches can control multiple switches:
 SWITCH_ALIAS = {
@@ -608,6 +610,7 @@ SWITCH_ALIAS = {
         "lz4",
         "x11", "gtk_x11",
         "pam", "sd_listen", "proc",
+        "pipewire",
         "peercred",
     ),
 }
@@ -3586,6 +3589,8 @@ tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.api", "nvenc")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 
 toggle_packages(dmabuf_ENABLED, "xpra.codecs.dmabuf")
+toggle_packages(pipewire_ENABLED, "xpra.codecs.pipewire")
+tace(pipewire_ENABLED, "xpra.codecs.pipewire._native", "libpipewire-0.3")
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 toggle_packages(argb_encoder_ENABLED, "xpra.codecs.argb.encoder")
 tace(argb_ENABLED, "xpra.codecs.argb.argb", optimize=3)

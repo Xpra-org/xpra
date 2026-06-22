@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.util.env import envbool
@@ -13,7 +13,6 @@ from xpra.exit_codes import ExitCode
 from xpra.scripts.config import InitExit
 
 
-GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = ("ximagesrc", "pipewiresrc")
 ShadowServerFactory = Callable[[dict[str, str]], object]
 
 XSHM: bool = envbool("XPRA_SHADOW_XSHM", True)
@@ -54,6 +53,15 @@ def load_remotedesktop(display: str = "") -> ShadowServerFactory | None:
 
 
 def load_pipewire(_display: str = "") -> ShadowServerFactory | None:
+    try:
+        available = check_pipewire()
+    except ImportError as e:
+        raise InitExit(
+            ExitCode.UNSUPPORTED,
+            "native PipeWire capture is unavailable; rebuild Xpra with --with-pipewire",
+        ) from e
+    if not available:
+        raise InitExit(ExitCode.UNSUPPORTED, "native PipeWire capture is disabled")
     return load_remotedesktop() or load_screencast()
 
 
@@ -80,12 +88,6 @@ def load_x11(display: str = "") -> ShadowServerFactory | None:
             os.environ["GDK_BACKEND"] = gdkb
         warn("Warning: unable to load x11 shadow server", f" {e}")
     return None
-
-
-def load_gstreamer(display: str = "") -> ShadowServerFactory | None:
-    os.environ["XPRA_STREAM_MODE"] = "gstreamer"
-    os.environ["XPRA_SHADOW_GSTREAMER"] = "1"
-    return load_x11()
 
 
 # the ShadowX11Server supports multiple sub-backends:
@@ -123,21 +125,11 @@ def check_nvfbc() -> bool:
     return NVFBC
 
 
-def check_gstreamer() -> bool:
-    GSTREAMER: bool = envbool("XPRA_SHADOW_GSTREAMER", True)
-    if not GSTREAMER:
-        return False
-    from xpra.gstreamer.common import has_plugins, import_gst
-    import_gst()
-    return has_plugins("ximagesrc")
-
-
 def check_pipewire() -> bool:
     if not PIPEWIRE:
         return False
-    from xpra.gstreamer.common import has_plugins, import_gst
-    import_gst()
-    return has_plugins("pipewiresrc")
+    from xpra.codecs.pipewire._native import NativeCapture
+    return NativeCapture is not None
 
 
 def check_x11() -> bool:
@@ -163,7 +155,6 @@ def nocheck() -> bool:
 SHADOW_OPTIONS = {
     "auto": nocheck,
     "nvfbc": check_nvfbc,
-    "gstreamer": check_gstreamer,
     "pipewire": check_pipewire,
     "x11": check_x11,
     "xshm": check_xshm,

@@ -6,7 +6,6 @@
 import os
 import re
 from typing import Any
-from collections.abc import Sequence
 from ctypes import create_unicode_buffer, byref, c_ulong
 from ctypes.wintypes import RECT
 
@@ -45,7 +44,6 @@ SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
 NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
 DXGI = envbool("XPRA_SHADOW_DXGI", True)
 GDI = envbool("XPRA_SHADOW_GDI", True)
-GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
 
 def _check_nvfbc() -> bool:
@@ -66,14 +64,6 @@ def _check_dxgi() -> bool:
     return True
 
 
-def _check_gstreamer() -> bool:
-    if not GSTREAMER:
-        return False
-    from xpra.gstreamer.common import has_plugins, import_gst
-    import_gst()
-    return any(has_plugins(el) for el in _get_gstreamer_elements())
-
-
 def _check_gdi() -> bool:
     return bool(GDI)
 
@@ -90,7 +80,6 @@ SHADOW_OPTIONS: dict = {
     "dxgi":      _check_dxgi,
     "gdi":       _check_gdi,
     "nvfbc":     _check_nvfbc,
-    "gstreamer": _check_gstreamer,
     "gtk":       _check_gtk,
 }
 
@@ -112,42 +101,6 @@ def _setup_nvfbc_capture(w: int, h: int, pixel_depth: int = 32):
             if part.strip() and part != "nvfbc":
                 log.warn(" %s", part.strip())
         return None
-
-
-def _get_gstreamer_elements() -> Sequence[str]:
-    if "XPRA_GSTREAMER_CAPTURE_ELEMENTS" in os.environ:
-        return os.environ.get("XPRA_GSTREAMER_CAPTURE_ELEMENTS", "").split(",")
-    elements = []
-    for element, enabled in {
-        "d3d11screencapturesrc": True,
-        "dx9screencapsrc": True,
-        "gdiscreencapsrc": False,   # prefer direct GDI path
-    }.items():
-        if envbool("XPRA_GSTREAMER_CAPTURE_" + element.upper(), enabled):
-            elements.append(element)
-    return elements
-
-
-GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = _get_gstreamer_elements()
-
-
-def _setup_gstreamer_capture(w: int, h: int, pixel_depth: int = 32):
-    from xpra.gstreamer.common import has_plugins, import_gst
-    import_gst()
-    for el in _get_gstreamer_elements():
-        if not has_plugins(el):
-            continue
-        log(f"testing gstreamer capture using {el}")
-        try:
-            from xpra.codecs.gstreamer.capture import Capture
-            capture = Capture(el, pixel_format="BGRX", width=w, height=h)
-            capture.start()
-            if capture.get_image(0, 0, w, h):
-                log(f"using gstreamer element {el}")
-                return capture
-        except Exception:
-            log(f"gstreamer failed to capture the screen using {el}", exc_info=True)
-    return None
 
 
 class ShadowServer(ShadowServerBase):
@@ -573,7 +526,7 @@ class ShadowServer(ShadowServerBase):
     def setup_monitor_capture(self, index: int, title: str, x: int, y: int, w: int, h: int):
         """
         Per-monitor capture dispatch.  DXGI is tried first (by desktop position),
-        with a per-monitor GDI fallback.  Full-desktop backends (nvfbc, gstreamer)
+        with a per-monitor GDI fallback.  Full-desktop backends (nvfbc)
         are routed through the base-class shared-capture path.
         """
         backend = self.backend.lower()
@@ -604,18 +557,13 @@ class ShadowServer(ShadowServerBase):
         raise RuntimeError(f"no capture backend available for monitor {title!r}")
 
     def setup_capture(self):
-        """Full-desktop capture used by nvfbc / gstreamer explicit-backend mode."""
+        """Full-desktop capture used by the nvfbc explicit-backend mode."""
         w, h = self.get_monitor_geometry()[2:4]
         backend = self.backend.lower()
         if backend in ("nvfbc", "auto") and NVFBC:
             capture = _setup_nvfbc_capture(w, h, self.pixel_depth)
             if capture:
                 log.info("capture using NvFBC")
-                return capture
-        if backend in ("gstreamer", "auto") and GSTREAMER:
-            capture = _setup_gstreamer_capture(w, h, self.pixel_depth)
-            if capture:
-                log.info("capture using GStreamer")
                 return capture
         if backend in ("gtk", "auto"):
             try:

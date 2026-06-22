@@ -247,6 +247,7 @@ Requires:			%{py3rpmname}-pillow
 # remote codec uses client code to connect to are remote encoder server:
 Suggests:			%{package_prefix}-client
 BuildRequires:		pkgconfig(libdrm)
+BuildRequires:		pkgconfig(libpipewire-0.3)
 Requires:			libdrm
 BuildRequires:		pkgconfig(vpx)
 Requires:			libvpx
@@ -317,8 +318,6 @@ Suggests:			mesa-va-drivers-freeworld
 Recommends:			gstreamer1-plugins-ugly
 #av1:
 Recommends:			gstreamer1-plugins-bad-free-extras
-#pipewire:
-Recommends:			pipewire-gstreamer
 #pytorch filter:
 Suggests:			%{py3rpmname}-torch-vision
 %description -n %{package_prefix}-codecs-extras

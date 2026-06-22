@@ -12,15 +12,12 @@ from typing import Any
 
 from xpra.exit_codes import ExitCode
 from xpra.server.common import get_sources_by_type
-from xpra.server.source.window import WindowsConnection
 from xpra.util.objects import typedict
-from xpra.util.env import envbool
 from xpra.common import may_notify_client
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
 from xpra.dbus.helper import dbus_to_native
-from xpra.codecs.gstreamer.capture import Capture, capture_and_encode
-from xpra.gstreamer.common import get_element_str
+from xpra.codecs.pipewire.capture import Capture, get_native_capture_class
 from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
@@ -32,13 +29,11 @@ from xpra.platform.posix.fd_portal import (
     AvailableSourceTypes, AvailableDeviceTypes,
 )
 from xpra.log import Logger
+from xpra.scripts.config import InitExit
 
 log = Logger("shadow")
 
 session_counter: int = random.randint(0, 2 ** 24)
-
-VIDEO_MODE = envbool("XPRA_PIPEWIRE_VIDEO_MODE", True)
-VIDEO_MODE_ENCODINGS = os.environ.get("XPRA_PIPEWIRE_VIDEO_ENCODINGS", "h264,vp8,vp9,av1").split(",")
 
 
 class PipewireWindowModel(CaptureWindowModel):
@@ -52,6 +47,10 @@ class PipewireWindowModel(CaptureWindowModel):
 
 class PortalShadow(ShadowServerBase):
     def __init__(self, attrs: dict[str, str]):
+        try:
+            get_native_capture_class()
+        except RuntimeError as e:
+            raise InitExit(ExitCode.UNSUPPORTED, str(e)) from e
         # we're not using X11, so no need for this check:
         os.environ["XPRA_UI_THREAD_CHECK"] = "0"
         os.environ["XPRA_NOX11"] = "1"
@@ -61,7 +60,7 @@ class PortalShadow(ShadowServerBase):
         self.session_path: str = ""
         self.session_handle: str = ""
         self.authenticating_client = None
-        self.capture: Capture | None = None
+        self.captures: dict[int, Capture] = {}
         self.portal_interface = get_portal_interface()
         self.input_devices_count = 0
         log(f"PortalShadow({attrs}) portal_interface={self.portal_interface}")
@@ -108,11 +107,13 @@ class PortalShadow(ShadowServerBase):
         """
 
     def stop_capture(self) -> None:
-        if c := self.capture:
-            self.capture = None
+        captures, self.captures = self.captures, {}
+        for c in captures.values():
             c.clean()
 
     def cleanup(self) -> None:
+        self.stop_capture()
+        self.stop_session()
         ShadowServerBase.cleanup(self)
         self.portal_interface = None
 
@@ -234,32 +235,18 @@ class PortalShadow(ShadowServerBase):
             return
         log(f"on_start_response starting pipewire capture for {streams}")
         for node_id, props in streams:
-            self.start_pipewire_capture(int(node_id), typedict(props))
+            if not self.start_pipewire_capture(int(node_id), typedict(props)):
+                return
         self.input_devices_count = res.intget("devices")
         if not self.input_devices_count and not self.readonly:
             # ss.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
             log.warn("Warning: no input devices,")
             log.warn(" keyboard and pointer events cannot be forwarded")
 
-    def create_capture_pipeline(self, fd: int, node_id: int, w: int, h: int) -> Capture:
-        capture_element = get_element_str("pipewiresrc", {
-            "fd": fd,
-            "path": str(node_id),
-            "do-timestamp": True,
-        })
-        c = self.authenticating_client
-        if VIDEO_MODE:
-            encoding = getattr(c, "encoding", "")
-            encs = getattr(c, "core_encodings", ())
-            full_csc_modes = getattr(c, "full_csc_modes", {})
-            log(f"create_capture_pipeline() core_encodings={encs}, full_csc_modes={full_csc_modes}")
-            pipeline = capture_and_encode(capture_element, encoding, full_csc_modes, w, h)
-            if pipeline:
-                return pipeline
-            log.warn("Warning: falling back to slow RGB capture")
-        return Capture(capture_element, pixel_format="BGRX", width=w, height=h)
+    def create_capture(self, fd: int, node_id: int, w: int, h: int) -> Capture:
+        return Capture(fd, node_id, w, h)
 
-    def start_pipewire_capture(self, node_id: int, props: typedict) -> None:
+    def start_pipewire_capture(self, node_id: int, props: typedict) -> bool:
         log(f"start_pipewire_capture({node_id}, {props})")
         if not isinstance(node_id, int):
             raise ValueError(f"node-id is a {type(node_id)}, must be an int")
@@ -273,20 +260,34 @@ class PortalShadow(ShadowServerBase):
             empty_dict,
             dbus_interface=SCREENCAST_IFACE)
         fd = fd_object.take()
-        self.capture = self.create_capture_pipeline(fd, node_id, w, h)
-        self.capture.node_id = node_id
-        self.capture.connect("state-changed", self.capture_state_changed)
-        self.capture.connect("error", self.capture_error)
-        self.capture.connect("new-image", self.capture_new_image)
-        self.capture.start()
+        try:
+            capture = self.create_capture(fd, node_id, w, h)
+        except Exception as e:
+            self.client_auth_error(str(e))
+            self.stop_capture()
+            self.stop_session()
+            return False
+        capture.connect("state-changed", self.capture_state_changed)
+        capture.connect("error", self.capture_error)
+        capture.connect("new-image", self.capture_new_image)
+        try:
+            capture.start()
+        except Exception as e:
+            capture.clean()
+            self.client_auth_error(f"failed to start native PipeWire capture: {e}")
+            self.stop_capture()
+            self.stop_session()
+            return False
+        self.captures[node_id] = capture
         source_type = props.intget("source_type")
         title = f"{AvailableSourceTypes(source_type)} {node_id}"
         geometry = (x, y, w, h)
-        model = PipewireWindowModel(self.capture, title, geometry, node_id, props)
+        model = PipewireWindowModel(capture, title, geometry, node_id, props)
         # must be called from the main thread:
         log(f"new model: {model}")
         self.do_add_new_window_common(node_id, model)
         self._send_new_window_packet(model)
+        return True
 
     def capture_new_image(self, capture, coding: str, data, client_info: dict) -> None:
         wid = capture.node_id
@@ -295,27 +296,18 @@ class PortalShadow(ShadowServerBase):
         if not model:
             log.error(f"Error: cannot find window model for node {wid:#x}")
             return
-        if isinstance(data, ImageWrapper):
-            self.refresh_window(model)
-            return
-        if not isinstance(data, bytes):
+        if not isinstance(data, ImageWrapper):
             log.warn(f"Warning: unexpected image datatype: {type(data)}")
             return
-        # this is a frame from a compressed stream,
-        # send it to all the window sources for this window:
-        window_sources = get_sources_by_type(self, WindowsConnection)
-        for ss in window_sources:
-            ws = ss.get_window_source(wid)
-            if not ws:
-                # client not showing this window
-                continue
-            ws.direct_queue_draw(coding, data, client_info)
+        self.refresh_window(model)
 
     def capture_error(self, capture, message) -> None:
         wid = capture.node_id
         log(f"capture_error({capture}, {message}) wid={wid:#x}")
         log.error("Error capturing screen:")
         log.estr(message)
+        if c := self.captures.pop(wid, None):
+            c.clean()
         if model := self.get_window(wid):
             self._remove_window(model)
         for ss in get_sources_by_type(self):

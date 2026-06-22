@@ -42,31 +42,6 @@ def setup_nvfbc_capture():
         return None
 
 
-def setup_gstreamer_capture():
-    GSTREAMER: bool = envbool("XPRA_SHADOW_GSTREAMER", False)
-    if not GSTREAMER:
-        return None
-    from xpra.gtk.util import get_default_root_window
-    root = get_default_root_window()
-    xid = root.get_xid()
-    ww, wh = root.get_geometry()[2:4]
-    from xpra.codecs.gstreamer.capture import Capture
-    el = "ximagesrc"
-    if xid >= 0:
-        el += f" xid={xid} startx=0 starty=0"
-    if ww > 0:
-        el += f" endx={ww}"
-    if wh > 0:
-        el += f" endy={wh}"
-    capture = Capture(el, width=ww, height=wh)
-    capture.start()
-    image = capture.get_image(0, 0, ww, wh)
-    if not image:
-        log("gstreamer capture failed to return an image")
-        return None
-    return capture
-
-
 def setup_xshm_capture():
     XSHM = envbool("XPRA_SHADOW_XSHM", True)
     if not XSHM:
@@ -94,7 +69,6 @@ def setup_gtk_capture():
 
 CAPTURE_BACKENDS: dict[str, Callable] = {
     "nvfbc": setup_nvfbc_capture,
-    "gstreamer": setup_gstreamer_capture,
     "xshm": setup_xshm_capture,
     "x11": setup_xshm_capture,
     "gtk": setup_gtk_capture,

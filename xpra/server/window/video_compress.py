@@ -13,7 +13,6 @@ from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.os_util import gi_import
-from xpra.util.thread import check_main_thread
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.constants import (
     TransientCodecException, get_subsampling,
@@ -36,7 +35,7 @@ from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER,
 from xpra.codecs.protocols import VideoEncoder
 from xpra.codecs.loader import has_codec
 from xpra.common import roundup
-from xpra.util.parsing import parse_scaling_value, MIN_VREFRESH, MAX_VREFRESH
+from xpra.util.parsing import parse_scaling_value
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.util.env import envint, envbool, first_time
@@ -55,7 +54,6 @@ scrolllog = Logger("scroll")
 compresslog = Logger("compress")
 refreshlog = Logger("refresh")
 regionrefreshlog = Logger("regionrefresh")
-gstlog = Logger("gstreamer")
 
 
 TEXT_USE_VIDEO = envbool("XPRA_TEXT_USE_VIDEO", False)
@@ -119,9 +117,7 @@ VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 30)))
 MIN_SCROLL_IMAGE_SIZE = envint("XPRA_MIN_SCROLL_IMAGE_SIZE", 128)
 
-STREAM_MODE = os.environ.get("XPRA_STREAM_MODE", "auto")
 STREAM_CONTENT_TYPES = os.environ.get("XPRA_STREAM_CONTENT_TYPES", "desktop,video").split(",")
-GSTREAMER_X11_TIMEOUT = envint("XPRA_GSTREAMER_X11_TIMEOUT", 500)
 
 SAVE_VIDEO_PATH = os.environ.get("XPRA_SAVE_VIDEO_PATH", "")
 SAVE_VIDEO_STREAMS = envbool("XPRA_SAVE_VIDEO_STREAMS", False)
@@ -223,7 +219,6 @@ class WindowVideoSource(WindowSource):
         self.video_fallback_encodings: dict = {}
         self.edge_encoding: str = ""
         self.start_video_frame: int = 0
-        self.gstreamer_timer: int = 0
         self.video_encoder_timer: int = 0
         self.b_frame_flush_timer: int = 0
         self.b_frame_flush_data : tuple = ()
@@ -231,8 +226,6 @@ class WindowVideoSource(WindowSource):
         self.encode_from_queue_due = 0
         self.scroll_data = None
         self.last_scroll_time = 0.0
-        self.stream_mode = STREAM_MODE
-        self.gstreamer_pipeline = None
 
         self._csc_encoder: ColorspaceConverter | None = None
         self._video_encoder: VideoEncoder | None = None
@@ -317,7 +310,6 @@ class WindowVideoSource(WindowSource):
             info["video_subregion"] = sri
         info["scaling"] = self.actual_scaling
         info["video-max-size"] = self.video_max_size
-        info["stream-mode"] = self.stream_mode
 
         def addcinfo(prefix, x) -> None:
             if not x:
@@ -372,7 +364,6 @@ class WindowVideoSource(WindowSource):
     def cleanup(self) -> None:
         super().cleanup()
         self.cleanup_codecs()
-        self.stop_gstreamer_pipeline()
 
     def cleanup_codecs(self) -> None:
         """ Video encoders (x264, nvenc and vpx) and their csc helpers
@@ -477,21 +468,9 @@ class WindowVideoSource(WindowSource):
                 videolog(f"gpu {accel=} - {common_accel=}")
                 if common_accel:
                     encoding = "stream"
-                    accel_types: set[str] = set()
-                    for gpu_encoding in common_accel:
-                        for accel_option in accel.get(gpu_encoding, ()):
-                            # 'gstreamer-vah264lpenc' -> 'gstreamer'
-                            accel_types.add(accel_option.codec_type.split("-", 1)[0])
-                    videolog(f"gpu encoder types: {accel_types}")
-                    self.stream_mode = STREAM_MODE
-                    # switch to GStreamer mode if all the GPU accelerated options require it:
-                    if self.stream_mode == "auto" and len(accel_types) == 1 and tuple(accel_types)[0] == "gstreamer":
-                        self.stream_mode = "gstreamer"
                     if first_time(f"gpu-stream-{self.wid:#x}"):
                         videolog.info(f"found GPU accelerated encoders for: {csv(common_accel)}")
                         videolog.info(f"switching to {encoding!r} encoding for {self.content_types!r} window {self.wid:#x}")
-                        if self.stream_mode == "gstreamer":
-                            videolog.info("using 'gstreamer' stream mode")
         super().update_encoding_selection(encoding, exclude, init)
         self.supports_scrolling = "scroll" in self.common_encodings
 
@@ -666,15 +645,6 @@ class WindowVideoSource(WindowSource):
         return super().do_get_auto_encoding(ww, wh, options, current_encoding or self.encoding, encoding_options)
 
     def do_damage(self, ww: int, wh: int, x: int, y: int, w: int, h: int, options: dict) -> None:
-        if ww >= 64 and wh >= 64 and self.encoding == "stream" and self.stream_mode == "gstreamer":
-            # in this mode, we start a pipeline once
-            # and let it submit packets, bypassing all the usual logic:
-            if self.gstreamer_pipeline or self.start_gstreamer_pipeline():
-                gp = self.gstreamer_pipeline
-                self.cancel_gstreamer_timer()
-                if gp:
-                    self.gstreamer_timer = GLib.timeout_add(GSTREAMER_X11_TIMEOUT, self.gstreamer_nodamage)
-                    return
         if vs := self.video_subregion:
             r = vs.rectangle
             if r and r.intersects(x, y, w, h):
@@ -682,69 +652,8 @@ class WindowVideoSource(WindowSource):
                 vs.cancel_refresh_timer()
         super().do_damage(ww, wh, x, y, w, h, options)
 
-    def gstreamer_nodamage(self) -> None:
-        gstlog("gstreamer_nodamage() stopping")
-        self.gstreamer_timer = 0
-        self.stop_gstreamer_pipeline()
-
-    def cancel_gstreamer_timer(self) -> None:
-        if gt := self.gstreamer_timer:
-            self.gstreamer_timer = 0
-            GLib.source_remove(gt)
-
-    def start_gstreamer_pipeline(self) -> bool:
-        from xpra.gstreamer.common import plugin_str
-        from xpra.codecs.gstreamer.capture import capture_and_encode
-        attrs: dict[str, bool | int] = {
-            "show-pointer": False,
-            "do-timestamp": True,
-            "use-damage": False,
-        }
-        try:
-            xid = self.window.get_property("xid")
-        except (TypeError, AttributeError):
-            xid = 0
-        if xid:
-            attrs["xid"] = xid
-        capture_element = plugin_str("ximagesrc", attrs)
-        w, h = self.window_dimensions
-        framerate = 0
-        if self.batch_config.min_delay > 20:
-            framerate = max(MIN_VREFRESH, min(MAX_VREFRESH, round(1000 / self.batch_config.min_delay)))
-        self.gstreamer_pipeline = capture_and_encode(capture_element, self.encoding, self.full_csc_modes,
-                                                     w, h, framerate)
-        if not self.gstreamer_pipeline:
-            return False
-        self.gstreamer_pipeline.connect("new-image", self.new_gstreamer_frame)
-        self.gstreamer_pipeline.start()
-        gstlog("start_gstreamer_pipeline() %s started", self.gstreamer_pipeline)
-        return True
-
-    def stop_gstreamer_pipeline(self) -> None:
-        gp = self.gstreamer_pipeline
-        gstlog("stop_gstreamer_pipeline() gstreamer_pipeline=%s", gp)
-        if gp:
-            self.gstreamer_pipeline = None
-            gp.stop()
-
-    def new_gstreamer_frame(self, _capture_pipeline, coding: str, data, client_info: dict) -> None:
-        gstlog(f"new_gstreamer_frame: {coding}")
-        if not self.window.is_managed():
-            return
-        gp = self.gstreamer_pipeline
-        if gp and (LOG_ENCODERS or compresslog.is_debug_enabled()):
-            client_info["encoder"] = gp.encoder
-        self.direct_queue_draw(coding, data, client_info)
-        GLib.idle_add(self.gstreamer_continue_damage)
-
-    def gstreamer_continue_damage(self) -> None:
-        # ensures that more damage events will be emitted
-        check_main_thread()
-        self.window.acknowledge_changes()
-
     def update_window_dimensions(self, ww: int, wh: int) -> None:
         super().update_window_dimensions(ww, wh)
-        self.stop_gstreamer_pipeline()
 
     def cancel_damage(self, limit: int = 0) -> None:
         self.cancel_encode_from_queue()
@@ -754,8 +663,6 @@ class WindowVideoSource(WindowSource):
         self.free_scroll_data()
         self.last_scroll_time = 0
         super().cancel_damage(limit)
-        self.cancel_gstreamer_timer()
-        self.stop_gstreamer_pipeline()
         # we must clean the video encoder to ensure
         # we will resend a key frame because we may be missing a frame
         self.cleanup_codecs()

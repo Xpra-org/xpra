@@ -16,7 +16,7 @@ from xpra.log import Logger
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
-log = Logger("gstreamer", "util")
+log = Logger("util")
 
 
 def label(text, *args, **kwargs):
@@ -52,22 +52,14 @@ SHADOW_BACKENDS: dict[str, Sequence[str]] = {
         "and also supports hardware video compression",
         "this option is only available for shadowing existing X11 sessions",
     ),
-    "gstreamer": (
-        "GStreamer screen capture",
-        "GStreamer will capture the session's contents using an operating system specific source element",
-        "the pixel data will be compressed using a stream encoder",
-        "eg: h264, hevc, av1, etc",
-    ),
     "gdi": (
         "GDI screen capture",
         "Legacy screen capture for MS Windows,",
         "the xpra server can use mixed encodings with this capture option",
     ),
     "pipewire": (
-        "GStreamer Pipewire capture",
-        "GStreamer pipewire source from the RemoteDesktop interface",
-        "the pixel data will be compressed using a stream encoder",
-        "eg: h264, hevc, av1, etc",
+        "Native PipeWire capture",
+        "PipeWire capture from the RemoteDesktop interface",
         "your desktop sessions must support the 'RemoteDesktop' dbus interface",
     ),
 }

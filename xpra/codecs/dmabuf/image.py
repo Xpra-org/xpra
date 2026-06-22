@@ -8,6 +8,7 @@ from time import monotonic
 from collections.abc import Callable, Sequence
 
 from xpra.util.io import osclose
+from xpra.common import noop
 from xpra.codecs.image import ImageWrapper
 from xpra.util.thread import check_main_thread
 from xpra.log import Logger
@@ -28,6 +29,7 @@ class DMABufImageWrapper(ImageWrapper):
                  drm_format: int, modifier: int,
                  fds: Sequence[int], strides: Sequence[int], offsets: Sequence[int],
                  downloader: Callable[[], ImageWrapper | None] | None = None,
+                 release: Callable[[], None] = noop,
                  pixel_format: str = "DMABUF", depth: int = 0,
                  bytesperpixel: int = 0, full_range=True):
         rowstride = tuple(strides)
@@ -39,6 +41,16 @@ class DMABufImageWrapper(ImageWrapper):
         self.strides = tuple(strides)
         self.offsets = tuple(offsets)
         self.downloader = downloader
+        self.release = release
+
+    def release_buffer(self) -> None:
+        """Return the producer buffer at most once."""
+        release = self.release
+        self.release = noop
+        try:
+            release()
+        except Exception as e:
+            log.error("Error releasing DMA-BUF producer buffer: %s", e)
 
     def __repr__(self) -> str:
         return "%s(%#x:%s:%s:%s)" % (
@@ -73,8 +85,17 @@ class DMABufImageWrapper(ImageWrapper):
         if not self.downloader:
             raise RuntimeError("no dmabuf downloader is available")
         start = monotonic()
-        image = self.downloader()
+        try:
+            image = self.downloader()
+        except Exception:
+            self.close_fds()
+            self.downloader = None
+            self.release_buffer()
+            raise
         if image is None:
+            self.close_fds()
+            self.downloader = None
+            self.release_buffer()
             raise RuntimeError("dmabuf download failed")
         self.pixels = image.get_pixels()
         self.pixel_format = image.get_pixel_format()
@@ -86,6 +107,7 @@ class DMABufImageWrapper(ImageWrapper):
         self.full_range = image.get_full_range()
         self.close_fds()
         self.downloader = None
+        self.release_buffer()
         elapsed = monotonic() - start
         log("may_download() format=%#x, modifier=%#x, size=%ix%i, elapsed=%ims",
             self.drm_format, self.modifier, self.width, self.height, int(1000 * elapsed))
@@ -105,4 +127,5 @@ class DMABufImageWrapper(ImageWrapper):
     def free(self) -> None:
         self.close_fds()
         self.downloader = None
+        self.release_buffer()
         super().free()

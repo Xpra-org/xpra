@@ -27,6 +27,30 @@ class TestDMABufImageWrapper(unittest.TestCase):
         os.close(read_fd)
         return image, calls
 
+    def test_release_callback(self):
+        released = []
+        image, _calls = self.make_wrapper()
+        image.release = lambda: released.append(True)
+        image.free()
+        image.free()
+        self.assertEqual(released, [True])
+
+        image, _calls = self.make_wrapper()
+        image.release = lambda: released.append(True)
+        image.may_download()
+        image.free()
+        self.assertEqual(released, [True, True])
+
+    def test_failed_download_releases(self):
+        image, _calls = self.make_wrapper()
+        released = []
+        image.downloader = lambda: None
+        image.release = lambda: released.append(True)
+        with self.assertRaises(RuntimeError):
+            image.may_download()
+        self.assertEqual(released, [True])
+        self.assertFalse(image.fds)
+
     def test_may_download(self):
         image, calls = self.make_wrapper()
         fds = image.fds
