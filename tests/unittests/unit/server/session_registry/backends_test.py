@@ -7,9 +7,12 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from xpra.server.session_registry.auth import Registry as AuthRegistry
 from xpra.server.session_registry.multifile import Registry as MultifileRegistry
+from xpra.server.session_registry.socket import Registry as SocketRegistry
+from xpra.net.constants import SocketState
 
 
 class FakeAuth:
@@ -81,6 +84,29 @@ class TestMultifileRegistry(unittest.TestCase):
         path = self._make_file("# header\n\nalice|secret|1000|1000|:10||\n")
         r = MultifileRegistry(filename=path)
         self.assertIsNotNone(r.lookup(FakeAuth(username="alice")))
+
+
+class TestSocketRegistry(unittest.TestCase):
+
+    def test_directory_options(self):
+        self.assertEqual(SocketRegistry(**{"socket-dirs": "/a:/b"}).socket_dirs, ["/a", "/b"])
+        self.assertEqual(SocketRegistry(socket_dirs=["/x"]).socket_dirs, ["/x"])
+
+    def test_live_unique_displays(self):
+        sockets = ((SocketState.LIVE, ":10"), (SocketState.DEAD, ":11"), (SocketState.LIVE, ":10"))
+        dotxpra = unittest.mock.Mock()
+        dotxpra.sockets.return_value = sockets
+        with patch("xpra.server.session_registry.socket.DotXpra", return_value=dotxpra):
+            session = SocketRegistry(socket_dirs=["/tmp"]).lookup(FakeAuth())
+        self.assertEqual((session.uid, session.gid, session.displays), (1000, 1000, [":10"]))
+        dotxpra.sockets.assert_called_once_with(check_uid=1000)
+
+    def test_missing_ids_and_scan_failure(self):
+        auth = FakeAuth()
+        auth.get_uid = unittest.mock.Mock(side_effect=NotImplementedError)
+        self.assertIsNone(SocketRegistry(socket_dirs=["/tmp"]).lookup(auth))
+        with patch("xpra.server.session_registry.socket.DotXpra", side_effect=OSError("denied")):
+            self.assertIsNone(SocketRegistry(socket_dirs=["/tmp"]).lookup(FakeAuth()))
 
 
 def main():

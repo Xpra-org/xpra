@@ -13,6 +13,14 @@ from xpra.platform.displayfd import write_displayfd, read_displayfd
 
 class DisplayFDTest(unittest.TestCase):
 
+    def test_pipe_roundtrip(self):
+        r_pipe, w_pipe = os.pipe()
+        self.assertTrue(write_displayfd(w_pipe, "77"))
+        try:
+            self.assertEqual(read_displayfd(r_pipe), b"77\n")
+        finally:
+            os.close(r_pipe)
+
     def test_write(self):
         temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test", delete=False)
         try:

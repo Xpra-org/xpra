@@ -7,12 +7,30 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from xpra.notification import common
 from unit.test_util import silence_error
 
 
 class TestCommon(unittest.TestCase):
+
+    def test_validated_hints(self):
+        hints = common.validated_hints({
+            "urgency": "2", "resident": 1, "category": "email", "unknown": "ignored",
+        })
+        self.assertEqual(hints, {"urgency": 2, "resident": True, "category": "email"})
+        self.assertEqual(common.validated_hints({"x": object()}), {})
+
+    def test_image_data_hint_precedence(self):
+        hints = {"image-path": "/first", "image_data": (1, 2, 3)}
+        with patch.object(common, "parse_image_data", return_value=None) as parse_data, \
+                patch.object(common, "parse_image_path", return_value=("png", 1, 1, b"data")) as parse_path:
+            self.assertEqual(common.image_data_hint(hints), ("png", 1, 1, b"data"))
+            parse_data.assert_called_once_with((1, 2, 3))
+            parse_path.assert_called_once_with("/first")
+        self.assertNotIn("image_data", hints)
+        self.assertNotIn("image-path", hints)
 
     def test_parse_image_data(self):
         p = common.parse_image_data
