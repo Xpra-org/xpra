@@ -44,7 +44,10 @@ MULTI_MONITORS: bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 def do_modify_gsettings(defs: dict[str, Any], value=False) -> dict[str, Any]:
     modified = {}
     try:
-        schemas = Gio.SettingsSchemaSource.get_default().list_schemas(True)
+        # `list_schemas(recursive)` returns a tuple of two lists:
+        # the non-relocatable and the relocatable schema ids
+        non_relocatable, relocatable = Gio.SettingsSchemaSource.get_default().list_schemas(True)
+        schemas = tuple(non_relocatable) + tuple(relocatable)
     except AttributeError:
         schemas = Gio.Settings.list_schemas()
     for schema, attributes in defs.items():
