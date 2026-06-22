@@ -45,7 +45,7 @@ def validate_size(size: int) -> None:
     if size < 64 * 1024 * 1024:
         raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
     if size > 16 * 1024 * 1024 * 1024:
-        raise ValueError("mmap is too big: %sB (maximum is 4GB)" % std_unit(size))
+        raise ValueError("mmap is too big: %sB (maximum is 16GB)" % std_unit(size))
 
 
 def get_mmap_dir() -> str:
