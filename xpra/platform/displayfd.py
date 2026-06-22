@@ -93,4 +93,5 @@ def parse_displayfd(buf: bytes, err: Callable) -> int:
         return -1
     if n < 0 or n >= 2 ** 16:
         err("provided an invalid display number: %s" % n)
+        return -1
     return n
