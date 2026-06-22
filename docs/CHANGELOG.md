@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.6] 2026-05-26
+## [6.6] 2026-06-22
 * 🔧 Platforms, build and packaging:
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
@@ -30,6 +30,7 @@
   * [`YUV422` support with `vp9`](https://github.com/Xpra-org/xpra/issues/4928)
   * [colorspace synchronization in video bitstream](https://github.com/Xpra-org/xpra/issues/4926)
 * ✨ Features:
+  * [gsettings synchronization](https://github.com/Xpra-org/xpra/issues/3683)
   * [clipboard rate limiting](https://github.com/Xpra-org/xpra/issues/2404)
   * [clipboard support for URIs on MS Windows](https://github.com/Xpra-org/xpra/issues/4917)
   * [audio keepalive](https://github.com/Xpra-org/xpra/issues/4913)
@@ -42,6 +43,7 @@
   * [Wayland scaled subsurfaces](https://github.com/Xpra-org/xpra/issues/4878)
   * [per-client readonly sessions](https://github.com/Xpra-org/xpra/issues/3468)
   * [client-server "loopback" tests](https://github.com/Xpra-org/xpra/issues/2357)
+  * [improved test coverage](https://github.com/Xpra-org/xpra/issues/2873)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
