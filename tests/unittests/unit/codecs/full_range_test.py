@@ -34,7 +34,7 @@ SAMPLE_FULL_RANGE = False
 
 # Codecs which do not signal the colour range at all
 # (there is nothing to verify and exercising them here is slow/flaky):
-NO_RANGE_CODECS = ("enc_gstreamer", "dec_gstreamer")
+NO_RANGE_CODECS: tuple[str, ...] = ()
 
 # (encoder, encoding, input colorspace, decoder, output colorspace) combinations
 # that carry the colour range through the bitstream from end to end

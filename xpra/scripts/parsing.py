@@ -1845,7 +1845,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     legacy_bool_parse("gstreamer")
     group.add_option("--gstreamer", action="store",
                      dest="gstreamer", default=defaults.gstreamer,
-                     help="Enable GStreamer audio and video support."
+                     help="Enable GStreamer audio support."
                           " Default: '%default'.")
     group.add_option("--env", action="append",
                      dest="env", default=mlist(defaults.env),

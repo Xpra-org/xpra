@@ -30,7 +30,6 @@ lock = Lock()
 NOWARN = [
     "nvenc", "nvdec", "enc_nvjpeg",
     "dec_nvjpeg", "nvfbc", "dec_openh264",
-    "enc_gstreamer", "dec_gstreamer",
     "csc_cython",
     "filter_torch",
     "filter_pillow",
@@ -57,7 +56,6 @@ SKIP_LIST: Sequence[str] = ()
 if OSX:
     SKIP_LIST = (
         "enc_amf", "dec_amf",
-        "enc_gstreamer", "dec_gstreamer",
         "nvenc", "nvdec", "nvjpeg",
         "filter_torch", "filter_pillow",
     )
@@ -81,10 +79,10 @@ ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "webp", "jpeg", "nvjpeg", "avif", "jph",
 ))
 ENCODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("enc", x) for x in (
-    "vpx", "x264", "openh264", "nvenc", "vpl", "libva", "gstreamer", "amf", "vt", "remote",
+    "vpx", "x264", "openh264", "nvenc", "vpl", "libva", "amf", "vt", "remote",
 ))
 DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
-    "pillow", "webp", "jpeg", "nvjpeg", "avif", "jph", "gstreamer",
+    "pillow", "webp", "jpeg", "nvjpeg", "avif", "jph",
 ))
 DECODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("dec", x) for x in (
     "vpl", "mf", "nvdec", "libva", "vpx", "openh264", "aom", "de265",
@@ -268,7 +266,6 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
     "enc_vpl"       : ("vpl encoder",       "vpl",          "encoder", "Encoder"),
     "enc_libva"     : ("libva encoder",     "libva",        "encoder", "Encoder"),
-    "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),
     "enc_amf"       : ("amf encoder",       "amf",          "encoder", "Encoder"),
     "enc_vt"        : ("VideoToolbox encoder", "vt",        "encoder", "Encoder"),
     "enc_remote"    : ("remote encoder",    "remote",       "encoder", "Encoder"),
@@ -289,7 +286,6 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
     "dec_openh264"  : ("openh264 decoder",  "openh264",     "decoder", "Decoder"),
     "nvdec"         : ("nvdec decoder",     "nvidia.nvdec", "decoder", "Decoder"),
-    "dec_gstreamer" : ("gstreamer decoder", "gstreamer",    "decoder", "Decoder"),
     "dec_aom"       : ("aom decoder",       "aom",          "decoder", "Decoder"),
     "dec_de265"     : ("de265 decoder",     "de265",        "decoder", "Decoder"),
     "enc_mf"        : ("mf encoder",        "mf",           "encoder", "Encoder"),

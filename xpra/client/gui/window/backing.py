@@ -125,7 +125,7 @@ def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int 
 
 
 def choose_decoder(decoders_for_cs: list[CodecSpec], max_setup_cost=100) -> CodecSpec:
-    # for now, just rank by setup-cost, so gstreamer decoders come last:
+    # for now, just rank by setup-cost, so slow-to-initialize decoders come last:
     scores: dict[int, list[int]] = {}
     for index, decoder_spec in enumerate(decoders_for_cs):
         cost = decoder_spec.setup_cost

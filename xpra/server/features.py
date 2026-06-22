@@ -181,7 +181,7 @@ def enforce_server_features() -> None:
         "ssh": "paramiko,xpra.net.ssh,xpra.server.subsystem.ssh_agent",
         "keyboard": "xpra.server.subsystem.keyboard,xpra.server.source.keyboard",
         "pointer": "xpra.server.subsystem.pointer,xpra.server.source.pointer",
-        "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
+        "gstreamer": "gi.repository.Gst,xpra.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
         "wayland": "xpra.wayland",
         "dbus": "xpra.dbus,xpra.server.dbus,xpra.server.source.dbus",

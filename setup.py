@@ -525,8 +525,6 @@ cuda_kernels_ENABLED    = nvidia_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_EN
 cuda_rebuild_ENABLED    = None if (nvidia_ENABLED and not WIN32) else False
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_exists("libyuv")
 gstreamer_ENABLED       = DEFAULT
-gstreamer_audio_ENABLED = gstreamer_ENABLED
-gstreamer_video_ENABLED = gstreamer_ENABLED and not OSX
 example_ENABLED         = DEFAULT
 win32_tools_ENABLED     = WIN32 and DEFAULT
 
@@ -580,7 +578,7 @@ CODEC_SWITCHES = ENCODER_SWITCHES + DECODER_SWITCHES + [
     "de265",
     "v4l2", "evdi", "drm",
     "csc_cython", "csc_libyuv", "pytorch",
-    "gstreamer", "gstreamer_audio", "gstreamer_video",
+    "gstreamer",
     "dmabuf",
     "pipewire",
 ]
@@ -602,7 +600,6 @@ SWITCH_ALIAS = {
     "vpl": ("vpl_decoder", "vpl_encoder"),
     "libva": ("libva_encoder", "libva_decoder"),
     "nvidia": ("nvidia", "nvenc", "nvdec", "nvfbc", "nvjpeg_encoder", "nvjpeg_decoder", "cuda_kernels"),
-    "gstreamer": ("gstreamer_audio", "gstreamer_video"),
     "cython": (
         "cython", "codecs",
         "server", "client", "shadow",
@@ -3687,7 +3684,6 @@ if libva_decoder_ENABLED:
     ace("xpra.codecs.libva.decoder,xpra/codecs/libva/va_decode.c",
         "libva,libva-win32" if WIN32 else "libva,libva-drm")
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
-toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
 toggle_packages(remote_encoder_ENABLED, "xpra.codecs.remote")
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
@@ -3791,8 +3787,6 @@ if cythonize_more_ENABLED:
                 ax("xpra.codecs.pillow.encoder")
             if pillow_decoder_ENABLED:
                 ax("xpra.codecs.pillow.decoder")
-        if gstreamer_video_ENABLED:
-            ax("xpra.codecs.gstreamer")
         if remote_encoder_ENABLED:
             ax("xpra.codecs.remote")
     if gstreamer_ENABLED:

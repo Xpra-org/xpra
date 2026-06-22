@@ -130,7 +130,7 @@ def enforce_client_features() -> None:
         "display": "xpra.client.subsystem.display",
         "window": "xpra.client.subsystem.window",
         "cursor": "xpra.client.subsystem.cursor",
-        "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
+        "gstreamer": "gi.repository.Gst,xpra.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
         "webcam": "xpra.webcam,xpra.client.subsystem.webcam",
         "audio": "xpra.audio,xpra.client.subsystem.audio",

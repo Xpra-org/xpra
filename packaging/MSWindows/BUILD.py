@@ -139,7 +139,7 @@ def du(path: str) -> int:
 
 
 def get_build_args(args) -> list[str]:
-    xpra_args = ["--without-gstreamer_video"]
+    xpra_args = []
     if args.light:
         for option in (
             "shadow", "server", "proxy", "rfb",

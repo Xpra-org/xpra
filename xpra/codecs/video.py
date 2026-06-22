@@ -46,8 +46,6 @@ CODEC_TO_MODULE: dict[str, str] = {
     "enc_mf"        : "mf.encoder",
     "dec_mf"        : "mf.decoder",
     "dec_vpl"       : "vpl.decoder",
-    "dec_gstreamer" : "gstreamer.decoder",
-    "enc_gstreamer" : "gstreamer.encoder",
     "enc_remote"    : "remote.encoder",
 }
 
@@ -75,14 +73,14 @@ def try_import_modules(prefix: str, *codec_names: str) -> list[str]:
 
 # all the codecs we know about:
 ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("amf", "vt", "x264", "openh264", "vpx",
-                                            "nvenc", "vpl", "libva", "nvjpeg", "jpeg", "webp", "gstreamer", "remote")
+                                            "nvenc", "vpl", "libva", "nvjpeg", "jpeg", "webp", "remote")
 HARDWARE_ENCODER_OPTIONS: Sequence[str] = ("nvenc", "vpl", "libva", "nvjpeg", "vt")
 ALL_CSC_MODULE_OPTIONS: Sequence[str] = ("cython", "libyuv")
-ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("vpl", "mf", "nvdec", "openh264", "vpx", "gstreamer", "aom", "de265")
+ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("vpl", "mf", "nvdec", "openh264", "vpx", "aom", "de265")
 
 PREFERRED_ENCODER_ORDER: Sequence[str] = tuple(
     autoprefix("enc", x) for x in (
-        "nvenc", "vpl", "libva", "vt", "nvjpeg", "x264", "vpx", "jpeg", "webp", "gstreamer")
+        "nvenc", "vpl", "libva", "vt", "nvjpeg", "x264", "vpx", "jpeg", "webp")
 )
 log("video: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)

@@ -30,6 +30,7 @@
   * [`YUV422` support with `vp9`](https://github.com/Xpra-org/xpra/issues/4928)
   * [colorspace synchronization in video bitstream](https://github.com/Xpra-org/xpra/issues/4926)
 * ✨ Features:
+  * [remove GStreamer video codecs](https://github.com/Xpra-org/xpra/issues/4936)
   * [gsettings synchronization](https://github.com/Xpra-org/xpra/issues/3683)
   * [clipboard rate limiting](https://github.com/Xpra-org/xpra/issues/2404)
   * [clipboard support for URIs on MS Windows](https://github.com/Xpra-org/xpra/issues/4917)

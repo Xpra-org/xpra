@@ -305,19 +305,6 @@ BuildRequires:		pkgconfig(libavif)
 BuildRequires:		pkgconfig(libde265)
 Requires:			libde265
 %endif
-#for gstreamer video encoder and decoder:
-Recommends:			gstreamer1
-Recommends:			python3-gstreamer1
-#appsrc, videoconvert:
-Recommends:			gstreamer1-plugins-base
-#vaapi:
-Recommends:			gstreamer1-vaapi
-#strangely conflicts with 'mesa-va-drivers' instead of replacing it:
-Suggests:			mesa-va-drivers-freeworld
-#x264:
-Recommends:			gstreamer1-plugins-ugly
-#av1:
-Recommends:			gstreamer1-plugins-bad-free-extras
 #pytorch filter:
 Suggests:			%{py3rpmname}-torch-vision
 %description -n %{package_prefix}-codecs-extras
@@ -868,7 +855,6 @@ rm -rf $RPM_BUILD_ROOT
 %if 0%{?fedora}
 %{python3_sitearch}/xpra/codecs/de265
 %endif
-%{python3_sitearch}/xpra/codecs/gstreamer
 %if 0%{amf_codecs}
 %{python3_sitearch}/xpra/codecs/amf
 %endif

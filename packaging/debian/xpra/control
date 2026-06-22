@@ -367,10 +367,6 @@ Depends: xpra-codecs (= ${binary:Version})
 #forky:              ,libavif16
 #sid:              ,libavif16
               ,libde265-0
-Recommends:
-        ,gstreamer-plugins-ugly
-        ,gstreamer1.0-vaapi
-        ,python3-gst-1.0
 Suggests: python3-torchvision
 Description: Extra picture and video codecs
  for the xpra server and client.

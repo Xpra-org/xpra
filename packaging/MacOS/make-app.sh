@@ -19,7 +19,6 @@ GIR_SOURCE_DIR="${JHBUILD_PREFIX}/share/gir-1.0"
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER="${STRIP_GSTREAMER:=$STRIP_DEFAULT}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_GSTREAMER}"
-GSTREAMER_VIDEO="${GSTREAMER_VIDEO:=0}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_TESTS="${STRIP_TESTS:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
@@ -43,11 +42,6 @@ if [ -z "${DO_X11}" ]; then
 fi
 
 BUILDNO="${BUILDNO:="0"}"
-if [ "${GSTREAMER_VIDEO}" == "1" ]; then
-	BUILD_ARGS="${BUILD_ARGS} --with-gstreamer_video"
-else
-	BUILD_ARGS="${BUILD_ARGS} --without-gstreamer_video"
-fi
 APP_NAME="Xpra"
 if [ "${LIGHT}" == "1" ]; then
   APP_NAME="Xpra-Light"
@@ -252,10 +246,6 @@ if [ "${LIGHT}" == "1" ]; then
 	for x in "server" "x11"; do
 		rm -fr "${PYDIR}/xpra/$x"
 	done
-fi
-if [ "${GSTREAMER_VIDEO}" == "0" ]; then
-	echo "- remove gstreamer video codec"
-	rm -fr "${PYDIR}/xpra/codecs/gstreamer"
 fi
 
 for module in "AVFoundation" "pkg_resources" "gi" "cffi" "OpenGL" "OpenGL_accelerate" "zeroconf"; do
@@ -635,9 +625,6 @@ if [ "$STRIP_GSTREAMER" == "1" ]; then
 	# we always need 'video' because pbutils links with it...
 	GST_DYLIBS="app audio base codecparsers codecs gl net pbutils reamer riff rtp tag video"
 	# not sure: allocators mse play player rtp rtsp sctp sdp webrtc
-	if [ "${GSTREAMER_VIDEO}" == "1" ]; then
-    GST_DYLIBS="${GST_DYLIBS} mpegts stmse"
-	fi
 	echo "  keeping: ${GST_DYLIBS}"
 	KEEP="${FRAMEWORKS_DIR}/gst.temp"
 	mkdir "${KEEP}" || exit 1
@@ -655,12 +642,6 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	KEEP="${RSCDIR}/lib/gstreamer-1.0.keep"
 	mkdir "${KEEP}" || exit 1
 	PLUGINS="app applemedia audioconvert audiolatency audioparsers audiorate audioresample audiotestsrc coreelements cutter faac flac gdp isomp4 matroska ogg opus opusparse oss4 osxaudio removesilence rtp speex volume vorbis wavenc wavparse"
-	if [ "${GSTREAMER_VIDEO}" == "1" ]; then
-    # video sink for testing:
-    PLUGINS="${PLUGINS} autodetect osxvideo"
-		# video support:
-		PLUGINS="${PLUGINS} vpx x264 aom openh264 videoconvert videorate videoscale libav"
-	fi
 	for x in $PLUGINS; do
 		KMP="${KMP} $x"
 		mv "${GST_PLUGIN_DIR}/libgst${x}.dylib" "${KEEP}/"

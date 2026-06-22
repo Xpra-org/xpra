@@ -131,7 +131,7 @@ sweep, ±0.5 MB noise floor on this host.
 | Option                              | Default     | ΔRSS server | Notes                                                                |
 |-------------------------------------|-------------|-------------|----------------------------------------------------------------------|
 | `--audio=no`                        | yes         | −2 MB       | Skips GStreamer audio probe                                          |
-| `--gstreamer=no`                    | yes         | −2 MB       | Implies `--audio=no`; also disables GStreamer video codecs           |
+| `--gstreamer=no`                    | yes         | −2 MB       | Implies `--audio=no`                                                 |
 | `--clipboard=no`                    | yes         | ~0 MB       | Noise — the clipboard server itself is tiny at idle                  |
 | `--notifications=no`                | yes         | −1 MB       |                                                                      |
 | `--bell=no`                         | yes         | −4 MB       | Skips XFixes bell listener + dbus glue                               |
