@@ -282,6 +282,146 @@ class Test_Roundtrip(unittest.TestCase):
                 rsignal, rnoise = results.get(key, (0, 0))
                 results[key] = (rsignal + signal, rnoise + noise)
 
+    def test_rgb_roundtrip_snr(self):
+        # exercise the full pipeline, including colorspace conversion on both ends:
+        #   RGB -> (csc) -> YUV -> encode -> decode -> YUV -> (csc) -> RGB
+        # the chain is lossy (chroma subsampling + lossy codec), so instead of
+        # verifying exact values we report the signal-to-noise ratio:
+        if numpy is None:
+            self.skipTest("numpy is required to compute the signal-to-noise ratio")
+        for quality in (100, 50):
+            results = self._run_rgb(quality=quality)
+            self.assertTrue(results, f"no RGB roundtrips exercised at quality={quality}%")
+            print(f"\nRGB -> YUV -> encode -> decode -> YUV -> RGB "
+                  f"signal-to-noise ratio at quality={quality}%:")
+            for key in sorted(results):
+                encoding, enc_type, dec_type, csc, size = key
+                snr = results[key]
+                label = f"{encoding} {enc_type}/{dec_type} {csc} {size}"
+                value = "lossless" if snr == float("inf") else f"{snr:5.1f} dB"
+                print(f"  {label:62} : {value}")
+
+    def _run_rgb(self, quality: int = 100, rgb_format: str = "BGRX") -> dict:
+        vh = getVideoHelper()
+        vh.enable_all_modules()
+        vh.init()
+        encodings = vh.get_encodings()
+        decodings = vh.get_decodings()
+        common = [x for x in encodings if x in decodings]
+        base_options = {"max-delayed": 0}
+        ctx = nullcontext()
+        try:
+            from xpra.codecs.nvidia.cuda.context import get_default_device_context
+            ctx = get_default_device_context()
+            base_options["cuda-device-context"] = ctx
+        except (ImportError, RuntimeError):
+            pass
+
+        def first_cpu_spec(specs):
+            # skip GPU csc modules: they need a cuda context and GPU buffers,
+            # which don't apply to the CPU images used here:
+            for spec in specs or ():
+                if not spec.codec_type.startswith("nv"):
+                    return spec
+            return None
+
+        results: dict = {}
+        with ctx:
+            for encoding in common:
+                encs = vh.get_encoder_specs(encoding)
+                decs = vh.get_decoder_specs(encoding)
+                for in_csc, enc_specs in encs.items():
+                    # this pipeline starts from RGB, so we only want encoders
+                    # whose input is a YUV colorspace we can convert RGB into:
+                    if not (in_csc.startswith("YUV") or in_csc == "NV12"):
+                        continue
+                    fcsc = first_cpu_spec(vh.get_csc_specs(rgb_format).get(in_csc))
+                    if not fcsc:
+                        continue
+                    for enc_spec in enc_specs:
+                        if enc_spec.codec_type.startswith("nv"):
+                            continue
+                        for out_csc in enc_spec.output_colorspaces:
+                            bcsc = first_cpu_spec(vh.get_csc_specs(out_csc).get(rgb_format))
+                            if not bcsc:
+                                continue
+                            for decoder_spec in decs.get(out_csc, ()):
+                                if decoder_spec.codec_type.startswith("nv"):
+                                    continue
+                                # only test a size that every stage accepts as-is
+                                # (a stage may require even dimensions: mask 0xFFFE):
+                                width_mask = enc_spec.width_mask & decoder_spec.width_mask & fcsc.width_mask & bcsc.width_mask
+                                height_mask = enc_spec.height_mask & decoder_spec.height_mask & fcsc.height_mask & bcsc.height_mask
+                                for width, height in TEST_SIZES:
+                                    if width != (width & width_mask) or height != (height & height_mask):
+                                        continue
+                                    signal, noise = self._test_rgb_data(
+                                        encoding, enc_spec.codec_class, decoder_spec.codec_class,
+                                        fcsc, bcsc, base_options, rgb_format,
+                                        in_csc, out_csc, width, height,
+                                        quality=quality, full_range=enc_spec.full_range)
+                                    key = (encoding, enc_spec.codec_type, decoder_spec.codec_type,
+                                           f"{rgb_format}->{in_csc}->{out_csc}", f"{width}x{height}")
+                                    results[key] = snr_db(signal, noise)
+        return results
+
+    def _csc_image(self, csc_spec, image, src_format, dst_format, width, height, options):
+        csc = csc_spec.codec_class()
+        csc.init_context(width, height, src_format, width, height, dst_format, options)
+        out_image = csc.convert_image(image)
+        csc.clean()
+        if not out_image:
+            raise RuntimeError(f"{csc_spec} failed to convert {src_format} to {dst_format}")
+        return out_image
+
+    def _test_rgb_data(self, encoding, encoder_class, decoder_class,
+                       fcsc, bcsc, base_options, rgb_format,
+                       in_csc, out_csc, width, height, quality=100, full_range=True):
+        log("test_rgb%s" % ((encoding, encoder_class, decoder_class, rgb_format,
+                             in_csc, out_csc, width, height, quality),))
+        enc_options = typedict(base_options or {})
+        enc_options["quality"] = quality
+        enc_options["speed"] = 0
+        enc_options["dst-formats"] = (out_csc,)
+        # both colorspace conversions must agree on the range so they cancel out:
+        csc_options = typedict({"full-range": full_range})
+        # 1. textured RGB source image (a flat colour would roundtrip near-losslessly):
+        src_image = make_textured_image(rgb_format, width, height)
+        src_stride = src_image.get_rowstride()
+        src_pixels = bytes(src_image.get_pixels())
+        # 2. RGB -> YUV (csc step before the encoder):
+        yuv_image = self._csc_image(fcsc, src_image, rgb_format, in_csc, width, height, csc_options)
+        # 3. encode the YUV image:
+        encoder = encoder_class()
+        encoder.init_context(encoding, width, height, in_csc, enc_options)
+        out = encoder.compress_image(yuv_image, enc_options)
+        if not out:
+            raise RuntimeError(f"{encoder} failed to compress {yuv_image} with options {enc_options}")
+        cdata, client_options = out
+        assert cdata
+        # 4. decode back to YUV:
+        decoder = decoder_class()
+        decoder.init_context(encoding, width, height, out_csc, enc_options)
+        yuv_out = decoder.decompress_image(cdata, typedict(client_options))
+        if not yuv_out:
+            raise ValueError("no image from decoder")
+        # 5. YUV -> RGB (csc step on the way out):
+        rgb_out = self._csc_image(bcsc, yuv_out, out_csc, rgb_format, width, height, csc_options)
+        # 6. compare the RGB images, ignoring the unused 'X' channel:
+        out_pixels = rgb_out.get_pixels()
+        out_stride = rgb_out.get_rowstride()
+        xi = rgb_format.find("X")
+        Bpp = len(rgb_format)
+        row_bytes = width * Bpp
+        signal = noise = 0
+        for y in range(height):
+            in_row = zeroout(src_pixels[src_stride * y:src_stride * y + row_bytes], xi, Bpp)
+            out_row = zeroout(out_pixels[out_stride * y:out_stride * y + row_bytes], xi, Bpp)
+            s, n = plane_energy(in_row, out_row)
+            signal += s
+            noise += n
+        return signal, noise
+
     def _test_data(self, encoding, encoder_class, decoder_class,
                    options, in_csc="YUV420P", out_csc="YUV420P", colour="?",
                    pixeldata=None, width=128, height=128, quality=100, verify=True):
