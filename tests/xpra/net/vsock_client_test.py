@@ -5,9 +5,10 @@
 
 
 import sys
-from xpra.net.vsock import connect_vsocket, CID_ANY, PORT_ANY       #@UnresolvedImport
 
+from xpra.net.vsock import connect_vsocket, CID_ANY, PORT_ANY       #@UnresolvedImport
 from xpra.log import Logger
+
 log = Logger("network")
 
 
@@ -24,6 +25,7 @@ def main(args):
     vsock.send(" "*1024*1024*1024)
     data = vsock.recv(1024)
     log("recv()=%s", data)
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

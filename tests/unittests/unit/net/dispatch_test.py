@@ -44,8 +44,12 @@ class DispatchTest(unittest.TestCase):
         dispatcher.packet_alias["old"] = "auth"
         proto = Mock()
         proto.is_closed.return_value = False
-        for name, authenticated, main in (("old", True, False), ("ui", True, True),
-                                           ("default", False, False), ("default-ui", False, True)):
+        for name, authenticated, main in (
+                ("old", True, False),
+                ("ui", True, True),
+                ("default", False, False),
+                ("default-ui", False, True),
+        ):
             dispatcher.dispatch_packet(proto, Packet(name, 1), authenticated)
             self.assertEqual(dispatcher.calls[-1], (main, "auth" if name == "old" else name))
         for handler in handlers.values():

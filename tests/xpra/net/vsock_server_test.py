@@ -5,9 +5,10 @@
 
 
 import sys
-from xpra.net.vsock import bind_vsocket, CID_HOST, PORT_ANY       #@UnresolvedImport
 
+from xpra.net.vsock import bind_vsocket, CID_HOST, PORT_ANY       #@UnresolvedImport
 from xpra.log import Logger
+
 log = Logger("network")
 
 
@@ -38,6 +39,7 @@ def main(args):
             else:
                 return 0
         connection.send("hello")
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
