@@ -109,26 +109,29 @@ def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str, int]
 
 
 @dataclass
-class ReceiveChunkState:
+class ChunkState:
     start: float
+    send_id: str
+    filesize: int
+
+
+@dataclass
+class ReceiveChunkState(ChunkState):
     fd: int
     filename: str
     mimetype: str
     printit: bool
     openit: bool
-    filesize: int
     options: typedict
     digest: hashlib._Hash | None
     written: int
     cancelled: bool
-    send_id: str
     timer: int
     chunk: int
 
 
 @dataclass
-class SendChunkState:
-    start: float
+class SendChunkState(ChunkState):
     data: bytes
     chunk_size: int
     timer: int
@@ -383,8 +386,12 @@ class FileTransferHandler(FileTransferAttributes):
     def cancel_file(self, chunk_id: str, message: str, chunk: int = 0) -> None:
         filelog("cancel_file%s", (chunk_id, message, chunk))
         if chunk_state := self.receive_chunks_in_progress.get(chunk_id):
+            if chunk_state.cancelled:
+                self.send("ack-file-chunk", chunk_id, False, message, chunk)
+                return
             # mark it as cancelled:
             chunk_state.cancelled = True
+            self.transfer_progress_error(False, chunk_state, message)
             timer = chunk_state.timer
             if timer:
                 chunk_state.timer = 0
@@ -422,15 +429,13 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("_process_file_send_chunk%s", (chunk_id, chunk, f"{len(file_data)} bytes", has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
 
-        def progress(position: int, error="") -> None:
+        def progress(position: int, error: str = "") -> None:
             s_elapsed = monotonic() - chunk_state.start
             self.transfer_progress_update(False, chunk_state.send_id, s_elapsed, position, chunk_state.filesize, error)
 
         def error(message: str) -> None:
             filelog.error(f"Error: {message}")
             self.cancel_file(chunk_id, message, chunk)
-            if chunk_state:
-                progress(-1, message)
 
         if not chunk_state:
             error(f"file transfer id {chunk_id!r} not found")
@@ -616,6 +621,7 @@ class FileTransferHandler(FileTransferAttributes):
                 os.unlink(filename)
             except OSError as e:
                 log.error("Error: failed to delete incomplete download %r: %s", filename, e)
+            self.transfer_progress_update(False, send_id, monotonic() - start, -1, filesize, message)
 
         digest: hashlib._Hash | None = None
         for hash_fn in ("sha512", "sha384", "sha256", "sha224", "sha1"):
@@ -629,11 +635,12 @@ class FileTransferHandler(FileTransferAttributes):
                 error(f"too many file transfers in progress: {nfiles}")
                 return
             timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
-            self.receive_chunks_in_progress[chunk_id] = ReceiveChunkState(monotonic(),
-                                                                          fd, filename, mimetype,
-                                                                          printit, openit, filesize,
-                                                                          options, digest, 0, False, send_id,
-                                                                          timer, chunk)
+            self.receive_chunks_in_progress[chunk_id] = ReceiveChunkState(
+                start=monotonic(), send_id=send_id, filesize=filesize,
+                fd=fd, filename=filename, mimetype=mimetype,
+                printit=printit, openit=openit, options=options,
+                digest=digest, written=0, cancelled=False, timer=timer, chunk=chunk,
+            )
             self.send("ack-file-chunk", chunk_id, True, b"", chunk)
             return
         # not chunked, full file:
@@ -675,7 +682,11 @@ class FileTransferHandler(FileTransferAttributes):
         if rf and len(rf) >= 2:
             argf = rf[0]
             if cb := self.file_request_callback.pop(argf, None):
-                cb(filename, filesize)
+                try:
+                    cb(filename, filesize)
+                except Exception as e:
+                    filelog("file request callback for %r", argf, exc_info=True)
+                    filelog.error("Error: file request callback for %r failed: %s", argf, e)
                 return
         if printit or openit:
             t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False,
@@ -1042,6 +1053,7 @@ class FileTransferHandler(FileTransferAttributes):
             return False
         filelog.warn("Warning: failed to %s file '%s',", ["send", "print"][spd.printit], spd.url)
         filelog.warn(" the send approval request timed out")
+        self.transfer_progress_update(True, send_id, 0.0, -1, spd.filesize, "approval request timed out")
         return False
 
     def do_send_file(self, filename: str, mimetype: str, data, filesize: int = 0,
@@ -1052,6 +1064,7 @@ class FileTransferHandler(FileTransferAttributes):
         else:
             action = "upload"
             logger = filelog
+        start = monotonic()
         logger("do_send_file%s", (filename, mimetype, type(data), f"{filesize} bytes", printit, openit, options))
         if not self.check_file_size(action, filename, filesize):
             return False
@@ -1062,7 +1075,8 @@ class FileTransferHandler(FileTransferAttributes):
         options = options or {}
         options["sha256"] = h.hexdigest()
         chunk_size = min(self.file_chunks, self.remote_file_chunks)
-        if 0 < chunk_size < filesize:
+        chunked = 0 < chunk_size < filesize
+        if chunked:
             in_progress = len(self.send_chunks_in_progress)
             if in_progress >= MAX_CONCURRENT_FILES:
                 raise RuntimeError(f"too many file transfers in progress: {in_progress}")
@@ -1072,7 +1086,10 @@ class FileTransferHandler(FileTransferAttributes):
             # timer to check that the other end is requesting more chunks:
             chunk_no = 0
             timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, chunk_no)
-            self.send_chunks_in_progress[chunk_id] = SendChunkState(monotonic(), data, chunk_size, timer, chunk_no)
+            self.send_chunks_in_progress[chunk_id] = SendChunkState(
+                start=start, send_id=send_id, filesize=filesize,
+                data=data, chunk_size=chunk_size, timer=timer, chunk=chunk_no,
+            )
             cdata = b""
             filelog("using chunks, sending initial file-chunk-id=%s, for chunk size=%s",
                     chunk_id, chunk_size)
@@ -1081,6 +1098,8 @@ class FileTransferHandler(FileTransferAttributes):
             cdata = self.compressed_wrapper("file-data", data)
             assert len(cdata) <= filesize  # compressed wrapper ensures this is true
             filelog("sending full file: %i bytes (chunk size=%i)", filesize, chunk_size)
+            # transfer is complete as soon as we send it:
+            self.transfer_progress_update(True, send_id, monotonic() - start, filesize, filesize, None)
         basefilename = os.path.basename(filename)
         self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options, send_id)
         return True
@@ -1097,6 +1116,8 @@ class FileTransferHandler(FileTransferAttributes):
         chunk_state.timer = 0  # timer has fired
         filelog.error(f"Error: chunked file transfer {chunk_id} timed out")
         filelog.error(f" on chunk {chunk_no}")
+        position = chunk_state.filesize - len(chunk_state.data)
+        self.transfer_progress_error(True, chunk_state, f"chunk {chunk_no} timed out after {position} bytes")
         self.cancel_sending(chunk_id)
 
     def cancel_sending(self, chunk_id: str) -> None:
@@ -1120,6 +1141,8 @@ class FileTransferHandler(FileTransferAttributes):
         if not state:
             filelog.info("the remote end is cancelling the file transfer:")
             filelog.info(" %s", error_message)
+            if chunk_state := self.send_chunks_in_progress.get(chunk_id):
+                self.transfer_progress_error(True, chunk_state, error_message)
             self.cancel_sending(chunk_id)
             return
         chunk_state = self.send_chunks_in_progress.get(chunk_id)
@@ -1128,9 +1151,13 @@ class FileTransferHandler(FileTransferAttributes):
             return
         if chunk_state.chunk != chunk:
             filelog.error("Error: chunk number mismatch (%i vs %i)", chunk_state.chunk, chunk)
+            self.transfer_progress_error(True, chunk_state, f"chunk number mismatch ({chunk_state.chunk} vs {chunk})")
             self.cancel_sending(chunk_id)
             return
         chunk_size = chunk_state.chunk_size
+        elapsed = monotonic() - chunk_state.start
+        position = chunk_state.filesize - len(chunk_state.data)
+        self.transfer_progress_update(True, chunk_state.send_id, elapsed, position, chunk_state.filesize, None)
         if not chunk_state.data:
             # all sent!
             elapsed = monotonic() - chunk_state.start
@@ -1158,6 +1185,10 @@ class FileTransferHandler(FileTransferAttributes):
 
     def compressed_wrapper(self, datatype, data, level=5):
         raise NotImplementedError()
+
+    def transfer_progress_error(self, send: bool, chunk_state: ChunkState, message: str) -> None:
+        elapsed = monotonic() - chunk_state.start
+        self.transfer_progress_update(send, chunk_state.send_id, elapsed, -1, chunk_state.filesize, message)
 
     def transfer_progress_update(self, send=True, transfer_id: str = "", elapsed=0.0, position=0, total=0,
                                  error=None) -> None:

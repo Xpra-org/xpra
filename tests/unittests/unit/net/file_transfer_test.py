@@ -240,7 +240,10 @@ class TestDataclasses(unittest.TestCase):
         assert state.filesize == 1024
 
     def test_send_chunk_state(self):
-        state = SendChunkState(start=0.0, data=b"hello", chunk_size=65536, timer=0, chunk=0)
+        state = SendChunkState(
+            start=0.0, send_id="", filesize=5,
+            data=b"hello", chunk_size=65536, timer=0, chunk=0,
+        )
         assert state.data == b"hello"
         assert state.chunk_size == 65536
 
@@ -783,6 +786,7 @@ def _make_send_state(h, chunk_id="scid1", data=b"0123456789" * 10):
     from xpra.net.file_transfer import SendChunkState
     state = SendChunkState(
         start=monotonic(), data=data, chunk_size=10, timer=0, chunk=0,
+        send_id="sid1", filesize=len(data),
     )
     h.send_chunks_in_progress[chunk_id] = state
     return state
@@ -1012,6 +1016,29 @@ class TestProcessDownloadedFile(unittest.TestCase):
             h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, opts)
         assert called
 
+    def test_request_file_callback_is_one_shot(self):
+        h = _FullHandler()
+        callback = MagicMock()
+        h.file_request_callback["requested"] = callback
+        options = typedict({"request-file": ("requested", True)})
+        with patch("xpra.net.file_transfer.start_thread") as start:
+            h.process_downloaded_file("/tmp/first", "raw", False, False, 10, options)
+            h.process_downloaded_file("/tmp/second", "raw", False, False, 20, options)
+        callback.assert_called_once_with("/tmp/first", 10)
+        self.assertNotIn("requested", h.file_request_callback)
+        start.assert_not_called()
+
+    def test_request_file_callback_failure_is_isolated(self):
+        h = _FullHandler()
+        callback = MagicMock(side_effect=RuntimeError("callback failed"))
+        h.file_request_callback["requested"] = callback
+        options = typedict({"request-file": ("requested", True)})
+        with patch("xpra.net.file_transfer.filelog") as filelog:
+            h.process_downloaded_file("/tmp/file", "raw", False, False, 10, options)
+        callback.assert_called_once_with("/tmp/file", 10)
+        self.assertNotIn("requested", h.file_request_callback)
+        self.assertTrue(filelog.error.called)
+
     def test_no_action_no_thread(self):
         h = _FullHandler()
         with patch("xpra.net.file_transfer.start_thread") as m, \
@@ -1025,6 +1052,16 @@ class TestProcessDownloadedFile(unittest.TestCase):
              patch("xpra.net.file_transfer.GLib"):
             h.process_downloaded_file("/tmp/f.txt", "raw", True, False, 100, typedict())
             m.assert_called_once()
+
+    def test_process_thread_contract(self):
+        h = _FullHandler()
+        options = typedict({"key": "value"})
+        with patch("xpra.net.file_transfer.start_thread") as start:
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, True, 100, options)
+        start.assert_called_once_with(
+            h.do_process_downloaded_file, "process-download", daemon=False,
+            args=("/tmp/f.txt", "raw", False, True, 100, options),
+        )
 
     def test_openit_starts_thread(self):
         h = _FullHandler()
@@ -1858,6 +1895,107 @@ class TestFileTransferTimersAndLimits(unittest.TestCase):
         with patch("xpra.net.file_transfer.GLib"), self.assertRaises(RuntimeError):
             handler.do_send_file("limited.bin", "", b"data", 4)
         self.assertFalse(handler.sent)
+
+
+class TestTransferProgressContracts(unittest.TestCase):
+
+    def test_receive_progress_is_monotonic_and_terminal(self):
+        handler = _FullHandler()
+        state, path = _make_receive_state(handler, filesize=6)
+        handler.file_descriptors.add(state.fd)
+        with patch("xpra.net.file_transfer.GLib") as glib, \
+             patch.object(handler, "process_downloaded_file") as processed:
+            glib.timeout_add.return_value = 8
+            handler._process_file_send_chunk(
+                Packet("file-send-chunk", "cid1", 1, b"ab", True),
+            )
+            handler._process_file_send_chunk(
+                Packet("file-send-chunk", "cid1", 2, b"cdef", False),
+            )
+        processed.assert_called_once()
+        self.assertEqual([p[0] for p in handler.progress], [False, False])
+        self.assertEqual([p[1] for p in handler.progress], ["sid1", "sid1"])
+        self.assertEqual([p[2] for p in handler.progress], [2, 6])
+        self.assertEqual([p[3] for p in handler.progress], [6, 6])
+        self.assertEqual([p[4] for p in handler.progress], ["", ""])
+        os.unlink(path)
+
+    def test_receive_cancellation_has_one_terminal_error(self):
+        handler = _FullHandler()
+        state, path = _make_receive_state(handler, filesize=6)
+        handler.file_descriptors.add(state.fd)
+        with patch("xpra.net.file_transfer.GLib"):
+            handler.cancel_download("sid1", "cancelled by user")
+            handler.cancel_download("sid1", "cancelled again")
+        self.assertEqual(len(handler.progress), 1)
+        send, transfer_id, position, total, error = handler.progress[0]
+        self.assertFalse(send)
+        self.assertEqual(transfer_id, "sid1")
+        self.assertEqual(position, -1)
+        self.assertEqual(total, 6)
+        self.assertEqual(error, "cancelled by user")
+        self.assertFalse(os.path.exists(path))
+
+    def test_non_chunked_send_reports_completion(self):
+        handler = _FullHandler()
+        handler.file_chunks = handler.remote_file_chunks = 0
+        with patch("xpra.net.file_transfer.monotonic", side_effect=(10, 12)):
+            handler.do_send_file("file.bin", "", b"data", 4, send_id="send-id")
+        self.assertEqual(handler.progress, [(True, "send-id", 4, 4, None)])
+
+    def test_chunked_send_reports_acknowledged_bytes(self):
+        handler = _FullHandler()
+        handler.file_chunks = handler.remote_file_chunks = 2
+        with patch("xpra.net.file_transfer.GLib") as glib:
+            glib.timeout_add.side_effect = range(1, 10)
+            handler.do_send_file("file.bin", "", b"data", 4, send_id="send-id")
+            chunk_id = next(iter(handler.send_chunks_in_progress))
+            handler._process_file_ack_chunk(Packet("ack-file-chunk", chunk_id, True, "", 0))
+            handler._process_file_ack_chunk(Packet("ack-file-chunk", chunk_id, True, "", 1))
+            handler._process_file_ack_chunk(Packet("ack-file-chunk", chunk_id, True, "", 2))
+        self.assertEqual([p[0] for p in handler.progress], [True, True, True])
+        self.assertEqual([p[1] for p in handler.progress], ["send-id"] * 3)
+        self.assertEqual([p[2] for p in handler.progress], [0, 2, 4])
+        self.assertEqual([p[3] for p in handler.progress], [4, 4, 4])
+        self.assertEqual([p[4] for p in handler.progress], [None, None, None])
+
+    def test_remote_send_cancellation_reports_error(self):
+        handler = _FullHandler()
+        handler.file_chunks = handler.remote_file_chunks = 2
+        with patch("xpra.net.file_transfer.GLib") as glib:
+            glib.timeout_add.return_value = 1
+            handler.do_send_file("file.bin", "", b"data", 4, send_id="send-id")
+            chunk_id = next(iter(handler.send_chunks_in_progress))
+            handler._process_file_ack_chunk(
+                Packet("ack-file-chunk", chunk_id, False, "remote cancelled", 0),
+            )
+        self.assertEqual(len(handler.progress), 1)
+        self.assertEqual(handler.progress[0][0:4], (True, "send-id", -1, 4))
+        self.assertEqual(handler.progress[0][4], "remote cancelled")
+
+    def test_send_timeout_reports_error(self):
+        handler = _FullHandler()
+        handler.file_chunks = handler.remote_file_chunks = 2
+        with patch("xpra.net.file_transfer.GLib") as glib:
+            glib.timeout_add.return_value = 1
+            handler.do_send_file("file.bin", "", b"data", 4, send_id="send-id")
+            chunk_id = next(iter(handler.send_chunks_in_progress))
+            handler._check_chunk_sending(chunk_id, 0)
+        self.assertEqual(len(handler.progress), 1)
+        self.assertEqual(handler.progress[0][0:4], (True, "send-id", -1, 4))
+        self.assertIn("timed out", handler.progress[0][4])
+
+    def test_approval_timeout_reports_error(self):
+        handler = _FullHandler()
+        handler.pending_send_data["send-id"] = SendPendingData(
+            datatype="file", url="file.bin", mimetype="", data=b"data",
+            filesize=4, printit=False, openit=False, options={},
+        )
+        handler.send_data_ask_timeout("send-id")
+        self.assertEqual(
+            handler.progress,
+            [(True, "send-id", -1, 4, "approval request timed out")],
+        )
 
 
 def main():
