@@ -12,6 +12,7 @@ size and latency depend on the codec build, hardware and machine load.
 
 import argparse
 import csv
+import json
 import math
 import statistics
 import sys
@@ -19,6 +20,7 @@ from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from time import monotonic
+from typing import TextIO
 
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper
@@ -34,6 +36,8 @@ class Result:
     encoder: str
     decoder: str
     pipeline: str
+    width: int
+    height: int
     quality: int
     speed: int
     frames: int
@@ -201,7 +205,7 @@ def benchmark_pipeline(encoding, enc_spec, dec_spec, fcsc_spec, bcsc_spec,
         return Result(
             encoding, enc_spec.codec_type, dec_spec.codec_type,
             f"{RGB_FORMAT}->{enc_spec.input_colorspace}->{dec_spec.input_colorspace}->{RGB_FORMAT}",
-            quality, speed, decoded_count, sum(measured_sizes),
+            width, height, quality, speed, decoded_count, sum(measured_sizes),
             statistics.mean(measured_sizes), snr_db(signal, noise), psnr_db(noise, samples),
             statistics.mean(csc_times), statistics.mean(encode_times),
             statistics.mean(roundtrip_times),
@@ -257,6 +261,54 @@ def print_result(result: Result) -> None:
           f"e2e={result.roundtrip_ms:7.2f} ms")
 
 
+def display_float(value: float, decimals: int = 2) -> str:
+    return "lossless" if math.isinf(value) else f"{value:.{decimals}f}"
+
+
+def write_markdown(results: list[Result], output: TextIO) -> None:
+    columns = (
+        "Encoding", "Encoder", "Decoder", "Pipeline", "Size", "Quality", "Speed",
+        "Bytes/frame", "SNR (dB)", "PSNR (dB)", "CSC (ms)", "Encode (ms)", "E2E (ms)",
+    )
+    output.write("| " + " | ".join(columns) + " |\n")
+    output.write("| " + " | ".join("---" for _column in columns) + " |\n")
+    for result in results:
+        values = (
+            result.encoding, result.encoder, result.decoder, result.pipeline,
+            f"{result.width}x{result.height}", str(result.quality), str(result.speed),
+            f"{result.bytes_per_frame:.0f}", display_float(result.snr_db),
+            display_float(result.psnr_db), display_float(result.csc_ms),
+            display_float(result.encode_ms), display_float(result.roundtrip_ms),
+        )
+        output.write("| " + " | ".join(value.replace("|", "\\|") for value in values) + " |\n")
+
+
+def json_value(value):
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
+def result_dict(result: Result) -> dict:
+    return {key: json_value(value) for key, value in asdict(result).items()}
+
+
+def write_json(results: list[Result], metadata: dict, output: TextIO) -> None:
+    document = {
+        "schema_version": 1,
+        "benchmark": metadata,
+        "results": [result_dict(result) for result in results],
+    }
+    json.dump(document, output, indent=2, allow_nan=False)
+    output.write("\n")
+
+
+def write_csv(results: list[Result], output: TextIO) -> None:
+    writer = csv.DictWriter(output, fieldnames=tuple(asdict(results[0])))
+    writer.writeheader()
+    writer.writerows(asdict(result) for result in results)
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--size", default="640x360", help="frame size (default: 640x360)")
@@ -267,6 +319,8 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--encodings", default="", help="comma-separated encoding filter")
     parser.add_argument("--encoders", default="", help="comma-separated codec_type filter")
     parser.add_argument("--csv", type=Path, help="write raw results as CSV")
+    parser.add_argument("--markdown", type=Path, help="write results as a Markdown table")
+    parser.add_argument("--json", type=Path, help="write results and run metadata as JSON")
     args = parser.parse_args(argv)
     try:
         width, height = (int(x) for x in args.size.lower().split("x", 1))
@@ -309,11 +363,26 @@ def main(argv: list[str]) -> int:
                         continue
                     results.append(result)
                     print_result(result)
-    if args.csv and results:
-        with args.csv.open("w", newline="", encoding="utf-8") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=tuple(asdict(results[0])))
-            writer.writeheader()
-            writer.writerows(asdict(result) for result in results)
+    if results:
+        if args.csv:
+            with args.csv.open("w", newline="", encoding="utf-8") as csv_file:
+                write_csv(results, csv_file)
+        if args.markdown:
+            with args.markdown.open("w", encoding="utf-8") as markdown_file:
+                write_markdown(results, markdown_file)
+        if args.json:
+            metadata = {
+                "width": width,
+                "height": height,
+                "requested_frames": args.frames,
+                "warmup_frames": args.warmup,
+                "qualities": args.quality,
+                "speeds": args.speed,
+                "encoding_filter": sorted(filters[0]),
+                "encoder_filter": sorted(filters[1]),
+            }
+            with args.json.open("w", encoding="utf-8") as json_file:
+                write_json(results, metadata, json_file)
     return 0 if results else 1
 
 
