@@ -4,20 +4,31 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import math
 import json
+import math
 import unittest
 from io import StringIO
 
-from tests.xpra.codecs.benchmark_video_encoders import (
-    make_frame,
-    psnr_db,
-    Result,
-    rgb_energy,
-    snr_db,
-    write_json,
-    write_markdown,
-)
+if __package__:
+    from .benchmark_video_encoders import (
+        make_frame,
+        psnr_db,
+        Result,
+        rgb_energy,
+        snr_db,
+        write_json,
+        write_markdown,
+    )
+else:
+    from benchmark_video_encoders import (
+        make_frame,
+        psnr_db,
+        Result,
+        rgb_energy,
+        snr_db,
+        write_json,
+        write_markdown,
+    )
 
 
 class VideoBenchmarkTest(unittest.TestCase):

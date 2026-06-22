@@ -6,7 +6,10 @@
 
 import unittest
 
-from tests.xpra.codecs.plot_video_encoder_benchmarks import color, render_svg, safe_filename
+if __package__:
+    from .plot_video_encoder_benchmarks import color, render_svg, safe_filename
+else:
+    from plot_video_encoder_benchmarks import color, render_svg, safe_filename
 
 
 class VideoBenchmarkPlotTest(unittest.TestCase):
