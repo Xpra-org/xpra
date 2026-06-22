@@ -13,6 +13,8 @@ from collections.abc import Sequence
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
 
+from xpra.util.env import envint
+
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
@@ -26,6 +28,12 @@ from libc.stdint cimport uint8_t, uintptr_t
 
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
+
+# sliced multi-threading: like x264, use slice-based threads above a speed threshold.
+# openh264 derives the thread count from the slice count, so we must also request
+# that many fixed slices (each slice is encoded by one thread):
+THREADS = envint("XPRA_OPENH264_THREADS", min(4, max(1, (os.cpu_count() or 1)//2)))
+MIN_SLICED_THREADS_SPEED = envint("XPRA_OPENH264_SLICED_THREADS", 60)
 
 DEF MAX_SPATIAL_LAYER_NUM = 4
 DEF MAX_LAYER_NUM_OF_FRAME = 128
@@ -139,6 +147,18 @@ cdef extern from "wels/codec_app_def.h":
         MEDIUM_COMPLEXITY           #medium complexity, medium speed, medium quality
         HIGH_COMPLEXITY             #high complexity, lowest speed, high quality
 
+    ctypedef enum SliceModeEnum:
+        SM_SINGLE_SLICE             #SliceNum==1
+        SM_FIXEDSLCNUM_SLICE        #according to SliceNum, enables multi-thread slicing
+        SM_RASTER_SLICE
+        SM_SIZELIMITED_SLICE
+        SM_RESERVED
+
+    ctypedef struct SSliceArgument:
+        SliceModeEnum uiSliceMode   #by default SM_SINGLE_SLICE
+        unsigned int uiSliceNum     #only used when uiSliceMode==SM_FIXEDSLCNUM_SLICE (0=auto from cpu cores)
+        unsigned int uiSliceSizeConstraint
+
     ctypedef enum EColorPrimaries:
         CP_RESERVED0
         CP_BT709
@@ -203,7 +223,7 @@ cdef extern from "wels/codec_app_def.h":
         ELevelIdc    uiLevelIdc     # value of profile IDC (0 for auto-detection)
         int          iDLayerQp      # value of level IDC (0 for auto-detection)
 
-        # SSliceArgument sSliceArgument
+        SSliceArgument sSliceArgument
 
         # Note: members bVideoSignalTypePresent through uiColorMatrix below are also defined in SWelsSPS in parameter_sets.h.
         bool_t      bVideoSignalTypePresent       # false => do not write any of the following information to the header
@@ -525,6 +545,13 @@ cdef class Encoder:
         self.param.iRCMode       = RC_OFF_MODE
         # speed maps to the encoder complexity (higher speed = lower complexity = faster):
         self.param.iComplexityMode = <ECOMPLEXITY_MODE> speed_to_complexity(self.speed)
+        # sliced multi-threading above the speed threshold (mirrors the x264 encoder).
+        # openh264 caps the thread count at the slice count, so request one fixed slice
+        # per thread; keep load balancing off so the slicing (and output) is deterministic:
+        cdef int threads = THREADS if (MIN_SLICED_THREADS_SPEED > 0 and self.speed >= MIN_SLICED_THREADS_SPEED) else 1
+        self.param.iMultipleThreadIdc = threads
+        if threads > 1:
+            self.param.bUseLoadBalancing = False
         # rate control is off, so the quantizer is fixed per spatial layer:
         # derive it from the requested quality (lower QP = higher quality):
         cdef int qp = quality_to_qp(self.quality)
@@ -532,6 +559,12 @@ cdef class Encoder:
         cdef int nlayers = max(1, self.param.iSpatialLayerNum)
         for i in range(nlayers):
             self.param.sSpatialLayers[i].iDLayerQp = qp
+            if threads > 1:
+                self.param.sSpatialLayers[i].sSliceArgument.uiSliceMode = SM_FIXEDSLCNUM_SLICE
+                self.param.sSpatialLayers[i].sSliceArgument.uiSliceNum = threads
+            else:
+                self.param.sSpatialLayers[i].sSliceArgument.uiSliceMode = SM_SINGLE_SLICE
+                self.param.sSpatialLayers[i].sSliceArgument.uiSliceNum = 1
         # signal the colour range used by the images we will be encoding,
         # so that the decoder can recover it from the bitstream (SPS VUI):
         self.param.sSpatialLayers[0].bVideoSignalTypePresent = True
@@ -546,8 +579,8 @@ cdef class Encoder:
         #a void (*)(void* context, int level, const char* message) function which receives log messages
         trace_level = WELS_LOG_WARNING
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
-        log("openh264 init_encoder: quality=%i qp=%i speed=%i complexity=%s full-range=%s",
-            self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), bool(self.full_range))
+        log("openh264 init_encoder: quality=%i qp=%i speed=%i complexity=%s threads=%i full-range=%s",
+            self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), threads, bool(self.full_range))
         for i in range(nlayers):
             log("spatial layer %i bFullRange=%s iDLayerQp=%i", i, self.param.sSpatialLayers[i].bFullRange, self.param.sSpatialLayers[i].iDLayerQp)
 
@@ -619,6 +652,7 @@ cdef class Encoder:
             "qp"            : quality_to_qp(self.quality),
             "speed"         : self.speed,
             "complexity"    : COMPLEXITY_NAMES.get(speed_to_complexity(self.speed), ""),
+            "threads"       : int(self.param.iMultipleThreadIdc),
         }
         return info
 
