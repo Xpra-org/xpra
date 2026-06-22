@@ -409,6 +409,24 @@ def get_specs() -> Sequence[VideoSpec]:
 generation = AtomicInteger()
 
 
+# with rate-control off, the quantizer is fixed and taken from `iDLayerQp`;
+# H.264 QP ranges from 0 (best quality) to 51 (worst). We map our 0..100 quality
+# percentage onto [MIN_QP, MAX_QP]. QP 0 is the encoder's maximum quality - still
+# lossy (4:2:0 subsampling + transform rounding), so it does not contradict the
+# has_lossless_mode=False spec, and we never signal it as lossless to the client:
+DEF MIN_QP = 0
+DEF MAX_QP = 51
+
+
+cdef int quality_to_qp(int quality):
+    if quality < 0:
+        quality = 50
+    elif quality > 100:
+        quality = 100
+    # higher quality -> lower QP:
+    return MAX_QP - (quality * (MAX_QP - MIN_QP)) // 100
+
+
 #cdef void log_cb(void* context, int level, const char* message) nogil:
 #    pass #nothing yet
 
@@ -421,6 +439,8 @@ cdef class Encoder:
     cdef object src_format
     cdef uint8_t full_range
     cdef uint8_t ready
+    cdef int quality
+    cdef SEncParamExt param
     cdef object file
 
     cdef object __weakref__
@@ -438,8 +458,9 @@ cdef class Encoder:
         self.height = height
         self.src_format = src_format
         self.full_range = options.boolget("full-range", True)
+        self.quality = options.intget("quality", 50)
         self.frames = 0
-        self.init_encoder(options)
+        self.init_encoder()
         gen = generation.increase()
         if SAVE_TO_FILE:
             filename = SAVE_TO_FILE+"openh264-"+str(gen)+f".{encoding}"
@@ -450,7 +471,7 @@ cdef class Encoder:
     def is_ready(self) -> bool:
         return bool(self.ready)
 
-    cdef void init_encoder(self, options:typedict):
+    cdef void init_encoder(self):
         cdef int r = 0
         with nogil:
             r = WelsCreateSVCEncoder(&self.context)
@@ -466,24 +487,30 @@ cdef class Encoder:
         cdef int level = LEVEL_4_1
         self.context.SetOption(ENCODER_OPTION_LEVEL, &level)
 
-        cdef SEncParamExt param
-        memset(&param, 0, sizeof(SEncParamExt))
+        memset(&self.param, 0, sizeof(SEncParamExt))
         with nogil:
-            r = self.context.GetDefaultParams(&param)
+            r = self.context.GetDefaultParams(&self.param)
         if r:
             raise RuntimeError("failed to get default openh264 encoder parameters")
-        param.iUsageType    = SCREEN_CONTENT_REAL_TIME
-        param.fMaxFrameRate = 30
-        param.iPicWidth     = self.width
-        param.iPicHeight    = self.height
-        param.iRCMode       = RC_OFF_MODE
+        self.param.iUsageType    = SCREEN_CONTENT_REAL_TIME
+        self.param.fMaxFrameRate = 30
+        self.param.iPicWidth     = self.width
+        self.param.iPicHeight    = self.height
+        self.param.iRCMode       = RC_OFF_MODE
+        # rate control is off, so the quantizer is fixed per spatial layer:
+        # derive it from the requested quality (lower QP = higher quality):
+        cdef int qp = quality_to_qp(self.quality)
+        cdef int i
+        cdef int nlayers = max(1, self.param.iSpatialLayerNum)
+        for i in range(nlayers):
+            self.param.sSpatialLayers[i].iDLayerQp = qp
         # signal the colour range used by the images we will be encoding,
         # so that the decoder can recover it from the bitstream (SPS VUI):
-        param.sSpatialLayers[0].bVideoSignalTypePresent = True
-        param.sSpatialLayers[0].bFullRange = self.full_range
-        #param.iTargetBitrate = 5000000
+        self.param.sSpatialLayers[0].bVideoSignalTypePresent = True
+        self.param.sSpatialLayers[0].bFullRange = self.full_range
+        #self.param.iTargetBitrate = 5000000
         with nogil:
-            r = self.context.InitializeExt(&param)
+            r = self.context.InitializeExt(&self.param)
         if r:
             raise RuntimeError("failed to initialize openh264 encoder context")
         #cdef int profile = PRO_MAIN
@@ -491,8 +518,25 @@ cdef class Encoder:
         #a void (*)(void* context, int level, const char* message) function which receives log messages
         trace_level = WELS_LOG_WARNING
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
-        for i in range(param.iSpatialLayerNum):
-            log("spatial layer %i bFullRange=%s", i, param.sSpatialLayers[i].bFullRange)
+        log("openh264 init_encoder: quality=%i qp=%i full-range=%s", self.quality, qp, bool(self.full_range))
+        for i in range(nlayers):
+            log("spatial layer %i bFullRange=%s iDLayerQp=%i", i, self.param.sSpatialLayers[i].bFullRange, self.param.sSpatialLayers[i].iDLayerQp)
+
+    cdef void set_encoding_quality(self, int quality):
+        # update the fixed quantizer on the fly (RC is off, so this maps straight to iDLayerQp):
+        if quality < 0 or quality == self.quality:
+            return
+        self.quality = quality
+        cdef int qp = quality_to_qp(quality)
+        cdef int i
+        cdef int nlayers = max(1, self.param.iSpatialLayerNum)
+        for i in range(nlayers):
+            self.param.sSpatialLayers[i].iDLayerQp = qp
+        cdef int r = self.context.SetOption(ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, &self.param)
+        if r:
+            log.warn("Warning: failed to set openh264 quality to %i (qp=%i), error %i", quality, qp, r)
+        else:
+            log("openh264 quality set to %i (qp=%i)", quality, qp)
 
     cdef void reinit_encoder(self):
         # close and reopen the encoder so the SPS is regenerated with the current colour
@@ -503,7 +547,7 @@ cdef class Encoder:
             with nogil:
                 context.Uninitialize()
                 WelsDestroySVCEncoder(context)
-        self.init_encoder(typedict())
+        self.init_encoder()
 
     def clean(self) -> None:
         log("openh264 close context %#x", <uintptr_t> self.context)
@@ -527,6 +571,8 @@ cdef class Encoder:
             "frames"        : int(self.frames),
             "width"         : self.width,
             "height"        : self.height,
+            "quality"       : self.quality,
+            "qp"            : quality_to_qp(self.quality),
         }
         return info
 
@@ -573,10 +619,10 @@ cdef class Encoder:
             self.reinit_encoder()
         if image.get_pixel_format()!="YUV420P":
             raise ValueError("expected YUV420P but got %s" % image.get_pixel_format())
+        # honour any per-frame quality change (no-op if unchanged):
+        self.set_encoding_quality(options.intget("quality", -1))
         pixels = image.get_pixels()
         strides = image.get_rowstride()
-
-        #encoder.SetOption(ENCODER_OPTION_SVC_ENCODE_PARAM_BASE, &param)
 
         cdef SFrameBSInfo frame_info
         memset(&frame_info, 0, sizeof(SFrameBSInfo))
