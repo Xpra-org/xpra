@@ -57,7 +57,7 @@ def has_codec_module(module_name: str) -> bool:
     try:
         found = bool(find_spec(top_module))
         log("%s found: %s", module_name, found)
-        return True
+        return found
     except Exception as e:
         log("codec module %s cannot be loaded: %s", module_name, e)
         return False
