@@ -274,6 +274,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "screen"        : "Screen and workarea dimension",
         "fps"           : "Frames per second",
         "xsettings"     : "XSettings synchronization",
+        "gsettings"     : "GSettings synchronization",
         "dbus"          : "DBUS calls",
         "menu"          : "Menus",
         "events"        : "System and window events",

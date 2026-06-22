@@ -33,6 +33,7 @@ dbus = True
 encoding = True
 logging = True
 ping = True
+gsettings = True
 register = True
 bandwidth = True
 shell = False
@@ -128,6 +129,7 @@ def set_server_features(opts, mode: str) -> None:
         features.rdp = (b(opts.rdp_upgrade) or bool(opts.bind_rdp)) and impcheck("server.rdp")
         features.ssh = b(opts.ssh) and impcheck("net.ssh", "server.ssh") and bool(find_spec("paramiko"))
         features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
+        features.gsettings = b(opts.gsettings_sync) and impcheck("server.subsystem.gsettings", "server.source.gsettings")
         features.register = bool(opts.register)
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
         features.power = envbool("XPRA_POWER_EVENTS", True)
@@ -186,6 +188,7 @@ def enforce_server_features() -> None:
         "encoding": "xpra.server.subsystem.encoding,xpra.server.source.encodings",
         "logging": "xpra.server.subsystem.logging",
         "ping": "xpra.server.subsystem.ping,xpra.server.source.ping",
+        "gsettings": "gi.repository.Gio,xpra.server.subsystem.gsettings,xpra.server.source.gsettings",
         "register": "xpra.server.subsystem.register",
         "bandwidth": "xpra.server.subsystem.bandwidth,xpra.server.source.bandwidth",
         "shell": "xpra.server.subsystem.shell,xpra.server.source.shell",

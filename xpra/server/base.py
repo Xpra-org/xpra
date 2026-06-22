@@ -64,6 +64,9 @@ class ServerBase(ServerCore):
         if features.ping:
             from xpra.server.subsystem.ping import PingServer
             classes.append(PingServer)
+        if features.gsettings:
+            from xpra.server.subsystem.gsettings import GSettingsServer
+            classes.append(GSettingsServer)
         if features.register:
             from xpra.server.subsystem.register import RegisterSubsystem
             classes.append(RegisterSubsystem)

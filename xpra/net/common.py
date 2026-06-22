@@ -28,6 +28,54 @@ BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
 FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO >= 0
 
+
+# (schema, key) GSettings pairs that the "gsettings" subsystem is allowed to
+# synchronize from client to server. Both ends consult this same allowlist:
+# the client only reads and sends these keys, and the server only accepts and
+# applies them. Overridable via XPRA_GSETTINGS_ALLOWLIST (comma-separated
+# "schema:key" entries):
+_DEFAULT_GSETTINGS_ALLOWLIST = (
+    "org.gnome.desktop.interface:gtk-theme",
+    "org.gnome.desktop.interface:icon-theme",
+    "org.gnome.desktop.interface:cursor-theme",
+    "org.gnome.desktop.interface:cursor-size",
+    "org.gnome.desktop.interface:font-name",
+    "org.gnome.desktop.interface:monospace-font-name",
+    "org.gnome.desktop.interface:document-font-name",
+    "org.gnome.desktop.interface:color-scheme",
+    "org.gnome.desktop.interface:font-antialiasing",
+    "org.gnome.desktop.interface:font-hinting",
+    "org.gnome.desktop.wm.preferences:theme",
+    "org.gnome.desktop.wm.preferences:button-layout",
+    "org.gnome.desktop.wm.preferences:titlebar-font",
+    "org.gnome.desktop.sound:theme-name",
+    "org.gnome.desktop.sound:event-sounds",
+    "org.gnome.desktop.a11y.interface:high-contrast",
+)
+
+
+def gsettings_key(schema: str, key: str) -> str:
+    return f"{schema}:{key}"
+
+
+def parse_gsettings_key(name: str) -> tuple[str, str]:
+    schema, key = name.split(":", 1)
+    return schema, key
+
+
+def _parse_gsettings_allowlist(value: str) -> tuple[tuple[str, str], ...]:
+    pairs: list[tuple[str, str]] = []
+    for entry in value.split(","):
+        entry = entry.strip()
+        if entry and ":" in entry:
+            pairs.append(parse_gsettings_key(entry))
+    return tuple(pairs)
+
+
+GSETTINGS_ALLOWLIST: tuple[tuple[str, str], ...] = _parse_gsettings_allowlist(
+    os.environ.get("XPRA_GSETTINGS_ALLOWLIST", ",".join(_DEFAULT_GSETTINGS_ALLOWLIST))
+)
+
 logger = None
 
 

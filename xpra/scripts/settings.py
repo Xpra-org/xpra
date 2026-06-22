@@ -65,7 +65,7 @@ def run_showconfig(options, args) -> ExitValue:
             # these options don't make sense on win32 or osx:
             HIDDEN += ["socket-dirs", "socket-dir",
                        "wm-name", "pulseaudio-command", "pulseaudio", "xvfb", "input-method",
-                       "socket-permissions", "xsettings",
+                       "socket-permissions", "xsettings", "gsettings-sync",
                        "exit-with-children", "start-new-commands",
                        "start", "start-child",
                        "start-after-connect", "start-child-after-connect",

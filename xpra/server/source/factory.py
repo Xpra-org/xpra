@@ -69,6 +69,9 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.ping:
         from xpra.server.source.ping import PingConnection
         mixins.append(PingConnection)
+    if features.gsettings:
+        from xpra.server.source.gsettings import GSettingsConnection
+        mixins.append(GSettingsConnection)
     if features.command:
         from xpra.server.source.menu import MenuConnection
         mixins.append(MenuConnection)

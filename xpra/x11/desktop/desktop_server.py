@@ -30,7 +30,6 @@ class XpraDesktopServer(DesktopServerBase):
     def __init__(self):
         super().__init__()
         self.session_type = "X11 desktop"
-        self.gsettings_modified = {}
         self.root_prop_watcher = None
         self.resize_value = -1, -1
 

@@ -33,6 +33,7 @@ ssh = True
 logging = True
 tray = True
 ping = True
+gsettings = True
 bandwidth = True
 socket = True
 ssh_agent = True
@@ -93,6 +94,7 @@ def set_client_features(opts) -> None:
     features.tray = b(opts.tray)
     from xpra.net.common import BACKWARDS_COMPATIBLE
     features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
+    features.gsettings = b(opts.gsettings_sync) and icheck("xpra.client.subsystem.gsettings")
     features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
     features.ssh_agent = envbool("XPRA_SSH_AGENT", True)
     features.socket = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
@@ -143,6 +145,7 @@ def enforce_client_features() -> None:
         "logging": "xpra.client.subsystem.logging",
         "tray": "xpra.client.subsystem.tray",
         "ping": "xpra.client.subsystem.ping",
+        "gsettings": "gi.repository.Gio,xpra.client.subsystem.gsettings",
         "bandwidth": "xpra.client.subsystem.bandwidth",
         "socket": "xpra.client.subsystem.socket",
         "ssh_agent": "xpra.client.subssytem.ssh_agent",

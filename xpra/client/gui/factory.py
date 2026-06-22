@@ -53,6 +53,9 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.ping:
         from xpra.client.subsystem.ping import PingClient
         CLIENT_BASES.append(PingClient)
+    if features.gsettings:
+        from xpra.client.subsystem.gsettings import GSettingsClient
+        CLIENT_BASES.append(GSettingsClient)
     if features.bandwidth:
         from xpra.client.subsystem.bandwidth import BandwidthClient
         CLIENT_BASES.append(BandwidthClient)

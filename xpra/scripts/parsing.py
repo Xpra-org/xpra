@@ -913,6 +913,7 @@ def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, lis
         defaults.webcam = False
         defaults.mousewheel = "no"
         defaults.xsettings = "no"
+        defaults.gsettings_sync = "no"
         defaults.clipboard = defaults.notifications = defaults.system_tray = "no"
         # A/V:
         defaults.audio = "no"
@@ -1459,6 +1460,11 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--xsettings", action="store", metavar="auto|yes|no",
                      dest="xsettings", default=defaults.xsettings,
                      help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
+    legacy_bool_parse("gsettings-sync")
+    group.add_option("--gsettings-sync", action="store", metavar="auto|yes|no",
+                     dest="gsettings_sync", default=defaults.gsettings_sync,
+                     help="GSettings synchronization (client appearance preferences to the server)."
+                          " Default: %s." % enabled_str(defaults.gsettings_sync))
     legacy_bool_parse("mmap")
     group.add_option("--mmap", action="store", metavar="yes|no|mmap-filename",
                      dest="mmap", default=defaults.mmap,

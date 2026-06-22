@@ -1455,6 +1455,14 @@ Enable or disable xsettings synchronization.  Xsettings are only forwarded
 from posix clients connecting to real posix servers (not shadows).
 In 'auto' mode, only seamless servers enable xsettings synchronization.
 .TP
+\fB\-\-gsettings\-sync\fP=\fIauto\fP|\fIyes\fP|\fIno\fP
+Enable or disable GSettings synchronization.
+When enabled, an allowlisted set of the client's GSettings (GTK theme, icon
+theme, fonts, color\-scheme, etc.) is forwarded to the server and applied there,
+but only while a single client is connected.  The server's original values are
+restored when the client disconnects.
+Defaults to 'no' on MacOS and MS Windows, 'auto' elsewhere.
+.TP
 \fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of system tray icons.
 This feature requires client support and may not be available on all

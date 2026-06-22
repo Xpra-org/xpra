@@ -7,7 +7,6 @@ import os
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.net.common import Packet
 from xpra.util.gobject import one_arg_signal, to_gsignals
@@ -18,7 +17,6 @@ from xpra.x11.error import xlog
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
-Gio = gi_import("Gio")
 
 log = Logger("server")
 windowlog = Logger("server", "window")
@@ -30,31 +28,14 @@ iconlog = Logger("icon")
 MODIFY_GSETTINGS: bool = envbool("XPRA_MODIFY_GSETTINGS", True)
 MULTI_MONITORS: bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
-
-def do_modify_gsettings(defs: dict[str, Any], value=False) -> dict[str, Any]:
-    modified = {}
-    try:
-        schemas = Gio.SettingsSchemaSource.get_default().list_schemas(True)
-    except AttributeError:
-        schemas = Gio.Settings.list_schemas()
-    for schema, attributes in defs.items():
-        if schema not in schemas:
-            continue
-        try:
-            s = Gio.Settings.new(schema_id=schema)
-            restore = []
-            for attribute in attributes:
-                v = s.get_boolean(attribute)
-                if v:
-                    s.set_boolean(attribute, value)
-                    restore.append(attribute)
-            if restore:
-                modified[schema] = restore
-        except Exception as e:
-            log("error accessing schema '%s' and attributes %s", schema, attributes, exc_info=True)
-            log.error("Error accessing schema '%s' and attributes %s:", schema, csv(attributes))
-            log.estr(e)
-    return modified
+# GSettings that the desktop server applies as a baseline (via the `gsettings` subsystem)
+# to suspend compositor animations for the duration of the session - {(schema, key): gvariant_text}:
+ANIMATION_GSETTINGS: dict[tuple[str, str], str] = {
+    ("org.mate.interface", "gtk-enable-animations"): "false",
+    ("org.mate.interface", "enable-animations"): "false",
+    ("org.gnome.desktop.interface", "enable-animations"): "false",
+    ("com.deepin.wrap.gnome.desktop.interface", "enable-animations"): "false",
+}
 
 
 SIGNALS = to_gsignals(ServerBase.__signals__)
@@ -76,7 +57,6 @@ class DesktopServerBase(GObject.GObject, ServerBase):
     def __init__(self):
         GObject.GObject.__init__(self)
         ServerBase.__init__(self)
-        self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
         self.session_type = "X11 desktop"
 
@@ -109,24 +89,21 @@ class DesktopServerBase(GObject.GObject, ServerBase):
             window.update_icon()
 
     def modify_gsettings(self) -> None:
-        # try to suspend animations:
-        self.gsettings_modified = do_modify_gsettings({
-            "org.mate.interface": ("gtk-enable-animations", "enable-animations"),
-            "org.gnome.desktop.interface": ("enable-animations",),
-            "com.deepin.wrap.gnome.desktop.interface": ("enable-animations",),
-        })
+        # suspend animations for the duration of the session by feeding the
+        # `gsettings` subsystem a baseline it applies (and restores on shutdown):
+        gsettings = self.get_subsystem("gsettings")
+        if not gsettings:
+            log("modify_gsettings() the gsettings subsystem is not available")
+            return
+        gsettings.defaults.update(ANIMATION_GSETTINGS)
+        gsettings.update_gsettings()
 
     def do_cleanup(self) -> None:
         remove_catchall_receiver("x11-motion-event", self)
         super().do_cleanup()
-        if MODIFY_GSETTINGS:
-            self.restore_gsettings()
         if rpw := self.root_prop_watcher:
             self.root_prop_watcher = None
             rpw.cleanup()
-
-    def restore_gsettings(self) -> None:
-        do_modify_gsettings(self.gsettings_modified, True)
 
     def set_desktop_geometry_attributes(self, w: int, h: int):
         # geometry is not synced with the client's for desktop servers

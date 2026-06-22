@@ -76,7 +76,7 @@ _xpra() {
         --terminate-children --title --tray --tray-icon --uid --use-display
         --username --video --video-decoders --video-encoders --video-scaling
         --vsock-auth --webcam --websocket-upgrade --window-close --window-icon
-        --windows --ws-auth --wss-auth --xsettings --xvfb"
+        --windows --ws-auth --wss-auth --xsettings --gsettings-sync --xvfb"
 
     # options that take a file or directory path
     case "$prev" in
@@ -102,7 +102,7 @@ _xpra() {
         --mmap|--system-tray|--tray|--readonly|--sharing|--lock|--daemon|\
         --html|--mdns|--pulseaudio|--dbus|--opengl|--audio|--video|--printing|\
         --file-transfer|--open-files|--open-url|--forward-xdg-open|\
-        --resize-display|--keyboard-sync|--xsettings|--swap-keys|\
+        --resize-display|--keyboard-sync|--xsettings|--gsettings-sync|--swap-keys|\
         --headerbar|--modal-windows|--desktop-fullscreen|--ssl|--ssh-upgrade|\
         --ssl-upgrade|--rfb-upgrade|--rdp-upgrade|--websocket-upgrade|\
         --exit-with-client|--exit-with-children|--exit-with-windows|\
