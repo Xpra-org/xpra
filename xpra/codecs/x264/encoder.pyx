@@ -1092,9 +1092,9 @@ cdef class Encoder:
             # "speed"     : max(0, min(100, speed)),
             "csc"       : self.csc_format,
         }
-        # modern mode omits steady-state full-range=True: only studio-range starts
-        # and all range transitions are signalled explicitly.
-        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not self.full_range):
+        # the colour range is signalled on every keyframe (so a decoder resuming from any
+        # keyframe knows it) and on every transition; steady-state full-range is omitted:
+        if BACKWARDS_COMPATIBLE or range_changed or (pic_out.b_keyframe and not self.full_range):
             client_options["full-range"] = bool(self.full_range)
         if slice_type!="P":
             client_options["type"] = slice_type

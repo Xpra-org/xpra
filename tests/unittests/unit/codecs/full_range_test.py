@@ -457,8 +457,10 @@ class H264FullRangeParserTest(unittest.TestCase):
 
 
 class SparseOptionSignallingTest(unittest.TestCase):
-    """ with BACKWARDS_COMPATIBLE off, only initial studio-range and later transitions
-        carry the colour range in the client options """
+    """ with BACKWARDS_COMPATIBLE off, the colour range is only carried in the client options
+        on keyframes (so a decoder can resume from any of them) and on range transitions;
+        steady-state full-range frames omit it entirely.
+        the encoders here use a single keyframe (the first frame) over the few frames tested. """
 
     def test_steady_state_signalling(self):
         w, h = TEST_SIZE
@@ -699,6 +701,41 @@ class BitstreamRangeChangeTest(unittest.TestCase):
             print(f"skipped (unavailable at runtime): {sorted_nicely(skipped)}")
         if not tested:
             self.skipTest("no encoder available")
+
+    def test_vp8_forces_keyframe_on_range_change(self):
+        # vp8 carries no colour range in its bitstream, so a client re-creating its decoder to
+        # apply a new range must resume from a keyframe: the encoder forces one on every change
+        enc_mod = loader.load_codec("enc_vpx")
+        if not enc_mod:
+            self.skipTest("no vpx encoder")
+        spec = None
+        for s in enc_mod.get_specs():
+            if s.encoding == "vp8" and s.input_colorspace == "YUV420P":
+                spec = s
+                break
+        if not spec:
+            self.skipTest("no vp8 YUV420P encoder")
+        w, h = TEST_SIZE
+        encoder = spec.codec_class()
+        keyframes = []
+        try:
+            encoder.init_context("vp8", w, h, "YUV420P", typedict({
+                "full-range": self.RANGES[0],
+                "dst-formats": list(spec.output_colorspaces),
+            }))
+            for fr in self.RANGES:
+                image = make_test_image("YUV420P", w, h)
+                image.set_full_range(fr)
+                out = encoder.compress_image(image, typedict())
+                data = out[0] if out else b""
+                # vp8 frame tag: bit 0 of the first byte is the frame type (0 = key frame):
+                keyframes.append(bool(data) and (data[0] & 0x1) == 0)
+        finally:
+            encoder.clean()
+        # RANGES = (True, True, False, False, True): the range starts at frame 0 and changes
+        # at frames 2 and 4, so exactly those frames must be keyframes:
+        self.assertEqual(keyframes, [True, False, True, False, True],
+                         f"vp8 keyframes for ranges {self.RANGES} were {keyframes}")
 
     def _encode_transition_frames(self, spec, encoding, in_cs, skipped):
         w, h = TEST_SIZE

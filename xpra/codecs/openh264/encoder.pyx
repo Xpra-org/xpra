@@ -608,16 +608,17 @@ cdef class Encoder:
                     PyBuffer_Release(&py_buf[i])
         if r:
             raise RuntimeError(f"openh264 failed to encode frame, error {r}")
+        cdef int is_idr = frame_info.eFrameType == videoFrameTypeIDR
         client_options = {
             "frame": self.frames,
         }
-        # modern mode omits steady-state full-range=True: only studio-range starts
-        # and all range transitions are signalled explicitly.
-        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not self.full_range):
+        # the colour range is signalled on every keyframe (so a decoder resuming from any
+        # keyframe knows it) and on every transition; steady-state full-range is omitted:
+        if BACKWARDS_COMPATIBLE or range_changed or (is_idr and not self.full_range):
             client_options["full-range"] = bool(self.full_range)
         if frame_info.eFrameType == videoFrameTypeInvalid:
             raise ValueError("invalid frame type")
-        elif frame_info.eFrameType == videoFrameTypeIDR:
+        elif is_idr:
             client_options["type"] = "IDR"
         # elif frame_info.eFrameType == videoFrameTypeI:
         #    client_options["type"] = "I"

@@ -147,15 +147,18 @@ cdef extern from "vpx/vpx_encoder.h":
         unsigned int[16] ts_layer_id
     ctypedef int64_t vpx_codec_pts_t
     ctypedef long vpx_enc_frame_flags_t
+    ctypedef long vpx_codec_frame_flags_t
 
     cdef int VPX_CODEC_CX_FRAME_PKT
     cdef int VPX_CODEC_STATS_PKT
     cdef int VPX_CODEC_PSNR_PKT
     cdef int VPX_CODEC_CUSTOM_PKT
+    cdef int VPX_FRAME_IS_KEY
 
     ctypedef struct frame:
         void    *buf
         size_t  sz
+        vpx_codec_frame_flags_t flags
 
     ctypedef struct data:
         frame frame
@@ -338,6 +341,7 @@ cdef class Encoder:
     cdef int quality
     cdef int lossless
     cdef int full_range
+    cdef int last_keyframe
     cdef object last_frame_times
     cdef object file
 
@@ -365,6 +369,7 @@ cdef class Encoder:
         self.speed = options.intget("speed", 50)
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         self.lossless = 0
+        self.last_keyframe = 0
         # the initial colour range (may be updated per-image):
         self.full_range = options.boolget("full-range", True)
         self.frames = 0
@@ -652,11 +657,12 @@ cdef class Encoder:
                 #"quality"  : min(99+self.lossless, self.quality),
                 #"speed"    : self.speed,
             }
-            # modern mode omits steady-state full-range=True: only studio-range starts
-            # and all range transitions are signalled explicitly.
-            if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not full_range):
+            data = self.do_compress_image(pic_in, strides, full_range, range_changed)
+            # the colour range is signalled on every keyframe (so a decoder resuming from any
+            # keyframe knows it) and on every transition; steady-state full-range is omitted:
+            if BACKWARDS_COMPATIBLE or range_changed or (self.last_keyframe and not full_range):
                 client_options["full-range"] = bool(full_range)
-            return self.do_compress_image(pic_in, strides, full_range, range_changed), client_options
+            return data, client_options
         finally:
             for i in range(3):
                 if py_buf[i].buf:
@@ -706,9 +712,11 @@ cdef class Encoder:
             raise ValueError(f"invalid colorspace {self.src_format!r}")
 
         image.bps = 0
-        # vp9 only writes the colour range (color_config) on keyframes, so force one when
-        # the range changes - otherwise the bitstream keeps advertising the old range:
-        if self.frames==0 or (range_changed and self.encoding == "vp9"):
+        # force a keyframe on the first frame and whenever the colour range changes:
+        # vp9 needs it to rewrite color_config in the bitstream, and a client re-creating its
+        # decoder to apply the new range (eg: vp8, which has no in-bitstream range) must resume
+        # from a keyframe:
+        if self.frames==0 or range_changed:
             flags |= VPX_EFLAG_FORCE_KF
         #deadline based on speed (also affects quality...)
         cdef unsigned long deadline
@@ -740,6 +748,7 @@ cdef class Encoder:
             free(image)
             log.error("%s invalid packet type: %s", self.encoding, PACKET_KIND.get(pkt.kind, pkt.kind))
             return None
+        self.last_keyframe = (pkt.data.frame.flags & VPX_FRAME_IS_KEY) != 0
         self.frames += 1
         #we copy the compressed data here, we could manage the buffer instead
         #using vpx_codec_set_cx_data_buf every time with a wrapper for freeing it,
