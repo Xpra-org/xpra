@@ -134,6 +134,11 @@ cdef extern from "wels/codec_app_def.h":
         SCREEN_CONTENT_NON_REAL_TIME,
         INPUT_CONTENT_TYPE_ALL
 
+    ctypedef enum ECOMPLEXITY_MODE:
+        LOW_COMPLEXITY              #the lowest complexity, the fastest speed
+        MEDIUM_COMPLEXITY           #medium complexity, medium speed, medium quality
+        HIGH_COMPLEXITY             #high complexity, lowest speed, high quality
+
     ctypedef enum EColorPrimaries:
         CP_RESERVED0
         CP_BT709
@@ -228,7 +233,7 @@ cdef extern from "wels/codec_app_def.h":
         int       iSpatialLayerNum          # spatial layer number,1<= iSpatialLayerNum <= MAX_SPATIAL_LAYER_NUM, MAX_SPATIAL_LAYER_NUM = 4
         SSpatialLayerConfig sSpatialLayers[MAX_SPATIAL_LAYER_NUM]
 
-        # ECOMPLEXITY_MODE iComplexityMode
+        ECOMPLEXITY_MODE iComplexityMode
         unsigned int      uiIntraPeriod     # period of Intra frame
         int               iNumRefFrame      # number of reference frame used
         # EParameterSetStrategy eSpsPpsIdStrategy     # different stategy in adjust ID in SPS/PPS: 0- constant ID, 1-additional ID, 6-mapping and additional
@@ -427,6 +432,25 @@ cdef int quality_to_qp(int quality):
     return MAX_QP - (quality * (MAX_QP - MIN_QP)) // 100
 
 
+# openh264 only offers 3 complexity levels; map our 0..100 speed onto them
+# (higher speed -> lower complexity -> faster but lower quality):
+COMPLEXITY_NAMES: Dict[int, str] = {
+    LOW_COMPLEXITY      : "low",
+    MEDIUM_COMPLEXITY   : "medium",
+    HIGH_COMPLEXITY     : "high",
+}
+
+
+cdef int speed_to_complexity(int speed):
+    if speed < 0:
+        speed = 50
+    if speed >= 67:
+        return LOW_COMPLEXITY
+    if speed >= 34:
+        return MEDIUM_COMPLEXITY
+    return HIGH_COMPLEXITY
+
+
 #cdef void log_cb(void* context, int level, const char* message) nogil:
 #    pass #nothing yet
 
@@ -440,6 +464,7 @@ cdef class Encoder:
     cdef uint8_t full_range
     cdef uint8_t ready
     cdef int quality
+    cdef int speed
     cdef SEncParamExt param
     cdef object file
 
@@ -459,6 +484,7 @@ cdef class Encoder:
         self.src_format = src_format
         self.full_range = options.boolget("full-range", True)
         self.quality = options.intget("quality", 50)
+        self.speed = options.intget("speed", 50)
         self.frames = 0
         self.init_encoder()
         gen = generation.increase()
@@ -497,6 +523,8 @@ cdef class Encoder:
         self.param.iPicWidth     = self.width
         self.param.iPicHeight    = self.height
         self.param.iRCMode       = RC_OFF_MODE
+        # speed maps to the encoder complexity (higher speed = lower complexity = faster):
+        self.param.iComplexityMode = <ECOMPLEXITY_MODE> speed_to_complexity(self.speed)
         # rate control is off, so the quantizer is fixed per spatial layer:
         # derive it from the requested quality (lower QP = higher quality):
         cdef int qp = quality_to_qp(self.quality)
@@ -518,7 +546,8 @@ cdef class Encoder:
         #a void (*)(void* context, int level, const char* message) function which receives log messages
         trace_level = WELS_LOG_WARNING
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
-        log("openh264 init_encoder: quality=%i qp=%i full-range=%s", self.quality, qp, bool(self.full_range))
+        log("openh264 init_encoder: quality=%i qp=%i speed=%i complexity=%s full-range=%s",
+            self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), bool(self.full_range))
         for i in range(nlayers):
             log("spatial layer %i bFullRange=%s iDLayerQp=%i", i, self.param.sSpatialLayers[i].bFullRange, self.param.sSpatialLayers[i].iDLayerQp)
 
@@ -537,6 +566,21 @@ cdef class Encoder:
             log.warn("Warning: failed to set openh264 quality to %i (qp=%i), error %i", quality, qp, r)
         else:
             log("openh264 quality set to %i (qp=%i)", quality, qp)
+
+    cdef void set_encoding_speed(self, int speed) except *:
+        # update the encoder complexity on the fly via the lightweight COMPLEXITY option:
+        if speed < 0 or speed == self.speed:
+            return
+        self.speed = speed
+        cdef int complexity = speed_to_complexity(speed)
+        # keep our stored param in sync so a later quality reconfigure preserves it:
+        self.param.iComplexityMode = <ECOMPLEXITY_MODE> complexity
+        cdef int r = self.context.SetOption(ENCODER_OPTION_COMPLEXITY, &complexity)
+        if r:
+            log.warn("Warning: failed to set openh264 speed to %i (complexity=%s), error %i",
+                     speed, COMPLEXITY_NAMES.get(complexity), r)
+        else:
+            log("openh264 speed set to %i (complexity=%s)", speed, COMPLEXITY_NAMES.get(complexity))
 
     cdef void reinit_encoder(self) except *:
         # close and reopen the encoder so the SPS is regenerated with the current colour
@@ -573,6 +617,8 @@ cdef class Encoder:
             "height"        : self.height,
             "quality"       : self.quality,
             "qp"            : quality_to_qp(self.quality),
+            "speed"         : self.speed,
+            "complexity"    : COMPLEXITY_NAMES.get(speed_to_complexity(self.speed), ""),
         }
         return info
 
@@ -619,8 +665,9 @@ cdef class Encoder:
             self.reinit_encoder()
         if image.get_pixel_format()!="YUV420P":
             raise ValueError("expected YUV420P but got %s" % image.get_pixel_format())
-        # honour any per-frame quality change (no-op if unchanged):
+        # honour any per-frame quality/speed change (no-op if unchanged):
         self.set_encoding_quality(options.intget("quality", -1))
+        self.set_encoding_speed(options.intget("speed", -1))
         pixels = image.get_pixels()
         strides = image.get_rowstride()
 
