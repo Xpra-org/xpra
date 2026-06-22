@@ -156,6 +156,8 @@ def get_notification_icon(icon_string: str) -> IconData | None:
         img = get_gtk_theme_icon(icon_string)
     if not img:
         return None
+    if not w or not h:
+        w, h = img.size
     if w > MAX_SIZE or h > MAX_SIZE:
         try:
             LANCZOS = Image.Resampling.LANCZOS

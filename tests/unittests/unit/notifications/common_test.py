@@ -73,6 +73,14 @@ class TestCommon(unittest.TestCase):
         finally:
             os.unlink(f.name)
 
+    def test_get_notification_icon(self):
+        image = common.PIL_Image().new("RGB", (300, 100), (1, 2, 3))
+        with patch.object(common, "get_gtk_theme_icon", return_value=image):
+            icon = common.get_notification_icon("test-icon")
+        self.assertEqual(icon[:3], ("png", 256, 256))
+        self.assertTrue(icon[3].startswith(b"\x89PNG"))
+        self.assertIsNone(common.get_notification_icon(""))
+
 
 def main():
     unittest.main()
