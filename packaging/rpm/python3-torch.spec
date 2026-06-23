@@ -28,7 +28,7 @@
 %endif
 
 Name:           %{python3}-torch-cuda
-Version:        2.11.0
+Version:        2.12.1
 Release:        1
 URL:            https://github.com/pytorch/pytorch
 Summary:        PyTorch provides tensor computation with strong GPU acceleration and deep neural networks built on a tape-based autograd system
@@ -71,14 +71,16 @@ Requires:       cuda
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ab3fde9e7e382f45ac942be6ea2c2ef362c5ccd6f55ed6d5f35e6ea81d3ab88e" ]; then
+if [ "${sha256}" != "757145cfd55c7c8c01f58c959f76230641cc67fdd1d8b6a130f93ad1bc116f5f" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n pytorch-v%{version}
-# Create missing NCCL pin file that's excluded from release tarball
+# Recreate the NCCL pin files excluded from the release tarball
+# (tools/optional_submodules.py reads these if NCCL / distributed are enabled):
 mkdir -p .ci/docker/ci_commit_pins
-echo "v2.21.5-1" > .ci/docker/ci_commit_pins/nccl-cu12.txt
+echo "v2.29.7-1" > .ci/docker/ci_commit_pins/nccl.txt
+echo "v2.29.3-1" > .ci/docker/ci_commit_pins/nccl-cu126.txt
 
 %build
 CUDA=/opt/cuda
@@ -163,6 +165,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/functorch
 
 %changelog
+* Tue Jun 23 2026 Antoine Martin <antoine@xpra.org> - 2.12.1-1
+- new upstream release
+
 * Wed Apr 01 2026 Antoine Martin <antoine@xpra.org> - 2.11.0-1
 - new upstream release
 
