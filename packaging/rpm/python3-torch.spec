@@ -43,7 +43,7 @@ BuildRequires:	coreutils
 BuildRequires:  make
 BuildRequires:  cmake
 BuildRequires:  gcc%{GCC_VERSION}
-BuildRequires:  gcc-c++%{GCC_VERSION}
+BuildRequires:  gcc%{GCC_VERSION}-c++
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-pip
 BuildRequires:  %{python3}-setuptools
