@@ -76,7 +76,6 @@ class XpraProxy:
                 buf = untilConcludes(self.is_active, noretry, from_conn.read, PROXY_BUFFER_SIZE)
                 if not buf:
                     log("%s: connection lost", log_name)
-                    self.quit(0)
                     return
                 if SHOW_DATA:
                     log("%s: %s bytes: %s", log_name, len(buf), repr_ellipsized(buf))
@@ -87,8 +86,16 @@ class XpraProxy:
                     buf = buf[written:]
                     log("%s: written %s bytes", log_name, written)
             log("%s copy loop ended", log_name)
-        except OSError:
-            log("%s", log_name, exc_info=True)
+        except OSError as e:
+            # an error during shutdown is expected (the pipes get closed), so only make noise
+            # if we were still active - and log a single line rather than flooding with tracebacks
+            # (this goes to stderr, which is a separate pipe from the protocol stream on stdout):
+            if self.exit_code is None:
+                log.warn("Warning: %s connection failed: %s", log_name, e)
+            log("%s copy loop error", log_name, exc_info=True)
+        finally:
+            # make sure the other direction is torn down too, whichever way this loop ended:
+            self.quit(0)
 
     def is_active(self) -> bool:
         return self.exit_code is None
