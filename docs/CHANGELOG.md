@@ -1,8 +1,16 @@
 # Changelog
 
-## [6.5.1] 2026-06-22
+## [6.5.1] 2026-06-24
 * 🔧 Platforms, build and packaging:
-  * none yet
+  * [`pynvml 13.610.43`](https://github.com/Xpra-org/xpra/commit/14cbb2d6c50a6e9b0bed25e759ca472b8f5c167b)
+  * [`pytools 2026.1.1`](https://github.com/Xpra-org/xpra/commit/49b917cddfc8928fc2c91721aeea6f406eb81013)
+  * [`torch-vision 0.27.1`](https://github.com/Xpra-org/xpra/commit/f886b1af686bcb48af8d0ca11cf66f3810528b3f)
+  * [`torch 2.12.1`](https://github.com/Xpra-org/xpra/commit/197ef58856181a941b8c5550a8003d1c2c0da903)
+* Major:
+  * [ssh connection failures](https://github.com/Xpra-org/xpra/commit/c911a3f62adca2cdf40b13a9bd1e75768862a2e1)
+* Minor:
+  * [gsettings lookup always failed in desktop servers](https://github.com/Xpra-org/xpra/commit/5e2f4d7b228f3483273c105555553825b937644e)
+  * [ssh proxied connections used the wrong config](https://github.com/Xpra-org/xpra/commit/6c482802a4f3dc6535663b2cf98486a901952175)
 * 📁 File-transfers:
   * [better parsing compatibility](https://github.com/Xpra-org/xpra/commit/387888e818c1e293764aed74baf99bfb05cabc62)
   * [legacy packet names, preserve printer and title, etc](https://github.com/Xpra-org/xpra/commit/044a3f537ef7dc5eb1d1e417afcd909549cd3f99)
@@ -16,7 +24,7 @@
   * [socket directory double-quoted in runner script](https://github.com/Xpra-org/xpra/commit/08e11148c640a7a611016466b19c704832958331)
   * [message shows incorrect mmap limit](https://github.com/Xpra-org/xpra/commit/c5ab361728fe6e2f2ae78ee74f8f6d38554cf35d)
   * [logging error when notification icon parsing fails](https://github.com/Xpra-org/xpra/commit/2ada4e51b412181d850c560ee58baaa86700b840)
-  * [notification theme icon default size](https://github.com/Xpra-org/xpra/commit/f9dee0e034f54e5051ecf3b8438f2586292f10fd)
+  * [notification theme icon default size](https://github.com/Xpra-org/xpra/commit/f9dee0e034f54e5051ecf3b8438f2586292f10fd) [+ fixup test](https://github.com/Xpra-org/xpra/commit/ac5a942b944fc192f811dac90f17f933ab1272b7)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:

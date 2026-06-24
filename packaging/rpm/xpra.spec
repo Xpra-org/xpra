@@ -1094,8 +1094,31 @@ fi
 
 
 %changelog
-* Mon Jun 22 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
-- TODO
+* Wed Jun 24 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
+- Platforms, build and packaging:
+   `pynvml 13.610.43`
+   `pytools 2026.1.1`
+   `torch-vision 0.27.1`
+   `torch 2.12.1`
+- Major:
+   ssh connection failures
+- Minor:
+   gsettings lookup always failed in desktop servers
+   ssh proxied connections used the wrong config
+- File-transfers:
+   better parsing compatibility
+   legacy packet names, preserve printer and title, etc
+   tighten file transfer authorization
+   reject malformed file transfer input
+- Encodings:
+   buffer overflow in fallback Cython CSC module
+   codec module availability detection
+- Cosmetic:
+   no need to try to use invalid displayfd values
+   socket directory double-quoted in runner script
+   message shows incorrect mmap limit
+   logging error when notification icon parsing fails
+   notification theme icon default size + fixup test
 * Wed May 06 2026 Antoine Martin <antoine@xpra.org> 6.5-10
 - Platforms, build and packaging:
    use `wasapi2` on MS Windows
