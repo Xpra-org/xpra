@@ -2076,11 +2076,9 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
             try:
                 conn = connect_or_fail(params, opts)
                 protocol = app.make_protocol(conn)
-                if opts.attach is not False:
-                    # the command clients (attach=False) start the protocol from their own `run()` method,
-                    # but the regular client relies on the caller to start it
-                    # (just like `do_setup_connection` does for the normal attach path):
-                    protocol.start()
+                # start the protocol now: `protocol.start()` is idempotent, so this is safe
+                # even for the command clients which also start it from their own `run()` method:
+                protocol.start()
                 may_show_progress(app, 80, "connecting to server")
                 break
             except InitExit as e:

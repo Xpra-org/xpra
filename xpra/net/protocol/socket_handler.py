@@ -450,8 +450,11 @@ class SocketProtocol:
     def start(self) -> None:
         def start_network_parse_thread() -> None:
             eventlog(f"start_network_parse_thread() closed={self._closed}")
-            if not self._closed:
-                self._read_parser_thread.start()
+            rpt = self._read_parser_thread
+            # idempotent: only start the parse thread if it isn't running already
+            # (start() may be called more than once - ie: by both the caller and the client's `run()`)
+            if not self._closed and rpt and not rpt.is_alive():
+                rpt.start()
 
         self.idle_add(start_network_parse_thread)
         if SEND_INVALID_PACKET:
