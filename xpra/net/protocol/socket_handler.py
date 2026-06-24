@@ -203,7 +203,7 @@ class SocketProtocol:
         self.receive_pending = False
         # ssh channel may contain garbage initially,
         # tell the protocol to wait for a valid header:
-        self.wait_for_header = conn.socktype == "ssh"
+        self.wait_for_header = envbool("XPRA_WAIT_FOR_HEADER", conn.socktype == "ssh")
         self.source_has_more = self.source_has_more_start
         self.flush_then_close = self.do_flush_then_close
 
