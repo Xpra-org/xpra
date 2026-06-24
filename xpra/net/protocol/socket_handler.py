@@ -442,9 +442,8 @@ class SocketProtocol:
             },
         }
         thread_info: dict[str, bool] = {}
-        for t in (self._write_thread, self._read_parser_thread, self._write_format_thread):
-            if t:
-                thread_info[t.name] = t.is_alive()
+        for t in self.get_threads():
+            thread_info[t.name] = t.is_alive()
         info["thread"] = thread_info
         return info
 
