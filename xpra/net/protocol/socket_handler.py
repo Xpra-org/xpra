@@ -905,7 +905,8 @@ class SocketProtocol:
                     return None
                 data += buf[:n]
                 pos = find_xpra_header(data, max_data_size=self.abs_max_packet_size)
-                eventlog("waiting for xpra header: pos=%i", pos)
+                eventlog("waiting for xpra header: pos=%i (len=%i max=%i data=%s)",
+                         pos, len(data), self.abs_max_packet_size, Ellipsizer(data))
                 if pos < 0:
                     continue
                 end = pos + HEADER_SIZE
