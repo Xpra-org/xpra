@@ -904,7 +904,7 @@ class SocketProtocol:
                 if not n:
                     return None
                 data += buf[:n]
-                pos = find_xpra_header(data)
+                pos = find_xpra_header(data, max_data_size=self.abs_max_packet_size)
                 eventlog("waiting for xpra header: pos=%i", pos)
                 if pos < 0:
                     continue
