@@ -19,14 +19,16 @@ autoprov: no
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
+%global upstream_version 3.3.0a1
+
 Name:		%{py3rpmname}-cython
-Version:	3.2.6
+Version:	3.3.0~a1
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://github.com/cython/cython/releases/download/%{version}/cython-%{version}.tar.gz
+Source0:    https://github.com/cython/cython/releases/download/%{upstream_version}/cython-%{upstream_version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   %{py3rpmname}
 Provides:   %{py3rpmname}-Cython = %{version}-%{release}
@@ -44,11 +46,11 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "6509472a245ccdf5fd11637a4744a1edfd38debb1a48332a8f3fe4b07db725bd" ]; then
+if [ "${sha256}" != "79787148701b5fd7c718b1ea5f1b8481be3e4ea938de78a1a5c3b04bf36b0c87" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -n cython-%{version}
+%setup -q -n cython-%{upstream_version}
 
 %build
 NPROCS=${NPROCS:-`nproc`}
@@ -80,6 +82,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Thu Jun 25 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a1-1
+- new upstream release
+
 * Sun May 24 2026 Antoine Martin <antoine@xpra.org> 3.2.5-1
 - new upstream release
 
