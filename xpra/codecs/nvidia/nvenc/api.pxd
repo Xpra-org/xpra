@@ -1148,7 +1148,7 @@ cdef uint8_t is_transient_error(NVENCSTATUS r)
 
 cdef str get_caps_name(NV_ENC_CAPS cap)
 
-cdef List[int] get_all_caps()
+cdef List[NV_ENC_CAPS] get_all_caps()
 
 cdef str get_preset_name(object preset)
 

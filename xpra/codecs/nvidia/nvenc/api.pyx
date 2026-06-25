@@ -380,7 +380,7 @@ cdef str get_caps_name(NV_ENC_CAPS cap):
     return CAPS_NAMES.get(cap) or str(cap)
 
 
-cdef List[int] get_all_caps():
+cdef List[NV_ENC_CAPS] get_all_caps():
     return list(CAPS_NAMES.keys())
 
 
