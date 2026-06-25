@@ -122,13 +122,12 @@ class EncodeClient(ClientBaseClass):
         self.send_encode()
 
     def hello_request(self) -> dict[str, Any]:
-        hello = {}
-        for cc in CLIENT_BASES:
-            hello.update(cc.get_caps(self))
         hello: dict[str, Any] = {
             "request": "encode",
             "encoding": self.encoding_options,
         }
+        for cc in CLIENT_BASES:
+            hello.update(cc.get_caps(self))
         if BACKWARDS_COMPATIBLE:
             hello["ui_client"] = True
         log(f"{hello=}")
