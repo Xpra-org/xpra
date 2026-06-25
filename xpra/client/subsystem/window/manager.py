@@ -583,10 +583,10 @@ class WindowManagerClient(StubClientMixin):
         self.send_refresh_all()
 
     def control_refresh(self, wid: int, suspend_resume, refresh, quality=100,
-                        options=None, client_properties=None) -> None:
+                        options: dict | None=None, client_properties: dict | None=None) -> None:
         packet: Sequence[PacketElement] = [WINDOW_REFRESH, wid, 0, quality]
-        options: dict = options or {}
-        client_properties: dict = client_properties or {}
+        options = options or {}
+        client_properties = client_properties or {}
         options["refresh-now"] = bool(refresh)
         if suspend_resume is True:
             options["batch"] = {

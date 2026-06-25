@@ -383,10 +383,12 @@ def unload_codecs() -> None:
 
 
 def show_codecs(show: Iterable[str] = ()) -> None:
-    for name in sorted(show or ALL_CODECS):
+    names = show or ALL_CODECS
+    for name in sorted(names):
         log(f"* {name.ljust(20)} : {str(name in codecs).ljust(10)} {codecs.get(name, '')}")
     log("codecs versions:")
-    for name in (show or codec_versions.keys()):
+    names = show or codec_versions.keys()
+    for name in sorted(names):
         version = codec_versions.get(name, "")
         log(f"* {name.ljust(20)} : {version}")
 
