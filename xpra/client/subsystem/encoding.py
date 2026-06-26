@@ -137,8 +137,9 @@ class Encodings(StubClientMixin):
     def load_all_codecs(self) -> None:
         log("load_all_codecs()")
         sleep(1)
-        load_codec("dec_pillow")
         ae = self.allowed_encodings
+        if {"png", "webp", "jpeg"}.intersection(ae):
+            load_codec("dec_pillow")
         if "jpeg" in ae:
             # try to load the fast jpeg decoders:
             load_codec("dec_jpeg")
