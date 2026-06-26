@@ -74,7 +74,7 @@ def basename(filename: str) -> str:
 def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str, int]:
     from xpra.platform.paths import get_download_dir  # pylint: disable=import-outside-toplevel
     dd = os.path.abspath(os.path.expanduser(get_download_dir()))
-    safe_basename = basename(basefilename)
+    safe_basename = basename(basefilename).lstrip(".")
     if safe_basename in ("", ".", ".."):
         safe_basename = "download"
     filename = os.path.abspath(os.path.join(dd, safe_basename))
