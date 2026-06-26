@@ -16,8 +16,9 @@ We understand and accept that some researchers prefer full-disclosure, but we wo
 Critical bugs are usually fixed (if reproducible) within hours, rather than days or weeks. Though making a new release does take a little bit longer.
 Even more so for vulnerabilities.
 
-Please contact [security@xpra.org](mailto:security@xpra.org)
+Please contact [security@xpra.org](mailto:security@xpra.org).
 
+You can encrypt all communications with the following GPG key: `66EA1EA1A1323924` for `xpra@xpra.org`, the primary key fingerprint: `B499 3B57 3231 48E3 7977  E5D8 7325 4CAD 1797 8FAF` is the same as the one used for [signing packages](https://github.com/Xpra-org/xpra/wiki/Download#-signatures).
 
 ## Notifications
 
