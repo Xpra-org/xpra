@@ -4,6 +4,7 @@
 # all we want is sed,
 # but is is MSWindows so it's easier to re-invent the wheel, sigh
 
+import os
 import sys
 
 def main():
@@ -13,6 +14,11 @@ def main():
         sys.exit(1)
     src = sys.argv[1]
     dst = sys.argv[2]
+    src = os.path.abspath(src)
+    dst = os.path.abspath(dst)
+    if not os.path.isfile(src):
+        print("Source file does not exist: %s" % src)
+        sys.exit(1)
     print("replacing tokens from file '%s' and saving to '%s'" % (src, dst))
     data = open(src, 'rb').read().decode()
     print("data=%i bytes %s" % (len(data), type(data)))
