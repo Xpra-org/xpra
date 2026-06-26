@@ -894,7 +894,12 @@ class ApplicationWindow:
         log("do_start_XpraClient(%s, %s) client=%s", conn, display_desc, self.client)
         self.client.encoding = self.config.encoding
         self.client.display_desc = display_desc
-        self.client.make_protocol(conn)
+        protocol = self.client.make_protocol(conn)
+        # make_protocol() does not start the protocol: the network read thread
+        # is only started by protocol.start() (as the command-line client does).
+        # Without this the client sends its hello but never reads the server's
+        # reply, so the connection times out with 0 packets received.
+        protocol.start()
         self.set_info_text("Network connection established")
         log("start_XpraClient() client initialized")
 
