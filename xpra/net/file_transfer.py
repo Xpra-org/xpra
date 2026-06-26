@@ -74,12 +74,21 @@ def basename(filename: str) -> str:
 def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str, int]:
     from xpra.platform.paths import get_download_dir  # pylint: disable=import-outside-toplevel
     dd = os.path.abspath(os.path.expanduser(get_download_dir()))
+    # resolve symlinks in the download directory so we can compare against fully resolved paths:
+    real_dd = os.path.realpath(dd)
     safe_basename = basename(basefilename).lstrip(".")
     if safe_basename in ("", ".", ".."):
         safe_basename = "download"
     filename = os.path.abspath(os.path.join(dd, safe_basename))
-    if os.path.commonpath((dd, filename)) != dd:
-        raise ValueError(f"download path {filename!r} escapes download directory {dd!r}")
+
+    def verify_contained(path: str) -> None:
+        # ensure the real path (following any symlinks) stays within the download directory,
+        # so that neither the supplied name nor a symlinked path component can escape it:
+        real_path = os.path.realpath(path)
+        if real_path != real_dd and os.path.commonpath((real_dd, real_path)) != real_dd:
+            raise ValueError(f"download path {path!r} escapes download directory {dd!r}")
+
+    verify_contained(filename)
     ext = MIMETYPE_EXTS.get(mimetype)
     if ext and not filename.endswith("." + ext):
         # on some platforms (win32),
@@ -96,6 +105,9 @@ def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str, int]
     base = 0
     while True:
         try:
+            # re-verify just before opening, to guard against a symlink being swapped in
+            # for a path component between the check above and the open below (TOCTOU):
+            verify_contained(filename)
             with umask_context(0o133):
                 fd = os.open(filename, flags)
         except FileExistsError:
