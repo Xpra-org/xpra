@@ -35,6 +35,7 @@ from xpra.scripts.config import (
     fixup_debug_option, fixup_options,
     find_docs_path, find_html5_path,
     make_defaults_struct, validate_config, name_to_field,
+    URL_SAFE_OPTIONS,
 )
 
 MODE_ALIAS: dict[str, str] = {
@@ -162,6 +163,11 @@ def parse_URL(url: str) -> tuple[str, dict]:
         params = parse_qs(params_str, keep_blank_values=True)
         f_params: dict[str, Any] = {}
         for k, v in params.items():
+            # URLs are untrusted: only allow a safe subset of options,
+            # never commands, environment, file paths, auth or encryption settings:
+            if k not in URL_SAFE_OPTIONS:
+                warn(f"Warning: option {k!r} is not allowed in URLs and will be ignored")
+                continue
             t = OPTION_TYPES.get(k)
             if t is not None and t not in (list, tuple):
                 f_params[k] = v[0]

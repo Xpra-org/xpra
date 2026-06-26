@@ -1330,6 +1330,36 @@ CLONES: dict[str, str] = {}
 # these options should not be specified in config files:
 NO_FILE_OPTIONS = ("daemon", )
 
+# URLs (ie: "xpra+tcp://host:port/?param=value") are untrusted input:
+# they can come from a clicked link, a web page, a QR code, etc.
+# Only a small allow-list of harmless display / connection preferences
+# may be set this way - everything else (commands, environment, file paths,
+# authentication, encryption, listening sockets, ...) could be abused to
+# achieve code execution, MITM or information disclosure on the client.
+# This is an allow-list on purpose: anything not listed here is rejected,
+# so newly added options are denied by default.
+URL_SAFE_OPTIONS: tuple[str, ...] = (
+    # encoding / picture quality:
+    "encoding", "encodings",
+    "quality", "min-quality", "speed", "min-speed",
+    "compression_level", "video-scaling", "auto-refresh-delay", "refresh-rate",
+    "opengl", "dpi", "desktop-scaling",
+    # window appearance:
+    "title", "session-name", "border", "headerbar", "splash",
+    "min-size", "max-size", "windows", "modal-windows", "desktop-fullscreen",
+    # input / pointer:
+    "mousewheel", "middle-click", "pointer", "shortcut-modifiers", "key-shortcut", "swap-keys",
+    "keyboard-sync",
+    # benign feature toggles:
+    "clipboard", "clipboard-direction",
+    "cursors", "bell", "notifications", "tray",
+    "sharing", "lock", "readonly", "av-sync",
+    # connection:
+    "username", "password", "reconnect", "pings",
+)
+# one could conceivably want to add `ssl-ca-data` or `ssl-server-verify-mode` here,
+# but this could be abused to connect to malicious servers...
+
 
 def validate_config(d=None, discard=NO_FILE_OPTIONS, extras_types=None, extras_validation=None) -> dict[str,Any]:
     return do_validate_config(d or {}, discard, extras_types or {}, extras_validation or {})
