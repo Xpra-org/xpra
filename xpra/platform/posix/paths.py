@@ -7,8 +7,10 @@
 # pylint: disable=import-outside-toplevel
 
 import os.path
+import shlex
 import sys
 import site
+import subprocess
 import tempfile
 
 from collections.abc import Sequence
@@ -211,6 +213,55 @@ def do_get_default_log_dirs() -> list[str]:
         log_dirs.append(v)
     log_dirs.append(tempfile.gettempdir())
     return log_dirs
+
+
+def _get_xdg_download_dir() -> str:
+    try:
+        proc = subprocess.run(
+            ["xdg-user-dir", "DOWNLOAD"],
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+    except Exception:
+        return ""
+    if proc.returncode != 0:
+        return ""
+    return proc.stdout.strip()
+
+
+def _get_user_dirs_download_dir() -> str:
+    config_home = os.environ.get("XDG_CONFIG_HOME", "~/.config")
+    user_dirs = os.path.expanduser(os.path.join(config_home, "user-dirs.dirs"))
+    try:
+        with open(user_dirs, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or not line.startswith("XDG_DOWNLOAD_DIR="):
+                    continue
+                value = line.split("=", 1)[1].strip()
+                try:
+                    parts = shlex.split(value)
+                except ValueError:
+                    return ""
+                if parts:
+                    return parts[0]
+                return ""
+    except OSError:
+        return ""
+    return ""
+
+
+def do_get_download_dir() -> str:
+    download_dir = _get_xdg_download_dir()
+    if download_dir:
+        return download_dir
+    download_dir = _get_user_dirs_download_dir()
+    if download_dir:
+        return download_dir
+    if os.path.exists(os.path.expanduser("~/Downloads")):
+        return "~/Downloads"
+    return "/tmp"
 
 
 def do_get_audio_command() -> list[str]:
