@@ -192,7 +192,7 @@ def get_download_dir() -> str:
 def do_get_download_dir() -> str:
     d = "~/Downloads"
     if not os.path.exists(os.path.expanduser(d)):
-        return "~"
+        return "/tmp"
     return d
 
 
