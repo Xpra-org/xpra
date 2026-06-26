@@ -176,6 +176,12 @@ class WindowDraw(StubClientMixin):
             self.idle_add(draw_abort, WINDOW_NOT_FOUND, "window not found")
             return
 
+        allowed_encodings = getattr(self, "allowed_encodings", ("rgb32", "rgb24", "mmap",))
+        if coding not in allowed_encodings and coding != "mmap":
+            log.warn("Warning: server sent unsupported encoding %r", coding)
+            self.idle_add(draw_abort, WINDOW_DECODE_ERROR, f"unsupported encoding {coding!r}")
+            return
+
         self._draw_counter += 1
         if PAINT_FAULT_RATE > 0 and (self._draw_counter % PAINT_FAULT_RATE) == 0:
             log.warn("injecting paint fault for %s draw packet %i, sequence number=%i",
