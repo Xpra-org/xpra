@@ -80,15 +80,8 @@ def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str, int]
     if safe_basename in ("", ".", ".."):
         safe_basename = "download"
     filename = os.path.abspath(os.path.join(dd, safe_basename))
-
-    def verify_contained(path: str) -> None:
-        # ensure the real path (following any symlinks) stays within the download directory,
-        # so that neither the supplied name nor a symlinked path component can escape it:
-        real_path = os.path.realpath(path)
-        if real_path != real_dd and os.path.commonpath((real_dd, real_path)) != real_dd:
-            raise ValueError(f"download path {path!r} escapes download directory {dd!r}")
-
-    verify_contained(filename)
+    if os.path.commonpath((dd, filename)) != dd:
+        raise ValueError(f"download path {filename!r} escapes download directory {dd!r}")
     ext = MIMETYPE_EXTS.get(mimetype)
     if ext and not filename.endswith("." + ext):
         # on some platforms (win32),
@@ -104,10 +97,16 @@ def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str, int]
         pass
     base = 0
     while True:
+        # verify the resolved path (following any symlinks) stays within the download directory:
+        # if a symlink points outside, skip this name rather than write outside the directory
+        # (O_CREAT|O_EXCL already refuses to follow a symlink when creating the file):
+        real_path = os.path.realpath(filename)
+        if real_path != real_dd and os.path.commonpath((real_dd, real_path)) != real_dd:
+            filelog(f"cannot save file as {filename!r}: path escapes the download directory")
+            base += 1
+            filename = f"{root}-{base}{ext}"
+            continue
         try:
-            # re-verify just before opening, to guard against a symlink being swapped in
-            # for a path component between the check above and the open below (TOCTOU):
-            verify_contained(filename)
             with umask_context(0o133):
                 fd = os.open(filename, flags)
         except FileExistsError:
