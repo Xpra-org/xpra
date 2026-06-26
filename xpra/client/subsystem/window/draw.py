@@ -126,23 +126,6 @@ class WindowDraw(StubClientMixin):
             data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)
         rowstride = packet.get_u32(9)
-        if not window:
-            # window is gone
-
-            def draw_cleanup() -> None:
-                if coding == "mmap":
-                    if area := self.mmap_read_area:
-                        from xpra.net.mmap.io import int_from_buffer
-                        # we need to ack the data to free the space!
-                        data_start = int_from_buffer(area.mmap, 0)
-                        offset, length = data[-1]
-                        data_start.value = offset + length
-                        # clear the mmap area via idle_add so any pending draw requests
-                        # will get a chance to run first (preserving the order)
-                self.send_damage_sequence(wid, packet_sequence, width, height, WINDOW_NOT_FOUND, "window not found")
-
-            self.idle_add(draw_cleanup)
-            return
         # rename old encoding aliases early:
         options = typedict()
         if len(packet) > 10:
@@ -150,6 +133,24 @@ class WindowDraw(StubClientMixin):
         dtype = DRAW_TYPES.get(type(data), type(data))
         log(DRAW_LOG_FMT, len(data), dtype, wid, packet_sequence, width, height, x, y, coding, options)
         start = monotonic()
+
+        def draw_cleanup() -> None:
+            if coding == "mmap":
+                if area := self.mmap_read_area:
+                    from xpra.net.mmap.io import int_from_buffer
+                    # we need to ack the data to free the space!
+                    data_start = int_from_buffer(area.mmap, 0)
+                    offset, length = data[-1]
+                    data_start.value = offset + length
+                    # clear the mmap area via idle_add so any pending draw requests
+                    # will get a chance to run first (preserving the order)
+
+        def record_draw_error(code=WINDOW_NOT_FOUND, message="window not found") -> None:
+            self.send_damage_sequence(wid, packet_sequence, width, height, code, message)
+
+        def draw_abort(code=WINDOW_NOT_FOUND, message="window not found") -> None:
+            draw_cleanup()
+            record_draw_error(code, message)
 
         def record_decode_time(success: bool | int, message="") -> None:
             if success > 0:
@@ -170,13 +171,18 @@ class WindowDraw(StubClientMixin):
                          success, message, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, repr_ellipsized(message, 512))
 
+        if not window:
+            # window is gone
+            self.idle_add(draw_abort, WINDOW_NOT_FOUND, "window not found")
+            return
+
         self._draw_counter += 1
         if PAINT_FAULT_RATE > 0 and (self._draw_counter % PAINT_FAULT_RATE) == 0:
             log.warn("injecting paint fault for %s draw packet %i, sequence number=%i",
                      coding, self._draw_counter, packet_sequence)
             if PAINT_FAULT_TELL:
                 msg = f"fault injection for {coding} draw packet {self._draw_counter}, sequence no={packet_sequence}"
-                self.idle_add(record_decode_time, False, msg)
+                self.idle_add(draw_abort, WINDOW_DECODE_ERROR, msg)
             return
         # we could expose this to the csc step? (not sure how this could be used)
         # if self.xscale!=1 or self.yscale!=1:
@@ -186,7 +192,7 @@ class WindowDraw(StubClientMixin):
         except Exception as e:
             log.error("Error drawing on window %#x", wid)
             log.error(f" using encoding {coding} with {options=}", exc_info=True)
-            self.idle_add(record_decode_time, False, str(e))
+            self.idle_add(record_draw_error, WINDOW_DECODE_ERROR, str(e))
             raise
 
     ######################################################################
