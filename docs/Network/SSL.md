@@ -104,7 +104,7 @@ openssl s_client -connect 127.0.0.1:10000  -CAfile /path/to/ca.crt < /dev/null
 ```
 Connect the xpra client:
 ```
-xpra attach ssl://localhost:10000 --ssl-ca-cert=/path/to/ca.crt
+xpra attach ssl://localhost:10000/ --ssl-ca-cert=/path/to/ca.crt
 ```
 
 ### Sending the CA data
@@ -122,7 +122,7 @@ python -c "import sys,binascii;print binascii.unhexlify(sys.argv[1])" \
 ```
 Use it directly in the xpra command:
 ```
-xpra attach ssl:localhost:10000 \
+xpra attach ssl://localhost:10000/ \
      --ssl-ca-data=2d2d2d2d2d424547494e...4452d2d2d2d2d0a
 ```
 Alternatively, place all of these in a connection file you can just double-click on:

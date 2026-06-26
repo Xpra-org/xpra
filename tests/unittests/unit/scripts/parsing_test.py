@@ -165,18 +165,18 @@ class TestParseEnv(unittest.TestCase):
 class TestParseURL(unittest.TestCase):
 
     def test_tcp_with_params(self):
-        address, opts = parse_URL("tcp://host:10000?compression_level=1")
+        address, opts = parse_URL("tcp://host:10000/?compression_level=1")
         self.assertIn("host:10000", address)
         # compression_level is typed as int in OPTION_TYPES
         self.assertEqual(opts.get("compression_level"), 1)
 
     def test_no_params(self):
-        address, opts = parse_URL("tcp://host:10000")
+        address, opts = parse_URL("tcp://host:10000/")
         self.assertEqual(opts, {})
         self.assertIn("host:10000", address)
 
     def test_xpra_prefix_stripped(self):
-        address, opts = parse_URL("xpra+tcp://host:10000")
+        address, opts = parse_URL("xpra+tcp://host:10000/")
         self.assertIn("host:10000", address)
 
     def test_path_included(self):
@@ -234,7 +234,7 @@ class TestNormalizeDisplayName(unittest.TestCase):
             self.assertEqual(result, ":10")
 
     def test_url_passthrough(self):
-        result = normalize_display_name("tcp://host:10000")
+        result = normalize_display_name("tcp://host:10000/")
         self.assertIn("host:10000", result)
 
 
@@ -290,7 +290,7 @@ class TestParseDisplayNameVsock(unittest.TestCase):
         vsock_mod = self._mock_vsock()
         with patch.dict(sys.modules, {"xpra.net.vsock.vsock": vsock_mod}):
             opts = _make_opts()
-            desc = parse_display_name(opts, "vsock://3:5000")
+            desc = parse_display_name(opts, "vsock://3:5000/")
         self.assertEqual(desc["type"], "vsock")
         cid, port = desc["vsock"]
         self.assertEqual(cid, 3)
@@ -327,7 +327,7 @@ class TestParseDisplayNameHyperV(unittest.TestCase):
         with patch.dict(sys.modules, {"xpra.net.common": common_mock}):
             with patch.multiple(_socket, **socket_patches, create=True):
                 opts = _make_opts()
-                desc = parse_display_name(opts, "hyperv://loopback:20000")
+                desc = parse_display_name(opts, "hyperv://loopback:20000/")
         self.assertEqual(desc["type"], "hyperv")
         vmid, service = desc["hyperv"]
         self.assertIsNotNone(vmid)
@@ -337,7 +337,7 @@ class TestParseDisplayNameHyperV(unittest.TestCase):
 class TestParseCmdlineMinimal(unittest.TestCase):
 
     def test_minimal_flag_sets_defaults(self):
-        options, args = parse_cmdline(["xpra", "attach", "--minimal", "tcp://host:10000"])
+        options, args = parse_cmdline(["xpra", "attach", "--minimal", "tcp://host:10000/"])
         # minimal mode disables features; some are stored as bool, others as "no"/"off" string
         from xpra.util.parsing import FALSE_OPTIONS
 
@@ -351,7 +351,7 @@ class TestParseCmdlineMinimal(unittest.TestCase):
 
     def test_minimal_preserves_explicit_overrides(self):
         # explicit value on cmdline should survive the second parse pass
-        options, args = parse_cmdline(["xpra", "attach", "--minimal", "--opengl=yes", "tcp://host:10000"])
+        options, args = parse_cmdline(["xpra", "attach", "--minimal", "--opengl=yes", "tcp://host:10000/"])
         self.assertEqual(options.opengl, "yes")
 
 

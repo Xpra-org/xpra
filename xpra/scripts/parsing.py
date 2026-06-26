@@ -251,7 +251,8 @@ def normalize_display_name(display_name: str) -> str:
         # then the username and password aren't parsed properly!
         pass
 
-    # fixup the legacy format "tcp:host:port"
+    # Normalize legacy connection strings to the canonical URI form,
+    # ie: "tcp://host:port/".
     pos = display_name.find(":")
     # duplicated to avoid import:
     BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
@@ -266,7 +267,7 @@ def normalize_display_name(display_name: str) -> str:
                           " use `ssh://host:port/display` instead", DeprecationWarning)
         elif pos > 0 and len(display_name) > pos + 2 and display_name[pos + 1] != "/":
             # replace the first ":" with "://"
-            # so we end up with parsable URL, ie: "tcp://host:port"
+            # so we end up with a parsable URI, ie: "tcp://host:port/"
             display_name = display_name[:pos] + "://" + display_name[pos + 1:]
             warnings.warn("Warning: the syntax `protocol:host` will be removed in a future release,"
                           " use `protocol://host` instead", DeprecationWarning)

@@ -80,8 +80,8 @@ class TestIsDisplayArg(unittest.TestCase):
         self.assertTrue(is_display_arg("wayland-1"))
 
     def test_socket_type_prefix(self):
-        self.assertTrue(is_display_arg("tcp://localhost:10000"))
-        self.assertTrue(is_display_arg("ssl://host:443"))
+        self.assertTrue(is_display_arg("tcp://localhost:10000/"))
+        self.assertTrue(is_display_arg("ssl://host:443/"))
 
     def test_bare_integer(self):
         self.assertTrue(is_display_arg("0"))
@@ -119,12 +119,12 @@ class TestSplitDisplayArg(unittest.TestCase):
 
 class TestIsConnectionArg(unittest.TestCase):
     def test_socket_url(self):
-        self.assertTrue(is_connection_arg("tcp://localhost:10000"))
-        self.assertTrue(is_connection_arg("ssl://host:443"))
+        self.assertTrue(is_connection_arg("tcp://localhost:10000/"))
+        self.assertTrue(is_connection_arg("ssl://host:443/"))
         self.assertTrue(is_connection_arg("ssh://user@host"))
 
-    def test_socket_colon_form(self):
-        self.assertTrue(is_connection_arg("tcp:localhost:10000"))
+    def test_socket_uri_form(self):
+        self.assertTrue(is_connection_arg("tcp://localhost:10000/"))
 
     def test_socket_slash_form(self):
         self.assertTrue(is_connection_arg("tcp/localhost"))
@@ -179,9 +179,9 @@ class TestStripAttachExtraPositionalArgs(unittest.TestCase):
         self.assertEqual(result, cmdline)
 
     def test_tcp_url_as_display(self):
-        cmdline = ["xpra", "attach", "tcp://host:10000", "xterm"]
+        cmdline = ["xpra", "attach", "tcp://host:10000/", "xterm"]
         result = strip_attach_extra_positional_args(cmdline)
-        self.assertEqual(result, ["xpra", "attach", "tcp://host:10000"])
+        self.assertEqual(result, ["xpra", "attach", "tcp://host:10000/"])
 
 
 class TestFindModePos(unittest.TestCase):

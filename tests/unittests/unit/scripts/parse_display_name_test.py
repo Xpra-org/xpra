@@ -10,7 +10,6 @@ import unittest
 
 from xpra.os_util import WIN32, POSIX
 from xpra.util.objects import AdHocStruct
-from xpra.util.env import IgnoreWarningsContext
 from xpra.scripts.parsing import parse_display_name
 
 
@@ -115,8 +114,7 @@ class TestMain(unittest.TestCase):
             t("vsock://any:any/", {"vsock": (CID_ANY, PORT_ANY)})
             t("vsock://10:2000/", {"vsock": (10, 2000)})
         t("vnc+ssh://host/0")
-        with IgnoreWarningsContext():
-            t("tcp:localhost:10000", {"host": "localhost", "port": 10000, "type": "tcp"})
+        t("tcp://localhost:10000/", {"host": "localhost", "port": 10000, "type": "tcp"})
 
 
 def main():

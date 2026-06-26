@@ -119,14 +119,6 @@ The \fBOPTIONS\fP can be used to specify an ssh proxy:
 xpra will then establish an SSH connection to the specified "proxy" host,
 and from that host xpra will set up an SSH connection to the xpra server.
 
-.P
-For backwards compatibility, SSH mode also supports the syntax:
-\fBssh:[USERNAME[:PASSWORD]@]HOST:DISPLAY\fP but this form does not
-support specifying the SSH port number.
-Older versions also used the form \fBprotocol:host:port\fP, but users
-are encouraged to move to a more standard URI format using \fB://\fP as
-separator.
-.P
 The password need only be specified when the server authentication module
 requires it.
 .P

@@ -100,7 +100,7 @@ def write_runner_shell_scripts(contents: str, overwrite: bool = True) -> None:
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
     # will clobber the rest.  This isn't great, but the tradeoff is that it
-    # makes it possible to use bare 'ssh:hostname' display names and
+    # makes it possible to use bare 'ssh://hostname/' display names and
     # autodiscover the proper numeric display name when only one xpra server
     # is running on the remote host.  Might need to revisit this later if
     # people run into problems or autodiscovery turns out to be less useful

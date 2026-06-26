@@ -19,7 +19,8 @@ log = Logger("menu")
 
 def show_qr(uri: str, width: int = 640, height: int = 640):
     assert uri.find(":") > 0, "invalid uri"
-    # support old-style URIs, ie: tcp:host:port
+    # Support legacy connection strings by rewriting them to canonical URIs,
+    # ie: "tcp://host:port/".
     if uri.find(":") != uri.find("://"):
         uri = uri.replace(":", "://", 1)
     parts = uri.split(":", 1)
