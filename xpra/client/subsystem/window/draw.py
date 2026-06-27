@@ -167,6 +167,13 @@ class WindowDraw(StubClientMixin):
                          success, message, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, repr_ellipsized(message, 512))
 
+        allowed_encodings = getattr(self, "allowed_encodings", ("rgb32", "rgb24", "mmap",))
+        if coding not in allowed_encodings and coding != "mmap":
+            msg = f"server sent unsupported encoding {coding!r}"
+            log.warn("Warning: %s", msg)
+            self.idle_add(record_decode_time, False, msg)
+            return
+
         self._draw_counter += 1
         if PAINT_FAULT_RATE > 0 and (self._draw_counter % PAINT_FAULT_RATE) == 0:
             log.warn("injecting paint fault for %s draw packet %i, sequence number=%i",
