@@ -137,8 +137,20 @@ class FileServerBehaviorTest(unittest.TestCase):
             f.flush()
             self.server._process_file_request(None, Packet("file-request", f.name, True))
         source.send_file.assert_called_once_with(
-            f.name, "", b"requested data", 14, openit=True,
+            f.name, "", b"requested data", 14, openit=True, send_id="",
             options={"request-file": (f.name, True)},
+        )
+
+    def test_request_file_echoes_send_id(self):
+        source = self.make_source()
+        self.owner.source = source
+        with tempfile.NamedTemporaryFile() as f:
+            f.write(b"requested data")
+            f.flush()
+            self.server._process_file_request(None, Packet("file-request", f.name, False, "send-123"))
+        source.send_file.assert_called_once_with(
+            f.name, "", b"requested data", 14, openit=False, send_id="send-123",
+            options={"request-file": (f.name, False)},
         )
 
     def test_unicode_filename_request_and_control(self):
@@ -154,7 +166,7 @@ class FileServerBehaviorTest(unittest.TestCase):
 
             self.server._process_file_request(None, Packet("file-request", path, False))
             source.send_file.assert_called_once_with(
-                path, "", data, len(data), openit=False,
+                path, "", data, len(data), openit=False, send_id="",
                 options={"request-file": (path, False)},
             )
 
