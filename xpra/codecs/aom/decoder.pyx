@@ -240,7 +240,7 @@ cdef class Decoder:
         pixel_format = get_format_str(image.fmt)
         # a 16-bit container holding 10-bit samples is exposed as "P10":
         if bit_depth == AOM_BITS_10 and pixel_format.endswith("P16"):
-            pixel_format = pixel_format[:-3] + "P10"
+            pixel_format = pixel_format.replace("P16", "P10")
         log("got aom av1 image at %#x, pixel format %s (bit depth %i)", <uintptr_t> image, pixel_format, bit_depth)
         if pixel_format not in COLORSPACES:
             raise RuntimeError(f"Unsupported image format %r" % pixel_format)
