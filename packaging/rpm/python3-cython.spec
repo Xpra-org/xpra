@@ -1,4 +1,10 @@
 %define _disable_source_fetch 0
+# Disable LTO: gcc 16's link-time optimizer miscompiles Cython's own
+# Compiler/Nodes.c (the generated C is correct, but -flto drops the
+# code.put_goto() emitted for if/else branches). The result is a Cython
+# binary whose compiled accelerators generate broken C for every if/else
+# (the else block runs unconditionally). Building without LTO is correct.
+%global _lto_cflags %{nil}
 %if 0%{?fedora} >= 42
 # F42 builds tried to bring in some weird dependencies on paths like /usr/sbin/python3
 AutoReqProv: no
@@ -23,7 +29,7 @@ autoprov: no
 
 Name:		%{py3rpmname}-cython
 Version:	3.3.0~a1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
@@ -82,6 +88,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Fri Jun 27 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a1-2
+- disable LTO: gcc 16 -flto miscompiles Compiler/Nodes.c and breaks if/else codegen
+
 * Thu Jun 25 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a1-1
 - new upstream release
 
