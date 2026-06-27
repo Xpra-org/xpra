@@ -527,9 +527,9 @@ class TestFileTransferHandler(unittest.TestCase):
     def test_do_process_file_data_request_pre_requested(self):
         fth = MinimalFTH()
         fth.file_transfer = True
-        fth.files_requested["f.txt"] = True
-        opts = typedict({"request-file": ("f.txt", True)})
-        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
+        # the request is matched on the send-id we generated, not the filename:
+        fth.files_requested["sid"] = True
+        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, typedict())
         self.assertTrue(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
         fth.cleanup()
 
@@ -797,10 +797,9 @@ class TestProcessDownloadedFile(unittest.TestCase):
     def test_request_file_callback_called(self):
         h = _FullHandler()
         called = []
-        h.file_request_callback["myarg"] = lambda fn, sz: called.append((fn, sz))
-        opts = typedict({"request-file": ("myarg", True)})
+        h.file_request_callback["sid"] = lambda fn, sz: called.append((fn, sz))
         with patch("xpra.net.file_transfer.GLib"):
-            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, opts)
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, typedict(), "sid")
         assert called
 
     def test_no_action_no_thread(self):
