@@ -106,6 +106,9 @@ class FileServer(StubSubsystem):
             log("no server log to send")
             return
         openit = packet.get_bool(2)
+        # echo back the send-id the client generated for this request (if any),
+        # so the client can safely match the response against its own request:
+        send_id = packet.get_str(3) if len(packet) > 3 else ""
         filename = os.path.abspath(osexpand(argf))
         if not os.path.exists(filename):
             log.warn("Warning: the file requested does not exist:")
@@ -132,7 +135,8 @@ class FileServer(StubSubsystem):
                               "File cannot be read", "The requested file cannot be read:\n%s" % filename,
                               icon_name="file")
             return
-        ss.send_file(filename, "", data, len(data), openit=openit, options={"request-file": (argf, openit)})
+        ss.send_file(filename, "", data, len(data), openit=openit, send_id=send_id,
+                     options={"request-file": (argf, openit)})
 
     def init_packet_handlers(self) -> None:
         # noqa: E241

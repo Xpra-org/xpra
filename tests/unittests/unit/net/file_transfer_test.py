@@ -677,10 +677,22 @@ class TestFileTransferHandler(unittest.TestCase):
     def test_do_process_file_data_request_pre_requested(self):
         fth = MinimalFTH()
         fth.file_transfer = True
-        fth.files_requested["f.txt"] = True
-        opts = typedict({"request-file": ("f.txt", True)})
-        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
+        # the request is matched on the send-id we generated, not the filename:
+        fth.files_requested["sid"] = True
+        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, typedict())
         self.assertTrue(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
+        fth.cleanup()
+
+    def test_do_process_file_data_request_unrequested_send_id(self):
+        # a server cannot get auto-accepted by spoofing the request-file option
+        # if the send-id does not match a request we actually made:
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.files_requested["sid"] = True
+        opts = typedict({"request-file": ("f.txt", True)})
+        fth.do_process_file_data_request("file", "other-sid", "f.txt", 100, False, True, opts)
+        self.assertFalse(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
+        self.assertIn("sid", fth.files_requested)
         fth.cleanup()
 
     def test_data_request_authorization_matrix(self):
@@ -1010,33 +1022,44 @@ class TestProcessDownloadedFile(unittest.TestCase):
     def test_request_file_callback_called(self):
         h = _FullHandler()
         called = []
-        h.file_request_callback["myarg"] = lambda fn, sz: called.append((fn, sz))
-        opts = typedict({"request-file": ("myarg", True)})
+        h.file_request_callback["sid"] = lambda fn, sz: called.append((fn, sz))
         with patch("xpra.net.file_transfer.GLib"):
-            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, opts)
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, typedict(), "sid")
         assert called
+
+    def test_request_file_callback_ignores_unmatched_send_id(self):
+        # the callback is keyed on the send-id we generated: a server cannot
+        # bypass it (and reach the open/print path) by spoofing the request-file
+        # option in the send-file packet with a different/absent send-id:
+        h = _FullHandler()
+        callback = MagicMock()
+        h.file_request_callback["sid"] = callback
+        opts = typedict({"request-file": ("sid", True)})
+        with patch("xpra.net.file_transfer.start_thread") as start:
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, True, 100, opts, "other-sid")
+        callback.assert_not_called()
+        self.assertIn("sid", h.file_request_callback)
+        start.assert_called_once()
 
     def test_request_file_callback_is_one_shot(self):
         h = _FullHandler()
         callback = MagicMock()
-        h.file_request_callback["requested"] = callback
-        options = typedict({"request-file": ("requested", True)})
+        h.file_request_callback["sid"] = callback
         with patch("xpra.net.file_transfer.start_thread") as start:
-            h.process_downloaded_file("/tmp/first", "raw", False, False, 10, options)
-            h.process_downloaded_file("/tmp/second", "raw", False, False, 20, options)
+            h.process_downloaded_file("/tmp/first", "raw", False, False, 10, typedict(), "sid")
+            h.process_downloaded_file("/tmp/second", "raw", False, False, 20, typedict(), "sid")
         callback.assert_called_once_with("/tmp/first", 10)
-        self.assertNotIn("requested", h.file_request_callback)
+        self.assertNotIn("sid", h.file_request_callback)
         start.assert_not_called()
 
     def test_request_file_callback_failure_is_isolated(self):
         h = _FullHandler()
         callback = MagicMock(side_effect=RuntimeError("callback failed"))
-        h.file_request_callback["requested"] = callback
-        options = typedict({"request-file": ("requested", True)})
+        h.file_request_callback["sid"] = callback
         with patch("xpra.net.file_transfer.filelog") as filelog:
-            h.process_downloaded_file("/tmp/file", "raw", False, False, 10, options)
+            h.process_downloaded_file("/tmp/file", "raw", False, False, 10, typedict(), "sid")
         callback.assert_called_once_with("/tmp/file", 10)
-        self.assertNotIn("requested", h.file_request_callback)
+        self.assertNotIn("sid", h.file_request_callback)
         self.assertTrue(filelog.error.called)
 
     def test_no_action_no_thread(self):
@@ -1478,7 +1501,7 @@ class _LoopbackHandler(_FullHandler):
             self.files_accepted[send_id] = openit
         cb_answer(self.approve_requests)
 
-    def process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options):
+    def process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options, send_id=""):
         with open(filename, "rb") as f:
             self.downloads.append((os.path.basename(filename), f.read(), options))
 

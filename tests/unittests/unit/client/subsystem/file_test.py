@@ -67,9 +67,10 @@ class FileClientTest(ClientMixinTest):
         self.assertIn("file-transfers", info)
         self.assertIn("remote", info["file-transfers"])
 
-        client.send_request_file("server.log", True)
-        self.assertEqual(self.packets[-1], ("file-request", "server.log", True))
-        self.assertTrue(client.files_requested["server.log"])
+        send_id = client.send_request_file("server.log", True)
+        # the request carries a client-generated send-id used to match the response:
+        self.assertEqual(self.packets[-1], ("file-request", "server.log", True, send_id))
+        self.assertTrue(client.files_requested[send_id])
 
     def test_request_file_capability_nesting_and_legacy_fallback(self):
         from xpra.client.base.file import FileMixin
