@@ -61,7 +61,7 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
         if size<64*1024*1024:
             raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
         if size>16*1024*1024*1024:
-            raise ValueError("mmap is too big: %sB (maximum is 4GB)" % std_unit(size))
+            raise ValueError("mmap is too big: %sB (maximum is 16GB)" % std_unit(size))
     try:
         import mmap
         unit = max(4096, mmap.PAGESIZE)
