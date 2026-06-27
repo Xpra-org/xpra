@@ -89,6 +89,10 @@ NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
 SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO>0)
 DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
+#control commands are driven by the server, which we do not trust by default:
+#a rogue server could otherwise switch encoders, toggle debug logging, etc.
+#set XPRA_CONTROL=1 to opt back in to server-driven control commands:
+CONTROL = envbool("XPRA_CONTROL", False)
 
 
 """
@@ -655,6 +659,12 @@ class UIXpraClient(ClientBaseClass):
         command = bytestostr(packet[1])
         args = packet[2:]
         log("_process_control(%s)", packet)
+        if not CONTROL:
+            #server-driven control commands are not trusted by default,
+            #the user has to opt in via the XPRA_CONTROL environment variable:
+            log.warn("Warning: ignoring control command %r from server", command)
+            log.warn(" set the XPRA_CONTROL environment variable to enable it")
+            return
         if command=="show_session_info":
             log("calling %s%s on server request", self.show_session_info, args)
             self.show_session_info(*args)
