@@ -40,6 +40,7 @@ MAX_CONCURRENT_FILES = max(1, envint("XPRA_MAX_CONCURRENT_FILES", 10))
 PRINT_JOB_TIMEOUT = max(60, envint("XPRA_PRINT_JOB_TIMEOUT", 3600))
 SEND_REQUEST_TIMEOUT = max(300, envint("XPRA_SEND_REQUEST_TIMEOUT", 3600))
 CHUNK_TIMEOUT = 10 * 1000
+URL_PREFIXES = tuple(prefix for prefix in os.environ.get("XPRA_URL_PREFIXES", "http://,https://").split(",") if prefix)
 
 MIMETYPE_EXTS: dict[str, str] = {
     "application/postscript": "ps",
@@ -793,8 +794,13 @@ class FileTransferHandler(FileTransferAttributes):
         url = packet.get_str(1)
         send_id = packet.get_str(2)
         if not self.open_url:
-            filelog.warn("Warning: received a request to open URL '%s'", url)
+            filelog.warn("Warning: received a request to open URL %r", url)
             filelog.warn(" but opening of URLs is disabled")
+            return
+        if not any(url.lower().startswith(url_prefix.lower()) for url_prefix in URL_PREFIXES):
+            filelog.warn("Warning: received a request to open URL %r", url)
+            filelog.warn(" but this does not match any of the allowed prefixes")
+            filelog.warn(" %s", csv(URL_PREFIXES))
             return
         if self.open_url_ask:
             acceptit, _printit, _openit = self.accept_data(send_id, "url", url, False, True)
