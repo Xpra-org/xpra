@@ -50,7 +50,7 @@ info = True
 def set_client_features(opts) -> None:
     from xpra.os_util import WIN32, OSX
     from importlib.util import find_spec
-    from xpra.util.parsing import FALSE_OPTIONS, OFF_OPTIONS
+    from xpra.util.parsing import FALSE_OPTIONS, OFF_OPTIONS, str_to_bool
 
     def b(v) -> bool:
         return str(v).lower() not in FALSE_OPTIONS
@@ -70,7 +70,7 @@ def set_client_features(opts) -> None:
     from xpra.client.base import features
     features.debug = features.debug or b(opts.debug)
     features.command = opts.commands
-    features.control = opts.control
+    features.control = str_to_bool(opts.control, False)
     features.file = b(opts.file_transfer) and icheck("xpra.net.file_transfer")
     features.printer = features.file and b(opts.printing)
     features.display = opts.windows

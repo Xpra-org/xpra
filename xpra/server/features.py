@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util.debug import CPUINFO, DETECT_MEMLEAKS, DETECT_FDLEAKS
+from xpra.util.parsing import str_to_bool
 
 debug = DETECT_MEMLEAKS or DETECT_FDLEAKS or CPUINFO
 watcher = True
@@ -70,7 +71,7 @@ def set_server_features(opts, mode: str) -> None:
     # turn off some server subsystem:
     from xpra.server import features
     features.http = opts.http and impcheck("net.http")
-    features.control = opts.control and impcheck("net.control")
+    features.control = str_to_bool(opts.control, True) and impcheck("net.control")
     features.mmap = b(opts.mmap) and impcheck("net.mmap")
     features.ssl = b(opts.ssl)
     features.dbus = b(opts.dbus) and bool(find_spec("dbus")) and impcheck("dbus", "server.dbus")

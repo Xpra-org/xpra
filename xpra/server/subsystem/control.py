@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.common import noop
+from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement
 from xpra.net.control.common import ControlCode, parse_boolean_value
@@ -24,7 +25,7 @@ class ControlHandler(StubServerMixin):
         self.control_enabled = False
 
     def init(self, opts) -> None:
-        self.control_enabled = opts.control
+        self.control_enabled = str_to_bool(opts.control, True)
 
     def setup(self) -> None:
         self.add_default_control_commands()
