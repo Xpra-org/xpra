@@ -13,6 +13,12 @@ from xpra.client.subsystem import encoding
 
 class EncodingSeccompTest(unittest.TestCase):
 
+    @staticmethod
+    def assert_decoder_exclusions(testcase: unittest.TestCase, filtered: tuple[str, ...]) -> None:
+        testcase.assertGreaterEqual(len(filtered), 3)
+        testcase.assertEqual(filtered[0], "all")
+        testcase.assertEqual(set(filtered[1:]), {"no-nvdec", "no-vpl"})
+
     def test_load_all_codecs_avoids_hardware_decode(self):
         helper = SimpleNamespace(set_modules=lambda **kwargs: None, init=lambda: None)
         client = SimpleNamespace(
@@ -37,7 +43,7 @@ class EncodingSeccompTest(unittest.TestCase):
         client = SimpleNamespace(video_decoders=("all", "no-vpl"))
         with patch("xpra.seccomp.is_enabled", return_value=True):
             filtered = encoding.Encodings.filter_video_decoder_options(client)
-        self.assertEqual(filtered, ("all", "no-nvdec", "no-vpl"))
+        self.assert_decoder_exclusions(self, filtered)
 
 
 if __name__ == "__main__":

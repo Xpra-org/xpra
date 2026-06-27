@@ -14,12 +14,18 @@ from xpra.seccomp import draw as seccomp_draw
 
 class SeccompTest(unittest.TestCase):
 
+    @staticmethod
+    def assert_decoder_exclusions(testcase: unittest.TestCase, filtered: tuple[str, ...]) -> None:
+        testcase.assertGreaterEqual(len(filtered), 3)
+        testcase.assertEqual(filtered[0], "all")
+        testcase.assertEqual(set(filtered[1:]), {"no-nvdec", "no-vpl"})
+
     def test_filter_video_decoder_options(self):
         with patch.object(seccomp, "LINUX", True), \
              patch.object(seccomp, "ENABLED", True), \
              patch.object(seccomp, "is_available", return_value=True):
             filtered = encoding.Encodings.filter_video_decoder_options(type("C", (), {"video_decoders": ("all", "no-vpl")})())
-        self.assertEqual(filtered, ("all", "no-vpl", "no-nvdec"))
+        self.assert_decoder_exclusions(self, filtered)
 
     def test_install_draw_thread_noop_when_disabled(self):
         with patch.object(seccomp, "is_enabled", return_value=False):

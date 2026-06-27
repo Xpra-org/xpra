@@ -142,10 +142,12 @@ class Encodings(StubClientMixin):
             return video_decoders
         if not seccomp.is_enabled():
             return video_decoders
-        disabled = {"no-vpl", "no-nvdec"}
+        disabled = ("no-vpl", "no-nvdec")
         filtered = [entry for entry in video_decoders if entry not in disabled]
         # Keep the explicit exclusions so "all" cannot re-enable them.
-        filtered.extend(disabled)
+        for entry in disabled:
+            if entry not in filtered:
+                filtered.append(entry)
         return tuple(filtered)
 
     def load_all_codecs(self) -> None:
