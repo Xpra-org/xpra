@@ -39,9 +39,10 @@ class FileMixin(StubClientMixin, FileTransferHandler):
         self.add_packets(
             "open-url",
             "file-send",
-            "file-data-request", "file-data-response",
+            "file-data-response",
             "file-ack-chunk", "file-send-chunk",
         )
+        self.add_packets("file-data-request", main_thread=True)
 
     def get_caps(self) -> dict[str, Any]:
         return {"file": self.get_file_transfer_features()}

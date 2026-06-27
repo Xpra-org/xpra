@@ -211,7 +211,7 @@ class ScreenshotXpraClient(AbstractImageXpraClient):
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_legacy_alias("screenshot", "display-screenshot")
-        self.add_packets("display-screenshot")
+        self.add_packets("display-screenshot", main_thread=True)
 
 
 class IconXpraClient(AbstractImageXpraClient):
@@ -226,7 +226,7 @@ class IconXpraClient(AbstractImageXpraClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("display-icon")
+        self.add_packets("display-icon", main_thread=True)
 
 
 class InfoXpraClient(CommandConnectClient):
@@ -541,7 +541,8 @@ class ShellXpraClient(SendCommandConnectClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("shell-reply", "ping")
+        self.add_packets("shell-reply", main_thread=True)
+        self.add_packets("ping")
 
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
