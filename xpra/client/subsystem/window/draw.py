@@ -11,6 +11,7 @@ from queue import SimpleQueue
 from threading import Thread
 from typing import Any
 
+from xpra.os_util import LINUX
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_DRAW_ACK
 from xpra.exit_codes import ExitCode, ExitValue
@@ -95,6 +96,8 @@ class WindowDraw(StubClientMixin):
         self.send_now(WINDOW_DRAW_ACK, *packet)
 
     def _draw_thread_loop(self):
+        if LINUX:
+            self.install_draw_thread_seccomp()
         while self.exit_code is None:
             packet = self._draw_queue.get()
             if packet is None:
@@ -105,6 +108,21 @@ class WindowDraw(StubClientMixin):
                 sleep(0)
         self._draw_thread = None
         log("draw thread ended")
+
+    @staticmethod
+    def install_draw_thread_seccomp() -> None:
+        sclog = Logger("seccomp")
+        sclog("install_draw_thread_seccomp()")
+        try:
+            from xpra.seccomp import draw as seccomp_draw
+        except ImportError:
+            sclog.warn("Warning: seccomp module is not available")
+            return
+        try:
+            installed = seccomp_draw.install_thread()
+            log("seccomp installed=%s", installed)
+        except Exception:
+            sclog.error("Error installing draw thread seccomp filter", exc_info=True)
 
     def _do_draw(self, packet: Packet) -> None:
         """ this runs from the draw thread above """

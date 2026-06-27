@@ -172,6 +172,7 @@ tests/unittests/test-file*
 /xpra/platform/*.c
 /xpra/platform/win32/d3d11/*.c
 /xpra/scripts/*.c
+/xpra/seccomp/*.c
 /xpra/server/*/*.c
 /xpra/server/*.c
 /xpra/vulkan/*.c

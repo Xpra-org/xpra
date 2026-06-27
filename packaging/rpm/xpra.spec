@@ -206,10 +206,12 @@ Recommends:			%{py3rpmname}-aioquic
 Recommends:			%{py3rpmname}-zeroconf
 BuildRequires:		pkgconfig(liblz4)
 Requires:			lz4-libs
+Requires:			libseccomp
 BuildRequires:		xxhash-devel
 Requires:			xxhash-libs
 BuildRequires:		pkgconfig(libbrotlidec)
 BuildRequires:		pkgconfig(libbrotlienc)
+BuildRequires:		pkgconfig(libseccomp)
 Recommends:			brotli
 %if ! 0%{?el10}
 BuildRequires:		pkgconfig(libqrencode)
@@ -817,6 +819,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/net/
 %{python3_sitearch}/xpra/opengl/
 %{python3_sitearch}/xpra/platform/
+%{python3_sitearch}/xpra/seccomp/
 %{python3_sitearch}/xpra/scripts/
 %{python3_sitearch}/xpra/wayland/
 %{python3_sitearch}/xpra/pointer/

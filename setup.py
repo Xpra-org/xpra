@@ -513,6 +513,7 @@ keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
 evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.10", "evdi")
 drm_ENABLED             = DEFAULT and (LINUX or FREEBSD) and pkg_config_version("2.4", "libdrm")
+seccomp_ENABLED         = DEFAULT and LINUX and pkg_config_exists("libseccomp")
 csc_cython_ENABLED      = DEFAULT
 pytorch_ENABLED         = DEFAULT
 nvidia_ENABLED          = DEFAULT and not OSX and BITS==64 and not RISCV
@@ -3502,6 +3503,7 @@ toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 toggle_packages(clipboard_ENABLED or gtk3_ENABLED, "xpra.gtk.bindings")
 tace(clipboard_ENABLED, "xpra.gtk.bindings.atoms", "gtk+-3.0")
 tace(gtk3_ENABLED, "xpra.gtk.bindings.gobject", "gtk+-3.0,pygobject-3.0")
+toggle_packages(seccomp_ENABLED, "xpra.seccomp")
 
 tace(client_ENABLED or server_ENABLED, "xpra.buffers.cyxor", optimize=3)
 tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.util.rectangle", optimize=3)
@@ -3719,6 +3721,7 @@ toggle_packages(vsock_ENABLED, "xpra.net.vsock")
 tace(vsock_ENABLED, "xpra.net.vsock.vsock")
 toggle_packages(lz4_ENABLED, "xpra.net.lz4")
 tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
+tace(seccomp_ENABLED, "xpra.seccomp._native", "libseccomp")
 
 toggle_packages(wayland_client_ENABLED or wayland_server_ENABLED, "xpra.wayland")
 tace(wayland_client_ENABLED, "xpra.wayland.wait_for_display", "wayland-client")

@@ -134,17 +134,39 @@ class Encodings(StubClientMixin):
                 self.after_handshake(self.send_encoding_config)
             start_thread(load, "load-all-codecs", daemon=True)
 
+    def filter_video_decoder_options(self) -> tuple[str, ...]:
+        video_decoders = tuple(self.video_decoders)
+        try:
+            from xpra import seccomp
+        except ImportError:
+            return video_decoders
+        if not seccomp.is_enabled():
+            return video_decoders
+        disabled = {"no-vpl", "no-nvdec"}
+        filtered = [entry for entry in video_decoders if entry not in disabled]
+        # Keep the explicit exclusions so "all" cannot re-enable them.
+        filtered.extend(disabled)
+        return tuple(filtered)
+
     def load_all_codecs(self) -> None:
         log("load_all_codecs()")
         sleep(1)
         ae = self.allowed_encodings
+        try:
+            from xpra import seccomp
+            video_decoders = self.filter_video_decoder_options()
+            allow_hardware_jpeg = not seccomp.is_enabled()
+        except ImportError:
+            video_decoders = tuple(self.video_decoders)
+            allow_hardware_jpeg = True
         if {"png", "webp", "jpeg"}.intersection(ae):
             load_codec("dec_pillow")
         if "jpeg" in ae:
             # try to load the fast jpeg decoders:
             load_codec("dec_jpeg")
-            load_codec("dec_nvjpeg")
-            load_codec("nvdec")
+            if allow_hardware_jpeg:
+                load_codec("dec_nvjpeg")
+                load_codec("nvdec")
         if "webp" in ae:
             # try to load the fast webp decoder:
             load_codec("dec_webp")
@@ -153,7 +175,7 @@ class Encodings(StubClientMixin):
         if "jph" in ae:
             load_codec("dec_jph")
         vh = getVideoHelper()
-        vh.set_modules(video_decoders=self.video_decoders, csc_modules=self.csc_modules)
+        vh.set_modules(video_decoders=video_decoders, csc_modules=self.csc_modules)
         vh.init()
 
     def cleanup(self) -> None:
