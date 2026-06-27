@@ -1088,7 +1088,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="shell", default=defaults.shell,
                      help="Enable the shell debugging channel")
     legacy_bool_parse("control")
-    group.add_option("--control", action="store", metavar="yes|no",
+    group.add_option("--control", action="store", metavar="yes|no|auto",
                      dest="control", default=defaults.control,
                      help="Enable `control` requests")
     group.add_option("--start", action="append",

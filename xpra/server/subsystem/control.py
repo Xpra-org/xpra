@@ -7,6 +7,7 @@ from typing import Any
 
 from xpra.common import noop
 from xpra.util.objects import typedict
+from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement
 from xpra.net.control.common import ControlCode, parse_boolean_value
@@ -29,7 +30,7 @@ class ControlHandler(StubSubsystem):
         self.server.hello_request_handlers["command"] = self._handle_hello_request_command
 
     def init(self, opts) -> None:
-        self.enabled = opts.control
+        self.enabled = str_to_bool(opts.control, True)
 
     def setup(self) -> None:
         self.add_default_control_commands()

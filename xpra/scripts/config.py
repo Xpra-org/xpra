@@ -1255,7 +1255,7 @@ def get_defaults() -> dict[str, Any]:
         "exit-with-client"  : False,
         "exit-with-windows" : False,
         "commands"          : True,
-        "control"           : True,
+        "control"           : None,
         "shell"             : False,
         "http"              : True,
         "start-new-commands": True,
