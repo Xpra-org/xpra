@@ -27,6 +27,7 @@ from xpra.scripts.config import (
     fixup_debug_option, fixup_options,
     make_defaults_struct, parse_bool, parse_number, print_number,
     validate_config, name_to_field,
+    URL_SAFE_OPTIONS,
     )
 
 
@@ -163,6 +164,11 @@ def parse_URL(url:str) -> Tuple[str,Dict]:
         params = parse_qs(params_str, keep_blank_values=True)
         f_params : Dict[str,Any] = {}
         for k,v in params.items():
+            #URLs are untrusted: only allow a safe subset of options,
+            #never commands, environment, file paths, auth or encryption settings:
+            if k not in URL_SAFE_OPTIONS:
+                warn(f"Warning: option {k!r} is not allowed in URLs and will be ignored")
+                continue
             t = OPTION_TYPES.get(k)
             if t is not None and t not in (list, tuple):
                 f_params[k] = v[0]
