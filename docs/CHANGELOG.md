@@ -31,6 +31,7 @@
   * [`YUV422` support with `vp9`](https://github.com/Xpra-org/xpra/issues/4928)
   * [colorspace synchronization in video bitstream](https://github.com/Xpra-org/xpra/issues/4926)
 * ✨ Features:
+  * [`seccomp` hardening of image parsing](https://github.com/Xpra-org/xpra/issues/622)
   * [native `pipewire` frame capture](https://github.com/Xpra-org/xpra/issues/4937)
   * [remove GStreamer video codecs](https://github.com/Xpra-org/xpra/issues/4936)
   * [gsettings synchronization](https://github.com/Xpra-org/xpra/issues/3683)
