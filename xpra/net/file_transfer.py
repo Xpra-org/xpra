@@ -77,9 +77,7 @@ def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str, int]
     dd = os.path.abspath(os.path.expanduser(get_download_dir()))
     # resolve symlinks in the download directory so we can compare against fully resolved paths:
     real_dd = os.path.realpath(dd)
-    safe_basename = basename(basefilename).lstrip(".")
-    if safe_basename in ("", ".", ".."):
-        safe_basename = "download"
+    safe_basename = basename(basefilename).lstrip(".") or "download"
     filename = os.path.abspath(os.path.join(dd, safe_basename))
     if os.path.commonpath((dd, filename)) != dd:
         raise ValueError(f"download path {filename!r} escapes download directory {dd!r}")
