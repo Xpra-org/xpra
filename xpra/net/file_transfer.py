@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, Optional, Callable, Set, Tuple
 
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
+from xpra.os_util import strtobytes, umask_context, POSIX, WIN32
 from xpra.util import typedict, csv, envint, envbool, engs, net_utf8, u
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.net.common import PacketType
@@ -471,7 +471,8 @@ class FileTransferHandler(FileTransferAttributes):
         elapsed = monotonic()-chunk_state.start
         filelog("%i bytes received in %i chunks, took %ims", chunk_state.filesize, chunk, elapsed*1000)
         self.process_downloaded_file(filename, chunk_state.mimetype,
-                                     chunk_state.printit, chunk_state.openit, chunk_state.filesize, options)
+                                     chunk_state.printit, chunk_state.openit, chunk_state.filesize, options,
+                                     chunk_state.send_id)
 
     def accept_data(self, send_id:str, dtype, basefilename:str, printit:bool, openit:bool) -> Tuple[bool,bool,bool]:
         #subclasses should check the flags,
@@ -593,21 +594,27 @@ class FileTransferHandler(FileTransferAttributes):
         finally:
             os.close(fd)
         self.transfer_progress_update(False, send_id, monotonic()-start, filesize, filesize, None)
-        self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
+        self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options, send_id)
 
 
-    def process_downloaded_file(self, filename:str, mimetype:str, printit:bool, openit:bool, filesize:int, options) -> None:
+    def process_downloaded_file(self, filename:str, mimetype:str, printit:bool, openit:bool, filesize:int,
+                                options, send_id:str="") -> None:
         filelog.info("downloaded %s bytes to %s file%s:",
                      filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
         filelog.info(" '%s'", filename)
         #some file requests may have a custom callback
         #(ie: bug report tool will just include the file)
-        rf = options.tupleget("request-file")
-        if rf and len(rf)>=2:
-            argf = rf[0]
-            cb = self.file_request_callback.pop(bytestostr(argf), None)
+        #the callback is keyed on the send-id we generated for the request,
+        #so it always consumes the transfer we requested and the file is never
+        #opened or printed behind our back:
+        if send_id:
+            cb = self.file_request_callback.pop(send_id, None)
             if cb:
-                cb(filename, filesize)
+                try:
+                    cb(filename, filesize)
+                except Exception as e:
+                    filelog("file request callback for %r", send_id, exc_info=True)
+                    filelog.error("Error: file request callback for %r failed: %s", send_id, e)
                 return
         if printit or openit:
             t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False,
@@ -748,9 +755,14 @@ class FileTransferHandler(FileTransferAttributes):
         return True
 
 
-    def send_request_file(self, filename:str, openit:bool=True):
-        self.send("request-file", filename, openit)
-        self.files_requested[filename] = openit
+    def send_request_file(self, filename:str, openit:bool=True,
+                          callback:Optional[Callable]=None) -> str:
+        send_id = uuid.uuid4().hex
+        self.files_requested[send_id] = openit
+        if callback:
+            self.file_request_callback[send_id] = callback
+        self.send("request-file", filename, openit, send_id)
+        return send_id
 
 
     def _process_open_url(self, packet : PacketType):
@@ -787,7 +799,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("open-url", url, send_id)
 
     def send_file(self, filename, mimetype, data, filesize=0,
-                  printit=False, openit=False, options=None):
+                  printit=False, openit=False, options=None, send_id=""):
         if printit:
             l = printlog
             if not self.printing:
@@ -825,14 +837,15 @@ class FileTransferHandler(FileTransferAttributes):
         if not self.check_file_size(action, filename, filesize):
             return False
         if ask:
-            return self.send_data_request(action, "file", filename, mimetype, data, filesize, printit, openit, options)
-        send_id = uuid.uuid4().hex
+            return self.send_data_request(action, "file", filename, mimetype, data, filesize,
+                                          printit, openit, options, send_id)
+        send_id = send_id or uuid.uuid4().hex
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
 
     def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0,
-                          printit=False, openit=True, options=None) -> Optional[str]:
-        send_id = uuid.uuid4().hex
+                          printit=False, openit=True, options=None, send_id="") -> Optional[str]:
+        send_id = send_id or uuid.uuid4().hex
         if len(self.pending_send_data)>=MAX_CONCURRENT_FILES:
             filelog.warn("Warning: %s dropped", action)
             filelog.warn(" %i transfer%s already waiting for a response",
@@ -867,14 +880,14 @@ class FileTransferHandler(FileTransferAttributes):
             self.send("send-data-response", send_id, accept)
         #could be a request we made:
         #(in which case we can just accept it without prompt)
-        rf = options.tupleget("request-file")
-        if rf and len(rf)>=2:
-            argf, openit = rf[:2]
-            openit = self.files_requested.pop(bytestostr(argf), None)
-            if openit is not None:
-                self.files_accepted[send_id] = openit
-                cb_answer(True)
-                return
+        #we match on the send-id we generated for the request,
+        #which the server echoes back - so a server cannot have a file
+        #auto-accepted unless we actually requested it with this exact id:
+        if send_id and send_id in self.files_requested:
+            req_openit = self.files_requested.pop(send_id)
+            self.files_accepted[send_id] = req_openit
+            cb_answer(True)
+            return
         if dtype=="file":
             url = os.path.basename(url)
             if printit:

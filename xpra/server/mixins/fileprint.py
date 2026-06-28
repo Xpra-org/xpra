@@ -293,6 +293,9 @@ class FilePrintServer(StubServerMixin):
             filelog("no server log to send")
             return
         openit = packet[2]
+        #echo back the send-id the client generated for this request (if any),
+        #so the client can safely match the response against its own request:
+        send_id = u(packet[3]) if len(packet)>3 else ""
         filename = os.path.abspath(osexpand(argf))
         if not os.path.exists(filename):
             filelog.warn("Warning: the file requested does not exist:")
@@ -315,7 +318,8 @@ class FilePrintServer(StubServerMixin):
                                icon_name="file")
                 return
         data = load_binary_file(filename)
-        ss.send_file(filename, "", data, len(data), openit=openit, options={"request-file" : (argf, openit)})
+        ss.send_file(filename, "", data, len(data), openit=openit, send_id=send_id,
+                     options={"request-file" : (argf, openit)})
 
 
     def init_packet_handlers(self) -> None:

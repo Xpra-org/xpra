@@ -597,9 +597,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def download_server_log(self, callback=None):
         filename = "${XPRA_SERVER_LOG}"
-        if callback:
-            self.file_request_callback[filename] = callback
-        self.send_request_file(filename, self.open_files)
+        self.send_request_file(filename, self.open_files, callback=callback)
 
     def send_download_request(self, *_args):
         command = ["xpra", "send-file"]
