@@ -1094,17 +1094,32 @@ fi
 
 
 %changelog
-* Wed Jun 24 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
+* Sun Jun 28 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
 - Platforms, build and packaging:
    `pynvml 13.610.43`
    `pytools 2026.1.1`
    `torch-vision 0.27.1`
    `torch 2.12.1`
+   `cython 3.2.6`
+   `cython 3.3` build warnings: use stricter types
+- Security:
+   RCE: URL parsing subversion
+   don't download to `$HOME` as fallback
+   never download to a dot file
+   restrict which types of URLs can be opened
+   verify download path stays within the download directory
+   ensure auto-accepted file download matches the request
+   only load pillow if needed
+   ensure that the server only uses one of the allowed encodings
+   no longer enable control channel on clients by default
 - Major:
-   ssh connection failures
+   `xpra info` fails to connect
+   ssh connection failures, launcher also fails
 - Minor:
    gsettings lookup always failed in desktop servers
    ssh proxied connections used the wrong config
+   error handling in fdproxy
+   encode client fails to use `mmap` transfers
 - File-transfers:
    better parsing compatibility
    legacy packet names, preserve printer and title, etc
@@ -1119,6 +1134,7 @@ fi
    message shows incorrect mmap limit
    logging error when notification icon parsing fails
    notification theme icon default size + fixup test
+   remove legacy unused file
 * Wed May 06 2026 Antoine Martin <antoine@xpra.org> 6.5-10
 - Platforms, build and packaging:
    use `wasapi2` on MS Windows

@@ -4,11 +4,26 @@ xpra (6.5.1-1) UNRELEASED; urgency=low
     `pytools 2026.1.1`
     `torch-vision 0.27.1`
     `torch 2.12.1`
+    `cython 3.2.6`
+    `cython 3.3` build warnings: use stricter types
+  * Security:
+    RCE: URL parsing subversion
+    don't download to `$HOME` as fallback
+    never download to a dot file
+    restrict which types of URLs can be opened
+    verify download path stays within the download directory
+    ensure auto-accepted file download matches the request
+    only load pillow if needed
+    ensure that the server only uses one of the allowed encodings
+    no longer enable control channel on clients by default
   * Major:
-    ssh connection failures
+    `xpra info` fails to connect
+    ssh connection failures, launcher also fails
   * Minor:
     gsettings lookup always failed in desktop servers
     ssh proxied connections used the wrong config
+    error handling in fdproxy
+    encode client fails to use `mmap` transfers
   * File-transfers:
     better parsing compatibility
     legacy packet names, preserve printer and title, etc
@@ -23,8 +38,9 @@ xpra (6.5.1-1) UNRELEASED; urgency=low
     message shows incorrect mmap limit
     logging error when notification icon parsing fails
     notification theme icon default size + fixup test
+    remove legacy unused file
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 24 Jun 2026 18:04:46 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 28 Jun 2026 15:44:43 +0700
 
 xpra (6.5-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
