@@ -452,7 +452,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.process_downloaded_file(filename, chunk_state.mimetype,
                                      chunk_state.printit, chunk_state.openit, chunk_state.filesize, options)
 
-    def accept_data(self, send_id:str, dtype, basefilename:str, printit:bool, openit:bool) -> Tuple[bool,bool]:
+    def accept_data(self, send_id:str, dtype, basefilename:str, printit:bool, openit:bool) -> Tuple[bool,bool,bool]:
         #subclasses should check the flags,
         #and if ask is True, verify they have accepted this specific send_id
         filelog("accept_data%s", (send_id, dtype, basefilename, printit, openit))
@@ -462,20 +462,27 @@ class FileTransferHandler(FileTransferAttributes):
                 self.file_transfer, self.file_transfer_ask)
         filelog("accept_data: open-files=%s, open-files-ask=%s",
                 self.open_files, self.open_files_ask)
+        if dtype=="url":
+            if not self.open_url or self.open_url_ask:
+                return False, False, False
+            return True, False, True
+        if dtype!="file":
+            return False, False, False
         req = self.files_accepted.pop(send_id, None)
         filelog("accept_data: files_accepted[%s]=%s", send_id, req)
         if req is not None:
-            return (False, req)
+            return True, False, req
         if printit:
             if not self.printing or self.printing_ask:
-                printit = False
-        elif not self.file_transfer or self.file_transfer_ask:
-            return None
+                return False, False, False
+            return True, True, False
+        if not self.file_transfer or self.file_transfer_ask:
+            return False, False, False
         if openit and (not self.open_files or self.open_files_ask):
             #we can't ask in this implementation,
             #so deny the request to open it:
             openit = False
-        return (printit, openit)
+        return True, printit, openit
 
     def _process_send_file(self, packet : PacketType) -> None:
         #the remote end is sending us a file
@@ -492,15 +499,14 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error(" file transfer aborted for %r", basefilename)
             return
         args = (send_id, "file", basefilename, printit, openit)
-        r = self.accept_data(*args)
-        filelog("%s%s=%s", self.accept_data, args, r)
-        if r is None:
+        acceptit, printit, openit = self.accept_data(*args)
+        filelog("%s%s=%s", self.accept_data, args, (acceptit, printit, openit))
+        if not acceptit:
             filelog.warn("Warning: %s rejected for file '%s'",
-                         ("transfer", "printing")[bool(printit)],
+                         ("transfer", "printing")[bool(args[3])],
                          basefilename)
             return
         #accept_data can override the flags:
-        printit, openit = r
         options = typedict(options)
         if printit:
             log = printlog
@@ -733,10 +739,12 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
             return
-        if not self.open_url_ask or self.accept_data(send_id, "url", url, False, True):
-            self._open_url(url)
-        else:
-            filelog("url '%s' not accepted", url)
+        if self.open_url_ask:
+            acceptit, _printit, _openit = self.accept_data(send_id, "url", url, False, True)
+            if not acceptit:
+                filelog("url '%s' not accepted", url)
+                return
+        self._open_url(url)
 
 
     def send_open_url(self, url:str):
@@ -842,16 +850,23 @@ class FileTransferHandler(FileTransferAttributes):
                 cb_answer(True)
                 return
         if dtype=="file":
-            if not self.file_transfer:
-                cb_answer(False)
-                return
             url = os.path.basename(url)
             if printit:
+                if not self.printing:
+                    cb_answer(False)
+                    return
                 ask = self.printing_ask
-            elif openit:
-                ask = self.file_transfer_ask or self.open_files_ask
             else:
-                ask = self.file_transfer_ask
+                if not self.file_transfer:
+                    cb_answer(False)
+                    return
+                if openit:
+                    if not self.open_files:
+                        cb_answer(False)
+                        return
+                    ask = self.file_transfer_ask or self.open_files_ask
+                else:
+                    ask = self.file_transfer_ask
         elif dtype=="url":
             if not self.open_url:
                 cb_answer(False)
@@ -872,10 +887,10 @@ class FileTransferHandler(FileTransferAttributes):
 
     def ask_data_request(self, cb_answer:Callable, send_id:str, dtype:str, url:str, filesize:int,
                          printit:bool, openit:bool) -> None:
-        #subclasses may prompt the user here instead
+        #subclasses may prompt the user here instead:
+        #the base implementation has no way to ask, so it denies the request
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))
-        v = self.accept_data(send_id, dtype, url, printit, openit)
-        cb_answer(v)
+        cb_answer(False)
 
     def _process_send_data_response(self, packet : PacketType) -> None:
         send_id, accept = packet[1:3]

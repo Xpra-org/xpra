@@ -564,9 +564,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if eurl!=url:
                 filelog.warn(" expected url '%s',", s(eurl))
                 filelog.warn("  but got url '%s'", s(url))
-            return None
+            return False, False, False
         #return the printit and openit flag we got from the UI:
-        return (r[2], r[3])
+        return True, bool(r[2]), bool(r[3])
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
         if self.file_size_dialog:
