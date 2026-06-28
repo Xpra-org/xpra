@@ -88,7 +88,7 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
-* Fri Jun 27 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a1-2
+* Sat Jun 27 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a1-2
 - disable LTO: gcc 16 -flto miscompiles Compiler/Nodes.c and breaks if/else codegen
 
 * Thu Jun 25 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a1-1
