@@ -63,7 +63,7 @@ def resolve_internal_host() -> str:
     interface = get_device_interface(gateways)
     if not interface:
         raise ValueError("cannot identify the network interface")
-    log("identified interface '%s'", interface)
+    log("identified interface %r", interface)
     addrs = netifaces.ifaddresses(interface)  # @UndefinedVariable
     log("ifaddresses(%s)=%s", interface, addrs)
     # ie: {17: [{'addr': '30:52:cb:85:54:03', 'broadcast': 'ff:ff:ff:ff:ff:ff'}],
@@ -71,7 +71,7 @@ def resolve_internal_host() -> str:
     #     10: [{'addr': 'fe80::1944:64a7:ab7b:9d67%wlan0', 'netmask': 'ffff:ffff:ffff:ffff::/64'}]}
     internal_host = get_interface_address(addrs)
     if not internal_host:
-        raise ValueError("no address found for interface '%s'", interface)
+        raise ValueError("no address found for interface %r" % interface)
     return internal_host
 
 

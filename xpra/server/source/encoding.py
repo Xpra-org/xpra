@@ -39,7 +39,7 @@ def parse_batch_int(value, varname: str, default: int) -> int:
         try:
             return int(value)
         except (TypeError, ValueError):
-            log.error("Error: invalid value '%s' for batch option %s", value, varname)
+            log.error("Error: invalid value %r for batch option %s", value, varname)
     return default
 
 

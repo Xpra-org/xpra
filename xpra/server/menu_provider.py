@@ -198,17 +198,17 @@ class MenuProvider:
             return "", b""
         category = menu_data.get(category_name)
         if not category:
-            log("get_menu_icon: invalid menu category '%s'", category_name)
+            log("get_menu_icon: invalid menu category %r", category_name)
             return "", b""
         if not app_name:
             return category.get("IconType"), category.get("IconData")
         entries = category.get("Entries")
         if not entries:
-            log("get_menu_icon: no entries for category '%s'", category_name)
+            log("get_menu_icon: no entries for category %r", category_name)
             return "", b""
         app = entries.get(app_name)
         if not app:
-            log("get_menu_icon: no matching application for '%s' in category '%s'",
+            log("get_menu_icon: no matching application for %r in category %r",
                 app_name, category_name)
             return "", b""
         return app.get("IconType", ""), app.get("IconData", b"")

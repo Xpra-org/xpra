@@ -83,7 +83,7 @@ def parse_scaling(desktop_scaling: str, root_w: int, root_h: int,
                     limits.append((x, y, sx, sy))
                     log("parsed desktop-scaling auto limits: %s", limits)
                 except Exception as e:
-                    log.warn("Warning: failed to parse limit string '%s':", l)
+                    log.warn("Warning: failed to parse limit string %r:", l)
                     log.warn(" %s", e)
                     log.warn(" should use the format WIDTHxHEIGTH:SCALINGVALUE")
         elif desktop_scaling != "auto":
@@ -121,7 +121,7 @@ def parse_scaling(desktop_scaling: str, root_w: int, root_h: int,
             return float(pair[0]) / float(pair[1])
         except (ValueError, ZeroDivisionError):
             pass
-        log.warn("Warning: failed to parse scaling value '%s'", v)
+        log.warn("Warning: failed to parse scaling value %r", v)
         return 0
 
     if desktop_scaling.find("x") > 0 and desktop_scaling.find(":") > 0:
@@ -214,7 +214,7 @@ def parse_simple_dict(s: str, sep: str = ",") -> dict[str, str | list[str] | dic
             d[k] = may_add()
         except Exception as e:
             log = Logger("util")
-            log.warn("Warning: failed to parse dictionary option '%s':", s)
+            log.warn("Warning: failed to parse dictionary option %r:", s)
             log.warn(" %s", e)
     return d
 

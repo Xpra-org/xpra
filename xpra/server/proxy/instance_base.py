@@ -535,7 +535,7 @@ class ProxyInstance:
         salt = gendigest(salt_digest, client_salt, server_salt)
         challenge_response = gendigest(digest, password, salt)
         if not challenge_response:
-            log("invalid digest module '%s': %s", digest)
+            log("invalid digest module %r: %s", digest)
             self.stop(None, f"server requested {digest!r} digest but it is not supported")
             return
         log.info("sending %s challenge response", digest)

@@ -223,7 +223,7 @@ class SubprocessCallee:
     def send(self, packet_type: str, *args: PacketElement) -> None:
         if HEXLIFY_PACKETS:
             args = [packet_type] + [hexstr(str(x)[:32]) for x in args]
-        log("send: adding '%s' message (%s items already in queue)", packet_type, self.send_queue.qsize())
+        log("send: adding %r message (%s items already in queue)", packet_type, self.send_queue.qsize())
         packet = (packet_type, *args)
         self.send_queue.put(packet)
         if p := self.protocol:
@@ -266,12 +266,12 @@ class SubprocessCallee:
             return
         wo = self.wrapped_object
         if not wo:
-            log("wrapped object is no more, ignoring method call '%s'", attr)
+            log("wrapped object is no more, ignoring method call %r", attr)
             return
         method = getattr(wo, attr, None)
         if not method:
-            log.warn("unknown command: '%s'", attr)
-            log.warn(" packet: '%s'", repr_ellipsized(str(packet)))
+            log.warn("unknown command: %r", attr)
+            log.warn(" packet: %r", repr_ellipsized(str(packet)))
             return
         if DEBUG_WRAPPER:
             log("calling %s.%s%s", wo, attr, str(tuple(packet[1:]))[:128])

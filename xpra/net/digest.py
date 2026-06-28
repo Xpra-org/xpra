@@ -63,7 +63,7 @@ def get_digest_module(digest: str) -> Callable | None:
     try:
         return getattr(hashlib, digest_module)
     except AttributeError as e:
-        log("no '%s' attribute in hashlib: %s", digest_module, e)
+        log("no %r attribute in hashlib: %s", digest_module, e)
         return None
 
 

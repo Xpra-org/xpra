@@ -486,7 +486,7 @@ class ChildCommandServer(StubSubsystem):
             return
         signame = packet.get_str(2)
         if signame not in COMMAND_SIGNALS:
-            log.warn("Warning: invalid signal received: '%s'", signame)
+            log.warn("Warning: invalid signal received: %r", signame)
             return
         procinfo = get_child_reaper().get_proc_info(pid)
         if not procinfo:

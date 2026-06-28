@@ -837,7 +837,7 @@ class ServerCore(GLibServer):
         if address:
             log_fn(" received on %s", pretty_socket(address))
         if packet_type:
-            log_fn(" this packet looks like a '%s' packet", packet_type)
+            log_fn(" this packet looks like a %r packet", packet_type)
         else:
             log_fn(" invalid packet format, not an xpra client?")
         if msg:

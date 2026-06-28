@@ -40,7 +40,7 @@ def get_clipboard_helper_classes(clipboard_type: str) -> list[type]:
             log.warn(f"Warning: no clipboard types matching {ct!r}")
             log.warn(" clipboard synchronization is disabled")
             return []
-        log(" found %i clipboard types matching '%s'", len(filtered), ct)
+        log(" found %i clipboard types matching %r", len(filtered), ct)
         clipboard_classes = filtered
     # now try to load them:
     log("get_clipboard_helper_classes() options=%s", clipboard_classes)

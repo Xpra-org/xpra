@@ -103,7 +103,7 @@ class NetworkListener(StubClientMixin):
             log("setup_sockets() bind=%s, client_socket_dirs=%s",
                 self.local_bind, self.client_socket_dirs, exc_info=True)
             log.warn("Warning: failed to create the client sockets:")
-            log.warn(" '%s'", e)
+            log.warn(" %r", e)
         else:
             self.sockets += local_sockets
 
@@ -193,7 +193,7 @@ class NetworkListener(StubClientMixin):
             close()
             return
         else:
-            log.info("packet '%s' is not handled by this client", packet_type)
+            log.info("packet %r is not handled by this client", packet_type)
             proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
         # make sure the connection is closed:
         tid = self.timeout_add(REQUEST_TIMEOUT * 1000, close)
@@ -204,7 +204,7 @@ class NetworkListener(StubClientMixin):
             proto.send_now(Packet("hello", data))
 
         if not is_request_allowed(proto, request):
-            log.info("request '%s' is not handled by this client", request)
+            log.info("request %r is not handled by this client", request)
             proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
             return True
 

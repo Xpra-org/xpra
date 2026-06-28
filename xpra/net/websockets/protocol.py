@@ -152,7 +152,7 @@ class WebSocketProtocol(SocketProtocol):
                 log("websocket pong opcode received")
                 self._process_ws_pong(full_payload)
             else:
-                log.warn("Warning unhandled websocket opcode '%s'", OPCODE_STR.get(opcode, f"{opcode:x}"))
+                log.warn("Warning unhandled websocket opcode %r", OPCODE_STR.get(opcode, f"{opcode:x}"))
                 log("payload=%r", payload)
 
     def _process_ws_ping(self, payload: SizedBuffer) -> None:

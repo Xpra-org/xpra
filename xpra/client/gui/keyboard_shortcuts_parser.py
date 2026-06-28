@@ -63,7 +63,7 @@ def parse_shortcut_modifiers(s: str, modifier_names: dict[str, str]) -> list[str
         for x in shortcut_modifiers:
             x = x.lower()
             if x not in modifier_names:
-                log.warn("Warning: invalid shortcut modifier '%s'", x)
+                log.warn("Warning: invalid shortcut modifier %r", x)
             else:
                 r.append(x)
         if shortcut_modifiers and not r:
@@ -135,7 +135,7 @@ def parse_shortcuts(strs: Sequence[str],
                 args = parse_args(all_args)
             except Exception as e:
                 log.warn("Warning: failed to parse arguments of shortcut:")
-                log.warn(" '%s': %s", s, e)
+                log.warn(" %r: %s", s, e)
                 continue
         action = action.replace("-", "_")  # must be an object attribute
         log("action(%s)=%s%s", s, action, args)
@@ -160,7 +160,7 @@ def parse_shortcuts(strs: Sequence[str],
                 # ie: "alt_l" -> "mod1"
                 imod = modifier_names.get(mod)
                 if not imod:
-                    log.warn("Warning: invalid modifier '%s' in keyboard shortcut '%s'", mod, s)
+                    log.warn("Warning: invalid modifier %r in keyboard shortcut %r", mod, s)
                     log.warn(" the modifiers must be one of: %s", csv(modifier_names.keys()))
                     valid = False
                     break

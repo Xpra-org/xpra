@@ -529,7 +529,7 @@ class SocketProtocol:
             try:
                 self._add_chunks_to_queue(packet_type, chunks, synchronous, more)
             except Exception:
-                log.error("Error: failed to queue '%s' packet", packet[0])
+                log.error("Error: failed to queue %r packet", packet[0])
                 log("add_chunks_to_queue%s", (chunks, ), exc_info=True)
                 raise
 

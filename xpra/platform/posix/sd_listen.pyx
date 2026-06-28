@@ -61,7 +61,7 @@ def get_sd_socket_type(fd) -> str:
     if not socktype:
         socktype = os.environ.get("XPRA_SD_SOCKET_TYPE", "tcp")
     if socktype not in TCP_SOCKTYPES:
-        log.warning("Warning: invalid sd socket type '%s', using 'tcp'", socktype)
+        log.warning("Warning: invalid sd socket type %r, using 'tcp'", socktype)
         socktype = "tcp"
     return socktype
 

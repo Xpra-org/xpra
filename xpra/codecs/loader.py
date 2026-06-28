@@ -321,7 +321,7 @@ def load_codec(name: str, options: dict | None = None):
                 attrs = attrs_names.split(",")
             except KeyError:
                 log("load_codec(%s)", name, exc_info=True)
-                log.error("Error: invalid codec name '%s'", name)
+                log.error("Error: invalid codec name %r", name)
                 return None
             xpra_top_module = f"xpra.codecs.{top_module}"
             xpra_class_module = f"{xpra_top_module}.{class_module}"

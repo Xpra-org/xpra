@@ -270,10 +270,10 @@ class ClipboardProtocolHelperCore:
             log_fn: Callable = log.debug
             if name in self.local_selections:
                 log_fn = log.warn
-            log_fn("ignoring token for clipboard '%s' (no proxy)", name)
+            log_fn("ignoring token for clipboard %r (no proxy)", name)
             return
         if not proxy.is_enabled():
-            log.warn("ignoring token for disabled clipboard '%s'", name)
+            log.warn("ignoring token for disabled clipboard %r", name)
             return
         log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         targets = None
@@ -410,7 +410,7 @@ class ClipboardProtocolHelperCore:
             self.send("clipboard-contents-none", request_id, selection)
 
         if must_discard(target):
-            log("invalid target '%s'", target)
+            log("invalid target %r", target)
             no_contents()
             return
         name = self.remote_to_local(selection)
@@ -419,11 +419,11 @@ class ClipboardProtocolHelperCore:
         proxy = self._clipboard_proxies.get(name)
         if proxy is None:
             # err, we were asked about a clipboard we don't handle...
-            log.error("Error: clipboard request for '%s' (no proxy, ignored)", name)
+            log.error("Error: clipboard request for %r (no proxy, ignored)", name)
             no_contents()
             return
         if not proxy.is_enabled():
-            log.warn("Warning: ignoring clipboard request for '%s' (disabled)", name)
+            log.warn("Warning: ignoring clipboard request for %r", name)
             no_contents()
             return
         if not proxy._can_send:

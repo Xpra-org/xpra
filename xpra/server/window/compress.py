@@ -792,7 +792,7 @@ class WindowSource(WindowIconSource):
     def encoding_changed(self, window, *args) -> bool:
         v = window.get("encoding", None)
         if v and v not in self._encoders:
-            log.warn("Warning: invalid encoding hint '%s'", v)
+            log.warn("Warning: invalid encoding hint %r", v)
             log.warn(" this encoding is not supported")
             v = ""
         self._encoding_hint = v
