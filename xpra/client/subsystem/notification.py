@@ -152,6 +152,15 @@ class NotificationClient(StubClientMixin):
         else:
             self.idle_add(show_notification)
 
+    def supported_icon_data(self, icon_data, what="icon"):
+        # drop icon data we have no decoder for,
+        # weak dependency on the `Encodings` subsystem:
+        if icon_data and icon_data[0] not in self.get_core_encodings():
+            log.warn(f"Warning: unsupported notification {what} encoding {icon_data[0]!r}")
+            log.warn(f" supported encodings: {csv(self.get_core_encodings())}")
+            return None
+        return icon_data
+
     def _process_notification_show(self, packet: Packet) -> None:
         if not self.notifications_enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
@@ -174,6 +183,11 @@ class NotificationClient(StubClientMixin):
         if len(packet) >= 12:
             actions = packet.get_strs(10)
             hints = packet.get_dict(11)
+        # only allow icon encodings we actually have a decoder for:
+        icon = self.supported_icon_data(icon, "icon")
+        app_icon_data = hints.get("app-icon-data")
+        if app_icon_data and not self.supported_icon_data(app_icon_data, "app-icon"):
+            hints.pop("app-icon-data")
         # note: if the server doesn't support notification forwarding,
         # it can still send us the messages (via xpra control or the dbus interface)
         log("_process_notification_show(%s) notifier=%s, server_notifications=%s",
