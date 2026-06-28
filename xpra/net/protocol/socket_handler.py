@@ -1012,7 +1012,8 @@ class SocketProtocol:
                 # (ie: when connecting over ssh, the channel may contain some unexpected output)
                 # for this to work, we have to assume that the initial packet is smaller than 64KB:
                 joined = b"".join(read_buffers)
-                pos = find_xpra_header(joined, max_data_size=self.abs_max_packet_size)
+                max_data_size = 4*1024*1024 if BACKWARDS_COMPATIBLE else 256*1024
+                pos = find_xpra_header(joined, max_data_size=max_data_size)
                 eventlog("waiting for xpra header: pos=%i", pos)
                 if pos < 0:
                     # wait some more:
