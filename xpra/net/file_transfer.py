@@ -311,11 +311,6 @@ class FileTransferHandler(FileTransferAttributes):
         filelog.error(f" for {filename!r}")
         filelog.error(f" received {digest.hexdigest()}")
         filelog.error(f" expected {expected_digest}")
-        try:
-            if os.path.exists(filename):
-                os.unlink(filename)
-        except OSError:
-            filelog.error(f"Error: failed to delete uploaded file {filename}")
 
 
     def _check_chunk_receiving(self, chunk_id:str, chunk_no:int) -> None:
@@ -376,22 +371,30 @@ class FileTransferHandler(FileTransferAttributes):
         filelog(f"file_data={len(file_data)} {type(file_data)}")
         filelog("_process_send_file_chunk%s", (chunk_id, chunk, f"{len(file_data)} bytes", has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
+        def progress(position, error=None):
+            elapsed = monotonic()-chunk_state.start
+            self.transfer_progress_update(False, chunk_state.send_id, elapsed, position, chunk_state.filesize, error)
+        def error(message):
+            filelog.error(f"Error: {message}")
+            self.cancel_file(chunk_id, message, chunk)
+            if chunk_state:
+                osclose(chunk_state.fd)
+                filename = chunk_state.filename
+                if filename and os.path.exists(filename):
+                    try:
+                        os.unlink(filename)
+                    except OSError:
+                        filelog.error(f"Error: failed to delete uploaded file {filename!r}")
+                progress(-1, message)
         if not chunk_state:
-            filelog.error(f"Error: cannot find the file transfer id {chunk_id!r}")
-            self.cancel_file(chunk_id, f"file transfer id {chunk_id!r} not found", chunk)
+            error(f"file transfer id {chunk_id!r} not found")
             return
         if chunk_state.cancelled:
             filelog("got chunk for a cancelled file transfer, ignoring it")
             return
-        def progress(position, error=None):
-            elapsed = monotonic()-chunk_state.start
-            self.transfer_progress_update(False, chunk_state.send_id, elapsed, position, chunk_state.filesize, error)
         fd = chunk_state.fd
         if chunk_state.chunk+1!=chunk:
-            filelog.error("Error: chunk number mismatch, expected %i but got %i", chunk_state.chunk+1, chunk)
-            self.cancel_file(chunk_id, "chunk number mismatch", chunk)
-            osclose(fd)
-            progress(-1, "chunk no mismatch")
+            error("chunk number mismatch")
             return
         #this is for legacy packet encoders only:
         if isinstance(file_data, str):
@@ -404,15 +407,10 @@ class FileTransferHandler(FileTransferAttributes):
                 chunk_state.digest.update(file_data)
             chunk_state.written += len(file_data)
         except OSError as e:
-            filelog.error("Error: cannot write file chunk")
-            filelog.estr(e)
-            self.cancel_file(chunk_id, f"write error: {e}", chunk)
-            osclose(fd)
-            progress(-1, f"write error ({e}")
+            error(f"cannot write file chunk: {e}")
             return
         if chunk_state.written>chunk_state.filesize:
-            filelog.error("Error: too much data received")
-            progress(-1, "file data size mismatch")
+            error("more data received than specified in the file size!")
             return
         self.send("ack-file-chunk", chunk_id, True, "", chunk)
         if chunk_state.cancelled:
@@ -437,14 +435,13 @@ class FileTransferHandler(FileTransferAttributes):
         if chunk_state.digest:
             expected_digest = options.strget(chunk_state.digest.name)   #ie: "sha256"
             if expected_digest and chunk_state.digest.hexdigest()!=expected_digest:
-                progress(-1, "checksum mismatch")
                 self.digest_mismatch(filename, chunk_state.digest, expected_digest)
+                error("checksum mismatch")
                 return
             filelog("%s digest matches: %s", chunk_state.digest.name, expected_digest)
         #check file size and digest then process it:
         if chunk_state.written!=chunk_state.filesize:
-            filelog.error("Error: expected a file of %i bytes, got %i", chunk_state.filesize, chunk_state.written)
-            progress(-1, "file size mismatch")
+            error(f"expected a file of {chunk_state.filesize} bytes, got {chunk_state.written}")
             return
         progress(chunk_state.written)
         elapsed = monotonic()-chunk_state.start
