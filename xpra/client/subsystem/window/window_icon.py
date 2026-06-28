@@ -91,6 +91,9 @@ class WindowIcon(StubClientMixin):
             img = Image.frombytes("RGBA", (width, height), memoryview_to_bytes(data),
                                   "raw", coding, rowstride, 1)
         else:
+            # weak dependency on `Encodings` subsystem:
+            if coding not in self.get_core_encodings():
+                raise ValueError(f"window icon encoding {coding!r} is not supported")
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.pillow.decoder import open_only
             img = open_only(data, ("png",))

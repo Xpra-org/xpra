@@ -58,7 +58,8 @@ class CursorClient(StubClientMixin):
 
     def get_caps(self) -> dict[str, Any]:
         encodings = ["raw", "default"]
-        if find_spec("PIL"):
+        # weak dependency on `Encodings` subsystem:
+        if "png" in self.get_core_encodings() and find_spec("PIL"):
             encodings.append("png")
         cursor_caps: dict[str, Any] = {
             "encodings": encodings,
@@ -114,7 +115,7 @@ class CursorClient(StubClientMixin):
             if setdefault:
                 encoding = encoding.split(":")[1]
             serial = int(new_cursor[5])
-            pixels = decompress_cursor_data(encoding, new_cursor[8], serial)
+            pixels = self.decompress_cursor_data(encoding, new_cursor[8], serial)
             new_cursor[8] = pixels
             new_cursor[0] = "raw"
         if setdefault:
@@ -122,6 +123,12 @@ class CursorClient(StubClientMixin):
             self.default_cursor_data = new_cursor
         else:
             self.set_windows_cursor(self._id_to_window.values(), new_cursor)
+
+    def decompress_cursor_data(self, encoding: str, cpixels: SizedBuffer, serial: int) -> bytes:
+        if encoding != "raw":
+            if encoding not in self.get_core_encodings():
+                raise ValueError(f"cursor encoding {encoding!r} is not supported")
+        return decompress_cursor_data(encoding, cpixels, serial)
 
     def _process_cursor_data(self, packet: Packet) -> None:
         if not self.cursors_enabled:
@@ -134,7 +141,7 @@ class CursorClient(StubClientMixin):
         serial = packet.get_u64(6)
         cpixels = packet.get_bytes(7)
         name = packet.get_str(8)
-        pixels = decompress_cursor_data(encoding, cpixels, serial)
+        pixels = self.decompress_cursor_data(encoding, cpixels, serial)
         cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, pixels, name)
         self.set_windows_cursor(self._id_to_window.values(), cursor_data)
 
