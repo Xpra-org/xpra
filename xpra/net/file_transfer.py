@@ -396,6 +396,9 @@ class FileTransferHandler(FileTransferAttributes):
         if chunk_state.chunk+1!=chunk:
             error("chunk number mismatch")
             return
+        if not file_data:
+            error("empty file chunk")
+            return
         #this is for legacy packet encoders only:
         if isinstance(file_data, str):
             file_data = strtobytes(file_data)
@@ -411,6 +414,9 @@ class FileTransferHandler(FileTransferAttributes):
             return
         if chunk_state.written>chunk_state.filesize:
             error("more data received than specified in the file size!")
+            return
+        if has_more and chunk_state.written==chunk_state.filesize:
+            error("more chunks requested after the declared file size was reached")
             return
         self.send("ack-file-chunk", chunk_id, True, "", chunk)
         if chunk_state.cancelled:
@@ -521,7 +527,7 @@ class FileTransferHandler(FileTransferAttributes):
         chunk_id = options.strget("file-chunk-id")
         try:
             filename, fd = safe_open_download_file(basefilename, mimetype)
-        except OSError as e:
+        except (OSError, ValueError) as e:
             log("cannot save file %s / %s", basefilename, mimetype, exc_info=True)
             log.error("Error: failed to save downloaded file")
             log.estr(e)
