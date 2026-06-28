@@ -906,7 +906,8 @@ class SocketProtocol:
                 if not n:
                     return None
                 data += buf[:n]
-                pos = find_xpra_header(data, max_data_size=self.abs_max_packet_size)
+                max_data_size = 4*1024*1024 if BACKWARDS_COMPATIBLE else 256*1024
+                pos = find_xpra_header(data, max_data_size=max_data_size)
                 eventlog("waiting for xpra header: pos=%i (len=%i max=%i data=%s)",
                          pos, len(data), self.abs_max_packet_size, Ellipsizer(data))
                 if pos < 0:
