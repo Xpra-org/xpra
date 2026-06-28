@@ -53,7 +53,7 @@ class WebcamClientForwarder:
 def valid_encodings(args: Sequence[str]) -> list[str]:
     # ensure that the encodings specified can be validated using HEADERS
     try:
-        from xpra.codecs.pillow.decoder import HEADERS  # pylint: disable=import-outside-toplevel
+        from xpra.codecs.image_type import HEADERS  # pylint: disable=import-outside-toplevel
     except ImportError:
         return []
     encodings = []
@@ -90,10 +90,11 @@ class WebcamConnection(StubClientConnection):
         if not caps.boolget(WebcamConnection.PREFIX):
             return False
         try:
-            from xpra.codecs.pillow.decoder import HEADERS  # pylint: disable=import-outside-toplevel
-            if not HEADERS:
+            # webcam forwarding needs the pillow decoder (which requires PIL):
+            from xpra.codecs.pillow.decoder import get_encodings  # pylint: disable=import-outside-toplevel
+            if not get_encodings():
                 # cythonized code can bind None for missing imports
-                raise ImportError("xpra.codecs.pillow.decoder.HEADERS")
+                raise ImportError("no pillow decoder encodings")
         except ImportError:
             return False
         return True

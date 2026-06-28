@@ -134,7 +134,8 @@ def get_appimage(app_name: str, icondata=b"", menu_icon_size=24) -> Gtk.Image | 
     if not pixbuf and icondata:
         # let's try pillow:
         try:
-            from xpra.codecs.pillow.decoder import open_only, is_svg  # pylint: disable=import-outside-toplevel
+            from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
+            from xpra.codecs.image_type import is_svg  # pylint: disable=import-outside-toplevel
             if not is_svg(icondata):
                 img = open_only(icondata)
                 if img.mode not in ("RGB", "RGBA"):
