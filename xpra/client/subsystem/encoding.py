@@ -89,7 +89,7 @@ class Encodings(StubClientMixin):
     PREFIX = "encoding"
 
     def __init__(self):
-        self.allowed_encodings = []
+        self.allowed_encodings: Sequence[str] = ()
         self.encoding = ""
         self.quality = -1
         self.min_quality = 0
@@ -197,18 +197,20 @@ class Encodings(StubClientMixin):
         ssc("encoding", caps)
 
     def get_info(self) -> dict[str, Any]:
+        einfo = {
+            "core": self.get_core_encodings(),
+            "window-icon": self.get_window_icon_encodings(),
+            "quality": self.quality,
+            "min-quality": self.min_quality,
+            "speed": self.speed,
+            "min-speed": self.min_speed,
+            "encoding": self.encoding or "auto",
+            "video-scaling": self.video_scaling if self.video_scaling is not None else "auto",
+        }
+        if BACKWARDS_COMPATIBLE:
+            einfo["cursor"] = self.get_cursor_encodings()
         return {
-            "encodings": {
-                "core": self.get_core_encodings(),
-                "window-icon": self.get_window_icon_encodings(),
-                "cursor": self.get_cursor_encodings(),
-                "quality": self.quality,
-                "min-quality": self.min_quality,
-                "speed": self.speed,
-                "min-speed": self.min_speed,
-                "encoding": self.encoding or "auto",
-                "video-scaling": self.video_scaling if self.video_scaling is not None else "auto",
-            },
+            "encodings": einfo,
             "server-encodings": self.server_core_encodings,
         }
 
@@ -345,6 +347,7 @@ class Encodings(StubClientMixin):
         return preforder(cenc)
 
     def get_cursor_encodings(self) -> list[str]:
+        assert BACKWARDS_COMPATIBLE
         e = ["raw", "default"]
         if "png" in self.get_core_encodings():
             e.append("png")
