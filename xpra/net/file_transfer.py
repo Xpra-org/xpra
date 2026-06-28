@@ -70,7 +70,8 @@ def basename(filename:str) -> str:
 def safe_open_download_file(basefilename:str, mimetype:str):
     from xpra.platform.paths import get_download_dir  # pylint: disable=import-outside-toplevel
     dd = os.path.expanduser(get_download_dir())
-    filename = os.path.abspath(os.path.join(dd, basename(basefilename)))
+    safe_basename = basename(basefilename).lstrip(".") or "download"
+    filename = os.path.abspath(os.path.join(dd, safe_basename))
     ext = MIMETYPE_EXTS.get(mimetype)
     if ext and not filename.endswith("."+ext):
         #on some platforms (win32),
