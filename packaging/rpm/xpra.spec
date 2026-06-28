@@ -827,7 +827,7 @@ fi
 
 
 %changelog
-* Thu Jun 18 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
+* Sun Jun 28 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
 - Platforms, build and packaging:
    honour pkgconfig file for Gtk build paths + fixup
    MSWindows clients unstable resizing of headerbar windows
@@ -840,6 +840,18 @@ fi
    `GLibUnix` warnings on macOS
    RHEL 10 packaging for libyuv
    openh264 RPM packaging conflicts
+   `pynvml 13.610.43`
+- Security:
+   RCE: URL parsing subversion
+   don't download to `$HOME` as fallback
+   no longer enable control channel on clients by default
+   tighten file transfer authorization
+   reject malformed file transfer input
+   never download to a dot file
+   verify download path stays within the download directory
+   restrict which types of URLs can be opened
+   bind requested-file auto-accept to a client-generated send-id
+   ensure file-transfer error handlers clean up properly
 - Major:
    `pinentry` error handling fails to parse output, fail faster
    use a clean environment for launching clients from the session GUI
@@ -856,6 +868,9 @@ fi
    proxy deadlocks
    "raise windows" tray menu entry nonfunctional
    ensure cleanup methods are always called from the correct context
+   socket directory double-quoted in runner script
+   no need to try to use invalid displayfd values
+   ssh proxied connections used the wrong config
 - Network:
    closed connections can shortcut out
    incomplete thread cleanup
@@ -882,6 +897,8 @@ fi
    nested dictionary formatting
    static gravity warning is obsolete
    hide bandwidth menu when the feature is not available
+   message shows incorrect mmap limit
+   remove legacy unused file
 
 * Sun May 03 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:

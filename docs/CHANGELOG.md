@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.6] 2026-06-18
+## [5.1.6] 2026-06-28
 * Platforms, build and packaging:
     * [honour pkgconfig file for Gtk build paths](https://github.com/Xpra-org/xpra/commit/cbf056e6374abc873bcdf167710315a9d1393740) + [fixup](https://github.com/Xpra-org/xpra/commit/a36e8331966962aad26cc1cf375734ca97f2ca63)
     * [MSWindows clients unstable resizing of headerbar windows](https://github.com/Xpra-org/xpra/commit/dad05c198995329cc2fd4b9eb61777d7039ebc5f)
@@ -13,6 +13,18 @@
     * [`GLibUnix` warnings on macOS](https://github.com/Xpra-org/xpra/commit/09d840977ee7edcd386cfd6135fd0183972aa9ee)
     * [RHEL 10 packaging for libyuv](https://github.com/Xpra-org/xpra/commit/6264a802bb66809bec26faed526b5587d82af421)
     * [openh264 RPM packaging conflicts](https://github.com/Xpra-org/xpra/commit/fa8d72ca65dbd4de700f2068e443c93dde2fa739)
+    * [`pynvml 13.610.43`](https://github.com/Xpra-org/xpra/commit/288d3a389c4c2684b380dab95722ccfd67da5d4c)
+* Security:
+    * [RCE: URL parsing subversion](https://github.com/Xpra-org/xpra/commit/102a14dc6940b3657e237889240f788a1f1fb8d5)
+    * [don't download to `$HOME` as fallback](https://github.com/Xpra-org/xpra/commit/356bf071278bdad0a379821058a4f4e6776d6d52)
+    * [no longer enable control channel on clients by default](https://github.com/Xpra-org/xpra/commit/0719e0ddad5a339a611bf0a8f11231fe6fd5febb)
+    * [tighten file transfer authorization](https://github.com/Xpra-org/xpra/commit/58d6ba62e48d44296efe60ec15d143d0a429454c)
+    * [reject malformed file transfer input](https://github.com/Xpra-org/xpra/commit/4c539f5c219acfab8cda8c4cd947d75505d93fc4)
+    * [never download to a dot file](https://github.com/Xpra-org/xpra/commit/5be01fa75fab1d247818b2309e36d0771ecb4b2f)
+    * [verify download path stays within the download directory](https://github.com/Xpra-org/xpra/commit/55e44747d31d22c276bffe4c3f7a5a5365c81be8)
+    * [restrict which types of URLs can be opened](https://github.com/Xpra-org/xpra/commit/11193a8f55e0f40549e1434546654aab44bb23e1)
+    * [bind requested-file auto-accept to a client-generated send-id](https://github.com/Xpra-org/xpra/commit/38350c33ac2cf7125f8618035d74ce5c5a7fddab)
+    * [ensure file-transfer error handlers clean up properly](https://github.com/Xpra-org/xpra/commit/bd00f629b8fc5701bfbf38e4f0750688af733c60)
 * Major:
     * [`pinentry` error handling](https://github.com/Xpra-org/xpra/commit/88b8b6d0d0a5c3b1a01cbb802d45bbdd3c3c8dfa) [fails to parse output](https://github.com/Xpra-org/xpra/commit/41435fa8dd5479f443b20c948a37266b859dd40e), [fail faster](https://github.com/Xpra-org/xpra/commit/88b8b6d0d0a5c3b1a01cbb802d45bbdd3c3c8dfa)
     * [use a clean environment for launching clients from the session GUI](https://github.com/Xpra-org/xpra/commit/1094ffb6c0ef0252ccba08136adbd856b68ebe8d)
@@ -29,6 +41,9 @@
     * [proxy deadlocks](https://github.com/Xpra-org/xpra/commit/d338b02cc882ad9b58a703629ac43622ac8dff06)
     * ["raise windows" tray menu entry nonfunctional](https://github.com/Xpra-org/xpra/commit/22e7248bd5da580422b74276e33cb0a8d5a614c6)
     * [ensure cleanup methods are always called from the correct context](https://github.com/Xpra-org/xpra/commit/a7cd163fb95bbbc441160fdaa437387a81e17d0b)
+    * [socket directory double-quoted in runner script](https://github.com/Xpra-org/xpra/commit/1c9bb8b96df5c59e8cceda68bfa231a630d2082b)
+    * [no need to try to use invalid displayfd values](https://github.com/Xpra-org/xpra/commit/020646ea5bfc8acc1b25f462fec1b0df3f8610d4)
+    * [ssh proxied connections used the wrong config](https://github.com/Xpra-org/xpra/commit/f76f0f3772906e04a945c7dc07ce03a03ece7f8e)
 * Network:
     * [closed connections can shortcut out](https://github.com/Xpra-org/xpra/commit/4b07127c5ce2707f679f45f44ea161a906f13fa2)
     * [incomplete thread cleanup](https://github.com/Xpra-org/xpra/commit/2e0f563ff8242d5a9d0d195f491b4c3118b9f1bc)
@@ -55,6 +70,8 @@
     * [nested dictionary formatting](https://github.com/Xpra-org/xpra/commit/653cce76bb4a04ada15138fff09502fe18cef820)
     * [static gravity warning is obsolete](https://github.com/Xpra-org/xpra/commit/e4b7863082d637e88580eb22279ac3634dc2ba88)
     * [hide bandwidth menu when the feature is not available](https://github.com/Xpra-org/xpra/commit/71ff7fea83b9252abf9fc777de61ee69bcf52ec5)
+    * [message shows incorrect mmap limit](https://github.com/Xpra-org/xpra/commit/66090bcfb9b05a7a948d5b674cc8ceb36ec4f36b)
+    * [remove legacy unused file](https://github.com/Xpra-org/xpra/commit/4b77dab1667ba0101c3c31083560e4cf2a6d952d)
 
 ## [5.1.5] 2026-05-03
 * Platforms, build and packaging:
