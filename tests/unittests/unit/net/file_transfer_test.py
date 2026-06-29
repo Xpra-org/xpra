@@ -19,7 +19,7 @@ from xpra.net.file_transfer import (
     basename, safe_open_download_file,
     FileTransferAttributes, FileTransferHandler,
     get_open_env, digest_mismatch,
-    ReceiveChunkState, RequestedFile, SendChunkState, SendPendingData,
+    AcceptedData, ReceiveChunkState, RequestedFile, SendChunkState, SendPendingData,
     DENY, ACCEPT, OPEN,
 )
 
@@ -470,10 +470,20 @@ class TestFileTransferHandler(unittest.TestCase):
     def test_accept_data_pre_accepted(self):
         fth = MinimalFTH()
         fth.file_transfer = True
-        fth.files_accepted["my-id"] = False
+        fth.files_accepted["my-id"] = AcceptedData(False, False)
         ok, _, _ = fth.accept_data("my-id", "file", "f.txt", False, False)
         self.assertTrue(ok)
         # consumed on use
+        self.assertNotIn("my-id", fth.files_accepted)
+        fth.cleanup()
+
+    def test_accept_data_pre_accepted_print_stays_print(self):
+        fth = MinimalFTH()
+        fth.files_accepted["my-id"] = AcceptedData(True, True)
+        ok, printit, openit = fth.accept_data("my-id", "file", "f.txt", True, True)
+        self.assertTrue(ok)
+        self.assertTrue(printit)
+        self.assertTrue(openit)
         self.assertNotIn("my-id", fth.files_accepted)
         fth.cleanup()
 
@@ -704,6 +714,14 @@ class TestFileTransferHandler(unittest.TestCase):
         fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
         self.assertFalse(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
         self.assertIn("sid", fth.files_requested)
+        fth.cleanup()
+
+    def test_do_process_file_data_request_preserves_print_request(self):
+        fth = MinimalFTH()
+        fth.files_requested["sid"] = RequestedFile("print-job.pdf", True)
+        opts = typedict({"request-file": ("print-job.pdf", True)})
+        fth.do_process_file_data_request("file", "sid", "print-job.pdf", 100, True, True, opts)
+        self.assertEqual(fth.files_accepted["sid"], AcceptedData(True, True))
         fth.cleanup()
 
     def test_data_request_authorization_matrix(self):
@@ -1529,7 +1547,7 @@ class _LoopbackHandler(_FullHandler):
 
     def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
         if self.approve_requests:
-            self.files_accepted[send_id] = openit
+            self.files_accepted[send_id] = AcceptedData(printit, openit)
         cb_answer(self.approve_requests)
 
     def process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options, send_id=""):

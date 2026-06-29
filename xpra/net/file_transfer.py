@@ -166,6 +166,12 @@ class RequestedFile:
     openit: bool
 
 
+@dataclass(frozen=True)
+class AcceptedData:
+    printit: bool
+    openit: bool
+
+
 class FileTransferAttributes:
 
     def __init__(self):
@@ -202,7 +208,7 @@ class FileTransferAttributes:
         self.file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.open_command = open_command
         self.files_requested: dict[str, RequestedFile] = {}
-        self.files_accepted: dict[str, bool] = {}
+        self.files_accepted: dict[str, AcceptedData] = {}
         self.file_request_callback: dict[str, Callable[[str, int], None]] = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
@@ -557,7 +563,7 @@ class FileTransferHandler(FileTransferAttributes):
         req = self.files_accepted.pop(send_id, None)
         filelog("accept_data: files_accepted[%s]=%s", send_id, req)
         if req is not None:
-            return True, False, req
+            return True, req.printit, req.openit
         if printit:
             if not self.printing or self.printing_ask:
                 return False, False, False
@@ -1006,7 +1012,7 @@ class FileTransferHandler(FileTransferAttributes):
         if send_id and (request := self.files_requested.get(send_id)):
             if self.request_file_match(request, options):
                 self.files_requested.pop(send_id, None)
-                self.files_accepted[send_id] = request.openit
+                self.files_accepted[send_id] = AcceptedData(printit, request.openit)
                 cb_answer(True)
                 return
             filelog.warn("Warning: received mismatched requested file approval for send-id %r", send_id)
