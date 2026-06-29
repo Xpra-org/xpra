@@ -386,10 +386,19 @@ def parse_display_name(opts, display_name: str, cmdline=(),
             desc["display"] = path
 
     def process_query_string(s) -> None:
+        # query strings can carry connection options (ie: "tcp://host/?proxy-host=...").
+        # most callers feed this trusted command-line input, but to harden any path that
+        # may pass untrusted data we can restrict it to the same allow-list as `parse_URL`.
+        # this is gated behind `XPRA_PARSING_STRICT` (off by default) as it would otherwise
+        # reject legitimate options that are not in the URL allow-list:
+        strict = envbool("XPRA_PARSING_STRICT", False)
         r = parse.parse_qs(s)
         for k, v in r.items():
             if k in desc:
                 warn(f"ignoring {k} override from query string")
+                continue
+            if strict and k not in URL_SAFE_OPTIONS:
+                warn(f"Warning: option {k!r} is not allowed in connection strings and will be ignored")
                 continue
             if len(v) == 1:
                 desc[k] = v[0]

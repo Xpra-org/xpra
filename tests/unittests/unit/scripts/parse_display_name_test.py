@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import tempfile
 import unittest
 
@@ -115,6 +116,26 @@ class TestMain(unittest.TestCase):
             t("vsock://10:2000/", {"vsock": (10, 2000)})
         t("vnc+ssh://host/0")
         t("tcp://localhost:10000/", {"host": "localhost", "port": 10000, "type": "tcp"})
+
+    def test_query_string_not_strict_by_default(self):
+        # by default (XPRA_PARSING_STRICT off) any query option is accepted,
+        # including ones that are not in the URL allow-list:
+        r = _test_parse_display_name("tcp://host/?proxy-host=evil.com&proxy-port=1080")
+        self.assertEqual(r.get("proxy-host"), "evil.com")
+        self.assertEqual(r.get("proxy-port"), "1080")
+
+    def test_query_string_strict_uses_allow_list(self):
+        # with XPRA_PARSING_STRICT on, only allow-listed options are kept,
+        # so a malicious proxy override cannot smuggle in a MITM:
+        os.environ["XPRA_PARSING_STRICT"] = "1"
+        try:
+            r = _test_parse_display_name("tcp://host/?proxy-host=evil.com&proxy-port=1080&encoding=rgb")
+        finally:
+            del os.environ["XPRA_PARSING_STRICT"]
+        self.assertNotIn("proxy-host", r)
+        self.assertNotIn("proxy-port", r)
+        # allow-listed options still pass through:
+        self.assertEqual(r.get("encoding"), "rgb")
 
 
 def main():
