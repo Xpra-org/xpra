@@ -125,9 +125,8 @@ class CursorClient(StubClientMixin):
             self.set_windows_cursor(self._id_to_window.values(), new_cursor)
 
     def decompress_cursor_data(self, encoding: str, cpixels: SizedBuffer, serial: int) -> bytes:
-        if encoding != "raw":
-            if encoding not in self.get_core_encodings():
-                raise ValueError(f"cursor encoding {encoding!r} is not supported")
+        if encoding != "raw" and encoding not in self.get_core_encodings():
+            raise ValueError(f"cursor encoding {encoding!r} is not supported")
         return decompress_cursor_data(encoding, cpixels, serial)
 
     def _process_cursor_data(self, packet: Packet) -> None:
