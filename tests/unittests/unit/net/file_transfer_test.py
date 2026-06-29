@@ -16,7 +16,7 @@ from xpra.net.file_transfer import (
     basename, safe_open_download_file,
     FileTransferAttributes, FileTransferHandler,
     get_open_env, digest_mismatch,
-    ReceiveChunkState, SendChunkState, SendPendingData,
+    AcceptedData, ReceiveChunkState, RequestedFile, SendChunkState, SendPendingData,
     DENY, ACCEPT, OPEN,
 )
 
@@ -365,10 +365,20 @@ class TestFileTransferHandler(unittest.TestCase):
     def test_accept_data_pre_accepted(self):
         fth = MinimalFTH()
         fth.file_transfer = True
-        fth.files_accepted["my-id"] = False
+        fth.files_accepted["my-id"] = AcceptedData(False, False)
         ok, _, _ = fth.accept_data("my-id", "file", "f.txt", False, False)
         self.assertTrue(ok)
         # consumed on use
+        self.assertNotIn("my-id", fth.files_accepted)
+        fth.cleanup()
+
+    def test_accept_data_pre_accepted_print_stays_print(self):
+        fth = MinimalFTH()
+        fth.files_accepted["my-id"] = AcceptedData(True, True)
+        ok, printit, openit = fth.accept_data("my-id", "file", "f.txt", True, True)
+        self.assertTrue(ok)
+        self.assertTrue(printit)
+        self.assertTrue(openit)
         self.assertNotIn("my-id", fth.files_accepted)
         fth.cleanup()
 
@@ -528,9 +538,28 @@ class TestFileTransferHandler(unittest.TestCase):
         fth = MinimalFTH()
         fth.file_transfer = True
         # the request is matched on the send-id we generated, not the filename:
-        fth.files_requested["sid"] = True
-        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, typedict())
+        fth.files_requested["sid"] = RequestedFile("f.txt", True)
+        opts = typedict({"request-file": ("f.txt", True)})
+        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
         self.assertTrue(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
+        fth.cleanup()
+
+    def test_do_process_file_data_request_mismatched_requested_file(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.files_requested["sid"] = RequestedFile("${XPRA_SERVER_LOG}", True)
+        opts = typedict({"request-file": ("other-file", True)})
+        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
+        self.assertFalse(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
+        self.assertIn("sid", fth.files_requested)
+        fth.cleanup()
+
+    def test_do_process_file_data_request_preserves_print_request(self):
+        fth = MinimalFTH()
+        fth.files_requested["sid"] = RequestedFile("print-job.pdf", True)
+        opts = typedict({"request-file": ("print-job.pdf", True)})
+        fth.do_process_file_data_request("file", "sid", "print-job.pdf", 100, True, True, opts)
+        self.assertEqual(fth.files_accepted["sid"], AcceptedData(True, True))
         fth.cleanup()
 
 # ---------------------------------------------------------------------------
@@ -797,10 +826,25 @@ class TestProcessDownloadedFile(unittest.TestCase):
     def test_request_file_callback_called(self):
         h = _FullHandler()
         called = []
+        h.files_requested["sid"] = RequestedFile("f.txt", False)
         h.file_request_callback["sid"] = lambda fn, sz: called.append((fn, sz))
         with patch("xpra.net.file_transfer.GLib"):
-            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, typedict(), "sid")
+            opts = typedict({"request-file": ("f.txt", False)})
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, opts, "sid")
         assert called
+
+    def test_request_file_callback_rejects_mismatched_request_file(self):
+        h = _FullHandler()
+        callback = MagicMock()
+        h.files_requested["sid"] = RequestedFile("f.txt", False)
+        h.file_request_callback["sid"] = callback
+        opts = typedict({"request-file": ("other-file", False)})
+        with patch("xpra.net.file_transfer.start_thread") as start:
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, True, 100, opts, "sid")
+        callback.assert_not_called()
+        self.assertIn("sid", h.file_request_callback)
+        self.assertIn("sid", h.files_requested)
+        start.assert_called_once()
 
     def test_no_action_no_thread(self):
         h = _FullHandler()
