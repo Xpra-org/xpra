@@ -110,6 +110,11 @@ class ClientMixinTest(unittest.TestCase):
         x.emit = noop
         if not hasattr(x, "after_handshake"):
             x.after_handshake = noop
+        # some subsystems (cursor, window icons) have a weak dependency on the
+        # `Encodings` subsystem to restrict the encodings they parse; supply a
+        # default when testing such a subsystem in isolation:
+        if not hasattr(x, "get_core_encodings"):
+            x.get_core_encodings = lambda: ["png"]
         fake_protocol = AdHocStruct()
         fake_protocol.get_info = lambda: {}
         fake_protocol.set_compression_level = lambda _x: None
