@@ -8,11 +8,12 @@ import re
 from collections.abc import Callable, Sequence
 
 from xpra.common import noop
-from xpra.util.str_fn import repr_ellipsized
+from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.util.env import envbool, IgnoreWarningsContext
 from xpra.os_util import OSX, gi_import
 from xpra.client.gui.menu_helper import MenuHelper, ImageMenuItem, MenuItem
 from xpra.codecs.icon_util import INKSCAPE_RE
+from xpra.codecs.image_type import get_image_type
 from xpra.gtk.widget import scaled_image, menuitem
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.dialogs.about import close_about
@@ -26,6 +27,7 @@ Gtk = gi_import("Gtk")
 GdkPixbuf = gi_import("GdkPixbuf")
 
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
+MENU_SVG_ICONS = envbool("XPRA_MENU_SVG_ICONS", True)
 HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", False)
 
 LOSSLESS = "Lossless"
@@ -101,14 +103,25 @@ def load_pixbuf(data) -> GdkPixbuf.Pixbuf:
     return loader.get_pixbuf()
 
 
-def get_appimage(app_name: str, icondata=b"", menu_icon_size=24) -> Gtk.Image | None:
+def get_appimage(app_name: str, icondata=b"", menu_icon_size=24, encodings=()) -> Gtk.Image | None:
     pixbuf = None
     if app_name and not icondata:
         # try to load from our icons:
+        # (local files are trusted and loaded no matter what `encodings` allows)
         nstr = app_name.lower()
         icon_filename = os.path.join(get_icon_dir(), "%s.png" % nstr)
         if os.path.exists(icon_filename):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=icon_filename)
+
+    if icondata:
+        # only parse remote icon data we actually have a decoder for
+        # (svg is added by the caller so it can still go through the GdkPixbuf loader):
+        itype = get_image_type(icondata)
+        if itype not in encodings:
+            log.warn(f"Warning: cannot show menu icon for {app_name!r}")
+            log.warn(f" unsupported image encoding {itype or 'unknown'!r}")
+            log.warn(f" allowed encodings: {csv(encodings)}")
+            icondata = b""
 
     def err(e) -> None:
         log("failed to load icon", exc_info=True)

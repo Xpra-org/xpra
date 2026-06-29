@@ -22,7 +22,7 @@ from xpra.client.gtk3.menu_helper import (
     QUALITY_OPTIONS, MIN_QUALITY_OPTIONS,
     SPEED_OPTIONS, MIN_SPEED_OPTIONS,
     get_appimage, ll, set_sensitive, ensure_item_selected,
-    make_encodingsmenu, MinAutoMenu,
+    make_encodingsmenu, MinAutoMenu, MENU_SVG_ICONS,
 )
 from xpra.gtk.widget import checkitem
 from xpra.exit_codes import ExitCode
@@ -1838,7 +1838,12 @@ class GTKTrayMenu(GTKMenuHelper):
     def start_menuitem(self, title: str, icondata=b"") -> Gtk.ImageMenuItem:
         smi = self.handshake_menuitem(title)
         if icondata:
-            image = get_appimage(title, icondata, self.menu_icon_size)
+            # only allow icon encodings we have a decoder for,
+            # optionally also allowing svg (via GdkPixbuf):
+            encodings = tuple(self.client.get_core_encodings())
+            if MENU_SVG_ICONS:
+                encodings += ("svg", )
+            image = get_appimage(title, icondata, self.menu_icon_size, encodings)
             if image:
                 ignorewarnings(smi.set_image, image)
         return smi
