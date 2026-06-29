@@ -25,16 +25,16 @@ autoprov: no
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
-%global upstream_version 3.3.0a1
+%global upstream_version 3.3.0a2.dev0
 
 Name:		%{py3rpmname}-cython
-Version:	3.3.0~a1
-Release:	2%{?dist}
+Version:	3.3.0~a2
+Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://github.com/cython/cython/releases/download/%{upstream_version}/cython-%{upstream_version}.tar.gz
+Source0:    https://files.pythonhosted.org/packages/source/c/cython/cython-%{upstream_version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   %{py3rpmname}
 Provides:   %{py3rpmname}-Cython = %{version}-%{release}
@@ -52,7 +52,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "79787148701b5fd7c718b1ea5f1b8481be3e4ea938de78a1a5c3b04bf36b0c87" ]; then
+if [ "${sha256}" != "c5465417ae39ca12f1cd418a9b3a196f485d344b18a313738473c9ab23a77d9f" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -88,6 +88,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Mon Jun 29 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a2-1
+- new upstream release
+
 * Sat Jun 27 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a1-2
 - disable LTO: gcc 16 -flto miscompiles Compiler/Nodes.c and breaks if/else codegen
 
