@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import socket
 from dataclasses import dataclass, field
 from typing import Any
@@ -10,11 +11,24 @@ from typing import Any
 from xpra.net.constants import DEFAULT_PORTS
 from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
+from xpra.log import Logger
+
+log = Logger("network", "mdns")
 
 try:
     local_host_name = socket.gethostname()
 except OSError:
     local_host_name = "localhost"
+
+# mDNS records are untrusted network input: anyone able to reach the client's mDNS
+# domain can advertise a service. The fields we splice into the connection URI must
+# therefore be validated - otherwise a malicious advertisement could smuggle URL
+# syntax (ie: `display=:2?proxy-host=evil`) into the `xpra attach <uri>` command and
+# have the query string parsed as connection options (proxy, ssh key, ...).
+# Restrict them to a conservative alphanumeric subset:
+VALID_MODE = re.compile(r"\A[a-z0-9+-]{1,16}\Z")
+VALID_DISPLAY = re.compile(r"\A[a-zA-Z0-9._-]{1,128}\Z")
+VALID_USERNAME = re.compile(r"\A[a-zA-Z0-9._-]{1,128}\Z")
 
 
 @dataclass(frozen=True)
@@ -221,8 +235,19 @@ def get_uri(password: str, interface, protocol, name: str, stype: str, domain, h
                 return ""
         else:
             mode = "tcp"
+    # these fields are untrusted (see note above): reject anything that isn't a
+    # plain identifier, so it cannot smuggle URL syntax into the connection URI:
+    if not VALID_MODE.match(mode):
+        log.warn("Warning: ignoring mDNS record with invalid mode %r", mode)
+        return ""
+    if username and not VALID_USERNAME.match(username):
+        log.warn("Warning: ignoring mDNS record with invalid username %r", username)
+        return ""
     if display and display.startswith(":"):
         dstr = display[1:]
+        if dstr and not VALID_DISPLAY.match(dstr):
+            log.warn("Warning: ignoring mDNS record with invalid display %r", display)
+            return ""
     # append interface to IPv6 host URI for link local addresses ("fe80:"):
     if interface and address.lower().startswith("fe80:"):
         # ie: "fe80::c1:ac45:7351:ea69%eth1"
