@@ -154,7 +154,7 @@ def parse_env(env) -> dict[str, str]:
 def parse_URL(url: str) -> tuple[str, dict]:
     from urllib.parse import urlparse, parse_qs
     up = urlparse(url)
-    address = up.netloc
+    address = str(up.netloc)
     qpos = url.find("?")
     options = {}
     if qpos > 0:
