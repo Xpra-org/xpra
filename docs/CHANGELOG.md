@@ -32,6 +32,7 @@
   * [colorspace synchronization in video bitstream](https://github.com/Xpra-org/xpra/issues/4926)
 * ✨ Features:
   * [`seccomp` hardening of image parsing](https://github.com/Xpra-org/xpra/issues/622)
+  * [honour encodings restrictions in all subsystems](https://github.com/Xpra-org/xpra/issues/4943)
   * [native `pipewire` frame capture](https://github.com/Xpra-org/xpra/issues/4937)
   * [remove GStreamer video codecs](https://github.com/Xpra-org/xpra/issues/4936)
   * [gsettings synchronization](https://github.com/Xpra-org/xpra/issues/3683)
