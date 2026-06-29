@@ -806,6 +806,7 @@ rm -rf $RPM_BUILD_ROOT
 %pycached %{python3_sitearch}/xpra/codecs/debug.py
 %pycached %{python3_sitearch}/xpra/codecs/icon_util.py
 %pycached %{python3_sitearch}/xpra/codecs/image.py
+%pycached %{python3_sitearch}/xpra/codecs/image_type.py
 %pycached %{python3_sitearch}/xpra/codecs/loader.py
 %pycached %{python3_sitearch}/xpra/codecs/rgb_transform.py
 %pycached %{python3_sitearch}/xpra/codecs/protocols.py

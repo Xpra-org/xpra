@@ -50,6 +50,7 @@ usr/lib/python3*/*/xpra/codecs/constants.py*
 usr/lib/python3*/*/xpra/codecs/debug.py*
 usr/lib/python3*/*/xpra/codecs/icon_util.py
 usr/lib/python3*/*/xpra/codecs/image.py
+usr/lib/python3*/*/xpra/codecs/image_type.py
 usr/lib/python3*/*/xpra/codecs/loader.py
 usr/lib/python3*/*/xpra/codecs/rgb_transform.py
 usr/lib/python3*/*/xpra/codecs/protocols.py
