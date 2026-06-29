@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import subprocess
 import hashlib
+import fnmatch
 import uuid
 from typing import Any, Final
 from time import monotonic
@@ -164,6 +165,7 @@ class SendPendingData:
 class RequestedFile:
     filename: str
     openit: bool
+    basename_pattern: str = ""
 
 
 @dataclass(frozen=True)
@@ -249,11 +251,16 @@ class FileTransferAttributes:
         }
 
     @staticmethod
-    def request_file_match(request: RequestedFile, options: typedict) -> bool:
+    def request_file_match(request: RequestedFile, filename: str, options: typedict) -> bool:
         request_file = options.tupleget("request-file")
         if len(request_file) != 2:
             return False
-        return request_file[0] == request.filename and bool(request_file[1]) == request.openit
+        if request_file[0] != request.filename or bool(request_file[1]) != request.openit:
+            return False
+        sent_basename = basename(filename)
+        if request.basename_pattern:
+            return fnmatch.fnmatch(sent_basename, request.basename_pattern)
+        return sent_basename == basename(request.filename)
 
 
 def digest_mismatch(filename: str, digest, expected_digest) -> None:
@@ -713,7 +720,7 @@ class FileTransferHandler(FileTransferAttributes):
         # opened or printed behind our back:
         cb = None
         if send_id and (request := self.files_requested.get(send_id)):
-            if self.request_file_match(request, options):
+            if self.request_file_match(request, filename, options):
                 self.files_requested.pop(send_id, None)
                 cb = self.file_request_callback.pop(send_id, None)
             else:
@@ -882,10 +889,10 @@ class FileTransferHandler(FileTransferAttributes):
             return False
         return True
 
-    def send_request_file(self, filename: str, openit: bool = True,
+    def send_request_file(self, filename: str, openit: bool = True, basename_pattern: str = "",
                           callback: Callable[[str, int], None] | None = None) -> str:
         send_id = uuid.uuid4().hex
-        self.files_requested[send_id] = RequestedFile(filename, openit)
+        self.files_requested[send_id] = RequestedFile(filename, openit, basename_pattern)
         if callback:
             self.file_request_callback[send_id] = callback
         self.send(FILE_REQUEST, filename, openit, send_id)
@@ -1010,7 +1017,7 @@ class FileTransferHandler(FileTransferAttributes):
         # which the server echoes back - so a server cannot have a file
         # auto-accepted unless we actually requested it with this exact id:
         if send_id and (request := self.files_requested.get(send_id)):
-            if self.request_file_match(request, options):
+            if self.request_file_match(request, url, options):
                 self.files_requested.pop(send_id, None)
                 self.files_accepted[send_id] = AcceptedData(printit, request.openit)
                 cb_answer(True)
