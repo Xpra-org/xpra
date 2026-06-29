@@ -160,6 +160,12 @@ class SendPendingData:
     options: dict
 
 
+@dataclass(frozen=True)
+class RequestedFile:
+    filename: str
+    openit: bool
+
+
 class FileTransferAttributes:
 
     def __init__(self):
@@ -195,7 +201,7 @@ class FileTransferAttributes:
         self.open_url = oua or str_to_bool(open_url)
         self.file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.open_command = open_command
-        self.files_requested: dict[str, bool] = {}
+        self.files_requested: dict[str, RequestedFile] = {}
         self.files_accepted: dict[str, bool] = {}
         self.file_request_callback: dict[str, Callable[[str, int], None]] = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
@@ -235,6 +241,13 @@ class FileTransferAttributes:
             "file": self.get_file_transfer_info(),
             "printer": self.get_printer_features(),
         }
+
+    @staticmethod
+    def request_file_match(request: RequestedFile, options: typedict) -> bool:
+        request_file = options.tupleget("request-file")
+        if len(request_file) != 2:
+            return False
+        return request_file[0] == request.filename and bool(request_file[1]) == request.openit
 
 
 def digest_mismatch(filename: str, digest, expected_digest) -> None:
@@ -692,7 +705,14 @@ class FileTransferHandler(FileTransferAttributes):
         # the callback is keyed on the send-id we generated for the request,
         # so it always consumes the transfer we requested and the file is never
         # opened or printed behind our back:
-        if send_id and (cb := self.file_request_callback.pop(send_id, None)):
+        cb = None
+        if send_id and (request := self.files_requested.get(send_id)):
+            if self.request_file_match(request, options):
+                self.files_requested.pop(send_id, None)
+                cb = self.file_request_callback.pop(send_id, None)
+            else:
+                filelog.warn("Warning: received mismatched requested file response for send-id %r", send_id)
+        if cb:
             try:
                 cb(filename, filesize)
             except Exception as e:
@@ -859,7 +879,7 @@ class FileTransferHandler(FileTransferAttributes):
     def send_request_file(self, filename: str, openit: bool = True,
                           callback: Callable[[str, int], None] | None = None) -> str:
         send_id = uuid.uuid4().hex
-        self.files_requested[send_id] = openit
+        self.files_requested[send_id] = RequestedFile(filename, openit)
         if callback:
             self.file_request_callback[send_id] = callback
         self.send(FILE_REQUEST, filename, openit, send_id)
@@ -983,11 +1003,13 @@ class FileTransferHandler(FileTransferAttributes):
         # we match on the send-id we generated for the request,
         # which the server echoes back - so a server cannot have a file
         # auto-accepted unless we actually requested it with this exact id:
-        if send_id and send_id in self.files_requested:
-            req_openit = self.files_requested.pop(send_id)
-            self.files_accepted[send_id] = req_openit
-            cb_answer(True)
-            return
+        if send_id and (request := self.files_requested.get(send_id)):
+            if self.request_file_match(request, options):
+                self.files_requested.pop(send_id, None)
+                self.files_accepted[send_id] = request.openit
+                cb_answer(True)
+                return
+            filelog.warn("Warning: received mismatched requested file approval for send-id %r", send_id)
         if dtype == "file":
             url = os.path.basename(url)
             if printit:

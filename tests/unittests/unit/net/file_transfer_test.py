@@ -19,7 +19,7 @@ from xpra.net.file_transfer import (
     basename, safe_open_download_file,
     FileTransferAttributes, FileTransferHandler,
     get_open_env, digest_mismatch,
-    ReceiveChunkState, SendChunkState, SendPendingData,
+    ReceiveChunkState, RequestedFile, SendChunkState, SendPendingData,
     DENY, ACCEPT, OPEN,
 )
 
@@ -678,8 +678,9 @@ class TestFileTransferHandler(unittest.TestCase):
         fth = MinimalFTH()
         fth.file_transfer = True
         # the request is matched on the send-id we generated, not the filename:
-        fth.files_requested["sid"] = True
-        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, typedict())
+        fth.files_requested["sid"] = RequestedFile("f.txt", True)
+        opts = typedict({"request-file": ("f.txt", True)})
+        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
         self.assertTrue(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
         fth.cleanup()
 
@@ -688,9 +689,19 @@ class TestFileTransferHandler(unittest.TestCase):
         # if the send-id does not match a request we actually made:
         fth = MinimalFTH()
         fth.file_transfer = True
-        fth.files_requested["sid"] = True
+        fth.files_requested["sid"] = RequestedFile("f.txt", True)
         opts = typedict({"request-file": ("f.txt", True)})
         fth.do_process_file_data_request("file", "other-sid", "f.txt", 100, False, True, opts)
+        self.assertFalse(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
+        self.assertIn("sid", fth.files_requested)
+        fth.cleanup()
+
+    def test_do_process_file_data_request_mismatched_requested_file(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.files_requested["sid"] = RequestedFile("${XPRA_SERVER_LOG}", True)
+        opts = typedict({"request-file": ("other-file", True)})
+        fth.do_process_file_data_request("file", "sid", "f.txt", 100, False, True, opts)
         self.assertFalse(any(p[0] == "file-data-response" and p[2] is True for p in fth.sent))
         self.assertIn("sid", fth.files_requested)
         fth.cleanup()
@@ -1022,9 +1033,11 @@ class TestProcessDownloadedFile(unittest.TestCase):
     def test_request_file_callback_called(self):
         h = _FullHandler()
         called = []
+        h.files_requested["sid"] = RequestedFile("${XPRA_SERVER_LOG}", False)
         h.file_request_callback["sid"] = lambda fn, sz: called.append((fn, sz))
         with patch("xpra.net.file_transfer.GLib"):
-            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, typedict(), "sid")
+            opts = typedict({"request-file": ("${XPRA_SERVER_LOG}", False)})
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, False, 100, opts, "sid")
         assert called
 
     def test_request_file_callback_ignores_unmatched_send_id(self):
@@ -1033,8 +1046,9 @@ class TestProcessDownloadedFile(unittest.TestCase):
         # option in the send-file packet with a different/absent send-id:
         h = _FullHandler()
         callback = MagicMock()
+        h.files_requested["sid"] = RequestedFile("${XPRA_SERVER_LOG}", True)
         h.file_request_callback["sid"] = callback
-        opts = typedict({"request-file": ("sid", True)})
+        opts = typedict({"request-file": ("${XPRA_SERVER_LOG}", True)})
         with patch("xpra.net.file_transfer.start_thread") as start:
             h.process_downloaded_file("/tmp/f.txt", "raw", False, True, 100, opts, "other-sid")
         callback.assert_not_called()
@@ -1044,10 +1058,12 @@ class TestProcessDownloadedFile(unittest.TestCase):
     def test_request_file_callback_is_one_shot(self):
         h = _FullHandler()
         callback = MagicMock()
+        h.files_requested["sid"] = RequestedFile("${XPRA_SERVER_LOG}", False)
         h.file_request_callback["sid"] = callback
         with patch("xpra.net.file_transfer.start_thread") as start:
-            h.process_downloaded_file("/tmp/first", "raw", False, False, 10, typedict(), "sid")
-            h.process_downloaded_file("/tmp/second", "raw", False, False, 20, typedict(), "sid")
+            opts = typedict({"request-file": ("${XPRA_SERVER_LOG}", False)})
+            h.process_downloaded_file("/tmp/first", "raw", False, False, 10, opts, "sid")
+            h.process_downloaded_file("/tmp/second", "raw", False, False, 20, opts, "sid")
         callback.assert_called_once_with("/tmp/first", 10)
         self.assertNotIn("sid", h.file_request_callback)
         start.assert_not_called()
@@ -1055,12 +1071,27 @@ class TestProcessDownloadedFile(unittest.TestCase):
     def test_request_file_callback_failure_is_isolated(self):
         h = _FullHandler()
         callback = MagicMock(side_effect=RuntimeError("callback failed"))
+        h.files_requested["sid"] = RequestedFile("${XPRA_SERVER_LOG}", False)
         h.file_request_callback["sid"] = callback
         with patch("xpra.net.file_transfer.filelog") as filelog:
-            h.process_downloaded_file("/tmp/file", "raw", False, False, 10, typedict(), "sid")
+            opts = typedict({"request-file": ("${XPRA_SERVER_LOG}", False)})
+            h.process_downloaded_file("/tmp/file", "raw", False, False, 10, opts, "sid")
         callback.assert_called_once_with("/tmp/file", 10)
         self.assertNotIn("sid", h.file_request_callback)
         self.assertTrue(filelog.error.called)
+
+    def test_request_file_callback_rejects_mismatched_request_file(self):
+        h = _FullHandler()
+        callback = MagicMock()
+        h.files_requested["sid"] = RequestedFile("${XPRA_SERVER_LOG}", False)
+        h.file_request_callback["sid"] = callback
+        opts = typedict({"request-file": ("other-file", False)})
+        with patch("xpra.net.file_transfer.start_thread") as start:
+            h.process_downloaded_file("/tmp/f.txt", "raw", False, True, 100, opts, "sid")
+        callback.assert_not_called()
+        self.assertIn("sid", h.file_request_callback)
+        self.assertIn("sid", h.files_requested)
+        start.assert_called_once()
 
     def test_no_action_no_thread(self):
         h = _FullHandler()
