@@ -63,21 +63,32 @@ class LosslessRoundtripTest(unittest.TestCase):
         cls.has_alpha = rgba.getchannel("A").getextrema() != (255, 255)
         cls.src_format = "BGRA" if cls.has_alpha else "BGRX"
         cls.canon_mode = "RGBA" if cls.has_alpha else "RGB"
-        # pack the pixels in BGRA / BGRX order (the canonical xpra screen format):
-        raw = rgba.tobytes()  # RGBA
+        cls.stride = cls.width * 4
+        # the colour pixels, and the reference we compare every decoded frame against:
+        cls.pixels = cls.pack_bgrx(rgba, cls.has_alpha)
+        cls.reference = rgba if cls.has_alpha else rgba.convert("RGB")
+        # a grayscale (R=G=B) variant, to exercise the monochrome lossless path: any standard
+        # luma transform is bit-exact when R=G=B, so this still round-trips losslessly:
+        gray = rgba.convert("L").convert("RGBA")
+        if cls.has_alpha:
+            gray.putalpha(rgba.getchannel("A"))
+        cls.gray_pixels = cls.pack_bgrx(gray, cls.has_alpha)
+        cls.gray_reference = gray if cls.has_alpha else gray.convert("RGB")
+
+    @staticmethod
+    def pack_bgrx(rgba_img, has_alpha: bool) -> bytes:
+        # pack a PIL RGBA image into BGRA / BGRX order (the canonical xpra screen format):
+        raw = rgba_img.tobytes()  # RGBA
         buf = bytearray(len(raw))
         for s in range(0, len(raw), 4):
-            buf[s] = raw[s + 2]                                     # B
-            buf[s + 1] = raw[s + 1]                                 # G
-            buf[s + 2] = raw[s]                                     # R
-            buf[s + 3] = raw[s + 3] if cls.has_alpha else 0xFF      # A / X
-        cls.pixels = bytes(buf)
-        cls.stride = cls.width * 4
-        # the reference we compare every decoded frame against:
-        cls.reference = rgba if cls.has_alpha else rgba.convert("RGB")
+            buf[s] = raw[s + 2]                                 # B
+            buf[s + 1] = raw[s + 1]                             # G
+            buf[s + 2] = raw[s]                                 # R
+            buf[s + 3] = raw[s + 3] if has_alpha else 0xFF      # A / X
+        return bytes(buf)
 
-    def make_image(self) -> ImageWrapper:
-        return ImageWrapper(0, 0, self.width, self.height, self.pixels, self.src_format, 32,
+    def make_image(self, pixels) -> ImageWrapper:
+        return ImageWrapper(0, 0, self.width, self.height, pixels, self.src_format, 32,
                             self.stride, 4, planes=ImageWrapper.PACKED, thread_safe=True)
 
     def decoded_to_image(self, dec_mod, dec_name: str, encoding: str, cdata: bytes, options: typedict):
@@ -92,9 +103,14 @@ class LosslessRoundtripTest(unittest.TestCase):
             rgb_format = img.get_pixel_format()
             raw_data = img.get_pixels()
             width, height, rowstride = img.get_width(), img.get_height(), img.get_rowstride()
-        pil_mode = "RGBA" if "A" in rgb_format else "RGB"
+        # grayscale encoders may report a single-channel "L"/"LA" format; otherwise the data
+        # is a packed RGB(X)/BGR(X) variant whose channel count drives the PIL image mode:
+        if rgb_format in ("L", "LA"):
+            pil_mode = rgb_format
+        else:
+            pil_mode = "RGBA" if "A" in rgb_format else "RGB"
         # interpret the decoded bytes using the format the decoder reported, then normalise
-        # to the canonical channel order so the comparison ignores BGR/RGB/X/A differences:
+        # to the canonical channel order so the comparison ignores BGR/RGB/X/A/L differences:
         decoded = Image.frombuffer(pil_mode, (width, height), bytes(raw_data), "raw", rgb_format, rowstride, 1)
         return decoded.convert(self.canon_mode)
 
@@ -107,28 +123,33 @@ class LosslessRoundtripTest(unittest.TestCase):
                 continue
             if encoding not in tuple(enc_mod.get_encodings()) or encoding not in tuple(dec_mod.get_encodings()):
                 continue
-            for speed in SPEEDS:
-                with self.subTest(encoder=enc_name, decoder=dec_name, encoding=encoding, speed=speed):
-                    image = self.make_image()
-                    result = enc_mod.encode(encoding, image, typedict({
-                        "quality": QUALITY,
-                        "speed": speed,
-                        "alpha": self.has_alpha,
-                        "rgb_format": self.src_format,
-                    }))
-                    self.assertTrue(result, f"{enc_name} {encoding} returned no data at speed {speed}")
-                    cdata = packet_bytes(result[1])
-                    self.assertGreater(len(cdata), 0, f"{enc_name} {encoding} produced an empty stream")
-                    decoded = self.decoded_to_image(dec_mod, dec_name, encoding, cdata, typedict({
-                        "rgb_format": self.src_format,
-                        "alpha": self.has_alpha,
-                    }))
-                    self.assertEqual((decoded.width, decoded.height), (self.width, self.height))
-                    diff = ImageChops.difference(decoded, self.reference)
-                    self.assertIsNone(
-                        diff.getbbox(),
-                        f"{enc_name}->{dec_name} {encoding} at quality={QUALITY} speed={speed} was not"
-                        f" lossless (max per-channel difference: {diff.getextrema()})")
+            for grayscale in (False, True):
+                pixels = self.gray_pixels if grayscale else self.pixels
+                reference = self.gray_reference if grayscale else self.reference
+                for speed in SPEEDS:
+                    with self.subTest(encoder=enc_name, decoder=dec_name, encoding=encoding,
+                                      grayscale=grayscale, speed=speed):
+                        image = self.make_image(pixels)
+                        result = enc_mod.encode(encoding, image, typedict({
+                            "quality": QUALITY,
+                            "speed": speed,
+                            "alpha": self.has_alpha,
+                            "grayscale": grayscale,
+                            "rgb_format": self.src_format,
+                        }))
+                        self.assertTrue(result, f"{enc_name} {encoding} returned no data at speed {speed}")
+                        cdata = packet_bytes(result[1])
+                        self.assertGreater(len(cdata), 0, f"{enc_name} {encoding} produced an empty stream")
+                        decoded = self.decoded_to_image(dec_mod, dec_name, encoding, cdata, typedict({
+                            "rgb_format": self.src_format,
+                            "alpha": self.has_alpha,
+                        }))
+                        self.assertEqual((decoded.width, decoded.height), (self.width, self.height))
+                        diff = ImageChops.difference(decoded, reference)
+                        self.assertIsNone(
+                            diff.getbbox(),
+                            f"{enc_name}->{dec_name} {encoding} grayscale={grayscale} at quality={QUALITY}"
+                            f" speed={speed} was not lossless (max per-channel difference: {diff.getextrema()})")
             tested.append(f"{enc_name}->{dec_name}:{encoding}")
         print(f"tested lossless picture round-trip ({self.width}x{self.height}): {tested}")
         if not tested:

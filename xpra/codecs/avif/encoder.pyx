@@ -215,7 +215,9 @@ def selftest(full=False) -> None:
     for has_alpha in (True, False):
         rgb_format = "BGR%s" % ["X", "A"][has_alpha]
         img = make_test_image(rgb_format, w, h)
-        for q in (10, 50, 90):
-            r = encode("avif", img, {"quality" : q, "speed" : 50, "alpha" : has_alpha})
-            assert len(r)>0
-            log(f"avif {rgb_format} @ {q}%%: " + hexstr(r[1].data))
+        for grayscale in (False, True):
+            # quality=100 exercises the lossless path (YUV444 identity, or YUV400 when grayscale):
+            for q in (10, 50, 90, 100):
+                r = encode("avif", img, {"quality" : q, "speed" : 50, "alpha" : has_alpha, "grayscale" : grayscale})
+                assert len(r)>0
+                log(f"avif {rgb_format} grayscale={grayscale} @ {q}%%: " + hexstr(r[1].data))
