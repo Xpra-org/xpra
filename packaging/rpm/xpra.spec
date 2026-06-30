@@ -1094,13 +1094,13 @@ fi
 
 
 %changelog
-* Sun Jun 28 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
+* Tue Jun 30 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
 - Platforms, build and packaging:
    `pynvml 13.610.43`
    `pytools 2026.1.1`
    `torch-vision 0.27.1`
    `torch 2.12.1`
-   `cython 3.2.6`
+   `cython 3.2.8`
    `cython 3.3` build warnings: use stricter types
 - Security:
    RCE: URL parsing subversion
@@ -1109,17 +1109,28 @@ fi
    restrict which types of URLs can be opened
    verify download path stays within the download directory
    ensure auto-accepted file download matches the request
+   harden requested file response validation
    only load pillow if needed
    ensure that the server only uses one of the allowed encodings
    no longer enable control channel on clients by default
+   validate untrusted mDNS record fields before building connection URIs
 - Major:
-   `xpra info` fails to connect
+   `xpra info` fails to connect + better limit
    ssh connection failures, launcher also fails
+   cairo backend fails to paint in 30 bit per pixel mode
 - Minor:
    gsettings lookup always failed in desktop servers
    ssh proxied connections used the wrong config
    error handling in fdproxy
    encode client fails to use `mmap` transfers
+   keyboard errors with X11 servers missing the Xkb extension
+   internal errors updating av-sync delay
+   mmap write errors should fall through
+   safer network capability parsing
+   don't send raw xpm icons
+   workarea calculations could fail
+   experimental client backends failed to use jpeg
+   `monitor` mode is desktop-like for clients
 - File-transfers:
    better parsing compatibility
    legacy packet names, preserve printer and title, etc
@@ -1128,6 +1139,7 @@ fi
 - Encodings:
    buffer overflow in fallback Cython CSC module
    codec module availability detection
+   avif can be used for lossless and grayscale
 - Cosmetic:
    no need to try to use invalid displayfd values
    socket directory double-quoted in runner script
@@ -1135,6 +1147,11 @@ fi
    logging error when notification icon parsing fails
    notification theme icon default size + fixup test
    remove legacy unused file
+   remove bogus statements
+   match method signature
+   planar data debug logging errors
+   remove duplicated keys, add missing one
+   incorrect metadata used for debug logging
 * Wed May 06 2026 Antoine Martin <antoine@xpra.org> 6.5-10
 - Platforms, build and packaging:
    use `wasapi2` on MS Windows

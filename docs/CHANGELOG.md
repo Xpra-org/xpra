@@ -1,12 +1,12 @@
 # Changelog
 
-## [6.5.1] 2026-06-28
+## [6.5.1] 2026-06-30
 * 🔧 Platforms, build and packaging:
   * [`pynvml 13.610.43`](https://github.com/Xpra-org/xpra/commit/14cbb2d6c50a6e9b0bed25e759ca472b8f5c167b)
   * [`pytools 2026.1.1`](https://github.com/Xpra-org/xpra/commit/49b917cddfc8928fc2c91721aeea6f406eb81013)
   * [`torch-vision 0.27.1`](https://github.com/Xpra-org/xpra/commit/f886b1af686bcb48af8d0ca11cf66f3810528b3f)
   * [`torch 2.12.1`](https://github.com/Xpra-org/xpra/commit/197ef58856181a941b8c5550a8003d1c2c0da903)
-  * [`cython 3.2.6`](https://github.com/Xpra-org/xpra/commit/db20ecfeeacae8b1e4913bb7df876e098946d9f8)
+  * [`cython 3.2.8`](https://github.com/Xpra-org/xpra/commit/19b70aba9877960fb4e6c35866c769db00759777)
   * [`cython 3.3` build warnings: use stricter types](https://github.com/Xpra-org/xpra/commit/deeeedcc88d82d5218ef9b3157e76c509ea7e2c7)
 * Security:
   * [RCE: URL parsing subversion](https://github.com/Xpra-org/xpra/commit/67f96f022e2d57aa41f730110e04d72fb29107c6)
@@ -15,17 +15,28 @@
   * [restrict which types of URLs can be opened](https://github.com/Xpra-org/xpra/commit/c81eacea5be7eb1b7c107e80bf161f8833946592)
   * [verify download path stays within the download directory](https://github.com/Xpra-org/xpra/commit/a8d0f3a2e64a06e62664151705283befd572de9b)
   * [ensure auto-accepted file download matches the request](https://github.com/Xpra-org/xpra/commit/fa94c76d11203b32dcac80fe1d745fda19f9858e)
+  * [harden requested file response validation](https://github.com/Xpra-org/xpra/commit/44e6fb5ae80fe3afbd86c81c9e9f17b03030e567)
   * [only load pillow if needed](https://github.com/Xpra-org/xpra/commit/e0568d34abd85f21400423e40202ff154e65ff19)
   * [ensure that the server only uses one of the allowed encodings](https://github.com/Xpra-org/xpra/commit/6ca21d4c8b20a4400e8dd6712100e3fc31be5772)
   * [no longer enable control channel on clients by default](https://github.com/Xpra-org/xpra/commit/a56524d7d2e25c6fbde15a61234ca2db85fccabf)
+  * [validate untrusted mDNS record fields before building connection URIs](https://github.com/Xpra-org/xpra/commit/e3556fb33e9284c7076ec6567adb800e44e05ae9)
 * Major:
-  * [`xpra info` fails to connect](https://github.com/Xpra-org/xpra/commit/c911a3f62adca2cdf40b13a9bd1e75768862a2e1)
+  * [`xpra info` fails to connect](https://github.com/Xpra-org/xpra/commit/c911a3f62adca2cdf40b13a9bd1e75768862a2e1) [+ better limit](https://github.com/Xpra-org/xpra/commit/a49145979bc4721f85db0181f2968f8089b4430c)
   * [ssh connection failures](https://github.com/Xpra-org/xpra/commit/e7dc2a119790aea2053a4293dac75f4e8c8f1498), [launcher also fails](https://github.com/Xpra-org/xpra/commit/095e1322d713978a8949b35ecfb32df92a41d1a9)
+  * [cairo backend fails to paint in 30 bit per pixel mode](https://github.com/Xpra-org/xpra/commit/7d3987f651ba469c044f901eb31a2af03d3fbcf1)
 * Minor:
   * [gsettings lookup always failed in desktop servers](https://github.com/Xpra-org/xpra/commit/5e2f4d7b228f3483273c105555553825b937644e)
   * [ssh proxied connections used the wrong config](https://github.com/Xpra-org/xpra/commit/6c482802a4f3dc6535663b2cf98486a901952175)
   * [error handling in fdproxy](https://github.com/Xpra-org/xpra/commit/4d0e641c8934cb74c4e2d0e0df262e8bdf64c3a0)
   * [encode client fails to use `mmap` transfers](https://github.com/Xpra-org/xpra/commit/05541acc9392cae86d70b2cdad44b0b66be448f1)
+  * [keyboard errors with X11 servers missing the Xkb extension](https://github.com/Xpra-org/xpra/commit/759c7d182383f7bf48d40110334d485ccdca1c46)
+  * [internal errors updating av-sync delay](https://github.com/Xpra-org/xpra/commit/17ca653fb67a571255ea3e8f152925ffec12c2fc)
+  * [mmap write errors should fall through](https://github.com/Xpra-org/xpra/commit/88c09cad56a2ac5d3fe477a8c56b7fb975e8e2bd)
+  * [safer network capability parsing](https://github.com/Xpra-org/xpra/commit/384e45790a9cda6780a99652181a53035f3e7c21)
+  * [don't send raw xpm icons](https://github.com/Xpra-org/xpra/commit/b5fa8ab5bab8b76ffbcba08a7d0a805a460f9f6b)
+  * [workarea calculations could fail](https://github.com/Xpra-org/xpra/commit/37781df48de0479aab3035c435606f2ef1a01dc0)
+  * [experimental client backends failed to use jpeg](https://github.com/Xpra-org/xpra/commit/9d6f45eab169171bc0a76f24cf885dca2fe6b347)
+  * [`monitor` mode is desktop-like for clients](https://github.com/Xpra-org/xpra/commit/c3ae8b5c70d6779563224f56ab83a71234075f2d)
 * 📁 File-transfers:
   * [better parsing compatibility](https://github.com/Xpra-org/xpra/commit/387888e818c1e293764aed74baf99bfb05cabc62)
   * [legacy packet names, preserve printer and title, etc](https://github.com/Xpra-org/xpra/commit/044a3f537ef7dc5eb1d1e417afcd909549cd3f99)
@@ -34,6 +45,7 @@
 * 🌈 Encodings:
   * [buffer overflow in fallback Cython CSC module](https://github.com/Xpra-org/xpra/commit/b11c671e6120601a78eabb6ebfd603008eb4b3ca)
   * [codec module availability detection](https://github.com/Xpra-org/xpra/commit/34172f00730d8052c2f0c6b60958631412a7a3ac)
+  * [avif can be used for lossless and grayscale](https://github.com/Xpra-org/xpra/commit/c7033685ef8ef67d540bfb17d4546281f1ecb618)
 * 💄 Cosmetic:
   * [no need to try to use invalid displayfd values](https://github.com/Xpra-org/xpra/commit/bba5afe758bc4a24a0371caacc3d2e1d944b95fd)
   * [socket directory double-quoted in runner script](https://github.com/Xpra-org/xpra/commit/08e11148c640a7a611016466b19c704832958331)
@@ -41,6 +53,11 @@
   * [logging error when notification icon parsing fails](https://github.com/Xpra-org/xpra/commit/2ada4e51b412181d850c560ee58baaa86700b840)
   * [notification theme icon default size](https://github.com/Xpra-org/xpra/commit/f9dee0e034f54e5051ecf3b8438f2586292f10fd) [+ fixup test](https://github.com/Xpra-org/xpra/commit/ac5a942b944fc192f811dac90f17f933ab1272b7)
   * [remove legacy unused file](https://github.com/Xpra-org/xpra/commit/4fda02ca9e6db67f19c784f8c997a3a1e2d95892)
+  * [remove bogus statements](https://github.com/Xpra-org/xpra/commit/227cd8e55b7a04d0437b76f09194555ca1718cc6)
+  * [match method signature](https://github.com/Xpra-org/xpra/commit/4417eb3ca73d8c35dd0606c8612308265fb285ad)
+  * [planar data debug logging errors](https://github.com/Xpra-org/xpra/commit/3e2962856beedbee755207400d4e77c886f429ab)
+  * [remove duplicated keys, add missing one](https://github.com/Xpra-org/xpra/commit/0f94654b585dbb12f3fc6ac7c64a38a14848e6a1)
+  * [incorrect metadata used for debug logging](https://github.com/Xpra-org/xpra/commit/88a29bddcaf9bcc5d68d7e8802778a1537781a27)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
