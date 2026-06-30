@@ -8,7 +8,6 @@
 import glob
 import os
 
-from typing import Dict, List
 from collections.abc import Callable
 
 from xpra.log import Logger
@@ -32,8 +31,8 @@ from xpra.wayland.wayland_surface import surfaces
 from xpra.wayland.wlroots cimport (
     wl_display, wlr_xdg_shell,
     wl_display_create, wl_display_destroy_clients, wl_display_destroy, wl_display_run,
-    wl_listener, wl_signal_add, wl_signal, wl_notify_func_t,
-    wlr_xdg_surface, wlr_xdg_popup, wlr_xdg_surface_events,
+    wl_listener,
+    wlr_xdg_surface, wlr_xdg_popup,
     WLR_XDG_SURFACE_ROLE_TOPLEVEL,
     wlr_backend, wlr_backend_start, wlr_backend_destroy,
     wlr_seat, wlr_cursor,
@@ -49,19 +48,19 @@ from xpra.wayland.wlroots cimport (
     wlr_cursor_create, wlr_cursor_destroy,
     wlr_xdg_shell_create,
     wlr_scene, wlr_scene_create, wlr_scene_node_destroy, wlr_scene_output_create,
-    wlr_scene_xdg_surface_create, wlr_scene_tree, wlr_scene_output, wlr_scene_output_commit,
+    wlr_scene_xdg_surface_create,
     wl_display_add_socket_auto,
     wl_event_loop, wl_display_get_event_loop, wl_event_loop_get_fd, wl_event_loop_dispatch,
     wlr_renderer, wlr_renderer_autocreate, wlr_renderer_destroy, wlr_renderer_init_wl_display,
     wlr_renderer_get_drm_fd, wlr_gles2_renderer_create_with_drm_fd,
     wlr_headless_backend_create,
-    wlr_texture, wlr_client_buffer, wlr_box, wlr_output,
+    wlr_output,
     wlr_output_layout_add, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
     wlr_output_init_render, wlr_output_layout,
     wlr_xdg_output_manager_v1, wlr_xdg_output_manager_v1_create,
     wlr_primary_selection_v1_device_manager, wlr_primary_selection_v1_device_manager_create,
-    wlr_data_source, wlr_seat_request_set_selection_event, wlr_seat_set_selection,
-    wlr_primary_selection_source, wlr_seat_request_set_primary_selection_event,
+    wlr_seat_request_set_selection_event, wlr_seat_set_selection,
+    wlr_seat_request_set_primary_selection_event,
     wlr_seat_set_primary_selection,
     xpra_wlr_seat_request_set_selection_signal, xpra_wlr_seat_set_selection_signal,
     xpra_wlr_seat_request_set_primary_selection_signal, xpra_wlr_seat_set_primary_selection_signal,
@@ -71,18 +70,11 @@ from xpra.wayland.wlroots cimport (
     wlr_data_control_manager_v1, wlr_data_control_manager_v1_create,
     wlr_xdg_activation_v1, wlr_xdg_activation_token_v1, wlr_xdg_activation_v1_request_activate_event,
     wlr_xdg_activation_v1_create, wlr_xdg_activation_token_v1_get_name,
-    WLR_OUTPUT_ADAPTIVE_SYNC_ENABLED,
 )
 from xpra.wayland.pointer_protocols cimport (
     wlr_relative_pointer_manager_v1, wlr_relative_pointer_manager_v1_create,
     wlr_pointer_constraints_v1, wlr_pointer_constraints_v1_create,
 )
-from xpra.wayland.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
-
-
-
-def add_event_listener(event_name: str, callback: Callable) -> None:
-    global event_listeners
 
 
 log = Logger("wayland")
