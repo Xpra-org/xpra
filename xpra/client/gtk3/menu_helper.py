@@ -8,7 +8,7 @@ import re
 from collections.abc import Callable, Sequence
 
 from xpra.common import noop
-from xpra.util.str_fn import repr_ellipsized, csv
+from xpra.util.str_fn import repr_ellipsized, csv, Ellipsizer
 from xpra.util.env import envbool, IgnoreWarningsContext
 from xpra.os_util import OSX, gi_import
 from xpra.client.gui.menu_helper import MenuHelper, ImageMenuItem, MenuItem
@@ -120,6 +120,7 @@ def get_appimage(app_name: str, icondata=b"", menu_icon_size=24, encodings=()) -
         if itype not in encodings:
             log.warn(f"Warning: cannot show menu icon for {app_name!r}")
             log.warn(f" unsupported image encoding {itype or 'unknown'!r}")
+            log.warn(" icon data=%s", Ellipsizer(icondata))
             log.warn(f" allowed encodings: {csv(encodings)}")
             icondata = b""
 
