@@ -107,7 +107,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
             # and `memoryview` pixel data cannot be handled by the packet encoders,
             # so we have to convert it to bytes:
             cwrapper.data = rgb_transform.pixels_to_bytes(pixels)
-            algo = "inlined lz4"
+            algo = "not"
     else:
         # can't pass a raw buffer to rencodeplus,
         # and even if we could, the image containing those pixels may be freed by the time we get to the encoder
