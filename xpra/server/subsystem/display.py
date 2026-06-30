@@ -416,7 +416,7 @@ class DisplayManager(StubSubsystem):
         monitors = attrs.dictget("monitors")
         if monitors:
             ss.set_monitors(monitors)
-        if desktop_size:
+        if desktop_size != (0, 0):
             self._apply_desktop_size(ss, *desktop_size)
         # DPI
         dpi = 0
