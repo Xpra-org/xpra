@@ -85,7 +85,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
     lz4 = options.get("lz4", False)
     zstd = options.get("zstd", False)
     algo = "not"
-    if (lz4 or zstd) and size >= 512 and speed < 100:
+    if (lz4 or zstd) and size >= 512 and speed <= 100:
         if size >= 4096:
             level = 1 + max(0, min(7, int(100 - speed) // 14))
         else:
@@ -93,10 +93,15 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
             # and use a lower level (max=3)
             level = max(0, min(3, int(125 - speed) // 35))
     if level > 0:
+        assert lz4 or zstd
         can_inline = size <= MAX_INLINE_SIZE
+        if speed < 90:
+            compressor = "zstd" if zstd else "lz4"
+        else:
+            compressor = "lz4" if lz4 else "zstd"
         cwrapper = compressed_wrapper(coding, pixels, level=level,
-                                      lz4=lz4,
-                                      zstd=zstd,
+                                      lz4=compressor == "lz4",
+                                      zstd=compressor == "zstd",
                                       can_inline=can_inline)
         if isinstance(cwrapper, LevelCompressed):
             # add compressed marker:
