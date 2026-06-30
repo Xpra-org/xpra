@@ -29,7 +29,7 @@ class PointerConnection(StubClientConnection, PointerSource):
         self.double_click_time: int = -1
         self.double_click_distance: tuple[int, int] | None = None
         # mouse echo:
-        self.mouse_last_position: tuple[int, int] | None = None
+        self.mouse_last_position: tuple[int, int] = (0, 0)
         self.mouse_last_relative_position: tuple[int, int] | None = None
         self.pointer_record = False
 
@@ -50,7 +50,7 @@ class PointerConnection(StubClientConnection, PointerSource):
             dc = typedict(c.dictget("double_click"))
             if dc:
                 self.double_click_time = dc.intget("time", -1)
-                self.double_click_distance = dc.intpair("distance")
+                self.double_click_distance = dc.intpair("distance", (-1, -1))
             else:
                 self.double_click_time = c.intget("double_click.time", -1)
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))

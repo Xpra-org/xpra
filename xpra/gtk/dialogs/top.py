@@ -445,8 +445,8 @@ class TopSessionGUI(Gtk.Window):
         server = sldict("server")
         display_info = sldict("display")
         dparts = []
-        rws = server.intpair("root_window_size", None)
-        if rws:
+        rws = server.intpair("root_window_size")
+        if rws != (0, 0):
             rww, rwh = rws
             sinfo = f"{rww}x{rwh}"
             depth = display_info.intget("depth")
@@ -454,7 +454,7 @@ class TopSessionGUI(Gtk.Window):
                 sinfo += f" {depth}-bit"
             sinfo += " display"
             mds = server.intpair("max_desktop_size")
-            if mds:
+            if mds != (0, 0):
                 mdw, mdh = mds
                 sinfo += f" (max {mdw}x{mdh})"
             dparts.append(sinfo)

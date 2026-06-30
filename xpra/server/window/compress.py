@@ -256,7 +256,7 @@ class WindowSource(WindowIconSource):
         self.rgb_formats = rgb_formats                  # supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        # extra options which may be specific to the encoder (ie: x264)
         self.rgb_lz4: bool = use("lz4") and encoding_options.boolget("rgb_lz4", False)       # server and client support lz4 pixel compression
-        self.client_render_size = encoding_options.get("render-size")
+        self.client_render_size = encoding_options.intpair("render-size")
         self.client_bit_depth: int = encoding_options.intget("bit-depth", 24)
         self.supports_transparency: bool = HAS_ALPHA and encoding_options.boolget("transparency", True)
         self.full_frames_only: bool = self.is_tray or encoding_options.boolget("full_frames_only", FULL_FRAMES_ONLY)
@@ -636,7 +636,7 @@ class WindowSource(WindowIconSource):
                 xshm_bytes = 0
             if xshm_bytes:
                 info["xshm"] = {"bytes": xshm_bytes}
-        if crs := self.client_render_size:
+        if (crs := self.client_render_size) != (0, 0):
             info["render-size"] = crs
         info["damage.fps"] = int(self.get_damage_fps())
         if self.pixel_format:
@@ -994,7 +994,7 @@ class WindowSource(WindowIconSource):
         weight = 1 + int(self.is_OR or self.is_tray or self.is_shadow)*2
         v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * weight)
         crs = self.client_render_size
-        if crs and DOWNSCALE and (crs[0] < ww or crs[1] < wh):
+        if crs != (0, 0) and DOWNSCALE and (crs[0] < ww or crs[1] < wh):
             # client will downscale, best to avoid sending rgb,
             # so we can more easily downscale at this end:
             max_rgb_threshold = 1024
@@ -2241,7 +2241,7 @@ class WindowSource(WindowIconSource):
 
     def scaled_size(self, image: ImageWrapper) -> tuple[int, int] | None:
         crs = self.client_render_size
-        if not crs or not DOWNSCALE:
+        if crs == (0, 0) or not DOWNSCALE:
             return None
         w, h = image.get_width(), image.get_height()
         ww, wh = self.window_dimensions

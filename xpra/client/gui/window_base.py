@@ -46,6 +46,10 @@ SHOW_SPINNER_WINDOW_TYPES = set(os.environ.get("XPRA_SHOW_SPINNER_WINDOW_TYPES",
 
 UNKNOWN_MACHINE: Final[str] = "<unknown machine>"
 
+# sentinel for "requested-position" metadata: a position no window can ever occupy
+# (0, 0) and negative coordinates are all valid positions, so we need an out-of-range value:
+NOT_REQUESTED: Final[tuple[int, int]] = (-2 ** 32, -2 ** 32)
+
 
 def is_wm_property(name: str) -> bool:
     return any(name.startswith(prefix) for prefix in ("_MOTIF", "WM_", "_NET_WM", "_GTK_"))
@@ -156,7 +160,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         self._yscale = client.yscale
         self._client_properties = client_properties
         self._set_initial_position = metadata.boolget("set-initial-position", False)
-        self._requested_position = metadata.intpair("requested-position", None)
+        self._requested_position = metadata.intpair("requested-position", NOT_REQUESTED)
         self.size_constraints = typedict()
         self.geometry_hints = typedict()
         self.content_type = ""
@@ -573,7 +577,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         ):
             v = size_constraints.intpair(a)
             geomlog("intpair(%s)=%s", a, v)
-            if not v:
+            if v == (0, 0):
                 continue
             v1, v2 = v
             if a == "maximum-size" and v1 >= 16384 and v2 >= 16384 and WIN32:
@@ -605,7 +609,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
                     ("maximum-aspect-ratio", "max_aspect"),
             ):
                 v = size_constraints.intpair(a)
-                if v:
+                if v != (0, 0):
                     v1, v2 = v
                     hints[h] = (v1 * self._xscale) / (v2 * self._yscale)
         # apply max-size override if needed:

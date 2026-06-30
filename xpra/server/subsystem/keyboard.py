@@ -160,7 +160,7 @@ class KeyboardManager(StubSubsystem):
         delay, interval = (500, 30)
         if not keyboard_clients:
             # so only activate this feature afterwards:
-            delay, interval = c.intpair("key_repeat") or (500, 30)
+            delay, interval = c.intpair("key_repeat", (500, 30))
             # always clear modifiers before setting a new keymap
             ss.make_keymask_match(c.strtupleget("modifiers"))
         self.set_keyboard_repeat(delay, interval)

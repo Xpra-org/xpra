@@ -760,10 +760,10 @@ class SessionInfo(Gtk.Window):
     def populate_features(self) -> bool:
         size_info = ""
         if features.window:
-            if self.client.server_actual_desktop_size:
+            if self.client.server_actual_desktop_size != (0, 0):
                 w, h = self.client.server_actual_desktop_size
                 size_info = f"{w}x{h}"
-                if self.client.server_randr and self.client.server_max_desktop_size:
+                if self.client.server_randr and self.client.server_max_desktop_size != (0, 0):
                     size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
                 bool_icon(self.server_randr_icon, self.client.server_randr)
         else:

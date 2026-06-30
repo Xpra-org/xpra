@@ -68,9 +68,9 @@ class DisplayClient(StubClientMixin):
         self._last_screen_settings = ()
         self._current_screen_sizes = []
 
-        self.server_desktop_size = None
-        self.server_actual_desktop_size = None
-        self.server_max_desktop_size = None
+        self.server_desktop_size = (0, 0)
+        self.server_actual_desktop_size = (0, 0)
+        self.server_max_desktop_size = (0, 0)
         self.server_display = None
         self.server_randr = False
         self.server_opengl = None
@@ -292,7 +292,7 @@ class DisplayClient(StubClientMixin):
     def print_desktop_size(self, c: typedict) -> None:
         if c.boolget("desktop") or c.boolget("shadow"):
             v = c.intpair("actual_desktop_size")
-            if v:
+            if v != (0, 0):
                 w, h = v
                 ss = c.tupleget("screen_sizes")
                 log.info(f" remote desktop size is {w}x{h}")
@@ -322,7 +322,7 @@ class DisplayClient(StubClientMixin):
                     self.scalingoff()
         if self.can_scale:
             self.may_adjust_scaling()
-        if not self.server_is_desktop and not skip_vfb_size_check and self.server_max_desktop_size:
+        if not self.server_is_desktop and not skip_vfb_size_check and self.server_max_desktop_size != (0, 0):
             avail_w, avail_h = self.server_max_desktop_size
             root_w, root_h = self.get_root_size()
             log("validating server_max_desktop_size=%s vs root size=%s",

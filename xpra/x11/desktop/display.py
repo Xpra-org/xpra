@@ -45,7 +45,7 @@ class XpraDesktopDisplayManager(X11DisplayManager):
             return root_w, root_h
         ss = display_sources[0]
         requested_size = ss.desktop_mode_size
-        if not requested_size:
+        if requested_size == (0, 0):
             screenlog("configure_best_screen_size() client did not request a specific desktop mode size")
             return root_w, root_h
         w, h = requested_size

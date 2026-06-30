@@ -83,6 +83,10 @@ class TestTypedict(unittest.TestCase):
         self.assertEqual(d.boolget("boolvalue"), True)
         self.assertEqual(d.intpair("intpair"), (1, 2))
         self.assertEqual(d.strtupleget("strtuple"), ("a", "b"))
+        #intpair always returns a pair of ints (the default when missing or invalid):
+        self.assertEqual(d.intpair("invalidkey"), (0, 0))
+        self.assertEqual(d.intpair("invalidkey", (1, 2)), (1, 2))
+        self.assertEqual(d.intpair("strkey", (3, 4)), (3, 4))
         #now test defaults:
         self.assertEqual(d.boolget("invalidkey"), False)
         self.assertEqual(d.boolget("invalidkey", False), False)

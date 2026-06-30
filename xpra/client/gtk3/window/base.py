@@ -27,7 +27,7 @@ from xpra.common import (
 )
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
 from xpra.net.common import PacketElement, BACKWARDS_COMPATIBLE
-from xpra.client.gui.window_base import ClientWindowBase
+from xpra.client.gui.window_base import ClientWindowBase, NOT_REQUESTED
 from xpra.client.gtk3.window.common import (
     use_x11_bindings, is_awt, is_popup, mask_buttons,
     WINDOW_NAME_TO_HINT, ALL_WINDOW_TYPES, BUTTON_MASK,
@@ -375,7 +375,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self._pos, self._set_initial_position, self.is_OR(), self.get_decorated())
         # honour "set-initial-position"
         if self._set_initial_position or self.is_OR():
-            self.set_initial_position(self._requested_position or self._pos)
+            requested = self._requested_position
+            self.set_initial_position(self._pos if requested == NOT_REQUESTED else requested)
         self.set_default_size(*self._size)
 
     def set_initial_position(self, pos) -> None:
@@ -1117,9 +1118,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         """snap server-coordinate dimensions to the application's resize increment grid"""
         sc = self.size_constraints
         inc = sc.intpair("increment")
-        if not inc:
+        if inc == (0, 0):
             return sw, sh
-        base = sc.intpair("base-size") or (0, 0)
+        base = sc.intpair("base-size")
         snapped = snap_to_increment(sw, sh, {
             "width_inc": inc[0], "height_inc": inc[1],
             "base_width": base[0], "base_height": base[1],

@@ -430,7 +430,7 @@ class ProxyInstance:
         elif packet_type == "hello":
             c = typedict(packet.get_dict(1))
             self.schedule_server_ping()
-            maxw, maxh = c.intpair("max_desktop_size") or (4096, 4096)
+            maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
             caps = self.filter_server_caps(c)
             # add new encryption caps:
             if self.cipher:

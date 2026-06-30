@@ -85,10 +85,10 @@ class HeaderBarWindow(GtkStubWindow):
             return True
         tsc = typedict(sc)
         maxs = tsc.intpair("maximum-size")
-        if maxs:
+        if maxs != (0, 0):
             return False
         mins = tsc.intpair("minimum-size")
-        if mins and mins != (0, 0):
+        if mins != (0, 0):
             return False
         if tsc.intpair("increment", (0, 0)) != (0, 0):
             return False

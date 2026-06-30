@@ -17,9 +17,9 @@ log = Logger("shadow")
 
 class ShadowDisplayMixin:
     def parse_screen_info(self, ss):
-        try:
+        if ss.desktop_size != (0, 0):
             log.info(" client root window size is %sx%s", *ss.desktop_size)
-        except Exception:
+        else:
             log.info(" unknown client desktop size")
         self.apply_refresh_rate(ss)
         return self.get_display_size()

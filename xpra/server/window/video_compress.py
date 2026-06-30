@@ -1521,14 +1521,14 @@ class WindowVideoSource(WindowSource):
         if width == 0 or height == 0:
             return 1, 1
         now = monotonic()
-        crs = None
+        crs = (0, 0)
         if DOWNSCALE:
             crs = self.client_render_size
 
         def get_min_required_scaling(default_value=(1, 1)) -> tuple[int, int]:
             mw = max_w
             mh = max_h
-            if crs:
+            if crs != (0, 0):
                 # if the client is going to downscale things anyway,
                 # then there is no need to send at a higher resolution than that:
                 crsw, crsh = crs

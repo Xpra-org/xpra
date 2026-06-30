@@ -212,7 +212,7 @@ class XSettingsServer(StubSubsystem):
                         ss = sss[0]
                         ds_unscaled = ss.desktop_size_unscaled
                         ds_scaled = ss.desktop_size
-                        if SCALED_FONT_ANTIALIAS or (not ds_unscaled or ds_unscaled == ds_scaled):
+                        if SCALED_FONT_ANTIALIAS or (ds_unscaled == (0, 0) or ds_unscaled == ds_scaled):
                             subpixel_order = ad.strget("orientation", "none").lower()
                     values |= {
                         "Xft.antialias": ad.intget("enabled", -1),

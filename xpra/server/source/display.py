@@ -41,9 +41,9 @@ class DisplayConnection(StubClientConnection):
         self.vrefresh: int = -1
         self.icc: dict = {}
         self.display_icc: dict = {}
-        self.desktop_size: tuple[int, int] | None = None
-        self.desktop_mode_size: tuple[int, int] | None = None
-        self.desktop_size_unscaled: tuple[int, int] | None = None
+        self.desktop_size: tuple[int, int] = (0, 0)
+        self.desktop_mode_size: tuple[int, int] = (0, 0)
+        self.desktop_size_unscaled: tuple[int, int] = (0, 0)
         self.desktop_size_server: tuple[int, int] = (0, 0)
         self.desktop_fullscreen: bool = False
         self.screen_sizes: list = []
@@ -58,7 +58,7 @@ class DisplayConnection(StubClientConnection):
     def get_info(self) -> dict[str, Any]:
         info = {
             "vertical-refresh": self.vrefresh,
-            "desktop_size": self.desktop_size or "",
+            "desktop_size": self.desktop_size if self.desktop_size != (0, 0) else "",
             "desktops": self.desktops,
             "desktop_names": self.desktop_names,
             "opengl": self.opengl_props,
@@ -66,9 +66,9 @@ class DisplayConnection(StubClientConnection):
             "screens": len(self.screen_sizes),
             "screen": get_screen_info(self.screen_sizes),
         }
-        if self.desktop_mode_size:
+        if self.desktop_mode_size != (0, 0):
             info["desktop_mode_size"] = self.desktop_mode_size
-        if self.desktop_size_unscaled:
+        if self.desktop_size_unscaled != (0, 0):
             info["desktop_size"] = {"unscaled": self.desktop_size_unscaled}
         return info
 
@@ -92,11 +92,11 @@ class DisplayConnection(StubClientConnection):
         else:
             self.vrefresh = c.intget("refresh-rate", -1)
         self.desktop_size = c.intpair("desktop_size")
-        if self.desktop_size is not None:
+        if self.desktop_size != (0, 0):
             w, h = self.desktop_size
             if w <= 0 or h <= 0 or w >= 32768 or h >= 32768:
                 log.warn("ignoring invalid desktop dimensions: %sx%s", w, h)
-                self.desktop_size = None
+                self.desktop_size = (0, 0)
         self.desktop_mode_size = c.intpair("desktop_mode_size")
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.desktop_fullscreen = c.boolget("desktop-fullscreen")

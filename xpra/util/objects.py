@@ -214,10 +214,8 @@ class typedict(dict):
             default = {}
         return self.conv_get(k, default, checkdict)
 
-    def intpair(self, k: str, default_value: tuple[int, int] | None = None) -> tuple[int, int] | None:
+    def intpair(self, k: str, default_value: tuple[int, int] = (0, 0)) -> tuple[int, int]:
         v = self.inttupleget(k, default_value)
-        if v is None:
-            return default_value
         if len(v) != 2:
             # "%s is not a pair of numbers: %s" % (k, len(v))
             return default_value

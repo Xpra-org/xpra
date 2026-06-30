@@ -396,7 +396,7 @@ class X11DisplayManager(DisplayManager):
         client_sizes = {}
         for ss in display_clients:
             client_size = ss.desktop_size
-            if client_size:
+            if client_size != (0, 0):
                 w, h = client_size
                 size = "%ix%i" % (w, h)
                 max_w = max(max_w, w)

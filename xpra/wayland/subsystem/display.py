@@ -34,7 +34,7 @@ class WaylandDisplayManager(DisplayManager):
         client_sizes = {}
         for ss in self.get_sources_by_type(DisplayConnection):
             client_size = ss.desktop_size
-            if client_size:
+            if client_size != (0, 0):
                 w, h = client_size
                 max_w = max(max_w, w)
                 max_h = max(max_h, h)

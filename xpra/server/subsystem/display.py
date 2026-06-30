@@ -46,7 +46,7 @@ def get_desktop_size_capability(server_source, root_w: int, root_h: int) -> tupl
         return root_w, root_h
     client_size = server_source.desktop_size
     log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
-    if not client_size:
+    if client_size == (0, 0):
         # client did not specify size, just return what we have
         return root_w, root_h
     client_w, client_h = client_size
@@ -261,7 +261,7 @@ class DisplayManager(StubSubsystem):
     def do_parse_screen_info(self, ss, desktop_size) -> tuple[int, int]:
         log("do_parse_screen_info%s", (ss, desktop_size))
         dw, dh = None, None
-        if desktop_size:
+        if desktop_size != (0, 0):
             try:
                 dw, dh = desktop_size
                 log.info(" client total display size is %sx%s", dw, dh)
@@ -404,10 +404,10 @@ class DisplayManager(StubSubsystem):
             return
         attrs = typedict(packet.get_dict(1))
         desktop_size = attrs.intpair("desktop-size")
-        if desktop_size:
+        if desktop_size != (0, 0):
             ss.desktop_size = desktop_size
         desktop_size_unscaled = attrs.intpair("desktop-size-unscaled")
-        if desktop_size_unscaled:
+        if desktop_size_unscaled != (0, 0):
             ss.desktop_size_unscaled = desktop_size_unscaled
         # vrefresh may be overridden in 'monitors' data:
         vrefresh = attrs.intget("vrefresh")
