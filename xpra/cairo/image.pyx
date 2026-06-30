@@ -259,7 +259,7 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
             else:
                 raise ValueError(f"unhandled pixel format for ARGB32: {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_RGB30:
-            if rgb_format in ("r210"):
+            if rgb_format in ("r210", ):
                 with nogil:
                     simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
             #UNTESTED!
