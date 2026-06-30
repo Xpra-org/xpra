@@ -24,7 +24,7 @@ from xpra.net.common import (
 )
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
-from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID
+from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER
 from xpra.util.thread import is_main_thread
 from xpra.util.version import get_version_info
 from xpra.net.digest import get_salt
@@ -416,7 +416,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
 
     def send_shutdown_server(self) -> None:
         assert self.server_client_shutdown
-        self.send("shutdown-server")
+        self.send(SHUTDOWN_SERVER)
 
     def _process_connection_close(self, packet: Packet) -> None:
         # ie: ("disconnect", "version error", "incompatible version")

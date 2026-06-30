@@ -7,6 +7,7 @@ from typing import Any
 
 from xpra.net.common import Packet
 from xpra.net.constants import ConnectionMessage
+from xpra.net.packet_type import SHUTDOWN_SERVER, EXIT_SERVER
 from xpra.os_util import gi_import
 from xpra.server import ServerExitMode
 from xpra.server.subsystem.stub import StubSubsystem
@@ -41,7 +42,7 @@ class ShutdownServer(StubSubsystem):
             "client-shutdown": self.client_shutdown,
         }
 
-    def _process_exit_server(self, _proto, packet: Packet = Packet("exit-server")) -> None:
+    def _process_exit_server(self, _proto, packet: Packet = Packet(EXIT_SERVER)) -> None:
         reason = packet.get_str(1) if len(packet) > 1 else ""
         self._request_exit(reason)
 
@@ -57,7 +58,7 @@ class ShutdownServer(StubSubsystem):
         self.server.cleanup_all_protocols(reason=reason)
         GLib.timeout_add(500, self.server.clean_quit, ServerExitMode.EXIT)
 
-    def _process_shutdown_server(self, _proto, _packet: Packet = Packet("shutdown-server")) -> None:
+    def _process_shutdown_server(self, _proto, _packet: Packet = Packet(SHUTDOWN_SERVER)) -> None:
         self._request_stop()
 
     def _handle_hello_request_stop(self, _proto, _caps: typedict) -> bool:
@@ -73,4 +74,4 @@ class ShutdownServer(StubSubsystem):
         return True
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("shutdown-server", "exit-server")
+        self.add_packets(SHUTDOWN_SERVER, EXIT_SERVER)

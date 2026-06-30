@@ -13,6 +13,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noerr
+from xpra.net.packet_type import SHUTDOWN_SERVER
 from xpra.util.system import stop_proc
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized, print_nested_dict, bytestostr
@@ -242,7 +243,7 @@ class ProxyServer(ServerCore):
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         # add shutdown handler
-        self._default_packet_handlers["shutdown-server"] = self._process_proxy_shutdown_server
+        self._default_packet_handlers[SHUTDOWN_SERVER] = self._process_proxy_shutdown_server
 
     def get_displays(self) -> dict[str, Any]:
         # override the default implementation to expose ALL displays

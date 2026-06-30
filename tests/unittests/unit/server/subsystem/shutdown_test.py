@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from xpra.net.common import Packet
 from xpra.net.constants import ConnectionMessage
+from xpra.net.packet_type import SHUTDOWN_SERVER, EXIT_SERVER
 from xpra.server import ServerExitMode
 from xpra.server.subsystem.shutdown import ShutdownServer
 from xpra.util.objects import typedict
@@ -41,13 +42,13 @@ class ShutdownTest(unittest.TestCase):
 
     def test_handlers_and_features(self) -> None:
         self.assertEqual(set(self.server.hello_request_handlers), {"exit", "stop"})
-        self.assertEqual(set(self.server.packet_handlers), {"exit-server", "shutdown-server"})
+        self.assertEqual(set(self.server.packet_handlers), {EXIT_SERVER, SHUTDOWN_SERVER})
         self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": self.shutdown.client_shutdown})
 
     def test_exit_request(self) -> None:
         with patch("xpra.server.subsystem.shutdown.GLib.timeout_add",
                    side_effect=lambda _delay, fn, *args: fn(*args)):
-            self.server.packet_handlers["exit-server"][0](None, Packet("exit-server", "restart"))
+            self.server.packet_handlers[EXIT_SERVER][0](None, Packet(EXIT_SERVER, "restart"))
         self.assertEqual(self.server.cleanup_reasons, ["restart"])
         self.assertEqual(self.server.quit_modes, [ServerExitMode.EXIT])
 

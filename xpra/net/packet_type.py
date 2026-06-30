@@ -81,3 +81,6 @@ CONNECTION_CLOSE: Final[str] = "disconnect" if BACKWARDS_COMPATIBLE else "connec
 CONNECTION_LOST: Final[str] = "connection-lost"
 GIBBERISH: Final[str] = "gibberish"
 INVALID: Final[str] = "invalid"
+
+SHUTDOWN_SERVER: Final[str] = "shutdown-server"
+EXIT_SERVER: Final[str] = "exit-server"
