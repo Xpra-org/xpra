@@ -184,7 +184,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixels, int 
             else:
                 raise ValueError(f"unhandled pixel format for ARGB32: {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_RGB30:
-            if rgb_format in ("r210"):
+            if rgb_format in ("r210", ):
                 simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
             #UNTESTED!
             #elif rgb_format in ("BGR48"):
