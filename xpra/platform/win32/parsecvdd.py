@@ -911,6 +911,7 @@ def main(argv: list[str]) -> int:
 
     print("Opening device handle …")
     handle = open_device()
+    assert handle.value is not None
     print(f"  handle       : {handle.value:#x}")
 
     version = vdd_version(handle)

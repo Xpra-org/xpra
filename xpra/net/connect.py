@@ -311,7 +311,8 @@ def display_desc_to_uri(display_desc: dict[str, Any]) -> str:
             raise InitException("missing host from display parameters")
         uri += host
         port = display_desc.get("port")
-        if port and port != DEFAULT_PORTS.get(dtype):
+        if port and port != DEFAULT_PORTS.get(dtype, 0):
+            assert port is not None
             uri += f":{port:d}"
         elif dtype == "vsock":
             cid, iport = display_desc["vsock"]
