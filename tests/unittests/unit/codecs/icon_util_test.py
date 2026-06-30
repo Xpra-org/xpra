@@ -26,7 +26,7 @@ class TestIconUtil(unittest.TestCase):
         finally:
             os.unlink(filename)
 
-    def test_load_icon_normalizes_jpeg_to_jpg(self):
+    def test_load_icon_preserves_jpeg_type(self):
         from xpra.codecs.icon_util import load_icon_from_file
 
         with tempfile.NamedTemporaryFile(suffix=".jpeg", delete=False) as f:
@@ -37,7 +37,7 @@ class TestIconUtil(unittest.TestCase):
         finally:
             os.unlink(filename)
 
-        self.assertEqual(icon, (b"\xff\xd8\xff" + b"\x00" * 40, "jpg"))
+        self.assertEqual(icon, (b"\xff\xd8\xff" + b"\x00" * 40, "jpeg"))
 
 
 def main():
