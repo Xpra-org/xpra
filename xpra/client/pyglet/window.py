@@ -126,7 +126,7 @@ class ClientWindow(Window):
         })
 
     def draw(self, x: int, y: int, w: int, h: int, coding: str, data, stride: int) -> None:
-        if coding in ("png", "jpg", "webp"):
+        if coding in ("png", "jpeg", "webp"):
             from PIL import Image
             from io import BytesIO
             img = Image.open(BytesIO(data))

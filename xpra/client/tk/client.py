@@ -92,7 +92,7 @@ class XpraTkClient:
             "windows": True,
             "keyboard": True,
             "pointer": {"double_click": {}},
-            "encodings": ("png", "jpg", "webp"),    # "rgb32", "rgb24"
+            "encodings": ("png", "jpeg", "webp"),    # "rgb32", "rgb24"
             "display": {"refresh-rate": 50},
         }
         if BACKWARDS_COMPATIBLE:

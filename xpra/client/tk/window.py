@@ -168,7 +168,7 @@ class ClientWindow(Toplevel):
         })
 
     def draw(self, x: int, y: int, _w: int, _h: int, coding: str, data, _stride: int) -> None:
-        if coding not in ("png", "jpg", "webp"):
+        if coding not in ("png", "jpeg", "webp"):
             raise ValueError(f"unsupported format {coding!r}")
         img = Image.open(BytesIO(data))
         self.backing.paste(img, (x, y))
