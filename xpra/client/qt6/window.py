@@ -217,7 +217,7 @@ class ClientWindow(QMainWindow):
             })
 
     def draw(self, x, y, w, h, coding, data, stride) -> None:
-        if coding in ("png", "jpg", "webp"):
+        if coding in ("png", "jpeg", "webp"):
             from PIL import Image
             from io import BytesIO
             img = Image.open(BytesIO(data))

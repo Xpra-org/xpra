@@ -83,7 +83,7 @@ class Qt6Client:
             "windows": True,
             "keyboard": True,
             "pointer": {"double_click": {}},
-            "encodings": ("rgb32", "rgb24", "png", "jpg", "webp"),
+            "encodings": ("rgb32", "rgb24", "png", "jpeg", "webp"),
             "display": {"refresh-rate": 50},
         }
         if BACKWARDS_COMPATIBLE:
