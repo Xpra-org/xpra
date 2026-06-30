@@ -5,6 +5,7 @@
 
 import os
 import tempfile
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import TypeAlias
 
@@ -21,7 +22,7 @@ AUTO_DELETE_DELAY = envint("XPRA_AUTO_DELETE_DELAY", 60)
 NID: TypeAlias = int | NotificationID
 
 
-class NotifierBase:
+class NotifierBase(ABC):
 
     def __init__(self, closed_cb=noop, action_cb=noop):
         # posix only - but degrades ok on non-posix:
@@ -37,11 +38,12 @@ class NotifierBase:
             for nid in tf:
                 self.clean_notification(nid)
 
+    @abstractmethod
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout: int,
+                    summary: str, body: str, actions: Sequence[str], hints: dict, expire_timeout: int,
                     icon: IconData | None) -> None:
-        raise NotImplementedError()
+        pass
 
     def get_icon_string(self, nid: NID, app_icon: str, icon: IconData | None, hints: dict) -> str:
         app_icon_data: IconData | None = hints.pop("app-icon-data", None)

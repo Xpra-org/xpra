@@ -30,7 +30,7 @@ class PyNotifyNotifier(NotifierBase):
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout: int,
+                    summary: str, body: str, actions: Sequence[str], hints: dict, expire_timeout: int,
                     icon: IconData | None) -> None:
         if not self.dbus_check(dbus_id):
             return
@@ -38,7 +38,7 @@ class PyNotifyNotifier(NotifierBase):
         n = notify2.Notification(summary, body, icon_string)
         PyNotifyNotifier.CACHE[int(nid)] = n
         n.set_urgency(notify2.URGENCY_LOW)
-        n.set_timeout(timeout)
+        n.set_timeout(expire_timeout)
         n.show()
         if icon_string:
             def notification_closed(*_args):

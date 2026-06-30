@@ -57,7 +57,7 @@ class UN_Notifier(NotifierBase):
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
                     summary: str, body: str,
-                    actions: Sequence[str], hints: dict, expire_timeout: int, icon: IconData | None):
+                    actions: Sequence[str], hints: dict, expire_timeout: int, icon: IconData | None) -> None:
         GTK_NOTIFIER = envbool("XPRA_OSX_GTK_NOTIFIER", True)
         if actions and GTK_NOTIFIER:
             # use GTK notifier when action buttons are needed:

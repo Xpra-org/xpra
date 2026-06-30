@@ -71,7 +71,7 @@ class DBUSNotifier(NotifierBase):
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout: int,
+                    summary: str, body: str, actions: Sequence[str], hints: dict, expire_timeout: int,
                     icon: IconData | None) -> None:
         if not self.dbus_check(dbus_id):
             return
@@ -91,7 +91,7 @@ class DBUSNotifier(NotifierBase):
                     app_str = app_name or "Xpra"
             self.last_notification = (
                 dbus_id, tray, nid, app_name, replaces_nid,
-                app_icon, summary, body, actions, hints, timeout, icon,
+                app_icon, summary, body, actions, hints, expire_timeout, icon,
             )
 
             def NotifyReply(notification_id) -> None:
@@ -104,8 +104,8 @@ class DBUSNotifier(NotifierBase):
 
             dbus_hints = self.to_dbus_hints(hints)
             log("calling %s%s", self.dbusnotify.Notify,
-                (app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout))
-            self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout,
+                (app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout))
+            self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout,
                                    reply_handler=NotifyReply,
                                    error_handler=NotifyError)
 

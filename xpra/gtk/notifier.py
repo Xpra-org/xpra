@@ -112,9 +112,10 @@ class GTKNotifier(NotifierBase):
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout,
+                    summary: str, body: str, actions: Sequence[str], hints: dict, expire_timeout: int,
                     icon: IconData | None) -> None:
-        GLib.idle_add(self.new_popup, int(nid), summary, body, actions, icon, timeout, 0 < timeout <= 600)
+        GLib.idle_add(self.new_popup, int(nid), summary, body, actions, icon, expire_timeout,
+                      0 < expire_timeout <= 600)
 
     def new_popup(self, nid: int, summary: str, body: str, actions: Sequence[str],
                   icon, timeout=10 * 1000, show_timeout=False) -> bool:
