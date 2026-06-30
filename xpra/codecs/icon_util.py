@@ -16,6 +16,7 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envint, envbool, first_time, SilenceWarningsContext
 from xpra.os_util import gi_import
 from xpra.util.io import load_binary_file
+from xpra.codecs.image_type import get_image_type
 from xpra.log import Logger
 
 log = Logger("menu")
@@ -74,7 +75,9 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
     log("load_icon_from_file(%s, %i)", filename, max_size)
     if filename.endswith("xpm"):
         if pngdata := load_xpm_as_png(filename):
-            return pngdata, "png"
+            icon_type = get_image_type(pngdata)
+            if icon_type == "png":
+                return pngdata, "png"
         return ()
     icondata = load_binary_file(filename)
     if not icondata:
@@ -90,7 +93,10 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
     log("got icon data from '%s': %i bytes", filename, len(icondata))
     if 0 < max_size < len(icondata) and first_time(f"icon-size-warning-{filename}"):
         large_icons.append((filename, len(icondata)))
-    return icondata, os.path.splitext(filename)[1].lstrip(".")
+    icon_type = get_image_type(icondata)
+    if icon_type in ("png", "webp", "svg", "jpeg"):
+        return icondata, icon_type
+    return ()
 
 
 def svg_to_png(filename: str, icondata, w: int = 128, h: int = 128) -> bytes:

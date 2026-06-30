@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import os
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -12,6 +14,30 @@ class TestIconUtil(unittest.TestCase):
             icon = load_icon_from_file("/tmp/test-icon.xpm")
 
         self.assertEqual(icon, ())
+
+    def test_load_icon_rejects_unsupported_type(self):
+        from xpra.codecs.icon_util import load_icon_from_file
+
+        with tempfile.NamedTemporaryFile(suffix=".tiff", delete=False) as f:
+            f.write(b"II*\x00" + b"\x00" * 40)
+            filename = f.name
+        try:
+            self.assertEqual(load_icon_from_file(filename), ())
+        finally:
+            os.unlink(filename)
+
+    def test_load_icon_normalizes_jpeg_to_jpg(self):
+        from xpra.codecs.icon_util import load_icon_from_file
+
+        with tempfile.NamedTemporaryFile(suffix=".jpeg", delete=False) as f:
+            f.write(b"\xff\xd8\xff" + b"\x00" * 40)
+            filename = f.name
+        try:
+            icon = load_icon_from_file(filename)
+        finally:
+            os.unlink(filename)
+
+        self.assertEqual(icon, (b"\xff\xd8\xff" + b"\x00" * 40, "jpg"))
 
 
 def main():
