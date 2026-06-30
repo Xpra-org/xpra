@@ -28,6 +28,7 @@ xpra (5.1.6-1) UNRELEASED; urgency=low
     use a clean environment for launching clients from the session GUI
     do skip query string overrides, as we claim to do
     RandR parsing error on cloned outputs
+    cairo backend fails to paint in 30 bit per pixel mode
   * Minor:
     openh264 codecs could crash
     window size-constraints not honoured with OpenGL backend
@@ -42,6 +43,9 @@ xpra (5.1.6-1) UNRELEASED; urgency=low
     socket directory double-quoted in runner script
     no need to try to use invalid displayfd values
     ssh proxied connections used the wrong config
+    keyboard errors with X11 servers missing the Xkb extension
+    workarea calculations could fail
+    `monitor` mode is desktop-like for clients
   * Network:
     closed connections can shortcut out
     incomplete thread cleanup
@@ -70,8 +74,9 @@ xpra (5.1.6-1) UNRELEASED; urgency=low
     hide bandwidth menu when the feature is not available
     message shows incorrect mmap limit
     remove legacy unused file
+    remove bogus statements
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 28 Jun 2026 18:27:33 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 30 Jun 2026 23:16:35 +0700
 
 xpra (5.1.5-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

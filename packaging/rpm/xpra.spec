@@ -827,7 +827,7 @@ fi
 
 
 %changelog
-* Sun Jun 28 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
+* Tue Jun 30 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
 - Platforms, build and packaging:
    honour pkgconfig file for Gtk build paths + fixup
    MSWindows clients unstable resizing of headerbar windows
@@ -857,6 +857,7 @@ fi
    use a clean environment for launching clients from the session GUI
    do skip query string overrides, as we claim to do
    RandR parsing error on cloned outputs
+   cairo backend fails to paint in 30 bit per pixel mode
 - Minor:
    openh264 codecs could crash
    window size-constraints not honoured with OpenGL backend
@@ -871,6 +872,9 @@ fi
    socket directory double-quoted in runner script
    no need to try to use invalid displayfd values
    ssh proxied connections used the wrong config
+   keyboard errors with X11 servers missing the Xkb extension
+   workarea calculations could fail
+   `monitor` mode is desktop-like for clients
 - Network:
    closed connections can shortcut out
    incomplete thread cleanup
@@ -899,6 +903,7 @@ fi
    hide bandwidth menu when the feature is not available
    message shows incorrect mmap limit
    remove legacy unused file
+   remove bogus statements
 
 * Sun May 03 2026 Antoine Martin <antoine@xpra.org> 5.1.5-10
 - Platforms, build and packaging:

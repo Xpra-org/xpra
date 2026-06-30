@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.6] 2026-06-28
+## [5.1.6] 2026-06-30
 * Platforms, build and packaging:
     * [honour pkgconfig file for Gtk build paths](https://github.com/Xpra-org/xpra/commit/cbf056e6374abc873bcdf167710315a9d1393740) + [fixup](https://github.com/Xpra-org/xpra/commit/a36e8331966962aad26cc1cf375734ca97f2ca63)
     * [MSWindows clients unstable resizing of headerbar windows](https://github.com/Xpra-org/xpra/commit/dad05c198995329cc2fd4b9eb61777d7039ebc5f)
@@ -30,6 +30,7 @@
     * [use a clean environment for launching clients from the session GUI](https://github.com/Xpra-org/xpra/commit/1094ffb6c0ef0252ccba08136adbd856b68ebe8d)
     * [do skip query string overrides, as we claim to do](https://github.com/Xpra-org/xpra/commit/e670505f3bb12d38a0af81d397661f811049ae2b)
     * [RandR parsing error on cloned outputs](https://github.com/Xpra-org/xpra/commit/3f36d58e1547e5f60b1763aa54ab9cb85a2e33e2)
+    * [cairo backend fails to paint in 30 bit per pixel mode](https://github.com/Xpra-org/xpra/commit/0dcbbb9bff86106f60ac1e6ecc26889a20d69c2b)
 * Minor:
     * [openh264 codecs could crash](https://github.com/Xpra-org/xpra/commit/c6505300ee7d80d80d7c0210f838a1eeaf19c653)
     * [window size-constraints not honoured with OpenGL backend](https://github.com/Xpra-org/xpra/commit/1df4107b4598d6b21874b625fb01033a22259a52)
@@ -44,6 +45,9 @@
     * [socket directory double-quoted in runner script](https://github.com/Xpra-org/xpra/commit/1c9bb8b96df5c59e8cceda68bfa231a630d2082b)
     * [no need to try to use invalid displayfd values](https://github.com/Xpra-org/xpra/commit/020646ea5bfc8acc1b25f462fec1b0df3f8610d4)
     * [ssh proxied connections used the wrong config](https://github.com/Xpra-org/xpra/commit/f76f0f3772906e04a945c7dc07ce03a03ece7f8e)
+    * [keyboard errors with X11 servers missing the Xkb extension](https://github.com/Xpra-org/xpra/commit/325765968bc8b5de272d940dcb904663e143cc7f)
+    * [workarea calculations could fail](https://github.com/Xpra-org/xpra/commit/34d2fb8f7fb2d68ba7493e387c48da76ca948677)
+    * [`monitor` mode is desktop-like for clients](https://github.com/Xpra-org/xpra/commit/e65b3b540588e3b4db397736771142cfd715b678)
 * Network:
     * [closed connections can shortcut out](https://github.com/Xpra-org/xpra/commit/4b07127c5ce2707f679f45f44ea161a906f13fa2)
     * [incomplete thread cleanup](https://github.com/Xpra-org/xpra/commit/2e0f563ff8242d5a9d0d195f491b4c3118b9f1bc)
@@ -72,6 +76,7 @@
     * [hide bandwidth menu when the feature is not available](https://github.com/Xpra-org/xpra/commit/71ff7fea83b9252abf9fc777de61ee69bcf52ec5)
     * [message shows incorrect mmap limit](https://github.com/Xpra-org/xpra/commit/66090bcfb9b05a7a948d5b674cc8ceb36ec4f36b)
     * [remove legacy unused file](https://github.com/Xpra-org/xpra/commit/4b77dab1667ba0101c3c31083560e4cf2a6d952d)
+    * [remove bogus statements](https://github.com/Xpra-org/xpra/commit/043ede137b9fe026b61148ff0f0727a179ac21f9)
 
 ## [5.1.5] 2026-05-03
 * Platforms, build and packaging:
