@@ -131,6 +131,7 @@ class SharingServer(StubSubsystem):
             if ss == source or uuid and ss.uuid == uuid:
                 log("same source: %s", ss)
                 continue
+            # noinspection PySimplifyBooleanCheck
             if self.sharing is True:
                 log("sharing all")
                 share_count += 1

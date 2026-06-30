@@ -5,8 +5,7 @@
 
 #cython: boundscheck=False, wraparound=False, initializedcheck=False, cdivision=True, always_allow_keywords=False
 
-from typing import Any, Dict, Tuple
-from collections.abc import Sequence
+from typing import Dict
 
 # libaom 3.3 as found in Ubuntu 22.04 doesn't define `AOM_IMG_FMT_NV12`,
 # so we just duplicate the definition here instead:

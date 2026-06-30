@@ -239,7 +239,7 @@ cdef extern from "aom/aom_codec.h":
     const char *aom_codec_error_detail(const aom_codec_ctx_t *ctx)
 
     aom_codec_err_t aom_codec_destroy(aom_codec_ctx_t *ctx)
-    aom_codec_caps_t aom_codec_get_caps(aom_codec_iface_t *iface);
+    aom_codec_caps_t aom_codec_get_caps(aom_codec_iface_t *iface)
 
     # aom_codec_err_t aom_codec_control(aom_codec_ctx_t *ctx, int ctrl_id, ...)
     aom_codec_err_t aom_codec_set_option(aom_codec_ctx_t *ctx, const char *name, const char *value)

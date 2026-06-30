@@ -118,12 +118,12 @@ TJPF_VAL = reverse_dict(TJPF_STR)
 
 
 def get_version() -> Tuple[int, int]:
-    return (1, 0)
+    return 1, 0
 
 
 def get_encodings() -> Sequence[str]:
     if JPEGA:
-        return ("jpeg", "jpega")
+        return "jpeg", "jpega"
     return ("jpeg", )
 
 

@@ -96,7 +96,7 @@ def get_type() -> str:
 
 
 def get_version() -> Tuple[int, int]:
-    return (4, 2)
+    return 4, 2
 
 
 def get_info() -> Dict[str, Any]:

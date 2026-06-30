@@ -40,7 +40,7 @@ cdef class X11ClassHintBindingsInstance(X11CoreBindingsInstance):
         if classhints.res_class!=NULL:
             _class = classhints.res_class[:]
         XFree(classhints)
-        return (_name, _class)
+        return _name, _class
 
 
 cdef X11ClassHintBindingsInstance singleton = None

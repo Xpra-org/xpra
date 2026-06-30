@@ -228,8 +228,8 @@ cdef extern from "X11/extensions/XInput2.h":
     XIDeviceInfo* XIQueryDevice(Display *display, int deviceid, int *ndevices_return)
     void XIFreeDeviceInfo(XIDeviceInfo *info)
     Atom *XIListProperties(Display *display, int deviceid, int *num_props_return)
-    Status XIGetProperty(Display *display, int deviceid, Atom property, long offset, long length,
-                         Bool delete_property, Atom type, Atom *type_return,
+    Status XIGetProperty(Display *display, int deviceid, Atom prop, long offset, long length,
+                         Bool delete_property, Atom prop_type, Atom *type_return,
                          int *format_return, unsigned long *num_items_return,
                          unsigned long *bytes_after_return, unsigned char **data)
 

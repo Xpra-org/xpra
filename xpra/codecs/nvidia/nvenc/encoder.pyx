@@ -2046,7 +2046,7 @@ cdef class Encoder:
 _init_message = False
 def init_module(options: dict) -> None:
     from xpra.codecs.nvidia.util import has_nvidia_hardware
-    if has_nvidia_hardware() is False:
+    if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")
     log("nvenc.init_module(%s)", options)
     min_version = 10

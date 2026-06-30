@@ -76,11 +76,11 @@ def get_cuda_version() -> Tuple[int, int, int]:
     errcheck(r, "nvjpegGetProperty MINOR_VERSION")
     r = nvjpegGetProperty(PATCH_LEVEL, &patch_level)
     errcheck(r, "nvjpegGetProperty PATCH_LEVEL")
-    return (major_version, minor_version, patch_level)
+    return major_version, minor_version, patch_level
 
 
 def get_version() -> Tuple[int, int, int, int]:
-    return (NVJPEG_VER_MAJOR, NVJPEG_VER_MINOR, NVJPEG_VER_PATCH, NVJPEG_VER_BUILD)
+    return NVJPEG_VER_MAJOR, NVJPEG_VER_MINOR, NVJPEG_VER_PATCH, NVJPEG_VER_BUILD
 
 
 ERR_STR: Dict[int, str] = {

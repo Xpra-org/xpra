@@ -54,7 +54,7 @@ cdef extern from "nvjpeg.h":
     nvjpegStatus_t nvjpegEncoderStateCreate(
         nvjpegHandle_t handle,
         nvjpegEncoderState_t *encoder_state,
-        cudaStream_t stream);
+        cudaStream_t stream)
     nvjpegStatus_t nvjpegEncoderStateDestroy(nvjpegEncoderState_t encoder_state)
     ctypedef struct nvjpegEncoderParams:
         pass
@@ -123,7 +123,7 @@ def get_type() -> str:
 
 
 def get_encodings() -> Sequence[str]:
-    return ("jpeg", "jpega")
+    return "jpeg", "jpega"
 
 
 def get_info() -> Dict[str, Any]:
@@ -133,7 +133,7 @@ def get_info() -> Dict[str, Any]:
 def init_module(options: dict) -> None:
     log("nvjpeg.encoder.init_module(%s) version=%s", options, get_version())
     from xpra.codecs.nvidia.util import has_nvidia_hardware
-    if has_nvidia_hardware() is False:
+    if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")
 
 

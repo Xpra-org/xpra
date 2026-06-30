@@ -69,7 +69,7 @@ def get_version() -> Tuple[int, int, int]:
     cdef unsigned int major = bv >> 24
     cdef unsigned int minor = (bv >> 12) & 0xFFF
     cdef unsigned int patch = bv & 0xFFF
-    return (major, minor, patch)
+    return major, minor, patch
 
 
 def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE) -> bytes:

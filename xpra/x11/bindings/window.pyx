@@ -267,7 +267,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
         if status==0:
             return 0
-        return attrs.your_event_mask;
+        return attrs.your_event_mask
 
     def setEventMask(self, Window xwindow, int mask) -> None:
         self.context_check("setEventMask")
@@ -310,7 +310,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &geom_attrs)
         if status==0:
             return None
-        return (geom_attrs.x, geom_attrs.y, geom_attrs.width, geom_attrs.height, geom_attrs.border_width)
+        return geom_attrs.x, geom_attrs.y, geom_attrs.width, geom_attrs.height, geom_attrs.border_width
 
     def get_depth(self, Drawable d) -> int:
         self.context_check("get_depth")
@@ -766,7 +766,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XDeleteProperty(self.display, xwindow, self.str_to_atom(property))
 
     def XChangeProperty(self, Window xwindow, property, dtype, int dformat, data) -> None:
-        "Set a property on a window."
+        """ Set a property on a window. """
         self.context_check("XChangeProperty")
         if dformat not in (8, 16, 32):
             raise ValueError(f"invalid format for property {property}: {dformat}")

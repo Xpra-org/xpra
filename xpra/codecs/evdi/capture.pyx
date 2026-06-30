@@ -153,7 +153,7 @@ MODE_STR = {
 def get_version() -> Sequence[int]:
     cdef evdi_lib_version version
     evdi_get_lib_version(&version)
-    return (version.version_major, version.version_minor, version.version_patchlevel)
+    return version.version_major, version.version_minor, version.version_patchlevel
 
 
 cdef void evdi_logging_function(void *user_data, const char *fmt, ...) noexcept:

@@ -59,7 +59,7 @@ def get_type() -> str:
 
 
 def get_encodings() -> Sequence[str]:
-    return ("jpeg", "jpega")
+    return "jpeg", "jpega"
 
 
 def get_info() -> Dict[str, Any]:
@@ -72,7 +72,7 @@ def get_info() -> Dict[str, Any]:
 def init_module(options: dict) -> None:
     log("nvjpeg.decoder.init_module(%s) version=%s", options, get_version())
     from xpra.codecs.nvidia.util import has_nvidia_hardware
-    if has_nvidia_hardware() is False:
+    if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")
 
 

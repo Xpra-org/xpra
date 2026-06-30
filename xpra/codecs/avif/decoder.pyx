@@ -55,7 +55,7 @@ AVIF_RANGE: Dict[int, str] = {
 
 
 def get_version() -> Tuple[int, int, int]:
-    return (AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH)
+    return AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH
 
 
 def get_info() -> Dict:

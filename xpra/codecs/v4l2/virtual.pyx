@@ -274,7 +274,7 @@ def query_video_device(device="/dev/video0") -> Dict[str, Any]:
 
 
 def get_version() -> Sequence[int]:
-    return (1, 0)
+    return 1, 0
 
 
 def get_type() -> str:

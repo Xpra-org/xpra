@@ -42,5 +42,5 @@ def get_parent_pid(int pid) -> cython.ulong:
         if readproc(pt_ptr, &proc_info) and proc_info.ppid > 0:
             return proc_info.ppid
     finally:
-        closeproc(pt_ptr);
+        closeproc(pt_ptr)
     return 0

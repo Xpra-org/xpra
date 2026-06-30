@@ -466,7 +466,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             keycode_array = []
             for i in range(8 * xmodmap.max_keypermod):
                 keycode_array.append(xmodmap.modifiermap[i])
-            return (xmodmap.max_keypermod, keycode_array)
+            return xmodmap.max_keypermod, keycode_array
         finally:
             if xmodmap!=NULL:
                 XFreeModifiermap(xmodmap)
@@ -783,7 +783,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XFreeModifiermap(keymap)
         self.set_work_keymap(NULL)
         XFree(keyboard_map)
-        return (keysyms_per_keycode, mappings)
+        return keysyms_per_keycode, mappings
 
     cdef Dict _get_modifier_mappings(self):
         """
@@ -803,7 +803,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             for keycode in keycodes:
                 keysym = 0
                 index = 0
-                while (keysym==0 and index<keysyms_per_keycode):
+                while keysym==0 and index < keysyms_per_keycode:
                     keysym = XkbKeycodeToKeysym(self.display, keycode, index//4, index%4)
                     index += 1
                 if keysym==0:
@@ -991,7 +991,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef unsigned int interval = 0
         if not XkbGetAutoRepeatRate(self.display, deviceSpec, &delay, &interval):
             return None
-        return (delay, interval)
+        return delay, interval
 
     def set_key_repeat_rate(self, delay: int, interval: int) -> bool:
         self.context_check("set_key_repeat_rate")

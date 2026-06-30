@@ -390,7 +390,7 @@ COLORSPACES: Dict[str, str] = {
 def get_version() -> Tuple[int, int, int]:
     cdef OpenH264Version version
     WelsGetCodecVersionEx(&version)
-    return (version.uMajor, version.uMinor, version.uRevision)
+    return version.uMajor, version.uMinor, version.uRevision
 
 
 def get_type() -> str:

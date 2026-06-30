@@ -162,7 +162,7 @@ cdef class Output(ListenerObject):
         super().__init__(N_LISTENERS)
 
     def __repr__(self):
-        return "Output(%s)" % (self.name)
+        return "Output(%s)" % self.name
 
     cdef void add_main_listeners(self):
         self.add_listener(L_OUTPUT_FRAME, &self.wlr_output.events.frame)

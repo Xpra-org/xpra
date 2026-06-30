@@ -190,7 +190,7 @@ cdef class XFixesBindingsInstance(X11CoreBindingsInstance):
                 a = (argb >> 24)   & 0xff
                 r = (argb >> 16)   & 0xff
                 g = (argb >> 8)    & 0xff
-                b = (argb)         & 0xff
+                b = argb           & 0xff
                 pixels[i*4]     = r
                 pixels[i*4+1]   = g
                 pixels[i*4+2]   = b

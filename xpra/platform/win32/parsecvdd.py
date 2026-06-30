@@ -404,7 +404,7 @@ def query_device_status() -> DeviceStatus:
             )
             if cr != CR_SUCCESS:
                 status = DeviceStatus.NOT_INSTALLED
-            elif (dev_status.value & (DN_DRIVER_LOADED | DN_STARTED)):
+            elif dev_status.value & (DN_DRIVER_LOADED | DN_STARTED):
                 status = DeviceStatus.OK
             elif dev_status.value & DN_HAS_PROBLEM:
                 p = problem_num.value

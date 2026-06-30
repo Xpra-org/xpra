@@ -261,7 +261,7 @@ cdef extern from "dav1d/dav1d.h":
 
 
 def get_version() -> Tuple[int, int, int]:
-    return (DAV1D_API_VERSION_MAJOR, DAV1D_API_VERSION_MINOR, DAV1D_API_VERSION_PATCH)
+    return DAV1D_API_VERSION_MAJOR, DAV1D_API_VERSION_MINOR, DAV1D_API_VERSION_PATCH
 
 
 def get_type() -> str:

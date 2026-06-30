@@ -141,7 +141,7 @@ cdef class rectangle:
         return self.subtract(rect.x, rect.y, rect.width, rect.height)
 
     def get_geometry(self) -> tuple[int, int, int, int]:
-        return (self.x, self.y, self.width, self.height)
+        return self.x, self.y, self.width, self.height
 
     def clone(self):
         return rectangle(self.x, self.y, self.width, self.height)

@@ -426,7 +426,7 @@ cdef inline object decode_big_number(char *data, unsigned int *pos, long long da
     pos[0] += 1
     cdef int x = 18
     check_pos(data, pos[0]+x, data_length)
-    while (data[pos[0]+x] != CHR_TERM):
+    while data[pos[0]+x] != CHR_TERM:
         x += 1
         if x >= MAX_INT_LENGTH:
             raise ValueError(f"Number is longer than {MAX_INT_LENGTH} characters")
@@ -468,7 +468,7 @@ cdef inline object decode_fixed_str(char *data, unsigned int *pos, long long dat
 cdef inline object decode_str(char *data, unsigned int *pos, long long data_length):
     cdef unsigned int x = 1
     check_pos(data, pos[0]+x, data_length)
-    while (data[pos[0]+x] not in (58, 47)):
+    while data[pos[0]+x] not in (58, 47):
         x += 1
         check_pos(data, pos[0]+x, data_length)
     cdef int size = int(data[pos[0]:pos[0]+x])

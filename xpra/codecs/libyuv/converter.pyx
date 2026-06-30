@@ -285,7 +285,7 @@ def get_type() -> str:
 
 
 def get_version() -> Tuple[int, int]:
-    return (1, 0)
+    return 1, 0
 
 
 def has_argb_to_j444() -> bool:

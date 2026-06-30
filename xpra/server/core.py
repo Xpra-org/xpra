@@ -496,6 +496,7 @@ class ServerCore(GLibServer):
         www_dir = self.parse_html_option(opts)
         self.init_www_dir(www_dir)
 
+    # noinspection PySimplifyBooleanCheck
     def parse_html_option(self, opts) -> str:
         # opts.html can contain a boolean, "auto" or the path to the webroot
         www_dir = ""

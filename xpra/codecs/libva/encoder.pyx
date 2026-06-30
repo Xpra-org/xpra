@@ -124,7 +124,7 @@ def cleanup_module() -> None:
 
 
 def get_version() -> Tuple[int, int]:
-    return (1, 0)
+    return 1, 0
 
 
 def get_type() -> str:

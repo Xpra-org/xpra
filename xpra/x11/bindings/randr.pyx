@@ -593,11 +593,11 @@ cdef Tuple query_version(Display *display):
     cdef int r = XRRQueryExtension(display, &event_base, &ignored)
     if not r:
         log(f"no XRandR!")
-        return (0, 0)
+        return 0, 0
     cdef int major = 0, minor = 0
     if not XRRQueryVersion(display, &major, &minor):
         log.warn("Warning: XRandR version check failed")
-        return (0, 0)
+        return 0, 0
     log(f"found XRandR extension version {major}.{minor} with event_base={event_base}")
     return major, minor
 

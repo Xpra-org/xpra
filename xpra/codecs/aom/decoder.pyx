@@ -70,7 +70,7 @@ cdef int check(r: aom_codec_err_t) except -1:
 
 def get_version() -> Tuple[int, int, int]:
     cdef int version = aom_codec_version()
-    return (version >> 16, (version >> 8) & 0xFF, version & 0xFF)
+    return version >> 16, (version >> 8) & 0xFF, version & 0xFF
 
 
 def get_type() -> str:

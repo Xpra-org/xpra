@@ -97,7 +97,7 @@ CODEC_TYPES: Dict[str, CMVideoCodecType] = {
 
 
 def get_version() -> Tuple[int, int]:
-    return (1, 0)
+    return 1, 0
 
 
 def get_type() -> str:
@@ -113,7 +113,7 @@ def get_info() -> Dict[str, Any]:
 
 
 def get_encodings() -> Sequence[str]:
-    return ("h264", "h265")
+    return "h264", "h265"
 
 
 MAX_WIDTH, MAX_HEIGHT = (4096, 4096)
