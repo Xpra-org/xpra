@@ -7,6 +7,7 @@
 import unittest
 from unittest.mock import MagicMock
 
+from xpra.server.auth import get_auth_modules
 from unit.server.subsystem.servermixintest_util import FakeServerBase
 
 
@@ -40,40 +41,34 @@ def make_server():
 class TestGetAuthModules(unittest.TestCase):
 
     def test_empty_list(self):
-        s = make_server()
-        result = s.get_auth_modules("tcp", [])
+        result = get_auth_modules("tcp", [])
         assert result == ()
 
     def test_none_auth(self):
-        s = make_server()
-        result = s.get_auth_modules("tcp", ["none"])
+        result = get_auth_modules("tcp", ["none"])
         assert len(result) == 1
         name, _, cls, opts = result[0]
         assert "none" in name.lower()
 
     def test_allow_auth(self):
-        s = make_server()
-        result = s.get_auth_modules("tcp", ["allow"])
+        result = get_auth_modules("tcp", ["allow"])
         assert len(result) == 1
         name, _, cls, opts = result[0]
         assert "allow" in name.lower()
 
     def test_reject_auth(self):
-        s = make_server()
-        result = s.get_auth_modules("tcp", ["reject"])
+        result = get_auth_modules("tcp", ["reject"])
         assert len(result) == 1
         name, _, cls, opts = result[0]
         assert "reject" in name.lower()
 
     def test_multiple_auth_modules(self):
-        s = make_server()
-        result = s.get_auth_modules("tcp", ["none", "allow"])
+        result = get_auth_modules("tcp", ["none", "allow"])
         assert len(result) == 2
 
     def test_invalid_module_raises(self):
-        s = make_server()
         with self.assertRaises(Exception):
-            s.get_auth_modules("tcp", ["does-not-exist-xpra-test-module"])
+            get_auth_modules("tcp", ["does-not-exist-xpra-test-module"])
 
 
 class TestMakeAuthenticators(unittest.TestCase):
@@ -90,7 +85,7 @@ class TestMakeAuthenticators(unittest.TestCase):
     def test_none_auth(self):
         s = make_server()
         # pre-populate auth_classes as init_auth would
-        s.auth_classes["tcp"] = s.get_auth_modules("tcp", ["none"])
+        s.auth_classes["tcp"] = get_auth_modules("tcp", ["none"])
         conn = self._make_conn("tcp")
         auths = s.make_authenticators("tcp", {}, conn)
         assert len(auths) == 1
@@ -98,7 +93,7 @@ class TestMakeAuthenticators(unittest.TestCase):
 
     def test_allow_auth(self):
         s = make_server()
-        s.auth_classes["tcp"] = s.get_auth_modules("tcp", ["allow"])
+        s.auth_classes["tcp"] = get_auth_modules("tcp", ["allow"])
         conn = self._make_conn("tcp")
         auths = s.make_authenticators("tcp", {}, conn)
         assert len(auths) == 1
@@ -114,7 +109,7 @@ class TestMakeAuthenticators(unittest.TestCase):
     def test_per_socket_auth_override(self):
         # per-socket auth= in conn.options overrides the global class list
         s = make_server()
-        s.auth_classes["tcp"] = s.get_auth_modules("tcp", ["reject"])
+        s.auth_classes["tcp"] = get_auth_modules("tcp", ["reject"])
         conn = self._make_conn("tcp", auth="none")
         auths = s.make_authenticators("tcp", {}, conn)
         assert len(auths) == 1
@@ -130,7 +125,7 @@ class TestMakeAuthenticators(unittest.TestCase):
         s = make_server()
         conn = self._make_conn("tcp")
         conn.options = {"self": "injected"}
-        s.auth_classes["tcp"] = s.get_auth_modules("tcp", ["none"])
+        s.auth_classes["tcp"] = get_auth_modules("tcp", ["none"])
         with self.assertRaises((ValueError, Exception)):
             s.make_authenticators("tcp", {}, conn)
 

@@ -26,6 +26,12 @@ GLib = gi_import("GLib")
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
 
+def get_auth_modules(socket_type: str, auth_strs: Iterable[str]) -> Sequence[AuthDef]:
+    modules = tuple(get_auth_module(auth_str) for auth_str in auth_strs)
+    log(f"get_auth_modules({socket_type}, {csv(auth_strs)})={modules}")
+    return modules
+
+
 class AuthenticationManager(StubSubsystem):
     """
         Manages authentication for ServerCore.
@@ -57,13 +63,8 @@ class AuthenticationManager(StubSubsystem):
                 opts_value = opts.auth
             else:
                 opts_value = getattr(opts, f"{x}_auth")
-            self.auth_classes[x] = self.get_auth_modules(x, opts_value)
+            self.auth_classes[x] = get_auth_modules(x, opts_value)
         log(f"init_auth(..) auth={self.auth_classes}")
-
-    def get_auth_modules(self, socket_type: str, auth_strs: Iterable[str]) -> Sequence[AuthDef]:
-        modules = tuple(get_auth_module(auth_str) for auth_str in auth_strs)
-        log(f"get_auth_modules({socket_type}, {auth_strs})={modules}")
-        return modules
 
     def make_authenticators(self, socktype: str, remote: dict[str, Any], conn) -> Sequence[Any]:
         log("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
@@ -77,7 +78,7 @@ class AuthenticationManager(StubSubsystem):
             # -> sock_auth = "exec(command=/bin/echo,foo=bar)"
             if not isinstance(sock_auth, (list, tuple)):
                 sock_auth = [sock_auth]
-            auth_classes = self.get_auth_modules(conn.socktype, sock_auth)
+            auth_classes = get_auth_modules(conn.socktype, sock_auth)
         else:
             # use authentication configuration defined for all sockets of this type:
             if socktype not in self.auth_classes:
