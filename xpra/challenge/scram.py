@@ -120,8 +120,9 @@ class Handler(AuthenticationHandler):
             return b""
         try:
             mechanism, stage = self.parse_digest(digest)
-        except ValueError:
-            pass
+        except ValueError as e:
+            log("failed to parse digest %r: %s", digest, e)
+            return b""
         if stage == "client-first":
             return self.handle_client_first(mechanism, prompt)
         if stage == "server-first":
