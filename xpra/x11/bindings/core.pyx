@@ -222,6 +222,7 @@ constants: Dict[str, int] = {
     "FocusChangeMask"   : FocusChangeMask,
     "KeyPressMask"      : KeyPressMask,
     "KeyReleaseMask"    : KeyReleaseMask,
+    "ButtonPressMask"   : ButtonPressMask,
     "ButtonReleaseMask" : ButtonReleaseMask,
     "EnterWindowMask"   : EnterWindowMask,
     "LeaveWindowMask"   : LeaveWindowMask,
