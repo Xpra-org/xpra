@@ -22,6 +22,7 @@
   * [support remote UNC named-pipe URLs](https://github.com/Xpra-org/xpra/issues/1454)
   * [much improved RFB support](https://github.com/Xpra-org/xpra/issues/4933)
 * 🌈 Encodings:
+  * [`zstd` stream compression](https://github.com/Xpra-org/xpra/issues/4946)
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
   * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)
   * [`libva` encoder](https://github.com/Xpra-org/xpra/issues/4628) [and decoder](https://github.com/Xpra-org/xpra/issues/4907)
