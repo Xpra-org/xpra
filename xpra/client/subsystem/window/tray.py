@@ -49,12 +49,14 @@ class WindowTray(StubClientMixin):
     # system tray
     def _process_new_tray(self, packet: Packet) -> None:
         assert self.client_supports_system_tray
-        self._ui_event()
+        self.client._ui_event()
         wid = packet.get_wid()
         w = packet.get_u16(2)
         h = packet.get_u16(3)
-        w = max(1, self.sx(w))
-        h = max(1, self.sy(h))
+        # scaling helpers are owned by the `display` subsystem:
+        display = self.get_subsystem("display")
+        w = max(1, display.sx(w))
+        h = max(1, display.sy(h))
         metadata = typedict()
         if len(packet) >= 5:
             metadata = typedict(packet.get_dict(4))
@@ -90,8 +92,8 @@ class WindowTray(StubClientMixin):
             tray = self.get_window(wid)
             log("tray_click(%s, %s, %s) tray=%s", button, pressed, event_time, tray)
             if tray:
-                x, y = self.get_mouse_position()
-                modifiers = self.get_current_modifiers()
+                x, y = self.client.get_mouse_position()
+                modifiers = self.client.get_current_modifiers()
                 button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
                 log("button_packet=%s", button_packet)
                 self.get_subsystem("pointer").send_positional(*button_packet)
@@ -101,9 +103,10 @@ class WindowTray(StubClientMixin):
             tray = self.get_window(wid)
             log("tray_mouseover(%s, %s) tray=%s", x, y, tray)
             if tray:
-                modifiers = self.get_current_modifiers()
+                modifiers = self.client.get_current_modifiers()
                 device_id = -1
-                self.get_subsystem("pointer").send_mouse_position(device_id, wid, self.cp(x, y), modifiers)
+                cp = self.get_subsystem("display").cp(x, y)
+                self.get_subsystem("pointer").send_mouse_position(device_id, wid, cp, modifiers)
 
         def do_tray_geometry(*args):
             # tell the "ClientTray" where it now lives
@@ -123,7 +126,7 @@ class WindowTray(StubClientMixin):
             if tray_widget:
                 do_tray_geometry(*args)
             else:
-                self.idle_add(do_tray_geometry, *args)
+                self.client.idle_add(do_tray_geometry, *args)
 
         def tray_exit(*args):
             log("tray_exit(%s)", args)
@@ -135,7 +138,8 @@ class WindowTray(StubClientMixin):
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
         from xpra.client.gui.client_tray import ClientTray
-        mmap = getattr(self, "mmap_read_area", None)
+        # the mmap read area is owned by the `mmap` subsystem:
+        mmap = getattr(self.get_subsystem("mmap"), "mmap_read_area", None)
         return ClientTray(client, wid, w, h, metadata, tray_widget, mmap)
 
     def get_tray_window(self, app_name: str, hints):
@@ -165,14 +169,19 @@ class WindowTray(StubClientMixin):
                 for tray in trays:
                     if tray.title.find(app_name) >= 0:
                         return tray.tray_widget
-        return self.tray
+        # the xpra system tray is owned by the `tray` subsystem (which may be disabled):
+        tray_subsystem = self.get_subsystem("tray")
+        return tray_subsystem.tray if tray_subsystem else None
 
     def set_tray_icon(self) -> None:
         # find all the window icons,
         # and if they are all using the same one, then use it as tray icon
         # otherwise use the default icon
-        log("set_tray_icon() DYNAMIC_TRAY_ICON=%s, tray=%s", DYNAMIC_TRAY_ICON, self.tray)
-        if not self.tray:
+        # the xpra system tray is owned by the `tray` subsystem (which may be disabled):
+        tray_subsystem = self.get_subsystem("tray")
+        tray = tray_subsystem.tray if tray_subsystem else None
+        log("set_tray_icon() DYNAMIC_TRAY_ICON=%s, tray=%s", DYNAMIC_TRAY_ICON, tray)
+        if not tray:
             return
         if not DYNAMIC_TRAY_ICON:
             # the icon ends up looking garbled on win32,
@@ -198,11 +207,11 @@ class WindowTray(StubClientMixin):
                     icon.mode, width, height, has_alpha)
                 rowstride = width * (3 + int(has_alpha))
                 rgb_data = icon.tobytes("raw", icon.mode)
-                self.tray.set_icon_from_data(rgb_data, has_alpha, width, height, rowstride)
+                tray.set_icon_from_data(rgb_data, has_alpha, width, height, rowstride)
                 return
         # this sets the default icon (badly named function!)
         log("set_tray_icon() using default icon")
-        self.tray.set_icon()
+        tray.set_icon()
 
     def init_authenticated_packet_handlers(self) -> None:
         # still need to be prefixed:

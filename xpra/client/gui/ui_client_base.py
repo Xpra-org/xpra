@@ -76,15 +76,13 @@ class UIXpraClient(ClientBaseClass):
         # features:
         self.readonly: bool = False
         self.headerbar = None
-        self.suspended = False
-
-        # in WindowClient - should it be?
-        # self.server_is_desktop = False
+        # `suspended` is owned by the `power` subsystem,
+        # `server_pointer` by the `pointer` subsystem,
+        # `server_is_desktop` by the `display` subsystem
         self.server_sharing: bool = False
         self.server_sharing_toggle: bool = False
         self.server_lock: bool = False
         self.server_lock_toggle: bool = False
-        self.server_pointer: bool = True
         self.server_readonly = False
         self.server_setting_updates: dict[str, Any] = {}
 

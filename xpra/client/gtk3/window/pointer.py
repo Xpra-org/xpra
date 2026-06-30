@@ -210,7 +210,9 @@ class PointerWindow(GtkStubWindow):
         if self.motion_cancels_pointer_overlay:
             self.cancel_remove_pointer_overlay_timer()
             self.remove_pointer_overlay()
-        if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
+        # `server_pointer` is owned by the `pointer` subsystem (which may be disabled):
+        pointer = self._client.get_subsystem("pointer")
+        if self._client.readonly or self._client.server_readonly or (pointer and not pointer.server_pointer):
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         if self.button_polling_timer:
@@ -253,7 +255,9 @@ class PointerWindow(GtkStubWindow):
     def _pointer_modifiers(self, event) -> tuple[tuple[int, int, int, int], list[str], list[int]]:
         pointer_data = self.get_pointer_data(event)
         # FIXME: state is used for both mods and buttons??
-        modifiers = self._client.mask_to_names(event.state)
+        # `mask_to_names` is owned by the `keyboard` subsystem (which may be absent):
+        keyboard = self._client.get_subsystem("keyboard")
+        modifiers = keyboard.mask_to_names(event.state) if keyboard else []
         buttons = mask_buttons(event.state)
         v = pointer_data, modifiers, buttons
         log("pointer_modifiers(%s)=%s (x_root=%s, y_root=%s, window_offset=%s)",
@@ -293,7 +297,9 @@ class PointerWindow(GtkStubWindow):
         return button
 
     def _button_action(self, button: int, event, depressed: bool, props=None) -> None:
-        if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
+        # `server_pointer` is owned by the `pointer` subsystem (which may be disabled):
+        pointer = self._client.get_subsystem("pointer")
+        if self._client.readonly or self._client.server_readonly or (pointer and not pointer.server_pointer):
             return
         if not self._client.middle_click and button == 2:
             log("_button_action: middle click suppressed (middle-click=no)")
@@ -348,7 +354,8 @@ class PointerWindow(GtkStubWindow):
         with IgnoreWarningsContext():
             x, y, mask = self.get_root_window().get_pointer()[-3:]
         buttons = mask_buttons(mask)
-        modifiers = self._client.mask_to_names(mask)
+        keyboard = self._client.get_subsystem("keyboard")
+        modifiers = keyboard.mask_to_names(mask) if keyboard else []
         self.do_poll_buttons((x, y), modifiers, buttons)
         if not self.button_pressed:
             self.button_polling_timer = 0

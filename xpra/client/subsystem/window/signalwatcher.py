@@ -159,7 +159,7 @@ class WindowSignalWatcher(StubClientMixin):
                 log("signal_watcher_event: %s", signame)
                 if signame:
                     if signame in self.server_window_signals:
-                        self.send("window-signal", wid, signame)
+                        self.client.send("window-signal", wid, signame)
                     else:
                         log(f"Warning: signal {signame!r} cannot be forwarded to this server")
             except Exception as e:

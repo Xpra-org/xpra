@@ -46,13 +46,13 @@ class WindowPointer(StubClientMixin):
             if is_Wayland():
                 log.warn("Warning: pointer polling is unlikely to work under Wayland")
                 log.warn(" and may cause problems")
-            self.poll_pointer_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
+            self.poll_pointer_timer = self.client.timeout_add(POLL_POINTER, self.poll_pointer)
         return True
 
     def cancel_poll_pointer_timer(self) -> None:
         if ppt := self.poll_pointer_timer:
             self.poll_pointer_timer = 0
-            self.source_remove(ppt)
+            self.client.source_remove(ppt)
 
     def _process_pointer_position(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -63,7 +63,7 @@ class WindowPointer(StubClientMixin):
             ry = packet.get_i16(5)
         else:
             rx, ry = -1, -1
-        cx, cy = self.get_mouse_position()
+        cx, cy = self.client.get_mouse_position()
         start_time = monotonic()
         log("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i",
             x, y, rx, ry, wid, cx, cy)
@@ -98,7 +98,7 @@ class WindowPointer(StubClientMixin):
                 b = sb
             server_buttons.append(b)
         self._button_state[button] = pressed
-        if "pointer-button" in self.server_packet_types or not BACKWARDS_COMPATIBLE:
+        if "pointer-button" in self.client.server_packet_types or not BACKWARDS_COMPATIBLE:
             props = props or {}
             if modifiers is not None:
                 props["modifiers"] = modifiers
@@ -126,10 +126,10 @@ class WindowPointer(StubClientMixin):
 
     def send_input_devices(self, fmt: str, input_devices: dict[int, dict[str, Any]]) -> None:
         assert self.server_input_devices
-        self.send("input-devices", fmt, input_devices)
+        self.client.send("input-devices", fmt, input_devices)
 
     def poll_pointer(self) -> bool:
-        pos = self.get_mouse_position()
+        pos = self.client.get_mouse_position()
         if pos != self.poll_pointer_position:
             self.poll_pointer_position = pos
             device_id = -1

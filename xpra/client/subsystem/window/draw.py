@@ -82,7 +82,7 @@ class WindowDraw(StubClientMixin):
     # painting windows:
     def _process_window_draw(self, packet: Packet) -> None:
         if PAINT_DELAY >= 0:
-            self.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
+            self.client.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
         else:
             self._draw_queue.put(packet)
 
@@ -93,12 +93,12 @@ class WindowDraw(StubClientMixin):
                              decode_time: int, message="") -> None:
         packet = packet_sequence, wid, width, height, decode_time, message
         log("sending ack: %s", packet)
-        self.send_now(WINDOW_DRAW_ACK, *packet)
+        self.client.send_now(WINDOW_DRAW_ACK, *packet)
 
     def _draw_thread_loop(self):
         if LINUX:
             self.install_draw_thread_seccomp()
-        while self.exit_code is None:
+        while self.client.exit_code is None:
             packet = self._draw_queue.get()
             if packet is None:
                 log("draw queue found exit marker")
@@ -154,7 +154,9 @@ class WindowDraw(StubClientMixin):
 
         def draw_cleanup() -> None:
             if coding == "mmap":
-                if area := self.mmap_read_area:
+                # the mmap read area is owned by the `mmap` subsystem:
+                mmap = self.get_subsystem("mmap")
+                if area := (mmap.mmap_read_area if mmap else None):
                     from xpra.net.mmap.io import int_from_buffer
                     # we need to ack the data to free the space!
                     data_start = int_from_buffer(area.mmap, 0)
@@ -191,13 +193,14 @@ class WindowDraw(StubClientMixin):
 
         if not window:
             # window is gone
-            self.idle_add(draw_abort, WINDOW_NOT_FOUND, "window not found")
+            self.client.idle_add(draw_abort, WINDOW_NOT_FOUND, "window not found")
             return
 
-        allowed_encodings = getattr(self, "allowed_encodings", ("rgb32", "rgb24", "mmap",))
+        # the list of allowed encodings is owned by the `encoding` subsystem:
+        allowed_encodings = getattr(self.get_subsystem("encoding"), "allowed_encodings", ("rgb32", "rgb24", "mmap",))
         if coding not in allowed_encodings and coding != "mmap":
             log.warn("Warning: server sent unsupported encoding %r", coding)
-            self.idle_add(draw_abort, WINDOW_DECODE_ERROR, f"unsupported encoding {coding!r}")
+            self.client.idle_add(draw_abort, WINDOW_DECODE_ERROR, f"unsupported encoding {coding!r}")
             return
 
         self._draw_counter += 1
@@ -206,7 +209,7 @@ class WindowDraw(StubClientMixin):
                      coding, self._draw_counter, packet_sequence)
             if PAINT_FAULT_TELL:
                 msg = f"fault injection for {coding} draw packet {self._draw_counter}, sequence no={packet_sequence}"
-                self.idle_add(draw_abort, WINDOW_DECODE_ERROR, msg)
+                self.client.idle_add(draw_abort, WINDOW_DECODE_ERROR, msg)
             return
         # we could expose this to the csc step? (not sure how this could be used)
         # if self.xscale!=1 or self.yscale!=1:
@@ -216,7 +219,7 @@ class WindowDraw(StubClientMixin):
         except Exception as e:
             log.error("Error drawing on window %#x", wid)
             log.error(f" using encoding {coding} with {options=}", exc_info=True)
-            self.idle_add(record_draw_error, WINDOW_DECODE_ERROR, str(e))
+            self.client.idle_add(record_draw_error, WINDOW_DECODE_ERROR, str(e))
             raise
 
     ######################################################################

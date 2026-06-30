@@ -53,7 +53,9 @@ class KeyboardWindow(GtkStubWindow):
                     if not keyname.startswith("U+"):
                         break
         key_event = KeyEvent()
-        key_event.modifiers = self._client.mask_to_names(event.state)
+        # `mask_to_names` is owned by the `keyboard` subsystem (which may be absent):
+        keyboard = self._client.get_subsystem("keyboard")
+        key_event.modifiers = keyboard.mask_to_names(event.state) if keyboard else []
         key_event.keyname = keyname
         key_event.keyval = keyval or 0
         key_event.keycode = keycode

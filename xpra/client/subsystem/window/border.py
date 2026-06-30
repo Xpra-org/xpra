@@ -108,7 +108,7 @@ class WindowBorderClient(StubClientMixin):
             self.border = parse_border(self.border_str)
 
     def setup_connection(self, conn) -> None:
-        display_name = getattr(self, "display_desc", {}).get("display_name", "")
+        display_name = getattr(self.client, "display_desc", {}).get("display_name", "")
         if display_name:
             # now that we have display_desc, parse the border again:
             self.border = parse_border(self.border_str, display_name)

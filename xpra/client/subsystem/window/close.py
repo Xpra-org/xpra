@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.net.packet_type import WINDOW_CLOSE
+from xpra.net.packet_type import WINDOW_CLOSE, SHUTDOWN_SERVER
 from xpra.util.objects import typedict
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
@@ -33,22 +33,24 @@ class WindowClose(StubClientMixin):
     def window_close_event(self, wid: int) -> None:
         log("window_close_event(%s) close window action=%s", wid, self.window_close_action)
         if self.window_close_action == "forward":
-            self.send(WINDOW_CLOSE, wid)
+            self.client.send(WINDOW_CLOSE, wid)
         elif self.window_close_action == "ignore":
             log("close event for window %#x ignored", wid)
         elif self.window_close_action == "disconnect":
             log.info("window-close set to disconnect, exiting (window %#x)", wid)
-            self.quit(0)
+            self.client.quit(0)
         elif self.window_close_action == "shutdown":
-            self.send("shutdown-server", "shutdown on window close")
+            self.client.send(SHUTDOWN_SERVER, "shutdown on window close")
         elif self.window_close_action == "auto":
             # forward unless this looks like a desktop,
             # this allows us to behave more like VNC:
             window = self.get_window(wid)
             log("window_close_event(%#x) window=%s", wid, window)
-            if self.server_is_desktop:
+            # `server_is_desktop` is owned by the `display` subsystem:
+            display = self.get_subsystem("display")
+            if display and display.server_is_desktop:
                 log.info("window-close event on desktop or shadow window, disconnecting")
-                self.quit(0)
+                self.client.quit(0)
                 return
             if window:
                 metadata = typedict(getattr(window, "_metadata", {}))
@@ -66,10 +68,10 @@ class WindowClose(StubClientMixin):
                     # honour this close request if there are no other windows:
                     if len(self._id_to_window) == 1:
                         log.info("%s, disconnecting", close)
-                        self.quit(0)
+                        self.client.quit(0)
                         return
                     log("there are %i windows, so forwarding %s", len(self._id_to_window), close)
             # default to forward:
-            self.send(WINDOW_CLOSE, wid)
+            self.client.send(WINDOW_CLOSE, wid)
         else:
             log.warn("unknown close-window action: %s", self.window_close_action)

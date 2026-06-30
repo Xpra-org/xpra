@@ -62,17 +62,17 @@ class WindowGrab(StubClientMixin):
         }
 
     def window_grab(self, wid: int, _window) -> None:
-        log.warn(f"Warning: window grab not implemented in {self.client_type}")
+        log.warn(f"Warning: window grab not implemented in {self.client.client_type}")
         self._window_with_grab = wid
 
     def window_ungrab(self) -> None:
-        log.warn(f"Warning: window ungrab not implemented in {self.client_type}")
+        log.warn(f"Warning: window ungrab not implemented in {self.client.client_type}")
         self._window_with_grab = None
 
     def do_force_ungrab(self, wid: int) -> None:
         log("do_force_ungrab(%#x)", wid)
         # ungrab via dedicated server packet:
-        self.send_force_ungrab(wid)
+        self.client.send_force_ungrab(wid)
 
     def _process_pointer_grab(self, packet: Packet) -> None:
         wid = packet.get_wid()

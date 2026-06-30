@@ -71,13 +71,11 @@ class WindowManagerClient(StubClientMixin):
         self.min_window_size: tuple[int, int] = (0, 0)
         self.max_window_size: tuple[int, int] = (0, 0)
 
-        self.readonly: bool = False
         self.windows_enabled: bool = True
         self.pixel_depth: int = 0
         self.modal_windows: bool = True
 
         self.server_window_frame_extents: bool = False
-        self.server_is_desktop: bool = False
         self.server_window_states: Sequence[str] = ()
 
     def init(self, opts) -> None:
@@ -92,11 +90,14 @@ class WindowManagerClient(StubClientMixin):
         self.modal_windows = self.windows_enabled and opts.modal_windows
 
     def init_ui(self, opts) -> None:
-        self.init_opengl(opts.opengl)
+        # opengl setup is owned by the `display` subsystem:
+        self.get_subsystem("display").init_opengl(opts.opengl)
 
     def load(self) -> None:
-        self.connect("suspend", self.suspend_windows)
-        self.connect("resume", self.resume_windows)
+        # the suspend/resume signals are owned by the `power` subsystem:
+        if power := self.get_subsystem("power"):
+            power.connect("suspend", self.suspend_windows)
+            power.connect("resume", self.resume_windows)
 
     def run(self) -> ExitValue:
         return ExitCode.OK
@@ -120,7 +121,7 @@ class WindowManagerClient(StubClientMixin):
             "count": len(self._window_to_id),
             "min-size": self.min_window_size,
             "max-size": self.max_window_size,
-            "read-only": self.readonly,
+            "read-only": self.client.readonly,
         }
         for wid, window in tuple(self._id_to_window.items()):
             info[wid] = window.get_info()
@@ -155,8 +156,8 @@ class WindowManagerClient(StubClientMixin):
         if not c.boolget("windows", True):
             log.warn("Warning: window forwarding is not enabled on this server")
         self.server_window_states = c.strtupleget("window.states", DEFAULT_SERVER_WINDOW_STATES)
-        self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
-        self.connect("startup-complete", self.log_windows_info)
+        # `server_is_desktop` is owned by the `display` subsystem (it parses the fuller set of caps)
+        self.client.connect("startup-complete", self.log_windows_info)
         return True
 
     def log_windows_info(self, *_args) -> None:
@@ -177,7 +178,7 @@ class WindowManagerClient(StubClientMixin):
     ######################################################################
     # regular windows:
     def _process_new_common(self, packet: Packet, override_redirect: bool):
-        self._ui_event()
+        self.client._ui_event()
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -212,11 +213,12 @@ class WindowManagerClient(StubClientMixin):
                 x = pwin._pos[0] + p_pos[0]
                 y = pwin._pos[1] + p_pos[1]
                 geomlog("relative position(%s)=%s", rel_pos, (x, y))
-        # scaled dimensions of window:
-        wx = self.sx(x)
-        wy = self.sy(y)
-        ww = max(1, self.sx(w))
-        wh = max(1, self.sy(h))
+        # scaled dimensions of window (scaling helpers are owned by the `display` subsystem):
+        display = self.get_subsystem("display")
+        wx = display.sx(x)
+        wy = display.sy(y)
+        ww = max(1, display.sx(w))
+        wh = max(1, display.sy(h))
         # backing size, same as original (server-side):
         bw, bh = w, h
         if len(packet) >= 8:
@@ -280,7 +282,7 @@ class WindowManagerClient(StubClientMixin):
                              geom, backing_size,
                              metadata, override_redirect, client_properties,
                              border, self.max_window_size, self.pixel_depth,
-                             self.headerbar)
+                             self.client.headerbar)
                 break
             except (RuntimeError, ValueError):
                 log.warn(f"Warning: failed to instantiate {cwc!r}", exc_info=True)
@@ -289,7 +291,7 @@ class WindowManagerClient(StubClientMixin):
             return None
         self.register_window(wid, window)
         if SHOW_DELAY >= 0:
-            self.timeout_add(SHOW_DELAY, self.show_window, wid, window, metadata, override_redirect)
+            self.client.timeout_add(SHOW_DELAY, self.show_window, wid, window, metadata, override_redirect)
         else:
             self.show_window(wid, window, metadata, override_redirect)
         return window
@@ -303,9 +305,11 @@ class WindowManagerClient(StubClientMixin):
         window.show_all()
         # apply the current cursor — without this, newly-shown windows
         # show an arrow indefinitely (server doesn't resend cursor data):
-        last_cursor = getattr(self, "_last_cursor_data", ())
-        if last_cursor:
-            self.set_windows_cursor([window], last_cursor)
+        # the cursor data and `set_windows_cursor` are owned by the `cursor` subsystem
+        # (which may be disabled), the last cursor data lives on the concrete client:
+        last_cursor = getattr(self.client, "_last_cursor_data", ())
+        if last_cursor and (cursor := self.get_subsystem("cursor")):
+            cursor.set_windows_cursor([window], last_cursor)
         if override_redirect and should_force_grab(metadata):
             log.warn("forcing grab for OR window %#x", wid)
             self.window_grab(wid, window)
@@ -392,7 +396,7 @@ class WindowManagerClient(StubClientMixin):
             # explicitly tell the server we have unmapped it:
             # (so it will reset the video encoders, etc)
             if not window.is_OR():
-                self.send(WINDOW_UNMAP, wid)
+                self.client.send(WINDOW_UNMAP, wid)
             self._id_to_window.pop(wid, None)
             self._window_to_id.pop(window, None)
             # create the new window,
@@ -442,7 +446,8 @@ class WindowManagerClient(StubClientMixin):
             direction = packet.get_i8(4)
             button = packet.get_u8(5)
             source_indication = packet.get_i8(6)
-            window.initiate_moveresize(self.sx(x_root), self.sy(y_root), direction, button, source_indication)
+            display = self.get_subsystem("display")
+            window.initiate_moveresize(display.sx(x_root), display.sy(y_root), direction, button, source_indication)
 
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -458,10 +463,11 @@ class WindowManagerClient(StubClientMixin):
         y = packet.get_i16(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
-        ax = self.sx(x)
-        ay = self.sy(y)
-        aw = max(1, self.sx(w))
-        ah = max(1, self.sy(h))
+        display = self.get_subsystem("display")
+        ax = display.sx(x)
+        ay = display.sy(y)
+        aw = max(1, display.sx(w))
+        ah = max(1, display.sy(h))
         resize_counter = -1
         if len(packet) > 6:
             resize_counter = packet.get_u64(6)
@@ -475,8 +481,9 @@ class WindowManagerClient(StubClientMixin):
         wid = packet.get_wid()
         w = packet.get_u32(2)
         h = packet.get_u32(3)
-        aw = max(1, self.sx(w))
-        ah = max(1, self.sy(h))
+        display = self.get_subsystem("display")
+        aw = max(1, display.sx(w))
+        ah = max(1, display.sy(h))
         resize_counter = -1
         if len(packet) > 4:
             resize_counter = packet.get_u64(4)
@@ -566,7 +573,7 @@ class WindowManagerClient(StubClientMixin):
         log("resume_windows%s", args)
         # this will reset the refresh rate too:
         self.send_refresh_all()
-        if self.opengl_enabled and OPENGL_REINIT_WINDOWS:
+        if self.client.opengl_enabled and OPENGL_REINIT_WINDOWS:
             # with opengl, the buffers sometimes contain garbage after resuming,
             # this should create new backing buffers:
             self.reinit_windows()
@@ -602,7 +609,7 @@ class WindowManagerClient(StubClientMixin):
         log("sending buffer refresh: options=%s, client_properties=%s", options, client_properties)
         packet.append(options)
         packet.append(client_properties)
-        self.send(*packet)
+        self.client.send(*packet)
 
     def send_refresh(self, wid: int) -> None:
         packet = [
@@ -615,7 +622,7 @@ class WindowManagerClient(StubClientMixin):
             },
             {},  # no client_properties
         ]
-        self.send(*packet)
+        self.client.send(*packet)
 
     def send_refresh_all(self) -> None:
         log("Automatic refresh for all windows ")

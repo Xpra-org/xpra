@@ -938,7 +938,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         if root is None:
             return ()
         modifiers_mask = root.get_pointer()[-1]
-        return self.mask_to_names(modifiers_mask)
+        # `mask_to_names` is owned by the `keyboard` subsystem (which may be absent):
+        keyboard = self.get_subsystem("keyboard")
+        return keyboard.mask_to_names(modifiers_mask) if keyboard else ()
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = UIXpraClient.make_hello(self)
