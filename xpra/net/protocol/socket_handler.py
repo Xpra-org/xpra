@@ -595,14 +595,17 @@ class SocketProtocol:
 
     def enable_encoder_from_caps(self, caps: typedict) -> bool:
         options = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
-        log(f"enable_encoder_from_caps(..) options={options}")
+        encoders = caps.strtupleget("encoders")
+        log(f"enable_encoder_from_caps(..) options={options}, encoders from caps={encoders}")
         self.chunks = caps.boolget("chunks", True)
         for e in options:
-            if caps.boolget(e):
+            if e in encoders or caps.boolget(e):
                 self.enable_encoder(e)
                 return True
             log(f"client does not support {e}")
         log.error("no matching packet encoder found!")
+        if encoders:
+            log.error(f" peer capabilities: {csv(encoders)}")
         return False
 
     def enable_encoder(self, e: str) -> None:
