@@ -189,9 +189,8 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         audio_caps = dict(self.audio_properties)
         if FULL_INFO < 2:
             # only expose these specific keys:
-            audio_caps = {k: v for k, v in audio_caps.items() if k in (
-                "muxers", "demuxers",
-            )}
+            expose = ("muxers", "demuxers")
+            audio_caps = {k: v for k, v in audio_caps.items() if k in expose}
         audio_caps.update({
             "encoders": self.speaker_codecs,
             "decoders": self.microphone_codecs,

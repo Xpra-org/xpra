@@ -272,9 +272,8 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         sp: dict[str, Any] = {str(k): v for k, v in self.audio_properties.items()}
         if FULL_INFO < 2:
             # only expose these specific keys:
-            sp = {k: v for k, v in sp.items() if k in (
-                "encoders", "decoders", "muxers", "demuxers",
-            )}
+            expose = ("encoders", "decoders", "muxers", "demuxers")
+            sp = {k: v for k, v in sp.items() if k in expose}
         caps.update(sp)
         log("audio capabilities: %s", caps)
         return caps

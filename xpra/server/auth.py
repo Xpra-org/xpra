@@ -171,7 +171,7 @@ class AuthenticationManager(StubSubsystem):
             return
         digest_modes = c.strtupleget("digest", ("hmac",))
         salt_digest_modes = c.strtupleget("salt-digest", ("xor",))
-        auth_caps: dict[str, Any] = self.setup_encryption(proto, c)
+        auth_caps: dict[str, Any] | None = self.setup_encryption(proto, c)
         if auth_caps is None:
             return
 

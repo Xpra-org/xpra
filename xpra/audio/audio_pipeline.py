@@ -179,29 +179,43 @@ class AudioPipeline(Pipeline):
             structure = message.get_structure()
             self.gstloginfo("unknown audio pipeline tag message: %s, tags=%s", structure.to_string(), tags)
 
-    def new_codec_description(self, desc) -> None:
+    def _log_description_change(self, current: str, value: str, what: str) -> None:
+        """
+        Log a single ``using '<value>' <what>`` line, unless it just repeats
+        what we last reported.
+
+        GStreamer may emit several increasingly-specific descriptions for the
+        same stream (e.g. 'mp4' then 'iso fmp4'), so we skip the message when
+        the new value is identical to - or a substring relative of - the
+        current one, to avoid spamming the log.
+        """
+        cur = current.lower()
+        if not cur or (value.find(cur) < 0 and cur.find(value) < 0):
+            self.gstloginfo("using '%s' %s", value, what)
+
+    def new_codec_description(self, desc: str) -> None:
+        """Record the audio codec name reported by GStreamer (e.g. 'opus', 'vorbis')."""
         log("new_codec_description(%s) current codec description=%s", desc, self.codec_description)
         if not desc:
             return
         dl = desc.lower()
+        # 'wav' is the generic fallback: never let it overwrite a real codec name:
         if dl == "wav" and self.codec_description:
             return
-        cdl = self.codec_description.lower()
-        if not cdl or (cdl != dl and dl.find(cdl) < 0 and cdl.find(dl) < 0):
-            self.gstloginfo("using '%s' audio codec", dl)
+        self._log_description_change(self.codec_description, dl, "audio codec")
         self.codec_description = dl
         self.info["codec_description"] = dl
 
-    def new_container_description(self, desc) -> None:
+    def new_container_description(self, desc: str) -> None:
+        """Record the container/muxer name reported by GStreamer (e.g. 'matroska', 'ogg')."""
         log("new_container_description(%s) current container description=%s", desc, self.container_description)
         if not desc:
             return
-        cdl = self.container_description.lower()
+        # normalize a couple of GStreamer aliases to friendlier names:
         dl = {
             "mka": "matroska",
             "mpeg4": "iso fmp4",
         }.get(desc.lower(), desc.lower())
-        if not cdl or (cdl != dl and dl.find(cdl) < 0 and cdl.find(dl) < 0):
-            self.gstloginfo("using '%s' container format", dl)
+        self._log_description_change(self.container_description, dl, "container format")
         self.container_description = dl
         self.info["container_description"] = dl

@@ -417,7 +417,7 @@ class VideoHelper:
         log("get_server_full_csc_modes(%s)=%s", client_supported_csc_modes, full_csc_modes)
         return full_csc_modes
 
-    def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes: str) -> dict[str, list[str]]:
+    def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes: str) -> dict[str, Sequence[str]]:
         """ given a list of RGB modes the client can handle,
             returns the CSC modes per encoding that the server can encode with,
             this will include the RGB modes themselves too.

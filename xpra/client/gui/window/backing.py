@@ -509,16 +509,18 @@ class WindowBackingBase:
         # and trim the transparency if we cannot handle it
         target_rgb_modes = tuple(rgb_modes)
         if not self._alpha_enabled:
-            target_rgb_modes = tuple(x for x in target_rgb_modes
-                                     if "A" not in x)
+            target_rgb_modes = tuple(x for x in target_rgb_modes if "A" not in x)
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
-        full_csc_modes["webp"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA")]
-        full_csc_modes["jpeg"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA", "YUV420P")]
-        full_csc_modes["jph"] = [x for x in rgb_modes if x == "BGRX"]
+
+        def add_enc_formats(enc: str, *formats: str) -> None:
+            full_csc_modes[enc] = tuple(x for x in rgb_modes if x in formats)
+        add_enc_formats("webp", "BGRX", "BGRA", "RGBX", "RGBA")
+        add_enc_formats("jpeg", "BGRX", "BGRA", "RGBX", "RGBA", "YUV420P")
+        add_enc_formats("jph", "BGRX")
         if self._alpha_enabled:
             # this would not match any target rgb modes anyway,
             # best not to have it in the list at all:
-            full_csc_modes["jpega"] = [x for x in rgb_modes if x in ("BGRA", "RGBA")]
+            add_enc_formats("jpega", "BGRA", "RGBA")
         videolog("_get_full_csc_modes(%s) with alpha=%s, target_rgb_modes=%s",
                  rgb_modes, self._alpha_enabled, target_rgb_modes)
         for e in sorted(full_csc_modes.keys()):

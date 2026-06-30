@@ -135,8 +135,7 @@ class WebcamForwarder(StubClientMixin):
         self.stop_sending_webcam()
 
     def resume_webcam(self, _client) -> None:
-        restart = self.webcam_resume_restart
-        if restart:
+        if restart := self.webcam_resume_restart:
             self.webcam_resume_restart = ()
             self.start_sending_webcam(*restart)
 
