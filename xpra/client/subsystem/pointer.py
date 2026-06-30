@@ -58,7 +58,8 @@ class PointerClient(StubClientMixin):
                 # some platforms don't detect the vrefresh correctly
                 # (ie: macos in virtualbox?), so use a sane default minimum
                 # discount by 5ms to ensure we have time to hit the target
-                v = max(60, self.get_vrefresh())
+                # weak dependency on the `display` subsystem:
+                v = max(60, self.get_subsystem("display").get_vrefresh())
                 self._mouse_position_delay = max(5, 1000 // v // 2 - 5)
                 log(f"mouse position delay: {self._mouse_position_delay}")
             except (AttributeError, OSError):
@@ -73,8 +74,8 @@ class PointerClient(StubClientMixin):
     def get_caps(self) -> dict[str, Any]:
         # the gtk client implements `get_mouse_position`
         def get_mouse_position() -> tuple[int, int]:
-            if hasattr(self, "get_mouse_position"):
-                return self.get_mouse_position()
+            if hasattr(self.client, "get_mouse_position"):
+                return self.client.get_mouse_position()
             return -1, -1
 
         double_click = get_double_click_caps()
@@ -96,11 +97,11 @@ class PointerClient(StubClientMixin):
         # packets that include the mouse position data
         # we can cancel the pending position packets
         packet = Packet(packet_type, *parts)
-        self._ordinary_packets.append(packet)
+        self.client._ordinary_packets.append(packet)
         self._mouse_position = None
         self._mouse_position_pending = None
         self.cancel_send_mouse_position_timer()
-        self.have_more()
+        self.client.have_more()
 
     def next_pointer_sequence(self, device_id: int) -> int:
         if device_id < 0:
@@ -111,7 +112,7 @@ class PointerClient(StubClientMixin):
         return seq
 
     def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
-        if "pointer" in self.server_packet_types or not BACKWARDS_COMPATIBLE:
+        if "pointer" in self.client.server_packet_types or not BACKWARDS_COMPATIBLE:
             # v5 packet type, most attributes are optional:
             attrs = props or {}
             if modifiers is not None:
@@ -134,7 +135,7 @@ class PointerClient(StubClientMixin):
         delay = self._mouse_position_delay - elapsed
         log("send_mouse_position(%s) elapsed=%i, delay left=%i", packet, elapsed, delay)
         if delay > 0:
-            self._mouse_position_timer = self.timeout_add(delay, self.do_send_mouse_position)
+            self._mouse_position_timer = self.client.timeout_add(delay, self.do_send_mouse_position)
         else:
             self.do_send_mouse_position()
 
@@ -143,12 +144,12 @@ class PointerClient(StubClientMixin):
         self._mouse_position_send_time = monotonic()
         self._mouse_position = self._mouse_position_pending
         log("do_send_mouse_position() position=%s", self._mouse_position)
-        self.have_more()
+        self.client.have_more()
 
     def cancel_send_mouse_position_timer(self) -> None:
         if mpt := self._mouse_position_timer:
             self._mouse_position_timer = 0
-            self.source_remove(mpt)
+            self.client.source_remove(mpt)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_pointer = c.boolget("pointer", True)

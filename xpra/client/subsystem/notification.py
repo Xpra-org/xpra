@@ -155,9 +155,11 @@ class NotificationClient(StubClientMixin):
     def supported_icon_data(self, icon_data, what="icon"):
         # drop icon data we have no decoder for,
         # weak dependency on the `Encodings` subsystem:
-        if icon_data and icon_data[0] not in self.get_core_encodings():
+        encoding = self.get_subsystem("encoding")
+        core_encodings = encoding.get_core_encodings() if encoding else ()
+        if icon_data and icon_data[0] not in core_encodings:
             log.warn(f"Warning: unsupported notification {what} encoding {icon_data[0]!r}")
-            log.warn(f" supported encodings: {csv(self.get_core_encodings())}")
+            log.warn(f" supported encodings: {csv(core_encodings)}")
             return None
         return icon_data
 

@@ -59,7 +59,8 @@ class CursorClient(StubClientMixin):
     def get_caps(self) -> dict[str, Any]:
         encodings = ["raw", "default"]
         # weak dependency on `Encodings` subsystem:
-        if "png" in self.get_core_encodings() and find_spec("PIL"):
+        encoding = self.get_subsystem("encoding")
+        if encoding and "png" in encoding.get_core_encodings() and find_spec("PIL"):
             encodings.append("png")
         cursor_caps: dict[str, Any] = {
             "encodings": encodings,
@@ -75,7 +76,10 @@ class CursorClient(StubClientMixin):
         if BACKWARDS_COMPATIBLE:
             dsize = get_default_cursor_size()
             if max(dsize) > 0:
-                cursor_caps["size"] = round(sum(get_default_cursor_size()) / (self.xscale + self.yscale))
+                # scaling factors are owned by the `display` subsystem:
+                display = self.get_subsystem("display")
+                xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
+                cursor_caps["size"] = round(sum(get_default_cursor_size()) / (xscale + yscale))
         caps: dict[str, Any] = {CursorClient.PREFIX: cursor_caps}
         if BACKWARDS_COMPATIBLE:
             caps["cursors"] = self.client_supports_cursors
@@ -122,10 +126,13 @@ class CursorClient(StubClientMixin):
             log("setting default cursor=%s", Ellipsizer(new_cursor))
             self.default_cursor_data = new_cursor
         else:
-            self.set_windows_cursor(self._id_to_window.values(), new_cursor)
+            self.set_windows_cursor(self.get_windows(), new_cursor)
 
     def decompress_cursor_data(self, encoding: str, cpixels: SizedBuffer, serial: int) -> bytes:
-        if encoding != "raw" and encoding not in self.get_core_encodings():
+        # weak dependency on `Encodings` subsystem:
+        enc = self.get_subsystem("encoding")
+        core_encodings = enc.get_core_encodings() if enc else ()
+        if encoding != "raw" and encoding not in core_encodings:
             raise ValueError(f"cursor encoding {encoding!r} is not supported")
         return decompress_cursor_data(encoding, cpixels, serial)
 
@@ -142,7 +149,7 @@ class CursorClient(StubClientMixin):
         name = packet.get_str(8)
         pixels = self.decompress_cursor_data(encoding, cpixels, serial)
         cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, pixels, name)
-        self.set_windows_cursor(self._id_to_window.values(), cursor_data)
+        self.set_windows_cursor(self.get_windows(), cursor_data)
 
     def _process_cursor_default(self, packet: Packet) -> None:
         log("setting default cursor: %s", packet)
@@ -151,7 +158,7 @@ class CursorClient(StubClientMixin):
         self.reset_cursor()
 
     def reset_cursor(self) -> None:
-        self.set_windows_cursor(self._id_to_window.values(), ())
+        self.set_windows_cursor(self.get_windows(), ())
 
     def set_windows_cursor(self, client_windows, new_cursor) -> None:
         raise NotImplementedError()

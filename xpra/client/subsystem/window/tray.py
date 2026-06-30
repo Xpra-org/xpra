@@ -94,7 +94,7 @@ class WindowTray(StubClientMixin):
                 modifiers = self.get_current_modifiers()
                 button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
                 log("button_packet=%s", button_packet)
-                self.send_positional(*button_packet)
+                self.get_subsystem("pointer").send_positional(*button_packet)
                 tray.reconfigure()
 
         def tray_mouseover(x, y):
@@ -103,7 +103,7 @@ class WindowTray(StubClientMixin):
             if tray:
                 modifiers = self.get_current_modifiers()
                 device_id = -1
-                self.send_mouse_position(device_id, wid, self.cp(x, y), modifiers)
+                self.get_subsystem("pointer").send_mouse_position(device_id, wid, self.cp(x, y), modifiers)
 
         def do_tray_geometry(*args):
             # tell the "ClientTray" where it now lives

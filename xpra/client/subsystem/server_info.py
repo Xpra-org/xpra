@@ -24,6 +24,7 @@ class ServerInfoClient(StubClientMixin):
     """
     Request `info` from server.
     """
+    PREFIX = "server-info"
 
     def __init__(self):
         self.server_last_info: dict = {}

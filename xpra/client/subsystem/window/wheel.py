@@ -92,7 +92,7 @@ class WindowWheel(StubClientMixin):
                           button, idist,
                           pointer, modifiers, buttons] + list((props or {}).values())
                 log("send_wheel_delta(..) %s", packet)
-                self.send_positional(*packet)
+                self.get_subsystem("pointer").send_positional(*packet)
             return 0
         # server cannot handle precise wheel,
         # so we have to use discrete events,

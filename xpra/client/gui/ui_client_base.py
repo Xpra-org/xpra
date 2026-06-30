@@ -67,6 +67,7 @@ class UIXpraClient(ClientBaseClass):
         for c in CLIENT_BASES:
             sublog("calling %s.__init__()", c)
             c.__init__(self)  # pylint: disable=non-parent-init-called
+            self.add_subsystem(c)
         self._ui_events: int = 0
         self.title: str = ""
         self.session_name: str = ""

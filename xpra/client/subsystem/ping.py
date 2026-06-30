@@ -31,6 +31,7 @@ class PingClient(StubClientMixin):
     """
     Ping handling
     """
+    PREFIX = "ping"
 
     PACKET_TYPES = ("ping", "ping_echo")
 

@@ -93,9 +93,11 @@ class DisplayClient(StubClientMixin):
             self.parse_scaling(opts.desktop_scaling)
 
     def load(self):
-        self.after_handshake(self.adjust_display)
-        self.connect("suspend", self.suspend_screen_size_change)
-        self.connect("resume", self.resume_screen_size_change)
+        self.client.after_handshake(self.adjust_display)
+        # the `suspend`/`resume` signals are owned by the `power` subsystem:
+        if power := self.get_subsystem("power"):
+            power.connect("suspend", self.suspend_screen_size_change)
+            power.connect("resume", self.resume_screen_size_change)
 
     def suspend_screen_size_change(self, _screen) -> bool:
         self.screen_size_change_suspended = True
@@ -336,12 +338,12 @@ class DisplayClient(StubClientMixin):
                 log.warn(" please see https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Xdummy.md")
 
     def send_icc_data(self) -> None:
-        if SYNC_ICC and (not BACKWARDS_COMPATIBLE or "configure-display" in self.server_packet_types):
+        if SYNC_ICC and (not BACKWARDS_COMPATIBLE or "configure-display" in self.client.server_packet_types):
             # it is now safe to send the colorspace data if we have any:
             icc = self.get_icc_info()
             dicc = self.get_display_icc_info()
             if icc or dicc:
-                self.send(DISPLAY_CONFIGURE, {
+                self.client.send(DISPLAY_CONFIGURE, {
                     "icc": {
                         "global": icc,
                         "display": dicc,
@@ -350,7 +352,7 @@ class DisplayClient(StubClientMixin):
 
     # noinspection PyUnreachableCode
     def set_max_packet_size(self) -> None:
-        p = self._protocol
+        p = self.client._protocol
         if not p or p.TYPE != "xpra":
             return
         root_w, root_h = self.cp(*self.get_root_size())
@@ -364,7 +366,7 @@ class DisplayClient(StubClientMixin):
         if maxw <= 0 or maxh <= 0 or maxw >= 32768 or maxh >= 32768:
             message = "invalid maximum desktop size: %ix%i" % (maxw, maxh)
             log(message)
-            self.quit(ExitCode.INTERNAL_ERROR)
+            self.client.quit(ExitCode.INTERNAL_ERROR)
             return
         if maxw >= 16384 or maxh >= 16384:
             log.warn("Warning: the desktop size is extremely large: %ix%i", maxw, maxh)
@@ -459,7 +461,7 @@ class DisplayClient(StubClientMixin):
             "server desktop size is %ix%i" % (max_w, max_h),
             "using scaling factor %s x %s" % (xstr, ystr),
         ]
-        may_notify_client(self, NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
+        may_notify_client(self.client, NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
         scalinglog.warn("Warning: %s", summary)
         for m in messages:
             scalinglog.warn(" %s", m)
@@ -522,7 +524,7 @@ class DisplayClient(StubClientMixin):
 
     def workspace_changed(self, *args) -> None:
         workspacelog("workspace_changed%s", args)
-        for win in self._id_to_window.values():
+        for win in self.get_windows():
             ws_changed = getattr(win, "workspace_changed", noop)
             ws_changed()
 
@@ -541,12 +543,12 @@ class DisplayClient(StubClientMixin):
         # trigger multiple calls to screen_size_changed, delayed by some amount
         # (sometimes up to 1s..)
         delay = 1000
-        self.screen_size_change_timer = self.timeout_add(delay, self.do_process_screen_size_change)
+        self.screen_size_change_timer = self.client.timeout_add(delay, self.do_process_screen_size_change)
 
     def cancel_screen_size_change_timer(self):
         if ssct := self.screen_size_change_timer:
             self.screen_size_change_timer = 0
-            self.source_remove(ssct)
+            self.client.source_remove(ssct)
 
     def do_process_screen_size_change(self) -> None:
         self.screen_size_change_timer = 0
@@ -554,8 +556,9 @@ class DisplayClient(StubClientMixin):
         log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s", MONITOR_CHANGE_REINIT)
         if MONITOR_CHANGE_REINIT:
             log.info("screen size change: will reinit the windows")
-            self.reinit_windows()
-            self.reinit_window_icons()
+            if window := self.get_subsystem("window"):
+                window.reinit_windows()
+                window.reinit_window_icons()
 
     def get_screen_settings(self) -> tuple:
         u_root_w, u_root_h = self.get_root_size()
@@ -594,7 +597,7 @@ class DisplayClient(StubClientMixin):
         root_w, root_h, sss = screen_settings[:3]
         log.info("sending updated screen size to server: %sx%s", root_w, root_h)
         log_screen_sizes(root_w, root_h, sss)
-        if "configure-display" in self.server_packet_types or not BACKWARDS_COMPATIBLE:
+        if "configure-display" in self.client.server_packet_types or not BACKWARDS_COMPATIBLE:
             root_w, root_h = screen_settings[:2]
             ndesktops, desktop_names = screen_settings[3:5]
             u_root_w, u_root_h = screen_settings[5:7]
@@ -619,7 +622,7 @@ class DisplayClient(StubClientMixin):
             if rrate:
                 attrs["vrefresh"] = rrate
             log(f"configure-display: {attrs}")
-            self.send(DISPLAY_CONFIGURE, attrs)
+            self.client.send(DISPLAY_CONFIGURE, attrs)
         self._last_screen_settings = screen_settings
         # update the max packet size (may have gone up):
         self.set_max_packet_size()
@@ -704,7 +707,7 @@ class DisplayClient(StubClientMixin):
                 "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
                 " would overflow the server's screen: %i x %i" % (maxw, maxh),
             ]
-            may_notify_client(self, NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
+            may_notify_client(self.client, NotificationID.SCALING, summary, "\n".join(messages), icon_name="scaling")
             scalinglog.warn("Warning: %s", summary)
             for m in messages:
                 scalinglog.warn(" %s", m)
@@ -722,21 +725,25 @@ class DisplayClient(StubClientMixin):
         else:
             scalinglog.info("setting scaling to %i%% x %i%%:", round(100 * self.xscale), round(100 * self.yscale))
         self.update_screen_size()
-        # re-initialize all the windows with their new size
-        for win in self._id_to_window.values():
-            if hasattr(win, "_xscale"):
-                win._xscale *= xchange
-            if hasattr(win, "_yscale"):
-                win._yscale *= ychange
+        window = self.get_subsystem("window")
+        if window:
+            # re-initialize all the windows with their new size
+            for win in self.get_windows():
+                if hasattr(win, "_xscale"):
+                    win._xscale *= xchange
+                if hasattr(win, "_yscale"):
+                    win._yscale *= ychange
 
-        def new_size_fn(w, h) -> tuple[int, int]:
-            minx, miny = 16384, 16384
-            if self.max_window_size != (0, 0):
-                minx, miny = self.max_window_size
-            return max(1, min(minx, round(w * xchange))), max(1, min(miny, round(h * ychange)))
+            max_window_size = window.max_window_size
 
-        self.resize_windows(new_size_fn)
-        self.reinit_window_icons()
+            def new_size_fn(w, h) -> tuple[int, int]:
+                minx, miny = 16384, 16384
+                if max_window_size != (0, 0):
+                    minx, miny = max_window_size
+                return max(1, min(minx, round(w * xchange))), max(1, min(miny, round(h * ychange)))
+
+            window.resize_windows(new_size_fn)
+            window.reinit_window_icons()
         self.emit("scaling-changed")
 
     def init_authenticated_packet_handlers(self) -> None:

@@ -107,7 +107,7 @@ class WindowPointer(StubClientMixin):
                 props["raw-button"] = button
             if server_buttons != buttons:
                 props["raw-buttons"] = buttons
-            seq = self.next_pointer_sequence(device_id)
+            seq = self.get_subsystem("pointer").next_pointer_sequence(device_id)
             packet = [POINTER_BUTTON, device_id, seq, wid, server_button, pressed, pointer, props]
         else:
             if server_button == -1:
@@ -116,7 +116,7 @@ class WindowPointer(StubClientMixin):
             if props:
                 packet += list(props.values())
         log("button packet: %s", packet)
-        self.send_positional(*packet)
+        self.get_subsystem("pointer").send_positional(*packet)
 
     @staticmethod
     def scale_pointer(pointer) -> tuple[int, int]:
@@ -135,7 +135,7 @@ class WindowPointer(StubClientMixin):
             device_id = -1
             wid = 0
             log(f"poll_pointer() updated position: {pos}")
-            self.send_mouse_position(device_id, wid, pos)
+            self.get_subsystem("pointer").send_mouse_position(device_id, wid, pos)
         return True
 
     def init_authenticated_packet_handlers(self) -> None:

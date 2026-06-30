@@ -21,6 +21,7 @@ class PowerEventClient(StubClientMixin):
     """
     Adds power events callbacks
     """
+    PREFIX = "power"
     __signals__: list[str] = ["suspend", "resume", "pause", "unpause"]
 
     def __init__(self):

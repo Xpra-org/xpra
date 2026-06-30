@@ -131,7 +131,7 @@ class Encodings(StubClientMixin):
         if not BACKWARDS_COMPATIBLE:
             def load() -> None:
                 self.load_all_codecs()
-                self.after_handshake(self.send_encoding_config)
+                self.client.after_handshake(self.send_encoding_config)
             start_thread(load, "load-all-codecs", daemon=True)
 
     def filter_video_decoder_options(self) -> tuple[str, ...]:
@@ -193,7 +193,7 @@ class Encodings(StubClientMixin):
         caps = typedict(packet.get_dict(1))
         Encodings._parse_server_capabilities(self, caps)
         # fire setting change event for the system-tray:
-        ssc = getattr(self, "server_setting_changed", noop)
+        ssc = getattr(self.client, "server_setting_changed", noop)
         ssc("encoding", caps)
 
     def get_info(self) -> dict[str, Any]:
@@ -217,7 +217,7 @@ class Encodings(StubClientMixin):
     def send_encoding_config(self) -> None:
         caps = self.get_encodings_caps()
         log("send_encoding_config() caps=%s", caps)
-        self.send("encoding-config", caps)
+        self.client.send("encoding-config", caps)
 
     def get_caps(self) -> dict[str, Any]:
         if not BACKWARDS_COMPATIBLE:
@@ -300,7 +300,7 @@ class Encodings(StubClientMixin):
         # figure out which CSC modes (usually YUV) can give us those RGB modes:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
         if has_codec("dec_webp"):
-            full_csc_modes["webp"] = ["BGRX", "BGRA", "RGBX", "RGBA"] if self.opengl_enabled else ["BGRX", "BGRA"]
+            full_csc_modes["webp"] = ["BGRX", "BGRA", "RGBX", "RGBA"] if self.client.opengl_enabled else ["BGRX", "BGRA"]
         if has_codec("dec_jpeg") or has_codec("dec_pillow"):
             full_csc_modes["jpeg"] = ["BGRX", "BGRA", "YUV420P"]
         if has_codec("dec_jpeg"):
@@ -379,32 +379,32 @@ class Encodings(StubClientMixin):
                 log.error(" " + csv(self.server_encodings))
                 return
         self.encoding = encoding
-        self.send("encoding", self.encoding)
+        self.client.send("encoding", self.encoding)
 
     def send_quality(self) -> None:
         q = self.quality
         log("send_quality() quality=%s", q)
         if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid quality: {q}")
-        self.send("quality", q)
+        self.client.send("quality", q)
 
     def send_min_quality(self) -> None:
         q = self.min_quality
         log("send_min_quality() min-quality=%s", q)
         if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid min-quality: {q}")
-        self.send("min-quality", q)
+        self.client.send("min-quality", q)
 
     def send_speed(self) -> None:
         s = self.speed
         log("send_speed() min-speed=%s", s)
         if s != -1 and (s < 0 or s > 100):
             raise ValueError(f"invalid speed: {s}")
-        self.send("speed", s)
+        self.client.send("speed", s)
 
     def send_min_speed(self) -> None:
         s = self.min_speed
         log("send_min_speed() min-speed=%s", s)
         if s != -1 and (s < 0 or s > 100):
             raise ValueError(f"invalid min-speed: {s}")
-        self.send("min-speed", s)
+        self.client.send("min-speed", s)

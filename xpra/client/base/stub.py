@@ -25,6 +25,34 @@ else:
 
 class StubClientMixin(superclass):
     __signals__: list[str] = []
+    # every concrete subsystem should declare a non-empty PREFIX,
+    # used as the key in `client.subsystems`:
+    PREFIX: str = ""
+
+    @property
+    def client(self):
+        # while subsystems are still mixed into a single client object,
+        # `self.client` is the client itself.
+        # Phase 2 (composition) will set `_client` to the owning client instance.
+        return getattr(self, "_client", None) or self
+
+    @client.setter
+    def client(self, value) -> None:
+        self._client = value
+
+    def get_subsystem(self, name: str):
+        """ look up a peer subsystem on the owning client """
+        return getattr(self.client, "subsystems", {}).get(name)
+
+    def get_window(self, wid: int):
+        """ look up a window by id on the `window` subsystem """
+        window = self.get_subsystem("window")
+        return window.get_window(wid) if window else None
+
+    def get_windows(self) -> tuple:
+        """ all the windows currently registered with the `window` subsystem """
+        window = self.get_subsystem("window")
+        return tuple(window._id_to_window.values()) if window else ()
 
     def init(self, opts) -> None:
         """

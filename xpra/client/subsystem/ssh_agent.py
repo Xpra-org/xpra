@@ -14,6 +14,7 @@ class SSHAgentClient(StubClientMixin):
     """
     Exposes ssh agent capability
     """
+    PREFIX = "ssh-agent"
 
     def get_caps(self) -> dict[str, Any]:
         ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK", "")

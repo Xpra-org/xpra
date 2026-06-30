@@ -33,6 +33,7 @@ class BandwidthClient(StubClientMixin):
     """
     Expose bandwidth information
     """
+    PREFIX = "bandwidth"
 
     def __init__(self):
         self.bandwidth_limit: int = 0

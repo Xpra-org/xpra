@@ -120,7 +120,9 @@ class MmapClient(StubClientMixin):
             read = True
             write = len(filenames) == 2
         group = self.mmap_group
-        root_w, root_h = self.get_root_size()
+        # weak dependency on the `display` subsystem:
+        display = self.get_subsystem("display")
+        root_w, root_h = display.get_root_size() if display else (0, 0)
         size = min(MAX_SIZE, max(MIN_SIZE, root_w * root_h * 4 * 8))
         if read:
             self.mmap_read_area = MmapArea("read", group, filenames[0], size)

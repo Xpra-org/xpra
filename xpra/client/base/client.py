@@ -67,12 +67,22 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     def __init__(self):
         self.defaults_init()
         PacketDispatcher.__init__(self)
+        # registry of subsystems, keyed by `PREFIX` (see `StubClientMixin.get_subsystem`):
+        # while subsystems are still mixed into this object, every entry is `self`.
+        self.subsystems: dict[str, Any] = {}
+        self.client = self
         for bc in CLIENT_BASES:
             sublog("%s.__init__()", bc)
             bc.__init__(self)
+            self.add_subsystem(bc)
         self.init_packet_handlers()
         self.exit_code: ExitValue | None = None
         self.start_time = int(time())
+
+    def add_subsystem(self, cls) -> None:
+        # while we still subclass, the subsystem instance is the client itself:
+        if prefix := getattr(cls, "PREFIX", ""):
+            self.subsystems[prefix] = self
 
     def idle_add(self, fn: Callable, *args, **kwargs) -> int:
         ...

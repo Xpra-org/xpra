@@ -45,10 +45,10 @@ class KeyboardClient(StubClientMixin):
 
     def init_ui(self, opts) -> None:
         send_keyboard = noop
-        if not self.readonly:
+        if not self.client.readonly:
             def do_send_keyboard(*parts):
                 log("do_send_keyboard%s", parts)
-                self.after_handshake(self.send, *parts)
+                self.client.after_handshake(self.client.send, *parts)
 
             send_keyboard = do_send_keyboard
         try:
@@ -61,8 +61,8 @@ class KeyboardClient(StubClientMixin):
                                                               opts.shortcut_modifiers,
                                                               opts.key_shortcut,
                                                               opts.keyboard_raw, **kwargs)
-            if DELAY_KEYBOARD_DATA and not self.readonly:
-                self.after_handshake(self.keyboard_helper.send_config)
+            if DELAY_KEYBOARD_DATA and not self.client.readonly:
+                self.client.after_handshake(self.keyboard_helper.send_config)
         except ImportError as e:
             log("error instantiating %s", self.keyboard_helper_class, exc_info=True)
             log.warn(f"Warning: no keyboard support, {e}")
@@ -103,13 +103,13 @@ class KeyboardClient(StubClientMixin):
     def get_keyboard_caps(self) -> dict[str, Any]:
         caps = {}
         kh = self.keyboard_helper
-        if self.readonly or not kh:
+        if self.client.readonly or not kh:
             # don't bother sending keyboard info, as it won't be used
             caps["keyboard"] = False
         else:
             caps["keyboard"] = True
             caps["ibus"] = True
-            caps["modifiers"] = self.get_current_modifiers()
+            caps["modifiers"] = self.client.get_current_modifiers()
             skip = ("keycodes", "x11_keycodes") if DELAY_KEYBOARD_DATA else ()
             caps["keymap"] = kh.get_keymap_properties(skip)
             # show the user a summary of what we have detected:
@@ -139,11 +139,13 @@ class KeyboardClient(StubClientMixin):
         kh = self.keyboard_helper
         if not kh:
             return False
-        wid = self._window_to_id[window]
+        # the window registry is owned by the `window` subsystem:
+        window_sub = self.get_subsystem("window")
+        wid = window_sub._window_to_id[window]
         log(f"handle_key_action({window}, {key_event}) wid={wid:#x}")
         if kh.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
             return False
-        if self.readonly:
+        if self.client.readonly:
             return False
         kh.process_key_event(wid, key_event)
         return False
