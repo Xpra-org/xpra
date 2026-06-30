@@ -460,7 +460,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
     def audio_control(self, action: str, *args):
         fn = "audio_control_" + action.replace("-", "_")
         method = getattr(self, fn, None)
-        log(f"audio_control({action}, {args}) {self}.{fn}={method}")
+        log(f"audio_control({action}, {args}) {fn}={method}")
         if not method:
             msg = f"unknown audio action {action!r}"
             if first_time(f"unknown-{method}"):

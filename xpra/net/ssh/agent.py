@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import shlex
 from collections.abc import Iterable
 
 from xpra.util.io import is_socket
@@ -97,7 +98,7 @@ def setup_proxy_ssh_socket(
     # evaluate the environment at call time, not at import time:
     auth_sock = auth_sock or os.environ.get("SSH_AUTH_SOCK", "")
     session_dir = session_dir or os.environ.get("XPRA_SESSION_DIR", "")
-    log(f"setup_proxy_ssh_socket({cmdline}, {auth_sock!r}")
+    log(f"setup_proxy_ssh_socket({shlex.join(cmdline)!r}, {auth_sock!r}")
     # this is the socket path that the ssh client wants us to use:
     # ie: "SSH_AUTH_SOCK=/tmp/ssh-XXXX4KyFhe/agent.726992"
     if not auth_sock or not os.path.exists(auth_sock) or not is_socket(auth_sock):
