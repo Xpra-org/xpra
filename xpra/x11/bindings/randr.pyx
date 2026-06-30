@@ -1061,7 +1061,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
         if rsc==NULL:
             log.error("Error: cannot access screen resources")
-            return {}
+            return
         if output<0 or output>=rsc.noutput:
             raise ValueError(f"invalid output number {output}, only {rsc.noutput} outputs")
         cdef RROutput rro = rsc.outputs[output]
@@ -1090,7 +1090,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         XRRDeleteMonitor(self.display, window, name_atom)
         self.XSync()
 
-    def set_crtc_config(self, monitor_defs: Dict) -> None:
+    def set_crtc_config(self, monitor_defs: Dict) -> bool:
         self.context_check("set_crtc_config")
         log(f"set_crtc_config({monitor_defs})")
         def dpi96(v):
@@ -1278,7 +1278,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
             if not monitors:
                 log.error("Error: failed to retrieve the list of monitors")
-                return
+                return False
             for mi in range(nmonitors):
                 name = self.get_atom_name(monitors[mi].name)
                 if not monitors[mi].automatic:
@@ -1292,7 +1292,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
             if not monitors:
                 log.error("Error: failed to retrieve the list of monitors")
-                return
+                return False
             monitor_names = []
             for mi in range(nmonitors):
                 name = self.get_atom_name(monitors[mi].name)
@@ -1347,7 +1347,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
             if not monitors:
                 log.error("Error: failed to retrieve the list of monitors")
-                return
+                return False
             all_names = []
             delete = []
             try:
