@@ -334,7 +334,7 @@ class WindowModel:
     This fake window class doesn't do anything with the requests.
     """
 
-    def __init__(self, wid: int, *args):
+    def __init__(self, wid: int, *_args):
         self.wid = wid
         self.show = self.draw_region = self.set_cursor_data = self.show_pointer_overlay = noop
         self.resize = self.move_resize = self.update_metadata = noop

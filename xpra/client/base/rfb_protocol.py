@@ -705,6 +705,7 @@ class RFBClientProtocol(RFBProtocol):
 
     def _parse_desktop_size(self, x: int, y: int, w: int, h: int, body) -> int:
         # DesktopSize pseudo-encoding: w,h are the new framebuffer size; no data follows
+        log("RFB desktop size: %s", (x, y, w, h))
         self._resize_desktop(w, h)
         return 0
 

@@ -203,7 +203,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         # this will call do_command()
         return super().server_connection_established(caps)
 
-    def _process_startup_complete(self, packet: Packet) -> None:
+    def _process_startup_complete(self, _packet: Packet) -> None:
         self.refresh_timer = self.timeout_add(REFRESH * 1000, self.request_refresh)
         # create the "desktop" window:
         geom = NO_GEOMETRY
@@ -407,7 +407,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         window.record("bell", device=device, percent=percent, pitch=pitch, duration=duration,
                       bell_class=bell_class, bell_id=bell_id, bell_name=bell_name)
 
-    def _process_cursor_default(self, packet: Packet) -> None:
+    def _process_cursor_default(self, _packet: Packet) -> None:
         for window in self._id_to_window.values():
             window.cursor_data = {}
             window.record("cursor-default")

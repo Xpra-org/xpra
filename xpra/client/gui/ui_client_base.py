@@ -270,6 +270,7 @@ class UIXpraClient(ClientBaseClass):
 
     def connection_accepted(self, caps: typedict) -> None:
         """ overriden here so we can call `handshake_complete` from the main thread """
+        log("connection accepted caps=%s", Ellipsizer(caps))
         self.connection_established = True
         self.idle_add(self.handshake_complete)
 

@@ -65,7 +65,6 @@ class RDPServer(StubSubsystem):
         conn.set_timeout(NEGOTIATION_TIMEOUT)
         # read until we have a complete TPKT PDU (the Connection Request):
         buf = data
-        payload = b""
         while True:
             payload, consumed = parse_tpkt(buf)
             if consumed:

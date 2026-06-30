@@ -329,7 +329,7 @@ class ControlWindow:
             self.replay.toggle_play_pause()
         self.replay.seek(0)
 
-    def speed_changed(self, *args) -> None:
+    def speed_changed(self, *_args) -> None:
         self.replay.set_rate(self.speed_spin.get_value())
 
     def set_events_data(self, event_times: list[int], sync_times: list[int]) -> None:

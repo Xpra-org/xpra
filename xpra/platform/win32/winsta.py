@@ -198,6 +198,7 @@ def create_user_winsta(username: str, token: HANDLE) -> str:
     The handles are kept alive internally; call :func:`destroy_user_winsta`
     when the session ends.
     """
+    log("create_user_winsta(%r, %#x)", username, token)
     # Window station names may only contain alphanumeric, underscore and $.
     import re as _re
     safe_name  = _re.sub(r"[^a-zA-Z0-9_$]", "_", username)

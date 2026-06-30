@@ -224,6 +224,7 @@ class WebcamServer(StubSubsystem):
         env = self.server.get_child_env()
         log("spawning webcam-client: %s", cmd)
         log(" with env=%s", env)
+        log(" for webcam size %ix%i", w, h)
         try:
             proc = Popen(cmd, env=env, close_fds=True)
             self.client_processes[device_id] = proc
