@@ -874,7 +874,6 @@ cdef class Encoder:
             "qp_max"            : param.rc.i_qp_max,
             "qp_step"           : param.rc.i_qp_step,
             "bitrate"           : param.rc.i_bitrate,
-            "vbv_max_bitrate"   : param.rc.i_vbv_max_bitrate,
             "vbv_buffer_size"   : param.rc.i_vbv_buffer_size,
             #"vbv_buffer_init"   : param.rc.f_vbv_buffer_init, #can't have floats with bencoder
             "vbv_max_bitrate"   : param.rc.i_vbv_max_bitrate,

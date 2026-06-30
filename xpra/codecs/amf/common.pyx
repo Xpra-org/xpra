@@ -257,7 +257,6 @@ cdef object get_caps(AMFCaps *caps, props: Dict):
     pycaps["acceleration"] = ACCEL_TYPE_STR(accel)
 
     getters: Dict[str, Callable] = {
-        "max-bitrate": get_int64,
         "number-of-streams": get_int64,
         "max-profile": get_int64,
         "max-tier": get_int64,

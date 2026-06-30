@@ -195,7 +195,6 @@ ENCODING_CAPS: Dict[str, Dict[str, str]] = {
         "pre-analysis": "PreAnalysis",
     },
     "av1": {
-        "max-bitrate" : "Av1MaxBitrate",
         # "number-of-streams": n/a
         "max-level": "Av1MaxLevel",
         "max-profile": "Av1MaxProfile",

@@ -348,11 +348,8 @@ cdef extern from *:
 _FORMAT_MAP: dict[int, tuple[str, int]] = {
     87:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8X8_UNORM
     91:  ("BGRA", 32),    # DXGI_FORMAT_B8G8R8A8_UNORM_SRGB  (uncommon)
-    87:  ("BGRX", 32),    # duplicate key; last wins — kept for clarity
     28:  ("RGBA", 32),    # DXGI_FORMAT_R8G8B8A8_UNORM
     26:  ("r210", 30),    # DXGI_FORMAT_R10G10B10A2_UNORM
-    87:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8X8_UNORM
-    91:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
     # most common: 87 = BGRX, 88 = BGRA
     88:  ("BGRA", 32),    # DXGI_FORMAT_B8G8R8A8_UNORM (with alpha)
 }
