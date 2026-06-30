@@ -155,7 +155,7 @@ class WindowManagerClient(StubClientMixin):
         if not c.boolget("windows", True):
             log.warn("Warning: window forwarding is not enabled on this server")
         self.server_window_states = c.strtupleget("window.states", DEFAULT_SERVER_WINDOW_STATES)
-        self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
+        self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")
         self.connect("startup-complete", self.log_windows_info)
         return True
 
