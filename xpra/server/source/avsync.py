@@ -92,6 +92,7 @@ class AVSyncConnection(StubClientConnection):
         else:
             log("av-sync support is disabled, setting it to 0")
             self.av_sync_delay_total = 0
+            enabled = False
         for ws in self.window_sources.values():
             ws.set_av_sync(enabled)
             ws.set_av_sync_delay(self.av_sync_delay_total)
