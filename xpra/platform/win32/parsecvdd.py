@@ -889,7 +889,7 @@ class VirtualDisplay:
 # CLI smoke-test
 # ---------------------------------------------------------------------------
 
-def main(argv: list[str]) -> int:
+def main() -> int:
     import time
 
     print("Parsec VDD smoke test")
@@ -942,4 +942,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main())

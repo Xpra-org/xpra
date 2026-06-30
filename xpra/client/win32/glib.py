@@ -53,10 +53,14 @@ class WindowsMessageSource(GLib.Source):
         # log("check() PeekMessage(..)=%s", has_message != 0)
         return has_message != 0
 
+    # noinspection PyUnusedLocal
     def dispatch(self, callback, user_data):
         """
         Process a LIMITED number of Windows messages per call
         This allows GLib main loop to run and Windows to do background work
+
+        ``callback`` and ``user_data`` are part of GLib's ``GSource.dispatch``
+        signature for custom sources.
         """
         max_messages = 5
         processed = 0

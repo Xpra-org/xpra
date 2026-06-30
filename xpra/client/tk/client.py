@@ -126,6 +126,7 @@ class XpraTkClient:
         app.after(0, call_handler)
 
     def _process_connection_close(self, packet: Packet):
+        log("%s", packet)
         self.quit(0)
 
     def _process_hello(self, packet: Packet) -> None:

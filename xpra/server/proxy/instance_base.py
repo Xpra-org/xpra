@@ -203,7 +203,7 @@ class ProxyInstance:
 
     ################################################################################
 
-    def get_proxy_info(self, proto) -> dict[str, Any]:
+    def get_proxy_info(self, _proto) -> dict[str, Any]:
         linfo = {}
         if self.client_last_ping_latency:
             linfo["client"] = round(self.client_last_ping_latency)

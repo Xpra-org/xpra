@@ -510,6 +510,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         return True
 
     def connection_accepted(self, caps: typedict) -> None:
+        log("accepted caps=%s", Ellipsizer(caps))
         self.connection_established = True
         self.handshake_complete()
 

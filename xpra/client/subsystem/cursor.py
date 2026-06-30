@@ -145,6 +145,7 @@ class CursorClient(StubClientMixin):
         self.set_windows_cursor(self._id_to_window.values(), cursor_data)
 
     def _process_cursor_default(self, packet: Packet) -> None:
+        log("setting default cursor: %s", packet)
         if not self.cursors_enabled:
             return
         self.reset_cursor()

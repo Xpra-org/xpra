@@ -146,6 +146,7 @@ class XpraPygletClient:
         netlog.info("got hello from %s server" % self.hello.get("version", ""))
 
     def _process_connection_close(self, packet: Packet):
+        log("%s", packet)
         self.quit(0)
 
     def _process_setting_change(self, packet: Packet) -> None:

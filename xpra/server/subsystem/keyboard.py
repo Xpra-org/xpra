@@ -413,7 +413,7 @@ class KeyboardManager(StubSubsystem):
         self._handle_key(wid, False, keyname, keyval, keycode, modifiers, is_mod, True)
         self.keys_timedout[keycode] = now
 
-    def _process_key_repeat(self, proto, packet: Packet) -> None:
+    def _process_key_repeat(self, _proto, _packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
 
     def _process_keyboard_sync(self, proto, packet: Packet) -> None:

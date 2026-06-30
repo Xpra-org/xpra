@@ -1089,7 +1089,7 @@ def setup_gl_drawing_area(widget) -> None:
     if not hwnd:
         return
 
-    def _proc(h, msg, wparam, lparam, uid, ref_data):
+    def _proc(h, msg, wparam, lparam, _uid, _ref_data):
         if msg == WM_SETCURSOR:
             SetCursor(GetCursor())
             return 1

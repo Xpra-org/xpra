@@ -458,7 +458,7 @@ class SECURITY_ATTRIBUTES(Structure):
 LPSECURITY_ATTRIBUTES = POINTER(SECURITY_ATTRIBUTES)
 
 
-def _check_status(result, func, args):
+def _check_status(result, _func, args):
     if result.value < 0:
         raise WinError(result.to_error())
     return args
