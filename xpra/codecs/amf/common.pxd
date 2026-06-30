@@ -5,12 +5,11 @@
 
 from typing import Dict
 
-from libc.stddef cimport wchar_t
-from libc.stdint cimport uint64_t, uintptr_t
+from libc.stdint cimport uint64_t
 
 from xpra.codecs.amf.amf cimport (
-    AMF_RESULT, AMFFactory, AMFGuid, AMFSurface, AMFSurfaceVtbl,
-    AMFPlane, AMFPlaneVtbl, AMFData, AMFCaps, AMFIOCaps, AMFVariantStruct,
+    AMF_RESULT, AMFFactory, AMFGuid, AMFSurface,
+    AMFPlane, AMFData, AMFCaps, AMFIOCaps,
     amf_uint32, amf_uint16, amf_uint8,
 )
 

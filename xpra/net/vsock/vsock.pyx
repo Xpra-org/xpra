@@ -117,7 +117,7 @@ def bind_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_HOST, port=VMADDR_PORT_AN
     log("server_socket(%s)", (SOCK_TYPES.get(sock_type, sock_type), CID_TYPES.get(cid, cid), port))
     assert sock_type in (SOCK_STREAM, SOCK_DGRAM), "invalid socket type %s" % sock_type
     #assert cid in (VMADDR_CID_ANY, VMADDR_CID_HYPERVISOR, VMADDR_CID_HOST), "invalid cid %s" % cid
-    assert port==VMADDR_PORT_ANY or (port>0 and port<65536)
+    assert port == VMADDR_PORT_ANY or (0 < port < 65536)
     log("socket(AF_VSOCK, %s, 0)", SOCK_TYPES.get(sock_type, sock_type))
     cdef int sockfd = socket(AF_VSOCK, sock_type, 0)
     log("socket(..)=%i", sockfd)
@@ -174,7 +174,7 @@ def connect_vsocket(sock_type=SOCK_STREAM, cid=VMADDR_CID_ANY, port=VMADDR_PORT_
     log("connect_vsocket(%s)", (cid, port, sock_type))
     assert sock_type in (SOCK_STREAM, SOCK_DGRAM), "invalid socket type %s" % sock_type
     #assert cid in (VMADDR_CID_ANY, VMADDR_CID_HYPERVISOR, VMADDR_CID_HOST), "invalid cid %s" % cid
-    assert port==VMADDR_PORT_ANY or (port>0 and port<65536)
+    assert port == VMADDR_PORT_ANY or (0 < port < 65536)
     log("socket(%i, %i, 0)", AF_VSOCK, sock_type)
     cdef int sockfd = socket(AF_VSOCK, sock_type, 0)
     log("socket(AF_VSOCK, SOCK_DGRAM, 0)=%i", sockfd)

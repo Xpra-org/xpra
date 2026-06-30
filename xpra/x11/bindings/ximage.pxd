@@ -13,14 +13,14 @@ cdef inline unsigned int roundup(unsigned int n, unsigned int m) noexcept:
 
 
 cdef inline unsigned char BYTESPERPIXEL(unsigned int depth) noexcept:
-    if depth>=24 and depth<=32:
+    if 24 <= depth <= 32:
         return 4
-    elif depth==16:
+    elif depth == 16:
         return 2
-    elif depth==8:
+    elif depth == 8:
         return 1
     #shouldn't happen!
-    return roundup(depth, 8)//8
+    return roundup(depth, 8) // 8
 
 
 cdef inline unsigned int MIN(unsigned int a, unsigned int b) noexcept:

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from libc.stddef cimport wchar_t
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, int64_t, uint64_t
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, int64_t
 
 ctypedef void *amf_handle
 ctypedef long amf_long

@@ -28,7 +28,6 @@ import time
 from typing import Any
 
 from libc.stdint cimport uintptr_t, uint8_t, uint32_t
-from libc.stddef cimport size_t
 from libc.string cimport memcpy
 
 from xpra.log import Logger

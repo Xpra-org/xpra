@@ -3,11 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any, Dict, Tuple, List
-from collections.abc import Sequence
-
-import binascii
-import ctypes
+from typing import List
 
 from libc.stdint cimport int8_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t   # pylint: disable=syntax-error
 

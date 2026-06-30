@@ -1126,7 +1126,7 @@ cdef class Encoder:
         return self.do_compress_image(NULL)
 
     def set_encoding_speed(self, int pct) -> None:
-        assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
+        assert 0 <= pct <= 100, "invalid percentage: %s" % pct
         assert self.context!=NULL, "context is closed!"
         cdef x264_param_t param
         cdef int new_preset = get_x264_preset(pct)

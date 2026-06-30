@@ -1896,7 +1896,7 @@ cdef class Encoder:
             r = self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount)
         raiseNVENC(r, "getting input format count")
         log(f"{inputFmtCount} input format types:")
-        assert inputFmtCount>0 and inputFmtCount<2**8
+        assert 0 < inputFmtCount < 2**8
         cdef NV_ENC_BUFFER_FORMAT* inputFmts = <NV_ENC_BUFFER_FORMAT*> cmalloc(sizeof(int) * inputFmtCount, "input formats")
         try:
             if DEBUG_API:

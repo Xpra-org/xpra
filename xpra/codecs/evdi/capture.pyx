@@ -12,7 +12,7 @@ from time import monotonic
 from typing import Tuple, List
 from collections.abc import Sequence
 
-from xpra.util.str_fn import bytestostr, strtobytes, memoryview_to_bytes
+from xpra.util.str_fn import strtobytes
 
 from xpra.log import Logger
 log = Logger("evdi")

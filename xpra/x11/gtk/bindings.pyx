@@ -7,7 +7,6 @@
 from time import monotonic
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import strtobytes, csv
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")
@@ -18,13 +17,12 @@ Gdk = gi_import("Gdk")
 Gtk = gi_import("Gtk")
 
 
-from xpra.x11.bindings.xlib cimport Display, Window, Visual, XEvent, XFree
+from xpra.x11.bindings.xlib cimport Display, Window, Visual, XEvent
 from xpra.x11.bindings.events cimport parse_xevent, init_x11_events
 from xpra.x11.bindings.events import get_x_event_signals, get_x_event_type_name
 from xpra.x11.dispatch import route_event
 
-from libc.stdint cimport uintptr_t
-from xpra.gtk.bindings.gobject cimport wrap, unwrap
+from xpra.gtk.bindings.gobject cimport unwrap
 
 
 from xpra.x11.common import REPR_FUNCTIONS

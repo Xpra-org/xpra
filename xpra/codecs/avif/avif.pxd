@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Dict
-from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t   #pylint: disable=syntax-error
+from libc.stdint cimport uint8_t, uint32_t, uint64_t   #pylint: disable=syntax-error
 
 DEF AVIF_PLANE_COUNT_YUV = 3
 
