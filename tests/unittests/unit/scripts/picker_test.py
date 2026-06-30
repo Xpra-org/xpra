@@ -212,7 +212,7 @@ class TestConnectOrFail(unittest.TestCase):
         orig = getattr(connect_mod, "connect_to", None)
         connect_mod.connect_to = lambda *a, **kw: conn
         try:
-            result = connect_or_fail({}, MagicMock())
+            result = connect_or_fail({})
             self.assertIs(result, conn)
         finally:
             if orig is not None:
@@ -232,7 +232,7 @@ class TestConnectOrFail(unittest.TestCase):
             connect_mod.connect_to = fail_connect
             try:
                 with self.assertRaises(InitExit) as ctx:
-                    connect_or_fail({}, MagicMock())
+                    connect_or_fail({})
                 self.assertIn("gone", str(ctx.exception))
             finally:
                 if orig_connect_to is not None:
@@ -244,7 +244,7 @@ class TestConnectOrFail(unittest.TestCase):
         connect_mod.connect_to = lambda *a, **kw: (_ for _ in ()).throw(InitException("init error"))
         try:
             with self.assertRaises(InitException):
-                connect_or_fail({}, MagicMock())
+                connect_or_fail({})
         finally:
             if orig is not None:
                 connect_mod.connect_to = orig
@@ -255,7 +255,7 @@ class TestConnectOrFail(unittest.TestCase):
         connect_mod.connect_to = lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("oops"))
         try:
             with self.assertRaises(InitExit):
-                connect_or_fail({}, MagicMock())
+                connect_or_fail({})
         finally:
             if orig is not None:
                 connect_mod.connect_to = orig

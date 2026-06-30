@@ -226,7 +226,7 @@ def single_display_match(dir_servers, nomatch="cannot find any live servers to c
     return sockdir, name, path
 
 
-def connect_or_fail(display_desc, opts):
+def connect_or_fail(display_desc):
     from xpra.net.bytestreams import ConnectionClosedException
     from xpra.net.connect import connect_to
     try:

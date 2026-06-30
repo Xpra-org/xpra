@@ -1186,7 +1186,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
     def do_setup_connection() -> None:
         try:
             log("do_setup_connection() display_desc=%s", display_desc)
-            conn = connect_or_fail(display_desc, opts)
+            conn = connect_or_fail(display_desc)
             if not conn:
                 raise RuntimeError("not connected")
             log("do_setup_connection() conn=%s", conn)
@@ -1389,7 +1389,7 @@ def connect_client_app(app, cmdline: list[str], opts, extra_args: list[str], mod
                 # forward the backend to the remote `_proxy_run` subcommand so that it can honour it:
                 display_desc["display_as_args"].append(f"--backend={opts.backend}")
             display_desc["display_as_args"] += run_args
-            connect_or_fail(display_desc, opts)
+            connect_or_fail(display_desc)
             return FakeClientApp()
         else:
             connect_to_server(app, display_desc, opts)
@@ -2074,7 +2074,7 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
 
         while True:
             try:
-                conn = connect_or_fail(params, opts)
+                conn = connect_or_fail(params)
                 protocol = app.make_protocol(conn)
                 # start the protocol now: `protocol.start()` is idempotent, so this is safe
                 # even for the command clients which also start it from their own `run()` method:
@@ -2506,7 +2506,7 @@ def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode:
             except OSError:
                 sshlog = Logger("ssh")
                 sshlog.error("Error setting up client ssh agent forwarding socket", exc_info=True)
-    server_conn = connect_or_fail(display, opts)
+    server_conn = connect_or_fail(display)
     from xpra.scripts.fdproxy import XpraProxy
     from xpra.net.bytestreams import TwoFileConnection
     pipe = TwoFileConnection(sys.stdout, sys.stdin, socktype="stdin/stdout")
