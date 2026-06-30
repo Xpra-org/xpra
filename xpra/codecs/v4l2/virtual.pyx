@@ -282,7 +282,6 @@ def get_type() -> str:
 
 
 def get_info() -> Dict[str,Any]:
-    global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
         "version"   : get_version(),
     }
