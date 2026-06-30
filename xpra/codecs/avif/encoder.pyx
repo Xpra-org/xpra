@@ -122,16 +122,14 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     cdef avifRWData avifOutput
     memset(&avifOutput, 0, sizeof(avifRWData))
 
-    AVIF_QUANTIZER_WORST_QUALITY
-    AVIF_QUANTIZER_BEST_QUALITY
     cdef int speed = options.intget("speed", 50)
     cdef int quality = options.intget("quality", 50)
-    cdef uint8_t lossless = quality >= 100 and not grayscale
-    #AVIF_QUANTIZER_BEST_QUALITY 0
-    #AVIF_QUANTIZER_WORST_QUALITY 63
+    cdef uint8_t lossless = quality >= 100
     qrange = 20
-    cdef int minq = AVIF_QUANTIZER_WORST_QUALITY - AVIF_QUANTIZER_WORST_QUALITY*100//quality
-    cdef int maxq = max(0, minq-qrange)
+    # map quality (0..100) to a base quantizer (0=best .. 63=worst), then allow the
+    # rate controller a band of `qrange` worse to save bits on easy frames:
+    cdef int minq = max(AVIF_QUANTIZER_BEST_QUALITY, AVIF_QUANTIZER_WORST_QUALITY * (100 - quality) // 100)
+    cdef int maxq = min(AVIF_QUANTIZER_WORST_QUALITY, minq + qrange)
     client_options = {"quality" : quality}
 
     with buffer_context(pixels) as bc:
@@ -139,13 +137,18 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
         log("avif.encode(%s, %s, %s) pixels=%#x", coding, image, options, int(bc))
         try:
             if lossless:
-                # encode the R/G/B channels directly, with no YCbCr transform (identity
-                # matrix) at full range and 4:4:4, so the round-trip is bit-exact - the
-                # quantizer is already 0 at quality=100:
-                avif_image.matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_IDENTITY
-                avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV444
+                # bit-exact round-trip: full range and lossless quantizer, no subsampling:
                 avif_image.yuvRange = AVIF_RANGE_FULL
-                client_options["subsampling"] = "YUV444"
+                minq = maxq = AVIF_QUANTIZER_LOSSLESS
+                if grayscale:
+                    avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV400
+                    client_options["subsampling"] = "YUV400"
+                else:
+                    # identity matrix encodes the R/G/B channels directly with no YCbCr
+                    # transform - this requires 4:4:4:
+                    avif_image.matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_IDENTITY
+                    avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV444
+                    client_options["subsampling"] = "YUV444"
             else:
                 if image.get_full_range():
                     avif_image.yuvRange = AVIF_RANGE_FULL
