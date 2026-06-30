@@ -15,8 +15,8 @@ class SubsurfaceWindowSource(WindowVideoSource):
 
     def __init__(self, *args, parent_wid: int, offset_x: int, offset_y: int,
                  logical_width: int = 0, logical_height: int = 0,
-                 native_width: int = 0, native_height: int = 0, **kwargs):
-        super().__init__(*args, **kwargs)
+                 native_width: int = 0, native_height: int = 0):
+        super().__init__(*args)
         self.parent_wid = parent_wid
         self.offset_x = offset_x
         self.offset_y = offset_y
