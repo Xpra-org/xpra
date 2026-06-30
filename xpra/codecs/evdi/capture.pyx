@@ -330,10 +330,11 @@ cdef class EvdiDevice:
             except KeyboardInterrupt as e:
                 log(f"{e}")
                 self.cleanup()
-                return
+                raise
             except Exception:
+                log("grab_pixels", exc_info=True)
                 self.cleanup()
-                return
+                return ()
         areas = tuple((rects[i].x1, rects[i].y1, rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1) for i in range(nrects))
         log(f"evdi_grab_pixels(%#x, %#x, {nrects}) areas={areas}", <uintptr_t> self.handle, <uintptr_t> rects)
         cdef int buf_size = rowstride * self.mode.height
