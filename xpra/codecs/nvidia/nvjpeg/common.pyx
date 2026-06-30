@@ -60,7 +60,7 @@ class NVJPEG_Exception(Exception):
 
 def errcheck(int r, fnname="", *args):
     if r:
-        fstr = fnname % (args)
+        fstr = fnname % (args, )
         raise NVJPEG_Exception("%s failed: %s" % (fstr, ERR_STR.get(r, r)))
 
 
