@@ -270,7 +270,6 @@ def get_type():
     return "v4l2"
 
 def get_info() -> Dict[str,Any]:
-    global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
         "version"   : get_version(),
         }
