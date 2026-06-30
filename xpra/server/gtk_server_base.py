@@ -241,6 +241,8 @@ class GTKServerBase(ServerBase):
 
     def calculate_workarea(self, maxw:int, maxh:int) -> None:
         screenlog("calculate_workarea(%s, %s)", maxw, maxh)
+        if not maxw or not maxh:
+            raise ValueError("invalid dimensions: %ix%i" % (maxw, maxh))
         workarea = Gdk.Rectangle()
         workarea.width = maxw
         workarea.height = maxh
@@ -262,13 +264,18 @@ class GTKServerBase(ServerBase):
                     display_workarea.width = work_w
                     display_workarea.height = work_h
                     screenlog("calculate_workarea() found %s for display %s", display_workarea, display[0])
-                    success, workarea = workarea.intersect(display_workarea)
+                    success, common_workarea = workarea.intersect(display_workarea)
                     if not success:
                         log.warn("Warning: failed to calculate workarea")
                         log.warn(" as intersection of %s and %s", (maxw, maxh), (work_x, work_y, work_w, work_h))
+                        workarea = None
+                        break
+                    workarea = common_workarea
+            if not workarea:
+                break
         #sanity checks:
         screenlog("calculate_workarea(%s, %s) workarea=%s", maxw, maxh, workarea)
-        if workarea.width==0 or workarea.height==0 or workarea.width>=32768-8192 or workarea.height>=32768-8192:
+        if not workarea or workarea.width==0 or workarea.height==0 or workarea.width>=32768-8192 or workarea.height>=32768-8192:
             screenlog.warn("Warning: failed to calculate a common workarea")
             screenlog.warn(" using the full display area: %ix%i", maxw, maxh)
             workarea = Gdk.Rectangle()
