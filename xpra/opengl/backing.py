@@ -1713,7 +1713,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 pass
             log(f"texture {index}: {tex_name:2} div={div_w},{div_h}, rowstride={rowstride}, {w}x{h}, "
                 f"data={size:8} bytes, upload={upload}, format={dformat}, type={uformat}")
-            if SHOW_PLANE_RANGES:
+            if SHOW_PLANE_RANGES and pixel_data:
                 from xpra.codecs.argb.argb import get_plane_range
                 log.info("range=%s, hex=%s", get_plane_range(pixel_data, w, rowstride, h), hexstr(pixel_data[:64]))
 
