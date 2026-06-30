@@ -14,11 +14,11 @@ cdef extern from "math.h":
 
 from math import sqrt
 def logp(double x) -> float:
-    return log(1.0+x)*1.4426950408889634
+    return log(1.0 + x)*1.4426950408889634
 
 
 cdef inline double clogp(double x) noexcept nogil:
-    return log(1.0+x)*1.4426950408889634
+    return log(1.0 + x)*1.4426950408889634
 
 
 SMOOTHING_NAMES = {sqrt: "sqrt", logp: "logp"}
@@ -192,9 +192,9 @@ def calculate_for_average(metric, float avg_value, float recent_value,
         Calculates factor and weight based on how far we are from the average value.
         This is used by metrics for which we do not know the optimal target value.
     """
-    cdef double avg = avg_value/div
-    cdef double recent = recent_value/div
-    cdef double factor = clogp(recent/avg)
+    cdef double avg = avg_value / div
+    cdef double recent = recent_value / div
+    cdef double factor = clogp(recent / avg)
     cdef double weight = max(0, max(factor, 1.0/factor)-1.0+weight_offset)/weight_div
     info = {"avg"   : int(1000.0*avg),
             "recent": int(1000.0*recent)}

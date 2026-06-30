@@ -10,6 +10,7 @@ from time import sleep, monotonic
 from typing import Any, NoReturn
 from collections.abc import Sequence
 
+from xpra.common import noop
 from xpra.net.ssh.paramiko.util import keymd5, get_key_fingerprints, load_private_key, SSHSocketConnection
 from xpra.scripts.main import InitException, InitExit
 from xpra.scripts.args import shellquote
@@ -127,10 +128,10 @@ class SSHProxyCommandConnection(SSHSocketConnection):
 
 def safe_lookup(config_obj, hostname: str) -> dict:
     try:
-        _lookup = getattr(config_obj, "_lookup", None)
+        _lookup = getattr(config_obj, "_lookup", noop)
         import paramiko
         # older versions don't have the same signature for `_lookup`:
-        if _lookup and getattr(paramiko, "__version_info__", (0, )) >= (3, 3):
+        if _lookup != noop and getattr(paramiko, "__version_info__", (0, )) >= (3, 3):
             # completely duplicate the paramiko logic since they're unwilling to merge a trivial change :(
             options = _lookup(hostname=hostname)
             # Inject HostName if it was not set (this used to be done incidentally
@@ -147,13 +148,9 @@ def safe_lookup(config_obj, hostname: str) -> dict:
                 hostname = config_obj.canonicalize(hostname, options, domains)
                 # Overwrite HostName again here (this is also what OpenSSH does)
                 options["hostname"] = hostname
-                options = _lookup(
-                    hostname, options, canonical=True, final=True
-                )
+                options = _lookup(hostname, options, canonical=True, final=True)
             else:
-                options = _lookup(
-                    hostname, options, canonical=False, final=True
-                )
+                options = _lookup(hostname, options, canonical=False, final=True)
         else:
             options = config_obj.lookup(hostname)
         return dict(options or {})
