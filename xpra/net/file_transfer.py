@@ -550,7 +550,7 @@ class FileTransferHandler(FileTransferAttributes):
                                      chunk_state.printit, chunk_state.openit, chunk_state.filesize, options,
                                      chunk_state.send_id)
 
-    def accept_data(self, send_id: str, dtype, basefilename: str,
+    def accept_data(self, send_id: str, dtype: str, basefilename: str,
                     printit: bool, openit: bool) -> tuple[bool, bool, bool]:
         # subclasses should check the flags,
         # and if ask is True, verify they have accepted this specific send_id

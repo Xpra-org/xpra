@@ -339,6 +339,7 @@ def find_in_PATH(command: str) -> str | None:
 def which(command: str) -> str:
     try:
         from shutil import which
+        # noinspection PyDeprecation
         return which(command) or ""
     except OSError:
         get_util_logger().debug(f"find_executable({command})", exc_info=True)

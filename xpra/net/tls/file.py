@@ -218,6 +218,7 @@ def gen_ssl_cert() -> tuple[str, str]:
         log.info(f" {certpath!r}")
         return keypath, certpath
     from shutil import which
+    # noinspection PyDeprecation
     openssl = which("openssl") or os.environ.get("OPENSSL", "")
     if not openssl:
         raise InitExit(ExitCode.SSL_FAILURE, "cannot find openssl executable")
