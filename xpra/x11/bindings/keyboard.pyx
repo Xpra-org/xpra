@@ -881,7 +881,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
     def get_keycodes_down(self):
         self.context_check("get_keycodes_down")
         if not self.hasXkb():
-            {}
+            return {}
         cdef char* key
         cdef KeySym keysym
         cdef int group, level
