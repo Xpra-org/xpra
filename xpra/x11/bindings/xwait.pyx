@@ -16,10 +16,10 @@ from xpra.x11.bindings.xlib cimport (
 
 
 cdef int exit_code = -1
-exit_event = threading.Event()
+cdef object exit_event = threading.Event()
 
 
-def err(s) -> None:
+cdef void err(s: str) noexcept:
     try:
         sys.stderr.write("%s\n"  % s)
         sys.stderr.flush()
@@ -27,7 +27,7 @@ def err(s) -> None:
         pass
 
 
-cdef void end(msg, int code = exit_code) noexcept:
+cdef void end(msg: str, int code = exit_code) noexcept:
     global exit_code, exit_event
     err(msg)
     exit_code = code
@@ -35,9 +35,7 @@ cdef void end(msg, int code = exit_code) noexcept:
 
 
 cdef int x11_io_error_handler(Display *display) except 0:
-    global message
-    message = b"X11 fatal IO error"
-    exit_code = 0
+    end("X11 fatal IO error", 0)
     return 0
 
 
@@ -52,7 +50,8 @@ for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.
 
 
 def os_signal(signum, _frame=None) -> None:
-    end("\ngot signal %s" % SIGNAMES.get(signum, signum), 128-signum)
+    signame = SIGNAMES.get(signum, signum)
+    end("\ngot signal %s" % signame, 128-signum)
 
 
 def xwait(display_name: str="") -> None:
@@ -71,7 +70,8 @@ def xwait(display_name: str="") -> None:
     XSetErrorHandler(&x11_error_handler)
     XSetIOErrorHandler(&x11_io_error_handler)
     cdef XEvent e
-    while True:
+    exit_code = -1
+    while exit_code < 0:
         with nogil:
             XNextEvent(d, &e)
 
