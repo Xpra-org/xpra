@@ -16,6 +16,7 @@ from libc.string cimport memset
 from xpra.codecs.amf.amf cimport (
     AMF_RESULT, AMF_OK,
     AMFFactory, AMFGuid, AMFTrace, AMFSurface, AMFPlane, AMFData, AMFDataVtbl,
+    AMFVariantStruct, AMFPlaneVtbl, AMFSurfaceVtbl,
     AMFVariantInit,
     AMFTraceWriter, AMFTraceWriterVtbl, AMF_TRACE_DEBUG, AMF_TRACE_INFO,
     amf_uint32, amf_uint16, amf_uint8, amf_int32, amf_bool,
