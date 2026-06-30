@@ -72,7 +72,7 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
         finally:
             if img:
                 img.close()
-        return b""
+        return ()
     icondata = load_binary_file(filename)
     if not icondata:
         return ()
