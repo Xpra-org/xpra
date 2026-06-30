@@ -846,6 +846,10 @@ cdef class VulkanWindow:
                 cleanup()
         if self.instance != NULL:
             vkDestroyInstance(self.instance, NULL)
+            # `instance` is also exposed as a read-only @property, which makes PyCharm
+            # think this assignment targets the property; here `self` is statically typed
+            # as `VulkanWindow`, so Cython writes the `cdef VkInstance instance` C field directly:
+            # noinspection PyPropertyAccessInspection
             self.instance = NULL
         log("VulkanWindow closed")
 
