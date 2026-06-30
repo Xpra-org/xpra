@@ -2953,6 +2953,7 @@ class WindowSource(WindowIconSource):
         data = image.get_pixels()
         if not data:
             raise RuntimeError(f"failed to get pixels from {image}")
+        mmap_data = ()
         for i in range(5):
             mmap_data = self._mmap.write_data(data)
             # elapsed = monotonic()-start+0.000000001 # make sure never zero!
@@ -2963,6 +2964,7 @@ class WindowSource(WindowIconSource):
             # busy wait in encode thread is OK for mmap:
             sleep((1 + i * i) / 1000)
         if not mmap_data:
+            log("mmap write failed!")
             return ()
         self.global_statistics.mmap_bytes_sent += len(data)
         self.global_statistics.mmap_free_size = self._mmap.get_free_size()
