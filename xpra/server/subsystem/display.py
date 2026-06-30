@@ -467,6 +467,8 @@ class DisplayManager(StubServerMixin):
 
     def calculate_workarea(self, maxw: int, maxh: int) -> None:
         log("calculate_workarea(%s, %s)", maxw, maxh)
+        if not maxw or not maxh:
+            raise ValueError("invalid dimensions: %ix%i" % (maxw, maxh))
         workarea = rectangle(0, 0, maxw, maxh)
         display_sources = get_sources_by_type(self, DisplayConnection)
         for ss in display_sources:
@@ -483,14 +485,19 @@ class DisplayManager(StubServerMixin):
                     work_x, work_y, work_w, work_h = display[6:10]
                     display_workarea = rectangle(work_x, work_y, work_w, work_h)
                     log("calculate_workarea() found %s for display %s", display_workarea, display[0])
-                    workarea = workarea.intersection_rect(display_workarea)
-                    if not workarea:
+                    common_workarea = workarea.intersection_rect(display_workarea)
+                    if not common_workarea:
                         log.warn("Warning: failed to calculate workarea")
                         log.warn(" as intersection of %s and %s", (maxw, maxh), (work_x, work_y, work_w, work_h))
+                        workarea = None
+                        break
+                    workarea = common_workarea
+            if not workarea:
+                break
         # sanity checks:
         log("calculate_workarea(%s, %s) workarea=%s", maxw, maxh, workarea)
         max_dim = 32768 - 8192
-        if workarea.width == 0 or workarea.height == 0 or workarea.width >= max_dim or workarea.height >= max_dim:
+        if not workarea or workarea.width == 0 or workarea.height == 0 or workarea.width >= max_dim or workarea.height >= max_dim:
             log.warn("Warning: failed to calculate a common workarea")
             log.warn(f" using the full display area: {maxw}x{maxh}")
             workarea = rectangle(0, 0, maxw, maxh)
