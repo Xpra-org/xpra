@@ -50,29 +50,32 @@ def load_rsvg():
     return _rsvg
 
 
+def load_xpm_as_png(filename: str) -> bytes:
+    try:
+        from xpra.codecs.image import to_png
+        from PIL import Image  # pylint: disable=import-outside-toplevel
+        img = Image.open(filename)
+        try:
+            img.load()
+            return to_png(img)
+        finally:
+            img.close()
+    except (ValueError, ImportError, KeyError) as e:
+        log(f"Image.open({filename}) {e}", exc_info=True)
+    except Exception:
+        log(f"Image.open({filename})", exc_info=True)
+    return b""
+
+
 def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
     if os.path.isdir(filename):
         log("load_icon_from_file(%s, %i) path is a directory!", filename, max_size)
         return ()
     log("load_icon_from_file(%s, %i)", filename, max_size)
     if filename.endswith("xpm"):
-        img = None
-        try:
-            from xpra.codecs.image import to_png
-            from PIL import Image  # pylint: disable=import-outside-toplevel
-            img = Image.open(filename)
-            img.load()
-            return to_png(img), "png"
-        except (ValueError, ImportError, KeyError) as e:
-            log(f"Image.open({filename}) {e}", exc_info=True)
-        except Exception as e:
-            log(f"Image.open({filename})", exc_info=True)
-            log.error(f"Error loading icon from {filename!r}:")
-            log.estr(e)
-        finally:
-            if img:
-                img.close()
-        return b""
+        if pngdata := load_xpm_as_png(filename):
+            return pngdata, "png"
+        return ()
     icondata = load_binary_file(filename)
     if not icondata:
         return ()
