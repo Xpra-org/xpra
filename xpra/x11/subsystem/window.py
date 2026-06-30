@@ -492,7 +492,7 @@ class SeamlessWindowServer(WindowServer):
         for ss in self.window_sources():
             ss.restack_window(wid, window, detail, sibling)
 
-    def _set_window_state(self, proto, wid: int, window, new_window_state: dict) -> Sequence[str]:
+    def _set_window_state(self, wid: int, window, new_window_state: dict) -> Sequence[str]:
         if not new_window_state:
             return ()
         nws = typedict(new_window_state)
@@ -605,7 +605,7 @@ class SeamlessWindowServer(WindowServer):
         if self.server.ui_driver == ss.uuid or not window.get_property("shown"):
             if len(packet) >= 8:
                 state = packet.get_dict(7)
-                self._set_window_state(proto, wid, window, state)
+                self._set_window_state(wid, window, state)
             geometry = self.client_clamp_window(proto, wid, window, x, y, w, h)
             self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
@@ -625,7 +625,7 @@ class SeamlessWindowServer(WindowServer):
         self._window_mapped_at(proto, wid, window)
         if len(packet) >= 4:
             state = packet.get_dict(3)
-            self._set_window_state(proto, wid, window, state)
+            self._set_window_state(wid, window, state)
         if window.get_property("shown"):
             geomlog("client %s unmapped window %#x - %s", ss, wid, window)
             for ss in self.window_sources():
@@ -697,7 +697,7 @@ class SeamlessWindowServer(WindowServer):
 
         if "state" in config and is_ui_driver:
             state = config.dictget("state")
-            self._set_window_state(proto, wid, window, state)
+            self._set_window_state(wid, window, state)
 
         if geometry and not window.is_OR() and not self.is_readonly(proto):
             damage = not window.get_property("shown")

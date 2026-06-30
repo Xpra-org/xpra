@@ -67,10 +67,10 @@ class DesktopWindowServer(WindowServer):
         log("contents changed on %s: %s", window, event)
         self.refresh_window_area(window, event.x, event.y, event.width, event.height)
 
-    def _set_window_state(self, proto, wid: int, window, new_window_state: dict) -> list[str]:
+    def _set_window_state(self, wid: int, window, new_window_state: dict) -> list[str]:
         if not new_window_state:
             return []
-        metadatalog("set_window_state%s", (proto, wid, window, new_window_state))
+        metadatalog("set_window_state%s", (wid, window, new_window_state))
         changes = []
         # boolean: but not a wm_state and renamed in the model (iconic vs iconified)
         iconified = new_window_state.get("iconified")
@@ -102,7 +102,7 @@ class DesktopWindowServer(WindowServer):
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet) >= 8:
             state = packet.get_dict(7)
-            self._set_window_state(proto, wid, window, state)
+            self._set_window_state(wid, window, state)
         if len(packet) >= 7:
             props = packet.get_dict(6)
             self._set_client_properties(proto, wid, window, props)
@@ -120,7 +120,7 @@ class DesktopWindowServer(WindowServer):
             # optional window_state added in 0.15 to update flags
             # during iconification events:
             state = packet.get_dict(3)
-            self._set_window_state(proto, wid, window, state)
+            self._set_window_state(wid, window, state)
         assert not window.is_OR()
         self._window_mapped_at(proto, wid, window)
         # TODO: handle iconification?
@@ -146,7 +146,7 @@ class DesktopWindowServer(WindowServer):
 
         if "state" in config:
             state = config.dictget("state")
-            self._set_window_state(proto, wid, window, state)
+            self._set_window_state(wid, window, state)
 
         geometry = config.inttupleget("geometry")
         if geometry:
