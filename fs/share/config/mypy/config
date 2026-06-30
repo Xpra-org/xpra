@@ -118,6 +118,9 @@ ignore_missing_imports = True
 [mypy-xpra.net.brotli.compressor]
 ignore_missing_imports = True
 
+[mypy-xpra.net.zstd.zstd]
+ignore_missing_imports = True
+
 [mypy-xpra.net.rencodeplus.*]
 ignore_missing_imports = True
 

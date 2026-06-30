@@ -440,6 +440,7 @@ vsock_ENABLED           = LINUX and has_header_file("linux/vm_sockets.h")
 lz4_ENABLED             = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
 brotli_ENABLED          = DEFAULT and has_header_file("brotli/decode.h") and has_header_file("brotli/encode.h")
+zstd_ENABLED            = DEFAULT and has_header_file("zstd.h")
 cityhash_ENABLED        = False  # has_header_file("/city.h")
 qrencode_ENABLED        = DEFAULT and has_header_file("qrencode.h")
 clipboard_ENABLED       = DEFAULT
@@ -605,7 +606,7 @@ SWITCH_ALIAS = {
         "cython", "codecs",
         "server", "client", "shadow",
         "rencodeplus", "brotli", "cityhash", "qrencode", "websockets", "netdev", "vsock",
-        "lz4",
+        "lz4", "zstd",
         "x11", "gtk_x11",
         "pam", "sd_listen", "proc",
         "pipewire",
@@ -625,7 +626,7 @@ SWITCHES += [
     "cython_tracing", "cythonize_more", "cython_shared", "cython_freethreading",
     "modules", "data",
     "brotli", "cityhash", "qrencode",
-    "vsock", "netdev", "proc", "mdns", "lz4", "mmap",
+    "vsock", "netdev", "proc", "mdns", "lz4", "zstd", "mmap",
     "clipboard",
     "scripts",
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
@@ -1275,6 +1276,7 @@ def install_dev_env_command() -> "list[str]":
             "cython": (f"{py3}-devel", f"{py3}-cython", f"{py3}-setuptools", "xxhash-devel", ),
             "lz4": ("pkgconfig(liblz4)", ),
             "brotli": ("pkgconfig(libbrotlidec)", "pkgconfig(libbrotlienc)", ),
+            "zstd": ("pkgconfig(libzstd)", ),
             "qrencode": ("pkgconfig(libqrencode)", ),
             "gtk3": (
                 f"{py3}-gobject", "pkgconfig(pygobject-3.0)", "pkgconfig(gtk+-3.0)",
@@ -1340,6 +1342,7 @@ def install_dev_env_command() -> "list[str]":
             "proc": ("libproc2-dev", ),
             "lz4": ("liblz4-dev", ),
             "brotli": ("libbrotli-dev", ),
+            "zstd": ("libzstd-dev", ),
             "qrencode": ("libqrencode-dev", ),
             "docs": ("pandoc", ),
         }
@@ -1355,6 +1358,7 @@ def install_dev_env_command() -> "list[str]":
             "cython": ("cython", "python-setuptools", "xxhash", ),
             "lz4": ("lz4", ),
             "brotli": ("brotli", ),
+            "zstd": ("zstd", ),
             "qrencode": ("qrencode", ),
             "gtk3": (
                 "gtk3", "python-gobject", "gobject-introspection",
@@ -3705,6 +3709,8 @@ tace(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus", optimize=3)
 toggle_packages(brotli_ENABLED, "xpra.net.brotli")
 tace(brotli_ENABLED, "xpra.net.brotli.decompressor", extra_link_args="-lbrotlidec")
 tace(brotli_ENABLED, "xpra.net.brotli.compressor", extra_link_args="-lbrotlienc")
+toggle_packages(zstd_ENABLED, "xpra.net.zstd")
+tace(zstd_ENABLED, "xpra.net.zstd.zstd", "libzstd")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(mmap_ENABLED, "xpra.net.mmap")
 toggle_packages(quic_ENABLED, "xpra.net.aio")

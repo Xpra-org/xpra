@@ -14,6 +14,8 @@ from xpra.log import Logger
 
 log = Logger("encoder", "argb")
 
+MAX_INLINE_SIZE = 32768
+
 
 def get_version() -> tuple[int, int]:
     return 6, 0
@@ -81,7 +83,9 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
     level = 0
     size = len(pixels)
     lz4 = options.get("lz4", False)
-    if lz4 and size >= 512 and speed < 100:
+    zstd = options.get("zstd", False)
+    algo = "not"
+    if (lz4 or zstd) and size >= 512 and speed < 100:
         if size >= 4096:
             level = 1 + max(0, min(7, int(100 - speed) // 14))
         else:
@@ -89,16 +93,17 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
             # and use a lower level (max=3)
             level = max(0, min(3, int(125 - speed) // 35))
     if level > 0:
-        algo = "lz4"
-        can_inline = size <= 32768
+        can_inline = size <= MAX_INLINE_SIZE
         cwrapper = compressed_wrapper(coding, pixels, level=level,
                                       lz4=lz4,
+                                      zstd=zstd,
                                       can_inline=can_inline)
         if isinstance(cwrapper, LevelCompressed):
             # add compressed marker:
             client_options[cwrapper.algorithm] = cwrapper.level & 0xF
             # remove network layer compression marker
             # so that this data will be decompressed by the decode thread client side:
+            algo = cwrapper.algorithm
             cwrapper.level = 0
         elif can_inline and isinstance(pixels, memoryview):
             assert isinstance(cwrapper, Compressed)
@@ -107,11 +112,9 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
             # and `memoryview` pixel data cannot be handled by the packet encoders,
             # so we have to convert it to bytes:
             cwrapper.data = rgb_transform.pixels_to_bytes(pixels)
-            algo = "inlined lz4"
     else:
         # can't pass a raw buffer to rencodeplus,
         # and even if we could, the image containing those pixels may be freed by the time we get to the encoder
-        algo = "not"
         cwrapper = Compressed(coding, rgb_transform.pixels_to_bytes(pixels))
     if pixel_format.find("A") >= 0 or pixel_format.find("X") >= 0:
         bpp = 32

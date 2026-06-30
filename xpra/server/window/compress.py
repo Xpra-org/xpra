@@ -256,6 +256,7 @@ class WindowSource(WindowIconSource):
         self.rgb_formats = rgb_formats                  # supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        # extra options which may be specific to the encoder (ie: x264)
         self.rgb_lz4: bool = use("lz4") and encoding_options.boolget("rgb_lz4", False)       # server and client support lz4 pixel compression
+        self.rgb_zstd: bool = use("zstd") and encoding_options.boolget("rgb_zstd", False)              # server and client support zstd pixel compression
         self.client_render_size = encoding_options.intpair("render-size")
         self.client_bit_depth: int = encoding_options.intget("bit-depth", 24)
         self.supports_transparency: bool = HAS_ALPHA and encoding_options.boolget("transparency", True)
@@ -467,6 +468,7 @@ class WindowSource(WindowIconSource):
         self.client_refresh_encodings = ()
         self.encoding_options = typedict()
         self.rgb_lz4 = False
+        self.rgb_zstd = False
         self.supports_transparency = False
         self.full_frames_only = False
         self.suspended = False
@@ -972,6 +974,10 @@ class WindowSource(WindowIconSource):
         self.update_refresh_attributes()
 
     def update_encoding_options(self, force_reload: bool = False) -> None:
+        # Refresh client-advertised RGB stream compressor support in case the
+        # connection updated its encoding options after this window source was created.
+        self.rgb_lz4 = use("lz4") and self.encoding_options.boolget("rgb_lz4", False)
+        self.rgb_zstd = use("zstd") and self.encoding_options.boolget("rgb_zstd", False)
         cv = self.global_statistics.congestion_value
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         ww, wh = self.window_dimensions
@@ -2112,6 +2118,7 @@ class WindowSource(WindowIconSource):
             "speed"     : speed,
             "rgb_formats"   : self.rgb_formats,
             "lz4"       : self.rgb_lz4,
+            "zstd"      : self.rgb_zstd,
         })
         if self.encoding == "grayscale":
             eoptions["grayscale"] = True

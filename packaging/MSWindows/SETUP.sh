@@ -21,7 +21,7 @@ $PACMAN ${XPKG}libvpl
 #more codecs:
 $PACMAN ${XPKG}libde265 ${XPKG}libx264 ${XPKG}libvpx ${XPKG}openh264 ${XPKG}dav1d ${XPKG}aom ${XPKG}libwebp ${XPKG}openjph
 #network layer libraries:
-$PACMAN ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium
+$PACMAN ${XPKG}lz4 ${XPKG}zstd ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium
 #pinentry is not available for aarch64 yet:
 $PACMAN ${XPKG}pinentry
 #make qr codes:

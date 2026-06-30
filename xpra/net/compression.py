@@ -14,16 +14,16 @@ from xpra.util.str_fn import memoryview_to_bytes
 from xpra.common import SizedBuffer
 
 # all the compressors we know about:
-ALL_COMPRESSORS: Sequence[str] = ("lz4", "zlib", "lzo", "brotli", "none")
+ALL_COMPRESSORS: Sequence[str] = ("lz4", "zlib", "lzo", "brotli", "zstd", "none")
 
-VALID_COMPRESSORS: Sequence[str] = ("lz4", "brotli")
+VALID_COMPRESSORS: Sequence[str] = ("lz4", "brotli", "zstd")
 
 # the compressors we may want to use, in the best compatibility order:
-TRY_COMPRESSORS: Sequence[str] = ("lz4", "brotli", "none")
+TRY_COMPRESSORS: Sequence[str] = ("lz4", "zstd", "brotli", "none")
 # order for performance:
-PERFORMANCE_ORDER: Sequence[str] = ("none", "lz4", "brotli")
+PERFORMANCE_ORDER: Sequence[str] = ("none", "lz4", "zstd", "brotli")
 # require compression (disallow 'none'):
-PERFORMANCE_COMPRESSION: Sequence[str] = ("lz4", "brotli")
+PERFORMANCE_COMPRESSION: Sequence[str] = ("lz4", "zstd", "brotli")
 
 MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 MAX_DECOMPRESSED_SIZE: int = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
@@ -78,6 +78,23 @@ def init_brotli() -> Compression:
     return Compression("brotli", brotli_version, brotli_compress_shim, brotli_decompress)
 
 
+def init_zstd() -> Compression:
+    # pylint: disable=import-outside-toplevel
+    # pylint: disable=redefined-outer-name
+    from xpra.net.protocol.header import ZSTD_FLAG
+    from xpra.net.zstd.zstd import compress, decompress, get_version  # @UnresolvedImport
+    zstd_decompress = decompress
+    zstd_compress = compress
+    zstd_version = get_version()
+
+    def zstd_compress_shim(packet: SizedBuffer, level: int) -> tuple[int, memoryview]:
+        if not isinstance(packet, (bytes, bytearray, memoryview)):
+            packet = bytes(str(packet), "UTF-8")
+        return min(15, level) | ZSTD_FLAG, zstd_compress(packet, level=level)
+
+    return Compression("zstd", zstd_version, zstd_compress_shim, zstd_decompress)
+
+
 def init_none() -> Compression:
 
     def nocompress(data: SizedBuffer, _level) -> tuple[int, SizedBuffer]:
@@ -94,6 +111,7 @@ def init_none() -> Compression:
 INIT_FUNCTIONS: dict[str, Callable[[], Compression]] = {
     "lz4": init_lz4,
     "brotli": init_brotli,
+    "zstd": init_zstd,
     "none": init_none,
 }
 
@@ -103,7 +121,7 @@ def init_compressors(*names: str) -> None:
         assert x not in ("compressors", "all"), "attempted to recurse!"
         if not envbool("XPRA_" + x.upper(), True):
             continue
-        if x not in ("lz4", "brotli", "none"):
+        if x not in ("lz4", "brotli", "zstd", "none"):
             from xpra.log import Logger
             logger = Logger("network", "protocol")
             logger.warn(f"Warning: invalid compressor {x} specified")
@@ -121,7 +139,7 @@ def init_compressors(*names: str) -> None:
 
 
 def init_all() -> None:
-    init_compressors(*(list(TRY_COMPRESSORS) + ["none"]))
+    init_compressors(*(list(TRY_COMPRESSORS) + ["zstd", "none"]))
 
 
 def use(compressor) -> bool:
@@ -241,18 +259,22 @@ class InvalidCompressionException(Exception):
 
 
 def get_compression_type(level: int) -> str:
-    from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
+    from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG, ZSTD_FLAG
     if level & LZ4_FLAG:
         return "lz4"
+    if level & ZSTD_FLAG:
+        return "zstd"
     if level & BROTLI_FLAG:
         return "brotli"
     return "zlib"
 
 
 def decompress(data: SizedBuffer, level: int) -> SizedBuffer:
-    from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
+    from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG, ZSTD_FLAG
     if level & LZ4_FLAG:
         algo = "lz4"
+    elif level & ZSTD_FLAG:
+        algo = "zstd"
     elif level & BROTLI_FLAG:
         algo = "brotli"
     else:

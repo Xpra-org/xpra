@@ -206,6 +206,7 @@ Recommends:			%{py3rpmname}-aioquic
 Recommends:			%{py3rpmname}-zeroconf
 BuildRequires:		pkgconfig(liblz4)
 Requires:			lz4-libs
+BuildRequires:		pkgconfig(libzstd)
 Requires:			libseccomp
 BuildRequires:		xxhash-devel
 Requires:			xxhash-libs

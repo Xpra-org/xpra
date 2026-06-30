@@ -25,6 +25,7 @@ FLAGS_CIPHER = 0x2
 LZ4_FLAG = 0x10
 # LZO_FLAG        = 0x20
 BROTLI_FLAG = 0x40
+ZSTD_FLAG = 0x80
 FLAGS_NOHEADER = 0x10000  # never encoded, so we can use a value bigger than a byte
 
 _header_unpack_struct = struct.Struct(b'!cBBBL')

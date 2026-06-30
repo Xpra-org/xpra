@@ -344,6 +344,7 @@ class EncodingsConnection(StubClientConnection):
                 self.encoding_options[ek] = c.intget(k)
         for k, ek in {
             "lz4": "rgb_lz4",
+            "zstd": "rgb_zstd",
         }.items():
             if k in c:
                 self.encoding_options[ek] = c.boolget(k)
@@ -354,7 +355,7 @@ class EncodingsConnection(StubClientConnection):
                 self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c.get(k)
             elif k.startswith("encoding."):
                 stripped_k = k.removeprefix("encoding.")
-                if stripped_k in ("transparency", "rgb_lz4"):
+                if stripped_k in ("transparency", "rgb_lz4", "rgb_zstd"):
                     v = c.boolget(k)
                 elif stripped_k in (
                     "initial_quality", "initial_speed",

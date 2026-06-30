@@ -59,6 +59,7 @@ Build-Depends: debhelper (>= 8)
               ,libproc2-dev | libprocps-dev
               ,liblz4-dev
               ,libbrotli-dev
+              ,libzstd-dev
               ,libseccomp-dev
               ,libxxhash-dev
               ,libqrencode-dev

@@ -610,8 +610,8 @@ class WindowBackingBase:
             if len(comp) != 1:
                 raise ValueError(f"more than one compressor specified: {comp!r}")
             compressor = comp[0]
-            if compressor != "lz4":
-                raise ValueError(f"pixel data can only be compressed with lz4, not {compressor!r}")
+            if compressor not in ("lz4", "zstd"):
+                raise ValueError(f"pixel data can only be compressed with lz4 or zstd, not {compressor!r}")
             rgb_data = compression.decompress_by_name(raw_data, algo=compressor)
         else:
             rgb_data = raw_data

@@ -359,6 +359,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "gobject"       : "Command line clients",
         "brotli"        : "Brotli bindings",
         "lz4"           : "LZ4 bindings",
+        "zstd"          : "zstd bindings",
         "seccomp"       : "seccomp sandboxing",
         # server bits:
         "test"          : "Test code",

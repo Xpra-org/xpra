@@ -56,7 +56,7 @@ class TestCompression(unittest.TestCase):
         r = compression.compressed_wrapper("test", b"a" * max(1, (compression.MIN_COMPRESS_SIZE + 1)))
         if not r.datatype.startswith("raw"):
             raise Exception(f"should not be able to use the wrapper without enabling a compressor, but got {r!r}")
-        for x in ("lz4", "brotli", "none"):
+        for x in ("lz4", "zstd", "brotli", "none"):
             if not compression.use(x):
                 continue
             kwargs = {x: True}
