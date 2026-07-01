@@ -12,7 +12,7 @@ from collections.abc import Sequence
 
 from xpra.common import SizedBuffer
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, hexstr
+from xpra.util.str_fn import csv, hexstr, Ellipsizer
 from xpra.codecs.image_type import get_image_type
 from xpra.codecs.debug import may_save_image
 from xpra.log import Logger
@@ -72,7 +72,13 @@ def decompress(coding: str, img_data: SizedBuffer, options: typedict) -> tuple[s
     if not actual or not coding.startswith(actual):
         raise ValueError(f"expected {coding!r} image data but received %r" % (actual or "unknown"))
     buf = BytesIO(img_data)
-    img = Image.open(buf)
+    try:
+        img = Image.open(buf)
+    except Image.DecompressionBombError:
+        log("received a DecompressionBombError")
+        log(" for %s", Ellipsizer(img_data))
+        from xpra.codecs.constants import TransientCodecException
+        raise TransientCodecException("received a DecompressionBombError on a %s" % actual) from None
     assert img.mode in ("L", "LA", "P", "RGB", "RGBA", "RGBX"), f"invalid image mode: {img.mode}"
     transparency = options.intget("transparency", -1)
     if img.mode == "P":

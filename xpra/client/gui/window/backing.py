@@ -986,6 +986,9 @@ class WindowBackingBase:
                 self.paint_scroll(img_data, options, callbacks)
             else:
                 self.do_draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
+        except TransientCodecException as e:
+            log.warn("Warning: %s", e)
+            fire_paint_callbacks(callbacks, -1, "transient error")
         except Exception:
             if self._backing is None:
                 fire_paint_callbacks(callbacks, -1, "this backing is closed - retry?")
