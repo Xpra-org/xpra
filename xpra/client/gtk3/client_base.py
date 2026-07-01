@@ -600,8 +600,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.sub_dialogs["session-info"] = dialog
 
     def show_bug_report(self, *_args) -> None:
-        send_info_request = getattr(self, "send_info_request", noop)
-        send_info_request()
+        server_info = self.get_subsystem("server-info")
+        if server_info:
+            server_info.send_info_request()
 
         if dialog := self.sub_dialogs.get("bug-report"):
             force_focus()
@@ -620,7 +621,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
             def get_server_info() -> typedict:
                 # the subsystem may not be loaded:
-                return getattr(self, "server_last_info", typedict())
+                return getattr(server_info, "server_last_info", typedict())
 
             dialog.init(show_about=False, get_server_info=get_server_info,
                         opengl_info=self.opengl_props,
