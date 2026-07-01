@@ -92,4 +92,4 @@ class CommandClient(StubClientMixin):
     def send_start_command(self, name: str, command: list[str], ignore: bool, sharing: bool = True) -> None:
         log("send_start_command%s", (name, command, ignore, sharing))
         assert name is not None and command is not None and ignore is not None
-        self.client.send(COMMAND_START, name, command, ignore, sharing)
+        self.send(COMMAND_START, name, command, ignore, sharing)

@@ -350,7 +350,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
     # audio:
 
     def may_notify_audio(self, summary: str, body: str) -> None:
-        may_notify_client(self, NotificationID.AUDIO, summary, body, icon_name="audio")
+        may_notify_client(self.client, NotificationID.AUDIO, summary, body, icon_name="audio")
 
     def audio_loop_check(self, mode="speaker") -> bool:
         from xpra.audio.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning_messages
@@ -560,8 +560,8 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
 
     def audio_sink_error(self, audio_sink, error) -> None:
         log("audio_sink_error(%s, %s) exit_code=%s, current sink=%s",
-            audio_sink, error, self.exit_code, self.audio_sink)
-        if self.exit_code is not None:
+            audio_sink, error, self.client.exit_code, self.audio_sink)
+        if self.client.exit_code is not None:
             # exiting
             return
         if audio_sink != self.audio_sink:
@@ -597,7 +597,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         self.timeout_add(delay, do_restart)
 
     def audio_process_stopped(self, audio_sink, *args) -> None:
-        if self.exit_code is not None:
+        if self.client.exit_code is not None:
             # exiting
             return
         if audio_sink != self.audio_sink:
@@ -608,7 +608,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
 
     def audio_sink_exit(self, audio_sink, *args) -> None:
         log("audio_sink_exit(%s, %s) audio_sink=%s", audio_sink, args, self.audio_sink)
-        if self.exit_code is not None:
+        if self.client.exit_code is not None:
             # exiting
             return
         ss = self.audio_sink

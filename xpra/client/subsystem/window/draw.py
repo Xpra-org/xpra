@@ -93,7 +93,7 @@ class WindowDraw(StubClientMixin):
                              decode_time: int, message="") -> None:
         packet = packet_sequence, wid, width, height, decode_time, message
         log("sending ack: %s", packet)
-        self.client.send_now(WINDOW_DRAW_ACK, *packet)
+        self.send_now(WINDOW_DRAW_ACK, *packet)
 
     def _draw_thread_loop(self):
         if LINUX:

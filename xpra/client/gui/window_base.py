@@ -313,7 +313,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         # but don't bother if they're the same as what we sent as defaults
         # (with a bit of magic to collapse the missing namespace from encoding_defaults)
         backing_props = self._backing.get_encoding_properties()
-        enc = self._client.get_subsystem("encoding")
+        enc = self.get_subsystem("encoding")
         encoding_defaults = enc.encoding_defaults if enc else {}
         for k in tuple(backing_props.keys()):
             v = backing_props[k]
@@ -692,7 +692,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             b.paint_box_line_width = b.default_paint_box_line_width
 
     def increase_quality(self, *_args) -> None:
-        enc = self._client.get_subsystem("encoding")
+        enc = self.get_subsystem("encoding")
         if not enc:
             return
         if enc.quality > 0:
@@ -706,7 +706,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             log("new min-quality=%s", enc.min_quality)
 
     def decrease_quality(self, *_args) -> None:
-        enc = self._client.get_subsystem("encoding")
+        enc = self.get_subsystem("encoding")
         if not enc:
             return
         if enc.quality > 0:
@@ -720,7 +720,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             log("new min-quality=%s", enc.min_quality)
 
     def increase_speed(self, *_args) -> None:
-        enc = self._client.get_subsystem("encoding")
+        enc = self.get_subsystem("encoding")
         if not enc:
             return
         if enc.speed > 0:
@@ -734,7 +734,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             log("new min-speed=%s", enc.min_speed)
 
     def decrease_speed(self, *_args) -> None:
-        enc = self._client.get_subsystem("encoding")
+        enc = self.get_subsystem("encoding")
         if not enc:
             return
         if enc.speed > 0:

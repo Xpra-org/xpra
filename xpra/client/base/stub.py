@@ -121,14 +121,25 @@ class StubClientMixin(superclass):
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         """
-        Send a packet to the server, dummy implementation.
+        Send a packet to the server.
+        When this subsystem is a composed instance, delegate to the owning
+        client; while still muxed the concrete client's own `send` overrides
+        this (and isolated tests inject their own), so this is only reached on
+        a real separate instance.
         """
+        client = self.client
+        if client is not self:
+            client.send(packet_type, *parts)
 
     def send_now(self, packet_type: str, *parts: PacketElement) -> None:
         """
         Send a packet to the server,
         this takes precedence over packets sent via send().
+        Delegates to the owning client (see `send`).
         """
+        client = self.client
+        if client is not self:
+            client.send_now(packet_type, *parts)
 
     def setup_connection(self, _conn) -> None:
         """

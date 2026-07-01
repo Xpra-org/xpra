@@ -17,6 +17,7 @@ class ProgressClient(StubClientMixin):
     """
     Encapsulates functions for managing the splash screen
     """
+    PREFIX = "progress"
 
     def __init__(self):
         self.progress_process = None

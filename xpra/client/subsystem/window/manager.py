@@ -305,11 +305,11 @@ class WindowManagerClient(StubClientMixin):
         window.show_all()
         # apply the current cursor — without this, newly-shown windows
         # show an arrow indefinitely (server doesn't resend cursor data):
-        # the cursor data and `set_windows_cursor` are owned by the `cursor` subsystem
-        # (which may be disabled), the last cursor data lives on the concrete client:
-        last_cursor = getattr(self.client, "_last_cursor_data", ())
-        if last_cursor and (cursor := self.get_subsystem("cursor")):
-            cursor.set_windows_cursor([window], last_cursor)
+        # the last cursor data is tracked by the `cursor` subsystem (which may be
+        # disabled); its set_windows_cursor renders via the toolkit client:
+        if cur := self.get_subsystem("cursor"):
+            if last_cursor := cur._last_cursor_data:
+                cur.set_windows_cursor([window], last_cursor)
         if override_redirect and should_force_grab(metadata):
             log.warn("forcing grab for OR window %#x", wid)
             self.window_grab(wid, window)
@@ -396,7 +396,7 @@ class WindowManagerClient(StubClientMixin):
             # explicitly tell the server we have unmapped it:
             # (so it will reset the video encoders, etc)
             if not window.is_OR():
-                self.client.send(WINDOW_UNMAP, wid)
+                self.send(WINDOW_UNMAP, wid)
             self._id_to_window.pop(wid, None)
             self._window_to_id.pop(window, None)
             # create the new window,
@@ -609,7 +609,7 @@ class WindowManagerClient(StubClientMixin):
         log("sending buffer refresh: options=%s, client_properties=%s", options, client_properties)
         packet.append(options)
         packet.append(client_properties)
-        self.client.send(*packet)
+        self.send(*packet)
 
     def send_refresh(self, wid: int) -> None:
         packet = [
@@ -622,7 +622,7 @@ class WindowManagerClient(StubClientMixin):
             },
             {},  # no client_properties
         ]
-        self.client.send(*packet)
+        self.send(*packet)
 
     def send_refresh_all(self) -> None:
         log("Automatic refresh for all windows ")

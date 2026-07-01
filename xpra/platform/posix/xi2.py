@@ -172,7 +172,8 @@ class XI2_Window:
             xinputlog(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
                       event.device, pointer_data, modifiers, buttons)
             device_id = 0
-            client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons, props)
+            if pointer := client.get_subsystem("pointer"):
+                pointer.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons, props)
         # now see if we have anything to send as a wheel event:
         if dx != 0 or dy != 0:
             xinputlog("do_xi_motion(%s, %s) wheel deltas: dx=%i, dy=%i", event, device, dx, dy)

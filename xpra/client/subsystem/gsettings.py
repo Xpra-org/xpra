@@ -80,7 +80,7 @@ class GSettingsClient(StubClientMixin):
                 log.warn("Warning: unable to read GSettings %r / %r: %s", schema_id, key, e)
         if values:
             log("sending initial gsettings: %s", values)
-            self.client.send("gsettings-update", values)
+            self.send("gsettings-update", values)
 
     def _gsetting_changed(self, settings, key: str, schema: str) -> None:
         if (schema, key) not in GSETTINGS_ALLOWLIST:
@@ -91,4 +91,4 @@ class GSettingsClient(StubClientMixin):
             log("error reading changed gsetting %s:%s", schema, key, exc_info=True)
             return
         log("gsetting changed: %s:%s=%s", schema, key, value)
-        self.client.send("gsettings-update", {gsettings_key(schema, key): value})
+        self.send("gsettings-update", {gsettings_key(schema, key): value})

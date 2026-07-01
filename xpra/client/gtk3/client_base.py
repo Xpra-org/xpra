@@ -7,7 +7,6 @@
 
 import os
 import shlex
-import weakref
 from time import monotonic
 from importlib import import_module
 from collections.abc import Callable, Sequence, Iterable
@@ -17,7 +16,7 @@ from typing import Any
 
 from xpra.common import noop, may_show_progress, may_notify_client
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, bytestostr, hexstr, memoryview_to_bytes
+from xpra.util.str_fn import csv, Ellipsizer, pver, bytestostr
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
 from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
@@ -30,12 +29,12 @@ from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.util.stats import std_unit
 from xpra.scripts.config import InitExit
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.gtk.cursors import cursor_types, get_default_cursor
+from xpra.gtk.cursors import get_default_cursor, make_cursor
 from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow
 from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.widget import scaled_image, label, FILE_CHOOSER_NATIVE
-from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
+from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.gobject import no_arg_signal
@@ -46,7 +45,7 @@ from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
 from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
     get_window_frame_sizes, get_window_frame_size,
-    system_bell, get_wm_name, get_fixed_cursor_size,
+    system_bell, get_wm_name,
     # use the platform version so per-monitor info is enriched (colour, dpi, ...)
     # on platforms that override it (win32, macos); it delegates to `xpra.gtk.info` otherwise:
     get_monitors_info,
@@ -65,15 +64,8 @@ focuslog = Logger("client", "focus")
 GLib = gi_import("GLib")
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
-GdkPixbuf = gi_import("GdkPixbuf")
-
-missing_cursor_names = set()
 
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED", "")
-# on win32, the named cursors work, but they are hard to see
-# when using the Adwaita theme
-USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", not WIN32 and not is_Wayland())
-SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
 OPENGL_MIN_SIZE = envint("XPRA_OPENGL_MIN_SIZE", 32)
 NO_OPENGL_WINDOW_TYPES = os.environ.get(
@@ -88,140 +80,6 @@ inject_css_overrides()
 init_display_source(False)
 # must come after init_display_source()
 from xpra.client.gtk3.window.base import HAS_X11_BINDINGS  # noqa: E402
-
-
-def get_local_cursor(cursor_name: str):
-    display = Gdk.Display.get_default()
-    if not cursor_name or not display:
-        return None
-    try:
-        cursor = Gdk.Cursor.new_from_name(display, cursor_name)
-    except TypeError:
-        cursorlog("Gdk.Cursor.new_from_name%s", (display, cursor_name), exc_info=True)
-        cursor = None
-    if cursor:
-        cursorlog("Gdk.Cursor.new_from_name(%s, %s)=%s", display, cursor_name, cursor)
-    else:
-        gdk_cursor = cursor_types.get(cursor_name.upper())
-        cursorlog("gdk_cursor(%s)=%s", cursor_name, gdk_cursor)
-        if gdk_cursor:
-            try:
-                cursor = Gdk.Cursor.new_for_display(display, gdk_cursor)
-                cursorlog("Cursor.new_for_display(%s, %s)=%s", display, gdk_cursor, cursor)
-            except TypeError as e:
-                log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
-                if first_time("cursor:%s" % cursor_name.upper()):
-                    log.error("Error creating cursor %s: %s", cursor_name.upper(), e)
-    if cursor:
-        pixbuf = cursor.get_image()
-        cursorlog("image=%s", pixbuf)
-        return pixbuf
-    if cursor_name not in missing_cursor_names:
-        cursorlog("cursor name '%s' not found", cursor_name)
-        missing_cursor_names.add(cursor_name)
-    return None
-
-
-def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | None:
-    # if present, try cursor ny name:
-    display = Gdk.Display.get_default()
-    if not display:
-        return None
-    cursorlog("make_cursor(%s) has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
-              Ellipsizer(cursor_data),
-              len(cursor_data) >= 10, bool(cursor_types), xscale, yscale, USE_LOCAL_CURSORS)
-    pixbuf = None
-    if len(cursor_data) >= 10 and cursor_types and USE_LOCAL_CURSORS:
-        cursor_name = bytestostr(cursor_data[9])
-        pixbuf = get_local_cursor(cursor_name)
-    # create cursor from the pixel data:
-    encoding, _, _, w, h, xhot, yhot, serial, pixels = cursor_data[0:9]
-    if encoding != "raw":
-        cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
-        return None
-    if not pixbuf:
-        if not pixels:
-            cursorlog.warn("Warning: no cursor pixel data")
-            cursorlog.warn(f" in cursor data {cursor_data}")
-            return None
-        if len(pixels) < w * h * 4:
-            cursorlog.warn("Warning: not enough pixels provided in cursor data")
-            cursorlog.warn(" %s needed and only %s bytes found:", w * h * 4, len(pixels))
-            cursorlog.warn(" '%s')", repr_ellipsized(hexstr(pixels)))
-            return None
-        pixbuf = get_pixbuf_from_data(pixels, True, w, h, w * 4)
-    else:
-        w = pixbuf.get_width()
-        h = pixbuf.get_height()
-        pixels = pixbuf.get_pixels()
-    x = max(0, min(xhot, w - 1))
-    y = max(0, min(yhot, h - 1))
-    csize = display.get_default_cursor_size()
-    cmaxw, cmaxh = display.get_maximal_cursor_size()
-    cursorlog("new %s cursor at %s,%s with serial=%#x, dimensions: %sx%s, len(pixels)=%s",
-              encoding, xhot, yhot, serial, w, h, len(pixels))
-    cursorlog("default cursor size is %s, maximum=%s", csize, (cmaxw, cmaxh))
-
-    # always apply desktop-scale first:
-    if xscale != 1 or yscale != 1:
-        sw = round(w * xscale)
-        sh = round(h * yscale)
-        sx = round(x * xscale)
-        sy = round(y * yscale)
-        sw = max(1, sw)
-        sh = max(1, sh)
-        # ensure we honour the max size if there is one:
-        if 0 < cmaxw < sw or 0 < cmaxh < sh:
-            ratio = 1.0
-            if cmaxw > 0:
-                ratio = max(ratio, w / cmaxw)
-            if cmaxh > 0:
-                ratio = max(ratio, h / cmaxh)
-            cursorlog("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
-            sx, sy = round(sx / ratio), round(sy / ratio)
-            sw, sh = min(cmaxw, round(sw / ratio)), min(cmaxh, round(sh / ratio))
-
-        cursorlog("scaling cursor to %ix%i for desktop-scale %s/%s", sw, sh, xscale, yscale)
-        pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)
-        pixels = pixbuf.get_pixels()
-        w, h, x, y = sw, sh, sx, sy
-
-    fw, fh = get_fixed_cursor_size()
-    # OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
-    # we may have to paste it into a bigger pixbuf, or crop it:
-    if fw > 0 and fh > 0 and (w, h) != (fw, fh):
-        if w <= fw and h <= fh:
-            cursorlog("pasting %ix%i cursor to fixed OS size %ix%i", w, h, fw, fh)
-            try:
-                from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
-            except ImportError:
-                return None
-            img = Image.frombytes("RGBA", (w, h), memoryview_to_bytes(pixels), "raw", "BGRA", w * 4, 1)
-            target = Image.new("RGBA", (fw, fh))
-            target.paste(img, (0, 0, w, h))
-            pixels = target.tobytes("raw", "BGRA")
-            pixbuf = get_pixbuf_from_data(pixels, True, fw, fh, fw * 4)
-        else:
-            cursorlog("downscaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
-            pixbuf = pixbuf.scale_simple(fw, fh, GdkPixbuf.InterpType.BILINEAR)
-            xratio, yratio = w / fw, h / fh
-            x, y = round(x / xratio), round(y / yratio)
-    if SAVE_CURSORS:
-        pixbuf.savev("cursor-%#x.png" % serial, "png", [], [])
-    # clamp to pixbuf size:
-    w = pixbuf.get_width()
-    h = pixbuf.get_height()
-    x = max(0, min(x, w - 1))
-    y = max(0, min(y, h - 1))
-    try:
-        c = Gdk.Cursor.new_from_pixbuf(display, pixbuf, x, y)
-    except RuntimeError as e:
-        log.error("Error: failed to create cursor:")
-        log.estr(e)
-        log.error(" Gdk.Cursor.new_from_pixbuf%s", (display, pixbuf, x, y))
-        log.error(" using size %ix%i with hotspot at %ix%i", w, h, x, y)
-        c = None
-    return c
 
 
 def get_group_ref(metadata: dict) -> str:
@@ -276,7 +134,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.sub_dialogs = {}
         self.menu_helper = None
         self.window_menu_helper = None
-        self.keyboard_helper_class = GTKKeyboardHelper
+        # the keyboard subsystem holds `keyboard_helper_class`; inject the GTK
+        # implementation into it (it is created by UIXpraClient.__init__ above):
+        if kb := self.get_subsystem("keyboard"):
+            kb.keyboard_helper_class = GTKKeyboardHelper
         self.data_send_requests = {}
         # clipboard bits:
         self.clipboard_notification_timer = 0
@@ -288,10 +149,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.opengl_props = {}
         self.gl_max_viewport_dims = 0, 0
         self.gl_texture_size_limit = 0
-        self._cursors = weakref.WeakKeyDictionary()
-        # Last cursor data applied; show_window() uses this to apply the
-        # current cursor to newly-created windows.
-        self._last_cursor_data: tuple = ()
+        # cursor tracking state (`_cursors`, `_last_cursor_data`) is owned by the
+        # `cursor` subsystem; the render methods below reach it via get_subsystem.
         # frame request hidden window:
         self.frame_request_window = None
         # group leader bits:
@@ -299,10 +158,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self._group_leader_wids = {}
         self._window_with_grab = 0
         self.video_max_size = VIDEO_MAX_SIZE
-        try:
-            self.connect("scaling-changed", self.reset_windows_cursors)
-        except TypeError:
-            log("no 'scaling-changed' signal")
 
     def setup_frame_request_windows(self) -> None:
         # query the window manager to get the frame size:
@@ -742,7 +597,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             dialog.present()
             return
         from xpra.gtk.dialogs.show_shortcuts import ShortcutInfo
-        kh = self.keyboard_helper
+        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
         assert kh, "no keyboard helper"
         dialog = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
         dialog.show_all()
@@ -779,7 +634,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         def init_bug_report() -> None:
             # skip things we aren't using:
             includes = {
-                "keyboard": bool(self.keyboard_helper),
+                "keyboard": bool(getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)),
                 "opengl": self.opengl_enabled,
             }
 
@@ -1003,11 +858,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         return get_screen_sizes(xscale, yscale)
 
-    def reset_windows_cursors(self, *_args) -> None:
-        cursorlog("reset_windows_cursors() resetting cursors for: %s", tuple(self._cursors.keys()))
-        for w, cursor_data in tuple(self._cursors.items()):
-            self.set_windows_cursor([w], cursor_data)
-
     def set_windows_cursor(self, windows, cursor_data: Sequence) -> None:
         cursorlog(f"set_windows_cursor({windows}, args[{len(cursor_data)}])")
         cursor = None
@@ -1020,7 +870,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             if cursor is None:
                 # use default:
                 cursor = get_default_cursor()
-        self._last_cursor_data = cursor_data
+        # the `cursor` subsystem records the last cursor (in its set_windows_cursor);
+        # here we only track which windows got a cursor, for reset_windows_cursors:
+        cur = self.get_subsystem("cursor")
         for w in windows:
             # weak dependency on PointerWindow:
             set_cursor_data = getattr(w, "set_cursor_data", noop)
@@ -1031,7 +883,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             gdkwin = gtkwin.get_window()
             # trays don't have a gdk window
             if gdkwin:
-                self._cursors[w] = cursor_data
+                if cur:
+                    cur._cursors[w] = cursor_data
                 gdkwin.set_cursor(cursor)
 
     def window_grab(self, wid: int, window) -> None:
@@ -1312,8 +1165,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     def get_client_window_classes(self, geom: tuple[int, int, int, int], metadata: typedict,
                                   override_redirect: bool) -> Sequence[type]:
         log("get_client_window_class%s", (geom, metadata, override_redirect))
+        enc = self.get_subsystem("encoding")
         log(" ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, encoding=%s",
-            self.ClientWindowClass, self.GLClientWindowClass, self.opengl_enabled, self.encoding)
+            self.ClientWindowClass, self.GLClientWindowClass, self.opengl_enabled, enc.encoding if enc else None)
         window_classes: list[type] = []
         if self.GLClientWindowClass:
             ww, wh = geom[2], geom[3]

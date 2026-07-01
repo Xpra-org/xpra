@@ -81,6 +81,11 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         "listener",
         "notification",
         "command",
+        "webcam",
+        "audio",
+        "keyboard",
+        "cursor",
+        "pointer",
     )
 
     def __init__(self):
@@ -441,8 +446,9 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.have_more()
 
     def next_packet(self) -> tuple[Packet, bool, bool]:
-        # naughty dependency on pointer:
-        mouse_position = getattr(self, "_mouse_position", None)
+        # naughty dependency on the `pointer` subsystem (absent on non-UI clients):
+        pointer = self.get_subsystem("pointer")
+        mouse_position = getattr(pointer, "_mouse_position", None) if pointer else None
         netlog("next_packet() packets in queues: priority=%i, ordinary=%i, mouse=%s",
                len(self._priority_packets), len(self._ordinary_packets), bool(mouse_position))
         synchronous = True
@@ -453,7 +459,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         elif mouse_position is not None:
             packet = mouse_position
             synchronous = False
-            self._mouse_position = mouse_position = None
+            pointer._mouse_position = mouse_position = None
         else:
             packet = ("none", )
         has_more = packet is not None and (

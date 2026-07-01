@@ -30,6 +30,10 @@ class ClientWidgetBase:
         self._backing = None
         self.pixel_depth = 24
 
+    def get_subsystem(self, name: str):
+        """ look up a client subsystem (delegates to the owning client) """
+        return self._client.get_subsystem(name)
+
     def get_info(self) -> dict[str, Any]:
         info = {
             "has-alpha": self._has_alpha,
@@ -58,7 +62,7 @@ class ClientWidgetBase:
             log("make_new_backing%s effective backing class=%s, server alpha=%s, window alpha=%s",
                 (backing_class, ww, wh, ww, wh), bc, self._has_alpha, self._window_alpha)
             backing = bc(self.wid, self._window_alpha, self.pixel_depth)
-            mmap_sub = self._client.get_subsystem("mmap")
+            mmap_sub = self.get_subsystem("mmap")
             mmap = getattr(mmap_sub, "mmap_read_area", None)
             if mmap:
                 backing.enable_mmap(mmap)

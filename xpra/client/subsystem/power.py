@@ -89,9 +89,9 @@ class PowerEventClient(StubClientMixin):
             # ("ui" and "window-ids" arguments are optional since v6.3)
             win = self.get_subsystem("window")
             wids = tuple(win._id_to_window.keys()) if win else ()
-            self.client.send("suspend", True, wids)
+            self.send("suspend", True, wids)
         else:
-            self.client.send("suspend")
+            self.send("suspend")
 
     def resume(self, *args) -> None:
         log("resume(%s)", args)
@@ -101,9 +101,9 @@ class PowerEventClient(StubClientMixin):
         if BACKWARDS_COMPATIBLE:
             win = self.get_subsystem("window")
             wids = tuple(win._id_to_window.keys()) if win else ()
-            self.client.send("resume", True, wids)
+            self.send("resume", True, wids)
         else:
-            self.client.send("resume")
+            self.send("resume")
         if elapsed < 1:
             # not really suspended
             # happens on macos when switching workspace!

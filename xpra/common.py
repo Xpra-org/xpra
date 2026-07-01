@@ -90,12 +90,27 @@ def may_show_progress(obj, pct: int, text="", *args) -> None:
     msg = _(text)
     if args:
         msg += ": " + ", ".join(str(v) for v in args)
-    show_progress = getattr(obj, "show_progress", noop)
+    # `show_progress` lives on the `progress` subsystem when the object exposes
+    # one (a composed client, where the subsystem holds the splash process);
+    # otherwise fall back to the object itself:
+    target = obj
+    get_subsystem = getattr(obj, "get_subsystem", None)
+    if callable(get_subsystem):
+        target = get_subsystem("progress") or obj
+    show_progress = getattr(target, "show_progress", noop)
     show_progress(pct, msg)
 
 
 def may_notify_client(obj, nid : NotificationID | int, summary, body, *args, **kwargs) -> None:
-    notify_client = getattr(obj, "notify_client", notify_to_log)
+    # `notify_client` lives on the `notification` subsystem when the object
+    # exposes one (a composed client, where the subsystem holds the notifier
+    # state); server-side `source` objects and un-composed clients have it
+    # directly, so fall back to the object itself:
+    target = obj
+    get_subsystem = getattr(obj, "get_subsystem", None)
+    if callable(get_subsystem):
+        target = get_subsystem("notification") or obj
+    notify_client = getattr(target, "notify_client", notify_to_log)
     notify_client(nid, summary, body, *args, **kwargs)
     # hide splash progress:
     may_show_progress(obj, 100, "notification", summary)

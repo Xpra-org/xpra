@@ -30,12 +30,14 @@ class KeyboardWindow(GtkStubWindow):
         return Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.KEY_RELEASE_MASK
 
     def next_keyboard_layout(self, update_platform_layout) -> None:
-        self._client.next_keyboard_layout(update_platform_layout)
+        if kb := self.get_subsystem("keyboard"):
+            kb.next_keyboard_layout(update_platform_layout)
 
     def keyboard_layout_changed(self, *args) -> None:
         # used by win32 hooks to tell us about keyboard layout changes for this window
         log("keyboard_layout_changed%s", args)
-        self._client.window_keyboard_layout_changed(self)
+        if kb := self.get_subsystem("keyboard"):
+            kb.window_keyboard_layout_changed(self)
 
     def parse_key_event(self, event, pressed: bool) -> KeyEvent:
         keyval = event.keyval
@@ -54,7 +56,7 @@ class KeyboardWindow(GtkStubWindow):
                         break
         key_event = KeyEvent()
         # `mask_to_names` is owned by the `keyboard` subsystem (which may be absent):
-        keyboard = self._client.get_subsystem("keyboard")
+        keyboard = self.get_subsystem("keyboard")
         key_event.modifiers = keyboard.mask_to_names(event.state) if keyboard else []
         key_event.keyname = keyname
         key_event.keyval = keyval or 0
@@ -83,10 +85,12 @@ class KeyboardWindow(GtkStubWindow):
 
     def handle_key_press_event(self, _window, event) -> bool:
         key_event = self.parse_key_event(event, True)
-        self._client.handle_key_action(self, key_event)
+        if kb := self.get_subsystem("keyboard"):
+            kb.handle_key_action(self, key_event)
         return True
 
     def handle_key_release_event(self, _window, event) -> bool:
         key_event = self.parse_key_event(event, False)
-        self._client.handle_key_action(self, key_event)
+        if kb := self.get_subsystem("keyboard"):
+            kb.handle_key_action(self, key_event)
         return True

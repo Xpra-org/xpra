@@ -217,7 +217,7 @@ class Encodings(StubClientMixin):
     def send_encoding_config(self) -> None:
         caps = self.get_encodings_caps()
         log("send_encoding_config() caps=%s", caps)
-        self.client.send("encoding-config", caps)
+        self.send("encoding-config", caps)
 
     def get_caps(self) -> dict[str, Any]:
         if not BACKWARDS_COMPATIBLE:
@@ -379,32 +379,32 @@ class Encodings(StubClientMixin):
                 log.error(" " + csv(self.server_encodings))
                 return
         self.encoding = encoding
-        self.client.send("encoding", self.encoding)
+        self.send("encoding", self.encoding)
 
     def send_quality(self) -> None:
         q = self.quality
         log("send_quality() quality=%s", q)
         if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid quality: {q}")
-        self.client.send("quality", q)
+        self.send("quality", q)
 
     def send_min_quality(self) -> None:
         q = self.min_quality
         log("send_min_quality() min-quality=%s", q)
         if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid min-quality: {q}")
-        self.client.send("min-quality", q)
+        self.send("min-quality", q)
 
     def send_speed(self) -> None:
         s = self.speed
         log("send_speed() min-speed=%s", s)
         if s != -1 and (s < 0 or s > 100):
             raise ValueError(f"invalid speed: {s}")
-        self.client.send("speed", s)
+        self.send("speed", s)
 
     def send_min_speed(self) -> None:
         s = self.min_speed
         log("send_min_speed() min-speed=%s", s)
         if s != -1 and (s < 0 or s > 100):
             raise ValueError(f"invalid min-speed: {s}")
-        self.client.send("min-speed", s)
+        self.send("min-speed", s)

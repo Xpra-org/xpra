@@ -153,7 +153,7 @@ class PingClient(StubClientMixin):
             self.ping_timer = 0
             return False
         now_ms = int(1000.0 * monotonic())
-        self.client.send("ping", now_ms)
+        self.send("ping", now_ms)
         wait = 1000 * MIN_PING_TIMEOUT
         aspl = tuple(self.server_ping_latency)
         if aspl:
@@ -198,7 +198,7 @@ class PingClient(StubClientMixin):
             log("swallowed ping!")
             return
         log(f"got ping, sending echo time={echotime} for {sid=}")
-        self.client.send("ping_echo", echotime, l1, l2, l3, int(1000.0 * sl), sid)
+        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0 * sl), sid)
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(*PingClient.PACKET_TYPES)

@@ -126,7 +126,7 @@ class WindowPointer(StubClientMixin):
 
     def send_input_devices(self, fmt: str, input_devices: dict[int, dict[str, Any]]) -> None:
         assert self.server_input_devices
-        self.client.send("input-devices", fmt, input_devices)
+        self.send("input-devices", fmt, input_devices)
 
     def poll_pointer(self) -> bool:
         pos = self.client.get_mouse_position()

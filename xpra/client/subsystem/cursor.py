@@ -8,6 +8,7 @@
 
 from typing import Any
 from importlib.util import find_spec
+from weakref import WeakKeyDictionary
 
 from xpra.common import SizedBuffer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
@@ -49,9 +50,22 @@ class CursorClient(StubClientMixin):
         self.client_supports_cursors: bool = False
         self.cursors_enabled: bool = False
         self.default_cursor_data = ()
+        # cursor tracking state (the toolkit client renders via `set_windows_cursor`
+        # and updates these): window -> cursor_data, and the last cursor applied
+        # (used to apply the current cursor to newly-shown windows):
+        self._cursors: WeakKeyDictionary = WeakKeyDictionary()
+        self._last_cursor_data: tuple = ()
 
     def init(self, opts) -> None:
         self.client_supports_cursors = opts.cursors
+
+    def load(self) -> None:
+        # re-apply cursors when the scaling changes (the `scaling-changed`
+        # signal is owned by the `display` subsystem):
+        try:
+            self.client.connect("scaling-changed", self.reset_windows_cursors)
+        except TypeError:
+            log("no 'scaling-changed' signal")
 
     def get_info(self) -> dict[str, Any]:
         return self.get_caps()
@@ -126,7 +140,7 @@ class CursorClient(StubClientMixin):
             log("setting default cursor=%s", Ellipsizer(new_cursor))
             self.default_cursor_data = new_cursor
         else:
-            self.client.set_windows_cursor(self.get_windows(), new_cursor)
+            self.set_windows_cursor(self.get_windows(), new_cursor)
 
     def decompress_cursor_data(self, encoding: str, cpixels: SizedBuffer, serial: int) -> bytes:
         # weak dependency on `Encodings` subsystem:
@@ -149,7 +163,7 @@ class CursorClient(StubClientMixin):
         name = packet.get_str(8)
         pixels = self.decompress_cursor_data(encoding, cpixels, serial)
         cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, pixels, name)
-        self.client.set_windows_cursor(self.get_windows(), cursor_data)
+        self.set_windows_cursor(self.get_windows(), cursor_data)
 
     def _process_cursor_default(self, packet: Packet) -> None:
         log("setting default cursor: %s", packet)
@@ -158,10 +172,19 @@ class CursorClient(StubClientMixin):
         self.reset_cursor()
 
     def reset_cursor(self) -> None:
-        self.client.set_windows_cursor(self.get_windows(), ())
+        self.set_windows_cursor(self.get_windows(), ())
+
+    def reset_windows_cursors(self, *_args) -> None:
+        # re-apply the tracked cursors (e.g. after a scaling change);
+        # the toolkit client does the actual rendering:
+        log("reset_windows_cursors() resetting cursors for: %s", tuple(self._cursors.keys()))
+        for w, cursor_data in tuple(self._cursors.items()):
+            self.set_windows_cursor([w], cursor_data)
 
     def set_windows_cursor(self, client_windows, new_cursor) -> None:
-        raise NotImplementedError()
+        # record the current cursor, then let the toolkit client render it:
+        self._last_cursor_data = new_cursor
+        self.client.set_windows_cursor(client_windows, new_cursor)
 
     def init_authenticated_packet_handlers(self) -> None:
         if BACKWARDS_COMPATIBLE:

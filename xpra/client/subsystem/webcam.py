@@ -137,7 +137,7 @@ class WebcamForwarder(StubClientMixin):
             self.start_sending_webcam(*restart)
 
     def webcam_state_changed(self) -> None:
-        self.idle_add(self.emit, "webcam-changed")
+        self.idle_add(self.client.emit, "webcam-changed")
 
     ######################################################################
     def start_sending_webcam(self, device_no: int, device: str) -> None:
@@ -324,8 +324,7 @@ class WebcamForwarder(StubClientMixin):
 
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1
-            self.send("webcam-frame", self.webcam_device_no, frame_no, encoding,
-                      w, h, img_data, options)
+            self.send("webcam-frame", self.webcam_device_no, frame_no, encoding, w, h, img_data, options)
             self.cancel_webcam_check_ack_timer()
             self.webcam_ack_check_timer = self.timeout_add(10 * 1000, self.webcam_check_acks)
             return True
@@ -336,7 +335,7 @@ class WebcamForwarder(StubClientMixin):
             summary = "Webcam forwarding has failed"
             body = "The system encountered the following error:\n" + \
                    ("%s\n" % e)
-            may_notify_client(self, NotificationID.WEBCAM,
+            may_notify_client(self.client, NotificationID.WEBCAM,
                               summary, body, expire_timeout=10 * 1000, icon_name="webcam")
             return False
         finally:

@@ -116,4 +116,4 @@ class BandwidthClient(StubClientMixin):
 
     def send_bandwidth_limit(self) -> None:
         log("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
-        self.client.send("bandwidth-limit", self.bandwidth_limit)
+        self.send("bandwidth-limit", self.bandwidth_limit)

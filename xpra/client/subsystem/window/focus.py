@@ -31,7 +31,7 @@ class WindowFocus(StubClientMixin):
     # focus:
     def send_focus(self, wid: int) -> None:
         log("send_focus(%#x)", wid)
-        self.client.send(WINDOW_FOCUS, wid, self.client.get_current_modifiers())
+        self.send(WINDOW_FOCUS, wid, self.client.get_current_modifiers())
 
     def has_focus(self, wid: int) -> bool:
         return bool(self._focused) and self._focused == wid

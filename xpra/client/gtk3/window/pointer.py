@@ -211,7 +211,7 @@ class PointerWindow(GtkStubWindow):
             self.cancel_remove_pointer_overlay_timer()
             self.remove_pointer_overlay()
         # `server_pointer` is owned by the `pointer` subsystem (which may be disabled):
-        pointer = self._client.get_subsystem("pointer")
+        pointer = self.get_subsystem("pointer")
         if self._client.readonly or self._client.server_readonly or (pointer and not pointer.server_pointer):
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
@@ -225,7 +225,8 @@ class PointerWindow(GtkStubWindow):
         log(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
             _device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
-        self._client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons)
+        if pointer:
+            pointer.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons)
 
     def get_mouse_position(self) -> tuple[int, int]:
         # this method is used on some platforms
@@ -256,7 +257,7 @@ class PointerWindow(GtkStubWindow):
         pointer_data = self.get_pointer_data(event)
         # FIXME: state is used for both mods and buttons??
         # `mask_to_names` is owned by the `keyboard` subsystem (which may be absent):
-        keyboard = self._client.get_subsystem("keyboard")
+        keyboard = self.get_subsystem("keyboard")
         modifiers = keyboard.mask_to_names(event.state) if keyboard else []
         buttons = mask_buttons(event.state)
         v = pointer_data, modifiers, buttons
@@ -284,7 +285,9 @@ class PointerWindow(GtkStubWindow):
         return True
 
     def translate_button(self, button: int, modifiers: list[str]) -> int:
-        transform = self._client._button_transform
+        # `_button_transform` is owned by the `pointer` subsystem (which may be disabled):
+        pointer = self.get_subsystem("pointer")
+        transform = pointer._button_transform if pointer else None
         if not transform:
             return button
         for modifier in modifiers:
@@ -298,10 +301,10 @@ class PointerWindow(GtkStubWindow):
 
     def _button_action(self, button: int, event, depressed: bool, props=None) -> None:
         # `server_pointer` is owned by the `pointer` subsystem (which may be disabled):
-        pointer = self._client.get_subsystem("pointer")
+        pointer = self.get_subsystem("pointer")
         if self._client.readonly or self._client.server_readonly or (pointer and not pointer.server_pointer):
             return
-        if not self._client.middle_click and button == 2:
+        if pointer and not pointer.middle_click and button == 2:
             log("_button_action: middle click suppressed (middle-click=no)")
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
@@ -354,7 +357,7 @@ class PointerWindow(GtkStubWindow):
         with IgnoreWarningsContext():
             x, y, mask = self.get_root_window().get_pointer()[-3:]
         buttons = mask_buttons(mask)
-        keyboard = self._client.get_subsystem("keyboard")
+        keyboard = self.get_subsystem("keyboard")
         modifiers = keyboard.mask_to_names(mask) if keyboard else []
         self.do_poll_buttons((x, y), modifiers, buttons)
         if not self.button_pressed:

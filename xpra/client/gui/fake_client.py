@@ -47,6 +47,10 @@ class FakeClient(AdHocStruct):
         self.window_with_grab = None
         self.keyboard_helper = None
 
+    def get_subsystem(self, _name: str):
+        # the fake client muxes all subsystem state/methods onto itself:
+        return self
+
     def get_window_frame_sizes(self, *_args) -> dict[str, Any]:
         return {}
 

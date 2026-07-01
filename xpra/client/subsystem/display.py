@@ -350,7 +350,7 @@ class DisplayClient(StubClientMixin):
             icc = self.get_icc_info()
             dicc = self.get_display_icc_info()
             if icc or dicc:
-                self.client.send(DISPLAY_CONFIGURE, {
+                self.send(DISPLAY_CONFIGURE, {
                     "icc": {
                         "global": icc,
                         "display": dicc,
@@ -629,7 +629,7 @@ class DisplayClient(StubClientMixin):
             if rrate:
                 attrs["vrefresh"] = rrate
             log(f"configure-display: {attrs}")
-            self.client.send(DISPLAY_CONFIGURE, attrs)
+            self.send(DISPLAY_CONFIGURE, attrs)
         self._last_screen_settings = screen_settings
         # update the max packet size (may have gone up):
         self.set_max_packet_size()

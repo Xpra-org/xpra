@@ -129,6 +129,10 @@ def later(fn: Callable[[], None], delay=100):
 
 class GTKTrayMenu(GTKMenuHelper):
 
+    def get_subsystem(self, subsystem: str):
+        """ look up a client subsystem (delegates to the owning client) """
+        return self.client.get_subsystem(subsystem)
+
     def setup_menu(self) -> Gtk.Menu:
         log("setup_menu()")
         return self.do_setup_menu(self.get_menu_items())
@@ -161,7 +165,7 @@ class GTKTrayMenu(GTKMenuHelper):
         )
 
     def is_mmap_enabled(self) -> bool:
-        mmap = self.client.get_subsystem("mmap")
+        mmap = self.get_subsystem("mmap")
         mra = mmap.mmap_read_area if mmap else None
         return bool(mra and mra.enabled and mra.size > 0)
 
@@ -340,22 +344,23 @@ class GTKTrayMenu(GTKMenuHelper):
     def make_cursorsmenuitem(self) -> Gtk.ImageMenuItem:
         def cursors_toggled(*args) -> None:
             v = cursors.get_active()
-            changed = self.client.cursors_enabled != v
-            self.client.cursors_enabled = v
+            cur = self.get_subsystem("cursor")
+            changed = cur.cursors_enabled != v
+            cur.cursors_enabled = v
             if changed:
                 self.client.send_cursors_enabled()
-            if not self.client.cursors_enabled:
-                self.client.reset_cursor()
-            log("cursors_toggled(%s) cursors_enabled=%s", args, self.client.cursors_enabled)
+            if not cur.cursors_enabled:
+                cur.reset_cursor()
+            log("cursors_toggled(%s) cursors_enabled=%s", args, cur.cursors_enabled)
 
         cursors = checkitem(_("Cursors"), cursors_toggled)
         set_sensitive(cursors, False)
 
         def set_cursors_menuitem(*args) -> None:
-            c = self.client
-            can_toggle_cursors = features.cursor and c.server_cursors and c.client_supports_cursors
+            cur = self.get_subsystem("cursor")
+            can_toggle_cursors = features.cursor and cur and cur.server_cursors and cur.client_supports_cursors
             log("set_cursors_menuitem%s can_toggle_cursors=%s", args, can_toggle_cursors)
-            cursors.set_active(can_toggle_cursors and self.client.cursors_enabled)
+            cursors.set_active(can_toggle_cursors and cur.cursors_enabled)
             sens_tooltip(cursors, can_toggle_cursors,
                          _("Forward custom mouse cursors"),
                          _("Cannot forward mouse cursors: the feature is disabled"))
@@ -364,7 +369,7 @@ class GTKTrayMenu(GTKMenuHelper):
         return cursors
 
     def make_notificationsmenuitem(self) -> Gtk.ImageMenuItem:
-        nsub = self.client.get_subsystem("notification")
+        nsub = self.get_subsystem("notification")
 
         def notifications_toggled(*args) -> None:
             v = notifications.get_active()
@@ -511,7 +516,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def make_keyboardsyncmenuitem(self) -> Gtk.CheckMenuItem:
         def set_keyboard_sync_tooltip() -> None:
-            kh = self.client.keyboard_helper
+            kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
             if not kh:
                 text = _("Keyboard support is not loaded")
             elif kh.sync:
@@ -523,8 +528,9 @@ class GTKTrayMenu(GTKMenuHelper):
 
         def keyboard_sync_toggled(*args) -> None:
             ks = kbsync.get_active()
-            if self.client.keyboard_sync != ks:
-                self.client.keyboard_sync = ks
+            kb = self.get_subsystem("keyboard")
+            if kb.keyboard_sync != ks:
+                kb.keyboard_sync = ks
                 log("keyboard_sync_toggled(%s) keyboard_sync=%s", args, ks)
                 set_keyboard_sync_tooltip()
                 self.client.send_keyboard_sync_enabled_status()
@@ -533,9 +539,9 @@ class GTKTrayMenu(GTKMenuHelper):
         set_sensitive(kbsync, False)
 
         def set_keyboard_sync_menuitem(*args) -> None:
-            if kh := self.client.keyboard_helper:
+            if kh := getattr(self.get_subsystem("keyboard"), "keyboard_helper", None):
                 log("set_keyboard_sync_menuitem%s enabled=%s", args, kh.sync)
-            can_set_sync = kh and self.client.server_keyboard
+            can_set_sync = kh and getattr(self.get_subsystem("keyboard"), "server_keyboard", False)
             sens_tooltip(kbsync, can_set_sync,
                          _("Enable keyboard state synchronization"),
                          _("Keyboard support is not available"))
@@ -549,7 +555,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def make_shortcutsmenuitem(self) -> Gtk.ImageMenuItem:
         kbshortcuts = checkitem(_("Intercept Shortcuts"))
-        kh = self.client.keyboard_helper
+        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
         kbshortcuts.set_active(kh and bool(kh.shortcuts_enabled))
 
         def keyboard_shortcuts_toggled(*args) -> None:
@@ -608,7 +614,7 @@ class GTKTrayMenu(GTKMenuHelper):
         def populate_picturemenu() -> None:
             if bw := self.make_bandwidthlimitmenuitem():
                 menu.append(bw)
-            if self.client.windows_enabled and len(self.client.get_subsystem("encoding").get_encodings()) > 1:
+            if self.client.windows_enabled and len(self.get_subsystem("encoding").get_encodings()) > 1:
                 menu.append(self.make_encodingsmenuitem())
             if self.client.can_scale:
                 menu.append(self.make_scalingmenuitem())
@@ -621,7 +627,7 @@ class GTKTrayMenu(GTKMenuHelper):
         return picture_menu_item
 
     def make_bandwidthlimitmenuitem(self) -> Gtk.ImageMenuItem:
-        bw = self.client.get_subsystem("bandwidth")
+        bw = self.get_subsystem("bandwidth")
         if not bw:
             return None
 
@@ -690,7 +696,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 return
             bandwidthlog("activate_cb(%s, %s) bwlimit=%s", item, args, bwlimit)
             ensure_item_selected(menu, item)
-            bw = self.client.get_subsystem("bandwidth")
+            bw = self.get_subsystem("bandwidth")
             if bw and (bw.bandwidth_limit or 0) != bwlimit:
                 bw.bandwidth_limit = bwlimit
                 bw.send_bandwidth_limit()
@@ -721,7 +727,7 @@ class GTKTrayMenu(GTKMenuHelper):
         return encodings
 
     def get_encoding_options(self) -> tuple[Sequence[str], Sequence[str]]:
-        esub = self.client.get_subsystem("encoding")
+        esub = self.get_subsystem("encoding")
         server_encodings = list(esub.server_encodings)
         client_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in esub.get_encodings()]
         # separator:
@@ -750,10 +756,10 @@ class GTKTrayMenu(GTKMenuHelper):
         return encodings_submenu
 
     def get_current_encoding(self) -> str:
-        return self.client.get_subsystem("encoding").encoding
+        return self.get_subsystem("encoding").encoding
 
     def set_current_encoding(self, enc: str) -> None:
-        self.client.get_subsystem("encoding").set_encoding(enc)
+        self.get_subsystem("encoding").set_encoding(enc)
         # these menus may need updating now:
         self.set_qualitymenu()
         self.set_speedmenu()
@@ -831,20 +837,20 @@ class GTKTrayMenu(GTKMenuHelper):
                            self.get_min_quality, self.get_quality, self.set_min_quality, self.set_quality)
 
     def get_min_quality(self) -> int:
-        return self.client.get_subsystem("encoding").min_quality
+        return self.get_subsystem("encoding").min_quality
 
     def get_quality(self) -> int:
-        return self.client.get_subsystem("encoding").quality
+        return self.get_subsystem("encoding").quality
 
     def set_min_quality(self, q: int) -> None:
-        esub = self.client.get_subsystem("encoding")
+        esub = self.get_subsystem("encoding")
         esub.min_quality = q
         esub.quality = -1
         esub.send_min_quality()
         esub.send_quality()
 
     def set_quality(self, q: int) -> None:
-        esub = self.client.get_subsystem("encoding")
+        esub = self.get_subsystem("encoding")
         esub.min_quality = -1
         esub.quality = q
         esub.send_min_quality()
@@ -852,7 +858,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def set_qualitymenu(self, *_args) -> None:
         if self.quality:
-            esub = self.client.get_subsystem("encoding")
+            esub = self.get_subsystem("encoding")
             enc = esub.encoding
             with_quality = enc in esub.server_encodings_with_quality or enc in GENERIC_ENCODINGS
             can_use = with_quality and not self.is_mmap_enabled()
@@ -886,20 +892,20 @@ class GTKTrayMenu(GTKMenuHelper):
                            self.get_min_speed, self.get_speed, self.set_min_speed, self.set_speed)
 
     def get_min_speed(self) -> int:
-        return self.client.get_subsystem("encoding").min_speed
+        return self.get_subsystem("encoding").min_speed
 
     def get_speed(self) -> int:
-        return self.client.get_subsystem("encoding").speed
+        return self.get_subsystem("encoding").speed
 
     def set_min_speed(self, s: int) -> None:
-        esub = self.client.get_subsystem("encoding")
+        esub = self.get_subsystem("encoding")
         esub.min_speed = s
         esub.speed = -1
         esub.send_min_speed()
         esub.send_speed()
 
     def set_speed(self, s: int) -> None:
-        esub = self.client.get_subsystem("encoding")
+        esub = self.get_subsystem("encoding")
         esub.min_speed = -1
         esub.speed = s
         esub.send_min_speed()
@@ -907,7 +913,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def set_speedmenu(self, *_args) -> None:
         if self.speed:
-            esub = self.client.get_subsystem("encoding")
+            esub = self.get_subsystem("encoding")
             enc = esub.encoding
             with_speed = enc in esub.server_encodings_with_speed or enc in GENERIC_ENCODINGS
             set_sensitive(self.speed, with_speed and not self.is_mmap_enabled())
@@ -936,23 +942,23 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def spk_on(self, *args) -> None:
         log("spk_on(%s)", args)
-        self.client.start_receiving_audio()
+        self.get_subsystem("audio").start_receiving_audio()
 
     def spk_off(self, *args) -> None:
         log("spk_off(%s)", args)
-        self.client.stop_receiving_audio()
+        self.get_subsystem("audio").stop_receiving_audio()
 
     def make_speakermenuitem(self) -> Gtk.ImageMenuItem:
         speaker = self.menuitem(_("Speaker"), "speaker.png", _("Forward audio output from the server"))
         set_sensitive(speaker, False)
 
         def is_speaker_on(*_args) -> bool:
-            return self.client.speaker_enabled
+            return self.get_subsystem("audio").speaker_enabled
 
         def check_available() -> str:
-            if not self.client.speaker_allowed:
+            if not self.get_subsystem("audio").speaker_allowed:
                 return _("Speaker forwarding has been disabled")
-            if not self.client.server_audio_send:
+            if not self.get_subsystem("audio").server_audio_send:
                 return _("Server does not support speaker forwarding")
             return ""
 
@@ -961,23 +967,23 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def mic_on(self, *args) -> None:
         log("mic_on(%s)", args)
-        self.client.start_sending_audio()
+        self.get_subsystem("audio").start_sending_audio()
 
     def mic_off(self, *args) -> None:
         log("mic_off(%s)", args)
-        self.client.stop_sending_audio()
+        self.get_subsystem("audio").stop_sending_audio()
 
     def make_microphonemenuitem(self) -> Gtk.ImageMenuItem:
         microphone = self.menuitem(_("Microphone"), "microphone.png", _("Forward audio input to the server"))
         set_sensitive(microphone, False)
 
         def is_microphone_on(*_args) -> bool:
-            return self.client.microphone_enabled
+            return self.get_subsystem("audio").microphone_enabled
 
         def check_available() -> str:
-            if not self.client.microphone_allowed:
+            if not self.get_subsystem("audio").microphone_allowed:
                 return _("Microphone forwarding has been disabled")
-            if not self.client.server_audio_receive:
+            if not self.get_subsystem("audio").server_audio_receive:
                 return _("Server does not support microphone forwarding")
             return ""
 
@@ -1047,7 +1053,7 @@ class GTKTrayMenu(GTKMenuHelper):
         sync = self.menuitem(_("Video Sync"), "video.png", _("Synchronize audio and video"))
         menu = Gtk.Menu()
         current_value = 0
-        if not self.client.av_sync:
+        if not self.get_subsystem("audio").av_sync:
             current_value = None
 
         def syncitem(label, delta: int | None = 0) -> Gtk.CheckMenuItem:
@@ -1058,11 +1064,11 @@ class GTKTrayMenu(GTKMenuHelper):
             def activate_cb(item, *_args) -> None:
                 avsynclog("activate_cb(%s, %s) delta=%s", item, menu, delta)
                 if delta is None:
-                    self.client.av_sync = False
-                    self.client.send_audio_sync(0)
+                    self.get_subsystem("audio").av_sync = False
+                    self.get_subsystem("audio").send_audio_sync(0)
                 else:
-                    self.client.av_sync = True
-                    self.client.av_sync_delta = delta
+                    self.get_subsystem("audio").av_sync = True
+                    self.get_subsystem("audio").av_sync_delta = delta
                     # the actual sync value will be calculated and sent
                     # in client._process_sound_data
 
@@ -1083,11 +1089,11 @@ class GTKTrayMenu(GTKMenuHelper):
             sync.show_all()
 
         def set_avsyncmenu(*_args) -> None:
-            if not self.client.server_av_sync:
+            if not self.get_subsystem("audio").server_av_sync:
                 set_sensitive(sync, False)
                 sync.set_tooltip_text(_("video-sync is not supported by the server"))
                 return
-            if not (self.client.speaker_allowed and self.client.server_audio_send):
+            if not (self.get_subsystem("audio").speaker_allowed and self.get_subsystem("audio").server_audio_send):
                 set_sensitive(sync, False)
                 sync.set_tooltip_text(_("video-sync requires speaker forwarding"))
                 return
@@ -1103,7 +1109,8 @@ class GTKTrayMenu(GTKMenuHelper):
         if not features.webcam or not WEBCAM_MENU:
             return None
         webcam = self.menuitem(_("Webcam"), "webcam.png")
-        if not self.client.webcam_forwarding:
+        wc = self.get_subsystem("webcam")
+        if not wc.webcam_forwarding:
             webcam.set_tooltip_text(_("Webcam forwarding is disabled"))
             set_sensitive(webcam, False)
             return webcam
@@ -1138,16 +1145,16 @@ class GTKTrayMenu(GTKMenuHelper):
 
         def start_webcam(device_no=0, device="") -> None:
             webcamlog("start_webcam(%s, %s)", device_no, device)
-            self.client.start_sending_webcam(device_no, device)
+            wc.start_sending_webcam(device_no, device)
 
         def stop_webcam(*args) -> None:
             webcamlog("stop_webcam%s", args)
-            self.client.stop_sending_webcam()
+            wc.stop_sending_webcam()
 
         def get_active_device_no() -> int:
-            if self.client.webcam_device is None:
+            if wc.webcam_device is None:
                 return -1
-            return self.client.webcam_device_no
+            return wc.webcam_device_no
 
         def populate_webcam_menu() -> None:
             menu.ignore_events = True
@@ -1195,12 +1202,12 @@ class GTKTrayMenu(GTKMenuHelper):
         webcam.set_submenu(menu)
 
         def webcam_changed(*args) -> None:
-            webcamlog("webcam_changed%s webcam_device=%s", args, self.client.webcam_device)
-            if not self.client.webcam_forwarding:
+            webcamlog("webcam_changed%s webcam_device=%s", args, wc.webcam_device)
+            if not wc.webcam_forwarding:
                 set_sensitive(webcam, False)
                 webcam.set_tooltip_text(_("Webcam forwarding is disabled"))
                 return
-            if not self.client.server_webcam:
+            if not wc.server_webcam:
                 set_sensitive(webcam, False)
                 webcam.set_tooltip_text(_("Server does not support webcam forwarding"))
                 return
@@ -1219,7 +1226,7 @@ class GTKTrayMenu(GTKMenuHelper):
         return webcam
 
     def make_keyboardmenuitem(self) -> Gtk.Menu | None:
-        if not features.window or not self.client.keyboard_helper:
+        if not features.window or not getattr(self.get_subsystem("keyboard"), "keyboard_helper", None):
             return None
         keyboard_menu_item = self.handshake_menuitem(_("Keyboard"), "keyboard.png")
         menu = Gtk.Menu()
@@ -1250,7 +1257,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
         if PREFER_IBUS_LAYOUTS:
             def got_ibus_layouts(setting: str, ibus_layouts) -> None:
-                kh = self.client.keyboard_helper
+                kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
                 Logger("ibus").debug(f"current layout=%r, got {setting!r}=%s", kh.layout, Ellipsizer(ibus_layouts))
                 if ibus_layouts and kh.layout:
                     self.populate_ibus_keyboard_layouts(ibus_layouts)
@@ -1273,7 +1280,7 @@ class GTKTrayMenu(GTKMenuHelper):
         backend = item.keyboard_backend
         layout = item.keyboard_layout
         variant = item.keyboard_variant
-        kh = self.client.keyboard_helper
+        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
         kh.locked = layout != "Auto"
         if layout != kh.layout_option or variant != kh.variant_option or kh.backend != backend or kh.name != name:
             kh.backend = backend
@@ -1308,7 +1315,7 @@ class GTKTrayMenu(GTKMenuHelper):
     def populate_ibus_keyboard_layouts(self, ibus_layouts: dict) -> None:
         self.layout_submenu = Gtk.Menu()
         self.keyboard_layout_item.set_submenu(self.layout_submenu)
-        kh = self.client.keyboard_helper
+        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
         matches = []
 
         def engine_item(engine) -> tuple[str, Gtk.CheckMenuItem]:
@@ -1390,7 +1397,7 @@ class GTKTrayMenu(GTKMenuHelper):
             for variant in variants:
                 self.layout_submenu.append(self.kbitem(f"{layout} - {variant}", layout, variant))
 
-        kh = self.client.keyboard_helper
+        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
         if not kh:
             # this can happen when connection fails?
             return
@@ -1626,7 +1633,7 @@ class GTKTrayMenu(GTKMenuHelper):
                                        _("Commands running on the server"),
                                        self.client.show_server_commands)
 
-        cmd = self.client.get_subsystem("command")
+        cmd = self.get_subsystem("command")
 
         def enable_servercommands(*args) -> None:
             log("enable_servercommands%s server-commands-info=%s", args, cmd.server_commands_info)
@@ -1642,7 +1649,7 @@ class GTKTrayMenu(GTKMenuHelper):
                                    _("Run a new command on the server"),
                                    self.client.show_start_new_command)
 
-        cmd = self.client.get_subsystem("command")
+        cmd = self.get_subsystem("command")
 
         def enable_start_new_command(*args) -> None:
             log("enable_start_new_command%s start_new_command=%s", args, cmd.server_start_new_commands)
@@ -1682,7 +1689,7 @@ class GTKTrayMenu(GTKMenuHelper):
         download = self.menuitem(_("Download File"), "download.png", cb=self.client.send_download_request)
         set_sensitive(download, False)
 
-        cmd = self.client.get_subsystem("command")
+        cmd = self.get_subsystem("command")
 
         def enable_download(*args) -> None:
             log("enable_download%s server_file_transfer=%s, server_start_new_commands=%s, subcommands=%s",
@@ -1768,7 +1775,7 @@ class GTKTrayMenu(GTKMenuHelper):
             return None
         start_menu_item = self.handshake_menuitem(_("Start"), "start.png")
         start_menu_item.show()
-        cmd = self.client.get_subsystem("command")
+        cmd = self.get_subsystem("command")
 
         def server_menu_checksum() -> str:
             import hashlib
@@ -1818,7 +1825,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def build_start_menu(self) -> Gtk.Menu:
         menu = Gtk.Menu()
-        server_menu = self.client.get_subsystem("command").server_menu
+        server_menu = self.get_subsystem("command").server_menu
         execlog("build_start_menu() %i menu items: %s", len(server_menu), Ellipsizer(server_menu))
         for category, category_props in sorted(server_menu.items()):
             execlog(" * category: %s", category)
@@ -1858,7 +1865,7 @@ class GTKTrayMenu(GTKMenuHelper):
         if icondata:
             # only allow icon encodings we have a decoder for,
             # optionally also allowing svg (via GdkPixbuf):
-            encodings = tuple(self.client.get_subsystem("encoding").get_core_encodings())
+            encodings = tuple(self.get_subsystem("encoding").get_core_encodings())
             if MENU_SVG_ICONS:
                 encodings += ("svg", )
             image = get_appimage(title, icondata, self.menu_icon_size, encodings)
@@ -1880,7 +1887,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 command = command.split("%", 1)[0]
             log("command=%s", command)
             if command:
-                cmd = self.client.get_subsystem("command")
+                cmd = self.get_subsystem("command")
                 cmd.send_start_command(app_name, command, False, self.client.server_sharing)
 
         app_menu_item.connect("activate", app_launch)
