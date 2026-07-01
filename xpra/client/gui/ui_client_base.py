@@ -62,8 +62,10 @@ class UIXpraClient(ClientBaseClass):
             run_info.append(f" window manager is {wm!r}")
         for info in run_info:
             log.info(info)
-        # same for tray:
-        self.tray = None
+        # the menu helper is a client-owned UI service (used by the `tray`
+        # subsystem and by window shortcut menus); toolkit clients override
+        # `get_menu_helper`/`get_menu_helper_class` to add their variants:
+        self.menu_helper = None
         for c in CLIENT_BASES:
             sublog("calling %s.__init__()", c)
             self.add_subsystem(c)
@@ -174,6 +176,35 @@ class UIXpraClient(ClientBaseClass):
         # exposes just the native classes (for clients with no toolkit variants).
         notification = self.get_subsystem("notification")
         return list(notification.get_native_notifier_classes()) if notification else []
+
+    def get_menu_helper(self):
+        """
+        menu helper used by our tray (make_tray / setup_xpra_tray)
+        and for showing the menu on windows via a shortcut;
+        concrete clients (e.g. gtk3) override this to add toolkit variants.
+        """
+        if not self.menu_helper:
+            from xpra.util.objects import make_instance
+            mhc = (self.get_menu_helper_class(), )
+            log("get_menu_helper() menu helper classes: %s", mhc)
+            self.menu_helper = make_instance(mhc, self)
+        return self.menu_helper
+
+    @staticmethod
+    def get_menu_helper_class():
+        from xpra.platform.systray import get_menu_helper_class
+        return get_menu_helper_class()
+
+    def show_menu(self, *_args) -> None:
+        if self.menu_helper:
+            self.menu_helper.activate()
+
+    def get_tray_classes(self) -> list[type]:
+        # the canonical tray class list lives on the client: concrete clients
+        # (e.g. gtk3) override this to add their toolkit-specific trays on top
+        # of the tray subsystem's native ones.
+        tray = self.get_subsystem("tray")
+        return list(tray.get_native_tray_classes()) if tray else []
 
     def server_ok(self) -> bool:
         # get the real value from the PingClient feature, if present:

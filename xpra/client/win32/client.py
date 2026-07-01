@@ -86,7 +86,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def run_loop(self) -> None:
         from xpra.client.win32.glib import inject_windows_message_source
-        inject_windows_message_source(self.glib_mainloop)
+        inject_windows_message_source(self.main_loop)
         GObjectClientAdapter.run_loop(self)
 
     def cleanup(self) -> None:

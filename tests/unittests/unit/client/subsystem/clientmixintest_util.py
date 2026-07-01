@@ -120,6 +120,14 @@ class ClientMixinTest(unittest.TestCase):
         # subsystem's own native notifiers as that client method:
         if not hasattr(x, "get_notifier_classes") and hasattr(x, "get_native_notifier_classes"):
             x.get_notifier_classes = x.get_native_notifier_classes
+        # the tray subsystem consumes the client's menu-helper service and its
+        # composed `get_tray_classes()`; when testing it in isolation, stand in a
+        # no-op menu helper and expose the subsystem's own native tray classes:
+        if hasattr(x, "get_native_tray_classes"):
+            if not hasattr(x, "get_menu_helper"):
+                x.get_menu_helper = noop
+            if not hasattr(x, "get_tray_classes"):
+                x.get_tray_classes = x.get_native_tray_classes
         fake_protocol = AdHocStruct()
         fake_protocol.get_info = lambda: {}
         fake_protocol.set_compression_level = lambda _x: None

@@ -12,15 +12,19 @@ from xpra.exit_codes import ExitValue
 from xpra.net.compression import Compressed
 from xpra.net.common import ClientPacketHandlerType, PacketElement
 
-# when running the unit tests,
-# we inject the signal emitter into the signal hierarchy,
-# whereas regular client classes inherit the signal methods from GObjectClientAdapter
+# Subsystems inherit `SignalEmitter` so that a *composed* subsystem instance can
+# own its own signals (emit/connect on itself) rather than routing through the
+# client GObject. On the concrete client, `StubClientMixin` is still in the MRO
+# (via the transitional flatten), but the real `GObject` connect/emit precede
+# `SignalEmitter` in the MRO, so the client keeps using GObject signals.
+# Under the unit tests we also mix in `GLibScheduler` (isolated subsystems have
+# no owning client to borrow `idle_add`/`timeout_add`/`source_remove` from).
+from xpra.util.signal_emitter import SignalEmitter
 if envbool("XPRA_UNIT_TEST"):
-    from xpra.util.signal_emitter import SignalEmitter
     from xpra.util.glib_scheduler import GLibScheduler
     superclass = type("StubSignalScheduler", (SignalEmitter, GLibScheduler), {})
 else:
-    superclass = object
+    superclass = SignalEmitter
 
 
 class StubClientMixin(superclass):
@@ -68,6 +72,16 @@ class StubClientMixin(superclass):
                 type(self).__name__, name,
             )
         return getattr(client, name)
+
+    def _should_call_direct(self) -> bool:
+        # `SignalEmitter` hook: a *composed* subsystem owns its own signals but
+        # has no main loop of its own; it fires them on the owning client's main
+        # loop (deferring via `idle_add` when emitted off the UI thread, exactly
+        # as the base `SignalEmitter` does with `self.main_loop`).
+        main_loop = getattr(self.client, "main_loop", None)
+        if main_loop is None or not main_loop.is_running():
+            return True
+        return main_loop.get_context().is_owner()
 
     def get_subsystem(self, name: str):
         """ look up a peer subsystem on the owning client """

@@ -14,23 +14,21 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 class AudioClientTest(ClientMixinTest):
 
-	def test_tray(self):
-		def _TrayClient():
-			x = TrayClient()
-			x.after_handshake = noop
-			def get_tray_menu_helper_class():
-				return None
-			x.get_tray_menu_helper_class = get_tray_menu_helper_class
-			return x
-		opts = AdHocStruct()
-		opts.tray = True
-		opts.delay_tray = 0
-		opts.tray_icon = ""
-		self._test_mixin_class(_TrayClient, opts)
+    def test_tray(self):
+        def _TrayClient():
+            x = TrayClient()
+            x.after_handshake = noop
+            return x
+        opts = AdHocStruct()
+        opts.tray = True
+        opts.delay_tray = 0
+        opts.tray_icon = ""
+        self._test_mixin_class(_TrayClient, opts)
+
 
 def main():
-	unittest.main()
+    unittest.main()
 
 
 if __name__ == '__main__':
-	main()
+    main()

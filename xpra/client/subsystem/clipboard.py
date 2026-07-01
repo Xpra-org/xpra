@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import monotonic
 from typing import Any
 from importlib import import_module
 from collections.abc import Sequence
@@ -14,13 +15,16 @@ from xpra.client.base.stub import StubClientMixin
 from xpra.platform.clipboard import get_backend_module
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.net import compression
+from xpra.util.env import envbool
 from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.objects import typedict
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.log import Logger
 
 log = Logger("clipboard")
 
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS", "")
+CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
 
 
 def get_clipboard_helper_classes(clipboard_type: str) -> list[type]:
@@ -65,12 +69,14 @@ def get_clipboard_helper_classes(clipboard_type: str) -> list[type]:
 
 class ClipboardClient(StubClientMixin):
     """
-    Utility mixin for clients that handle clipboard synchronization
+    Utility mixin for clients that handle clipboard synchronization.
+    This subsystem owns the `clipboard-toggled` signal (via `SignalEmitter`):
+    peers subscribe with `get_subsystem("clipboard").connect("clipboard-toggled", ...)`.
     """
-    __signals__ = ["clipboard-toggled"]
     PREFIX = "clipboard"
 
     def __init__(self):
+        SignalEmitter.__init__(self)
         self.client_clipboard_type: str = ""
         self.client_clipboard_direction: str = "both"
         self.client_supports_clipboard: bool = False
@@ -84,6 +90,9 @@ class ClipboardClient(StubClientMixin):
         self.clipboard_helper = None
         self.local_clipboard_requests: int = 0
         self.remote_clipboard_requests: int = 0
+        # tray notification (blink the tray icon while requests are in progress):
+        self.clipboard_notification_timer = 0
+        self.last_clipboard_notification: float = 0
         # only used with the translated clipboard class:
         self.local_clipboard: str = ""
         self.remote_clipboard: str = ""
@@ -106,6 +115,7 @@ class ClipboardClient(StubClientMixin):
             self.client_supports_clipboard = False
 
     def cleanup(self) -> None:
+        self.cancel_clipboard_notification_timer()
         ch = self.clipboard_helper
         log("ClipboardClient.cleanup() clipboard_helper=%s", ch)
         if ch:
@@ -153,7 +163,7 @@ class ClipboardClient(StubClientMixin):
         self.parse_clipboard_capabilities(typedict(caps))
         if self.server_clipboard and self.clipboard_helper:
             self.configure_clipboard()
-            self.after_handshake(self.start_clipboard_sync)
+            self.client.after_handshake(self.start_clipboard_sync)
         return True
 
     def init_clipboard_helper(self) -> None:
@@ -164,6 +174,22 @@ class ClipboardClient(StubClientMixin):
             log.warn("Warning: no clipboard support")
         self.clipboard_helper = ch
         self.clipboard_enabled = ch is not None
+        if ch:
+            # reset the tray notification whenever the clipboard is toggled
+            # (only start watching after the handshake to avoid loops):
+            self.client.after_handshake(self.watch_clipboard_toggled)
+            if self.server_clipboard:
+                # from now on, notify the server whenever the clipboard flag changes:
+                self.connect("clipboard-toggled", self.clipboard_toggled)
+
+    def watch_clipboard_toggled(self) -> None:
+        self.connect("clipboard-toggled", self.reset_clipboard_notification)
+
+    def reset_clipboard_notification(self, *_args) -> None:
+        # reset the tray icon:
+        self.local_clipboard_requests = 0
+        self.remote_clipboard_requests = 0
+        self.clipboard_notify(0)
 
     def parse_clipboard_capabilities(self, caps: typedict) -> None:
         self.server_clipboard = bool(caps)
@@ -212,7 +238,7 @@ class ClipboardClient(StubClientMixin):
         self.send_clipboard_selections(ch.get_remote_selections())
         ch.send_all_tokens()
         # ui may want to know this is now set:
-        self.client.emit("clipboard-toggled")
+        self.emit("clipboard-toggled")
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardClient.PREFIX}-status")
@@ -264,7 +290,7 @@ class ClipboardClient(StubClientMixin):
             log.info("clipboard toggled to %s by the server", ["off", "on"][int(clipboard_enabled)])
             log.info(" reason given: %r", reason)
             self.clipboard_enabled = bool(clipboard_enabled)
-            self.client.emit("clipboard-toggled")
+            self.emit("clipboard-toggled")
 
     def clipboard_toggled(self, *args) -> None:
         log("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s",
@@ -321,13 +347,47 @@ class ClipboardClient(StubClientMixin):
         n = self.local_clipboard_requests+self.remote_clipboard_requests
         self.clipboard_notify(n)
 
+    def clipboard_notify(self, n: int) -> None:
+        # blink the tray icon while clipboard requests are in progress;
+        # the actual tray rendering is owned by the `tray` subsystem:
+        tray = self.get_subsystem("tray")
+        tray_widget = tray.tray if tray else None
+        if not tray_widget or not CLIPBOARD_NOTIFY:
+            return
+        log("clipboard_notify(%i) notification timer=%s", n, self.clipboard_notification_timer)
+        self.cancel_clipboard_notification_timer()
+        if n > 0 and self.clipboard_enabled:
+            self.last_clipboard_notification = monotonic()
+            tray_widget.set_icon("clipboard")
+            tray_widget.set_tooltip(f"{n} clipboard requests in progress")
+            tray_widget.set_blinking(True)
+        else:
+            # no more pending clipboard transfers,
+            # reset the tray icon,
+            # but wait at least N seconds after the last clipboard transfer:
+            N = 1
+            delay = max(0, round(1000 * (self.last_clipboard_notification + N - monotonic())))
+            self.clipboard_notification_timer = self.timeout_add(delay, self.reset_clipboard_tray)
+
+    def reset_clipboard_tray(self) -> None:
+        self.clipboard_notification_timer = 0
+        if tray := self.get_subsystem("tray"):
+            tray.reset_tray_icon()
+
+    def cancel_clipboard_notification_timer(self) -> None:
+        if cnt := self.clipboard_notification_timer:
+            self.clipboard_notification_timer = 0
+            self.source_remove(cnt)
+
     def compressible_item(self, compressible) -> compression.Compressible:
         """
             converts a 'Compressible' item into something that will
             call `self.compressed_wrapper` when compression is requested
             by the network encode thread.
         """
-        client = self
+        # the real (lz4/brotli) `compressed_wrapper` lives on the client
+        # (the stub's is a dummy that does not compress):
+        client = self.client
 
         class ProtocolCompressible(compression.Compressible):
             __slots__ = ()
@@ -336,7 +396,3 @@ class ClipboardClient(StubClientMixin):
                 return client.compressed_wrapper(self.datatype, self.data,
                                                  level=9, can_inline=False, brotli=True)
         return ProtocolCompressible(compressible.datatype, compressible.data)
-
-    @staticmethod
-    def clipboard_notify(n: int) -> None:
-        log("clipboard_notify(%i)", n)

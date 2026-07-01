@@ -86,6 +86,8 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         "keyboard",
         "cursor",
         "pointer",
+        "tray",
+        "clipboard",
     )
 
     def __init__(self):

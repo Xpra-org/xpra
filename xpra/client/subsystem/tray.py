@@ -32,7 +32,6 @@ class TrayClient(StubClientMixin):
         # state:
         self.tray = None
         self.delay_tray = False
-        self.menu_helper = None
 
     def init(self, opts) -> None:
         if not opts.tray:
@@ -41,7 +40,9 @@ class TrayClient(StubClientMixin):
         self.tray_icon = opts.tray_icon
 
     def load(self):
-        self.get_menu_helper()
+        # the menu helper is a toolkit-specific client service (see `get_menu_helper`
+        # on the concrete client); the tray is one of its consumers:
+        self.client.get_menu_helper()
         if self.delay_tray:
             self.client.connect("first-ui-received", self.setup_xpra_tray)
         else:
@@ -51,7 +52,7 @@ class TrayClient(StubClientMixin):
             else:
                 # wait for handshake:
                 # see appindicator bug #3956
-                self.after_handshake(self.setup_xpra_tray)
+                self.client.after_handshake(self.setup_xpra_tray)
 
     def setup_xpra_tray(self, *args) -> None:
         log("setup_xpra_tray%s", args)
@@ -84,35 +85,22 @@ class TrayClient(StubClientMixin):
             with log.trap_error("Error during tray cleanup"):
                 t.cleanup()
 
+    def reset_tray_icon(self) -> None:
+        tray = self.tray
+        if not tray:
+            return
+        tray.set_icon(None)  # None means back to default icon
+        tray.set_tooltip(self.get_tray_title())
+        tray.set_blinking(False)
+
     @staticmethod
-    def get_tray_classes() -> list[type]:
-        # subclasses may add their toolkit specific variants, if any
-        # by overriding this method
+    def get_native_tray_classes() -> list[type]:
+        # the concrete client's `get_tray_classes` composes these with its
+        # toolkit specific variants, if any (e.g. gtk3 adds the StatusIcon tray)
         # use the native ones first:
         if not USE_NATIVE_TRAY:
             return []
         return get_backends()
-
-    def get_menu_helper(self):
-        """
-        menu helper used by our tray (make_tray / setup_xpra_tray)
-        and for showing the menu on windows via a shortcut,
-        this method is overriden in the gtk3.client
-        """
-        mhc = (self.get_menu_helper_class(), )
-        log("get_menu_helper() mhc=%s", mhc)
-        self.menu_helper = make_instance(mhc, self)
-        log("get_menu_helper()=%s", self.menu_helper)
-        return self.menu_helper
-
-    @staticmethod
-    def get_menu_helper_class():
-        from xpra.platform.systray import get_menu_helper_class
-        return get_menu_helper_class()
-
-    def show_menu(self, *_args) -> None:
-        if self.menu_helper:
-            self.menu_helper.activate()
 
     def create_xpra_tray(self, tray_icon_filename: str):
         tray = None
@@ -121,25 +109,25 @@ class TrayClient(StubClientMixin):
 
         def xpra_tray_click(button, pressed, time=0):
             log("xpra_tray_click(%s, %s, %s)", button, pressed, time)
+            mh = self.client.get_menu_helper()
             if button == 1 and pressed:
-                self.idle_add(self.menu_helper.activate, button, time)
+                self.idle_add(mh.activate, button, time)
             elif button in (2, 3) and not pressed:
-                self.idle_add(self.menu_helper.popup, button, time)
+                self.idle_add(mh.popup, button, time)
 
         def xpra_tray_mouseover(*args):
             log("xpra_tray_mouseover%s", args)
 
         def xpra_tray_exit(*args):
             log("xpra_tray_exit%s", args)
-            self.disconnect_and_quit(0, ConnectionMessage.CLIENT_EXIT)
+            self.client.disconnect_and_quit(0, ConnectionMessage.CLIENT_EXIT)
 
         def xpra_tray_geometry(*args):
             if tray:
                 log("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())
 
-        menu = None
-        if self.menu_helper:
-            menu = self.menu_helper.build()
+        mh = self.client.get_menu_helper()
+        menu = mh.build() if mh else None
         tray = self.make_tray(XPRA_APP_ID, menu, self.get_tray_title(), tray_icon_filename,
                               xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
         log("setup_xpra_tray(%s)=%s (%s)", tray_icon_filename, tray, type(tray))
@@ -147,20 +135,20 @@ class TrayClient(StubClientMixin):
             def reset_tray_title() -> None:
                 tray.set_tooltip(self.get_tray_title())
 
-            self.after_handshake(reset_tray_title)
+            self.client.after_handshake(reset_tray_title)
         return tray
 
     def make_tray(self, *args):
         """ tray used by our own application """
-        tc = self.get_tray_classes()
+        tc = self.client.get_tray_classes()
         log("make_tray%s tray classes=%s", args, tc)
-        return make_instance(tc, self, *args)
+        return make_instance(tc, self.client, *args)
 
     def get_tray_title(self) -> str:
         t: list[str] = []
-        if self.session_name or self.server_session_name:
-            t.append(self.session_name or self.server_session_name)
-        if ce := self.get_connection_endpoint():
+        if self.client.session_name or self.client.server_session_name:
+            t.append(self.client.session_name or self.client.server_session_name)
+        if ce := self.client.get_connection_endpoint():
             t.append(ce)
         if not t:
             t.insert(0, "Xpra")

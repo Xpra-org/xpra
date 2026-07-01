@@ -34,7 +34,8 @@ class TrayMenu(MenuHelper):
         if not client:
             log.warn("Warning: unable to show menu without a client object")
             return 0
-        tray = getattr(client, "tray", None)
+        tray_subsystem = client.get_subsystem("tray")
+        tray = tray_subsystem.tray if tray_subsystem else None
         if not tray:
             log.warn("Warning: unable to show menu without a tray object")
             return 0

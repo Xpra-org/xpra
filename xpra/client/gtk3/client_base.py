@@ -7,7 +7,6 @@
 
 import os
 import shlex
-from time import monotonic
 from importlib import import_module
 from collections.abc import Callable, Sequence, Iterable
 from subprocess import Popen, PIPE
@@ -57,7 +56,6 @@ opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
 framelog = Logger("gtk", "client", "frame")
 filelog = Logger("gtk", "client", "file")
-clipboardlog = Logger("gtk", "client", "clipboard")
 grablog = Logger("client", "grab")
 focuslog = Logger("client", "focus")
 
@@ -66,7 +64,6 @@ Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED", "")
-CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
 OPENGL_MIN_SIZE = envint("XPRA_OPENGL_MIN_SIZE", 32)
 NO_OPENGL_WINDOW_TYPES = os.environ.get(
     "XPRA_NO_OPENGL_WINDOW_TYPES",
@@ -139,9 +136,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         if kb := self.get_subsystem("keyboard"):
             kb.keyboard_helper_class = GTKKeyboardHelper
         self.data_send_requests = {}
-        # clipboard bits:
-        self.clipboard_notification_timer = 0
-        self.last_clipboard_notification = 0
         # opengl bits:
         self.client_supports_opengl = False
         self.opengl_force = False
@@ -214,7 +208,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.stop_pinentry()
         for name, dialog in self.sub_dialogs.items():
             dialog.close()
-        self.cancel_clipboard_notification_timer()
         if mh := self.menu_helper:
             self.menu_helper = None
             mh.cleanup()
@@ -727,8 +720,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return wfs
 
     def get_tray_classes(self) -> list[type]:
-        from xpra.client.subsystem.tray import TrayClient
-        return _add_statusicon_tray(TrayClient.get_tray_classes())
+        return _add_statusicon_tray(super().get_tray_classes())
 
     def get_system_tray_classes(self) -> list[type]:
         from xpra.client.subsystem.window import WindowClient
@@ -1293,57 +1285,5 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         log("last window for refs %s is gone, destroying the group leader %s", refs, group_leader)
         group_leader.close()
 
-    def setup_clipboard_helper(self, helper_class, options: dict):
-        from xpra.client.subsystem.clipboard import ClipboardClient
-        ch = ClipboardClient.setup_clipboard_helper(self, helper_class, options)
-
-        # check for loops after handshake:
-
-        def register_clipboard_toggled(*_args) -> None:
-            def clipboard_toggled(*_args) -> None:
-                # reset tray icon:
-                self.local_clipboard_requests = 0
-                self.remote_clipboard_requests = 0
-                self.clipboard_notify(0)
-
-            self.connect("clipboard-toggled", clipboard_toggled)
-
-        self.after_handshake(register_clipboard_toggled)
-        if self.server_clipboard:
-            # from now on, we will send a message to the server whenever the clipboard flag changes:
-            self.connect("clipboard-toggled", self.clipboard_toggled)
-        return ch
-
-    def cancel_clipboard_notification_timer(self) -> None:
-        if cnt := self.clipboard_notification_timer:
-            self.clipboard_notification_timer = 0
-            self.source_remove(cnt)
-
-    def clipboard_notify(self, n: int) -> None:
-        tray = getattr(self, "tray", None)
-        if not tray or not CLIPBOARD_NOTIFY:
-            return
-        clipboardlog(f"clipboard_notify({n}) notification timer={self.clipboard_notification_timer}")
-        self.cancel_clipboard_notification_timer()
-        if n > 0 and self.clipboard_enabled:
-            self.last_clipboard_notification = monotonic()
-            tray.set_icon("clipboard")
-            tray.set_tooltip(f"{n} clipboard requests in progress")
-            tray.set_blinking(True)
-        else:
-            # no more pending clipboard transfers,
-            # reset the tray icon,
-            # but wait at least N seconds after the last clipboard transfer:
-            N = 1
-            delay = max(0, round(1000 * (self.last_clipboard_notification + N - monotonic())))
-
-            self.clipboard_notification_timer = GLib.timeout_add(delay, self.reset_tray_icon)
-
-    def reset_tray_icon(self) -> None:
-        self.clipboard_notification_timer = 0
-        tray = self.tray
-        if not tray:
-            return
-        tray.set_icon(None)  # None means back to default icon
-        tray.set_tooltip(self.get_tray_title())
-        tray.set_blinking(False)
+    # the xpra clipboard tray notification (blink/reset) is owned by the
+    # `clipboard` and `tray` subsystems.

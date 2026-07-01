@@ -179,7 +179,8 @@ class GTKTrayMenu(GTKMenuHelper):
         def set_menu_title(*_args) -> None:
             # set the real name when available:
             try:
-                title = self.client.get_tray_title()
+                tray = self.client.get_subsystem("tray")
+                title = tray.get_tray_title() if tray else (self.client.session_name or "Xpra")
             except Exception:
                 title = self.client.session_name or "Xpra"
             title_item.set_label(title)
@@ -392,7 +393,7 @@ class GTKTrayMenu(GTKMenuHelper):
         return notifications
 
     def remote_clipboard_changed(self, item, clipboard_submenu) -> None:
-        c = self.client
+        c = self.get_subsystem("clipboard")
         if not c or not c.server_clipboard or not c.client_supports_clipboard:
             return
         # prevent infinite recursion where ensure_item_selected
@@ -415,7 +416,8 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def set_new_remote_clipboard(self, remote_clipboard) -> None:
         clipboardlog("set_new_remote_clipboard(%s)", remote_clipboard)
-        ch = self.client.clipboard_helper
+        clipboard = self.get_subsystem("clipboard")
+        ch = clipboard.clipboard_helper
         local_clipboard = "CLIPBOARD"
         ch._local_to_remote = {local_clipboard: remote_clipboard}
         ch._remote_to_local = {remote_clipboard: local_clipboard}
@@ -423,12 +425,12 @@ class GTKTrayMenu(GTKMenuHelper):
         clipboardlog.info("server clipboard synchronization changed to %s selection", remote_clipboard)
         # tell the server what to look for:
         # (now that "clipboard-toggled" has re-enabled clipboard if necessary)
-        self.client.send_clipboard_selections(selections)
+        clipboard.send_clipboard_selections(selections)
         ch.send_tokens([local_clipboard])
 
     def make_translatedclipboard_optionsmenuitem(self) -> Gtk.ImageMenuItem:
         clipboardlog("make_translatedclipboard_optionsmenuitem()")
-        ch = self.client.clipboard_helper
+        ch = self.get_subsystem("clipboard").clipboard_helper
         selection_menu = self.menuitem(_("Selection"), None, _("Choose which remote clipboard to connect to"))
         selection_submenu = Gtk.Menu()
         selection_menu.set_submenu(selection_submenu)
@@ -459,14 +461,15 @@ class GTKTrayMenu(GTKMenuHelper):
     def do_clipboard_direction_changed(self, label) -> None:
         # find the value matching this item label:
         d = CLIPBOARD_DIRECTION_LABEL_TO_NAME.get(label)
-        if d and d != self.client.client_clipboard_direction:
+        clipboard = self.get_subsystem("clipboard")
+        if d and clipboard and d != clipboard.client_clipboard_direction:
             log.info("clipboard synchronization direction changed to: %s", label.lower())
-            self.client.client_clipboard_direction = d
+            clipboard.client_clipboard_direction = d
             can_send = d in ("to-server", "both")
             can_receive = d in ("to-client", "both")
-            self.client.clipboard_helper.set_direction(can_send, can_receive)
+            clipboard.clipboard_helper.set_direction(can_send, can_receive)
             # will send new tokens and may help reset things:
-            self.client.emit("clipboard-toggled")
+            clipboard.emit("clipboard-toggled")
 
     def make_clipboardmenuitem(self) -> Gtk.ImageMenuItem | None:
         if not features.clipboard or not SHOW_CLIPBOARD_MENU:
@@ -477,8 +480,8 @@ class GTKTrayMenu(GTKMenuHelper):
         set_sensitive(clipboard, False)
 
         def set_clipboard_menu(*args) -> None:
-            c = self.client
-            if not c.server_clipboard:
+            c = self.get_subsystem("clipboard")
+            if not c or not c.server_clipboard:
                 clipboard.set_tooltip_text(_("Server does not support clipboard synchronization"))
                 return
             ch = c.clipboard_helper
@@ -503,7 +506,7 @@ class GTKTrayMenu(GTKMenuHelper):
             for label in CLIPBOARD_DIRECTION_LABELS:
                 direction_item = Gtk.CheckMenuItem(label=label)
                 d = CLIPBOARD_DIRECTION_LABEL_TO_NAME.get(label)
-                direction_item.set_active(d == self.client.client_clipboard_direction)
+                direction_item.set_active(d == c.client_clipboard_direction)
                 clipboard_submenu.append(direction_item)
                 items.append(direction_item)
             clipboard_submenu.show_all()

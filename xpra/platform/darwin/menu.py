@@ -226,7 +226,8 @@ class OSXMenuHelper(GTKTrayMenu):
             def set_clipboard_menu(*args) -> None:
                 log("set_clipboard_menu%s", args)
                 self.set_clipboard_menu(clipboard_menu)
-            self.client.connect("clipboard-toggled", set_clipboard_menu)
+            if clipboard := self.get_subsystem("clipboard"):
+                clipboard.connect("clipboard-toggled", set_clipboard_menu)
             self.after_handshake(set_clipboard_menu)
         if features.audio and SHOW_SOUND_MENU:
             audio_menu = Gtk.Menu()
@@ -348,8 +349,9 @@ class OSXMenuHelper(GTKTrayMenu):
     def set_clipboard_menu(self, clipboard_menu) -> None:
         # find the menu item matching the current settings,
         # and select it
+        clipboard = self.get_subsystem("clipboard")
         try:
-            ch = self.client.clipboard_helper
+            ch = clipboard.clipboard_helper
             rc_setting = "CLIPBOARD"
             if len(ch._local_to_remote) == 1:
                 rc_setting = tuple(ch._local_to_remote.values())[0]
@@ -358,7 +360,7 @@ class OSXMenuHelper(GTKTrayMenu):
             self.select_clipboard_menu_option(None, label, CLIPBOARD_LABELS)
         except RuntimeError:
             clipboardlog("failed to select remote clipboard option in menu", exc_info=True)
-        direction = self.client.client_clipboard_direction
+        direction = clipboard.client_clipboard_direction
         direction_label = CLIPBOARD_DIRECTION_NAME_TO_LABEL.get(direction, "Disabled")
         clipboardlog("direction(%s)=%s", direction, direction_label)
         self.select_clipboard_menu_option(None, direction_label, CLIPBOARD_DIRECTION_LABELS)

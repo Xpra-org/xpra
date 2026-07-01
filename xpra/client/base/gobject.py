@@ -25,7 +25,10 @@ class GObjectClientAdapter(GObject.GObject, GLibScheduler):
 
     def __init__(self):
         self.exit_code = None
-        self.glib_mainloop = None
+        # the GLib main loop (created in `run()`); named to match the server
+        # (`GLibServer.main_loop`) so `SignalEmitter._should_call_direct` and
+        # subsystems can find it uniformly:
+        self.main_loop = None
         self.client_type = "pygobject"
         GObject.GObject.__init__(self)
 
@@ -34,13 +37,13 @@ class GObjectClientAdapter(GObject.GObject, GLibScheduler):
         install_signal_handlers("%s Client" % self.client_type, self.handle_app_signal)
 
     def run(self) -> ExitValue:
-        self.glib_mainloop = GLib.MainLoop()
+        self.main_loop = GLib.MainLoop()
         self.run_loop()
         return self.exit_code or ExitCode.OK
 
     def run_loop(self) -> None:
         with SilenceWarningsContext(DeprecationWarning):
-            self.glib_mainloop.run()
+            self.main_loop.run()
 
     def quit(self, exit_code: ExitValue = ExitCode.OK) -> None:
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
@@ -53,7 +56,7 @@ class GObjectClientAdapter(GObject.GObject, GLibScheduler):
         GLib.timeout_add(5 * 1000, self.force_quit, exit_code)
 
     def exit_loop(self) -> None:
-        self.glib_mainloop.quit()
+        self.main_loop.quit()
         self.cleanup()
 
     def connect(self, name: str, *args, **kwargs) -> int:
