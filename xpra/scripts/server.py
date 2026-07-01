@@ -601,7 +601,6 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     app.parse_socket_options(opts)
     app.init_sockets(retry=10 * int(upgrading))
 
-    app.protected_env = protected_env
     if opts.backend == "wayland":
         from xpra.wayland.subsystem.manager import WaylandManager
         wm = app.add_subsystem(WaylandManager)

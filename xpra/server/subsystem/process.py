@@ -170,7 +170,6 @@ class ProcessServer(StubSubsystem):
         if POSIX and self.uid and not self.gid:
             self.gid = find_group(self.uid)
             opts.gid = self.gid
-        self.protected_env = dict(getattr(self.server, "protected_env", {}))
         self.env = tuple(opts.env)
         self.source = tuple(opts.source)
         self.wm_name = str(opts.wm_name or "")

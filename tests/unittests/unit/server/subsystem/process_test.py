@@ -29,7 +29,7 @@ class ProcessServerTest(unittest.TestCase):
         return SimpleNamespace(**opts)
 
     def test_setup_configures_env_and_chdir(self):
-        server = SimpleNamespace(protected_env={"PROTECTED": "1"})
+        server = SimpleNamespace()
         opts = self.make_opts(env=("A=B",), chdir="/tmp")
         process = ProcessServer(server)
         with patch("xpra.server.subsystem.process.getuid", return_value=1), \
@@ -42,7 +42,7 @@ class ProcessServerTest(unittest.TestCase):
         chdir.assert_called_once_with("/tmp")
 
     def test_setup_root_switches_user(self):
-        server = SimpleNamespace(protected_env={"PROTECTED": "1"})
+        server = SimpleNamespace()
         opts = self.make_opts(uid=1000, gid=1000, env=("A=B",))
         process = ProcessServer(server)
         with patch("xpra.server.subsystem.process.POSIX", True), \
@@ -55,6 +55,7 @@ class ProcessServerTest(unittest.TestCase):
                 patch("xpra.server.subsystem.process.os.chdir") as chdir, \
                 patch.dict(os.environ, {}, clear=True):
             process.init(opts)
+            process.protected_env = {"PROTECTED": "1"}
             process.setup()
             assert os.environ["HOME"] == "/home/alice"
             assert os.environ["USER"] == "alice"
@@ -68,7 +69,7 @@ class ProcessServerTest(unittest.TestCase):
         assert process.chdir == "/home/alice"
 
     def test_get_info(self):
-        server = SimpleNamespace(protected_env={})
+        server = SimpleNamespace()
         opts = self.make_opts(uid=1000, gid=1000, chdir="/tmp")
         process = ProcessServer(server)
         process.init(opts)
