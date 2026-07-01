@@ -66,7 +66,6 @@ class UIXpraClient(ClientBaseClass):
         self.tray = None
         for c in CLIENT_BASES:
             sublog("calling %s.__init__()", c)
-            c.__init__(self)  # pylint: disable=non-parent-init-called
             self.add_subsystem(c)
         self._ui_events: int = 0
         self.title: str = ""
@@ -96,7 +95,7 @@ class UIXpraClient(ClientBaseClass):
         """ initialize variables from configuration """
         for c in CLIENT_BASES:
             sublog(f"init: {c}")
-            c.init(self, opts)
+            self._call_subsystem(c, "init", opts)
 
         self.title = opts.title
         self.session_name = opts.session_name
@@ -112,18 +111,18 @@ class UIXpraClient(ClientBaseClass):
         """ initialize user interface """
         for c in CLIENT_BASES:
             sublog(f"init: {c}")
-            c.init_ui(self, opts)
+            self._call_subsystem(c, "init_ui", opts)
 
     def load(self):
         for c in CLIENT_BASES:
             sublog(f"load: {c}")
-            c.load(self)
+            self._call_subsystem(c, "load")
 
     def run(self) -> ExitValue:
         if FORCE_ALERT:
             self.schedule_timer_redraw()
         for c in CLIENT_BASES:
-            c.run(self)
+            self._call_subsystem(c, "run")
         return self.exit_code or 0
 
     def quit(self, exit_code: ExitValue = 0) -> None:
@@ -133,7 +132,7 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.cleanup()")
         for c in CLIENT_BASES:
             sublog("%s.cleanup()", c)
-            c.cleanup(self)
+            self._call_subsystem(c, "cleanup")
         # the protocol has been closed, it is now safe to close all the windows:
         # (cleaner and needed when we run embedded in the client launcher)
         reaper_cleanup()
@@ -151,7 +150,7 @@ class UIXpraClient(ClientBaseClass):
             info["session-name"] = self.session_name
         for c in CLIENT_BASES:
             with sublog.trap_error("Error collection information from %s", c):
-                info.update(c.get_info(self))
+                info.update(self._call_subsystem(c, "get_info"))
         return info
 
     def show_about(self, *_args) -> None:
@@ -168,9 +167,18 @@ class UIXpraClient(ClientBaseClass):
             self.emit("first-ui-received")
         self._ui_events += 1
 
+    def get_notifier_classes(self) -> Sequence[Callable]:
+        # the canonical notifier list lives on the client: concrete clients
+        # (e.g. gtk3) override this to add their toolkit-specific notifiers on
+        # top of the notification subsystem's native ones. This base default
+        # exposes just the native classes (for clients with no toolkit variants).
+        notification = self.get_subsystem("notification")
+        return list(notification.get_native_notifier_classes()) if notification else []
+
     def server_ok(self) -> bool:
         # get the real value from the PingClient feature, if present:
-        return getattr(self, "_server_ok", True)
+        ping = self.get_subsystem("ping")
+        return ping._server_ok if ping else True
 
     def get_mouse_position(self) -> tuple:
         raise NotImplementedError()
@@ -230,7 +238,7 @@ class UIXpraClient(ClientBaseClass):
             "lock": self.client_lock,
         }
         for c in CLIENT_BASES:
-            ccaps = c.get_caps(self)
+            ccaps = self._call_subsystem(c, "get_caps")
             sublog("%s.get_caps()=%s", c, ccaps)
             caps.update(ccaps)
         if FULL_INFO > 0:
@@ -241,13 +249,13 @@ class UIXpraClient(ClientBaseClass):
     # connection setup:
     def setup_connection(self, conn) -> None:
         for c in CLIENT_BASES:
-            c.setup_connection(self, conn)
+            self._call_subsystem(c, "setup_connection", conn)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         for cb in CLIENT_BASES:
             sublog("%s.parse_server_capabilities(..)", cb)
             try:
-                if not cb.parse_server_capabilities(self, c):
+                if not self._call_subsystem(cb, "parse_server_capabilities", c):
                     sublog.info(f"failed to parse server capabilities in {cb}")
                     return False
             except Exception:
@@ -375,8 +383,9 @@ class UIXpraClient(ClientBaseClass):
         self.send("lock-toggle", self.client_lock)
 
     def send_notify_enabled(self) -> None:
-        assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
-        self.send(NOTIFICATION_STATUS, self.notifications_enabled)
+        notification = self.get_subsystem("notification")
+        assert notification.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
+        self.send(NOTIFICATION_STATUS, notification.notifications_enabled)
 
     def send_bell_enabled(self) -> None:
         assert self.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
@@ -414,7 +423,7 @@ class UIXpraClient(ClientBaseClass):
         windows = tuple(getattr(self, "_id_to_window", {}).values())
         if not windows:
             return
-        if self._server_ok or FORCE_ALERT:
+        if self.server_ok() or FORCE_ALERT:
             log.info("server is OK again")
             return
         log.info("server is not responding, drawing alert state over the windows")
@@ -427,7 +436,7 @@ class UIXpraClient(ClientBaseClass):
             if self._protocol is None:
                 # no longer connected!
                 return False
-            ok = self._server_ok and not FORCE_ALERT
+            ok = self.server_ok() and not FORCE_ALERT
             log("timer_redraw() ok=%s", ok)
             # ensure every window has the latest state:
             for window in self._id_to_window.values():
@@ -449,6 +458,6 @@ class UIXpraClient(ClientBaseClass):
     def init_authenticated_packet_handlers(self) -> None:
         log("init_authenticated_packet_handlers()")
         for c in CLIENT_BASES:
-            c.init_authenticated_packet_handlers(self)
+            self._call_subsystem(c, "init_authenticated_packet_handlers")
         # run from the UI thread:
         self.add_packets("startup-complete", "setting-change", main_thread=True)

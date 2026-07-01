@@ -30,7 +30,7 @@ class PowerEventClient(StubClientMixin):
 
     def run(self) -> None:
         try:
-            self.connect("first-ui-received", self.start_ui_watcher)
+            self.client.connect("first-ui-received", self.start_ui_watcher)
         except (TypeError, AttributeError):
             log("no 'first-ui-received' signal")
         from xpra.platform.events import add_handler
@@ -68,11 +68,11 @@ class PowerEventClient(StubClientMixin):
 
     def ui_pause(self):
         self.ui_thread_tick()
-        self.emit("pause")
+        self.client.emit("pause")
 
     def ui_unpause(self):
         self.ui_thread_tick()
-        self.emit("unpause")
+        self.client.emit("unpause")
 
     def ui_message(self, message: str) -> None:
         if self.suspended:
@@ -84,22 +84,26 @@ class PowerEventClient(StubClientMixin):
         log("suspend(%s)", args)
         log.info(f"{self} suspending")
         self.suspended = time()
-        self.emit("suspend")
+        self.client.emit("suspend")
         if BACKWARDS_COMPATIBLE:
             # ("ui" and "window-ids" arguments are optional since v6.3)
-            self.send("suspend", True, tuple(self._id_to_window.keys()))
+            win = self.get_subsystem("window")
+            wids = tuple(win._id_to_window.keys()) if win else ()
+            self.client.send("suspend", True, wids)
         else:
-            self.send("suspend")
+            self.client.send("suspend")
 
     def resume(self, *args) -> None:
         log("resume(%s)", args)
-        self.emit("resume")
+        self.client.emit("resume")
         elapsed = max(0.0, time() - self.suspended) if self.suspended else 0.0
         self.suspended = 0.0
         if BACKWARDS_COMPATIBLE:
-            self.send("resume", True, tuple(self._id_to_window.keys()))
+            win = self.get_subsystem("window")
+            wids = tuple(win._id_to_window.keys()) if win else ()
+            self.client.send("resume", True, wids)
         else:
-            self.send("resume")
+            self.client.send("resume")
         if elapsed < 1:
             # not really suspended
             # happens on macos when switching workspace!

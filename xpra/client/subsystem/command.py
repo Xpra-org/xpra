@@ -63,7 +63,7 @@ class CommandClient(StubClientMixin):
         self.server_start_new_commands = c.boolget("start-new-commands")
         if self.server_start_new_commands:
             # weak dependency injection on ui client:
-            onchange = getattr(self, "on_server_setting_changed", noop)
+            onchange = getattr(self.client, "on_server_setting_changed", noop)
 
             def update_menu_value(_setting, menu) -> None:
                 self.server_menu = menu
@@ -71,7 +71,7 @@ class CommandClient(StubClientMixin):
 
         if self.request_start or self.request_start_child:
             if self.server_start_new_commands:
-                self.after_handshake(self.send_start_new_commands)
+                self.client.after_handshake(self.send_start_new_commands)
             else:
                 log.warn("Warning: cannot start new commands")
                 log.warn(" the feature is currently disabled on the server")
@@ -92,4 +92,4 @@ class CommandClient(StubClientMixin):
     def send_start_command(self, name: str, command: list[str], ignore: bool, sharing: bool = True) -> None:
         log("send_start_command%s", (name, command, ignore, sharing))
         assert name is not None and command is not None and ignore is not None
-        self.send(COMMAND_START, name, command, ignore, sharing)
+        self.client.send(COMMAND_START, name, command, ignore, sharing)

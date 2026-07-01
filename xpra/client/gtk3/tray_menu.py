@@ -161,10 +161,9 @@ class GTKTrayMenu(GTKMenuHelper):
         )
 
     def is_mmap_enabled(self) -> bool:
-        if not getattr(self.client, "", False):
-            return False
-        mra = self.client.mmap_read_area
-        return mra and mra.enabled and mra.size > 0
+        mmap = self.client.get_subsystem("mmap")
+        mra = mmap.mmap_read_area if mmap else None
+        return bool(mra and mra.enabled and mra.size > 0)
 
     def make_titlemenuitem(self) -> Gtk.MenuItem:
         if not SHOW_TITLE_ITEM:
@@ -365,10 +364,12 @@ class GTKTrayMenu(GTKMenuHelper):
         return cursors
 
     def make_notificationsmenuitem(self) -> Gtk.ImageMenuItem:
+        nsub = self.client.get_subsystem("notification")
+
         def notifications_toggled(*args) -> None:
             v = notifications.get_active()
-            changed = self.client.notifications_enabled != v
-            self.client.notifications_enabled = v
+            changed = nsub.notifications_enabled != v
+            nsub.notifications_enabled = v
             log("notifications_toggled%s active=%s changed=%s", args, v, changed)
             if changed:
                 self.client.send_notify_enabled()
@@ -376,9 +377,9 @@ class GTKTrayMenu(GTKMenuHelper):
         set_sensitive(notifications, False)
 
         def set_notifications_menuitem(*args) -> None:
-            log("set_notifications_menuitem%s enabled=%s", args, self.client.notifications_enabled)
-            can_notify = self.client.client_supports_notifications
-            notifications.set_active(can_notify and self.client.notifications_enabled)
+            log("set_notifications_menuitem%s enabled=%s", args, nsub.notifications_enabled)
+            can_notify = nsub.client_supports_notifications
+            notifications.set_active(can_notify and nsub.notifications_enabled)
             sens_tooltip(notifications, can_notify,
                          _("Forward system notifications"),
                          _("Cannot forward system notifications: the feature is disabled"))
@@ -607,7 +608,7 @@ class GTKTrayMenu(GTKMenuHelper):
         def populate_picturemenu() -> None:
             if bw := self.make_bandwidthlimitmenuitem():
                 menu.append(bw)
-            if self.client.windows_enabled and len(self.client.get_encodings()) > 1:
+            if self.client.windows_enabled and len(self.client.get_subsystem("encoding").get_encodings()) > 1:
                 menu.append(self.make_encodingsmenuitem())
             if self.client.can_scale:
                 menu.append(self.make_scalingmenuitem())
@@ -620,7 +621,8 @@ class GTKTrayMenu(GTKMenuHelper):
         return picture_menu_item
 
     def make_bandwidthlimitmenuitem(self) -> Gtk.ImageMenuItem:
-        if not hasattr(self.client, "bandwidth_server_limit") or not hasattr(self.client, "bandwidth_limit"):
+        bw = self.client.get_subsystem("bandwidth")
+        if not bw:
             return None
 
         bandwidth_limit_menu_item = self.menuitem(_("Bandwidth Limit"), "bandwidth_limit.png")
@@ -642,9 +644,9 @@ class GTKTrayMenu(GTKMenuHelper):
                                                            "so bandwidth limits are disabled"))
                 set_sensitive(bandwidth_limit_menu_item, False)
             else:
-                initial_value = self.client.bandwidth_server_limit or self.client.bandwidth_limit or 0
+                initial_value = bw.bandwidth_server_limit or bw.bandwidth_limit or 0
                 bandwidthlog("set_bwlimitmenu() bandwidth_server_limit=%s, bandwidth_limit=%s, initial value=%s",
-                             self.client.bandwidth_server_limit, self.client.bandwidth_limit, initial_value)
+                             bw.bandwidth_server_limit, bw.bandwidth_limit, initial_value)
 
                 options = BANDWIDTH_MENU_OPTIONS
                 if initial_value and initial_value not in options:
@@ -654,7 +656,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 for v in sorted(options):
                     menu.append(bwitem(v))
 
-                sbl = self.client.bandwidth_server_limit
+                sbl = bw.bandwidth_server_limit
                 for bwlimit, c in menuitems.items():
                     c.set_active(initial_value == bwlimit)
                     # disable any values higher than what the server allows:
@@ -688,9 +690,10 @@ class GTKTrayMenu(GTKMenuHelper):
                 return
             bandwidthlog("activate_cb(%s, %s) bwlimit=%s", item, args, bwlimit)
             ensure_item_selected(menu, item)
-            if (self.client.bandwidth_limit or 0) != bwlimit:
-                self.client.bandwidth_limit = bwlimit
-                self.client.send_bandwidth_limit()
+            bw = self.client.get_subsystem("bandwidth")
+            if bw and (bw.bandwidth_limit or 0) != bwlimit:
+                bw.bandwidth_limit = bwlimit
+                bw.send_bandwidth_limit()
 
         c.connect("toggled", activate_cb)
         c.show()
@@ -718,8 +721,9 @@ class GTKTrayMenu(GTKMenuHelper):
         return encodings
 
     def get_encoding_options(self) -> tuple[Sequence[str], Sequence[str]]:
-        server_encodings = list(self.client.server_encodings)
-        client_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.client.get_encodings()]
+        esub = self.client.get_subsystem("encoding")
+        server_encodings = list(esub.server_encodings)
+        client_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in esub.get_encodings()]
         # separator:
         client_encodings.insert(0, "-")
         server_encodings.insert(0, "-")
@@ -746,10 +750,10 @@ class GTKTrayMenu(GTKMenuHelper):
         return encodings_submenu
 
     def get_current_encoding(self) -> str:
-        return self.client.encoding
+        return self.client.get_subsystem("encoding").encoding
 
     def set_current_encoding(self, enc: str) -> None:
-        self.client.set_encoding(enc)
+        self.client.get_subsystem("encoding").set_encoding(enc)
         # these menus may need updating now:
         self.set_qualitymenu()
         self.set_speedmenu()
@@ -827,27 +831,30 @@ class GTKTrayMenu(GTKMenuHelper):
                            self.get_min_quality, self.get_quality, self.set_min_quality, self.set_quality)
 
     def get_min_quality(self) -> int:
-        return self.client.min_quality
+        return self.client.get_subsystem("encoding").min_quality
 
     def get_quality(self) -> int:
-        return self.client.quality
+        return self.client.get_subsystem("encoding").quality
 
     def set_min_quality(self, q: int) -> None:
-        self.client.min_quality = q
-        self.client.quality = -1
-        self.client.send_min_quality()
-        self.client.send_quality()
+        esub = self.client.get_subsystem("encoding")
+        esub.min_quality = q
+        esub.quality = -1
+        esub.send_min_quality()
+        esub.send_quality()
 
     def set_quality(self, q: int) -> None:
-        self.client.min_quality = -1
-        self.client.quality = q
-        self.client.send_min_quality()
-        self.client.send_quality()
+        esub = self.client.get_subsystem("encoding")
+        esub.min_quality = -1
+        esub.quality = q
+        esub.send_min_quality()
+        esub.send_quality()
 
     def set_qualitymenu(self, *_args) -> None:
         if self.quality:
-            enc = self.client.encoding
-            with_quality = enc in self.client.server_encodings_with_quality or enc in GENERIC_ENCODINGS
+            esub = self.client.get_subsystem("encoding")
+            enc = esub.encoding
+            with_quality = enc in esub.server_encodings_with_quality or enc in GENERIC_ENCODINGS
             can_use = with_quality and not self.is_mmap_enabled()
             set_sensitive(self.quality, can_use)
             if self.is_mmap_enabled():
@@ -859,7 +866,7 @@ class GTKTrayMenu(GTKMenuHelper):
             self.quality.set_tooltip_text(_("Minimum picture quality"))
             # now check if lossless is supported:
             if self.quality.get_submenu():
-                can_lossless = enc in self.client.server_encodings_with_lossless_mode
+                can_lossless = enc in esub.server_encodings_with_lossless_mode
                 for q, item in self.quality.get_submenu().menu_items.items():
                     set_sensitive(item, q < 100 or can_lossless)
 
@@ -879,27 +886,30 @@ class GTKTrayMenu(GTKMenuHelper):
                            self.get_min_speed, self.get_speed, self.set_min_speed, self.set_speed)
 
     def get_min_speed(self) -> int:
-        return self.client.min_speed
+        return self.client.get_subsystem("encoding").min_speed
 
     def get_speed(self) -> int:
-        return self.client.speed
+        return self.client.get_subsystem("encoding").speed
 
     def set_min_speed(self, s: int) -> None:
-        self.client.min_speed = s
-        self.client.speed = -1
-        self.client.send_min_speed()
-        self.client.send_speed()
+        esub = self.client.get_subsystem("encoding")
+        esub.min_speed = s
+        esub.speed = -1
+        esub.send_min_speed()
+        esub.send_speed()
 
     def set_speed(self, s: int) -> None:
-        self.client.min_speed = -1
-        self.client.speed = s
-        self.client.send_min_speed()
-        self.client.send_speed()
+        esub = self.client.get_subsystem("encoding")
+        esub.min_speed = -1
+        esub.speed = s
+        esub.send_min_speed()
+        esub.send_speed()
 
     def set_speedmenu(self, *_args) -> None:
         if self.speed:
-            enc = self.client.encoding
-            with_speed = enc in self.client.server_encodings_with_speed or enc in GENERIC_ENCODINGS
+            esub = self.client.get_subsystem("encoding")
+            enc = esub.encoding
+            with_speed = enc in esub.server_encodings_with_speed or enc in GENERIC_ENCODINGS
             set_sensitive(self.speed, with_speed and not self.is_mmap_enabled())
             if self.is_mmap_enabled():
                 self.speed.set_tooltip_text(_("Quality is always 100% with mmap"))
@@ -1616,9 +1626,11 @@ class GTKTrayMenu(GTKMenuHelper):
                                        _("Commands running on the server"),
                                        self.client.show_server_commands)
 
+        cmd = self.client.get_subsystem("command")
+
         def enable_servercommands(*args) -> None:
-            log("enable_servercommands%s server-commands-info=%s", args, self.client.server_commands_info)
-            sens_tooltip(servercommands, features.command and self.client.server_commands_info,
+            log("enable_servercommands%s server-commands-info=%s", args, cmd.server_commands_info)
+            sens_tooltip(servercommands, features.command and cmd.server_commands_info,
                          _("Show a list of the commands running on the server"),
                          SERVER_NOT_SUPPORTED)
 
@@ -1630,9 +1642,11 @@ class GTKTrayMenu(GTKMenuHelper):
                                    _("Run a new command on the server"),
                                    self.client.show_start_new_command)
 
+        cmd = self.client.get_subsystem("command")
+
         def enable_start_new_command(*args) -> None:
-            log("enable_start_new_command%s start_new_command=%s", args, self.client.server_start_new_commands)
-            sens_tooltip(runcommand, features.command and self.client.server_start_new_commands,
+            log("enable_start_new_command%s start_new_command=%s", args, cmd.server_start_new_commands)
+            sens_tooltip(runcommand, features.command and cmd.server_start_new_commands,
                          _("Choose a command to run on the server"),
                          _("Not supported or enabled on the server"))
         self.after_handshake(enable_start_new_command)
@@ -1668,12 +1682,14 @@ class GTKTrayMenu(GTKMenuHelper):
         download = self.menuitem(_("Download File"), "download.png", cb=self.client.send_download_request)
         set_sensitive(download, False)
 
+        cmd = self.client.get_subsystem("command")
+
         def enable_download(*args) -> None:
             log("enable_download%s server_file_transfer=%s, server_start_new_commands=%s, subcommands=%s",
-                args, self.client.remote_file_transfer, self.client.server_start_new_commands,
+                args, self.client.remote_file_transfer, cmd.server_start_new_commands,
                 self.client._remote_subcommands)
             remote_send_file = "send-file" in self.client._remote_subcommands
-            supported = self.client.remote_file_transfer and self.client.server_start_new_commands
+            supported = self.client.remote_file_transfer and cmd.server_start_new_commands
             set_sensitive(download, supported and remote_send_file)
             if not supported:
                 download.set_tooltip_text(SERVER_NOT_SUPPORTED)
@@ -1752,11 +1768,12 @@ class GTKTrayMenu(GTKMenuHelper):
             return None
         start_menu_item = self.handshake_menuitem(_("Start"), "start.png")
         start_menu_item.show()
+        cmd = self.client.get_subsystem("command")
 
         def server_menu_checksum() -> str:
             import hashlib
             h = hashlib.sha256()
-            for category, category_props in sorted((self.client.server_menu or {}).items()):
+            for category, category_props in sorted((cmd.server_menu or {}).items()):
                 if not isinstance(category_props, dict):
                     continue
                 entries = category_props.get("Entries") or {}
@@ -1772,15 +1789,15 @@ class GTKTrayMenu(GTKMenuHelper):
             if menu_checksum[0] == new_checksum:
                 log("start menu data has not changed")
                 return
-            if not self.client.start_new_commands:
+            if not cmd.start_new_commands:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text(_("Starting new commands is disabled"))
                 return
-            if not self.client.server_start_new_commands:
+            if not cmd.server_start_new_commands:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text(_("This server does not support starting new commands"))
                 return
-            if not self.client.server_menu:
+            if not cmd.server_menu:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text(_("This server does not provide start menu data"))
                 return
@@ -1801,8 +1818,9 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def build_start_menu(self) -> Gtk.Menu:
         menu = Gtk.Menu()
-        execlog("build_start_menu() %i menu items: %s", len(self.client.server_menu), Ellipsizer(self.client.server_menu))
-        for category, category_props in sorted(self.client.server_menu.items()):
+        server_menu = self.client.get_subsystem("command").server_menu
+        execlog("build_start_menu() %i menu items: %s", len(server_menu), Ellipsizer(server_menu))
+        for category, category_props in sorted(server_menu.items()):
             execlog(" * category: %s", category)
             if not isinstance(category_props, dict):
                 execlog("category properties is not a dict: %s", type(category_props))
@@ -1840,7 +1858,7 @@ class GTKTrayMenu(GTKMenuHelper):
         if icondata:
             # only allow icon encodings we have a decoder for,
             # optionally also allowing svg (via GdkPixbuf):
-            encodings = tuple(self.client.get_core_encodings())
+            encodings = tuple(self.client.get_subsystem("encoding").get_core_encodings())
             if MENU_SVG_ICONS:
                 encodings += ("svg", )
             image = get_appimage(title, icondata, self.menu_icon_size, encodings)
@@ -1862,7 +1880,8 @@ class GTKTrayMenu(GTKMenuHelper):
                 command = command.split("%", 1)[0]
             log("command=%s", command)
             if command:
-                self.client.send_start_command(app_name, command, False, self.client.server_sharing)
+                cmd = self.client.get_subsystem("command")
+                cmd.send_start_command(app_name, command, False, self.client.server_sharing)
 
         app_menu_item.connect("activate", app_launch)
         return app_menu_item

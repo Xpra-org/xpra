@@ -115,6 +115,11 @@ class ClientMixinTest(unittest.TestCase):
         # default when testing such a subsystem in isolation:
         if not hasattr(x, "get_core_encodings"):
             x.get_core_encodings = lambda: ["png"]
+        # the notification subsystem composes its notifier list via the client's
+        # `get_notifier_classes()`; when testing it in isolation, expose just the
+        # subsystem's own native notifiers as that client method:
+        if not hasattr(x, "get_notifier_classes") and hasattr(x, "get_native_notifier_classes"):
+            x.get_notifier_classes = x.get_native_notifier_classes
         fake_protocol = AdHocStruct()
         fake_protocol.get_info = lambda: {}
         fake_protocol.set_compression_level = lambda _x: None

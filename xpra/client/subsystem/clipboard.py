@@ -212,7 +212,7 @@ class ClipboardClient(StubClientMixin):
         self.send_clipboard_selections(ch.get_remote_selections())
         ch.send_all_tokens()
         # ui may want to know this is now set:
-        self.emit("clipboard-toggled")
+        self.client.emit("clipboard-toggled")
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardClient.PREFIX}-status")
@@ -264,7 +264,7 @@ class ClipboardClient(StubClientMixin):
             log.info("clipboard toggled to %s by the server", ["off", "on"][int(clipboard_enabled)])
             log.info(" reason given: %r", reason)
             self.clipboard_enabled = bool(clipboard_enabled)
-            self.emit("clipboard-toggled")
+            self.client.emit("clipboard-toggled")
 
     def clipboard_toggled(self, *args) -> None:
         log("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s",

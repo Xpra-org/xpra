@@ -153,8 +153,8 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         init_audio_tagging(opts.tray_icon)
 
     def load(self):
-        self.connect("suspend", self.suspend_audio)
-        self.connect("resume", self.resume_audio)
+        self.client.connect("suspend", self.suspend_audio)
+        self.client.connect("resume", self.resume_audio)
         if BACKWARDS_COMPATIBLE:
             self.audio_properties = self.query_audio()
             self.audio_properties.update(get_pa_info())
@@ -302,7 +302,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         else:
             self.parse_audio_capabilities(audio)
             self.auto_start()
-            self.emit("audio-initialized")
+            self.client.emit("audio-initialized")
         return True
 
     def send_audio_capabilities(self) -> None:
@@ -409,7 +409,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         finally:
             if enabled != self.microphone_enabled:
                 self.microphone_enabled = enabled
-                self.emit("microphone-changed")
+                self.client.emit("microphone-changed")
             log("start_sending_audio(%s) done, microphone_enabled=%s", device, enabled)
 
     def start_audio_source(self, device="") -> bool:
@@ -417,7 +417,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         assert self.audio_source is None
 
         def audio_source_state_changed(*_args) -> None:
-            self.emit("microphone-changed")
+            self.client.emit("microphone-changed")
 
         # find the matching codecs:
         matching_codecs = get_matching_codecs(self.microphone_codecs, self.server_audio_decoders)
@@ -466,7 +466,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         log("stop_sending_audio() audio source=%s", ss)
         if self.microphone_enabled:
             self.microphone_enabled = False
-            self.emit("microphone-changed")
+            self.client.emit("microphone-changed")
         self.audio_source = None
         if ss is None:
             log.warn("Warning: cannot stop audio capture which has not been started")
@@ -513,7 +513,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         finally:
             if self.speaker_enabled != enabled:
                 self.speaker_enabled = enabled
-                self.emit("speaker-changed")
+                self.client.emit("speaker-changed")
             log("start_receiving_audio() done, speaker_enabled=%s", enabled)
 
     def stop_receiving_audio(self, tell_server: bool = True) -> None:
@@ -526,7 +526,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         log("stop_receiving_audio(%s) audio sink=%s", tell_server, ss)
         if self.speaker_enabled:
             self.speaker_enabled = False
-            self.emit("speaker-changed")
+            self.client.emit("speaker-changed")
         if not ss:
             return
         if tell_server and ss.sequence == self.audio_sink_sequence:
@@ -548,7 +548,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         if state == "ready":
             self.on_sink_ready()
             self.on_sink_ready = noop
-        self.emit("speaker-changed")
+        self.client.emit("speaker-changed")
 
     def audio_sink_bitrate_changed(self, audio_sink, bitrate: int) -> None:
         if audio_sink != self.audio_sink:
@@ -556,7 +556,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
             return
         log("audio_sink_bitrate_changed(%s, %s)", audio_sink, bitrate)
         # not shown in the UI, so don't bother with emitting a signal:
-        # self.emit("speaker-changed")
+        # self.client.emit("speaker-changed")
 
     def audio_sink_error(self, audio_sink, error) -> None:
         log("audio_sink_error(%s, %s) exit_code=%s, current sink=%s",
@@ -691,7 +691,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
         audio = typedict(packet.get_dict(1))
         self.parse_audio_capabilities(audio)
         self.auto_start()
-        self.emit("audio-initialized")
+        self.client.emit("audio-initialized")
 
     def _process_audio_data(self, packet: Packet) -> None:
         codec = packet.get_str(1)
@@ -720,7 +720,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
                     self.stop_receiving_audio(True)
                     return
                 self.speaker_enabled = True
-                self.emit("speaker-changed")
+                self.client.emit("speaker-changed")
                 self.on_sink_ready = noop
                 codec = metadata.strget("codec")
                 log("starting speaker on server request using codec %s", codec)

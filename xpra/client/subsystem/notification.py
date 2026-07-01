@@ -91,7 +91,7 @@ class NotificationClient(StubClientMixin):
         return caps
 
     def make_notifier(self):
-        nc = self.get_notifier_classes()
+        nc = self.client.get_notifier_classes()
         log("make_notifier() notifier classes: %s", csv(nc))
         return make_instance(nc, self.notification_closed, self.notification_action)
 
@@ -110,12 +110,13 @@ class NotificationClient(StubClientMixin):
             self.send("notification-action", nid, action_id)
 
     @staticmethod
-    def get_notifier_classes() -> Sequence[Callable]:
-        # subclasses will generally add their toolkit specific variants
-        # by overriding this method
-        # use the native ones first:
+    def get_native_notifier_classes() -> Sequence[Callable]:
+        # the toolkit-independent (native) notifiers;
+        # the concrete client's `get_notifier_classes` composes these with its
+        # own toolkit-specific variants (see `UIXpraClient.get_notifier_classes`).
         ncs = get_backends() if NATIVE_NOTIFIER else ()
-        log("get_notifier_classes() %s.%s()=%s (native=%s)", get_backends.__module__, get_backends.__name__, ncs, NATIVE_NOTIFIER)
+        log("get_native_notifier_classes() %s.%s()=%s (native=%s)",
+            get_backends.__module__, get_backends.__name__, ncs, NATIVE_NOTIFIER)
         return ncs
 
     def notify_client(self, nid: int | NotificationID, summary: str, body: str, actions: Sequence[str] = (),
@@ -167,7 +168,7 @@ class NotificationClient(StubClientMixin):
         if not self.notifications_enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
-        self._ui_event()
+        self.client._ui_event()
         dbus_id = packet.get_str(1)
         nid = packet.get_u64(2)
         app_name = packet.get_str(3)

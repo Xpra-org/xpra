@@ -29,6 +29,12 @@ class StubClientMixin(superclass):
     # used as the key in `client.subsystems`:
     PREFIX: str = ""
 
+    # main-loop scheduling helpers provided by the owning client; they are
+    # copied onto the subsystem when it is attached to a client (see the
+    # `client` setter) so subsystems call `self.timeout_add(...)` directly
+    # rather than reaching through `self.client`:
+    SCHEDULER_METHODS = ("idle_add", "timeout_add", "source_remove")
+
     @property
     def client(self):
         # while subsystems are still mixed into a single client object,
@@ -39,6 +45,29 @@ class StubClientMixin(superclass):
     @client.setter
     def client(self, value) -> None:
         self._client = value
+        if value is not None and value is not self:
+            # a real, separate owning client: borrow its main-loop scheduler:
+            for name in self.SCHEDULER_METHODS:
+                setattr(self, name, getattr(value, name))
+
+    def __getattr__(self, name: str):
+        # transitional Phase-2 aid: once a subsystem becomes a real instance
+        # (its `_client` points at a *different* client object), any attribute
+        # that the Phase-1 routing missed falls back to the owning client
+        # rather than raising `AttributeError`, with a loud one-time warning so
+        # the missed routing gets fixed. While still muxed (`_client is self`)
+        # or in isolated unit tests (`_client` unset) this is completely inert.
+        client = self.__dict__.get("_client")
+        if client is None or client is self or name.startswith("__"):
+            raise AttributeError(name)
+        from xpra.util.env import first_time
+        if first_time(f"{type(self).__name__}.{name}-client-fallback"):
+            from xpra.log import Logger
+            Logger("subsystems").warn(
+                "Warning: %s.%s resolved on the client (missed Phase-2 routing)",
+                type(self).__name__, name,
+            )
+        return getattr(client, name)
 
     def get_subsystem(self, name: str):
         """ look up a peer subsystem on the owning client """
@@ -146,9 +175,30 @@ class StubClientMixin(superclass):
         Register the packet types that this mixin can handle after authentication.
         """
 
-    def add_packet_handler(self, packet_type: str, handler: ClientPacketHandlerType,
-                           main_thread=True) -> None:  # pragma: no cover
-        raise NotImplementedError()
+    def add_packets(self, *packet_types: str, main_thread: bool = False) -> None:
+        """
+        Register packet handlers for this subsystem. Handlers
+        (`_process_<packet_type>`) are looked up on this instance and
+        registered against the client's packet dispatcher.
+        (mirror of the server's `StubSubsystem.add_packets`)
+        """
+        for packet_type in packet_types:
+            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
+            self.client.add_packet_handler(packet_type, handler, main_thread)
 
-    def add_packet_handlers(self, defs: dict[str, ClientPacketHandlerType], main_thread=True) -> None:  # pragma: no cover
-        raise NotImplementedError()
+    def add_packet_handler(self, packet_type: str, handler: ClientPacketHandlerType,
+                           main_thread: bool = False) -> None:
+        """ register a single packet handler on the owning client """
+        self.client.add_packet_handler(packet_type, handler, main_thread)
+
+    def add_packet_handlers(self, defs: dict[str, ClientPacketHandlerType], main_thread: bool = False) -> None:
+        """ register multiple packet handlers on the owning client """
+        self.client.add_packet_handlers(defs, main_thread)
+
+    def add_legacy_alias(self, legacy_name: str, new_name: str) -> None:
+        """ register a backwards-compat packet name alias on the owning client """
+        self.client.add_legacy_alias(legacy_name, new_name)
+
+    def remove_packet_handlers(self, *keys: str) -> None:
+        """ remove packet handlers from the owning client's dispatcher """
+        self.client.remove_packet_handlers(*keys)

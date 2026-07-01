@@ -59,10 +59,10 @@ class BandwidthClient(StubClientMixin):
         if BACKWARDS_COMPATIBLE:
             caps["network-state"] = True
         # get socket speed if we have it:
-        pinfo = self._protocol.get_info()
+        pinfo = self.client._protocol.get_info()
         device_info = pinfo.get("socket", {}).get("device", {})
         try:
-            coptions = self._protocol._conn.options
+            coptions = self.client._protocol._conn.options
         except AttributeError:
             coptions = {}
         log("get_caps() device_info=%s, connection options=%s", device_info, coptions)
@@ -116,4 +116,4 @@ class BandwidthClient(StubClientMixin):
 
     def send_bandwidth_limit(self) -> None:
         log("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
-        self.send("bandwidth-limit", self.bandwidth_limit)
+        self.client.send("bandwidth-limit", self.bandwidth_limit)

@@ -80,9 +80,6 @@ class WebcamForwarder(StubClientMixin):
         self.server_webcam_rgb_formats: Sequence[str] = ()
         # duplicated from encodings mixin:
         self.server_encodings: Sequence[str] = ()
-        if not hasattr(self, "server_ping_latency"):
-            from collections import deque
-            self.server_ping_latency: deque[tuple[float, float]] = deque(maxlen=1000)
 
     def cleanup(self) -> None:
         self.stop_sending_webcam()
@@ -94,8 +91,8 @@ class WebcamForwarder(StubClientMixin):
         log("webcam forwarding: %s", self.webcam_forwarding)
 
     def load(self) -> None:
-        self.connect("suspend", self.suspend_webcam)
-        self.connect("resume", self.resume_webcam)
+        self.client.connect("suspend", self.suspend_webcam)
+        self.client.connect("resume", self.resume_webcam)
 
     def get_caps(self) -> dict[str, Any]:
         if not self.webcam_forwarding:
@@ -127,7 +124,7 @@ class WebcamForwarder(StubClientMixin):
                     device_no = int(device.removeprefix("/dev/video"))
                 except ValueError:
                     device_no = 0
-                self.connect("handshake-complete", self.start_sending_webcam, device_no, device)
+                self.client.connect("handshake-complete", self.start_sending_webcam, device_no, device)
         return True
 
     def suspend_webcam(self, _client) -> None:
@@ -178,7 +175,7 @@ class WebcamForwarder(StubClientMixin):
             w, h = image.get_width(), image.get_height()
             pixel_format = webcam_device.pixel_format
 
-            mmap_write_area = getattr(self, "mmap_write_area", None)
+            mmap_write_area = getattr(self.get_subsystem("mmap"), "mmap_write_area", None)
             if mmap_write_area and mmap_write_area.enabled:
                 target_formats = self.server_webcam_rgb_formats
             else:
@@ -274,7 +271,8 @@ class WebcamForwarder(StubClientMixin):
         not_acked = self.webcam_frame_no - 1 - self.webcam_last_ack
         # not all frames have been acked
         latency = 100
-        spl = tuple(x for _, x in self.server_ping_latency)
+        ping = self.get_subsystem("ping")
+        spl = tuple(x for _, x in ping.server_ping_latency) if ping else ()
         if spl:
             latency = int(1000 * sum(spl) / len(spl))
         # how many frames should be in flight
@@ -310,9 +308,7 @@ class WebcamForwarder(StubClientMixin):
 
             options: dict[str, Any] = {}
             if encoding == "mmap":
-                from xpra.client.subsystem.mmap import MmapClient
-                assert isinstance(self, MmapClient)
-                mmap_write_area = self.mmap_write_area
+                mmap_write_area = self.get_subsystem("mmap").mmap_write_area
                 options["pixel-format"] = pixel_format
                 mmap_data = mmap_write_area.write_data(image.get_pixels())
                 log("mmap_write_area=%s, mmap_data=%s", mmap_write_area.get_info(), mmap_data)

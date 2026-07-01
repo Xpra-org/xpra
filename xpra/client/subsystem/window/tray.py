@@ -126,7 +126,7 @@ class WindowTray(StubClientMixin):
             if tray_widget:
                 do_tray_geometry(*args)
             else:
-                self.client.idle_add(do_tray_geometry, *args)
+                self.idle_add(do_tray_geometry, *args)
 
         def tray_exit(*args):
             log("tray_exit(%s)", args)

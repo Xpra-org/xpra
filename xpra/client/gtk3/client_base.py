@@ -29,11 +29,11 @@ from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
 from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.util.stats import std_unit
 from xpra.scripts.config import InitExit
-from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, MIN_VREFRESH, MAX_VREFRESH
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.gtk.cursors import cursor_types, get_default_cursor
 from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow
-from xpra.gtk.info import get_screen_sizes, get_average_monitor_refresh_rate
+from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.widget import scaled_image, label, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
@@ -365,20 +365,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             mh.cleanup()
         UIXpraClient.cleanup(self)
 
-    def get_raw_vrefresh(self) -> int:
-        rate = envint("XPRA_VREFRESH", 0)
-        if rate:
-            return rate
-        # DisplayClient defines this method:
-        try:
-            rate = super().get_raw_vrefresh()
-        except AttributeError:
-            log("get_raw_vrefresh() not defined in super class, trying GTK")
-            rate = get_average_monitor_refresh_rate()
-        if rate < 0:
-            return -1
-        return max(MIN_VREFRESH, min(MAX_VREFRESH, rate))
-
     def _process_startup_complete(self, packet: Packet) -> None:
         super()._process_startup_complete(packet)
         Gdk.notify_startup_complete()
@@ -528,7 +514,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         dialog.show()
 
     def show_server_commands(self, *_args) -> None:
-        sci = getattr(self, "server_commands_info", False)
+        cmd = self.get_subsystem("command")
+        sci = getattr(cmd, "server_commands_info", False)
         if not sci:
             log.warn("Warning: cannot show server commands")
             log.warn(" the feature is not available")
@@ -541,21 +528,22 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         dialog.show()
 
     def show_start_new_command(self, *args) -> None:
-        ssnc = getattr(self, "server_start_new_commands", False)
+        cmd = self.get_subsystem("command")
+        ssnc = getattr(cmd, "server_start_new_commands", False)
         if not ssnc:
             log.warn("Warning: cannot start new commands")
             log.warn(" the feature is not available")
             return
         dialog = self.sub_dialogs.get("start-new-command")
-        log(f"show_start_new_command{args} current {dialog=}, flag={self.server_start_new_commands}")
+        log(f"show_start_new_command{args} current {dialog=}, flag={ssnc}")
         if not dialog:
-            log("server_menu=%s", Ellipsizer(self.server_menu))
+            log("server_menu=%s", Ellipsizer(cmd.server_menu))
             from xpra.gtk.dialogs.start_new_command import get_start_new_command_gui
 
             def run_command_cb(command, sharing=True) -> None:
-                self.send_start_command(command, shlex.split(command), False, sharing)
+                cmd.send_start_command(command, shlex.split(command), False, sharing)
 
-            dialog = get_start_new_command_gui(run_command_cb, self.server_sharing, self.server_menu)
+            dialog = get_start_new_command_gui(run_command_cb, self.server_sharing, cmd.server_menu)
             self.sub_dialogs["start-new-command"] = dialog
         dialog.show()
 

@@ -43,7 +43,7 @@ class TrayClient(StubClientMixin):
     def load(self):
         self.get_menu_helper()
         if self.delay_tray:
-            self.connect("first-ui-received", self.setup_xpra_tray)
+            self.client.connect("first-ui-received", self.setup_xpra_tray)
         else:
             if WIN32 or OSX:
                 # show shortly after the main loop starts running:
@@ -76,7 +76,7 @@ class TrayClient(StubClientMixin):
 
         def tray_ready(*_args) -> None:
             tray.ready()
-        self.connect("startup-complete", tray_ready)
+        self.client.connect("startup-complete", tray_ready)
 
     def cleanup(self) -> None:
         if t := self.tray:

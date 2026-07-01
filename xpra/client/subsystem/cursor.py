@@ -126,7 +126,7 @@ class CursorClient(StubClientMixin):
             log("setting default cursor=%s", Ellipsizer(new_cursor))
             self.default_cursor_data = new_cursor
         else:
-            self.set_windows_cursor(self.get_windows(), new_cursor)
+            self.client.set_windows_cursor(self.get_windows(), new_cursor)
 
     def decompress_cursor_data(self, encoding: str, cpixels: SizedBuffer, serial: int) -> bytes:
         # weak dependency on `Encodings` subsystem:
@@ -149,7 +149,7 @@ class CursorClient(StubClientMixin):
         name = packet.get_str(8)
         pixels = self.decompress_cursor_data(encoding, cpixels, serial)
         cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, pixels, name)
-        self.set_windows_cursor(self.get_windows(), cursor_data)
+        self.client.set_windows_cursor(self.get_windows(), cursor_data)
 
     def _process_cursor_default(self, packet: Packet) -> None:
         log("setting default cursor: %s", packet)
@@ -158,7 +158,7 @@ class CursorClient(StubClientMixin):
         self.reset_cursor()
 
     def reset_cursor(self) -> None:
-        self.set_windows_cursor(self.get_windows(), ())
+        self.client.set_windows_cursor(self.get_windows(), ())
 
     def set_windows_cursor(self, client_windows, new_cursor) -> None:
         raise NotImplementedError()

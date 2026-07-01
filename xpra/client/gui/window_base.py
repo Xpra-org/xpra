@@ -313,7 +313,8 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         # but don't bother if they're the same as what we sent as defaults
         # (with a bit of magic to collapse the missing namespace from encoding_defaults)
         backing_props = self._backing.get_encoding_properties()
-        encoding_defaults = self._client.encoding_defaults
+        enc = self._client.get_subsystem("encoding")
+        encoding_defaults = enc.encoding_defaults if enc else {}
         for k in tuple(backing_props.keys()):
             v = backing_props[k]
             try:
@@ -691,48 +692,60 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             b.paint_box_line_width = b.default_paint_box_line_width
 
     def increase_quality(self, *_args) -> None:
-        if self._client.quality > 0:
+        enc = self._client.get_subsystem("encoding")
+        if not enc:
+            return
+        if enc.quality > 0:
             # change fixed quality:
-            self._client.quality = min(100, self._client.quality + 10)
-            self._client.send_quality()
-            log("new quality=%s", self._client.quality)
+            enc.quality = min(100, enc.quality + 10)
+            enc.send_quality()
+            log("new quality=%s", enc.quality)
         else:
-            self._client.min_quality = min(100, self._client.min_quality + 10)
-            self._client.send_min_quality()
-            log("new min-quality=%s", self._client.min_quality)
+            enc.min_quality = min(100, enc.min_quality + 10)
+            enc.send_min_quality()
+            log("new min-quality=%s", enc.min_quality)
 
     def decrease_quality(self, *_args) -> None:
-        if self._client.quality > 0:
+        enc = self._client.get_subsystem("encoding")
+        if not enc:
+            return
+        if enc.quality > 0:
             # change fixed quality:
-            self._client.quality = max(1, self._client.quality - 10)
-            self._client.send_quality()
-            log("new quality=%s", self._client.quality)
+            enc.quality = max(1, enc.quality - 10)
+            enc.send_quality()
+            log("new quality=%s", enc.quality)
         else:
-            self._client.min_quality = max(0, self._client.min_quality - 10)
-            self._client.send_min_quality()
-            log("new min-quality=%s", self._client.min_quality)
+            enc.min_quality = max(0, enc.min_quality - 10)
+            enc.send_min_quality()
+            log("new min-quality=%s", enc.min_quality)
 
     def increase_speed(self, *_args) -> None:
-        if self._client.speed > 0:
+        enc = self._client.get_subsystem("encoding")
+        if not enc:
+            return
+        if enc.speed > 0:
             # change fixed speed:
-            self._client.speed = min(100, self._client.speed + 10)
-            self._client.send_speed()
-            log("new speed=%s", self._client.speed)
+            enc.speed = min(100, enc.speed + 10)
+            enc.send_speed()
+            log("new speed=%s", enc.speed)
         else:
-            self._client.min_speed = min(100, self._client.min_speed + 10)
-            self._client.send_min_speed()
-            log("new min-speed=%s", self._client.min_speed)
+            enc.min_speed = min(100, enc.min_speed + 10)
+            enc.send_min_speed()
+            log("new min-speed=%s", enc.min_speed)
 
     def decrease_speed(self, *_args) -> None:
-        if self._client.speed > 0:
+        enc = self._client.get_subsystem("encoding")
+        if not enc:
+            return
+        if enc.speed > 0:
             # change fixed speed:
-            self._client.speed = max(1, self._client.speed - 10)
-            self._client.send_speed()
-            log("new speed=%s", self._client.speed)
+            enc.speed = max(1, enc.speed - 10)
+            enc.send_speed()
+            log("new speed=%s", enc.speed)
         else:
-            self._client.min_speed = max(0, self._client.min_speed - 10)
-            self._client.send_min_speed()
-            log("new min-speed=%s", self._client.min_speed)
+            enc.min_speed = max(0, enc.min_speed - 10)
+            enc.send_min_speed()
+            log("new min-speed=%s", enc.min_speed)
 
     def scaleup(self, *_args) -> None:
         self._client.scaleup()

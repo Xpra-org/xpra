@@ -229,7 +229,7 @@ class NetworkListener(StubClientMixin):
             return True
         if request == "detach":
             def protocol_closed() -> None:
-                self.disconnect_and_quit(ExitCode.OK, "network request")
+                self.client.disconnect_and_quit(ExitCode.OK, "network request")
 
             proto.send_disconnect([ConnectionMessage.DETACH_REQUEST], done_callback=protocol_closed)
             return True

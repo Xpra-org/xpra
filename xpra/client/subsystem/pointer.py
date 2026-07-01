@@ -135,7 +135,7 @@ class PointerClient(StubClientMixin):
         delay = self._mouse_position_delay - elapsed
         log("send_mouse_position(%s) elapsed=%i, delay left=%i", packet, elapsed, delay)
         if delay > 0:
-            self._mouse_position_timer = self.client.timeout_add(delay, self.do_send_mouse_position)
+            self._mouse_position_timer = self.timeout_add(delay, self.do_send_mouse_position)
         else:
             self.do_send_mouse_position()
 
@@ -149,7 +149,7 @@ class PointerClient(StubClientMixin):
     def cancel_send_mouse_position_timer(self) -> None:
         if mpt := self._mouse_position_timer:
             self._mouse_position_timer = 0
-            self.client.source_remove(mpt)
+            self.source_remove(mpt)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_pointer = c.boolget("pointer", True)

@@ -32,7 +32,7 @@ from xpra.client.base.factory import get_client_base_classes
 from xpra.util.child_reaper import get_child_reaper, reaper_cleanup
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals
 from xpra.util.io import stderr_print
-from xpra.util.objects import typedict
+from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import (
     Ellipsizer, repr_ellipsized, print_nested_dict,
     bytestostr, hexstr,
@@ -64,6 +64,25 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     # for c in CLIENT_BASES:
     #    __signals__ += getattr(c, "__signals__", [])
 
+    # Phase-2 migration: subsystems whose PREFIX is listed here are stored as
+    # real `cls(self)` instances in `self.subsystems` (server-style composition);
+    # every other subsystem is still mixed into the client (stored as `self`).
+    # The list grows one subsystem at a time until the mux is fully dismantled.
+    COMPOSED_SUBSYSTEMS: tuple[str, ...] = (
+        "bandwidth",
+        "ping",
+        "encoding",
+        "power",
+        "server-info",
+        "logging",
+        "gsettings",
+        "ssh-agent",
+        "mmap",
+        "listener",
+        "notification",
+        "command",
+    )
+
     def __init__(self):
         self.defaults_init()
         PacketDispatcher.__init__(self)
@@ -73,16 +92,69 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.client = self
         for bc in CLIENT_BASES:
             sublog("%s.__init__()", bc)
-            bc.__init__(self)
             self.add_subsystem(bc)
         self.init_packet_handlers()
         self.exit_code: ExitValue | None = None
         self.start_time = int(time())
 
     def add_subsystem(self, cls) -> None:
-        # while we still subclass, the subsystem instance is the client itself:
-        if prefix := getattr(cls, "PREFIX", ""):
-            self.subsystems[prefix] = self
+        prefix = getattr(cls, "PREFIX", "")
+        if prefix and prefix in self.COMPOSED_SUBSYSTEMS:
+            # real composition: a separate instance with a back-reference to the
+            # client (mirror of the server's `ServerCore.add_subsystem`).
+            # Wire the client *before* running `__init__` so the subsystem can use
+            # `self.client` during construction (as it could when muxed):
+            instance = cls.__new__(cls)
+            instance.client = self
+            cls.__init__(instance)
+            self.subsystems[prefix] = instance
+        else:
+            # still muxed: initialise the subsystem's state on the client itself:
+            cls.__init__(self)
+            if prefix:
+                self.subsystems[prefix] = self
+
+    def _call_subsystem(self, cls, method: str, *args):
+        # dispatch one subsystem's lifecycle/caps call:
+        # to its real instance if it has been composed out, otherwise to the
+        # muxed client (identical to the old `cls.method(self, *args)`).
+        instance = self.subsystems.get(getattr(cls, "PREFIX", ""))
+        if instance is not None and instance is not self:
+            return getattr(instance, method)(*args)
+        return getattr(cls, method)(self, *args)
+
+    def _dispatch_fire(self, method: str, *args, reverse: bool = False) -> None:
+        # fan a lifecycle call out to every subsystem (mirror of `ServerCore._dispatch_fire`).
+        # NOT yet wired in: while subsystems are muxed, `subsystems.values()` is `self`
+        # repeated, so calling this would run the method once per entry. Phase 2f replaces
+        # the `for bc in CLIENT_BASES` loops with this once the entries are real instances.
+        subs = list(self.subsystems.values())
+        if reverse:
+            subs.reverse()
+        for sub in subs:
+            fn = getattr(sub, method, None)
+            if fn is None:
+                sublog.warn("Warning: no %r on %s", method, sub)
+                continue
+            try:
+                fn(*args)
+            except Exception:
+                sublog.warn(f"Error: in {sub}.{method}", exc_info=True)
+
+    def _dispatch_merge(self, method: str, *args) -> dict:
+        # merge a dict-returning call across every subsystem (mirror of `ServerCore._dispatch_merge`).
+        # Same caveat as `_dispatch_fire`: not wired in until Phase 2f.
+        info: dict = {}
+        for sub in self.subsystems.values():
+            fn = getattr(sub, method, None)
+            try:
+                d = fn(*args)
+            except Exception:
+                sublog.warn(f"Error: in {sub}.{method}", exc_info=True)
+                continue
+            if d:
+                merge_dicts(info, d)
+        return info
 
     def idle_add(self, fn: Callable, *args, **kwargs) -> int:
         ...

@@ -46,13 +46,13 @@ class WindowPointer(StubClientMixin):
             if is_Wayland():
                 log.warn("Warning: pointer polling is unlikely to work under Wayland")
                 log.warn(" and may cause problems")
-            self.poll_pointer_timer = self.client.timeout_add(POLL_POINTER, self.poll_pointer)
+            self.poll_pointer_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
         return True
 
     def cancel_poll_pointer_timer(self) -> None:
         if ppt := self.poll_pointer_timer:
             self.poll_pointer_timer = 0
-            self.client.source_remove(ppt)
+            self.source_remove(ppt)
 
     def _process_pointer_position(self, packet: Packet) -> None:
         wid = packet.get_wid()

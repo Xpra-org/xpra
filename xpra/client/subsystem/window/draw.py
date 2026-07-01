@@ -82,7 +82,7 @@ class WindowDraw(StubClientMixin):
     # painting windows:
     def _process_window_draw(self, packet: Packet) -> None:
         if PAINT_DELAY >= 0:
-            self.client.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
+            self.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
         else:
             self._draw_queue.put(packet)
 
@@ -193,14 +193,14 @@ class WindowDraw(StubClientMixin):
 
         if not window:
             # window is gone
-            self.client.idle_add(draw_abort, WINDOW_NOT_FOUND, "window not found")
+            self.idle_add(draw_abort, WINDOW_NOT_FOUND, "window not found")
             return
 
         # the list of allowed encodings is owned by the `encoding` subsystem:
         allowed_encodings = getattr(self.get_subsystem("encoding"), "allowed_encodings", ("rgb32", "rgb24", "mmap",))
         if coding not in allowed_encodings and coding != "mmap":
             log.warn("Warning: server sent unsupported encoding %r", coding)
-            self.client.idle_add(draw_abort, WINDOW_DECODE_ERROR, f"unsupported encoding {coding!r}")
+            self.idle_add(draw_abort, WINDOW_DECODE_ERROR, f"unsupported encoding {coding!r}")
             return
 
         self._draw_counter += 1
@@ -209,7 +209,7 @@ class WindowDraw(StubClientMixin):
                      coding, self._draw_counter, packet_sequence)
             if PAINT_FAULT_TELL:
                 msg = f"fault injection for {coding} draw packet {self._draw_counter}, sequence no={packet_sequence}"
-                self.client.idle_add(draw_abort, WINDOW_DECODE_ERROR, msg)
+                self.idle_add(draw_abort, WINDOW_DECODE_ERROR, msg)
             return
         # we could expose this to the csc step? (not sure how this could be used)
         # if self.xscale!=1 or self.yscale!=1:
@@ -219,7 +219,7 @@ class WindowDraw(StubClientMixin):
         except Exception as e:
             log.error("Error drawing on window %#x", wid)
             log.error(f" using encoding {coding} with {options=}", exc_info=True)
-            self.client.idle_add(record_draw_error, WINDOW_DECODE_ERROR, str(e))
+            self.idle_add(record_draw_error, WINDOW_DECODE_ERROR, str(e))
             raise
 
     ######################################################################

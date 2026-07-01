@@ -59,7 +59,7 @@ class WindowFocus(StubClientMixin):
             if focused and not self.lost_focus_timer:
                 # send the lost-focus via a timer and re-check it
                 # (this allows a new window to gain focus without having to do a reset_focus)
-                self.lost_focus_timer = self.client.timeout_add(20, self.send_lost_focus)
+                self.lost_focus_timer = self.timeout_add(20, self.send_lost_focus)
                 self._focused = None
         return focused != self._focused
 
@@ -73,4 +73,4 @@ class WindowFocus(StubClientMixin):
     def cancel_lost_focus_timer(self) -> None:
         if lft := self.lost_focus_timer:
             self.lost_focus_timer = 0
-            self.client.source_remove(lft)
+            self.source_remove(lft)

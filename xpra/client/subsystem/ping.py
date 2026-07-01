@@ -84,9 +84,9 @@ class PingClient(StubClientMixin):
         if self.pings:
             self.pings = c.boolget("ping", BACKWARDS_COMPATIBLE)
             if self.pings:
-                self.connect("startup-complete", self.start_sending_pings)
-                self.connect("suspend", self.cancel_timers)
-                self.connect("resume", self.start_sending_pings)
+                self.client.connect("startup-complete", self.start_sending_pings)
+                self.client.connect("suspend", self.cancel_timers)
+                self.client.connect("resume", self.start_sending_pings)
         return True
 
     def start_sending_pings(self, *args) -> None:
@@ -108,7 +108,7 @@ class PingClient(StubClientMixin):
 
     def check_server_echo(self, ping_sent_time) -> bool:
         self.ping_echo_timers.pop(ping_sent_time, None)
-        if self._protocol is None:
+        if self.client._protocol is None:
             # no longer connected!
             return False
         last = self._server_ok
@@ -125,7 +125,7 @@ class PingClient(StubClientMixin):
         log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)",
             ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
         if last != self._server_ok:
-            self.server_connection_state_change()
+            self.client.server_connection_state_change()
         return False
 
     def cancel_ping_echo_timeout_timer(self) -> None:
@@ -142,18 +142,18 @@ class PingClient(StubClientMixin):
         log(f"check_echo_timeout({ping_time}) last={self.last_ping_echoed_time}, {expired=}")
         if expired:
             # no point trying to use disconnect_and_quit() to tell the server here..
-            self.warn_and_quit(ExitCode.CONNECTION_LOST,
-                               "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
+            self.client.warn_and_quit(ExitCode.CONNECTION_LOST,
+                                      "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
 
     def send_ping(self) -> bool:
-        p = self._protocol
+        p = self.client._protocol
         protocol_type = getattr(p, "TYPE", "undefined")
         if protocol_type not in ("xpra", "websocket"):
             log(f"not sending ping for {protocol_type} connection")
             self.ping_timer = 0
             return False
         now_ms = int(1000.0 * monotonic())
-        self.send("ping", now_ms)
+        self.client.send("ping", now_ms)
         wait = 1000 * MIN_PING_TIMEOUT
         aspl = tuple(self.server_ping_latency)
         if aspl:
@@ -198,7 +198,7 @@ class PingClient(StubClientMixin):
             log("swallowed ping!")
             return
         log(f"got ping, sending echo time={echotime} for {sid=}")
-        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0 * sl), sid)
+        self.client.send("ping_echo", echotime, l1, l2, l3, int(1000.0 * sl), sid)
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(*PingClient.PACKET_TYPES)
