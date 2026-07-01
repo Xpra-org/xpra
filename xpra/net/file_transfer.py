@@ -567,6 +567,7 @@ class FileTransferHandler(FileTransferAttributes):
         if len(packet) >= 9:
             send_id = packet.get_str(8)
         chunk_id = options.strget("file-chunk-id")
+        chunk = 0
         log = filelog
 
         def cancel(message: str) -> None:
@@ -629,7 +630,6 @@ class FileTransferHandler(FileTransferAttributes):
                 digest = getattr(hashlib, hash_fn)()
                 break
         if chunk_id:
-            chunk = 0
             nfiles = len(self.receive_chunks_in_progress)
             if nfiles >= MAX_CONCURRENT_FILES:
                 error(f"too many file transfers in progress: {nfiles}")
