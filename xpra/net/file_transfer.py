@@ -516,9 +516,14 @@ class FileTransferHandler(FileTransferAttributes):
         #basefilename should be utf8:
         basefilename = net_utf8(basefilename)
         mimetype = net_utf8(mimetype)
+        options = typedict(options)
+        chunk_id = options.strget("file-chunk-id")
+        chunk = 0
         if filesize<=0:
             filelog.error("Error: invalid file size: %s", filesize)
             filelog.error(" file transfer aborted for %r", basefilename)
+            if chunk_id:
+                self.cancel_file(chunk_id, f"invalid file size {filesize} for {basefilename!r}", chunk)
             return
         args = (send_id, "file", basefilename, printit, openit)
         acceptit, printit, openit = self.accept_data(*args)
@@ -529,7 +534,6 @@ class FileTransferHandler(FileTransferAttributes):
                          basefilename)
             return
         #accept_data can override the flags:
-        options = typedict(options)
         if printit:
             log = printlog
             assert self.printing
@@ -543,7 +547,6 @@ class FileTransferHandler(FileTransferAttributes):
             log.error(" %sB, the file size limit is %sB",
                     std_unit(filesize), std_unit(self.file_size_limit))
             return
-        chunk_id = options.strget("file-chunk-id")
         try:
             filename, fd = safe_open_download_file(basefilename, mimetype)
         except (OSError, ValueError) as e:
@@ -560,7 +563,6 @@ class FileTransferHandler(FileTransferAttributes):
                 digest = getattr(hashlib, hash_fn)()
                 break
         if chunk_id:
-            chunk = 0
             l = len(self.receive_chunks_in_progress)
             if l>=MAX_CONCURRENT_FILES:
                 self.cancel_file(chunk_id, f"too many file transfers in progress: {l}", chunk)
