@@ -19,7 +19,7 @@ from xpra.net.file_transfer import (
     basename, safe_open_download_file,
     FileTransferAttributes, FileTransferHandler,
     get_open_env, digest_mismatch,
-    AcceptedData, ReceiveChunkState, RequestedFile, SendChunkState, SendPendingData,
+    AcceptedData, AcceptedDataRequest, ReceiveChunkState, RequestedFile, SendChunkState, SendPendingData,
     DENY, ACCEPT, OPEN,
 )
 
@@ -487,6 +487,46 @@ class TestFileTransferHandler(unittest.TestCase):
         self.assertNotIn("my-id", fth.files_accepted)
         fth.cleanup()
 
+    def test_accept_data_request_metadata_match(self):
+        fth = MinimalFTH()
+        fth.record_data_request_acceptance("my-id", "file", "f.txt", "text/plain", 4,
+                                           False, True, typedict({"printer": "p1"}))
+        opts = typedict({"printer": "p1", "sha256": "0" * 64, "file-chunk-id": "chunk-id"})
+        ok, printit, openit = fth.accept_data("my-id", "file", "f.txt", False, False,
+                                              "text/plain", 4, opts)
+        self.assertTrue(ok)
+        self.assertFalse(printit)
+        self.assertTrue(openit)
+        self.assertNotIn("my-id", fth.data_send_requests)
+        fth.cleanup()
+
+    def test_accept_data_request_metadata_mismatch(self):
+        cases = (
+            ("datatype", ("url", "f.txt", "text/plain", 4, typedict({"printer": "p1"}))),
+            ("filename", ("file", "other.txt", "text/plain", 4, typedict({"printer": "p1"}))),
+            ("mimetype", ("file", "f.txt", "application/octet-stream", 4, typedict({"printer": "p1"}))),
+            ("filesize", ("file", "f.txt", "text/plain", 5, typedict({"printer": "p1"}))),
+            ("options", ("file", "f.txt", "text/plain", 4, typedict({"printer": "p2"}))),
+        )
+        for name, args in cases:
+            with self.subTest(name):
+                fth = MinimalFTH()
+                fth.record_data_request_acceptance("my-id", "file", "f.txt", "text/plain", 4,
+                                                   False, True, typedict({"printer": "p1"}))
+                self.assertEqual(fth.accept_data("my-id", args[0], args[1], False, False,
+                                                 args[2], args[3], args[4]), (False, False, False))
+                self.assertNotIn("my-id", fth.data_send_requests)
+                fth.cleanup()
+
+    def test_accepted_data_request_only_compares_approval_options(self):
+        request = AcceptedDataRequest("file", "f.txt", "text/plain", 4, False, False, {"printer": "p1"})
+        self.assertTrue(request.matches("file", "f.txt", "text/plain", 4, {
+            "printer": "p1",
+            "sha256": "0" * 64,
+            "file-chunk-id": "chunk-id",
+            "future-transfer-option": "ignored",
+        }))
+
     def test_accept_data_openit_disabled(self):
         fth = MinimalFTH()
         fth.file_transfer = True
@@ -739,8 +779,22 @@ class TestFileTransferHandler(unittest.TestCase):
         fth = MinimalFTH()
         fth.files_requested["sid"] = RequestedFile("print-job.pdf", True)
         opts = typedict({"request-file": ("print-job.pdf", True)})
-        fth.do_process_file_data_request("file", "sid", "print-job.pdf", 100, True, True, opts)
-        self.assertEqual(fth.files_accepted["sid"], AcceptedData(True, True))
+        fth.do_process_file_data_request("file", "sid", "print-job.pdf", 100, True, True, opts, "application/pdf")
+        self.assertEqual(fth.data_send_requests["sid"], AcceptedDataRequest(
+            "file", "print-job.pdf", "application/pdf", 100, True, True, {
+                "request-file": ("print-job.pdf", True),
+            },
+        ))
+        fth.cleanup()
+
+    def test_requested_file_acceptance_is_metadata_bound(self):
+        fth = MinimalFTH()
+        fth.files_requested["sid"] = RequestedFile("server.log", False)
+        opts = typedict({"request-file": ("server.log", False)})
+        fth.do_process_file_data_request("file", "sid", "server.log", 100, False, True, opts, "text/plain")
+        self.assertEqual(fth.accept_data("sid", "file", "other.log", False, False,
+                                         "text/plain", 100, opts), (False, False, False))
+        self.assertNotIn("sid", fth.data_send_requests)
         fth.cleanup()
 
     def test_data_request_authorization_matrix(self):
@@ -1066,6 +1120,26 @@ class TestProcessFileSend(unittest.TestCase):
             os.unlink(tmp_path)
         except OSError:
             pass
+
+    def test_preaccepted_file_size_mismatch_rejected(self):
+        h = _FullHandler()
+        h.file_transfer_ask = True
+        h.record_data_request_acceptance("sid", "file", "f.txt", "text/plain", 4, False, False, typedict())
+        pkt = self._pkt(filename="f.txt", mimetype="text/plain", filesize=5, data=b"12345", send_id="sid")
+        with patch("xpra.net.file_transfer.safe_open_download_file") as safe_open:
+            h._process_file_send(pkt)
+        safe_open.assert_not_called()
+        self.assertNotIn("sid", h.data_send_requests)
+
+    def test_preaccepted_chunked_file_mismatch_rejected_without_name_error(self):
+        h = _FullHandler()
+        h.file_transfer_ask = True
+        h.record_data_request_acceptance("sid", "file", "f.txt", "text/plain", 4, False, False, typedict())
+        pkt = self._pkt(filename="f.txt", mimetype="text/plain", filesize=5, data=b"",
+                        options={"file-chunk-id": "cid1"}, send_id="sid")
+        h._process_file_send(pkt)
+        self.assertIn(("ack-file-chunk", "cid1", False, "transfer rejected for file 'f.txt'", 0), h.sent)
+        self.assertNotIn("sid", h.data_send_requests)
 
 
 # ---------------------------------------------------------------------------
@@ -1584,9 +1658,11 @@ class _LoopbackHandler(_FullHandler):
         for packet in packets:
             self.peer.receive(packet)
 
-    def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
+    def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit,
+                         mimetype="", options=None):
         if self.approve_requests:
-            self.files_accepted[send_id] = AcceptedData(printit, openit)
+            self.record_data_request_acceptance(send_id, dtype, url, mimetype, filesize,
+                                                printit, openit, options)
         cb_answer(self.approve_requests)
 
     def process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options, send_id=""):

@@ -174,6 +174,32 @@ class AcceptedData:
     openit: bool
 
 
+APPROVAL_OPTION_KEYS: Final[tuple[str, ...]] = ("request-file", "printer", "title", "copies", "options")
+
+
+def comparable_transfer_options(options: dict | typedict | None) -> dict[str, Any]:
+    if not options:
+        return {}
+    return {str(k): v for k, v in dict(options).items() if str(k) in APPROVAL_OPTION_KEYS}
+
+
+@dataclass(frozen=True)
+class AcceptedDataRequest:
+    dtype: str
+    url: str
+    mimetype: str
+    filesize: int
+    printit: bool
+    openit: bool
+    options: dict[str, Any]
+
+    def matches(self, dtype: str, url: str, mimetype: str, filesize: int,
+                options: dict | typedict | None = None) -> bool:
+        expected = (self.dtype, self.url, self.mimetype, self.filesize, self.options)
+        actual = (dtype, url, mimetype, filesize, comparable_transfer_options(options))
+        return expected == actual
+
+
 class FileTransferAttributes:
 
     def __init__(self):
@@ -211,6 +237,7 @@ class FileTransferAttributes:
         self.open_command = open_command
         self.files_requested: dict[str, RequestedFile] = {}
         self.files_accepted: dict[str, AcceptedData] = {}
+        self.data_send_requests: dict[str, AcceptedDataRequest] = {}
         self.file_request_callback: dict[str, Callable[[str, int], None]] = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
@@ -550,17 +577,34 @@ class FileTransferHandler(FileTransferAttributes):
                                      chunk_state.printit, chunk_state.openit, chunk_state.filesize, options,
                                      chunk_state.send_id)
 
+    def record_data_request_acceptance(self, send_id: str, dtype: str, url: str, mimetype: str, filesize: int,
+                                       printit: bool, openit: bool, options: dict | typedict | None = None) -> None:
+        self.data_send_requests[send_id] = AcceptedDataRequest(
+            dtype, url, mimetype, filesize, printit, openit, comparable_transfer_options(options),
+        )
+
     def accept_data(self, send_id: str, dtype: str, basefilename: str,
-                    printit: bool, openit: bool) -> tuple[bool, bool, bool]:
+                    printit: bool, openit: bool, mimetype: str = "", filesize: int = 0,
+                    options: dict | typedict | None = None) -> tuple[bool, bool, bool]:
         # subclasses should check the flags,
         # and if ask is True, verify they have accepted this specific send_id
-        filelog("accept_data%s", (send_id, dtype, basefilename, printit, openit))
+        filelog("accept_data%s", (send_id, dtype, basefilename, printit, openit, mimetype, filesize, options))
         filelog("accept_data: printing=%s, printing-ask=%s",
                 self.printing, self.printing_ask)
         filelog("accept_data: file-transfer=%s, file-transfer-ask=%s",
                 self.file_transfer, self.file_transfer_ask)
         filelog("accept_data: open-files=%s, open-files-ask=%s",
                 self.open_files, self.open_files_ask)
+        if accepted := self.data_send_requests.pop(send_id, None):
+            if accepted.matches(dtype, basefilename, mimetype, filesize, options):
+                return True, accepted.printit, accepted.openit
+            filelog.warn("Warning: the file attributes are different")
+            filelog.warn(" from the ones that were used to accept the transfer")
+            actual_options = comparable_transfer_options(options)
+            expected = (accepted.dtype, accepted.url, accepted.mimetype, accepted.filesize, accepted.options)
+            actual = (dtype, basefilename, mimetype, filesize, actual_options)
+            filelog.warn(" expected %s but got %s", expected, actual)
+            return False, False, False
         if dtype == "url":
             if not self.open_url or self.open_url_ask:
                 return False, False, False
@@ -619,7 +663,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.send("ack-file-chunk", chunk_id, False, message, 0)
             return
 
-        args = (send_id, "file", basefilename, printit, openit)
+        args = (send_id, "file", basefilename, printit, openit, mimetype, filesize, options)
         acceptit, printit, openit = self.accept_data(*args)
         filelog("%s%s=%s", self.accept_data, args, (acceptit, printit, openit))
         if not acceptit:
@@ -994,6 +1038,7 @@ class FileTransferHandler(FileTransferAttributes):
         dtype = packet.get_str(1)
         send_id = packet.get_str(2)
         url = packet.get_str(3)
+        mimetype = packet.get_str(4)
         filesize = packet.get_u64(5)
         printit = packet.get_bool(6)
         openit = packet.get_bool(7)
@@ -1001,11 +1046,11 @@ class FileTransferHandler(FileTransferAttributes):
         if len(packet) >= 9:
             options = packet.get_dict(8)
         # filenames and url are always sent encoded as utf8:
-        self.do_process_file_data_request(dtype, send_id, url, filesize, printit, openit, typedict(options))
+        self.do_process_file_data_request(dtype, send_id, url, filesize, printit, openit, typedict(options), mimetype)
 
     def do_process_file_data_request(self, dtype: str, send_id: str, url: str, filesize: int,
-                                     printit: bool, openit: bool, options: typedict) -> None:
-        filelog(f"do_process_file_data_request: {send_id=}, {url=}, {printit=}, {openit=}, {options=}")
+                                     printit: bool, openit: bool, options: typedict, mimetype: str = "") -> None:
+        filelog("do_process_file_data_request: %s", (send_id, url, mimetype, filesize, printit, openit, options))
 
         def cb_answer(accept: bool) -> None:
             filelog("accept%s=%s", (url, printit, openit), accept)
@@ -1019,7 +1064,9 @@ class FileTransferHandler(FileTransferAttributes):
         if send_id and (request := self.files_requested.get(send_id)):
             if self.request_file_match(request, url, options):
                 self.files_requested.pop(send_id, None)
-                self.files_accepted[send_id] = AcceptedData(printit, request.openit)
+                accepted_url = os.path.basename(url) if dtype == "file" else url
+                self.record_data_request_acceptance(send_id, dtype, accepted_url, mimetype, filesize,
+                                                    printit, request.openit, options)
                 cb_answer(True)
                 return
             filelog.warn("Warning: received mismatched requested file approval for send-id %r", send_id)
@@ -1057,13 +1104,14 @@ class FileTransferHandler(FileTransferAttributes):
             # it would fail later when we don't find this send_id in our accepted list
             cb_answer(False)
             return
-        self.ask_data_request(cb_answer, send_id, dtype, url, filesize, printit, openit)
+        self.ask_data_request(cb_answer, send_id, dtype, url, filesize, printit, openit, mimetype, options)
 
     def ask_data_request(self, cb_answer: Callable[[bool], None],
                          send_id: str, dtype: str, url: str, filesize: int,
-                         printit: bool, openit: bool) -> None:
+                         printit: bool, openit: bool, mimetype: str = "",
+                         options: typedict | None = None) -> None:
         # subclasses may prompt the user here instead
-        filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))
+        filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit, mimetype, options))
         cb_answer(False)
 
     def _process_file_data_response(self, packet: Packet) -> None:

@@ -16,7 +16,7 @@ from typing import Any
 
 from xpra.common import noop, may_show_progress, may_notify_client
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer, pver, bytestostr
+from xpra.util.str_fn import csv, Ellipsizer, pver
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
 from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
@@ -415,11 +415,14 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     ################################
     # file handling
     def ask_data_request(self, cb_answer, send_id, dtype: str, url: str, filesize: int,
-                         printit: bool, openit: bool) -> None:
-        GLib.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)
+                         printit: bool, openit: bool, mimetype: str = "",
+                         options: typedict | None = None) -> None:
+        GLib.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize,
+                      printit, openit, mimetype, options)
 
     def do_ask_data_request(self, cb_answer, send_id, dtype: str, url: str, filesize: int,
-                            printit: bool, openit: bool) -> None:
+                            printit: bool, openit: bool, mimetype: str = "",
+                            options: typedict | None = None) -> None:
         from xpra.gtk.dialogs.open_requests import get_open_requests_window
         timeout = self.remote_file_ask_timeout
 
@@ -427,7 +430,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             from xpra.net.file_transfer import ACCEPT
             if int(accept) == ACCEPT:
                 # record our response, so we will actually accept the file when the packets arrive:
-                self.data_send_requests[send_id] = (dtype, url, printit, newopenit)
+                self.record_data_request_acceptance(send_id, dtype, url, mimetype, filesize,
+                                                    printit, newopenit, options)
             cb_answer(accept)
 
         dialog = get_open_requests_window(self.show_file_upload, self.cancel_download)
@@ -444,30 +448,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None) -> None:
         if fad := self.sub_dialogs.get("ask-data"):
             GLib.idle_add(fad.transfer_progress_update, send, transfer_id, elapsed, position, total, error)
-
-    def accept_data(self, send_id, dtype: str, url: str, printit: bool, openit: bool) -> tuple[bool, bool, bool]:
-        # check if we have accepted this file via the GUI:
-        r = self.data_send_requests.pop(send_id, None)
-        if not r:
-            filelog(f"accept_data: data send request {send_id} not found")
-            from xpra.net.file_transfer import FileTransferHandler
-            return FileTransferHandler.accept_data(self, send_id, dtype, url, printit, openit)
-        edtype = r[0]
-        eurl = r[1]
-        if edtype != dtype or eurl != url:
-            filelog.warn("Warning: the file attributes are different")
-            filelog.warn(" from the ones that were used to accept the transfer")
-            s = bytestostr
-            if edtype != dtype:
-                filelog.warn(" expected data type '%s' but got '%s'", s(edtype), s(dtype))
-            if eurl != url:
-                filelog.warn(" expected url '%s',", s(eurl))
-                filelog.warn("  but got url '%s'", s(url))
-            return False, False, False
-        # return the printit and openit flag we got from the UI:
-        ui_printit = bool(r[2])
-        ui_openit = bool(r[3])
-        return True, ui_printit, ui_openit
 
     def close_file_size_warning(self) -> None:
         if dialog := self.sub_dialogs.pop("file-size-warning"):
