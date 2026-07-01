@@ -139,7 +139,8 @@ class WindowTray(StubClientMixin):
         tray_widget.show()
         from xpra.client.gui.client_tray import ClientTray
         # the mmap read area is owned by the `mmap` subsystem:
-        mmap = getattr(self.get_subsystem("mmap"), "mmap_read_area", None)
+        mmap_sub = self.get_subsystem("mmap")
+        mmap = mmap_sub.mmap_read_area if mmap_sub else None
         return ClientTray(client, wid, w, h, metadata, tray_widget, mmap)
 
     def get_tray_window(self, app_name: str, hints):

@@ -163,8 +163,8 @@ class GTKServer(StubSubsystem):
         with SilenceWarningsContext(DeprecationWarning):
             w, h = screen.get_width(), screen.get_height()
         log("new screen dimensions: %ix%i", w, h)
-        fn = getattr(self.server, "set_screen_geometry_attributes", noop)
-        fn(w, h)
+        if hasattr(self.server, "set_screen_geometry_attributes"):
+            self.server.set_screen_geometry_attributes(w, h)
 
     def late_cleanup(self, stop=True) -> None:
         from xpra.gtk.util import close_gtk_display

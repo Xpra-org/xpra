@@ -577,7 +577,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             dialog.present()
             return
         from xpra.gtk.dialogs.show_shortcuts import ShortcutInfo
-        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
+        keyboard = self.get_subsystem("keyboard")
+        kh = keyboard.keyboard_helper if keyboard else None
         assert kh, "no keyboard helper"
         dialog = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
         dialog.show_all()
@@ -614,8 +615,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
         def init_bug_report() -> None:
             # skip things we aren't using:
+            keyboard = self.get_subsystem("keyboard")
             includes = {
-                "keyboard": bool(getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)),
+                "keyboard": bool(keyboard and keyboard.keyboard_helper),
                 "opengl": self.opengl_enabled,
             }
 

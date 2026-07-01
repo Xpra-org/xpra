@@ -31,7 +31,7 @@ class DebugServer(StubSubsystem):
 
     def setup(self) -> None:
         def is_closed() -> bool:
-            return getattr(self.server, "_closing", False)
+            return self.server._closing
 
         init_leak_detection(is_closed)
         from xpra.util.meminfo import maybe_start_memory_debug

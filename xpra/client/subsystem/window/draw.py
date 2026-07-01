@@ -197,7 +197,8 @@ class WindowDraw(StubClientMixin):
             return
 
         # the list of allowed encodings is owned by the `encoding` subsystem:
-        allowed_encodings = getattr(self.get_subsystem("encoding"), "allowed_encodings", ("rgb32", "rgb24", "mmap",))
+        encoding_subsystem = self.get_subsystem("encoding")
+        allowed_encodings = encoding_subsystem.allowed_encodings if encoding_subsystem else ("rgb32", "rgb24", "mmap",)
         if coding not in allowed_encodings and coding != "mmap":
             log.warn("Warning: server sent unsupported encoding %r", coding)
             self.idle_add(draw_abort, WINDOW_DECODE_ERROR, f"unsupported encoding {coding!r}")

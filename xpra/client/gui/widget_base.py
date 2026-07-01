@@ -63,7 +63,7 @@ class ClientWidgetBase:
                 (backing_class, ww, wh, ww, wh), bc, self._has_alpha, self._window_alpha)
             backing = bc(self.wid, self._window_alpha, self.pixel_depth)
             mmap_sub = self.get_subsystem("mmap")
-            mmap = getattr(mmap_sub, "mmap_read_area", None)
+            mmap = mmap_sub.mmap_read_area if mmap_sub else None
             if mmap:
                 backing.enable_mmap(mmap)
         backing.init(ww, wh, bw, bh)

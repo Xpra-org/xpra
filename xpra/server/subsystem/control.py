@@ -5,7 +5,6 @@
 
 from typing import Any
 
-from xpra.common import noop
 from xpra.util.objects import typedict
 from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import csv
@@ -143,6 +142,6 @@ class ControlHandler(StubSubsystem):
             return msg
         cur = getattr(target, fn, None)
         setattr(target, fn, state)
-        setting_changed = getattr(target, "setting_changed", getattr(self.server, "setting_changed", noop))
+        setting_changed = getattr(target, "setting_changed", self.server.setting_changed)
         setting_changed(feature, state)
         return f"{feature} set to {state} (was {cur!r}"

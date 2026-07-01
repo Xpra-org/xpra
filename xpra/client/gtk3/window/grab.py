@@ -130,7 +130,8 @@ class GrabWindow(GtkStubWindow):
             args, seat, GRAB_STATUS_STRING.get(r), grabbed)
 
     def toggle_keyboard_grab(self) -> None:
-        grabbed = getattr(self.get_subsystem("keyboard"), "keyboard_grabbed", False)
+        keyboard = self.get_subsystem("keyboard")
+        grabbed = keyboard.keyboard_grabbed if keyboard else False
         log("toggle_keyboard_grab() grabbed=%s", grabbed)
         if grabbed:
             self.keyboard_ungrab()

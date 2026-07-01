@@ -657,7 +657,8 @@ class ServerCore(GLibServer):
             return False
         if tosocktype == "rfb":
             # only available with the RFBServer subsystem
-            return getattr(self.subsystems.get("rfb"), "_rfb_upgrade", 0) > 0
+            rfb = self.get_subsystem("rfb")
+            return rfb is not None and rfb._rfb_upgrade > 0
         if tosocktype == "rdp":
             return self.rdp_upgrade
         if socktype in ("tcp", "socket", "vsock", "named-pipe"):

@@ -72,7 +72,7 @@ class PrinterServer(StubSubsystem):
 
     def setup(self) -> None:
         # verify we have a local socket for printing:
-        sockets = getattr(self.server, "sockets", ())
+        sockets = self.server.sockets
         unixsockets = [sock.address for sock in sockets if sock.socktype == "socket"]
         log("local unix domain sockets we can use for printing: %s", unixsockets)
         if not unixsockets and self.file_transfer.printing:

@@ -22,7 +22,6 @@ from xpra.net.net_util import get_info as get_net_info
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.constants import ConnectionMessage
-from xpra.common import noop
 from xpra.util.parsing import str_to_bool
 from xpra.os_util import get_machine_id, POSIX, gi_import
 from xpra.util.system import get_env_info, get_sysconfig_info
@@ -264,8 +263,7 @@ class InfoServer(StubSubsystem):
     def control_command_name(self, name: str) -> str:
         self.server.session_name = name
         log.info(f"changed session name: {self.server.session_name!r}")
-        setting_changed = getattr(self.server, "setting_changed", noop)
-        setting_changed("session_name", name)
+        self.server.setting_changed("session_name", name)
         if mdns := self.get_subsystem("mdns"):
             mdns.mdns_update()
         return f"session name set to {name}"

@@ -175,7 +175,8 @@ class WebcamForwarder(StubClientMixin):
             w, h = image.get_width(), image.get_height()
             pixel_format = webcam_device.pixel_format
 
-            mmap_write_area = getattr(self.get_subsystem("mmap"), "mmap_write_area", None)
+            mmap_sub = self.get_subsystem("mmap")
+            mmap_write_area = mmap_sub.mmap_write_area if mmap_sub else None
             if mmap_write_area and mmap_write_area.enabled:
                 target_formats = self.server_webcam_rgb_formats
             else:

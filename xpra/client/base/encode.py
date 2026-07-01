@@ -172,7 +172,8 @@ class EncodeClient(ClientBaseClass):
             log("sending uncompressed")
             data = raw_data
 
-        mmap_write_area = getattr(self.get_subsystem("mmap"), "mmap_write_area", None)
+        mmap_sub = self.get_subsystem("mmap")
+        mmap_write_area = mmap_sub.mmap_write_area if mmap_sub else None
         if mmap_write_area and mmap_write_area.enabled:
             mmap_data = mmap_write_area.write_data(data)
             log("mmap_write_area=%s, mmap_data=%s", mmap_write_area.get_info(), mmap_data)

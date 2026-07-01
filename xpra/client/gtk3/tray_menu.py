@@ -516,7 +516,8 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def make_keyboardsyncmenuitem(self) -> Gtk.CheckMenuItem:
         def set_keyboard_sync_tooltip() -> None:
-            kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
+            keyboard = self.get_subsystem("keyboard")
+            kh = keyboard.keyboard_helper if keyboard else None
             if not kh:
                 text = _("Keyboard support is not loaded")
             elif kh.sync:
@@ -539,9 +540,11 @@ class GTKTrayMenu(GTKMenuHelper):
         set_sensitive(kbsync, False)
 
         def set_keyboard_sync_menuitem(*args) -> None:
-            if kh := getattr(self.get_subsystem("keyboard"), "keyboard_helper", None):
+            keyboard = self.get_subsystem("keyboard")
+            kh = keyboard.keyboard_helper if keyboard else None
+            if kh:
                 log("set_keyboard_sync_menuitem%s enabled=%s", args, kh.sync)
-            can_set_sync = kh and getattr(self.get_subsystem("keyboard"), "server_keyboard", False)
+            can_set_sync = kh and keyboard.server_keyboard
             sens_tooltip(kbsync, can_set_sync,
                          _("Enable keyboard state synchronization"),
                          _("Keyboard support is not available"))
@@ -555,7 +558,8 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def make_shortcutsmenuitem(self) -> Gtk.ImageMenuItem:
         kbshortcuts = checkitem(_("Intercept Shortcuts"))
-        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
+        keyboard = self.get_subsystem("keyboard")
+        kh = keyboard.keyboard_helper if keyboard else None
         kbshortcuts.set_active(kh and bool(kh.shortcuts_enabled))
 
         def keyboard_shortcuts_toggled(*args) -> None:
@@ -1226,7 +1230,8 @@ class GTKTrayMenu(GTKMenuHelper):
         return webcam
 
     def make_keyboardmenuitem(self) -> Gtk.Menu | None:
-        if not features.window or not getattr(self.get_subsystem("keyboard"), "keyboard_helper", None):
+        keyboard = self.get_subsystem("keyboard")
+        if not features.window or not keyboard or not keyboard.keyboard_helper:
             return None
         keyboard_menu_item = self.handshake_menuitem(_("Keyboard"), "keyboard.png")
         menu = Gtk.Menu()
@@ -1257,7 +1262,8 @@ class GTKTrayMenu(GTKMenuHelper):
 
         if PREFER_IBUS_LAYOUTS:
             def got_ibus_layouts(setting: str, ibus_layouts) -> None:
-                kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
+                keyboard = self.get_subsystem("keyboard")
+                kh = keyboard.keyboard_helper if keyboard else None
                 Logger("ibus").debug(f"current layout=%r, got {setting!r}=%s", kh.layout, Ellipsizer(ibus_layouts))
                 if ibus_layouts and kh.layout:
                     self.populate_ibus_keyboard_layouts(ibus_layouts)
@@ -1280,7 +1286,8 @@ class GTKTrayMenu(GTKMenuHelper):
         backend = item.keyboard_backend
         layout = item.keyboard_layout
         variant = item.keyboard_variant
-        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
+        keyboard = self.get_subsystem("keyboard")
+        kh = keyboard.keyboard_helper if keyboard else None
         kh.locked = layout != "Auto"
         if layout != kh.layout_option or variant != kh.variant_option or kh.backend != backend or kh.name != name:
             kh.backend = backend
@@ -1315,7 +1322,8 @@ class GTKTrayMenu(GTKMenuHelper):
     def populate_ibus_keyboard_layouts(self, ibus_layouts: dict) -> None:
         self.layout_submenu = Gtk.Menu()
         self.keyboard_layout_item.set_submenu(self.layout_submenu)
-        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
+        keyboard = self.get_subsystem("keyboard")
+        kh = keyboard.keyboard_helper if keyboard else None
         matches = []
 
         def engine_item(engine) -> tuple[str, Gtk.CheckMenuItem]:
@@ -1397,7 +1405,8 @@ class GTKTrayMenu(GTKMenuHelper):
             for variant in variants:
                 self.layout_submenu.append(self.kbitem(f"{layout} - {variant}", layout, variant))
 
-        kh = getattr(self.get_subsystem("keyboard"), "keyboard_helper", None)
+        keyboard = self.get_subsystem("keyboard")
+        kh = keyboard.keyboard_helper if keyboard else None
         if not kh:
             # this can happen when connection fails?
             return
