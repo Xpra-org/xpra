@@ -220,7 +220,6 @@ class WindowDraw(StubClientMixin):
             log.error("Error drawing on window %#x", wid)
             log.error(f" using encoding {coding} with {options=}", exc_info=True)
             self.idle_add(record_draw_error, WINDOW_DECODE_ERROR, str(e))
-            raise
 
     ######################################################################
     # packets:
