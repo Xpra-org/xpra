@@ -993,6 +993,13 @@ class TestProcessFileSend(unittest.TestCase):
             h._process_file_send(pkt)
         assert not any(p[0] == "ack-file-chunk" for p in h.sent)
 
+    def test_chunked_zero_filesize_rejected_without_name_error(self):
+        h = _FullHandler()
+        pkt = self._pkt(filesize=0, data=b"", options={"file-chunk-id": "cid1"})
+        with patch("xpra.net.file_transfer.GLib"):
+            h._process_file_send(pkt)
+        self.assertIn(("ack-file-chunk", "cid1", False, "invalid file size 0 for 'f.txt'", 0), h.sent)
+
     def test_too_large_rejected(self):
         h = _FullHandler()
         h.file_size_limit = 5
