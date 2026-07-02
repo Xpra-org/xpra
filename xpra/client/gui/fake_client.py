@@ -8,45 +8,43 @@ from collections.abc import Sequence
 
 from xpra.common import noop
 from xpra.util.glib_scheduler import GLibScheduler
-from xpra.util.objects import AdHocStruct
 from xpra.log import Logger
 
 log = Logger("client")
 
 
-class FakeClient(AdHocStruct, GLibScheduler):
+class FakeWindowSubsystem:
+    def __init__(self):
+        self.wheel_smooth = False
+        self.modal_windows = False
+        self._id_to_window = {}
+
+    def has_focus(self, *_args) -> bool:
+        return False
+
+    def window_close_event(self, *_args) -> None:
+        log("window_close_event ignored")
+
+
+class FakeClient(GLibScheduler):
     def __init__(self):
         self.title = ""
         self.readonly = False
-        self.modal_windows = []
-        self._focused = None
         self._remote_server_mode = "seamless"
-        self.wheel_smooth = False
         self.pointer_grabbed = None
         self.find_window = noop
         self.request_frame_extents = noop
-        self.server_window_states = ()
-        self.server_window_frame_extents = False
         self.server_readonly = False
-        self.update_focus = noop
-        self.has_focus = noop
-
-        self._id_to_window = {}
-        self._window_to_id = {}
-
         self.window_ungrab = noop
+        self.subsystems = {
+            "window": FakeWindowSubsystem(),
+        }
 
     def get_subsystem(self, name: str):
-        # the fake client muxes all subsystem state/methods onto itself:
-        return self if name=="window" else None
+        return self.subsystems.get(name)
 
     def get_window_frame_sizes(self, *_args) -> dict[str, Any]:
         return {}
-
-    def no_scaling(self, *args):
-        if len(args) == 1:
-            return args[0]
-        return args
 
     def signal_disconnect_and_quit(self, *_args):
         log.info("signal_disconnect_and_quit")
@@ -63,26 +61,5 @@ class FakeClient(AdHocStruct, GLibScheduler):
     def get_mouse_position(self) -> tuple[int, int]:
         return 0, 0
 
-    def server_ok(self) -> bool:
-        return True
-
-    def mask_to_names(self, *_args) -> Sequence[str]:
-        return ()
-
-    def window_close_event(self, *_args) -> None:
-        log("window_close_event ignored")
-
-    def control_refresh(self, *_args, **_kwargs) -> None:
-        log("send_control_refresh ignored")
-
-    def fsx(self, v) -> int:
-        return v
-
-    def fsy(self, v) -> int:
-        return v
-
-    def sx(self, v) -> int:
-        return v
-
-    def sy(self, v) -> int:
-        return v
+    def __repr__(self):
+        return f"<FakeClient {self.subsystems!r}>"
