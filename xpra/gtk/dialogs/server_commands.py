@@ -170,9 +170,8 @@ class ServerCommandsWindow:
                             log(f"windows matching pid={pid}: {windows}")
                     icon = icon_widget(windows)
                     widgets = [icon, l5(f"{pid}"), l5(cmd_str), l5(rstr)]
-                    if server_commands_signals:
-                        if returncode is None:
-                            widgets.append(self.signal_button(pid))
+                    if server_commands_signals and returncode is None:
+                        widgets.append(self.signal_button(pid))
                     for i, widget in enumerate(widgets):
                         grid.attach(widget, i, 1 + row, 1, 1)
             self.alignment.add(grid)
