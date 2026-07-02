@@ -113,7 +113,7 @@ class PointerClient(StubClientMixin):
         return seq
 
     def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
-        if "pointer" in self.get_subsystem("network").server_packet_types or not BACKWARDS_COMPATIBLE:
+        if "pointer" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
             # v5 packet type, most attributes are optional:
             attrs = props or {}
             if modifiers is not None:

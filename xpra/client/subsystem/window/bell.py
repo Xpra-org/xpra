@@ -22,6 +22,8 @@ class WindowBell(StubClientMixin):
     """
 
     def __init__(self):
+        if not hasattr(self, "client"):
+            StubClientMixin.__init__(self)
         self.client_supports_bell: bool = False
         self.server_bell: bool = False
         self.bell_enabled: bool = False

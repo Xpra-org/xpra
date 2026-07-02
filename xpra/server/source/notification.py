@@ -20,6 +20,7 @@ log = Logger("notify")
 class NotificationConnection(StubClientConnection):
 
     PREFIX = "notification"
+    __signals__ = ["user-event"]
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:

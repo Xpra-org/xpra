@@ -163,7 +163,8 @@ class EncodeClient(ClientBaseClass):
             rowstride = rowstride * 4 // 3
         encoding = "rgb"
         encode_options = {}
-        if self.get_subsystem("network").compression_level > 0:
+        network = self.get_subsystem("network")
+        if network.compression_level > 0:
             from xpra.net.lz4.lz4 import compress
             data = compress(raw_data)
             encode_options["lz4"] = 1

@@ -98,7 +98,7 @@ class WindowPointer(StubClientMixin):
                 b = sb
             server_buttons.append(b)
         self._button_state[button] = pressed
-        if "pointer-button" in self.get_subsystem("network").server_packet_types or not BACKWARDS_COMPATIBLE:
+        if "pointer-button" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
             props = props or {}
             if modifiers is not None:
                 props["modifiers"] = modifiers

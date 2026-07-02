@@ -146,7 +146,8 @@ class TrayClient(StubClientMixin):
         t: list[str] = []
         if self.client.session_name or self.client.server_session_name:
             t.append(self.client.session_name or self.client.server_session_name)
-        if ce := self.get_subsystem("network").get_connection_endpoint():
+        network = self.get_subsystem("network")
+        if network and (ce := network.get_connection_endpoint()):
             t.append(ce)
         if not t:
             t.insert(0, "Xpra")
