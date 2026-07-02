@@ -124,7 +124,7 @@ class WebcamForwarder(StubClientMixin):
                     device_no = int(device.removeprefix("/dev/video"))
                 except ValueError:
                     device_no = 0
-                self.client.connect("handshake-complete", self.start_sending_webcam, device_no, device)
+                self.client.after_handshake(self.start_sending_webcam, device_no, device)
         return True
 
     def suspend_webcam(self, _client) -> None:
