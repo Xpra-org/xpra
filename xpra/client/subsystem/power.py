@@ -69,11 +69,11 @@ class PowerEventClient(StubClientMixin):
 
     def ui_pause(self):
         self.ui_thread_tick()
-        self.client.emit("pause")
+        self.emit("pause")
 
     def ui_unpause(self):
         self.ui_thread_tick()
-        self.client.emit("unpause")
+        self.emit("unpause")
 
     def ui_message(self, message: str) -> None:
         if self.suspended:
@@ -85,7 +85,7 @@ class PowerEventClient(StubClientMixin):
         log("suspend(%s)", args)
         log.info(f"{self} suspending")
         self.suspended = time()
-        self.client.emit("suspend")
+        self.emit("suspend")
         if BACKWARDS_COMPATIBLE:
             # ("ui" and "window-ids" arguments are optional since v6.3)
             win = self.get_subsystem("window")
@@ -96,7 +96,7 @@ class PowerEventClient(StubClientMixin):
 
     def resume(self, *args) -> None:
         log("resume(%s)", args)
-        self.client.emit("resume")
+        self.emit("resume")
         elapsed = max(0.0, time() - self.suspended) if self.suspended else 0.0
         self.suspended = 0.0
         if BACKWARDS_COMPATIBLE:

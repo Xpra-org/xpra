@@ -90,8 +90,9 @@ class WebcamForwarder(StubClientMixin):
         log("webcam forwarding: %s", self.forwarding)
 
     def load(self) -> None:
-        self.client.connect("suspend", self.suspend_webcam)
-        self.client.connect("resume", self.resume_webcam)
+        if power := self.get_subsystem("power"):
+            power.connect("suspend", self.suspend_webcam)
+            power.connect("resume", self.resume_webcam)
 
     def get_caps(self) -> dict[str, Any]:
         if not self.forwarding:
@@ -136,7 +137,7 @@ class WebcamForwarder(StubClientMixin):
             self.start_sending_webcam(*restart)
 
     def webcam_state_changed(self) -> None:
-        self.idle_add(self.client.emit, "webcam-changed")
+        self.idle_add(self.emit, "webcam-changed")
 
     ######################################################################
     def start_sending_webcam(self, device_no: int, device: str) -> None:

@@ -91,10 +91,9 @@ class DisplayClient(StubClientMixin):
 
     def load(self):
         self.client.after_handshake(self.adjust_display)
-        # the `suspend`/`resume` signals are registered on the client GObject
-        # (the `power` instance has no emitter once subsystems are split apart):
-        self.client.connect("suspend", self.suspend_screen_size_change)
-        self.client.connect("resume", self.resume_screen_size_change)
+        if power := self.get_subsystem("power"):
+            power.connect("suspend", self.suspend_screen_size_change)
+            power.connect("resume", self.resume_screen_size_change)
 
     def suspend_screen_size_change(self, _screen) -> bool:
         self.screen_size_change_suspended = True
@@ -472,7 +471,7 @@ class DisplayClient(StubClientMixin):
         scalinglog.warn("Warning: %s", summary)
         for m in messages:
             scalinglog.warn(" %s", m)
-        self.client.emit("scaling-changed")
+        self.emit("scaling-changed")
 
     ######################################################################
     # screen scaling:
@@ -744,7 +743,7 @@ class DisplayClient(StubClientMixin):
 
             window.resize_windows(new_size_fn)
             window.reinit_window_icons()
-        self.client.emit("scaling-changed")
+        self.emit("scaling-changed")
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets("show-desktop", "desktop_size", main_thread=True)

@@ -805,7 +805,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 x.set_active(scalingvalue == closest)
             scaling_submenu.updating = False
 
-        self.client.connect("scaling-changed", scaling_changed)
+        self.get_subsystem("display").connect("scaling-changed", scaling_changed)
         return scaling_submenu
 
     def make_scalingvaluemenuitem(self, scaling_submenu, scalingvalue=1.0) -> Gtk.CheckMenuItem:
@@ -1061,8 +1061,9 @@ class GTKTrayMenu(GTKMenuHelper):
                     ensure_item_selected(menu, off)
             menu.ignore_events = False
 
-        self.client.connect(client_signal, update_audiosubmenu_state)
-        self.client.connect("audio-initialized", update_audiosubmenu_state)
+        audio = self.get_subsystem("audio")
+        audio.connect(client_signal, update_audiosubmenu_state)
+        audio.connect("audio-initialized", update_audiosubmenu_state)
         self.after_handshake(update_audiosubmenu_state)
         menu.show_all()
         return menu
@@ -1119,7 +1120,7 @@ class GTKTrayMenu(GTKMenuHelper):
             set_sensitive(sync, True)
 
         self.after_handshake(set_avsyncmenu)
-        self.client.connect("audio-initialized", set_avsyncmenu)
+        self.get_subsystem("audio").connect("audio-initialized", set_avsyncmenu)
         sync.show_all()
         return sync
 
@@ -1237,7 +1238,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 x.set_active(x.device_no == get_active_device_no())
             menu.ignore_events = False
 
-        self.client.connect("webcam-changed", webcam_changed)
+        self.get_subsystem("webcam").connect("webcam-changed", webcam_changed)
         set_sensitive(webcam, False)
         self.after_handshake(webcam_changed)
         self.client.on_server_setting_changed("webcam", webcam_changed)

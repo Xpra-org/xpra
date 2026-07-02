@@ -101,10 +101,9 @@ class WindowManagerClient(StubClientMixin):
             gl.init_opengl(opts.opengl)
 
     def load(self) -> None:
-        # the suspend/resume signals are registered on the client GObject
-        # (the `power` instance has no emitter once subsystems are split apart):
-        self.client.connect("suspend", self.suspend_windows)
-        self.client.connect("resume", self.resume_windows)
+        if power := self.get_subsystem("power"):
+            power.connect("suspend", self.suspend_windows)
+            power.connect("resume", self.resume_windows)
 
     def run(self) -> ExitValue:
         return ExitCode.OK

@@ -61,12 +61,9 @@ class CursorClient(StubClientMixin):
         self.client_supports = opts.cursors
 
     def load(self) -> None:
-        # re-apply cursors when the scaling changes (the `scaling-changed`
-        # signal is owned by the `display` subsystem):
-        try:
-            self.client.connect("scaling-changed", self.reset_windows_cursors)
-        except TypeError:
-            log("no 'scaling-changed' signal")
+        # re-apply cursors when the scaling changes:
+        if display := self.get_subsystem("display"):
+            display.connect("scaling-changed", self.reset_windows_cursors)
 
     def get_info(self) -> dict[str, Any]:
         return self.get_caps()

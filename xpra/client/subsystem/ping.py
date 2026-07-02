@@ -86,8 +86,9 @@ class PingClient(StubClientMixin):
             self.pings = c.boolget("ping", BACKWARDS_COMPATIBLE)
             if self.pings:
                 self.client.connect("startup-complete", self.start_sending_pings)
-                self.client.connect("suspend", self.cancel_timers)
-                self.client.connect("resume", self.start_sending_pings)
+                if power := self.get_subsystem("power"):
+                    power.connect("suspend", self.cancel_timers)
+                    power.connect("resume", self.start_sending_pings)
         return True
 
     def start_sending_pings(self, *args) -> None:
