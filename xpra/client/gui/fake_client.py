@@ -16,12 +16,7 @@ log = Logger("client")
 class FakeClient(AdHocStruct):
     def __init__(self):
         self.title = ""
-        self.sp = self.sx = self.sy = self.srect = self.no_scaling
-        self.cx = self.cy = self.no_scaling
-        self.xscale = self.yscale = 1
-        self.server_window_decorations = True
         self.readonly = False
-        self.encoding_defaults = {}
         self.modal_windows = []
         self._focused = None
         self._remote_server_mode = "seamless"
@@ -32,19 +27,13 @@ class FakeClient(AdHocStruct):
         self.server_window_states = ()
         self.server_window_frame_extents = False
         self.server_readonly = False
-        self.server_pointer = False
         self.update_focus = noop
         self.has_focus = noop
-        self.suspended = False
 
         self._id_to_window = {}
         self._window_to_id = {}
 
-        self.handle_key_action = noop
         self.window_ungrab = noop
-        self.keyboard_grabbed = False
-        self.window_with_grab = None
-        self.keyboard_helper = None
 
     def get_subsystem(self, name: str):
         # the fake client muxes all subsystem state/methods onto itself:
