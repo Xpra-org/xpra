@@ -24,14 +24,21 @@ def _can_use_opengl(w, h, metadata, override_redirect=False, xscale=1, yscale=1)
 
     Uses opengl_force=True to skip texture/size/window-type checks
     and isolate the Win32 alpha+opaque-region logic.
+
+    opengl state (enabled/force/window-class) lives on the `opengl` subsystem and
+    scaling (sx/sy) on the `display` subsystem, so mock both via get_subsystem().
     """
+    gl = MagicMock()
+    gl.GLClientWindowClass = MagicMock()
+    gl.opengl_enabled = True
+    gl.opengl_force = True
+    display = MagicMock()
+    display.sx = lambda v: round(v * xscale)
+    display.sy = lambda v: round(v * yscale)
+    subsystems = {"opengl": gl, "display": display}
     client = MagicMock()
-    client.GLClientWindowClass = MagicMock()
-    client.opengl_enabled = True
-    client.opengl_force = True
     client.headerbar = "no"
-    client.sx = lambda v: round(v * xscale)
-    client.sy = lambda v: round(v * yscale)
+    client.get_subsystem = subsystems.get
     return GTKXpraClient.can_use_opengl(client, w, h, metadata, override_redirect)
 
 
