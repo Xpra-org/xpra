@@ -33,15 +33,15 @@ class KeyboardClient(StubClientMixin):
     PREFIX = "keyboard"
 
     def __init__(self):
-        self.keyboard_enabled = True
-        self.keyboard_helper_class: type = KeyboardHelper
-        self.keyboard_helper = None
-        self.keyboard_grabbed: bool = False
-        self.keyboard_sync: bool = False
+        self.enabled = True
+        self.helper_class: type = KeyboardHelper
+        self.helper = None
+        self.grabbed: bool = False
+        self.sync: bool = False
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
-        self.server_keyboard: bool = True
-        self.kh_warning: bool = False
+        self.server_enabled: bool = True
+        self.warning: bool = False
 
     def init_ui(self, opts) -> None:
         send_keyboard = noop
@@ -57,19 +57,20 @@ class KeyboardClient(StubClientMixin):
                     "backend", "model", "layout", "layouts", "variant", "variants", "options",
                 )
             )
-            self.keyboard_helper = self.keyboard_helper_class(send_keyboard, opts.keyboard_sync,
-                                                              opts.shortcut_modifiers,
-                                                              opts.key_shortcut,
-                                                              opts.keyboard_raw, **kwargs)
+            self.sync = opts.keyboard_sync
+            self.helper = self.helper_class(send_keyboard, self.sync,
+                                            opts.shortcut_modifiers,
+                                            opts.key_shortcut,
+                                            opts.keyboard_raw, **kwargs)
             if DELAY_KEYBOARD_DATA and not self.client.readonly:
-                self.client.after_handshake(self.keyboard_helper.send_config)
+                self.client.after_handshake(self.helper.send_config)
         except ImportError as e:
-            log("error instantiating %s", self.keyboard_helper_class, exc_info=True)
+            log("error instantiating %s", self.helper_class, exc_info=True)
             log.warn(f"Warning: no keyboard support, {e}")
 
     def cleanup(self) -> None:
-        if kh := self.keyboard_helper:
-            self.keyboard_helper = None
+        if kh := self.helper:
+            self.helper = None
             kh.cleanup()
 
     def get_info(self) -> dict[str, dict[str, Any]]:
@@ -80,10 +81,10 @@ class KeyboardClient(StubClientMixin):
         return self.get_keyboard_caps()
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.server_keyboard = c.boolget("keyboard", True)
-        if not self.server_keyboard and self.keyboard_helper:
+        self.server_enabled = c.boolget("keyboard", True)
+        if not self.server_enabled and self.helper:
             # swallow packets:
-            self.keyboard_helper.send = noop
+            self.helper.send = noop
         try:
             from xpra import keyboard
             if not keyboard:
@@ -91,18 +92,18 @@ class KeyboardClient(StubClientMixin):
                 raise ImportError("xpra.keyboard")
         except ImportError:
             log.warn("Warning: keyboard module is missing")
-            self.keyboard_enabled = False
+            self.enabled = False
             return True
-        if self.keyboard_helper:
+        if self.helper:
             modifier_keycodes = c.dictget("modifier_keycodes")
             if modifier_keycodes:
-                self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
+                self.helper.set_modifier_mappings(modifier_keycodes)
         self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1, -1))
         return True
 
     def get_keyboard_caps(self) -> dict[str, Any]:
         caps = {}
-        kh = self.keyboard_helper
+        kh = self.helper
         if self.client.readonly or not kh:
             # don't bother sending keyboard info, as it won't be used
             caps["keyboard"] = False
@@ -110,33 +111,33 @@ class KeyboardClient(StubClientMixin):
             caps["keyboard"] = True
             caps["ibus"] = True
             caps["modifiers"] = self.client.get_current_modifiers()
+            delay_ms, interval_ms = kh.key_repeat_delay, kh.key_repeat_interval
+            if delay_ms <= 0 or interval_ms <= 0:
+                # cannot do keyboard sync without a key repeat value
+                self.sync = False
+            kh.sync = self.sync
             skip = ("keycodes", "x11_keycodes") if DELAY_KEYBOARD_DATA else ()
             caps["keymap"] = kh.get_keymap_properties(skip)
             # show the user a summary of what we have detected:
-            self.keyboard_helper.log_keyboard_info()
-            delay_ms, interval_ms = kh.key_repeat_delay, kh.key_repeat_interval
+            self.helper.log_keyboard_info()
             if delay_ms > 0 and interval_ms > 0:
                 caps["key_repeat"] = (delay_ms, interval_ms)
-            else:
-                # cannot do keyboard_sync without a key repeat value!
-                # (maybe we could just choose one?)
-                kh.keyboard_sync = False
-            caps["keyboard_sync"] = kh.sync
+            caps["keyboard_sync"] = self.sync
         log("keyboard capabilities: %s", caps)
         return caps
 
     def next_keyboard_layout(self, update_platform_layout) -> None:
-        if self.keyboard_helper:
-            self.keyboard_helper.next_layout(update_platform_layout)
+        if self.helper:
+            self.helper.next_layout(update_platform_layout)
 
     def window_keyboard_layout_changed(self, window=None) -> None:
         # win32 can change the keyboard mapping per window...
         log("window_keyboard_layout_changed(%s)", window)
-        if self.keyboard_helper:
-            self.keyboard_helper.keymap_changed()
+        if self.helper:
+            self.helper.keymap_changed()
 
     def handle_key_action(self, window, key_event: KeyEvent) -> bool:
-        kh = self.keyboard_helper
+        kh = self.helper
         if not kh:
             return False
         # the window registry is owned by the `window` subsystem:
@@ -151,6 +152,6 @@ class KeyboardClient(StubClientMixin):
         return False
 
     def mask_to_names(self, mask) -> list[str]:
-        if self.keyboard_helper is None:
+        if self.helper is None:
             return []
-        return self.keyboard_helper.mask_to_names(int(mask))
+        return self.helper.mask_to_names(int(mask))

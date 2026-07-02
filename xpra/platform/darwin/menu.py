@@ -377,9 +377,9 @@ class OSXMenuHelper(GTKTrayMenu):
 
     def _get_keyboard(self):
         keyboard = self.get_subsystem("keyboard")
-        if not keyboard or not keyboard.keyboard_helper:
+        if not keyboard or not keyboard.helper:
             return None
-        return keyboard.keyboard_helper.keyboard
+        return keyboard.helper.keyboard
 
     def make_swapkeysmenuitem(self):
         def swapkeys_toggled(*args):

@@ -46,18 +46,18 @@ class CursorClient(StubClientMixin):
     PREFIX = "cursor"
 
     def __init__(self):
-        self.server_cursors: bool = False
-        self.client_supports_cursors: bool = False
-        self.cursors_enabled: bool = False
-        self.default_cursor_data = ()
+        self.server_enabled: bool = False
+        self.client_supports: bool = False
+        self.enabled: bool = False
+        self.default_data = ()
         # cursor tracking state (the toolkit client renders via `set_windows_cursor`
         # and updates these): window -> cursor_data, and the last cursor applied
         # (used to apply the current cursor to newly-shown windows):
         self._cursors: WeakKeyDictionary = WeakKeyDictionary()
-        self._last_cursor_data: tuple = ()
+        self.last_data: tuple = ()
 
     def init(self, opts) -> None:
-        self.client_supports_cursors = opts.cursors
+        self.client_supports = opts.cursors
 
     def load(self) -> None:
         # re-apply cursors when the scaling changes (the `scaling-changed`
@@ -96,24 +96,24 @@ class CursorClient(StubClientMixin):
                 cursor_caps["size"] = round(sum(get_default_cursor_size()) / (xscale + yscale))
         caps: dict[str, Any] = {CursorClient.PREFIX: cursor_caps}
         if BACKWARDS_COMPATIBLE:
-            caps["cursors"] = self.client_supports_cursors
+            caps["cursors"] = self.client_supports
         log("cursor caps=%s", caps)
         return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         cursor = c.get("cursor")
-        self.server_cursors = bool(cursor)
+        self.server_enabled = bool(cursor)
         if isinstance(cursor, dict):
-            self.default_cursor_data = typedict(cursor).tupleget("default", ())
+            self.default_data = typedict(cursor).tupleget("default", ())
         if BACKWARDS_COMPATIBLE:
-            self.server_cursors |= c.boolget("cursors", True)
-        self.cursors_enabled = self.server_cursors and self.client_supports_cursors
-        log("parse_server_capabilities(..) cursor=%s, default=%s", self.cursors_enabled, self.default_cursor_data)
+            self.server_enabled |= c.boolget("cursors", True)
+        self.enabled = self.server_enabled and self.client_supports
+        log("parse_server_capabilities(..) cursor=%s, default=%s", self.enabled, self.default_data)
         return True
 
     def _process_cursor(self, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        if not self.cursors_enabled:
+        if not self.enabled:
             return
         if len(packet) == 2:
             # marker telling us to use the default cursor:
@@ -138,7 +138,7 @@ class CursorClient(StubClientMixin):
             new_cursor[0] = "raw"
         if setdefault:
             log("setting default cursor=%s", Ellipsizer(new_cursor))
-            self.default_cursor_data = new_cursor
+            self.default_data = new_cursor
         else:
             self.set_windows_cursor(self.get_windows(), new_cursor)
 
@@ -151,7 +151,7 @@ class CursorClient(StubClientMixin):
         return decompress_cursor_data(encoding, cpixels, serial)
 
     def _process_cursor_data(self, packet: Packet) -> None:
-        if not self.cursors_enabled:
+        if not self.enabled:
             return
         encoding = packet.get_str(1)
         w = packet.get_u16(2)
@@ -167,7 +167,7 @@ class CursorClient(StubClientMixin):
 
     def _process_cursor_default(self, packet: Packet) -> None:
         log("setting default cursor: %s", packet)
-        if not self.cursors_enabled:
+        if not self.enabled:
             return
         self.reset_cursor()
 
@@ -183,7 +183,7 @@ class CursorClient(StubClientMixin):
 
     def set_windows_cursor(self, client_windows, new_cursor) -> None:
         # record the current cursor, then let the toolkit client render it:
-        self._last_cursor_data = new_cursor
+        self.last_data = new_cursor
         self.client.set_windows_cursor(client_windows, new_cursor)
 
     def init_authenticated_packet_handlers(self) -> None:

@@ -218,7 +218,7 @@ class PlatformClient(StubClientMixin):
         def low_level_keyboard_handler(ncode: int, wparam: int, lparam: int):
             log("WH_KEYBOARD_LL: %s", (ncode, wparam, lparam))
             keyboard = self.get_subsystem("keyboard")
-            kh = keyboard.keyboard_helper if keyboard else None
+            kh = keyboard.helper if keyboard else None
             locked = kh.locked if kh else False
             if POLL_LAYOUT and self._keyboard_poll_timer == 0 and not locked:
                 self._keyboard_poll_timer = GLib.timeout_add(POLL_LAYOUT, self.poll_layout)
@@ -232,7 +232,7 @@ class PlatformClient(StubClientMixin):
                     # the keys we want intercept before the OS:
                     trap = vk_code in (win32con.VK_LWIN, win32con.VK_RWIN, win32con.VK_TAB)
                     key_event_type = ALL_KEY_EVENTS.get(wparam)
-                    if keyboard.keyboard_grabbed and focused and trap and key_event_type:
+                    if keyboard.grabbed and focused and trap and key_event_type:
                         pressed = wparam in KEY_DOWN_EVENTS
                         key_event = may_handle_key_event(kh.keyboard, scan_code, vk_code, pressed)
                         if key_event:

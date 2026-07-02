@@ -25,11 +25,6 @@ class FakeClient(FileTransferHandler):
         self.start_new_commands = True
         self.server_bell = True
         self.client_supports_bell = True
-        self.notifications_enabled = True
-        self.client_supports_notifications = True
-        self.cursors_enabled = True
-        self.server_cursors = True
-        self.client_supports_cursors = True
         self.server_clipboard = True
         self.client_supports_clipboard = True
         self.client_clipboard_direction = "both"
@@ -42,8 +37,6 @@ class FakeClient(FileTransferHandler):
         self.speaker_enabled = True
         self.microphone_allowed = True
         self.microphone_enabled = True
-        self.server_audio_send = True
-        self.server_audio_receive = True
         self.server_readonly = False
         self.bell_enabled = True
         self.webcam_forwarding = True
@@ -51,7 +44,6 @@ class FakeClient(FileTransferHandler):
         self.server_virtual_video_devices = 0
         self.client_supports_opengl = False
         self.title = "test"
-        self.keyboard_helper = None
         self.clipboard_helper = None
         self._id_to_window = {}
         self._window_to_id = {}

@@ -414,21 +414,21 @@ class UIXpraClient(ClientBaseClass):
 
     def send_notify_enabled(self) -> None:
         notification = self.get_subsystem("notification")
-        assert notification.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
-        self.send(NOTIFICATION_STATUS, notification.notifications_enabled)
+        assert notification.client_supports, "cannot toggle notifications: the feature is disabled by the client"
+        self.send(NOTIFICATION_STATUS, notification.enabled)
 
     def send_cursors_enabled(self) -> None:
         cursor = self.get_subsystem("cursor")
-        assert cursor and cursor.client_supports_cursors, "cannot toggle cursors: the feature is disabled by the client"
-        assert cursor.server_cursors, "cannot toggle cursors: the feature is disabled by the server"
-        self.send(CURSOR_SET, cursor.cursors_enabled)
+        assert cursor and cursor.client_supports, "cannot toggle cursors: the feature is disabled by the client"
+        assert cursor.server_enabled, "cannot toggle cursors: the feature is disabled by the server"
+        self.send(CURSOR_SET, cursor.enabled)
 
     def send_force_ungrab(self, wid: int) -> None:
         self.send("force-ungrab", wid)
 
     def send_keyboard_sync_enabled_status(self, *_args) -> None:
         if kb := self.get_subsystem("keyboard"):
-            self.send(KEYBOARD_SYNC, kb.keyboard_sync)
+            self.send(KEYBOARD_SYNC, kb.sync)
 
     ######################################################################
     # windows overrides

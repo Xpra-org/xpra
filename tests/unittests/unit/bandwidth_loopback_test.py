@@ -49,8 +49,8 @@ class BandwidthLoopbackTest(LoopbackTest):
         self.assertEqual(source.bandwidth_limit, 0)
 
         limit = 5 * 1024 * 1024  # 5 MiB/s, within [MIN, MAX]
-        client.bandwidth_limit = limit
-        client.send_bandwidth_limit()
+        client.limit = limit
+        client.send_limit()
 
         # the packet crossed the wire:
         self.assertIn(("bandwidth-limit", limit), [tuple(p) for p in self.c2s])

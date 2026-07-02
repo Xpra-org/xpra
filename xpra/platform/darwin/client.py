@@ -34,7 +34,7 @@ class PlatformClient(StubClientMixin):
     def init_ui(self, opts) -> None:
         swap_keys = opts.swap_keys
         keyboard = self.get_subsystem("keyboard")
-        kh = keyboard.keyboard_helper if keyboard else None
+        kh = keyboard.helper if keyboard else None
         log("setting swap_keys=%s using %s", swap_keys, kh)
         if kh and kh.keyboard:
             log("%s.swap_keys=%s", kh.keyboard, swap_keys)

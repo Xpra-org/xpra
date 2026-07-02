@@ -26,21 +26,21 @@ class GSettingsClient(StubClientMixin):
     PREFIX = "gsettings"
 
     def __init__(self):
-        self.gsettings_sync = ""
-        self.gsettings_enabled = False
-        self.server_gsettings = False
+        self.sync = ""
+        self.enabled = False
+        self.server_enabled = False
         # keep references to the `Gio.Settings` objects we watch, to avoid garbage collection:
-        self._settings: dict[str, Any] = {}
+        self.settings: dict[str, Any] = {}
 
     def init(self, opts) -> None:
-        self.gsettings_sync = opts.gsettings_sync
+        self.sync = opts.gsettings_sync
         # `auto` enables synchronization everywhere except MacOS and MS Windows:
-        self.gsettings_enabled = str_to_bool(opts.gsettings_sync, not (OSX or WIN32))
-        log("gsettings_sync(%s)=%s", opts.gsettings_sync, self.gsettings_enabled)
+        self.enabled = str_to_bool(opts.gsettings_sync, not (OSX or WIN32))
+        log("gsettings_sync(%s)=%s", opts.gsettings_sync, self.enabled)
 
     def cleanup(self) -> None:
-        settings = self._settings
-        self._settings = {}
+        settings = self.settings
+        self.settings = {}
         for s in settings.values():
             try:
                 s.disconnect_by_func(self._gsetting_changed)
@@ -48,15 +48,15 @@ class GSettingsClient(StubClientMixin):
                 log("error disconnecting from %s", s, exc_info=True)
 
     def get_caps(self) -> dict[str, Any]:
-        if self.gsettings_enabled:
+        if self.enabled:
             return {"gsettings": True}
         return {}
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.server_gsettings = c.boolget("gsettings")
+        self.server_enabled = c.boolget("gsettings")
         log("parse_server_capabilities() gsettings enabled=%s, server=%s",
-            self.gsettings_enabled, self.server_gsettings)
-        if self.gsettings_enabled and self.server_gsettings:
+            self.enabled, self.server_enabled)
+        if self.enabled and self.server_enabled:
             self.client.after_handshake(self.setup_gsettings)
         return True
 
@@ -68,10 +68,10 @@ class GSettingsClient(StubClientMixin):
             if not schema or not schema.has_key(key):
                 continue
             try:
-                s = self._settings.get(schema_id)
+                s = self.settings.get(schema_id)
                 if s is None:
                     s = Gio.Settings.new(schema_id)
-                    self._settings[schema_id] = s
+                    self.settings[schema_id] = s
                 values[gsettings_key(schema_id, key)] = s.get_value(key).print_(True)
                 # watch this key for live changes:
                 s.connect(f"changed::{key}", self._gsetting_changed, schema_id)

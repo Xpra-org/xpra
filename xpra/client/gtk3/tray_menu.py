@@ -344,22 +344,22 @@ class GTKTrayMenu(GTKMenuHelper):
         def cursors_toggled(*args) -> None:
             v = cursors.get_active()
             cur = self.get_subsystem("cursor")
-            changed = cur.cursors_enabled != v
-            cur.cursors_enabled = v
+            changed = cur.enabled != v
+            cur.enabled = v
             if changed:
                 self.client.send_cursors_enabled()
-            if not cur.cursors_enabled:
+            if not cur.enabled:
                 cur.reset_cursor()
-            log("cursors_toggled(%s) cursors_enabled=%s", args, cur.cursors_enabled)
+            log("cursors_toggled(%s) enabled=%s", args, cur.enabled)
 
         cursors = checkitem(_("Cursors"), cursors_toggled)
         set_sensitive(cursors, False)
 
         def set_cursors_menuitem(*args) -> None:
             cur = self.get_subsystem("cursor")
-            can_toggle_cursors = features.cursor and cur and cur.server_cursors and cur.client_supports_cursors
+            can_toggle_cursors = features.cursor and cur and cur.server_enabled and cur.client_supports
             log("set_cursors_menuitem%s can_toggle_cursors=%s", args, can_toggle_cursors)
-            cursors.set_active(can_toggle_cursors and cur.cursors_enabled)
+            cursors.set_active(can_toggle_cursors and cur.enabled)
             sens_tooltip(cursors, can_toggle_cursors,
                          _("Forward custom mouse cursors"),
                          _("Cannot forward mouse cursors: the feature is disabled"))
@@ -372,8 +372,8 @@ class GTKTrayMenu(GTKMenuHelper):
 
         def notifications_toggled(*args) -> None:
             v = notifications.get_active()
-            changed = nsub.notifications_enabled != v
-            nsub.notifications_enabled = v
+            changed = nsub.enabled != v
+            nsub.enabled = v
             log("notifications_toggled%s active=%s changed=%s", args, v, changed)
             if changed:
                 self.client.send_notify_enabled()
@@ -381,9 +381,9 @@ class GTKTrayMenu(GTKMenuHelper):
         set_sensitive(notifications, False)
 
         def set_notifications_menuitem(*args) -> None:
-            log("set_notifications_menuitem%s enabled=%s", args, nsub.notifications_enabled)
-            can_notify = nsub.client_supports_notifications
-            notifications.set_active(can_notify and nsub.notifications_enabled)
+            log("set_notifications_menuitem%s enabled=%s", args, nsub.enabled)
+            can_notify = nsub.client_supports
+            notifications.set_active(can_notify and nsub.enabled)
             sens_tooltip(notifications, can_notify,
                          _("Forward system notifications"),
                          _("Cannot forward system notifications: the feature is disabled"))
@@ -518,10 +518,10 @@ class GTKTrayMenu(GTKMenuHelper):
     def make_keyboardsyncmenuitem(self) -> Gtk.CheckMenuItem:
         def set_keyboard_sync_tooltip() -> None:
             keyboard = self.get_subsystem("keyboard")
-            kh = keyboard.keyboard_helper if keyboard else None
+            kh = keyboard.helper if keyboard else None
             if not kh:
                 text = _("Keyboard support is not loaded")
-            elif kh.sync:
+            elif keyboard.sync:
                 text = "Disable keyboard synchronization " + \
                        "(prevents spurious key repeats on high latency connections)"
             else:
@@ -531,9 +531,13 @@ class GTKTrayMenu(GTKMenuHelper):
         def keyboard_sync_toggled(*args) -> None:
             ks = kbsync.get_active()
             kb = self.get_subsystem("keyboard")
-            if kb.keyboard_sync != ks:
-                kb.keyboard_sync = ks
-                log("keyboard_sync_toggled(%s) keyboard_sync=%s", args, ks)
+            if not kb:
+                return
+            if kb.sync != ks:
+                kb.sync = ks
+                if kb.helper:
+                    kb.helper.sync = ks
+                log("keyboard_sync_toggled(%s) sync=%s", args, ks)
                 set_keyboard_sync_tooltip()
                 self.client.send_keyboard_sync_enabled_status()
 
@@ -542,16 +546,16 @@ class GTKTrayMenu(GTKMenuHelper):
 
         def set_keyboard_sync_menuitem(*args) -> None:
             keyboard = self.get_subsystem("keyboard")
-            kh = keyboard.keyboard_helper if keyboard else None
+            kh = keyboard.helper if keyboard else None
             if kh:
-                log("set_keyboard_sync_menuitem%s enabled=%s", args, kh.sync)
-            can_set_sync = kh and keyboard.server_keyboard
+                log("set_keyboard_sync_menuitem%s enabled=%s", args, keyboard.sync)
+            can_set_sync = kh and keyboard.server_enabled
             sens_tooltip(kbsync, can_set_sync,
                          _("Enable keyboard state synchronization"),
                          _("Keyboard support is not available"))
             if can_set_sync:
                 kbsync.connect("toggled", keyboard_sync_toggled)
-            kbsync.set_active(kh and bool(kh.sync))
+            kbsync.set_active(kh and bool(keyboard.sync))
             set_keyboard_sync_tooltip()
 
         self.after_handshake(set_keyboard_sync_menuitem)
@@ -560,7 +564,7 @@ class GTKTrayMenu(GTKMenuHelper):
     def make_shortcutsmenuitem(self) -> Gtk.ImageMenuItem:
         kbshortcuts = checkitem(_("Intercept Shortcuts"))
         keyboard = self.get_subsystem("keyboard")
-        kh = keyboard.keyboard_helper if keyboard else None
+        kh = keyboard.helper if keyboard else None
         kbshortcuts.set_active(kh and bool(kh.shortcuts_enabled))
 
         def keyboard_shortcuts_toggled(*args) -> None:
@@ -659,9 +663,9 @@ class GTKTrayMenu(GTKMenuHelper):
                                                            "so bandwidth limits are disabled"))
                 set_sensitive(bandwidth_limit_menu_item, False)
             else:
-                initial_value = bw.bandwidth_server_limit or bw.bandwidth_limit or 0
-                bandwidthlog("set_bwlimitmenu() bandwidth_server_limit=%s, bandwidth_limit=%s, initial value=%s",
-                             bw.bandwidth_server_limit, bw.bandwidth_limit, initial_value)
+                initial_value = bw.server_limit or bw.limit or 0
+                bandwidthlog("set_bwlimitmenu() server_limit=%s, limit=%s, initial value=%s",
+                             bw.server_limit, bw.limit, initial_value)
 
                 options = BANDWIDTH_MENU_OPTIONS
                 if initial_value and initial_value not in options:
@@ -671,7 +675,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 for v in sorted(options):
                     menu.append(bwitem(v))
 
-                sbl = bw.bandwidth_server_limit
+                sbl = bw.server_limit
                 for bwlimit, c in menuitems.items():
                     c.set_active(initial_value == bwlimit)
                     # disable any values higher than what the server allows:
@@ -706,9 +710,9 @@ class GTKTrayMenu(GTKMenuHelper):
             bandwidthlog("activate_cb(%s, %s) bwlimit=%s", item, args, bwlimit)
             ensure_item_selected(menu, item)
             bw = self.get_subsystem("bandwidth")
-            if bw and (bw.bandwidth_limit or 0) != bwlimit:
-                bw.bandwidth_limit = bwlimit
-                bw.send_bandwidth_limit()
+            if bw and (bw.limit or 0) != bwlimit:
+                bw.limit = bwlimit
+                bw.send_limit()
 
         c.connect("toggled", activate_cb)
         c.show()
@@ -972,7 +976,7 @@ class GTKTrayMenu(GTKMenuHelper):
         def check_available() -> str:
             if not self.get_subsystem("audio").speaker_allowed:
                 return _("Speaker forwarding has been disabled")
-            if not self.get_subsystem("audio").server_audio_send:
+            if not self.get_subsystem("audio").server_send:
                 return _("Server does not support speaker forwarding")
             return ""
 
@@ -997,7 +1001,7 @@ class GTKTrayMenu(GTKMenuHelper):
         def check_available() -> str:
             if not self.get_subsystem("audio").microphone_allowed:
                 return _("Microphone forwarding has been disabled")
-            if not self.get_subsystem("audio").server_audio_receive:
+            if not self.get_subsystem("audio").server_receive:
                 return _("Server does not support microphone forwarding")
             return ""
 
@@ -1107,7 +1111,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 set_sensitive(sync, False)
                 sync.set_tooltip_text(_("video-sync is not supported by the server"))
                 return
-            if not (self.get_subsystem("audio").speaker_allowed and self.get_subsystem("audio").server_audio_send):
+            if not (self.get_subsystem("audio").speaker_allowed and self.get_subsystem("audio").server_send):
                 set_sensitive(sync, False)
                 sync.set_tooltip_text(_("video-sync requires speaker forwarding"))
                 return
@@ -1241,7 +1245,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def make_keyboardmenuitem(self) -> Gtk.Menu | None:
         keyboard = self.get_subsystem("keyboard")
-        if not features.window or not keyboard or not keyboard.keyboard_helper:
+        if not features.window or not keyboard or not keyboard.helper:
             return None
         keyboard_menu_item = self.handshake_menuitem(_("Keyboard"), "keyboard.png")
         menu = Gtk.Menu()
@@ -1273,7 +1277,7 @@ class GTKTrayMenu(GTKMenuHelper):
         if PREFER_IBUS_LAYOUTS:
             def got_ibus_layouts(setting: str, ibus_layouts) -> None:
                 keyboard = self.get_subsystem("keyboard")
-                kh = keyboard.keyboard_helper if keyboard else None
+                kh = keyboard.helper if keyboard else None
                 Logger("ibus").debug(f"current layout=%r, got {setting!r}=%s", kh.layout, Ellipsizer(ibus_layouts))
                 if ibus_layouts and kh.layout:
                     self.populate_ibus_keyboard_layouts(ibus_layouts)
@@ -1297,7 +1301,7 @@ class GTKTrayMenu(GTKMenuHelper):
         layout = item.keyboard_layout
         variant = item.keyboard_variant
         keyboard = self.get_subsystem("keyboard")
-        kh = keyboard.keyboard_helper if keyboard else None
+        kh = keyboard.helper if keyboard else None
         kh.locked = layout != "Auto"
         if layout != kh.layout_option or variant != kh.variant_option or kh.backend != backend or kh.name != name:
             kh.backend = backend
@@ -1333,7 +1337,7 @@ class GTKTrayMenu(GTKMenuHelper):
         self.layout_submenu = Gtk.Menu()
         self.keyboard_layout_item.set_submenu(self.layout_submenu)
         keyboard = self.get_subsystem("keyboard")
-        kh = keyboard.keyboard_helper if keyboard else None
+        kh = keyboard.helper if keyboard else None
         matches = []
 
         def engine_item(engine) -> tuple[str, Gtk.CheckMenuItem]:
@@ -1416,7 +1420,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 self.layout_submenu.append(self.kbitem(f"{layout} - {variant}", layout, variant))
 
         keyboard = self.get_subsystem("keyboard")
-        kh = keyboard.keyboard_helper if keyboard else None
+        kh = keyboard.helper if keyboard else None
         if not kh:
             # this can happen when connection fails?
             return

@@ -48,7 +48,7 @@ class NotificationLoopbackTest(LoopbackTest):
 
     def test_client_action_reaches_server(self):
         client, _server, source = self._connect()
-        self.assertTrue(client.server_notifications)
+        self.assertTrue(client.server)
         events = []
         source.connect("user-event", lambda *a: events.append(a))
 
@@ -68,7 +68,7 @@ class NotificationLoopbackTest(LoopbackTest):
     def test_server_show_reaches_client(self):
         client, _server, source = self._connect()
         # stand in for the client-side notifier / UI:
-        client.notifications_enabled = True
+        client.enabled = True
         client.notifier = MagicMock()
         client._ui_event = lambda *a: None
         # the source needs to consider the client ready:

@@ -36,21 +36,21 @@ class BandwidthClient(StubClientMixin):
     PREFIX = "bandwidth"
 
     def __init__(self):
-        self.bandwidth_limit: int = 0
-        self.bandwidth_detection: bool = False
-        self.bandwidth_server_limit: int = 0
+        self.limit: int = 0
+        self.detection: bool = False
+        self.server_limit: int = 0
 
     def init(self, opts) -> None:
-        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
-        self.bandwidth_detection = opts.bandwidth_detection
-        log("init bandwidth_limit=%s", self.bandwidth_limit)
+        self.limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
+        self.detection = opts.bandwidth_detection
+        log("init bandwidth_limit=%s", self.limit)
 
     def get_info(self) -> dict[str, Any]:
         return {
             "bandwidth": {
-                "limit": self.bandwidth_limit,
-                "detection": self.bandwidth_detection,
-                "server-limit": self.bandwidth_server_limit,
+                "limit": self.limit,
+                "detection": self.detection,
+                "server-limit": self.server_limit,
             }
         }
 
@@ -90,8 +90,8 @@ class BandwidthClient(StubClientMixin):
         log("get_caps() connection-data=%s", connection_data)
         caps["connection-data"] = connection_data
 
-        bandwidth_limit = self.bandwidth_limit
-        log("bandwidth-limit setting=%s, socket-speed=%s", self.bandwidth_limit, socket_speed)
+        bandwidth_limit = self.limit
+        log("bandwidth-limit setting=%s, socket-speed=%s", self.limit, socket_speed)
         if bandwidth_limit is None:
             if socket_speed:
                 # auto: use 80% of socket speed if we have it:
@@ -102,18 +102,18 @@ class BandwidthClient(StubClientMixin):
         if BACKWARDS_COMPATIBLE:
             if bandwidth_limit > 0:
                 caps["bandwidth-limit"] = bandwidth_limit
-            caps["bandwidth-detection"] = self.bandwidth_detection
+            caps["bandwidth-detection"] = self.detection
         caps["bandwidth"] = {
             "limit": bandwidth_limit,
-            "detection": self.bandwidth_detection,
+            "detection": self.detection,
         }
         return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.bandwidth_server_limit = c.intget("network.bandwidth-limit") or c.intget("bandwidth.limit")
-        log(f"{self.bandwidth_server_limit=}")
+        self.server_limit = c.intget("network.bandwidth-limit") or c.intget("bandwidth.limit")
+        log(f"{self.server_limit=}")
         return True
 
-    def send_bandwidth_limit(self) -> None:
-        log("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
-        self.send("bandwidth-limit", self.bandwidth_limit)
+    def send_limit(self) -> None:
+        log("send_limit() bandwidth-limit=%i", self.limit)
+        self.send("bandwidth-limit", self.limit)

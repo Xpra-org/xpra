@@ -86,8 +86,8 @@ class AudioLoopbackTest(LoopbackTest):
         self.assertTrue(any(p[0] == "audio-capabilities" for p in self.s2c),
                         "server did not send audio capabilities back: %s" % (self.s2c,))
         # which the client parsed:
-        self.assertTrue(client.server_audio_send)
-        self.assertIn("opus", client.server_audio_encoders)
+        self.assertTrue(client.server_send)
+        self.assertIn("opus", client.server_encoders)
 
     def test_audio_data_server_to_client(self):
         from xpra.audio.common import AUDIO_DATA_PACKET
@@ -97,9 +97,9 @@ class AudioLoopbackTest(LoopbackTest):
         client.speaker_allowed = True
         sink = MagicMock()
         sink.codec = "opus"
-        sink.sequence = client.audio_sink_sequence
+        sink.sequence = client.sink_sequence
         sink.get_state = MagicMock(return_value="ready")
-        client.audio_sink = sink
+        client.sink = sink
 
         # the server pushes an audio-data packet to the client:
         source.send(AUDIO_DATA_PACKET, "opus", b"payload", {"sequence": -1})

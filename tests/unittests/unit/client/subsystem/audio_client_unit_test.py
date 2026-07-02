@@ -41,10 +41,10 @@ def _make_client(*, speaker_enabled=False, microphone_enabled=False,
     x.microphone_codecs = ["opus"]
     x.av_sync = av_sync
     x.server_av_sync = server_av_sync
-    x.server_audio_send = False
-    x.server_audio_receive = False
-    x.server_audio_encoders = ()
-    x.server_audio_decoders = ()
+    x.server_send = False
+    x.server_receive = False
+    x.server_encoders = ()
+    x.server_decoders = ()
     x.on_sink_ready = lambda: None
     return x
 
@@ -52,10 +52,10 @@ def _make_client(*, speaker_enabled=False, microphone_enabled=False,
 def _make_sink(x, codec="opus"):
     sink = MagicMock()
     sink.codec = codec
-    sink.sequence = x.audio_sink_sequence
+    sink.sequence = x.sink_sequence
     sink.get_state = MagicMock(return_value="ready")
     sink.get_info = MagicMock(return_value={})
-    x.audio_sink = sink
+    x.sink = sink
     x.speaker_enabled = True
     return sink
 
@@ -63,8 +63,8 @@ def _make_sink(x, codec="opus"):
 def _make_source(x, codec="opus"):
     source = MagicMock()
     source.codec = codec
-    source.sequence = x.audio_source_sequence
-    x.audio_source = source
+    source.sequence = x.source_sequence
+    x.source = source
     x.microphone_enabled = True
     return source
 
@@ -118,12 +118,12 @@ class TestGetAudioCapabilities(unittest.TestCase):
 
     def test_empty_without_properties(self):
         x = _make_client()
-        x.audio_properties = typedict()
+        x.properties = typedict()
         assert x.get_audio_capabilities() == {}
 
     def test_has_expected_keys(self):
         x = _make_client()
-        x.audio_properties = typedict({"encoders": ["opus"], "decoders": ["opus"]})
+        x.properties = typedict({"encoders": ["opus"], "decoders": ["opus"]})
         caps = x.get_audio_capabilities()
         assert "decoders" in caps
         assert "encoders" in caps
@@ -160,25 +160,25 @@ class TestParseServerCapabilities(unittest.TestCase):
         x = _make_client()
         c = typedict({"audio": {"async": True}})
         x.parse_server_capabilities(c)
-        assert x.wants_audio_capabilities is True
+        assert x.wants_capabilities is True
 
     def test_async_with_properties_sends_caps(self):
         x = _make_client()
-        x.audio_properties = typedict({"encoders": ["opus"]})
+        x.properties = typedict({"encoders": ["opus"]})
         c = typedict({"audio": {"async": True}})
         x.parse_server_capabilities(c)
         assert any(p[0] == "audio-capabilities" for p in x._sent)
 
     def test_non_async_calls_auto_start(self):
         x = _make_client(speaker_enabled=True)
-        x.server_audio_send = True
-        x.server_audio_encoders = ("opus",)
+        x.server_send = True
+        x.server_encoders = ("opus",)
         c = typedict({"audio": {"send": True, "encoders": ["opus"]}})
         with patch.object(x, "start_receiving_audio"):
             x.parse_server_capabilities(c)
             # auto_start is called when server sends audio and speaker is enabled
             # (via the non-async path)
-            # auto_start reads server_audio_send which was set by parse_audio_capabilities
+            # auto_start reads server_send which was set by parse_audio_capabilities
             # called just before; ensure emit was called
         x.emit.assert_called_with("audio-initialized")
 
@@ -204,10 +204,10 @@ class TestParseAudioCapabilities(unittest.TestCase):
         x.parse_audio_capabilities(audio)
         assert x.server_pulseaudio_id == "pa-id-123"
         assert x.server_pulseaudio_server == "unix:/run/user/1000/pulse/native"
-        assert "opus" in x.server_audio_decoders
-        assert "opus" in x.server_audio_encoders
-        assert x.server_audio_receive is True
-        assert x.server_audio_send is True
+        assert "opus" in x.server_decoders
+        assert "opus" in x.server_encoders
+        assert x.server_receive is True
+        assert x.server_send is True
 
 
 # ---------------------------------------------------------------------------
@@ -218,21 +218,21 @@ class TestAutoStart(unittest.TestCase):
 
     def test_starts_speaker_when_conditions_met(self):
         x = _make_client(speaker_enabled=True)
-        x.server_audio_send = True
+        x.server_send = True
         with patch.object(x, "start_receiving_audio") as m:
             x.auto_start()
             m.assert_called_once()
 
     def test_does_not_start_speaker_when_disabled(self):
         x = _make_client(speaker_enabled=False)
-        x.server_audio_send = True
+        x.server_send = True
         with patch.object(x, "start_receiving_audio") as m:
             x.auto_start()
             m.assert_not_called()
 
     def test_schedules_microphone_via_idle_add(self):
         x = _make_client(microphone_enabled=True)
-        x.server_audio_receive = True
+        x.server_receive = True
         idle_calls = []
         x.idle_add = lambda fn, *a: idle_calls.append(fn)
         with patch.object(x, "start_sending_audio"):
@@ -278,15 +278,15 @@ class TestStopSendingAudio(unittest.TestCase):
     def test_increments_sequence(self):
         x = _make_client()
         _make_source(x)
-        seq_before = x.audio_source_sequence
+        seq_before = x.source_sequence
         x.stop_sending_audio()
-        assert x.audio_source_sequence == seq_before + 1
+        assert x.source_sequence == seq_before + 1
 
-    def test_clears_audio_source(self):
+    def test_clears_source(self):
         x = _make_client()
         _make_source(x)
         x.stop_sending_audio()
-        assert x.audio_source is None
+        assert x.source is None
 
     def test_emits_microphone_changed(self):
         x = _make_client(microphone_enabled=True)
@@ -319,15 +319,15 @@ class TestStopReceivingAudio(unittest.TestCase):
     def test_increments_sequence(self):
         x = _make_client()
         _make_sink(x)
-        seq_before = x.audio_sink_sequence
+        seq_before = x.sink_sequence
         x.stop_receiving_audio()
-        assert x.audio_sink_sequence == seq_before + 1
+        assert x.sink_sequence == seq_before + 1
 
-    def test_clears_audio_sink(self):
+    def test_clears_sink(self):
         x = _make_client()
         _make_sink(x)
         x.stop_receiving_audio()
-        assert x.audio_sink is None
+        assert x.sink is None
 
     def test_noop_when_no_sink(self):
         x = _make_client()
@@ -345,31 +345,31 @@ class TestSuspendResumeAudio(unittest.TestCase):
         _make_sink(x)
         with patch.object(x, "stop_receiving_audio"), patch.object(x, "stop_sending_audio"):
             x.suspend_audio(None)
-        assert x.audio_resume_restart is True
+        assert x.resume_restart is True
 
     def test_suspend_no_restart_when_no_sink(self):
         x = _make_client()
         x.suspend_audio(None)
-        assert x.audio_resume_restart is False
+        assert x.resume_restart is False
 
     def test_resume_starts_audio_when_flag_set(self):
         x = _make_client()
-        x.audio_resume_restart = True
+        x.resume_restart = True
         with patch.object(x, "start_receiving_audio") as m:
             x.resume_audio(None)
             m.assert_called_once()
-        assert x.audio_resume_restart is False
+        assert x.resume_restart is False
 
     def test_resume_noop_when_flag_clear(self):
         x = _make_client()
-        x.audio_resume_restart = False
+        x.resume_restart = False
         with patch.object(x, "start_receiving_audio") as m:
             x.resume_audio(None)
             m.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
-# new_stream / new_audio_buffer / send_audio_sync
+# new_stream / new_buffer / send_audio_sync
 # ---------------------------------------------------------------------------
 
 class TestNewStream(unittest.TestCase):
@@ -388,8 +388,8 @@ class TestNewStream(unittest.TestCase):
         x = _make_client()
         stale = MagicMock()
         stale.codec = "opus"
-        # audio_source is a different object
-        x.audio_source = MagicMock()
+        # source is a different object
+        x.source = MagicMock()
         x.new_stream(stale, "opus")
         assert not x._sent
 
@@ -400,24 +400,24 @@ class TestNewAudioBuffer(unittest.TestCase):
         x = _make_client()
         source = _make_source(x)
         source.codec = "opus"
-        source.sequence = x.audio_source_sequence
-        x.new_audio_buffer(source, b"audio bytes", {})
+        source.sequence = x.source_sequence
+        x.new_buffer(source, b"audio bytes", {})
         from xpra.audio.common import AUDIO_DATA_PACKET
         assert any(p[0] == AUDIO_DATA_PACKET for p in x._sent)
 
     def test_increments_bytecount(self):
         x = _make_client()
         source = _make_source(x)
-        source.sequence = x.audio_source_sequence
-        x.new_audio_buffer(source, b"1234", {})
-        assert x.audio_out_bytecount >= 4
+        source.sequence = x.source_sequence
+        x.new_buffer(source, b"1234", {})
+        assert x.out_bytecount >= 4
 
     def test_drops_old_sequence(self):
         x = _make_client()
         source = _make_source(x)
         source.sequence = 0
-        x.audio_source_sequence = 5  # now source.sequence < audio_source_sequence
-        x.new_audio_buffer(source, b"data", {})
+        x.source_sequence = 5  # now source.sequence < source_sequence
+        x.new_buffer(source, b"data", {})
         assert not x._sent
 
 
@@ -436,7 +436,7 @@ class TestSendAudioSync(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# audio_sink_state_changed / audio_sink_exit / audio_process_stopped
+# sink_state_changed / sink_exit / process_stopped
 # ---------------------------------------------------------------------------
 
 class TestAudioSinkStateChanged(unittest.TestCase):
@@ -446,21 +446,21 @@ class TestAudioSinkStateChanged(unittest.TestCase):
         sink = _make_sink(x)
         ready_called = []
         x.on_sink_ready = lambda: ready_called.append(True)
-        x.audio_sink_state_changed(sink, "ready")
+        x.sink_state_changed(sink, "ready")
         assert ready_called
         assert x.on_sink_ready.__name__ == "<lambda>" or x.on_sink_ready is not None
 
     def test_emits_speaker_changed(self):
         x = _make_client()
         sink = _make_sink(x)
-        x.audio_sink_state_changed(sink, "playing")
+        x.sink_state_changed(sink, "playing")
         x.emit.assert_called_with("speaker-changed")
 
     def test_ignores_stale_sink(self):
         x = _make_client()
         _make_sink(x)
         stale = MagicMock()
-        x.audio_sink_state_changed(stale, "ready")
+        x.sink_state_changed(stale, "ready")
         x.emit.assert_not_called()
 
 
@@ -470,7 +470,7 @@ class TestAudioSinkExit(unittest.TestCase):
         x = _make_client()
         sink = _make_sink(x)
         with patch.object(x, "stop_receiving_audio") as m:
-            x.audio_sink_exit(sink)
+            x.sink_exit(sink)
             m.assert_called_once()
 
     def test_ignores_stale_sink(self):
@@ -478,7 +478,7 @@ class TestAudioSinkExit(unittest.TestCase):
         _make_sink(x)
         stale = MagicMock()
         with patch.object(x, "stop_receiving_audio") as m:
-            x.audio_sink_exit(stale)
+            x.sink_exit(stale)
             m.assert_not_called()
 
     def test_ignores_when_exiting(self):
@@ -486,7 +486,7 @@ class TestAudioSinkExit(unittest.TestCase):
         sink = _make_sink(x)
         x.exit_code = 0
         with patch.object(x, "stop_receiving_audio") as m:
-            x.audio_sink_exit(sink)
+            x.sink_exit(sink)
             m.assert_not_called()
 
 
@@ -496,7 +496,7 @@ class TestAudioProcessStopped(unittest.TestCase):
         x = _make_client()
         sink = _make_sink(x)
         with patch.object(x, "stop_receiving_audio") as m:
-            x.audio_process_stopped(sink)
+            x.process_stopped(sink)
             m.assert_called_once()
 
     def test_ignores_stale_sink(self):
@@ -504,7 +504,7 @@ class TestAudioProcessStopped(unittest.TestCase):
         _make_sink(x)
         stale = MagicMock()
         with patch.object(x, "stop_receiving_audio") as m:
-            x.audio_process_stopped(stale)
+            x.process_stopped(stale)
             m.assert_not_called()
 
 
@@ -538,10 +538,10 @@ class TestProcessAudioData(unittest.TestCase):
 
     def test_ignores_old_sequence(self):
         x = _make_client()
-        x.audio_sink_sequence = 5
+        x.sink_sequence = 5
         pkt = self._make_packet(metadata={"sequence": 3})
         x._process_audio_data(pkt)
-        assert x.audio_sink is None  # nothing started
+        assert x.sink is None  # nothing started
 
     def test_drops_without_speaker_enabled(self):
         x = _make_client(speaker_enabled=False)
@@ -553,7 +553,7 @@ class TestProcessAudioData(unittest.TestCase):
         x = _make_client()
         x.speaker_allowed = True
         pkt = self._make_packet(metadata={"start-of-stream": True, "codec": "opus"})
-        with patch.object(x, "start_audio_sink") as m:
+        with patch.object(x, "start_sink") as m:
             x._process_audio_data(pkt)
             m.assert_called_once_with("opus")
 

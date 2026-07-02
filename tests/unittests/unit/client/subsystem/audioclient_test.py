@@ -153,7 +153,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
         self.verify_packet(0, ("audio-control", "start", "opus"))
         self.verify_packet(1, ("audio-control", "new-sequence", 1))
         # assert not self.packets, "sent some unexpected packets: %s" % (self.packets,)
-        assert self.mixin.audio_sink is None, "sink is still active: %s" % self.mixin.audio_sink
+        assert self.mixin.sink is None, "sink is still active: %s" % self.mixin.sink
 
 
 def main():
@@ -198,9 +198,9 @@ class DeviceInvalidationTest(unittest.TestCase):
     def _make_fake_sink(self, x):
         fake_sink = AdHocStruct()
         fake_sink.codec = "opus"
-        fake_sink.sequence = x.audio_sink_sequence
+        fake_sink.sequence = x.sink_sequence
         fake_sink.cleanup = lambda: None
-        x.audio_sink = fake_sink
+        x.sink = fake_sink
         x.speaker_enabled = True
         return fake_sink
 
@@ -212,18 +212,18 @@ class DeviceInvalidationTest(unittest.TestCase):
         x.idle_add = lambda fn, *a: scheduled.append(("idle", fn)) or 0
         x.timeout_add = lambda delay, fn, *a: scheduled.append((delay, fn)) or 0
 
-        x.audio_sink_error(fake_sink, "AUDIO_DEVICE_CHANGED")
-        assert x.audio_sink is None, "sink should have been stopped"
+        x.sink_error(fake_sink, "AUDIO_DEVICE_CHANGED")
+        assert x.sink is None, "sink should have been stopped"
         assert len(scheduled) >= 1, "expected at least one scheduled callback"
 
     def test_non_device_error_does_not_restart(self):
         x = self._make_client()
         fake_sink = self._make_fake_sink(x)
-        x.audio_resume_restart = False
+        x.resume_restart = False
 
-        x.audio_sink_error(fake_sink, "some other fatal error")
-        assert x.audio_sink is None, "sink should have been stopped"
-        assert not x.audio_resume_restart, "resume flag should not be set"
+        x.sink_error(fake_sink, "some other fatal error")
+        assert x.sink is None, "sink should have been stopped"
+        assert not x.resume_restart, "resume flag should not be set"
 
 
 if __name__ == '__main__':

@@ -544,7 +544,8 @@ class SessionInfo(Gtk.Window):
         # runs every 100ms
         if self.is_closed:
             return False
-        ss = self.client.audio_sink
+        audio = self.get_client_subsystem("audio")
+        ss = audio.sink if audio else None
         if SHOW_SOUND_STATS and ss:
             info = ss.get_info()
             if info:
@@ -575,10 +576,11 @@ class SessionInfo(Gtk.Window):
             self.net_in_bitcount.append(conn.input_bytecount * 8)
             self.net_out_bitcount.append(conn.output_bytecount * 8)
             if features.audio and SHOW_SOUND_STATS:
-                if self.client.audio_in_bytecount > 0:
-                    self.audio_in_bitcount.append(self.client.audio_in_bytecount * 8)
-                if self.client.audio_out_bytecount > 0:
-                    self.audio_out_bitcount.append(self.client.audio_out_bytecount * 8)
+                audio = self.get_client_subsystem("audio")
+                if audio and audio.in_bytecount > 0:
+                    self.audio_in_bitcount.append(audio.in_bytecount * 8)
+                if audio and audio.out_bytecount > 0:
+                    self.audio_out_bitcount.append(audio.out_bytecount * 8)
 
         if self.show_client and features.window:
             # count pixels in the last second:
@@ -813,13 +815,13 @@ class SessionInfo(Gtk.Window):
             bool_icon(self.server_clipboard_icon, bool(clipboard and clipboard.server_clipboard))
         if features.notification:
             notification = self.get_client_subsystem("notification")
-            bool_icon(self.server_notifications_icon, bool(notification and notification.server_notifications))
+            bool_icon(self.server_notifications_icon, bool(notification and notification.server))
         if features.window:
             window = self.get_client_subsystem("window")
             bool_icon(self.server_bell_icon, bool(window and window.server_bell))
         if features.cursor:
             cursor = self.get_client_subsystem("cursor")
-            bool_icon(self.server_cursors_icon, bool(cursor and cursor.server_cursors))
+            bool_icon(self.server_cursors_icon, bool(cursor and cursor.server_enabled))
         return True
 
     def add_codecs_tab(self) -> None:
@@ -868,19 +870,20 @@ class SessionInfo(Gtk.Window):
             return ", ".join(codecs or ())
 
         if features.audio:
-            c = self.client
-            if self.show_server:
-                self.server_speaker_codecs_label.set_text(
-                    codec_info(c.server_audio_send, c.server_audio_encoders))
-            if self.show_client:
-                self.client_speaker_codecs_label.set_text(
-                    codec_info(c.speaker_allowed, c.speaker_codecs))
-            if self.show_server:
-                self.server_microphone_codecs_label.set_text(
-                    codec_info(c.server_audio_receive, c.server_audio_decoders))
-            if self.show_client:
-                self.client_microphone_codecs_label.set_text(
-                    codec_info(c.microphone_allowed, c.microphone_codecs))
+            c = self.get_client_subsystem("audio")
+            if c:
+                if self.show_server:
+                    self.server_speaker_codecs_label.set_text(
+                        codec_info(c.server_send, c.server_encoders))
+                if self.show_client:
+                    self.client_speaker_codecs_label.set_text(
+                        codec_info(c.speaker_allowed, c.speaker_codecs))
+                if self.show_server:
+                    self.server_microphone_codecs_label.set_text(
+                        codec_info(c.server_receive, c.server_decoders))
+                if self.show_client:
+                    self.client_microphone_codecs_label.set_text(
+                        codec_info(c.microphone_allowed, c.microphone_codecs))
 
         def encliststr(v) -> str:
             v = list(v)
@@ -1009,10 +1012,12 @@ class SessionInfo(Gtk.Window):
                         s = "%sbit/s" % std_unit(bitrate)
                     details.set_text(s)
 
-            set_audio_info(self.speaker_label, self.speaker_details,
-                           self.client.speaker_enabled, self.client.audio_sink)
-            set_audio_info(self.microphone_label, None,
-                           self.client.microphone_enabled, self.client.audio_source)
+            audio = self.get_client_subsystem("audio")
+            if audio:
+                set_audio_info(self.speaker_label, self.speaker_details,
+                               audio.speaker_enabled, audio.sink)
+                set_audio_info(self.microphone_label, None,
+                               audio.microphone_enabled, audio.source)
 
         self.connection_type_label.set_text(c.socktype)
         protocol_info = p.get_info()
@@ -1432,7 +1437,8 @@ class SessionInfo(Gtk.Window):
                                           scale=scale)
         set_graph_surface(self.latency_graph, surface)
 
-        if features.audio and SHOW_SOUND_STATS and self.client.audio_sink:
+        audio = self.get_client_subsystem("audio")
+        if features.audio and SHOW_SOUND_STATS and audio and audio.sink:
             # audio queue graph:
             queue_values, queue_labels = norm_lists(
                 (
@@ -1468,11 +1474,13 @@ class SessionInfoClient(InfoTimerClient):
         self.session_name = self.server_session_name = "session-info"
         self.windows_enabled = False
         self.send_ping = noop
-        self.server_audio_send = self.server_audio_receive = True
-        self.server_audio_encoders = self.server_audio_decoders = []
         self.server_ping_latency = self.client_ping_latency = []
         self.server_start_time = 0
         super().setup_connection(conn)
+        audio = self.get_subsystem("audio")
+        if audio:
+            audio.server_send = audio.server_receive = True
+            audio.server_encoders = audio.server_decoders = []
         self.window = None
 
     def run_loop(self) -> None:
@@ -1503,14 +1511,14 @@ class SessionInfoClient(InfoTimerClient):
             clipboard.server_clipboard = feature_info.boolget("clipboard")
         notification = self.get_subsystem("notification")
         if notification:
-            notification.server_notifications = feature_info.boolget("notification")
+            notification.server = feature_info.boolget("notification")
         display_info = rtdict("display")
         window = self.get_subsystem("window")
         if window:
             window.server_bell = display_info.boolget("bell")
         cursor = self.get_subsystem("cursor")
         if cursor:
-            cursor.server_cursors = display_info.boolget("cursors")
+            cursor.server_enabled = display_info.boolget("cursors")
         display = self.get_subsystem("display")
         if display:
             display.server_opengl = rtdict("display", "opengl")

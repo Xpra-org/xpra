@@ -129,10 +129,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.sub_dialogs = {}
         self.menu_helper = None
         self.window_menu_helper = None
-        # the keyboard subsystem holds `keyboard_helper_class`; inject the GTK
+        # the keyboard subsystem holds `helper_class`; inject the GTK
         # implementation into it (it is created by UIXpraClient.__init__ above):
         if kb := self.get_subsystem("keyboard"):
-            kb.keyboard_helper_class = GTKKeyboardHelper
+            kb.helper_class = GTKKeyboardHelper
         # add our GTK-specific behaviour to the subsystem signals (the subsystems
         # own these signals; we just subscribe and react):
         if window := self.get_subsystem("window"):
@@ -141,7 +141,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             gl.connect("toggled", self._opengl_toggled)
         self.data_send_requests = {}
         # opengl state is owned by the `opengl` subsystem; cursor tracking state
-        # (`_cursors`, `_last_cursor_data`) by the `cursor` subsystem; the methods
+        # (`_cursors`, `last_data`) by the `cursor` subsystem; the methods
         # below reach them via `get_subsystem(...)`.
         # frame request hidden window:
         self.frame_request_window = None
@@ -569,7 +569,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             return
         from xpra.gtk.dialogs.show_shortcuts import ShortcutInfo
         keyboard = self.get_subsystem("keyboard")
-        kh = keyboard.keyboard_helper if keyboard else None
+        kh = keyboard.helper if keyboard else None
         assert kh, "no keyboard helper"
         dialog = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
         dialog.show_all()
@@ -609,7 +609,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             keyboard = self.get_subsystem("keyboard")
             gl = self.get_subsystem("opengl")
             includes = {
-                "keyboard": bool(keyboard and keyboard.keyboard_helper),
+                "keyboard": bool(keyboard and keyboard.helper),
                 "opengl": bool(gl and gl.opengl_enabled),
             }
 

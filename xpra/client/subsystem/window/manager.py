@@ -321,7 +321,7 @@ class WindowManagerClient(StubClientMixin):
         # the last cursor data is tracked by the `cursor` subsystem (which may be
         # disabled); its set_windows_cursor renders via the toolkit client:
         if cur := self.get_subsystem("cursor"):
-            if last_cursor := cur._last_cursor_data:
+            if last_cursor := cur.last_data:
                 cur.set_windows_cursor([window], last_cursor)
         if override_redirect and should_force_grab(metadata):
             log.warn("forcing grab for OR window %#x", wid)
