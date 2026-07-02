@@ -21,7 +21,7 @@ import traceback
 from typing import Any, NoReturn
 from collections.abc import Callable, Iterable
 
-from xpra.common import noerr, noop, may_show_progress, may_notify_client
+from xpra.common import noerr, noop, may_show_progress, may_notify_client, set_progress_process
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
@@ -1303,7 +1303,7 @@ def create_client_app(opts, extra_args: list[str], mode: str):
         app.init(opts)
         if opts.splash:
             from xpra import __version__
-            app.progress_process = make_progress_process(opts.session_name or "Xpra Recorder v%s" % __version__)
+            set_progress_process(app, make_progress_process(opts.session_name or "Xpra Recorder v%s" % __version__))
     elif mode == "_monitor":
         basic()
         from xpra.client.base.command import MonitorXpraClient
@@ -1753,7 +1753,7 @@ def make_client(opts):
 
         from xpra.client.gtk3.client import XpraClient
         app = XpraClient()
-        app.progress_process = progress_process
+        set_progress_process(app, progress_process)
 
         if opts.opengl in ("probe", "nowarn"):
             may_show_progress(app, 20, "validating OpenGL configuration")

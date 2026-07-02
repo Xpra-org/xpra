@@ -85,20 +85,28 @@ def subsystem_name(c: type) -> str:
     return c.__name__.replace("Server", "").rstrip("_").lower()
 
 
+def _progress_target(obj):
+    # `show_progress`/`progress_process` live on the `progress` subsystem when the
+    # object exposes one (a composed client, where the subsystem holds the splash
+    # process); otherwise fall back to the object itself:
+    get_subsystem = getattr(obj, "get_subsystem", None)
+    if callable(get_subsystem):
+        return get_subsystem("progress") or obj
+    return obj
+
+
 def may_show_progress(obj, pct: int, text="", *args) -> None:
     from xpra.util.i18n import _
     msg = _(text)
     if args:
         msg += ": " + ", ".join(str(v) for v in args)
-    # `show_progress` lives on the `progress` subsystem when the object exposes
-    # one (a composed client, where the subsystem holds the splash process);
-    # otherwise fall back to the object itself:
-    target = obj
-    get_subsystem = getattr(obj, "get_subsystem", None)
-    if callable(get_subsystem):
-        target = get_subsystem("progress") or obj
+    target = _progress_target(obj)
     show_progress = getattr(target, "show_progress", noop)
     show_progress(pct, msg)
+
+
+def set_progress_process(obj, progress_process) -> None:
+    _progress_target(obj).progress_process = progress_process
 
 
 def may_notify_client(obj, nid : NotificationID | int, summary, body, *args, **kwargs) -> None:

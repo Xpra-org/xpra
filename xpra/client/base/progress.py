@@ -19,7 +19,8 @@ class ProgressClient(StubClientMixin):
     """
     PREFIX = "progress"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.progress_process = None
 
     def show_progress(self, pct: int, text="") -> None:

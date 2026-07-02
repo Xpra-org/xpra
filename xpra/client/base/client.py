@@ -71,6 +71,7 @@ COMPOSED_SUBSYSTEMS: tuple[str, ...] = (
     "opengl",
     "window",
     "control",
+    "progress",
 )
 # composed subsystems are real instances, kept OUT of the client's MRO
 # (see `xpra.client.gui.ui_client_base.MUXED_BASES` for the mirror of this):

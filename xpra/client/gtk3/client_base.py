@@ -217,7 +217,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self.remove_packet_handlers("startup-complete")
 
     def do_process_challenge_prompt(self, prompt="password"):
-        self.stop_progress_process(f"showing {prompt} prompt")
+        if progress := self.get_subsystem("progress"):
+            progress.stop_progress_process(f"showing {prompt} prompt")
         authlog = Logger("auth")
         may_show_progress(self, 100, "authentication")
         PINENTRY = os.environ.get("XPRA_PINENTRY", "")
