@@ -385,18 +385,22 @@ class UIXpraClient(ClientBaseClass):
             cb(setting, value)
 
     def add_control_commands(self) -> None:
-        super().add_control_commands()
+        # called by the `control` subsystem (it owns the base commands; this
+        # adds the UI-specific ones on top, via the `add_control_command` delegate
+        # since this class and the `control` subsystem are no longer related by
+        # inheritance - see `ControlClient.parse_server_capabilities`):
         try:
             from xpra.net.control.common import ControlCommand, ArgsControlCommand
         except ImportError as e:
             log(f"control commands are not available: {e}")
-        else:
-            self.control_commands |= {
-                "show_session_info": ControlCommand("show-session-info", "Shows the session info dialog", self.show_session_info),
-                "show_bug_report": ControlCommand("show-bug-report", "Shows the bug report dialog", self.show_bug_report),
-                "name": ArgsControlCommand("name", "Sets the server session name", self.set_server_session_name,
-                                           min_args=1, max_args=1),
-            }
+            return
+        self.add_control_command(
+            "show_session_info", ControlCommand("show-session-info", "Shows the session info dialog", self.show_session_info))
+        self.add_control_command(
+            "show_bug_report", ControlCommand("show-bug-report", "Shows the bug report dialog", self.show_bug_report))
+        self.add_control_command(
+            "name", ArgsControlCommand("name", "Sets the server session name", self.set_server_session_name,
+                                       min_args=1, max_args=1))
 
     def set_server_session_name(self, name: str):
         self.server_session_name = name

@@ -60,10 +60,13 @@ class BandwidthClient(StubClientMixin):
         if BACKWARDS_COMPATIBLE:
             caps["network-state"] = True
         # get socket speed if we have it:
-        pinfo = self.client._protocol.get_info()
+        protocol = self.client._protocol
+        if not protocol:
+            return caps
+        pinfo = protocol.get_info()
         device_info = pinfo.get("socket", {}).get("device", {})
         try:
-            coptions = self.client._protocol._conn.options
+            coptions = protocol._conn.options
         except AttributeError:
             coptions = {}
         log("get_caps() device_info=%s, connection options=%s", device_info, coptions)

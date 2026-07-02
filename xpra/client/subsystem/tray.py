@@ -41,9 +41,6 @@ class TrayClient(StubClientMixin):
         self.icon = opts.tray_icon
 
     def load(self):
-        # the menu helper is a toolkit-specific client service (see `get_menu_helper`
-        # on the concrete client); the tray is one of its consumers:
-        self.client.get_menu_helper()
         if self.delay:
             self.client.connect("first-ui-received", self.setup_xpra_tray)
         else:

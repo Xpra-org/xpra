@@ -255,7 +255,8 @@ class NetworkListener(StubClientMixin):
 
             def process_control() -> None:
                 try:
-                    code, response = self.process_control_command(proto, *command)
+                    control = self.get_subsystem("control")
+                    code, response = control.process_control_command(proto, *command)
                 except Exception as e:
                     code = ExitCode.FAILURE
                     response = str(e)

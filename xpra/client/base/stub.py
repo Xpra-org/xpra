@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from collections.abc import Callable
 from typing import Any, NoReturn
 
 from xpra.util.objects import typedict
@@ -47,8 +48,9 @@ class StubClientMixin(SignalEmitter):
             source = client
         else:
             source = self if all(hasattr(self, m) for m in self.SCHEDULER_METHODS) else GLibScheduler
-        for name in self.SCHEDULER_METHODS:
-            setattr(self, name, getattr(source, name))
+        self.idle_add: Callable = source.idle_add
+        self.timeout_add: Callable = source.timeout_add
+        self.source_remove: Callable = source.source_remove
 
     def _should_call_direct(self) -> bool:
         # `SignalEmitter` hook: a *composed* subsystem owns its own signals but

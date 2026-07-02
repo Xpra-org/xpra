@@ -22,7 +22,8 @@ class ControlClient(StubClientMixin):
     """
     PREFIX = "control"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.control_commands: dict[str, Any] = {}
 
     def get_info(self) -> dict[str, tuple]:
@@ -32,6 +33,12 @@ class ControlClient(StubClientMixin):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.add_control_commands()
+        # let the concrete client add its own (UI-specific) control commands
+        # (e.g. `UIXpraClient.add_control_commands`, a separate method on a
+        # separate class - not a `super()` chain, since this subsystem is composed):
+        add_ui_commands = getattr(self.client, "add_control_commands", None)
+        if add_ui_commands:
+            add_ui_commands()
         return True
 
     def add_control_commands(self) -> None:
@@ -52,7 +59,7 @@ class ControlClient(StubClientMixin):
 
     def _process_control(self, packet: Packet) -> None:
         args = packet[1:]
-        code, msg = self.process_control_command(self._protocol, *args)
+        code, msg = self.process_control_command(self.client._protocol, *args)
         log.warn(f"{code}, {msg!r}")
 
     def process_control_command(self, proto, *args) -> tuple[ControlCode | int, str]:

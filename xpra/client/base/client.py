@@ -42,7 +42,40 @@ from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger
 
 CLIENT_BASES = get_client_base_classes()
-ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
+
+# Phase-2 migration: subsystems whose PREFIX is listed here are stored as
+# real `cls(client=self)` instances in `self.subsystems` (server-style composition);
+# every other subsystem is still mixed into the client (stored as `self`).
+# The list grows one subsystem at a time until the mux is fully dismantled.
+COMPOSED_SUBSYSTEMS: tuple[str, ...] = (
+    "bandwidth",
+    "ping",
+    "encoding",
+    "power",
+    "server-info",
+    "logging",
+    "gsettings",
+    "ssh-agent",
+    "mmap",
+    "listener",
+    "notification",
+    "command",
+    "webcam",
+    "audio",
+    "keyboard",
+    "cursor",
+    "pointer",
+    "tray",
+    "clipboard",
+    "display",
+    "opengl",
+    "window",
+    "control",
+)
+# composed subsystems are real instances, kept OUT of the client's MRO
+# (see `xpra.client.gui.ui_client_base.MUXED_BASES` for the mirror of this):
+MUXED_BASES = tuple(c for c in CLIENT_BASES if getattr(c, "PREFIX", "") not in COMPOSED_SUBSYSTEMS)
+ClientBaseClass = type('ClientBaseClass', MUXED_BASES, {})
 
 log = Logger("client")
 netlog = Logger("network")
@@ -50,7 +83,7 @@ sublog = Logger("subsystems")
 
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 
-sublog("Client base classes: %s", CLIENT_BASES)
+sublog("Client base classes: %s (muxed into the MRO: %s)", CLIENT_BASES, MUXED_BASES)
 
 
 class XpraClientBase(PacketDispatcher, ClientBaseClass):
@@ -62,34 +95,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     """
     __signals__ = ["startup-complete"]
 
-    # Phase-2 migration: subsystems whose PREFIX is listed here are stored as
-    # real `cls(self)` instances in `self.subsystems` (server-style composition);
-    # every other subsystem is still mixed into the client (stored as `self`).
-    # The list grows one subsystem at a time until the mux is fully dismantled.
-    COMPOSED_SUBSYSTEMS: tuple[str, ...] = (
-        "bandwidth",
-        "ping",
-        "encoding",
-        "power",
-        "server-info",
-        "logging",
-        "gsettings",
-        "ssh-agent",
-        "mmap",
-        "listener",
-        "notification",
-        "command",
-        "webcam",
-        "audio",
-        "keyboard",
-        "cursor",
-        "pointer",
-        "tray",
-        "clipboard",
-        "display",
-        "opengl",
-        "window",
-    )
+    COMPOSED_SUBSYSTEMS = COMPOSED_SUBSYSTEMS
 
     def __init__(self):
         self.defaults_init()
@@ -120,6 +126,13 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             cls.__init__(self)
             if prefix:
                 self.subsystems[prefix] = self
+
+    def add_control_command(self, name: str, control) -> None:
+        # delegate to the `control` subsystem (mirror of `ServerCore.add_control_command`),
+        # so other subsystems can register a command without depending on the MRO:
+        control_subsystem = self.subsystems.get("control")
+        if control_subsystem:
+            control_subsystem.add_control_command(name, control)
 
     def _call_subsystem(self, cls, method: str, *args):
         # dispatch one subsystem's lifecycle/caps call:
