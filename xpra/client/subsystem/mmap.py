@@ -83,7 +83,8 @@ class MmapClient(StubClientMixin):
     """
     PREFIX = "mmap"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.mmap_option = "no"
         self.mmap_group = "auto"
         self.mmap_read_area: MmapArea | None = None

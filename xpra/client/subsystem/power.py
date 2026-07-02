@@ -24,7 +24,8 @@ class PowerEventClient(StubClientMixin):
     PREFIX = "power"
     __signals__: list[str] = ["suspend", "resume", "pause", "unpause"]
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.ui_watcher = None
         self.suspended = 0.0
 

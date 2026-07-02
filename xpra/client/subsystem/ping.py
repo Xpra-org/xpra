@@ -35,7 +35,8 @@ class PingClient(StubClientMixin):
 
     PACKET_TYPES = ("ping", "ping_echo")
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.pings: bool = False
         self.server_latency: deque[tuple[float, float]] = deque(maxlen=1000)
         self.server_load = (0, 0, 0)

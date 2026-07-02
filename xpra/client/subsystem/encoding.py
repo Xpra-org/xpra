@@ -88,7 +88,8 @@ class Encodings(StubClientMixin):
     """
     PREFIX = "encoding"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.allowed_encodings: Sequence[str] = ()
         self.encoding = ""
         self.quality = -1

@@ -35,7 +35,8 @@ class BandwidthClient(StubClientMixin):
     """
     PREFIX = "bandwidth"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.limit: int = 0
         self.detection: bool = False
         self.server_limit: int = 0

@@ -6,7 +6,6 @@
 import sys
 from typing import Any, NoReturn
 
-from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.compression import Compressed
@@ -17,42 +16,39 @@ from xpra.net.common import ClientPacketHandlerType, PacketElement
 # client GObject. On the concrete client, `StubClientMixin` is still in the MRO
 # (via the transitional flatten), but the real `GObject` connect/emit precede
 # `SignalEmitter` in the MRO, so the client keeps using GObject signals.
-# Under the unit tests we also mix in `GLibScheduler` (isolated subsystems have
-# no owning client to borrow `idle_add`/`timeout_add`/`source_remove` from).
 from xpra.util.signal_emitter import SignalEmitter
-if envbool("XPRA_UNIT_TEST"):
-    from xpra.util.glib_scheduler import GLibScheduler
-    superclass = type("StubSignalScheduler", (SignalEmitter, GLibScheduler), {})
-else:
-    superclass = SignalEmitter
+from xpra.util.glib_scheduler import GLibScheduler
 
 
-class StubClientMixin(superclass):
+class StubClientMixin(SignalEmitter):
     __signals__: list[str] = []
     # every concrete subsystem should declare a non-empty PREFIX,
     # used as the key in `client.subsystems`:
     PREFIX: str = ""
 
-    # main-loop scheduling helpers provided by the owning client; they are
-    # copied onto the subsystem when it is attached to a client (see the
-    # `client` setter) so subsystems call `self.timeout_add(...)` directly
-    # rather than reaching through `self.client`:
+    # main-loop scheduling helpers borrowed from `client` (see `__init__`),
+    # so subsystems can call `self.timeout_add(...)` directly rather than
+    # reaching through `self.client`:
     SCHEDULER_METHODS = ("idle_add", "timeout_add", "source_remove")
 
-    @property
-    def client(self):
-        # a *composed* subsystem instance has `_client` pointing at the owning
-        # client; the client itself (and isolated unit tests) leaves it unset,
-        # so `self.client` resolves to the instance itself.
-        return getattr(self, "_client", None) or self
-
-    @client.setter
-    def client(self, value) -> None:
-        self._client = value
-        if value is not None and value is not self:
-            # a real, separate owning client: borrow its main-loop scheduler:
-            for name in self.SCHEDULER_METHODS:
-                setattr(self, name, getattr(value, name))
+    def __init__(self, client=None) -> None:
+        """
+        `client` is the owning client (mirror of the server's `StubSubsystem.__init__`),
+        given when this subsystem is a real, separate composed instance.
+        Leave unset when this subsystem *is* the client (still flattened into it
+        via multiple inheritance) or stands alone (eg: in a unit test): the
+        concrete class then already provides its own scheduler methods, or - if
+        it doesn't (a bare instance with no client of its own) - we fall back to
+        the plain GLib main loop.
+        """
+        super().__init__()
+        self.client = client if client is not None else self
+        if client is not None:
+            source = client
+        else:
+            source = self if all(hasattr(self, m) for m in self.SCHEDULER_METHODS) else GLibScheduler
+        for name in self.SCHEDULER_METHODS:
+            setattr(self, name, getattr(source, name))
 
     def _should_call_direct(self) -> bool:
         # `SignalEmitter` hook: a *composed* subsystem owns its own signals but

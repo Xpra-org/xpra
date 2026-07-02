@@ -99,7 +99,8 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
     __signals__ = ["speaker-changed", "microphone-changed", "audio-initialized"]
     PREFIX = "audio"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.source_plugin = ""
         self.speaker_allowed: bool = False
         self.speaker_enabled: bool = False

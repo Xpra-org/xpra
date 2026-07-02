@@ -34,7 +34,8 @@ class PointerClient(StubClientMixin):
     """
     PREFIX = "pointer"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.sequence = {}
         self.position_delay = 5
         self.position: Packet | None = None

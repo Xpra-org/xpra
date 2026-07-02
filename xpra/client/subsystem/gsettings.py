@@ -25,7 +25,8 @@ class GSettingsClient(StubClientMixin):
 
     PREFIX = "gsettings"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.sync = ""
         self.enabled = False
         self.server_enabled = False

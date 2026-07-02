@@ -48,7 +48,8 @@ class DisplayClient(StubClientMixin):
     __signals__ = ["scaling-changed"]
     PREFIX = "display"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         check_display()
         self.dpi = 0
         self.can_scale = False

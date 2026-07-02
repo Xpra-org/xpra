@@ -33,7 +33,8 @@ class NotificationClient(StubClientMixin):
     """
     PREFIX = "notification"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.client_supports = False
         self.server = False
         self.enabled = False

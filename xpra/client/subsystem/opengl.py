@@ -13,7 +13,6 @@ from xpra.util.str_fn import csv, pver
 from xpra.util.env import osexpand
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.client.base.stub import StubClientMixin
-from xpra.util.signal_emitter import SignalEmitter
 from xpra.log import Logger
 
 log = Logger("opengl")
@@ -35,8 +34,8 @@ class OpenGLClient(StubClientMixin):
     """
     PREFIX = "opengl"
 
-    def __init__(self):
-        SignalEmitter.__init__(self)
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.enabled: bool = False
         self.properties: dict[str, Any] = {}
         self.client_supports: bool = False

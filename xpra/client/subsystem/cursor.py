@@ -45,7 +45,8 @@ class CursorClient(StubClientMixin):
     """
     PREFIX = "cursor"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.server_enabled: bool = False
         self.client_supports: bool = False
         self.enabled: bool = False

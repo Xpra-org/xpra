@@ -32,7 +32,8 @@ class KeyboardClient(StubClientMixin):
     """
     PREFIX = "keyboard"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.enabled = True
         self.helper_class: type = KeyboardHelper
         self.helper = None

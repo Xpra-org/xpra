@@ -26,7 +26,8 @@ class TrayClient(StubClientMixin):
     """
     PREFIX = "tray"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         # settings:
         self.icon = None
         # state:

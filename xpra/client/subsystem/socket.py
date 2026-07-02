@@ -48,7 +48,8 @@ class NetworkListener(StubClientMixin):
     """
     PREFIX = "listener"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.sockets: list[SocketListener] = []
         self._potential_protocols = []
         self._close_timers: dict[Any, int] = {}

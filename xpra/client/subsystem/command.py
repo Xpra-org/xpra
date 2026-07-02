@@ -24,7 +24,8 @@ class CommandClient(StubClientMixin):
     """
     PREFIX = "command"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.server_start_new_commands: bool = False
         self.server_menu = {}
         self.start_new_commands: bool = False

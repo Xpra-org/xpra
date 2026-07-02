@@ -94,6 +94,9 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     def __init__(self):
         self.defaults_init()
         PacketDispatcher.__init__(self)
+        # this object *is* the client for every subsystem still muxed into it
+        # (see `StubClientMixin.__init__`):
+        self.client = self
         # registry of subsystems, keyed by `PREFIX` (see `StubClientMixin.get_subsystem`):
         # composed subsystems are real instances; the ones still muxed into this
         # object are stored as `self`.
@@ -109,12 +112,8 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         prefix = getattr(cls, "PREFIX", "")
         if prefix and prefix in self.COMPOSED_SUBSYSTEMS:
             # real composition: a separate instance with a back-reference to the
-            # client (mirror of the server's `ServerCore.add_subsystem`).
-            # Wire the client *before* running `__init__` so the subsystem can use
-            # `self.client` during construction (as it could when muxed):
-            instance = cls.__new__(cls)
-            instance.client = self
-            cls.__init__(instance)
+            # client (mirror of the server's `ServerCore.add_subsystem`):
+            instance = cls(client=self)
             self.subsystems[prefix] = instance
         else:
             # still muxed: initialise the subsystem's state on the client itself:

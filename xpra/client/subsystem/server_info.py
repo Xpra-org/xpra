@@ -26,7 +26,8 @@ class ServerInfoClient(StubClientMixin):
     """
     PREFIX = "server-info"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.last_info: dict = {}
         self.request_pending: bool = False
 

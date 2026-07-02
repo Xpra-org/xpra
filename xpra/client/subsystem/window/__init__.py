@@ -5,6 +5,7 @@
 
 from typing import Any
 
+from xpra.client.base.stub import StubClientMixin
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue, ExitCode
 
@@ -49,7 +50,8 @@ class WindowClient(WindowClientClass):
 
     PREFIX = "window"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         for bc in WINDOW_CLIENT_BASES:
             bc.__init__(self)
 

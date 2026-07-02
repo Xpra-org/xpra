@@ -29,7 +29,8 @@ class LoggingClient(StubClientMixin):
     """
     PREFIX = "logging"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.remote_logging = "no"
         self.in_remote_logging = False
         self.local_logging = noop

@@ -18,7 +18,6 @@ from xpra.net import compression
 from xpra.util.env import envbool
 from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.objects import typedict
-from xpra.util.signal_emitter import SignalEmitter
 from xpra.log import Logger
 
 log = Logger("clipboard")
@@ -75,8 +74,8 @@ class ClipboardClient(StubClientMixin):
     """
     PREFIX = "clipboard"
 
-    def __init__(self):
-        SignalEmitter.__init__(self)
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.client_clipboard_type: str = ""
         self.client_clipboard_direction: str = "both"
         self.client_supports_clipboard: bool = False
