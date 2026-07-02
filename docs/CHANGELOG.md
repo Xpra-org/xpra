@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.1] 2026-06-30
+## [6.5.1] 2026-07-03
 * 🔧 Platforms, build and packaging:
   * [`pynvml 13.610.43`](https://github.com/Xpra-org/xpra/commit/14cbb2d6c50a6e9b0bed25e759ca472b8f5c167b)
   * [`pytools 2026.1.1`](https://github.com/Xpra-org/xpra/commit/49b917cddfc8928fc2c91721aeea6f406eb81013)
@@ -23,6 +23,7 @@
 * Major:
   * [`xpra info` fails to connect](https://github.com/Xpra-org/xpra/commit/c911a3f62adca2cdf40b13a9bd1e75768862a2e1) [+ better limit](https://github.com/Xpra-org/xpra/commit/a49145979bc4721f85db0181f2968f8089b4430c)
   * [ssh connection failures](https://github.com/Xpra-org/xpra/commit/e7dc2a119790aea2053a4293dac75f4e8c8f1498), [launcher also fails](https://github.com/Xpra-org/xpra/commit/095e1322d713978a8949b35ecfb32df92a41d1a9)
+  * [html5 client clipboard is disabled](https://github.com/Xpra-org/xpra/commit/3891198a56d19723477d90a5248172bc9c18e5bf)
   * [cairo backend fails to paint in 30 bit per pixel mode](https://github.com/Xpra-org/xpra/commit/7d3987f651ba469c044f901eb31a2af03d3fbcf1)
 * Minor:
   * [gsettings lookup always failed in desktop servers](https://github.com/Xpra-org/xpra/commit/5e2f4d7b228f3483273c105555553825b937644e)
@@ -58,6 +59,7 @@
   * [planar data debug logging errors](https://github.com/Xpra-org/xpra/commit/3e2962856beedbee755207400d4e77c886f429ab)
   * [remove duplicated keys, add missing one](https://github.com/Xpra-org/xpra/commit/0f94654b585dbb12f3fc6ac7c64a38a14848e6a1)
   * [incorrect metadata used for debug logging](https://github.com/Xpra-org/xpra/commit/88a29bddcaf9bcc5d68d7e8802778a1537781a27)
+  * [webcam handshake function](https://github.com/Xpra-org/xpra/commit/3dc29a697e0152f632ba54c5ec85fbc09f1fbd3b)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:

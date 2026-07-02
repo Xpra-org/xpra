@@ -1094,7 +1094,7 @@ fi
 
 
 %changelog
-* Tue Jun 30 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
+* Fri Jul 03 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
 - Platforms, build and packaging:
    `pynvml 13.610.43`
    `pytools 2026.1.1`
@@ -1117,6 +1117,7 @@ fi
 - Major:
    `xpra info` fails to connect + better limit
    ssh connection failures, launcher also fails
+   html5 client clipboard is disabled
    cairo backend fails to paint in 30 bit per pixel mode
 - Minor:
    gsettings lookup always failed in desktop servers
@@ -1152,6 +1153,7 @@ fi
    planar data debug logging errors
    remove duplicated keys, add missing one
    incorrect metadata used for debug logging
+   webcam handshake function
 * Wed May 06 2026 Antoine Martin <antoine@xpra.org> 6.5-10
 - Platforms, build and packaging:
    use `wasapi2` on MS Windows

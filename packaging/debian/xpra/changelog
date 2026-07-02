@@ -21,6 +21,7 @@ xpra (6.5.1-1) UNRELEASED; urgency=low
   * Major:
     `xpra info` fails to connect + better limit
     ssh connection failures, launcher also fails
+    html5 client clipboard is disabled
     cairo backend fails to paint in 30 bit per pixel mode
   * Minor:
     gsettings lookup always failed in desktop servers
@@ -56,8 +57,9 @@ xpra (6.5.1-1) UNRELEASED; urgency=low
     planar data debug logging errors
     remove duplicated keys, add missing one
     incorrect metadata used for debug logging
+    webcam handshake function
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 30 Jun 2026 23:12:44 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 03 Jul 2026 03:00:53 +0700
 
 xpra (6.5-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
