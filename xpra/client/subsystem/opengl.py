@@ -33,6 +33,7 @@ class OpenGLClient(StubClientMixin):
     rendering being turned on/off (ie: the gtk3 client re-creates its windows).
     """
     PREFIX = "opengl"
+    __signals__ = ["toggled"]
 
     def __init__(self, client=None):
         StubClientMixin.__init__(self, client)

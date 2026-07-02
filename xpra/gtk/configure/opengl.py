@@ -131,7 +131,7 @@ def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[G
     pixel_depth = 0  # int(opts.pixel_depth)
     wid = 10000
     noclient = FakeClient()
-    noclient._id_to_window[wid] = parent
+    noclient.get_subsystem("window")._id_to_window[wid] = parent
     ww, wh = WW, WH
     metadata = typedict({
         # prevent resizing:

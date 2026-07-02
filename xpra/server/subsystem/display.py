@@ -77,6 +77,7 @@ class DisplayManager(StubSubsystem):
     # `display-geometry-changed` is emitted on this subsystem (via
     # `SignalEmitter`) when the display geometry changes. Peer subsystems
     # subscribe with `self.get_subsystem("display").connect(...)`.
+    __signals__ = ["display-geometry-changed"]
 
     def __init__(self, server=None):
         StubSubsystem.__init__(self, server)

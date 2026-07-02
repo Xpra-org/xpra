@@ -73,6 +73,7 @@ class ClipboardClient(StubClientMixin):
     peers subscribe with `get_subsystem("clipboard").connect("clipboard-toggled", ...)`.
     """
     PREFIX = "clipboard"
+    __signals__ = ["clipboard-toggled"]
 
     def __init__(self, client=None):
         StubClientMixin.__init__(self, client)

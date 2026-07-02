@@ -49,6 +49,9 @@ WindowClientClass = type("WindowClientClass", WINDOW_CLIENT_BASES, {})
 class WindowClient(WindowClientClass):
 
     PREFIX = "window"
+    # owned by the leaf classes muxed into this composite (manager.py, bell.py),
+    # but declared here since that's what `self.__signals__` resolves to at runtime:
+    __signals__ = ["new-window", "bell-toggled"]
 
     def __init__(self, client=None):
         StubClientMixin.__init__(self, client)

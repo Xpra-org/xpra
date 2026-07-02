@@ -82,6 +82,14 @@ class StubClientConnection(SignalEmitter):
         """
         return False
 
+    def user_event(self, msg: str) -> None:
+        """
+        Notify the idle mixin, when it is present, that this connection has seen
+        user activity.
+        """
+        if "user-event" in getattr(self, "__signals__", ()):
+            self.emit("user-event", msg)
+
     def parse_client_caps(self, c: typedict) -> None:
         """
         Parse client attributes specified in the hello capabilities.

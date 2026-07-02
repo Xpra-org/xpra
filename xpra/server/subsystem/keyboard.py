@@ -308,7 +308,7 @@ class KeyboardManager(StubSubsystem):
                 log.error("Error: failed to %s key", ["unpress", "press"][pressed])
                 log.estr(e)
                 log.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
-        ss.emit("user-event", "key-action")
+        ss.user_event("key-action")
         # Keyboard-as-scroll: notify window sources that the user just triggered
         # a scroll-equivalent keypress.
         if KEYBOARD_SCROLL_ENABLED and pressed and wid and keyname in KEYBOARD_SCROLL_KEYNAMES:

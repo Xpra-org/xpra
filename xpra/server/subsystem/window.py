@@ -606,7 +606,7 @@ class WindowServer(StubSubsystem):
         self._focus(ss, wid, modifiers)
         # if the client focused one of our windows, count this as a user event:
         if wid > 0:
-            ss.emit("user-event", "focus")
+            ss.user_event("focus")
 
     def _focus(self, _server_source, wid: int, modifiers) -> None:
         focuslog("_focus(%#x, %s)", wid, modifiers)

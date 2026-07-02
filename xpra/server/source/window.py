@@ -54,6 +54,7 @@ class WindowsConnection(StubClientConnection):
     etc
     """
     PREFIX = "window"
+    __signals__ = ["new-window-source", "remove-window-source"]
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:

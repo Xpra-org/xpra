@@ -260,7 +260,7 @@ class PointerManager(StubSubsystem):
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return
-        ss.emit("user-event", "pointer-button")
+        ss.user_event("pointer-button")
         self.last_mouse_user = ss.uuid
         self.server.set_ui_driver(ss)
         device_id = packet.get_i64(1)
@@ -285,7 +285,7 @@ class PointerManager(StubSubsystem):
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return
-        ss.emit("user-event", "button-action")
+        ss.user_event("button-action")
         self.last_mouse_user = ss.uuid
         self.server.set_ui_driver(ss)
         wid = packet.get_wid(1)
@@ -373,7 +373,7 @@ class PointerManager(StubSubsystem):
                 ss.make_keymask_match(modifiers)
             window_sub = self.get_subsystem("window")
             if window_sub is not None and wid == window_sub.get_focus():
-                ss.emit("user-event", "focus-changed")
+                ss.user_event("focus-changed")
 
     def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool,
                                  pointer, props: dict) -> None:
@@ -531,7 +531,7 @@ class PointerManager(StubSubsystem):
         ss.mouse_last_position = pointer
         if self.server.ui_driver and self.server.ui_driver != ss.uuid:
             return
-        ss.emit("user-event", "pointer")
+        ss.user_event("pointer")
         self.last_mouse_user = ss.uuid
         if self.process_mouse_common(proto, device_id, wid, pdata, props):
             modifiers = props.get("modifiers")
@@ -555,7 +555,7 @@ class PointerManager(StubSubsystem):
         ss.mouse_last_position = pointer
         if self.server.ui_driver and self.server.ui_driver != ss.uuid:
             return
-        ss.emit("user-event", "pointer-position")
+        ss.user_event("pointer-position")
         self.last_mouse_user = ss.uuid
         props: dict[str, Any] = {}
         device_id = -1

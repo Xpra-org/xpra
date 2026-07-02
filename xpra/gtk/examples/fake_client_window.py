@@ -34,6 +34,7 @@ class TestClient(FakeClient):
     def __init__(self):
         super().__init__()
         self.title = "@title@"
+        self.get_subsystem("window").window_close_event = self.window_close_event
 
     def get_window_menu_helper(self):
         return None
@@ -61,7 +62,7 @@ class TestClient(FakeClient):
         return Gtk.Image()
 
     def window_close_event(self, wid: int, *_args) -> None:
-        if window := self._id_to_window.get(wid):
+        if window := self.get_subsystem("window")._id_to_window.get(wid):
             window.destroy()
 
 
@@ -207,8 +208,8 @@ def make_xpra_window(args):
         (32768, 32768), 24,
         headerbar=args.headerbar,
     )
-    client._id_to_window[wid] = window
-    client._window_to_id[window] = wid
+    window_subsystem = client.get_subsystem("window")
+    window_subsystem._id_to_window[wid] = window
 
     def close_window(_window, _event) -> bool:
         window.destroy()

@@ -252,6 +252,7 @@ class AudioSubprocessWrapper(SubprocessCaller):
         * handle "info" packets, so we have a cached copy
         * forward get/set volume calls (get_volume uses the value found in "info")
     """
+    __signals__ = SubprocessCaller.__signals__ + ("state-changed", "info", "signal", "error")
 
     def __init__(self, description: str):
         super().__init__(description)
@@ -330,6 +331,7 @@ class AudioSubprocessWrapper(SubprocessCaller):
 
 
 class SourceSubprocessWrapper(AudioSubprocessWrapper):
+    __signals__ = AudioSubprocessWrapper.__signals__ + ("new-buffer", "new-stream")
 
     def __init__(self, plugin, _options, codecs, volume, element_options):
         super().__init__("audio capture")
@@ -352,6 +354,7 @@ class SourceSubprocessWrapper(AudioSubprocessWrapper):
 
 
 class SinkSubprocessWrapper(AudioSubprocessWrapper):
+    __signals__ = AudioSubprocessWrapper.__signals__
 
     def __init__(self, plugin, codec, volume, element_options):
         super().__init__("audio playback")

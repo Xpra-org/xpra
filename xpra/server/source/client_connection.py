@@ -52,6 +52,8 @@ class ClientConnection(StubClientConnection):
     items are picked off by the separate 'encode' thread (see 'encode_loop')
     and added to the damage_packet_queue.
     """
+    # fired by the `suspend` server subsystem directly on this connection object:
+    __signals__ = ["suspend", "resume"]
 
     def __init__(self, protocol, disconnect_cb: Callable, setting_changed: Callable[[str, Any], None]):
         StubClientConnection.__init__(self)

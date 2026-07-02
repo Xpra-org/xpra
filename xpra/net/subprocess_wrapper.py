@@ -313,6 +313,7 @@ class SubprocessCaller(SignalEmitter):
      when those signals are forwarded back.
     (there is no validation of which signals are valid or not)
     """
+    __signals__ = (CONNECTION_LOST, GIBBERISH, "exit")
 
     def __init__(self, description="wrapper"):
         super().__init__()

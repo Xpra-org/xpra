@@ -124,7 +124,17 @@ def get_client_connection_class(caps: typedict):
     ClientConnectionClass = type('ClientConnectionClass', CC_BASES, {})
     log("ClientConnectionClass%s", CC_BASES)
 
+    # `CC_BASES` are mixed into one real object (not composed as separate
+    # instances), so `__signals__` needs an explicit union here: plain multiple
+    # inheritance would only pick up whichever base defines it first in the MRO.
+    muxer_signals: list[str] = []
+    for _cc_bc in CC_BASES:
+        for _cc_sig in _cc_bc.__signals__:
+            if _cc_sig not in muxer_signals:
+                muxer_signals.append(_cc_sig)
+
     class ClientConnectionMuxer(ClientConnectionClass):
+        __signals__ = muxer_signals
 
         def __init__(self, protocol, disconnect_cb: Callable, server, setting_changed: Callable):
             self.hello_sent = 0.0

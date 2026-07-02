@@ -154,6 +154,9 @@ INSTANCE_SUBSYSTEM_CLASSES = get_instance_subsystem_classes()
 SIGNALS: dict[str, int] = {
     "init-thread-ended": 0,
     "running": 0,
+    "client-exited": 0,
+    "last-client-exited": 0,
+    "new-ui-driver": 0,
 }
 
 

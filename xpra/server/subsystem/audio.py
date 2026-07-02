@@ -34,6 +34,7 @@ class AudioServer(StubSubsystem):
     # `audio-initialized` is emitted on this subsystem (via `SignalEmitter`)
     # once `query_audio()` completes. The audio source class subscribes
     # with `server.subsystems["audio"].connect(...)`.
+    __signals__ = ["audio-initialized"]
 
     def __init__(self, server=None):
         StubSubsystem.__init__(self, server)

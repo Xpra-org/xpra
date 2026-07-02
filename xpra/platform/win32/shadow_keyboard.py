@@ -68,7 +68,7 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
             self.keys_pressed[vk_code] = keyname
         else:
             self.keys_pressed.pop(vk_code, None)
-        ss.emit("user-event", "key-action")
+        ss.user_event("key-action")
 
     @staticmethod
     def _sync_native_modifiers(ss, attrs: typedict, ignore_vk: int) -> None:

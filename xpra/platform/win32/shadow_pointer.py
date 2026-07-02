@@ -54,7 +54,7 @@ class Win32ShadowPointerManager(ShadowPointerManager):
             self._update_modifiers(proto, wid, props.get("modifiers"))
         did = -1
         if self.process_mouse_common(proto, did, wid, pointer):
-            self.get_server_source(proto).emit("user-event", "button-action")
+            self.get_server_source(proto).user_event("button-action")
             self.button_action(did, wid, button, pressed, props)
 
     def button_action(self, device_id, wid: int, button: int, pressed: bool, props: dict) -> None:

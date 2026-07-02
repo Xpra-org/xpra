@@ -25,6 +25,9 @@ GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 
 
 class IdleConnection(StubClientConnection):
+    # also emitted by other server subsystems directly on this connection object
+    # (window, notification, pointer, keyboard):
+    __signals__ = ["user-event"]
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
