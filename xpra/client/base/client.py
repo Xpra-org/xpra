@@ -216,7 +216,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
 
     def init(self, opts) -> None:
         for bc in CLIENT_BASES:
-            bc.init(self, opts)
+            self._call_subsystem(bc, "init", opts)
         self.display = opts.display
         self.install_signal_handlers()
 
@@ -305,7 +305,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         info: dict[str, Any] = {"pid": os.getpid()}
         info.update(PacketDispatcher.get_info(self))
         for bc in CLIENT_BASES:
-            info.update(bc.get_info(self))
+            info.update(self._call_subsystem(bc, "get_info"))
         return info
 
     def make_protocol(self, conn):
@@ -347,7 +347,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
 
     def setup_connection(self, conn) -> None:
         for bc in CLIENT_BASES:
-            bc.setup_connection(self, conn)
+            self._call_subsystem(bc, "setup_connection", conn)
 
     def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
         if not self._protocol:
@@ -396,7 +396,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         capabilities = {}
         for bc in CLIENT_BASES:
             # FIXME: digests should be added to!
-            capabilities.update(bc.get_caps(self))
+            capabilities.update(self._call_subsystem(bc, "get_caps"))
         # difficult to move this attribute:
         if self.display:
             capabilities["display"] = self.display
@@ -487,7 +487,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         reaper_cleanup()
         for bc in CLIENT_BASES:
             with sublog.trap_error(f"Error cleaning {bc!r} handler"):
-                bc.cleanup(self)
+                self._call_subsystem(bc, "cleanup")
         self.cancel_verify_connected_timer()
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
@@ -636,7 +636,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     def parse_server_capabilities(self, c: typedict) -> bool:
         netlog("parse_server_capabilities(..)")
         for bc in CLIENT_BASES:
-            if not bc.parse_server_capabilities(self, c):
+            if not self._call_subsystem(bc, "parse_server_capabilities", c):
                 sublog.info(f"server capabilities rejected by {bc}")
                 return False
         self.server_client_shutdown = c.boolget("client-shutdown", True)
@@ -724,11 +724,11 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self._default_ui_packet_handlers[INVALID] = self._process_invalid
         self.add_legacy_alias("disconnect", "connection-close")
         for bc in CLIENT_BASES:
-            bc.init_packet_handlers(self)
+            self._call_subsystem(bc, "init_packet_handlers")
 
     def init_authenticated_packet_handlers(self) -> None:
         for bc in CLIENT_BASES:
-            bc.init_authenticated_packet_handlers(self)
+            self._call_subsystem(bc, "init_authenticated_packet_handlers")
 
     def call_packet_handler(self, main: bool, handler: PacketHandlerType, _proto, packet: Packet) -> None:
         """
