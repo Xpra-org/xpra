@@ -23,6 +23,12 @@ class TestPillowHeader(unittest.TestCase):
             e = get_image_type(data)
             assert encoding==e, "expected %s got %s" % (encoding, e)
 
+    def test_svg_with_leading_comment(self):
+        comment = b"<!-- Copyright 2000-2024 JetBrains s.r.o. and contributors. " \
+                  b"Use of this source code is governed by the Apache 2.0 license. -->\n"
+        data = comment + b'<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"></svg>'
+        self.assertEqual(get_image_type(data), "svg")
+
     def test_bad_header(self):
         for x in (b"", None,
                   b"abc",

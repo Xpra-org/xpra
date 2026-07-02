@@ -14,6 +14,7 @@ from xpra.common import SizedBuffer
 from xpra.util.str_fn import memoryview_to_bytes
 
 PNG_HEADER = struct.pack("BBBBBBBB", 137, 80, 78, 71, 13, 10, 26, 10)
+HEADER_SIZE = 256
 
 
 def is_png(data: bytes) -> bool:
@@ -39,6 +40,11 @@ def is_jpeg(data: bytes) -> bool:
 
 
 def is_svg(data: bytes) -> bool:
+    if data.startswith(b"<!--"):
+        try:
+            data = data.split(b"-->", 1)[1].strip(b"\n\r ")
+        except IndexError:
+            pass
     return data[:5] == b"<?xml" or data[:4] == b"<svg"
 
 
@@ -72,7 +78,7 @@ def get_image_type(data: SizedBuffer) -> str:
         return ""
     if len(data) < 32:
         return ""
-    header = memoryview_to_bytes(data[:32])
+    header = memoryview_to_bytes(data[:HEADER_SIZE])
     for fn, encoding in HEADERS.items():
         if fn(header):
             return encoding
