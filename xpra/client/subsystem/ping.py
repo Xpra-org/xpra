@@ -37,14 +37,14 @@ class PingClient(StubClientMixin):
 
     def __init__(self):
         self.pings: bool = False
-        self.server_ping_latency: deque[tuple[float, float]] = deque(maxlen=1000)
+        self.server_latency: deque[tuple[float, float]] = deque(maxlen=1000)
         self.server_load = (0, 0, 0)
-        self.client_ping_latency: deque[tuple[float, float]] = deque(maxlen=1000)
+        self.client_latency: deque[tuple[float, float]] = deque(maxlen=1000)
         self._server_ok: bool = True
-        self.last_ping_echoed_time = 0
-        self.ping_timer: int = 0
-        self.ping_echo_timers: dict[int, int] = {}
-        self.ping_echo_timeout_timer = 0
+        self.last_echoed_time = 0
+        self.timer: int = 0
+        self.echo_timers: dict[int, int] = {}
+        self.echo_timeout_timer = 0
 
     def init(self, opts) -> None:
         self.pings = opts.pings
@@ -90,56 +90,55 @@ class PingClient(StubClientMixin):
         return True
 
     def start_sending_pings(self, *args) -> None:
-        log("start_sending_pings%s pings=%s, ping_timer=%s", args, self.pings, self.ping_timer)
-        if self.pings > 0 and not self.ping_timer:
+        log("start_sending_pings%s pings=%s, ping_timer=%s", args, self.pings, self.timer)
+        if self.pings > 0 and not self.timer:
             self.send_ping()
-            self.ping_timer = self.timeout_add(1000 * self.pings, self.send_ping)
+            self.timer = self.timeout_add(1000 * self.pings, self.send_ping)
 
     def cancel_ping_timer(self) -> None:
-        if pt := self.ping_timer:
-            self.ping_timer = 0
+        if pt := self.timer:
+            self.timer = 0
             self.source_remove(pt)
 
     def cancel_ping_echo_timers(self) -> None:
-        pet: Iterable[int] = tuple(self.ping_echo_timers.values())
-        self.ping_echo_timers = {}
+        pet: Iterable[int] = tuple(self.echo_timers.values())
+        self.echo_timers = {}
         for t in pet:
             self.source_remove(t)
 
     def check_server_echo(self, ping_sent_time) -> bool:
-        self.ping_echo_timers.pop(ping_sent_time, None)
+        self.echo_timers.pop(ping_sent_time, None)
         if self.client._protocol is None:
             # no longer connected!
             return False
         last = self._server_ok
-        self._server_ok = self.last_ping_echoed_time >= ping_sent_time
+        self._server_ok = self.last_echoed_time >= ping_sent_time
         if FAKE_BROKEN_CONNECTION > 0:
             fakeit = (int(monotonic()) % FAKE_BROKEN_CONNECTION) <= FAKE_BROKEN_CONNECTION // 2
             self._server_ok = self._server_ok and fakeit
         if not self._server_ok:
-            if not self.ping_echo_timeout_timer:
-                self.ping_echo_timeout_timer = self.timeout_add(PING_TIMEOUT * 1000,
-                                                                self.check_echo_timeout, ping_sent_time)
+            if not self.echo_timeout_timer:
+                self.echo_timeout_timer = self.timeout_add(PING_TIMEOUT * 1000, self.check_echo_timeout, ping_sent_time)
         else:
             self.cancel_ping_echo_timeout_timer()
         log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)",
-            ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
+            ping_sent_time, last, self._server_ok, self.last_echoed_time)
         if last != self._server_ok:
             self.client.server_connection_state_change()
         return False
 
     def cancel_ping_echo_timeout_timer(self) -> None:
-        if pett := self.ping_echo_timeout_timer:
-            self.ping_echo_timeout_timer = 0
+        if pett := self.echo_timeout_timer:
+            self.echo_timeout_timer = 0
             self.source_remove(pett)
 
     def server_connection_state_change(self) -> None:
         log("server_connection_state_change() ok=%s", self._server_ok)
 
     def check_echo_timeout(self, ping_time) -> None:
-        self.ping_echo_timeout_timer = 0
-        expired = self.last_ping_echoed_time < ping_time
-        log(f"check_echo_timeout({ping_time}) last={self.last_ping_echoed_time}, {expired=}")
+        self.echo_timeout_timer = 0
+        expired = self.last_echoed_time < ping_time
+        log(f"check_echo_timeout({ping_time}) last={self.last_echoed_time}, {expired=}")
         if expired:
             # no point trying to use disconnect_and_quit() to tell the server here..
             self.client.warn_and_quit(ExitCode.CONNECTION_LOST,
@@ -150,12 +149,12 @@ class PingClient(StubClientMixin):
         protocol_type = getattr(p, "TYPE", "undefined")
         if protocol_type not in ("xpra", "websocket"):
             log(f"not sending ping for {protocol_type} connection")
-            self.ping_timer = 0
+            self.timer = 0
             return False
         now_ms = int(1000.0 * monotonic())
         self.send("ping", now_ms)
         wait = 1000 * MIN_PING_TIMEOUT
-        aspl = tuple(self.server_ping_latency)
+        aspl = tuple(self.server_latency)
         if aspl:
             spl: Sequence[float] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
@@ -164,7 +163,7 @@ class PingClient(StubClientMixin):
                 now_ms, round(1000 * avg), wait)
         t = self.timeout_add(wait, self.check_server_echo, now_ms)
         log(f"send_ping() time={now_ms}, timer={t}")
-        self.ping_echo_timers[now_ms] = t
+        self.echo_timers[now_ms] = t
         return True
 
     def _process_ping_echo(self, packet: Packet) -> None:
@@ -173,13 +172,13 @@ class PingClient(StubClientMixin):
         l2 = packet.get_u64(3)
         l3 = packet.get_u64(4)
         cl = packet.get_i64(5)
-        self.last_ping_echoed_time = echoedtime
+        self.last_echoed_time = echoedtime
         self.check_server_echo(0)
         server_ping_latency = monotonic() - echoedtime / 1000.0
-        self.server_ping_latency.append((monotonic(), server_ping_latency))
+        self.server_latency.append((monotonic(), server_ping_latency))
         self.server_load = l1, l2, l3
         if cl >= 0:
-            self.client_ping_latency.append((monotonic(), cl / 1000.0))
+            self.client_latency.append((monotonic(), cl / 1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
     def _process_ping(self, packet: Packet) -> None:
@@ -191,7 +190,7 @@ class PingClient(StubClientMixin):
         if PING_DETAILS:
             l1, l2, l3 = getloadavg()
         try:
-            sl = self.server_ping_latency[-1][1]
+            sl = self.server_latency[-1][1]
         except IndexError:
             sl = -1
         if SWALLOW_PINGS > 0:

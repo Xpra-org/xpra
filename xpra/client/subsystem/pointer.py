@@ -35,14 +35,14 @@ class PointerClient(StubClientMixin):
     PREFIX = "pointer"
 
     def __init__(self):
-        self._pointer_sequence = {}
-        self._mouse_position_delay = 5
-        self._mouse_position: Packet | None = None
-        self._mouse_position_pending: Packet | None = None
-        self._mouse_position_send_time = 0
-        self._mouse_position_delay = MOUSE_DELAY
-        self._mouse_position_timer = 0
-        self._button_transform: dict[tuple[str, int], int] = {}
+        self.sequence = {}
+        self.position_delay = 5
+        self.position: Packet | None = None
+        self.position_pending: Packet | None = None
+        self.position_send_time = 0
+        self.position_delay = MOUSE_DELAY
+        self.position_timer = 0
+        self.button_transform: dict[tuple[str, int], int] = {}
         self.server_pointer = True
         self.middle_click = True
 
@@ -52,7 +52,7 @@ class PointerClient(StubClientMixin):
         pointer = pointer_opt.split(":", 1)[0]
         modifier = "shift" if pointer_opt.find(":") < 0 else pointer_opt.split(":", 1)[1]
         if pointer in ("emulate3buttons", "middleemulation"):
-            self._button_transform[(modifier, 1)] = 2  # emulate middle button with shift+left
+            self.button_transform[(modifier, 1)] = 2  # emulate middle button with shift+left
         if MOUSE_DELAY_AUTO:
             try:
                 # some platforms don't detect the vrefresh correctly
@@ -60,8 +60,8 @@ class PointerClient(StubClientMixin):
                 # discount by 5ms to ensure we have time to hit the target
                 # weak dependency on the `display` subsystem:
                 v = max(60, self.get_subsystem("display").get_vrefresh())
-                self._mouse_position_delay = max(5, 1000 // v // 2 - 5)
-                log(f"mouse position delay: {self._mouse_position_delay}")
+                self.position_delay = max(5, 1000 // v // 2 - 5)
+                log(f"mouse position delay: {self.position_delay}")
             except (AttributeError, OSError):
                 log("failed to calculate automatic delay", exc_info=True)
 
@@ -69,7 +69,7 @@ class PointerClient(StubClientMixin):
         self.cancel_send_mouse_position_timer()
 
     def get_info(self) -> dict[str, dict[str, Any]]:
-        return {PointerClient.PREFIX: {"button-transform": self._button_transform}}
+        return {PointerClient.PREFIX: {"button-transform": self.button_transform}}
 
     def get_caps(self) -> dict[str, Any]:
         # the gtk client implements `get_mouse_position`
@@ -98,8 +98,8 @@ class PointerClient(StubClientMixin):
         # we can cancel the pending position packets
         packet = Packet(packet_type, *parts)
         self.client._ordinary_packets.append(packet)
-        self._mouse_position = None
-        self._mouse_position_pending = None
+        self.position = None
+        self.position_pending = None
         self.cancel_send_mouse_position_timer()
         self.client.have_more()
 
@@ -107,8 +107,8 @@ class PointerClient(StubClientMixin):
         if device_id < 0:
             # unspecified device, don't bother with sequence numbers
             return 0
-        seq = self._pointer_sequence.get(device_id, 0) + 1
-        self._pointer_sequence[device_id] = seq
+        seq = self.sequence.get(device_id, 0) + 1
+        self.sequence[device_id] = seq
         return seq
 
     def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
@@ -126,29 +126,29 @@ class PointerClient(StubClientMixin):
             packet = Packet("pointer-position", wid, pos, modifiers or (), buttons or ())
             if props:
                 packet += props.values()
-        if self._mouse_position_timer:
-            self._mouse_position_pending = packet
+        if self.position_timer:
+            self.position_pending = packet
             return
-        self._mouse_position_pending = packet
+        self.position_pending = packet
         now = monotonic()
-        elapsed = int(1000 * (now - self._mouse_position_send_time))
-        delay = self._mouse_position_delay - elapsed
+        elapsed = int(1000 * (now - self.position_send_time))
+        delay = self.position_delay - elapsed
         log("send_mouse_position(%s) elapsed=%i, delay left=%i", packet, elapsed, delay)
         if delay > 0:
-            self._mouse_position_timer = self.timeout_add(delay, self.do_send_mouse_position)
+            self.position_timer = self.timeout_add(delay, self.do_send_mouse_position)
         else:
             self.do_send_mouse_position()
 
     def do_send_mouse_position(self) -> None:
-        self._mouse_position_timer = 0
-        self._mouse_position_send_time = monotonic()
-        self._mouse_position = self._mouse_position_pending
-        log("do_send_mouse_position() position=%s", self._mouse_position)
+        self.position_timer = 0
+        self.position_send_time = monotonic()
+        self.position = self.position_pending
+        log("do_send_mouse_position() position=%s", self.position)
         self.client.have_more()
 
     def cancel_send_mouse_position_timer(self) -> None:
-        if mpt := self._mouse_position_timer:
-            self._mouse_position_timer = 0
+        if mpt := self.position_timer:
+            self.position_timer = 0
             self.source_remove(mpt)
 
     def parse_server_capabilities(self, c: typedict) -> bool:

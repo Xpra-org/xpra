@@ -601,7 +601,7 @@ class WindowManagerClient(StubClientMixin):
         # this will reset the refresh rate too:
         self.send_refresh_all()
         gl = self.get_subsystem("opengl")
-        if gl and gl.opengl_enabled and OPENGL_REINIT_WINDOWS:
+        if gl and gl.enabled and OPENGL_REINIT_WINDOWS:
             # with opengl, the buffers sometimes contain garbage after resuming,
             # this should create new backing buffers:
             self.reinit_windows()

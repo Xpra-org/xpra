@@ -97,9 +97,9 @@ class FakeApplication(FakeClient):
         }
 
         opengl = struct(
-            opengl_enabled=False,
-            client_supports_opengl=True,
-            opengl_props={},
+            enabled=False,
+            client_supports=True,
+            properties={},
         )
         command = struct(
             server_start_new_commands=True,
@@ -158,10 +158,10 @@ class FakeApplication(FakeClient):
         audio.stop_sending_audio = lambda: self.set_audio_enabled(audio, "microphone_enabled", False)
 
         webcam = struct(
-            server_webcam=True,
-            webcam_forwarding=True,
-            webcam_device=None,
-            webcam_device_no=-1,
+            server_enabled=True,
+            forwarding=True,
+            device=None,
+            device_no=-1,
         )
         webcam.start_sending_webcam = lambda device_no=0, device="": self.set_webcam_device(webcam, device_no, device)
         webcam.stop_sending_webcam = lambda: self.set_webcam_device(webcam, -1, None)
@@ -220,8 +220,8 @@ class FakeApplication(FakeClient):
 
     @staticmethod
     def set_webcam_device(webcam, device_no: int, device) -> None:
-        webcam.webcam_device_no = device_no
-        webcam.webcam_device = device
+        webcam.device_no = device_no
+        webcam.device = device
 
     def set_bell_enabled(self, enabled: bool) -> None:
         self.bell_enabled = enabled

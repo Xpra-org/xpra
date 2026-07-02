@@ -451,7 +451,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     def next_packet(self) -> tuple[Packet, bool, bool]:
         # naughty dependency on the `pointer` subsystem (absent on non-UI clients):
         pointer = self.get_subsystem("pointer")
-        mouse_position = pointer._mouse_position if pointer else None
+        mouse_position = pointer.position if pointer else None
         netlog("next_packet() packets in queues: priority=%i, ordinary=%i, mouse=%s",
                len(self._priority_packets), len(self._ordinary_packets), bool(mouse_position))
         synchronous = True
@@ -462,7 +462,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         elif mouse_position is not None:
             packet = mouse_position
             synchronous = False
-            pointer._mouse_position = mouse_position = None
+            pointer.position = mouse_position = None
         else:
             packet = ("none", )
         has_more = packet is not None and (

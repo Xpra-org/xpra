@@ -285,9 +285,9 @@ class PointerWindow(GtkStubWindow):
         return True
 
     def translate_button(self, button: int, modifiers: list[str]) -> int:
-        # `_button_transform` is owned by the `pointer` subsystem (which may be disabled):
+        # `button_transform` is owned by the `pointer` subsystem (which may be disabled):
         pointer = self.get_subsystem("pointer")
-        transform = pointer._button_transform if pointer else None
+        transform = pointer.button_transform if pointer else None
         if not transform:
             return button
         for modifier in modifiers:

@@ -13,29 +13,30 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 class WebcamTest(ClientMixinTest):
 
-	def test_webcam(self):
-		opts = AdHocStruct()
-		opts.webcam = "on"
-		self._test_mixin_class(WebcamForwarder, opts, {
-			"webcam" : True,
-			"webcam.encodings" : ("png", "jpeg"),
-			"virtual-video-devices" : 1,
-			})
-		x = self.mixin
-		if not x.webcam_device:
-			print("no webcam device found, test skipped")
-			return
-		self.glib.timeout_add(2500, x.stop_sending_webcam)
-		self.glib.timeout_add(5000, self.stop)
-		self.main_loop.run()
-		assert len(self.packets)>2
-		self.verify_packet(0, ("webcam-start", 0, ))
-		self.verify_packet(1, ("webcam-frame", 0, ))
-		self.verify_packet(-1, ("webcam-stop", 0, ))
+    def test_webcam(self):
+        opts = AdHocStruct()
+        opts.webcam = "on"
+        self._test_mixin_class(WebcamForwarder, opts, {
+            "webcam" : True,
+            "webcam.encodings" : ("png", "jpeg"),
+            "virtual-video-devices" : 1,
+        })
+        x = self.mixin
+        if not x.device:
+            print("no webcam device found, test skipped")
+            return
+        self.glib.timeout_add(2500, x.stop_sending_webcam)
+        self.glib.timeout_add(5000, self.stop)
+        self.main_loop.run()
+        assert len(self.packets)>2
+        self.verify_packet(0, ("webcam-start", 0, ))
+        self.verify_packet(1, ("webcam-frame", 0, ))
+        self.verify_packet(-1, ("webcam-stop", 0, ))
+
 
 def main():
-	unittest.main()
+    unittest.main()
 
 
 if __name__ == '__main__':
-	main()
+    main()

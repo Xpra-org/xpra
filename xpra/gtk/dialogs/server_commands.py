@@ -107,6 +107,14 @@ class ServerCommandsWindow:
     def get_client_subsystem(self, name: str):
         return self.client.get_subsystem(name)
 
+    def get_client_server_last_info(self) -> dict:
+        # `last_info` is owned by the `server-info` subsystem;
+        # the standalone test harness fakes it directly on the client instead:
+        si = self.get_client_subsystem("server-info")
+        if si:
+            return si.last_info
+        return getattr(self.client, "server_last_info", {}) or {}
+
     def get_server_commands_signals(self) -> tuple[str, ...]:
         command = self.get_client_subsystem("command")
         if not command:
@@ -125,7 +133,7 @@ class ServerCommandsWindow:
         return btn
 
     def populate_table(self) -> bool:
-        commands_info = typedict(self.client.server_last_info).dictget("commands")
+        commands_info = typedict(self.get_client_server_last_info()).dictget("commands")
         if self.commands_info != commands_info and commands_info:
             log("populate_table() new commands_info=%s", commands_info)
             self.commands_info = commands_info

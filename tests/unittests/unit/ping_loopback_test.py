@@ -45,8 +45,8 @@ class PingLoopbackTest(LoopbackTest):
         self.assertTrue(any(p[0] == "ping_echo" for p in self.s2c),
                         "server did not echo the ping: %s" % (self.s2c,))
         # and the client recorded the echo:
-        self.assertEqual(client.last_ping_echoed_time, ping_time)
-        self.assertEqual(len(client.server_ping_latency), 1)
+        self.assertEqual(client.last_echoed_time, ping_time)
+        self.assertEqual(len(client.server_latency), 1)
 
     def test_server_ping_echoed_by_client(self):
         _client, _server, source = self._connect()

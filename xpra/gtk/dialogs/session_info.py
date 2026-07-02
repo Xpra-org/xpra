@@ -194,8 +194,17 @@ def make_os_str(sys_platform, platform_release, platform_platform, platform_linu
     return "\n".join(remstr(s))
 
 
+def get_client_server_last_info(client) -> dict:
+    # `last_info` is owned by the `server-info` subsystem on a full UI client;
+    # standalone monitor clients (`InfoTimerClient`) fake it directly on themselves:
+    si = getattr(client, "get_subsystem", None) and client.get_subsystem("server-info")
+    if si:
+        return si.last_info
+    return getattr(client, "server_last_info", {}) or {}
+
+
 def get_server_platform_name(client) -> str:
-    server_info: dict = getattr(client, "server_last_info") or {}
+    server_info: dict = get_client_server_last_info(client)
     pinfo = server_info.get("server", {}).get("platform", {})
 
     def plat(key=""):
@@ -216,7 +225,7 @@ def get_local_platform_name() -> str:
 
 
 def get_server_builddate(client) -> str:
-    build_info = getattr(client, "server_last_info", {}).get("server", {}).get("build", {})
+    build_info = get_client_server_last_info(client).get("server", {}).get("build", {})
 
     def cattr(name):
         return build_info.get(name, "") or getattr(client, f"_remote_build_{name}", "")
@@ -243,7 +252,7 @@ def get_server_revision_str(client) -> str:
     def cattr(name):
         return getattr(client, name, "")
 
-    build_info = getattr(client, "server_last_info", {}).get("server", {}).get("build", {})
+    build_info = get_client_server_last_info(client).get("server", {}).get("build", {})
     if build_info:
         return caps_to_revision(typedict(build_info))
 
@@ -403,8 +412,15 @@ class SessionInfo(Gtk.Window):
     def get_client_subsystem(self, name: str):
         return self.client.get_subsystem(name)
 
+    def get_ping_latencies(self) -> tuple:
+        # the `ping` subsystem is not present on standalone monitor clients (`SessionInfoClient`):
+        ping = self.get_client_subsystem("ping")
+        if not ping:
+            return (), ()
+        return ping.server_latency, ping.client_latency
+
     def get_window_title(self) -> str:
-        t = [_("Session Info")]
+        t = [_("Session Information")]
         if c := self.client:
             if c.session_name or c.server_session_name:
                 t.append(c.session_name or c.server_session_name)
@@ -560,7 +576,7 @@ class SessionInfo(Gtk.Window):
         return not self.is_closed
 
     def last_info(self) -> dict:
-        return dict(getattr(self.client, "server_last_info", {}))
+        return dict(get_client_server_last_info(self.client))
 
     def populate(self, *_args) -> bool:
         conn = self.connection
@@ -613,8 +629,9 @@ class SessionInfo(Gtk.Window):
                     recs[i] = None
             return tuple(recs.get(x) for x in sorted(recs.keys()))
 
-        self.server_latency = get_ping_latency_records(self.client.server_ping_latency)
-        self.client_latency = get_ping_latency_records(self.client.client_ping_latency)
+        server_latency, client_latency = self.get_ping_latencies()
+        self.server_latency = get_ping_latency_records(server_latency)
+        self.client_latency = get_ping_latency_records(client_latency)
         if server_last_info := self.last_info():
             # populate running averages for graphs:
 
@@ -629,8 +646,9 @@ class SessionInfo(Gtk.Window):
 
             addavg(self.avg_batch_delay, "batch", "delay")
             addavg(self.avg_damage_out_latency, "damage", "out_latency")
-            spl = tuple(1000.0 * x[1] for x in tuple(self.client.server_ping_latency))
-            cpl = tuple(1000.0 * x[1] for x in tuple(self.client.client_ping_latency))
+            server_latency, client_latency = self.get_ping_latencies()
+            spl = tuple(1000.0 * x[1] for x in tuple(server_latency))
+            cpl = tuple(1000.0 * x[1] for x in tuple(client_latency))
             if spl and cpl:
                 self.avg_ping_latency.append(round(sum(spl + cpl) / len(spl + cpl)))
             if features.window and self.show_client:
@@ -682,7 +700,7 @@ class SessionInfo(Gtk.Window):
             if not self.show_client:
                 return ""
             opengl = self.get_client_subsystem("opengl")
-            props = opengl.opengl_props if opengl else {}
+            props = opengl.properties if opengl else {}
             return make_version_str(props.get(prop, default_value))
 
         def servergl(prop="opengl", default_value="n/a") -> str:
@@ -713,8 +731,8 @@ class SessionInfo(Gtk.Window):
 
     def show_opengl_state(self) -> None:
         opengl = self.get_client_subsystem("opengl")
-        props = opengl.opengl_props if opengl else {}
-        if opengl and opengl.opengl_enabled:
+        props = opengl.properties if opengl else {}
+        if opengl and opengl.enabled:
             glinfo = "%s / %s" % (
                 props.get("vendor", ""),
                 props.get("renderer", ""),
@@ -804,7 +822,7 @@ class SessionInfo(Gtk.Window):
                 display_info = "%ix%i" % (root_w, root_h)
             self.client_display.set_text(display_info)
             opengl = self.get_client_subsystem("opengl")
-            bool_icon(self.client_opengl_icon, bool(opengl and opengl.client_supports_opengl))
+            bool_icon(self.client_opengl_icon, bool(opengl and opengl.client_supports))
             self.show_window_renderers()
 
         if features.mmap:
@@ -1158,11 +1176,12 @@ class SessionInfo(Gtk.Window):
         self.last_populate_statistics = monotonic()
         self.client.send_info_request()
 
-        if self.client.server_ping_latency:
-            spl = tuple(int(1000 * x[1]) for x in tuple(self.client.server_ping_latency))
+        server_latency, client_latency = self.get_ping_latencies()
+        if server_latency:
+            spl = tuple(int(1000 * x[1]) for x in tuple(server_latency))
             setlabels(self.server_latency_labels, spl)
-        if self.client.client_ping_latency:
-            cpl = tuple(int(1000 * x[1]) for x in tuple(self.client.client_ping_latency))
+        if client_latency:
+            cpl = tuple(int(1000 * x[1]) for x in tuple(client_latency))
             setlabels(self.client_latency_labels, cpl)
         if features.window and self.client.windows_enabled:
             setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
@@ -1218,7 +1237,7 @@ class SessionInfo(Gtk.Window):
             self.transient_managed_label.set_text(str(transient))
             self.trays_managed_label.set_text(str(trays))
             opengl = self.get_client_subsystem("opengl")
-            if opengl and opengl.client_supports_opengl:
+            if opengl and opengl.client_supports:
                 self.opengl_label.set_text(str(gl))
 
             # update encoder and renderer labels:
@@ -1474,7 +1493,6 @@ class SessionInfoClient(InfoTimerClient):
         self.session_name = self.server_session_name = "session-info"
         self.windows_enabled = False
         self.send_ping = noop
-        self.server_ping_latency = self.client_ping_latency = []
         self.server_start_time = 0
         super().setup_connection(conn)
         audio = self.get_subsystem("audio")

@@ -28,22 +28,22 @@ class TrayClient(StubClientMixin):
 
     def __init__(self):
         # settings:
-        self.tray_icon = None
+        self.icon = None
         # state:
         self.tray = None
-        self.delay_tray = False
+        self.delay = False
 
     def init(self, opts) -> None:
         if not opts.tray:
             return
-        self.delay_tray = opts.delay_tray
-        self.tray_icon = opts.tray_icon
+        self.delay = opts.delay_tray
+        self.icon = opts.tray_icon
 
     def load(self):
         # the menu helper is a toolkit-specific client service (see `get_menu_helper`
         # on the concrete client); the tray is one of its consumers:
         self.client.get_menu_helper()
-        if self.delay_tray:
+        if self.delay:
             self.client.connect("first-ui-received", self.setup_xpra_tray)
         else:
             if WIN32 or OSX:
@@ -56,7 +56,7 @@ class TrayClient(StubClientMixin):
 
     def setup_xpra_tray(self, *args) -> None:
         log("setup_xpra_tray%s", args)
-        tray = self.create_xpra_tray(self.tray_icon or "xpra")
+        tray = self.create_xpra_tray(self.icon or "xpra")
         self.tray = tray
         if not tray:
             return

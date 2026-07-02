@@ -51,7 +51,7 @@ class WindowMenuHelper(GTKMenuHelper):
     def make_infomenuitem(self) -> Gtk.ImageMenuItem:
         def show_info(*_args) -> None:
             from xpra.client.gtk3.window.window_info import WindowInfo
-            wi = WindowInfo(self.client, self.window)
+            wi = WindowInfo(self.window)
             wi.show()
 
         gl = self.menuitem("Window Information", "information.png", "Window state and details", show_info)

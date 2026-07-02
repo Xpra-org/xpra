@@ -490,7 +490,7 @@ class GTKMenuHelper(MenuHelper):
             # (which contain the menu widget and are of no interest to the 'show_session_info' function)
             self.show_session_info()
 
-        sessioninfomenuitem = self.handshake_menuitem(_("Session Info"), "statistics.png", cb=show_session_info_cb)
+        sessioninfomenuitem = self.handshake_menuitem(_("Session"), "statistics.png", cb=show_session_info_cb)
         return sessioninfomenuitem
 
     def make_bugreportmenuitem(self) -> ImageMenuItem:

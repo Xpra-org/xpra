@@ -158,7 +158,7 @@ class DisplayClient(StubClientMixin):
             # opengl caps are still reported here (in the display capabilities),
             # but the state is owned by the `opengl` subsystem:
             gl = self.get_subsystem("opengl")
-            op = gl.opengl_props if gl else {}
+            op = gl.properties if gl else {}
             if FULL_INFO < 2:
                 op = skipkeys(op, "extensions", "GLU.extensions")
             caps["opengl"] = op

@@ -22,7 +22,7 @@ class ActionWindow(StubWindow):
 
     def show_window_info(self, *_args) -> None:
         from xpra.client.gtk3.window.window_info import WindowInfo
-        wi = WindowInfo(self._client, self)
+        wi = WindowInfo(self)
         wi.show()
 
     def show_session_info(self, *args) -> None:

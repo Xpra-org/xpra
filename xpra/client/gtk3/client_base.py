@@ -610,15 +610,15 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             gl = self.get_subsystem("opengl")
             includes = {
                 "keyboard": bool(keyboard and keyboard.helper),
-                "opengl": bool(gl and gl.opengl_enabled),
+                "opengl": bool(gl and gl.enabled),
             }
 
             def get_server_info() -> typedict:
                 # the subsystem may not be loaded:
-                return getattr(server_info, "server_last_info", typedict())
+                return getattr(server_info, "last_info", typedict())
 
             dialog.init(show_about=False, get_server_info=get_server_info,
-                        opengl_info=gl.opengl_props if gl else {},
+                        opengl_info=gl.properties if gl else {},
                         includes=includes)
             dialog.show()
 
@@ -922,7 +922,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         gl = self.get_subsystem("opengl")
         gl_window_class = gl.GLClientWindowClass if gl else None
         log(" ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, encoding=%s",
-            self.ClientWindowClass, gl_window_class, bool(gl and gl.opengl_enabled),
+            self.ClientWindowClass, gl_window_class, bool(gl and gl.enabled),
             enc.encoding if enc else None)
         window_classes: list[type] = []
         if gl_window_class:
@@ -941,12 +941,12 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         display = self.get_subsystem("display")
         gl_window_class = gl.GLClientWindowClass if gl else None
         opengllog("can_use_opengl GLClientWindowClass=%s, opengl_enabled=%s, opengl_force=%s",
-                  gl_window_class, gl and gl.opengl_enabled, gl and gl.opengl_force)
-        if gl_window_class is None or not gl.opengl_enabled:
+                  gl_window_class, gl and gl.enabled, gl and gl.force)
+        if gl_window_class is None or not gl.enabled:
             return False
-        if not gl.opengl_force:
+        if not gl.force:
             # verify texture limits:
-            ms = min(display.sx(gl.gl_texture_size_limit), *gl.gl_max_viewport_dims)
+            ms = min(display.sx(gl.texture_size_limit), *gl.max_viewport_dims)
             if w > ms or h > ms:
                 return False
             # avoid opengl for small windows:

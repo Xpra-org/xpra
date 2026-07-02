@@ -198,7 +198,9 @@ class NotificationClient(StubClientMixin):
         log("notification actions=%s, hints=%s", actions, hints)
         assert self.notifier
         # this one of the few places where we actually do care about character encoding:
-        tray = self.get_tray_window(app_name, hints)
+        # `get_tray_window` is owned by the `window` subsystem (which may be disabled):
+        window = self.get_subsystem("window")
+        tray = window.get_tray_window(app_name, hints) if window else None
         log("get_tray_window(%s)=%s", app_name, tray)
         self.notifier.show_notify(dbus_id, tray, nid,
                                   app_name, replaces_nid, app_icon,
@@ -211,10 +213,6 @@ class NotificationClient(StubClientMixin):
         nid = packet.get_u64(1)
         log("_process_notification_close(%s)", nid)
         self.notifier.close_notify(nid)
-
-    def get_tray_window(self, _app_name, _hints):
-        # overridden in subclass to use the correct window if we can find it
-        return self.tray
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(f"{NotificationClient.PREFIX}-show", f"{NotificationClient.PREFIX}-close", main_thread=True)

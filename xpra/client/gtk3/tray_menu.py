@@ -235,7 +235,7 @@ class GTKTrayMenu(GTKMenuHelper):
             menu.append(self.make_notificationsmenuitem())
         if features.window:
             menu.append(self.make_cursorsmenuitem())
-        if (glsub := self.get_subsystem("opengl")) and glsub.client_supports_opengl:
+        if (glsub := self.get_subsystem("opengl")) and glsub.client_supports:
             menu.append(self.make_openglmenuitem())
         if features.window:
             menu.append(self.make_modalwindowmenuitem())
@@ -585,8 +585,8 @@ class GTKTrayMenu(GTKMenuHelper):
 
         def gl_set(*args) -> None:
             glsub = self.get_subsystem("opengl")
-            enabled = bool(glsub and glsub.opengl_enabled)
-            supports = bool(glsub and glsub.client_supports_opengl)
+            enabled = bool(glsub and glsub.enabled)
+            supports = bool(glsub and glsub.client_supports)
             log("gl_set(%s) opengl_enabled=%s, ", args, enabled)
             gl.set_active(enabled)
             set_sensitive(gl, supports)
@@ -1128,7 +1128,7 @@ class GTKTrayMenu(GTKMenuHelper):
             return None
         webcam = self.menuitem(_("Webcam"), "webcam.png")
         wc = self.get_subsystem("webcam")
-        if not wc.webcam_forwarding:
+        if not wc.forwarding:
             webcam.set_tooltip_text(_("Webcam forwarding is disabled"))
             set_sensitive(webcam, False)
             return webcam
@@ -1170,9 +1170,9 @@ class GTKTrayMenu(GTKMenuHelper):
             wc.stop_sending_webcam()
 
         def get_active_device_no() -> int:
-            if wc.webcam_device is None:
+            if wc.device is None:
                 return -1
-            return wc.webcam_device_no
+            return wc.device_no
 
         def populate_webcam_menu() -> None:
             menu.ignore_events = True
@@ -1220,12 +1220,12 @@ class GTKTrayMenu(GTKMenuHelper):
         webcam.set_submenu(menu)
 
         def webcam_changed(*args) -> None:
-            webcamlog("webcam_changed%s webcam_device=%s", args, wc.webcam_device)
-            if not wc.webcam_forwarding:
+            webcamlog("webcam_changed%s webcam_device=%s", args, wc.device)
+            if not wc.forwarding:
                 set_sensitive(webcam, False)
                 webcam.set_tooltip_text(_("Webcam forwarding is disabled"))
                 return
-            if not wc.server_webcam:
+            if not wc.server_enabled:
                 set_sensitive(webcam, False)
                 webcam.set_tooltip_text(_("Server does not support webcam forwarding"))
                 return

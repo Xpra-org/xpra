@@ -86,7 +86,7 @@ class PlatformClient(StubClientMixin):
         # opengl windows may need to be re-created since the GPU may have changed:
         opengl = self.get_subsystem("opengl")
         window = self.get_subsystem("window")
-        if opengl and window and opengl.opengl_enabled:
+        if opengl and window and opengl.enabled:
             window.reinit_windows()
 
     def cg_check_display(self) -> bool:

@@ -301,7 +301,7 @@ class Encodings(StubClientMixin):
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
         if has_codec("dec_webp"):
             gl = self.get_subsystem("opengl")
-            opengl_enabled = bool(gl and gl.opengl_enabled)
+            opengl_enabled = bool(gl and gl.enabled)
             full_csc_modes["webp"] = ["BGRX", "BGRA", "RGBX", "RGBA"] if opengl_enabled else ["BGRX", "BGRA"]
         if has_codec("dec_jpeg") or has_codec("dec_pillow"):
             full_csc_modes["jpeg"] = ["BGRX", "BGRA", "YUV420P"]

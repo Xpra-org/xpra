@@ -748,7 +748,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         delay = ICONIFY_LATENCY
         if delay > 0:
             ping = self.get_subsystem("ping")
-            spl = tuple(ping.server_ping_latency) if ping else ()
+            spl = tuple(ping.server_latency) if ping else ()
             if spl:
                 worst = max(x[1] for x in spl)
                 delay += int(1000 * worst)

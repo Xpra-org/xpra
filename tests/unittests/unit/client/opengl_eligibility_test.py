@@ -22,7 +22,7 @@ except Exception:
 def _can_use_opengl(w, h, metadata, override_redirect=False, xscale=1, yscale=1):
     """Call can_use_opengl() with a mock self to avoid GTK initialization.
 
-    Uses opengl_force=True to skip texture/size/window-type checks
+    Uses force=True to skip texture/size/window-type checks
     and isolate the Win32 alpha+opaque-region logic.
 
     opengl state (enabled/force/window-class) lives on the `opengl` subsystem and
@@ -30,8 +30,8 @@ def _can_use_opengl(w, h, metadata, override_redirect=False, xscale=1, yscale=1)
     """
     gl = MagicMock()
     gl.GLClientWindowClass = MagicMock()
-    gl.opengl_enabled = True
-    gl.opengl_force = True
+    gl.enabled = True
+    gl.force = True
     display = MagicMock()
     display.sx = lambda v: round(v * xscale)
     display.sy = lambda v: round(v * yscale)

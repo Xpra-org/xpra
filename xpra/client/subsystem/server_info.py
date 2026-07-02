@@ -27,28 +27,28 @@ class ServerInfoClient(StubClientMixin):
     PREFIX = "server-info"
 
     def __init__(self):
-        self.server_last_info: dict = {}
-        self.info_request_pending: bool = False
+        self.last_info: dict = {}
+        self.request_pending: bool = False
 
         def request_initial_info(*_args) -> None:
             self.send_info_request()
         self.client.connect("startup-complete", request_initial_info)
 
     def _process_info_response(self, packet: Packet) -> None:
-        self.info_request_pending = False
-        self.server_last_info = typedict(packet.get_dict(1))
-        log("info-response: %s", Ellipsizer(self.server_last_info))
+        self.request_pending = False
+        self.last_info = typedict(packet.get_dict(1))
+        log("info-response: %s", Ellipsizer(self.last_info))
         if LOG_INFO_RESPONSE:
             items = LOG_INFO_RESPONSE.split(",")
             logres = [re.compile(v) for v in items]
             log.info("info-response debug for %s:", csv("'%s'" % x for x in items))
-            for k in sorted(self.server_last_info.keys()):
+            for k in sorted(self.last_info.keys()):
                 if LOG_INFO_RESPONSE == "all" or any(lr.match(k) for lr in logres):
-                    log.info(" %s=%s", k, self.server_last_info[k])
+                    log.info(" %s=%s", k, self.last_info[k])
 
     def send_info_request(self, *categories: str) -> None:
-        if not self.info_request_pending:
-            self.info_request_pending = True
+        if not self.request_pending:
+            self.request_pending = True
             window_ids = ()  # no longer used or supported by servers
             self.send(INFO_REQUEST, [self.client.uuid], window_ids, categories)
 

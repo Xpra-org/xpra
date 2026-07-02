@@ -125,9 +125,9 @@ class LoopbackTest(unittest.TestCase):
             while cli.mixin._ordinary_packets:
                 p = cli.mixin._ordinary_packets.pop(0)
                 to_server(p[0], *p[1:])
-            mp = getattr(cli.mixin, "_mouse_position", None)
+            mp = getattr(cli.mixin, "position", None)
             if mp is not None:
-                cli.mixin._mouse_position = None
+                cli.mixin.position = None
                 to_server(mp[0], *mp[1:])
 
         cli.mixin.have_more = have_more

@@ -80,10 +80,9 @@ def get_window_attributes(w) -> str:
 
 class WindowInfo(Gtk.Window):
 
-    def __init__(self, client, window):
+    def __init__(self, window):
         super().__init__()
         add_close_accel(self, self.close)
-        self._client = client
         self._window = window
         self.is_closed = False
         self.set_title("Window Information for %s" % window.get_title())
@@ -308,9 +307,6 @@ class WindowInfo(Gtk.Window):
             self.backing_properties.set_text("")
 
     def bool_icon(self, image, on_off: bool) -> None:
-        c = self._client
-        if not c:
-            return
         if on_off:
             icon = get_icon_pixbuf("ticked-small.png")
         else:
