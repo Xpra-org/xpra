@@ -139,7 +139,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             window.connect("new-window", self._new_window)
         if gl := self.get_subsystem("opengl"):
             gl.connect("toggled", self._opengl_toggled)
-        self.data_send_requests = {}
         # opengl state is owned by the `opengl` subsystem; cursor tracking state
         # (`_cursors`, `last_data`) by the `cursor` subsystem; the methods
         # below reach them via `get_subsystem(...)`.
@@ -416,24 +415,25 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                             printit: bool, openit: bool, mimetype: str = "",
                             options: typedict | None = None) -> None:
         from xpra.gtk.dialogs.open_requests import get_open_requests_window
-        timeout = self.remote_file_ask_timeout
+        file_sub = self.get_subsystem("file")
+        timeout = file_sub.remote_file_ask_timeout
 
         def rec_answer(accept, newopenit: bool=openit) -> None:
             from xpra.net.file_transfer import ACCEPT
             if int(accept) == ACCEPT:
                 # record our response, so we will actually accept the file when the packets arrive:
-                self.record_data_request_acceptance(send_id, dtype, url, mimetype, filesize,
-                                                    printit, newopenit, options)
+                file_sub.record_data_request_acceptance(send_id, dtype, url, mimetype, filesize,
+                                                        printit, newopenit, options)
             cb_answer(accept)
 
-        dialog = get_open_requests_window(self.show_file_upload, self.cancel_download)
+        dialog = get_open_requests_window(self.show_file_upload, file_sub.cancel_download)
         dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
         dialog.show()
         self.sub_dialogs["ask-data"] = dialog
 
     def show_ask_data_dialog(self, *_args) -> None:
         from xpra.gtk.dialogs.open_requests import get_open_requests_window
-        dialog = get_open_requests_window(self.show_file_upload, self.cancel_download)
+        dialog = get_open_requests_window(self.show_file_upload, self.get_subsystem("file").cancel_download)
         dialog.show()
         self.sub_dialogs["ask-data"] = dialog
 
@@ -467,7 +467,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def download_server_log(self, callback: Callable[[str, int], None] = noop) -> None:
         filename = "${XPRA_SERVER_LOG}"
-        self.send_request_file(filename, self.open_files, "*.log", callback=callback)
+        file_sub = self.get_subsystem("file")
+        file_sub.send_request_file(filename, file_sub.open_files, "*.log", callback=callback)
 
     def send_download_request(self, *_args) -> None:
         command = ["xpra", "send-file"]
@@ -477,13 +478,14 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         if dialog := self.sub_dialogs.get("file-upload"):
             dialog.present()
             return
-        filelog(f"show_file_upload{args} can open={self.remote_open_files}")
+        remote_open_files = self.get_subsystem("file").remote_open_files
+        filelog(f"show_file_upload{args} can open={remote_open_files}")
         buttons = [Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL]
-        if self.remote_open_files:
+        if remote_open_files:
             buttons += [Gtk.STOCK_OPEN, Gtk.ResponseType.ACCEPT]
         buttons += [Gtk.STOCK_OK, Gtk.ResponseType.OK]
         title = "File to upload"
-        if FILE_CHOOSER_NATIVE > 1 or (FILE_CHOOSER_NATIVE and not self.remote_open_files):
+        if FILE_CHOOSER_NATIVE > 1 or (FILE_CHOOSER_NATIVE and not remote_open_files):
             dialog = Gtk.FileChooserNative(title=title, action=Gtk.FileChooserAction.OPEN)
             dialog.set_accept_label("Upload")
         else:
@@ -510,7 +512,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         except OSError:
             pass
         else:
-            if not self.check_file_size("upload", filename, filesize):
+            if not self.get_subsystem("file").check_file_size("upload", filename, filesize):
                 close_file_upload_dialog()
                 return
         gfile = dialog.get_file()
@@ -530,7 +532,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             log.warn(f"Warning: failed to load file {filename!r}")
             return
         filelog(f"load_contents: filename={filename}, {filesize} bytes, entity={entity}, openit={openit}")
-        self.send_file(filename, "", data, filesize=filesize, openit=openit)
+        self.get_subsystem("file").send_file(filename, "", data, filesize=filesize, openit=openit)
 
     def configure_server_debug(self, *_args) -> None:
         dialog = self.sub_dialogs.get("server-debug")
@@ -992,7 +994,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def _new_window(self, _emitter, window) -> None:
         # in desktop / monitor / shadow mode, place each new window fullscreen on its own monitor:
-        screen_mode = any(self._remote_server_mode.find(x) >= 0 for x in ("desktop", "monitor", "shadow"))
+        remote_server_mode = self.get_subsystem("serverinfo")._remote_server_mode
+        screen_mode = any(remote_server_mode.find(x) >= 0 for x in ("desktop", "monitor", "shadow"))
         display = self.get_subsystem("display")
         if display and display.desktop_fullscreen and screen_mode:
             screen = Gdk.Screen.get_default()

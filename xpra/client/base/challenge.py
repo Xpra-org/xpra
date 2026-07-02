@@ -13,7 +13,7 @@ from xpra.platform.info import get_username
 from xpra.scripts.config import InitExit
 from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
 from xpra.net.common import Packet, pretty_socket
-from xpra.common import noop, may_show_progress
+from xpra.common import may_show_progress
 from xpra.net.constants import ConnectionMessage
 from xpra.util.io import use_gui_prompt
 from xpra.util.env import envbool
@@ -38,25 +38,29 @@ class ChallengeClient(StubClientMixin):
     """
     Adds ability to handle challenge packets
     """
+    PREFIX = "challenge"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.username = ""
         self.password = None
         self.password_file: list[str] = []
         self.password_index = 0
         self.password_sent = False
-        self.has_password = False
         self.challenge_handlers_option = ()
         self.challenge_handlers = []
 
     def init(self, opts) -> None:
-        # `app.username` is overwritten post-connect from `display_desc["username"]`
-        # (which folds in the URL / opts / XPRA_USERNAME env merge done by parse_display_name)
+        # `app.get_subsystem("challenge").username` is overwritten post-connect from
+        # `display_desc["username"]` (which folds in the URL / opts / XPRA_USERNAME env
+        # merge done by parse_display_name)
         self.username = opts.username or ""
         self.password = opts.password
         self.password_file = opts.password_file
         self.challenge_handlers_option = opts.challenge_handlers
-        self.has_password = bool(self.password or self.password_file or os.environ.get("XPRA_PASSWORD"))
+        # `has_password` is core client state (read by `XpraClientBase.send_hello`
+        # before any subsystem-specific object exists in some code paths):
+        self.client.has_password = bool(self.password or self.password_file or os.environ.get("XPRA_PASSWORD"))
 
     def get_info(self) -> dict[str, tuple]:
         return {}
@@ -79,10 +83,10 @@ class ChallengeClient(StubClientMixin):
         return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        if not self.password_sent and self.has_password:
-            p = self._protocol
+        if not self.password_sent and self.client.has_password:
+            p = self.client._protocol
             if not p or p.TYPE == "xpra":
-                self.warn_and_quit(ExitCode.NO_AUTHENTICATION, "the server did not request our password")
+                self.client.warn_and_quit(ExitCode.NO_AUTHENTICATION, "the server did not request our password")
                 return False
         return True
 
@@ -115,8 +119,8 @@ class ChallengeClient(StubClientMixin):
         kwargs: dict[str, Any] = {}
         if len(parts) == 2:
             kwargs = parse_simple_dict(parts[1])
-        kwargs["protocol"] = self._protocol
-        kwargs["display-desc"] = self.display_desc
+        kwargs["protocol"] = self.client._protocol
+        kwargs["display-desc"] = self.client.display_desc
         if "password" not in kwargs and self.password:
             kwargs["password"] = self.password
         if self.password_file:
@@ -144,9 +148,7 @@ class ChallengeClient(StubClientMixin):
         log(f"processing challenge: {packet[1:]}")
         if not self.validate_challenge_packet(packet):
             return
-        # soft dependency on base client:
-        cancel_vct = getattr(self, "cancel_verify_connected_timer", noop)
-        cancel_vct()
+        self.client.cancel_verify_connected_timer()
         start_thread(self.do_process_challenge, "call-challenge-handlers", True, (packet,))
 
     def do_process_challenge(self, packet: Packet) -> None:
@@ -173,7 +175,7 @@ class ChallengeClient(StubClientMixin):
                 # (ie: pinentry was cancelled by the user)
                 log(f"{handler.handle}({packet}) raised {e!r}")
                 log.info(f"exiting: {e}")
-                self.disconnect_and_quit(e.status, str(e))
+                self.client.disconnect_and_quit(e.status, str(e))
                 return
             except Exception as e:
                 log(f"{handler.handle}({packet})", exc_info=True)
@@ -181,7 +183,7 @@ class ChallengeClient(StubClientMixin):
                 log.estr(e)
                 continue
         log.warn("Warning: failed to connect, authentication required")
-        self.disconnect_and_quit(ExitCode.PASSWORD_REQUIRED, "authentication required")
+        self.client.disconnect_and_quit(ExitCode.PASSWORD_REQUIRED, "authentication required")
 
     def pop_challenge_handler(self, digest: str = ""):
         # find the challenge handler most suitable for this digest type,
@@ -229,10 +231,10 @@ class ChallengeClient(StubClientMixin):
                    server_message: str | ConnectionMessage = ConnectionMessage.AUTHENTICATION_FAILED) -> None:
         log.error("Error: authentication failed:")
         log.error(f" {message}")
-        self.disconnect_and_quit(code, server_message)
+        self.client.disconnect_and_quit(code, server_message)
 
     def validate_challenge_packet(self, packet) -> bool:
-        p = self._protocol
+        p = self.client._protocol
         if not p:
             return False
         digest = packet.get_str(3).split(":", 1)[0]
@@ -240,9 +242,10 @@ class ChallengeClient(StubClientMixin):
         if digest in ("xor", "des"):
             # verify that the connection is already encrypted,
             # or that it will be configured for encryption in `send_challenge_reply`:
-            get_encryption = getattr(self, "get_encryption", noop)
-            encrypted = p.is_sending_encrypted() or bool(get_encryption())
-            local = self.display_desc.get("local", False)
+            # (`aes` is a soft dependency: absent when encryption is disabled entirely)
+            aes = self.get_subsystem("aes")
+            encrypted = p.is_sending_encrypted() or bool(aes and aes.get_encryption())
+            local = self.client.display_desc.get("local", False)
             log(f"{digest} challenge, encrypted={encrypted}, local={local}")
             if local and ALLOW_LOCALHOST_PASSWORDS:
                 return True
@@ -262,7 +265,7 @@ class ChallengeClient(StubClientMixin):
     def get_challenge_prompt(self, prompt="password") -> str:
         text = f"Please enter the {prompt}"
         try:
-            conn = self._protocol._conn
+            conn = self.client._protocol._conn
             text += f",\n connecting to {conn.socktype} server {pretty_socket(conn.remote)}"
         except (AttributeError, TypeError):
             pass
@@ -273,13 +276,13 @@ class ChallengeClient(StubClientMixin):
             self.auth_error(ExitCode.PASSWORD_REQUIRED,
                             "this server requires authentication and no password is available")
             return
-        # soft dependency on aes client:
-        getenc = getattr(self, "get_encryption", noop)
-        if getenc():
+        # `aes` is a soft dependency: absent when encryption is disabled entirely
+        aes = self.get_subsystem("aes")
+        if aes and aes.get_encryption():
             assert len(packet) >= 3, "challenge does not contain encryption details to use for the response"
             server_cipher = typedict(packet.get_dict(2))
-            key = self.get_encryption_key()
-            if not self.set_server_encryption(server_cipher, key):
+            key = aes.get_encryption_key()
+            if not aes.set_server_encryption(server_cipher, key):
                 return
         # some authentication handlers give us the response and salt,
         # ready to use without needing to use the digest
@@ -324,10 +327,10 @@ class ChallengeClient(StubClientMixin):
 
     def do_send_challenge_reply(self, challenge_response: bytes, client_salt: bytes) -> None:
         self.password_sent = True
-        if self._protocol.TYPE == "rfb":
-            self._protocol.send_challenge_reply(challenge_response)
+        if self.client._protocol.TYPE == "rfb":
+            self.client._protocol.send_challenge_reply(challenge_response)
             return
-        self.send_hello(challenge_response, client_salt)
+        self.client.send_hello(challenge_response, client_salt)
 
     def init_packet_handlers(self) -> None:
         self.add_packets("challenge")

@@ -59,11 +59,11 @@ def get_remote_lib_versions(c: typedict, libs=DEFAULT_LIBS) -> dict[str, tuple]:
 
 
 class ServerInfoMixin(StubClientMixin):
+    PREFIX = "serverinfo"
 
-    def __init__(self):  # pylint: disable=super-init-not-called
-        super().__init__()
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.server_start_time: float = -1
-        self.server_session_name: str = ""
         self.server_packet_encoders: Sequence[str] = ()
         self._remote_machine_id = ""
         self._remote_uuid = ""
@@ -90,7 +90,7 @@ class ServerInfoMixin(StubClientMixin):
         return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        p = self._protocol
+        p = self.client._protocol
         if p.TYPE == "rfb":
             # only the xpra protocol provides the server info
             return True
@@ -131,7 +131,7 @@ class ServerInfoMixin(StubClientMixin):
         verr = version_compat_check(self._remote_version)
         if verr is not None:
             vstr = ".".join(str(x) for x in (self._remote_version or ()))
-            self.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION, f"incompatible remote version {vstr!r}: {verr}")
+            self.client.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION, f"incompatible remote version {vstr!r}: {verr}")
             return False
 
         self.print_server_info(c)

@@ -124,12 +124,12 @@ class NetworkListener(StubClientMixin):
             start a thread to dispatch it to the correct handler.
         """
         log("_new_connection%s", (listener, handle))
-        if self.exit_code is not None:
+        if self.client.exit_code is not None:
             log("ignoring new connection during shutdown")
             return False
         with log.trap_error(f"Error handling new {listener.socktype} connection"):
             self.handle_new_connection(listener, handle)
-        return self.exit_code is None
+        return self.client.exit_code is None
 
     def handle_new_connection(self, listener: SocketListener, handle: int) -> None:
         socktype = listener.socktype
@@ -137,7 +137,7 @@ class NetworkListener(StubClientMixin):
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
             conn = NamedPipeConnection(listener.socket.pipe_name, handle, listener.options)
             log.info("New %s connection received on %s", socktype, conn.target)
-            self.make_protocol(conn)
+            self.client.make_protocol(conn)
             return
         conn = accept_connection(listener, SOCKET_TIMEOUT)
         if conn is None:
@@ -213,7 +213,7 @@ class NetworkListener(StubClientMixin):
             def send_info() -> None:
                 from xpra.platform.gui import get_session_type
                 from xpra.util.system import platform_name
-                info = self.get_info()
+                info = self.client.get_info()
                 info["network"] = get_network_caps()
                 info["authentication"] = get_digest_caps()
                 info["session-type"] = (get_session_type() or platform_name()) + " client"
@@ -238,7 +238,7 @@ class NetworkListener(StubClientMixin):
             hello_reply({"version": version_str()})
             return True
         if request in ("show-menu", "show-about", "show-session-info"):
-            fn = getattr(self, request.replace("-", "_"), None)
+            fn = getattr(self.client, request.replace("-", "_"), None)
             if not fn:
                 hello_reply({"error": "%s not found" % request})
             else:
@@ -273,7 +273,7 @@ class NetworkListener(StubClientMixin):
         # minimal information for identifying the session
         return {
             "session-type": "client",
-            "session-name": self.session_name,
+            "session-name": self.client.session_name,
             "platform": sys.platform,
             "pid": os.getpid(),
             "machine-id": get_machine_id(),

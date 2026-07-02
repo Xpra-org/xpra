@@ -344,7 +344,7 @@ class DisplayClient(StubClientMixin):
                 log.warn(" please see https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Xdummy.md")
 
     def send_icc_data(self) -> None:
-        if SYNC_ICC and (not BACKWARDS_COMPATIBLE or "configure-display" in self.client.server_packet_types):
+        if SYNC_ICC and (not BACKWARDS_COMPATIBLE or "configure-display" in self.get_subsystem("network").server_packet_types):
             # it is now safe to send the colorspace data if we have any:
             icc = self.get_icc_info()
             dicc = self.get_display_icc_info()
@@ -596,7 +596,7 @@ class DisplayClient(StubClientMixin):
         root_w, root_h, sss = screen_settings[:3]
         log.info("sending updated screen size to server: %sx%s", root_w, root_h)
         log_screen_sizes(root_w, root_h, sss)
-        if "configure-display" in self.client.server_packet_types or not BACKWARDS_COMPATIBLE:
+        if "configure-display" in self.get_subsystem("network").server_packet_types or not BACKWARDS_COMPATIBLE:
             root_w, root_h = screen_settings[:2]
             ndesktops, desktop_names = screen_settings[3:5]
             u_root_w, u_root_h = screen_settings[5:7]

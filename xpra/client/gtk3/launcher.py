@@ -851,7 +851,9 @@ class ApplicationWindow:
         may_show_progress(self.client, 40, "loading user interface")
         self.client.init_ui(self.config)
         self.client.load()
-        self.client.username = display_desc.get("username")
+        challenge = self.client.get_subsystem("challenge")
+        if challenge:
+            challenge.username = display_desc.get("username")
 
         def handshake_complete(*_args) -> None:
             may_show_progress(self.client, 100, "Session connected")
@@ -907,7 +909,9 @@ class ApplicationWindow:
 
         password = display_desc.get("password", "")
         if password:
-            self.client.password = password
+            challenge = self.client.get_subsystem("challenge")
+            if challenge:
+                challenge.password = password
 
         def do_quit(*args) -> None:
             log("do_quit%s", args)

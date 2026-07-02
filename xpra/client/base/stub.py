@@ -5,7 +5,7 @@
 
 import sys
 from collections.abc import Callable
-from typing import Any, NoReturn
+from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
@@ -99,13 +99,23 @@ class StubClientMixin(SignalEmitter):
         run the main loop.
         """
 
-    def quit(self, exit_code: ExitValue) -> NoReturn:  # pragma: no cover
+    def quit(self, exit_code: ExitValue) -> None:  # pragma: no cover
         """
         Terminate the client with the given exit code.
         (the exit code is ignored if we already have one)
+        Delegates to the owning client (mirrors `send`/`send_now`): the real
+        implementation lives on the concrete toolkit client (eg:
+        `GObjectClientAdapter.quit`, which stops the main loop and runs
+        `cleanup()`); only fall back to a raw `sys.exit()` when this object
+        *is* the client and has no such implementation of its own (bare/
+        standalone use).
         """
-        self.exit_code = exit_code
-        sys.exit(exit_code)
+        client = self.client
+        if client is not self:
+            client.quit(exit_code)
+        else:
+            self.exit_code = exit_code
+            sys.exit(exit_code)
 
     def cleanup(self) -> None:
         """
@@ -158,14 +168,17 @@ class StubClientMixin(SignalEmitter):
         """
         return True
 
-    # noinspection PyMethodMayBeStatic
-    def compressed_wrapper(self, datatype, data, level=5, **_kwargs) -> Compressed:
+    def compressed_wrapper(self, datatype, data, level=5, **kwargs) -> Compressed:
         """
-        Dummy utility method for compressing data.
-        Actual client implementations will provide compression
-        based on the client and server capabilities (ie: lz4, brotli).
-        subclasses should override this method.
+        Compress data for sending to the server.
+        Delegates to the `network` subsystem's real (lz4/brotli) implementation
+        when one is available (mirrors `send`/`send_now`); otherwise (bare/
+        standalone use, eg: in a unit test) falls back to an uncompressed
+        wrapper below.
         """
+        network = self.get_subsystem("network")
+        if network and network is not self:
+            return network.compressed_wrapper(datatype, data, level=level, **kwargs)
         assert level >= 0
         return Compressed("raw %s" % datatype, data)
 

@@ -1192,8 +1192,10 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
             log("do_setup_connection() conn=%s", conn)
             # source the credentials from `display_desc` since `parse_display_name`
             # merges URL / opts / env / password-file into it during connect:
-            app.username = display_desc.get("username", "")
-            app.password = display_desc.get("password", "")
+            challenge = app.get_subsystem("challenge")
+            if challenge:
+                challenge.username = display_desc.get("username", "")
+                challenge.password = display_desc.get("password", "")
             app.display = opts.display
             app.display_desc = display_desc
             protocol = app.make_protocol(conn)

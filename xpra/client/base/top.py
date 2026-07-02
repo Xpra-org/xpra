@@ -721,7 +721,7 @@ class TopSessionClient(InfoTimerClient):
                 break
             ci = self.td(client_info.dictget(nclients))
             session_id = ci.strget("session-id")
-            if session_id != self.session_id and ci.boolget("windows", True) and ci.strget("type") != "top":
+            if session_id != self.get_subsystem("clientid").session_id and ci.boolget("windows", True) and ci.strget("type") != "top":
                 gui_clients.append(nclients)
             nclients += 1
         return nclients, gui_clients

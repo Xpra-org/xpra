@@ -170,7 +170,7 @@ class LoggingClient(StubClientMixin):
             if self.log_both:
                 ll(logger_log, level, msg, *args, **kwargs)
         except Exception as e:
-            if self.exit_code is not None:
+            if self.client.exit_code is not None:
                 # errors can happen during exit, don't care
                 return
             local_warn("Warning: failed to send logging packet:")

@@ -7,7 +7,6 @@ import os.path
 from urllib.parse import unquote
 from collections.abc import Callable
 
-from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.os_util import gi_import, WIN32
 from xpra.util.objects import typedict
@@ -55,10 +54,11 @@ def drag_motion_cb(wid: int, context, x: int, y: int, time: int) -> bool:
 class DragNDropWindow(GtkStubWindow):
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
-        # opengl probing uses a fake client,
-        # in which case we don't want dragndrop initialized:
-        if isinstance(client, FileTransferHandler):
-            self._file_handler = client
+        # opengl probing uses a fake client, whose `get_subsystem` returns
+        # `None` for "file", in which case we don't want dragndrop initialized:
+        file_handler = client.get_subsystem("file")
+        if file_handler:
+            self._file_handler = file_handler
             self.init_dragndrop()
 
     def is_readonly(self) -> bool:

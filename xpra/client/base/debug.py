@@ -21,10 +21,11 @@ class DebugClient(StubClientMixin):
     """
     Adds some debug functions
     """
+    PREFIX = "debug"
 
     def run(self) -> ExitValue:
         def is_closed() -> bool:
-            return getattr(self, "exit_code", None) is not None
+            return getattr(self.client, "exit_code", None) is not None
 
         init_leak_detection(is_closed)
         return 0

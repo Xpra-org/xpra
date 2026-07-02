@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Callable
 
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
@@ -20,9 +21,10 @@ INIT_PRINTING_DELAY = envint("XPRA_INIT_PRINTING_DELAY", 2)
 
 
 class FileMixin(StubClientMixin, FileTransferHandler):
+    PREFIX = "file"
 
-    def __init__(self):
-        StubClientMixin.__init__(self)
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         FileTransferHandler.__init__(self)
         self.remote_request_file: bool = False
 
@@ -51,7 +53,6 @@ class FileMixin(StubClientMixin, FileTransferHandler):
         return {"file-transfers": FileTransferHandler.get_info(self)}
 
     def cleanup(self) -> None:
-        # we must clean printing before FileTransferHandler, which turns the printing flag off!
         FileTransferHandler.cleanup(self)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
@@ -59,3 +60,29 @@ class FileMixin(StubClientMixin, FileTransferHandler):
         fc = typedict(c.dictget("file"))
         self.remote_request_file = fc.boolget("request-file", c.boolget("request-file", False))
         return True
+
+    # `FileTransferHandler`'s internals call these three back on `self` as hooks
+    # (eg: to prompt the user, or report progress); toolkit clients (eg: gtk3)
+    # override them with real UI - reach that override via `self.client` since
+    # this subsystem is composed (a separate instance, not in the client's MRO);
+    # fall back to the base (no-op) implementation for clients that don't.
+    def ask_data_request(self, cb_answer: Callable[[bool], None], *args, **kwargs) -> None:
+        fn = getattr(self.client, "ask_data_request", None)
+        if fn:
+            fn(cb_answer, *args, **kwargs)
+        else:
+            FileTransferHandler.ask_data_request(self, cb_answer, *args, **kwargs)
+
+    def file_size_warning(self, *args) -> None:
+        fn = getattr(self.client, "file_size_warning", None)
+        if fn:
+            fn(*args)
+        else:
+            FileTransferHandler.file_size_warning(self, *args)
+
+    def transfer_progress_update(self, *args, **kwargs) -> None:
+        fn = getattr(self.client, "transfer_progress_update", None)
+        if fn:
+            fn(*args, **kwargs)
+        else:
+            FileTransferHandler.transfer_progress_update(self, *args, **kwargs)

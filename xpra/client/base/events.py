@@ -16,6 +16,7 @@ class EventsClient(StubClientMixin):
     """
     Receives server events
     """
+    PREFIX = "events"
 
     def get_caps(self) -> dict[str, Any]:
         return {"events": True}

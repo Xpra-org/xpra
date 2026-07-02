@@ -17,6 +17,7 @@ class InfoClient(StubClientMixin):
     """
     Adds extra information about the client
     """
+    PREFIX = "clientinfo"
 
     def get_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {}
@@ -32,7 +33,7 @@ class InfoClient(StubClientMixin):
                 caps["hostname"] = socket.gethostname()
             except socket.error:
                 pass
-            vi = self.get_version_info()
+            vi = self.client.get_version_info()
             caps["build"] = vi
         if mid := get_machine_id():
             caps["machine_id"] = mid

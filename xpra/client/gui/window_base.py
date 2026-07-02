@@ -10,21 +10,18 @@ import re
 from typing import Any, Final
 from collections.abc import Callable, MutableSequence
 
-from xpra.os_util import OSX, WIN32, gi_import
+from xpra.os_util import OSX, WIN32
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window.backing import fire_paint_callbacks
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
 from xpra.common import gravity_str, force_size_constraint
-from xpra.util.glib_scheduler import GLibScheduler
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std
 from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("window")
 paintlog = Logger("paint")
@@ -135,7 +132,7 @@ def do_get_window_title(client, wid: int, metadata: dict) -> str:
     return replaced
 
 
-class ClientWindowBase(ClientWidgetBase, GLibScheduler):
+class ClientWindowBase(ClientWidgetBase):
 
     def __init__(self, client, group_leader, wid: int,
                  geom: tuple[int, int, int, int],
@@ -149,6 +146,9 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
              metadata, override_redirect, client_properties,
              border, max_window_size, pixel_depth,
              headerbar))
+        self.idle_add: Callable = client.idle_add
+        self.timeout_add: Callable = client.timeout_add
+        self.source_remove: Callable = client.source_remove
         super().__init__(client, wid, metadata.boolget("has-alpha"))
         wx, wy, ww, wh = geom
         bw, bh = backing_size
@@ -508,7 +508,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         was_decorated = self.get_decorated()
         if WIN32 and decorated != was_decorated:
             log.info("decorations flag toggled, now %s, re-initializing window", decorated)
-            GLib.idle_add(self.get_subsystem("window").reinit_window, self.wid, self)
+            self.idle_add(self.get_subsystem("window").reinit_window, self.wid, self)
         else:
             self.set_decorated(decorated)
             self.apply_geometry_hints(self.geometry_hints)
@@ -839,7 +839,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         if backing.repaint_all or self._xscale != 1 or self._yscale != 1 or is_Wayland():
             # easy: just repaint the whole window:
             rw, rh = self.get_size()
-            GLib.idle_add(self.repaint, 0, 0, rw, rh)
+            self.idle_add(self.repaint, 0, 0, rw, rh)
             return
         pr = self.pending_refresh
         self.pending_refresh = []
@@ -849,7 +849,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             if self.window_offset:
                 rx += self.window_offset[0]
                 ry += self.window_offset[1]
-            GLib.idle_add(self.repaint, rx, ry, rw, rh)
+            self.idle_add(self.repaint, rx, ry, rw, rh)
 
     def eos(self) -> None:
         """ Note: this runs from the draw thread (not UI thread) """

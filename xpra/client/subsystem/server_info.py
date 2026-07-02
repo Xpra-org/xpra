@@ -51,7 +51,7 @@ class ServerInfoClient(StubClientMixin):
         if not self.request_pending:
             self.request_pending = True
             window_ids = ()  # no longer used or supported by servers
-            self.send(INFO_REQUEST, [self.client.uuid], window_ids, categories)
+            self.send(INFO_REQUEST, [self.get_subsystem("clientid").uuid], window_ids, categories)
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(INFO_RESPONSE)

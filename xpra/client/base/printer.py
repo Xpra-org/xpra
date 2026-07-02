@@ -9,7 +9,6 @@ from xpra.net.packet_type import PRINT_DEVICES
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
-from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.base.stub import StubClientMixin
 from xpra.util.thread import start_thread
 from xpra.log import Logger
@@ -22,64 +21,61 @@ SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 INIT_PRINTING_DELAY = envint("XPRA_INIT_PRINTING_DELAY", 2)
 
 
-class PrinterMixin(StubClientMixin, FileTransferHandler):
+class PrinterMixin(StubClientMixin):
+    """
+    Printer forwarding.
+    `printing`/`remote_printing`/`remote_printing_ask` and the packet types used
+    to send print jobs are all part of the same `FileTransferHandler` state as
+    regular file transfers (parsed together from the same options, and the
+    packet handlers overlap entirely) - so this subsystem has no
+    `FileTransferHandler` of its own, it owns only the printer-discovery/export
+    logic and reaches into the `file` subsystem (`features.printer` implies
+    `features.file`, so it is always present) for everything else.
+    """
+    PREFIX = "printer"
 
-    def __init__(self):
-        StubClientMixin.__init__(self)
-        FileTransferHandler.__init__(self)
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.printer_attributes = []
         self.send_printers_timer: int = 0
-        self.exported_printers = None
+        self.exported_printers = {}
 
-    def init(self, opts) -> None:
-        FileTransferHandler.init_opts(self, opts)
+    @property
+    def file(self):
+        return self.get_subsystem("file")
 
     def load(self):
-        self.after_handshake(self.init_printing)
-
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_legacy_alias("send-file", "file-send")
-        self.add_legacy_alias("send-data-request", "file-data-request")
-        self.add_legacy_alias("send-data-response", "file-data-response")
-        self.add_legacy_alias("ack-file-chunk", "file-ack-chunk")
-        self.add_legacy_alias("send-file-chunk", "file-send-chunk")
-        self.add_packets(
-            "open-url",
-            "file-send",
-            "file-data-request",
-            "file-data-response",
-            "file-ack-chunk",
-            "file-send-chunk",
-        )
+        self.client.after_handshake(self.init_printing)
 
     def get_caps(self) -> dict[str, Any]:
-        return {"printer": self.get_printer_features()}
+        return {"printer": self.file.get_printer_features()}
 
     def cleanup(self) -> None:
-        # we must clean printing before FileTransferHandler, which turns the printing flag off!
         self.cleanup_printing()
-        FileTransferHandler.cleanup(self)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.parse_printer_caps(c)
+        self.file.parse_printer_caps(c)
         self.parse_printing_capabilities(c)
         self.dump_remote_printing_caps()
         return True
 
     def parse_printing_capabilities(self, caps: typedict) -> None:
-        printlog("parse_printing_capabilities() client printing support=%s", self.printing)
-        if self.printing:
-            printlog("parse_printing_capabilities() server printing support=%s", self.remote_printing)
-            if self.remote_printing:
+        f = self.file
+        printlog("parse_printing_capabilities() client printing support=%s", f.printing)
+        if f.printing:
+            printlog("parse_printing_capabilities() server printing support=%s", f.remote_printing)
+            if f.remote_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
                                                            ("printer-info", "device-uri"))
 
     def dump_remote_printing_caps(self) -> None:
+        f = self.file
         filelog("printing remote caps:")
-        filelog(" printing=%-5s        (ask=%s)", self.remote_printing, self.remote_printing_ask)
+        filelog(" printing=%-5s        (ask=%s)", f.remote_printing, f.remote_printing_ask)
 
     def init_printing(self) -> None:
-        if self.printing and self.remote_printing:
+        f = self.file
+        if f.printing and f.remote_printing:
             self.timeout_add(INIT_PRINTING_DELAY * 1000, self.do_init_printing)
 
     def do_init_printing(self) -> None:
@@ -90,14 +86,14 @@ class PrinterMixin(StubClientMixin, FileTransferHandler):
         except Exception as e:
             printlog.error("Error initializing printing support:")
             printlog.estr(e)
-            self.printing = False
+            self.file.printing = False
         else:
             self.send_printers()
-        printlog("do_init_printing() enabled=%s", self.printing)
+        printlog("do_init_printing() enabled=%s", self.file.printing)
 
     def cleanup_printing(self) -> None:
-        printlog("cleanup_printing() printing=%s", self.printing)
-        if not self.printing:
+        printlog("cleanup_printing() printing=%s", self.file.printing)
+        if not self.file.printing:
             return
         self.cancel_send_printers_timer()
         try:

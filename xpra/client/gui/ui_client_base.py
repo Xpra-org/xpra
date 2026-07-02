@@ -74,6 +74,10 @@ class UIXpraClient(ClientBaseClass):
         for c in CLIENT_BASES:
             sublog("calling %s.__init__()", c)
             self.add_subsystem(c)
+        # react to the `ping` subsystem's "timeout" signal by drawing an alert
+        # state over the windows (a UI concern, so it lives here, not in `ping`):
+        if ping := self.get_subsystem("ping"):
+            ping.connect("timeout", self.server_connection_state_change)
         self._ui_events: int = 0
         self.title: str = ""
         self.session_name: str = ""
@@ -221,6 +225,11 @@ class UIXpraClient(ClientBaseClass):
         # get the real value from the PingClient feature, if present:
         ping = self.get_subsystem("ping")
         return ping._server_ok if ping else True
+
+    def get_windows(self) -> tuple:
+        """ all the windows currently registered with the `window` subsystem """
+        window = self.get_subsystem("window")
+        return tuple(window._id_to_window.values()) if window else ()
 
     def get_mouse_position(self) -> tuple:
         raise NotImplementedError()
@@ -451,7 +460,8 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # network and status:
-    def server_connection_state_change(self) -> None:
+    def server_connection_state_change(self, *_args) -> None:
+        # handler for the `ping` subsystem's "timeout" signal (see `__init__`):
         windows = self.get_windows()
         if not windows:
             return

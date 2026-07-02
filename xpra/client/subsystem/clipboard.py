@@ -384,14 +384,12 @@ class ClipboardClient(StubClientMixin):
             call `self.compressed_wrapper` when compression is requested
             by the network encode thread.
         """
-        # the real (lz4/brotli) `compressed_wrapper` lives on the client
-        # (the stub's is a dummy that does not compress):
-        client = self.client
+        mixin = self
 
         class ProtocolCompressible(compression.Compressible):
             __slots__ = ()
 
             def compress(self) -> compression.Compressed:
-                return client.compressed_wrapper(self.datatype, self.data,
-                                                 level=9, can_inline=False, brotli=True)
+                return mixin.compressed_wrapper(self.datatype, self.data,
+                                                level=9, can_inline=False, brotli=True)
         return ProtocolCompressible(compressible.datatype, compressible.data)

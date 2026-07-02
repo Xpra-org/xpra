@@ -16,7 +16,6 @@ from collections.abc import Callable, Sequence
 from xpra.scripts.config import InitExit
 from xpra.common import noerr, noop, may_show_progress, stop_asyncio_loop
 from xpra.net.constants import ConnectionMessage
-from xpra.net import compression
 from xpra.net.common import (
     Packet, PacketElement, PacketHandlerType,
     disconnect_is_an_error,
@@ -72,6 +71,17 @@ COMPOSED_SUBSYSTEMS: tuple[str, ...] = (
     "window",
     "control",
     "progress",
+    "network",
+    "clientid",
+    "debug",
+    "clientinfo",
+    "events",
+    "file",
+    "serverinfo",
+    "printer",
+    "aes",
+    "challenge",
+    "ssl-upgrade",
 )
 # composed subsystems are real instances, kept OUT of the client's MRO
 # (see `xpra.client.gui.ui_client_base.MUXED_BASES` for the mirror of this):
@@ -127,6 +137,16 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             cls.__init__(self)
             if prefix:
                 self.subsystems[prefix] = self
+
+    def get_subsystem(self, name: str):
+        """
+        look up a composed (or still-muxed) subsystem by its `PREFIX`.
+        Defined directly here (mirroring `StubClientMixin.get_subsystem`, not
+        inherited from it) because every `base/*` mixin is composed out now,
+        so `ClientBaseClass` can be empty and this class can no longer rely on
+        picking up `StubClientMixin` transitively through one of them.
+        """
+        return self.subsystems.get(name)
 
     def add_control_command(self, name: str, control) -> None:
         # delegate to the `control` subsystem (mirror of `ServerCore.add_control_command`),
@@ -205,6 +225,10 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.display = None
         self.server_client_shutdown = True
         self.verify_connected_timer = 0
+        # identity: concrete clients (and `GObjectClientAdapter`, which runs before
+        # subsystem composition) freely override this; the `clientid` subsystem just
+        # reports whatever it finds here (see `IDClient.get_caps`):
+        self.client_type = "python"
         # protocol stuff:
         self._protocol = None
         self._priority_packets: list[Packet] = []
@@ -219,6 +243,20 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             self._call_subsystem(bc, "init", opts)
         self.display = opts.display
         self.install_signal_handlers()
+
+    def init_ui(self, opts) -> None:
+        """
+        `XpraClientBase` has no UI of its own to initialize; this only exists
+        because `UIXpraClient.init_ui` dispatches to every entry in
+        `CLIENT_BASES` (which includes this class itself, always muxed).
+        """
+
+    def load(self) -> None:
+        """ see `init_ui`: this class has nothing of its own to load """
+
+    def run(self) -> ExitValue:
+        """ see `init_ui`: the main loop is run by the concrete toolkit client """
+        return ExitCode.OK
 
     @staticmethod
     def force_quit(exit_code: ExitValue = ExitCode.FAILURE) -> NoReturn:
@@ -307,6 +345,16 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         for bc in CLIENT_BASES:
             info.update(self._call_subsystem(bc, "get_info"))
         return info
+
+    def get_caps(self) -> dict[str, Any]:
+        """
+        `XpraClientBase`'s own capabilities are gathered by `make_hello_base`
+        (which loops over its own `CLIENT_BASES`); this only exists because
+        `UIXpraClient.make_hello` separately dispatches `get_caps` to every
+        entry in *its* `CLIENT_BASES` (which includes this class itself,
+        always muxed) - nothing to add a second time here.
+        """
+        return {}
 
     def make_protocol(self, conn):
         if not conn:
@@ -433,23 +481,6 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         if BACKWARDS_COMPATIBLE:
             return {"keyboard": False}
         return {}
-
-    def compressed_wrapper(self, datatype, data, level=5, **kwargs) -> compression.Compressed:
-        if level > 0 and len(data) >= 256:
-            kw = {}
-            # brotli is not enabled by default as a generic compressor
-            # but callers may choose to enable it via kwargs:
-            for algo, defval in {
-                "lz4": True,
-                "brotli": False,
-            }.items():
-                kw[algo] = algo in self.server_compressors and compression.use(algo) and kwargs.get(algo, defval)
-            cw = compression.compressed_wrapper(datatype, data, level=level, can_inline=False, **kw)
-            if len(cw) < len(data):
-                # the compressed version is smaller, use it:
-                return cw
-        # we can't compress, so at least avoid warnings in the protocol layer:
-        return compression.Compressed(f"raw {datatype}", data)
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         packet = Packet(packet_type, *parts)

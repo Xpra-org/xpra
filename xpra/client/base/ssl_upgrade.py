@@ -17,6 +17,7 @@ class SSLUpgradeClient(StubClientMixin):
     """
     Adds ability to upgrade connections to ssl
     """
+    PREFIX = "ssl-upgrade"
 
     def parse_server_capabilities(self, c: typedict) -> bool:  # pylint: disable=unused-argument
         self.remove_packet_handlers("ssl-upgrade")
@@ -30,7 +31,7 @@ class SSLUpgradeClient(StubClientMixin):
         # send ssl-upgrade request!
         log = Logger("client", "ssl")
         log(f"ssl-upgrade({ssl_attrs})")
-        conn = self._protocol._conn
+        conn = self.client._protocol._conn
         socktype = conn.socktype
         new_socktype = {"tcp": "ssl", "ws": "wss"}.get(socktype)
         if not new_socktype:
@@ -57,8 +58,8 @@ class SSLUpgradeClient(StubClientMixin):
                 log.error(" %s", packet)
                 self.quit(ExitCode.INTERNAL_ERROR)
 
-        conn = self._protocol.steal_connection(read_callback)
-        if not self._protocol.wait_for_io_threads_exit(1):
+        conn = self.client._protocol.steal_connection(read_callback)
+        if not self.client._protocol.wait_for_io_threads_exit(1):
             log.error("Error: failed to terminate network threads for ssl upgrade")
             self.quit(ExitCode.INTERNAL_ERROR)
             # noinspection PyUnreachableCode
@@ -68,8 +69,9 @@ class SSLUpgradeClient(StubClientMixin):
         log("ssl handshake complete")
         from xpra.net.tls.connection import SSLSocketConnection
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, new_socktype)
-        self._protocol = self.make_protocol(ssl_conn)
-        self._protocol.start()
+        # `make_protocol` sets `self.client._protocol` itself:
+        protocol = self.client.make_protocol(ssl_conn)
+        protocol.start()
 
     def init_packet_handlers(self) -> None:
         self.add_packets("ssl-upgrade")

@@ -16,11 +16,12 @@ class IDClient(StubClientMixin):
     """
     Essential client information
     """
+    PREFIX = "clientid"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.uuid: str = get_user_uuid()
         self.session_id: str = uuid.uuid4().hex
-        self.client_type = "python"
 
     def get_caps(self) -> dict[str, Any]:
         caps = {
@@ -30,7 +31,9 @@ class IDClient(StubClientMixin):
         }
         if FULL_INFO > 0:
             caps |= {
-                "client_type": self.client_type,
+                # `client_type` is identity state owned by the concrete client
+                # (set before this subsystem even exists - see `defaults_init`):
+                "client_type": self.client.client_type,
             }
         return caps
 
@@ -39,5 +42,5 @@ class IDClient(StubClientMixin):
             "uuid": self.uuid,
             "version": XPRA_VERSION,
             "session-id": self.session_id,
-            "client_type": self.client_type,
+            "client_type": self.client.client_type,
         }

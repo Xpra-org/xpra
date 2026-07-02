@@ -29,8 +29,10 @@ class AESClient(StubClientMixin):
     """
     Adds tcp encryption feature
     """
+    PREFIX = "aes"
 
-    def __init__(self):
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self.encryption = None
         self.encryption_keyfile = None
         self.server_padding_options = [DEFAULT_PADDING]
@@ -84,23 +86,23 @@ class AESClient(StubClientMixin):
         }
         log(f"cipher_caps={cipher_caps}")
         key = self.get_encryption_key()
-        self._protocol.set_cipher_in(encryption, strtobytes(iv),
-                                     key, key_salt, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                     iterations, padding, always_pad, stream)
+        self.client._protocol.set_cipher_in(encryption, strtobytes(iv),
+                                            key, key_salt, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
+                                            iterations, padding, always_pad, stream)
         return cipher_caps
 
     def setup_connection(self, conn) -> None:
-        if self._protocol.TYPE == "rfb":
+        if self.client._protocol.TYPE == "rfb":
             return
         encryption = self.get_encryption()
         if encryption and ENCRYPT_FIRST_PACKET:
             key = self.get_encryption_key()
-            self._protocol.set_cipher_out(encryption, strtobytes(DEFAULT_IV),
-                                          key, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                          DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM)
+            self.client._protocol.set_cipher_out(encryption, strtobytes(DEFAULT_IV),
+                                                 key, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
+                                                 DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM)
 
     def parse_server_capabilities(self, caps: typedict) -> bool:  # pylint: disable=unused-argument
-        p = self._protocol
+        p = self.client._protocol
         if not p:
             return False
         if self.get_encryption():
@@ -131,7 +133,7 @@ class AESClient(StubClientMixin):
         self.server_padding_options = caps.strtupleget("padding.options", (DEFAULT_PADDING,))
 
         def fail(msg) -> bool:
-            self.warn_and_quit(ExitCode.ENCRYPTION, msg)
+            self.client.warn_and_quit(ExitCode.ENCRYPTION, msg)
             return False
 
         if key_stretch != "PBKDF2":
@@ -144,7 +146,7 @@ class AESClient(StubClientMixin):
             return fail(f"unsupported server cipher padding: {padding}, allowed paddings: {csv(ALL_PADDING_OPTIONS)}")
         if key_hash not in key_hashes:
             return fail(f"unsupported key hashing: {key_hash}, allowed algorithms: {csv(key_hashes)}")
-        p = self._protocol
+        p = self.client._protocol
         if not p:
             return False
         p.set_cipher_out(cipher + "-" + cipher_mode, strtobytes(cipher_iv),
@@ -153,7 +155,7 @@ class AESClient(StubClientMixin):
         return True
 
     def get_encryption(self) -> str:
-        p = self._protocol
+        p = self.client._protocol
         if not p:
             return ""
         conn = p._conn
@@ -172,7 +174,7 @@ class AESClient(StubClientMixin):
         return encryption
 
     def get_encryption_key(self) -> bytes:
-        conn = self._protocol._conn
+        conn = self.client._protocol._conn
         keydata = parse_encoded_bin_data(conn.options.get("keydata", ""))
         log(f"get_encryption_key() connection options keydata={Ellipsizer(keydata)}")
         if keydata:

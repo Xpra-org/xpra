@@ -40,12 +40,11 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
     def __init__(self, opts):
         GObjectClientAdapter.__init__(self)
         XpraClientBase.__init__(self)
-        super().init(opts)
-        self.display_desc = {}
         # not used by command line clients,
         # so don't try probing for printers, etc
-        self.file_transfer = False
-        self.printing = False
+        opts.file_transfer = "no"
+        opts.printing = "no"
+        super().init(opts)
         self.command_timeout = None
         self.last_server_event: Sequence[PacketElement] = ()
         # don't bother with many of these things for one-off commands:
@@ -435,7 +434,7 @@ class InfoTimerClient(MonitorXpraClient):
         if not self.info_request_pending:
             self.info_request_pending = True
             window_ids = ()  # no longer used or supported by servers
-            self.send(INFO_REQUEST, [self.uuid], window_ids, categories)
+            self.send(INFO_REQUEST, [self.get_subsystem("clientid").uuid], window_ids, categories)
         if not self.info_timer:
             self.info_timer = self.timeout_add((self.REFRESH_RATE + 2) * 1000, self.info_timeout)
         return True

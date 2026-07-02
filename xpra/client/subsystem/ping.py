@@ -32,6 +32,7 @@ class PingClient(StubClientMixin):
     Ping handling
     """
     PREFIX = "ping"
+    __signals__: list[str] = ["timeout"]
 
     PACKET_TYPES = ("ping", "ping_echo")
 
@@ -126,16 +127,13 @@ class PingClient(StubClientMixin):
         log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)",
             ping_sent_time, last, self._server_ok, self.last_echoed_time)
         if last != self._server_ok:
-            self.client.server_connection_state_change()
+            self.emit("timeout")
         return False
 
     def cancel_ping_echo_timeout_timer(self) -> None:
         if pett := self.echo_timeout_timer:
             self.echo_timeout_timer = 0
             self.source_remove(pett)
-
-    def server_connection_state_change(self) -> None:
-        log("server_connection_state_change() ok=%s", self._server_ok)
 
     def check_echo_timeout(self, ping_time) -> None:
         self.echo_timeout_timer = 0
