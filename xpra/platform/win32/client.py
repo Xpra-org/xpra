@@ -320,9 +320,10 @@ class PlatformClient(StubClientMixin):
             return
         if wparam == 0:
             # our app has lost focus
-            self.update_focus(0, False)
+            if w := self.get_subsystem("window"):
+                w.update_focus(0, False)
         # workaround for windows losing their style:
-        for window in self._id_to_window.values():
+        for window in self.get_windows():
             fixup_window_style = getattr(window, "fixup_window_style", None)
             if fixup_window_style:
                 fixup_window_style()

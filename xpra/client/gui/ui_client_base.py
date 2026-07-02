@@ -334,7 +334,7 @@ class UIXpraClient(ClientBaseClass):
             Gdk = gi_import("Gdk")
             screen = Gdk.Screen.get_default()
             n = screen.get_n_monitors()
-            monitor = (len(self._id_to_window) - 1) % n
+            monitor = (len(self.get_windows()) - 1) % n
             window.fullscreen_on_monitor(screen, monitor)
             log("fullscreen_on_monitor: %i", monitor)
         return window
@@ -426,9 +426,10 @@ class UIXpraClient(ClientBaseClass):
         self.send(NOTIFICATION_STATUS, notification.notifications_enabled)
 
     def send_bell_enabled(self) -> None:
-        assert self.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
-        assert self.server_bell, "cannot toggle bell: the feature is disabled by the server"
-        self.send(BELL_SET, self.bell_enabled)
+        window = self.get_subsystem("window")
+        assert window and window.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
+        assert window.server_bell, "cannot toggle bell: the feature is disabled by the server"
+        self.send(BELL_SET, window.bell_enabled)
 
     def send_cursors_enabled(self) -> None:
         cursor = self.get_subsystem("cursor")
@@ -461,7 +462,7 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # network and status:
     def server_connection_state_change(self) -> None:
-        windows = tuple(getattr(self, "_id_to_window", {}).values())
+        windows = self.get_windows()
         if not windows:
             return
         if self.server_ok() or FORCE_ALERT:
@@ -480,7 +481,7 @@ class UIXpraClient(ClientBaseClass):
             ok = self.server_ok() and not FORCE_ALERT
             log("timer_redraw() ok=%s", ok)
             # ensure every window has the latest state:
-            for window in self._id_to_window.values():
+            for window in self.get_windows():
                 if not window.is_tray():
                     window.set_alert_state(not ok)
             self.redraw_windows()
@@ -491,7 +492,7 @@ class UIXpraClient(ClientBaseClass):
 
     def redraw_windows(self) -> None:
         # redraws all the windows without requesting a refresh from the server:
-        for window in self._id_to_window.values():
+        for window in self.get_windows():
             window.redraw()
 
     ######################################################################

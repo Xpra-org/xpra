@@ -629,8 +629,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # we can tell the server using a "buffer-refresh" packet instead
         # and also take care of tweaking the batch config
         options = {"refresh-now": refresh}  # no need to refresh it
-        self._client.control_refresh(self.wid, suspend_resume,
-                                     refresh=refresh, options=options, client_properties=client_properties)
+        self.get_subsystem("window").control_refresh(self.wid, suspend_resume,
+                                                     refresh=refresh, options=options, client_properties=client_properties)
 
     def freeze(self) -> None:
         # the OpenGL subclasses override this method to also free their GL context
@@ -694,7 +694,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 actual_updates[state] = value
                 statelog("%s=%s (was %s)", var, value, cur)
         server_updates: dict[str, bool] = {k: v for k, v in actual_updates.items()
-                                           if k in self._client.server_window_states}
+                                           if k in self.get_subsystem("window").server_window_states}
         # iconification is handled a bit differently...
         iconified = server_updates.pop("iconified", None)
         if iconified is not None:
@@ -722,7 +722,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
                 self.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
             if REFRESH_MAXIMIZED:
-                self._client.send_refresh(self.wid)
+                self.get_subsystem("window").send_refresh(self.wid)
 
         self._window_state.update(server_updates)
         self.emit("state-updated")
@@ -872,7 +872,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # what we want is "window-modal"
         # so we can turn this off using the "modal_windows" feature,
         # from the command line and the system tray:
-        mw = self._client.modal_windows
+        mw = self.get_subsystem("window").modal_windows
         log("set_modal(%s) modal_windows=%s", modal, mw)
         Gtk.Window.set_modal(self, modal and mw)
 
@@ -1005,7 +1005,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if self.is_OR() or self.is_tray():
                     # we can't do it: the server can't handle configure packets for OR windows!
                     return
-                if not self._client.server_window_frame_extents:
+                if not self.get_subsystem("window").server_window_frame_extents:
                     # can't send cheap "skip-geometry" packets or frame-extents feature not supported:
                     return
                 # tell server about new value:
@@ -1226,7 +1226,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.when_realized("transient-for-root", set_root_transient)
         else:
             # gtk window is easier:
-            window = self._client._id_to_window.get(wid)
+            window = self.get_subsystem("window")._id_to_window.get(wid)
             log("%s.apply_transient_for(%#x) window=%s", self, wid, window)
             if window and isinstance(window, Gtk.Window):
                 self.set_transient_for(window)
@@ -1257,7 +1257,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._client_properties = {}
         self._window_state = {}
         self.cancel_window_state_timer()
-        if self._client.server_window_frame_extents and "frame" not in state:
+        if self.get_subsystem("window").server_window_frame_extents and "frame" not in state:
             wfs = self.get_window_frame_size()
             if wfs and len(wfs) == 4:
                 state["frame"] = self.crect(*wfs)
@@ -1277,7 +1277,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             htf = self.has_toplevel_focus()
             focuslog("mapped: has-toplevel-focus=%s", htf)
             if htf:
-                self._client.update_focus(self.wid, htf)
+                self.get_subsystem("window").update_focus(self.wid, htf)
 
     def get_window_frame_size(self) -> Sequence[int]:
         frame = self._client.get_frame_extents(self).get("frame", ())
@@ -1621,7 +1621,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def do_delete_event(self, event) -> bool:
         # Gtk.Window.do_delete_event(self, event)
         eventslog("do_delete_event(%s)", event)
-        self._client.window_close_event(self.wid)
+        self.get_subsystem("window").window_close_event(self.wid)
         return True
 
     def key_may_break_moveresize(self, _window, event) -> bool:

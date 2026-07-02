@@ -97,6 +97,13 @@ class StubClientMixin(superclass):
         window = self.get_subsystem("window")
         return tuple(window._id_to_window.values()) if window else ()
 
+    def window_registered(self, wid: int, window) -> None:
+        """
+        Per-client hook called after the `window` subsystem registers a new window.
+        Concrete clients (ie: win32) override this to connect toolkit signals; the
+        default does nothing.
+        """
+
     def init(self, opts) -> None:
         """
         Initialize this instance with the options given.

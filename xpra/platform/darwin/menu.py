@@ -405,14 +405,14 @@ class OSXMenuHelper(GTKTrayMenu):
             v = mousewheel_menuitem.get_active()
             log("invert_toggled(%s) invert enabled=%s", args, v)
             if v:
-                self.client.wheel_map[4] = 5
-                self.client.wheel_map[5] = 4
+                self.get_subsystem("window").wheel_map[4] = 5
+                self.get_subsystem("window").wheel_map[5] = 4
             else:
-                self.client.wheel_map[4] = 4
-                self.client.wheel_map[5] = 5
+                self.get_subsystem("window").wheel_map[4] = 4
+                self.get_subsystem("window").wheel_map[5] = 5
 
         mousewheel_menuitem = checkitem("Invert Mouse Wheel", invert_toggled)
-        mousewheel_menuitem.set_active(self.client.wheel_map.get(4) != 4)
+        mousewheel_menuitem.set_active(self.get_subsystem("window").wheel_map.get(4) != 4)
         return mousewheel_menuitem
 
     def make_numlockmenuitem(self):

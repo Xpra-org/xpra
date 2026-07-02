@@ -362,13 +362,16 @@ def pointer_grab(window, *args) -> bool:
 def pointer_ungrab(window, *args) -> bool:
     hwnd = get_window_handle(window)
     client = window._client
+    # grab-tracking state is owned by the `window` subsystem:
+    wp = client.get_subsystem("window")
     grablog("pointer_ungrab%s window=%s, hwnd=%s, pointer_grabbed=%s",
-            args, window, hwnd, client.pointer_grabbed)
+            args, window, hwnd, wp and wp.pointer_grabbed)
     if not hwnd:
         return False
     grablog("ClipCursor(None)")
     ClipCursor(None)
-    client.pointer_grabbed = None
+    if wp:
+        wp.pointer_grabbed = None
     return True
 
 
@@ -416,8 +419,8 @@ def fixup_window_style(self, *_args) -> None:
             send_control_refresh = getattr(self, "send_control_refresh", noop)
             if ws_visible:
                 # with opengl, we need to re-create the window (PITA):
-                if REINIT_VISIBLE_WINDOWS:
-                    client.reinit_window(self.wid, self)
+                if REINIT_VISIBLE_WINDOWS and (wp := client.get_subsystem("window")):
+                    wp.reinit_window(self.wid, self)
             send_control_refresh(not ws_visible)
     except Exception:
         log.warn("failed to fixup window style", exc_info=True)
@@ -607,7 +610,8 @@ def add_window_hooks(window) -> None:
                         deltay = 0
                     pointer = window.get_mouse_position()
                     device_id = -1
-                    client.wheel_event(device_id, wid, deltax, deltay, pointer)
+                    if wp := client.get_subsystem("window"):
+                        wp.wheel_event(device_id, wid, deltax, deltay, pointer)
 
             def mousewheel(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
                 handle_wheel(VERTICAL, wParam, lParam)

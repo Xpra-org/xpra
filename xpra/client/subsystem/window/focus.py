@@ -46,7 +46,7 @@ class WindowFocus(StubClientMixin):
             self.cancel_lost_focus_timer()
         else:
             if self._window_with_grab:
-                self.window_ungrab()
+                self.client.window_ungrab()
                 if wwgrab := self._window_with_grab:
                     self.do_force_ungrab(wwgrab)
                 self._window_with_grab = None

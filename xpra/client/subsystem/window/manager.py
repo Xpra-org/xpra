@@ -185,7 +185,7 @@ class WindowManagerClient(StubClientMixin):
         y = packet.get_i16(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
-        metadata = self.cook_metadata(True, packet.get_dict(6))
+        metadata = self.client.cook_metadata(True, packet.get_dict(6))
         # newer versions use metadata only:
         override_redirect |= metadata.boolget("override-redirect", False)
         if override_redirect and self.modal_windows:
@@ -262,8 +262,9 @@ class WindowManagerClient(StubClientMixin):
                         geom: tuple[int, int, int, int],
                         backing_size: tuple[int, int],
                         metadata: typedict, override_redirect: bool, client_properties):
-        client_window_classes = self.get_client_window_classes(geom, metadata, override_redirect)
-        group_leader_window = self.get_group_leader(wid, metadata, override_redirect)
+        # window creation / group-leader / metadata cooking are concrete-client concerns:
+        client_window_classes = self.client.get_client_window_classes(geom, metadata, override_redirect)
+        group_leader_window = self.client.get_group_leader(wid, metadata, override_redirect)
         # workaround for "popup" OR windows without a transient-for (like: google chrome popups):
         # prevents them from being pushed under other windows on OSX
         # find a "transient-for" value using the pid to find a suitable window
@@ -279,7 +280,9 @@ class WindowManagerClient(StubClientMixin):
             client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, wid,
+                # the window's owning client must be the real client (not this
+                # subsystem instance): it reaches siblings via `client.get_subsystem`
+                window = cwc(self.client, group_leader_window, wid,
                              geom, backing_size,
                              metadata, override_redirect, client_properties,
                              border, self.max_window_size, self.pixel_depth,
@@ -301,6 +304,8 @@ class WindowManagerClient(StubClientMixin):
         log("register_window(..) window(%#x)=%s", wid, window)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
+        # per-client post-registration hook (ie: win32 connects window signals):
+        self.client.window_registered(wid, window)
 
     def show_window(self, wid: int, window, metadata, override_redirect: bool) -> None:
         window.show_all()
@@ -313,7 +318,7 @@ class WindowManagerClient(StubClientMixin):
                 cur.set_windows_cursor([window], last_cursor)
         if override_redirect and should_force_grab(metadata):
             log.warn("forcing grab for OR window %#x", wid)
-            self.window_grab(wid, window)
+            self.client.window_grab(wid, window)
 
     def freeze(self) -> None:
         log("freeze()")
@@ -393,7 +398,7 @@ class WindowManagerClient(StubClientMixin):
                     backing.close()
 
             # now we can unmap it:
-            self.destroy_window(wid, window)
+            self.client.destroy_window(wid, window)
             # explicitly tell the server we have unmapped it:
             # (so it will reset the video encoders, etc)
             if not window.is_OR():
@@ -455,7 +460,7 @@ class WindowManagerClient(StubClientMixin):
         metadata = packet.get_dict(2)
         metalog("metadata update for window %i: %s", wid, metadata)
         if window := self.get_window(wid):
-            metadata = self.cook_metadata(False, metadata)
+            metadata = self.client.cook_metadata(False, metadata)
             window.update_metadata(metadata)
 
     def _process_window_move_resize(self, packet: Packet) -> None:
@@ -494,12 +499,26 @@ class WindowManagerClient(StubClientMixin):
             window.resize(aw, ah, resize_counter)
 
     def _process_raise_window(self, packet: Packet) -> None:
-        # implemented in gtk subclass
-        pass
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        log(f"going to raise window {wid:#x} - {window}")
+        if window:
+            if window.has_toplevel_focus():
+                log("window already has top level focus")
+                return
+            window.present()
 
     def _process_window_restack(self, packet: Packet) -> None:
-        # implemented in gtk subclass
-        pass
+        wid = packet.get_wid()
+        detail = packet.get_i8(2)
+        other_wid = packet.get_wid(3)
+        above = int(detail == 0)
+        window = self.get_window(wid)
+        other_window = self.get_window(other_wid)
+        log("restack window %s - %s %s %s",
+            wid, window, ["above", "below"][above], other_window)
+        if window:
+            window.restack(other_window, above)
 
     def _process_configure_override_redirect(self, packet: Packet) -> None:
         self._process_window_move_resize(packet)
@@ -512,7 +531,7 @@ class WindowManagerClient(StubClientMixin):
                 self.may_reenable_modal_windows(window)
             del self._id_to_window[wid]
             del self._window_to_id[window]
-            self.destroy_window(wid, window)
+            self.client.destroy_window(wid, window)
         # weak dependency on Tray mixin:
         set_tray_icon = getattr(self, "set_tray_icon", noop)
         set_tray_icon()
@@ -535,7 +554,7 @@ class WindowManagerClient(StubClientMixin):
         window.destroy()
         if self._window_with_grab == wid:
             log("destroying window %s which has grab, ungrabbing!", wid)
-            self.window_ungrab()
+            self.client.window_ungrab()
             self._window_with_grab = None
         if self.pointer_grabbed == wid:
             self.pointer_grabbed = None
@@ -558,7 +577,7 @@ class WindowManagerClient(StubClientMixin):
         for wid, window in self._id_to_window.items():
             try:
                 log("destroy_all_windows() destroying %#x / %s", wid, window)
-                self.destroy_window(wid, window)
+                self.client.destroy_window(wid, window)
             except (RuntimeError, ValueError):
                 log(f"destroy_all_windows() failed to destroy {window}", exc_info=True)
         self._id_to_window = {}

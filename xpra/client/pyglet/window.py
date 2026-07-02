@@ -54,7 +54,8 @@ class ClientWindow(Window):
         self.client.send(WINDOW_CLOSE, self.wid)
 
     def on_activate(self) -> None:
-        self.client.update_focus(self.wid)
+        if wc := self.client.get_subsystem("window"):
+            wc.update_focus(self.wid)
 
     def on_show(self) -> None:
         x, y = self.get_location()

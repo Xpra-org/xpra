@@ -144,7 +144,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         # group leader bits:
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
-        self._window_with_grab = 0
+        # `_window_with_grab` is owned by the `window` subsystem (grab.py)
         self.video_max_size = VIDEO_MAX_SIZE
 
     def setup_frame_request_windows(self) -> None:
@@ -875,7 +875,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             # also grab the keyboard so the user won't Alt-Tab away:
             r = Gdk.keyboard_grab(window.get_window(), False, etime)
             grablog("keyboard_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
-        self._window_with_grab = wid
+        # grab-tracking state is owned by the `window` subsystem:
+        if w := self.get_subsystem("window"):
+            w._window_with_grab = wid
 
     def window_ungrab(self) -> None:
         grablog("window_ungrab()")
@@ -883,7 +885,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         with IgnoreWarningsContext():
             Gdk.pointer_ungrab(etime)
             Gdk.keyboard_ungrab(etime)
-        self._window_with_grab = 0
+        if w := self.get_subsystem("window"):
+            w._window_with_grab = 0
 
     def window_bell(self, window, device: int, percent: int, pitch: int, duration: int, bell_class,
                     bell_id: int, bell_name: str) -> None:
@@ -899,28 +902,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         if not system_bell(xid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
             # fallback to simple beep:
             Gdk.beep()
-
-    def _process_raise_window(self, packet: Packet) -> None:
-        wid = packet.get_wid()
-        window = self.get_window(wid)
-        focuslog(f"going to raise window {wid:#x} - {window}")
-        if window:
-            if window.has_toplevel_focus():
-                log("window already has top level focus")
-                return
-            window.present()
-
-    def _process_restack_window(self, packet: Packet) -> None:
-        wid = packet.get_wid()
-        detail = packet.get_i8(2)
-        other_wid = packet.get_wid(3)
-        above = int(detail == 0)
-        window = self.get_window(wid)
-        other_window = self._id_to_window.get(other_wid)
-        focuslog("restack window %s - %s %s %s",
-                 wid, window, ["above", "below"][above], other_window)
-        if window:
-            window.restack(other_window, above)
 
     def get_gl_client_window_module(self, enable_opengl: str) -> tuple[dict, Any]:
         # the (toolkit-specific) OpenGL window backend for this client;
@@ -1007,17 +988,20 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         gl = self.get_subsystem("opengl")
         gl.opengl_enabled = not gl.opengl_enabled
         opengllog("opengl_toggled: %s", gl.opengl_enabled)
+        window = self.get_subsystem("window")
+        if not window:
+            return
         # now replace all the windows with new ones:
-        for wid, window in tuple(self._id_to_window.items()):
-            self.reinit_window(wid, window)
-        opengllog("replaced all the windows with opengl=%s: %s", gl.opengl_enabled, self._id_to_window)
-        self.reinit_window_icons()
+        for wid, win in tuple(window._id_to_window.items()):
+            window.reinit_window(wid, win)
+        opengllog("replaced all the windows with opengl=%s: %s", gl.opengl_enabled, window._id_to_window)
+        window.reinit_window_icons()
 
     def find_window(self, metadata: typedict, metadata_key: str = "transient-for"):
         fwid = metadata.intget(metadata_key, -1)
         log("find_window(%s, %s) wid=%#x", metadata, metadata_key, fwid)
-        if fwid > 0:
-            return self._id_to_window.get(fwid)
+        if fwid > 0 and (window := self.get_subsystem("window")):
+            return window.get_window(fwid)
         return None
 
     def find_gdk_window(self, metadata: typedict, metadata_key="transient-for"):
@@ -1058,9 +1042,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return group_leader_window
 
     def destroy_window(self, wid: int, window) -> None:
-        # override so we can cleanup the group-leader if needed,
-        from xpra.client.subsystem.window import WindowClient
-        WindowClient.destroy_window(self, wid, window)
+        # augment the window subsystem's own destroy with group-leader cleanup:
+        if w := self.get_subsystem("window"):
+            w.destroy_window(wid, window)
         group_leader = window.group_leader
         if group_leader is None or not self._group_leader_wids:
             return

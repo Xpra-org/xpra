@@ -41,7 +41,7 @@ class FocusWindow(GtkStubWindow):
     def cleanup(self):
         self.remove_event_receiver()
         self.cancel_focus_timer()
-        if self._client.has_focus(self.wid):
+        if self.get_subsystem("window").has_focus(self.wid):
             self._unfocus()
 
     def get_info(self) -> dict[str, Any]:
@@ -107,7 +107,7 @@ class FocusWindow(GtkStubWindow):
         self.send_latest_focus()
 
     def send_latest_focus(self) -> None:
-        focused = self._client._focused
+        focused = self.get_subsystem("window")._focused
         log("send_latest_focus() wid=%#x, focused=%s, latest=%s", self.wid, focused, self._focus_latest)
         if self._focus_latest:
             self._focus()
@@ -115,7 +115,7 @@ class FocusWindow(GtkStubWindow):
             self._unfocus()
 
     def _focus(self) -> bool:
-        change = self._client.update_focus(self.wid, True)
+        change = self.get_subsystem("window").update_focus(self.wid, True)
         if change and AUTOGRAB_WITH_FOCUS:
             # soft dependency on GrabWindow:
             autograb = getattr(self, "may_autograb", noop)

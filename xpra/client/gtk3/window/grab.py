@@ -61,7 +61,7 @@ class GrabWindow(GtkStubWindow):
 
     def grab_broken(self, win, event) -> None:
         log("grab_broken%s", (win, event))
-        self._client._window_with_grab = None
+        self.get_subsystem("window")._window_with_grab = None
 
     def _focus_change(self, *args) -> None:
         assert not self._override_redirect
@@ -142,32 +142,32 @@ class GrabWindow(GtkStubWindow):
         gdkwin = self.get_window()
         # try platform specific variant first:
         if pointer_grab(gdkwin):
-            self._client.pointer_grabbed = self.wid
+            self.get_subsystem("window").pointer_grabbed = self.wid
             log(f"{pointer_grab}({gdkwin}) success")
             return
         with IgnoreWarningsContext():
             r = Gdk.pointer_grab(gdkwin, True, GRAB_EVENT_MASK, gdkwin, None, Gdk.CURRENT_TIME)
         if r == Gdk.GrabStatus.SUCCESS:
-            self._client.pointer_grabbed = self.wid
+            self.get_subsystem("window").pointer_grabbed = self.wid
         log("pointer_grab%s Gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
-            args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
+            args, self.get_window(), GRAB_STATUS_STRING.get(r), self.get_subsystem("window").pointer_grabbed)
 
     def pointer_ungrab(self, *args) -> None:
         gdkwin = self.get_window()
         if pointer_ungrab(gdkwin):
-            self._client.pointer_grabbed = None
+            self.get_subsystem("window").pointer_grabbed = None
             log(f"{pointer_ungrab}({gdkwin}) success")
             return
         log("pointer_ungrab%s pointer_grabbed=%s",
-            args, self._client.pointer_grabbed)
-        self._client.pointer_grabbed = None
+            args, self.get_subsystem("window").pointer_grabbed)
+        self.get_subsystem("window").pointer_grabbed = None
         if gdkwin := self.get_window():
             d = gdkwin.get_display()
             if d:
                 d.pointer_ungrab(Gdk.CURRENT_TIME)
 
     def toggle_pointer_grab(self) -> None:
-        pg = self._client.pointer_grabbed
+        pg = self.get_subsystem("window").pointer_grabbed
         log("toggle_pointer_grab() pointer_grabbed=%s, our id=%s", pg, self.wid)
         if pg == self.wid:
             self.pointer_ungrab()

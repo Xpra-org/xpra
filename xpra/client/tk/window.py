@@ -82,7 +82,8 @@ class ClientWindow(Toplevel):
 
     def on_focus_in(self, event) -> None:
         log(f"focus-in: {event!r}")
-        self.client.update_focus(self.wid)
+        if wc := self.client.get_subsystem("window"):
+            wc.update_focus(self.wid)
 
     @staticmethod
     def on_focus_out(event) -> None:

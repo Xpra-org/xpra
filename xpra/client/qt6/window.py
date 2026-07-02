@@ -128,10 +128,13 @@ class ClientWindow(QMainWindow):
 
     def eventFilter(self, obj, event) -> bool:
         etype = event.type()
+        wc = self.client.get_subsystem("window")
         if etype == QEvent.Type.WindowDeactivate:
-            self.client.update_focus(0)
+            if wc:
+                wc.update_focus(0)
         elif etype == QEvent.Type.WindowActivate:
-            self.client.update_focus(self.wid)
+            if wc:
+                wc.update_focus(self.wid)
         elif etype == QEvent.Type.Show:
             x = self.pos().x() + self.label.pos().x()
             y = self.pos().y() + self.label.pos().y()

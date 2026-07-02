@@ -508,7 +508,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         was_decorated = self.get_decorated()
         if WIN32 and decorated != was_decorated:
             log.info("decorations flag toggled, now %s, re-initializing window", decorated)
-            GLib.idle_add(self._client.reinit_window, self.wid, self)
+            GLib.idle_add(self.get_subsystem("window").reinit_window, self.wid, self)
         else:
             self.set_decorated(decorated)
             self.apply_geometry_hints(self.geometry_hints)
@@ -803,13 +803,13 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
 
     def refresh_window(self, *args) -> None:
         log("refresh_window(%s) wid=%#x", args, self.wid)
-        self._client.send_refresh(self.wid)
+        self.get_subsystem("window").send_refresh(self.wid)
 
     def refresh_all_windows(self, *_args) -> None:
         # this method is only here because we may want to fire it
         # from a --key-shortcut action and the event is delivered to
         # the "ClientWindow"
-        self._client.send_refresh_all()
+        self.get_subsystem("window").send_refresh_all()
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
@@ -877,7 +877,7 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
 
     def _unfocus(self) -> bool:
         # overriden in FocusWindow
-        return self._client.update_focus(self.wid, False)
+        return self.get_subsystem("window").update_focus(self.wid, False)
 
     @staticmethod
     def log(message="") -> None:

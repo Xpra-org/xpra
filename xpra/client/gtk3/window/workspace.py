@@ -219,7 +219,7 @@ class WorkspaceWindow(GtkStubWindow):
             return
         if workspace == desktop or workspace == WORKSPACE_ALL or desktop is None:
             # window is back in view
-            self._client.control_refresh(self.wid, False, False)
+            self.get_subsystem("window").control_refresh(self.wid, False, False)
         if (workspace < 0 or workspace >= ndesktops) and workspace not in (WORKSPACE_UNSET, WORKSPACE_ALL):
             # this should not happen, workspace is unsigned (CARDINAL)
             # and the server should have the same list of desktops that we have here

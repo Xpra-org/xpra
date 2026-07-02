@@ -79,13 +79,13 @@ class WindowGrab(StubClientMixin):
         window = self.get_window(wid)
         log("grabbing %#x: %s", wid, window)
         if window:
-            self.window_grab(wid, window)
+            self.client.window_grab(wid, window)
 
     def _process_pointer_ungrab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log("ungrabbing %#x: %s", wid, window)
-        self.window_ungrab()
+        self.client.window_ungrab()
 
     ######################################################################
     # packets:

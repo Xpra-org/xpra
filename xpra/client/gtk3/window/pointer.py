@@ -92,7 +92,7 @@ class PointerWindow(GtkStubWindow):
         mask: Gdk.EventMask = Gdk.EventMask.POINTER_MOTION_MASK
         mask |= Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
         mask |= Gdk.EventMask.SCROLL_MASK
-        if self._client.wheel_smooth:
+        if self.get_subsystem("window").wheel_smooth:
             mask |= Gdk.EventMask.SMOOTH_SCROLL_MASK
         return mask
 
@@ -221,7 +221,7 @@ class PointerWindow(GtkStubWindow):
             self.start_button_polling()
         wid = self.get_mouse_event_wid(*pointer_data)
         log("do_motion_notify_event(%s) wid=%#x / focus=%s / window wid=%#x",
-            event, wid, self._client._focused, self.wid)
+            event, wid, self.get_subsystem("window")._focused, self.wid)
         log(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
             _device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
@@ -274,7 +274,7 @@ class PointerWindow(GtkStubWindow):
             device_id = -1
             norm_x = norm_scroll(event.delta_x)
             norm_y = norm_scroll(event.delta_y)
-            self._client.wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
+            self.get_subsystem("window").wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
             return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         log("do_scroll_event device=%s, direction=%s, button_mapping=%s",
@@ -310,7 +310,7 @@ class PointerWindow(GtkStubWindow):
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
         log("_button_action(%s, %s, %s) wid=%#x / focus=%s / window wid=%#x",
-            button, event, depressed, wid, self._client._focused, self.wid)
+            button, event, depressed, wid, self.get_subsystem("window")._focused, self.wid)
         log(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
             _device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
@@ -318,7 +318,7 @@ class PointerWindow(GtkStubWindow):
         def send_button(server_button, pressed, **kwargs) -> None:
             sprops = props or {}
             sprops.update(kwargs)
-            self._client.send_button(device_id, wid, server_button, pressed, pointer_data, modifiers, buttons, sprops)
+            self.get_subsystem("window").send_button(device_id, wid, server_button, pressed, pointer_data, modifiers, buttons, sprops)
 
         server_button = -1
         if not depressed:
@@ -376,8 +376,7 @@ class PointerWindow(GtkStubWindow):
                     wid = self.get_mouse_event_wid()
                     server_button = self.translate_button(button, modifiers)
                     sprops = {}
-                    self._client.send_button(device_id, wid, server_button, False, pointer_data, modifiers, buttons,
-                                             sprops)
+                    self.get_subsystem("window").send_button(device_id, wid, server_button, False, pointer_data, modifiers, buttons, sprops)
                     self.button_pressed.pop(button, None)
 
     def do_button_press_event(self, event) -> None:

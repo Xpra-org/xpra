@@ -129,8 +129,9 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         from xpra.client.win32.menu import TrayMenu
         return TrayMenu
 
-    def register_window(self, wid: int, window) -> None:
-        super().register_window(wid, window)
+    def window_registered(self, wid: int, window) -> None:
+        # post-registration hook (the `window` subsystem does the id bookkeeping);
+        # connect the win32 window signals and create the native window:
         window.connect("mapped", self.window_mapped_event)
         window.connect("closed", self.window_closed)
         window.connect("focused", self.window_focused_event)
@@ -155,13 +156,13 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def window_focused_event(self, window) -> None:
         log("window_focused_event(%s)", window)
-        if not window.is_OR():
-            self.update_focus(window.wid, True)
+        if not window.is_OR() and (w := self.get_subsystem("window")):
+            w.update_focus(window.wid, True)
 
     def window_focus_lost_event(self, window) -> None:
         log("window_lost_focus(%s)", window)
-        if not window.is_OR():
-            self.update_focus(window.wid, False)
+        if not window.is_OR() and (w := self.get_subsystem("window")):
+            w.update_focus(window.wid, False)
 
     def window_minimized_event(self, window) -> None:
         self.send(WINDOW_UNMAP, window.wid)

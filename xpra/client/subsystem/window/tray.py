@@ -71,9 +71,9 @@ class WindowTray(StubClientMixin):
 
     def make_system_tray(self, *args):
         """ tray used for application systray forwarding """
-        tc = self.get_system_tray_classes()
+        tc = self.client.get_system_tray_classes()
         log("make_system_tray%s system tray classes=%s", args, tc)
-        return make_instance(tc, self, *args)
+        return make_instance(tc, self.client, *args)
 
     # noinspection PyMethodMayBeStatic
     def get_system_tray_classes(self) -> list[type]:

@@ -316,23 +316,25 @@ class GTKTrayMenu(GTKMenuHelper):
         return readonly
 
     def make_bellmenuitem(self) -> Gtk.ImageMenuItem:
-        c = self.client
+        # bell state (server_bell/client_supports_bell/bell_enabled) is owned by the `window` subsystem:
+        c = self.get_subsystem("window")
 
         def bell_toggled(*args) -> None:
-            can_toggle_bell = c.server_bell and c.client_supports_bell
-            if not can_toggle_bell:
+            if not c or not (c.server_bell and c.client_supports_bell):
                 return
             v = bell.get_active()
-            changed = self.client.bell_enabled != v
-            self.client.bell_enabled = v
+            changed = c.bell_enabled != v
+            c.bell_enabled = v
             if changed:
                 self.client.send_bell_enabled()
-            log("bell_toggled(%s) bell_enabled=%s", args, self.client.bell_enabled)
+            log("bell_toggled(%s) bell_enabled=%s", args, c.bell_enabled)
         bell = checkitem(_("Bell"), bell_toggled)
         set_sensitive(bell, False)
 
         def set_bell_menuitem(*args) -> None:
-            log("set_bell_menuitem%s enabled=%s", args, self.client.bell_enabled)
+            if not c:
+                return
+            log("set_bell_menuitem%s enabled=%s", args, c.bell_enabled)
             can_toggle_bell = c.server_bell and c.client_supports_bell
             bell.set_active(can_toggle_bell and c.bell_enabled)
             sens_tooltip(bell, can_toggle_bell,
@@ -601,12 +603,12 @@ class GTKTrayMenu(GTKMenuHelper):
     def make_modalwindowmenuitem(self) -> Gtk.ImageMenuItem:
         modal = checkitem(_("Modal Windows"))
         modal.set_tooltip_text(_("honour modal windows"))
-        modal.set_active(self.client.modal_windows)
+        modal.set_active(self.get_subsystem("window").modal_windows)
         set_sensitive(modal, False)
 
         def modal_toggled(*args) -> None:
-            self.client.modal_windows = modal.get_active()
-            log("modal_toggled%s modal_windows=%s", args, self.client.modal_windows)
+            self.get_subsystem("window").modal_windows = modal.get_active()
+            log("modal_toggled%s modal_windows=%s", args, self.get_subsystem("window").modal_windows)
 
         def set_modal_menuitem(*_args) -> None:
             set_sensitive(modal, True)
@@ -624,7 +626,7 @@ class GTKTrayMenu(GTKMenuHelper):
         def populate_picturemenu() -> None:
             if bw := self.make_bandwidthlimitmenuitem():
                 menu.append(bw)
-            if self.client.windows_enabled and len(self.get_subsystem("encoding").get_encodings()) > 1:
+            if self.get_subsystem("window").windows_enabled and len(self.get_subsystem("encoding").get_encodings()) > 1:
                 menu.append(self.make_encodingsmenuitem())
             if (display := self.get_subsystem("display")) and display.can_scale:
                 menu.append(self.make_scalingmenuitem())
@@ -1555,21 +1557,21 @@ class GTKTrayMenu(GTKMenuHelper):
     def make_refreshmenuitem(self) -> Gtk.ImageMenuItem:
         def force_refresh(*_args) -> None:
             log("force refresh")
-            self.client.send_refresh_all()
-            self.client.reinit_window_icons()
+            self.get_subsystem("window").send_refresh_all()
+            self.get_subsystem("window").reinit_window_icons()
 
         return self.handshake_menuitem(_("Refresh"), "retry.png", None, force_refresh)
 
     def make_reinitmenuitem(self) -> Gtk.ImageMenuItem:
         def force_reinit(*_args) -> None:
             log("force reinit")
-            self.client.reinit_windows()
-            self.client.reinit_window_icons()
+            self.get_subsystem("window").reinit_windows()
+            self.get_subsystem("window").reinit_window_icons()
 
         return self.handshake_menuitem(_("Re-initialize"), "reinitialize.png", None, force_reinit)
 
     def _non_OR_windows(self) -> tuple:
-        return tuple(win for win in self.client._window_to_id.keys() if not win.is_OR())
+        return tuple(win for win in self.get_subsystem("window")._window_to_id.keys() if not win.is_OR())
 
     def _call_non_OR_windows(self, functions: dict[str, Any]) -> None:
         for win in self._non_OR_windows():

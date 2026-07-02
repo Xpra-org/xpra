@@ -45,7 +45,7 @@ class WindowBell(StubClientMixin):
         bell_id = packet.get_u32(7)
         bell_name = packet.get_str(8)
         window = self.get_window(wid)
-        self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
+        self.client.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def window_bell(self, window, device: int, percent: int, pitch: int, duration: int, bell_class,
                     bell_id: int, bell_name: str) -> None:
