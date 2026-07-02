@@ -61,8 +61,6 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     * handling packets received via _process_packet
     """
     __signals__ = ["startup-complete"]
-    # for c in CLIENT_BASES:
-    #    __signals__ += getattr(c, "__signals__", [])
 
     # Phase-2 migration: subsystems whose PREFIX is listed here are stored as
     # real `cls(self)` instances in `self.subsystems` (server-style composition);
@@ -97,9 +95,9 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.defaults_init()
         PacketDispatcher.__init__(self)
         # registry of subsystems, keyed by `PREFIX` (see `StubClientMixin.get_subsystem`):
-        # while subsystems are still mixed into this object, every entry is `self`.
+        # composed subsystems are real instances; the ones still muxed into this
+        # object are stored as `self`.
         self.subsystems: dict[str, Any] = {}
-        self.client = self
         for bc in CLIENT_BASES:
             sublog("%s.__init__()", bc)
             self.add_subsystem(bc)

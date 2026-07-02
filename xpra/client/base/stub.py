@@ -41,9 +41,9 @@ class StubClientMixin(superclass):
 
     @property
     def client(self):
-        # while subsystems are still mixed into a single client object,
-        # `self.client` is the client itself.
-        # Phase 2 (composition) will set `_client` to the owning client instance.
+        # a *composed* subsystem instance has `_client` pointing at the owning
+        # client; the client itself (and isolated unit tests) leaves it unset,
+        # so `self.client` resolves to the instance itself.
         return getattr(self, "_client", None) or self
 
     @client.setter
@@ -53,25 +53,6 @@ class StubClientMixin(superclass):
             # a real, separate owning client: borrow its main-loop scheduler:
             for name in self.SCHEDULER_METHODS:
                 setattr(self, name, getattr(value, name))
-
-    def __getattr__(self, name: str):
-        # transitional Phase-2 aid: once a subsystem becomes a real instance
-        # (its `_client` points at a *different* client object), any attribute
-        # that the Phase-1 routing missed falls back to the owning client
-        # rather than raising `AttributeError`, with a loud one-time warning so
-        # the missed routing gets fixed. While still muxed (`_client is self`)
-        # or in isolated unit tests (`_client` unset) this is completely inert.
-        client = self.__dict__.get("_client")
-        if client is None or client is self or name.startswith("__"):
-            raise AttributeError(name)
-        from xpra.util.env import first_time
-        if first_time(f"{type(self).__name__}.{name}-client-fallback"):
-            from xpra.log import Logger
-            Logger("subsystems").warn(
-                "Warning: %s.%s resolved on the client (missed Phase-2 routing)",
-                type(self).__name__, name,
-            )
-        return getattr(client, name)
 
     def _should_call_direct(self) -> bool:
         # `SignalEmitter` hook: a *composed* subsystem owns its own signals but
@@ -96,13 +77,6 @@ class StubClientMixin(superclass):
         """ all the windows currently registered with the `window` subsystem """
         window = self.get_subsystem("window")
         return tuple(window._id_to_window.values()) if window else ()
-
-    def window_registered(self, wid: int, window) -> None:
-        """
-        Per-client hook called after the `window` subsystem registers a new window.
-        Concrete clients (ie: win32) override this to connect toolkit signals; the
-        default does nothing.
-        """
 
     def init(self, opts) -> None:
         """

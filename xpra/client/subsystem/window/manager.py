@@ -20,6 +20,7 @@ from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.client.base.stub import StubClientMixin
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.common import noop
 from xpra.log import Logger
 
@@ -64,6 +65,11 @@ def log_windows_info(windows: tuple) -> None:
 class WindowManagerClient(StubClientMixin):
 
     def __init__(self):
+        # the `window` subsystem owns these signals (via `SignalEmitter`); peers
+        # subscribe with `get_subsystem("window").connect(name, handler)`:
+        #  - "new-window"   (window)      fired once a new window is registered
+        #  - "bell-toggled" ()            fired when the bell forwarding is toggled (see bell.py)
+        SignalEmitter.__init__(self)
         self._window_to_id: dict[Any, int] = {}
         self._id_to_window: dict[int, Any] = {}
 
@@ -304,8 +310,9 @@ class WindowManagerClient(StubClientMixin):
         log("register_window(..) window(%#x)=%s", wid, window)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
-        # per-client post-registration hook (ie: win32 connects window signals):
-        self.client.window_registered(wid, window)
+        # let clients add their own behaviour for the new window (ie: gtk3 places
+        # it fullscreen on a monitor in desktop mode, win32 connects its signals):
+        self.emit("new-window", window)
 
     def show_window(self, wid: int, window, metadata, override_redirect: bool) -> None:
         window.show_all()

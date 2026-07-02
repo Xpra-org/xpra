@@ -133,12 +133,16 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         # implementation into it (it is created by UIXpraClient.__init__ above):
         if kb := self.get_subsystem("keyboard"):
             kb.keyboard_helper_class = GTKKeyboardHelper
+        # add our GTK-specific behaviour to the subsystem signals (the subsystems
+        # own these signals; we just subscribe and react):
+        if window := self.get_subsystem("window"):
+            window.connect("new-window", self._new_window)
+        if gl := self.get_subsystem("opengl"):
+            gl.connect("toggled", self._opengl_toggled)
         self.data_send_requests = {}
-        # opengl state (enabled/props/force/texture limits) is owned by the
-        # `display` subsystem; the opengl methods below reach it via
-        # `get_subsystem("display")`. Only the window class references stay here.
-        # cursor tracking state (`_cursors`, `_last_cursor_data`) is owned by the
-        # `cursor` subsystem; the render methods below reach it via get_subsystem.
+        # opengl state is owned by the `opengl` subsystem; cursor tracking state
+        # (`_cursors`, `_last_cursor_data`) by the `cursor` subsystem; the methods
+        # below reach them via `get_subsystem(...)`.
         # frame request hidden window:
         self.frame_request_window = None
         # group leader bits:
@@ -718,8 +722,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return _add_statusicon_tray(super().get_tray_classes())
 
     def get_system_tray_classes(self) -> list[type]:
-        from xpra.client.subsystem.window import WindowClient
-        return _add_statusicon_tray(WindowClient.get_system_tray_classes(self))
+        window = self.get_subsystem("window")
+        native = window.get_system_tray_classes() if window else []
+        return _add_statusicon_tray(native)
 
     def supports_system_tray(self) -> bool:
         #  always True: we can always use Gtk.StatusIcon as fallback
@@ -984,17 +989,25 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 return False
         return True
 
-    def toggle_opengl(self, *_args) -> None:
-        gl = self.get_subsystem("opengl")
-        gl.opengl_enabled = not gl.opengl_enabled
-        opengllog("opengl_toggled: %s", gl.opengl_enabled)
+    def _new_window(self, _emitter, window) -> None:
+        # in desktop / monitor / shadow mode, place each new window fullscreen on its own monitor:
+        screen_mode = any(self._remote_server_mode.find(x) >= 0 for x in ("desktop", "monitor", "shadow"))
+        display = self.get_subsystem("display")
+        if display and display.desktop_fullscreen and screen_mode:
+            screen = Gdk.Screen.get_default()
+            n = screen.get_n_monitors()
+            monitor = (len(self.get_windows()) - 1) % n
+            window.fullscreen_on_monitor(screen, monitor)
+            log("fullscreen_on_monitor: %i", monitor)
+
+    def _opengl_toggled(self, emitter) -> None:
+        # the `opengl` subsystem toggled rendering on/off: replace all the windows with new ones:
         window = self.get_subsystem("window")
         if not window:
             return
-        # now replace all the windows with new ones:
         for wid, win in tuple(window._id_to_window.items()):
             window.reinit_window(wid, win)
-        opengllog("replaced all the windows with opengl=%s: %s", gl.opengl_enabled, window._id_to_window)
+        opengllog("replaced all the windows with opengl=%s: %s", emitter.opengl_enabled, window._id_to_window)
         window.reinit_window_icons()
 
     def find_window(self, metadata: typedict, metadata_key: str = "transient-for"):

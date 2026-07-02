@@ -17,8 +17,7 @@ from xpra.common import noerr, may_notify_client
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
 from xpra.net.common import Packet, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, BELL_SET
-from xpra.os_util import gi_import
+from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
 from xpra.util.system import get_run_info
@@ -29,11 +28,17 @@ from xpra.client.base import features
 from xpra.log import Logger
 
 CLIENT_BASES = get_client_base_classes()
-ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
+# Composed subsystems live as separate instances in `client.subsystems` (reached via
+# `get_subsystem(...)`), so they are kept OUT of the client's MRO. `UIXpraClient` only
+# inherits from `XpraClientBase` plus the subsystems still muxed into the client object
+# (currently just `native`/`PlatformClient`; the `base/*` transport mixins go with Phase 3).
+# The full `CLIENT_BASES` list is still used to drive lifecycle/caps/signal dispatch below.
+MUXED_BASES = tuple(c for c in CLIENT_BASES if getattr(c, "PREFIX", "") not in XpraClientBase.COMPOSED_SUBSYSTEMS)
+ClientBaseClass = type('ClientBaseClass', MUXED_BASES, {})
 
 log = Logger("client")
 sublog = Logger("subsystems")
-sublog("UIXpraClient base classes: %s", CLIENT_BASES)
+sublog("UIXpraClient base classes: %s (muxed into the MRO: %s)", CLIENT_BASES, MUXED_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
@@ -326,19 +331,6 @@ class UIXpraClient(ClientBaseClass):
     def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
         self.idle_add(super().send_hello, challenge_response, client_salt)
 
-    def _process_new_window(self, packet: Packet):
-        window = super()._process_new_window(packet)
-        screen_mode = any(self._remote_server_mode.find(x) >= 0 for x in ("desktop", "monitor", "shadow"))
-        display = self.get_subsystem("display")
-        if display and display.desktop_fullscreen and screen_mode:
-            Gdk = gi_import("Gdk")
-            screen = Gdk.Screen.get_default()
-            n = screen.get_n_monitors()
-            monitor = (len(self.get_windows()) - 1) % n
-            window.fullscreen_on_monitor(screen, monitor)
-            log("fullscreen_on_monitor: %i", monitor)
-        return window
-
     ######################################################################
     # server messages:
     # noinspection PyMethodMayBeStatic
@@ -424,12 +416,6 @@ class UIXpraClient(ClientBaseClass):
         notification = self.get_subsystem("notification")
         assert notification.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
         self.send(NOTIFICATION_STATUS, notification.notifications_enabled)
-
-    def send_bell_enabled(self) -> None:
-        window = self.get_subsystem("window")
-        assert window and window.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
-        assert window.server_bell, "cannot toggle bell: the feature is disabled by the server"
-        self.send(BELL_SET, window.bell_enabled)
 
     def send_cursors_enabled(self) -> None:
         cursor = self.get_subsystem("cursor")

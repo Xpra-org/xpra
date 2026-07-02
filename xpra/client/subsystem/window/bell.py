@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.net.common import Packet
+from xpra.net.packet_type import BELL_SET
 from xpra.util.objects import typedict
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
@@ -14,6 +15,11 @@ log = Logger("window")
 
 
 class WindowBell(StubClientMixin):
+    """
+    Bell forwarding. Part of the `window` subsystem, which owns the
+    "bell-toggled" signal (see `WindowManagerClient`): peers subscribe with
+    `get_subsystem("window").connect("bell-toggled", handler)`.
+    """
 
     def __init__(self):
         self.client_supports_bell: bool = False
@@ -22,6 +28,17 @@ class WindowBell(StubClientMixin):
 
     def init(self, opts) -> None:
         self.client_supports_bell = opts.bell
+
+    def set_bell_enabled(self, enabled: bool) -> None:
+        # toggle bell forwarding, tell the server, and let peers (ie: the tray
+        # menu checkbox) sync via the "bell-toggled" signal:
+        if not (self.server_bell and self.client_supports_bell):
+            return
+        if enabled == self.bell_enabled:
+            return
+        self.bell_enabled = enabled
+        self.send(BELL_SET, enabled)
+        self.emit("bell-toggled")
 
     def get_caps(self) -> dict[str, Any]:
         return {

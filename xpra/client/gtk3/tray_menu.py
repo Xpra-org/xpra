@@ -318,22 +318,16 @@ class GTKTrayMenu(GTKMenuHelper):
     def make_bellmenuitem(self) -> Gtk.ImageMenuItem:
         # bell state (server_bell/client_supports_bell/bell_enabled) is owned by the `window` subsystem:
         c = self.get_subsystem("window")
+        assert c
 
         def bell_toggled(*args) -> None:
-            if not c or not (c.server_bell and c.client_supports_bell):
-                return
-            v = bell.get_active()
-            changed = c.bell_enabled != v
-            c.bell_enabled = v
-            if changed:
-                self.client.send_bell_enabled()
+            # the `window` subsystem does the guard / send / signal:
+            c.set_bell_enabled(bell.get_active())
             log("bell_toggled(%s) bell_enabled=%s", args, c.bell_enabled)
         bell = checkitem(_("Bell"), bell_toggled)
         set_sensitive(bell, False)
 
         def set_bell_menuitem(*args) -> None:
-            if not c:
-                return
             log("set_bell_menuitem%s enabled=%s", args, c.bell_enabled)
             can_toggle_bell = c.server_bell and c.client_supports_bell
             bell.set_active(can_toggle_bell and c.bell_enabled)
@@ -342,6 +336,8 @@ class GTKTrayMenu(GTKMenuHelper):
                          _("Cannot forward the system bell: the feature has been disabled"))
         self.after_handshake(set_bell_menuitem)
         self.client.on_server_setting_changed("bell", set_bell_menuitem)
+        # keep the checkbox in sync when the bell is toggled from anywhere:
+        c.connect("bell-toggled", set_bell_menuitem)
         return bell
 
     def make_cursorsmenuitem(self) -> Gtk.ImageMenuItem:
@@ -593,7 +589,8 @@ class GTKTrayMenu(GTKMenuHelper):
 
             def opengl_toggled(*args) -> None:
                 log("opengl_toggled%s", args)
-                self.client.toggle_opengl()
+                if glsub := self.get_subsystem("opengl"):
+                    glsub.toggle_opengl()
 
             gl.connect("toggled", opengl_toggled)
 

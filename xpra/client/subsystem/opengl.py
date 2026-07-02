@@ -13,6 +13,7 @@ from xpra.util.str_fn import csv, pver
 from xpra.util.env import osexpand
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.client.base.stub import StubClientMixin
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.log import Logger
 
 log = Logger("opengl")
@@ -27,10 +28,15 @@ class OpenGLClient(StubClientMixin):
     window class as an opaque type to validate and instantiate. The opengl
     capabilities are reported by the `display` subsystem (which reads this
     subsystem's `opengl_props`).
+
+    Owns the "toggled" signal (via `SignalEmitter`): peers subscribe with
+    `get_subsystem("opengl").connect("toggled", handler)` to react to opengl
+    rendering being turned on/off (ie: the gtk3 client re-creates its windows).
     """
     PREFIX = "opengl"
 
     def __init__(self):
+        SignalEmitter.__init__(self)
         self.opengl_enabled: bool = False
         self.opengl_props: dict[str, Any] = {}
         self.client_supports_opengl: bool = False
@@ -47,6 +53,12 @@ class OpenGLClient(StubClientMixin):
             "supported": self.client_supports_opengl,
             "props": self.opengl_props,
         }
+
+    def toggle_opengl(self, *_args) -> None:
+        self.opengl_enabled = not self.opengl_enabled
+        log("toggle_opengl() opengl_enabled=%s", self.opengl_enabled)
+        # let the client re-create its windows for the new rendering mode:
+        self.emit("toggled")
 
     def init_opengl(self, enable_opengl: str) -> None:
         log(f"init_opengl({enable_opengl})")

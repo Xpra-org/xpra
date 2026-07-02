@@ -76,6 +76,9 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         self.win32_message_source = 0
         self.wheel_delta = 0
         self.client_type = "win32"
+        # connect the win32 window signals + create the native window for each new window:
+        if window := self.get_subsystem("window"):
+            window.connect("new-window", self._new_window)
 
     def __repr__(self):
         return "XpraWin32Client"
@@ -129,8 +132,8 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         from xpra.client.win32.menu import TrayMenu
         return TrayMenu
 
-    def window_registered(self, wid: int, window) -> None:
-        # post-registration hook (the `window` subsystem does the id bookkeeping);
+    def _new_window(self, _emitter, window) -> None:
+        # the `window` subsystem does the id bookkeeping and fires "new-window";
         # connect the win32 window signals and create the native window:
         window.connect("mapped", self.window_mapped_event)
         window.connect("closed", self.window_closed)
