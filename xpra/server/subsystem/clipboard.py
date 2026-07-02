@@ -93,7 +93,7 @@ class ClipboardServer(StubServerMixin):
             ci["client"] = cc.uuid
         return {ClipboardServer.PREFIX: ci}
 
-    def get_server_features(self, server_source=None) -> dict[str, Any]:
+    def get_caps(self, server_source=None) -> dict[str, Any]:
         ch = self._clipboard_helper
         clipboard = ch is not None
         log("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s",
