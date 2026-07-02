@@ -9,8 +9,10 @@ from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.systray import get_backends, get_menu_helper_class
 from xpra.platform.paths import get_icon_filename
+from xpra.client.gui.fake_client import FakeClient
 from xpra.gtk.widget import scaled_image
 from xpra.common import noop
+from xpra.util.objects import AdHocStruct
 from xpra.log import Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
@@ -20,78 +22,39 @@ GdkPixbuf = gi_import("GdkPixbuf")
 log = Logger("client")
 
 
-class FakeApplication:
+def struct(**kwargs):
+    obj = AdHocStruct()
+    obj.__dict__.update(kwargs)
+    return obj
+
+
+class FakeApplication(FakeClient):
 
     def __init__(self):
+        super().__init__()
+        self._subsystems = {}
         self.display_desc = {}
         self.session_name = "Test System Tray"
+        self.server_session_name = ""
         self.windows_enabled = True
-        self.readonly = False
-        self.opengl_enabled = False
         self.modal_windows = False
         self.server_bell = False
-        self.server_cursors = False
-        self.server_readonly = False
         self.server_client_shutdown = True
         self.server_sharing = True
         self.server_sharing_toggle = True
         self.server_lock = True
         self.server_lock_toggle = True
-        self.server_av_sync = True
-        self.server_webcam = True
-        self.server_audio_send = True
-        self.server_audio_receive = True
-        self.server_clipboard = False
-        self.server_encodings = ["png", "rgb"]
-        self.server_encodings_with_quality = []
-        self.server_encodings_with_speed = []
-        self.server_start_new_commands = True
-        self.server_menu = False
-        self.server_commands_info = None
-        self.server_multi_monitors = False
-        self.bandwidth_server_limit = 0
-        self.server_monitors = {}
-        self.bandwidth_limit = 0
-        self.speaker_allowed = True
-        self.speaker_enabled = True
-        self.microphone_enabled = True
-        self.microphone_allowed = True
-        self.client_supports_opengl = True
-        self.client_supports_notifications = True
-        self.client_supports_system_tray = True
-        self.client_supports_clipboard = True
-        self.client_supports_cursors = True
-        self.client_supports_bell = True
         self.client_supports_sharing = True
         self.client_lock = False
-        self.download_server_log = None
         self.remote_file_transfer = True
         self.remote_file_transfer_ask = True
-        self.notifications_enabled = False
-        self.client_clipboard_direction = "both"
-        self.clipboard_enabled = True
-        self.cursors_enabled = True
-        self.default_cursor_data = None
-        self.bell_enabled = False
-        self.keyboard_helper = None
-        self.av_sync = True
-        self.webcam_forwarding = True
-        self.webcam_device = None
-        self.can_scale = True
-        self.xscale = 1.0
-        self.yscale = 1.0
-        self.quality = 80
-        self.speed = 50
-        self.encoding = "png"
-        self.send_download_request = None
         self._remote_subcommands = ()
-        self._process_encodings = noop
-        self._window_to_id = {}
         self.remote_printing_ask = False
         self.remote_open_files_ask = False
         self.remote_open_url_ask = False
         self._remote_server_log = ""
-        self.start_new_commands = False
+        self.client_supports_system_tray = True
+        self.init_fake_subsystems()
         classes = [get_menu_helper_class()]
         try:
             from xpra.client.gtk3.tray_menu import GTKTrayMenu
@@ -121,7 +84,156 @@ class FakeApplication:
                                        self.xpra_tray_mouseover, self.xpra_tray_exit)
             except Exception as e:
                 log.warn("failed to create tray %s: %s", tray_class, e)
+        self._subsystems["tray"] = self.tray
         self.tray.set_tooltip("Test System Tray")
+
+    def init_fake_subsystems(self) -> None:
+        self.server_bell = False
+        self.client_supports_bell = True
+        self.bell_enabled = False
+        self.wheel_map = {
+            4: 4,
+            5: 5,
+        }
+
+        opengl = struct(
+            opengl_enabled=False,
+            client_supports_opengl=True,
+            opengl_props={},
+        )
+        command = struct(
+            server_start_new_commands=True,
+            server_commands_info=None,
+            server_commands_signals=(),
+            start_new_commands=False,
+            server_menu=False,
+            send_start_command=noop,
+        )
+        display = struct(
+            can_scale=True,
+            xscale=1.0,
+            yscale=1.0,
+            server_multi_monitors=False,
+            server_monitors={},
+            server_add_monitor_label="",
+            server_new_monitor_resolutions=(),
+        )
+        display.scaleset = lambda xscale, yscale: self.set_scaling(display, xscale, yscale)
+        display.cp = lambda x, y: (round(x * display.xscale), round(y * display.yscale))
+
+        encoding = struct(
+            encoding="png",
+            quality=80,
+            min_quality=-1,
+            speed=50,
+            min_speed=-1,
+            server_encodings=["png", "rgb"],
+            server_encodings_with_quality=[],
+            server_encodings_with_speed=[],
+            server_encodings_with_lossless_mode=[],
+            get_encodings=self.get_encodings,
+            get_core_encodings=self.get_encodings,
+            send_quality=noop,
+            send_min_quality=noop,
+            send_speed=noop,
+            send_min_speed=noop,
+        )
+        encoding.set_encoding = lambda enc: self.set_encoding(encoding, enc)
+
+        audio = struct(
+            speaker_allowed=True,
+            speaker_enabled=True,
+            microphone_allowed=True,
+            microphone_enabled=True,
+            server_audio_send=True,
+            server_audio_receive=True,
+            av_sync=True,
+            av_sync_delta=0,
+            server_av_sync=True,
+            send_audio_sync=noop,
+        )
+        audio.start_receiving_audio = lambda: self.set_audio_enabled(audio, "speaker_enabled", True)
+        audio.stop_receiving_audio = lambda: self.set_audio_enabled(audio, "speaker_enabled", False)
+        audio.start_sending_audio = lambda: self.set_audio_enabled(audio, "microphone_enabled", True)
+        audio.stop_sending_audio = lambda: self.set_audio_enabled(audio, "microphone_enabled", False)
+
+        webcam = struct(
+            server_webcam=True,
+            webcam_forwarding=True,
+            webcam_device=None,
+            webcam_device_no=-1,
+        )
+        webcam.start_sending_webcam = lambda device_no=0, device="": self.set_webcam_device(webcam, device_no, device)
+        webcam.stop_sending_webcam = lambda: self.set_webcam_device(webcam, -1, None)
+
+        self._subsystems.update({
+            "audio": audio,
+            "bandwidth": struct(
+                bandwidth_server_limit=0,
+                bandwidth_limit=0,
+                send_bandwidth_limit=noop,
+            ),
+            "clipboard": struct(
+                server_clipboard=False,
+                client_supports_clipboard=True,
+                clipboard_enabled=True,
+                clipboard_helper=None,
+                client_clipboard_direction="both",
+                send_clipboard_selections=noop,
+                emit=noop,
+            ),
+            "command": command,
+            "cursor": struct(
+                server_cursors=False,
+                client_supports_cursors=True,
+                cursors_enabled=True,
+                default_cursor_data=None,
+                reset_cursor=noop,
+            ),
+            "display": display,
+            "encoding": encoding,
+            "keyboard": struct(keyboard_helper=None),
+            "notification": struct(
+                client_supports_notifications=True,
+                notifications_enabled=False,
+            ),
+            "opengl": opengl,
+            "webcam": webcam,
+            "window": self,
+        })
+
+    def get_subsystem(self, name: str):
+        return self._subsystems.get(name)
+
+    @staticmethod
+    def set_scaling(display, xscale: float, yscale: float) -> None:
+        display.xscale = xscale
+        display.yscale = yscale
+
+    @staticmethod
+    def set_encoding(encoding, value: str) -> None:
+        encoding.encoding = value
+
+    @staticmethod
+    def set_audio_enabled(audio, name: str, enabled: bool) -> None:
+        setattr(audio, name, enabled)
+
+    @staticmethod
+    def set_webcam_device(webcam, device_no: int, device) -> None:
+        webcam.webcam_device_no = device_no
+        webcam.webcam_device = device
+
+    def set_bell_enabled(self, enabled: bool) -> None:
+        self.bell_enabled = enabled
+
+    def send_refresh_all(self, *_args) -> None:
+        log("send_refresh_all ignored")
+
+    def reinit_windows(self, *_args) -> None:
+        log("reinit_windows ignored")
+
+    def reinit_window_icons(self, *_args) -> None:
+        log("reinit_window_icons ignored")
 
     def after_handshake(self, cb: Callable, *args) -> None:
         GLib.idle_add(cb, *args)
@@ -149,6 +261,33 @@ class FakeApplication:
         """ this method is part of the GUI client "interface" """
 
     def send_sharing_enabled(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def send_lock_enabled(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def send_notify_enabled(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def send_cursors_enabled(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def send_remove_monitor(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def send_add_monitor(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def send_shutdown_server(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def configure_server_debug(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def download_server_log(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def send_download_request(self, *_args) -> None:
         """ this method is part of the GUI client "interface" """
 
     def get_image(self, icon_name: str, size=None):

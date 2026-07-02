@@ -361,7 +361,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def show_server_commands(self, *_args) -> None:
         cmd = self.get_subsystem("command")
-        sci = getattr(cmd, "server_commands_info", False)
+        sci = bool(cmd and cmd.server_commands_info)
         if not sci:
             log.warn("Warning: cannot show server commands")
             log.warn(" the feature is not available")
@@ -375,7 +375,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def show_start_new_command(self, *args) -> None:
         cmd = self.get_subsystem("command")
-        ssnc = getattr(cmd, "server_start_new_commands", False)
+        ssnc = bool(cmd and cmd.server_start_new_commands)
         if not ssnc:
             log.warn("Warning: cannot start new commands")
             log.warn(" the feature is not available")
@@ -1002,13 +1002,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def _opengl_toggled(self, emitter) -> None:
         # the `opengl` subsystem toggled rendering on/off: replace all the windows with new ones:
-        window = self.get_subsystem("window")
-        if not window:
-            return
-        for wid, win in tuple(window._id_to_window.items()):
-            window.reinit_window(wid, win)
-        opengllog("replaced all the windows with opengl=%s: %s", emitter.opengl_enabled, window._id_to_window)
-        window.reinit_window_icons()
+        if window := self.get_subsystem("window"):
+            window.reinit_windows()
+            window.reinit_window_icons()
 
     def find_window(self, metadata: typedict, metadata_key: str = "transient-for"):
         fwid = metadata.intget(metadata_key, -1)

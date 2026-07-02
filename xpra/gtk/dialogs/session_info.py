@@ -400,6 +400,9 @@ class SessionInfo(Gtk.Window):
             GLib.timeout_add(100, self.populate_audio_stats)
         add_close_accel(self, self.close)
 
+    def get_client_subsystem(self, name: str):
+        return self.client.get_subsystem(name)
+
     def get_window_title(self) -> str:
         t = [_("Session Info")]
         if c := self.client:
@@ -676,12 +679,16 @@ class SessionInfo(Gtk.Window):
         def clientgl(prop="opengl", default_value="n/a") -> str:
             if not self.show_client:
                 return ""
-            return make_version_str(self.client.opengl_props.get(prop, default_value))
+            opengl = self.get_client_subsystem("opengl")
+            props = opengl.opengl_props if opengl else {}
+            return make_version_str(props.get(prop, default_value))
 
         def servergl(prop="opengl", default_value="n/a") -> str:
             if not self.show_server:
                 return ""
-            return make_version_str(typedict(self.client.server_opengl or {}).get(prop, default_value))
+            display = self.get_client_subsystem("display")
+            server_opengl = display.server_opengl if display else None
+            return make_version_str(typedict(server_opengl or {}).get(prop, default_value))
 
         for prop in ("OpenGL", "Vendor", "PyOpenGL"):
             key = prop.lower()
@@ -703,15 +710,17 @@ class SessionInfo(Gtk.Window):
         return not self.is_closed
 
     def show_opengl_state(self) -> None:
-        if self.client.opengl_enabled:
+        opengl = self.get_client_subsystem("opengl")
+        props = opengl.opengl_props if opengl else {}
+        if opengl and opengl.opengl_enabled:
             glinfo = "%s / %s" % (
-                self.client.opengl_props.get("vendor", ""),
-                self.client.opengl_props.get("renderer", ""),
+                props.get("vendor", ""),
+                props.get("renderer", ""),
             )
-            info = get_glbuffering_info(self.client.opengl_props)
+            info = get_glbuffering_info(props)
         else:
             # info could be telling us that the gl bindings are missing:
-            glinfo = self.client.opengl_props.get("info", "disabled")
+            glinfo = props.get("info", "disabled")
             info = "n/a"
         self.client_opengl_label.set_text(glinfo)
         self.opengl_buffering.set_text(info)
@@ -721,7 +730,11 @@ class SessionInfo(Gtk.Window):
             return
         wr = []
         renderers = {}
-        for wid, window in tuple(self.client._id_to_window.items()):
+        window_sub = self.get_client_subsystem("window")
+        if not window_sub:
+            return
+        id_to_window = window_sub._id_to_window
+        for wid, window in tuple(id_to_window.items()):
             renderers.setdefault(window.get_backing_class(), []).append(wid)
         for bclass, windows in renderers.items():
             wr.append("%s (%i)" % (bclass.__name__.replace("Backing", ""), len(windows)))
@@ -758,14 +771,22 @@ class SessionInfo(Gtk.Window):
             self.server_cursors_icon = image_row(_("Cursors"))
 
     def populate_features(self) -> bool:
+        display = self.get_client_subsystem("display")
         size_info = ""
         if features.window:
-            if self.client.server_actual_desktop_size != (0, 0):
-                w, h = self.client.server_actual_desktop_size
+            if display:
+                server_actual_desktop_size = display.server_actual_desktop_size
+                server_max_desktop_size = display.server_max_desktop_size
+                server_randr = display.server_randr
+            else:
+                server_actual_desktop_size = server_max_desktop_size = (0, 0)
+                server_randr = False
+            if server_actual_desktop_size != (0, 0):
+                w, h = server_actual_desktop_size
                 size_info = f"{w}x{h}"
-                if self.client.server_randr and self.client.server_max_desktop_size != (0, 0):
-                    size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
-                bool_icon(self.server_randr_icon, self.client.server_randr)
+                if server_randr and server_max_desktop_size != (0, 0):
+                    size_info += " (max %s)" % ("x".join([str(x) for x in server_max_desktop_size]))
+                bool_icon(self.server_randr_icon, server_randr)
         else:
             size_info = "unknown"
             unknown = get_icon_pixbuf("unknown.png")
@@ -774,25 +795,31 @@ class SessionInfo(Gtk.Window):
         self.server_randr_label.set_text("%s" % size_info)
         if self.show_client:
             root_w, root_h = self.client.get_root_size()
-            if features.window and (self.client.xscale != 1 or self.client.yscale != 1):
-                sw, sh = self.client.cp(root_w, root_h)
+            if features.window and display and (display.xscale != 1 or display.yscale != 1):
+                sw, sh = display.cp(root_w, root_h)
                 display_info = "%ix%i (scaled from %ix%i)" % (sw, sh, root_w, root_h)
             else:
                 display_info = "%ix%i" % (root_w, root_h)
             self.client_display.set_text(display_info)
-            bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
+            opengl = self.get_client_subsystem("opengl")
+            bool_icon(self.client_opengl_icon, bool(opengl and opengl.client_supports_opengl))
             self.show_window_renderers()
 
         if features.mmap:
-            bool_icon(self.server_mmap_icon, bool(self.client.mmap_read_area))
+            mmap = self.get_client_subsystem("mmap")
+            bool_icon(self.server_mmap_icon, bool(mmap and mmap.mmap_read_area))
         if features.clipboard:
-            bool_icon(self.server_clipboard_icon, self.client.server_clipboard)
+            clipboard = self.get_client_subsystem("clipboard")
+            bool_icon(self.server_clipboard_icon, bool(clipboard and clipboard.server_clipboard))
         if features.notification:
-            bool_icon(self.server_notifications_icon, self.client.server_notifications)
+            notification = self.get_client_subsystem("notification")
+            bool_icon(self.server_notifications_icon, bool(notification and notification.server_notifications))
         if features.window:
-            bool_icon(self.server_bell_icon, self.client.server_bell)
+            window = self.get_client_subsystem("window")
+            bool_icon(self.server_bell_icon, bool(window and window.server_bell))
         if features.cursor:
-            bool_icon(self.server_cursors_icon, self.client.server_cursors)
+            cursor = self.get_client_subsystem("cursor")
+            bool_icon(self.server_cursors_icon, bool(cursor and cursor.server_cursors))
         return True
 
     def add_codecs_tab(self) -> None:
@@ -1168,8 +1195,12 @@ class SessionInfo(Gtk.Window):
             setlabels(self.regions_sizes_labels, region_sizes, rounding=std_unit_dec)
             setlabels(self.pixels_per_second_labels, pps, rounding=std_unit_dec)
 
+            window_sub = self.get_client_subsystem("window")
+            if not window_sub:
+                return True
+            window_to_id = window_sub._window_to_id
             windows, gl, transient, trays = 0, 0, 0, 0
-            for w in self.client._window_to_id.keys():
+            for w in window_to_id.keys():
                 if w.is_tray():
                     trays += 1
                 elif w.is_OR():
@@ -1181,11 +1212,12 @@ class SessionInfo(Gtk.Window):
             self.windows_managed_label.set_text(str(windows))
             self.transient_managed_label.set_text(str(transient))
             self.trays_managed_label.set_text(str(trays))
-            if self.client.client_supports_opengl:
+            opengl = self.get_client_subsystem("opengl")
+            if opengl and opengl.client_supports_opengl:
                 self.opengl_label.set_text(str(gl))
 
             # update encoder and renderer labels:
-            id_to_window = getattr(self.client, "_id_to_window", {})
+            id_to_window = window_sub._id_to_window
             window_encoder_stats = self.get_window_encoder_stats()
             # remove labels for windows that no longer exist:
             for wid in list(self.encoder_labels):
@@ -1247,7 +1279,10 @@ class SessionInfo(Gtk.Window):
                 if isinstance(w, dict):
                     window_dict.update(w)
         if window_dict:
-            id_to_window = self.client._id_to_window
+            window_sub = self.get_client_subsystem("window")
+            if not window_sub:
+                return {}
+            id_to_window = window_sub._id_to_window
             for k, v in window_dict.items():
                 with log.trap_error("Error: cannot lookup window dict"):
                     wid = int(k)
@@ -1462,17 +1497,28 @@ class SessionInfoClient(InfoTimerClient):
             return d
 
         from xpra.client.base.serverinfo import get_remote_lib_versions
-        features = rtdict("features")
-        self.server_clipboard = features.boolget("clipboard")
-        self.server_notifications = features.boolget("notification")
-        display = rtdict("display")
-        self.server_opengl = rtdict("display", "opengl")
-        self.server_bell = display.boolget("bell")
-        self.server_cursors = display.boolget("cursors")
-        self.server_randr = display.boolget("randr")
+        feature_info = rtdict("features")
+        clipboard = self.get_subsystem("clipboard")
+        if clipboard:
+            clipboard.server_clipboard = feature_info.boolget("clipboard")
+        notification = self.get_subsystem("notification")
+        if notification:
+            notification.server_notifications = feature_info.boolget("notification")
+        display_info = rtdict("display")
+        window = self.get_subsystem("window")
+        if window:
+            window.server_bell = display_info.boolget("bell")
+        cursor = self.get_subsystem("cursor")
+        if cursor:
+            cursor.server_cursors = display_info.boolget("cursors")
+        display = self.get_subsystem("display")
+        if display:
+            display.server_opengl = rtdict("display", "opengl")
+            display.server_randr = display_info.boolget("randr")
         server = rtdict("server")
-        self.server_actual_desktop_size = server.inttupleget("root_window_size")
-        self.server_max_desktop_size = server.inttupleget("max_desktop_size")
+        if display:
+            display.server_actual_desktop_size = server.intpair("root_window_size")
+            display.server_max_desktop_size = server.intpair("max_desktop_size")
         self._remote_lib_versions = get_remote_lib_versions(rtdict("server"))
         encodings = rtdict("encodings")
         self.server_core_encodings = encodings.strtupleget("core")

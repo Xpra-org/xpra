@@ -263,9 +263,10 @@ class OSXMenuHelper(GTKTrayMenu):
             # set_sensitive(bool) does not work on OSX,
             # so we only add the menu item if it does something
             def add_ah(*_args) -> None:
-                if self.client.server_start_new_commands:
+                command = self.get_subsystem("command")
+                if command and command.server_start_new_commands:
                     add(server_menu, self.make_runcommandmenuitem())
-                if SHOW_SERVER_COMMANDS and self.client.server_commands_info:
+                if SHOW_SERVER_COMMANDS and command and command.server_commands_info:
                     add(server_menu, self.make_servercommandsmenuitem())
                 if SHOW_UPLOAD and self.client.remote_file_transfer:
                     add(server_menu, self.make_uploadmenuitem())
@@ -375,9 +376,10 @@ class OSXMenuHelper(GTKTrayMenu):
         pass  # no speed menu on MacOS
 
     def _get_keyboard(self):
-        if not self.client or not self.client.keyboard_helper:
+        keyboard = self.get_subsystem("keyboard")
+        if not keyboard or not keyboard.keyboard_helper:
             return None
-        return self.client.keyboard_helper.keyboard
+        return keyboard.keyboard_helper.keyboard
 
     def make_swapkeysmenuitem(self):
         def swapkeys_toggled(*args):

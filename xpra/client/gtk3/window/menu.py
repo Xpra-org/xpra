@@ -209,10 +209,10 @@ class WindowMenuHelper(GTKMenuHelper):
     def make_reinitmenuitem(self) -> Gtk.ImageMenuItem:
         def force_reinit(*args) -> None:
             log("force reinit%s", args)
-            self.client.reinit_window(self.window.wid, self.window)
-            reset_icon = getattr(self.window, "reset_icon", None)
-            if reset_icon:
-                reset_icon()
+            if window := self.client.get_subsystem("window"):
+                window.reinit_window(self.window.wid, self.window)
+            if tray := self.client.get_subsystem("tray"):
+                tray.reset_tray_icon()
 
         return self.menuitem("Re-initialize", "reinitialize.png", cb=force_reinit)
 

@@ -33,7 +33,8 @@ class PlatformClient(StubClientMixin):
 
     def init_ui(self, opts) -> None:
         swap_keys = opts.swap_keys
-        kh = getattr(self, "keyboard_helper", None)
+        keyboard = self.get_subsystem("keyboard")
+        kh = keyboard.keyboard_helper if keyboard else None
         log("setting swap_keys=%s using %s", swap_keys, kh)
         if kh and kh.keyboard:
             log("%s.swap_keys=%s", kh.keyboard, swap_keys)
@@ -79,12 +80,14 @@ class PlatformClient(StubClientMixin):
 
     def cg_display_change(self, display, flags, userinfo) -> None:
         log("cg_display_change%s", (display, flags, userinfo))
-        # The display mode has changed
+        if not (flags & kCGDisplaySetModeFlag):
+            # The display mode has not changed.
+            return
         # opengl windows may need to be re-created since the GPU may have changed:
-        opengl = getattr(self, "opengl_enabled", False)
-        reinit_windows = getattr(self, "reinit_windows", noop)
-        if (flags & kCGDisplaySetModeFlag) and opengl:
-            reinit_windows()
+        opengl = self.get_subsystem("opengl")
+        window = self.get_subsystem("window")
+        if opengl and window and opengl.opengl_enabled:
+            window.reinit_windows()
 
     def cg_check_display(self) -> bool:
         log("cg_check_display()")

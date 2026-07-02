@@ -94,7 +94,8 @@ class ServerCommandsWindow:
             b = self.btn(label, tooltip, callback, icon_name)
             hbox.pack_start(b)
 
-        if self.client.server_start_new_commands:
+        command = self.get_client_subsystem("command")
+        if command and command.server_start_new_commands:
             btn("Start New", "Run a command on the server", self.client.show_start_new_command, "forward.png")
         btn("Close", "", self.close, "quit.png")
 
@@ -102,6 +103,15 @@ class ServerCommandsWindow:
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
+
+    def get_client_subsystem(self, name: str):
+        return self.client.get_subsystem(name)
+
+    def get_server_commands_signals(self) -> tuple[str, ...]:
+        command = self.get_client_subsystem("command")
+        if not command:
+            return ()
+        return tuple(command.server_commands_signals)
 
     def btn(self, label: str, tooltip: str, callback: Callable, icon_name="") -> Gtk.Button:
         btn = Gtk.Button(label=label)
@@ -123,7 +133,8 @@ class ServerCommandsWindow:
                 self.alignment.remove(self.contents)
             grid = Gtk.Grid()
             headers = ["", "PID", "Command", "Exit Code"]
-            if self.client.server_commands_signals:
+            server_commands_signals = self.get_server_commands_signals()
+            if server_commands_signals:
                 headers.append("Send Signal")
             for i, text in enumerate(headers):
                 grid.attach(l5(text), i, 0, 1, 1)
@@ -144,12 +155,14 @@ class ServerCommandsWindow:
                     windows = ()
                     from xpra.client.base import features
                     if features.window:
-                        windows = tuple(w for w in self.client._id_to_window.values()
-                                        if getattr(w, "_metadata", {}).get("pid") == pid)
-                        log(f"windows matching pid={pid}: {windows}")
+                        window = self.get_client_subsystem("window")
+                        if window:
+                            windows = tuple(w for w in window._id_to_window.values()
+                                            if w._metadata.get("pid") == pid)
+                            log(f"windows matching pid={pid}: {windows}")
                     icon = icon_widget(windows)
                     widgets = [icon, l5(f"{pid}"), l5(cmd_str), l5(rstr)]
-                    if self.client.server_commands_signals:
+                    if server_commands_signals:
                         if returncode is None:
                             widgets.append(self.signal_button(pid))
                     for i, widget in enumerate(widgets):
@@ -163,13 +176,14 @@ class ServerCommandsWindow:
     def signal_button(self, pid) -> Gtk.HBox:
         hbox = Gtk.HBox()
         combo = Gtk.ComboBoxText()
-        for x in self.client.server_commands_signals:
+        server_commands_signals = self.get_server_commands_signals()
+        for x in server_commands_signals:
             combo.append_text(x)
 
         def send(*_args) -> None:
             a = combo.get_active()
             if a >= 0:
-                signame = self.client.server_commands_signals[a]
+                signame = server_commands_signals[a]
                 self.client.send("command-signal", pid, signame)
 
         b = self.btn("Send", "", send, "forward.png")
@@ -257,8 +271,9 @@ def main() -> int:  # pragma: no cover
             'start-on-disconnect': (),
         }
         client.server_last_info = {"commands": commands_info}
-        client.server_start_new_commands = True
-        client.server_commands_signals = ("SIGINT", "SIGTERM", "SIGUSR1")
+        command = AdHocStruct()
+        command.server_start_new_commands = True
+        command.server_commands_signals = ("SIGINT", "SIGTERM", "SIGUSR1")
 
         """
         this is for testing only - we are not connected to a server:
@@ -267,9 +282,15 @@ def main() -> int:  # pragma: no cover
         client.send = noop
         window1 = AdHocStruct()
         window1._metadata = {"pid": 542}  # pylint: disable=protected-access
-        client._id_to_window = {  # pylint: disable=protected-access
+        window = AdHocStruct()
+        window._id_to_window = {  # pylint: disable=protected-access
             1: window1
         }
+        subsystems = {
+            "command": command,
+            "window": window,
+        }
+        client.get_subsystem = subsystems.get
 
         def show_start_new_command(*_args) -> None:
             from xpra.gtk.dialogs.start_new_command import get_start_new_command_gui
