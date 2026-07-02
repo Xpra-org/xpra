@@ -11,7 +11,7 @@ import struct
 from collections.abc import Callable
 
 from xpra.common import SizedBuffer
-from xpra.util.str_fn import strtobytes, memoryview_to_bytes
+from xpra.util.str_fn import memoryview_to_bytes
 
 PNG_HEADER = struct.pack("BBBBBBBB", 137, 80, 78, 71, 13, 10, 26, 10)
 
@@ -39,7 +39,7 @@ def is_jpeg(data: bytes) -> bool:
 
 
 def is_svg(data: bytes) -> bool:
-    return strtobytes(data[:5]) == b"<?xml" or strtobytes(data[:4]) == b"<svg"
+    return data[:5] == b"<?xml" or data[:4] == b"<svg"
 
 
 XPM_HEADER = b"/* XPM */"
