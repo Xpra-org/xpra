@@ -7,13 +7,14 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.common import noop
+from xpra.util.glib_scheduler import GLibScheduler
 from xpra.util.objects import AdHocStruct
 from xpra.log import Logger
 
 log = Logger("client")
 
 
-class FakeClient(AdHocStruct):
+class FakeClient(AdHocStruct, GLibScheduler):
     def __init__(self):
         self.title = ""
         self.readonly = False

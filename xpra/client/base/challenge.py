@@ -125,7 +125,8 @@ class ChallengeClient(StubClientMixin):
             kwargs["password"] = self.password
         if self.password_file:
             kwargs["password-files"] = self.password_file
-        kwargs["challenge_prompt_function"] = self.do_process_challenge_prompt
+        dialogs = self.get_subsystem("dialogs")
+        kwargs["challenge_prompt_function"] = getattr(dialogs, "do_process_challenge_prompt", self.do_process_challenge_prompt)
 
         auth_mod_name = f"xpra.challenge.{mod_name}"
         log(f"auth module name for {auth!r}: {auth_mod_name!r}")

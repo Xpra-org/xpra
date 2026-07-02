@@ -63,25 +63,26 @@ class FileMixin(StubClientMixin, FileTransferHandler):
 
     # `FileTransferHandler`'s internals call these three back on `self` as hooks
     # (eg: to prompt the user, or report progress); toolkit clients (eg: gtk3)
-    # override them with real UI - reach that override via `self.client` since
-    # this subsystem is composed (a separate instance, not in the client's MRO);
-    # fall back to the base (no-op) implementation for clients that don't.
+    # provide them via the optional `dialogs` subsystem.
     def ask_data_request(self, cb_answer: Callable[[bool], None], *args, **kwargs) -> None:
-        fn = getattr(self.client, "ask_data_request", None)
+        dialogs = self.get_subsystem("dialogs")
+        fn = getattr(dialogs, "ask_data_request", None)
         if fn:
             fn(cb_answer, *args, **kwargs)
         else:
             FileTransferHandler.ask_data_request(self, cb_answer, *args, **kwargs)
 
     def file_size_warning(self, *args) -> None:
-        fn = getattr(self.client, "file_size_warning", None)
+        dialogs = self.get_subsystem("dialogs")
+        fn = getattr(dialogs, "file_size_warning", None)
         if fn:
             fn(*args)
         else:
             FileTransferHandler.file_size_warning(self, *args)
 
     def transfer_progress_update(self, *args, **kwargs) -> None:
-        fn = getattr(self.client, "transfer_progress_update", None)
+        dialogs = self.get_subsystem("dialogs")
+        fn = getattr(dialogs, "transfer_progress_update", None)
         if fn:
             fn(*args, **kwargs)
         else:

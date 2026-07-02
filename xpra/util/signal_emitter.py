@@ -19,18 +19,27 @@ class SignalEmitter:
     by inheriting from this class.
     This allows us to exercise more functionality when running the unit tests.
     """
+    __signals__ = ()
 
     def __init__(self):
         self._signal_callbacks: dict[str, list[tuple[Callable, list[Any]]]] = {}
 
     def connect(self, signal: str, cb: Callable, *args) -> None:
         """ gobject style signal registration """
+        self._verify_signal(signal)
         log("connect(%s, %s, %s)", signal, cb, args)
         self._signal_callbacks.setdefault(signal, []).append((cb, list(args)))
 
     def emit(self, signal: str, *extra_args):
+        self._verify_signal(signal)
         log("%s.emit(%s, %s)", self, signal, extra_args)
         self._fire_callback(signal, extra_args)
+
+    def _verify_signal(self, signal: str) -> None:
+        # catches typos and signals that were renamed/removed on one side only:
+        # every class using a signal name should declare it in its own `__signals__`.
+        if signal not in self.__signals__:
+            log.warn("Warning: %r is not a declared signal of %s", signal, type(self).__name__)
 
     def _should_call_direct(self) -> bool:
         """

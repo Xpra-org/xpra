@@ -114,6 +114,48 @@ class FileClientTest(ClientMixinTest):
             client.cleanup()
         cleanup.assert_called_once_with(client)
 
+    def test_file_hooks_delegate_to_dialogs_subsystem(self):
+        from xpra.client.base.file import FileMixin
+
+        calls = []
+
+        class Dialogs:
+
+            def ask_data_request(self, cb_answer, *args, **kwargs) -> None:
+                calls.append(("ask", args, kwargs))
+                cb_answer(True)
+
+            def file_size_warning(self, *args) -> None:
+                calls.append(("warning", args))
+
+            def transfer_progress_update(self, *args, **kwargs) -> None:
+                calls.append(("progress", args, kwargs))
+
+        class Client:
+            subsystems = {"dialogs": Dialogs()}
+
+            def idle_add(self, *_args, **_kwargs) -> int:
+                return 0
+
+            def timeout_add(self, *_args, **_kwargs) -> int:
+                return 0
+
+            def source_remove(self, *_args, **_kwargs) -> None:
+                return None
+
+        client = FileMixin(Client())
+        answers = []
+        client.ask_data_request(answers.append, "sid", "file", "url", 1, False, False)
+        client.file_size_warning("upload", "local", "x", 2, 1)
+        client.transfer_progress_update(True, 1, position=2)
+
+        self.assertEqual(answers, [True])
+        self.assertEqual(calls, [
+            ("ask", ("sid", "file", "url", 1, False, False), {}),
+            ("warning", ("upload", "local", "x", 2, 1)),
+            ("progress", (True, 1), {"position": 2}),
+        ])
+
 
 def main():
     import unittest

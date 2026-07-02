@@ -52,10 +52,11 @@ class UIXpraClient(ClientBaseClass):
     # NOTE: these signals aren't registered here because this class
     # does not extend GObject,
     # the gtk client subclasses will take care of it.
-    # these are all "no-arg" signals
-    __signals__ = ["first-ui-received", ]
-    for c in CLIENT_BASES:
-        __signals__ += c.__signals__
+    # these are all "no-arg" signals.
+    # composed subsystems own and declare their own signals now (see their
+    # `__signals__`) and are not aggregated here - `SignalEmitter` warns if a
+    # signal used with `emit`/`connect` isn't in the emitter's own list.
+    __signals__ = ["first-ui-received"] + XpraClientBase.__signals__
 
     # noinspection PyMissingConstructor
     def __init__(self):  # pylint: disable=super-init-not-called

@@ -82,6 +82,7 @@ COMPOSED_SUBSYSTEMS: tuple[str, ...] = (
     "aes",
     "challenge",
     "ssl-upgrade",
+    "dialogs",
 )
 # composed subsystems are real instances, kept OUT of the client's MRO
 # (see `xpra.client.gui.ui_client_base.MUXED_BASES` for the mirror of this):
