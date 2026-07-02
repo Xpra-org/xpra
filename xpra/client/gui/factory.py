@@ -14,6 +14,9 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.display:
         from xpra.client.subsystem.display import DisplayClient
         CLIENT_BASES.append(DisplayClient)
+    if features.opengl:
+        from xpra.client.subsystem.opengl import OpenGLClient
+        CLIENT_BASES.append(OpenGLClient)
     if features.window:
         from xpra.client.subsystem.window import WindowClient
         CLIENT_BASES.append(WindowClient)

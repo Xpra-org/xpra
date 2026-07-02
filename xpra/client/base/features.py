@@ -16,6 +16,7 @@ file = True
 printer = True
 display = True
 window = True
+opengl = True
 cursor = True
 gstreamer = True
 x11 = True
@@ -76,6 +77,7 @@ def set_client_features(opts) -> None:
     features.printer = features.file and b(opts.printing)
     features.display = opts.windows
     features.window = opts.windows
+    features.opengl = opts.windows and b(opts.opengl) and icheck("xpra.opengl")
     features.cursor = opts.windows and opts.cursors
     features.gstreamer = opts.gstreamer
     features.x11 = opts.backend in ("x11", "auto") and icheck("xpra.x11", not (WIN32 or OSX))
@@ -129,6 +131,7 @@ def enforce_client_features() -> None:
         "printer": "xpra.client.base.printer",
         "display": "xpra.client.subsystem.display",
         "window": "xpra.client.subsystem.window",
+        "opengl": "xpra.opengl,xpra.client.subsystem.opengl",
         "cursor": "xpra.client.subsystem.cursor",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",

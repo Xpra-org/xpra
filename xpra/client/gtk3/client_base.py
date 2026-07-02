@@ -7,16 +7,15 @@
 
 import os
 import shlex
-from importlib import import_module
 from collections.abc import Callable, Sequence, Iterable
 from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
 
-from xpra.common import noop, may_show_progress, may_notify_client
+from xpra.common import noop, may_show_progress
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer, pver
-from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
+from xpra.util.str_fn import csv, Ellipsizer
+from xpra.util.env import envint, envbool, first_time, IgnoreWarningsContext, ignorewarnings
 from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland
@@ -24,10 +23,10 @@ from xpra.util.io import load_binary_file
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE, pretty_socket
 from xpra.common import noerr, is_covered_by_opaque_region
 from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
-from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
+from xpra.constants import DEFAULT_METADATA_SUPPORTED
 from xpra.util.stats import std_unit
 from xpra.scripts.config import InitExit
-from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.util.parsing import FALSE_OPTIONS
 from xpra.gtk.cursors import get_default_cursor, make_cursor
 from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow
@@ -121,7 +120,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         __gsignals__[signal_name] = no_arg_signal
 
     ClientWindowClass: type | None = None
-    GLClientWindowClass: type | None = None
 
     def __init__(self):
         GObjectClientAdapter.__init__(self)
@@ -136,13 +134,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         if kb := self.get_subsystem("keyboard"):
             kb.keyboard_helper_class = GTKKeyboardHelper
         self.data_send_requests = {}
-        # opengl bits:
-        self.client_supports_opengl = False
-        self.opengl_force = False
-        self.opengl_enabled = False
-        self.opengl_props = {}
-        self.gl_max_viewport_dims = 0, 0
-        self.gl_texture_size_limit = 0
+        # opengl state (enabled/props/force/texture limits) is owned by the
+        # `display` subsystem; the opengl methods below reach it via
+        # `get_subsystem("display")`. Only the window class references stay here.
         # cursor tracking state (`_cursors`, `_last_cursor_data`) is owned by the
         # `cursor` subsystem; the render methods below reach it via get_subsystem.
         # frame request hidden window:
@@ -194,7 +188,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
         from xpra.client.base import features
         if features.display:
-            Gdk.Screen.get_default().connect("size-changed", self.screen_size_changed)
+            Gdk.Screen.get_default().connect("size-changed", self.get_subsystem("display").screen_size_changed)
         if features.window:
             # call this once early:
             ignorewarnings(self.get_mouse_position)
@@ -398,11 +392,11 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     ################################
     # monitors
     def send_remove_monitor(self, index) -> None:
-        assert self.server_monitors
+        assert self.get_subsystem("display").server_monitors
         self.send("configure-monitor", "remove", "index", index)
 
     def send_add_monitor(self, resolution="1024x768") -> None:
-        assert self.server_monitors
+        assert self.get_subsystem("display").server_monitors
         self.send("configure-monitor", "add", resolution)
 
     ################################
@@ -609,9 +603,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         def init_bug_report() -> None:
             # skip things we aren't using:
             keyboard = self.get_subsystem("keyboard")
+            gl = self.get_subsystem("opengl")
             includes = {
                 "keyboard": bool(keyboard and keyboard.keyboard_helper),
-                "opengl": self.opengl_enabled,
+                "opengl": bool(gl and gl.opengl_enabled),
             }
 
             def get_server_info() -> typedict:
@@ -619,7 +614,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 return getattr(server_info, "server_last_info", typedict())
 
             dialog.init(show_about=False, get_server_info=get_server_info,
-                        opengl_info=self.opengl_props,
+                        opengl_info=gl.opengl_props if gl else {},
                         includes=includes)
             dialog.show()
 
@@ -749,7 +744,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def get_mouse_position(self) -> tuple[int, int]:
         p = self.get_raw_mouse_position()
-        return self.cp(p[0], p[1])
+        display = self.get_subsystem("display")
+        return display.cp(p[0], p[1]) if display else (p[0], p[1])
 
     def get_current_modifiers(self) -> Sequence[str]:
         root = self.get_root_window()
@@ -828,7 +824,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return screen.get_rgba_visual() is not None
 
     def get_monitors_info(self) -> dict[int, Any]:
-        return get_monitors_info(self.xscale, self.yscale)
+        display = self.get_subsystem("display")
+        xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
+        return get_monitors_info(xscale, yscale)
 
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         return get_screen_sizes(xscale, yscale)
@@ -838,7 +836,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         cursor = None
         if cursor_data:
             try:
-                cursor = make_cursor(cursor_data, self.xscale, self.yscale)
+                display = self.get_subsystem("display")
+                xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
+                cursor = make_cursor(cursor_data, xscale, yscale)
                 cursorlog(f"make_cursor(..)={cursor}")
             except Exception as e:
                 log.warn("error creating cursor: %s (using default)", e, exc_info=True)
@@ -922,232 +922,27 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         if window:
             window.restack(other_window, above)
 
-    def opengl_setup_failure(self, summary="Xpra OpenGL GPU Acceleration Failure", body="") -> None:
-        OK = "0"
-        DISABLE = "1"
-
-        def notify_callback(event, nid, action_id, *args):
-            log("notify_callback(%s, %s, %s, %s)", event, nid, action_id, args)
-            if event == "notification-close":
-                return
-            if event != "notification-action":
-                log.warn(f"Warning: unexpected event {event}")
-                return
-            if nid != NotificationID.OPENGL:
-                log.warn(f"Warning: unexpected notification id {nid}")
-                return
-            if action_id == DISABLE:
-                from xpra.platform.paths import get_user_conf_dirs
-                dirs = get_user_conf_dirs()
-                for d in dirs:
-                    conf_file = osexpand(os.path.join(d, "xpra.conf"))
-                    try:
-                        with open(conf_file, "a", encoding="latin1") as f:
-                            f.write("\n")
-                            f.write("# user chose to disable the opengl warning:\n")
-                            f.write("opengl=nowarn\n")
-                        log.info("OpenGL warning will be silenced from now on,")
-                        log.info(" '%s' has been updated", conf_file)
-                        break
-                    except OSError:
-                        log("failed to create / append to config file '%s'", conf_file, exc_info=True)
-
-        def delayed_notify() -> None:
-            if self.exit_code is not None:
-                return
-            if OSX:
-                # don't bother logging an error on MacOS,
-                # OpenGL is being deprecated
-                log.info(summary)
-                log.info(body)
-                return
-            actions = (OK, "OK", DISABLE, "Don't show this warning again")
-            may_notify_client(self, NotificationID.OPENGL, summary, body, actions,
-                              icon_name="opengl", callback=notify_callback)
-
-        # wait for the main loop to run:
-        GLib.timeout_add(2 * 1000, delayed_notify)
-
-    def glinit_error(self, msg: str, err) -> None:
-        opengllog("OpenGL initialization error", exc_info=True)
-        self.GLClientWindowClass = None
-        self.client_supports_opengl = False
-        opengllog.error("%s", msg)
-        for x in str(err).split("\n"):
-            opengllog.error(" %s", x)
-        self.opengl_props["info"] = str(err)
-        self.opengl_props["enabled"] = False
-        self.opengl_setup_failure(body=str(err))
-
-    def glinit_warn(self, warning: str) -> None:
-        if self.opengl_enabled and not self.opengl_force:
-            self.opengl_enabled = False
-            opengllog.warn("Warning: OpenGL is disabled:")
-        opengllog.warn(" %s", warning)
-
-    def validate_texture_size(self) -> None:
-        if self.do_validate_texture_size():
-            return
-        # log at warn level if the limit is low:
-        # (if we're likely to hit it - if the screen is as big or bigger)
-        w, h = self.get_root_size()
-        log_fn = opengllog.info
-        if w * 2 <= self.gl_texture_size_limit and h * 2 <= self.gl_texture_size_limit:
-            log_fn = opengllog.debug
-        if w >= self.gl_texture_size_limit or h >= self.gl_texture_size_limit:
-            log_fn = opengllog.warn
-        log_fn("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i",
-               self.gl_texture_size_limit, self.gl_texture_size_limit)
-        glver = pver(self.opengl_props.get("opengl", ""))
-        renderer = self.opengl_props.get("renderer", "unknown")
-        log_fn(f" for OpenGL {glver} renderer {renderer!r}")
-
-    def do_validate_texture_size(self) -> bool:
-        mww, mwh = self.max_window_size
-        lim = self.gl_texture_size_limit
-        if lim >= 16 * 1024:
-            return True
-        if mww > 0 and mww > lim:
-            return False
-        if mwh > 0 and mwh > lim:
-            return False
-        return True
-
-    # OpenGL bits:
-    def init_opengl(self, enable_opengl: str) -> None:
-        opengllog(f"init_opengl({enable_opengl})")
-        # enable_opengl can be True, False, force, probe-failed, probe-success, or None (auto-detect)
-        # ie: "on:native,gtk", "auto", "no"
-        # ie: "probe-failed:SIGSEGV"
-        # ie: "probe-success"
-        parts = enable_opengl.split(":", 1)
-        enable_option = parts[0].lower()  # ie: "on"
-        opengllog(f"init_opengl: enable_option={enable_option}")
-        if enable_option in ("probe-failed", "probe-error", "probe-crash", "probe-warning", "probe-disabled"):
-            msg = enable_option.replace("-", " ")
-            if len(parts) > 1 and any(len(x) for x in parts[1:]):
-                msg += ": %s" % csv(parts[1:])
-            self.opengl_props["info"] = "disabled, %s" % msg
-            if enable_option != "probe-disabled":
-                self.opengl_setup_failure(body=msg)
-            return
-        if enable_option in FALSE_OPTIONS:
-            self.opengl_props["info"] = "disabled by configuration"
-            return
-        warnings = []
-        self.opengl_props["info"] = ""
-        if enable_option == "force":
-            self.opengl_force = True
-        elif enable_option != "probe-success":
-            from xpra.platform.gui import gl_check as platform_gl_check
-            opengllog("checking with %s", platform_gl_check)
-            warning = platform_gl_check()
-            opengllog("%s()=%s", platform_gl_check, warning)
-            if warning:
-                warnings.append(warning)
-
-        if warnings:
-            if enable_option in ("", "auto"):
-                opengllog.warn("OpenGL disabled:")
-                for warning in warnings:
-                    opengllog.warn(" %s", warning)
-                self.opengl_props["info"] = "disabled: %s" % csv(warnings)
-                return
-            if enable_option == "probe-success":
-                opengllog.warn("OpenGL enabled, despite some warnings:")
-            else:
-                opengllog.warn("OpenGL safety warning (enabled at your own risk):")
-            for warning in warnings:
-                opengllog.warn(" %s", warning)
-            self.opengl_props["info"] = "enabled despite: %s" % csv(warnings)
-        try:
-            opengllog("init_opengl: going to import xpra.opengl")
-            import_module("xpra.opengl")
-            from xpra.opengl.window import get_gl_client_window_module, test_gl_client_window
-            self.opengl_props, gl_client_window_module = get_gl_client_window_module(enable_opengl)
-            if not gl_client_window_module:
-                opengllog.warn("Warning: no OpenGL backend module found")
-                self.client_supports_opengl = False
-                self.opengl_props["info"] = "disabled: no module found"
-                return
-            if self.opengl_props.get("nocheck"):
-                opengllog.info("OpenGL enabled, checks skipped")
-                return
-            opengllog("init_opengl: found props %s", self.opengl_props)
-            self.GLClientWindowClass = gl_client_window_module.GLClientWindow
-            self.client_supports_opengl = True
-            # only enable opengl by default if force-enabled or if safe to do so:
-            enabled_by_option = enable_option in (list(TRUE_OPTIONS) + ["auto", "nocheck"])
-            self.opengl_enabled = self.opengl_force or enabled_by_option or self.opengl_props.get("safe", False)
-            self.gl_texture_size_limit = self.opengl_props.get("texture-size-limit", 16 * 1024)
-            dims = self.gl_texture_size_limit, self.gl_texture_size_limit
-            self.gl_max_viewport_dims = self.opengl_props.get("max-viewport-dims", dims)
-            renderer = self.opengl_props.get("renderer", "unknown")
-            parts = renderer.split("(")
-            if len(parts) > 1 and len(parts[0]) > 10:
-                renderer = parts[0].strip()
-            driver_info = renderer or self.opengl_props.get("vendor") or "unknown card"
-
-            from xpra.opengl.check import MIN_SIZE
-            if min(self.gl_max_viewport_dims) < MIN_SIZE:
-                self.glinit_warn("the maximum viewport size is too low: %s" % (self.gl_max_viewport_dims,))
-            if self.gl_texture_size_limit < MIN_SIZE:
-                self.glinit_warn("the texture size limit is too low: %s" % (self.gl_texture_size_limit,))
-            if driver_info.startswith("SVGA3D") and os.environ.get("WAYLAND_DISPLAY"):
-                self.glinit_warn("SVGA3D driver is buggy under Wayland")
-            self.GLClientWindowClass.MAX_VIEWPORT_DIMS = self.gl_max_viewport_dims
-            self.GLClientWindowClass.MAX_BACKING_DIMS = self.gl_texture_size_limit, self.gl_texture_size_limit
-            opengllog("OpenGL: enabled=%s, texture-size-limit=%s, max-window-size=%s",
-                      self.opengl_enabled, self.gl_texture_size_limit, self.max_window_size)
-
-            if self.opengl_enabled:
-                self.validate_texture_size()
-            if self.opengl_enabled and enable_opengl != "probe-success" and not self.opengl_force:
-                draw_result = test_gl_client_window(self.GLClientWindowClass,
-                                                    max_window_size=self.max_window_size,
-                                                    pixel_depth=self.pixel_depth)
-                if not draw_result.get("success", False):
-                    self.glinit_error("OpenGL test rendering failed:",
-                                      draw_result.get("message", "") or "unknown error")
-                    return
-                opengllog(f"OpenGL test rendering succeeded: {draw_result}")
-            if self.opengl_enabled:
-                glvstr = ".".join(str(v) for v in self.opengl_props.get("opengl", ()))
-                opengllog.info(f"OpenGL {glvstr} enabled on {driver_info!r}")
-                module = self.opengl_props.get("module", "unknown")
-                backend = self.opengl_props.get("backend", "unknown")
-                opengllog.info(f" using {module} {backend} backend")
-                opengllog.info(" zerocopy is %s", ["not available", "available"][self.opengl_props.get("zerocopy", 0)])
-                # don't try to handle video dimensions bigger than this:
-                mvs = min(8192, self.gl_texture_size_limit)
-                self.video_max_size = (mvs, mvs)
-            elif self.client_supports_opengl:
-                opengllog(f"OpenGL supported on {driver_info!r}, but not enabled")
-            self.opengl_props["enabled"] = self.opengl_enabled
-            if self.opengl_enabled and not warnings and OSX:
-                # non-opengl is slow on MacOS:
-                self.opengl_force = True
-        except ImportError as e:
-            opengllog(f"init_opengl({enable_opengl})", exc_info=True)
-            self.glinit_error("OpenGL accelerated rendering is not available:", e)
-        except RuntimeError as e:
-            opengllog(f"init_opengl({enable_opengl})", exc_info=True)
-            self.glinit_error("OpenGL support could not be enabled on this hardware:", e)
-        except Exception as e:
-            opengllog(f"init_opengl({enable_opengl})", exc_info=True)
-            self.glinit_error("Error loading OpenGL support:", e)
+    def get_gl_client_window_module(self, enable_opengl: str) -> tuple[dict, Any]:
+        # the (toolkit-specific) OpenGL window backend for this client;
+        # the `display` subsystem calls this from its `init_opengl` and stays
+        # backend-agnostic. Other toolkits provide their own implementation.
+        from xpra.opengl.window import get_gl_client_window_module
+        return get_gl_client_window_module(enable_opengl)
 
     def get_client_window_classes(self, geom: tuple[int, int, int, int], metadata: typedict,
                                   override_redirect: bool) -> Sequence[type]:
         log("get_client_window_class%s", (geom, metadata, override_redirect))
         enc = self.get_subsystem("encoding")
+        gl = self.get_subsystem("opengl")
+        gl_window_class = gl.GLClientWindowClass if gl else None
         log(" ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, encoding=%s",
-            self.ClientWindowClass, self.GLClientWindowClass, self.opengl_enabled, enc.encoding if enc else None)
+            self.ClientWindowClass, gl_window_class, bool(gl and gl.opengl_enabled),
+            enc.encoding if enc else None)
         window_classes: list[type] = []
-        if self.GLClientWindowClass:
+        if gl_window_class:
             ww, wh = geom[2], geom[3]
             if self.can_use_opengl(ww, wh, metadata, override_redirect):
-                window_classes.append(self.GLClientWindowClass)
+                window_classes.append(gl_window_class)
             else:
                 opengllog(f"OpenGL not available for {ww}x{wh} {override_redirect=} window {metadata}")
         if self.ClientWindowClass:
@@ -1155,12 +950,17 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return tuple(window_classes)
 
     def can_use_opengl(self, w: int, h: int, metadata: typedict, override_redirect: bool) -> bool:
-        opengllog(f"can_use_opengl {self.GLClientWindowClass=}, {self.opengl_enabled=}, {self.opengl_force=}")
-        if self.GLClientWindowClass is None or not self.opengl_enabled:
+        # opengl state lives on the `opengl` subsystem; scaling (sx/sy) on `display`:
+        gl = self.get_subsystem("opengl")
+        display = self.get_subsystem("display")
+        gl_window_class = gl.GLClientWindowClass if gl else None
+        opengllog("can_use_opengl GLClientWindowClass=%s, opengl_enabled=%s, opengl_force=%s",
+                  gl_window_class, gl and gl.opengl_enabled, gl and gl.opengl_force)
+        if gl_window_class is None or not gl.opengl_enabled:
             return False
-        if not self.opengl_force:
+        if not gl.opengl_force:
             # verify texture limits:
-            ms = min(self.sx(self.gl_texture_size_limit), *self.gl_max_viewport_dims)
+            ms = min(display.sx(gl.gl_texture_size_limit), *gl.gl_max_viewport_dims)
             if w > ms or h > ms:
                 return False
             # avoid opengl for small windows:
@@ -1189,7 +989,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 # so scale opaque-region up rather than scaling w/h back down
                 # to avoid rounding errors from the round-trip conversion
                 opr = tuple(
-                    (self.sx(ox), self.sy(oy), self.sx(ow), self.sy(oh))
+                    (display.sx(ox), display.sy(oy), display.sx(ow), display.sy(oh))
                     for ox, oy, ow, oh in metadata.tupleget("opaque-region")
                 )
                 if not is_covered_by_opaque_region(opr, w, h):
@@ -1204,12 +1004,13 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return True
 
     def toggle_opengl(self, *_args) -> None:
-        self.opengl_enabled = not self.opengl_enabled
-        opengllog("opengl_toggled: %s", self.opengl_enabled)
+        gl = self.get_subsystem("opengl")
+        gl.opengl_enabled = not gl.opengl_enabled
+        opengllog("opengl_toggled: %s", gl.opengl_enabled)
         # now replace all the windows with new ones:
         for wid, window in tuple(self._id_to_window.items()):
             self.reinit_window(wid, window)
-        opengllog("replaced all the windows with opengl=%s: %s", self.opengl_enabled, self._id_to_window)
+        opengllog("replaced all the windows with opengl=%s: %s", gl.opengl_enabled, self._id_to_window)
         self.reinit_window_icons()
 
     def find_window(self, metadata: typedict, metadata_key: str = "transient-for"):

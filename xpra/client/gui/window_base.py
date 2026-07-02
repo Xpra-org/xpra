@@ -156,8 +156,9 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         self.group_leader = group_leader
         self._pos = (wx, wy)
         self._size = (ww, wh)
-        self._xscale = client.xscale
-        self._yscale = client.yscale
+        display = client.get_subsystem("display")
+        self._xscale = display.xscale if display else 1
+        self._yscale = display.yscale if display else 1
         self._client_properties = client_properties
         self._set_initial_position = metadata.boolget("set-initial-position", False)
         self._requested_position = metadata.intpair("requested-position", NOT_REQUESTED)
@@ -569,7 +570,6 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             return
         geomlog("set_size_constraints(%s, %s)", size_constraints, max_window_size)
         hints = typedict()
-        client = self._client
         for (a, h1, h2) in (
                 ("maximum-size", "max_width", "max_height"),
                 ("minimum-size", "min_width", "min_height"),
@@ -584,12 +584,13 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             if a == "maximum-size" and v1 >= 16384 and v2 >= 16384 and WIN32:
                 # causes problems, see #2714, #3533
                 continue
-            sv1 = client.sx(v1)
-            sv2 = client.sy(v2)
+            # the window's own scaling (self._xscale) tracks the display scale:
+            sv1 = self.sx(v1)
+            sv2 = self.sy(v2)
             if a in ("base-size", "increment"):
                 # rounding is not allowed for these values
-                fsv1 = client.fsx(v1)
-                fsv2 = client.fsy(v2)
+                fsv1 = self.fsx(v1)
+                fsv2 = self.fsy(v2)
 
                 def closetoint(value):
                     # tolerate some rounding error:
@@ -748,7 +749,8 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             log("new min-speed=%s", enc.min_speed)
 
     def scaleup(self, *_args) -> None:
-        self._client.scaleup()
+        if display := self._client.get_subsystem("display"):
+            display.scaleup()
 
     def window_scaleup(self, *_args) -> None:
         scaling = max(self._xscale, self._yscale)
@@ -758,7 +760,8 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             self._scaleto(min(options))
 
     def scaledown(self, *_args) -> None:
-        self._client.scaledown()
+        if display := self._client.get_subsystem("display"):
+            display.scaledown()
 
     def window_scaledown(self, *_args) -> None:
         scaling = min(self._xscale, self._yscale)
@@ -768,7 +771,8 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             self._scaleto(max(options))
 
     def scalingoff(self) -> None:
-        self._client.scalingoff()
+        if display := self._client.get_subsystem("display"):
+            display.scalingoff()
 
     def window_scalingoff(self) -> None:
         self._scaleto(1)
@@ -784,7 +788,8 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
         self.resize(nw, nh)
 
     def scalereset(self, *_args) -> None:
-        self._client.scalereset()
+        if display := self._client.get_subsystem("display"):
+            display.scalereset()
 
     def magic_key(self, *args) -> None:
         if b := self.border:
@@ -838,8 +843,9 @@ class ClientWindowBase(ClientWidgetBase, GLibScheduler):
             return
         pr = self.pending_refresh
         self.pending_refresh = []
+        display = self._client.get_subsystem("display")
         for x, y, w, h in pr:
-            rx, ry, rw, rh = self._client.srect(x, y, w, h)
+            rx, ry, rw, rh = display.srect(x, y, w, h) if display else (x, y, w, h)
             if self.window_offset:
                 rx += self.window_offset[0]
                 ry += self.window_offset[1]

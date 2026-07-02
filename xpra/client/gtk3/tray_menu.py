@@ -235,7 +235,7 @@ class GTKTrayMenu(GTKMenuHelper):
             menu.append(self.make_notificationsmenuitem())
         if features.window:
             menu.append(self.make_cursorsmenuitem())
-        if self.client.client_supports_opengl:
+        if (glsub := self.get_subsystem("opengl")) and glsub.client_supports_opengl:
             menu.append(self.make_openglmenuitem())
         if features.window:
             menu.append(self.make_modalwindowmenuitem())
@@ -582,9 +582,12 @@ class GTKTrayMenu(GTKMenuHelper):
         gl.set_tooltip_text(_("hardware accelerated rendering using OpenGL"))
 
         def gl_set(*args) -> None:
-            log("gl_set(%s) opengl_enabled=%s, ", args, self.client.opengl_enabled)
-            gl.set_active(self.client.opengl_enabled)
-            set_sensitive(gl, self.client.client_supports_opengl)
+            glsub = self.get_subsystem("opengl")
+            enabled = bool(glsub and glsub.opengl_enabled)
+            supports = bool(glsub and glsub.client_supports_opengl)
+            log("gl_set(%s) opengl_enabled=%s, ", args, enabled)
+            gl.set_active(enabled)
+            set_sensitive(gl, supports)
 
             def opengl_toggled(*args) -> None:
                 log("opengl_toggled%s", args)
@@ -623,7 +626,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 menu.append(bw)
             if self.client.windows_enabled and len(self.get_subsystem("encoding").get_encodings()) > 1:
                 menu.append(self.make_encodingsmenuitem())
-            if self.client.can_scale:
+            if (display := self.get_subsystem("display")) and display.can_scale:
                 menu.append(self.make_scalingmenuitem())
             menu.append(self.make_qualitymenuitem())
             menu.append(self.make_speedmenuitem())
@@ -786,8 +789,11 @@ class GTKTrayMenu(GTKMenuHelper):
 
         def scaling_changed(*args) -> None:
             log("scaling_changed%s updating selected tray menu item", args)
+            display = self.get_subsystem("display")
+            if not display:
+                return
             # find the nearest scaling option to show as current:
-            scaling = (self.client.xscale + self.client.yscale) / 2.0
+            scaling = (display.xscale + display.yscale) / 2.0
             by_distance = {abs(scaling - x): x for x in SCALING_OPTIONS}
             closest = by_distance.get(sorted(by_distance)[0], 1)
             scaling_submenu.updating = True
@@ -801,7 +807,8 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def make_scalingvaluemenuitem(self, scaling_submenu, scalingvalue=1.0) -> Gtk.CheckMenuItem:
         def scalecmp(v) -> bool:
-            return abs(self.client.xscale - v) < 0.1
+            display = self.get_subsystem("display")
+            return bool(display) and abs(display.xscale - v) < 0.1
 
         pct = round(100.0 * scalingvalue)
         label = {100: _("None")}.get(pct, f"{pct}%")
@@ -816,7 +823,8 @@ class GTKTrayMenu(GTKMenuHelper):
             if scaling_submenu.updating or not item.get_active():
                 return
             ensure_item_selected(scaling_submenu, item)
-            self.client.scaleset(item.scalingvalue, item.scalingvalue)
+            if display := self.get_subsystem("display"):
+                display.scaleset(item.scalingvalue, item.scalingvalue)
 
         c.connect('activate', scaling_activated)
 
@@ -1474,9 +1482,10 @@ class GTKTrayMenu(GTKMenuHelper):
         monitors_menu_item.set_submenu(menu)
 
         def populate_monitors(*args) -> None:
+            display = self.get_subsystem("display")
             log("populate_monitors%s client server_multi_monitors=%s, server_monitors=%s",
-                args, self.client.server_multi_monitors, self.client.server_monitors)
-            if not self.client.server_multi_monitors or not self.client.server_monitors:
+                args, display and display.server_multi_monitors, display and display.server_monitors)
+            if not display or not display.server_multi_monitors or not display.server_monitors:
                 monitors_menu_item.hide()
                 return
             for x in menu.get_children():
@@ -1486,7 +1495,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 log("monitor_changed(%s, %s)", mitem, index)
                 self.client.send_remove_monitor(index)
 
-            for i, monitor in self.client.server_monitors.items():
+            for i, monitor in display.server_monitors.items():
                 mitem = Gtk.CheckMenuItem(label=monitor.get("name", "VFB-%i" % i))
                 mitem.set_active(True)
                 mitem.set_draw_as_radio(True)
@@ -1498,7 +1507,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 menu.append(mitem)
             # and finally, an entry for adding a new monitor
             # (the server can override the label, ie: "Add a virtual monitor"):
-            add_monitor_item = self.menuitem(self.client.server_add_monitor_label or "Add a monitor")
+            add_monitor_item = self.menuitem(display.server_add_monitor_label or "Add a monitor")
             resolutions_menu = Gtk.Menu()
             add_monitor_item.set_submenu(resolutions_menu)
 
@@ -1511,7 +1520,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
             # prefer the resolutions advertised by the server (ie: parsec-vdd
             # EDID modes), which may be more restrictive than xrandr:
-            resolutions = self.client.server_new_monitor_resolutions or NEW_MONITOR_RESOLUTIONS
+            resolutions = display.server_new_monitor_resolutions or NEW_MONITOR_RESOLUTIONS
             for resolution in resolutions:
                 mitem = self.menuitem(resolution)
                 mitem.connect("activate", add_monitor, resolution)

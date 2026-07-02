@@ -61,10 +61,6 @@ class DisplayClient(StubClientMixin):
         self.screen_size_change_timer = 0
         self.screen_size_change_counter = 0
         self.screen_size_change_suspended = False
-        self.opengl_enabled: bool = False
-        self.opengl_props: dict[str, Any] = {}
-        self.client_supports_opengl: bool = False
-
         self._last_screen_settings = ()
         self._current_screen_sizes = []
 
@@ -159,7 +155,10 @@ class DisplayClient(StubClientMixin):
             if wm_name:
                 caps["wm_name"] = wm_name
 
-            op = self.opengl_props
+            # opengl caps are still reported here (in the display capabilities),
+            # but the state is owned by the `opengl` subsystem:
+            gl = self.get_subsystem("opengl")
+            op = gl.opengl_props if gl else {}
             if FULL_INFO < 2:
                 op = skipkeys(op, "extensions", "GLU.extensions")
             caps["opengl"] = op
@@ -515,13 +514,6 @@ class DisplayClient(StubClientMixin):
     def cp(self, x, y) -> tuple[int, int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
-
-    ######################################################################
-    # OpenGL:
-    def init_opengl(self, _enable_opengl) -> None:
-        self.opengl_enabled = False
-        self.client_supports_opengl = False
-        self.opengl_props = {"info": "not supported"}
 
     ######################################################################
     # desktop, screen and scaling:

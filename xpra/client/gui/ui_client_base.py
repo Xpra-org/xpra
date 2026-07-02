@@ -177,6 +177,12 @@ class UIXpraClient(ClientBaseClass):
         notification = self.get_subsystem("notification")
         return list(notification.get_native_notifier_classes()) if notification else []
 
+    def get_gl_client_window_module(self, _enable_opengl: str) -> tuple[dict, Any]:
+        # the (toolkit-specific) OpenGL window backend, asked for by the `display`
+        # subsystem's `init_opengl`. No backend by default; toolkits that support
+        # OpenGL rendering (e.g. gtk3) override this.
+        return {}, None
+
     def get_menu_helper(self):
         """
         menu helper used by our tray (make_tray / setup_xpra_tray)
@@ -323,7 +329,8 @@ class UIXpraClient(ClientBaseClass):
     def _process_new_window(self, packet: Packet):
         window = super()._process_new_window(packet)
         screen_mode = any(self._remote_server_mode.find(x) >= 0 for x in ("desktop", "monitor", "shadow"))
-        if self.desktop_fullscreen and screen_mode:
+        display = self.get_subsystem("display")
+        if display and display.desktop_fullscreen and screen_mode:
             Gdk = gi_import("Gdk")
             screen = Gdk.Screen.get_default()
             n = screen.get_n_monitors()
@@ -441,7 +448,8 @@ class UIXpraClient(ClientBaseClass):
     def cook_metadata(self, _new_window, metadata: dict) -> typedict:
         # convert to a typedict and apply client-side overrides:
         tdmeta = typedict(metadata)
-        if self.server_is_desktop and self.desktop_fullscreen:
+        display = self.get_subsystem("display")
+        if display and display.server_is_desktop and display.desktop_fullscreen:
             # force it fullscreen:
             metadata.pop("size-constraints", None)
             metadata["fullscreen"] = True

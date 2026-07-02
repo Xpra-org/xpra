@@ -90,8 +90,9 @@ class WindowManagerClient(StubClientMixin):
         self.modal_windows = self.windows_enabled and opts.modal_windows
 
     def init_ui(self, opts) -> None:
-        # opengl setup is owned by the `display` subsystem:
-        self.get_subsystem("display").init_opengl(opts.opengl)
+        # opengl setup is owned by the `opengl` subsystem:
+        if gl := self.get_subsystem("opengl"):
+            gl.init_opengl(opts.opengl)
 
     def load(self) -> None:
         # the suspend/resume signals are registered on the client GObject
@@ -573,7 +574,8 @@ class WindowManagerClient(StubClientMixin):
         log("resume_windows%s", args)
         # this will reset the refresh rate too:
         self.send_refresh_all()
-        if self.client.opengl_enabled and OPENGL_REINIT_WINDOWS:
+        gl = self.get_subsystem("opengl")
+        if gl and gl.opengl_enabled and OPENGL_REINIT_WINDOWS:
             # with opengl, the buffers sometimes contain garbage after resuming,
             # this should create new backing buffers:
             self.reinit_windows()

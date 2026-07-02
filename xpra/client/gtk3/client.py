@@ -86,7 +86,8 @@ class XpraClient(GTKXpraClient):
         if not root:
             return -1, -1
         p = root.get_pointer()[-3:-1]
-        return self.cp(p[0] or 0, p[1] or 0)
+        display = self.get_subsystem("display")
+        return display.cp(p[0] or 0, p[1] or 0) if display else (p[0] or 0, p[1] or 0)
 
 
 GObject.type_register(XpraClient)
