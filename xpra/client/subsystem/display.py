@@ -82,6 +82,8 @@ class DisplayClient(StubClientMixin):
         # X11 XSettings / root-window property watching (DPI, workarea, desktop names)
         # feeds this subsystem; it's an OS/display-server concern, not a toolkit one:
         self._x11_props = None
+        # darwin GPU/display reconfiguration watching:
+        self._cg_display = None
 
     def init(self, opts) -> None:
         self.desktop_fullscreen = opts.desktop_fullscreen
@@ -96,6 +98,10 @@ class DisplayClient(StubClientMixin):
             from xpra.platform.posix.display import X11DisplayPropsWatcher
             self._x11_props = X11DisplayPropsWatcher(self)
             self._x11_props.setup()
+        elif OSX:
+            from xpra.platform.darwin.display import DarwinDisplayReconfigWatcher
+            self._cg_display = DarwinDisplayReconfigWatcher(self)
+            self._cg_display.setup()
 
     def load(self):
         self.client.after_handshake(self.adjust_display)
@@ -125,9 +131,12 @@ class DisplayClient(StubClientMixin):
 
     def cleanup(self) -> None:
         self.cancel_screen_size_change_timer()
-        if self._x11_props:
-            self._x11_props.cleanup()
+        if xp := self._x11_props:
             self._x11_props = None
+            xp.cleanup()
+        if self._cg_display:
+            self._cg_display.cleanup()
+            self._cg_display = None
 
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         raise NotImplementedError()
@@ -550,7 +559,7 @@ class DisplayClient(StubClientMixin):
 
     def schedule_screen_size_change_timer(self):
         # update via timer so the data is more likely to be final (up to date) when we query it,
-        # some properties (like _NET_WORKAREA for X11 clients via posix gui "PlatformClient") may
+        # some properties (like _NET_WORKAREA for X11 clients, via `X11DisplayPropsWatcher`) may
         # trigger multiple calls to screen_size_changed, delayed by some amount
         # (sometimes up to 1s..)
         delay = 1000

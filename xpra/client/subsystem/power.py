@@ -9,6 +9,7 @@ from datetime import timedelta
 
 from xpra.client.base.stub import StubClientMixin
 from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.os_util import WIN32, OSX
 from xpra.util.env import envint
 from xpra.log import Logger
 
@@ -28,6 +29,9 @@ class PowerEventClient(StubClientMixin):
         StubClientMixin.__init__(self, client)
         self.ui_watcher = None
         self.suspended = 0.0
+        # extra, platform-specific suspend/resume signal sources feeding the
+        # same `suspend()`/`resume()` below:
+        self._platform_watcher = None
 
     def run(self) -> None:
         try:
@@ -43,6 +47,14 @@ class PowerEventClient(StubClientMixin):
                 self.timeout_add(FAKE_SUSPEND_RESUME * 500, self.resume)
                 return True
             self.timeout_add(FAKE_SUSPEND_RESUME * 1000, fake_suspend)
+        if WIN32:
+            from xpra.platform.win32.power import Win32ScreensaverWatcher
+            self._platform_watcher = Win32ScreensaverWatcher(self)
+        elif OSX:
+            from xpra.platform.darwin.power import DarwinDisplaySleepWatcher
+            self._platform_watcher = DarwinDisplaySleepWatcher(self)
+        if self._platform_watcher:
+            self._platform_watcher.setup()
 
     def start_ui_watcher(self, _client) -> None:
         if self.ui_watcher:
@@ -62,6 +74,9 @@ class PowerEventClient(StubClientMixin):
         if uw := self.ui_watcher:
             self.ui_watcher = None
             uw.stop()
+        if pw := self._platform_watcher:
+            self._platform_watcher = None
+            pw.cleanup()
 
     def ui_thread_tick(self):
         if uiw := self.ui_watcher:

@@ -71,7 +71,11 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     for signal_name in UIXpraClient.__signals__:
         __gsignals__[signal_name] = no_arg_signal
 
-    SUBSYSTEM_CLASSES = {"display": Win32DisplayClient}
+    @staticmethod
+    def get_subsystem_classes() -> dict[str, type]:
+        classes = dict(UIXpraClient.get_subsystem_classes())
+        classes["display"] = Win32DisplayClient
+        return classes
 
     def __init__(self):
         GObjectClientAdapter.__init__(self)

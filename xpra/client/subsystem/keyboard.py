@@ -7,11 +7,13 @@
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.client.base import features
 from xpra.client.base.stub import StubClientMixin
 from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.keyboard.common import KeyEvent, DELAY_KEYBOARD_DATA
 from xpra.util.objects import typedict
 from xpra.common import noop
+from xpra.os_util import WIN32
 from xpra.log import Logger
 
 log = Logger("keyboard")
@@ -43,6 +45,8 @@ class KeyboardClient(StubClientMixin):
         self.key_repeat_interval = -1
         self.server_enabled: bool = True
         self.warning: bool = False
+        # win32 global low-level keyboard hook:
+        self._win32_keyboard_hook = None
 
     def init_ui(self, opts) -> None:
         send_keyboard = noop
@@ -68,11 +72,26 @@ class KeyboardClient(StubClientMixin):
         except ImportError as e:
             log("error instantiating %s", self.helper_class, exc_info=True)
             log.warn(f"Warning: no keyboard support, {e}")
+        # only meaningful on macOS, but harmless to set unconditionally:
+        if self.helper and self.helper.keyboard:
+            log("%s.swap_keys=%s", self.helper.keyboard, opts.swap_keys)
+            self.helper.keyboard.swap_keys = opts.swap_keys
+
+    def run(self) -> None:
+        if WIN32:
+            from xpra.platform.win32.gui import FORWARD_WINDOWS_KEY
+            if FORWARD_WINDOWS_KEY and features.window:
+                from xpra.platform.win32.keyboard_hook import Win32KeyboardHookWatcher
+                self._win32_keyboard_hook = Win32KeyboardHookWatcher(self)
+                self._win32_keyboard_hook.setup()
 
     def cleanup(self) -> None:
         if kh := self.helper:
             self.helper = None
             kh.cleanup()
+        if wkh := self._win32_keyboard_hook:
+            self._win32_keyboard_hook = None
+            wkh.cleanup()
 
     def get_info(self) -> dict[str, dict[str, Any]]:
         return {KeyboardClient.PREFIX: self.get_keyboard_caps()}

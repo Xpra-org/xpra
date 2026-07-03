@@ -39,7 +39,6 @@ bandwidth = True
 socket = True
 ssh_agent = True
 encoding = True
-native = True
 power = True
 progress = True
 encryption = True
@@ -101,7 +100,6 @@ def set_client_features(opts) -> None:
     features.ssh_agent = envbool("XPRA_SSH_AGENT", True)
     features.socket = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
     features.encoding = opts.windows
-    features.native = envbool("XPRA_CLIENT_NATIVE_BINDINGS", True)
     features.power = envbool("XPRA_POWER_EVENTS", True)
     features.progress = b(opts.splash)
     features.encryption = bool(opts.encryption) and b(opts.encryption)
@@ -153,7 +151,6 @@ def enforce_client_features() -> None:
         "socket": "xpra.client.subsystem.socket",
         "ssh_agent": "xpra.client.subssytem.ssh_agent",
         "encoding": "xpra.client.subsystem.encodings",
-        "native": "xpra.platform.client",
         "power": "xpra.client.subsystem.power",
         "progress": "xpra.client.base.progress",
         "encryption": "xpra.client.base.aes",

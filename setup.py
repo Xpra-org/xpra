@@ -3470,7 +3470,7 @@ if client_ENABLED:
         add_modules("xpra.client.win32")
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
 toggle_packages(client_ENABLED, "xpra.client.gui", "xpra.client.gui.window")
-toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3.window")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gtk3.subsystem", "xpra.client.gtk3.window")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and bool(MINGW_PREFIX)), "gi")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
@@ -3767,6 +3767,7 @@ if cythonize_more_ENABLED:
         ax("xpra.client.base")
         if gtk3_ENABLED:
             ax("xpra.client.gtk3")
+            ax("xpra.client.gtk3.subsystem")
             ax("xpra.client.gtk3.window")
             if opengl_ENABLED:
                 ax("xpra.client.gtk3.opengl")
@@ -3782,6 +3783,7 @@ if cythonize_more_ENABLED:
             ax("xpra.client.tk")
         if win32_client_ENABLED:
             ax("xpra.client.win32")
+            ax("xpra.client.win32.subsystem")
     if client_ENABLED or server_ENABLED:
         ax("xpra.challenge")
     if clipboard_ENABLED:

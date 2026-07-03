@@ -63,16 +63,6 @@ class WindowDraw(StubClientMixin):
             dt.join(0.1)
         log("WindowClient.cleanup() done")
 
-    ######################################################################
-    # hello:
-    def get_caps(self) -> dict[str, Any]:
-        caps = {
-            "encoding": {
-                "eos": True,
-            },
-        }
-        return caps
-
     def get_info(self) -> dict[str, Any]:
         return {
             "draw-counter": self._draw_counter,

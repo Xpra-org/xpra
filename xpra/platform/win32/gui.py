@@ -1124,9 +1124,6 @@ def main() -> None:
         log.info("Event loop is running")
         loop = GLib.MainLoop()
 
-        from xpra.platform.win32.client import PlatformClient
-        PlatformClient()
-
         try:
             loop.run()
         except KeyboardInterrupt:

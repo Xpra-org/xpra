@@ -27,7 +27,7 @@ from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_S
 from xpra.util.thread import is_main_thread
 from xpra.util.version import get_version_info
 from xpra.net.digest import get_salt
-from xpra.client.base.factory import get_client_base_classes
+from xpra.client.base.factory import get_client_subsystems
 from xpra.util.child_reaper import get_child_reaper, reaper_cleanup
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals
 from xpra.util.io import stderr_print
@@ -40,54 +40,7 @@ from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger
 
-CLIENT_BASES = get_client_base_classes()
-
-# Phase-2 migration: subsystems whose PREFIX is listed here are stored as
-# real `cls(client=self)` instances in `self.subsystems` (server-style composition);
-# every other subsystem is still mixed into the client (stored as `self`).
-# The list grows one subsystem at a time until the mux is fully dismantled.
-COMPOSED_SUBSYSTEMS: tuple[str, ...] = (
-    "bandwidth",
-    "ping",
-    "encoding",
-    "power",
-    "server-info",
-    "logging",
-    "gsettings",
-    "ssh-agent",
-    "mmap",
-    "listener",
-    "notification",
-    "command",
-    "webcam",
-    "audio",
-    "keyboard",
-    "cursor",
-    "pointer",
-    "tray",
-    "clipboard",
-    "display",
-    "opengl",
-    "window",
-    "control",
-    "progress",
-    "network",
-    "clientid",
-    "debug",
-    "clientinfo",
-    "events",
-    "file",
-    "serverinfo",
-    "printer",
-    "aes",
-    "challenge",
-    "ssl-upgrade",
-    "dialogs",
-)
-# composed subsystems are real instances, kept OUT of the client's MRO
-# (see `xpra.client.gui.ui_client_base.MUXED_BASES` for the mirror of this):
-MUXED_BASES = tuple(c for c in CLIENT_BASES if getattr(c, "PREFIX", "") not in COMPOSED_SUBSYSTEMS)
-ClientBaseClass = type('ClientBaseClass', MUXED_BASES, {})
+BASE_SUBSYSTEMS = get_client_subsystems()
 
 log = Logger("client")
 netlog = Logger("network")
@@ -95,10 +48,10 @@ sublog = Logger("subsystems")
 
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 
-sublog("Client base classes: %s (muxed into the MRO: %s)", CLIENT_BASES, MUXED_BASES)
+sublog("Client subsystems: %s", BASE_SUBSYSTEMS)
 
 
-class XpraClientBase(PacketDispatcher, ClientBaseClass):
+class XpraClientBase(PacketDispatcher):
     """
     Base class for Xpra clients.
     Provides the glue code for:
@@ -107,53 +60,44 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     """
     __signals__ = ["startup-complete"]
 
-    COMPOSED_SUBSYSTEMS = COMPOSED_SUBSYSTEMS
-    # concrete toolkit clients (GTKXpraClient, XpraWin32Client, ...) override this to
-    # substitute a toolkit-specific subclass for a composed subsystem, keyed by PREFIX
-    # (e.g. {"display": Gtk3DisplayClient}). Empty by default: no substitution.
-    SUBSYSTEM_CLASSES: dict[str, type] = {}
+    @staticmethod
+    def get_subsystem_classes() -> dict[str, type]:
+        """
+        The subsystem classes to compose, keyed by `PREFIX`. Concrete toolkit
+        clients (`UIXpraClient`, `GTKXpraClient`, `XpraWin32Client`, ...) override
+        this to extend or patch entries returned by their superclass's version -
+        e.g. substituting a toolkit-specific subclass for "display", or adding a
+        toolkit-only subsystem like "dialogs" (see `xpra.client.gui.ui_client_base`
+        and `xpra.client.gtk3.client_base`). Called polymorphically via `self.` in
+        `__init__`, so a single call already picks up every override in the
+        concrete class's MRO.
+        """
+        return {cls.PREFIX: cls for cls in BASE_SUBSYSTEMS}
 
     def __init__(self):
         self.defaults_init()
         PacketDispatcher.__init__(self)
-        # this object *is* the client for every subsystem still muxed into it
-        # (see `StubClientMixin.__init__`):
+        # composed subsystems hold a `client=self` back-reference to reach this
+        # object; this object also treats itself as its own "client" so generic
+        # code written against a subsystem's `self.client` works uniformly here too:
         self.client = self
-        # registry of subsystems, keyed by `PREFIX` (see `StubClientMixin.get_subsystem`):
-        # composed subsystems are real instances; the ones still muxed into this
-        # object are stored as `self`.
+        # registry of composed subsystem instances, keyed by `PREFIX`
+        # (see `StubClientMixin.get_subsystem`):
         self.subsystems: dict[str, Any] = {}
-        for bc in CLIENT_BASES:
-            sublog("%s.__init__()", bc)
-            self.add_subsystem(bc)
+        for prefix, cls in self.get_subsystem_classes().items():
+            subsystem = cls(client=self)
+            sublog("%s=%s", prefix, subsystem)
+            self.subsystems[prefix] = subsystem
         self.init_packet_handlers()
         self.exit_code: ExitValue | None = None
         self.start_time = int(time())
-
-    def get_subsystem_class(self, cls: type) -> type:
-        # let a concrete toolkit client substitute its own subclass:
-        return self.SUBSYSTEM_CLASSES.get(getattr(cls, "PREFIX", ""), cls)
-
-    def add_subsystem(self, cls) -> None:
-        prefix = getattr(cls, "PREFIX", "")
-        if prefix and prefix in self.COMPOSED_SUBSYSTEMS:
-            # real composition: a separate instance with a back-reference to the
-            # client (mirror of the server's `ServerCore.add_subsystem`):
-            instance = self.get_subsystem_class(cls)(client=self)
-            self.subsystems[prefix] = instance
-        else:
-            # still muxed: initialise the subsystem's state on the client itself:
-            cls.__init__(self)
-            if prefix:
-                self.subsystems[prefix] = self
 
     def get_subsystem(self, name: str):
         """
         look up a composed (or still-muxed) subsystem by its `PREFIX`.
         Defined directly here (mirroring `StubClientMixin.get_subsystem`, not
         inherited from it) because every `base/*` mixin is composed out now,
-        so `ClientBaseClass` can be empty and this class can no longer rely on
-        picking up `StubClientMixin` transitively through one of them.
+        so this class has no mixed-in base to pick up `StubClientMixin` from.
         """
         return self.subsystems.get(name)
 
@@ -176,9 +120,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     def _dispatch_fire(self, method: str, *args, reverse: bool = False) -> None:
         # fan a lifecycle call out to every composed subsystem (mirror of `ServerCore._dispatch_fire`).
         # every `PREFIX`-bearing subsystem is composed now, so `subsystems.values()` are real,
-        # distinct instances - safe to call directly (no risk of re-entering `self`'s own
-        # method, unlike the still-muxed classes with no `PREFIX`, eg `PlatformClient`,
-        # which callers must still dispatch to explicitly - see `UIXpraClient.init`).
+        # distinct instances - safe to call directly (no risk of re-entering `self`'s own method).
         subs = list(self.subsystems.values())
         if reverse:
             subs.reverse()
@@ -351,11 +293,9 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
 
     def get_caps(self) -> dict[str, Any]:
         """
-        `XpraClientBase`'s own capabilities are gathered by `make_hello_base`
-        (which loops over its own `CLIENT_BASES`); this only exists because
-        `UIXpraClient.make_hello` separately dispatches `get_caps` to every
-        entry in *its* `CLIENT_BASES` (which includes this class itself,
-        always muxed) - nothing to add a second time here.
+        `XpraClientBase` itself has no `PREFIX` and is never composed, so this
+        is never actually reached via `_call_subsystem` - it stays as the
+        documented no-op contract for that dispatch mechanism.
         """
         return {}
 
@@ -404,13 +344,13 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             log("send_hello(..) skipped, no protocol (listen mode?)")
             return
         try:
-            hello = self.make_hello_base()
             if self.has_password and not challenge_response:
                 # avoid sending the full hello: tell the server we want
                 # a packet challenge first
+                hello = self.make_hello_base()
                 hello["challenge"] = True
             else:
-                hello.update(self.make_hello())
+                hello = self.make_hello()
             if BACKWARDS_COMPATIBLE:
                 hello.setdefault("wants", []).append("packet-types")
         except InitExit as e:
@@ -443,10 +383,19 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             self.warn_and_quit(ExitCode.CONNECTION_FAILED, "connection timed out")
 
     def make_hello_base(self) -> dict[str, Any]:
+        """
+        Minimal hello sent to request a password challenge, before authentication:
+        only the base (non-UI) subsystems' capabilities are included
+        (see `make_hello`, used for the normal, fully authenticated case).
+        """
         capabilities = {}
-        for bc in CLIENT_BASES:
+        for bc in BASE_SUBSYSTEMS:
             # FIXME: digests should be added to!
             capabilities.update(self._call_subsystem(bc, "get_caps"))
+        return self._add_common_hello(capabilities)
+
+    def _add_common_hello(self, capabilities: dict[str, Any]) -> dict[str, Any]:
+        # shared by `make_hello_base` and `make_hello`:
         # difficult to move this attribute:
         if self.display:
             capabilities["display"] = self.display
@@ -480,9 +429,18 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         return get_version_info(FULL_INFO)
 
     def make_hello(self) -> dict[str, Any]:
+        """
+        Full hello, sent once authenticated (or when no password is required):
+        gathers `get_caps` from every composed subsystem generically - for a
+        `UIXpraClient` instance, `self.subsystems` already holds both the base
+        and the UI subsystems (see `get_subsystem_classes`), so this one call
+        covers both.
+        """
+        capabilities = self._dispatch_merge("get_caps")
+        capabilities = self._add_common_hello(capabilities)
         if BACKWARDS_COMPATIBLE:
-            return {"keyboard": False}
-        return {}
+            capabilities.setdefault("keyboard", False)
+        return capabilities
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         packet = Packet(packet_type, *parts)
@@ -758,8 +716,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self._default_ui_packet_handlers[GIBBERISH] = self._process_gibberish
         self._default_ui_packet_handlers[INVALID] = self._process_invalid
         self.add_legacy_alias("disconnect", "connection-close")
-        for bc in CLIENT_BASES:
-            self._call_subsystem(bc, "init_packet_handlers")
+        self._dispatch_fire("init_packet_handlers")
 
     def init_authenticated_packet_handlers(self) -> None:
         self._dispatch_fire("init_authenticated_packet_handlers")

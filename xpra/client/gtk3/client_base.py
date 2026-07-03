@@ -109,13 +109,18 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         __gsignals__[signal_name] = no_arg_signal
 
     ClientWindowClass: type | None = None
-    SUBSYSTEM_CLASSES = {"display": Gtk3DisplayClient}
+
+    @staticmethod
+    def get_subsystem_classes() -> dict[str, type]:
+        classes = dict(UIXpraClient.get_subsystem_classes())
+        classes["display"] = Gtk3DisplayClient
+        classes["dialogs"] = GTKDialogClient
+        return classes
 
     def __init__(self):
         GObjectClientAdapter.__init__(self)
         UIXpraClient.__init__(self)
         self.client_type = "Python/GTK3"
-        self.add_subsystem(GTKDialogClient)
         self.menu_helper = None
         self.window_menu_helper = None
         # the keyboard subsystem holds `helper_class`; inject the GTK

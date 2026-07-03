@@ -19,6 +19,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
+from xpra.os_util import WIN32, OSX, gi_import
 from xpra.client.base.stub import StubClientMixin
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.common import noop
@@ -31,6 +32,8 @@ execlog = Logger("client", "exec")
 
 OPENGL_REINIT_WINDOWS = envbool("XPRA_OPENGL_REINIT_WINDOWS", True)
 SHOW_DELAY: int = envint("XPRA_SHOW_DELAY", -1)
+OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
+OSX_EVENT_LISTENER = envbool("XPRA_OSX_EVENT_LISTENER", True)
 
 DEFAULT_SERVER_WINDOW_STATES: Final[Sequence[str]] = (
     "iconified", "fullscreen", "above", "below",
@@ -83,6 +86,8 @@ class WindowManagerClient(StubClientMixin):
 
         self.server_window_frame_extents: bool = False
         self.server_window_states: Sequence[str] = ()
+        # win32 WM/session event listener:
+        self._win32_events = None
 
     def init(self, opts) -> None:
         self.auto_refresh_delay = opts.auto_refresh_delay
@@ -106,10 +111,36 @@ class WindowManagerClient(StubClientMixin):
             power.connect("resume", self.resume_windows)
 
     def run(self) -> ExitValue:
+        if WIN32:
+            from xpra.platform.win32.window_events import Win32ClientEventsWatcher
+            self._win32_events = Win32ClientEventsWatcher(self)
+            self._win32_events.setup()
+        elif OSX:
+            self._setup_osx_events()
         return ExitCode.OK
+
+    def _setup_osx_events(self) -> None:
+        if OSX_FOCUS_WORKAROUND:
+            from xpra.platform.darwin.gui import enable_focus_workaround, disable_focus_workaround
+            GLib = gi_import("GLib")
+
+            def first_ui_received(*_args):
+                enable_focus_workaround()
+                GLib.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
+
+            self.client.connect("first-ui-received", first_ui_received)
+        if OSX_EVENT_LISTENER:
+            with log.trap_error("Error setting up OSX event listener"):
+                from xpra.platform.darwin.events import get_app_delegate
+                delegate = get_app_delegate()
+                log(f"_setup_osx_events() {delegate=}, deiconify_windows={self.deiconify_windows}")
+                delegate.add_handler("deiconify", self.deiconify_windows)
 
     def cleanup(self) -> None:
         log("WindowClient.cleanup()")
+        if we := self._win32_events:
+            self._win32_events = None
+            we.cleanup()
         # the protocol has been closed, it is now safe to close all the windows:
         # (cleaner and needed when we run embedded in the client launcher)
         self.destroy_all_windows()

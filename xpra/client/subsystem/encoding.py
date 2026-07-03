@@ -269,6 +269,7 @@ class Encodings(StubClientMixin):
             "video_max_size": self.video_max_size,
             "max-soft-expired": MAX_SOFT_EXPIRED,
             "send-timestamps": SEND_TIMESTAMPS,
+            "eos": True,
         }
         if self.video_scaling is not None:
             caps["scaling.control"] = self.video_scaling

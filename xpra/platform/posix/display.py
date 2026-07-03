@@ -27,8 +27,8 @@ def get_resource_manager() -> bytes | None:
 class X11DisplayPropsWatcher:
     """
     XSettings + root-window property watching (DPI, workarea, desktop names),
-    feeding the `display` subsystem (moved from `xpra.platform.posix.client.PlatformClient`).
-    This is an X11-binding based, OS/display-server concern, not a toolkit one.
+    feeding the `display` subsystem. This is an X11-binding based, OS/display-server
+    concern, not a toolkit one.
     """
 
     def __init__(self, display_client):

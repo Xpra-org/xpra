@@ -9,7 +9,7 @@ import sys
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.client.gui.factory import get_client_base_classes
+from xpra.client.gui.factory import get_client_subsystems
 from xpra.client.base.client import XpraClientBase
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
@@ -27,28 +27,17 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base import features
 from xpra.log import Logger
 
-CLIENT_BASES = get_client_base_classes()
 # Composed subsystems live as separate instances in `client.subsystems` (reached via
-# `get_subsystem(...)`), so they are kept OUT of the client's MRO. `UIXpraClient` only
-# inherits from `XpraClientBase` plus the subsystems still muxed into the client object
-# (currently just `native`/`PlatformClient`; the `base/*` transport mixins go with Phase 3).
-# The full `CLIENT_BASES` list is still used to drive the hello/caps dispatch (see `make_hello`).
-MUXED_BASES = tuple(c for c in CLIENT_BASES if getattr(c, "PREFIX", "") not in XpraClientBase.COMPOSED_SUBSYSTEMS)
-ClientBaseClass = type('ClientBaseClass', MUXED_BASES, {})
-# the platform-specific mixin has no `PREFIX` of its own (never composed), so it is not
-# reachable via `self.subsystems` / `_dispatch_fire`: callers that need it (`init`, `init_ui`,
-# `run`, `cleanup` - the only lifecycle methods it actually overrides) dispatch to it explicitly.
-PLATFORM_MUXED_BASES = tuple(c for c in MUXED_BASES if c is not XpraClientBase)
+# `get_subsystem(...)`), so they are kept OUT of the client's MRO - `UIXpraClient` just
+# inherits from `XpraClientBase` directly.
 
 log = Logger("client")
-sublog = Logger("subsystems")
-sublog("UIXpraClient base classes: %s (muxed into the MRO: %s)", CLIENT_BASES, MUXED_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
 
 
-class UIXpraClient(ClientBaseClass):
+class UIXpraClient(XpraClientBase):
     """
     Utility superclass for client classes which have a UI.
     See gtk_client_base and its subclasses.
@@ -62,8 +51,16 @@ class UIXpraClient(ClientBaseClass):
     # signal used with `emit`/`connect` isn't in the emitter's own list.
     __signals__ = ["first-ui-received"] + XpraClientBase.__signals__
 
-    # noinspection PyMissingConstructor
-    def __init__(self):  # pylint: disable=super-init-not-called
+    @staticmethod
+    def get_subsystem_classes() -> dict[str, type]:
+        classes = dict(XpraClientBase.get_subsystem_classes())
+        classes.update({cls.PREFIX: cls for cls in get_client_subsystems()})
+        return classes
+
+    def __init__(self):
+        # composes every subsystem (base and UI) in one pass via the polymorphic
+        # `get_subsystem_classes()` - see `XpraClientBase.__init__`:
+        XpraClientBase.__init__(self)
         # try to ensure we start on a new line (see #4023):
         noerr(sys.stdout.write, "\n")
         run_info = get_run_info(f"{self.client_toolkit()} client")
@@ -76,9 +73,6 @@ class UIXpraClient(ClientBaseClass):
         # subsystem and by window shortcut menus); toolkit clients override
         # `get_menu_helper`/`get_menu_helper_class` to add their variants:
         self.menu_helper = None
-        for c in CLIENT_BASES:
-            sublog("calling %s.__init__()", c)
-            self.add_subsystem(c)
         # react to the `ping` subsystem's "timeout" signal by drawing an alert
         # state over the windows (a UI concern, so it lives here, not in `ping`):
         if ping := self.get_subsystem("ping"):
@@ -110,8 +104,6 @@ class UIXpraClient(ClientBaseClass):
     def init(self, opts) -> None:
         """ initialize variables from configuration """
         XpraClientBase.init(self, opts)
-        for c in PLATFORM_MUXED_BASES:
-            c.init(self, opts)
 
         self.title = opts.title
         self.session_name = opts.session_name
@@ -123,18 +115,10 @@ class UIXpraClient(ClientBaseClass):
     def client_toolkit(self) -> str:
         raise NotImplementedError()
 
-    def init_ui(self, opts) -> None:
-        """ initialize user interface """
-        XpraClientBase.init_ui(self, opts)
-        for c in PLATFORM_MUXED_BASES:
-            c.init_ui(self, opts)
-
     def run(self) -> ExitValue:
         if FORCE_ALERT:
             self.schedule_timer_redraw()
         XpraClientBase.run(self)
-        for c in PLATFORM_MUXED_BASES:
-            c.run(self)
         return self.exit_code or 0
 
     def quit(self, exit_code: ExitValue = 0) -> None:
@@ -142,9 +126,6 @@ class UIXpraClient(ClientBaseClass):
 
     def cleanup(self) -> None:
         log("UIXpraClient.cleanup()")
-        for c in PLATFORM_MUXED_BASES:
-            with sublog.trap_error(f"Error cleaning {c!r}"):
-                c.cleanup(self)
         # subsystems cleaned up and the protocol closed by `XpraClientBase.cleanup`:
         # (cleaner and needed when we run embedded in the client launcher)
         XpraClientBase.cleanup(self)
@@ -274,6 +255,9 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # hello:
     def make_hello(self) -> dict[str, Any]:
+        # `XpraClientBase.make_hello` already gathers `get_caps` from every
+        # composed subsystem generically (base and UI alike - see
+        # `get_subsystem_classes`), so only the UI-only extras are added here:
         caps = XpraClientBase.make_hello(self)
         if BACKWARDS_COMPATIBLE:
             caps.setdefault("wants", []).append("events")
@@ -286,10 +270,6 @@ class UIXpraClient(ClientBaseClass):
             "share": self.client_supports_sharing,
             "lock": self.client_lock,
         }
-        for c in CLIENT_BASES:
-            ccaps = self._call_subsystem(c, "get_caps")
-            sublog("%s.get_caps()=%s", c, ccaps)
-            caps.update(ccaps)
         if FULL_INFO > 0:
             caps["session-type"] = get_session_type()
         return caps
