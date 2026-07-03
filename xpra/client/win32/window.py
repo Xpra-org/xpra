@@ -28,6 +28,7 @@ from xpra.platform.win32.common import (
     SetWindowTextW,
     InvalidateRect,
     BeginPaint, EndPaint, PAINTSTRUCT,
+    SetForegroundWindow, GetForegroundWindow,
 )
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
@@ -517,6 +518,32 @@ class ClientWindow(GObject.GObject):
         ShowWindow(self.hwnd, win32con.SW_SHOW)
         UpdateWindow(self.hwnd)
         # InvalidateRect(self.hwnd, None, True)
+
+    def has_toplevel_focus(self) -> bool:
+        return bool(self.hwnd) and GetForegroundWindow() == self.hwnd
+
+    def present(self) -> None:
+        if not self.hwnd:
+            return
+        if self.minimized:
+            ShowWindow(self.hwnd, win32con.SW_RESTORE)
+        else:
+            ShowWindow(self.hwnd, win32con.SW_SHOW)
+        SetForegroundWindow(self.hwnd)
+
+    def restack(self, other_window, above: int = 0) -> None:
+        if not self.hwnd:
+            return
+        flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE
+        other_hwnd = getattr(other_window, "hwnd", 0)
+        if above:
+            SetWindowPos(self.hwnd, other_hwnd or win32con.HWND_TOP, 0, 0, 0, 0, flags)
+        elif other_hwnd:
+            # there is no "insert before" in the win32 API,
+            # so we place the other window above ourselves instead:
+            SetWindowPos(other_hwnd, self.hwnd, 0, 0, 0, 0, flags)
+        else:
+            SetWindowPos(self.hwnd, win32con.HWND_BOTTOM, 0, 0, 0, 0, flags)
 
     def update_icon(self, img):
         iconlog("update_icon(%s) size=%s", img, img.size)

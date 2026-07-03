@@ -80,6 +80,25 @@ class ClientWindow(Toplevel):
     def show(self) -> None:
         self.deiconify()
 
+    def has_toplevel_focus(self) -> bool:
+        focused = self.focus_displayof()
+        if focused is None:
+            return False
+        path = str(self)
+        focused_path = str(focused)
+        return focused_path == path or focused_path.startswith(path + ".")
+
+    def present(self) -> None:
+        self.deiconify()
+        self.lift()
+        self.focus_force()
+
+    def restack(self, other_window, above: int = 0) -> None:
+        if above:
+            self.lift(other_window)
+        else:
+            self.lower(other_window)
+
     def on_focus_in(self, event) -> None:
         log(f"focus-in: {event!r}")
         if wc := self.client.get_subsystem("window"):

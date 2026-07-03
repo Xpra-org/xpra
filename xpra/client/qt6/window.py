@@ -187,6 +187,22 @@ class ClientWindow(QMainWindow):
         log(f"{obj}: {event} {event.type().name}")
         return False
 
+    def has_toplevel_focus(self) -> bool:
+        return self.isActiveWindow()
+
+    def present(self) -> None:
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def restack(self, other_window, above: int = 0) -> None:
+        # Qt only exposes global raise/lower for top-level windows,
+        # there is no API to stack relative to a specific sibling:
+        if above:
+            self.raise_()
+        else:
+            self.lower()
+
     def keyPressEvent(self, event: QKeyEvent) -> None:
         self.send_key_event(event, True)
 
