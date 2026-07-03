@@ -120,58 +120,66 @@ class ServerSocketsTest(ServerTestUtil):
                     sleep(0.1)
 
     def _test_connect(self, server_args=(), client_args=(), password=b"", uri_prefix=DISPLAY_PREFIX, exit_code=0):
-        display_no = self.find_free_display_no()
+        display_no = self.find_free_display_no(self.displays())
         display = f":{display_no}"
         log(f"starting test server on {display}")
         server = self.start_server(display, "--printing=no", *server_args)
-        # we should always be able to get the version:
-        uri = uri_prefix + str(display_no)
-        start = monotonic()
-        timeout = FAIL_WAIT if exit_code == ExitCode.CONNECTION_FAILED else CONNECT_WAIT
-        wait = envint("XPRA_TEST_SUBPROCESS_WAIT", timeout * 2)
-        while True:
-            args = ["version", uri] + list(client_args or ())
-            env = self.get_run_env()
-            env["XPRA_UNIT_TEST"] = "0"
-            env["XPRA_CONNECT_TIMEOUT"] = str(timeout)
+        f = None
+        try:
+            auth_args = []
+            if password:
+                f = self._temp_file(password)
+                auth_args = [
+                    f"--password-file={f.name}",
+                    f"--challenge-handlers=file:filename={f.name}",
+                ]
+            # we should always be able to get the version:
+            uri = uri_prefix + str(display_no)
+            start = monotonic()
+            timeout = FAIL_WAIT if exit_code == ExitCode.CONNECTION_FAILED else CONNECT_WAIT
+            wait = envint("XPRA_TEST_SUBPROCESS_WAIT", timeout * 2)
+            while True:
+                args = ["version", uri] + list(client_args or ()) + auth_args
+                env = self.get_run_env()
+                env["XPRA_UNIT_TEST"] = "0"
+                env["XPRA_CONNECT_TIMEOUT"] = str(timeout)
+                client = self.run_xpra(args, env=env)
+                r = pollwait(client, timeout)
+                if r == 0 or r == exit_code:
+                    break
+                if r is None:
+                    client.terminate()
+                if pollwait(server, 1) is not None:
+                    r = server.poll()
+                    raise Exception(f"server terminated - was started with args={args}, returned {estr(r)}")
+                if monotonic() - start > wait:
+                    if exit_code == ExitCode.CONNECTION_FAILED:
+                        return
+                    err_msg = f"version client failed to connect using {args}, returned {estr(r)}"
+                    log.error(err_msg)
+                    log.error(f" server was started on {display=} with {server_args}")
+                    raise Exception(err_msg)
+            # try to connect
+            args = ["connect-test", uri]
+            args += [x.replace("$DISPLAY_NO", str(display_no)) for x in client_args]
+            args += auth_args
             client = self.run_xpra(args, env=env)
-            r = pollwait(client, timeout)
-            if r == 0 or r == exit_code:
-                break
+            r = pollwait(client, wait)
             if r is None:
                 client.terminate()
-            if pollwait(server, 1) is not None:
-                r = server.poll()
-                raise Exception(f"server terminated - was started with args={args}, returned {estr(r)}")
-            if monotonic() - start > wait:
-                if exit_code == ExitCode.CONNECTION_FAILED:
-                    return
-                err_msg = f"version client failed to connect using {args}, returned {estr(r)}"
-                log.error(err_msg)
-                log.error(f" server was started on {display=} with {server_args}")
-                raise Exception(err_msg)
-        # try to connect
-        args = ["connect-test", uri] + [x.replace("$DISPLAY_NO", str(display_no)) for x in client_args]
-        f = None
-        if password:
-            f = self._temp_file(password)
-            args += [f"--password-file={f.name}"]
-            args += [f"--challenge-handlers=file:filename={f.name}"]
-        client = self.run_xpra(args, env=env)
-        r = pollwait(client, wait)
-        if f:
-            f.close()
-        if r is None:
-            client.terminate()
-        server.terminate()
-        if r != exit_code:
-            log.error("Exit code mismatch")
-            log.error(" expected %s (%s)", estr(exit_code), exit_code)
-            log.error(" got %s (%s)", estr(r), r)
-            log.error(" server args=%s", server_args)
-            log.error(" client args=%s", client_args)
-            self.verify_exitcode(expected=exit_code, actual=r)
-        pollwait(server, 10)
+            if r != exit_code:
+                log.error("Exit code mismatch")
+                log.error(" expected %s (%s)", estr(exit_code), exit_code)
+                log.error(" got %s (%s)", estr(r), r)
+                log.error(" server args=%s", server_args)
+                log.error(" client args=%s", client_args)
+                self.verify_exitcode(expected=exit_code, actual=r)
+        finally:
+            if f:
+                f.close()
+            if server.poll() is None:
+                server.terminate()
+            pollwait(server, 10)
 
     def test_default_socket(self):
         self._test_connect(["--bind=auto,auth=allow"], [], b"hello", DISPLAY_PREFIX, ExitCode.OK)
@@ -237,7 +245,7 @@ class ServerSocketsTest(ServerTestUtil):
         except ImportError as e:
             print(f"quic socket test skipped: {e}")
             return
-        display_no = self.find_free_display_no()
+        display_no = self.find_free_display_no(self.displays())
         display = f":{display_no}"
         with GenSSLCertContext() as genssl:
             server = None
@@ -263,7 +271,7 @@ class ServerSocketsTest(ServerTestUtil):
 
     def test_ssl(self):
         server = None
-        display_no = self.find_free_display_no()
+        display_no = self.find_free_display_no(self.displays())
         display = f":{display_no}"
         tcp_port = get_free_tcp_port()
         ws_port = get_free_tcp_port()
