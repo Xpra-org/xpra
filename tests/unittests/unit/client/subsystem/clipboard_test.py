@@ -14,32 +14,34 @@ from unit.process_test_util import DisplayContext
 
 class ClipboardClientTest(ClientMixinTest):
 
-	def test_clipboard(self):
-		from xpra.client.subsystem.clipboard import ClipboardClient
-		opts = AdHocStruct()
-		opts.clipboard = "yes"
-		opts.clipboard_direction = "both"
-		opts.local_clipboard = "CLIPBOARD"
-		opts.remote_clipboard = "CLIPBOARD"
+    def test_clipboard(self):
+        from xpra.client.subsystem.clipboard import ClipboardClient
+        opts = AdHocStruct()
+        opts.clipboard = "yes"
+        opts.clipboard_direction = "both"
+        opts.local_clipboard = "CLIPBOARD"
+        opts.remote_clipboard = "CLIPBOARD"
 
-		def after_handshake(cls, fn: Callable, *args):
-			self.glib.timeout_add(1000, fn, *args)
-		ClipboardClient.after_handshake = after_handshake
-		self._test_mixin_class(ClipboardClient, opts, {
-			"clipboard": {
-				"enable-selections": True,
-			},
-		})
-		self.glib.timeout_add(5000, self.stop)
-		self.main_loop.run()
-		assert len(self.packets)>=1
-		assert self.packets[0][0]=="clipboard-enable-selections"
+        def after_handshake(fn: Callable, *args):
+            self.glib.timeout_add(1000, fn, *args)
+        # `ClipboardClient.parse_server_capabilities` calls `self.client.after_handshake(...)`,
+        # so this must be set on the owning-client stand-in (`self`), not on the subsystem class:
+        self.after_handshake = after_handshake
+        self._test_mixin_class(ClipboardClient, opts, {
+            "clipboard": {
+                "enable-selections": True,
+            },
+        })
+        self.glib.timeout_add(5000, self.stop)
+        self.main_loop.run()
+        assert len(self.packets)>=1
+        assert self.packets[0][0]=="clipboard-enable-selections"
 
 
 def main():
-	with DisplayContext():
-		unittest.main()
+    with DisplayContext():
+        unittest.main()
 
 
 if __name__ == '__main__':
-	main()
+    main()

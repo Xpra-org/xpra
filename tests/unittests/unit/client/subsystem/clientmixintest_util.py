@@ -55,6 +55,9 @@ class ClientMixinTest(unittest.TestCase):
     def send(self, *args) -> None:
         self.packets.append(args)
 
+    def send_now(self, *args) -> None:
+        self.packets.append(args)
+
     def get_packet(self, index: int):
         if index < 0:
             actual_index = len(self.packets)+index
@@ -119,7 +122,10 @@ class ClientMixinTest(unittest.TestCase):
         self.quit = self.fake_quit
         self.connect = noop
         self.emit = noop
-        self.after_handshake = noop
+        # a test may set this itself before calling `_test_mixin_class`
+        # (ie: to actually run the deferred callback via the glib loop):
+        if not hasattr(self, "after_handshake"):
+            self.after_handshake = noop
         self._ui_event = noop
         self.on_server_setting_changed = noop
         # the notification subsystem composes its notifier list via the client's

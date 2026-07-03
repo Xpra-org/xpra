@@ -35,6 +35,22 @@ class _FakeProtocol:
         return True
 
 
+class _FakeOwningClient:
+    """
+    Minimal stand-in for the owning client object that the `Challenge`
+    subsystem delegates to via `self.client` (see `StubClientSubsystem`).
+    """
+    _protocol = None
+    display_desc: dict = {}
+    has_password = False
+
+    def warn_and_quit(self, *args) -> None:
+        pass
+
+    def cancel_verify_connected_timer(self) -> None:
+        pass
+
+
 def _hmac_digests():
     return [d for d in get_digests() if d.startswith("hmac")]
 
@@ -47,15 +63,17 @@ def make_challenge_client(handler, username, captured, errors):
     """
     from xpra.client.base.challenge import Challenge
     client = Challenge()
-    client._protocol = _FakeProtocol()
-    client.display_desc = {}
+    owner = _FakeOwningClient()
+    owner._protocol = _FakeProtocol()
+    owner.display_desc = {}
+    client.client = owner
     client.username = username
     # inject the handler directly rather than going through init_challenge_handlers:
     client.challenge_handlers = [handler]
     # capture the reply (do_send_challenge_reply calls send_hello for TYPE=="xpra"):
-    client.send_hello = lambda challenge_response=b"", client_salt=b"": captured.append((challenge_response, client_salt))
+    owner.send_hello = lambda challenge_response=b"", client_salt=b"": captured.append((challenge_response, client_salt))
     # capture the failure paths (auth_error / "authentication required"):
-    client.disconnect_and_quit = lambda *args: errors.append(args)
+    owner.disconnect_and_quit = lambda *args: errors.append(args)
     return client
 
 
