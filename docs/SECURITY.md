@@ -28,7 +28,9 @@ please send a request to [security@xpra.org](mailto:security@xpra.org)
 
 ## Known issues
 * [CVE-2021-40839](https://nvd.nist.gov/vuln/detail/CVE-2021-40839) [`rencode` issue](https://www.mail-archive.com/shifter-users@lists.devloop.org.uk/msg02754.html) affected all MS Windows and MacOS binary packages produced before the fix
-
+* [RCE via xpra URLs](https://github.com/Xpra-org/xpra/issues/4951)
+* [file-transfer vulnerabilities](https://github.com/Xpra-org/xpra/issues/4952)
+* [encodings are not validated](https://github.com/Xpra-org/xpra/issues/4950)
 
 ## False positives
 Some vulnerabilities are reported, sometimes automatically,
