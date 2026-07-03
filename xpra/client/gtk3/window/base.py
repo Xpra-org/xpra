@@ -1570,7 +1570,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         geomlog("window origin=%ix%i, root origin=%ix%i, actual position=%ix%i", ox, oy, rx, ry, ax, ay)
         # validate against edge of screen (ensure window is shown):
         if CLAMP_WINDOW_TO_SCREEN:
-            mw, mh = self._client.get_root_size()
+            display = self._client.get_subsystem("display")
+            mw, mh = display.get_root_size() if display else (0, 0)
             if (ax + w) <= 0:
                 ax = -w + 1
             elif ax >= mw:

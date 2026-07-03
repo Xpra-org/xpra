@@ -3,37 +3,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-
 from xpra.client.base.stub import StubClientMixin
-from xpra.platform.posix.gui import x11_bindings, X11WindowBindings
-from xpra.util.parsing import str_to_bool
+from xpra.platform.posix.gui import X11WindowBindings
 from xpra.common import noop
-from xpra.os_util import OSX, WIN32, gi_import
+from xpra.os_util import gi_import
 from xpra.log import Logger, is_debug_enabled
 from xpra.util.system import is_Wayland
 
 GLib = gi_import("GLib")
 
 log = Logger("posix")
-eventlog = Logger("posix", "events")
 xinputlog = Logger("posix", "xinput")
-
-FAKE_ROOT_PROP_EVENTS = tuple(x for x in os.environ.get("XPRA_FAKE_ROOT_PROP_EVENTS", "").split(",") if x)
-
-
-def get_resource_manager() -> bytes | None:
-    try:
-        from xpra.gtk.util import get_default_root_window
-        from xpra.x11.prop import prop_get
-        root = get_default_root_window()
-        xid = root.get_xid()
-        value = prop_get(xid, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
-        if value is not None:
-            return value.encode("utf-8")
-    except (ImportError, UnicodeEncodeError):
-        log.error("failed to get RESOURCE_MANAGER", exc_info=True)
-    return None
 
 
 def add_xi2_method_overrides() -> None:
@@ -55,29 +35,21 @@ def xi2_debug() -> None:
 
 
 class PlatformClient(StubClientMixin):
+    """
+    XSettings/root-window property watching (feeding the `display` subsystem) has
+    moved to `xpra.platform.posix.display.X11DisplayPropsWatcher`, composed directly
+    by `DisplayClient`. What's left here is XI2 input device setup (feeds `pointer`/
+    `keyboard`, not yet drained - see the Phase 4 plan's follow-up scope).
+    """
+
     def __init__(self):
-        self._xsettings_enabled = False
-        self._xsettings_watcher = None
-        self._root_props_watcher = None
         self._x11_filter = None
         self._xi_setup_failures = 0
-
-    def init(self, opts) -> None:
-        self._xsettings_enabled = not (OSX or WIN32 or is_Wayland()) and str_to_bool(opts.xsettings)
-        if self._xsettings_enabled:
-            self.setup_xprops()
 
     def init_ui(self, opts) -> None:
         # this would trigger warnings with our temporary opengl windows:
         # only enable it after we have connected:
         self.after_handshake(self.setup_xi)
-        if FAKE_ROOT_PROP_EVENTS:
-            def fake_root_prop_change() -> bool:
-                import random
-                prop = random.choice(FAKE_ROOT_PROP_EVENTS)
-                self._handle_root_prop_changed(self, prop)
-                return True
-            GLib.timeout_add(10*1000, fake_root_prop_change)
 
     def init_x11_filter(self) -> None:
         if self._x11_filter:
@@ -93,53 +65,11 @@ class PlatformClient(StubClientMixin):
             self._x11_filter = None
 
     def cleanup(self) -> None:
-        log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
+        log("cleanup() x11_filter=%s", self._x11_filter)
         if self._x11_filter:
             self._x11_filter = None
             from xpra.x11.gtk.bindings import cleanup_x11_filter  # @UnresolvedImport, @UnusedImport
             cleanup_x11_filter()
-        if self._xsettings_watcher:
-            self._xsettings_watcher.cleanup()
-            self._xsettings_watcher = None
-        if self._root_props_watcher:
-            self._root_props_watcher.cleanup()
-            self._root_props_watcher = None
-
-    def suspend_callback(self, *args) -> None:
-        eventlog("suspend_callback%s", args)
-        self.suspend()
-
-    def resume_callback(self, *args) -> None:
-        eventlog("resume_callback%s", args)
-        self.resume()
-
-    def setup_xprops(self) -> None:
-        # wait for handshake to complete:
-        if x11_bindings():
-            self.after_handshake(self.do_setup_xprops)
-
-    def do_setup_xprops(self, *args) -> None:
-        log("do_setup_xprops(%s)", args)
-        ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
-        try:
-            self.init_x11_filter()
-            # pylint: disable=import-outside-toplevel
-            from xpra.x11.subsystem.xsettings_manager import XSettingsWatcher
-            from xpra.x11.xroot_props import XRootPropWatcher
-            if self._xsettings_watcher is None:
-                self._xsettings_watcher = XSettingsWatcher()
-                self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
-                self._handle_xsettings_changed()
-            if self._root_props_watcher is None:
-                self._root_props_watcher = XRootPropWatcher(ROOT_PROPS)
-                self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
-                # ensure we get the initial value:
-                self._root_props_watcher.do_notify("RESOURCE_MANAGER")
-        except ImportError as e:
-            log("do_setup_xprops%s", args, exc_info=True)
-            log.error("Error: failed to load X11 properties/settings bindings:")
-            log.estr(e)
-            log.error(" root window properties will not be propagated")
 
     def do_xi_devices_changed(self, event) -> None:
         log("do_xi_devices_changed(%s)", event)
@@ -208,35 +138,3 @@ class PlatformClient(StubClientMixin):
             # register our enhanced event handlers:
             add_xi2_method_overrides()
         return False
-
-    def _get_xsettings(self):
-        if xw := self._xsettings_watcher:
-            with log.trap_error("Error retrieving XSETTINGS"):
-                return xw.get_settings()
-        return None
-
-    def _handle_xsettings_changed(self, *_args) -> None:
-        settings = self._get_xsettings()
-        log("xsettings_changed new value=%s", settings)
-        if settings is not None:
-            self.send("server-settings", {"xsettings-blob": settings})
-
-    def _handle_root_prop_changed(self, obj, prop) -> None:
-        log("root_prop_changed(%s, %s)", obj, prop)
-        if prop == "RESOURCE_MANAGER":
-            rm = get_resource_manager()
-            if rm is not None:
-                self.send("server-settings", {"resource-manager": rm})
-            return
-        method_name = {
-            "_NET_WORKAREA": "screen_size_changed",
-            "_NET_CURRENT_DESKTOP": "workspace_changed",
-            "_NET_DESKTOP_NAMES": "desktops_changed",
-            "_NET_NUMBER_OF_DESKTOPS": "desktops_changed",
-        }.get(prop, "")
-        if not method_name:
-            log.error("Error: unknown property %r", prop)
-            return
-        handler = getattr(self, method_name, noop)
-        log("handler(%r)=%s", prop, handler)
-        handler("from %r event on %s" % (prop, self._root_props_watcher))

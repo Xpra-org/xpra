@@ -21,9 +21,8 @@ from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
 from xpra.constants import DEFAULT_METADATA_SUPPORTED
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.gtk.cursors import get_default_cursor, make_cursor
-from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
+from xpra.gtk.util import get_default_root_window, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow
-from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.widget import scaled_image
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.versions import get_gtk_version_info
@@ -34,12 +33,10 @@ from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gtk3.dialogs import GTKDialogClient
 from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
+from xpra.client.gtk3.subsystem.display import Gtk3DisplayClient
 from xpra.platform.gui import (
     get_window_frame_sizes, get_window_frame_size,
     system_bell, get_wm_name,
-    # use the platform version so per-monitor info is enriched (colour, dpi, ...)
-    # on platforms that override it (win32, macos); it delegates to `xpra.gtk.info` otherwise:
-    get_monitors_info,
 )
 from xpra.log import Logger
 
@@ -112,6 +109,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         __gsignals__[signal_name] = no_arg_signal
 
     ClientWindowClass: type | None = None
+    SUBSYSTEM_CLASSES = {"display": Gtk3DisplayClient}
 
     def __init__(self):
         GObjectClientAdapter.__init__(self)
@@ -364,9 +362,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         from xpra.x11.bindings.window import X11WindowBindings
         return X11WindowBindings().get_root_xid()
 
-    def get_root_size(self) -> tuple[int, int]:
-        return get_root_size()
-
     def get_raw_mouse_position(self) -> tuple[int, int]:
         root = self.get_root_window()
         if not root:
@@ -389,7 +384,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = UIXpraClient.make_hello(self)
-        capabilities["encoding.transparency"] = self.has_transparency()
+        display = self.get_subsystem("display")
+        capabilities["encoding.transparency"] = display.has_transparency() if display else False
         if FULL_INFO > 1:
             capabilities.setdefault("versions", {}).update(get_gtk_version_info())
         EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", FULL_INFO > 1)
@@ -445,22 +441,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             "max_size": (128, 128),  # limit
         }
         return capabilities
-
-    def has_transparency(self) -> bool:
-        if not envbool("XPRA_ALPHA", True):
-            return False
-        screen = Gdk.Screen.get_default()
-        if screen is None:
-            return is_Wayland()
-        return screen.get_rgba_visual() is not None
-
-    def get_monitors_info(self) -> dict[int, Any]:
-        display = self.get_subsystem("display")
-        xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
-        return get_monitors_info(xscale, yscale)
-
-    def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
-        return get_screen_sizes(xscale, yscale)
 
     def set_windows_cursor(self, windows, cursor_data: Sequence) -> None:
         cursorlog(f"set_windows_cursor({windows}, args[{len(cursor_data)}])")

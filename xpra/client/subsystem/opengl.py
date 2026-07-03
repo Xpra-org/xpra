@@ -211,7 +211,8 @@ class OpenGLClient(StubClientMixin):
         limit = self.texture_size_limit
         # log at warn level if the limit is low:
         # (if we're likely to hit it - if the screen is as big or bigger)
-        w, h = self.client.get_root_size()
+        display = self.get_subsystem("display")
+        w, h = display.get_root_size() if display else (0, 0)
         log_fn = log.info
         if w * 2 <= limit and h * 2 <= limit:
             log_fn = log.debug

@@ -108,6 +108,10 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     __signals__ = ["startup-complete"]
 
     COMPOSED_SUBSYSTEMS = COMPOSED_SUBSYSTEMS
+    # concrete toolkit clients (GTKXpraClient, XpraWin32Client, ...) override this to
+    # substitute a toolkit-specific subclass for a composed subsystem, keyed by PREFIX
+    # (e.g. {"display": Gtk3DisplayClient}). Empty by default: no substitution.
+    SUBSYSTEM_CLASSES: dict[str, type] = {}
 
     def __init__(self):
         self.defaults_init()
@@ -126,12 +130,16 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.exit_code: ExitValue | None = None
         self.start_time = int(time())
 
+    def get_subsystem_class(self, cls: type) -> type:
+        # let a concrete toolkit client substitute its own subclass:
+        return self.SUBSYSTEM_CLASSES.get(getattr(cls, "PREFIX", ""), cls)
+
     def add_subsystem(self, cls) -> None:
         prefix = getattr(cls, "PREFIX", "")
         if prefix and prefix in self.COMPOSED_SUBSYSTEMS:
             # real composition: a separate instance with a back-reference to the
             # client (mirror of the server's `ServerCore.add_subsystem`):
-            instance = cls(client=self)
+            instance = self.get_subsystem_class(cls)(client=self)
             self.subsystems[prefix] = instance
         else:
             # still muxed: initialise the subsystem's state on the client itself:

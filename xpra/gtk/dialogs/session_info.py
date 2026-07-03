@@ -814,7 +814,7 @@ class SessionInfo(Gtk.Window):
                 self.server_randr_icon.set_from_pixbuf(unknown)
         self.server_randr_label.set_text("%s" % size_info)
         if self.show_client:
-            root_w, root_h = self.client.get_root_size()
+            root_w, root_h = display.get_root_size() if display else (0, 0)
             if features.window and display and (display.xscale != 1 or display.yscale != 1):
                 sw, sh = display.cp(root_w, root_h)
                 display_info = "%ix%i (scaled from %ix%i)" % (sw, sh, root_w, root_h)
@@ -1364,7 +1364,8 @@ class SessionInfo(Gtk.Window):
         dpi = screen.get_resolution() if screen else -1
         scale = max(1, dpi / DEFAULT_DPI) if dpi > 0 else self.get_scale_factor()
         rect = box.get_allocation()
-        maxw, maxh = self.client.get_root_size()
+        display = self.get_client_subsystem("display")
+        maxw, maxh = display.get_root_size() if display else (0, 0)
         ngraphs = 2 + int(SHOW_SOUND_STATS)
         # the preferred size (which does not cause the window to grow too big):
         W = 360

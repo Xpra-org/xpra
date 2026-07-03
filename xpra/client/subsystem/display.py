@@ -20,15 +20,16 @@ from xpra.common import (
     noop, skipkeys, may_notify_client,
 )
 from xpra.constants import NotificationID
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.parsing import (
-    parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
+    parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp, str_to_bool,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME, FALSE_OPTIONS, get_refresh_rate_for_value,
     adjust_monitor_refresh_rate, MIN_VREFRESH, MAX_VREFRESH,
 )
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.env import envbool, envint
+from xpra.util.system import is_Wayland
 from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
@@ -78,6 +79,9 @@ class DisplayClient(StubClientMixin):
         self.server_is_desktop = False
         self.server_is_monitor = False
         self.log_screen_info = True
+        # X11 XSettings / root-window property watching (DPI, workarea, desktop names)
+        # feeds this subsystem; it's an OS/display-server concern, not a toolkit one:
+        self._x11_props = None
 
     def init(self, opts) -> None:
         self.desktop_fullscreen = opts.desktop_fullscreen
@@ -88,6 +92,10 @@ class DisplayClient(StubClientMixin):
         scalinglog("can_scale(%s)=%s", opts.desktop_scaling, self.can_scale)
         if self.can_scale:
             self.parse_scaling(opts.desktop_scaling)
+        if POSIX and not OSX and not is_Wayland() and str_to_bool(opts.xsettings):
+            from xpra.platform.posix.display import X11DisplayPropsWatcher
+            self._x11_props = X11DisplayPropsWatcher(self)
+            self._x11_props.setup()
 
     def load(self):
         self.client.after_handshake(self.adjust_display)
@@ -110,13 +118,16 @@ class DisplayClient(StubClientMixin):
         return True
 
     def parse_scaling(self, desktop_scaling: str) -> None:
-        root_w, root_h = self.client.get_root_size()
+        root_w, root_h = self.get_root_size()
         self.initial_scaling = parse_scaling(desktop_scaling, root_w, root_h, MIN_SCALING, MAX_SCALING)
         self.xscale, self.yscale = self.initial_scaling
         scalinglog("scaling(%s)=%s", self.initial_scaling, (self.xscale, self.yscale))
 
     def cleanup(self) -> None:
         self.cancel_screen_size_change_timer()
+        if self._x11_props:
+            self._x11_props.cleanup()
+            self._x11_props = None
 
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         raise NotImplementedError()
@@ -171,7 +182,7 @@ class DisplayClient(StubClientMixin):
             caps["desktops"] = ndesktops
             caps["desktop.names"] = tuple(desktop_names)
 
-        ss = self.client.get_screen_sizes()
+        ss = self.get_screen_sizes()
         self._current_screen_sizes = ss
 
         if self.log_screen_info:
@@ -196,7 +207,7 @@ class DisplayClient(StubClientMixin):
         if BACKWARDS_COMPATIBLE:
             # legacy per-screen tuples; modern servers use the `monitors` dict instead:
             caps["screen_sizes"] = sss
-        monitors = self.client.get_monitors_info()
+        monitors = self.get_monitors_info()
         caps["monitors"] = adjust_monitor_refresh_rate(self.refresh_rate, monitors)
         caps.update(self.get_screen_caps())
         caps["dpi"] = self.get_dpi_caps()
@@ -332,7 +343,7 @@ class DisplayClient(StubClientMixin):
             self.may_adjust_scaling()
         if not self.server_is_desktop and not skip_vfb_size_check and self.server_max_desktop_size != (0, 0):
             avail_w, avail_h = self.server_max_desktop_size
-            root_w, root_h = self.client.get_root_size()
+            root_w, root_h = self.get_root_size()
             log("validating server_max_desktop_size=%s vs root size=%s",
                 self.server_max_desktop_size, (root_w, root_h))
             if self.cx(root_w) != root_w or self.cy(root_h) != root_h:
@@ -361,7 +372,7 @@ class DisplayClient(StubClientMixin):
         p = self.client._protocol
         if not p or p.TYPE != "xpra":
             return
-        root_w, root_h = self.cp(*self.client.get_root_size())
+        root_w, root_h = self.cp(*self.get_root_size())
         maxw, maxh = root_w, root_h
         try:
             server_w, server_h = self.server_actual_desktop_size
@@ -394,7 +405,8 @@ class DisplayClient(StubClientMixin):
         return get_display_icc_info()
 
     def get_monitors_info(self) -> dict:
-        return {}
+        from xpra.platform.gui import get_monitors_info
+        return get_monitors_info(self.xscale, self.yscale)
 
     def _process_show_desktop(self, packet: Packet) -> None:
         show = packet.get_bool(1)
@@ -420,11 +432,11 @@ class DisplayClient(StubClientMixin):
             return
         assert self.can_scale
         max_w, max_h = self.server_max_desktop_size  # ie: server limited to 8192x4096?
-        w, h = self.client.get_root_size()  # ie: 5760, 2160
+        w, h = self.get_root_size()  # ie: 5760, 2160
         sw, sh = self.cp(w, h)  # ie: upscaled to: 11520x4320
         scalinglog("may_adjust_scaling() server max desktop size=%s, server actual desktop size=%s",
                    self.server_max_desktop_size, self.server_actual_desktop_size)
-        scalinglog("may_adjust_scaling() client root size=%s", self.client.get_root_size())
+        scalinglog("may_adjust_scaling() client root size=%s", self.get_root_size())
         scalinglog(" scaled client root size using %sx%s: %s", self.xscale, self.yscale, (sw, sh))
 
         # server size is too small for the client screen size with the current scaling value,
@@ -560,10 +572,10 @@ class DisplayClient(StubClientMixin):
                 window.reinit_window_icons()
 
     def get_screen_settings(self) -> tuple:
-        u_root_w, u_root_h = self.client.get_root_size()
+        u_root_w, u_root_h = self.get_root_size()
         root_w, root_h = self.cp(u_root_w, u_root_h)
-        self._current_screen_sizes = self.client.get_screen_sizes()
-        sss = self.client.get_screen_sizes(self.xscale, self.yscale)
+        self._current_screen_sizes = self.get_screen_sizes()
+        sss = self.get_screen_sizes(self.xscale, self.yscale)
         ndesktops = get_number_of_desktops()
         desktop_names = get_desktop_names()
         log("get_screen_settings() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
@@ -582,7 +594,7 @@ class DisplayClient(StubClientMixin):
         vrefresh = self.get_vrefresh()
         log("get_screen_settings() vrefresh=%s", vrefresh)
         # expose both the real and the cooked per-monitor refresh rate, as in the hello caps:
-        monitors = adjust_monitor_refresh_rate(self.refresh_rate, self.client.get_monitors_info())
+        monitors = adjust_monitor_refresh_rate(self.refresh_rate, self.get_monitors_info())
         return root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh, monitors
 
     def update_screen_size(self) -> None:
@@ -693,7 +705,7 @@ class DisplayClient(StubClientMixin):
         ychange = yscale / self.yscale
         # check against maximum server supported size:
         maxw, maxh = self.server_max_desktop_size
-        root_w, root_h = self.client.get_root_size()
+        root_w, root_h = self.get_root_size()
         sw = int(root_w / xscale)
         sh = int(root_h / yscale)
         scalinglog("scale_change root size=%s x %s, scaled to %s x %s", root_w, root_h, sw, sh)

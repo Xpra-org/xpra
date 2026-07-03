@@ -16,6 +16,7 @@ from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gui.ui_client_base import UIXpraClient
+from xpra.client.win32.subsystem.display import Win32DisplayClient
 from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
 from xpra.platform.win32.keyboard import VK_NAMES, NATIVE_HELD_VKS, NATIVE_TOGGLED_VKS
 from xpra.log import Logger
@@ -70,6 +71,8 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     for signal_name in UIXpraClient.__signals__:
         __gsignals__[signal_name] = no_arg_signal
 
+    SUBSYSTEM_CLASSES = {"display": Win32DisplayClient}
+
     def __init__(self):
         GObjectClientAdapter.__init__(self)
         UIXpraClient.__init__(self)
@@ -100,13 +103,6 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def client_toolkit(self) -> str:
         return "Win32"
-
-    def get_root_size(self):
-        from xpra.platform.win32.gui import get_display_size
-        return get_display_size()
-
-    def get_screen_sizes(self, xscale=1.0, yscale=1.0) -> Sequence[tuple[int, int]]:
-        return (self.get_root_size(), )
 
     def get_current_modifiers(self) -> Sequence[str]:
         return ()

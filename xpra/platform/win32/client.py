@@ -200,10 +200,12 @@ class PlatformClient(StubClientMixin):
         log("SPI_GETSCREENSAVERRUNNING=%s", v)
         if self._screensaver_state != v:
             self._screensaver_state = v
-            if v:
-                self.suspend()
-            else:
-                self.resume()
+            power = self.get_subsystem("power")
+            if power:
+                if v:
+                    power.suspend()
+                else:
+                    power.resume()
         return True
 
     def poll_layout(self) -> None:
