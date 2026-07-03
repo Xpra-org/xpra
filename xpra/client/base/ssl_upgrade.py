@@ -29,7 +29,6 @@ class SSLUpgrade(StubClientSubsystem):
 
     def ssl_upgrade(self, ssl_attrs: typedict) -> None:
         # send ssl-upgrade request!
-        log = Logger("client", "ssl")
         log(f"ssl-upgrade({ssl_attrs})")
         conn = self.client._protocol._conn
         socktype = conn.socktype
