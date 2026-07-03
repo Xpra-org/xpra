@@ -535,7 +535,7 @@ class WindowManagerClient(StubClientSubsystem):
         if window:
             window.resize(aw, ah, resize_counter)
 
-    def _process_raise_window(self, packet: Packet) -> None:
+    def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log(f"going to raise window {wid:#x} - {window}")
@@ -738,7 +738,8 @@ class WindowManagerClient(StubClientSubsystem):
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
         if BACKWARDS_COMPATIBLE:
-            self.add_packets("raise-window", "new-override-redirect", main_thread=True)
+            self.add_packets("new-override-redirect", main_thread=True)
+            self.add_legacy_alias("raise-window", "window-raise")
             self.add_legacy_alias("new-window", "window-create")
             self.add_legacy_alias("restack-window", "window-restack")
             self.add_legacy_alias("initiate-moveresize", "window-initiate-moveresize")
@@ -746,6 +747,7 @@ class WindowManagerClient(StubClientSubsystem):
             self.add_legacy_alias("configure-override-redirect", "window-move-resize")
         self.add_packets(
             "window-create",
+            "window-raise",
             "window-restack",
             "window-initiate-moveresize",
             "window-move-resize",
