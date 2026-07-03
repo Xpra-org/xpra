@@ -42,7 +42,7 @@
   * [audio keepalive](https://github.com/Xpra-org/xpra/issues/4913)
   * [virtual monitors for MS Windows shadow servers](https://github.com/Xpra-org/xpra/issues/4909)
   * [`expand` server for MS Windows](https://github.com/Xpra-org/xpra/issues/4911)
-  * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885)
+  * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885), [also for client](https://github.com/Xpra-org/xpra/issues/4948)
   * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)
   * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256) [including rate control](https://github.com/Xpra-org/xpra/issues/1949)
   * [basic bash shell completion](https://github.com/Xpra-org/xpra/issues/2375)

@@ -166,10 +166,11 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         return getattr(cls, method)(self, *args)
 
     def _dispatch_fire(self, method: str, *args, reverse: bool = False) -> None:
-        # fan a lifecycle call out to every subsystem (mirror of `ServerCore._dispatch_fire`).
-        # NOT yet wired in: while subsystems are muxed, `subsystems.values()` is `self`
-        # repeated, so calling this would run the method once per entry. Phase 2f replaces
-        # the `for bc in CLIENT_BASES` loops with this once the entries are real instances.
+        # fan a lifecycle call out to every composed subsystem (mirror of `ServerCore._dispatch_fire`).
+        # every `PREFIX`-bearing subsystem is composed now, so `subsystems.values()` are real,
+        # distinct instances - safe to call directly (no risk of re-entering `self`'s own
+        # method, unlike the still-muxed classes with no `PREFIX`, eg `PlatformClient`,
+        # which callers must still dispatch to explicitly - see `UIXpraClient.init`).
         subs = list(self.subsystems.values())
         if reverse:
             subs.reverse()
@@ -184,8 +185,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
                 sublog.warn(f"Error: in {sub}.{method}", exc_info=True)
 
     def _dispatch_merge(self, method: str, *args) -> dict:
-        # merge a dict-returning call across every subsystem (mirror of `ServerCore._dispatch_merge`).
-        # Same caveat as `_dispatch_fire`: not wired in until Phase 2f.
+        # merge a dict-returning call across every composed subsystem (mirror of `ServerCore._dispatch_merge`).
         info: dict = {}
         for sub in self.subsystems.values():
             fn = getattr(sub, method, None)
@@ -240,23 +240,18 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.have_more = noop
 
     def init(self, opts) -> None:
-        for bc in CLIENT_BASES:
-            self._call_subsystem(bc, "init", opts)
+        self._dispatch_fire("init", opts)
         self.display = opts.display
         self.install_signal_handlers()
 
     def init_ui(self, opts) -> None:
-        """
-        `XpraClientBase` has no UI of its own to initialize; this only exists
-        because `UIXpraClient.init_ui` dispatches to every entry in
-        `CLIENT_BASES` (which includes this class itself, always muxed).
-        """
+        self._dispatch_fire("init_ui", opts)
 
     def load(self) -> None:
-        """ see `init_ui`: this class has nothing of its own to load """
+        self._dispatch_fire("load")
 
     def run(self) -> ExitValue:
-        """ see `init_ui`: the main loop is run by the concrete toolkit client """
+        self._dispatch_fire("run")
         return ExitCode.OK
 
     @staticmethod
@@ -343,8 +338,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {"pid": os.getpid()}
         info.update(PacketDispatcher.get_info(self))
-        for bc in CLIENT_BASES:
-            info.update(self._call_subsystem(bc, "get_info"))
+        merge_dicts(info, self._dispatch_merge("get_info"))
         return info
 
     def get_caps(self) -> dict[str, Any]:
@@ -395,8 +389,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         self.verify_connected_timer = self.timeout_add(round(conn.timeout + conn.connection_delay) * 1000, self.verify_connected)
 
     def setup_connection(self, conn) -> None:
-        for bc in CLIENT_BASES:
-            self._call_subsystem(bc, "setup_connection", conn)
+        self._dispatch_fire("setup_connection", conn)
 
     def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
         if not self._protocol:
@@ -516,10 +509,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
         return packet, synchronous, has_more
 
     def cleanup(self) -> None:
-        reaper_cleanup()
-        for bc in CLIENT_BASES:
-            with sublog.trap_error(f"Error cleaning {bc!r} handler"):
-                self._call_subsystem(bc, "cleanup")
+        self._dispatch_fire("cleanup")
         self.cancel_verify_connected_timer()
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
@@ -528,6 +518,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             log("calling %s", p.close)
             p.close()
         stop_asyncio_loop()
+        reaper_cleanup()
         log("cleanup done")
 
     def quit(self, exit_code: ExitValue = 0) -> None:
@@ -667,9 +658,13 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         netlog("parse_server_capabilities(..)")
-        for bc in CLIENT_BASES:
-            if not self._call_subsystem(bc, "parse_server_capabilities", c):
-                sublog.info(f"server capabilities rejected by {bc}")
+        for sub in self.subsystems.values():
+            try:
+                if not sub.parse_server_capabilities(c):
+                    sublog.info(f"server capabilities rejected by {sub}")
+                    return False
+            except Exception:
+                sublog.error("Error parsing server capabilities using %s", sub, exc_info=True)
                 return False
         self.server_client_shutdown = c.boolget("client-shutdown", True)
         netlog("parse_server_capabilities(..) done")
@@ -759,8 +754,7 @@ class XpraClientBase(PacketDispatcher, ClientBaseClass):
             self._call_subsystem(bc, "init_packet_handlers")
 
     def init_authenticated_packet_handlers(self) -> None:
-        for bc in CLIENT_BASES:
-            self._call_subsystem(bc, "init_authenticated_packet_handlers")
+        self._dispatch_fire("init_authenticated_packet_handlers")
 
     def call_packet_handler(self, main: bool, handler: PacketHandlerType, _proto, packet: Packet) -> None:
         """

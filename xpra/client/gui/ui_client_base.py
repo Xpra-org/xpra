@@ -32,9 +32,13 @@ CLIENT_BASES = get_client_base_classes()
 # `get_subsystem(...)`), so they are kept OUT of the client's MRO. `UIXpraClient` only
 # inherits from `XpraClientBase` plus the subsystems still muxed into the client object
 # (currently just `native`/`PlatformClient`; the `base/*` transport mixins go with Phase 3).
-# The full `CLIENT_BASES` list is still used to drive lifecycle/caps/signal dispatch below.
+# The full `CLIENT_BASES` list is still used to drive the hello/caps dispatch (see `make_hello`).
 MUXED_BASES = tuple(c for c in CLIENT_BASES if getattr(c, "PREFIX", "") not in XpraClientBase.COMPOSED_SUBSYSTEMS)
 ClientBaseClass = type('ClientBaseClass', MUXED_BASES, {})
+# the platform-specific mixin has no `PREFIX` of its own (never composed), so it is not
+# reachable via `self.subsystems` / `_dispatch_fire`: callers that need it (`init`, `init_ui`,
+# `run`, `cleanup` - the only lifecycle methods it actually overrides) dispatch to it explicitly.
+PLATFORM_MUXED_BASES = tuple(c for c in MUXED_BASES if c is not XpraClientBase)
 
 log = Logger("client")
 sublog = Logger("subsystems")
@@ -105,9 +109,9 @@ class UIXpraClient(ClientBaseClass):
 
     def init(self, opts) -> None:
         """ initialize variables from configuration """
-        for c in CLIENT_BASES:
-            sublog(f"init: {c}")
-            self._call_subsystem(c, "init", opts)
+        XpraClientBase.init(self, opts)
+        for c in PLATFORM_MUXED_BASES:
+            c.init(self, opts)
 
         self.title = opts.title
         self.session_name = opts.session_name
@@ -121,20 +125,16 @@ class UIXpraClient(ClientBaseClass):
 
     def init_ui(self, opts) -> None:
         """ initialize user interface """
-        for c in CLIENT_BASES:
-            sublog(f"init: {c}")
-            self._call_subsystem(c, "init_ui", opts)
-
-    def load(self):
-        for c in CLIENT_BASES:
-            sublog(f"load: {c}")
-            self._call_subsystem(c, "load")
+        XpraClientBase.init_ui(self, opts)
+        for c in PLATFORM_MUXED_BASES:
+            c.init_ui(self, opts)
 
     def run(self) -> ExitValue:
         if FORCE_ALERT:
             self.schedule_timer_redraw()
-        for c in CLIENT_BASES:
-            self._call_subsystem(c, "run")
+        XpraClientBase.run(self)
+        for c in PLATFORM_MUXED_BASES:
+            c.run(self)
         return self.exit_code or 0
 
     def quit(self, exit_code: ExitValue = 0) -> None:
@@ -142,12 +142,12 @@ class UIXpraClient(ClientBaseClass):
 
     def cleanup(self) -> None:
         log("UIXpraClient.cleanup()")
-        for c in CLIENT_BASES:
-            sublog("%s.cleanup()", c)
-            self._call_subsystem(c, "cleanup")
-        # the protocol has been closed, it is now safe to close all the windows:
+        for c in PLATFORM_MUXED_BASES:
+            with sublog.trap_error(f"Error cleaning {c!r}"):
+                c.cleanup(self)
+        # subsystems cleaned up and the protocol closed by `XpraClientBase.cleanup`:
         # (cleaner and needed when we run embedded in the client launcher)
-        reaper_cleanup()
+        XpraClientBase.cleanup(self)
         log("UIXpraClient.cleanup() done")
 
     def signal_cleanup(self) -> None:
@@ -157,12 +157,9 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.signal_cleanup() done")
 
     def get_info(self) -> dict[str, Any]:
-        info: dict[str, Any] = {}
+        info = XpraClientBase.get_info(self)
         if FULL_INFO > 0:
             info["session-name"] = self.session_name
-        for c in CLIENT_BASES:
-            with sublog.trap_error("Error collection information from %s", c):
-                info.update(self._call_subsystem(c, "get_info"))
         return info
 
     def show_about(self, *_args) -> None:
@@ -299,21 +296,9 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # connection setup:
-    def setup_connection(self, conn) -> None:
-        for c in CLIENT_BASES:
-            self._call_subsystem(c, "setup_connection", conn)
-
     def parse_server_capabilities(self, c: typedict) -> bool:
-        for cb in CLIENT_BASES:
-            sublog("%s.parse_server_capabilities(..)", cb)
-            try:
-                if not self._call_subsystem(cb, "parse_server_capabilities", c):
-                    sublog.info(f"failed to parse server capabilities in {cb}")
-                    return False
-            except Exception:
-                sublog("%s.parse_server_capabilities(%s)", cb, Ellipsizer(c))
-                sublog.error("Error parsing server capabilities using %s", cb, exc_info=True)
-                return False
+        if not XpraClientBase.parse_server_capabilities(self, c):
+            return False
         self.server_session_name = c.strget("session_name")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
         self.server_sharing = c.boolget("sharing")
@@ -500,7 +485,6 @@ class UIXpraClient(ClientBaseClass):
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
         log("init_authenticated_packet_handlers()")
-        for c in CLIENT_BASES:
-            self._call_subsystem(c, "init_authenticated_packet_handlers")
+        XpraClientBase.init_authenticated_packet_handlers(self)
         # run from the UI thread:
         self.add_packets("startup-complete", "setting-change", main_thread=True)
