@@ -55,6 +55,13 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         # for newer versions, it is easier:
         self.hello_extra["wants"] = []
 
+    def init_packet_handlers(self) -> None:
+        super().init_packet_handlers()
+        self.add_packets("startup-complete", main_thread=True)
+
+    def _process_startup_complete(self, packet: Packet) -> None:
+        self.completed_startup = packet
+
     def make_protocol(self, conn):
         protocol = super().make_protocol(conn)
         protocol._log_stats = False
@@ -757,6 +764,7 @@ class ExitXpraClient(HelloRequestClient):
 
 class StopXpraClient(HelloRequestClient):
     """ stop a server """
+    COMMAND_TIMEOUT = envint("XPRA_STOP_COMMAND_TIMEOUT", 5)
 
     def hello_request(self) -> dict[str, Any]:
         return {
@@ -764,6 +772,7 @@ class StopXpraClient(HelloRequestClient):
         }
 
     def do_command(self, caps: typedict) -> None:
+        self.server_client_shutdown = caps.boolget("client-shutdown", self.server_client_shutdown)
         if not self.server_client_shutdown:
             log.error("Error: cannot shutdown this server")
             log.error(" the feature is disabled on the server")
@@ -776,6 +785,8 @@ class StopXpraClient(HelloRequestClient):
         # not exiting the client here,
         # the server should send us the shutdown disconnection message anyway
         # and if not, we will then hit the timeout to tell us something went wrong
+        if self.COMMAND_TIMEOUT > 0:
+            self.command_timeout = self.timeout_add(self.COMMAND_TIMEOUT * 1000, self.timeout)
 
 
 class DetachXpraClient(HelloRequestClient):
