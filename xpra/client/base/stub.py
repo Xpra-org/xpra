@@ -43,11 +43,8 @@ class StubClientMixin(SignalEmitter):
         the plain GLib main loop.
         """
         super().__init__()
-        self.client = client if client is not None else self
-        if client is not None:
-            source = client
-        else:
-            source = self if all(hasattr(self, m) for m in self.SCHEDULER_METHODS) else GLibScheduler
+        self.client = client
+        source = client if client is not None else GLibScheduler
         self.idle_add: Callable = source.idle_add
         self.timeout_add: Callable = source.timeout_add
         self.source_remove: Callable = source.source_remove
