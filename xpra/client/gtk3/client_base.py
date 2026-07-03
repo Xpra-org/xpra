@@ -602,7 +602,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def _new_window(self, _emitter, window) -> None:
         # in desktop / monitor / shadow mode, place each new window fullscreen on its own monitor:
-        remote_server_mode = self.get_subsystem("serverinfo")._remote_server_mode
+        remote_server_mode = self.get_subsystem("remote-info")._remote_server_mode
         screen_mode = any(remote_server_mode.find(x) >= 0 for x in ("desktop", "monitor", "shadow"))
         display = self.get_subsystem("display")
         if display and display.desktop_fullscreen and screen_mode:

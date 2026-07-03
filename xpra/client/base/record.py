@@ -51,7 +51,7 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.ping:
         from xpra.client.subsystem.ping import PingClient
         classes.append(PingClient)
-    # ServerInfoClient?
+    # InfoRequest?
     # ClipboardClient, KeyboardClient, PointerClient, NotificationClient, Encodings -> emulate it
     # TrayClient -> use custom tray instead
     from xpra.client.base.command import XpraClientBase

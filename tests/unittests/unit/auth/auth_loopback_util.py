@@ -9,8 +9,8 @@ Cross-side "loopback" harness for the authentication handshake.
 Unlike the subsystem loopback harness (`unit/loopback_util.py`), authentication is
 not a packet subsystem: the server side is a `SysAuthenticator` driven by
 `xpra.server.auth.AuthenticationManager`, and the client side is the
-`ChallengeClient` mixin. This helper wires the *real* client challenge dispatch
-(`ChallengeClient.do_process_challenge` -> `send_challenge_reply` ->
+`Challenge` mixin. This helper wires the *real* client challenge dispatch
+(`Challenge.do_process_challenge` -> `send_challenge_reply` ->
 `do_send_challenge_reply`) to a *real* server authenticator and exchanges the
 actual `challenge` packet / `challenge_response` capability between them.
 
@@ -27,7 +27,7 @@ from xpra.util.objects import typedict
 
 
 class _FakeProtocol:
-    """Minimal stand-in for the real network protocol used by ChallengeClient."""
+    """Minimal stand-in for the real network protocol used by Challenge."""
     TYPE = "xpra"
     _conn = None
 
@@ -41,12 +41,12 @@ def _hmac_digests():
 
 def make_challenge_client(handler, username, captured, errors):
     """
-    Build a real ChallengeClient with just enough plumbing injected to run the
+    Build a real Challenge with just enough plumbing injected to run the
     challenge dispatch in-process. `send_hello` (the exit of a successful reply)
     and `disconnect_and_quit` (the failure paths) are captured.
     """
-    from xpra.client.base.challenge import ChallengeClient
-    client = ChallengeClient()
+    from xpra.client.base.challenge import Challenge
+    client = Challenge()
     client._protocol = _FakeProtocol()
     client.display_desc = {}
     client.username = username

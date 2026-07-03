@@ -13,7 +13,7 @@ log = Logger("client")
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 
 
-class ProgressClient(StubClientMixin):
+class Progress(StubClientMixin):
     """
     Encapsulates functions for managing the splash screen
     """

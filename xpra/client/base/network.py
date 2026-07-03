@@ -17,7 +17,7 @@ from xpra.log import Logger
 log = Logger("client", "network")
 
 
-class NetworkClient(StubClientMixin):
+class Network(StubClientMixin):
     """
     Protocol caps
     """

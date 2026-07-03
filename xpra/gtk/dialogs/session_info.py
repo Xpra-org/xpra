@@ -195,9 +195,9 @@ def make_os_str(sys_platform, platform_release, platform_platform, platform_linu
 
 
 def get_client_server_last_info(client) -> dict:
-    # `last_info` is owned by the `server-info` subsystem on a full UI client;
+    # `last_info` is owned by the `info-request` subsystem on a full UI client;
     # standalone monitor clients (`InfoTimerClient`) fake it directly on themselves:
-    si = getattr(client, "get_subsystem", None) and client.get_subsystem("server-info")
+    si = getattr(client, "get_subsystem", None) and client.get_subsystem("info-request")
     if si:
         return si.last_info
     return getattr(client, "server_last_info", {}) or {}
@@ -1523,7 +1523,7 @@ class SessionInfoClient(InfoTimerClient):
                 d = typedict(v or {})
             return d
 
-        from xpra.client.base.serverinfo import get_remote_lib_versions
+        from xpra.client.base.remoteinfo import get_remote_lib_versions
         feature_info = rtdict("features")
         clipboard = self.get_subsystem("clipboard")
         if clipboard:

@@ -34,7 +34,7 @@ ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
                                         "uri,file,env,scram,kerberos,gss,fido2,u2f,prompt,prompt,prompt,prompt").split(",")
 
 
-class ChallengeClient(StubClientMixin):
+class Challenge(StubClientMixin):
     """
     Adds ability to handle challenge packets
     """

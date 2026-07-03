@@ -1716,14 +1716,14 @@ class GTKTrayMenu(GTKMenuHelper):
         set_sensitive(download, False)
 
         cmd = self.get_subsystem("command")
-        serverinfo = self.get_subsystem("serverinfo")
+        remoteinfo = self.get_subsystem("remote-info")
         file_sub = self.get_subsystem("file")
 
         def enable_download(*args) -> None:
             log("enable_download%s server_file_transfer=%s, server_start_new_commands=%s, subcommands=%s",
                 args, file_sub.remote_file_transfer, cmd.server_start_new_commands,
-                serverinfo._remote_subcommands)
-            remote_send_file = "send-file" in serverinfo._remote_subcommands
+                remoteinfo._remote_subcommands)
+            remote_send_file = "send-file" in remoteinfo._remote_subcommands
             supported = file_sub.remote_file_transfer and cmd.server_start_new_commands
             set_sensitive(download, supported and remote_send_file)
             if not supported:
@@ -1751,11 +1751,11 @@ class GTKTrayMenu(GTKMenuHelper):
         def download_server_log(*_args) -> None:
             self.client.download_server_log()
         download_log = self.menuitem(_("Download Server Log"), "list.png", cb=download_server_log)
-        serverinfo = self.get_subsystem("serverinfo")
+        remoteinfo = self.get_subsystem("remote-info")
         file_sub = self.get_subsystem("file")
 
         def enable_download(*args) -> None:
-            can_download = features.file and file_sub.remote_file_transfer and bool(serverinfo._remote_server_log)
+            can_download = features.file and file_sub.remote_file_transfer and bool(remoteinfo._remote_server_log)
             log("enable_download%s can_download=%s", args, can_download)
             sens_tooltip(download_log, can_download,
                          _("Download the server log"),

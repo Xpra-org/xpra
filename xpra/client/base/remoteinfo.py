@@ -58,8 +58,8 @@ def get_remote_lib_versions(c: typedict, libs=DEFAULT_LIBS) -> dict[str, tuple]:
     return versions
 
 
-class ServerInfoMixin(StubClientMixin):
-    PREFIX = "serverinfo"
+class RemoteInfo(StubClientMixin):
+    PREFIX = "remote-info"
 
     def __init__(self, client=None):
         StubClientMixin.__init__(self, client)

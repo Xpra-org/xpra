@@ -108,9 +108,9 @@ class ServerCommandsWindow:
         return self.client.get_subsystem(name)
 
     def get_client_server_last_info(self) -> dict:
-        # `last_info` is owned by the `server-info` subsystem;
+        # `last_info` is owned by the `info-request` subsystem;
         # the standalone test harness fakes it directly on the client instead:
-        si = self.get_client_subsystem("server-info")
+        si = self.get_client_subsystem("info-request")
         if si:
             return si.last_info
         return getattr(self.client, "server_last_info", {}) or {}

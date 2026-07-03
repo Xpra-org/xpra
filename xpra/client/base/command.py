@@ -36,7 +36,6 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         Utility superclass for clients that only send one command
         via the hello packet.
     """
-
     def __init__(self, opts):
         GObjectClientAdapter.__init__(self)
         XpraClientBase.__init__(self)

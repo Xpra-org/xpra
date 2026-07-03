@@ -11,19 +11,19 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.client.base import aes
-from xpra.client.base.aes import AESClient
+from xpra.client.base.aes import AES
 from xpra.scripts.config import InitExit
 from xpra.util.objects import typedict
 
 
 def client(options=None, protocol_type="tcp"):
-    value = AESClient()
+    value = AES()
     conn = SimpleNamespace(options=options or {})
     value._protocol = SimpleNamespace(TYPE=protocol_type, _conn=conn, set_cipher_in=Mock(), set_cipher_out=Mock())
     return value
 
 
-class AESClientTest(unittest.TestCase):
+class AESTest(unittest.TestCase):
 
     def test_encryption_selection(self):
         value = client({"encryption": "AES-CBC"})

@@ -61,7 +61,6 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
     Minimal xpra client that connects back to the server, authenticates with
     a one-time token, and displays incoming webcam frames in a GTK window.
     """
-
     def __init__(self, display_desc: dict[str, Any]) -> None:
         GObjectClientAdapter.__init__(self)
         XpraClientBase.__init__(self)

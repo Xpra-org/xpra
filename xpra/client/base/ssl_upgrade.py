@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("ssl")
 
 
-class SSLUpgradeClient(StubClientMixin):
+class SSLUpgrade(StubClientMixin):
     """
     Adds ability to upgrade connections to ssl
     """

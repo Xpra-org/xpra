@@ -25,7 +25,7 @@ from xpra.log import Logger
 log = Logger("crypto")
 
 
-class AESClient(StubClientMixin):
+class AES(StubClientMixin):
     """
     Adds tcp encryption feature
     """

@@ -13,7 +13,7 @@ from xpra.os_util import get_machine_id, BITS
 from xpra.client.base.stub import StubClientMixin
 
 
-class InfoClient(StubClientMixin):
+class ClientInfo(StubClientMixin):
     """
     Adds extra information about the client
     """

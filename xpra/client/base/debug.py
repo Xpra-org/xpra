@@ -17,7 +17,7 @@ from xpra.util.env import envbool
 SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO > 1)
 
 
-class DebugClient(StubClientMixin):
+class Debug(StubClientMixin):
     """
     Adds some debug functions
     """

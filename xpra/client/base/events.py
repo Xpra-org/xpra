@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("events")
 
 
-class EventsClient(StubClientMixin):
+class Events(StubClientMixin):
     """
     Receives server events
     """

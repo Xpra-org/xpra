@@ -6,40 +6,40 @@
 
 def get_client_subsystems() -> tuple[type, ...]:
     from xpra.client.base import features
-    from xpra.client.base.network import NetworkClient
-    from xpra.client.base.clientid import IDClient
-    subsystems: list[type] = [NetworkClient, IDClient]
+    from xpra.client.base.network import Network
+    from xpra.client.base.clientid import ClientID
+    subsystems: list[type] = [Network, ClientID]
     if features.info:
-        from xpra.client.base.clientinfo import InfoClient
-        subsystems.append(InfoClient)
+        from xpra.client.base.clientinfo import ClientInfo
+        subsystems.append(ClientInfo)
     if features.challenge:
-        from xpra.client.base.challenge import ChallengeClient
-        subsystems.append(ChallengeClient)
+        from xpra.client.base.challenge import Challenge
+        subsystems.append(Challenge)
     if features.server_events:
-        from xpra.client.base.events import EventsClient
-        subsystems.append(EventsClient)
+        from xpra.client.base.events import Events
+        subsystems.append(Events)
     if features.server_info:
-        from xpra.client.base.serverinfo import ServerInfoMixin
-        subsystems.append(ServerInfoMixin)
+        from xpra.client.base.remoteinfo import RemoteInfo
+        subsystems.append(RemoteInfo)
     if features.encryption:
-        from xpra.client.base.aes import AESClient
-        subsystems.append(AESClient)
+        from xpra.client.base.aes import AES
+        subsystems.append(AES)
     if features.progress:
-        from xpra.client.base.progress import ProgressClient
-        subsystems.append(ProgressClient)
+        from xpra.client.base.progress import Progress
+        subsystems.append(Progress)
     if features.debug:
-        from xpra.client.base.debug import DebugClient
-        subsystems.append(DebugClient)
+        from xpra.client.base.debug import Debug
+        subsystems.append(Debug)
     if features.file:
-        from xpra.client.base.file import FileMixin
-        subsystems.append(FileMixin)
+        from xpra.client.base.file import File
+        subsystems.append(File)
     if features.printer:
-        from xpra.client.base.printer import PrinterMixin
-        subsystems.append(PrinterMixin)
+        from xpra.client.base.printer import Printer
+        subsystems.append(Printer)
     if features.control:
-        from xpra.client.base.control import ControlClient
-        subsystems.append(ControlClient)
+        from xpra.client.base.control import Control
+        subsystems.append(Control)
     if features.ssl_upgrade:
-        from xpra.client.base.ssl_upgrade import SSLUpgradeClient
-        subsystems.append(SSLUpgradeClient)
+        from xpra.client.base.ssl_upgrade import SSLUpgrade
+        subsystems.append(SSLUpgrade)
     return tuple(subsystems) or (object, )

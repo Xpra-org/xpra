@@ -9,7 +9,7 @@ Cross-side "loopback" tests for the authentication handshake.
 
 Each test wires a real client challenge handler (`xpra.challenge.*`) to a real
 server authenticator (`xpra.auth.*`) and exchanges the actual `challenge` packet
-through the real `ChallengeClient` dispatch (see `auth_loopback_util.py`).
+through the real `Challenge` dispatch (see `auth_loopback_util.py`).
 
 Only the hmac digest pairs are covered here: they flow through the real client
 send path end-to-end. `scram` is deferred - the client `send_challenge_reply`

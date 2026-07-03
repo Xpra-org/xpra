@@ -174,7 +174,7 @@ class XpraClientBase(PacketDispatcher):
         self.verify_connected_timer = 0
         # identity: concrete clients (and `GObjectClientAdapter`, which runs before
         # subsystem composition) freely override this; the `clientid` subsystem just
-        # reports whatever it finds here (see `IDClient.get_caps`):
+        # reports whatever it finds here (see `ClientID.get_caps`):
         self.client_type = "python"
         # protocol stuff:
         self._protocol = None

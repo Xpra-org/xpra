@@ -20,7 +20,7 @@ SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 INIT_PRINTING_DELAY = envint("XPRA_INIT_PRINTING_DELAY", 2)
 
 
-class FileMixin(StubClientMixin, FileTransferHandler):
+class File(StubClientMixin, FileTransferHandler):
     PREFIX = "file"
 
     def __init__(self, client=None):

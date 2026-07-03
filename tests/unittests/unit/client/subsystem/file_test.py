@@ -26,7 +26,7 @@ class FileClientTest(ClientMixinTest):
         return opts
 
     def test_modern_capabilities_and_packet_registration(self):
-        from xpra.client.base.file import FileMixin
+        from xpra.client.base.file import File
 
         caps = {
             "file": {
@@ -39,7 +39,7 @@ class FileClientTest(ClientMixinTest):
                 "request-file": True,
             },
         }
-        client = self._test_mixin_class(FileMixin, self.make_opts(), caps)
+        client = self._test_mixin_class(File, self.make_opts(), caps)
         self.assertTrue(client.remote_file_transfer)
         self.assertTrue(client.remote_file_transfer_ask)
         self.assertEqual(client.remote_file_size_limit, 12345)
@@ -77,9 +77,9 @@ class FileClientTest(ClientMixinTest):
         self.assertEqual(client.files_requested[send_id], RequestedFile("${XPRA_SERVER_LOG}", True, "*.log"))
 
     def test_request_file_capability_nesting_and_legacy_fallback(self):
-        from xpra.client.base.file import FileMixin
+        from xpra.client.base.file import File
 
-        client = FileMixin()
+        client = File()
         client.parse_server_capabilities(typedict({
             "request-file": True,
             "file": {"enabled": True, "request-file": False},
@@ -107,15 +107,15 @@ class FileClientTest(ClientMixinTest):
         self.assertTrue(client.remote_request_file)
 
     def test_cleanup_delegates_to_transfer_handler(self):
-        from xpra.client.base.file import FileMixin
+        from xpra.client.base.file import File
 
-        client = FileMixin()
+        client = File()
         with patch.object(FileTransferHandler, "cleanup", autospec=True) as cleanup:
             client.cleanup()
         cleanup.assert_called_once_with(client)
 
     def test_file_hooks_delegate_to_dialogs_subsystem(self):
-        from xpra.client.base.file import FileMixin
+        from xpra.client.base.file import File
 
         calls = []
 
@@ -143,7 +143,7 @@ class FileClientTest(ClientMixinTest):
             def source_remove(self, *_args, **_kwargs) -> None:
                 return None
 
-        client = FileMixin(Client())
+        client = File(Client())
         answers = []
         client.ask_data_request(answers.append, "sid", "file", "url", 1, False, False)
         client.file_size_warning("upload", "local", "x", 2, 1)

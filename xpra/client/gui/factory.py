@@ -7,8 +7,8 @@
 def get_client_subsystems() -> tuple[type, ...]:
     from xpra.client.base import features
 
-    from xpra.client.subsystem.server_info import ServerInfoClient
-    subsystems: list[type] = [ServerInfoClient]
+    from xpra.client.subsystem.info_request import InfoRequest
+    subsystems: list[type] = [InfoRequest]
     if features.display:
         from xpra.client.subsystem.display import DisplayClient
         subsystems.append(DisplayClient)

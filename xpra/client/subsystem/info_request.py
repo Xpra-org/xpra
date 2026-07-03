@@ -20,11 +20,11 @@ log = Logger("network")
 LOG_INFO_RESPONSE: str = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 
 
-class ServerInfoClient(StubClientMixin):
+class InfoRequest(StubClientMixin):
     """
     Request `info` from server.
     """
-    PREFIX = "server-info"
+    PREFIX = "info-request"
 
     def __init__(self, client=None):
         StubClientMixin.__init__(self, client)

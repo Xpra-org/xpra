@@ -8,7 +8,7 @@ import time
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from xpra.client.base.network import NetworkClient
+from xpra.client.base.network import Network
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
@@ -20,7 +20,7 @@ class MixinsTest(ClientMixinTest):
         opts.compression_level = 0
         opts.bandwidth_limit = 0
         opts.bandwidth_detection = True
-        self._test_mixin_class(NetworkClient, opts, {"start_time": time.time()})
+        self._test_mixin_class(Network, opts, {"start_time": time.time()})
 
 
 def main():

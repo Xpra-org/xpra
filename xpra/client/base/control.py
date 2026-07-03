@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("exec")
 
 
-class ControlClient(StubClientMixin):
+class Control(StubClientMixin):
     """
     Utility mixin for clients that support a control channel
 

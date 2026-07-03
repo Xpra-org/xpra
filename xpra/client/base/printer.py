@@ -21,7 +21,7 @@ SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 INIT_PRINTING_DELAY = envint("XPRA_INIT_PRINTING_DELAY", 2)
 
 
-class PrinterMixin(StubClientMixin):
+class Printer(StubClientMixin):
     """
     Printer forwarding.
     `printing`/`remote_printing`/`remote_printing_ask` and the packet types used

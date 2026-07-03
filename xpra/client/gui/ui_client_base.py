@@ -363,7 +363,7 @@ class UIXpraClient(XpraClientBase):
         # called by the `control` subsystem (it owns the base commands; this
         # adds the UI-specific ones on top, via the `add_control_command` delegate
         # since this class and the `control` subsystem are no longer related by
-        # inheritance - see `ControlClient.parse_server_capabilities`):
+        # inheritance - see `Control.parse_server_capabilities`):
         try:
             from xpra.net.control.common import ControlCommand, ArgsControlCommand
         except ImportError as e:

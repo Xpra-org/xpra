@@ -421,9 +421,9 @@ class GTKDialogClient(StubClientMixin):
         self.sub_dialogs["session-info"] = dialog
 
     def show_bug_report(self, *_args) -> None:
-        server_info = self.get_subsystem("server-info")
-        if server_info:
-            server_info.send_info_request()
+        info_request = self.get_subsystem("info-request")
+        if info_request:
+            info_request.send_info_request()
 
         if dialog := self.sub_dialogs.get("bug-report"):
             force_focus()
@@ -444,7 +444,7 @@ class GTKDialogClient(StubClientMixin):
 
             def get_server_info() -> typedict:
                 # the subsystem may not be loaded:
-                return getattr(server_info, "last_info", typedict())
+                return getattr(info_request, "last_info", typedict())
 
             dialog.init(show_about=False, get_server_info=get_server_info,
                         opengl_info=gl.properties if gl else {},

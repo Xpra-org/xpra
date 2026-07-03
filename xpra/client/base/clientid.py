@@ -12,7 +12,7 @@ from xpra.util.version import vparts, XPRA_VERSION
 from xpra.client.base.stub import StubClientMixin
 
 
-class IDClient(StubClientMixin):
+class ClientID(StubClientMixin):
     """
     Essential client information
     """
