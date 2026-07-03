@@ -9,7 +9,6 @@ from typing import Any
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import POINTER_BUTTON
-from xpra.os_util import POSIX
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
@@ -28,28 +27,18 @@ class WindowPointer(StubClientMixin):
         self._button_state = {}
         self.poll_pointer_timer = 0
         self.poll_pointer_position = -1, -1
-        # XI2 device enumeration (X11-specific, feeds `send_input_devices` below):
+        # XI2 device enumeration (X11-specific): read/written by the `xi2`
+        # subsystem, when composed - see `xpra.client.subsystem.xi2.XI2Client`:
         self.input_devices = ""
-        self._xi2 = None
 
     def init(self, opts) -> None:
         self.input_devices = opts.input_devices
-        if POSIX:
-            # this would trigger warnings with our temporary opengl windows:
-            # only enable it after we have connected (deferred internally via
-            # `after_handshake` - see `X11InputDevicesWatcher.setup`):
-            from xpra.platform.posix.input_devices import X11InputDevicesWatcher
-            self._xi2 = X11InputDevicesWatcher(self)
-            self._xi2.setup()
 
     def cleanup(self) -> None:
         log("WindowClient.cleanup()")
         # the protocol has been closed, it is now safe to close all the windows:
         # (cleaner and needed when we run embedded in the client launcher)
         self.cancel_poll_pointer_timer()
-        if self._xi2:
-            self._xi2.cleanup()
-            self._xi2 = None
         log("WindowClient.cleanup() done")
 
     def get_info(self) -> dict[str, Any]:

@@ -134,9 +134,9 @@ class DisplayClient(StubClientMixin):
         if xp := self._x11_props:
             self._x11_props = None
             xp.cleanup()
-        if self._cg_display:
-            self._cg_display.cleanup()
+        if cgd := self._cg_display:
             self._cg_display = None
+            cgd.cleanup()
 
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         raise NotImplementedError()

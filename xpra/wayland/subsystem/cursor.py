@@ -61,9 +61,9 @@ class WaylandCursorManager(CursorManager):
         self.cursor_tracker = SeatCursorTracker(compositor.get_seat_ptr(), self.cursor)
 
     def cleanup(self) -> None:
-        if self.cursor_tracker:
-            self.cursor_tracker.cleanup()
+        if ct := self.cursor_tracker:
             self.cursor_tracker = None
+            ct.cleanup()
 
     def get_default_cursor_size(self) -> tuple[int, int]:
         return CURSOR_SIZE, CURSOR_SIZE

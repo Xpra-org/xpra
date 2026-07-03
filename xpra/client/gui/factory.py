@@ -21,6 +21,11 @@ def get_client_subsystems() -> tuple[type, ...]:
         if features.cursor:
             from xpra.client.subsystem.cursor import CursorClient
             subsystems.append(CursorClient)
+        if features.pointer:
+            from xpra.os_util import POSIX, OSX
+            if POSIX and not OSX:
+                from xpra.client.subsystem.xi2 import XI2Client
+                subsystems.append(XI2Client)
     if features.webcam:
         from xpra.client.subsystem.webcam import WebcamForwarder
         subsystems.append(WebcamForwarder)

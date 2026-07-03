@@ -77,10 +77,6 @@ class XpraClientBase(PacketDispatcher):
     def __init__(self):
         self.defaults_init()
         PacketDispatcher.__init__(self)
-        # composed subsystems hold a `client=self` back-reference to reach this
-        # object; this object also treats itself as its own "client" so generic
-        # code written against a subsystem's `self.client` works uniformly here too:
-        self.client = self
         # registry of composed subsystem instances, keyed by `PREFIX`
         # (see `StubClientMixin.get_subsystem`):
         self.subsystems: dict[str, Any] = {}

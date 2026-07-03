@@ -3,9 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.client.base.stub import StubClientMixin
 from xpra.os_util import gi_import
-from xpra.log import Logger, is_debug_enabled
 from xpra.util.system import is_Wayland
+from xpra.log import Logger, is_debug_enabled
 
 GLib = gi_import("GLib")
 
@@ -31,19 +32,24 @@ def xi2_debug() -> None:
         xinputlog("xi2_debug()", exc_info=True)
 
 
-class X11InputDevicesWatcher:
+class XI2Client(StubClientMixin):
     """
     XI2 input device enumeration + hierarchy-change events, feeding the
-    `window` subsystem's `WindowPointer` leaf.
+    `window` subsystem's `WindowPointer` leaf. Only composed on POSIX
+    (excluding OSX) when the `window` and `pointer` subsystems are both
+    enabled - see `xpra.client.gui.factory.get_client_subsystems`.
     """
+    PREFIX = "xi2"
 
-    def __init__(self, window_pointer):
-        self.window = window_pointer
+    def __init__(self, client=None):
+        StubClientMixin.__init__(self, client)
         self._x11_filter = None
         self._xi_setup_failures = 0
 
-    def setup(self) -> None:
-        self.window.client.after_handshake(self.setup_xi)
+    def init(self, opts) -> None:
+        # this would trigger warnings with our temporary opengl windows:
+        # only enable it once we have connected:
+        self.client.after_handshake(self.setup_xi)
 
     def init_x11_filter(self) -> None:
         if self._x11_filter:
@@ -73,14 +79,16 @@ class X11InputDevicesWatcher:
         XI2 = X11XI2Bindings()
         devices = XI2.get_devices()
         if devices:
-            self.window.send_input_devices("xi", devices)
+            window = self.get_subsystem("window")
+            window.send_input_devices("xi", devices)
 
     def setup_xi(self) -> None:
         GLib.timeout_add(100, self.do_setup_xi)
 
     def do_setup_xi(self) -> bool:
-        input_devices = self.window.input_devices
-        server_input_devices = self.window.server_input_devices or ""
+        window = self.get_subsystem("window")
+        input_devices = window.input_devices
+        server_input_devices = window.server_input_devices or ""
 
         if input_devices.lower() in ("noxi2", "nox"):
             return False

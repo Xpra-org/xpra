@@ -39,9 +39,9 @@ class ClientMixinTest(unittest.TestCase):
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
-        if self.mixin:
-            self.mixin.cleanup()
+        if mixin := self.mixin:
             self.mixin = None
+            mixin.cleanup()
 
     def stop(self) -> None:
         self.glib.timeout_add(1000, self.main_loop.quit)

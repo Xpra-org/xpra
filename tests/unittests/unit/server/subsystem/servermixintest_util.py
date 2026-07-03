@@ -50,12 +50,12 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter):
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
-        if self.source:
-            self.source.cleanup()
+        if source := self.source:
             self.source = None
-        if self.mixin:
-            self.mixin.cleanup()
+            source.cleanup()
+        if mixin := self.mixin:
             self.mixin = None
+            mixin.cleanup()
 
     def debug_all(self) -> None:
         from xpra.log import enable_debug_for

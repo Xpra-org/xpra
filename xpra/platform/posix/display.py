@@ -61,12 +61,12 @@ class X11DisplayPropsWatcher:
             self._x11_filter = None
             from xpra.x11.gtk.bindings import cleanup_x11_filter  # @UnresolvedImport, @UnusedImport
             cleanup_x11_filter()
-        if self._xsettings_watcher:
-            self._xsettings_watcher.cleanup()
+        if xw := self._xsettings_watcher:
             self._xsettings_watcher = None
-        if self._root_props_watcher:
-            self._root_props_watcher.cleanup()
+            xw.cleanup()
+        if rw := self._root_props_watcher:
             self._root_props_watcher = None
+            rw.cleanup()
 
     def do_setup_xprops(self, *args) -> None:
         log("do_setup_xprops(%s)", args)
