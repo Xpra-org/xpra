@@ -9,7 +9,7 @@ from collections.abc import Callable
 from subprocess import Popen, PIPE
 from threading import Event
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.common import noop, may_show_progress, noerr
 from xpra.exit_codes import ExitCode
 from xpra.gtk.widget import FILE_CHOOSER_NATIVE, label
@@ -31,11 +31,11 @@ GLib = gi_import("GLib")
 Gtk = gi_import("Gtk")
 
 
-class GTKDialogClient(StubClientMixin):
+class GTKDialogClient(StubClientSubsystem):
     PREFIX = "dialogs"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.pinentry_proc = None
         self.sub_dialogs = {}
 

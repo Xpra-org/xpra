@@ -27,7 +27,7 @@ from xpra.net.common import is_request_allowed, Packet, FULL_INFO
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 
@@ -38,7 +38,7 @@ MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 5)
 REQUEST_TIMEOUT = envint("XPRA_CLIENT_REQUEST_TIMEOUT", 10)
 
 
-class NetworkListener(StubClientMixin):
+class NetworkListener(StubClientSubsystem):
     """
     Mixin for adding listening sockets to the client,
     those can be used for
@@ -49,7 +49,7 @@ class NetworkListener(StubClientMixin):
     PREFIX = "listener"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.sockets: list[SocketListener] = []
         self._potential_protocols = []
         self._close_timers: dict[Any, int] = {}

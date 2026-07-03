@@ -9,7 +9,7 @@ from collections.abc import Callable
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.net.file_transfer import FileTransferHandler
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 printlog = Logger("printing")
@@ -20,11 +20,11 @@ SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 INIT_PRINTING_DELAY = envint("XPRA_INIT_PRINTING_DELAY", 2)
 
 
-class File(StubClientMixin, FileTransferHandler):
+class File(StubClientSubsystem, FileTransferHandler):
     PREFIX = "file"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         FileTransferHandler.__init__(self)
         self.remote_request_file: bool = False
 

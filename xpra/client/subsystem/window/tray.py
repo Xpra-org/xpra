@@ -10,7 +10,7 @@ from xpra.os_util import OSX
 from xpra.util.system import is_Ubuntu
 from xpra.util.objects import typedict, make_instance
 from xpra.util.env import envint, envbool
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window", "tray")
@@ -20,7 +20,7 @@ ICON_OVERLAY: int = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
 
 
-class WindowTray(StubClientMixin):
+class WindowTray(StubClientSubsystem):
 
     def __init__(self):
         self.client_supports_system_tray: bool = False

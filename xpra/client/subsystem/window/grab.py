@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.net.common import Packet
 from xpra.util.objects import typedict
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window", "grab")
@@ -49,7 +49,7 @@ def should_force_grab(metadata: typedict) -> bool:
     return False
 
 
-class WindowGrab(StubClientMixin):
+class WindowGrab(StubClientSubsystem):
 
     def __init__(self):
         self._window_with_grab = None

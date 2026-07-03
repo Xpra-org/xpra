@@ -23,7 +23,7 @@ from xpra.os_util import get_machine_id, get_user_uuid, WIN32, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 from xpra.util.thread import start_thread
 
@@ -92,7 +92,7 @@ def get_pa_info() -> dict:
     return {}
 
 
-class AudioClient(AudioKeepaliveMixin, StubClientMixin):
+class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     """
     Utility mixin for clients that handle audio
     """
@@ -100,7 +100,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientMixin):
     PREFIX = "audio"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.source_plugin = ""
         self.speaker_allowed: bool = False
         self.speaker_enabled: bool = False

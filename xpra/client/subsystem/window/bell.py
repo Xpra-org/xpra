@@ -8,13 +8,13 @@ from typing import Any
 from xpra.net.common import Packet
 from xpra.net.packet_type import BELL_SET
 from xpra.util.objects import typedict
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window")
 
 
-class WindowBell(StubClientMixin):
+class WindowBell(StubClientSubsystem):
     """
     Bell forwarding. Part of the `window` subsystem, which owns the
     "bell-toggled" signal (see `WindowManagerClient`): peers subscribe with
@@ -23,7 +23,7 @@ class WindowBell(StubClientMixin):
 
     def __init__(self):
         if not hasattr(self, "client"):
-            StubClientMixin.__init__(self)
+            StubClientSubsystem.__init__(self)
         self.client_supports_bell: bool = False
         self.server_bell: bool = False
         self.bell_enabled: bool = False

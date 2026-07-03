@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.env import envbool
 from xpra.log import Logger
 
@@ -13,14 +13,14 @@ log = Logger("client")
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 
 
-class Progress(StubClientMixin):
+class Progress(StubClientSubsystem):
     """
     Encapsulates functions for managing the splash screen
     """
     PREFIX = "progress"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.progress_process = None
 
     def show_progress(self, pct: int, text="") -> None:

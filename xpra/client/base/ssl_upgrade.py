@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("ssl")
 
 
-class SSLUpgrade(StubClientMixin):
+class SSLUpgrade(StubClientSubsystem):
     """
     Adds ability to upgrade connections to ssl
     """

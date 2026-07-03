@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -11,29 +10,16 @@ from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.compression import Compressed
 from xpra.net.common import ClientPacketHandlerType, PacketElement
-
-# Subsystems inherit `SignalEmitter` so that a *composed* subsystem instance can
-# own its own signals (emit/connect on itself) rather than routing through the
-# client GObject.
 from xpra.util.signal_emitter import SignalEmitter
 
 
-class StubClientMixin(SignalEmitter):
+class StubClientSubsystem(SignalEmitter):
     __signals__: list[str] = []
     # every concrete subsystem should declare a non-empty PREFIX,
     # used as the key in `client.subsystems`:
     PREFIX: str = ""
 
     def __init__(self, client=None) -> None:
-        """
-        `client` is the owning client (mirror of the server's `StubSubsystem.__init__`),
-        given when this subsystem is a real, separate composed instance.
-        Leave unset when this subsystem *is* the client (still flattened into it
-        via multiple inheritance) or stands alone (eg: in a unit test): the
-        concrete class then already provides its own scheduler methods, or - if
-        it doesn't (a bare instance with no client of its own) - we fall back to
-        the plain GLib main loop.
-        """
         super().__init__()
         self.client = client
         # copy scheduler methods from client if present, GLib otherwise:
@@ -99,16 +85,9 @@ class StubClientMixin(SignalEmitter):
         Delegates to the owning client (mirrors `send`/`send_now`): the real
         implementation lives on the concrete toolkit client (eg:
         `GObjectClientAdapter.quit`, which stops the main loop and runs
-        `cleanup()`); only fall back to a raw `sys.exit()` when this object
-        *is* the client and has no such implementation of its own (bare/
-        standalone use).
+        `cleanup()`).
         """
-        client = self.client
-        if client is not self:
-            client.quit(exit_code)
-        else:
-            self.exit_code = exit_code
-            sys.exit(exit_code)
+        self.client.quit(exit_code)
 
     def cleanup(self) -> None:
         """
@@ -117,15 +96,10 @@ class StubClientMixin(SignalEmitter):
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         """
-        Send a packet to the server.
-        When this subsystem is a composed instance, delegate to the owning
-        client; while still muxed the concrete client's own `send` overrides
-        this (and isolated tests inject their own), so this is only reached on
-        a real separate instance.
+        Send a packet to the server, via the owning client.
+        (isolated tests inject their own `send`)
         """
-        client = self.client
-        if client is not self:
-            client.send(packet_type, *parts)
+        self.client.send(packet_type, *parts)
 
     def send_now(self, packet_type: str, *parts: PacketElement) -> None:
         """
@@ -133,9 +107,7 @@ class StubClientMixin(SignalEmitter):
         this takes precedence over packets sent via send().
         Delegates to the owning client (see `send`).
         """
-        client = self.client
-        if client is not self:
-            client.send_now(packet_type, *parts)
+        self.client.send_now(packet_type, *parts)
 
     def setup_connection(self, _conn) -> None:
         """
@@ -144,13 +116,13 @@ class StubClientMixin(SignalEmitter):
 
     def get_caps(self) -> dict[str, Any]:
         """
-        Return the capabilities provided by this mixin.
+        Return the capabilities provided by this subsystem.
         """
         return {}
 
     def get_info(self) -> dict[str, Any]:
         """
-        Information contained in this mixin
+        Information contained in this subsystem
         """
         return {}
 
@@ -170,19 +142,19 @@ class StubClientMixin(SignalEmitter):
         wrapper below.
         """
         network = self.get_subsystem("network")
-        if network and network is not self:
+        if network:
             return network.compressed_wrapper(datatype, data, level=level, **kwargs)
         assert level >= 0
         return Compressed("raw %s" % datatype, data)
 
     def init_packet_handlers(self) -> None:
         """
-        Register the packet types that this mixin can handle, even before authentication.
+        Register the packet types that this subsystem can handle, even before authentication.
         """
 
     def init_authenticated_packet_handlers(self) -> None:
         """
-        Register the packet types that this mixin can handle after authentication.
+        Register the packet types that this subsystem can handle after authentication.
         """
 
     def add_packets(self, *packet_types: str, main_thread: bool = False) -> None:

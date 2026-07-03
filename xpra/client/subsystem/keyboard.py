@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.client.base import features
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.keyboard.common import KeyEvent, DELAY_KEYBOARD_DATA
 from xpra.util.objects import typedict
@@ -28,14 +28,14 @@ def noauto(val: str | Sequence | None) -> str | Sequence | None:
     return val
 
 
-class KeyboardClient(StubClientMixin):
+class KeyboardClient(StubClientSubsystem):
     """
     Utility mixin for clients that handle keyboard input
     """
     PREFIX = "keyboard"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.enabled = True
         self.helper_class: type = KeyboardHelper
         self.helper = None

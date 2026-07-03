@@ -30,7 +30,7 @@ from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.env import envbool, envint
 from xpra.util.system import is_Wayland
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("screen")
@@ -41,7 +41,7 @@ MONITOR_CHANGE_REINIT = envbool("XPRA_MONITOR_CHANGE_REINIT", WIN32 or OSX)
 SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", True)
 
 
-class DisplayClient(StubClientMixin):
+class DisplayClient(StubClientSubsystem):
     """
     Utility mixin for clients that handle a desktop / display
     Adds client-side scaling handling
@@ -50,7 +50,7 @@ class DisplayClient(StubClientMixin):
     PREFIX = "display"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         check_display()
         self.dpi = 0
         self.can_scale = False

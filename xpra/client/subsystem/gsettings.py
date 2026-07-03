@@ -9,7 +9,7 @@ from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.objects import typedict
 from xpra.util.parsing import str_to_bool
 from xpra.net.common import GSETTINGS_ALLOWLIST, gsettings_key
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 Gio = gi_import("Gio")
@@ -17,7 +17,7 @@ Gio = gi_import("Gio")
 log = Logger("client", "gsettings")
 
 
-class GSettingsClient(StubClientMixin):
+class GSettingsClient(StubClientSubsystem):
     """
     Forward an allowlisted set of the client's GSettings to the server,
     re-sending individual keys as they change.
@@ -26,7 +26,7 @@ class GSettingsClient(StubClientMixin):
     PREFIX = "gsettings"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.sync = ""
         self.enabled = False
         self.server_enabled = False

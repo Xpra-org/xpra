@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.common import Packet
 from xpra.net.control.common import ControlCode
 from xpra.util.objects import typedict
@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("exec")
 
 
-class Control(StubClientMixin):
+class Control(StubClientSubsystem):
     """
     Utility mixin for clients that support a control channel
 
@@ -23,7 +23,7 @@ class Control(StubClientMixin):
     PREFIX = "control"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.control_commands: dict[str, Any] = {}
 
     def get_info(self) -> dict[str, tuple]:

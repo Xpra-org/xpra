@@ -20,7 +20,7 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.common import may_notify_client
 from xpra.constants import NotificationID
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -52,7 +52,7 @@ def is_available() -> bool:
         return False
 
 
-class WebcamForwarder(StubClientMixin):
+class WebcamForwarder(StubClientSubsystem):
     """
     Mixin for clients that forward webcams
     """
@@ -61,7 +61,7 @@ class WebcamForwarder(StubClientMixin):
     __signals__ = ["webcam-changed"]
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         # webcam:
         self.option = ""
         self.forwarding = False

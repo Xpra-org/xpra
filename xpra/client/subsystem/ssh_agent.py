@@ -7,10 +7,10 @@
 import os.path
 from typing import Any
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 
 
-class SSHAgentClient(StubClientMixin):
+class SSHAgentClient(StubClientSubsystem):
     """
     Exposes ssh agent capability
     """

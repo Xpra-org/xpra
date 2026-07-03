@@ -20,7 +20,7 @@ from xpra.net import compression
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 from xpra.util.thread import start_thread
 
@@ -82,14 +82,14 @@ def get_batch_caps() -> dict[str, Any]:
     return caps
 
 
-class Encodings(StubClientMixin):
+class Encodings(StubClientSubsystem):
     """
     Mixin for adding encodings to a client
     """
     PREFIX = "encoding"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.allowed_encodings: Sequence[str] = ()
         self.encoding = ""
         self.quality = -1

@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Callable
 from importlib import import_module
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.platform.info import get_username
 from xpra.scripts.config import InitExit
 from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
@@ -34,14 +34,14 @@ ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
                                         "uri,file,env,scram,kerberos,gss,fido2,u2f,prompt,prompt,prompt,prompt").split(",")
 
 
-class Challenge(StubClientMixin):
+class Challenge(StubClientSubsystem):
     """
     Adds ability to handle challenge packets
     """
     PREFIX = "challenge"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.username = ""
         self.password = None
         self.password_file: list[str] = []

@@ -78,7 +78,7 @@ class XpraClientBase(PacketDispatcher):
         self.defaults_init()
         PacketDispatcher.__init__(self)
         # registry of composed subsystem instances, keyed by `PREFIX`
-        # (see `StubClientMixin.get_subsystem`):
+        # (see `StubClientSubsystem.get_subsystem`):
         self.subsystems: dict[str, Any] = {}
         for prefix, cls in self.get_subsystem_classes().items():
             subsystem = cls(client=self)
@@ -90,10 +90,9 @@ class XpraClientBase(PacketDispatcher):
 
     def get_subsystem(self, name: str):
         """
-        look up a composed (or still-muxed) subsystem by its `PREFIX`.
-        Defined directly here (mirroring `StubClientMixin.get_subsystem`, not
-        inherited from it) because every `base/*` mixin is composed out now,
-        so this class has no mixed-in base to pick up `StubClientMixin` from.
+        look up a composed subsystem by its `PREFIX`.
+        (mirrors `StubClientSubsystem.get_subsystem` - subsystems are never
+        part of this class hierarchy, they are always composed instances)
         """
         return self.subsystems.get(name)
 
@@ -105,13 +104,9 @@ class XpraClientBase(PacketDispatcher):
             control_subsystem.add_control_command(name, control)
 
     def _call_subsystem(self, cls, method: str, *args):
-        # dispatch one subsystem's lifecycle/caps call:
-        # to its real instance if it has been composed out, otherwise to the
-        # muxed client (identical to the old `cls.method(self, *args)`).
-        instance = self.subsystems.get(getattr(cls, "PREFIX", ""))
-        if instance is not None and instance is not self:
-            return getattr(instance, method)(*args)
-        return getattr(cls, method)(self, *args)
+        # dispatch one subsystem's lifecycle/caps call to its composed instance:
+        instance = self.subsystems[cls.PREFIX]
+        return getattr(instance, method)(*args)
 
     def _dispatch_fire(self, method: str, *args, reverse: bool = False) -> None:
         # fan a lifecycle call out to every composed subsystem (mirror of `ServerCore._dispatch_fire`).

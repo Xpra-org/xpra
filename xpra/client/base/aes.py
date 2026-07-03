@@ -6,7 +6,7 @@
 import os
 from typing import Any
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.str_fn import csv, strtobytes, Ellipsizer
 from xpra.util.io import filedata_nocrlf
 from xpra.scripts.config import InitExit
@@ -25,14 +25,14 @@ from xpra.log import Logger
 log = Logger("crypto")
 
 
-class AES(StubClientMixin):
+class AES(StubClientSubsystem):
     """
     Adds tcp encryption feature
     """
     PREFIX = "aes"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.encryption = None
         self.encryption_keyfile = None
         self.server_padding_options = [DEFAULT_PADDING]

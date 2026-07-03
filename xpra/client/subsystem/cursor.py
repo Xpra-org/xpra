@@ -15,7 +15,7 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("cursor")
@@ -39,14 +39,14 @@ def decompress_cursor_data(encoding: str, cpixels: SizedBuffer, serial: int) -> 
     return b""
 
 
-class CursorClient(StubClientMixin):
+class CursorClient(StubClientSubsystem):
     """
     Add cursor handling
     """
     PREFIX = "cursor"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.server_enabled: bool = False
         self.client_supports: bool = False
         self.enabled: bool = False

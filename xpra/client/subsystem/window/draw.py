@@ -20,7 +20,7 @@ from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window", "draw")
@@ -36,7 +36,7 @@ DRAW_LOG_FMT = "process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at 
 DRAW_TYPES: dict[type, str] = {bytes: "bytes", str: "bytes", tuple: "arrays", list: "arrays"}
 
 
-class WindowDraw(StubClientMixin):
+class WindowDraw(StubClientSubsystem):
 
     def __init__(self):
         # draw thread:

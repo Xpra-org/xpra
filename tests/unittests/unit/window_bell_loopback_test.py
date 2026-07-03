@@ -58,7 +58,8 @@ class WindowBellLoopbackTest(LoopbackTest):
         # client-side bell plumbing (provided by the window subsystem in production):
         client.bell_enabled = True
         client.get_window = lambda wid: None
-        client.window_bell = MagicMock()
+        # the UI hook lives on the owning client (stood-in by the test harness):
+        client.client.window_bell = MagicMock()
         # server source ready to send a bell:
         source.window_bell = True
         source.suspended = False
@@ -70,8 +71,8 @@ class WindowBellLoopbackTest(LoopbackTest):
         self.assertTrue(any(p[0] == WINDOW_BELL for p in self.s2c),
                         "server did not send a bell: %s" % (self.s2c,))
         # and the client decoded it and forwarded it to its UI hook:
-        client.window_bell.assert_called_once()
-        args = client.window_bell.call_args.args
+        client.client.window_bell.assert_called_once()
+        args = client.client.window_bell.call_args.args
         # window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
         self.assertEqual(args[2], 100)            # percent
         self.assertEqual(args[3], 440)            # pitch

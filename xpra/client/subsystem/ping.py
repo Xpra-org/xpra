@@ -12,7 +12,7 @@ from collections.abc import Sequence, Iterable
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 from xpra.util.objects import typedict
 from xpra.util.system import getloadavg
@@ -27,7 +27,7 @@ SWALLOW_PINGS: bool = envbool("XPRA_SWALLOW_PINGS", False)
 PING_DETAILS = envbool("XPRA_PING_DETAILS", FULL_INFO > 0)
 
 
-class PingClient(StubClientMixin):
+class PingClient(StubClientSubsystem):
     """
     Ping handling
     """
@@ -37,7 +37,7 @@ class PingClient(StubClientMixin):
     PACKET_TYPES = ("ping", "ping_echo")
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.pings: bool = False
         self.server_latency: deque[tuple[float, float]] = deque(maxlen=1000)
         self.server_load = (0, 0, 0)

@@ -7,7 +7,7 @@
 from time import time
 from datetime import timedelta
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import WIN32, OSX
 from xpra.util.env import envint
@@ -18,7 +18,7 @@ log = Logger("event")
 FAKE_SUSPEND_RESUME: int = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
 
 
-class PowerEventClient(StubClientMixin):
+class PowerEventClient(StubClientSubsystem):
     """
     Adds power events callbacks
     """
@@ -26,7 +26,7 @@ class PowerEventClient(StubClientMixin):
     __signals__: list[str] = ["suspend", "resume", "pause", "unpause"]
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.ui_watcher = None
         self.suspended = 0.0
         # extra, platform-specific suspend/resume signal sources feeding the

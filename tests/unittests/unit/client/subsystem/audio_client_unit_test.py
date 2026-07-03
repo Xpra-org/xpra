@@ -12,7 +12,7 @@ Exercises the state-machine, packet-handling, and capability helpers directly.
 import unittest
 from unittest.mock import MagicMock, patch
 from xpra.net.common import Packet
-from xpra.util.objects import typedict
+from xpra.util.objects import typedict, AdHocStruct
 
 
 def _make_client(*, speaker_enabled=False, microphone_enabled=False,
@@ -20,7 +20,9 @@ def _make_client(*, speaker_enabled=False, microphone_enabled=False,
     """Return a bare AudioClient wired with minimal stubs."""
     from xpra.client.subsystem.audio import AudioClient
     x = AudioClient()
-    x.exit_code = None
+    # the subsystem reads `exit_code` from its owning client:
+    x.client = AdHocStruct()
+    x.client.exit_code = None
     x._signal_callbacks = {}
     x._remote_uuid = ""
     x._remote_machine_id = ""
@@ -484,7 +486,7 @@ class TestAudioSinkExit(unittest.TestCase):
     def test_ignores_when_exiting(self):
         x = _make_client()
         sink = _make_sink(x)
-        x.exit_code = 0
+        x.client.exit_code = 0
         with patch.object(x, "stop_receiving_audio") as m:
             x.sink_exit(sink)
             m.assert_not_called()

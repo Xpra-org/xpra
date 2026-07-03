@@ -6,13 +6,13 @@
 from typing import Any
 
 from xpra.net.common import Packet
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("events")
 
 
-class Events(StubClientMixin):
+class Events(StubClientSubsystem):
     """
     Receives server events
     """

@@ -12,7 +12,7 @@ from xpra.util.env import envbool, envint
 from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import csv
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.mmap.io import init_client_mmap, clean_mmap
 from xpra.net.mmap.objects import BaseMmapArea
 from xpra.log import Logger
@@ -77,14 +77,14 @@ class MmapArea(BaseMmapArea):
             self.write_token()
 
 
-class MmapClient(StubClientMixin):
+class MmapClient(StubClientSubsystem):
     """
     Mixin for adding mmap support to a client
     """
     PREFIX = "mmap"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.mmap_option = "no"
         self.mmap_group = "auto"
         self.mmap_read_area: MmapArea | None = None

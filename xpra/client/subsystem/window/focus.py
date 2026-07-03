@@ -7,13 +7,13 @@
 from typing import Any
 
 from xpra.net.packet_type import WINDOW_FOCUS
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window", "focus")
 
 
-class WindowFocus(StubClientMixin):
+class WindowFocus(StubClientSubsystem):
 
     def __init__(self):
         self.lost_focus_timer: int = 0

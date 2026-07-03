@@ -10,30 +10,30 @@ import unittest
 
 from xpra.util.objects import AdHocStruct
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 
 
 class StubClientTest(ClientMixinTest):
 
-	def test_mixin(self):
-		opts = AdHocStruct()
-		self._test_mixin_class(StubClientMixin, opts, {})
+    def test_mixin(self):
+        opts = AdHocStruct()
+        self._test_mixin_class(StubClientSubsystem, opts, {})
 
-	def test_compressed_wrapper(self):
-		s = StubClientMixin()
-		s.compressed_wrapper("text", "foo", 1)
-		for level in (-1, -100):
-			try:
-				s.compressed_wrapper("text", "bar", level)
-			except Exception:
-				pass
-			else:
-				raise Exception("should have failed with invalid level %s" % level)
+    def test_compressed_wrapper(self):
+        s = StubClientSubsystem()
+        s.compressed_wrapper("text", "foo", 1)
+        for level in (-1, -100):
+            try:
+                s.compressed_wrapper("text", "bar", level)
+            except Exception:
+                pass
+            else:
+                raise Exception("should have failed with invalid level %s" % level)
 
 
 def main():
-	unittest.main()
+    unittest.main()
 
 
 if __name__ == '__main__':
-	main()
+    main()

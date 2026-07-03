@@ -17,7 +17,7 @@ from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.system import stop_proc
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window", "exec")
@@ -76,7 +76,7 @@ def clean_signalwatcher(proc) -> None:
         noerr(stderr.close)
 
 
-class WindowSignalWatcher(StubClientMixin):
+class WindowSignalWatcher(StubClientSubsystem):
     """
     Adds ability to run a signal_watcher command for each window.
     """

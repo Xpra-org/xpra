@@ -11,7 +11,7 @@ from xpra.util.parsing import FALSE_OPTIONS
 from xpra.os_util import OSX
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window", "pointer")
@@ -52,7 +52,7 @@ def parse_mousewheel(mousewheel: str) -> tuple[bool, dict]:
     return wheel_smooth, wheel_map
 
 
-class WindowWheel(StubClientMixin):
+class WindowWheel(StubClientSubsystem):
 
     def __init__(self):
         self.server_precise_wheel: bool = False

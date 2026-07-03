@@ -8,7 +8,7 @@ from collections import namedtuple
 
 from xpra.client.gui.window_border import WindowBorder
 from xpra.util.env import first_time
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window")
@@ -92,7 +92,7 @@ def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
     return border
 
 
-class WindowBorderClient(StubClientMixin):
+class WindowBorderClient(StubClientSubsystem):
     """
     Adds support for the window border:
     parse it or generate it from the connection info.

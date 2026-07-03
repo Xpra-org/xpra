@@ -11,7 +11,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.net.common import Packet
 from xpra.net.packet_type import INFO_REQUEST, INFO_RESPONSE
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("network")
@@ -20,14 +20,14 @@ log = Logger("network")
 LOG_INFO_RESPONSE: str = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 
 
-class InfoRequest(StubClientMixin):
+class InfoRequest(StubClientSubsystem):
     """
     Request `info` from server.
     """
     PREFIX = "info-request"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.last_info: dict = {}
         self.request_pending: bool = False
 

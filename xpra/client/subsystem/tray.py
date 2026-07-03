@@ -10,7 +10,7 @@ from xpra.util.objects import make_instance
 from xpra.util.env import envint, envbool
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import XPRA_APP_ID
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("tray")
@@ -19,7 +19,7 @@ USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 
 
-class TrayClient(StubClientMixin):
+class TrayClient(StubClientSubsystem):
     """
     Mixin for supporting our system tray
     (not forwarding other application's trays - that's handled in WindowClient)
@@ -27,7 +27,7 @@ class TrayClient(StubClientMixin):
     PREFIX = "tray"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         # settings:
         self.icon = None
         # state:

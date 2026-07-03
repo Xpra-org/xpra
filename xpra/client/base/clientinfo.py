@@ -10,10 +10,10 @@ from typing import Any
 from xpra.net.common import FULL_INFO
 from xpra.platform.info import get_name, get_username
 from xpra.os_util import get_machine_id, BITS
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 
 
-class ClientInfo(StubClientMixin):
+class ClientInfo(StubClientSubsystem):
     """
     Adds extra information about the client
     """

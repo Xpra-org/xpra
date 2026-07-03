@@ -12,13 +12,13 @@ from xpra.os_util import OSX
 from xpra.util.str_fn import csv, pver
 from xpra.util.env import osexpand
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("opengl")
 
 
-class OpenGLClient(StubClientMixin):
+class OpenGLClient(StubClientSubsystem):
     """
     Client-side OpenGL setup and state.
 
@@ -36,7 +36,7 @@ class OpenGLClient(StubClientMixin):
     __signals__ = ["toggled"]
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.enabled: bool = False
         self.properties: dict[str, Any] = {}
         self.client_supports: bool = False

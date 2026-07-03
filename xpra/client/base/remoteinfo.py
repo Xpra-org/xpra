@@ -15,7 +15,7 @@ from xpra.util.system import platform_name
 from xpra.net.packet_encoding import VALID_ENCODERS
 from xpra.common import skipkeys
 from xpra.net.common import FULL_INFO
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger
 
@@ -58,11 +58,11 @@ def get_remote_lib_versions(c: typedict, libs=DEFAULT_LIBS) -> dict[str, tuple]:
     return versions
 
 
-class RemoteInfo(StubClientMixin):
+class RemoteInfo(StubClientSubsystem):
     PREFIX = "remote-info"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.server_start_time: float = -1
         self.server_packet_encoders: Sequence[str] = ()
         self._remote_machine_id = ""

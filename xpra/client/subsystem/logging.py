@@ -14,14 +14,14 @@ from xpra.common import noop
 from xpra.net.packet_type import LOGGING_CONTROL, LOGGING_EVENT
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.common import Packet, LOG_PACKET_TYPE, FULL_INFO
 from xpra.log import Logger, set_global_logging_handler, get_info
 
 log = Logger("client")
 
 
-class LoggingClient(StubClientMixin):
+class LoggingClient(StubClientSubsystem):
     """
     Mixin for remote logging support,
     either sending local logging events to the server,
@@ -30,7 +30,7 @@ class LoggingClient(StubClientMixin):
     PREFIX = "logging"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.remote_logging = "no"
         self.in_remote_logging = False
         self.local_logging = noop

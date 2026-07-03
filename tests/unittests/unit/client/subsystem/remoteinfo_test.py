@@ -16,13 +16,11 @@ class RemoteInfoClientTest(ClientMixinTest):
     def test_audio(self):
         waq = []
 
-        def _RemoteInfo():
-            x = RemoteInfo()
-
-            def warn_and_quit(*args):
-                waq.append(args)
-            x.warn_and_quit = warn_and_quit
-            return x
+        def warn_and_quit(*args):
+            waq.append(args)
+        # the subsystem calls `self.client.warn_and_quit`,
+        # and this test harness stands in for the owning client:
+        self.warn_and_quit = warn_and_quit
         opts = AdHocStruct()
         caps = typedict({
             "machine_id" : "123",
@@ -36,7 +34,7 @@ class RemoteInfoClientTest(ClientMixinTest):
             "platform.platform" : "platformX",
             "platform.linux_distribution" : ('Linux Fedora', 20, 'Heisenbug'),
         })
-        x = self._test_mixin_class(_RemoteInfo, opts, caps)
+        x = self._test_mixin_class(RemoteInfo, opts, caps)
         del caps["build.version"]
         assert not x.parse_server_capabilities(caps), "should have failed when version is missing"
         version = "0.1"

@@ -12,7 +12,7 @@ from xpra.util.str_fn import memoryview_to_bytes
 from xpra.os_util import OSX
 from xpra.util.system import is_Ubuntu
 from xpra.util.env import envint, envbool, first_time
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window")
@@ -49,7 +49,7 @@ def load_overlay_image(icon_filename: str):
         return img
 
 
-class WindowIcon(StubClientMixin):
+class WindowIcon(StubClientSubsystem):
 
     def __init__(self):
         self.overlay_image = None

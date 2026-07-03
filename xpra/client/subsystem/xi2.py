@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.os_util import gi_import
 from xpra.util.system import is_Wayland
 from xpra.log import Logger, is_debug_enabled
@@ -32,7 +32,7 @@ def xi2_debug() -> None:
         xinputlog("xi2_debug()", exc_info=True)
 
 
-class XI2Client(StubClientMixin):
+class XI2Client(StubClientSubsystem):
     """
     XI2 input device enumeration + hierarchy-change events, feeding the
     `window` subsystem's `WindowPointer` leaf. Only composed on POSIX
@@ -42,7 +42,7 @@ class XI2Client(StubClientMixin):
     PREFIX = "xi2"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self._x11_filter = None
         self._xi_setup_failures = 0
 

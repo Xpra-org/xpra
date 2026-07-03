@@ -11,7 +11,7 @@ from importlib import import_module
 from collections.abc import Sequence
 
 from xpra.clipboard.common import ALL_CLIPBOARDS, parse_want_targets
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.platform.clipboard import get_backend_module
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.net import compression
@@ -66,7 +66,7 @@ def get_clipboard_helper_classes(clipboard_type: str) -> list[type]:
     return loadable
 
 
-class ClipboardClient(StubClientMixin):
+class ClipboardClient(StubClientSubsystem):
     """
     Utility mixin for clients that handle clipboard synchronization.
     This subsystem owns the `clipboard-toggled` signal (via `SignalEmitter`):
@@ -76,7 +76,7 @@ class ClipboardClient(StubClientMixin):
     __signals__ = ["clipboard-toggled"]
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.client_clipboard_type: str = ""
         self.client_clipboard_direction: str = "both"
         self.client_supports_clipboard: bool = False

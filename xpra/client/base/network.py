@@ -10,21 +10,21 @@ from collections.abc import Sequence
 from xpra.net import compression
 from xpra.net.common import FULL_INFO, pretty_socket, BACKWARDS_COMPATIBLE
 from xpra.net.net_util import get_network_caps, get_info
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("client", "network")
 
 
-class Network(StubClientMixin):
+class Network(StubClientSubsystem):
     """
     Protocol caps
     """
     PREFIX = "network"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         # legacy:
         self.compression_level: int = 0
         # populated by `init()`/`parse_server_capabilities()`, but `compressed_wrapper()`

@@ -7,7 +7,7 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.common import noop
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import COMMAND_START
@@ -18,14 +18,14 @@ from xpra.log import Logger
 log = Logger("exec")
 
 
-class CommandClient(StubClientMixin):
+class CommandClient(StubClientSubsystem):
     """
     Utility mixin for clients that execute remote commands
     """
     PREFIX = "command"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.server_start_new_commands: bool = False
         self.server_menu = {}
         self.start_new_commands: bool = False

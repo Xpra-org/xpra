@@ -20,7 +20,7 @@ from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.os_util import WIN32, OSX, gi_import
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.common import noop
 from xpra.log import Logger
@@ -65,7 +65,7 @@ def log_windows_info(windows: tuple) -> None:
     log.info(msg)
 
 
-class WindowManagerClient(StubClientMixin):
+class WindowManagerClient(StubClientSubsystem):
 
     def __init__(self):
         # the `window` subsystem owns these signals (via `SignalEmitter`); peers

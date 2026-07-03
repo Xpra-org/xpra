@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from time import monotonic
 from collections.abc import Callable
 
 from xpra.common import noop
@@ -99,51 +98,52 @@ class ClientMixinTest(unittest.TestCase):
     def fake_quit(self, code) -> None:
         self.exit_codes.append(code)
 
+    def get_mouse_position(self) -> tuple[int, int]:
+        # stand-in for the toolkit client's pointer query,
+        # used by the `pointer` subsystem via `self.client`:
+        return 0, 0
+
+    def get_raw_mouse_position(self) -> tuple[int, int]:
+        return 0, 0
+
     def _test_mixin_class(self, mclass, opts, caps=None, protocol_type="xpra"):
         x = self.mixin = mclass()
-        x.start_time = monotonic()
-        x.exit_code = None
-        x.readonly = False
-        x.server_packet_types = ()
-        x.quit = self.fake_quit
-        x.connect = noop
-        x.emit = noop
-        if not hasattr(x, "after_handshake"):
-            x.after_handshake = noop
-        # some subsystems (cursor, window icons) have a weak dependency on the
-        # `Encodings` subsystem to restrict the encodings they parse; supply a
-        # default when testing such a subsystem in isolation:
-        if not hasattr(x, "get_core_encodings"):
-            x.get_core_encodings = lambda: ["png"]
+        # subsystems are always owned by a client and reach it via `self.client`
+        # (`send`, `quit`, `add_packet_handler`, ... all delegate to it);
+        # this test harness stands in for the owning client:
+        x.client = self
+        self.exit_code = None
+        self.readonly = False
+        self.session_name = ""
+        self.display_desc = {}
+        self.quit = self.fake_quit
+        self.connect = noop
+        self.emit = noop
+        self.after_handshake = noop
+        self._ui_event = noop
+        self.on_server_setting_changed = noop
         # the notification subsystem composes its notifier list via the client's
         # `get_notifier_classes()`; when testing it in isolation, expose just the
         # subsystem's own native notifiers as that client method:
-        if not hasattr(x, "get_notifier_classes") and hasattr(x, "get_native_notifier_classes"):
-            x.get_notifier_classes = x.get_native_notifier_classes
+        if hasattr(x, "get_native_notifier_classes"):
+            self.get_notifier_classes = x.get_native_notifier_classes
         # the tray subsystem consumes the client's menu-helper service and its
         # composed `get_tray_classes()`; when testing it in isolation, stand in a
         # no-op menu helper and expose the subsystem's own native tray classes:
         if hasattr(x, "get_native_tray_classes"):
-            if not hasattr(x, "get_menu_helper"):
-                x.get_menu_helper = noop
-            if not hasattr(x, "get_tray_classes"):
-                x.get_tray_classes = x.get_native_tray_classes
+            self.get_menu_helper = noop
+            self.get_tray_classes = x.get_native_tray_classes
         fake_protocol = AdHocStruct()
         fake_protocol.get_info = lambda: {}
         fake_protocol.set_compression_level = lambda _x: None
         fake_protocol.TYPE = protocol_type
         fake_protocol.enable_encoder_from_caps = noop
-        x._protocol = fake_protocol   # pylint: disable=protected-access
-        x.add_legacy_alias = self.add_legacy_alias
-        x.add_packets = self.add_packets
-        x.add_packet_handler = self.add_packet_handler
+        self._protocol = fake_protocol
         x.init(opts)
         x.load()
         conn = AdHocStruct()
         conn.filename = "/fake/path/to/nowhere"
         x.setup_connection(conn)
-        x.send = self.send
-        x.send_now = self.send
         x.init_authenticated_packet_handlers()
         caps = self.make_caps(caps)
         x.parse_server_capabilities(caps)

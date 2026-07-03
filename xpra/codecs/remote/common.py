@@ -29,8 +29,8 @@ try:
     from xpra.client.subsystem.mmap import MmapClient
     baseclass = MmapClient
 except ImportError:
-    from xpra.client.base.stub import StubClientMixin
-    baseclass = StubClientMixin
+    from xpra.client.base.stub import StubClientSubsystem
+    baseclass = StubClientSubsystem
 
 
 def get_version() -> Sequence[int]:

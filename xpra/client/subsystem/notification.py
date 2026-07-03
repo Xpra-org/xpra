@@ -15,7 +15,7 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.util.env import envbool
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("notify")
@@ -27,14 +27,14 @@ THREADED_NOTIFICATIONS = envbool("XPRA_THREADED_NOTIFICATIONS", True)
 notifier = None
 
 
-class NotificationClient(StubClientMixin):
+class NotificationClient(StubClientSubsystem):
     """
     Mixin for clients that handle notifications
     """
     PREFIX = "notification"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.client_supports = False
         self.server = False
         self.enabled = False

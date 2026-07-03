@@ -9,7 +9,7 @@ from xpra.net.packet_type import PRINT_DEVICES
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.thread import start_thread
 from xpra.log import Logger
 
@@ -21,7 +21,7 @@ SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 INIT_PRINTING_DELAY = envint("XPRA_INIT_PRINTING_DELAY", 2)
 
 
-class Printer(StubClientMixin):
+class Printer(StubClientSubsystem):
     """
     Printer forwarding.
     `printing`/`remote_printing`/`remote_printing_ask` and the packet types used
@@ -35,7 +35,7 @@ class Printer(StubClientMixin):
     PREFIX = "printer"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.printer_attributes = []
         self.send_printers_timer: int = 0
         self.exported_printers = {}

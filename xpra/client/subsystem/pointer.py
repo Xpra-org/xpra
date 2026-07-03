@@ -7,7 +7,7 @@
 from typing import Any
 from time import monotonic
 
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import POINTER_MOTION
 from xpra.util.objects import typedict
@@ -28,14 +28,14 @@ def get_double_click_caps() -> dict[str, Any]:
     }
 
 
-class PointerClient(StubClientMixin):
+class PointerClient(StubClientSubsystem):
     """
     Utility mixin for clients that handle pointer input
     """
     PREFIX = "pointer"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.sequence = {}
         self.position_delay = 5
         self.position: Packet | None = None

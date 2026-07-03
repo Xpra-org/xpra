@@ -14,7 +14,7 @@ from xpra.net.device_info import (
 )
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.parsing import parse_with_unit
 from xpra.log import Logger
 
@@ -29,14 +29,14 @@ def parse_speed(v) -> int:
     return parse_with_unit("speed", v) or 0
 
 
-class BandwidthClient(StubClientMixin):
+class BandwidthClient(StubClientSubsystem):
     """
     Expose bandwidth information
     """
     PREFIX = "bandwidth"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.limit: int = 0
         self.detection: bool = False
         self.server_limit: int = 0

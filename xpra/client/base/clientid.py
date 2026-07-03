@@ -9,17 +9,17 @@ from typing import Any
 from xpra.net.common import FULL_INFO
 from xpra.os_util import get_user_uuid
 from xpra.util.version import vparts, XPRA_VERSION
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 
 
-class ClientID(StubClientMixin):
+class ClientID(StubClientSubsystem):
     """
     Essential client information
     """
     PREFIX = "clientid"
 
     def __init__(self, client=None):
-        StubClientMixin.__init__(self, client)
+        StubClientSubsystem.__init__(self, client)
         self.uuid: str = get_user_uuid()
         self.session_id: str = uuid.uuid4().hex
 

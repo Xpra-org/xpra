@@ -12,7 +12,7 @@ from xpra.net.packet_type import POINTER_BUTTON
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window", "pointer")
@@ -21,7 +21,7 @@ SKIP_DUPLICATE_BUTTON_EVENTS: bool = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS"
 POLL_POINTER = envint("XPRA_POLL_POINTER", 0)
 
 
-class WindowPointer(StubClientMixin):
+class WindowPointer(StubClientSubsystem):
     def __init__(self):
         self.server_input_devices = None
         self._button_state = {}

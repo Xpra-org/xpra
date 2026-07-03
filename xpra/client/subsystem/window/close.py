@@ -7,7 +7,7 @@ import os
 
 from xpra.net.packet_type import WINDOW_CLOSE, SHUTDOWN_SERVER
 from xpra.util.objects import typedict
-from xpra.client.base.stub import StubClientMixin
+from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window")
@@ -16,7 +16,7 @@ WM_CLASS_CLOSEEXIT: list[str] = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephy
 TITLE_CLOSEEXIT: list[str] = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
 
-class WindowClose(StubClientMixin):
+class WindowClose(StubClientSubsystem):
 
     def __init__(self):
         self.window_close_action: str = "forward"
