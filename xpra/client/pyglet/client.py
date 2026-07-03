@@ -227,7 +227,7 @@ class XpraPygletClient:
 
         def recheck_focus(_elapsed) -> None:
             if self.focused == wid:
-                self.send(WINDOW_FOCUS, wid, ())
+                self.send(WINDOW_FOCUS, wid)
         clock.schedule_once(recheck_focus, 0.01)
 
 

@@ -225,14 +225,14 @@ class Qt6Client:
 
         def recheck_focus() -> None:
             if self.focused == wid:
-                self.send(WINDOW_FOCUS, wid, ())
+                self.send(WINDOW_FOCUS, wid)
         QTimer.singleShot(10, recheck_focus)
 
     def state_changed(self, state) -> None:
         log(f"state changed: {state}")
         if state == Qt.ApplicationState.ApplicationInactive:
             self.focused = 0
-            self.send(WINDOW_FOCUS, 0, ())
+            self.send(WINDOW_FOCUS, 0)
 
 
 class XpraQt6Client(Qt6Client):

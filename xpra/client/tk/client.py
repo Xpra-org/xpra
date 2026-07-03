@@ -212,7 +212,7 @@ class XpraTkClient:
 
         def recheck_focus() -> None:
             if self.focused == wid:
-                self.send(WINDOW_FOCUS, wid, ())
+                self.send(WINDOW_FOCUS, wid)
         app.after(10, recheck_focus)
 
 
