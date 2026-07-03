@@ -10,13 +10,13 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.client.base.gobject import GObjectClientAdapter
+from xpra.client.base.command import XpraClientBase
 from xpra.exit_codes import ExitValue
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_DRAW_ACK, WINDOW_REFRESH
 from xpra.platform.paths import initial_cwd
 from xpra.util.env import envint
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -40,28 +40,9 @@ def save_json(path: str, data: dict) -> None:
         f.write(text)
 
 
-def get_client_base_classes() -> tuple[type, ...]:
-    classes: list[type] = []
-    # Warning: MmapClient must come first,
-    # so it is initialized by the time XpraClientBase creates the hello packet
-    from xpra.client.base import features
-    if features.mmap:
-        from xpra.client.subsystem.mmap import MmapClient
-        classes.append(MmapClient)
-    if features.ping:
-        from xpra.client.subsystem.ping import PingClient
-        classes.append(PingClient)
-    # InfoRequest?
-    # ClipboardClient, KeyboardClient, PointerClient, NotificationClient, Encodings -> emulate it
-    # TrayClient -> use custom tray instead
-    from xpra.client.base.command import XpraClientBase
-    classes.append(XpraClientBase)
-    log("RecordClient base classes=%s", csv(classes))
-    return tuple(classes)
-
-
-CLIENT_BASES = get_client_base_classes()
-ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
+# InfoRequest?
+# ClipboardClient, KeyboardClient, PointerClient, NotificationClient, Encodings -> emulate it
+# TrayClient -> use custom tray instead
 
 
 class WindowModel:
@@ -127,12 +108,25 @@ class WindowModel:
         return False
 
 
-class RecordClient(GObjectClientAdapter, ClientBaseClass):
+class RecordClient(GObjectClientAdapter, XpraClientBase):
+
+    @staticmethod
+    def get_subsystem_classes() -> dict[str, type]:
+        # `mmap` and `ping` are GUI-level subsystems, not part of the base
+        # subsystems, but this client wants them composed too:
+        classes = dict(XpraClientBase.get_subsystem_classes())
+        from xpra.client.base import features
+        if features.mmap:
+            from xpra.client.subsystem.mmap import MmapClient
+            classes[MmapClient.PREFIX] = MmapClient
+        if features.ping:
+            from xpra.client.subsystem.ping import PingClient
+            classes[PingClient.PREFIX] = PingClient
+        return classes
 
     def __init__(self, options):
         GObjectClientAdapter.__init__(self)
-        for cc in CLIENT_BASES:
-            cc.__init__(self)
+        XpraClientBase.__init__(self)
         self.client_type = "recorder"
         self.windows = options.windows
         self._id_to_window: dict[int, Any] = {}
@@ -145,8 +139,7 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         self.start = monotonic()
 
     def init(self, opts) -> None:
-        for cc in CLIENT_BASES:
-            cc.init(self, opts)
+        super().init(opts)
         if opts.encoding and opts.encoding not in self.encodings:
             self.encodings = tuple(list(self.encodings) + [opts.encoding])
         self.encoding_options = {
@@ -195,13 +188,6 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
                 "display": {"record": True},
             }
         return caps
-
-    def server_connection_established(self, caps: typedict) -> bool:
-        for cc in CLIENT_BASES:
-            if not cc.parse_server_capabilities(self, caps):
-                return False
-        # this will call do_command()
-        return super().server_connection_established(caps)
 
     def _process_startup_complete(self, _packet: Packet) -> None:
         self.refresh_timer = self.timeout_add(REFRESH * 1000, self.request_refresh)

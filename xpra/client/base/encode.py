@@ -20,36 +20,28 @@ log = Logger("client", "encoding")
 EXT_ALIASES = {"jpg": "jpeg"}
 
 
-def get_client_base_classes() -> tuple[type, ...]:
-    from xpra.client.base import features
-
-    classes: list[type] = []
-    # Warning: MmapClient must come first,
-    # so it is initialized by the time HelloRequestClient creates the hello packet
-    if features.mmap:
-        from xpra.client.subsystem.mmap import MmapClient
-        classes.append(MmapClient)
-    classes.append(HelloRequestClient)
-    return tuple(classes)
-
-
-CLIENT_BASES = get_client_base_classes()
-ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
-
-
-class EncodeClient(ClientBaseClass):
+class EncodeClient(HelloRequestClient):
     """
     Sends the file(s) to the server for encoding,
     saves the result in the current working directory
     this requires a server version 6.3 or later
     """
 
+    @staticmethod
+    def get_subsystem_classes() -> dict[str, type]:
+        # `mmap` is a GUI-level subsystem, not part of the base subsystems,
+        # but this client wants it composed for performance (see `init`):
+        classes = dict(HelloRequestClient.get_subsystem_classes())
+        from xpra.client.base import features
+        if features.mmap:
+            from xpra.client.subsystem.mmap import MmapClient
+            classes[MmapClient.PREFIX] = MmapClient
+        return classes
+
     def __init__(self, options, filenames: Sequence[str]):
         if not filenames:
             raise ValueError("please specify some filenames to encode")
-        for cc in CLIENT_BASES:
-            args = (options, ) if cc == HelloRequestClient else ()
-            cc.__init__(self, *args)
+        super().__init__(options)
         self.client_type = "encoder"
         self.filenames = list(filenames)
         self.add_packets("encode-response", "encodings")
@@ -61,8 +53,7 @@ class EncodeClient(ClientBaseClass):
         # encode client needs bidirectional mmap by default for performance:
         if opts.mmap.lower() == "auto":
             opts.mmap = "yes"
-        for cc in CLIENT_BASES:
-            cc.init(self, opts)
+        super().init(opts)
         if opts.encoding and opts.encoding not in self.encodings:
             self.encodings = tuple(list(self.encodings) + [opts.encoding])
         self.encoding_options = {
@@ -79,15 +70,9 @@ class EncodeClient(ClientBaseClass):
             if value > 0:
                 self.encoding_options[attr] = value
 
-    def setup_connection(self, conn) -> None:
-        # ensures that MmapClient will get a chance to setup:
-        for cc in CLIENT_BASES:
-            cc.setup_connection(self, conn)
-
     def server_connection_established(self, c: typedict) -> bool:
-        for cc in CLIENT_BASES:
-            if not cc.parse_server_capabilities(self, c):
-                return False
+        if not self.parse_server_capabilities(c):
+            return False
         # this will call do_command()
         return super().server_connection_established(c)
 
@@ -126,8 +111,9 @@ class EncodeClient(ClientBaseClass):
             "request": "encode",
             "encoding": self.encoding_options,
         }
-        for cc in CLIENT_BASES:
-            hello.update(cc.get_caps(self))
+        mmap_sub = self.get_subsystem("mmap")
+        if mmap_sub:
+            hello.update(mmap_sub.get_caps())
         if BACKWARDS_COMPATIBLE:
             hello["ui_client"] = True
         log(f"{hello=}")
