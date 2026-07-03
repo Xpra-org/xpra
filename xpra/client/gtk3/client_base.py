@@ -1082,7 +1082,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             # fallback to simple beep:
             Gdk.beep()
 
-    def _process_raise_window(self, packet: Packet) -> None:
+    def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         focuslog(f"going to raise window {wid:#x} - {window}")
@@ -1092,7 +1092,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 return
             window.present()
 
-    def _process_restack_window(self, packet: Packet) -> None:
+    def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
         detail = packet.get_i8(2)
         other_wid = packet.get_wid(3)
