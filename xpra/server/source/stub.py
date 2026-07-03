@@ -55,15 +55,20 @@ class StubClientConnection(SignalEmitter):
         """
         return True
 
+    def get_main_loop(self):
+        server = getattr(self, "server", None)
+        return getattr(server, "main_loop", None)
+
     def init_state(self) -> None:
         """
         Initialize state attributes.
         """
 
-    def init_from(self, _protocol, _server) -> None:
+    def init_from(self, _protocol, server) -> None:
         """
         Initialize setting inherited from the server or connection.
         """
+        self.server = server
 
     def cleanup(self) -> None:
         """

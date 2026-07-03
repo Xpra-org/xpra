@@ -49,15 +49,11 @@ class StubClientMixin(SignalEmitter):
         self.timeout_add: Callable = source.timeout_add
         self.source_remove: Callable = source.source_remove
 
-    def _should_call_direct(self) -> bool:
-        # `SignalEmitter` hook: a *composed* subsystem owns its own signals but
-        # has no main loop of its own; it fires them on the owning client's main
-        # loop (deferring via `idle_add` when emitted off the UI thread, exactly
-        # as the base `SignalEmitter` does with `self.main_loop`).
-        main_loop = getattr(self.client, "main_loop", None)
-        if main_loop is None or not main_loop.is_running():
-            return True
-        return main_loop.get_context().is_owner()
+    def get_main_loop(self):
+        client = self.client
+        if client is not None:
+            return getattr(client, "main_loop", None)
+        return getattr(self, "main_loop", None)
 
     def get_subsystem(self, name: str):
         """ look up a peer subsystem on the owning client """

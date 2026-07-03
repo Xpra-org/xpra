@@ -41,21 +41,12 @@ class SignalEmitter:
         if signal not in self.__signals__:
             log.warn("Warning: %r is not a declared signal of %s", signal, type(self).__name__)
 
-    def _should_call_direct(self) -> bool:
-        """
-        Return True when callbacks can be invoked immediately.
+    def get_main_loop(self):
+        return getattr(self, "main_loop", None)
 
-        SignalEmitter is mixed into both objects that own a GLib main loop
-        directly (for example GLibServer, via self.main_loop) and child objects
-        whose owning server has the loop (for example subsystems, via
-        self.server.main_loop). There is still only one relevant loop for a
-        server graph; the lookup varies because the emitter may be the owner or
-        one of its children.
-        """
-        main_loop = getattr(self, "main_loop", None)
-        if main_loop is None:
-            server = getattr(self, "server", None)
-            main_loop = getattr(server, "main_loop", None)
+    def _should_call_direct(self) -> bool:
+        """ Return True when callbacks can be invoked immediately. """
+        main_loop = self.get_main_loop()
         if main_loop is None:
             return True
         if not main_loop.is_running():

@@ -31,6 +31,9 @@ class StubSubsystem(SignalEmitter):
         self.server = server
         SignalEmitter.__init__(self)
 
+    def get_main_loop(self):
+        return getattr(self.server, "main_loop", None)
+
     def get_server_source(self, proto):
         """ delegate to the server's per-protocol client source lookup """
         return self.server.get_server_source(proto)
