@@ -92,8 +92,11 @@ class WindowTray(StubClientMixin):
             tray = self.get_window(wid)
             log("tray_click(%s, %s, %s) tray=%s", button, pressed, event_time, tray)
             if tray:
-                x, y = self.client.get_mouse_position()
-                modifiers = self.client.get_current_modifiers()
+                x = y = -1
+                if pointer := self.get_subsystem("pointer"):
+                    x, y = pointer.get_mouse_position()
+                keyboard = self.get_subsystem("keyboard")
+                modifiers = keyboard.get_current_modifiers() if keyboard else ()
                 button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
                 log("button_packet=%s", button_packet)
                 self.get_subsystem("pointer").send_positional(*button_packet)
@@ -103,7 +106,8 @@ class WindowTray(StubClientMixin):
             tray = self.get_window(wid)
             log("tray_mouseover(%s, %s) tray=%s", x, y, tray)
             if tray:
-                modifiers = self.client.get_current_modifiers()
+                keyboard = self.get_subsystem("keyboard")
+                modifiers = keyboard.get_current_modifiers() if keyboard else ()
                 device_id = -1
                 cp = self.get_subsystem("display").cp(x, y)
                 self.get_subsystem("pointer").send_mouse_position(device_id, wid, cp, modifiers)

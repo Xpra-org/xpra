@@ -1414,8 +1414,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             sw, sh = self.snap_to_server_grid(sw, sh, nearest=sw != w or sh != h)
 
         if BACKWARDS_COMPATIBLE:
-            packet: Sequence[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state,
-                                               skip_geometry]
+            packet: list[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
             pwid = self.wid
             if self.is_OR():
                 pwid = -1 if BACKWARDS_COMPATIBLE else 0
@@ -1424,18 +1423,21 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 packet.append(self.get_mouse_position())
             else:
                 packet.append((-1, -1))
-            packet.append(self._client.get_current_modifiers())
+            keyboard = self.get_subsystem("keyboard")
+            packet.append(keyboard.get_current_modifiers() if keyboard else ())
             self.send("configure-window", *packet)
             geomlog("%s", packet)
         else:
             config: dict[str, PacketElement] = {}
-            if not self._client.readonly and hasattr(self, "get_mouse_position"):
-                config["pointer"] = {
-                    "wid": self.wid if not self.is_OR() else 0,
-                    "position": self.get_mouse_position(),
-                    "modifiers": self._client.get_current_modifiers(),
-                    # "device-id": -1,
-                }
+            if not self._client.readonly:
+                if pointer := self.get_subsystem("pointer"):
+                    config["pointer"] = {
+                        "wid": self.wid if not self.is_OR() else 0,
+                        "position": pointer.get_mouse_position(),
+                        # "device-id": -1,
+                    }
+                if keyboard := self.get_subsystem("keyboard"):
+                    config["modifiers"] = keyboard.get_current_modifiers()
             if props:
                 config["properties"] = props
             if state:

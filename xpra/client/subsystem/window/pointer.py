@@ -60,6 +60,9 @@ class WindowPointer(StubClientMixin):
             self.poll_pointer_timer = 0
             self.source_remove(ppt)
 
+    def get_mouse_position(self) -> tuple[int, int]:
+        return self.client.get_mouse_position()
+
     def _process_pointer_position(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
@@ -69,7 +72,7 @@ class WindowPointer(StubClientMixin):
             ry = packet.get_i16(5)
         else:
             rx, ry = -1, -1
-        cx, cy = self.client.get_mouse_position()
+        cx, cy = self.get_mouse_position()
         start_time = monotonic()
         log("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i",
             x, y, rx, ry, wid, cx, cy)
@@ -135,7 +138,7 @@ class WindowPointer(StubClientMixin):
         self.send("input-devices", fmt, input_devices)
 
     def poll_pointer(self) -> bool:
-        pos = self.client.get_mouse_position()
+        pos = self.get_mouse_position()
         if pos != self.poll_pointer_position:
             self.poll_pointer_position = pos
             device_id = -1

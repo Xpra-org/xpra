@@ -80,7 +80,8 @@ class WindowWheel(StubClientMixin):
         return True
 
     def send_wheel_delta(self, device_id: int, wid: int, button: int, distance, pointer=None, props=None) -> float:
-        modifiers = self.client.get_current_modifiers()
+        keyboard = self.get_subsystem("keyboard")
+        modifiers = keyboard.get_current_modifiers() if keyboard else ()
         buttons: Sequence[int] = ()
         log("send_wheel_delta%s precise wheel=%s, modifiers=%s, pointer=%s",
             (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)

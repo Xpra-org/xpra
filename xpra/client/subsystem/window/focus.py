@@ -31,7 +31,10 @@ class WindowFocus(StubClientMixin):
     # focus:
     def send_focus(self, wid: int) -> None:
         log("send_focus(%#x)", wid)
-        self.send(WINDOW_FOCUS, wid, self.client.get_current_modifiers())
+        packet = [WINDOW_FOCUS, wid]
+        if keyboard := self.get_subsystem("keyboard"):
+            packet.append(keyboard.get_current_modifiers())
+        self.send(*packet)
 
     def has_focus(self, wid: int) -> bool:
         return bool(self._focused) and self._focused == wid

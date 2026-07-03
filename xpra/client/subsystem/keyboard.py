@@ -130,7 +130,7 @@ class KeyboardClient(StubClientMixin):
         else:
             caps["keyboard"] = True
             caps["ibus"] = True
-            caps["modifiers"] = self.client.get_current_modifiers()
+            caps["modifiers"] = self.get_current_modifiers()
             delay_ms, interval_ms = kh.key_repeat_delay, kh.key_repeat_interval
             if delay_ms <= 0 or interval_ms <= 0:
                 # cannot do keyboard sync without a key repeat value
@@ -175,3 +175,8 @@ class KeyboardClient(StubClientMixin):
         if self.helper is None:
             return []
         return self.helper.mask_to_names(int(mask))
+
+    def get_current_modifiers(self) -> Sequence[str]:
+        # delegate to the client for now, since querying the current modifiers
+        # requires toolkit-specific access to the pointer / root window:
+        return self.client.get_current_modifiers()

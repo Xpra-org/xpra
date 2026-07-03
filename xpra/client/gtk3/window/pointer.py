@@ -232,7 +232,7 @@ class PointerWindow(GtkStubWindow):
         # this method is used on some platforms
         # to get the pointer position for events that don't include it
         # (ie: wheel events)
-        x, y = self._client.get_raw_mouse_position()
+        x, y = self.get_subsystem("pointer").get_raw_mouse_position()
         return self._offset_pointer(x, y)
 
     def _offset_pointer(self, x: int, y: int) -> tuple[int, int]:
