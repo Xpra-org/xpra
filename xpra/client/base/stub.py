@@ -14,11 +14,8 @@ from xpra.net.common import ClientPacketHandlerType, PacketElement
 
 # Subsystems inherit `SignalEmitter` so that a *composed* subsystem instance can
 # own its own signals (emit/connect on itself) rather than routing through the
-# client GObject. On the concrete client, `StubClientMixin` is still in the MRO
-# (via the transitional flatten), but the real `GObject` connect/emit precede
-# `SignalEmitter` in the MRO, so the client keeps using GObject signals.
+# client GObject.
 from xpra.util.signal_emitter import SignalEmitter
-from xpra.util.glib_scheduler import GLibScheduler
 
 
 class StubClientMixin(SignalEmitter):
@@ -26,11 +23,6 @@ class StubClientMixin(SignalEmitter):
     # every concrete subsystem should declare a non-empty PREFIX,
     # used as the key in `client.subsystems`:
     PREFIX: str = ""
-
-    # main-loop scheduling helpers borrowed from `client` (see `__init__`),
-    # so subsystems can call `self.timeout_add(...)` directly rather than
-    # reaching through `self.client`:
-    SCHEDULER_METHODS = ("idle_add", "timeout_add", "source_remove")
 
     def __init__(self, client=None) -> None:
         """
@@ -44,7 +36,11 @@ class StubClientMixin(SignalEmitter):
         """
         super().__init__()
         self.client = client
-        source = client if client is not None else GLibScheduler
+        # copy scheduler methods from client if present, GLib otherwise:
+        source = client
+        if not client:
+            from xpra.util.glib_scheduler import GLibScheduler
+            source = GLibScheduler
         self.idle_add: Callable = source.idle_add
         self.timeout_add: Callable = source.timeout_add
         self.source_remove: Callable = source.source_remove
