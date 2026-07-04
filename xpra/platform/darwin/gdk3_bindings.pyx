@@ -14,32 +14,13 @@ log = Logger("bindings", "gtk")
 Gdk = gi_import("Gdk")
 
 
-ctypedef float CGFloat
-ctypedef int BOOL
-
 cdef extern from "AppKit/AppKit.h":
-    ctypedef struct NSColor:
-        pass
-    ctypedef struct NSWindow:
-        pass
     ctypedef struct NSView:
         pass
-
-cdef extern from "transparency_glue.h":
-    #couldn't figure out how to get unions and cython+objc to play nice,
-    #so we use a wrapper:
-    void setAlphaValue(NSWindow *window, float alpha)
-    void setOpaque(NSWindow *window, BOOL opaque)
-    void setBackgroundColor(NSWindow *window, NSColor *color)
-    void setClearBackgroundColor(NSWindow *window)
-    void invalidateShadow(NSWindow *window)
-    void setHasShadow(NSWindow *window, BOOL hasShadow)
-    float getBackingScaleFactor(NSWindow *window)
 
 
 cdef extern from "gtk-3.0/gdk/quartz/gdkquartz-cocoa-access.h":
     NSView *gdk_quartz_window_get_nsview(GdkWindow *window)
-    NSWindow *gdk_quartz_window_get_nswindow(GdkWindow *window)
 
 
 cdef extern from "gtk-3.0/gdk/gdk.h":
@@ -48,12 +29,6 @@ cdef extern from "gtk-3.0/gdk/gdk.h":
 
 cdef GdkWindow *get_gdkwindow(pywindow):
     return <GdkWindow*>unwrap(pywindow, Gdk.Window)
-
-cdef NSWindow *get_nswindow(pywindow):
-    cdef GdkWindow *gdkwindow = get_gdkwindow(pywindow)
-    assert gdkwindow
-    cdef NSWindow *nswindow = gdk_quartz_window_get_nswindow(gdkwindow)
-    return nswindow
 
 cdef NSView *get_nsview(pywindow):
     cdef GdkWindow *gdkwindow = get_gdkwindow(pywindow)
@@ -64,12 +39,3 @@ cdef NSView *get_nsview(pywindow):
 def get_nsview_ptr(pywindow) -> int:
     cdef NSView *nsview = get_nsview(pywindow)
     return <uintptr_t> nsview
-
-def enable_transparency(pywindow) -> None:
-    cdef NSWindow *window = get_nswindow(pywindow)
-    setClearBackgroundColor(window)
-    setOpaque(window, 0)
-
-def get_backing_scale_factor(pywindow) -> float:
-    cdef NSWindow *window = get_nswindow(pywindow)
-    return getBackingScaleFactor(window)

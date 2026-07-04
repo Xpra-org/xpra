@@ -313,7 +313,7 @@ class GLXContext:
         set_visual(da, True)
         win = tmp.get_window()
         log("check_support(%s) using temporary window=%s", force_enable, tmp)
-        with self.get_paint_context(win):
+        with self.get_paint_context(win.get_xid()):
             i.update(check_PyOpenGL_support(force_enable))
         tmp.destroy()
         return i
@@ -324,12 +324,12 @@ class GLXContext:
     def is_double_buffered(self) -> bool:
         return DOUBLE_BUFFERED
 
-    def get_paint_context(self, gdk_window) -> GLXWindowContext:
+    def get_paint_context(self, handle: int) -> GLXWindowContext:
         if not self.context:
             raise RuntimeError("no glx context")
-        if not gdk_window:
-            raise RuntimeError("cannot get a paint context without a window")
-        return GLXWindowContext(self.context, gdk_window.get_xid())
+        if not handle:
+            raise RuntimeError("cannot get a paint context without a window handle")
+        return GLXWindowContext(self.context, handle)
 
     def destroy(self) -> None:
         if c := self.context:

@@ -7,6 +7,7 @@ from typing import Any
 
 import objc
 from Cocoa import (
+    NSColor,
     NSOpenGLContext, NSOpenGLPixelFormat, NSOpenGLPFAAccelerated,
     NSOpenGLPFAAlphaSize, NSOpenGLPFAColorSize,
     NSOpenGLPFADepthSize, NSOpenGLPFADoubleBuffer, NSOpenGLPFAAccumSize,
@@ -16,7 +17,7 @@ from Cocoa import (
 )
 from xpra.gtk.window import GDKWindow
 from xpra.opengl.check import check_PyOpenGL_support
-from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr, enable_transparency, get_backing_scale_factor
+from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -27,12 +28,20 @@ log = Logger("opengl")
 ACCELERATED = envbool("XPRA_OPENGL_ACCELERATED", False)
 
 
+def set_nsview_transparent(nsview) -> None:
+    # equivalent to the former `gdk3_bindings.enable_transparency`, but derived
+    # from the `NSView` (via its `NSWindow`) so we only need the view pointer:
+    nswindow = nsview.window()
+    if nswindow:
+        nswindow.setBackgroundColor_(NSColor.clearColor())
+        nswindow.setOpaque_(False)
+
+
 class AGLWindowContext:
 
-    def __init__(self, gl_context: NSOpenGLContext, nsview: int, gdk_window):
+    def __init__(self, gl_context: NSOpenGLContext, nsview):
         self.gl_context = gl_context
         self.nsview = nsview
-        self.gdk_window = gdk_window
         log("%s", self)
         self.gl_context.setView_(nsview)
 
@@ -62,7 +71,8 @@ class AGLWindowContext:
         self.destroy()
 
     def get_scale_factor(self) -> float:
-        return get_backing_scale_factor(self.gdk_window)
+        nswindow = self.nsview.window() if self.nsview else None
+        return nswindow.backingScaleFactor() if nswindow else 1.0
 
     def destroy(self) -> None:
         self.gl_context = None
@@ -144,7 +154,7 @@ class AGLContext:
                     si[name] = conv(v)  # ie: bool(8)
         Gdk = gi_import("Gdk")
         tmp = GDKWindow(window_type=Gdk.WindowType.TEMP, title="tmp-opengl-check")
-        with self.get_paint_context(tmp):
+        with self.get_paint_context(get_nsview_ptr(tmp)):
             i.update(check_PyOpenGL_support(force_enable))
         tmp.hide()
         return i
@@ -161,23 +171,24 @@ class AGLContext:
     def is_double_buffered(self) -> bool:
         return bool(self._get_apfa(NSOpenGLPFADoubleBuffer))
 
-    def get_paint_context(self, gdk_window) -> AGLWindowContext:
+    def get_paint_context(self, handle: int) -> AGLWindowContext:
         if not self.gl_context:
             raise RuntimeError("no OpenGL context")
-        nsview_ptr = get_nsview_ptr(gdk_window)
+        # `handle` is the NSView pointer:
+        nsview_ptr = handle
         if self.window_context and self.nsview_ptr != nsview_ptr:
-            log("get_paint_context(%s) nsview_ptr has changed, was %#x, now %#x - destroying window context",
-                gdk_window, nsview_ptr, self.nsview_ptr)
+            log("get_paint_context(%#x) nsview_ptr has changed, was %#x - destroying window context",
+                nsview_ptr, self.nsview_ptr)
             self.window_context.destroy()
             self.window_context = None
         if not self.window_context:
             self.nsview_ptr = nsview_ptr
             nsview = objc.objc_object(c_void_p=nsview_ptr)
-            log("get_paint_context(%s) nsview(%#x)=%s", gdk_window, nsview_ptr, nsview)
-            if self.alpha and enable_transparency:
+            log("get_paint_context(%#x) nsview=%s", nsview_ptr, nsview)
+            if self.alpha:
                 self.gl_context.setValues_forParameter_([0], NSOpenGLCPSurfaceOpacity)
-                enable_transparency(gdk_window)
-            self.window_context = AGLWindowContext(self.gl_context, nsview, gdk_window)
+                set_nsview_transparent(nsview)
+            self.window_context = AGLWindowContext(self.gl_context, nsview)
         return self.window_context
 
     def __del__(self):

@@ -3383,7 +3383,7 @@ toggle_packages(notifications_ENABLED, "xpra.notification")
 if dbus_ENABLED and server_ENABLED:
     add_packages("xpra.server.dbus")
 
-tace(OSX, "xpra.platform.darwin.gdk3_bindings,xpra/platform/darwin/transparency_glue.m",
+tace(OSX, "xpra.platform.darwin.gdk3_bindings",
      ("gtk+-3.0", "pygobject-3.0"),
      language="objc",
      extra_compile_args=(

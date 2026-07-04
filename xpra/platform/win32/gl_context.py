@@ -11,7 +11,6 @@ from contextlib import nullcontext, AbstractContextManager
 from xpra.opengl.check import check_PyOpenGL_support
 from xpra.util.io import CaptureStdErr
 from xpra.platform.win32 import is_terminal
-from xpra.platform.win32.gtk import get_window_handle
 from xpra.platform.win32.constants import (
     CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW,
     WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT,
@@ -154,8 +153,7 @@ class WGLContext:
     def is_double_buffered(self) -> bool:
         return DOUBLE_BUFFERED  # self.pixel_format_props.get("double-buffered", False)
 
-    def get_paint_context(self, gdk_window) -> WGLWindowContext:
-        hwnd = get_window_handle(gdk_window)
+    def get_paint_context(self, hwnd: int) -> WGLWindowContext:
         if self.hwnd != hwnd:
             # (this shouldn't happen)
             # just make sure we don't keep using a context for a different handle:

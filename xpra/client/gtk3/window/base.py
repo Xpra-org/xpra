@@ -784,6 +784,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if WIN32:
             from xpra.platform.win32.gtk import get_window_handle
             return get_window_handle(self)
+        if OSX:
+            from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr
+            return get_nsview_ptr(self)
         try:
             return gdkwindow.get_xid()
         except AttributeError:

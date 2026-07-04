@@ -703,7 +703,7 @@ class ClientWindow(GObject.GObject):
 
     def get_window_handle(self) -> int:
         # the native window handle is simply our `HWND`:
-        return self.hwnd or 0
+        return int(self.hwnd) or 0
 
     def show_all(self):
         ShowWindow(self.hwnd, win32con.SW_SHOW)

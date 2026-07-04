@@ -6,7 +6,7 @@
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.os_util import gi_import, WIN32
+from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.str_fn import Ellipsizer
 from xpra.opengl.backing import GLWindowBackingBase
 from xpra.platform.gl_context import GLContext
@@ -49,13 +49,19 @@ class GLDrawingArea(GLWindowBackingBase):
         self._backing = da
 
     def get_backing_handle(self) -> int:
-        # the GL drawing-area platform hooks are win32-only, so only win32
-        # needs a native handle here (other platforms no-op on `setup_gl_drawing_area`):
+        # the native handle of the drawing area's window:
+        # the win32 `HWND`, the X11 `Window` xid, or the macOS `NSView` pointer.
         da = self._backing
-        if da and WIN32:
+        gdk_window = da.get_window() if da else None
+        if not gdk_window:
+            return 0
+        if WIN32:
             from xpra.platform.win32.gtk import get_window_handle
-            return get_window_handle(da)
-        return 0
+            return get_window_handle(gdk_window)
+        if OSX:
+            from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr
+            return get_nsview_ptr(gdk_window)
+        return gdk_window.get_xid()
 
     def on_realize(self, *args) -> None:
         from xpra.platform.gui import setup_gl_drawing_area
@@ -88,12 +94,12 @@ class GLDrawingArea(GLWindowBackingBase):
         b = self._backing
         if not b:
             return None
-        gdk_window = b.get_window()
-        if not gdk_window:
-            raise RuntimeError(f"backing {b} does not have a gdk window!")
-        self.window_context = self.context.get_paint_context(gdk_window)
+        handle = self.get_backing_handle()
+        if not handle:
+            raise RuntimeError(f"backing {b} does not have a native window handle!")
+        self.window_context = self.context.get_paint_context(handle)
         if not self.window_context:
-            raise RuntimeError(f"failed to get an OpenGL window context for {gdk_window} from {self.context}")
+            raise RuntimeError(f"failed to get an OpenGL window context for {b} from {self.context}")
         return self.window_context
 
     def do_gl_show(self, rect_count: int) -> None:
