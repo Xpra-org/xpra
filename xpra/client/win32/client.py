@@ -13,10 +13,12 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitValue
 from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from xpra.os_util import gi_import
+from xpra.util.objects import typedict
 from xpra.util.gobject import no_arg_signal
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.win32.subsystem.display import Win32DisplayClient
+from xpra.platform.gui import get_xdpi, get_ydpi
 from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
 from xpra.platform.win32.keyboard import VK_NAMES, NATIVE_HELD_VKS, NATIVE_TOGGLED_VKS
 from xpra.log import Logger
@@ -121,6 +123,21 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def init(self, opts) -> None:
         UIXpraClient.init(self, opts)
+
+    def get_group_leader(self, wid: int, metadata: typedict, _override_redirect: bool):
+        return None
+
+    def get_xdpi(self) -> int:
+        xdpi = get_xdpi()
+        if xdpi > 0:
+            return xdpi
+        return 96
+
+    def get_ydpi(self) -> int:
+        ydpi = get_ydpi()
+        if ydpi > 0:
+            return ydpi
+        return 96
 
     @staticmethod
     def get_client_window_classes(_geom, _metadata, _override_redirect) -> Sequence[type]:
