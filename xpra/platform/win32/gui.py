@@ -19,7 +19,6 @@ from ctypes.wintypes import HWND, DWORD, POINT, RECT, LPCWSTR
 
 from xpra.common import noop
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.gtk import get_window_handle
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.platform.win32.common import (
     GetSystemMetrics, SetWindowLongA, GetWindowLongW,
@@ -243,6 +242,9 @@ def get_session_type() -> str:
 
 def win32_propsys_set_group_leader(self, leader):
     """ implements set group leader using propsys """
+    # `self` and `leader` are raw GDK windows here (this is bound as
+    # `gdk_window.set_group`), so we need the GTK -> HWND helper:
+    from xpra.platform.win32.gtk import get_window_handle
     hwnd = get_window_handle(self)
     if not hwnd:
         return
@@ -341,7 +343,7 @@ def pointer_ungrab(hwnd: int) -> bool:
 
 def fixup_window_style(self, *_args) -> None:
     """ a fixup function we want to call from other places """
-    hwnd = get_window_handle(self)
+    hwnd = self.get_window_handle()
     if not hwnd:
         return
     try:
@@ -409,7 +411,7 @@ def apply_maxsize_hints(window, hints: dict[str, Any]):
         (as GTK does not honour it properly on win32)
     """
     workw, workh = 0, 0
-    handle = get_window_handle(window)
+    handle = window.get_window_handle()
     if not handle:
         return
     log("apply_maxsize_hints(%s, %s) handle=%#x", window, hints, handle)
@@ -488,7 +490,7 @@ def add_window_hooks(window) -> None:
         return
     # at least provide a dummy method:
     gdk_window.set_group = no_set_group
-    handle = get_window_handle(gdk_window)
+    handle = window.get_window_handle()
     if not handle:
         log.warn("Warning: cannot add window hooks without a window handle!")
         return
@@ -1019,6 +1021,8 @@ def set_window_progress(window, pct: int) -> None:
         taskbar = getTaskbar()
         window.taskbar = taskbar
     if taskbar:
+        # `window` is a GTK dialog/window (not a native client window):
+        from xpra.platform.win32.gtk import get_window_handle
         handle = get_window_handle(window)
         taskbar.SetProgressValue(handle, max(0, min(100, pct)), 100)
 
@@ -1052,6 +1056,7 @@ _gl_subclass_procs: dict[int, object] = {}
 
 
 def setup_gl_drawing_area(widget) -> None:
+    from xpra.platform.win32.gtk import get_window_handle
     cleanup_gl_drawing_area(widget)
     hwnd = get_window_handle(widget)
     if not hwnd:
@@ -1072,6 +1077,7 @@ def setup_gl_drawing_area(widget) -> None:
 def cleanup_gl_drawing_area(widget) -> None:
     if not widget:
         return
+    from xpra.platform.win32.gtk import get_window_handle
     hwnd = get_window_handle(widget)
     if not hwnd:
         return
