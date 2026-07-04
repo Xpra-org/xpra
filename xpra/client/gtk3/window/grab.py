@@ -139,12 +139,13 @@ class GrabWindow(GtkStubWindow):
             self.keyboard_grab()
 
     def pointer_grab(self, *args) -> None:
-        gdkwin = self.get_window()
+        handle = self.get_window_handle()
         # try platform specific variant first:
-        if pointer_grab(gdkwin):
+        if pointer_grab(handle):
             self.get_subsystem("window").pointer_grabbed = self.wid
-            log(f"{pointer_grab}({gdkwin}) success")
+            log(f"{pointer_grab}({handle:#x}) success")
             return
+        gdkwin = self.get_window()
         with IgnoreWarningsContext():
             r = Gdk.pointer_grab(gdkwin, True, GRAB_EVENT_MASK, gdkwin, None, Gdk.CURRENT_TIME)
         if r == Gdk.GrabStatus.SUCCESS:
@@ -153,10 +154,10 @@ class GrabWindow(GtkStubWindow):
             args, self.get_window(), GRAB_STATUS_STRING.get(r), self.get_subsystem("window").pointer_grabbed)
 
     def pointer_ungrab(self, *args) -> None:
-        gdkwin = self.get_window()
-        if pointer_ungrab(gdkwin):
+        handle = self.get_window_handle()
+        if pointer_ungrab(handle):
             self.get_subsystem("window").pointer_grabbed = None
-            log(f"{pointer_ungrab}({gdkwin}) success")
+            log(f"{pointer_ungrab}({handle:#x}) success")
             return
         log("pointer_ungrab%s pointer_grabbed=%s",
             args, self.get_subsystem("window").pointer_grabbed)

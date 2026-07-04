@@ -238,9 +238,8 @@ class WorkspaceWindow(GtkStubWindow):
         if WIN32:
             if not WIN32_WORKSPACE:
                 return
-            from xpra.platform.win32.gui import get_window_handle
             from pyvda.pyvda import AppView, VirtualDesktop
-            hwnd = get_window_handle(self)
+            hwnd = self.get_window_handle()
             if not hwnd:
                 return
             vd = VirtualDesktop(number=workspace + 1)
@@ -276,12 +275,11 @@ class WorkspaceWindow(GtkStubWindow):
             if not WIN32_WORKSPACE:
                 return WORKSPACE_UNSET
             try:
-                from xpra.platform.win32.gui import get_window_handle
                 from pyvda.pyvda import AppView
             except ImportError as e:
                 log(f"unable to query workspace: {e}")
                 return 0
-            hwnd = get_window_handle(self)
+            hwnd = self.get_window_handle()
             if not hwnd:
                 return WORKSPACE_UNSET
             try:

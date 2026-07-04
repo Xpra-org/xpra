@@ -13,14 +13,13 @@ from typing import Any
 from collections.abc import Callable, Sequence
 from ctypes import (
     WinDLL,  # @UnresolvedImport
-    CDLL, pythonapi, py_object,
     HRESULT, c_bool, create_string_buffer, byref, addressof, sizeof,  # @UnresolvedImport
 )
-from ctypes.wintypes import HWND, DWORD, POINT, RECT, HGDIOBJ, LPCWSTR
-from ctypes.util import find_library
+from ctypes.wintypes import HWND, DWORD, POINT, RECT, LPCWSTR
 
 from xpra.common import noop
 from xpra.platform.win32 import constants as win32con
+from xpra.platform.win32.gtk import get_window_handle
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.platform.win32.common import (
     GetSystemMetrics, SetWindowLongA, GetWindowLongW,
@@ -55,20 +54,6 @@ GLib = gi_import("GLib")
 REINIT_VISIBLE_WINDOWS = envbool("XPRA_WIN32_REINIT_VISIBLE_WINDOWS", True)
 APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
 MONITOR_DPI = envbool("XPRA_WIN32_MONITOR_DPI", True)
-
-PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
-PyCapsule_GetPointer.restype = HGDIOBJ
-PyCapsule_GetPointer.argtypes = [py_object]
-log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
-GDK_DLL_NAME = "libgdk-3-0.dll"
-gdk_dll = find_library(GDK_DLL_NAME)
-if not gdk_dll:
-    raise ImportError(f"ctypes cannot find {GDK_DLL_NAME!r}")
-gdkdll = CDLL(gdk_dll)
-gdk_win32_window_get_handle = gdkdll.gdk_win32_window_get_handle
-gdk_win32_window_get_handle.argtypes = [HGDIOBJ]
-gdk_win32_window_get_handle.restype = HWND
-log("gdkdll=%s", gdkdll)
 
 shell32 = WinDLL("shell32", use_last_error=True)
 dwmapi = WinDLL("dwmapi", use_last_error=True)
@@ -188,21 +173,6 @@ def get_monitor_workarea_for_window(handle: int):
     except Exception as e:
         log.warn("failed to query workareas: %s", e)
         return None
-
-
-def get_window_handle(window) -> int:
-    """ returns the win32 hwnd from a gtk.Window or gdk.Window """
-    gdk_window = window
-    try:
-        gdk_window = window.get_window()
-    except Exception:
-        pass
-    if not gdk_window:
-        return 0
-    gpointer = PyCapsule_GetPointer(gdk_window.__gpointer__, None)
-    hwnd = gdk_win32_window_get_handle(gpointer)
-    # log("get_window_handle(%s) gpointer=%#x, hwnd=%#x", gpointer, hwnd)
-    return hwnd
 
 
 # https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
@@ -328,11 +298,11 @@ def style_str(style) -> str:
     return csv(s for c, s in WS_NAMES.items() if (c & style) == c)
 
 
-def pointer_grab(window, *args) -> bool:
-    hwnd = get_window_handle(window)
-    grablog("pointer_grab%s window=%s, hwnd=%s", args, window, hwnd)
+def pointer_grab(hwnd: int) -> bool:
+    # confine the pointer to the window's client area using `ClipCursor`.
+    # the caller owns grab-tracking state (ie: `pointer_grabbed`).
+    grablog("pointer_grab(%#x)", hwnd)
     if not hwnd:
-        window._client.pointer_grabbed = None
         return False
     wrect = RECT()
     GetWindowRect(hwnd, byref(wrect))  # NOSONAR
@@ -355,23 +325,17 @@ def pointer_grab(window, *args) -> bool:
     clip = RECT(*coords)
     r = ClipCursor(clip)
     grablog("ClipCursor%s=%s", coords, r)
-    window._client.pointer_grabbed = window.wid
-    return True
+    return bool(r)
 
 
-def pointer_ungrab(window, *args) -> bool:
-    hwnd = get_window_handle(window)
-    client = window._client
-    # grab-tracking state is owned by the `window` subsystem:
-    wp = client.get_subsystem("window")
-    grablog("pointer_ungrab%s window=%s, hwnd=%s, pointer_grabbed=%s",
-            args, window, hwnd, wp and wp.pointer_grabbed)
+def pointer_ungrab(hwnd: int) -> bool:
+    # `ClipCursor(None)` releases the confinement (system-wide, so `hwnd` is
+    # only used to validate the request); the caller owns grab-tracking state.
+    grablog("pointer_ungrab(%#x)", hwnd)
     if not hwnd:
         return False
     grablog("ClipCursor(None)")
     ClipCursor(None)
-    if wp:
-        wp.pointer_grabbed = None
     return True
 
 

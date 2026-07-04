@@ -11,7 +11,7 @@ from contextlib import nullcontext, AbstractContextManager
 from xpra.opengl.check import check_PyOpenGL_support
 from xpra.util.io import CaptureStdErr
 from xpra.platform.win32 import is_terminal
-from xpra.platform.win32.gui import get_window_handle
+from xpra.platform.win32.gtk import get_window_handle
 from xpra.platform.win32.constants import (
     CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW,
     WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT,

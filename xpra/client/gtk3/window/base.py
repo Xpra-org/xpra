@@ -772,6 +772,23 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def set_command(self, command) -> None:
         self.set_x11_property("WM_COMMAND", "latin1", command)
 
+    def get_window_handle(self) -> int:
+        """
+        return the native window handle for this window:
+        the win32 `HWND` on MS Windows, the X11 `Window` xid on Linux, etc.
+        returns 0 if there is no native window (ie: not realized yet)
+        """
+        gdkwindow = self.get_window()
+        if not gdkwindow:
+            return 0
+        if WIN32:
+            from xpra.platform.win32.gtk import get_window_handle
+            return get_window_handle(self)
+        try:
+            return gdkwindow.get_xid()
+        except AttributeError:
+            return 0
+
     def set_x11_property(self, prop_name: str, dtype: str, value) -> None:
         if not HAS_X11_BINDINGS:
             return

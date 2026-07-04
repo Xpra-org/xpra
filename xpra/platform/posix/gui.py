@@ -324,15 +324,15 @@ def system_bell(*args) -> bool:
         return False
 
 
-def pointer_grab(gdk_window) -> bool:
+def pointer_grab(handle: int) -> bool:
     if x11_bindings():
         from xpra.x11.error import xlog
         with xlog:
-            return X11WindowBindings().pointer_grab(gdk_window.get_xid())
+            return X11WindowBindings().pointer_grab(handle)
     return False
 
 
-def pointer_ungrab(_window) -> bool:
+def pointer_ungrab(handle: int) -> bool:
     if x11_bindings():
         from xpra.x11.error import xlog
         with xlog:

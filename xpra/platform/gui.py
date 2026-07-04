@@ -279,16 +279,18 @@ def set_shaded(_window, _shaded: bool) -> None:
     """
 
 
-def pointer_grab(_window):
+def pointer_grab(handle: int) -> bool:
     """
-    Pointer grabs require platform specific code
+    Pointer grabs require platform specific code.
+    `handle` is the native window handle (HWND / xid / ...).
     """
     return False
 
 
-def pointer_ungrab(_window):
+def pointer_ungrab(handle: int) -> bool:
     """
-    Pointer grabs require platform specific code
+    Pointer grabs require platform specific code.
+    `handle` is the native window handle (HWND / xid / ...).
     """
     return False
 
