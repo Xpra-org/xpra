@@ -20,12 +20,14 @@ from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.win32.subsystem.display import Win32DisplayClient
 from xpra.platform.gui import get_xdpi, get_ydpi
 from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
+from xpra.platform.win32.gui import pointer_grab, pointer_ungrab
 from xpra.platform.win32.keyboard import VK_NAMES, NATIVE_HELD_VKS, NATIVE_TOGGLED_VKS
 from xpra.log import Logger
 
 log = Logger("client")
 netlog = Logger("client", "network")
 keylog = Logger("client", "keyboard")
+grablog = Logger("client", "grab")
 
 GLib = gi_import("GLib")
 GObject = gi_import("GObject")
@@ -84,6 +86,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         UIXpraClient.__init__(self)
         self.win32_message_source = 0
         self.wheel_delta = 0
+        self._grab_handle = 0
         self.client_type = "win32"
         # connect the win32 window signals + create the native window for each new window:
         if window := self.get_subsystem("window"):
@@ -120,6 +123,28 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def set_windows_cursor(self, windows, cursor_data):
         log("set_windows_cursor(%s, %s) not implemented in this backend", windows, cursor_data)
+
+    def window_grab(self, wid: int, window) -> None:
+        # confine the pointer to the window (via `ClipCursor`):
+        handle = window.get_window_handle()
+        grabbed = pointer_grab(handle)
+        grablog("window_grab(%#x, %s) handle=%#x, pointer_grab=%s", wid, window, handle, grabbed)
+        self._grab_handle = handle
+        # also grab the keyboard so the user can't Alt-Tab / Super away:
+        # (the `WH_KEYBOARD_LL` hook swallows Win/Tab keys while `grabbed` and focused)
+        if kb := self.get_subsystem("keyboard"):
+            kb.grabbed = True
+        if w := self.get_subsystem("window"):
+            w._window_with_grab = wid
+
+    def window_ungrab(self) -> None:
+        grablog("window_ungrab() handle=%#x", self._grab_handle)
+        pointer_ungrab(self._grab_handle)
+        self._grab_handle = 0
+        if kb := self.get_subsystem("keyboard"):
+            kb.grabbed = False
+        if w := self.get_subsystem("window"):
+            w._window_with_grab = 0
 
     def init(self, opts) -> None:
         UIXpraClient.init(self, opts)
