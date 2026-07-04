@@ -52,12 +52,40 @@ def get_window_handle(window) -> int:
     return hwnd
 
 
+def win32_propsys_set_group_leader(self, leader):
+    """ implements set group leader using propsys """
+    # `self` and `leader` are raw GDK windows here (this is bound as
+    # `gdk_window.set_group`), so we need the GTK -> HWND helper:
+    from xpra.platform.win32.gui import set_window_group
+    hwnd = get_window_handle(self)
+    if not hwnd:
+        return
+    try:
+        log("win32_propsys_set_group_leader(%s)", leader)
+        lhandle = get_window_handle(leader)
+        assert lhandle
+    except Exception:
+        log("win32_propsys_set_group_leader(%s)", leader, exc_info=True)
+        log.warn("Warning: no window handle for %s", leader)
+        log.warn(" cannot set window grouping attribute")
+        return
+    if not lhandle:
+        return
+    try:
+        log("win32 hooks: get_window_handle(%s)=%#x, set_group(%#x)", self, hwnd, lhandle)
+        set_window_group(hwnd, lhandle)
+    except Exception as e:
+        log("set_window_group error", exc_info=True)
+        log.error("Error: failed to set group leader")
+        log.estr(e)
+
+
 def add_window_hooks(window) -> None:
     # the win32 primitives + toggle flags + smaller helpers live in `gui.py`;
     # only this GTK-coupled orchestration (which hooks GTK window methods and
     # the GDK window object) belongs here:
     from xpra.platform.win32.gui import (
-        no_set_group, win32_propsys_set_group_leader,
+        no_set_group,
         fixup_window_style, set_decorated, window_state_updated,
         apply_geometry_hints, apply_maxsize_hints,
         pointer_grab, pointer_ungrab, _apply_title_bar_theme, set_window_group,

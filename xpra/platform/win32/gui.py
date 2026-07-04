@@ -238,34 +238,6 @@ def get_session_type() -> str:
     return ""
 
 
-def win32_propsys_set_group_leader(self, leader):
-    """ implements set group leader using propsys """
-    # `self` and `leader` are raw GDK windows here (this is bound as
-    # `gdk_window.set_group`), so we need the GTK -> HWND helper:
-    from xpra.platform.win32.gtk import get_window_handle
-    hwnd = get_window_handle(self)
-    if not hwnd:
-        return
-    try:
-        log("win32_propsys_set_group_leader(%s)", leader)
-        lhandle = get_window_handle(leader)
-        assert lhandle
-    except Exception:
-        log("win32_propsys_set_group_leader(%s)", leader, exc_info=True)
-        log.warn("Warning: no window handle for %s", leader)
-        log.warn(" cannot set window grouping attribute")
-        return
-    if not lhandle:
-        return
-    try:
-        log("win32 hooks: get_window_handle(%s)=%#x, set_group(%#x)", self, hwnd, lhandle)
-        set_window_group(hwnd, lhandle)
-    except Exception as e:
-        log("set_window_group error", exc_info=True)
-        log.error("Error: failed to set group leader")
-        log.estr(e)
-
-
 WS_NAMES: dict[int, str] = {
     win32con.WS_BORDER: "BORDER",
     win32con.WS_CAPTION: "CAPTION",
