@@ -183,6 +183,38 @@ class BITMAPV5HEADER(Structure):
 PBITMAPV5HEADER = POINTER(BITMAPV5HEADER)
 
 
+class MINMAXINFO(Structure):
+    _fields_ = [
+        ("ptReserved", POINT),
+        ("ptMaxSize", POINT),
+        ("ptMaxPosition", POINT),
+        ("ptMinTrackSize", POINT),
+        ("ptMaxTrackSize", POINT),
+    ]
+
+
+class WINDOWPOS(Structure):
+    _fields_ = [
+        ("hwnd", HWND),
+        ("hwndInsertAfter", HWND),
+        ("x", c_int),
+        ("y", c_int),
+        ("cx", c_int),
+        ("cy", c_int),
+        ("flags", UINT),
+    ]
+
+
+class FLASHWINFO(Structure):
+    _fields_ = [
+        ("cbSize", UINT),
+        ("hwnd", HWND),
+        ("dwFlags", DWORD),
+        ("uCount", UINT),
+        ("dwTimeout", DWORD),
+    ]
+
+
 class WINDOWPLACEMENT(Structure):
     _fields_ = [
         ('flags', UINT),
@@ -392,6 +424,17 @@ except AttributeError:
     # 32-bit Windows fallback: SetWindowLongPtrW doesn't exist, use the 32-bit variants
     SetWindowLongPtrW = SetWindowLongW
     GetWindowLongPtrW = GetWindowLongW
+# separate, independently-typed binding for setting arbitrary pointer-sized values
+# (ie: GWLP_HWNDPARENT), do not reuse `SetWindowLongPtrW` above: its argtypes are
+# fixed to WNDPROC for the GWL_WNDPROC subclassing use case in `window_hooks.py`
+GWLP_HWNDPARENT = -8
+try:
+    SetWindowLongPtrValueW = WINFUNCTYPE(LONG_PTR, HWND, INT, LONG_PTR)(("SetWindowLongPtrW", user32))
+    GetWindowLongPtrValueW = WINFUNCTYPE(LONG_PTR, HWND, INT)(("GetWindowLongPtrW", user32))
+except AttributeError:
+    # 32-bit Windows fallback: SetWindowLongPtrW doesn't exist, use the 32-bit variants
+    SetWindowLongPtrValueW = WINFUNCTYPE(LONG, HWND, INT, LONG)(("SetWindowLongW", user32))
+    GetWindowLongPtrValueW = WINFUNCTYPE(LONG, HWND, INT)(("GetWindowLongW", user32))
 SetWindowPos = user32.SetWindowPos
 SetWindowPos.argtypes = [HWND, HWND, INT, INT, INT, INT, UINT]
 SetWindowPos.restype = BOOL
@@ -445,6 +488,7 @@ GetWindowRect = user32.GetWindowRect
 GetDoubleClickTime = user32.GetDoubleClickTime
 _EnumDisplayMonitors = user32.EnumDisplayMonitors
 MonitorFromWindow = user32.MonitorFromWindow
+MonitorFromWindow.argtypes = [HWND, DWORD]
 MonitorFromWindow.restype = HMONITOR
 GetMonitorInfoW = user32.GetMonitorInfoW
 GetMonitorInfoW.argtypes = [HMONITOR, POINTER(MONITORINFOEX)]
@@ -697,6 +741,12 @@ SetForegroundWindow.argtypes = [HWND]
 GetForegroundWindow = user32.GetForegroundWindow
 GetForegroundWindow.restype = HWND
 GetForegroundWindow.argtypes = []
+FlashWindowEx = user32.FlashWindowEx
+FlashWindowEx.argtypes = [POINTER(FLASHWINFO)]
+FlashWindowEx.restype = BOOL
+SetWindowRgn = user32.SetWindowRgn
+SetWindowRgn.argtypes = [HWND, HGDIOBJ, BOOL]
+SetWindowRgn.restype = c_int
 TrackPopupMenu = user32.TrackPopupMenu
 TrackPopupMenu.restype = BOOL
 TrackPopupMenu.argtypes = [HMENU, UINT, c_int, c_int, c_int, HWND, POINTER(RECT)]
@@ -872,6 +922,13 @@ CreateDIBitmap.argtypes = [HDC, PBITMAPINFOHEADER, DWORD, c_void_p, PBITMAPINFO,
 DeleteObject = gdi32.DeleteObject
 DeleteObject.argtypes = [HGDIOBJ]
 DeleteObject.restype = BOOL
+CreateRectRgn = gdi32.CreateRectRgn
+CreateRectRgn.argtypes = [c_int, c_int, c_int, c_int]
+CreateRectRgn.restype = HGDIOBJ
+CombineRgn = gdi32.CombineRgn
+CombineRgn.argtypes = [HGDIOBJ, HGDIOBJ, HGDIOBJ, c_int]
+CombineRgn.restype = c_int
+RGN_OR = 2
 DeleteDC = gdi32.DeleteDC
 DeleteDC.restype = BOOL
 DeleteDC.argtypes = [HDC]

@@ -193,6 +193,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         self.send(WINDOW_CONFIGURE, window.wid, {
             "state": window.state_updates,
             "geometry": geometry,
+            "resize-counter": window.resize_counter,
         })
         # we have consumed it, so we can reset it now:
         window.state_updates = {}

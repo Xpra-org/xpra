@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import win32con
+from typing import Any
 from collections.abc import MutableSequence, Callable
 from ctypes.wintypes import HWND, BYTE, HICON, HDC
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
@@ -15,6 +16,7 @@ from xpra.os_util import gi_import
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.util.objects import typedict
+from xpra.platform.win32.constants import FLASHW_ALL, FLASHW_TIMERNOFG, FLASHW_STOP
 from xpra.platform.win32.common import (
     GetModuleHandleA,
     WNDPROC, WNDCLASSEX, RegisterClassExW, UnregisterClassW,
@@ -29,6 +31,10 @@ from xpra.platform.win32.common import (
     InvalidateRect,
     BeginPaint, EndPaint, PAINTSTRUCT,
     SetForegroundWindow, GetForegroundWindow,
+    SetWindowLongA, GWLP_HWNDPARENT, SetWindowLongPtrValueW,
+    MINMAXINFO, WINDOWPOS, FLASHWINFO, FlashWindowEx,
+    MonitorFromWindow, GetMonitorInfo, EnumDisplayMonitors,
+    CreateRectRgn, CombineRgn, RGN_OR, SetWindowRgn, DeleteObject,
 )
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
@@ -37,6 +43,7 @@ from xpra.log import Logger
 log = Logger("client", "window")
 iconlog = Logger("icon")
 drawlog = Logger("draw")
+geomlog = Logger("geometry")
 
 GObject = gi_import("GObject")
 GLib = gi_import("GLib")
@@ -73,6 +80,12 @@ WM_NCXBUTTONDOWN = 0x00AB
 WM_NCXBUTTONUP = 0x00AC
 WM_NCXBUTTONDBLCLK = 0x00AD
 WM_MOUSEHWHEEL = 0x020E
+
+DECORATION_STYLE = win32con.WS_CAPTION | win32con.WS_THICKFRAME | win32con.WS_SYSMENU | win32con.WS_MINIMIZEBOX | win32con.WS_MAXIMIZEBOX
+# window-type values (see xpra/client/gtk3/window/common.py) that should be
+# treated like "skip-taskbar" on win32 (no clean equivalent to X11 dialog/utility
+# window-manager hints, so we just hide them from the taskbar/alt-tab list):
+WINDOW_TYPE_TOOLWINDOW = {"DIALOG", "UTILITY", "SPLASHSCREEN"}
 
 
 SIZE_SUBCOMMAND: dict[int: str] = {
@@ -150,6 +163,7 @@ class ClientWindow(GObject.GObject):
                  border, max_window_size, pixel_depth,
                  headerbar):
         GObject.GObject.__init__(self)
+        self.client = client
         self.wid = wid
         self.x = geom[0]
         self.y = geom[1]
@@ -159,6 +173,7 @@ class ClientWindow(GObject.GObject):
         if override_redirect:
             metadata["override-redirect"] = override_redirect
         self.metadata = metadata
+        self.pixel_depth = pixel_depth
         self.wnd_proc = WNDPROC(self.wnd_proc_cb)
         self.wc = self.create_wnd_class()
         self.class_atom = RegisterClassExW(byref(self.wc))
@@ -167,12 +182,20 @@ class ClientWindow(GObject.GObject):
         self.pixels = c_void_p()
         self.hicon = 0
         self.hicons: set[HICON] = set()
+        self.style = 0
+        self.resize_counter = 0
         # state:
         self.minimized = False
         self.maximized = False
         self.fullscreen = False
+        self._pre_fullscreen_geom = None
         self.state_updates = {}
         self.fullscreen_monitors = ()
+        self.size_constraints = typedict()
+        self._above = False
+        self._below = False
+        self._skip_taskbar = False
+        self._type_toolwindow = False
         self.backing = None
         log("new window: %#x %s", self.wid, self.metadata)
 
@@ -188,6 +211,10 @@ class ClientWindow(GObject.GObject):
         self.hdc = CreateCompatibleDC(None)
         log("CreateCompatibleDC()=%#x", self.hdc)
         self.backing = GDIBacking(self.wid, self.hdc, self.hwnd, self.width, self.height, self.alpha)
+        # apply the metadata the window was created with:
+        # (`set_metadata()` is otherwise only reached later, via `update_metadata()`,
+        # on a subsequent server metadata packet)
+        self.set_metadata(typedict(self.metadata))
 
     def __repr__(self):
         return "Win32ClientWindow(%#x)" % self.wid
@@ -209,7 +236,7 @@ class ClientWindow(GObject.GObject):
         Convert the window's internal geometry into system coordinates,
         which include the top bar and borders.
         """
-        return system_geometry(self.x, self.y, self.width, self.height, self.wc.style, exstyle)
+        return system_geometry(self.x, self.y, self.width, self.height, self.style, exstyle)
 
     def create_window(self) -> HWND:
         title = self.metadata.strget("title", "")
@@ -224,6 +251,7 @@ class ClientWindow(GObject.GObject):
         if self.alpha:
             log.warn("Warning: painting with alpha requires using UpdateLayeredWindow!")
             dwexstyle |= win32con.WS_EX_LAYERED
+        self.style = style
         x, y, w, h = self.get_system_geometry(dwexstyle)
         log("create_window() system-geometry(%s)=%s", (self.x, self.y, self.width, self.height), (x, y, w, h))
         if not self.is_OR() and not self.metadata.boolget("set-initial-position", False):
@@ -237,6 +265,15 @@ class ClientWindow(GObject.GObject):
         msg_str = WM_MESSAGES.get(msg, str(msg))
         log("wnd_proc_cb(%i, %s, %i, %#x)", hwnd, msg_str, wparam, lparam)
         try:
+            if msg == win32con.WM_GETMINMAXINFO and lparam:
+                self.apply_size_constraints(lparam)
+                return 0
+            if msg == win32con.WM_WINDOWPOSCHANGING and self._below and lparam:
+                # re-assert "always on bottom" on every pending z-order change
+                # (there is no persistent/"sticky" HWND_BOTTOM, unlike HWND_TOPMOST):
+                wp = cast(lparam, POINTER(WINDOWPOS)).contents
+                wp.hwndInsertAfter = win32con.HWND_BOTTOM
+                # falls through to DefWindowProcW, do not return here
             if msg == win32con.WM_CREATE:
                 create = cast(lparam, POINTER(CREATESTRUCT)).contents
                 self.x = create.x
@@ -416,9 +453,8 @@ class ClientWindow(GObject.GObject):
             SetWindowTextW(self.hwnd, metadata.strget("title", ""))
         if "size-constraints" in metadata:
             self.size_constraints = typedict(metadata.dictget("size-constraints"))
-        # if "transient-for" in metadata:
-        #    self.apply_transient_for(metadata.intget("transient-for"))
-        # set parent?
+        if "transient-for" in metadata:
+            self.apply_transient_for(metadata.intget("transient-for"))
         if "maximized" in metadata:
             self.maximized = metadata.boolget("maximized")
             if self.maximized:
@@ -428,8 +464,7 @@ class ClientWindow(GObject.GObject):
         if "fullscreen-monitors" in metadata:
             self.fullscreen_monitors = metadata.inttupleget("fullscreen-monitors")
         if "fullscreen" in metadata:
-            self.fullscreen = metadata.boolget("fullscreen")
-            # todo: set style and dimensions of monitors specified in `self.fullscreen_monitors`
+            self.set_fullscreen(metadata.boolget("fullscreen"))
         if "iconic" in metadata:
             self.minimized = metadata.boolget("iconic")
             if self.minimized:
@@ -437,39 +472,177 @@ class ClientWindow(GObject.GObject):
             else:
                 ShowWindow(self.hwnd, win32con.SW_RESTORE)
         if "decorations" in metadata:
-            # todo: decorated = metadata.boolget("decorations", True)
-            pass
+            self.set_decorations(metadata.boolget("decorations", True))
 
         if "above" in metadata:
-            change = win32con.HWND_TOPMOST if metadata.boolget("above") else win32con.HWND_NOTOPMOST
+            self._above = metadata.boolget("above")
+            change = win32con.HWND_TOPMOST if self._above else win32con.HWND_NOTOPMOST
             SetWindowPos(self.hwnd, change, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
 
         if "below" in metadata:
-            if metadata.boolget("below"):
-                # todo: this is not sticky!
-                # re-add it on WM_WINDOWPOSCHANGING
+            self._below = metadata.boolget("below")
+            if self._below:
+                # the `WM_WINDOWPOSCHANGING` handler in `wnd_proc_cb` re-asserts this
+                # on every subsequent z-order change, since there is no persistent
+                # "always on bottom" flag equivalent to `HWND_TOPMOST`:
                 SetWindowPos(self.hwnd, win32con.HWND_BOTTOM, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
-            else:
-                log("todo: need to remove 'below'")
+            # clearing `_below` needs no HWND action: the next natural z-order
+            # change simply stops being overridden
 
         if "shaded" in metadata:
-            # need to be implemented manually
+            # no win32 equivalent, would need to be reimplemented manually
+            # (resize down to the titlebar and restore) - not attempted in this pass
             pass
 
         if "sticky" in metadata:
-            # not supported via an API?
+            # visible on all virtual desktops: would require the undocumented
+            # IVirtualDesktopManager COM interface - not attempted in this pass
             pass
 
         if "skip-taskbar" in metadata:
-            # todo
-            pass
+            self.set_skip_taskbar(metadata.boolget("skip-taskbar"))
 
         if "skip-pager" in metadata:
-            # todo
+            # no win32 equivalent to an X11 pager / virtual-desktop overview
             pass
 
+        if "window-type" in metadata:
+            self.set_window_type(metadata.strtupleget("window-type"))
+
+        if "shape" in metadata:
+            self.set_shape(metadata.dictget("shape", {}))
+
+    def apply_transient_for(self, wid: int) -> None:
+        if not self.hwnd:
+            return
+        owner_hwnd = 0
+        if wid and self.client:
+            wm = self.client.get_subsystem("window")
+            owner = wm.get_window(wid) if wm else None
+            owner_hwnd = getattr(owner, "hwnd", 0) or 0
+        SetWindowLongPtrValueW(self.hwnd, GWLP_HWNDPARENT, owner_hwnd)
+
+    def set_fullscreen(self, fullscreen: bool) -> None:
+        if fullscreen == self.fullscreen or not self.hwnd:
+            self.fullscreen = fullscreen
+            return
+        self.fullscreen = fullscreen
+        if fullscreen:
+            self._pre_fullscreen_geom = (self.x, self.y, self.width, self.height)
+            left, top, right, bottom = self._get_fullscreen_rect()
+            flags = win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE
+            SetWindowPos(self.hwnd, 0, left, top, right - left, bottom - top, flags)
+        else:
+            geom = self._pre_fullscreen_geom or (self.x, self.y, self.width, self.height)
+            self._pre_fullscreen_geom = None
+            self.move_resize(*geom)
+
+    def _get_fullscreen_rect(self) -> tuple[int, int, int, int]:
+        # best-effort multi-monitor span: `fullscreen_monitors` is a 4-tuple of
+        # monitor indices (top, bottom, left, right); monitor index ordering from
+        # `EnumDisplayMonitors()` is not guaranteed to match the server's enumeration,
+        # this is an inherent limitation shared with the X11 implementation:
+        monitors = self.fullscreen_monitors
+        if len(monitors) == 4:
+            try:
+                handles = EnumDisplayMonitors()
+                rects = [GetMonitorInfo(handles[i])["Monitor"] for i in monitors]
+                lefts, tops, rights, bottoms = zip(*rects)
+                return min(lefts), min(tops), max(rights), max(bottoms)
+            except (IndexError, OSError):
+                geomlog("invalid fullscreen-monitors %s, using single monitor", monitors, exc_info=True)
+        hmonitor = MonitorFromWindow(self.hwnd, win32con.MONITOR_DEFAULTTONEAREST)
+        return GetMonitorInfo(hmonitor)["Monitor"]
+
+    def set_decorations(self, decorated: bool) -> None:
+        if not self.hwnd or self.is_OR():
+            return
+        style = self.style
+        if decorated:
+            style |= DECORATION_STYLE
+        else:
+            style &= ~DECORATION_STYLE
+        if style != self.style:
+            self.style = style
+            SetWindowLongA(self.hwnd, win32con.GWL_STYLE, style)
+            flags = win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE | win32con.SWP_FRAMECHANGED
+            SetWindowPos(self.hwnd, 0, 0, 0, 0, 0, flags)
+
+    def _apply_toolwindow(self) -> None:
+        if not self.hwnd:
+            return
+        want = self._skip_taskbar or self._type_toolwindow
+        exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
+        have = bool(exstyle & win32con.WS_EX_TOOLWINDOW)
+        if want == have:
+            return
+        exstyle = (exstyle | win32con.WS_EX_TOOLWINDOW) if want else (exstyle & ~win32con.WS_EX_TOOLWINDOW)
+        was_focused = self.has_toplevel_focus()
+        SetWindowLongA(self.hwnd, win32con.GWL_EXSTYLE, exstyle)
+        # the taskbar / alt-tab list doesn't reliably refresh from SWP_FRAMECHANGED alone
+        # for this bit, a hide/show cycle is the documented workaround:
+        ShowWindow(self.hwnd, win32con.SW_HIDE)
+        ShowWindow(self.hwnd, win32con.SW_SHOW if was_focused else win32con.SW_SHOWNOACTIVATE)
+
+    def set_skip_taskbar(self, skip_taskbar: bool) -> None:
+        self._skip_taskbar = skip_taskbar
+        self._apply_toolwindow()
+
+    def set_window_type(self, window_types) -> None:
+        self._type_toolwindow = bool(set(window_types) & WINDOW_TYPE_TOOLWINDOW)
+        self._apply_toolwindow()
+
+    def set_shape(self, shape: dict) -> None:
+        if not self.hwnd:
+            return
+        rectangles = shape.get("Bounding.rectangles")
+        if not rectangles:
+            # clear any custom shape, restore the default rectangular region:
+            SetWindowRgn(self.hwnd, 0, True)
+            return
+        x_off, y_off = shape.get("x", 0), shape.get("y", 0)
+        combined = 0
+        for x, y, w, h in rectangles:
+            rgn = CreateRectRgn(x_off + x, y_off + y, x_off + x + w, y_off + y + h)
+            if not combined:
+                combined = rgn
+            else:
+                CombineRgn(combined, combined, rgn, RGN_OR)
+                DeleteObject(rgn)
+        if combined:
+            # ownership of `combined` transfers to the HWND on success:
+            SetWindowRgn(self.hwnd, combined, True)
+
+    def get_info(self) -> dict[str, Any]:
+        attributes = [a for a, v in (
+            ("fullscreen", self.fullscreen),
+            ("maximized", self.maximized),
+            ("minimized", self.minimized),
+            ("above", self._above),
+            ("below", self._below),
+            ("skip-taskbar", self._skip_taskbar),
+            ("focused", self.has_toplevel_focus()),
+        ) if v]
+        return {
+            "hwnd": self.hwnd,
+            "override-redirect": self.is_OR(),
+            "position": (self.x, self.y),
+            "size": (self.width, self.height),
+            "pixel-depth": self.pixel_depth,
+            "has-alpha": self.alpha,
+            "attributes": attributes,
+        }
+
     def set_alert_state(self, alert_state: bool) -> None:
-        log("set_alert_state(%s) not implemented in this backend", alert_state)
+        if not self.hwnd:
+            return
+        fwi = FLASHWINFO()
+        fwi.cbSize = sizeof(FLASHWINFO)
+        fwi.hwnd = self.hwnd
+        fwi.dwFlags = (FLASHW_ALL | FLASHW_TIMERNOFG) if alert_state else FLASHW_STOP
+        fwi.uCount = 0
+        fwi.dwTimeout = 0
+        FlashWindowEx(byref(fwi))
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
@@ -498,15 +671,29 @@ class ClientWindow(GObject.GObject):
             backing.eos()
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
+        self.resize_counter = resize_counter
+        if not self.hwnd:
+            return
         exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
-        wx, wy, ww, wh = system_geometry(x, y, w, h, self.wc.style, exstyle)
+        wx, wy, ww, wh = system_geometry(x, y, w, h, self.style, exstyle)
         flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
-        # flags |= win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
-        log.warn("move_resize%s system geometry=%s, flags=%#x", (x, y, w, h, resize_counter), (wx, wy, ww, wh), flags)
-        # if False:
-        #    SetWindowPos(self.hwnd, 0, wx, wy, ww, wh, flags)
-        # this should already trigger WM_MOVE and update the position
-        # so we don't need to do it here, it may even be incorrect to do so
+        geomlog("move_resize%s system geometry=%s", (x, y, w, h, resize_counter), (wx, wy, ww, wh))
+        SetWindowPos(self.hwnd, 0, wx, wy, ww, wh, flags)
+        # this triggers WM_MOVE / WM_SIZE, which update self.x/y/width/height and the backing
+
+    def resize(self, w: int, h: int, resize_counter: int = 0) -> None:
+        self.move_resize(self.x, self.y, w, h, resize_counter)
+
+    def apply_size_constraints(self, lparam) -> None:
+        info = cast(lparam, POINTER(MINMAXINFO)).contents
+        minw, minh = self.size_constraints.intpair("minimum-size")
+        if minw > 0 and minh > 0:
+            info.ptMinTrackSize.x = minw
+            info.ptMinTrackSize.y = minh
+        maxw, maxh = self.size_constraints.intpair("maximum-size")
+        if maxw > 0 and maxh > 0:
+            info.ptMaxTrackSize.x = maxw
+            info.ptMaxTrackSize.y = maxh
 
     def is_tray(self) -> bool:
         return False

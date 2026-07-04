@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 from collections.abc import Callable
-from ctypes import Structure, cast, POINTER, c_void_p
+from ctypes import cast, POINTER, c_void_p
 from ctypes.wintypes import POINT
 
 from xpra.util.env import envbool
@@ -15,6 +15,7 @@ from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
     WNDPROC, GetWindowLongW, SetWindowLongPtrW, GetSystemMetrics, CallWindowProcW,
+    MINMAXINFO,
 )
 from ctypes import GetLastError
 from xpra.log import Logger
@@ -22,16 +23,6 @@ from xpra.log import Logger
 
 log = Logger("win32", "window", "util")
 vlog = Logger("verbose")
-
-
-class MINMAXINFO(Structure):
-    _fields_ = [
-        ("ptReserved", POINT),
-        ("ptMaxSize", POINT),
-        ("ptMaxPosition", POINT),
-        ("ptMinTrackSize", POINT),
-        ("ptMaxTrackSize", POINT),
-    ]
 
 
 # loosely based on this recipe:
