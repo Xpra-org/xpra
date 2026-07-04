@@ -6,7 +6,7 @@
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, WIN32
 from xpra.util.str_fn import Ellipsizer
 from xpra.opengl.backing import GLWindowBackingBase
 from xpra.platform.gl_context import GLContext
@@ -48,9 +48,18 @@ class GLDrawingArea(GLWindowBackingBase):
         da.show()
         self._backing = da
 
+    def get_backing_handle(self) -> int:
+        # the GL drawing-area platform hooks are win32-only, so only win32
+        # needs a native handle here (other platforms no-op on `setup_gl_drawing_area`):
+        da = self._backing
+        if da and WIN32:
+            from xpra.platform.win32.gtk import get_window_handle
+            return get_window_handle(da)
+        return 0
+
     def on_realize(self, *args) -> None:
         from xpra.platform.gui import setup_gl_drawing_area
-        setup_gl_drawing_area(self._backing)
+        setup_gl_drawing_area(self.get_backing_handle())
         onrcb = self.on_realize_cb
         log("GLDrawingArea.on_realize%s callbacks=%s", args, tuple(Ellipsizer(x) for x in onrcb))
         self.on_realize_cb = []
@@ -98,7 +107,7 @@ class GLDrawingArea(GLWindowBackingBase):
 
     def close_gl(self, context) -> None:
         from xpra.platform.gui import cleanup_gl_drawing_area
-        cleanup_gl_drawing_area(self._backing)
+        cleanup_gl_drawing_area(self.get_backing_handle())
         super().close_gl(context)
 
     def close_gl_config(self) -> None:

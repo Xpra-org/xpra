@@ -299,11 +299,11 @@ def gl_check() -> str:
     return ""  # no problem
 
 
-def setup_gl_drawing_area(_widget) -> None:
-    """Install platform hooks on the GL drawing area widget after it is realized."""
+def setup_gl_drawing_area(_handle: int) -> None:
+    """Install platform hooks on the GL drawing area (by native window handle) after it is realized."""
 
 
-def cleanup_gl_drawing_area(_widget) -> None:
+def cleanup_gl_drawing_area(_handle: int) -> None:
     """Remove platform hooks installed by setup_gl_drawing_area."""
 
 

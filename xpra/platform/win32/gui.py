@@ -8,7 +8,6 @@
 
 import os
 import sys
-import types
 from typing import Any
 from collections.abc import Callable, Sequence
 from ctypes import (
@@ -19,7 +18,6 @@ from ctypes.wintypes import HWND, DWORD, POINT, RECT, LPCWSTR
 
 from xpra.common import noop
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.platform.win32.common import (
     GetSystemMetrics, SetWindowLongA, GetWindowLongW,
     ClipCursor, GetCursorPos,
@@ -475,120 +473,11 @@ def no_set_group(*_args):
 
 
 def add_window_hooks(window) -> None:
-    log("add_window_hooks(%s) WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s",
-        window, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE)
-    log(" MAX_SIZE_HINT=%s, MAX_SIZE_HINT=%s", MAX_SIZE_HINT, MAX_SIZE_HINT)
-    if not WINDOW_HOOKS:
-        # allows us to disable the win32 hooks for testing
-        return
-    try:
-        gdk_window = window.get_window()
-    except Exception:
-        gdk_window = None
-    if not gdk_window:
-        # can't get a handle from a None value...
-        return
-    # at least provide a dummy method:
-    gdk_window.set_group = no_set_group
-    handle = window.get_window_handle()
-    if not handle:
-        log.warn("Warning: cannot add window hooks without a window handle!")
-        return
-    log("add_window_hooks(%s) gdk window=%s, hwnd=%#x", window, gdk_window, handle)
-
-    try:
-        _apply_title_bar_theme(handle)
-    except Exception:
-        log("_apply_title_bar_theme(%#x)", handle, exc_info=True)
-
-    if GROUP_LEADER:
-        # MSWindows 7 onwards can use AppUserModel to emulate the group leader stuff:
-        log("win32 hooks: set_window_group=%s", set_window_group)
-        gdk_window.set_group = types.MethodType(win32_propsys_set_group_leader, gdk_window)
-        log("hooked group leader override using %s", set_window_group)
-
-    if UNDECORATED_STYLE:
-        # OR windows never have any decorations or taskbar menu
-        if not window._override_redirect:
-            # the method to call to fix things up:
-            window.fixup_window_style = types.MethodType(fixup_window_style, window)
-            # override `set_decorated` so we can preserve the taskbar menu for undecorated windows
-            window.__set_decorated = window.set_decorated
-            window.set_decorated = types.MethodType(set_decorated, window)
-            # override `after_window_state_updated` so we can re-add the missing style options
-            # (somehow doing it from on_realize which calls add_window_hooks is not enough)
-            window.connect("state-updated", window_state_updated)
-            # call it at least once:
-            window.fixup_window_style()
-
-    if CLIP_CURSOR:
-        window.pointer_grab = types.MethodType(pointer_grab, window)
-        window.pointer_ungrab = types.MethodType(pointer_ungrab, window)
-
-    if MAX_SIZE_HINT or LANGCHANGE or WHEEL:
-        # glue code for gtk to win32 APIs:
-        # add event hook class:
-        win32hooks = Win32Hooks(handle)
-        log("add_window_hooks(%s) added hooks for hwnd %#x: %s", window, handle, win32hooks)
-        window.win32hooks = win32hooks
-        win32hooks.setup()
-
-        if MAX_SIZE_HINT:
-            # save original geometry function:
-            window.__apply_geometry_hints = window.apply_geometry_hints
-            window.apply_geometry_hints = types.MethodType(apply_geometry_hints, window)
-            # apply current max-size from hints, if any:
-            if window.geometry_hints:
-                apply_maxsize_hints(window, window.geometry_hints)
-
-        if LANGCHANGE:
-            def inputlangchange(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
-                keylog("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
-                window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
-                return 0
-
-            win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
-
-        if WHEEL:
-            VERTICAL = "vertical"
-            HORIZONTAL = "horizontal"
-
-            def handle_wheel(orientation: str, wParam: int, lParam: int):
-                distance = wParam >> 16
-                if distance > 2 ** 15:
-                    # ie: 0xFF88 -> 0x78 (120)
-                    distance = distance - 2 ** 16
-                keys = wParam & 0xFFFF
-                y = lParam >> 16
-                x = lParam & 0xFFFF
-                units = distance / WHEEL_DELTA
-                client = getattr(window, "_client")
-                wid = getattr(window, "_id", 0)
-                pointerlog(
-                    "win32 mousewheel: orientation=%s, distance=%i, wheel-delta=%s, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%#x",
-                    orientation, distance, WHEEL_DELTA, units, distance, keys, x, y, client, wid)
-                if client and wid > 0:
-                    if orientation == VERTICAL:
-                        deltax = 0
-                        deltay = units
-                    else:
-                        deltax = units
-                        deltay = 0
-                    pointer = window.get_mouse_position()
-                    device_id = -1
-                    if wp := client.get_subsystem("window"):
-                        wp.wheel_event(device_id, wid, deltax, deltay, pointer)
-
-            def mousewheel(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
-                handle_wheel(VERTICAL, wParam, lParam)
-                return 0
-
-            def mousehwheel(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
-                handle_wheel(HORIZONTAL, wParam, lParam)
-                return 0
-
-            win32hooks.add_window_event_handler(win32con.WM_MOUSEWHEEL, mousewheel)
-            win32hooks.add_window_event_handler(win32con.WM_MOUSEHWHEEL, mousehwheel)
+    # the implementation is GTK-coupled (it hooks GTK window methods and the
+    # GDK window), so it lives in the GTK-on-win32 module; import it lazily so
+    # that importing this module stays GDK-free (see `xpra.platform.win32.gtk`):
+    from xpra.platform.win32.gtk import add_window_hooks as gtk_add_window_hooks
+    gtk_add_window_hooks(window)
 
 
 def remove_window_hooks(window) -> None:
@@ -1055,10 +944,8 @@ _GL_SUBCLASS_UID = 0xC055  # arbitrary uIdSubclass passed to SetWindowSubclass; 
 _gl_subclass_procs: dict[int, object] = {}
 
 
-def setup_gl_drawing_area(widget) -> None:
-    from xpra.platform.win32.gtk import get_window_handle
-    cleanup_gl_drawing_area(widget)
-    hwnd = get_window_handle(widget)
+def setup_gl_drawing_area(hwnd: int) -> None:
+    cleanup_gl_drawing_area(hwnd)
     if not hwnd:
         return
 
@@ -1071,20 +958,16 @@ def setup_gl_drawing_area(widget) -> None:
     proc = SUBCLASSPROC(_proc)
     _gl_subclass_procs[hwnd] = proc
     SetWindowSubclass(HWND(hwnd), proc, _GL_SUBCLASS_UID, 0)
-    log("setup_gl_drawing_area(%s) hwnd=%#x", widget, hwnd)
+    log("setup_gl_drawing_area() hwnd=%#x", hwnd)
 
 
-def cleanup_gl_drawing_area(widget) -> None:
-    if not widget:
-        return
-    from xpra.platform.win32.gtk import get_window_handle
-    hwnd = get_window_handle(widget)
+def cleanup_gl_drawing_area(hwnd: int) -> None:
     if not hwnd:
         return
     proc = _gl_subclass_procs.pop(hwnd, None)
     if proc:
         RemoveWindowSubclass(HWND(hwnd), proc, _GL_SUBCLASS_UID)
-        log("cleanup_gl_drawing_area(%s) hwnd=%#x", widget, hwnd)
+        log("cleanup_gl_drawing_area() hwnd=%#x", hwnd)
 
 
 def main() -> None:
