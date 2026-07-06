@@ -180,7 +180,7 @@ def add_window_hooks(window) -> None:
                 x = lParam & 0xFFFF
                 units = distance / WHEEL_DELTA
                 client = getattr(window, "_client")
-                wid = getattr(window, "_id", 0)
+                wid = getattr(window, "wid", 0)
                 pointerlog(
                     "win32 mousewheel: orientation=%s, distance=%i, wheel-delta=%s, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%#x",
                     orientation, distance, WHEEL_DELTA, units, distance, keys, x, y, client, wid)
