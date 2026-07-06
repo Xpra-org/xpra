@@ -26,15 +26,16 @@ autoprov: no
 %endif
 
 %global upstream_version 3.3.0a2.dev0
+%global git_commit 5771cc75dfdb64af4bd2c987b397187d9837a4d5
 
 Name:		%{py3rpmname}-cython
 Version:	3.3.0~a2
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://files.pythonhosted.org/packages/source/c/cython/cython-%{upstream_version}.tar.gz
+Source0:    https://github.com/cython/cython/archive/%{git_commit}.tar.gz#/cython-%{git_commit}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   %{py3rpmname}
 Provides:   %{py3rpmname}-Cython = %{version}-%{release}
@@ -52,11 +53,11 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "c5465417ae39ca12f1cd418a9b3a196f485d344b18a313738473c9ab23a77d9f" ]; then
+if [ "${sha256}" != "50bbc5020eb5e3674baa82d385a67c96db38332114962248ec144b6ec350bd4c" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -n cython-%{upstream_version}
+%setup -q -n cython-%{git_commit}
 
 %build
 NPROCS=${NPROCS:-`nproc`}
@@ -88,6 +89,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Mon Jul 06 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a2-2
+- use upstream git commit snapshot instead of the pythonhosted sdist
+
 * Mon Jun 29 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a2-1
 - new upstream release
 
