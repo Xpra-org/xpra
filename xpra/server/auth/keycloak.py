@@ -7,7 +7,7 @@
 import os
 import sys
 import json
-from collections.abc import Sequence
+from typing import Sequence, Tuple
 
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 
@@ -68,7 +68,7 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "keycloak"
 
-    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
+    def get_challenge(self, digests: Sequence[str]) -> Tuple[bytes, str]:
         assert not self.challenge_sent
         if "keycloak" not in digests:
             log.error("Error: client does not support keycloak authentication")

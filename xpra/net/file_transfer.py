@@ -110,7 +110,7 @@ def safe_open_download_file(basefilename:str, mimetype:str):
             filename = f"{root}-{base}{ext}"
         else:
             filelog("safe_open_download_file(%s, %s) will use %r", basefilename, mimetype, filename)
-            filelog(f"using {filename=!r}, {fd=}")
+            filelog("using %r, %i", filename, fd)
             return filename, fd
 
 @dataclass
