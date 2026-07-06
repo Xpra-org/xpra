@@ -2,6 +2,7 @@ fake-cuda
 libfakeXinerama
 gstreamer1-plugin-timestamp
 libyuv
+openh264
 python3-Cython
 python3-pycuda
 python3-pynvml
