@@ -1307,14 +1307,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 frame = wfs.get("frame", ())
         return frame
 
-    def monitor_changed(self, monitor) -> None:
+    def _get_monitor_index(self, monitor) -> int:
         display = monitor.get_display()
-        mid = -1
         for i in range(display.get_n_monitors()):
-            m = display.get_monitor(i)
-            if m == monitor:
-                mid = i
-                break
+            if display.get_monitor(i) == monitor:
+                return i
+        return -1
+
+    def monitor_changed(self, monitor) -> None:
+        mid = self._get_monitor_index(monitor)
         geom = monitor.get_geometry()
         manufacturer = monitor.get_manufacturer()
         model = monitor.get_model()
@@ -1465,6 +1466,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if not skip_geometry:
                 config["geometry"] = (sx, sy, sw, sh)
                 config["resize-counter"] = self._resize_counter
+                if self._monitor is not None:
+                    mg = self._monitor.get_geometry()
+                    mid = self._get_monitor_index(self._monitor)
+                    if mid >= 0:
+                        config["monitor"] = {
+                            "index": mid,
+                            "position": (self.cx(x - mg.x), self.cy(y - mg.y)),
+                        }
             self.send(WINDOW_CONFIGURE, self.wid, config)
             geomlog("sending configure for %i: %s", self.wid, config)
 

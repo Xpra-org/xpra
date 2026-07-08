@@ -537,6 +537,18 @@ class ClientWindow(GObject.GObject):
             self._pre_fullscreen_geom = None
             self.move_resize(*geom)
 
+    def get_monitor_position(self) -> dict[str, Any]:
+        if not self.hwnd:
+            return {}
+        try:
+            hmonitor = MonitorFromWindow(self.hwnd, win32con.MONITOR_DEFAULTTONEAREST)
+            index = EnumDisplayMonitors().index(hmonitor)
+            left, top = GetMonitorInfo(hmonitor)["Monitor"][:2]
+        except (OSError, ValueError):
+            geomlog("failed to resolve monitor for window %#x", self.hwnd, exc_info=True)
+            return {}
+        return {"index": index, "position": (self.x - left, self.y - top)}
+
     def _get_fullscreen_rect(self) -> tuple[int, int, int, int]:
         # best-effort multi-monitor span: `fullscreen_monitors` is a 4-tuple of
         # monitor indices (top, bottom, left, right); monitor index ordering from

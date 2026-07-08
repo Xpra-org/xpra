@@ -251,11 +251,14 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     def send_configure(self, window) -> None:
         geometry = (window.x, window.y, window.width, window.height)
         log("send_configure: geometry=%s", geometry)
-        self.send(WINDOW_CONFIGURE, window.wid, {
+        config = {
             "state": window.state_updates,
             "geometry": geometry,
             "resize-counter": window.resize_counter,
-        })
+        }
+        if monitor := window.get_monitor_position():
+            config["monitor"] = monitor
+        self.send(WINDOW_CONFIGURE, window.wid, config)
         # we have consumed it, so we can reset it now:
         window.state_updates = {}
 
