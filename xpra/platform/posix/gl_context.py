@@ -165,6 +165,7 @@ class GLXContext:
         self.xdisplay: int = 0
         self.context = None
         self.bit_depth: int = 0
+        self.visual_id: int = 0
         self.xdisplay = get_xdisplay()
 
         # query version
@@ -205,6 +206,11 @@ class GLXContext:
         log(f"using {fbconfig=}")
         # the X11 visual for this framebuffer config:
         xvinfo = GLX.glXGetVisualFromFBConfig(self.xdisplay, fbconfig)
+        if xvinfo:
+            # so that `set_visual()` can assign the exact same visual to the GTK window,
+            # instead of guessing one independently and risking a mismatched BadMatch:
+            self.visual_id = xvinfo.contents.visualid
+            self.props["visual-id"] = self.visual_id
 
         # query extensions:
         extensions = get_extensions(self.xdisplay)
@@ -310,7 +316,7 @@ class GLXContext:
         tmp.realize()
         da = Gtk.DrawingArea()
         tmp.add(da)
-        set_visual(da, True)
+        set_visual(da, True, self.visual_id)
         win = tmp.get_window()
         log("check_support(%s) using temporary window=%s", force_enable, tmp)
         with self.get_paint_context(win):
