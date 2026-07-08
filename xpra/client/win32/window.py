@@ -161,7 +161,7 @@ class ClientWindow(GObject.GObject):
     def __init__(self, client, group_leader_window, wid: int, geom, backing_size, metadata: dict,
                  override_redirect, client_properties,
                  border, max_window_size, pixel_depth,
-                 headerbar):
+                 headerbar=None):
         GObject.GObject.__init__(self)
         self.client = client
         self.wid = wid

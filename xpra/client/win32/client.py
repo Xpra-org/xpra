@@ -5,6 +5,7 @@
 
 import signal
 import win32con
+from typing import Any
 from ctypes import byref
 from ctypes.wintypes import POINT
 from collections.abc import Sequence
@@ -172,9 +173,19 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             return ydpi
         return 96
 
-    @staticmethod
-    def get_client_window_classes(_geom, _metadata, _override_redirect) -> Sequence[type]:
+    def get_gl_client_window_module(self, enable_opengl: str) -> tuple[dict, Any]:
+        # the native (Gtk-free) WGL OpenGL backend for this client;
+        # the `opengl` subsystem calls this from its `init_opengl`:
+        from xpra.client.win32.opengl import get_gl_client_window_module
+        return get_gl_client_window_module(enable_opengl)
+
+    def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
         from xpra.client.win32.window import ClientWindow
+        gl = self.get_subsystem("opengl")
+        gl_window_class = gl.GLClientWindowClass if (gl and gl.enabled) else None
+        if gl_window_class:
+            # try the OpenGL window first, fall back to the GDI window:
+            return (gl_window_class, ClientWindow)
         return (ClientWindow, )
 
     @staticmethod
