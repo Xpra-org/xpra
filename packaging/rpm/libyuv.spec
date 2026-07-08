@@ -46,7 +46,7 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "5959073a16a557ce21fb4dc4335282140bb43a74fda7b90bca9e0075bce90f3d" ]; then
+if [ "${sha256}" != "9f4a589a793b3f0dadbadf7628d366187ccce463ae49715f50bb495bbf122c80" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
