@@ -17,10 +17,30 @@ class FakeWindowSubsystem:
     def __init__(self):
         self.wheel_smooth = False
         self.modal_windows = False
+        self.server_window_states: Sequence[str] = ()
+        self.server_window_frame_extents = False
         self._id_to_window = {}
+        self._focused = None
+        self._window_with_grab = None
+        self.pointer_grabbed = None
 
     def has_focus(self, *_args) -> bool:
         return False
+
+    def update_focus(self, *_args) -> bool:
+        return False
+
+    def control_refresh(self, *_args) -> None:
+        log("control_refresh ignored")
+
+    def send_refresh(self, *_args) -> None:
+        log("send_refresh ignored")
+
+    def send_button(self, *_args) -> None:
+        log("send_button ignored")
+
+    def wheel_event(self, *_args) -> None:
+        log("wheel_event ignored")
 
     def window_close_event(self, *_args) -> None:
         log("window_close_event ignored")

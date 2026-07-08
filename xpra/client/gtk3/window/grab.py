@@ -85,7 +85,8 @@ class GrabWindow(GtkStubWindow):
             self.keyboard_ungrab()
 
     def may_autograb(self) -> bool:
-        server_mode = self._client.get_subsystem("remote-info")._remote_server_mode
+        remoteinfo = self._client.get_subsystem("remote-info")
+        server_mode = remoteinfo._remote_server_mode if remoteinfo else ""
         autograb = bool(AUTOGRAB_MODES) and any(x == "*" or server_mode.find(x) >= 0 for x in AUTOGRAB_MODES)
         log("may_autograb() server-mode=%s, autograb(%s)=%s", server_mode, AUTOGRAB_MODES, autograb)
         if autograb:
