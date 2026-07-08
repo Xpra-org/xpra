@@ -109,10 +109,19 @@ def new_GDKWindow(gdk_window_class,
     mask = Gdk.WindowAttributesType(attributes_mask)
     return gdk_window_class(parent, attributes, mask)
 
-def set_visual(window, alpha : bool=True) -> Optional[Gdk.Visual]:
+def set_visual(window, alpha : bool=True, visual_id: int=0) -> Optional[Gdk.Visual]:
     screen = window.get_screen()
     if alpha:
-        visual = screen.get_rgba_visual()
+        visual = None
+        if visual_id:
+            # a specific X visual was requested (ie: to match a GLX FBConfig),
+            # look it up instead of guessing via `get_rgba_visual()`,
+            # since the two can disagree on which visual is "the" RGBA one:
+            gi.require_version("GdkX11", "3.0")  # @UndefinedVariable
+            from gi.repository import GdkX11  # @UnresolvedImport
+            visual = GdkX11.X11Screen.lookup_visual(screen, visual_id)
+        if visual is None:
+            visual = screen.get_rgba_visual()
     else:
         visual = screen.get_system_visual()
     alphalog("set_visual(%s, %s) screen=%s, visual=%s", window, alpha, screen, visual)

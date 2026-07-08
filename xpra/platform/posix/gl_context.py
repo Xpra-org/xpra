@@ -108,6 +108,7 @@ class GLXContext:
         self.xdisplay : int = 0
         self.context = None
         self.bit_depth : int = 0
+        self.visual_id : int = 0
         import gi
         gi.require_version("Gdk", "3.0")  # @UndefinedVariable
         from gi.repository import Gdk  # @UnresolvedImport
@@ -133,6 +134,11 @@ class GLXContext:
         attrs = c_attrs(pyattrs)
         self.xdisplay = get_xdisplay()
         xvinfo = GLX.glXChooseVisual(self.xdisplay, screen.get_number(), attrs)
+        if xvinfo:
+            # so that `set_visual()` can assign the exact same visual to the GTK window,
+            # instead of guessing one independently and risking a mismatched BadMatch:
+            self.visual_id = xvinfo.contents.visualid
+            self.props["visual-id"] = self.visual_id
         def getconfig(attrib):
             value = c_int()
             r = GLX.glXGetConfig(self.xdisplay, xvinfo, attrib, byref(value))
@@ -202,7 +208,7 @@ class GLXContext:
         tmp.realize()
         da = Gtk.DrawingArea()
         tmp.add(da)
-        set_visual(da, True)
+        set_visual(da, True, self.visual_id)
         win = tmp.get_window()
         log("check_support(%s) using temporary window=%s", force_enable, tmp)
         with self.get_paint_context(win):
