@@ -79,7 +79,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.5.1
+Version:			6.5.2
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1094,6 +1094,16 @@ fi
 
 
 %changelog
+* Wed Jul 08 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
+- 🔧 Platforms, build and packaging:
+- Major:
+   Gtk X11 clients OpenGL errors
+   missing wheel events with MS Windows clients
+- Minor:
+   missing window raise / restack
+   don't request OpenGL contexts with depth or stencil buffers
+- Cosmetic:
+   system tray does not detect mmap
 * Fri Jul 03 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
 - Platforms, build and packaging:
    `pynvml 13.610.43`

@@ -1,3 +1,16 @@
+xpra (6.5.2-1) UNRELEASED; urgency=low
+  * 🔧 Platforms, build and packaging:
+  * Major:
+    Gtk X11 clients OpenGL errors
+    missing wheel events with MS Windows clients
+  * Minor:
+    missing window raise / restack
+    don't request OpenGL contexts with depth or stencil buffers
+  * Cosmetic:
+    system tray does not detect mmap
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 08 Jul 2026 15:08:36 +0700
+
 xpra (6.5.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     `pynvml 13.610.43`

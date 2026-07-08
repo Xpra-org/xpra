@@ -1,5 +1,16 @@
 # Changelog
 
+## [6.5.2] 2026-07-08
+* 🔧 Platforms, build and packaging:
+* Major:
+  * [Gtk X11 clients OpenGL errors](https://github.com/Xpra-org/xpra/commit/e7c95b2cd76e3c8a7a09bb13ea174bc9efd0b091)
+  * [missing wheel events with MS Windows clients](https://github.com/Xpra-org/xpra/commit/3d9a6e96d45978beb881162ec55c5bf71695f7d7)
+* Minor:
+  * [missing window raise / restack](https://github.com/Xpra-org/xpra/commit/1911df851c80a5041a724a6eaaed64ac9af597c9)
+  * [don't request OpenGL contexts with depth or stencil buffers](https://github.com/Xpra-org/xpra/commit/c384483670f22ff3f31d479688452ff13f134256)
+* Cosmetic:
+  * [system tray does not detect mmap](https://github.com/Xpra-org/xpra/commit/d11c5e0f2b0fdeae6da143b7ef9acff433b8bd50)
+
 ## [6.5.1] 2026-07-03
 * 🔧 Platforms, build and packaging:
   * [`pynvml 13.610.43`](https://github.com/Xpra-org/xpra/commit/14cbb2d6c50a6e9b0bed25e759ca472b8f5c167b)
