@@ -25,12 +25,26 @@ autoprov: no
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
+# The default build already compiles Cython's smaller accelerator modules.
+# --cython-compile-all additionally compiles the two largest self-hosted
+# modules, Compiler/Nodes.py (~11k lines) and Compiler/ExprNodes.py (~16k
+# lines), plus a handful of other big ones. On slow emulated builds (aarch64,
+# riscv64 on an x86_64 buildbot) generating and compiling that much C takes
+# drastically longer (and is what triggered the aarch64 var-tracking gcc
+# failure on Nodes.c), while only saving a little runtime in Cython itself
+# when it later cythonizes other packages. So skip it on those arches.
+%ifarch aarch64 riscv64
+%global cython_compile_all %{nil}
+%else
+%global cython_compile_all --cython-compile-all
+%endif
+
 %global upstream_version 3.3.0a2.dev0
 %global git_commit 5771cc75dfdb64af4bd2c987b397187d9837a4d5
 
 Name:		%{py3rpmname}-cython
 Version:	3.3.0~a2
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
@@ -61,11 +75,11 @@ fi
 
 %build
 NPROCS=${NPROCS:-`nproc`}
-CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build -j ${NPROCS} --cython-compile-all
+CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build -j ${NPROCS} %{cython_compile_all}
 
 %install
 rm -rf %{buildroot}
-%{python3} setup.py install -O1 --skip-build --root %{buildroot} --cython-compile-all
+%{python3} setup.py install -O1 --skip-build --root %{buildroot} %{cython_compile_all}
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 %if "%{bin_prefix}" != ""
 mv %{buildroot}%{_bindir}/cygdb %{buildroot}%{_bindir}/%{bin_prefix}cygdb
@@ -89,6 +103,11 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Wed Jul 08 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a2-3
+- skip --cython-compile-all on aarch64 and riscv64: avoids compiling Nodes.c
+  and ExprNodes.c, which dominate build time (and gcc struggles with) on
+  emulated buildbots
+
 * Mon Jul 06 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a2-2
 - use upstream git commit snapshot instead of the pythonhosted sdist
 
