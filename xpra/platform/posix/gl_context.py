@@ -186,8 +186,10 @@ class GLXContext:
             GLX.GLX_RED_SIZE: bpc,
             GLX.GLX_GREEN_SIZE: bpc,
             GLX.GLX_BLUE_SIZE: bpc,
-            GLX.GLX_DEPTH_SIZE: 24,
-            GLX.GLX_STENCIL_SIZE: 8,
+            # we don't do any 3D rendering, just 2D texture / FBO blits,
+            # so we don't need a depth or stencil buffer:
+            GLX.GLX_DEPTH_SIZE: 0,
+            GLX.GLX_STENCIL_SIZE: 0,
         }
         if alpha:
             pyattrs[GLX.GLX_ALPHA_SIZE] = int(alpha) * bpc
