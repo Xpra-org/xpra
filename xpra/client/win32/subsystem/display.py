@@ -97,7 +97,8 @@ class Win32DisplayClient(DisplayClient):
         return get_display_size()
 
     def get_screen_sizes(self, xscale=1.0, yscale=1.0) -> Sequence[tuple[int, int]]:
-        return (self.get_root_size(), )
+        w, h = self.get_root_size()
+        return ((round(w / xscale), round(h / yscale)), )
 
     def get_monitors_info(self) -> dict:
         return get_monitors_info(self.xscale, self.yscale)

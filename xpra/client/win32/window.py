@@ -169,6 +169,7 @@ class ClientWindow(GObject.GObject):
         self.y = geom[1]
         self.width = max(1, geom[2])
         self.height = max(1, geom[3])
+        self._backing_size = backing_size
         self.alpha = metadata.boolget("has-alpha", False)
         if override_redirect:
             metadata["override-redirect"] = override_redirect
@@ -210,7 +211,9 @@ class ClientWindow(GObject.GObject):
         log("hwnd=%s", self.hwnd)
         self.hdc = CreateCompatibleDC(None)
         log("CreateCompatibleDC()=%#x", self.hdc)
-        self.backing = GDIBacking(self.wid, self.hdc, self.hwnd, self.width, self.height, self.alpha)
+        bw, bh = self._backing_size
+        self.backing = GDIBacking(self.wid, self.hdc, self.hwnd, bw, bh, self.alpha)
+        self.backing.init(self.width, self.height, bw, bh)
         # apply the metadata the window was created with:
         # (`set_metadata()` is otherwise only reached later, via `update_metadata()`,
         # on a subsequent server metadata packet)
@@ -230,6 +233,24 @@ class ClientWindow(GObject.GObject):
         wc.hbrBackground = win32con.COLOR_WINDOW + 1
         wc.lpszClassName = "XpraWindowClass%i" % self.wid
         return wc
+
+    def update_backing_render_size(self, width: int, height: int) -> None:
+        """
+        The native window's on-screen (client) size changed - either because the OS
+        clamped/adjusted the requested size at creation time, or because the user
+        dragged/snapped the window. Recompute the corresponding server-pixel backing
+        size via the display subsystem's scale factor (mirroring the GTK3 backend's
+        `_set_backing_size()`) and update the backing's render size accordingly.
+        """
+        backing = self.backing
+        if not backing:
+            return
+        display = self.client.get_subsystem("display") if self.client else None
+        if display:
+            bw, bh = display.cx(width), display.cy(height)
+        else:
+            bw, bh = width, height
+        backing.init(width, height, bw, bh)
 
     def get_system_geometry(self, exstyle: int) -> tuple[int, int, int, int]:
         """
@@ -278,9 +299,8 @@ class ClientWindow(GObject.GObject):
                 create = cast(lparam, POINTER(CREATESTRUCT)).contents
                 self.x = create.x
                 self.y = create.y
-                backing = self.backing
-                if backing and (self.width != create.cx or self.height != create.cy):
-                    backing.resize(create.cx, create.cy)
+                if self.backing and (self.width != create.cx or self.height != create.cy):
+                    self.update_backing_render_size(create.cx, create.cy)
                     self.width = create.cx
                     self.height = create.cy
                 self.emit("mapped")
@@ -324,9 +344,8 @@ class ClientWindow(GObject.GObject):
                 elif wparam == win32con.SIZE_MAXSHOW:
                     return 0
                 elif wparam == win32con.SIZE_RESTORED:
-                    backing = self.backing
-                    if backing and (width != self.width or height != self.height):
-                        backing.resize(width, height)
+                    if self.backing and (width != self.width or height != self.height):
+                        self.update_backing_render_size(width, height)
                         self.width = width
                         self.height = height
                         self.emit("resized")

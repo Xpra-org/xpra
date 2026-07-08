@@ -14,7 +14,7 @@ from xpra.platform.win32.common import (
     DeleteDC,  # ReleaseDC
     CreateCompatibleDC,
     BITMAPV5HEADER, CreateDIBSection,
-    BitBlt,
+    BitBlt, StretchBlt, SetStretchBltMode,
 )
 from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks, PaintCallbacks
 from xpra.util.objects import typedict
@@ -31,8 +31,8 @@ class GDIBacking(WindowBackingBase):
         super().__init__(wid, alpha)
         self.hdc = hdc
         self.hwnd = hwnd
-        self.width = width
-        self.height = height
+        self.size = (width, height)
+        self.render_size = (width, height)
         self.pixels = c_void_p()
         self.bitmap = self.create_bitmap(width, height)
         # the superclass requires this attribute to be set to enable rendering:
@@ -61,11 +61,21 @@ class GDIBacking(WindowBackingBase):
             header.bV5Compression = win32con.BI_RGB
         bitmap = CreateDIBSection(self.hdc, byref(header), win32con.DIB_RGB_COLORS, byref(self.pixels), None, 0)
         if not self.pixels or not bitmap:
-            log.error("Error creating bitmap backing of size %ix%i", self.width, self.height)
+            log.error("Error creating bitmap backing of size %ix%i", width, height)
             raise WinError(get_last_error())
         return bitmap
 
-    def resize(self, width: int, height: int):
+    def init(self, ww: int, wh: int, bw: int, bh: int) -> None:
+        """
+        `(ww, wh)` is the on-screen (client, desktop-scaled) size,
+        `(bw, bh)` is the backing buffer (server pixel) size:
+        only the latter requires reallocating the DIB section.
+        """
+        self.render_size = (ww, wh)
+        if (bw, bh) != self.size:
+            self._resize_backing(bw, bh)
+
+    def _resize_backing(self, width: int, height: int) -> None:
         bitmap = self.bitmap
         if not bitmap:
             raise RuntimeError("GDI backing has already been freed")
@@ -76,12 +86,10 @@ class GDIBacking(WindowBackingBase):
         temp_dc = CreateCompatibleDC(None)
         SelectObject(temp_dc, bitmap)
 
-        # rect = RECT(0, 0, width, height)
-        # FillRect(self.hdc, byref(rect), GetStockObject(BLACK_BRUSH))
-
         # Copy overlapping region
-        copy_width = min(width, self.width)
-        copy_height = min(height, self.height)
+        old_width, old_height = self.size
+        copy_width = min(width, old_width)
+        copy_height = min(height, old_height)
 
         BitBlt(self.hdc, 0, 0, copy_width, copy_height, temp_dc, 0, 0, win32con.SRCCOPY)
 
@@ -89,12 +97,18 @@ class GDIBacking(WindowBackingBase):
         DeleteObject(bitmap)
 
         self.bitmap = new_bitmap
-        self.width = width
-        self.height = height
+        self.size = (width, height)
 
     def paint(self, hdc: HDC) -> None:
-        if self.bitmap:
-            BitBlt(hdc, 0, 0, self.width, self.height, self.hdc, 0, 0, win32con.SRCCOPY)
+        if not self.bitmap:
+            return
+        bw, bh = self.size
+        rw, rh = self.render_size
+        if (bw, bh) == (rw, rh):
+            BitBlt(hdc, 0, 0, bw, bh, self.hdc, 0, 0, win32con.SRCCOPY)
+        else:
+            SetStretchBltMode(hdc, win32con.HALFTONE)
+            StretchBlt(hdc, 0, 0, rw, rh, self.hdc, 0, 0, bw, bh, win32con.SRCCOPY)
 
     def with_gfx_context(self, function: Callable, *args) -> None:
         # the do_paint_rgb function access the pixel buffer directly
@@ -122,18 +136,19 @@ class GDIBacking(WindowBackingBase):
                 fire_paint_callbacks(callbacks, False, "pixel format conversion needed")
                 return
 
-        bitmap_stride = self.width * 4
+        bw, bh = self.size
+        bitmap_stride = bw * 4
         offset = y * bitmap_stride + x * 4
         src = addressof(c_void_p.from_buffer(img_data))
         dst = c_void_p(self.pixels.value + offset)
         log(f"draw_region {offset=} {src=} - {dst=} {bitmap_stride=} {rowstride=}")
-        if rowstride == bitmap_stride and x == 0 and y >= 0 and width == self.width and y + height <= self.height:
+        if rowstride == bitmap_stride and x == 0 and y >= 0 and width == bw and y + height <= bh:
             # happy path: copy all at once
             memmove(dst, src, rowstride * height)
         else:
             # slow path: copy each row separately
-            rowlen = min(width, self.width - x) * 4
-            for i in range(min(height, self.height - y)):
+            rowlen = min(width, bw - x) * 4
+            for i in range(min(height, bh - y)):
                 dst = c_void_p(self.pixels.value + offset + i * bitmap_stride)
                 src = addressof(c_void_p.from_buffer(img_data)) + i * rowstride
                 memmove(dst, src, rowlen)

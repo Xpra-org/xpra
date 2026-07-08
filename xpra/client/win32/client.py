@@ -250,6 +250,8 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def send_configure(self, window) -> None:
         geometry = (window.x, window.y, window.width, window.height)
+        if display := self.get_subsystem("display"):
+            geometry = display.crect(*geometry)
         log("send_configure: geometry=%s", geometry)
         config = {
             "state": window.state_updates,
@@ -269,6 +271,10 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         if ClientToScreen(window.hwnd, byref(coords)):
             absx = int(coords.x)
             absy = int(coords.y)
+        display = self.get_subsystem("display")
+        if display:
+            absx, absy = display.cp(absx, absy)
+            x, y = display.cp(x, y)
         return absx, absy, x, y
 
     def window_mouse_moved_event(self, window, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
