@@ -2405,6 +2405,8 @@ if WIN32:
     assert MINGW_PREFIX, "you must run this build from a MINGW environment"
     if modules_ENABLED:
         add_packages("xpra.platform.win32", "xpra.platform.win32.namedpipes")
+        if opengl_ENABLED:
+            add_packages("xpra.platform.win32.opengl")
     remove_packages("xpra.platform.darwin", "xpra.platform.posix")
 
     # this is where the win32 gi installer will put things:
