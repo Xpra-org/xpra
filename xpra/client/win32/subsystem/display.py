@@ -13,6 +13,7 @@ from xpra.platform.win32.common import (
     EnumDisplayMonitors, GetMonitorInfo,
     GetDeviceCaps, DeleteDC,
 )
+from xpra.platform.win32.displayconfig import get_display_config
 from xpra.client.subsystem.display import DisplayClient
 from xpra.log import Logger
 
@@ -45,6 +46,12 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
     def ys(v: int) -> int:
         return round(v / yscale)
 
+    # awareness-independent geometry / scanout data, keyed by GDI device name:
+    try:
+        display_config = get_display_config()
+    except Exception:
+        log("get_display_config() failed", exc_info=True)
+        display_config = {}
     info: dict[int, Any] = {}
     for i, hmonitor in enumerate(EnumDisplayMonitors()):
         try:
@@ -60,6 +67,39 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
             "geometry": (xs(mleft), ys(mtop), xs(mright - mleft), ys(mbottom - mtop)),
             "workarea": (xs(wleft), ys(wtop), xs(wright - wleft), ys(wbottom - wtop)),
         }
+        # prefer the `QueryDisplayConfig` SOURCE mode for the geometry: it is the
+        # true device-pixel desktop surface, reported independently of the process
+        # DPI awareness (whereas `GetMonitorInfo` is only physical when PMv2-aware):
+        dcfg = display_config.get(device, {})
+        src = dcfg.get("source")
+        if src:
+            sx, sy = src["position"]
+            sw, sh = src["width"], src["height"]
+            minfo["geometry"] = (xs(sx), ys(sy), xs(sw), ys(sh))
+            # rebase the workarea (which `GetMonitorInfo` reports in the awareness
+            # space) onto the physical geometry, so both live in the same device-pixel
+            # coordinate space. this is an identity transform under PMv2 awareness:
+            mw, mh = mright - mleft, mbottom - mtop
+            fx = sw / mw if mw else 1.0
+            fy = sh / mh if mh else 1.0
+            minfo["workarea"] = (
+                xs(sx + round((wleft - mleft) * fx)),
+                ys(sy + round((wtop - mtop) * fy)),
+                xs(round((wright - wleft) * fx)),
+                ys(round((wbottom - wtop) * fy)),
+            )
+        tgt = dcfg.get("target")
+        if tgt:
+            # the actual scanout raster of the panel, in true device pixels
+            # (not subject to the client `xscale`/`yscale` - this is hardware):
+            minfo["scanout"] = {
+                "active-size": tgt["active-size"],
+                "total-size": tgt["total-size"],
+                "pixel-clock": tgt["pixel-clock"],
+            }
+            # a hardware/GPU scaler sits between the desktop surface and the panel:
+            if "scaled" in dcfg:
+                minfo["scaled"] = dcfg["scaled"]
         if device:
             minfo["name"] = device
             dc = _get_device_dc(device)
@@ -81,6 +121,10 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
                     DeleteDC(dc)
             else:
                 log("failed to create a device context for %r", device)
+        # prefer the exact scanout refresh rate (mHz) over the integer GetDeviceCaps
+        # value, but ignore the 0/1 Hz "unknown" sentinel some drivers report:
+        if tgt and tgt["refresh-rate"] > 1000:
+            minfo["refresh-rate"] = tgt["refresh-rate"]
         info[i] = minfo
     log("get_monitors_info(%s, %s)=%s", xscale, yscale, info)
     return info
