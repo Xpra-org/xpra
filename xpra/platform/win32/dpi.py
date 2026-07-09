@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 
 
-from ctypes import WinDLL, c_int, c_long, get_last_error
-from ctypes.wintypes import BOOL, HANDLE
+from ctypes import WinDLL, POINTER, byref, c_int, c_long, get_last_error
+from ctypes.wintypes import BOOL, HANDLE, POINT
 
 from xpra.platform.win32.common import GetSystemMetrics, user32
 from xpra.util.env import envint, envbool
@@ -150,3 +150,43 @@ def init_dpi() -> None:
         DPI_SCALING = round(100 * ((actual_w / w) + (actual_h / h))) / 200
         log("DPI_SCALING=%s (screen size changed from %s to %s after enabling DPI awareness)",
             DPI_SCALING, (w, h), (actual_w, actual_h))
+
+
+def _load_logical_to_physical():
+    # `LogicalToPhysicalPointForPerMonitorDPI` (win10 1607+) is the per-monitor,
+    # awareness-independent point conversion. Resolve it lazily so that a missing
+    # symbol on an older OS cannot break the import of this module:
+    try:
+        fn = user32.LogicalToPhysicalPointForPerMonitorDPI  # @UndefinedVariable
+    except AttributeError:
+        log("LogicalToPhysicalPointForPerMonitorDPI is not available (requires Windows 10 1607+)")
+        return None
+    fn.argtypes = [HANDLE, POINTER(POINT)]
+    fn.restype = BOOL
+    return fn
+
+
+_logical_to_physical = _load_logical_to_physical()
+
+
+def physical_point(hwnd: int, x: int, y: int) -> tuple[int, int]:
+    """
+    Convert a *screen* point from the window's logical (DPI-awareness dependent)
+    coordinate space into true physical device pixels, irrespective of the
+    process / thread / window DPI awareness.
+
+    This is a no-op when the process is already Per-Monitor-v2 aware (see
+    `init_dpi`), but it guarantees physical-pixel accuracy even if a lower
+    awareness level somehow ended up in effect (Layer 2 - belt and braces).
+
+    Note: the conversion uses the DPI of the monitor `hwnd` is on, so a pointer
+    that has crossed onto a monitor with a different scaling factor while the
+    process is *not* fully aware would use the window's monitor DPI. Under the
+    enforced Per-Monitor-v2 awareness this never matters (identity transform).
+    """
+    if not hwnd or _logical_to_physical is None:
+        return x, y
+    pt = POINT(x, y)
+    if _logical_to_physical(hwnd, byref(pt)):
+        return int(pt.x), int(pt.y)
+    return x, y

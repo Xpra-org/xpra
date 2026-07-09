@@ -21,6 +21,7 @@ from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.win32.subsystem.display import Win32DisplayClient
 from xpra.platform.gui import get_xdpi, get_ydpi
 from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
+from xpra.platform.win32.dpi import physical_point
 from xpra.platform.win32.gui import pointer_grab, pointer_ungrab
 from xpra.platform.win32.keyboard import VK_NAMES, NATIVE_HELD_VKS, NATIVE_TOGGLED_VKS
 from xpra.log import Logger
@@ -265,12 +266,22 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         window.state_updates = {}
 
     def _pointer_data(self, window, x: int, y: int) -> tuple[int, int, int, int]:
-        absx = window.x + x
-        absy = window.y + y
-        coords = POINT()
-        if ClientToScreen(window.hwnd, byref(coords)):
-            absx = int(coords.x)
-            absy = int(coords.y)
+        hwnd = window.hwnd
+        # screen ("root") position of the client-area origin and of the pointer.
+        # `ClientToScreen` transforms the POINT in place, so it must be seeded
+        # with the client coordinates we want to convert:
+        origin = POINT(0, 0)
+        ptr = POINT(x, y)
+        if hwnd and ClientToScreen(hwnd, byref(origin)) and ClientToScreen(hwnd, byref(ptr)):
+            # Layer 2: normalize to true physical device pixels, so the values
+            # are correct even if the process somehow ended up with a lower DPI
+            # awareness than Per-Monitor-v2 (a no-op when fully aware):
+            ox, oy = physical_point(hwnd, origin.x, origin.y)
+            absx, absy = physical_point(hwnd, ptr.x, ptr.y)
+            # window-relative coordinates, normalized the same way:
+            x, y = absx - ox, absy - oy
+        else:
+            absx, absy = window.x + x, window.y + y
         display = self.get_subsystem("display")
         if display:
             absx, absy = display.cp(absx, absy)
