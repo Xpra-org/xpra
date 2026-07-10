@@ -289,9 +289,17 @@ def get_display_config() -> dict[str, dict[str, Any]]:
         # differs from the scanned-out active raster:
         src = entry.get("source")
         tgt = entry.get("target")
-        if src and tgt:
-            entry["scaled"] = (src["width"], src["height"]) != tgt["active-size"]
         name = _source_device_name(path.sourceInfo.adapterId, path.sourceInfo.id)
+        if src and tgt:
+            scaled = (src["width"], src["height"]) != tgt["active-size"]
+            entry["scaled"] = scaled
+            if scaled:
+                # the desktop surface (where windows and the pointer live) does not
+                # match the scanned-out raster, so a hardware/GPU scaler is in the
+                # path and window coordinates cannot be 1:1 with GPU scanout:
+                log.info("monitor %s: %ix%i desktop surface scaled to %ix%i scanout (%s)",
+                         name or "?", src["width"], src["height"],
+                         tgt["active-size"][0], tgt["active-size"][1], entry["scaling"])
         if name:
             info[name] = entry
     log("get_display_config()=%s", info)
