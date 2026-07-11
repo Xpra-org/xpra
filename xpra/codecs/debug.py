@@ -12,7 +12,30 @@ from xpra.log import Logger
 
 log = Logger("codec")
 
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
+_save_to_file_warned = False
+
+
+def get_save_to_file() -> str:
+    # single place where `XPRA_SAVE_TO_FILE` is evaluated: it must be honoured
+    # everywhere through this function so that the seccomp check below is always applied.
+    save = os.environ.get("XPRA_SAVE_TO_FILE", "")
+    if save:
+        # decoders save frames from the draw thread, which runs under a seccomp filter
+        # that blocks file access - writing there would kill the process (see seccomp.md):
+        try:
+            from xpra.seccomp import is_enabled
+        except ImportError:
+            is_enabled = None
+        if is_enabled and is_enabled():
+            global _save_to_file_warned
+            if not _save_to_file_warned:
+                _save_to_file_warned = True
+                log.warn("Warning: 'XPRA_SAVE_TO_FILE' is ignored because seccomp is enabled")
+            return ""
+    return save
+
+
+SAVE_TO_FILE = get_save_to_file()
 
 
 def may_save_image(coding: str, data: memoryview | bytes | bytearray, now: float = 0):

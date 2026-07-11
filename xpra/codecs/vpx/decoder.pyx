@@ -38,7 +38,8 @@ from xpra.codecs.vpx.vpx cimport (
 from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
+from xpra.codecs.debug import get_save_to_file
+SAVE_TO_FILE = get_save_to_file()
 
 VPX_COLOR_SPACES : Dict[int,str] = {
     VPX_CS_UNKNOWN  : "unknown",

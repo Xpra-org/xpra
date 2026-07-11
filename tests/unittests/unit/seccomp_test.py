@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import unittest
 from unittest.mock import patch
 
@@ -62,6 +63,18 @@ class SeccompTest(unittest.TestCase):
 
     def test_rfb_syscalls_match_parse(self):
         self.assertEqual(seccomp_rfb.RFB_SYSCALLS, seccomp_parse.PARSE_SYSCALLS)
+
+    def test_get_save_to_file_gated_by_seccomp(self):
+        from xpra.codecs import debug as codec_debug
+        with patch.dict(os.environ, {"XPRA_SAVE_TO_FILE": "frame"}):
+            with patch.object(seccomp, "is_enabled", return_value=True):
+                self.assertEqual(codec_debug.get_save_to_file(), "")
+            with patch.object(seccomp, "is_enabled", return_value=False):
+                self.assertEqual(codec_debug.get_save_to_file(), "frame")
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("XPRA_SAVE_TO_FILE", None)
+            with patch.object(seccomp, "is_enabled", return_value=True):
+                self.assertEqual(codec_debug.get_save_to_file(), "")
 
 
 if __name__ == "__main__":
