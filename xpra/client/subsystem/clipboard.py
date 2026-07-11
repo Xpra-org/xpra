@@ -243,12 +243,14 @@ class ClipboardClient(StubClientSubsystem):
     def init_authenticated_packet_handlers(self) -> None:
         self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardClient.PREFIX}-status")
         for x in (
-            "token", "request",
+            "data", "request",
             "contents", "contents-none",
             "pending-requests", "enable-selections",
             "status",
         ):
             self.add_packet_handler(f"{ClipboardClient.PREFIX}-{x}", self._process_clipboard_packet, True)
+        if BACKWARDS_COMPATIBLE:
+            self.add_packet_handler(f"{ClipboardClient.PREFIX}-token", self._process_clipboard_packet, True)
 
     def make_clipboard_helper(self):
         """

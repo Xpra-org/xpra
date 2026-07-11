@@ -287,11 +287,13 @@ class ClipboardManager(StubSubsystem):
     def init_packet_handlers(self) -> None:
         if self.enabled:
             for x in (
-                    "token", "request", "contents", "contents-none",
+                    "data", "request", "contents", "contents-none",
                     "pending-requests", "enable-selections", "loop-uuids",
                     "status",
             ):
                 self.add_packet_handler(f"{ClipboardManager.PREFIX}-%s" % x, self._process_clipboard_packet)
+            if BACKWARDS_COMPATIBLE:
+                self.add_packet_handler(f"{ClipboardManager.PREFIX}-token", self._process_clipboard_packet)
             self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardManager.PREFIX}-status")
 
     #########################################

@@ -212,13 +212,15 @@ class ClipboardProtocolHelperCore:
 
     def init_packet_handlers(self) -> None:
         self._packet_handlers: dict[str, Callable] = {
-            "clipboard-token": self._process_clipboard_token,
+            "clipboard-data": self._process_clipboard_data,
             "clipboard-request": self._process_clipboard_request,
             "clipboard-contents": self._process_clipboard_contents,
             "clipboard-contents-none": self._process_clipboard_contents_none,
             "clipboard-pending-requests": self._process_clipboard_pending_requests,
             "clipboard-enable-selections": self._process_clipboard_enable_selections,
         }
+        if BACKWARDS_COMPATIBLE:
+            self._packet_handlers["clipboard-token"] = self._process_clipboard_token
 
     def make_proxy(self, selection: str):
         raise NotImplementedError()
@@ -243,25 +245,46 @@ class ClipboardProtocolHelperCore:
         if log.is_debug_enabled():
             log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
         remote = self.local_to_remote(proxy._selection)
-        packet: list[Any] = ["clipboard-token", remote]
-        if packet_data:
-            # append 'TARGETS' unchanged:
-            packet.append(packet_data[0])
-            # if present, the next element is the target data,
-            # which we have to convert to wire format:
-            if len(packet_data) >= 2:
-                target, dtype, dformat, data = packet_data[1]
-                wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
-                if wire_encoding:
-                    if wire_data := self._may_compress(dtype, dformat, wire_data):
-                        packet += [target, dtype, dformat, wire_encoding, wire_data]
-                        claim = proxy._can_send
-                        packet += [claim, self.local_greedy]
+        if BACKWARDS_COMPATIBLE:
+            packet: list[Any] = ["clipboard-token", remote]
+            if packet_data:
+                # append 'TARGETS' unchanged:
+                packet.append(packet_data[0])
+                # if present, the next element is the target data,
+                # which we have to convert to wire format:
+                if len(packet_data) >= 2:
+                    target, dtype, dformat, data = packet_data[1]
+                    wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
+                    if wire_encoding:
+                        if wire_data := self._may_compress(dtype, dformat, wire_data):
+                            packet += [target, dtype, dformat, wire_encoding, wire_data]
+                            claim = proxy._can_send
+                            packet += [claim, self.local_greedy]
+        else:
+            options: dict[str, PacketElement] = {
+                "claim": proxy._can_send,
+                "greedy": self.local_greedy,
+            }
+            if packet_data:
+                if targets := packet_data[0]:
+                    options["targets"] = targets
+                if len(packet_data) >= 2:
+                    target, dtype, dformat, data = packet_data[1]
+                    wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
+                    if wire_encoding:
+                        wire_data = self._may_compress(dtype, dformat, wire_data)
+                        if wire_data is not None:
+                            # Nested values cannot use the top-level Compressible marker.
+                            if isinstance(wire_data, Compressible):
+                                wire_data = wire_data.data
+                            options["data"] = {
+                                target: (dtype, dformat, wire_encoding, wire_data),
+                            }
+            packet = ["clipboard-data", remote, options]
         log("send_clipboard_token_handler %s to %s", proxy._selection, remote)
         self.send(*packet)
 
-    def _process_clipboard_token(self, packet: Packet) -> None:
-        selection = packet.get_str(1)
+    def _get_clipboard_token_proxy(self, selection: str):
         name = self.remote_to_local(selection)
         proxy = self._clipboard_proxies.get(name)
         if proxy is None:
@@ -271,11 +294,18 @@ class ClipboardProtocolHelperCore:
             if name in self.local_selections:
                 log_fn = log.warn
             log_fn("ignoring token for clipboard %r (no proxy)", name)
-            return
+            return None
         if not proxy.is_enabled():
             log.warn("ignoring token for disabled clipboard %r", name)
-            return
+            return None
         log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
+        return proxy
+
+    def _process_clipboard_token(self, packet: Packet) -> None:
+        selection = packet.get_str(1)
+        proxy = self._get_clipboard_token_proxy(selection)
+        if proxy is None:
+            return
         targets = None
         target_data = None
         if proxy._can_receive:
@@ -303,6 +333,40 @@ class ClipboardProtocolHelperCore:
             proxy._greedy_client = packet.get_bool(9)
         synchronous_client = len(packet) >= 11 and packet.get_bool(10)
         proxy.got_token(targets, target_data, claim, synchronous_client)
+
+    def _process_clipboard_data(self, packet: Packet) -> None:
+        selection = packet.get_str(1)
+        proxy = self._get_clipboard_token_proxy(selection)
+        if proxy is None:
+            return
+        options = typedict(packet.get_dict(2))
+        targets = None
+        target_data = None
+        if proxy._can_receive:
+            if "targets" in options:
+                targets = self.local_targets(options.strtupleget("targets"))
+            wire_items = options.dictget("data")
+            if wire_items:
+                target_data = {}
+                for target, item in wire_items.items():
+                    target = bytestostr(target)
+                    if not isinstance(item, (tuple, list)) or len(item) < 4:
+                        raise ValueError(f"invalid clipboard data for target {target!r}: {item!r}")
+                    dtype, dformat, wire_encoding, wire_data = item[:4]
+                    dtype = bytestostr(dtype)
+                    dformat = int(dformat)
+                    wire_encoding = bytestostr(wire_encoding)
+                    if dformat not in (8, 16, 32):
+                        raise ValueError(
+                            f"invalid format '{dformat!r}' for type {dtype!r} and wire {wire_encoding=!r}")
+                    if target and not must_discard(target):
+                        raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
+                        target_data[target] = (dtype, dformat, raw_data)
+        claim = options.boolget("claim", True)
+        proxy._greedy_client = options.boolget("greedy", proxy._greedy_client)
+        if options.boolget("token", True):
+            synchronous_client = options.boolget("synchronous", False)
+            proxy.got_token(targets, target_data, claim, synchronous_client)
 
     def local_targets(self, remote_targets: Iterable[str]) -> Sequence[str]:
         """ filter remote targets to values that can be used locally """
