@@ -239,7 +239,7 @@ class ClipboardProtocolHelperCore:
         # only send the tokens that we're actually handling:
         self.send_tokens(tuple(self._clipboard_proxies.keys()))
 
-    def _send_clipboard_token_handler(self, proxy, packet_data: tuple[PacketElement] = ()):
+    def _send_clipboard_token_handler(self, proxy, packet_data: tuple[PacketElement, ...] = ()):
         if log.is_debug_enabled():
             log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
         remote = self.local_to_remote(proxy._selection)
