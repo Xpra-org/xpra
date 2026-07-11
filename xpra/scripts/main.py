@@ -339,6 +339,77 @@ def configure_network(options) -> None:
         raise InitException("at least one valid packet encoder must be enabled")
 
 
+SECCOMP_THREADS: tuple[str, ...] = ("draw", "parse", "rfb")
+SECCOMP_ACTIONS: tuple[str, ...] = (
+    "kill", "kill_thread", "kill-thread", "kill_process", "kill-process", "errno", "log", "allow",
+)
+
+
+def parse_seccomp_option(value: str) -> dict[str, str]:
+    """
+    Convert a `--seccomp=...` option value into the environment variables
+    that gate the per-thread seccomp filters (draw / parse / rfb).
+    Returns an empty dict for an empty / "auto" value (leave the environment untouched).
+    Raises `ValueError` for invalid values.
+    """
+    value = (value or "").strip().lower()
+    if value in ("", "auto"):
+        return {}
+    env: dict[str, str] = {}
+    if value in ("no", "off", "false", "none", "0", "disable", "disabled"):
+        # force everything off (including the global fallback flag):
+        env["XPRA_SECCOMP"] = "0"
+        for thread in SECCOMP_THREADS:
+            env[f"XPRA_SECCOMP_{thread.upper()}"] = "0"
+        return env
+    if value in ("default", "strict"):
+        # enable all the filters, `default` is non-fatal (errno), `strict` kills the process:
+        action = "errno" if value == "default" else "kill_process"
+        for thread in SECCOMP_THREADS:
+            env[f"XPRA_SECCOMP_{thread.upper()}"] = "1"
+            env[f"XPRA_SECCOMP_{thread.upper()}_ACTION"] = action
+        return env
+    # explicit list of threads, ie: "draw,parse" or "draw:errno,parse:kill":
+    actions: dict[str, str] = {}
+    for part in value.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        thread, _, action = part.partition(":")
+        thread = thread.strip()
+        action = action.strip()
+        if thread not in SECCOMP_THREADS:
+            raise ValueError(f"invalid seccomp thread {thread!r}, must be one of: {csv(SECCOMP_THREADS)}")
+        if action and action not in SECCOMP_ACTIONS:
+            raise ValueError(f"invalid seccomp action {action!r}, must be one of: {csv(SECCOMP_ACTIONS)}")
+        actions[thread] = action
+    if not actions:
+        raise ValueError(f"no valid seccomp threads found in {value!r}")
+    # deliberately do not set the global `XPRA_SECCOMP` flag here:
+    # the draw filter reads it as its primary gate, so setting it would override
+    # the per-thread flags below. Enable / disable each thread explicitly instead:
+    for thread in SECCOMP_THREADS:
+        var = f"XPRA_SECCOMP_{thread.upper()}"
+        if thread in actions:
+            env[var] = "1"
+            if actions[thread]:
+                env[f"{var}_ACTION"] = actions[thread]
+        else:
+            env[var] = "0"
+    return env
+
+
+def configure_seccomp(value: str) -> None:
+    # set the seccomp environment variables that are not already set,
+    # early enough for the filter threads to pick them up when they are instantiated:
+    try:
+        env = parse_seccomp_option(value)
+    except ValueError as e:
+        raise InitException(f"invalid seccomp option: {e}") from None
+    for name, val in env.items():
+        os.environ.setdefault(name, val)
+
+
 def configure_env(env_str) -> None:
     if env_str:
         env = parse_env(env_str)
@@ -538,6 +609,7 @@ def run_mode(script_file: str, cmdline: list[str], options, args: list[str], ful
                 argv.insert(0, arg)
         return systemd_run_wrap(mode, argv, options.systemd_run_args, user=getuid() != 0)
     configure_env(options.env)
+    configure_seccomp(getattr(options, "seccomp", ""))
     configure_logging(options, mode)
     if mode not in NO_NETWORK_SUBCOMMANDS:
         configure_network(options)

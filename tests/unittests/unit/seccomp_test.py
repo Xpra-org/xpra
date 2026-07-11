@@ -64,6 +64,52 @@ class SeccompTest(unittest.TestCase):
     def test_rfb_syscalls_match_parse(self):
         self.assertEqual(seccomp_rfb.RFB_SYSCALLS, seccomp_parse.PARSE_SYSCALLS)
 
+    def test_parse_seccomp_option(self):
+        from xpra.scripts.main import parse_seccomp_option as p
+        self.assertEqual(p(""), {})
+        self.assertEqual(p("auto"), {})
+        self.assertEqual(p("no"), {
+            "XPRA_SECCOMP": "0",
+            "XPRA_SECCOMP_DRAW": "0", "XPRA_SECCOMP_PARSE": "0", "XPRA_SECCOMP_RFB": "0",
+        })
+        self.assertEqual(p("default"), {
+            "XPRA_SECCOMP_DRAW": "1", "XPRA_SECCOMP_DRAW_ACTION": "errno",
+            "XPRA_SECCOMP_PARSE": "1", "XPRA_SECCOMP_PARSE_ACTION": "errno",
+            "XPRA_SECCOMP_RFB": "1", "XPRA_SECCOMP_RFB_ACTION": "errno",
+        })
+        self.assertEqual(p("strict")["XPRA_SECCOMP_DRAW_ACTION"], "kill_process")
+        # explicit thread list disables the unlisted threads and never sets the global flag:
+        env = p("draw,parse:kill")
+        self.assertNotIn("XPRA_SECCOMP", env)
+        self.assertEqual(env["XPRA_SECCOMP_DRAW"], "1")
+        self.assertNotIn("XPRA_SECCOMP_DRAW_ACTION", env)
+        self.assertEqual(env["XPRA_SECCOMP_PARSE"], "1")
+        self.assertEqual(env["XPRA_SECCOMP_PARSE_ACTION"], "kill")
+        self.assertEqual(env["XPRA_SECCOMP_RFB"], "0")
+        for bad in ("draw,bogus", "draw:nope", "xxx"):
+            with self.assertRaises(ValueError):
+                p(bad)
+
+    def test_configure_seccomp_only_sets_unset_vars(self):
+        from xpra.scripts import main
+        keys = ("XPRA_SECCOMP", "XPRA_SECCOMP_DRAW", "XPRA_SECCOMP_DRAW_ACTION",
+                "XPRA_SECCOMP_PARSE", "XPRA_SECCOMP_PARSE_ACTION",
+                "XPRA_SECCOMP_RFB", "XPRA_SECCOMP_RFB_ACTION")
+        with patch.dict(os.environ, {}, clear=False):
+            for k in keys:
+                os.environ.pop(k, None)
+            # a value already present in the environment must be preserved:
+            os.environ["XPRA_SECCOMP_DRAW_ACTION"] = "log"
+            main.configure_seccomp("strict")
+            self.assertEqual(os.environ["XPRA_SECCOMP_DRAW"], "1")
+            self.assertEqual(os.environ["XPRA_SECCOMP_DRAW_ACTION"], "log")
+            self.assertEqual(os.environ["XPRA_SECCOMP_PARSE_ACTION"], "kill_process")
+            # empty value is a no-op:
+            for k in keys:
+                os.environ.pop(k, None)
+            main.configure_seccomp("")
+            self.assertNotIn("XPRA_SECCOMP_DRAW", os.environ)
+
     def test_get_save_to_file_gated_by_seccomp(self):
         from xpra.codecs import debug as codec_debug
         with patch.dict(os.environ, {"XPRA_SAVE_TO_FILE": "frame"}):

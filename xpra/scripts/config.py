@@ -684,6 +684,7 @@ OPTION_TYPES: dict[str, Any] = {
     "file-transfer"     : str,
     "printing"          : str,
     "headerbar"         : str,
+    "seccomp"           : str,
     "challenge-handlers": list,
     # ssl options:
     "ssl"               : str,
@@ -1167,6 +1168,7 @@ def get_defaults() -> dict[str, Any]:
         "pdf-printer"       : "",
         "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
         "debug"             : "",
+        "seccomp"           : "",
         "input-method"      : "auto",
         "audio-source"      : "",
         "html"              : "auto",

@@ -1863,6 +1863,15 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="gstreamer", default=defaults.gstreamer,
                      help="Enable GStreamer audio support."
                           " Default: '%default'.")
+    group.add_option("--seccomp", action="store",
+                     dest="seccomp", default=defaults.seccomp, metavar="MODE",
+                     help="Restrict the syscalls available to the threads that handle untrusted data,"
+                          " using Linux seccomp filters (Linux only, no effect elsewhere)."
+                          " Values: 'no', 'default' (all filters, non-fatal 'errno' action),"
+                          " 'strict' (all filters, fatal 'kill_process' action),"
+                          " or a comma-separated list of threads to filter (draw, parse, rfb)"
+                          " with an optional per-thread action (ie: 'draw:errno,parse:kill')."
+                          " Default: '%default'.")
     group.add_option("--env", action="append",
                      dest="env", default=mlist(defaults.env),
                      help="Define environment variables which will apply to this process and all subprocesses,"
