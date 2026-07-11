@@ -71,15 +71,18 @@ class OSXClipboardProxy(ClipboardProxyCore):
         self.pasteboard.clearContents()
 
     def do_emit_token(self) -> None:
-        packet_data: list[str | int | list[str]] = []
+        targets = ()
+        target_data = {}
         if self._want_targets:
             targets = self.get_targets()
             log("do_emit_token() targets=%s", targets)
-            packet_data.append(targets)
             if self._greedy_client and "TEXT" in targets:
                 if text := self.get_clipboard_text():
-                    packet_data += ["STRING", "bytes", 8, text]
-        self.send_clipboard_token_handler(self, tuple(packet_data))
+                    target_data["STRING"] = ("STRING", 8, text)
+        self.send_clipboard_token_handler(self, {
+            "targets": tuple(targets),
+            "data": target_data,
+        })
 
     def get_clipboard_text(self) -> str:
         text = self.pasteboard.stringForType_(NSStringPboardType)

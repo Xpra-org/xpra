@@ -241,45 +241,48 @@ class ClipboardProtocolHelperCore:
         # only send the tokens that we're actually handling:
         self.send_tokens(tuple(self._clipboard_proxies.keys()))
 
-    def _send_clipboard_token_handler(self, proxy, packet_data: tuple[PacketElement, ...] = ()):
+    def _send_clipboard_token_handler(self, proxy, token_data: dict[str, Any]) -> None:
         if log.is_debug_enabled():
-            log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
+            log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(token_data))
         remote = self.local_to_remote(proxy._selection)
+        targets = token_data.get("targets", ())
+        raw_items = token_data.get("data", {})
         if BACKWARDS_COMPATIBLE:
             packet: list[Any] = ["clipboard-token", remote]
-            if packet_data:
-                # append 'TARGETS' unchanged:
-                packet.append(packet_data[0])
-                # if present, the next element is the target data,
-                # which we have to convert to wire format:
-                if len(packet_data) >= 2:
-                    target, dtype, dformat, data = packet_data[1]
+            if targets or raw_items:
+                packet.append(targets)
+                # The legacy packet format can only carry one data item.
+                for target, item in raw_items.items():
+                    dtype, dformat, data = item[:3]
                     wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
                     if wire_encoding:
                         if wire_data := self._may_compress(dtype, dformat, wire_data):
                             packet += [target, dtype, dformat, wire_encoding, wire_data]
                             claim = proxy._can_send
                             packet += [claim, self.local_greedy]
+                            break
         else:
             options: dict[str, PacketElement] = {
                 "claim": proxy._can_send,
                 "greedy": self.local_greedy,
             }
-            if packet_data:
-                if targets := packet_data[0]:
-                    options["targets"] = targets
-                if len(packet_data) >= 2:
-                    target, dtype, dformat, data = packet_data[1]
-                    wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
-                    if wire_encoding:
-                        wire_data = self._may_compress(dtype, dformat, wire_data)
-                        if wire_data is not None:
-                            # Nested values cannot use the top-level Compressible marker.
-                            if isinstance(wire_data, Compressible):
-                                wire_data = wire_data.data
-                            options["data"] = {
-                                target: (dtype, dformat, wire_encoding, wire_data),
-                            }
+            if targets:
+                options["targets"] = targets
+            wire_items = {}
+            for target, item in raw_items.items():
+                dtype, dformat, data = item[:3]
+                wire_encoding, wire_data = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
+                if not wire_encoding:
+                    continue
+                wire_data = self._may_compress(dtype, dformat, wire_data)
+                if wire_data is None:
+                    continue
+                # Nested values cannot use the top-level Compressible marker.
+                if isinstance(wire_data, Compressible):
+                    wire_data = wire_data.data
+                wire_items[target] = (dtype, dformat, wire_encoding, wire_data)
+            if wire_items:
+                options["data"] = wire_items
             packet = ["clipboard-data", remote, options]
         log("send_clipboard_token_handler %s to %s", proxy._selection, remote)
         self.send(*packet)

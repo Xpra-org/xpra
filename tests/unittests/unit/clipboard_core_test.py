@@ -58,7 +58,10 @@ class ClipboardCoreTest(unittest.TestCase):
         helper.local_greedy = True
         helper._send_clipboard_token_handler(
             proxy,
-            (("UTF8_STRING",), ("UTF8_STRING", "STRING", 8, b"hello")),
+            {
+                "targets": ("UTF8_STRING",),
+                "data": {"UTF8_STRING": ("STRING", 8, b"hello")},
+            },
         )
         self.assertEqual(
             packets,
@@ -67,13 +70,30 @@ class ClipboardCoreTest(unittest.TestCase):
         )
         self.assertIn("clipboard-token", helper._packet_handlers)
 
+    def test_legacy_packet_uses_first_data_item(self):
+        helper, proxy, packets = self.make_helper(True)
+        helper._send_clipboard_token_handler(proxy, {
+            "targets": ("UTF8_STRING", "image/png"),
+            "data": {
+                "UTF8_STRING": ("STRING", 8, b"hello"),
+                "image/png": ("image/png", 8, b"PNG"),
+            },
+        })
+        self.assertEqual(packets, [(
+            "clipboard-token", "CLIPBOARD", ("UTF8_STRING", "image/png"),
+            "UTF8_STRING", "STRING", 8, "bytes", b"hello", True, False,
+        )])
+
     def test_modern_clipboard_data_packet(self):
         helper, proxy, packets = self.make_helper(False)
         helper.local_greedy = True
         payload = b"hello" * 200
         helper._send_clipboard_token_handler(
             proxy,
-            (("UTF8_STRING",), ("UTF8_STRING", "STRING", 8, payload)),
+            {
+                "targets": ("UTF8_STRING",),
+                "data": {"UTF8_STRING": ("STRING", 8, payload)},
+            },
         )
         self.assertEqual(len(packets), 1)
         packet_type, selection, options = packets[0]
@@ -95,12 +115,27 @@ class ClipboardCoreTest(unittest.TestCase):
 
     def test_modern_packet_omits_empty_targets(self):
         helper, proxy, packets = self.make_helper(False)
-        helper._send_clipboard_token_handler(proxy, ((),))
+        helper._send_clipboard_token_handler(proxy, {"targets": (), "data": {}})
         self.assertEqual(packets, [(
             "clipboard-data",
             "CLIPBOARD",
             {"claim": True, "greedy": False},
         )])
+
+    def test_modern_packet_sends_multiple_data_items(self):
+        helper, proxy, packets = self.make_helper(False)
+        helper._send_clipboard_token_handler(proxy, {
+            "targets": ("UTF8_STRING", "image/png"),
+            "data": {
+                "UTF8_STRING": ("STRING", 8, b"hello", "future-field"),
+                "image/png": ("image/png", 8, b"PNG"),
+            },
+        })
+        options = packets[0][2]
+        self.assertEqual(options["data"], {
+            "UTF8_STRING": ("STRING", 8, "bytes", b"hello"),
+            "image/png": ("image/png", 8, "bytes", b"PNG"),
+        })
 
     def test_modern_packet_multiple_targets(self):
         helper, proxy, _packets = self.make_helper(False)

@@ -105,9 +105,12 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     # forward local requests to the remote clipboard:
     ############################################################################
     def schedule_emit_token(self, min_delay=0) -> None:
-        def send_token(*token_data):
+        def send_token(targets=(), target_data=None):
             self._have_token = False
-            self.emit("send-clipboard-token", token_data)
+            self.emit("send-clipboard-token", {
+                "targets": tuple(targets),
+                "data": target_data or {},
+            })
 
         if not (self._want_targets or self._greedy_client):
             send_token()
@@ -126,9 +129,11 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             if text := self.clipboard.wait_for_text():
                 # should verify the target is actually utf8...
                 text_target = text_targets[0]
-                send_token(targets, (text_target, "UTF8_STRING", 8, text))
+                send_token(targets, {
+                    text_target: ("UTF8_STRING", 8, text),
+                })
                 return
-        send_token(text_targets)
+        send_token(targets)
 
     def owner_change(self, clipboard, event) -> None:
         log("owner_change(%s, %s) window=%s, selection=%s",

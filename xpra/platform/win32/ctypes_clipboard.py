@@ -404,7 +404,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
     def do_emit_token(self):
         if not self._greedy_client:
             # send just the token
-            self.send_clipboard_token_handler(self)
+            self.send_clipboard_token_handler(self, {"targets": (), "data": {}})
             return
 
         # greedy clients want data with the token,
@@ -424,8 +424,12 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     target = "image/png"
 
             def got_contents(dtype: str, dformat: int, data: Any) -> None:
-                packet_data = (targets or [target], (target, dtype, dformat, data))
-                self.send_clipboard_token_handler(self, packet_data)
+                self.send_clipboard_token_handler(self, {
+                    "targets": tuple(targets or (target,)),
+                    "data": {
+                        target: (dtype, dformat, data),
+                    },
+                })
 
             self.get_contents(target, got_contents)
 

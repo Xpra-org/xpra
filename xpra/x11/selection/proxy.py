@@ -413,15 +413,14 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
         if not (self._want_targets or self._greedy_client):
             self._have_token = False
-            self.emit("send-clipboard-token", ())
+            self.emit("send-clipboard-token", {"targets": (), "data": {}})
             return
 
         # we need the targets, and the target data for greedy clients:
 
         def send_token_with_targets() -> None:
-            token_data = (self.targets, )
             self._have_token = False
-            self.emit("send-clipboard-token", token_data)
+            self.emit("send-clipboard-token", {"targets": tuple(self.targets), "data": {}})
 
         def with_targets(otargets: Sequence[str]) -> None:
             if not self._greedy_client:
@@ -440,9 +439,13 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 if not (dtype and dformat and data):
                     send_token_with_targets()
                     return
-                token_data = (targets, (target, dtype, dformat, data))
                 self._have_token = False
-                self.emit("send-clipboard-token", token_data)
+                self.emit("send-clipboard-token", {
+                    "targets": tuple(otargets),
+                    "data": {
+                        target: (dtype, dformat, data),
+                    },
+                })
 
             self.get_contents(target, got_chosen_target)
 
