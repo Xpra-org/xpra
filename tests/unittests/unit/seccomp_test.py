@@ -41,6 +41,21 @@ class SeccompTest(unittest.TestCase):
         self.assertTrue(set(seccomp_draw.DRAW_SYSCALLS).issubset(set(seccomp_parse.PARSE_SYSCALLS)))
         self.assertIn("recvfrom", seccomp_parse.PARSE_SYSCALLS)
 
+    def test_draw_blocks_file_syscalls(self):
+        # the draw filter must not allow opening / creating / deleting files:
+        for syscall in seccomp_draw.FILE_SYSCALLS:
+            self.assertNotIn(syscall, seccomp_draw.DRAW_SYSCALLS)
+        self.assertIn("openat", seccomp_draw.FILE_SYSCALLS)
+        # the draw list is exactly the baseline minus the file syscalls:
+        self.assertEqual(set(seccomp_draw.DRAW_SYSCALLS),
+                         set(seccomp_draw.BASE_SYSCALLS) - set(seccomp_draw.FILE_SYSCALLS))
+
+    def test_parse_and_rfb_keep_file_syscalls(self):
+        # parse / rfb keep file access (larger lazy-import surface in packet handlers):
+        for syscalls in (seccomp_parse.PARSE_SYSCALLS, seccomp_rfb.RFB_SYSCALLS):
+            self.assertIn("openat", syscalls)
+            self.assertIn("open", syscalls)
+
     def test_install_rfb_read_thread_noop_when_disabled(self):
         with patch.object(seccomp_rfb, "is_enabled", return_value=False):
             self.assertFalse(seccomp_rfb.install_thread())

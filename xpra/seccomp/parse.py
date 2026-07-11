@@ -10,7 +10,7 @@ import os
 
 from xpra.log import Logger
 from xpra.seccomp import is_available
-from xpra.seccomp.draw import DRAW_SYSCALLS
+from xpra.seccomp.draw import BASE_SYSCALLS
 from xpra.util.env import envbool
 
 log = Logger("seccomp")
@@ -21,14 +21,15 @@ ACTION_ENV = "XPRA_SECCOMP_PARSE_ACTION"
 # so that `XPRA_SECCOMP_DRAW=1` does not silently enable it:
 ENABLED = envbool("XPRA_SECCOMP_PARSE", envbool("XPRA_SECCOMP", False))
 
-# the parse thread reads from the socket, decrypts, decompresses and decodes packets:
-# it needs everything the draw thread does, plus:
+# the parse thread reads from the socket, decrypts, decompresses and decodes packets.
+# it uses the permissive baseline (which keeps file access, since packet handlers
+# dispatched inline here lazily import a lot of code - unlike the draw thread), plus:
 # * `recvfrom` - what `socket.recv_into` maps to on x86_64
 # * `getsockname` / `getsockopt` - read-only socket introspection used when
 #   gathering connection info (peer credentials, unix socket path, ...)
 # * `sysinfo` - read-only system statistics, used by `os.getloadavg()` in the
 #   server-side ping handler (which stays on the parse thread):
-PARSE_SYSCALLS: tuple[str, ...] = DRAW_SYSCALLS + (
+PARSE_SYSCALLS: tuple[str, ...] = BASE_SYSCALLS + (
     "recvfrom",
     "getsockname",
     "getsockopt",

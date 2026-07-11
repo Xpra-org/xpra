@@ -15,7 +15,11 @@ log = Logger("seccomp")
 
 ACTION_ENV = "XPRA_SECCOMP_DRAW_ACTION"
 
-DRAW_SYSCALLS: tuple[str, ...] = (
+# permissive baseline shared with the network parse and rfb filters.
+# those threads dispatch many packet handlers (hello, audio, encodings, ...)
+# with a large lazy-import surface, so they keep the ability to open files -
+# see `xpra/seccomp/parse.py` and `xpra/seccomp/rfb.py`:
+BASE_SYSCALLS: tuple[str, ...] = (
     "access",
     "arch_prctl",
     "brk",
@@ -96,6 +100,28 @@ DRAW_SYSCALLS: tuple[str, ...] = (
     "clock_nanosleep",
     "restart_syscall",
 )
+
+# the draw thread only decodes images that are already in memory: the decoders
+# it uses are pre-loaded and pre-warmed by the codec selftest (XPRA_CODEC_SELFTEST,
+# on by default) before this thread starts, and hardware decoders are disabled
+# under seccomp (see `xpra/client/subsystem/encoding.py`). So it never needs to
+# open, create or delete files - blocking those confines a decoder bug from
+# touching the filesystem. (Debug image dumping via XPRA_SAVE_TO_FILE is turned
+# off under seccomp, see `xpra/codecs/debug.py`.)
+FILE_SYSCALLS: tuple[str, ...] = (
+    "open",
+    "openat",
+    "unlink",
+    "unlinkat",
+    "mkdir",
+    "rename",
+    "renameat",
+    "renameat2",
+    "ftruncate",
+    "fallocate",
+)
+
+DRAW_SYSCALLS: tuple[str, ...] = tuple(s for s in BASE_SYSCALLS if s not in FILE_SYSCALLS)
 
 
 def install_thread() -> bool:
