@@ -203,6 +203,22 @@ def get_client_server_last_info(client) -> dict:
     return getattr(client, "server_last_info", {}) or {}
 
 
+def get_client_subsystem(client, name: str):
+    get_subsystem = getattr(client, "get_subsystem", None)
+    return get_subsystem(name) if get_subsystem else None
+
+
+def subsystem_attr(client, subsystem: str, attr: str, default=None):
+    sub = get_client_subsystem(client, subsystem)
+    if sub is not None and hasattr(sub, attr):
+        return getattr(sub, attr)
+    return getattr(client, attr, default)
+
+
+def remote_attr(client, attr: str, default=None):
+    return subsystem_attr(client, "remote-info", attr, default)
+
+
 def get_server_platform_name(client) -> str:
     server_info: dict = get_client_server_last_info(client)
     pinfo = server_info.get("server", {}).get("platform", {})
@@ -210,7 +226,8 @@ def get_server_platform_name(client) -> str:
     def plat(key=""):
         # we can get the platform information from the server info mixin,
         # or from the server last info:
-        return pinfo.get(key) or getattr(client, f"_remote_platform{key}", "")
+        attr = "_remote_platform" if not key else f"_remote_platform_{key}"
+        return pinfo.get(key) or remote_attr(client, attr, "")
 
     return make_os_str(
         plat(""),
@@ -228,7 +245,7 @@ def get_server_builddate(client) -> str:
     build_info = get_client_server_last_info(client).get("server", {}).get("build", {})
 
     def cattr(name):
-        return build_info.get(name, "") or getattr(client, f"_remote_build_{name}", "")
+        return build_info.get(name, "") or remote_attr(client, f"_remote_build_{name}", "")
 
     return make_datetime(cattr("date"), cattr("time"))
 
@@ -244,13 +261,13 @@ def get_local_builddate() -> str:
 
 
 def get_server_version(client) -> str:
-    v = getattr(client, "_remote_version")
+    v = remote_attr(client, "_remote_version", "")
     return make_version_str(v or "unknown")
 
 
 def get_server_revision_str(client) -> str:
     def cattr(name):
-        return getattr(client, name, "")
+        return remote_attr(client, name, "")
 
     build_info = get_client_server_last_info(client).get("server", {}).get("build", {})
     if build_info:
@@ -410,7 +427,40 @@ class SessionInfo(Gtk.Window):
         add_close_accel(self, self.close)
 
     def get_client_subsystem(self, name: str):
-        return self.client.get_subsystem(name)
+        return get_client_subsystem(self.client, name)
+
+    def get_subsystem_attr(self, subsystem: str, attr: str, default=None):
+        return subsystem_attr(self.client, subsystem, attr, default)
+
+    def get_remote_attr(self, attr: str, default=None):
+        return remote_attr(self.client, attr, default)
+
+    def get_window_pixel_counter(self) -> tuple:
+        return tuple(self.get_subsystem_attr("window", "pixel_counter", ()))
+
+    def get_windows_enabled(self) -> bool:
+        default = getattr(self.client, "windows_enabled", False)
+        return bool(self.get_subsystem_attr("window", "windows_enabled", default))
+
+    def send_ping(self) -> None:
+        if client_ping := getattr(self.client, "send_ping", None):
+            client_ping()
+            return
+        if ping := self.get_client_subsystem("ping"):
+            ping.send_ping()
+
+    def send_info_request(self, *categories: str) -> None:
+        if client_info_request := getattr(self.client, "send_info_request", None):
+            client_info_request(*categories)
+            return
+        if info_request := self.get_client_subsystem("info-request"):
+            info_request.send_info_request(*categories)
+
+    def get_core_encodings(self) -> Sequence[str]:
+        if client_get_core_encodings := getattr(self.client, "get_core_encodings", None):
+            return client_get_core_encodings()
+        encoding = self.get_client_subsystem("encoding")
+        return encoding.get_core_encodings() if encoding else ()
 
     def get_ping_latencies(self) -> tuple:
         # the `ping` subsystem is not present on standalone monitor clients (`SessionInfoClient`):
@@ -582,7 +632,7 @@ class SessionInfo(Gtk.Window):
         conn = self.connection
         if self.is_closed or not conn:
             return False
-        self.client.send_ping()
+        self.send_ping()
         self.last_populate_time = monotonic()
 
         if self.show_client:
@@ -601,7 +651,7 @@ class SessionInfo(Gtk.Window):
         if self.show_client and features.window:
             # count pixels in the last second:
             since = monotonic() - 1
-            decoded = [0] + [pixels for _, t, pixels in self.client.pixel_counter if t > since]
+            decoded = [0] + [pixels for _, t, pixels in self.get_window_pixel_counter() if t > since]
             self.pixel_in_data.append(sum(decoded))
 
         # update latency values
@@ -652,7 +702,7 @@ class SessionInfo(Gtk.Window):
             if spl and cpl:
                 self.avg_ping_latency.append(round(sum(spl + cpl) / len(spl + cpl)))
             if features.window and self.show_client:
-                pc = tuple(self.client.pixel_counter)
+                pc = self.get_window_pixel_counter()
                 if pc:
                     tsize = 0
                     ttime = 0
@@ -913,10 +963,10 @@ class SessionInfo(Gtk.Window):
 
         se = ()
         if features.encoding:
-            se = self.client.server_core_encodings
+            se = self.get_subsystem_attr("encoding", "server_core_encodings", ())
         self.server_encodings_label.set_text(encliststr(se))
         if self.show_client and features.encoding:
-            self.client_encodings_label.set_text(encliststr(self.client.get_core_encodings()))
+            self.client_encodings_label.set_text(encliststr(self.get_core_encodings()))
         else:
             self.client_encodings_label.set_text("n/a")
 
@@ -924,28 +974,30 @@ class SessionInfo(Gtk.Window):
         if self.show_client:
             self.client_packet_encoders_label.set_text(csv(get_enabled_encoders()))
         if self.show_server:
-            self.server_packet_encoders_label.set_text(csv(self.client.server_packet_encoders))
+            self.server_packet_encoders_label.set_text(
+                csv(self.get_subsystem_attr("remote-info", "server_packet_encoders", ()))
+            )
 
         from xpra.net.compression import get_enabled_compressors
         if self.show_client:
             self.client_packet_compressors_label.set_text(csv(get_enabled_compressors()))
         if self.show_server:
-            self.server_packet_compressors_label.set_text(csv(self.client.server_compressors))
+            self.server_packet_compressors_label.set_text(
+                csv(self.get_subsystem_attr("network", "server_compressors", ()))
+            )
         return False
 
     def add_connection_tab(self) -> None:
         self.grid_tab("connect.png", _("Connection"), self.populate_connection)
 
-        def cattr(name) -> str:
-            return getattr(self.client, name, "")
-
         if self.connection:
             self.connection.target = self.label_row(_("Server Endpoint"))
-        if features.display and self.client.server_display:
-            self.label_row(_("Server Display"), prettify_plug_name(self.client.server_display))
-        self.label_row(_("Server Hostname"), cattr("_remote_hostname"))
-        if cattr("_remote_platform"):
-            self.label_row(_("Server Platform"), cattr("_remote_platform"))
+        server_display = self.get_subsystem_attr("display", "server_display", "")
+        if features.display and server_display:
+            self.label_row(_("Server Display"), prettify_plug_name(server_display))
+        self.label_row(_("Server Hostname"), self.get_remote_attr("_remote_hostname", ""))
+        if self.get_remote_attr("_remote_platform", ""):
+            self.label_row(_("Server Platform"), self.get_remote_attr("_remote_platform", ""))
         self.server_load_label = self.label_row(_("Server Load"))
         self.server_load_label.set_tooltip_text(_("Average over 1, 5 and 15 minutes"))
         self.session_started_label = self.label_row(_("Session Duration"))
@@ -973,10 +1025,12 @@ class SessionInfo(Gtk.Window):
         self.microphone_label, self.microphone_details = add_audio_row(_("Microphone"))
 
     def populate_connection(self) -> bool:
-        if self.client.server_load:
-            self.server_load_label.set_text("  ".join("%.1f" % (x / 1000.0) for x in self.client.server_load))
-        if self.client.server_start_time > 0:
-            settimedeltastr(self.session_started_label, self.client.server_start_time)
+        server_load = self.get_subsystem_attr("ping", "server_load", ())
+        if server_load:
+            self.server_load_label.set_text("  ".join("%.1f" % (x / 1000.0) for x in server_load))
+        server_start_time = self.get_subsystem_attr("remote-info", "server_start_time", 0)
+        if server_start_time > 0:
+            settimedeltastr(self.session_started_label, server_start_time)
         else:
             self.session_started_label.set_text("unknown")
         settimedeltastr(self.session_connected_label, self.client.start_time)
@@ -1110,7 +1164,7 @@ class SessionInfo(Gtk.Window):
             _("Client Latency (ms)"),
             _("The time it takes for the client to respond to pings, as measured by the server"),
         )
-        if not features.window or not self.client.windows_enabled:
+        if not features.window or not self.get_windows_enabled():
             return
         self.batch_labels = maths_labels(
             _("Batch Delay (MPixels / ms)"),
@@ -1174,7 +1228,7 @@ class SessionInfo(Gtk.Window):
             # don't repopulate more than every second
             return True
         self.last_populate_statistics = monotonic()
-        self.client.send_info_request()
+        self.send_info_request()
 
         server_latency, client_latency = self.get_ping_latencies()
         if server_latency:
@@ -1183,7 +1237,7 @@ class SessionInfo(Gtk.Window):
         if client_latency:
             cpl = tuple(int(1000 * x[1]) for x in tuple(client_latency))
             setlabels(self.client_latency_labels, cpl)
-        if features.window and self.client.windows_enabled:
+        if features.window and self.get_windows_enabled():
             setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
             setall(self.damage_labels, self.values_from_info("damage_out_latency", "damage.out_latency"))
             setall(self.quality_labels, self.all_values_from_info("quality", "encoding.quality"))
@@ -1193,12 +1247,13 @@ class SessionInfo(Gtk.Window):
             rps = []
             pps = []
             decoding_latency = []
-            if self.client.pixel_counter:
+            pixel_counter = self.get_window_pixel_counter()
+            if pixel_counter:
                 min_time = 0.0
                 max_time = 0.0
                 regions_per_second = {}
                 pixels_per_second = {}
-                for start_time, end_time, size in self.client.pixel_counter:
+                for start_time, end_time, size in pixel_counter:
                     decoding_latency.append(int(1000.0 * (end_time - start_time)))
                     region_sizes.append(size)
                     if min_time == 0.0 or min_time > end_time:
@@ -1352,7 +1407,7 @@ class SessionInfo(Gtk.Window):
     def populate_graphs(self, *_args) -> bool:
         # older servers have 'batch' at top level,
         # newer servers store it under client
-        self.client.send_info_request("network", "damage", "state", "batch", "client")
+        self.send_info_request("network", "damage", "state", "batch", "client")
         box = self.tab_box
         h = box.get_preferred_height()[0]
         bh = self.tab_button_box.get_preferred_height()[0]
@@ -1396,7 +1451,7 @@ class SessionInfo(Gtk.Window):
             else:
                 labels += [_("recv") + " %sb/s" % unit(net_in_scale)]
                 datasets += [net_in_data]
-        if features.window and SHOW_PIXEL_STATS and self.client.windows_enabled:
+        if features.window and SHOW_PIXEL_STATS and self.get_windows_enabled():
             pixel_scale, in_pixels = values_to_scaled_values(tuple(
                 self.pixel_in_data)[3:N_SAMPLES + 4], min_scaled_value=100)
             datasets.append(in_pixels)
