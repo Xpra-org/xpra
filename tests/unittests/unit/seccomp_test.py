@@ -10,6 +10,7 @@ from unittest.mock import patch
 from xpra import seccomp
 from xpra.client.subsystem import encoding
 from xpra.seccomp import draw as seccomp_draw
+from xpra.seccomp import parse as seccomp_parse
 
 
 class SeccompTest(unittest.TestCase):
@@ -30,6 +31,14 @@ class SeccompTest(unittest.TestCase):
     def test_install_draw_thread_noop_when_disabled(self):
         with patch.object(seccomp, "is_enabled", return_value=False):
             self.assertFalse(seccomp_draw.install_thread())
+
+    def test_install_parse_thread_noop_when_disabled(self):
+        with patch.object(seccomp_parse, "is_enabled", return_value=False):
+            self.assertFalse(seccomp_parse.install_thread())
+
+    def test_parse_syscalls_superset_of_draw(self):
+        self.assertTrue(set(seccomp_draw.DRAW_SYSCALLS).issubset(set(seccomp_parse.PARSE_SYSCALLS)))
+        self.assertIn("recvfrom", seccomp_parse.PARSE_SYSCALLS)
 
 
 if __name__ == "__main__":

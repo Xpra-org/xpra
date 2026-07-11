@@ -334,4 +334,8 @@ class Challenge(StubClientSubsystem):
         self.client.send_hello(challenge_response, client_salt)
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("challenge")
+        # dispatch on the main thread: `_process_challenge` spawns the
+        # "call-challenge-handlers" worker, and we don't want that worker to
+        # inherit the network parse thread's seccomp filter (auth handlers may
+        # spawn subprocesses / read files) - see xpra/seccomp/parse.py
+        self.add_packets("challenge", main_thread=True)

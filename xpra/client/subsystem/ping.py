@@ -188,7 +188,10 @@ class PingClient(StubClientSubsystem):
             sid = packet.get_str(3)
         l1, l2, l3 = 0, 0, 0
         if PING_DETAILS:
-            l1, l2, l3 = getloadavg()
+            try:
+                l1, l2, l3 = getloadavg()
+            except OSError:
+                pass
         try:
             sl = self.server_latency[-1][1]
         except IndexError:

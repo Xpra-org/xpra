@@ -38,7 +38,7 @@ from xpra.net.common import (
     ConnectionClosedException, may_log_packet, no_packet,
     Packet, NetPacketType, PacketElement, BACKWARDS_COMPATIBLE,
 )
-from xpra.net.constants import MAX_PACKET_SIZE
+from xpra.net.constants import MAX_PACKET_SIZE, SOCKET_TYPES
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net.compression import (
@@ -104,6 +104,26 @@ class PacketReadInfo:
 @dataclass
 class ReceiveState:
     raw_packets: dict[int, SizedBuffer] = field(default_factory=dict)
+
+
+def install_parse_thread_seccomp(socktype: str) -> None:
+    # install the network parse thread seccomp filter (thread-local, runs once at thread start)
+    # this is a no-op unless enabled via the `XPRA_SECCOMP_PARSE` / `XPRA_SECCOMP` environment variables
+    sclog = Logger("seccomp")
+    # only sandbox real network connections, which carry untrusted input:
+    # internal subprocess-wrapper pipes (audio, ...) are trusted and their handlers
+    # legitimately spawn subprocesses / emit signals inline on this thread
+    if socktype not in SOCKET_TYPES:
+        sclog("not installing parse thread seccomp filter for %r connection", socktype)
+        return
+    try:
+        from xpra.seccomp import parse as seccomp_parse
+    except ImportError:
+        return
+    try:
+        seccomp_parse.install_thread()
+    except Exception:
+        sclog.error("Error installing parse thread seccomp filter", exc_info=True)
 
 
 class SocketProtocol:
@@ -976,6 +996,7 @@ class SocketProtocol:
 
     def _read_parse_thread_loop(self) -> None:
         log("read_parse_thread_loop starting")
+        install_parse_thread_seccomp(getattr(self._conn, "socktype", ""))
         try:
             self.do_read_parse_thread_loop()
         except Exception as e:
