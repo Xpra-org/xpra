@@ -45,6 +45,20 @@ def check_wid(wid) -> bool:
     return True
 
 
+def install_rfb_read_thread_seccomp() -> None:
+    # sandbox the RFB read thread once the handshake / authentication / TLS upgrade
+    # is complete and we enter steady-state framebuffer parsing - see seccomp.md:
+    sclog = Logger("seccomp")
+    try:
+        from xpra.seccomp import rfb as seccomp_rfb
+    except ImportError:
+        return
+    try:
+        seccomp_rfb.install_thread()
+    except Exception:
+        sclog.error("Error installing rfb read thread seccomp filter", exc_info=True)
+
+
 class RFBClientProtocol(RFBProtocol):
 
     def __init__(self, conn,
@@ -531,6 +545,9 @@ class RFBClientProtocol(RFBProtocol):
         }
         client_properties = {}
         self._process_packet_cb(self, Packet("new-window", WID, 0, 0, w, h, metadata, client_properties))
+        # from here on this thread only parses (untrusted) framebuffer updates,
+        # so it is safe to lock it down with a seccomp filter:
+        install_rfb_read_thread_seccomp()
         self._packet_parser = self._parse_rfb_packet
         self.send_set_pixel_format()
         self.send_set_encodings()

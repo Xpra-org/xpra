@@ -11,6 +11,7 @@ from xpra import seccomp
 from xpra.client.subsystem import encoding
 from xpra.seccomp import draw as seccomp_draw
 from xpra.seccomp import parse as seccomp_parse
+from xpra.seccomp import rfb as seccomp_rfb
 
 
 class SeccompTest(unittest.TestCase):
@@ -39,6 +40,13 @@ class SeccompTest(unittest.TestCase):
     def test_parse_syscalls_superset_of_draw(self):
         self.assertTrue(set(seccomp_draw.DRAW_SYSCALLS).issubset(set(seccomp_parse.PARSE_SYSCALLS)))
         self.assertIn("recvfrom", seccomp_parse.PARSE_SYSCALLS)
+
+    def test_install_rfb_read_thread_noop_when_disabled(self):
+        with patch.object(seccomp_rfb, "is_enabled", return_value=False):
+            self.assertFalse(seccomp_rfb.install_thread())
+
+    def test_rfb_syscalls_match_parse(self):
+        self.assertEqual(seccomp_rfb.RFB_SYSCALLS, seccomp_parse.PARSE_SYSCALLS)
 
 
 if __name__ == "__main__":
