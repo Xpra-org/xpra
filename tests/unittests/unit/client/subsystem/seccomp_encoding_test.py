@@ -27,11 +27,12 @@ class EncodingSeccompTest(unittest.TestCase):
             csc_modules=(),
         )
         client.filter_video_decoder_options = lambda: ("all", "no-nvdec", "no-vpl")
-        with patch.object(encoding, "sleep"), \
-             patch.object(encoding, "load_codec") as load_codec, \
+        with patch.object(encoding, "load_codec") as load_codec, \
              patch.object(encoding, "getVideoHelper", return_value=helper), \
              patch("xpra.seccomp.is_enabled", return_value=True):
-            encoding.Encodings.load_all_codecs(client)
+            # `do_load_all_codecs` holds the actual loading logic; `load_all_codecs`
+            # is just the once-only lock/event wrapper around it:
+            encoding.Encodings.do_load_all_codecs(client)
         loaded = [call.args[0] for call in load_codec.call_args_list]
         self.assertIn("dec_jpeg", loaded)
         self.assertIn("dec_webp", loaded)
