@@ -508,7 +508,9 @@ class ChildCommandServer(StubSubsystem):
         if COMMAND_SIGNALS:
             self.add_packets("command-signal")
         if self.start_new_commands:
-            self.add_packets(f"{ChildCommandServer.PREFIX}-start")
+            # starting a new command spawns a subprocess, so run it on the main thread
+            # rather than inline on the network parse thread:
+            self.add_packets(f"{ChildCommandServer.PREFIX}-start", main_thread=True)
             self.add_legacy_alias("start-command", f"{ChildCommandServer.PREFIX}-start")
 
     #########################################

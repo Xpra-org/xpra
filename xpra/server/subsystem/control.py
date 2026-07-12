@@ -89,7 +89,9 @@ class ControlHandler(StubSubsystem):
         log("command request returned: %s (%s)", code, msg)
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("control-request")
+        # control commands may spawn subprocesses or do file I/O, so run them on the
+        # main thread rather than inline on the network parse thread:
+        self.add_packets("control-request", main_thread=True)
         self.add_legacy_alias("command_request", "control-request")
 
     #########################################

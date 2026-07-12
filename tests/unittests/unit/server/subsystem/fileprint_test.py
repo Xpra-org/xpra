@@ -84,6 +84,9 @@ class FileServerBehaviorTest(unittest.TestCase):
             remote_file_transfer=True,
             printing=True,
             remote_printing=True,
+            # run scheduled file work inline (synchronously) so the tests can assert
+            # on `send_file` directly, without a real file worker thread / main loop:
+            schedule_file_io=lambda fn, *args: fn(*args),
             send_file=MagicMock(),
             send_open_url=MagicMock(return_value=True),
             notify_client=MagicMock(),

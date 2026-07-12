@@ -7,7 +7,6 @@
 # pylint: disable-msg=E1101
 
 import os.path
-import hashlib
 from typing import Any
 from collections.abc import Sequence
 
@@ -210,19 +209,16 @@ class PrinterServer(StubSubsystem):
         log("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data),
                                   source_uuid, title, printer, no_copies, print_options))
         log("process_print: got %s bytes for file %s", len(file_data), filename)
-        # parse the print options:
-        hu = hashlib.sha256()
-        hu.update(file_data)
-        log("sha1 digest: %s", hu.hexdigest())
+        # `do_send_file` computes the sha256 itself (per client), so we don't hash here:
         options = {
             "printer": printer,
             "title": title,
             "copies": no_copies,
             "options": print_options,
-            "sha256": hu.hexdigest(),
         }
         log("parsed printer options: %s", options)
         if SAVE_PRINT_JOBS:
+            # a debug aid, off by default: this write stays on the calling thread
             _save_print_job(filename, file_data)
 
         sent = 0
@@ -245,11 +241,14 @@ class PrinterServer(StubSubsystem):
             if printer not in ss.printers:
                 log.warn("Warning: client %s does not have a '%s' printer", ss.uuid, printer)
                 continue
-            log("'%s' sent to %s for printing on '%s'", title or filename, ss, printer)
-            if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
-                sent += 1
+            log("'%s' scheduled to %s for printing on '%s'", title or filename, ss, printer)
+            # hash and compress the job on the client's file worker thread, off the
+            # network parse thread (each client gets its own copy of the options):
+            ss.schedule_file_io(ss.send_file, filename, mimetype, file_data, len(file_data),
+                                True, True, dict(options))
+            sent += 1
         unit_str, v = to_std_unit(len(file_data), unit=1024)
-        message = "'%s' (%i%sB) sent to %i clients for printing" % (title or filename, v, unit_str, sent)
+        message = "'%s' (%i%sB) scheduled to %i clients for printing" % (title or filename, v, unit_str, sent)
         log(message)
         return ExitCode.OK if sent > 0 else ExitCode.REMOTE_ERROR, message
 
@@ -272,5 +271,7 @@ class PrinterServer(StubSubsystem):
         if self.file_transfer.printing:
             self.add_legacy_alias("printers", "print-devices")
             self.add_legacy_alias("print", "print-file")
-            self.add_packets("print-devices",
-                             "print-file")
+            # `print-devices` configures virtual printers (spawns `lpadmin`), so it
+            # runs on the main thread rather than inline on the network parse thread:
+            self.add_packets("print-devices", main_thread=True)
+            self.add_packets("print-file")

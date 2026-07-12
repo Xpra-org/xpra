@@ -295,6 +295,11 @@ filter:
 | `file-ack-chunk` | compresses and sends the next outgoing chunk | Moved to the file worker thread |
 | `file-data-response` | ACCEPT: hash/compress and send; OPEN: open a file/URL locally via `subprocess.Popen` | Hash/compress → worker thread; OPEN's `subprocess.Popen` → main thread |
 | `file-request` (server) | reads a requested file from disk, then sends it | Moved to the file worker thread |
+| `print-file` (server) | forwards a print job to clients (hash/compress) | Per-client send moved to the file worker thread |
+| `print-devices` (server) | configures virtual printers, spawns `lpadmin` | Moved to the main thread (`main_thread=True`) |
+| `command-start` (server) | starts a new command via `subprocess.Popen` | Moved to the main thread (`main_thread=True`) |
+| `control-request` (server) | runs a control command (may fork/exec, do file I/O) | Moved to the main thread (`main_thread=True`) |
+| `shell-exec` (server) | runs arbitrary Python (`exec`) - gated by `--shell` | Off by default; grants RCE when enabled (see below) |
 | `challenge` | starts the auth worker (may fork/exec, read files) | Kept off-thread (`main_thread=True`) |
 | `audio-data` / keepalive | sequencing + delegation to the audio subprocess | Safe on the parse thread |
 | `encoding-set`, `server-event`, `logging-event` | update client state / log | Safe on the parse thread |
@@ -302,8 +307,11 @@ filter:
 
 Handlers already moved off the parse thread (onto the UI/main thread) include
 `open-url`, `notification-*`, `file-data-request`, and the command-client
-`display-*` / `shell-reply` handlers. With these moves, no file-transfer handler
-does a file or `execve` syscall on the parse thread.
+`display-*` / `shell-reply` handlers. With these moves, no handler that spawns a
+subprocess or does file I/O runs inline on the parse thread - except `shell-exec`,
+which is off by default and, when enabled with `--shell=yes`, hands the client
+arbitrary code execution anyway (a far larger hole than any parse-thread syscall
+gap): do not enable it on a sandboxed deployment.
 
 ### File worker thread
 
@@ -317,7 +325,9 @@ that thread:
   `write` / `unlink`);
 * `file-ack-chunk` and `file-data-response` (ACCEPT) - compress / hash the
   outgoing data;
-* `file-request` (server) - read the requested file from disk before sending it.
+* `file-request` (server) - read the requested file from disk before sending it;
+* `print-file` (server) - forward a print job to each client (hash / compress),
+  scheduled on that client's worker.
 
 The `file-data-response` OPEN fallback (open a file/URL at this end) instead uses
 `GLib.idle_add` to run its `subprocess.Popen` on the main thread, mirroring
@@ -338,11 +348,12 @@ work inline on the parse thread instead (the previous behaviour).
 
 ## Future work
 
-* Parse thread: walk the remaining non-file inline handlers with
-  `XPRA_SECCOMP_PARSE_ACTION=errno` and, per handler, either allow a benign
-  read-only syscall or defer privileged work off-thread. `ping` stays on the parse
-  thread to avoid contention. (The file-transfer handlers are now all off-thread.)
-* Tighten the parse / rfb allow-lists to drop file access, once their lazy-import
-  surface has been validated in `log` mode. File-transfer disk I/O already runs on
-  the file worker thread, so the parse thread no longer needs `openat` / `write` /
-  `unlink` for file transfers.
+* Tighten the parse allow-list to drop file access, once the remaining inline
+  handlers have been validated in `log` mode (`XPRA_SECCOMP_PARSE_ACTION=errno`).
+  The handlers that spawned subprocesses or did file I/O (file transfers, printing,
+  `command-start`, `control-request`) now run off the parse thread, so it should no
+  longer need `openat` / `write` / `unlink` / `execve`. Two opt-in exceptions must
+  stay disabled under a fatal parse filter: `--shell` (arbitrary code execution)
+  and `XPRA_SAVE_PRINT_JOBS` (debug write, still on the calling thread).
+* The `rfb` read thread keeps file access for now; its lazy-import surface has not
+  been walked, and it is a lower priority than the main parse path.
