@@ -218,11 +218,19 @@ files, so `_process_challenge` runs on the main thread.
   before the main loop builds the hello. Hardware decoders (which would `dlopen`
   CUDA etc. on the draw thread) are separately disabled under seccomp via
   `xpra/client/subsystem/encoding.py`.
-* the **parse** and **rfb** allow-lists keep the full `BASE_SYSCALLS` (including
-  `open`/`openat`) plus a few socket-introspection syscalls (`recvfrom`,
-  `getsockname`, `getsockopt`, `sysinfo`). They dispatch many packet handlers
-  inline with a much larger lazy-import surface, so tightening them is deferred
-  (validate in `log` mode first).
+* the **parse** allow-list (`PARSE_SYSCALLS`) is the same tightened `DRAW_SYSCALLS`
+  (no file access) plus the socket syscalls the reader needs (`SOCKET_SYSCALLS`:
+  `recvfrom`, `getsockname`, `getsockopt`, `sysinfo`). This is possible because
+  every inline packet handler that spawned a subprocess or did file I/O has been
+  moved off the parse thread (file transfers and printing to the file worker thread;
+  `open-url`, `start-command` and `control-request` to the main thread - see the
+  handler audit below). The residual risk is a handler that lazily imports a module
+  for the *first time* on the parse thread (an `openat`); the parse action defaults
+  to `errno` (non-fatal) for this reason, so validate a deployment with
+  `XPRA_SECCOMP_PARSE_ACTION=log` and pre-compiled bytecode before using `strict`.
+* the **rfb** allow-list (`RFB_SYSCALLS`) still keeps the full `BASE_SYSCALLS`
+  (including `open`/`openat`) plus `SOCKET_SYSCALLS`. Its inline handlers have not
+  been walked to move their file I/O off-thread, so tightening it is deferred.
 
 **`kill_process` caveat:** a blocked lazy `import` or `dlopen` is a `SIGSYS`
 process kill, not a catchable exception - `log.trap_error` cannot recover from it.
@@ -335,7 +343,7 @@ The `file-data-response` OPEN fallback (open a file/URL at this end) instead use
 spawns subprocesses.
 
 Together this keeps `openat` / `write` / `unlink` / `execve` off the parse thread,
-which is the prerequisite for dropping file access from the parse allow-list.
+which is what lets the parse allow-list drop file access (`PARSE_SYSCALLS`, above).
 
 The thread is **started on demand** (on the first transfer that needs it) and,
 crucially, **from the main thread** via `GLib.idle_add` - never from the parse
@@ -348,12 +356,13 @@ work inline on the parse thread instead (the previous behaviour).
 
 ## Future work
 
-* Tighten the parse allow-list to drop file access, once the remaining inline
-  handlers have been validated in `log` mode (`XPRA_SECCOMP_PARSE_ACTION=errno`).
-  The handlers that spawned subprocesses or did file I/O (file transfers, printing,
-  `command-start`, `control-request`) now run off the parse thread, so it should no
-  longer need `openat` / `write` / `unlink` / `execve`. Two opt-in exceptions must
-  stay disabled under a fatal parse filter: `--shell` (arbitrary code execution)
-  and `XPRA_SAVE_PRINT_JOBS` (debug write, still on the calling thread).
-* The `rfb` read thread keeps file access for now; its lazy-import surface has not
-  been walked, and it is a lower priority than the main parse path.
+* The parse allow-list now drops file access, but this has only been reasoned
+  through statically - validate a real deployment in `log` mode
+  (`XPRA_SECCOMP_PARSE_ACTION=log`) exercising all features (clipboard, mmap setup,
+  audio, encodings), watch the audit log for any `openat` a first-time lazy import
+  or mmap file setup still needs on the parse thread, and either pre-warm it or add
+  it back. Only switch to `strict` (`kill_process`) after that. Two opt-in features
+  must stay disabled under a fatal parse filter: `--shell` (arbitrary code
+  execution) and `XPRA_SAVE_PRINT_JOBS` (debug write, still on the calling thread).
+* The `rfb` read thread still keeps file access; its inline handlers have not been
+  walked to move their file I/O off-thread. Lower priority than the main parse path.

@@ -51,18 +51,31 @@ class SeccompTest(unittest.TestCase):
         self.assertEqual(set(seccomp_draw.DRAW_SYSCALLS),
                          set(seccomp_draw.BASE_SYSCALLS) - set(seccomp_draw.FILE_SYSCALLS))
 
-    def test_parse_and_rfb_keep_file_syscalls(self):
-        # parse / rfb keep file access (larger lazy-import surface in packet handlers):
-        for syscalls in (seccomp_parse.PARSE_SYSCALLS, seccomp_rfb.RFB_SYSCALLS):
-            self.assertIn("openat", syscalls)
-            self.assertIn("open", syscalls)
+    def test_parse_blocks_file_syscalls(self):
+        # every file/exec packet handler now runs off the parse thread, so the parse
+        # filter drops file access too (see docs/Usage/Seccomp.md):
+        for syscall in seccomp_draw.FILE_SYSCALLS:
+            self.assertNotIn(syscall, seccomp_parse.PARSE_SYSCALLS)
+        # parse is exactly the draw list plus the socket read syscalls:
+        self.assertEqual(set(seccomp_parse.PARSE_SYSCALLS),
+                         set(seccomp_draw.DRAW_SYSCALLS) | set(seccomp_parse.SOCKET_SYSCALLS))
+
+    def test_rfb_keeps_file_syscalls(self):
+        # the rfb read thread has not been walked, so it keeps file access for now:
+        self.assertIn("openat", seccomp_rfb.RFB_SYSCALLS)
+        self.assertIn("open", seccomp_rfb.RFB_SYSCALLS)
+        # rfb is the full baseline (with files) plus the socket read syscalls:
+        self.assertEqual(set(seccomp_rfb.RFB_SYSCALLS),
+                         set(seccomp_draw.BASE_SYSCALLS) | set(seccomp_parse.SOCKET_SYSCALLS))
 
     def test_install_rfb_read_thread_noop_when_disabled(self):
         with patch.object(seccomp_rfb, "is_enabled", return_value=False):
             self.assertFalse(seccomp_rfb.install_thread())
 
-    def test_rfb_syscalls_match_parse(self):
-        self.assertEqual(seccomp_rfb.RFB_SYSCALLS, seccomp_parse.PARSE_SYSCALLS)
+    def test_rfb_is_superset_of_parse(self):
+        # rfb keeps everything parse has, plus the file syscalls parse dropped:
+        self.assertTrue(set(seccomp_parse.PARSE_SYSCALLS).issubset(set(seccomp_rfb.RFB_SYSCALLS)))
+        self.assertTrue(set(seccomp_draw.FILE_SYSCALLS).issubset(set(seccomp_rfb.RFB_SYSCALLS)))
 
     def test_parse_seccomp_option(self):
         from xpra.scripts.main import parse_seccomp_option as p

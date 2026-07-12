@@ -10,7 +10,8 @@ import os
 
 from xpra.log import Logger
 from xpra.seccomp import is_available
-from xpra.seccomp.parse import PARSE_SYSCALLS
+from xpra.seccomp.draw import BASE_SYSCALLS
+from xpra.seccomp.parse import SOCKET_SYSCALLS
 from xpra.util.env import envbool
 
 log = Logger("seccomp")
@@ -22,9 +23,11 @@ ACTION_ENV = "XPRA_SECCOMP_RFB_ACTION"
 ENABLED = envbool("XPRA_SECCOMP_RFB", envbool("XPRA_SECCOMP", False))
 
 # the RFB client read thread reads from the socket and decodes framebuffer updates
-# (raw / tight / zlib / cursor) inline, dispatching draw/challenge/clipboard packets:
-# its syscall needs are the same as the main network parse thread.
-RFB_SYSCALLS: tuple[str, ...] = PARSE_SYSCALLS
+# (raw / tight / zlib / cursor) inline, dispatching draw/challenge/clipboard packets.
+# Unlike the network parse thread, its inline handlers have not been walked to move
+# their file I/O off-thread, so it keeps the full baseline (with file access) plus the
+# socket syscalls. Tightening it is left as future work (see `docs/Usage/Seccomp.md`).
+RFB_SYSCALLS: tuple[str, ...] = BASE_SYSCALLS + SOCKET_SYSCALLS
 
 
 def is_enabled() -> bool:
