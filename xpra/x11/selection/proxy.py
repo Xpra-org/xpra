@@ -146,6 +146,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     def got_token(self, targets, target_data=None, claim=True, synchronous_client=False) -> None:
         # the remote end now owns the clipboard
+        self._selection_generation += 1
         self.cancel_emit_token()
         if not self._enabled:
             return
