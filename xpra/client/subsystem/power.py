@@ -98,7 +98,7 @@ class PowerEventClient(StubClientSubsystem):
 
     def suspend(self, *args) -> None:
         log("suspend(%s)", args)
-        log.info(f"{self} suspending")
+        log.info(f"{self.client} suspending")
         self.suspended = time()
         self.emit("suspend")
         if BACKWARDS_COMPATIBLE:
@@ -125,4 +125,4 @@ class PowerEventClient(StubClientSubsystem):
             # happens on macos when switching workspace!
             return
         delta = timedelta(seconds=int(elapsed))
-        log.info(f"{self} resuming, was suspended for %s", str(delta).lstrip("0:"))
+        log.info(f"{self.client} resuming, was suspended for %s", str(delta).lstrip("0:"))
