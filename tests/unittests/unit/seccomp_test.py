@@ -170,6 +170,70 @@ class SeccompTest(unittest.TestCase):
             encoding.Encodings.ensure_codecs_loaded(stalled)
             self.assertEqual(stalled.loads, 1)
 
+    @staticmethod
+    def _file_io_fake():
+        # a minimal stand-in borrowing the real file I/O thread methods, so we can
+        # verify received-file writes are handed off to the "file-io" thread:
+        from queue import SimpleQueue
+        from xpra.net import file_transfer as ft
+
+        class Fake:
+            schedule_file_io = ft.FileTransferHandler.schedule_file_io
+            _ensure_file_io_thread = ft.FileTransferHandler._ensure_file_io_thread
+            _file_io_loop = ft.FileTransferHandler._file_io_loop
+            stop_file_io_thread = ft.FileTransferHandler.stop_file_io_thread
+
+            def __init__(self):
+                self._file_io_queue = SimpleQueue()
+                self._file_io_thread = None
+                self.ran: list = []
+
+        return ft, Fake()
+
+    def test_file_io_runs_off_the_parse_thread(self):
+        import threading
+        ft, fake = self._file_io_fake()
+
+        def work(tag: str) -> None:
+            fake.ran.append((tag, threading.current_thread().name))
+
+        with patch.object(ft, "FILE_IO_THREAD", True), \
+                patch.object(ft.GLib, "idle_add", side_effect=lambda fn, *a: fn(*a)) as idle_add:
+            def parse() -> None:
+                fake.schedule_file_io(work, "a")
+                fake.schedule_file_io(work, "b")
+            t = threading.Thread(target=parse, name="parse")
+            t.start()
+            t.join()
+            fake.stop_file_io_thread()
+
+        # thread creation was deferred to the main loop (idle_add), not the parse thread:
+        self.assertTrue(idle_add.called)
+        # both writes ran, in order, on the dedicated file-io thread (never "parse"):
+        self.assertEqual([tag for tag, _ in fake.ran], ["a", "b"])
+        for _, tname in fake.ran:
+            self.assertEqual(tname, "file-io")
+        # cleanly stopped:
+        self.assertIsNone(fake._file_io_thread)
+
+    def test_file_io_disabled_runs_inline(self):
+        import threading
+        ft, fake = self._file_io_fake()
+
+        def work(tag: str) -> None:
+            fake.ran.append((tag, threading.current_thread().name))
+
+        with patch.object(ft, "FILE_IO_THREAD", False):
+            def parse() -> None:
+                fake.schedule_file_io(work, "a")
+            t = threading.Thread(target=parse, name="parse")
+            t.start()
+            t.join()
+
+        # disabled: the write runs inline on the calling (parse) thread, no thread spawned:
+        self.assertEqual(fake.ran, [("a", "parse")])
+        self.assertIsNone(fake._file_io_thread)
+
     def test_get_save_to_file_gated_by_seccomp(self):
         from xpra.codecs import debug as codec_debug
         with patch.dict(os.environ, {"XPRA_SAVE_TO_FILE": "frame"}):

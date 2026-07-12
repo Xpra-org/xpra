@@ -102,13 +102,18 @@ class FileServer(StubSubsystem):
             log.warn("Warning: invalid client source for file-request packet")
             return
         argf = packet.get_str(1)
-        if argf == "${XPRA_SERVER_LOG}" and not os.environ.get("XPRA_SERVER_LOG"):
-            log("no server log to send")
-            return
         openit = packet.get_bool(2)
         # echo back the send-id the client generated for this request (if any),
         # so the client can safely match the response against its own request:
         send_id = packet.get_str(3) if len(packet) > 3 else ""
+        # read the file from disk and send it from the connection's file worker thread,
+        # so the disk I/O is kept off the network parse thread:
+        ss.schedule_file_io(self.do_process_file_request, ss, argf, openit, send_id)
+
+    def do_process_file_request(self, ss, argf: str, openit: bool, send_id: str) -> None:
+        if argf == "${XPRA_SERVER_LOG}" and not os.environ.get("XPRA_SERVER_LOG"):
+            log("no server log to send")
+            return
         filename = os.path.abspath(osexpand(argf))
         if not os.path.exists(filename):
             log.warn("Warning: the file requested does not exist:")

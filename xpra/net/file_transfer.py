@@ -11,6 +11,8 @@ import subprocess
 import hashlib
 import fnmatch
 import uuid
+from queue import SimpleQueue
+from threading import Thread
 from typing import Any, Final
 from time import monotonic
 from dataclasses import dataclass
@@ -41,6 +43,11 @@ MAX_CONCURRENT_FILES = max(1, envint("XPRA_MAX_CONCURRENT_FILES", 10))
 PRINT_JOB_TIMEOUT = max(60, envint("XPRA_PRINT_JOB_TIMEOUT", 3600))
 SEND_REQUEST_TIMEOUT = max(300, envint("XPRA_SEND_REQUEST_TIMEOUT", 3600))
 CHUNK_TIMEOUT = 10 * 1000
+# file transfers do their disk I/O (writing received files, reading files to send)
+# and CPU-heavy work (compression, hashing) on a dedicated daemon thread, so that
+# it is all kept off the network parse thread:
+FILE_IO_THREAD = envbool("XPRA_FILE_IO_THREAD", True)
+FILE_IO_JOIN_TIMEOUT = envint("XPRA_FILE_IO_JOIN_TIMEOUT", 5)
 URL_PREFIXES = tuple(prefix for prefix in os.environ.get("XPRA_URL_PREFIXES", "http://,https://").split(",") if prefix)
 
 MIMETYPE_EXTS: dict[str, str] = {
@@ -337,8 +344,13 @@ class FileTransferHandler(FileTransferAttributes):
         self.send_chunks_in_progress: dict[str, SendChunkState] = {}
         self.receive_chunks_in_progress: dict[str, ReceiveChunkState] = {}
         self.file_descriptors: set[int] = set()
+        self._file_io_queue: SimpleQueue = SimpleQueue()
+        self._file_io_thread: Thread | None = None
 
     def cleanup(self) -> None:
+        # drain and stop the file I/O thread first, so any in-flight write completes
+        # (and closes its file descriptor) before we clean up below:
+        self.stop_file_io_thread()
         for t in self.pending_send_data_timers.values():
             GLib.source_remove(t)
         self.pending_send_data_timers = {}
@@ -365,6 +377,48 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog(f"os.close({x}) {e}")
         self.file_descriptors = set()
         self.init_attributes()
+
+    ######################################################################
+    # file worker thread:
+    # file transfers run their disk I/O (writing received files, reading files to
+    # send) and CPU-heavy work (compression, hashing) on this dedicated daemon
+    # thread, keeping it off the network parse thread - which the seccomp filter can
+    # then forbid from touching the filesystem. See `docs/Usage/Seccomp.md`.
+    def schedule_file_io(self, fn: Callable, *args) -> None:
+        if not FILE_IO_THREAD:
+            fn(*args)
+            return
+        self._file_io_queue.put((fn, args))
+        if self._file_io_thread is None:
+            # start the thread from the main thread (rather than the parse thread we
+            # are running on now) so that it does not inherit a seccomp filter:
+            GLib.idle_add(self._ensure_file_io_thread)
+
+    def _ensure_file_io_thread(self) -> None:
+        # runs on the main thread (see `schedule_file_io`):
+        if self._file_io_thread is None:
+            self._file_io_thread = start_thread(self._file_io_loop, "file-io", daemon=True)
+
+    def _file_io_loop(self) -> None:
+        filelog("file I/O thread started")
+        while True:
+            item = self._file_io_queue.get()
+            if item is None:
+                break
+            fn, args = item
+            with filelog.trap_error("Error processing file I/O"):
+                fn(*args)
+        filelog("file I/O thread ended")
+
+    def stop_file_io_thread(self) -> None:
+        thread = self._file_io_thread
+        self._file_io_thread = None
+        if thread is None:
+            return
+        # `None` is the exit marker - anything queued before it still gets written:
+        self._file_io_queue.put(None)
+        if thread.is_alive():
+            thread.join(FILE_IO_JOIN_TIMEOUT)
 
     def parse_file_transfer_caps(self, c: typedict) -> None:
         fc = typedict(c.dictget("file"))
@@ -480,6 +534,10 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("ack-file-chunk", chunk_id, False, message, chunk)
 
     def _process_file_send_chunk(self, packet: Packet) -> None:
+        # write the chunk to disk from the file I/O thread, off the parse thread:
+        self.schedule_file_io(self.do_process_file_send_chunk, packet)
+
+    def do_process_file_send_chunk(self, packet: Packet) -> None:
         chunk_id = packet.get_str(1)
         chunk = packet.get_u32(2)
         file_data: SizedBuffer = packet.get_buffer(3)
@@ -628,6 +686,10 @@ class FileTransferHandler(FileTransferAttributes):
         return True, printit, openit
 
     def _process_file_send(self, packet: Packet) -> None:
+        # save the file from the file I/O thread, off the parse thread:
+        self.schedule_file_io(self.do_process_file_send, packet)
+
+    def do_process_file_send(self, packet: Packet) -> None:
         # the remote end is sending us a file
         start = monotonic()
         basefilename = packet.get_str(1)
@@ -1133,19 +1195,20 @@ class FileTransferHandler(FileTransferAttributes):
             raise ValueError(f"unknown value for send-data response: {accept!r}")
         if spd.datatype == "file":
             if accept == ACCEPT:
-                self.do_send_file(spd.url, spd.mimetype, spd.data, spd.filesize,
-                                  spd.printit, spd.openit, spd.options, send_id)
+                # the hashing / compression is done on the file worker thread, off the parse thread:
+                self.schedule_file_io(self.do_send_file, spd.url, spd.mimetype, spd.data, spd.filesize,
+                                      spd.printit, spd.openit, spd.options, send_id)
             else:
                 assert spd.openit and accept == OPEN
-                # try to open at this end:
-                self._open_file(spd.url)
+                # try to open at this end, on the main thread (it spawns a subprocess):
+                GLib.idle_add(self._open_file, spd.url)
         elif spd.datatype == "url":
             if accept == ACCEPT:
                 self.do_send_open_url(spd.url, send_id)
             else:
                 assert accept == OPEN
-                # open it at this end:
-                self._open_url(spd.url)
+                # open it at this end, on the main thread (it spawns a subprocess):
+                GLib.idle_add(self._open_url, spd.url)
         else:
             filelog.error("Error: unknown datatype '%s'", spd.datatype)
 
@@ -1235,6 +1298,10 @@ class FileTransferHandler(FileTransferAttributes):
             GLib.source_remove(timer)
 
     def _process_file_ack_chunk(self, packet: Packet) -> None:
+        # compress and send the next chunk from the file worker thread, off the parse thread:
+        self.schedule_file_io(self.do_process_file_ack_chunk, packet)
+
+    def do_process_file_ack_chunk(self, packet: Packet) -> None:
         # the other end received our send-file or send-file-chunk,
         # send some more file data
         filelog("ack-file-chunk: %s", packet[1:])

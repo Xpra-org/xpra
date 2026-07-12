@@ -15,6 +15,7 @@ from time import monotonic
 
 from xpra.net.common import Packet
 from xpra.util.objects import typedict
+from xpra.net import file_transfer
 from xpra.net.file_transfer import (
     basename, safe_open_download_file,
     FileTransferAttributes, FileTransferHandler,
@@ -22,6 +23,20 @@ from xpra.net.file_transfer import (
     AcceptedData, AcceptedDataRequest, ReceiveChunkState, RequestedFile, SendChunkState, SendPendingData,
     DENY, ACCEPT, OPEN,
 )
+
+_orig_file_io_thread = file_transfer.FILE_IO_THREAD
+
+
+def setUpModule() -> None:
+    # run the file-transfer handlers inline (synchronously) instead of handing off
+    # to the file worker thread, so these logic tests can assert their results
+    # directly, without a running main loop to start and drain that thread.
+    # The worker hand-off itself is covered by `unit/seccomp_test.py`.
+    file_transfer.FILE_IO_THREAD = False
+
+
+def tearDownModule() -> None:
+    file_transfer.FILE_IO_THREAD = _orig_file_io_thread
 
 
 class TestBasename(unittest.TestCase):
@@ -1557,9 +1572,10 @@ class TestProcessFileDataResponse(unittest.TestCase):
         self._register(h, "s4", datatype="file", url="/tmp/f.txt", openit=True)
         pkt = Packet("send-data-response", "s4", OPEN)
         with patch.object(h, "_open_file") as m, \
-             patch("xpra.net.file_transfer.GLib"):
+             patch("xpra.net.file_transfer.GLib") as glib:
             h._process_file_data_response(pkt)
-            m.assert_called_once_with("/tmp/f.txt")
+            # the local open (which spawns a subprocess) is deferred to the main thread:
+            glib.idle_add.assert_called_once_with(m, "/tmp/f.txt")
 
 
 # ---------------------------------------------------------------------------

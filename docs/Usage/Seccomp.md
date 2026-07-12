@@ -290,23 +290,59 @@ filter:
 
 | Handler(s) | What it does | Seccomp impact |
 |---|---|---|
-| `open-url` | may spawn an opener via `subprocess.Popen` | Blocker under a fatal action |
-| `file-send`, `file-send-chunk`, `file-data-response` | open/write/unlink download files, may start a print/open worker | Blockers under a fatal action |
+| `open-url` | may spawn an opener via `subprocess.Popen` | Moved to the UI/main thread (`main_thread=True`) |
+| `file-send`, `file-send-chunk` | open/write/unlink download files | Moved to the file worker thread (see below) |
+| `file-ack-chunk` | compresses and sends the next outgoing chunk | Moved to the file worker thread |
+| `file-data-response` | ACCEPT: hash/compress and send; OPEN: open a file/URL locally via `subprocess.Popen` | Hash/compress → worker thread; OPEN's `subprocess.Popen` → main thread |
+| `file-request` (server) | reads a requested file from disk, then sends it | Moved to the file worker thread |
 | `challenge` | starts the auth worker (may fork/exec, read files) | Kept off-thread (`main_thread=True`) |
 | `audio-data` / keepalive | sequencing + delegation to the audio subprocess | Safe on the parse thread |
 | `encoding-set`, `server-event`, `logging-event` | update client state / log | Safe on the parse thread |
 | `ping` | immediate `ping_echo` response | Kept on the parse thread deliberately |
 
 Handlers already moved off the parse thread (onto the UI/main thread) include
-`notification-*`, `file-data-request`, and the command-client `display-*` /
-`shell-reply` handlers.
+`open-url`, `notification-*`, `file-data-request`, and the command-client
+`display-*` / `shell-reply` handlers. With these moves, no file-transfer handler
+does a file or `execve` syscall on the parse thread.
+
+### File worker thread
+
+File transfers run their disk I/O (writing received files, reading files to send)
+and CPU-heavy work (compression, hashing) on a dedicated daemon thread (`file-io`,
+`xpra.net.file_transfer.FileTransferHandler`) rather than inline on the parse
+thread. The handlers hand their work to `schedule_file_io()`, which queues it for
+that thread:
+
+* `file-send` / `file-send-chunk` - write received files to disk (`openat` /
+  `write` / `unlink`);
+* `file-ack-chunk` and `file-data-response` (ACCEPT) - compress / hash the
+  outgoing data;
+* `file-request` (server) - read the requested file from disk before sending it.
+
+The `file-data-response` OPEN fallback (open a file/URL at this end) instead uses
+`GLib.idle_add` to run its `subprocess.Popen` on the main thread, mirroring
+`open-url` - the worker thread stays a minimal disk/compression consumer and never
+spawns subprocesses.
+
+Together this keeps `openat` / `write` / `unlink` / `execve` off the parse thread,
+which is the prerequisite for dropping file access from the parse allow-list.
+
+The thread is **started on demand** (on the first transfer that needs it) and,
+crucially, **from the main thread** via `GLib.idle_add` - never from the parse
+thread - because a thread inherits the seccomp filter of the thread that creates
+it, so a worker spawned by a filtered parse thread would itself be unable to touch
+the filesystem. On disconnect, `stop_file_io_thread()` queues an exit marker and
+joins the thread, so any in-flight write completes before teardown
+(`XPRA_FILE_IO_JOIN_TIMEOUT`, default 5s). Set `XPRA_FILE_IO_THREAD=0` to run the
+work inline on the parse thread instead (the previous behaviour).
 
 ## Future work
 
-* Parse thread: walk the remaining inline handlers with
+* Parse thread: walk the remaining non-file inline handlers with
   `XPRA_SECCOMP_PARSE_ACTION=errno` and, per handler, either allow a benign
-  read-only syscall or move privileged work (subprocess/file I/O, ie `open-url`,
-  `file-send`) off-thread with `main_thread=True`. `ping` and the file data-plane
-  handlers stay on the parse thread to avoid contention.
+  read-only syscall or defer privileged work off-thread. `ping` stays on the parse
+  thread to avoid contention. (The file-transfer handlers are now all off-thread.)
 * Tighten the parse / rfb allow-lists to drop file access, once their lazy-import
-  surface has been validated in `log` mode.
+  surface has been validated in `log` mode. File-transfer disk I/O already runs on
+  the file worker thread, so the parse thread no longer needs `openat` / `write` /
+  `unlink` for file transfers.
