@@ -103,6 +103,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.incr_data_type: str = ""
         self.incr_data_chunks: list[bytes] = []
         self.incr_data_timer: int = 0
+        self._selection_generation: int = 0
 
     def reset_incr_data(self) -> None:
         self.incr_data_size: int = 0
@@ -134,6 +135,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     def got_token(self, targets, target_data=None, claim=True, synchronous_client=False) -> None:
         # the remote end now owns the clipboard
+        self._selection_generation += 1
         self.cancel_emit_token()
         if not self._enabled:
             return
@@ -372,8 +374,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
 
         # we need the targets, and the target data for greedy clients:
+        generation = self._selection_generation
 
         def send_token_with_targets() -> None:
+            if generation != self._selection_generation:
+                return
             token_data = (self.targets, )
             self._have_token = False
             self.emit("send-clipboard-token", token_data)
@@ -391,6 +396,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             target = targets[0]
 
             def got_chosen_target(dtype: str, dformat: int, data: Any) -> None:
+                if generation != self._selection_generation:
+                    return
                 log("got_chosen_target(%s, %s, %s)", dtype, dformat, Ellipsizer(data))
                 if not (dtype and dformat and data):
                     send_token_with_targets()
@@ -406,6 +413,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
 
         def got_targets(dtype: str, dformat: int, data: Any) -> None:
+            if generation != self._selection_generation:
+                return
             assert dtype == "ATOM" and dformat == 32
             self.targets = xatoms_to_strings(data)
             log("got_targets: %s", self.targets)
@@ -444,6 +453,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     def do_owner_changed(self) -> None:
         log("do_owner_changed()")
+        self._selection_generation += 1
         self.target_data = {}
         self.targets = ()
         super().do_owner_changed()
