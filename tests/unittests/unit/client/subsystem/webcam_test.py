@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import MagicMock, patch
 
 from xpra.util.objects import AdHocStruct
 from xpra.client.subsystem.webcam import WebcamForwarder
@@ -12,30 +13,77 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class WebcamTest(ClientMixinTest):
+    def test_suspend_resume_inactive(self):
+        webcam = WebcamForwarder()
+        with patch.object(webcam, "start_sending_webcam") as start:
+            webcam.suspend_webcam(None)
+            webcam.resume_webcam(None)
+        assert webcam.webcam_resume_restart == ()
+        start.assert_not_called()
 
-	def test_webcam(self):
-		opts = AdHocStruct()
-		opts.webcam = "on"
-		self._test_mixin_class(WebcamForwarder, opts, {
-			"webcam" : True,
-			"webcam.encodings" : ("png", "jpeg"),
-			"virtual-video-devices" : 1,
-			})
-		x = self.mixin
-		if not x.webcam_device:
-			print("no webcam device found, test skipped")
-			return
-		self.glib.timeout_add(2500, x.stop_sending_webcam)
-		self.glib.timeout_add(5000, self.stop)
-		self.main_loop.run()
-		assert len(self.packets)>2
-		self.verify_packet(0, ("webcam-start", 0, ))
-		self.verify_packet(1, ("webcam-frame", 0, ))
-		self.verify_packet(-1, ("webcam-stop", 0, ))
+    def test_suspend_resume_active(self):
+        webcam = WebcamForwarder()
+        webcam.send = MagicMock()
+        webcam.server_webcam = True
+        webcam.webcam_device = MagicMock()
+        webcam.webcam_device_no = 7
+        webcam.webcam_device_str = "/dev/video7"
+
+        webcam.suspend_webcam(None)
+
+        assert webcam.webcam_resume_restart == (7, "/dev/video7")
+        assert webcam.webcam_device is None
+        with patch.object(webcam, "start_sending_webcam") as start:
+            webcam.resume_webcam(None)
+        assert webcam.webcam_resume_restart == ()
+        start.assert_called_once_with(7, "/dev/video7")
+
+    def test_webcam(self):
+        opts = AdHocStruct()
+        opts.webcam = "on"
+        self._test_mixin_class(
+            WebcamForwarder,
+            opts,
+            {
+                "webcam": True,
+                "webcam.encodings": ("png", "jpeg"),
+                "virtual-video-devices": 1,
+            },
+        )
+        x = self.mixin
+        if not x.webcam_device:
+            print("no webcam device found, test skipped")
+            return
+        self.glib.timeout_add(2500, x.stop_sending_webcam)
+        self.glib.timeout_add(5000, self.stop)
+        self.main_loop.run()
+        assert len(self.packets) > 2
+        self.verify_packet(
+            0,
+            (
+                "webcam-start",
+                0,
+            ),
+        )
+        self.verify_packet(
+            1,
+            (
+                "webcam-frame",
+                0,
+            ),
+        )
+        self.verify_packet(
+            -1,
+            (
+                "webcam-stop",
+                0,
+            ),
+        )
+
 
 def main():
-	unittest.main()
+    unittest.main()
 
 
-if __name__ == '__main__':
-	main()
+if __name__ == "__main__":
+    main()

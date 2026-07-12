@@ -59,6 +59,7 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_forwarding = False
         self.webcam_device = None
         self.webcam_device_no = -1
+        self.webcam_device_str = ""
         self.webcam_frame_no = 0
         self.webcam_last_ack = -1
         self.webcam_ack_check_timer = 0
@@ -124,7 +125,8 @@ class WebcamForwarder(StubClientMixin):
         return True
 
     def suspend_webcam(self, _client) -> None:
-        self.webcam_resume_restart = (self.webcam_device_no, self.webcam_device)
+        self.webcam_resume_restart = ((self.webcam_device_no, self.webcam_device_str)
+                                      if self.webcam_device is not None else ())
         self.stop_sending_webcam()
 
     def resume_webcam(self, _client) -> None:
@@ -201,6 +203,7 @@ class WebcamForwarder(StubClientMixin):
             log("webcam encoding: %s", self.webcam_encoding)
 
             self.webcam_device_no = device_no
+            self.webcam_device_str = device
             self.webcam_device = webcam_device
             self.send("webcam-start", self.webcam_device_no, w, h)
             self.webcam_state_changed()
@@ -247,6 +250,7 @@ class WebcamForwarder(StubClientMixin):
         assert self.server_webcam
         self.webcam_device = None
         self.webcam_device_no = -1
+        self.webcam_device_str = ""
         self.webcam_frame_no = 0
         self.webcam_last_ack = -1
         try:
