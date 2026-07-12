@@ -6,10 +6,12 @@
 import os
 from io import BytesIO
 from time import monotonic
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 from xpra.util.env import envint, envbool
-from xpra.clipboard.common import ClipboardCallback
+from xpra.clipboard.common import ClipboardCallback, ClipboardData, ClipboardDataCallback, get_format_size
+from xpra.clipboard.targets import choose_eager_targets
 from xpra.util.str_fn import bytestostr
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -19,6 +21,7 @@ GLib = gi_import("GLib")
 log = Logger("clipboard")
 
 DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
+MAX_CLIPBOARD_TOKEN_SIZE = envint("XPRA_CLIPBOARD_TOKEN_MAX_SIZE", 4 * 1024 * 1024)
 
 
 def filter_data(dtype: str = "", dformat: int = 0, data=b"", trusted: bool = False, output_dtype="") -> bytes:
@@ -227,6 +230,52 @@ class ClipboardProxyCore:
     # contents of this clipboard:
     def get_contents(self, target: str, got_contents: ClipboardCallback) -> None:
         pass
+
+    def collect_contents(self, targets: Iterable[str], got_contents: ClipboardDataCallback,
+                         max_size: int = MAX_CLIPBOARD_TOKEN_SIZE) -> None:
+        """Collect target contents sequentially, then return the successful results."""
+        pending = iter(dict.fromkeys(targets))
+        target_data: ClipboardData = {}
+        total_size = 0
+
+        def collect_next() -> None:
+            try:
+                target = next(pending)
+            except StopIteration:
+                got_contents(target_data)
+                return
+
+            completed = False
+
+            def got_target(dtype: str, dformat: int, data: Any) -> None:
+                nonlocal completed, total_size
+                if completed:
+                    return
+                completed = True
+                if dtype and dformat and data:
+                    data_size = self._contents_size(dformat, data)
+                    if max_size <= 0 or total_size + data_size <= max_size:
+                        target_data[target] = (dtype, dformat, data)
+                        total_size += data_size
+                collect_next()
+
+            self.get_contents(target, got_target)
+
+        collect_next()
+
+    def get_eager_targets(self, targets: Iterable[str]) -> Sequence[str]:
+        return choose_eager_targets(targets, self.preferred_targets)
+
+    @staticmethod
+    def _contents_size(dformat: int, data: Any) -> int:
+        if isinstance(data, str):
+            return len(data.encode("utf8"))
+        if isinstance(data, memoryview):
+            return data.nbytes
+        size = len(data)
+        if isinstance(data, (bytes, bytearray)):
+            return size
+        return size * get_format_size(dformat) // 8
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         raise NotImplementedError()

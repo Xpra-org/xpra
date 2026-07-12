@@ -47,7 +47,9 @@ def get_format_size(dformat: int) -> int:
     return max(8, {32: CARD32_SIZE}.get(dformat, dformat))
 
 
+ClipboardData: TypeAlias = dict[str, tuple[str, int, Any]]
 ClipboardCallback: TypeAlias = Callable[[str, int, Any], None]
+ClipboardDataCallback: TypeAlias = Callable[[ClipboardData], None]
 
 
 def env_timeout(name, default: int, min_time=0, max_time=5000) -> int:

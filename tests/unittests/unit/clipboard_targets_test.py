@@ -6,7 +6,16 @@
 
 import unittest
 
-from xpra.clipboard.targets import _filter_targets, must_discard, must_discard_extra
+from xpra.clipboard.targets import (
+    HTML_TARGETS,
+    PLAIN_TEXT_TARGETS,
+    TEXT_TARGETS,
+    URI_TARGETS,
+    _filter_targets,
+    choose_eager_targets,
+    must_discard,
+    must_discard_extra,
+)
 
 
 class TestClipboardTargets(unittest.TestCase):
@@ -42,6 +51,21 @@ class TestClipboardTargets(unittest.TestCase):
         # targets may arrive as bytes
         result = _filter_targets([b"UTF8_STRING", b"text/plain"])
         assert len(result) == 2
+
+    def test_target_groups(self):
+        assert "UTF8_STRING" in PLAIN_TEXT_TARGETS
+        assert "text/plain" in PLAIN_TEXT_TARGETS
+        assert "text/html" in HTML_TARGETS
+        assert "text/uri-list" in URI_TARGETS
+        assert "text/html" in TEXT_TARGETS
+        assert not set(PLAIN_TEXT_TARGETS) & set(HTML_TARGETS)
+        assert not set(PLAIN_TEXT_TARGETS) & set(URI_TARGETS)
+
+    def test_choose_eager_targets(self):
+        targets = ("custom", "text/html", "UTF8_STRING", "text/uri-list", "UTF8_STRING")
+        assert choose_eager_targets(targets) == ("UTF8_STRING", "text/html", "text/uri-list")
+        assert choose_eager_targets(targets, ("text/html", "custom")) == ("text/html",)
+        assert choose_eager_targets(("custom",), ("custom",)) == ("custom",)
 
 
 def main():

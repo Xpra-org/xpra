@@ -114,6 +114,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.incr_data_chunks: list[bytes] = []
         self.incr_data_timer: int = 0
         self._emit_token_backoff: int = 0
+        self._selection_generation: int = 0
 
     def reset_incr_data(self) -> None:
         self.incr_data_size: int = 0
@@ -398,6 +399,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self._emit_token_timer = 0
         self._last_emit_token = monotonic()
         self._sent_token_events += 1
+        generation = self._selection_generation
         # increase the back-off for any token sent again in a short time,
         # more so for clients that need the targets, and even more for greedy clients
         # (which also require us to collect the contents):
@@ -419,6 +421,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         # we need the targets, and the target data for greedy clients:
 
         def send_token_with_targets() -> None:
+            if generation != self._selection_generation:
+                return
             self._have_token = False
             self.emit("send-clipboard-token", {"targets": tuple(self.targets), "data": {}})
 
@@ -426,34 +430,30 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             if not self._greedy_client:
                 send_token_with_targets()
                 return
-            # find the preferred targets:
-            targets = self.choose_targets(otargets)
-            log(f"choose_targets({otargets})={targets}")
+            targets = self.get_eager_targets(otargets)
+            log(f"get_eager_targets({otargets})={targets}")
             if not targets:
                 send_token_with_targets()
                 return
-            target = targets[0]
 
-            def got_chosen_target(dtype: str, dformat: int, data: Any) -> None:
-                log("got_chosen_target(%s, %s, %s)", dtype, dformat, Ellipsizer(data))
-                if not (dtype and dformat and data):
-                    send_token_with_targets()
+            def got_target_data(target_data) -> None:
+                if generation != self._selection_generation:
                     return
                 self._have_token = False
                 self.emit("send-clipboard-token", {
                     "targets": tuple(otargets),
-                    "data": {
-                        target: (dtype, dformat, data),
-                    },
+                    "data": target_data,
                 })
 
-            self.get_contents(target, got_chosen_target)
+            self.collect_contents(targets, got_target_data)
 
         if self.targets:
             with_targets(self.targets)
             return
 
         def got_targets(dtype: str, dformat: int, data: Any) -> None:
+            if generation != self._selection_generation:
+                return
             if not dtype:
                 log("get targets failed, so we don't own the clipboard any more")
                 # don't emit the token:
@@ -466,26 +466,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.get_contents("TARGETS", got_targets)
 
     def choose_targets(self, targets) -> Sequence[str]:
-        if self.preferred_targets:
-            # prefer PNG, but only if supported by the client:
-            fmts = []
-            for img_fmt in ("image/png", "image/jpeg"):
-                if img_fmt in targets and img_fmt in self.preferred_targets:
-                    fmts.append(img_fmt)
-            if fmts:
-                return tuple(fmts)
-            common_targets = tuple(x for x in self.preferred_targets if x in targets)
-            # prefer text targets:
-            preferred_text_targets = tuple(x for x in common_targets if x in TEXT_TARGETS)
-            log(f"choose_targets(..) {common_targets=}, {preferred_text_targets=}")
-            if preferred_text_targets:
-                return preferred_text_targets
-            return common_targets
-        # prefer a text target:
-        text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
-        if text_targets:
-            return text_targets
-        return targets
+        return self.get_eager_targets(targets)
 
     def do_selection_clear_event(self, event) -> None:
         log("do_x11_selection_clear(%s) was owned=%s", event, self.owned)
@@ -496,6 +477,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     def do_owner_changed(self) -> None:
         log("do_owner_changed()")
+        self._selection_generation += 1
         self.target_data = {}
         self.targets = ()
         super().do_owner_changed()

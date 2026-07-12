@@ -384,7 +384,21 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def schedule_emit_token(self, min_delay=0) -> None:
         self._have_token = False
         targets = self.targets if (self._want_targets or self._greedy_client) else ()
-        self.emit("send-clipboard-token", {"targets": tuple(targets), "data": {}})
+        if not self._greedy_client:
+            self.emit("send-clipboard-token", {"targets": tuple(targets), "data": {}})
+            return
+        eager_targets = self.get_eager_targets(targets)
+        source_ptr = self.local_source_ptr
+
+        def got_target_data(target_data) -> None:
+            if source_ptr != self.local_source_ptr:
+                return
+            self.emit("send-clipboard-token", {
+                "targets": tuple(targets),
+                "data": target_data,
+            })
+
+        self.collect_contents(eager_targets, got_target_data)
 
     def get_contents(self, target: str, got_contents: ClipboardCallback) -> None:
         log("get_contents(%s, %s) source=%#x", target, got_contents, self.local_source_ptr)

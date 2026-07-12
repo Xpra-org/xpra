@@ -62,3 +62,29 @@ TEXT_TARGETS: Sequence[str] = tuple(
     os.environ.get("XPRA_CLIPBOARD_TEXT_TARGETS",
                    "UTF8_STRING,TEXT,STRING,text/plain;charset=utf-8,text/plain,text/html").split(",")
 )
+HTML_TARGETS: Sequence[str] = tuple(
+    os.environ.get("XPRA_CLIPBOARD_HTML_TARGETS", "text/html").split(",")
+)
+URI_TARGETS: Sequence[str] = tuple(
+    os.environ.get("XPRA_CLIPBOARD_URI_TARGETS", "text/uri-list").split(",")
+)
+PLAIN_TEXT_TARGETS: Sequence[str] = tuple(
+    target for target in TEXT_TARGETS if target not in HTML_TARGETS and target not in URI_TARGETS
+)
+EAGER_TARGETS: Sequence[str] = tuple(
+    os.environ.get(
+        "XPRA_CLIPBOARD_EAGER_TARGETS",
+        "UTF8_STRING,text/plain;charset=utf-8,text/plain,text/html,text/uri-list,TEXT,STRING,image/png,image/jpeg",
+    ).split(",")
+)
+
+
+def choose_eager_targets(targets: Iterable[str], preferred_targets: Iterable[str] = ()) -> Sequence[str]:
+    available = tuple(dict.fromkeys(bytestostr(target) for target in targets))
+    preferred = tuple(dict.fromkeys(bytestostr(target) for target in preferred_targets))
+    supported = set(preferred or available)
+    eager = tuple(target for target in EAGER_TARGETS if target in available and target in supported)
+    if eager:
+        return eager
+    common = tuple(target for target in preferred if target in available)
+    return common[:1] or available[:1]
