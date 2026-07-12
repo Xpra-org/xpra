@@ -1166,10 +1166,11 @@ Restrict the syscalls available to the threads that handle untrusted data,
 using Linux seccomp filters (Linux only, no effect elsewhere).
 \fIMODE\fP can be \fIno\fP, \fIdefault\fP (all filters with the non-fatal \fIerrno\fP action),
 \fIstrict\fP (all filters with the fatal \fIkill_process\fP action),
-or a comma separated list of threads to filter (\fIdraw\fP, \fIparse\fP, \fIrfb\fP)
+or a comma separated list of threads to filter (\fIdraw\fP, \fIparse\fP, \fIrfb\fP, \fImenu\fP)
 with an optional per-thread action, ie: \fB\-\-seccomp\fP=\fIdraw:errno,parse:kill\fP.
 Individual filters and actions can also be set via the
-\fBXPRA_SECCOMP\fP, \fBXPRA_SECCOMP_DRAW\fP, \fBXPRA_SECCOMP_PARSE\fP and \fBXPRA_SECCOMP_RFB\fP
+\fBXPRA_SECCOMP\fP, \fBXPRA_SECCOMP_DRAW\fP, \fBXPRA_SECCOMP_PARSE\fP,
+\fBXPRA_SECCOMP_RFB\fP and \fBXPRA_SECCOMP_MENU\fP
 environment variables, which take precedence over this option.
 .TP
 \fB\-\-env\fP=\fIKEY=VALUE\fP

@@ -79,7 +79,7 @@ Any subsystem that accesses hardware directly is an inherent security risk.
 This includes: the [NVENC encoder](NVENC.md) (see also _proxy server system integration_), hardware OpenGL [server](OpenGL.md) and [client](Client-OpenGL.md) acceleration, printer access and some authentication modules.
 
 ### [Seccomp sandboxing](Seccomp.md)
-On Linux, the threads that first process untrusted network data (picture / video decoding, packet parsing, VNC framebuffer parsing) can be confined with [seccomp](Seccomp.md) syscall filters, so that a bug in one of those paths cannot easily open files, spawn commands or open new network connections. This is disabled by default and enabled with `--seccomp`.
+On Linux, the threads that first process untrusted network data (picture / video decoding, packet parsing, VNC framebuffer parsing) and the XDG menu loader can be confined with [seccomp](Seccomp.md) syscall filters. These policies limit the syscalls available to each workload; the menu loader retains read-only filesystem access. This is disabled by default and enabled with `--seccomp`.
 
 </details>
 

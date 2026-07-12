@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
+import sys
 from threading import Lock
 from typing import Any
 from collections.abc import Callable
@@ -22,6 +23,19 @@ log = Logger("menu")
 MENU_WATCHER = envbool("XPRA_MENU_WATCHER", True)
 MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
 EXPORT_MENU_DATA = envbool("XPRA_EXPORT_MENU_DATA", True)
+
+
+def install_menu_thread_seccomp() -> bool:
+    sclog = Logger("seccomp")
+    try:
+        from xpra.seccomp import menu as seccomp_menu
+    except ImportError:
+        return False
+    try:
+        return seccomp_menu.install_thread()
+    except Exception:
+        sclog.error("Error installing menu loading thread seccomp filter", exc_info=True)
+        return False
 
 
 def noicondata(menu_data: dict) -> dict:
@@ -133,6 +147,11 @@ class MenuProvider:
         # as this may take a while and
         # so server startup can complete:
         def load() -> None:
+            if install_menu_thread_seccomp():
+                # Importing a module from newer source normally attempts a writable
+                # pyc open. This flag is process-global, so leave it enabled to avoid
+                # races between concurrent menu reloads and other lazy imports.
+                sys.dont_write_bytecode = True
             try:
                 self.get_menu_data(force_reload)
                 self.get_desktop_sessions()

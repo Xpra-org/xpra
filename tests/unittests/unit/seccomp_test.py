@@ -5,12 +5,16 @@
 # later version. See the file COPYING for details.
 
 import os
+import subprocess
+import sys
+import textwrap
 import unittest
 from unittest.mock import patch
 
 from xpra import seccomp
 from xpra.client.subsystem import encoding
 from xpra.seccomp import draw as seccomp_draw
+from xpra.seccomp import menu as seccomp_menu
 from xpra.seccomp import parse as seccomp_parse
 from xpra.seccomp import rfb as seccomp_rfb
 
@@ -38,6 +42,20 @@ class SeccompTest(unittest.TestCase):
         with patch.object(seccomp_parse, "is_enabled", return_value=False):
             self.assertFalse(seccomp_parse.install_thread())
 
+    def test_install_menu_thread_noop_when_disabled(self):
+        with patch.object(seccomp_menu, "is_enabled", return_value=False):
+            self.assertFalse(seccomp_menu.install_thread())
+
+    def test_install_menu_thread_uses_masked_rules(self):
+        with patch.object(seccomp_menu, "is_enabled", return_value=True), \
+             patch("xpra.seccomp._native.install_filter") as install_filter:
+            self.assertTrue(seccomp_menu.install_thread())
+        install_filter.assert_called_once_with(
+            seccomp_menu.MENU_SYSCALLS,
+            seccomp_menu.get_action(),
+            seccomp_menu.MENU_MASKED_RULES,
+        )
+
     def test_parse_syscalls_superset_of_draw(self):
         self.assertTrue(set(seccomp_draw.DRAW_SYSCALLS).issubset(set(seccomp_parse.PARSE_SYSCALLS)))
         self.assertIn("recvfrom", seccomp_parse.PARSE_SYSCALLS)
@@ -50,6 +68,45 @@ class SeccompTest(unittest.TestCase):
         # the draw list is exactly the baseline minus the file syscalls:
         self.assertEqual(set(seccomp_draw.DRAW_SYSCALLS),
                          set(seccomp_draw.BASE_SYSCALLS) - set(seccomp_draw.FILE_SYSCALLS))
+
+    def test_menu_allows_only_masked_file_opens(self):
+        self.assertNotIn("open", seccomp_menu.MENU_SYSCALLS)
+        self.assertNotIn("openat", seccomp_menu.MENU_SYSCALLS)
+        masked_syscalls = {rule[0] for rule in seccomp_menu.MENU_MASKED_RULES}
+        self.assertEqual(masked_syscalls, {"open", "openat", "write", "writev"})
+        for syscall in ("clone", "clone3", "mkdir", "rename", "unlink", "ftruncate", "write"):
+            self.assertNotIn(syscall, seccomp_menu.MENU_SYSCALLS)
+
+    @unittest.skipUnless(seccomp.is_available(), "native seccomp module is unavailable")
+    def test_menu_native_read_only_policy(self):
+        code = textwrap.dedent("""
+            import os
+            import subprocess
+            import tempfile
+            import threading
+
+            from xpra.seccomp import _native
+            from xpra.seccomp.menu import MENU_MASKED_RULES, MENU_SYSCALLS
+
+            writable = tempfile.TemporaryFile()
+            _native.install_filter(MENU_SYSCALLS, "errno", MENU_MASKED_RULES)
+            with open("/etc/hosts", encoding="utf8") as stream:
+                assert stream.read(1)
+
+            def denied(fn):
+                try:
+                    fn()
+                except (OSError, RuntimeError):
+                    return
+                raise AssertionError("operation unexpectedly allowed")
+
+            denied(lambda: open("/tmp/xpra-seccomp-menu-write-test", "w"))
+            denied(lambda: os.write(writable.fileno(), b"x"))
+            denied(lambda: os.mkdir("/tmp/xpra-seccomp-menu-mkdir-test"))
+            denied(lambda: subprocess.run(("true",), check=True))
+            denied(lambda: threading.Thread(target=lambda: None).start())
+        """)
+        subprocess.run((sys.executable, "-c", code), check=True)
 
     def test_parse_blocks_file_syscalls(self):
         # every file/exec packet handler now runs off the parse thread, so the parse
@@ -84,11 +141,13 @@ class SeccompTest(unittest.TestCase):
         self.assertEqual(p("no"), {
             "XPRA_SECCOMP": "0",
             "XPRA_SECCOMP_DRAW": "0", "XPRA_SECCOMP_PARSE": "0", "XPRA_SECCOMP_RFB": "0",
+            "XPRA_SECCOMP_MENU": "0",
         })
         self.assertEqual(p("default"), {
             "XPRA_SECCOMP_DRAW": "1", "XPRA_SECCOMP_DRAW_ACTION": "errno",
             "XPRA_SECCOMP_PARSE": "1", "XPRA_SECCOMP_PARSE_ACTION": "errno",
             "XPRA_SECCOMP_RFB": "1", "XPRA_SECCOMP_RFB_ACTION": "errno",
+            "XPRA_SECCOMP_MENU": "1", "XPRA_SECCOMP_MENU_ACTION": "errno",
         })
         self.assertEqual(p("strict")["XPRA_SECCOMP_DRAW_ACTION"], "kill_process")
         # explicit thread list disables the unlisted threads and never sets the global flag:
@@ -99,6 +158,7 @@ class SeccompTest(unittest.TestCase):
         self.assertEqual(env["XPRA_SECCOMP_PARSE"], "1")
         self.assertEqual(env["XPRA_SECCOMP_PARSE_ACTION"], "kill")
         self.assertEqual(env["XPRA_SECCOMP_RFB"], "0")
+        self.assertEqual(env["XPRA_SECCOMP_MENU"], "0")
         for bad in ("draw,bogus", "draw:nope", "xxx"):
             with self.assertRaises(ValueError):
                 p(bad)
@@ -108,6 +168,7 @@ class SeccompTest(unittest.TestCase):
         keys = ("XPRA_SECCOMP", "XPRA_SECCOMP_DRAW", "XPRA_SECCOMP_DRAW_ACTION",
                 "XPRA_SECCOMP_PARSE", "XPRA_SECCOMP_PARSE_ACTION",
                 "XPRA_SECCOMP_RFB", "XPRA_SECCOMP_RFB_ACTION")
+        keys += ("XPRA_SECCOMP_MENU", "XPRA_SECCOMP_MENU_ACTION")
         with patch.dict(os.environ, {}, clear=False):
             for k in keys:
                 os.environ.pop(k, None)

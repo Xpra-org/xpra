@@ -15,6 +15,14 @@ from xpra.server.core import ServerCore
 
 class TestServerCore(unittest.TestCase):
 
+    def test_init_starts_background_worker_first(self):
+        server = ServerCore.__new__(ServerCore)
+        with patch("xpra.server.core.get_worker") as get_worker:
+            # Missing options stop init immediately after the worker is started.
+            with self.assertRaises(AttributeError):
+                server.init(SimpleNamespace())
+        get_worker.assert_called_once_with()
+
     def test_handle_ssh_connection_uses_display_name_api(self):
         server = ServerCore.__new__(ServerCore)
         display = SimpleNamespace(get_display_name=lambda: ":42")

@@ -55,7 +55,7 @@ from xpra.os_util import (
 )
 from xpra.util.system import register_SIGUSR_signals, get_run_info, deadly_signal
 from xpra.util.io import load_binary_file, find_libexec_command
-from xpra.util.background_worker import quit_worker
+from xpra.util.background_worker import get_worker, quit_worker
 from xpra.util.thread import start_thread, check_main_thread
 from xpra.common import noop, noerr, stop_asyncio_loop
 from xpra.util.objects import merge_dicts
@@ -230,6 +230,10 @@ class ServerCore(GLibServer):
 
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)
+        # This shared worker must predate every filtered thread.  Otherwise the
+        # first add_work_item() from one of them would create a worker which
+        # inherits that thread's seccomp policy.
+        get_worker()
         self.session_name = str(opts.session_name)
         set_name("Xpra", self.session_name or "Xpra")
         self.unix_socket_paths = []

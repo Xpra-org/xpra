@@ -41,9 +41,9 @@ xpra attach ssl://HOST:PORT/ --seccomp=default
 | `--seccomp=` | Effect |
 |---|---|
 | `no` | *(default)* no filtering |
-| `default` | enable all three filters with a **non-fatal** action: a blocked syscall fails with a permission error instead of killing anything |
-| `strict` | enable all three filters with a **fatal** action: a blocked syscall kills the whole process |
-| a list | enable only the listed threads, ie `draw`, `parse`, `rfb` |
+| `default` | enable all four filters with a **non-fatal** action: a blocked syscall fails with a permission error instead of killing anything |
+| `strict` | enable all four filters with a **fatal** action: a blocked syscall kills the whole process |
+| a list | enable only the listed threads, ie `draw`, `parse`, `rfb`, `menu` |
 
 The list form lets you pick individual filters and, optionally, an action per
 filter (see [actions](#actions) below):
@@ -146,9 +146,11 @@ precedence over the option**:
 | `XPRA_SECCOMP_DRAW` | enable/disable the decoding filter |
 | `XPRA_SECCOMP_PARSE` | enable/disable the network parse filter |
 | `XPRA_SECCOMP_RFB` | enable/disable the VNC client filter |
+| `XPRA_SECCOMP_MENU` | enable/disable the menu loading filter |
 | `XPRA_SECCOMP_DRAW_ACTION` | action for the decoding filter |
 | `XPRA_SECCOMP_PARSE_ACTION` | action for the parse filter |
 | `XPRA_SECCOMP_RFB_ACTION` | action for the VNC client filter |
+| `XPRA_SECCOMP_MENU_ACTION` | action for the menu loading filter |
 
 Each `*_ACTION` accepts `errno`, `kill`, `kill_thread`, `kill_process`, `log` or
 `allow` (default: `kill_process`).
@@ -165,9 +167,10 @@ sandboxing - end users can stop reading here.
 
 Each filter is a per-thread [`seccomp`](https://www.kernel.org/doc/html/latest/userspace-api/seccomp_filter.html)
 BPF allow-list, built with `libseccomp` in the native helper
-`xpra/seccomp/_native`. The primitive `install_filter(syscalls, action)` sets
+`xpra/seccomp/_native`. The primitive `install_filter(syscalls, action, masked_rules)` sets
 `PR_SET_NO_NEW_PRIVS`, initialises the filter with the chosen default action, adds
-one `SCMP_ACT_ALLOW` rule per allowed syscall, and loads it. The Python side lives
+one `SCMP_ACT_ALLOW` rule per allowed syscall (optionally constrained by masked
+argument comparisons), and loads it. The Python side lives
 in `xpra/seccomp/`:
 
 * `xpra/seccomp/draw.py` - decoding thread, installed at the top of the draw loop
@@ -177,6 +180,8 @@ in `xpra/seccomp/`:
   real network sockets.
 * `xpra/seccomp/rfb.py` - RFB client read thread, installed once the handshake
   reaches steady state (`xpra/client/base/rfb_protocol.py`).
+* `xpra/seccomp/menu.py` - XDG menu loading thread, installed before importing or
+  parsing platform menu data (`xpra/server/menu_provider.py`).
 
 The `--seccomp` option is turned into the `XPRA_SECCOMP*` environment variables by
 `parse_seccomp_option()` / `configure_seccomp()` in `xpra/scripts/main.py`. This
@@ -194,6 +199,11 @@ with `main_thread=True` so it is dispatched on the GLib main loop (which predate
 the parse thread's filter). This is how the `challenge` handler stays unsandboxed:
 auth backends may `fork`/`exec` a helper (kerberos/gss/exec/u2f/pinentry) or read
 files, so `_process_challenge` runs on the main thread.
+
+The server also starts its shared background worker during `ServerCore.init()`,
+before subsystem setup. Menu loading posts completion callbacks to this worker;
+creating it lazily from the filtered menu thread would make unrelated work inherit
+the menu policy.
 
 ## Syscall lists
 
@@ -231,6 +241,15 @@ files, so `_process_challenge` runs on the main thread.
 * the **rfb** allow-list (`RFB_SYSCALLS`) still keeps the full `BASE_SYSCALLS`
   (including `open`/`openat`) plus `SOCKET_SYSCALLS`. Its inline handlers have not
   been walked to move their file I/O off-thread, so tightening it is deferred.
+* the **menu** allow-list (`MENU_SYSCALLS`) keeps the read-side filesystem calls
+  needed to traverse XDG configuration and load XML, desktop files and icons.
+  `open` and `openat` use masked argument rules which reject write, create,
+  truncate, append and temporary-file flags. Namespace mutations, new descendants
+  and socket operations are not allowed, and writes are limited to the standard
+  output/error descriptors used for logging. Use `--seccomp=menu:errno` when
+  auditing menu and icon variants before enabling a fatal action. pyxdg's
+  `KDELegacyDirs` helper is skipped because it would execute `kde-config`, and
+  runtime bytecode writes are disabled before the loader's lazy imports.
 
 **`kill_process` caveat:** a blocked lazy `import` or `dlopen` is a `SIGSYS`
 process kill, not a catchable exception - `log.trap_error` cannot recover from it.
@@ -239,15 +258,15 @@ This is why the pre-warm above matters, and why the debug file-dump
 
 ## Thread coverage
 
-Two threads carry a filter today - **draw** and **parse** - plus the client-side
-**rfb** thread. The rest of the thread inventory, and why each is or is not
-sandboxed:
+Four thread roles carry filters today: **draw**, **parse**, client-side **rfb** and
+**menu loading**. The rest of the thread inventory, and why each is or is not sandboxed:
 
 | Thread | Untrusted input? | Decision |
 |---|---|---|
 | **draw / decode** | Yes: compressed images/video | **Sandboxed** (`seccomp/draw.py`) |
 | **network parse** | Yes: raw socket bytes | **Sandboxed**, network sockets only (`seccomp/parse.py`) |
 | **RFB read** (client) | Yes: framebuffer parsing | **Sandboxed** at steady state (`seccomp/rfb.py`) |
+| **menu loading** | Local XDG metadata and icons | **Sandboxed**, read-only filesystem access (`seccomp/menu.py`) |
 | **QUIC/WebTransport asyncio** | Yes: UDP recv + TLS/HTTP3 | Mostly covered indirectly - see below |
 | **RFB read** (server) | Yes: client input | Out of scope - handlers drive the display server |
 | **HTTP handler** | Websocket upgrade only | Left - see below |

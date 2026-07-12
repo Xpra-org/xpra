@@ -7,16 +7,27 @@
 
 from libc.errno cimport EPERM
 from libc.string cimport strerror
-from libc.stdint cimport uint32_t
+from libc.stdint cimport uint32_t, uint64_t
 from cpython.bytes cimport PyBytes_AsString
 
 cdef extern from "seccomp.h":
     ctypedef void* scmp_filter_ctx
 
+    ctypedef enum scmp_compare:
+        SCMP_CMP_MASKED_EQ
+
+    cdef struct scmp_arg_cmp:
+        unsigned int arg
+        scmp_compare op
+        uint64_t datum_a
+        uint64_t datum_b
+
     scmp_filter_ctx seccomp_init(uint32_t def_action)
     int seccomp_load(scmp_filter_ctx ctx)
     void seccomp_release(scmp_filter_ctx ctx)
     int seccomp_rule_add(scmp_filter_ctx ctx, uint32_t action, int syscall, unsigned int arg_cnt, ...)
+    int seccomp_rule_add_array(scmp_filter_ctx ctx, uint32_t action, int syscall,
+                               unsigned int arg_cnt, const scmp_arg_cmp *arg_array)
     int seccomp_syscall_resolve_name(const char *name)
 
 cdef extern from "sys/prctl.h":
@@ -47,11 +58,15 @@ cdef inline void raise_seccomp_error(str what, int code):
     raise RuntimeError(f"{what} failed: {(<bytes>strerror(err)).decode('latin1')} ({err})")
 
 
-def install_filter(syscalls, str action="kill_thread") -> None:
+def install_filter(syscalls, str action="kill_thread", masked_rules=()) -> None:
     cdef scmp_filter_ctx ctx = NULL
     cdef int r
     cdef int nr
     cdef bytes syscall_name
+    cdef unsigned int arg_index
+    cdef uint64_t mask
+    cdef uint64_t value
+    cdef scmp_arg_cmp comparison
     if prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0:
         raise_seccomp_error("prctl(PR_SET_NO_NEW_PRIVS)", EPERM)
     ctx = seccomp_init(action_value(action))
@@ -66,6 +81,18 @@ def install_filter(syscalls, str action="kill_thread") -> None:
             r = seccomp_rule_add(ctx, 0x7FFF0000, nr, 0)
             if r != 0:
                 raise_seccomp_error(f"seccomp_rule_add({name})", r)
+        for name, arg_index, mask, value in masked_rules:
+            syscall_name = str(name).encode("ascii")
+            nr = seccomp_syscall_resolve_name(PyBytes_AsString(syscall_name))
+            if nr < 0:
+                raise RuntimeError(f"unknown seccomp syscall {name!r}")
+            comparison.arg = arg_index
+            comparison.op = SCMP_CMP_MASKED_EQ
+            comparison.datum_a = mask
+            comparison.datum_b = value
+            r = seccomp_rule_add_array(ctx, 0x7FFF0000, nr, 1, &comparison)
+            if r != 0:
+                raise_seccomp_error(f"seccomp_rule_add({name}, masked)", r)
         r = seccomp_load(ctx)
         if r != 0:
             raise_seccomp_error("seccomp_load", r)

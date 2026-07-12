@@ -519,7 +519,21 @@ def load_xdg_menu_data() -> dict:
 def do_load_xdg_menu_data():
     sleep(MENU_DELAY)
     error = None
-    from xdg.Menu import parse
+    from xdg.Menu import XMLMenuBuilder, parse
+
+    def parse_menu():
+        # KDELegacyDirs makes pyxdg run `kde-config`. Process creation is
+        # deliberately forbidden by the menu seccomp policy, so omit those
+        # legacy entries instead of triggering the policy while parsing them.
+        from xpra.seccomp.menu import is_enabled as menu_seccomp_enabled
+        if not menu_seccomp_enabled():
+            return parse()
+
+        class SandboxedXMLMenuBuilder(XMLMenuBuilder):
+            def parse_kde_legacy_dirs(self, _filename, _parent) -> None:
+                log("skipping KDE legacy menu directories under seccomp")
+
+        return SandboxedXMLMenuBuilder().parse()
     # see ticket #2340,
     # invalid values for XDG_CONFIG_DIRS can cause problems,
     # so try unsetting it if we can't load the menus with it:
@@ -564,7 +578,7 @@ def do_load_xdg_menu_data():
                     log("parsing xdg menu data for prefix %r with XDG_CONFIG_DIRS=%s and XDG_MENU_PREFIX=%s",
                         prefix, os.environ.get("XDG_CONFIG_DIRS"), os.environ.get("XDG_MENU_PREFIX"))
                     with IgnoreWarningsContext():
-                        return parse()
+                        return parse_menu()
                 except Exception as e:
                     log("load_xdg_menu_data()", exc_info=True)
                     error = e
