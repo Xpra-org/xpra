@@ -109,6 +109,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.local_request_counter: int = 0
         self.targets: Sequence[str] = ()
         self.target_data: dict[str, tuple[str, int, Any]] = {}
+        self._targets_owner: int = 0
         self.incr_data_size: int = 0
         self.incr_data_type: str = ""
         self.incr_data_chunks: list[bytes] = []
@@ -162,6 +163,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 targets = list(targets) + list(target_data.keys())
             self.targets = tuple(bytestostr(x) for x in (targets or ()))
             self.target_data = target_data or {}
+            self._targets_owner = self.xid
             if targets and claim:
                 xatoms = strings_to_xatoms(targets)
                 self.got_contents("TARGETS", "ATOM", 32, xatoms)
@@ -346,6 +348,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         # if this is the special target 'TARGETS', cache the result:
         if target == "TARGETS" and dtype == "ATOM" and dformat == 32:
             self.targets = xatoms_to_strings(data)
+            self._targets_owner = self.xid
         # the remote peer sent us a response,
         # find all the pending requests for this target
         # and give them the response they are waiting for:
@@ -401,6 +404,15 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self._last_emit_token = monotonic()
         self._sent_token_events += 1
         generation = self._selection_generation
+        with xsync:
+            owner = X11Window.XGetSelectionOwner(self._selection)
+        if owner == self.xid:
+            log("not emitting token for %s: the selection contains remote data", self._selection)
+            return
+        if owner != self._targets_owner:
+            self.targets = ()
+            self.target_data = {}
+            self._targets_owner = 0
         # increase the back-off for any token sent again in a short time,
         # more so for clients that need the targets, and even more for greedy clients
         # (which also require us to collect the contents):
@@ -455,12 +467,17 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         def got_targets(dtype: str, dformat: int, data: Any) -> None:
             if generation != self._selection_generation:
                 return
+            with xsync:
+                current_owner = X11Window.XGetSelectionOwner(self._selection)
+            if current_owner != owner:
+                return
             if not dtype:
                 log("get targets failed, so we don't own the clipboard any more")
                 # don't emit the token:
                 return
             assert dtype == "ATOM" and dformat == 32
             self.targets = xatoms_to_strings(data)
+            self._targets_owner = owner
             log("got_targets: %s", self.targets)
             with_targets(self.targets)
 
@@ -481,18 +498,22 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self._selection_generation += 1
         self.target_data = {}
         self.targets = ()
+        self._targets_owner = 0
         super().do_owner_changed()
 
     def get_contents(self, target: str, got_contents: ClipboardCallback) -> None:
         log("get_contents(%s, %s) owned=%s, have-token=%s",
             target, got_contents, self.owned, self._have_token)
+        with xsync:
+            owner = X11Window.XGetSelectionOwner(self._selection)
+        self.owned = owner == self.xid
         if target == "TARGETS":
-            if self.targets:
+            if self.targets and self._targets_owner == owner:
                 xatoms = strings_to_xatoms(self.targets)
                 got_contents("ATOM", 32, xatoms)
                 return
         else:
-            if target_data := self.target_data.get(target):
+            if self._targets_owner == owner and (target_data := self.target_data.get(target)):
                 dtype, dformat, value = target_data
                 got_contents(dtype, dformat, value)
                 return
