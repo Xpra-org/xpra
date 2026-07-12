@@ -203,12 +203,21 @@ files, so `_process_challenge` runs on the main thread.
   (`FILE_SYSCALLS`: `open`, `openat`, `unlink`, `unlinkat`, `mkdir`, `rename`,
   `renameat*`, `ftruncate`, `fallocate`). The draw thread only decodes images that
   are already in memory, so it never needs to open, create or delete a file -
-  *provided* its decoders are already loaded and pre-warmed. That pre-warming is
-  the codec self-test (`XPRA_CODEC_SELFTEST`, on by default), which runs a real
-  decode of each codec on the loader thread at startup, triggering PIL's lazy
-  plugin imports and any `dlopen` of codec libraries *before* the draw thread
-  starts. Hardware decoders (which would `dlopen` CUDA etc. on the draw thread) are
-  separately disabled under seccomp via `xpra/client/subsystem/encoding.py`.
+  *provided* its decoders are already loaded and pre-warmed. To guarantee that
+  ordering, the draw thread is made the **sole initializer** of the codecs: from
+  `init_draw_thread_codecs()` it loads and self-tests all of them *itself*, before
+  it installs the filter. Loading runs the codec self-test (`XPRA_CODEC_SELFTEST`,
+  on by default), which does a real decode of each codec, triggering PIL's lazy
+  plugin imports, any `dlopen` of codec libraries and any transient decoder worker
+  threads, all while the draw thread is still unfiltered. Every other consumer that
+  needs the codecs (the `encoding-config` packet, and - in backwards-compatible
+  mode - the encoding capabilities in the hello) calls
+  `Encodings.ensure_codecs_loaded()`, which *waits* for the draw thread rather than
+  loading anything itself; only when there is no draw thread does it load them
+  directly. This is safe because the draw thread is started (in the client's `run`)
+  before the main loop builds the hello. Hardware decoders (which would `dlopen`
+  CUDA etc. on the draw thread) are separately disabled under seccomp via
+  `xpra/client/subsystem/encoding.py`.
 * the **parse** and **rfb** allow-lists keep the full `BASE_SYSCALLS` (including
   `open`/`openat`) plus a few socket-introspection syscalls (`recvfrom`,
   `getsockname`, `getsockopt`, `sysinfo`). They dispatch many packet handlers
@@ -294,8 +303,6 @@ Handlers already moved off the parse thread (onto the UI/main thread) include
 
 ## Future work
 
-* Draw thread: initialise video decoders from the draw thread so decoder worker
-  threads and the filter have a well-defined ordering.
 * Parse thread: walk the remaining inline handlers with
   `XPRA_SECCOMP_PARSE_ACTION=errno` and, per handler, either allow a benign
   read-only syscall or move privileged work (subprocess/file I/O, ie `open-url`,

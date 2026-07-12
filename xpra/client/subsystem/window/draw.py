@@ -86,6 +86,7 @@ class WindowDraw(StubClientSubsystem):
         self.send_now(WINDOW_DRAW_ACK, *packet)
 
     def _draw_thread_loop(self):
+        self.init_draw_thread_codecs()
         if LINUX:
             self.install_draw_thread_seccomp()
         while self.client.exit_code is None:
@@ -98,6 +99,21 @@ class WindowDraw(StubClientSubsystem):
                 sleep(0)
         self._draw_thread = None
         log("draw thread ended")
+
+    def init_draw_thread_codecs(self) -> None:
+        # The draw thread is the sole initializer of the codecs it will use: loading them
+        # here (before the seccomp filter below, and before any draw packet is processed)
+        # guarantees every codec import / `dlopen` / self-test - and any transient decoder
+        # worker thread the self-tests spawn - happens on this thread while it is still
+        # unfiltered, and in a well-defined order relative to the filter. Every other
+        # consumer waits for this via `Encodings.ensure_codecs_loaded`.
+        # See `docs/Usage/Seccomp.md`.
+        encoding = self.get_subsystem("encoding")
+        if not encoding:
+            return
+        log("init_draw_thread_codecs() loading codecs from the draw thread")
+        with log.trap_error("Error loading codecs from the draw thread"):
+            encoding.load_all_codecs()
 
     @staticmethod
     def install_draw_thread_seccomp() -> None:

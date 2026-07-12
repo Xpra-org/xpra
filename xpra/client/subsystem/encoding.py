@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 import os
-from time import sleep
 from typing import Any
+from threading import Event, Lock
 from collections.abc import Sequence
 
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS
@@ -26,6 +26,7 @@ from xpra.util.thread import start_thread
 
 log = Logger("client", "encoding")
 
+CODEC_LOAD_TIMEOUT = envint("XPRA_CODEC_LOAD_TIMEOUT", 30)
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
@@ -90,6 +91,12 @@ class Encodings(StubClientSubsystem):
 
     def __init__(self, client=None):
         StubClientSubsystem.__init__(self, client)
+        # Codec initialization is owned by the draw thread whenever one exists (it
+        # must load the codecs before installing its seccomp filter): the draw thread
+        # calls `load_all_codecs`, every other consumer calls `ensure_codecs_loaded`
+        # and waits on this completion event. The lock keeps the load itself atomic:
+        self._codecs_lock = Lock()
+        self._codecs_loaded = Event()
         self.allowed_encodings: Sequence[str] = ()
         self.encoding = ""
         self.quality = -1
@@ -125,15 +132,41 @@ class Encodings(StubClientSubsystem):
         self.video_decoders = opts.video_decoders
 
     def load(self) -> None:
-        if BACKWARDS_COMPATIBLE:
+        # in backwards-compatible mode the hello carries the full encoding caps, so the
+        # codecs must be loaded before it is built. When a draw thread exists it owns
+        # that loading and `get_caps` waits for it (see `ensure_codecs_loaded`); the
+        # `load` phase runs before the draw thread starts, so only load here when there
+        # is no draw thread to defer to (otherwise we would deadlock waiting for it):
+        if BACKWARDS_COMPATIBLE and not self.has_draw_thread():
             self.load_all_codecs()
 
     def run(self) -> None:
         if not BACKWARDS_COMPATIBLE:
             def load() -> None:
-                self.load_all_codecs()
+                self.ensure_codecs_loaded()
                 self.client.after_handshake(self.send_encoding_config)
-            start_thread(load, "load-all-codecs", daemon=True)
+            start_thread(load, "encoding-config", daemon=True)
+
+    def has_draw_thread(self) -> bool:
+        # a `window` subsystem always runs a draw thread (see `window/draw.py`),
+        # and that draw thread owns codec initialization:
+        return bool(self.get_subsystem("window"))
+
+    def ensure_codecs_loaded(self) -> None:
+        # enforce the invariant that, when a draw thread exists, it is the only thread
+        # that initializes the codecs: every other consumer waits for it here rather
+        # than loading (which would run codec imports / `dlopen` off the draw thread,
+        # possibly after its seccomp filter is installed - see `docs/Usage/Seccomp.md`):
+        if self._codecs_loaded.is_set():
+            return
+        if self.has_draw_thread():
+            if not self._codecs_loaded.wait(CODEC_LOAD_TIMEOUT):
+                log.warn("Warning: timed out waiting for the draw thread to load the codecs")
+                # last-resort fallback so we never hang the handshake:
+                self.load_all_codecs()
+            return
+        # no draw thread to defer to: load them ourselves
+        self.load_all_codecs()
 
     def filter_video_decoder_options(self) -> tuple[str, ...]:
         video_decoders = tuple(self.video_decoders)
@@ -152,8 +185,20 @@ class Encodings(StubClientSubsystem):
         return tuple(filtered)
 
     def load_all_codecs(self) -> None:
+        # the actual, idempotent loader: called by the draw thread (which owns codec
+        # initialization when it exists), or by `ensure_codecs_loaded` when there is no
+        # draw thread. It must load the codecs exactly once, and the draw thread relies
+        # on it completing before it installs its seccomp filter (which blocks the file
+        # access that codec imports / `dlopen` / self-tests need - see
+        # `docs/Usage/Seccomp.md`):
+        with self._codecs_lock:
+            if self._codecs_loaded.is_set():
+                return
+            self.do_load_all_codecs()
+            self._codecs_loaded.set()
+
+    def do_load_all_codecs(self) -> None:
         log("load_all_codecs()")
-        sleep(1)
         ae = self.allowed_encodings
         try:
             from xpra import seccomp
@@ -223,6 +268,10 @@ class Encodings(StubClientSubsystem):
     def get_caps(self) -> dict[str, Any]:
         if not BACKWARDS_COMPATIBLE:
             return {"encoding": self.get_encodings_caps()}
+        # the backwards-compatible hello advertises the full encoding caps, so make sure
+        # the codecs are loaded first - waiting for the draw thread when it owns that
+        # (this runs on the main loop, after the draw thread has been started):
+        self.ensure_codecs_loaded()
         return {
             "encoding": self.get_encodings_caps(),
             "cursor.encodings": self.get_cursor_encodings(),
