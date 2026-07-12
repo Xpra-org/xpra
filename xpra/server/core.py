@@ -1596,8 +1596,16 @@ class ServerCore(GLibServer):
 
         # this will call call_hello_oked if successful
         # it may also just send challenge packets,
-        # in which case we'll end up here parsing the hello again
-        start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
+        # in which case we'll end up here parsing the hello again.
+        # Spawn the authentication thread from the main thread (via `idle_add`) rather
+        # than from the network parse thread we are running on: authentication modules
+        # are instantiated here and may open files, sockets or subprocesses, and a
+        # thread spawned by the parse thread would inherit its seccomp filter
+        # (see `docs/Usage/Seccomp.md`).
+        def authenticate() -> bool:
+            start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
+            return False
+        GLib.idle_add(authenticate)
 
     def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
         if auth := self.get_subsystem("auth"):
