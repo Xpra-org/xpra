@@ -1584,9 +1584,16 @@ class ServerCore(GLibServer):
                 cert = ssl_options.get("cert", "")
                 if cert:
                     log.info(f"sending ssl upgrade for {conn}")
-                    cert_data = load_binary_file(cert)
-                    ssl_attrs = {"cert-data": cert_data}
-                    proto.send_now(Packet("ssl-upgrade", ssl_attrs))
+
+                    # read the certificate from disk on the main thread, not the parse
+                    # thread we are running on (which the seccomp filter forbids from
+                    # opening files - see `docs/Usage/Seccomp.md`):
+                    def send_ssl_upgrade() -> bool:
+                        cert_data = load_binary_file(cert)
+                        ssl_attrs = {"cert-data": cert_data}
+                        proto.send_now(Packet("ssl-upgrade", ssl_attrs))
+                        return False
+                    GLib.idle_add(send_ssl_upgrade)
                     return
 
         # if we're here, then we should have read everything that was sent by the client,
