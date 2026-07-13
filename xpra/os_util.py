@@ -61,10 +61,16 @@ def gi_import(mod="Gtk", version="") -> ModuleType:
                 # cythonized code can bind None for missing imports
                 raise ImportError("xpra.platform.darwin")
         import gi
-        try:
-            gi.require_version(mod, version)
-        except (ValueError, AssertionError) as e:
-            raise ImportError(f"unable to import {mod!r} {version=!r}: {e}") from None
+        # `require_version` always enumerates the typelib directories on disk,
+        # even for namespaces that are already loaded - which the seccomp filters
+        # forbid (see `docs/Usage/Seccomp.md`).
+        # Skip it if this exact version has already been required,
+        # `import_module` will then just return the module from the import cache:
+        if gi.get_required_version(mod) != version:
+            try:
+                gi.require_version(mod, version)
+            except (ValueError, AssertionError) as e:
+                raise ImportError(f"unable to import {mod!r} {version=!r}: {e}") from None
         import importlib
         return importlib.import_module(f"gi.repository.{mod}")
 

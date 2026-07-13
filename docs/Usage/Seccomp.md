@@ -251,6 +251,15 @@ the menu policy.
   `KDELegacyDirs` helper is skipped because it would execute `kde-config`, and
   runtime bytecode writes are disabled before the loader's lazy imports.
 
+**`gi_import` caveat:** pygobject's `require_version()` enumerates the typelib
+directories *on disk* on every call, even for a namespace that is already loaded.
+Any lazy `gi_import("GLib")` made from a handler (`xpra/util/background_worker.py`,
+`xpra/notification/base.py`, `xpra/codecs/loader.py`, ...) would therefore hit
+`openat` on the parse thread and fail with `Namespace GLib not available`.
+`gi_import` (`xpra/os_util.py`) now skips `require_version` when that exact version
+has already been required, so the module comes from the import cache without
+touching the filesystem.
+
 **`kill_process` caveat:** a blocked lazy `import` or `dlopen` is a `SIGSYS`
 process kill, not a catchable exception - `log.trap_error` cannot recover from it.
 This is why the pre-warm above matters, and why the debug file-dump
