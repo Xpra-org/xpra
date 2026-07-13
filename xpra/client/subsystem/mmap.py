@@ -6,9 +6,11 @@
 import os
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
+from xpra.util.thread import is_main_thread
 from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import csv
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
@@ -16,6 +18,8 @@ from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.mmap.io import init_client_mmap, clean_mmap
 from xpra.net.mmap.objects import BaseMmapArea
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("mmap")
 
@@ -41,8 +45,14 @@ class MmapArea(BaseMmapArea):
         super().close()
         self.clean_mmap()
 
-    def clean_mmap(self) -> None:
+    def clean_mmap(self) -> bool:
         log("%s.clean_mmap() filename=%s", self, self.filename)
+        if not is_main_thread():
+            # the areas are enabled from `parse_server_capabilities`, which runs on the
+            # network parse thread - and its seccomp filter forbids `unlink`
+            # (see `docs/Usage/Seccomp.md`), so delete the file from the main thread:
+            GLib.idle_add(self.clean_mmap)
+            return False
         if self.tempfile:
             try:
                 self.tempfile.close()
@@ -54,6 +64,7 @@ class MmapArea(BaseMmapArea):
             if self.filename and os.path.exists(self.filename):
                 clean_mmap(self.filename)
                 self.filename = ""
+        return False
 
     def enable_from_caps(self, mmap_caps: typedict) -> bool:
         try:
