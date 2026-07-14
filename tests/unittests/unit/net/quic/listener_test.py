@@ -21,6 +21,7 @@ def _make_protocol(xpra_server=None):
     from xpra.net.quic.listener import HttpServerProtocol
     protocol = HttpServerProtocol.__new__(HttpServerProtocol)
     protocol._xpra_server = xpra_server or MagicMock()
+    protocol.http_origin = "auto"
     protocol._handlers = {}
     protocol._http = None
     protocol._quic = MagicMock()
