@@ -11,6 +11,7 @@ from xpra.server.common import SSH_AGENT_DISPATCH
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict
 from xpra.util.parsing import FALSE_OPTIONS
+from xpra.server.source.ssh_agent import SSHAgentConnection
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.ssh.agent import setup_ssh_auth_sock, set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket
 from xpra.log import Logger
@@ -75,21 +76,22 @@ class SshAgent(StubSubsystem):
         ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
         self.update_agent_symlinks(ssh_auth_sock)
 
-    def cleanup_protocol(self, protocol) -> None:
+    def may_update_agent_symlinks(self, source) -> None:
+        # called by the `client-session` subsystem: the generic `cleanup_protocol` hook
+        # fires after the source has been removed, too late to look up its uuid
         if not self.enabled:
             return
-        source = self.get_server_source(protocol)
         # revert to the agent of whichever client is left, or back to the default:
         agent = ""
-        for ss in self.get_sources_by_type(exclude=source):
-            if ss.uuid and getattr(ss, "ssh_auth_sock", ""):
+        for ss in self.get_sources_by_type(SSHAgentConnection, exclude=source):
+            if ss.uuid and ss.ssh_auth_sock:
                 agent = ss.uuid
                 break
-        self.update_agent_symlinks(agent, remove=source.uuid if source else "")
+        self.update_agent_symlinks(agent, remove=source.uuid)
 
     def update_agent_symlinks(self, agent: str, remove: str = "") -> None:
         # both callers above can fire from the disconnect path
-        # (`cleanup_protocol`, and `new-ui-driver` re-emitted when the ui driver goes away),
+        # (`may_update_agent_symlinks`, and `new-ui-driver` re-emitted when the ui driver goes away),
         # which the server runs inline on the network parse thread - where the seccomp filter
         # denies `unlink` and `symlink`. See `docs/Usage/Seccomp.md`.
         # Retargeting the agent symlink is never urgent, so always do it from the main thread:
