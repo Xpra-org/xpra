@@ -11,12 +11,14 @@ from io import StringIO
 import tempfile
 import unittest
 from types import ModuleType, SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+from xpra.scripts.config import InitException
 from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
     add_desktop_greeter,
+    harden_server_process,
     has_child_arg,
     init_virtual_devices,
     is_splash_enabled,
@@ -30,6 +32,27 @@ from xpra.server.subsystem.process import setup_pam_session, setup_runtime_dir
 
 
 class TestMain(unittest.TestCase):
+
+    def test_harden_server_process(self):
+        harden_process = Mock()
+        security_module = ModuleType("xpra.platform.posix.security")
+        security_module.harden_process = harden_process
+        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+             patch("xpra.scripts.server.LINUX", False):
+            harden_server_process()
+        harden_process.assert_not_called()
+        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+             patch("xpra.scripts.server.LINUX", True):
+            harden_server_process()
+        harden_process.assert_called_once_with()
+
+    def test_harden_server_process_failure(self):
+        security_module = ModuleType("xpra.platform.posix.security")
+        security_module.harden_process = Mock(side_effect=OSError(1, "not permitted"))
+        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+             patch("xpra.scripts.server.LINUX", True), \
+             self.assertRaisesRegex(InitException, "failed to harden the server process"):
+            harden_server_process()
 
     def test_splash_enabled(self):
         assert is_splash_enabled("foo", True, True, ":10") is False, "splash should not be enabled for daemons"
