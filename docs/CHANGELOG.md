@@ -1,15 +1,22 @@
 # Changelog
 
-## [6.5.2] 2026-07-08
+## [6.5.2] 2026-07-14
 * 🔧 Platforms, build and packaging:
+  * [Cython fails to compile on arm64](https://github.com/Xpra-org/xpra/commit/90f828ae524112688647d9f8d87778370c01e3a8)
 * Major:
   * [Gtk X11 clients OpenGL errors](https://github.com/Xpra-org/xpra/commit/e7c95b2cd76e3c8a7a09bb13ea174bc9efd0b091)
   * [missing wheel events with MS Windows clients](https://github.com/Xpra-org/xpra/commit/3d9a6e96d45978beb881162ec55c5bf71695f7d7)
+* Clipboard:
+  * [some default targets missing](https://github.com/Xpra-org/xpra/commit/5998f9b179bc0f5b81314f683f20443c73567e72)
+  * [prevent stale emission](https://github.com/Xpra-org/xpra/commit/5aa73353055d91d9d165c0772643d4a8f1087a1a)
+  * [target ownership confusion](https://github.com/Xpra-org/xpra/commit/194d9237fcdc616936dd9f4414f8a5a5110a8ff9)
 * Minor:
+  * [webcam does not restart following suspend + resume](https://github.com/Xpra-org/xpra/commit/e93d1941fa905507e858a20d09e5bbf25b05b3ab)
   * [missing window raise / restack](https://github.com/Xpra-org/xpra/commit/1911df851c80a5041a724a6eaaed64ac9af597c9)
   * [don't request OpenGL contexts with depth or stencil buffers](https://github.com/Xpra-org/xpra/commit/c384483670f22ff3f31d479688452ff13f134256)
 * Cosmetic:
   * [system tray does not detect mmap](https://github.com/Xpra-org/xpra/commit/d11c5e0f2b0fdeae6da143b7ef9acff433b8bd50)
+  * [clipboard type hint](https://github.com/Xpra-org/xpra/commit/34b1d18d84b750a5ab522859a4d52526f0587b87)
 
 ## [6.5.1] 2026-07-03
 * 🔧 Platforms, build and packaging:
