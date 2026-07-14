@@ -1877,8 +1877,8 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                           " using Linux seccomp filters (Linux only, no effect elsewhere)."
                           " Values: 'no', 'default' (all filters, non-fatal 'errno' action),"
                           " 'strict' (all filters, fatal 'kill_process' action),"
-                          " or a comma-separated list of threads to filter (draw, parse, rfb)"
-                          " with an optional per-thread action (ie: 'draw:errno,parse:kill')."
+                          " or a comma-separated list of threads to filter (decode, parse, rfb, menu)"
+                          " with an optional per-thread action (ie: 'decode:errno,parse:kill')."
                           " Default: '%default'.")
     group.add_option("--env", action="append",
                      dest="env", default=mlist(defaults.env),

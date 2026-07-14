@@ -18,7 +18,7 @@ log = Logger("seccomp")
 
 ACTION_ENV = "XPRA_SECCOMP_RFB_ACTION"
 
-# gate the RFB read filter independently of the draw / network-parse filters,
+# gate the RFB read filter independently of the decode / network-parse filters,
 # so that enabling one does not silently enable the others:
 ENABLED = envbool("XPRA_SECCOMP_RFB", envbool("XPRA_SECCOMP", False))
 

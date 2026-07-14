@@ -44,6 +44,9 @@ class WindowDraw(StubClientSubsystem):
 
     ######################################################################
     # painting windows:
+    # these handlers only queue the work, but they must stay on the UI thread
+    # (`main_thread=True`): that hop is what orders them after the `new-window`
+    # that creates the window they refer to - do not "optimize" it away.
     def _process_window_draw(self, packet: Packet) -> None:
         if PAINT_DELAY >= 0:
             self.timeout_add(PAINT_DELAY, self.add_decode_work, self._do_draw, packet)
@@ -162,4 +165,6 @@ class WindowDraw(StubClientSubsystem):
     def init_authenticated_packet_handlers(self) -> None:
         if BACKWARDS_COMPATIBLE:
             self.add_legacy_alias("draw", "window-draw")
+        # `main_thread=True` is required for ordering, not for the (trivial) handlers:
+        # see `_process_window_draw` above
         self.add_packets("window-draw", "eos", main_thread=True)

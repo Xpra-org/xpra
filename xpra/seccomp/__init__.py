@@ -11,7 +11,7 @@ import sys
 from xpra.util.env import envbool
 
 LINUX = sys.platform.startswith("linux")
-ENABLED = envbool("XPRA_SECCOMP", envbool("XPRA_SECCOMP_DRAW", False))
+ENABLED = envbool("XPRA_SECCOMP", envbool("XPRA_SECCOMP_DECODE", False))
 
 
 def is_available() -> bool:

@@ -21,7 +21,7 @@ untrusted input:
 
 | Filter | Thread | What it processes |
 |---|---|---|
-| `draw` | picture decoding (the `decode` thread) | compressed image and video frames, window icons, cursors |
+| `decode` | picture decoding | compressed image and video frames, window icons, cursors |
 | `parse` | network read | raw socket bytes: decrypt → decompress → decode packets |
 | `rfb` | VNC client read | RFB / VNC framebuffer updates (when connecting to a VNC server) |
 
@@ -43,20 +43,20 @@ xpra attach ssl://HOST:PORT/ --seccomp=default
 | `no` | *(default)* no filtering |
 | `default` | enable all four filters with a **non-fatal** action: a blocked syscall fails with a permission error instead of killing anything |
 | `strict` | enable all four filters with a **fatal** action: a blocked syscall kills the whole process |
-| a list | enable only the listed threads, ie `draw`, `parse`, `rfb`, `menu` |
+| a list | enable only the listed threads, ie `decode`, `parse`, `rfb`, `menu` |
 
 The list form lets you pick individual filters and, optionally, an action per
 filter (see [actions](#actions) below):
 
 ```shell
 # only sandbox the image decoding thread:
-xpra attach ... --seccomp=draw
+xpra attach ... --seccomp=decode
 
 # sandbox decoding and network parsing:
-xpra attach ... --seccomp=draw,parse
+xpra attach ... --seccomp=decode,parse
 
 # decoding is fatal on violation, network parsing only fails the call:
-xpra attach ... --seccomp=draw:kill,parse:errno
+xpra attach ... --seccomp=decode:kill,parse:errno
 ```
 
 The recommended approach is to start with `--seccomp=default` (nothing is killed,
@@ -97,7 +97,7 @@ is not on its allow-list:
 * **Codec self-test** must stay enabled (it is, by default). Xpra pre-loads and
   pre-warms every decoder at startup *before* the sandbox is installed; running
   with `XPRA_CODEC_SELFTEST=0` removes that step and is incompatible with the
-  `draw` filter.
+  `decode` filter.
 
 * **QUIC** connections read from the socket on a separate event-loop thread that
   is not sandboxed; the packet decoding they feed into *is* covered by the `parse`
@@ -143,11 +143,11 @@ precedence over the option**:
 | Variable | Purpose |
 |---|---|
 | `XPRA_SECCOMP` | global on/off, enables all filters |
-| `XPRA_SECCOMP_DRAW` | enable/disable the decoding filter |
+| `XPRA_SECCOMP_DECODE` | enable/disable the decoding filter |
 | `XPRA_SECCOMP_PARSE` | enable/disable the network parse filter |
 | `XPRA_SECCOMP_RFB` | enable/disable the VNC client filter |
 | `XPRA_SECCOMP_MENU` | enable/disable the menu loading filter |
-| `XPRA_SECCOMP_DRAW_ACTION` | action for the decoding filter |
+| `XPRA_SECCOMP_DECODE_ACTION` | action for the decoding filter |
 | `XPRA_SECCOMP_PARSE_ACTION` | action for the parse filter |
 | `XPRA_SECCOMP_RFB_ACTION` | action for the VNC client filter |
 | `XPRA_SECCOMP_MENU_ACTION` | action for the menu loading filter |
@@ -173,9 +173,9 @@ one `SCMP_ACT_ALLOW` rule per allowed syscall (optionally constrained by masked
 argument comparisons), and loads it. The Python side lives
 in `xpra/seccomp/`:
 
-* `xpra/seccomp/draw.py` - decoding thread, installed at the top of the decode loop
-  (`xpra/client/subsystem/decode.py`). The filter is still named after its original
-  consumer, the draw loop, but the thread it covers is now shared (see below).
+* `xpra/seccomp/draw.py` - the `decode` filter, installed at the top of the decode loop
+  (`xpra/client/subsystem/decode.py`). The module keeps its original file name, from when
+  the only sandboxed decoding thread was the draw loop.
 * `xpra/seccomp/parse.py` - network parse thread, installed at the top of
   `_read_parse_thread_loop` (`xpra/net/protocol/socket_handler.py`), and only for
   real network sockets.
@@ -189,7 +189,7 @@ The `--seccomp` option is turned into the `XPRA_SECCOMP*` environment variables 
 runs in `run_mode` right after `configure_env`, before the client / server object
 and its threads are created, and only sets variables that are not already defined.
 The list form deliberately does **not** set the global `XPRA_SECCOMP` flag: the
-draw filter reads it as its primary gate, so setting it would override the
+decode filter reads it as its primary gate, so setting it would override the
 per-thread flags.
 
 **Thread inheritance.** A seccomp filter is inherited by every thread created
@@ -210,7 +210,7 @@ the menu policy.
 
 `xpra/seccomp/draw.py` defines a permissive `BASE_SYSCALLS` baseline. From it:
 
-* the **draw** allow-list (`DRAW_SYSCALLS`) removes the file-namespace syscalls
+* the **decode** allow-list (`DECODE_SYSCALLS`) removes the file-namespace syscalls
   (`FILE_SYSCALLS`: `open`, `openat`, `unlink`, `unlinkat`, `mkdir`, `rename`,
   `renameat*`, `ftruncate`, `fallocate`). The decode thread only decodes images that
   are already in memory, so it never needs to open, create or delete a file -
@@ -229,7 +229,7 @@ the menu policy.
   before the main loop builds the hello. Hardware decoders (which would `dlopen`
   CUDA etc. on the decode thread) are separately disabled under seccomp via
   `xpra/client/subsystem/encoding.py`.
-* the **parse** allow-list (`PARSE_SYSCALLS`) is the same tightened `DRAW_SYSCALLS`
+* the **parse** allow-list (`PARSE_SYSCALLS`) is the same tightened `DECODE_SYSCALLS`
   (no file access) plus the socket syscalls the reader needs (`SOCKET_SYSCALLS`:
   `recvfrom`, `getsockname`, `getsockopt`, `sysinfo`). This is possible because
   every inline packet handler that spawned a subprocess or did file I/O has been
@@ -300,7 +300,7 @@ up *then*, not before enqueuing - a window destroyed mid-decode simply drops its
 
 ## Thread coverage
 
-Four thread roles carry filters today: **draw**, **parse**, client-side **rfb** and
+Four thread roles carry filters today: **decode**, **parse**, client-side **rfb** and
 **menu loading**. The rest of the thread inventory, and why each is or is not sandboxed:
 
 | Thread | Untrusted input? | Decision |

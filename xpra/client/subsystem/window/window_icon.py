@@ -169,6 +169,9 @@ class WindowIcon(StubClientSubsystem):
                 log("client composited window icon saved to %s", filename)
         return icon
 
+    # this handler only queues the work, but it must stay on the UI thread
+    # (`main_thread=True`): that hop is what orders it after the `new-window`
+    # that creates the window it refers to - do not "optimize" it away.
     def _process_window_icon(self, packet: Packet) -> None:
         wid = packet.get_wid()
         w = packet.get_u16(2)
@@ -194,6 +197,6 @@ class WindowIcon(StubClientSubsystem):
             set_tray_icon()
 
     def init_authenticated_packet_handlers(self) -> None:
-        # `main_thread=True`: the hop through the UI thread is what orders this packet
-        # against `new-window` (also a UI packet) before it reaches the decode queue
+        # `main_thread=True` is required for ordering, not for the (trivial) handler:
+        # see `_process_window_icon` above
         self.add_packets("window-icon", main_thread=True)

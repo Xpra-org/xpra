@@ -10,18 +10,18 @@ import os
 
 from xpra.log import Logger
 from xpra.seccomp import is_available
-from xpra.seccomp.draw import DRAW_SYSCALLS
+from xpra.seccomp.draw import DECODE_SYSCALLS
 from xpra.util.env import envbool
 
 log = Logger("seccomp")
 
 ACTION_ENV = "XPRA_SECCOMP_PARSE_ACTION"
 
-# gate the network parse filter independently of the draw filter,
-# so that `XPRA_SECCOMP_DRAW=1` does not silently enable it:
+# gate the network parse filter independently of the decode filter,
+# so that `XPRA_SECCOMP_DECODE=1` does not silently enable it:
 ENABLED = envbool("XPRA_SECCOMP_PARSE", envbool("XPRA_SECCOMP", False))
 
-# syscalls the socket-reading threads need on top of the draw baseline:
+# syscalls the socket-reading threads need on top of the decode baseline:
 # * `recvfrom` - what `socket.recv_into` maps to on x86_64
 # * `getsockname` / `getsockopt` - read-only socket introspection used when
 #   gathering connection info (peer credentials, unix socket path, ...)
@@ -38,11 +38,11 @@ SOCKET_SYSCALLS: tuple[str, ...] = (
 # and dispatches the packet handlers inline. Every handler that spawned a subprocess or
 # did file I/O has been moved off this thread (file transfers, printing, `open-url`,
 # `start-command`, control - see `docs/Usage/Seccomp.md`), so the parse filter now drops
-# file access too, just like the draw filter: the draw baseline plus the socket syscalls.
+# file access too, just like the decode filter: the decode baseline plus the socket syscalls.
 # Caveat: a handler that lazily imports a module for the first time on this thread would
 # still hit `openat`. The default action is `errno` (non-fatal) for exactly this reason -
 # validate a deployment with `XPRA_SECCOMP_PARSE_ACTION=log` before switching to `strict`.
-PARSE_SYSCALLS: tuple[str, ...] = DRAW_SYSCALLS + SOCKET_SYSCALLS
+PARSE_SYSCALLS: tuple[str, ...] = DECODE_SYSCALLS + SOCKET_SYSCALLS
 
 
 def is_enabled() -> bool:

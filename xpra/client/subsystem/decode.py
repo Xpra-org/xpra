@@ -100,13 +100,13 @@ class Decode(StubClientSubsystem):
         sclog = Logger("seccomp")
         sclog("install_seccomp()")
         try:
-            # the filter is still named after its original (and main) consumer, the draw loop:
-            from xpra.seccomp import draw as seccomp_draw
+            # `xpra.seccomp.draw` is the `decode` filter, under its original file name:
+            from xpra.seccomp import draw as seccomp_decode
         except ImportError:
             sclog.warn("Warning: seccomp module is not available")
             return
         try:
-            installed = seccomp_draw.install_thread()
+            installed = seccomp_decode.install_thread()
             sclog("seccomp installed=%s", installed)
         except Exception:
             sclog.error("Error installing decode thread seccomp filter", exc_info=True)

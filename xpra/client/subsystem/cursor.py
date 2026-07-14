@@ -136,6 +136,9 @@ class CursorClient(StubClientSubsystem):
         log("parse_server_capabilities(..) cursor=%s, default=%s", self.enabled, self.default_data)
         return True
 
+    # these handlers only queue the work, but they must stay on the UI thread
+    # (`main_thread=True`): that hop is what orders them against the window packets
+    # (`new-window`, ...) they share the UI thread with - do not "optimize" it away.
     def _process_cursor(self, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
         if not self.enabled:
@@ -226,6 +229,8 @@ class CursorClient(StubClientSubsystem):
         self.client.set_windows_cursor(client_windows, new_cursor)
 
     def init_authenticated_packet_handlers(self) -> None:
+        # `main_thread=True` is required for ordering, not for the (trivial) handlers:
+        # see `_process_cursor` above
         if BACKWARDS_COMPATIBLE:
             self.add_packets("cursor", main_thread=True)
         self.add_packets("cursor-data", "cursor-default", main_thread=True)

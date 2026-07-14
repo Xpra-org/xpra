@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 from xpra import seccomp
 from xpra.client.subsystem import encoding
-from xpra.seccomp import draw as seccomp_draw
+from xpra.seccomp import draw as seccomp_decode
 from xpra.seccomp import menu as seccomp_menu
 from xpra.seccomp import parse as seccomp_parse
 from xpra.seccomp import rfb as seccomp_rfb
@@ -34,9 +34,9 @@ class SeccompTest(unittest.TestCase):
             filtered = encoding.Encodings.filter_video_decoder_options(type("C", (), {"video_decoders": ("all", "no-vpl")})())
         self.assert_decoder_exclusions(self, filtered)
 
-    def test_install_draw_thread_noop_when_disabled(self):
+    def test_install_decode_thread_noop_when_disabled(self):
         with patch.object(seccomp, "is_enabled", return_value=False):
-            self.assertFalse(seccomp_draw.install_thread())
+            self.assertFalse(seccomp_decode.install_thread())
 
     def test_install_parse_thread_noop_when_disabled(self):
         with patch.object(seccomp_parse, "is_enabled", return_value=False):
@@ -56,18 +56,18 @@ class SeccompTest(unittest.TestCase):
             seccomp_menu.MENU_MASKED_RULES,
         )
 
-    def test_parse_syscalls_superset_of_draw(self):
-        self.assertTrue(set(seccomp_draw.DRAW_SYSCALLS).issubset(set(seccomp_parse.PARSE_SYSCALLS)))
+    def test_parse_syscalls_superset_of_decode(self):
+        self.assertTrue(set(seccomp_decode.DECODE_SYSCALLS).issubset(set(seccomp_parse.PARSE_SYSCALLS)))
         self.assertIn("recvfrom", seccomp_parse.PARSE_SYSCALLS)
 
-    def test_draw_blocks_file_syscalls(self):
-        # the draw filter must not allow opening / creating / deleting files:
-        for syscall in seccomp_draw.FILE_SYSCALLS:
-            self.assertNotIn(syscall, seccomp_draw.DRAW_SYSCALLS)
-        self.assertIn("openat", seccomp_draw.FILE_SYSCALLS)
-        # the draw list is exactly the baseline minus the file syscalls:
-        self.assertEqual(set(seccomp_draw.DRAW_SYSCALLS),
-                         set(seccomp_draw.BASE_SYSCALLS) - set(seccomp_draw.FILE_SYSCALLS))
+    def test_decode_blocks_file_syscalls(self):
+        # the decode filter must not allow opening / creating / deleting files:
+        for syscall in seccomp_decode.FILE_SYSCALLS:
+            self.assertNotIn(syscall, seccomp_decode.DECODE_SYSCALLS)
+        self.assertIn("openat", seccomp_decode.FILE_SYSCALLS)
+        # the decode list is exactly the baseline minus the file syscalls:
+        self.assertEqual(set(seccomp_decode.DECODE_SYSCALLS),
+                         set(seccomp_decode.BASE_SYSCALLS) - set(seccomp_decode.FILE_SYSCALLS))
 
     def test_menu_allows_only_masked_file_opens(self):
         self.assertNotIn("open", seccomp_menu.MENU_SYSCALLS)
@@ -111,11 +111,11 @@ class SeccompTest(unittest.TestCase):
     def test_parse_blocks_file_syscalls(self):
         # every file/exec packet handler now runs off the parse thread, so the parse
         # filter drops file access too (see docs/Usage/Seccomp.md):
-        for syscall in seccomp_draw.FILE_SYSCALLS:
+        for syscall in seccomp_decode.FILE_SYSCALLS:
             self.assertNotIn(syscall, seccomp_parse.PARSE_SYSCALLS)
-        # parse is exactly the draw list plus the socket read syscalls:
+        # parse is exactly the decode list plus the socket read syscalls:
         self.assertEqual(set(seccomp_parse.PARSE_SYSCALLS),
-                         set(seccomp_draw.DRAW_SYSCALLS) | set(seccomp_parse.SOCKET_SYSCALLS))
+                         set(seccomp_decode.DECODE_SYSCALLS) | set(seccomp_parse.SOCKET_SYSCALLS))
 
     def test_rfb_keeps_file_syscalls(self):
         # the rfb read thread has not been walked, so it keeps file access for now:
@@ -123,7 +123,7 @@ class SeccompTest(unittest.TestCase):
         self.assertIn("open", seccomp_rfb.RFB_SYSCALLS)
         # rfb is the full baseline (with files) plus the socket read syscalls:
         self.assertEqual(set(seccomp_rfb.RFB_SYSCALLS),
-                         set(seccomp_draw.BASE_SYSCALLS) | set(seccomp_parse.SOCKET_SYSCALLS))
+                         set(seccomp_decode.BASE_SYSCALLS) | set(seccomp_parse.SOCKET_SYSCALLS))
 
     def test_install_rfb_read_thread_noop_when_disabled(self):
         with patch.object(seccomp_rfb, "is_enabled", return_value=False):
@@ -132,7 +132,7 @@ class SeccompTest(unittest.TestCase):
     def test_rfb_is_superset_of_parse(self):
         # rfb keeps everything parse has, plus the file syscalls parse dropped:
         self.assertTrue(set(seccomp_parse.PARSE_SYSCALLS).issubset(set(seccomp_rfb.RFB_SYSCALLS)))
-        self.assertTrue(set(seccomp_draw.FILE_SYSCALLS).issubset(set(seccomp_rfb.RFB_SYSCALLS)))
+        self.assertTrue(set(seccomp_decode.FILE_SYSCALLS).issubset(set(seccomp_rfb.RFB_SYSCALLS)))
 
     def test_parse_seccomp_option(self):
         from xpra.scripts.main import parse_seccomp_option as p
@@ -140,32 +140,32 @@ class SeccompTest(unittest.TestCase):
         self.assertEqual(p("auto"), {})
         self.assertEqual(p("no"), {
             "XPRA_SECCOMP": "0",
-            "XPRA_SECCOMP_DRAW": "0", "XPRA_SECCOMP_PARSE": "0", "XPRA_SECCOMP_RFB": "0",
+            "XPRA_SECCOMP_DECODE": "0", "XPRA_SECCOMP_PARSE": "0", "XPRA_SECCOMP_RFB": "0",
             "XPRA_SECCOMP_MENU": "0",
         })
         self.assertEqual(p("default"), {
-            "XPRA_SECCOMP_DRAW": "1", "XPRA_SECCOMP_DRAW_ACTION": "errno",
+            "XPRA_SECCOMP_DECODE": "1", "XPRA_SECCOMP_DECODE_ACTION": "errno",
             "XPRA_SECCOMP_PARSE": "1", "XPRA_SECCOMP_PARSE_ACTION": "errno",
             "XPRA_SECCOMP_RFB": "1", "XPRA_SECCOMP_RFB_ACTION": "errno",
             "XPRA_SECCOMP_MENU": "1", "XPRA_SECCOMP_MENU_ACTION": "errno",
         })
-        self.assertEqual(p("strict")["XPRA_SECCOMP_DRAW_ACTION"], "kill_process")
+        self.assertEqual(p("strict")["XPRA_SECCOMP_DECODE_ACTION"], "kill_process")
         # explicit thread list disables the unlisted threads and never sets the global flag:
-        env = p("draw,parse:kill")
+        env = p("decode,parse:kill")
         self.assertNotIn("XPRA_SECCOMP", env)
-        self.assertEqual(env["XPRA_SECCOMP_DRAW"], "1")
-        self.assertNotIn("XPRA_SECCOMP_DRAW_ACTION", env)
+        self.assertEqual(env["XPRA_SECCOMP_DECODE"], "1")
+        self.assertNotIn("XPRA_SECCOMP_DECODE_ACTION", env)
         self.assertEqual(env["XPRA_SECCOMP_PARSE"], "1")
         self.assertEqual(env["XPRA_SECCOMP_PARSE_ACTION"], "kill")
         self.assertEqual(env["XPRA_SECCOMP_RFB"], "0")
         self.assertEqual(env["XPRA_SECCOMP_MENU"], "0")
-        for bad in ("draw,bogus", "draw:nope", "xxx"):
+        for bad in ("decode,bogus", "decode:nope", "draw", "xxx"):
             with self.assertRaises(ValueError):
                 p(bad)
 
     def test_configure_seccomp_only_sets_unset_vars(self):
         from xpra.scripts import main
-        keys = ("XPRA_SECCOMP", "XPRA_SECCOMP_DRAW", "XPRA_SECCOMP_DRAW_ACTION",
+        keys = ("XPRA_SECCOMP", "XPRA_SECCOMP_DECODE", "XPRA_SECCOMP_DECODE_ACTION",
                 "XPRA_SECCOMP_PARSE", "XPRA_SECCOMP_PARSE_ACTION",
                 "XPRA_SECCOMP_RFB", "XPRA_SECCOMP_RFB_ACTION")
         keys += ("XPRA_SECCOMP_MENU", "XPRA_SECCOMP_MENU_ACTION")
@@ -173,16 +173,16 @@ class SeccompTest(unittest.TestCase):
             for k in keys:
                 os.environ.pop(k, None)
             # a value already present in the environment must be preserved:
-            os.environ["XPRA_SECCOMP_DRAW_ACTION"] = "log"
+            os.environ["XPRA_SECCOMP_DECODE_ACTION"] = "log"
             main.configure_seccomp("strict")
-            self.assertEqual(os.environ["XPRA_SECCOMP_DRAW"], "1")
-            self.assertEqual(os.environ["XPRA_SECCOMP_DRAW_ACTION"], "log")
+            self.assertEqual(os.environ["XPRA_SECCOMP_DECODE"], "1")
+            self.assertEqual(os.environ["XPRA_SECCOMP_DECODE_ACTION"], "log")
             self.assertEqual(os.environ["XPRA_SECCOMP_PARSE_ACTION"], "kill_process")
             # empty value is a no-op:
             for k in keys:
                 os.environ.pop(k, None)
             main.configure_seccomp("")
-            self.assertNotIn("XPRA_SECCOMP_DRAW", os.environ)
+            self.assertNotIn("XPRA_SECCOMP_DECODE", os.environ)
 
     def test_load_all_codecs_runs_once(self):
         # the decode thread and the `load-all-codecs` thread may both call this,

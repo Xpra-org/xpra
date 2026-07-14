@@ -13,7 +13,9 @@ from xpra.seccomp import is_enabled
 
 log = Logger("seccomp")
 
-ACTION_ENV = "XPRA_SECCOMP_DRAW_ACTION"
+# this module is the `decode` filter (`--seccomp=decode`, `XPRA_SECCOMP_DECODE`):
+# it keeps its original file name, from when the only sandboxed decoding thread was the draw loop.
+ACTION_ENV = "XPRA_SECCOMP_DECODE_ACTION"
 
 # permissive baseline shared with the network parse and rfb filters.
 # those threads dispatch many packet handlers (hello, audio, encodings, ...)
@@ -101,10 +103,10 @@ BASE_SYSCALLS: tuple[str, ...] = (
     "restart_syscall",
 )
 
-# this filter is named after its original consumer, the draw loop, but it is installed
-# on the client's shared `decode` thread (`xpra/client/subsystem/decode.py`), which decodes
-# every kind of untrusted picture data the server sends: draw packets, window icons and
-# cursors. That thread only decodes images that are already in memory: the decoders it uses
+# this filter is installed on the client's shared `decode` thread
+# (`xpra/client/subsystem/decode.py`), which decodes every kind of untrusted picture data
+# the server sends: draw packets, window icons and cursors.
+# That thread only decodes images that are already in memory: the decoders it uses
 # are pre-loaded and pre-warmed by the codec selftest (XPRA_CODEC_SELFTEST, on by default)
 # before the filter is installed, every consumer imports what it needs from its
 # `preload_decode()` hook, and hardware decoders are disabled under seccomp
@@ -125,7 +127,7 @@ FILE_SYSCALLS: tuple[str, ...] = (
     "fallocate",
 )
 
-DRAW_SYSCALLS: tuple[str, ...] = tuple(s for s in BASE_SYSCALLS if s not in FILE_SYSCALLS)
+DECODE_SYSCALLS: tuple[str, ...] = tuple(s for s in BASE_SYSCALLS if s not in FILE_SYSCALLS)
 
 
 def install_thread() -> bool:
@@ -134,7 +136,7 @@ def install_thread() -> bool:
     from xpra.seccomp import _native
     action = get_action()
     log("installing decode thread seccomp policy with action=%s", action)
-    _native.install_filter(DRAW_SYSCALLS, action)
+    _native.install_filter(DECODE_SYSCALLS, action)
     return True
 
 

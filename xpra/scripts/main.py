@@ -339,7 +339,7 @@ def configure_network(options) -> None:
         raise InitException("at least one valid packet encoder must be enabled")
 
 
-SECCOMP_THREADS: tuple[str, ...] = ("draw", "parse", "rfb", "menu")
+SECCOMP_THREADS: tuple[str, ...] = ("decode", "parse", "rfb", "menu")
 SECCOMP_ACTIONS: tuple[str, ...] = (
     "kill", "kill_thread", "kill-thread", "kill_process", "kill-process", "errno", "log", "allow",
 )
@@ -348,7 +348,7 @@ SECCOMP_ACTIONS: tuple[str, ...] = (
 def parse_seccomp_option(value: str) -> dict[str, str]:
     """
     Convert a `--seccomp=...` option value into the environment variables
-    that gate the per-thread seccomp filters (draw / parse / rfb / menu).
+    that gate the per-thread seccomp filters (decode / parse / rfb / menu).
     Returns an empty dict for an empty / "auto" value (leave the environment untouched).
     Raises `ValueError` for invalid values.
     """
@@ -369,7 +369,7 @@ def parse_seccomp_option(value: str) -> dict[str, str]:
             env[f"XPRA_SECCOMP_{thread.upper()}"] = "1"
             env[f"XPRA_SECCOMP_{thread.upper()}_ACTION"] = action
         return env
-    # explicit list of threads, ie: "draw,parse" or "draw:errno,parse:kill":
+    # explicit list of threads, ie: "decode,parse" or "decode:errno,parse:kill":
     actions: dict[str, str] = {}
     for part in value.split(","):
         part = part.strip()
@@ -386,7 +386,7 @@ def parse_seccomp_option(value: str) -> dict[str, str]:
     if not actions:
         raise ValueError(f"no valid seccomp threads found in {value!r}")
     # deliberately do not set the global `XPRA_SECCOMP` flag here:
-    # the draw filter reads it as its primary gate, so setting it would override
+    # the decode filter reads it as its primary gate, so setting it would override
     # the per-thread flags below. Enable / disable each thread explicitly instead:
     for thread in SECCOMP_THREADS:
         var = f"XPRA_SECCOMP_{thread.upper()}"
