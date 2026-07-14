@@ -18,6 +18,10 @@ EXTENSION_TO_MIMETYPE: dict[str, str] = {
 # or which reject every request that carries an `Origin` header:
 ORIGIN_ANY: Sequence[str] = ("any", "all", "*")
 ORIGIN_NONE: Sequence[str] = ("none", "no", "off", "false")
+ORIGIN_AUTO = "auto"
+# `strict` can be combined with any of the values above,
+# it rejects the requests which don't have an `Origin` header at all:
+ORIGIN_STRICT = "strict"
 
 DEFAULT_PORTS: dict[str, int] = {"http": 80, "https": 443}
 
@@ -68,22 +72,30 @@ def check_origin(origin: str, host: str, policy: str) -> bool:
     Verify the `Origin` header of an http request against the `http-origin` policy.
     Browsers always send an `Origin` header when initiating a websocket connection,
     and scripts cannot omit or forge it,
-    so requests without one are never cross-site requests from a browser.
+    so requests without one are never cross-site requests from a browser:
+    they are only rejected by the `strict` policy.
+    (xpra clients only send an `Origin` header if they are configured to do so:
+    see the `xpra.net.websockets.headers.origin` module)
     """
-    pol = (policy or "auto").strip().lower()
-    if pol in ORIGIN_ANY:
-        return True
+    tokens = [x.strip().lower() for x in (policy or ORIGIN_AUTO).split(",") if x.strip()]
+    values = [x for x in tokens if x != ORIGIN_STRICT]
+    strict = len(values) < len(tokens)
+    if not values:
+        # `strict` on its own is a shortcut for `auto,strict`:
+        values = [ORIGIN_AUTO]
     if not origin:
+        return not strict
+    if any(v in ORIGIN_ANY for v in values):
         return True
-    if pol in ORIGIN_NONE:
+    if any(v in ORIGIN_NONE for v in values):
         return False
     parsed = parse_origin(origin)
     if not parsed[1]:
         # unparsable, ie: `null` from a sandboxed iframe or a `file://` page
         return False
-    if pol == "auto":
-        return same_origin(origin, host)
-    return parsed in tuple(parse_origin(x) for x in pol.split(",") if x.strip())
+    if ORIGIN_AUTO in values and same_origin(origin, host):
+        return True
+    return parsed in tuple(parse_origin(v) for v in values if v != ORIGIN_AUTO)
 
 
 def http_response(content, content_type: str = "text/plain") -> HttpResponse:

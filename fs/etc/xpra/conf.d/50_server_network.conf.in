@@ -99,6 +99,11 @@ http-scripts = all
 # Set this if the html5 client is served from another host or port:
 #http-origin=https://desktop.example
 #http-origin=any
+# Only browsers send an 'Origin' header: add 'strict' to also reject
+# the websocket connections that don't have one.
+# (xpra clients then need XPRA_WEBSOCKET_HEADERS_MODULES=origin)
+#http-origin=strict
+#http-origin=strict,https://desktop.example
 http-origin = auto
 
 ########################################################################

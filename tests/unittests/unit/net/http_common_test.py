@@ -47,6 +47,20 @@ class TestHttpOrigin(unittest.TestCase):
             assert check_origin("http://evil.example", "localhost:14500", policy)
             assert check_origin("null", "localhost:14500", policy)
 
+    def test_strict_rejects_missing_origin(self):
+        for policy in ("strict", "strict,https://desktop.example", "any,strict"):
+            assert not check_origin("", "localhost:14500", policy)
+
+    def test_strict_alone_is_same_origin(self):
+        assert check_origin("http://localhost:14500", "localhost:14500", "strict")
+        assert not check_origin("http://evil.example", "localhost:14500", "strict")
+
+    def test_strict_with_allowlist(self):
+        policy = "strict,https://desktop.example"
+        assert check_origin("https://desktop.example", "localhost:14500", policy)
+        assert not check_origin("http://evil.example", "localhost:14500", policy)
+        assert not check_origin("", "localhost:14500", policy)
+
     def test_none(self):
         # every request carrying an `Origin` header is rejected:
         for policy in ("none", "no", "off"):

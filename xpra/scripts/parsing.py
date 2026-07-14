@@ -1243,10 +1243,11 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Enable the builtin web server scripts. Default: '%default'.")
     group.add_option("--http-origin", action="store",
                      dest="http_origin", default=defaults.http_origin,
-                     metavar="auto|any|none|ORIGINS",
+                     metavar="auto|any|none|strict|ORIGINS",
                      help="Which origins are allowed to open websocket connections from a browser."
                           " 'auto' only allows the pages served by this server,"
                           " ORIGINS is a comma separated list - ie: 'https://desktop.example'."
+                          " Add 'strict' to also reject the connections without an 'Origin' header."
                           " Default: '%default'.")
     legacy_bool_parse("html")
     group.add_option("--html", action="store",
