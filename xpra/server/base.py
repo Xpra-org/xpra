@@ -459,6 +459,10 @@ class ServerBase(ServerBaseClass):
             pass
         if source := self._server_sources.pop(protocol, None):
             self.cleanup_source(source)
+            # must stay after `cleanup_source` above: that emits `new-ui-driver`, which
+            # also retargets the agent symlink - the last writer has to be this one
+            may_update_agent_symlinks = getattr(self, "may_update_agent_symlinks", noop)
+            may_update_agent_symlinks(source)
             mdns_update = getattr(self, "mdns_update", noop)
             add_work_item(mdns_update)
         for c in SERVER_BASES:

@@ -70,11 +70,12 @@ class SshAgent(StubServerMixin):
         ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
         set_ssh_agent(ssh_auth_sock)
 
-    def cleanup_protocol(self, protocol) -> None:
+    def may_update_agent_symlinks(self, source) -> None:
+        # called from `ServerBase.cleanup_protocol`: the generic `cleanup_protocol` mixin
+        # hook fires after the source has been removed, too late to look up its uuid
         if not self.ssh_agent:
             return
-        source = self.get_server_source(protocol)
-        if source and source.uuid:
+        if source.uuid:
             clean_agent_socket(source.uuid)
         remaining_sources = get_sources_by_type(self, exclude=source)
         for ss in remaining_sources:
