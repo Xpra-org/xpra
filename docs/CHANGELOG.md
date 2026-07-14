@@ -1,5 +1,18 @@
 # Changelog
 
+## [5.1.7] 2026-07-14
+* Platforms, build and packaging:
+    * [almalinux build failures](https://github.com/Xpra-org/xpra/commit/e371556e6710cb19b02f215af7f4754313d59f00) [and rockylinux](https://github.com/Xpra-org/xpra/commit/dc839d9bc7bdd46b7161b37f89d98263b2405a1f)
+    * [missing default build list](https://github.com/Xpra-org/xpra/commit/403e684f0cb731c01e2799ac4c335110268c0605) - [unused arm64 list](https://github.com/Xpra-org/xpra/commit/ebdcf11bb30609e541c5b47a7dded68affce2d12)
+    * [RHEL builds need our private openh264](https://github.com/Xpra-org/xpra/commit/c31381a14a88580626dbf1e61356af2e5f9dbd2d) [and CentOS](https://github.com/Xpra-org/xpra/commit/46941f44b363f2bf37a7bcddfc15ccf83102ccb4)
+    * [Python 3.6 syntax compatibility](https://github.com/Xpra-org/xpra/commit/0d8384964f8a1ae2e505eba6fd4839daf142d707)
+    * [no pyopengl to build here](https://github.com/Xpra-org/xpra/commit/bcd98f8557dff2609a448f7b357756dbaa870d0e)
+* Major:
+    * [chunked file transfer early rejection errors out](https://github.com/Xpra-org/xpra/commit/075e60d24ca4e14b06321864afb32a51cf6b7514)
+* Minor:
+    * [Gtk X11 clients OpenGL errors](https://github.com/Xpra-org/xpra/commit/4c7dab57dc77fea015e58f4ecfe27714d5720403)
+    * [don't request OpenGL contexts with depth or stencil buffers](https://github.com/Xpra-org/xpra/commit/67511f70785c6bc2e5741d0a68b5e8c349db10d0)
+
 ## [5.1.6] 2026-06-30
 * Platforms, build and packaging:
     * [honour pkgconfig file for Gtk build paths](https://github.com/Xpra-org/xpra/commit/cbf056e6374abc873bcdf167710315a9d1393740) + [fixup](https://github.com/Xpra-org/xpra/commit/a36e8331966962aad26cc1cf375734ca97f2ca63)

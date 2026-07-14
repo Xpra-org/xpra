@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.1.6
+%define version 5.1.7
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -827,6 +827,8 @@ fi
 
 
 %changelog
+* Tue Jul 14 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+- TODO
 * Tue Jun 30 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
 - Platforms, build and packaging:
    honour pkgconfig file for Gtk build paths + fixup
