@@ -29,7 +29,7 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
 from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import POSIX, WIN32, OSX, getuid, get_hex_uuid
+from xpra.os_util import POSIX, WIN32, OSX, LINUX, getuid, get_hex_uuid
 from xpra.util.str_fn import nicestr, csv
 from xpra.util.io import stderr_print
 from xpra.util.env import envbool, envint, osexpand, get_saved_env, get_saved_env_var, OSEnvContext
@@ -398,6 +398,16 @@ def init_virtual_devices(app, devices: dict) -> None:
         pointer.init_virtual_devices(devices)
 
 
+def harden_server_process() -> None:
+    if not LINUX:
+        return
+    from xpra.platform.posix.security import harden_process
+    try:
+        harden_process()
+    except OSError as e:
+        raise InitException(f"failed to harden the server process: {e}") from None
+
+
 def do_run_server(script_file: str, cmdline: list[str], opts,
                   extra_args: list[str], full_mode: str, defaults) -> ExitValue:
     if opts.encoding == "help" or "help" in opts.encodings:
@@ -630,6 +640,9 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         use_display = xvfb.use_display
         # Change uid as early as possible, but after VFB setup:
         process.setup()
+    # setuid makes a process dumpable again, so harden only after privileges
+    # have reached their final state and before accepting client traffic.
+    harden_server_process()
     display_name = vfb_result.display_name
     app.init_subsystems()
 
