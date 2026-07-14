@@ -113,6 +113,33 @@ class TestNewHttpHandler(unittest.TestCase):
         assert isinstance(handler, ServerWebSocketConnection)
         assert p._xpra_server.make_protocol.called
 
+    def test_websocket_same_origin(self):
+        from xpra.net.quic.websocket import ServerWebSocketConnection
+        p = self._make_protocol_with_http()
+        event = self._make_headers_event(
+            "CONNECT", "/", protocol="websocket",
+            extra=[(b"origin", b"https://localhost")],
+        )
+        handler = p.new_http_handler(event)
+        assert isinstance(handler, ServerWebSocketConnection)
+        assert p._xpra_server.make_protocol.called
+
+    def test_websocket_cross_origin(self):
+        p = self._make_protocol_with_http()
+        event = self._make_headers_event(
+            "CONNECT", "/", protocol="websocket",
+            extra=[(b"origin", b"https://evil.example")],
+        )
+        handler = p.new_http_handler(event)
+        assert handler is None
+        p._http.send_headers.assert_called_once_with(
+            stream_id=event.stream_id,
+            headers=[(b":status", b"403")],
+            end_stream=True,
+        )
+        p.transmit.assert_called_once()
+        p._xpra_server.make_protocol.assert_not_called()
+
     def test_webtransport_handler(self):
         from xpra.net.quic.webtransport import ServerWebTransportConnection
         p = self._make_protocol_with_http()
