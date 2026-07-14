@@ -45,6 +45,24 @@ class ClientMixinTest(unittest.TestCase):
     def stop(self) -> None:
         self.glib.timeout_add(1000, self.main_loop.quit)
 
+    # the scheduler belongs to the owning client, which this harness stands in for:
+    # `StubClientSubsystem` copies these three from it when it is constructed.
+
+    def idle_add(self, fn: Callable, *args, **kwargs) -> int:
+        # subsystems hand work back to the UI thread with `idle_add`
+        # (ie: the `decode` thread returning a decoded cursor or window icon).
+        # most tests never run a main loop, so run it now, or it would be dropped:
+        fn(*args, **kwargs)
+        return 0
+
+    def timeout_add(self, timeout: int, fn: Callable, *args, **kwargs) -> int:
+        return self.glib.timeout_add(timeout, fn, *args, **kwargs)
+
+    def source_remove(self, tid: int) -> None:
+        # `idle_add` above runs inline and returns 0: there is no source to remove
+        if tid:
+            self.glib.source_remove(tid)
+
     def dump_packets(self) -> None:
         from xpra.util.io import get_util_logger
         log = get_util_logger()
@@ -115,6 +133,15 @@ class ClientMixinTest(unittest.TestCase):
         # (`send`, `quit`, `add_packet_handler`, ... all delegate to it);
         # this test harness stands in for the owning client:
         x.client = self
+        # the client also owns the scheduler: `StubClientSubsystem` copies these three
+        # from the client it is constructed with, but it is constructed here without one
+        # (`mclass` is not always a class that takes one), so it fell back to
+        # `GLibScheduler`. Re-bind them now that the client is set, otherwise work handed
+        # back to the UI thread with `idle_add` - the `decode` thread returning a decoded
+        # cursor or window icon - would be queued to a main loop that never runs:
+        x.idle_add = self.idle_add
+        x.timeout_add = self.timeout_add
+        x.source_remove = self.source_remove
         self.exit_code = None
         self.readonly = False
         self.session_name = ""
