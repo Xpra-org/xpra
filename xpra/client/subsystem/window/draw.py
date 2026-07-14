@@ -6,17 +6,12 @@
 # later version. See the file COPYING for details.
 
 from collections import deque
-from time import sleep, monotonic
-from queue import SimpleQueue
-from threading import Thread
+from time import monotonic
 from typing import Any
 
-from xpra.os_util import LINUX
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_DRAW_ACK
-from xpra.exit_codes import ExitCode, ExitValue
 from xpra.constants import WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
-from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
@@ -39,29 +34,8 @@ DRAW_TYPES: dict[type, str] = {bytes: "bytes", str: "bytes", tuple: "arrays", li
 class WindowDraw(StubClientSubsystem):
 
     def __init__(self):
-        # draw thread:
-        self._draw_queue = SimpleQueue[Packet | None]()
-        self._draw_thread: Thread | None = None
         self._draw_counter: int = 0
         self.pixel_counter: deque = deque(maxlen=1000)
-
-    def run(self) -> ExitValue:
-        # we decode pixel data in this thread
-        self._draw_thread = start_thread(self._draw_thread_loop, "draw")
-        return ExitCode.OK
-
-    def cleanup(self) -> None:
-        log("WindowClient.cleanup()")
-        # tell the draw thread to exit:
-        if dq := self._draw_queue:
-            dq.put(None)
-        if dq:
-            dq.put(None)
-        dt = self._draw_thread
-        log("WindowClient.cleanup() draw thread=%s, alive=%s", dt, dt and dt.is_alive())
-        if dt and dt.is_alive():
-            dt.join(0.1)
-        log("WindowClient.cleanup() done")
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -72,12 +46,12 @@ class WindowDraw(StubClientSubsystem):
     # painting windows:
     def _process_window_draw(self, packet: Packet) -> None:
         if PAINT_DELAY >= 0:
-            self.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
+            self.timeout_add(PAINT_DELAY, self.add_decode_work, self._do_draw, packet)
         else:
-            self._draw_queue.put(packet)
+            self.add_decode_work(self._do_draw, packet)
 
     def _process_eos(self, packet: Packet) -> None:
-        self._draw_queue.put(packet)
+        self.add_decode_work(self._do_draw, packet)
 
     def send_damage_sequence(self, wid: int, packet_sequence: int, width: int, height: int,
                              decode_time: int, message="") -> None:
@@ -85,53 +59,8 @@ class WindowDraw(StubClientSubsystem):
         log("sending ack: %s", packet)
         self.send_now(WINDOW_DRAW_ACK, *packet)
 
-    def _draw_thread_loop(self):
-        self.init_draw_thread_codecs()
-        if LINUX:
-            self.install_draw_thread_seccomp()
-        while self.client.exit_code is None:
-            packet = self._draw_queue.get()
-            if packet is None:
-                log("draw queue found exit marker")
-                break
-            with log.trap_error(f"Error processing {packet} packet"):
-                self._do_draw(packet)
-                sleep(0)
-        self._draw_thread = None
-        log("draw thread ended")
-
-    def init_draw_thread_codecs(self) -> None:
-        # The draw thread is the sole initializer of the codecs it will use: loading them
-        # here (before the seccomp filter below, and before any draw packet is processed)
-        # guarantees every codec import / `dlopen` / self-test - and any transient decoder
-        # worker thread the self-tests spawn - happens on this thread while it is still
-        # unfiltered, and in a well-defined order relative to the filter. Every other
-        # consumer waits for this via `Encodings.ensure_codecs_loaded`.
-        # See `docs/Usage/Seccomp.md`.
-        encoding = self.get_subsystem("encoding")
-        if not encoding:
-            return
-        log("init_draw_thread_codecs() loading codecs from the draw thread")
-        with log.trap_error("Error loading codecs from the draw thread"):
-            encoding.load_all_codecs()
-
-    @staticmethod
-    def install_draw_thread_seccomp() -> None:
-        sclog = Logger("seccomp")
-        sclog("install_draw_thread_seccomp()")
-        try:
-            from xpra.seccomp import draw as seccomp_draw
-        except ImportError:
-            sclog.warn("Warning: seccomp module is not available")
-            return
-        try:
-            installed = seccomp_draw.install_thread()
-            log("seccomp installed=%s", installed)
-        except Exception:
-            sclog.error("Error installing draw thread seccomp filter", exc_info=True)
-
     def _do_draw(self, packet: Packet) -> None:
-        """ this runs from the draw thread above """
+        """ this runs from the decode thread (see `xpra/client/subsystem/decode.py`) """
         wid = packet.get_wid()
         window = self.get_window(wid)
         if packet.get_type() == "eos":

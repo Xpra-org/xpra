@@ -814,7 +814,7 @@ class ClientWindowBase(ClientWidgetBase):
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
                     options: typedict, callbacks: MutableSequence[Callable]):
-        """ Note: this runs from the draw thread (not UI thread) """
+        """ Note: this runs from the decode thread (not UI thread) """
         backing = self._backing
         if not backing:
             log("draw_region: window %s has no backing, gone?", self.wid)
@@ -852,7 +852,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.idle_add(self.repaint, rx, ry, rw, rh)
 
     def eos(self) -> None:
-        """ Note: this runs from the draw thread (not UI thread) """
+        """ Note: this runs from the decode thread (not UI thread) """
         if backing := self._backing:
             backing.eos()
 

@@ -73,6 +73,27 @@ class StubClientSubsystem(SignalEmitter):
         Slower initialization that may load external components
         """
 
+    def preload_decode(self) -> None:
+        """
+        Called on the decode thread before its seccomp filter is installed.
+        Import here anything this subsystem will need when its work runs there:
+        a first-time import on the filtered thread would hit `openat` and be blocked.
+        (see `xpra/client/subsystem/decode.py` and `docs/Usage/Seccomp.md`)
+        """
+
+    def add_decode_work(self, fn: Callable, *args) -> None:
+        """
+        Queue `fn(*args)` for the decode thread, which decodes the untrusted data
+        sent by the server (pixels, icons, cursors) under a seccomp filter.
+        When there is no `decode` subsystem to defer to (bare / standalone use,
+        eg: in a unit test), run it inline.
+        """
+        decode = self.get_subsystem("decode")
+        if decode:
+            decode.add_work(fn, *args)
+        else:
+            fn(*args)
+
     def run(self) -> ExitValue:
         """
         run the main loop.

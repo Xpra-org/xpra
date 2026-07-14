@@ -70,6 +70,10 @@ class WindowClient(WindowClientClass):
         for bc in WINDOW_CLIENT_BASES:
             bc.load(self)
 
+    def preload_decode(self) -> None:
+        for bc in WINDOW_CLIENT_BASES:
+            bc.preload_decode(self)
+
     def parse_server_capabilities(self, c: typedict) -> bool:
         for bc in WINDOW_CLIENT_BASES:
             if not bc.parse_server_capabilities(self, c):

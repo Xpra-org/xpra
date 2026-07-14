@@ -185,8 +185,8 @@ class SeccompTest(unittest.TestCase):
             self.assertNotIn("XPRA_SECCOMP_DRAW", os.environ)
 
     def test_load_all_codecs_runs_once(self):
-        # the draw thread and the `load-all-codecs` thread may both call this,
-        # so it must load the codecs exactly once (see draw-thread seccomp ordering):
+        # the decode thread and the `load-all-codecs` thread may both call this,
+        # so it must load the codecs exactly once (see decode-thread seccomp ordering):
         from threading import Event, Lock
 
         class FakeEncodings:
@@ -209,38 +209,38 @@ class SeccompTest(unittest.TestCase):
         encoding.Encodings.load_all_codecs(already)
         self.assertEqual(already.calls, 0)
 
-    def test_ensure_codecs_loaded_defers_to_draw_thread(self):
-        # the invariant: when a draw thread exists, `ensure_codecs_loaded` must wait for
-        # it rather than loading the codecs itself; without a draw thread, it loads them:
+    def test_ensure_codecs_loaded_defers_to_decode_thread(self):
+        # the invariant: when a decode thread exists, `ensure_codecs_loaded` must wait for
+        # it rather than loading the codecs itself; without a decode thread, it loads them:
         from threading import Event
 
         class FakeEncodings:
-            def __init__(self, draw_thread: bool):
-                self._draw_thread = draw_thread
+            def __init__(self, decode_thread: bool):
+                self._decode_thread = decode_thread
                 self._codecs_loaded = Event()
                 self.loads = 0
 
-            def has_draw_thread(self) -> bool:
-                return self._draw_thread
+            def has_decode_thread(self) -> bool:
+                return self._decode_thread
 
             def load_all_codecs(self) -> None:
                 self.loads += 1
                 self._codecs_loaded.set()
 
-        # no draw thread: loads the codecs itself
-        no_draw = FakeEncodings(draw_thread=False)
-        encoding.Encodings.ensure_codecs_loaded(no_draw)
-        self.assertEqual(no_draw.loads, 1)
+        # no decode thread: loads the codecs itself
+        no_decode = FakeEncodings(decode_thread=False)
+        encoding.Encodings.ensure_codecs_loaded(no_decode)
+        self.assertEqual(no_decode.loads, 1)
 
-        # draw thread present and codecs already loaded: returns without loading
-        loaded = FakeEncodings(draw_thread=True)
+        # decode thread present and codecs already loaded: returns without loading
+        loaded = FakeEncodings(decode_thread=True)
         loaded._codecs_loaded.set()
         encoding.Encodings.ensure_codecs_loaded(loaded)
         self.assertEqual(loaded.loads, 0)
 
-        # draw thread present but it never loads: falls back after the timeout
+        # decode thread present but it never loads: falls back after the timeout
         with patch.object(encoding, "CODEC_LOAD_TIMEOUT", 0.01):
-            stalled = FakeEncodings(draw_thread=True)
+            stalled = FakeEncodings(decode_thread=True)
             encoding.Encodings.ensure_codecs_loaded(stalled)
             self.assertEqual(stalled.loads, 1)
 

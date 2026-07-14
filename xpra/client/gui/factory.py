@@ -16,6 +16,9 @@ def get_client_subsystems() -> tuple[type, ...]:
         from xpra.client.subsystem.opengl import OpenGLClient
         subsystems.append(OpenGLClient)
     if features.window:
+        # the decode thread must be started before the subsystems that post work to it:
+        from xpra.client.subsystem.decode import Decode
+        subsystems.append(Decode)
         from xpra.client.subsystem.window import WindowClient
         subsystems.append(WindowClient)
         if features.cursor:

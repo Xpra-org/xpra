@@ -257,6 +257,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "client"        : "All client code",
         "paint"         : "Client window paint code",
         "draw"          : "Client draw packets",
+        "decode"        : "Client decode thread",
         "cairo"         : "Cairo paint code used with the GTK3 client",
         "opengl"        : "Client OpenGL rendering",
         "vulkan"        : "Client Vulkan rendering",

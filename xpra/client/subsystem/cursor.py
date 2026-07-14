@@ -20,7 +20,23 @@ from xpra.log import Logger
 
 log = Logger("cursor")
 
-SAVE_CURSORS: bool = envbool("XPRA_SAVE_CURSORS", False)
+
+def get_save_cursors() -> bool:
+    if not envbool("XPRA_SAVE_CURSORS", False):
+        return False
+    # cursors are decoded from the decode thread, which runs under a seccomp filter
+    # that blocks file access - writing there would kill the process (see Seccomp.md):
+    try:
+        from xpra.seccomp import is_enabled
+    except ImportError:
+        return True
+    if is_enabled():
+        log.warn("Warning: 'XPRA_SAVE_CURSORS' is ignored because seccomp is enabled")
+        return False
+    return True
+
+
+SAVE_CURSORS: bool = get_save_cursors()
 
 
 def decompress_cursor_data(encoding: str, cpixels: SizedBuffer, serial: int) -> bytes:
@@ -64,6 +80,17 @@ class CursorClient(StubClientSubsystem):
         # re-apply cursors when the scaling changes:
         if display := self.get_subsystem("display"):
             display.connect("scaling-changed", self.reset_windows_cursors)
+
+    def preload_decode(self) -> None:
+        # `decompress_cursor_data` runs on the decode thread, where a first-time import
+        # would be blocked by the seccomp filter - so do it here instead:
+        try:
+            from xpra.codecs.pillow.decoder import open_only
+            log("preload_decode() open_only=%s", open_only)
+        except ImportError as e:
+            # without pillow we never advertise the `png` cursor encoding (see `get_caps`),
+            # so the server can only send us `raw` cursors, which need no decoder:
+            log("preload_decode() no pillow decoder: %s", e)
 
     def get_info(self) -> dict[str, Any]:
         return self.get_caps()
@@ -115,25 +142,32 @@ class CursorClient(StubClientSubsystem):
             return
         if len(packet) == 2:
             # marker telling us to use the default cursor:
-            new_cursor = packet[1]
-            setdefault = False
-        else:
-            if len(packet) < 9:
-                raise ValueError(f"invalid cursor packet: only {len(packet)} items")
-            new_cursor = list(packet[1:])
-            if len(new_cursor) >= 12:
-                ssize = new_cursor[10]
-                smax = new_cursor[11]
-                log("server cursor sizes: default=%s, max=%s", ssize, smax)
-            # trim packet-type:
-            encoding = str(new_cursor[0])
-            setdefault = encoding.startswith("default:")
-            if setdefault:
-                encoding = encoding.split(":")[1]
-            serial = int(new_cursor[5])
-            pixels = self.decompress_cursor_data(encoding, new_cursor[8], serial)
-            new_cursor[8] = pixels
-            new_cursor[0] = "raw"
+            self.apply_cursor(packet[1], False)
+            return
+        if len(packet) < 9:
+            raise ValueError(f"invalid cursor packet: only {len(packet)} items")
+        new_cursor = list(packet[1:])
+        if len(new_cursor) >= 12:
+            ssize = new_cursor[10]
+            smax = new_cursor[11]
+            log("server cursor sizes: default=%s, max=%s", ssize, smax)
+        self.add_decode_work(self._decode_cursor, new_cursor)
+
+    def _decode_cursor(self, new_cursor: list) -> None:
+        """ this runs from the decode thread (see `xpra/client/subsystem/decode.py`) """
+        log("_decode_cursor(%s)", Ellipsizer(new_cursor))
+        # trim packet-type:
+        encoding = str(new_cursor[0])
+        setdefault = encoding.startswith("default:")
+        if setdefault:
+            encoding = encoding.split(":")[1]
+        serial = int(new_cursor[5])
+        new_cursor[8] = self.decompress_cursor_data(encoding, new_cursor[8], serial)
+        new_cursor[0] = "raw"
+        self.idle_add(self.apply_cursor, new_cursor, setdefault)
+
+    def apply_cursor(self, new_cursor, setdefault: bool) -> None:
+        """ this runs from the UI thread """
         if setdefault:
             log("setting default cursor=%s", Ellipsizer(new_cursor))
             self.default_data = new_cursor
@@ -159,9 +193,16 @@ class CursorClient(StubClientSubsystem):
         serial = packet.get_u64(6)
         cpixels = packet.get_bytes(7)
         name = packet.get_str(8)
+        self.add_decode_work(self._decode_cursor_data, encoding, w, h, xhot, yhot, serial, cpixels, name)
+
+    def _decode_cursor_data(self, encoding: str, w: int, h: int, xhot: int, yhot: int,
+                            serial: int, cpixels: SizedBuffer, name: str) -> None:
+        """ this runs from the decode thread (see `xpra/client/subsystem/decode.py`) """
+        log("_decode_cursor_data(%s, %s, %s, %s, %s, %#x, %i bytes, %s)",
+            encoding, w, h, xhot, yhot, serial, len(cpixels), name)
         pixels = self.decompress_cursor_data(encoding, cpixels, serial)
         cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, pixels, name)
-        self.set_windows_cursor(self.get_windows(), cursor_data)
+        self.idle_add(self.apply_cursor, cursor_data, False)
 
     def _process_cursor_default(self, packet: Packet) -> None:
         log("setting default cursor: %s", packet)

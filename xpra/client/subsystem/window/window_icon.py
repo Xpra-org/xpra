@@ -20,7 +20,24 @@ log = Logger("window")
 DYNAMIC_TRAY_ICON: bool = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
 ICON_OVERLAY: int = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
-SAVE_WINDOW_ICONS: bool = envbool("XPRA_SAVE_WINDOW_ICONS", False)
+
+
+def get_save_window_icons() -> bool:
+    if not envbool("XPRA_SAVE_WINDOW_ICONS", False):
+        return False
+    # icons are decoded from the decode thread, which runs under a seccomp filter
+    # that blocks file access - writing there would kill the process (see Seccomp.md):
+    try:
+        from xpra.seccomp import is_enabled
+    except ImportError:
+        return True
+    if is_enabled():
+        log.warn("Warning: 'XPRA_SAVE_WINDOW_ICONS' is ignored because seccomp is enabled")
+        return False
+    return True
+
+
+SAVE_WINDOW_ICONS: bool = get_save_window_icons()
 
 
 def load_overlay_image(icon_filename: str):
@@ -57,6 +74,17 @@ class WindowIcon(StubClientSubsystem):
     def init(self, opts) -> None:
         self.overlay_image = load_overlay_image(opts.tray_icon)
         log("overlay_image=%s", self.overlay_image)
+
+    def preload_decode(self) -> None:
+        # `window_icon_image` runs on the decode thread, where a first-time import
+        # would be blocked by the seccomp filter - so do them here instead:
+        try:
+            from PIL import Image
+            from xpra.codecs.pillow.decoder import open_only
+            log("preload_decode() Image=%s, open_only=%s", Image, open_only)
+        except ImportError as e:
+            log("preload_decode()", exc_info=True)
+            log.info("window icons require python-pillow: %s", e)
 
     def cleanup(self) -> None:
         self.overlay_image = None
@@ -147,14 +175,25 @@ class WindowIcon(StubClientSubsystem):
         h = packet.get_u16(3)
         coding = packet.get_str(4)
         data = packet.get_bytes(5)
+        self.add_decode_work(self._decode_window_icon, wid, w, h, coding, data)
+
+    def _decode_window_icon(self, wid: int, w: int, h: int, coding: str, data) -> None:
+        """ this runs from the decode thread (see `xpra/client/subsystem/decode.py`) """
         img = self.window_icon_image(wid, w, h, coding, data)
+        log("_decode_window_icon(%s, %s, %s, %s, %s bytes) image=%s", wid, w, h, coding, len(data), img)
+        if img:
+            self.idle_add(self._set_window_icon, wid, img)
+
+    def _set_window_icon(self, wid: int, img) -> None:
+        # the window may have been destroyed whilst we were decoding its icon:
         window = self.get_window(wid)
-        log("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s",
-            wid, w, h, coding, len(data), img, window)
-        if window and img:
+        log("_set_window_icon(%s, %s) window=%s", wid, img, window)
+        if window:
             window.update_icon(img)
             set_tray_icon = getattr(self, "set_tray_icon", noop)
             set_tray_icon()
 
     def init_authenticated_packet_handlers(self) -> None:
+        # `main_thread=True`: the hop through the UI thread is what orders this packet
+        # against `new-window` (also a UI packet) before it reaches the decode queue
         self.add_packets("window-icon", main_thread=True)

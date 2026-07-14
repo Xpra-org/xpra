@@ -101,13 +101,17 @@ BASE_SYSCALLS: tuple[str, ...] = (
     "restart_syscall",
 )
 
-# the draw thread only decodes images that are already in memory: the decoders
-# it uses are pre-loaded and pre-warmed by the codec selftest (XPRA_CODEC_SELFTEST,
-# on by default) before this thread starts, and hardware decoders are disabled
-# under seccomp (see `xpra/client/subsystem/encoding.py`). So it never needs to
-# open, create or delete files - blocking those confines a decoder bug from
-# touching the filesystem. (Debug image dumping via XPRA_SAVE_TO_FILE is turned
-# off under seccomp, see `xpra/codecs/debug.py`.)
+# this filter is named after its original consumer, the draw loop, but it is installed
+# on the client's shared `decode` thread (`xpra/client/subsystem/decode.py`), which decodes
+# every kind of untrusted picture data the server sends: draw packets, window icons and
+# cursors. That thread only decodes images that are already in memory: the decoders it uses
+# are pre-loaded and pre-warmed by the codec selftest (XPRA_CODEC_SELFTEST, on by default)
+# before the filter is installed, every consumer imports what it needs from its
+# `preload_decode()` hook, and hardware decoders are disabled under seccomp
+# (see `xpra/client/subsystem/encoding.py`). So it never needs to open, create or delete
+# files - blocking those confines a decoder bug from touching the filesystem.
+# (Debug image dumping via XPRA_SAVE_TO_FILE, XPRA_SAVE_WINDOW_ICONS and XPRA_SAVE_CURSORS
+# is turned off under seccomp.)
 FILE_SYSCALLS: tuple[str, ...] = (
     "open",
     "openat",
@@ -129,7 +133,7 @@ def install_thread() -> bool:
         return False
     from xpra.seccomp import _native
     action = get_action()
-    log("installing draw thread seccomp policy with action=%s", action)
+    log("installing decode thread seccomp policy with action=%s", action)
     _native.install_filter(DRAW_SYSCALLS, action)
     return True
 

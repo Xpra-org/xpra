@@ -20,7 +20,7 @@ def get_save_to_file() -> str:
     # everywhere through this function so that the seccomp check below is always applied.
     save = os.environ.get("XPRA_SAVE_TO_FILE", "")
     if save:
-        # decoders save frames from the draw thread, which runs under a seccomp filter
+        # decoders save frames from the decode thread, which runs under a seccomp filter
         # that blocks file access - writing there would kill the process (see seccomp.md):
         try:
             from xpra.seccomp import is_enabled

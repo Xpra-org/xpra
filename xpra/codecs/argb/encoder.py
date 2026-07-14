@@ -134,5 +134,5 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
         may_save_image("png", to_png(img))
 
     # wrap it using "Compressed" so the network layer receiving it
-    # won't decompress it (leave it to the client's draw thread)
+    # won't decompress it (leave it to the client's decode thread)
     return coding, cwrapper, client_options, width, height, stride, bpp

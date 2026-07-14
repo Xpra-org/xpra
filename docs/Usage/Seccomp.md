@@ -21,7 +21,7 @@ untrusted input:
 
 | Filter | Thread | What it processes |
 |---|---|---|
-| `draw` | picture / video decoding | compressed image and video frames |
+| `draw` | picture decoding (the `decode` thread) | compressed image and video frames, window icons, cursors |
 | `parse` | network read | raw socket bytes: decrypt → decompress → decode packets |
 | `rfb` | VNC client read | RFB / VNC framebuffer updates (when connecting to a VNC server) |
 
@@ -90,9 +90,9 @@ is not on its allow-list:
   keep them on a non-fatal action. With `--seccomp=default` (`errno`) the transfer
   simply fails instead.
 
-* **Debug image dumping** (`XPRA_SAVE_TO_FILE`) writes frames to disk from the
-  decoding thread, so it is automatically turned off (with a warning) whenever
-  seccomp is enabled.
+* **Debug image dumping** writes to disk from the decoding thread, so it is
+  automatically turned off (with a warning) whenever seccomp is enabled - this covers
+  `XPRA_SAVE_TO_FILE` (frames), `XPRA_SAVE_WINDOW_ICONS` and `XPRA_SAVE_CURSORS`.
 
 * **Codec self-test** must stay enabled (it is, by default). Xpra pre-loads and
   pre-warms every decoder at startup *before* the sandbox is installed; running
@@ -173,8 +173,9 @@ one `SCMP_ACT_ALLOW` rule per allowed syscall (optionally constrained by masked
 argument comparisons), and loads it. The Python side lives
 in `xpra/seccomp/`:
 
-* `xpra/seccomp/draw.py` - decoding thread, installed at the top of the draw loop
-  (`xpra/client/subsystem/window/draw.py`).
+* `xpra/seccomp/draw.py` - decoding thread, installed at the top of the decode loop
+  (`xpra/client/subsystem/decode.py`). The filter is still named after its original
+  consumer, the draw loop, but the thread it covers is now shared (see below).
 * `xpra/seccomp/parse.py` - network parse thread, installed at the top of
   `_read_parse_thread_loop` (`xpra/net/protocol/socket_handler.py`), and only for
   real network sockets.
@@ -211,22 +212,22 @@ the menu policy.
 
 * the **draw** allow-list (`DRAW_SYSCALLS`) removes the file-namespace syscalls
   (`FILE_SYSCALLS`: `open`, `openat`, `unlink`, `unlinkat`, `mkdir`, `rename`,
-  `renameat*`, `ftruncate`, `fallocate`). The draw thread only decodes images that
+  `renameat*`, `ftruncate`, `fallocate`). The decode thread only decodes images that
   are already in memory, so it never needs to open, create or delete a file -
-  *provided* its decoders are already loaded and pre-warmed. To guarantee that
-  ordering, the draw thread is made the **sole initializer** of the codecs: from
-  `init_draw_thread_codecs()` it loads and self-tests all of them *itself*, before
+  *provided* everything it will import is already loaded. To guarantee that
+  ordering, the decode thread is made the **sole initializer** of the codecs: from
+  `Decode.preload()` it loads and self-tests all of them *itself*, before
   it installs the filter. Loading runs the codec self-test (`XPRA_CODEC_SELFTEST`,
   on by default), which does a real decode of each codec, triggering PIL's lazy
   plugin imports, any `dlopen` of codec libraries and any transient decoder worker
-  threads, all while the draw thread is still unfiltered. Every other consumer that
+  threads, all while the decode thread is still unfiltered. Every other consumer that
   needs the codecs (the `encoding-config` packet, and - in backwards-compatible
   mode - the encoding capabilities in the hello) calls
-  `Encodings.ensure_codecs_loaded()`, which *waits* for the draw thread rather than
-  loading anything itself; only when there is no draw thread does it load them
-  directly. This is safe because the draw thread is started (in the client's `run`)
+  `Encodings.ensure_codecs_loaded()`, which *waits* for the decode thread rather than
+  loading anything itself; only when there is no decode thread does it load them
+  directly. This is safe because the decode thread is started (in the client's `run`)
   before the main loop builds the hello. Hardware decoders (which would `dlopen`
-  CUDA etc. on the draw thread) are separately disabled under seccomp via
+  CUDA etc. on the decode thread) are separately disabled under seccomp via
   `xpra/client/subsystem/encoding.py`.
 * the **parse** allow-list (`PARSE_SYSCALLS`) is the same tightened `DRAW_SYSCALLS`
   (no file access) plus the socket syscalls the reader needs (`SOCKET_SYSCALLS`:
@@ -262,8 +263,40 @@ touching the filesystem.
 
 **`kill_process` caveat:** a blocked lazy `import` or `dlopen` is a `SIGSYS`
 process kill, not a catchable exception - `log.trap_error` cannot recover from it.
-This is why the pre-warm above matters, and why the debug file-dump
-(`get_save_to_file()` in `xpra/codecs/debug.py`) is disabled under seccomp.
+This is why the pre-warm above matters, and why the debug file-dumps
+(`get_save_to_file()` in `xpra/codecs/debug.py`, `get_save_window_icons()` in
+`xpra/client/subsystem/window/window_icon.py`, `get_save_cursors()` in
+`xpra/client/subsystem/cursor.py`) are disabled under seccomp.
+
+## The decode thread
+
+The sandboxed decoding thread is not draw-specific: it is a shared worker owned by the
+`decode` subsystem (`xpra/client/subsystem/decode.py`), and any client subsystem can post
+work to it with `add_decode_work(method, *args)` (`StubClientSubsystem`). Its queue holds
+`(callable, args)` pairs, so the producer stays a trivial packet handler and the decoding
+itself happens on the filtered thread. Three consumers use it today:
+
+| Packet | Enqueues | Decodes |
+|---|---|---|
+| `window-draw` / `eos` | `WindowDraw._process_window_draw` | `_do_draw` → `window.draw_region()` |
+| `window-icon` | `WindowIcon._process_window_icon` | `_decode_window_icon` → Pillow |
+| `cursor` / `cursor-data` | `CursorClient._process_cursor_data` | `_decode_cursor_data` → Pillow |
+
+Two rules bind a new consumer:
+
+* **Import from `preload_decode()`, not from the work item.** `Decode.preload()` loads the
+  codecs and then calls `preload_decode()` on every subsystem, all while the thread is still
+  unfiltered. A module imported for the first time *after* the filter is installed hits
+  `openat` and, under a fatal action, kills the process. (This is why the window-icon and
+  cursor subsystems import `PIL` / `xpra.codecs.pillow.decoder` from that hook: with
+  `--encodings=rgb`, `dec_pillow` is never loaded, so nothing else would have imported them.)
+* **Keep the packet handler on `main_thread=True`.** All three producers are UI packets, and
+  so is `new-window`. That shared UI-thread hop is what orders a draw or an icon *after* the
+  window it refers to has been created; dispatching them straight from the parse thread would
+  race window creation. The handler only enqueues, so it costs nothing to leave it there.
+
+The result is bounced back to the UI thread with `idle_add`, and the target window is looked
+up *then*, not before enqueuing - a window destroyed mid-decode simply drops its icon.
 
 ## Thread coverage
 
@@ -272,7 +305,7 @@ Four thread roles carry filters today: **draw**, **parse**, client-side **rfb** 
 
 | Thread | Untrusted input? | Decision |
 |---|---|---|
-| **draw / decode** | Yes: compressed images/video | **Sandboxed** (`seccomp/draw.py`) |
+| **decode** | Yes: compressed images/video, window icons, cursors | **Sandboxed** (`seccomp/draw.py`) |
 | **network parse** | Yes: raw socket bytes | **Sandboxed**, network sockets only (`seccomp/parse.py`) |
 | **RFB read** (client) | Yes: framebuffer parsing | **Sandboxed** at steady state (`seccomp/rfb.py`) |
 | **menu loading** | Local XDG metadata and icons | **Sandboxed**, read-only filesystem access (`seccomp/menu.py`) |
@@ -298,7 +331,7 @@ and documented rather than closed.
 
 `RFBClientProtocol` reads the socket and does all the tight/zlib/gradient/
 depalette/cursor byte-crunching inline, dispatching `draw`/`challenge`/
-`clipboard-token`: jpeg goes to the already-sandboxed draw thread, `challenge` is
+`clipboard-token`: jpeg goes to the already-sandboxed decode thread, `challenge` is
 `main_thread=True` (and dispatched before client-init anyway), and the heavy
 parsing is pure-Python + `zlib.decompress`.
 
