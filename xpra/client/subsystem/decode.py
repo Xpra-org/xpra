@@ -38,6 +38,15 @@ def prewarm_malloc_arena() -> None:
     So provoke that read here, from a throwaway thread, while we are still unfiltered.
     (harmless on a libc that does not do this - it is just some allocation churn)
 
+    It has to be a thread *exit*: there is no cheaper way in, and both of the obvious
+    shortcuts have been tried and do not work.
+    * `check_may_shrink_heap` (and `heap_trim` / `shrink_heap`) are `static` in glibc:
+      they are not in the dynamic symbol table, so `ctypes` cannot call them.
+    * `malloc_trim(0)` *is* exported, but `mtrim()` consolidates, `madvise`s the free
+      chunks and then calls `systrim()` - the main-arena/`sbrk` trim. It never reaches
+      `heap_trim`, so it never reads the file. Neither does a plain large `malloc`/`free`
+      (nothing left at the top of the heap to shrink). Only the arena teardown does.
+
     Only worth doing when a filter is actually going to be installed, and it can be turned
     off with `XPRA_MALLOC_PREWARM=0` - at the risk of that `SIGSYS` at shutdown.
     """
