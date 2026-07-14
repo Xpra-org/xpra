@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.6] 2026-06-22
+## [6.6] 2026-07-14
 * 🔧 Platforms, build and packaging:
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
@@ -15,12 +15,18 @@
   * [use `TCP_INFO` to drive batch delay](https://github.com/Xpra-org/xpra/issues/2421)
   * [`asyncio` loop exit fix](https://github.com/Xpra-org/xpra/pull/4891)
   * [longer session connection timeout for ssh sessions](https://github.com/Xpra-org/xpra/issues/4904)
-  * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
-  * [`scram` authentication](https://github.com/Xpra-org/xpra/issues/1771)
   * [serialized SSL socket access](https://github.com/Xpra-org/xpra/issues/4919)
   * [`ProxyJump` support with paramiko ssh backend](https://github.com/Xpra-org/xpra/commit/2167c90e98555d4d62d62924fdb868eba5f96888)
   * [support remote UNC named-pipe URLs](https://github.com/Xpra-org/xpra/issues/1454)
   * [much improved RFB support](https://github.com/Xpra-org/xpra/issues/4933)
+* 🛡️ Security:
+  * [`seccomp` hardening of image parsing](https://github.com/Xpra-org/xpra/issues/622)
+  * [honour encodings restrictions in all subsystems](https://github.com/Xpra-org/xpra/issues/4943)
+  * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
+  * [`scram` authentication](https://github.com/Xpra-org/xpra/issues/1771)
+  * [http origin validation](https://github.com/Xpra-org/xpra/issues/4957)
+  * [rate-limit authentication requests](https://github.com/Xpra-org/xpra/issues/4959)
+  * [process level protections: prevent ptrace / core dumps](https://github.com/Xpra-org/xpra/issues/4958)
 * 🌈 Encodings:
   * [`zstd` stream compression](https://github.com/Xpra-org/xpra/issues/4946)
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
@@ -32,8 +38,6 @@
   * [`YUV422` support with `vp9`](https://github.com/Xpra-org/xpra/issues/4928)
   * [colorspace synchronization in video bitstream](https://github.com/Xpra-org/xpra/issues/4926)
 * ✨ Features:
-  * [`seccomp` hardening of image parsing](https://github.com/Xpra-org/xpra/issues/622)
-  * [honour encodings restrictions in all subsystems](https://github.com/Xpra-org/xpra/issues/4943)
   * [native `pipewire` frame capture](https://github.com/Xpra-org/xpra/issues/4937)
   * [remove GStreamer video codecs](https://github.com/Xpra-org/xpra/issues/4936)
   * [gsettings synchronization](https://github.com/Xpra-org/xpra/issues/3683)
