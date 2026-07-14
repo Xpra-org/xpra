@@ -515,6 +515,7 @@ v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and
 evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.10", "evdi")
 drm_ENABLED             = DEFAULT and (LINUX or FREEBSD) and pkg_config_version("2.4", "libdrm")
 seccomp_ENABLED         = DEFAULT and LINUX and pkg_config_exists("libseccomp")
+landlock_ENABLED        = DEFAULT and LINUX and has_header_file("linux/landlock.h")
 csc_cython_ENABLED      = DEFAULT
 pytorch_ENABLED         = DEFAULT
 nvidia_ENABLED          = DEFAULT and not OSX and BITS==64 and not RISCV
@@ -608,7 +609,7 @@ SWITCH_ALIAS = {
         "rencodeplus", "brotli", "cityhash", "qrencode", "websockets", "netdev", "vsock",
         "lz4", "zstd",
         "x11", "gtk_x11",
-        "pam", "sd_listen", "proc",
+        "pam", "sd_listen", "proc", "landlock",
         "pipewire",
         "peercred",
     ),
@@ -635,7 +636,7 @@ SWITCHES += [
     "wayland_client", "wayland_server",
     "qt6_client", "pyglet_client", "tk_client", "win32_client",
     "ism_ext",
-    "pam", "xdg_open", "peercred",
+    "pam", "xdg_open", "peercred", "landlock",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
     "docs", "pandoc_lua",
@@ -3530,6 +3531,7 @@ if peercred_ENABLED:
 
 # platform:
 tace(sd_listen_ENABLED, "xpra.platform.posix.sd_listen", "libsystemd")
+tace(landlock_ENABLED, "xpra.platform.posix._landlock")
 tace(proc_ENABLED and proc_use_procps, "xpra.platform.posix.proc_procps", "libprocps",
      extra_compile_args="-Wno-error")
 tace(proc_ENABLED and proc_use_libproc, "xpra.platform.posix.proc_libproc", "libproc2", language="c++")

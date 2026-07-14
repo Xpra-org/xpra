@@ -408,6 +408,23 @@ def harden_server_process() -> None:
         raise InitException(f"failed to harden the server process: {e}") from None
 
 
+def enforce_server_landlock(app=None) -> None:
+    if not LINUX:
+        return
+    # The session bus creates its own socket and needs write access to devices
+    # such as /dev/null.  Start it outside the domain, then confine the server
+    # before the remaining subsystems are set up.
+    if app is not None and envbool("XPRA_LANDLOCK", False):
+        dbus = app.get_subsystem("dbus")
+        if dbus and dbus.enabled:
+            dbus.init_dbus_env()
+    from xpra.platform.posix.security import enforce_landlock
+    try:
+        enforce_landlock((os.environ.get("XPRA_SESSION_DIR", ""), ), allow_socket_creation=False)
+    except (ImportError, OSError) as e:
+        raise InitException(f"failed to restrict the server process with Landlock: {e}") from None
+
+
 def do_run_server(script_file: str, cmdline: list[str], opts,
                   extra_args: list[str], full_mode: str, defaults) -> ExitValue:
     if opts.encoding == "help" or "help" in opts.encodings:
@@ -665,6 +682,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         app.init(opts)
         progress(60, "creating local sockets")
         app.init_local_sockets(opts, display_name, clobber)
+        enforce_server_landlock(app)
         progress(90, "finalizing")
         app.setup()
         init_virtual_devices(app, vfb_result.devices)

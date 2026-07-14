@@ -33,7 +33,7 @@ from xpra.util.parsing import (
     get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data, FALSE_OPTIONS,
 )
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
-from xpra.os_util import getuid, getgid, is_admin, gi_import, WIN32, OSX, POSIX
+from xpra.os_util import getuid, getgid, is_admin, gi_import, WIN32, OSX, POSIX, LINUX
 from xpra.util.io import load_binary_file, stderr_print, info, warn, error, clean_std_pipes
 from xpra.util.system import is_Wayland, set_proc_title, is_systemd_pid1, stop_proc
 from xpra.scripts.parsing import (
@@ -931,7 +931,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         app = WebcamClient(display_desc)
         app.init(options)
         connect_to_server(app, display_desc, options)
-        return do_run_client(app)
+        return do_run_client(app, options)
     if mode == "keyboard":
         from xpra.platform import keyboard
         return keyboard.main(cmdline)
@@ -1168,7 +1168,7 @@ def run_client(script_file, cmdline: list[str], opts, extra_args: list[str], mod
             Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
         return ExitCode.OK
     app = get_client_app(cmdline, opts, extra_args, mode)
-    r = do_run_client(app)
+    r = do_run_client(app, opts)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % exit_str(r))
         return exec_reconnect(script_file, cmdline)
@@ -1866,8 +1866,20 @@ def make_client(opts):
     return app
 
 
-def do_run_client(app) -> ExitValue:
+def enforce_client_landlock(opts) -> None:
+    if not LINUX:
+        return
+    from xpra.platform.posix.security import enforce_landlock
     try:
+        enforce_landlock((opts.download_path, ), allow_socket_creation=True)
+    except (ImportError, OSError) as e:
+        raise InitException(f"failed to restrict the client process with Landlock: {e}") from None
+
+
+def do_run_client(app, opts=None) -> ExitValue:
+    try:
+        if opts is not None:
+            enforce_client_landlock(opts)
         return app.run()
     except KeyboardInterrupt:
         return -signal.SIGINT
@@ -2015,7 +2027,7 @@ def start_server_via_proxy(cmdline, options, args, mode: str) -> ExitValue | Non
             from xpra.net.constants import SYSTEM_PROXY_SOCKET
             args = [SYSTEM_PROXY_SOCKET]
         app = get_client_app(cmdline, options, args, "request-%s" % mode)
-        r = do_run_client(app)
+        r = do_run_client(app, options)
         # OK or got a signal:
         NO_RETRY: list[int] = [int(ExitCode.OK)] + list(range(128, 128 + 16))
         # TODO: honour "--attach=yes"
@@ -2167,7 +2179,7 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
         if app:
             may_show_progress(app, 100, "failure", e)
         raise
-    r = do_run_client(app)
+    r = do_run_client(app, opts)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % exit_str(r))
         args = list(cmdline)

@@ -8,9 +8,12 @@
 import os
 import shlex
 import signal
+import sys
 import tempfile
 import unittest
 from subprocess import Popen, DEVNULL, PIPE
+from types import ModuleType, SimpleNamespace
+from unittest.mock import Mock, patch
 
 from xpra.os_util import getuid, POSIX, OSX
 from xpra.util.env import OSEnvContext
@@ -23,6 +26,7 @@ from xpra.scripts.main import (
     nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
     isdisplaytype,
     check_display,
+    enforce_client_landlock,
     _monitors_args,
 )
 from xpra.scripts.picker import find_session_by_name
@@ -35,6 +39,16 @@ def _get_test_socket_dir():
 
 
 class TestMain(unittest.TestCase):
+
+    def test_enforce_client_landlock(self):
+        enforce_landlock = Mock()
+        security_module = ModuleType("xpra.platform.posix.security")
+        security_module.enforce_landlock = enforce_landlock
+        opts = SimpleNamespace(download_path="/downloads")
+        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+             patch("xpra.scripts.main.LINUX", True):
+            enforce_client_landlock(opts)
+        enforce_landlock.assert_called_once_with(("/downloads", ), allow_socket_creation=True)
 
     def test_nox(self):
         with OSEnvContext():

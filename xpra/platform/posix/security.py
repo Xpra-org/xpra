@@ -10,13 +10,21 @@ import ctypes
 import mmap
 import os
 import resource
+import sys
+import tempfile
 from collections.abc import Iterator
 
 from xpra.log import Logger
+from xpra.util.env import envbool
 
 log = Logger("server")
 
 PR_SET_DUMPABLE = 4
+
+SYSTEM_READ_PATHS: tuple[str, ...] = (
+    "/bin", "/sbin", "/lib", "/lib64", "/usr", "/etc", "/opt",
+    "/run", "/var", "/proc", "/sys", "/dev",
+)
 
 
 def _get_libc():
@@ -98,3 +106,52 @@ def harden_process() -> None:
         log("marked %i writable private memory mappings MADV_DONTDUMP", marked)
         if failed:
             log.warn("Warning: failed to mark %i memory mappings MADV_DONTDUMP", failed)
+
+
+def get_landlock_read_paths() -> tuple[str, ...]:
+    """Return the system, interpreter and per-user roots Xpra may read."""
+    paths: list[str] = list(SYSTEM_READ_PATHS)
+    paths += [
+        os.getcwd(),
+        os.environ.get("HOME", "~"),
+        os.environ.get("XDG_CONFIG_HOME", "~/.config"),
+        os.environ.get("XDG_CACHE_HOME", "~/.cache"),
+        os.environ.get("XDG_DATA_HOME", "~/.local/share"),
+        os.environ.get("XDG_STATE_HOME", "~/.local/state"),
+        os.environ.get("XDG_RUNTIME_DIR", ""),
+        sys.prefix,
+        sys.base_prefix,
+        os.path.dirname(sys.executable),
+    ]
+    for name, default in (
+        ("XDG_CONFIG_DIRS", "/etc/xdg"),
+        ("XDG_DATA_DIRS", "/usr/local/share:/usr/share"),
+    ):
+        paths += os.environ.get(name, default).split(os.pathsep)
+    for path in sys.path:
+        paths.append(path or os.getcwd())
+    return tuple(paths)
+
+
+def get_landlock_temp_paths() -> tuple[str, ...]:
+    from xpra.platform.paths import get_xpra_tmp_dir
+    return tempfile.gettempdir(), get_xpra_tmp_dir()
+
+
+def get_landlock_device_paths() -> tuple[str, ...]:
+    """Return device hierarchies used by hardware codecs and graphics APIs."""
+    return "/dev/dri", "/dev/accel"
+
+
+def enforce_landlock(write_paths=(), *, allow_socket_creation: bool) -> int:
+    """Install Xpra's opt-in process-wide Landlock filesystem policy."""
+    if not envbool("XPRA_LANDLOCK", False):
+        return 0
+    from xpra.platform.posix.landlock import restrict_paths
+    return restrict_paths(
+        get_landlock_read_paths(),
+        tuple(write_paths) + get_landlock_temp_paths(),
+        device_paths=get_landlock_device_paths(),
+        allow_socket_creation=allow_socket_creation,
+        sync_threads=True,
+    )

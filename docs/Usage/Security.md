@@ -81,6 +81,9 @@ This includes: the [NVENC encoder](NVENC.md) (see also _proxy server system inte
 ### [Seccomp sandboxing](Seccomp.md)
 On Linux, the threads that first process untrusted network data (picture / video decoding, packet parsing, VNC framebuffer parsing) and the XDG menu loader can be confined with [seccomp](Seccomp.md) syscall filters. These policies limit the syscalls available to each workload; the menu loader retains read-only filesystem access. This is disabled by default and enabled with `--seccomp`.
 
+### [Landlock filesystem confinement](Landlock.md)
+On Linux kernels with Landlock ABI 9 or newer, the whole client or server process can be restricted to system and user read roots plus a small set of writable directories. This experimental policy is disabled by default and enabled with `XPRA_LANDLOCK=1`.
+
 </details>
 
 ---

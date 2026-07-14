@@ -362,6 +362,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "lz4"           : "LZ4 bindings",
         "zstd"          : "zstd bindings",
         "seccomp"       : "seccomp sandboxing",
+        "landlock"      : "Landlock filesystem confinement",
         # server bits:
         "test"          : "Test code",
         "verbose"       : "Very verbose flag",

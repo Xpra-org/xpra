@@ -18,6 +18,7 @@ from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
     add_desktop_greeter,
+    enforce_server_landlock,
     harden_server_process,
     has_child_arg,
     init_virtual_devices,
@@ -53,6 +54,29 @@ class TestMain(unittest.TestCase):
              patch("xpra.scripts.server.LINUX", True), \
              self.assertRaisesRegex(InitException, "failed to harden the server process"):
             harden_server_process()
+
+    def test_enforce_server_landlock(self):
+        enforce_landlock = Mock()
+        security_module = ModuleType("xpra.platform.posix.security")
+        security_module.enforce_landlock = enforce_landlock
+        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+             patch.dict(os.environ, {"XPRA_SESSION_DIR": "/session"}, clear=False), \
+             patch("xpra.scripts.server.LINUX", True):
+            enforce_server_landlock()
+        enforce_landlock.assert_called_once_with(("/session", ), allow_socket_creation=False)
+
+    def test_enforce_server_landlock_starts_dbus_first(self):
+        events = []
+        enforce_landlock = Mock(side_effect=lambda *args, **kwargs: events.append("landlock"))
+        security_module = ModuleType("xpra.platform.posix.security")
+        security_module.enforce_landlock = enforce_landlock
+        dbus = SimpleNamespace(enabled=True, init_dbus_env=lambda: events.append("dbus"))
+        app = SimpleNamespace(get_subsystem=lambda name: dbus if name == "dbus" else None)
+        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+             patch.dict(os.environ, {"XPRA_LANDLOCK": "1", "XPRA_SESSION_DIR": "/session"}, clear=False), \
+             patch("xpra.scripts.server.LINUX", True):
+            enforce_server_landlock(app)
+        self.assertEqual(events, ["dbus", "landlock"])
 
     def test_splash_enabled(self):
         assert is_splash_enabled("foo", True, True, ":10") is False, "splash should not be enabled for daemons"
