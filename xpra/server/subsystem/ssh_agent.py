@@ -69,27 +69,36 @@ class SshAgent(StubSubsystem):
     def setup(self) -> None:
         self.server.connect("new-ui-driver", self.set_agent)
 
+    def get_agent_uuid(self, exclude=None) -> str:
+        # the client driving the session gets to provide the agent,
+        # failing that, any client that has one:
+        ui_driver = self.server.ui_driver
+        agent = ""
+        for ss in self.get_sources_by_type(SSHAgentConnection, exclude=exclude):
+            if not ss.uuid or not ss.ssh_auth_sock:
+                continue
+            if ss.uuid == ui_driver:
+                return ss.uuid
+            agent = agent or ss.uuid
+        return agent
+
     def set_agent(self, server, source) -> None:
         log("set_agent(%s, %s) ssh-agent=%s", server, source, self.enabled)
         if not self.enabled:
             return
-        ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
-        self.update_agent_symlinks(ssh_auth_sock)
+        self.update_agent_symlinks(self.get_agent_uuid())
 
     def may_update_agent_symlinks(self, source) -> None:
         # called by the `client-session` subsystem: the generic `cleanup_protocol` hook
         # fires after the source has been removed, too late to look up its uuid
         if not self.enabled:
             return
-        # revert to the agent of whichever client is left, or back to the default:
-        agent = ""
-        for ss in self.get_sources_by_type(SSHAgentConnection, exclude=source):
-            if ss.uuid and ss.ssh_auth_sock:
-                agent = ss.uuid
-                break
-        self.update_agent_symlinks(agent, remove=source.uuid)
+        self.update_agent_symlinks(self.get_agent_uuid(exclude=source), remove=source.uuid)
 
-    def update_agent_symlinks(self, agent: str, remove: str = "") -> None:
+    def update_agent_symlinks(self, uuid: str, remove: str = "") -> None:
+        # `uuid` is always a client uuid or an empty string for the default agent:
+        # never a raw `ssh_auth_sock` path, so that `agent` keeps pointing
+        # at the `ssh/$UUID` symlink validated by `accept_client_ssh_agent`
         # both callers above can fire from the disconnect path
         # (`may_update_agent_symlinks`, and `new-ui-driver` re-emitted when the ui driver goes away),
         # which the server runs inline on the network parse thread - where the seccomp filter
@@ -98,7 +107,7 @@ class SshAgent(StubSubsystem):
         def update() -> None:
             if remove:
                 clean_agent_socket(remove)
-            set_ssh_agent(agent)
+            set_ssh_agent(uuid)
 
         GLib.idle_add(update)
 

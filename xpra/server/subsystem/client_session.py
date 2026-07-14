@@ -121,8 +121,6 @@ class ClientSessionServer(StubSubsystem):
         if source := self.sources.pop(protocol, None):
             self.server.cleanup_source(source)
             if ssh_agent := self.get_subsystem("ssh-agent"):
-                # must stay after `cleanup_source` above: that emits `new-ui-driver`,
-                # which also retargets the agent symlink - the last writer has to be this one
                 ssh_agent.may_update_agent_symlinks(source)
             if mdns := self.get_subsystem("mdns"):
                 add_work_item(mdns.mdns_update)
