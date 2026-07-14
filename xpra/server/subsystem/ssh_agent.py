@@ -6,6 +6,7 @@
 
 import os
 
+from xpra.os_util import gi_import
 from xpra.server.common import SSH_AGENT_DISPATCH
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict
@@ -13,6 +14,8 @@ from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.ssh.agent import setup_ssh_auth_sock, set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("network", "ssh")
 
@@ -70,21 +73,32 @@ class SshAgent(StubSubsystem):
         if not self.enabled:
             return
         ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
-        set_ssh_agent(ssh_auth_sock)
+        self.update_agent_symlinks(ssh_auth_sock)
 
     def cleanup_protocol(self, protocol) -> None:
         if not self.enabled:
             return
         source = self.get_server_source(protocol)
-        if source and source.uuid:
-            clean_agent_socket(source.uuid)
-        remaining_sources = self.get_sources_by_type(exclude=source)
-        for ss in remaining_sources:
-            ssh_auth_sock = getattr(ss, "ssh_auth_sock", "")
-            if ss.uuid and ssh_auth_sock:
-                set_ssh_agent(ss.uuid)
-                return
-        set_ssh_agent("")
+        # revert to the agent of whichever client is left, or back to the default:
+        agent = ""
+        for ss in self.get_sources_by_type(exclude=source):
+            if ss.uuid and getattr(ss, "ssh_auth_sock", ""):
+                agent = ss.uuid
+                break
+        self.update_agent_symlinks(agent, remove=source.uuid if source else "")
+
+    def update_agent_symlinks(self, agent: str, remove: str = "") -> None:
+        # both callers above can fire from the disconnect path
+        # (`cleanup_protocol`, and `new-ui-driver` re-emitted when the ui driver goes away),
+        # which the server runs inline on the network parse thread - where the seccomp filter
+        # denies `unlink` and `symlink`. See `docs/Usage/Seccomp.md`.
+        # Retargeting the agent symlink is never urgent, so always do it from the main thread:
+        def update() -> None:
+            if remove:
+                clean_agent_socket(remove)
+            set_ssh_agent(agent)
+
+        GLib.idle_add(update)
 
     def add_new_client(self, ss, _c: typedict) -> None:
         if not self.enabled:
