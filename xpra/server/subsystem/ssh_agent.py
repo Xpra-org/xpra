@@ -11,6 +11,7 @@ from xpra.util.io import is_socket
 from xpra.util.objects import typedict
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubServerMixin
+from xpra.server.source.ssh_agent import SSHAgentConnection
 from xpra.net.ssh.agent import setup_ssh_auth_sock, set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket
 from xpra.log import Logger
 
@@ -63,27 +64,39 @@ class SshAgent(StubServerMixin):
     def setup(self) -> None:
         self.connect("new-ui-driver", self.set_agent)
 
+    def get_agent_uuid(self, exclude=None) -> str:
+        # the client driving the session gets to provide the agent,
+        # failing that, any client that has one:
+        agent = ""
+        for ss in get_sources_by_type(self, SSHAgentConnection, exclude=exclude):
+            if not ss.uuid or not ss.ssh_auth_sock:
+                continue
+            if ss.uuid == self.ui_driver:
+                return ss.uuid
+            agent = agent or ss.uuid
+        return agent
+
     def set_agent(self, server, source) -> None:
         log("set_agent(%s, %s) ssh-agent=%s", server, source, self.ssh_agent)
         if not self.ssh_agent:
             return
-        ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
-        set_ssh_agent(ssh_auth_sock)
+        self.update_agent_symlinks(self.get_agent_uuid())
 
     def may_update_agent_symlinks(self, source) -> None:
         # called from `ServerBase.cleanup_protocol`: the generic `cleanup_protocol` mixin
         # hook fires after the source has been removed, too late to look up its uuid
         if not self.ssh_agent:
             return
-        if source.uuid:
-            clean_agent_socket(source.uuid)
-        remaining_sources = get_sources_by_type(self, exclude=source)
-        for ss in remaining_sources:
-            ssh_auth_sock = getattr(ss, "ssh_auth_sock", "")
-            if ss.uuid and ssh_auth_sock:
-                set_ssh_agent(ss.uuid)
-                return
-        set_ssh_agent("")
+        self.update_agent_symlinks(self.get_agent_uuid(exclude=source), remove=source.uuid)
+
+    @staticmethod
+    def update_agent_symlinks(uuid: str, remove: str = "") -> None:
+        # `uuid` is always a client uuid or an empty string for the default agent:
+        # never a raw `ssh_auth_sock` path, so that `agent` keeps pointing
+        # at the `ssh/$UUID` symlink validated by `accept_client_ssh_agent`
+        if remove:
+            clean_agent_socket(remove)
+        set_ssh_agent(uuid)
 
     def add_new_client(self, ss, _c: typedict) -> None:
         if not self.ssh_agent:
