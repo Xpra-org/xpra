@@ -981,6 +981,24 @@ checks the host using the system's \fItcp-wrappers\fP library.
 (Posix only, and not available on Mac OS)
 See \fIhosts.allow\fP and \fIhosts.deny\fP for details.
 
+.IP \fBratelimit\fP
+Delays and then rejects the clients that keep failing to authenticate,
+protecting a socket against brute force attacks.
+This module does not authenticate anyone by itself: it must be chained
+before a real authentication module, and listed first, so that a blocked
+address is turned away before a challenge is even sent to it.
+The attributes are: \fImax\-failures\fP (default 5), the number of
+failures allowed within \fIwindow\fP seconds (default 60),
+\fIdelay\fP (default 1) the number of seconds added after the first
+failure and doubling with each one, up to \fImax\-delay\fP (default 8),
+\fIipv4\-prefix\fP (default 32) and \fIipv6\-prefix\fP (default 128)
+to count whole subnets together rather than individual addresses,
+and \fImax\-tracked\fP (default 10000), the number of addresses remembered.
+Using \fIipv6\-prefix=64\fP is recommended: an attacker usually controls
+a whole IPv6 subnet.
+Loopback addresses and unix domain sockets are never rate limited.
+eg: \fB\-\-tcp\-auth=ratelimit:max\-failures=3,window=60 \-\-tcp\-auth=file:filename=pass.txt\fP
+
 .IP \fBexec\fP
 Executes the command specified using the \fIcommand\fP attribute,
 the arguments to this command are: a description of the access

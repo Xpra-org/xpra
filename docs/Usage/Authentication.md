@@ -53,6 +53,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [capability](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/capability.py)               | matches values in the capabilities supplied by the client                               | [#3575](https://github.com/Xpra-org/xpra/issues/3575#issuecomment-1183292333)       |
 | [peercred](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/peercred.py)                   | `SO_PEERCRED` authentication                                                            | [#1524](https://github.com/Xpra-org/xpra/issues/issues/1524)                        |
 | [hosts](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/hosts.py)                         | [TCP Wrapper](https://en.wikipedia.org/wiki/TCP_Wrapper)                                | [#1730](https://github.com/Xpra-org/xpra/issues/issues/1730#issuecomment-765492022) |
+| [ratelimit](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/ratelimit.py)                 | delays then rejects clients that keep failing to authenticate                            | brute force protection, chain it before a real authentication module                |
 | [exec](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/exec.py)                           | Delegates to an external command                                                        | [#1690](https://github.com/Xpra-org/xpra/issues/1690)                               |
 | [kerberos-password](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/kerberos_password.py) | Uses kerberos to authenticate a username + password                                     | [#1691](https://github.com/Xpra-org/xpra/issues/1691)                               |
 | [kerberos-token](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/kerberos_token.py)       | Uses a kerberos ticket to authenticate a client                                         | [#1691](https://github.com/Xpra-org/xpra/issues/1691)                               |
@@ -81,6 +82,35 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 Beware when mixing environment variables and password files as the latter may contain a trailing newline character whereas the former often do not.
 
 The `otpscreen` module accepts the following options: `mode` (`digits`, `alpha` or `alphanumeric`, default `digits`), `count` (number of characters in the generated secret, default `6`), `timeout` (how long the dialog stays up, in seconds, default `120`), and `display` (which display to open the dialog on, default `auto` which reuses the server's saved `DISPLAY` / `WAYLAND_DISPLAY`).
+</details>
+
+<details>
+  <summary>rate limiting</summary>
+
+The `ratelimit` module protects a socket against brute force attacks: it records how many times each client IP address has recently failed to authenticate, delays the ones that keep failing, and eventually rejects them outright.
+
+It does not authenticate anyone by itself - it is a gate that must be **chained before a real authentication module**, and it must be listed **first** so that a blocked address is turned away before the server even sends it a challenge:
+```shell
+xpra start --bind-tcp=0.0.0.0:10000 \
+  --tcp-auth=ratelimit:max-failures=3,window=60,ipv6-prefix=64 \
+  --tcp-auth=password:value=mysecret
+```
+
+| Option         | Default | Purpose                                                                                          |
+|----------------|---------|--------------------------------------------------------------------------------------------------|
+| `max-failures` | `5`     | how many failures within the window are allowed before the client is rejected                    |
+| `window`       | `60`    | how long a failure is remembered, in seconds                                                     |
+| `delay`        | `1`     | delay added after the first failure, doubling with each one; `0` disables the delay              |
+| `max-delay`    | `8`     | upper limit for that delay, in seconds                                                           |
+| `ipv4-prefix`  | `32`    | group IPv4 addresses by prefix, ie: `24` counts a whole `/24` together                           |
+| `ipv6-prefix`  | `128`   | group IPv6 addresses by prefix - **`64` is recommended**, see below                              |
+| `max-tracked`  | `10000` | how many addresses to remember at most                                                           |
+
+Once `max-failures` is reached, the client is rejected until the window expires: the rejected attempts are not counted again, so a legitimate user who gets locked out always recovers after `window` seconds.
+
+An attacker usually controls an entire IPv6 subnet, so limiting each individual IPv6 address (the default) is easily bypassed by picking a new one for each attempt - use `ipv6-prefix=64` to count a whole `/64` together.
+
+Loopback addresses, unix domain sockets and named pipes are never rate limited.
 </details>
 
 <details>
@@ -309,6 +339,16 @@ Helpers in [`xpra/auth/common.py`](https://github.com/Xpra-org/xpra/blob/master/
 Authenticator instances are constructed by [`auth_helper.get_auth_module()`](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/auth_helper.py), which parses the `auth=NAME(opt=value,...)` syntax and imports `xpra.auth.<name>`. Each socket can chain multiple authenticators; the first one to require a challenge issues it and subsequent ones either verify additional caps or contribute to `get_sessions()`.
 
 Multi-step authenticators keep their state on the `Authenticator` instance. After `authenticate(caps)` succeeds, the server calls `get_next_challenge()`: return `()` when the authenticator is complete, or return `(challenge_bytes, digest_name, prompt)` to send another `challenge` packet. The next client response arrives in `caps["challenge_response"]` and is processed by the same authenticator.
+
+Three optional callbacks are called on the authenticators of a connection, if they are defined:
+
+| Callback          | Called when                                                                                                         |
+|-------------------|---------------------------------------------------------------------------------------------------------------------|
+| `auth_failed()`   | any module in the chain rejected the client - an authenticator only ever sees its own result, this is how it can find out that a *later* module failed |
+| `auth_succeeded()`| every module in the chain has passed                                                                                |
+| `cleanup()`       | the authenticators are discarded (on success *and* on failure), to free up any resources                            |
+
+A new `Authenticator` is instantiated for every connection, so a module that needs to remember something across connections (like [`ratelimit`](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/ratelimit.py), which counts the failures of each client IP) must keep that state at the class level and protect it with a lock: `verify_auth` runs in a separate thread for each connection.
 
 </details>
 <details>

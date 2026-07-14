@@ -119,12 +119,23 @@ class AuthenticationManager(StubSubsystem):
         proto.send_now(Packet(CHALLENGE, salt, auth_caps, digest, salt_digest, prompt))
         self.server.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
+    def notify_authenticators(self, proto: SocketProtocol, event: str) -> None:
+        # optional hook: an authentication module only ever sees its own result,
+        # this tells the whole chain how the connection ended up
+        # (ie: `ratelimit` counts the failures for each client IP)
+        for authenticator in proto.authenticators or ():
+            callback = getattr(authenticator, event, None)
+            if callback:
+                with log.trap_error(f"Error in {authenticator!r} {event!r} callback"):
+                    callback()
+
     def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage, authenticator=None) -> None:
         log.warn("Warning: authentication failed")
         wmsg = nicestr(msg)
         if authenticator:
             wmsg = f"{authenticator!r}: "+wmsg
         log.warn(f" {wmsg}")
+        self.notify_authenticators(proto, "auth_failed")
         GLib.timeout_add(1000, self.server.disconnect_client, proto, msg)
 
     def init_authenticators(self, proto: SocketProtocol, c: typedict) -> bool:
@@ -198,6 +209,7 @@ class AuthenticationManager(StubSubsystem):
         log(f"all {len(proto.authenticators)} authentication modules passed")
         capabilities = packet.get_dict(1)
         c = typedict(capabilities)
+        self.notify_authenticators(proto, "auth_succeeded")
         proto.clean_authenticators()
         # continue processing hello packet in UI thread:
         GLib.idle_add(self.server.call_hello_oked, proto, c, auth_caps)

@@ -130,6 +130,62 @@ class TestMakeAuthenticators(unittest.TestCase):
             s.make_authenticators("tcp", {}, conn)
 
 
+class Recorder:
+    """an authentication module that implements the optional outcome callbacks"""
+
+    def __init__(self):
+        self.events: list[str] = []
+
+    def auth_failed(self) -> None:
+        self.events.append("auth_failed")
+
+    def auth_succeeded(self) -> None:
+        self.events.append("auth_succeeded")
+
+
+class TestNotifyAuthenticators(unittest.TestCase):
+
+    def _make_proto(self, *authenticators):
+        proto = MagicMock()
+        proto.authenticators = authenticators
+        return proto
+
+    def test_auth_failed_notifies(self):
+        s = make_server()
+        r = Recorder()
+        s.auth_failed(self._make_proto(r), "authentication failed")
+        assert r.events == ["auth_failed"]
+
+    def test_auth_succeeded_notifies(self):
+        s = make_server()
+        r = Recorder()
+        s.notify_authenticators(self._make_proto(r), "auth_succeeded")
+        assert r.events == ["auth_succeeded"]
+
+    def test_modules_without_callbacks_are_skipped(self):
+        # most authentication modules don't implement the callbacks:
+        s = make_server()
+        r = Recorder()
+        s.auth_failed(self._make_proto(object(), r), "authentication failed")
+        assert r.events == ["auth_failed"]
+
+    def test_no_authenticators(self):
+        # `auth_failed` is also called before the authenticators are instantiated
+        s = make_server()
+        s.auth_failed(self._make_proto(), "authentication failed")
+
+    def test_callback_errors_are_trapped(self):
+        s = make_server()
+        r = Recorder()
+
+        class Exploder:
+            def auth_failed(self) -> None:
+                raise RuntimeError("test error")
+
+        s.auth_failed(self._make_proto(Exploder(), r), "authentication failed")
+        assert r.events == ["auth_failed"]
+
+
 def _make_fake_opts(**extra):
     """Minimal opts object with all socket-type auth attributes set to ['none']."""
     class FakeOpts:

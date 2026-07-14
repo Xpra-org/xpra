@@ -106,7 +106,7 @@ class TestAuth(unittest.TestCase):
         return a.authenticate(caps)
 
     def test_all(self) -> None:
-        test_modules = ["reject", "allow", "none", "file", "multifile", "env", "password"]
+        test_modules = ["reject", "allow", "none", "file", "multifile", "env", "password", "ratelimit"]
         try:
             self.a("pam")
             test_modules.append("pam")
