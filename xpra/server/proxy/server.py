@@ -21,6 +21,7 @@ from xpra.util.env import envint, envbool, envfloat
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import (
     get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, get_group_id, get_xpra_group, gi_import,
+    valid_uuid,
     WIN32, POSIX, OSX,
 )
 from xpra.util.io import umask_context
@@ -377,6 +378,10 @@ class ProxyServer(ServerCore):
         if not uuid:
             authlog.error("Error: rejecting register request: missing 'uuid'")
             self.send_disconnect(proto, "register: missing uuid")
+            return True
+        if not valid_uuid(uuid):
+            authlog.error("Error: rejecting register request: invalid 'uuid'")
+            self.send_disconnect(proto, "register: invalid uuid")
             return True
         displays = list(caps.strtupleget("displays"))
         if not displays:

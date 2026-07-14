@@ -7,6 +7,7 @@ import os
 import shlex
 from collections.abc import Iterable
 
+from xpra.os_util import valid_uuid
 from xpra.util.io import is_socket
 from xpra.log import Logger
 
@@ -111,13 +112,13 @@ def setup_proxy_ssh_socket(
     # which is used to derive the agent path symlink
     # that the server will want to use for this connection,
     # newer clients pass it to the remote proxy command process using an env var:
-    agent_uuid = None
+    agent_uuid = ""
     for x in cmdline:
         if x.startswith("--env=SSH_AGENT_UUID="):
             agent_uuid = x.removeprefix("--env=SSH_AGENT_UUID=")
             break
     # prevent illegal paths:
-    if not agent_uuid or agent_uuid.find("/") >= 0 or agent_uuid.find(".") >= 0:
+    if not valid_uuid(agent_uuid):
         log(f"setup_proxy_ssh_socket invalid SSH_AGENT_UUID={agent_uuid!r}")
         return ""
     # ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID

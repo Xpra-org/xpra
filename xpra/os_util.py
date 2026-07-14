@@ -183,6 +183,25 @@ def get_int_uuid() -> int:
     return uuid.uuid4().int
 
 
+MAX_UUID_LENGTH = 128
+UUID_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.")
+
+
+def valid_uuid(uuid: str) -> bool:
+    """
+        Our own clients use a hex digest, but the uuid can also be chosen
+        by the user (`XPRA_USER_UUID`) or by other client implementations,
+        so just rule out the characters that would be problematic
+        when the uuid ends up in a filename: ie the `ssh/$UUID` agent symlinks
+    """
+    if not uuid or len(uuid) > MAX_UUID_LENGTH:
+        return False
+    if uuid.startswith(".") or ".." in uuid:
+        # no dotfiles, no path traversal - matches `get_ssh_agent_path`
+        return False
+    return all(c in UUID_CHARS for c in uuid)
+
+
 def get_machine_id() -> str:
     """
         Try to get uuid string which uniquely identifies this machine.

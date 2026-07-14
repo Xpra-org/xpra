@@ -9,7 +9,7 @@ import unittest
 from xpra.os_util import (
     POSIX,
     getuid, getgid, get_shell_for_uid, get_username_for_uid, get_home_for_uid,
-    get_hex_uuid, get_int_uuid, get_user_uuid,
+    get_hex_uuid, get_int_uuid, get_user_uuid, valid_uuid, MAX_UUID_LENGTH,
 )
 from xpra.util.env import OSEnvContext
 from xpra.util.thread import is_main_thread
@@ -57,19 +57,37 @@ class TestOSUtil(unittest.TestCase):
         assert get_int_uuid()!=0
         assert get_user_uuid()!=0
 
+    def test_valid_uuid(self):
+        # what our own clients and the html5 / rust clients may send:
+        for uuid in (get_hex_uuid(), get_user_uuid(), "a"*64, "0", "my-laptop", "my_laptop", "v1.2"):
+            assert valid_uuid(uuid), f"{uuid!r} should be valid"
+        for uuid in (
+            "",                             # no uuid at all
+            "a"*(MAX_UUID_LENGTH+1),        # too long
+            ".", "..", "...",               # `get_ssh_agent_path` rejects these,
+            ".hidden",                      # and any other dotfile,
+            "foo..bar",                     # and anything that could traverse
+            "../../etc/passwd",
+            "foo/bar", "foo\\bar",          # path separators
+            "~root", "foo:bar", "foo bar",
+            "foo\nbar", "foo\0bar",
+        ):
+            assert not valid_uuid(uuid), f"{uuid!r} should be rejected"
+
     def test_posix_wrappers(self):
         if not POSIX:
             return
         assert isinstance(getuid(), int)
         assert isinstance(getgid(), int)
+
         def isstr(v):
             assert v
             assert isinstance(v, str)
+
         isstr(get_shell_for_uid(getuid()))
         isstr(get_username_for_uid(getuid()))
         isstr(get_home_for_uid(getuid()))
         assert not get_shell_for_uid(999999999)
-
 
     def test_memoryview_to_bytes(self):
         assert memoryview_to_bytes(b"bar")==b"bar"
@@ -106,8 +124,10 @@ class TestOSUtil(unittest.TestCase):
     def test_is_main_thread(self):
         assert is_main_thread()
         result = []
+
         def notmainthread():
             result.append(is_main_thread())
+
         from threading import Thread
         t = Thread(target=notmainthread)
         t.start()
@@ -118,6 +138,7 @@ class TestOSUtil(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

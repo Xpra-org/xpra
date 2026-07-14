@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from xpra.net.common import FULL_INFO
 from xpra.net.constants import ConnectionMessage
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, valid_uuid
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.background_worker import add_work_item
 from xpra.util.objects import typedict, merge_dicts
@@ -151,6 +151,14 @@ class ClientSessionServer(StubSubsystem):
             self.server.clean_quit(False)
 
     def sanity_checks(self, proto, caps: typedict) -> bool:
+        for attr in ("uuid", "session-id"):
+            # these are used as identifiers everywhere, including in filenames:
+            value = caps.strget(attr)
+            if value and not valid_uuid(value):
+                # don't echo the value back
+                log.warn(f"Warning: rejecting client with an invalid {attr!r} value")
+                self.server.send_disconnect(proto, f"invalid {attr!r} value")
+                return False
         server_uuid = caps.strget("server_uuid")
         if server_uuid:
             if server_uuid == self.server.subsystems["id"].uuid:

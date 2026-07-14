@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from xpra.net.common import Packet
+from xpra.os_util import get_hex_uuid
 from xpra.server.subsystem.client_session import ClientSessionServer
 from xpra.util.objects import typedict
 from unit.server.subsystem.servermixintest_util import FakeServerBase
@@ -56,7 +57,11 @@ class FakeServer(FakeServerBase):
         self.cleaned = []
         self.emitted = []
         self.accepted = []
+        self.disconnected = []
         self._potential_protocols = []
+
+    def send_disconnect(self, proto, *messages) -> None:
+        self.disconnected.append((proto, messages))
 
     def _dispatch_first_truthy(self, method: str, *args):
         self.dispatched.append((method, args))
@@ -95,6 +100,17 @@ class ClientSessionTest(unittest.TestCase):
         self.session.dispatch_send_initial_data(source)
         self.assertEqual([x[0] for x in self.server.dispatched],
                          ["parse_hello", "add_new_client", "send_initial_data"])
+
+    def test_sanity_checks_uuids(self) -> None:
+        proto = object()
+        caps = typedict({"uuid": get_hex_uuid(), "session-id": get_hex_uuid()})
+        self.assertTrue(self.session.sanity_checks(proto, caps))
+        self.assertFalse(self.server.disconnected)
+        # a uuid we may end up using as a filename must not contain a path:
+        for attr in ("uuid", "session-id"):
+            caps = typedict({attr: "../../../etc/passwd"})
+            self.assertFalse(self.session.sanity_checks(proto, caps))
+        self.assertEqual(len(self.server.disconnected), 2)
 
     def test_hello_creates_source(self) -> None:
         proto = object()
