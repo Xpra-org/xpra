@@ -19,6 +19,30 @@ log = Logger("client", "decode")
 
 WorkItem = tuple[Callable, tuple]
 
+# see `prewarm_malloc_arena`:
+PREWARM_CHUNK = 128 * 1024
+PREWARM_COUNT = 64
+
+
+def prewarm_malloc_arena() -> None:
+    """
+    glibc reads `/proc/sys/vm/overcommit_memory` - and caches the answer for the whole
+    process - the first time it trims a thread's malloc arena. That happens when a thread
+    *exits*: `__malloc_arena_thread_freeres` -> `_int_free_maybe_trim` -> `heap_trim` ->
+    `shrink_heap` -> `check_may_shrink_heap`. If the first thread to get there is a
+    filtered one, the `openat` is blocked and the process is killed - not while decoding,
+    but at shutdown, when the decode thread finally exits.
+    So provoke that read here, from a throwaway thread, while we are still unfiltered.
+    (harmless on a libc that does not do this - it is just some allocation churn)
+    """
+    def churn() -> None:
+        chunks = [bytes(PREWARM_CHUNK) for _ in range(PREWARM_COUNT)]
+        chunks.clear()
+
+    log("prewarm_malloc_arena()")
+    thread = start_thread(churn, "malloc-prewarm", daemon=True)
+    thread.join(10)
+
 
 class Decode(StubClientSubsystem):
     """
@@ -94,6 +118,9 @@ class Decode(StubClientSubsystem):
                 continue
             with log.trap_error("Error preloading %s", subsystem):
                 subsystem.preload_decode()
+        # last, because it wants the allocations above to have happened:
+        with log.trap_error("Error pre-warming the malloc arena"):
+            prewarm_malloc_arena()
 
     @staticmethod
     def install_seccomp() -> None:
