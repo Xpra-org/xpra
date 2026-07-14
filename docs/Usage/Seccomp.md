@@ -151,6 +151,7 @@ precedence over the option**:
 | `XPRA_SECCOMP_PARSE_ACTION` | action for the parse filter |
 | `XPRA_SECCOMP_RFB_ACTION` | action for the VNC client filter |
 | `XPRA_SECCOMP_MENU_ACTION` | action for the menu loading filter |
+| `XPRA_MALLOC_PREWARM` | work around a glibc `openat` at thread exit (on by default - see the *glibc malloc caveat* in the technical details below) |
 
 Each `*_ACTION` accepts `errno`, `kill`, `kill_thread`, `kill_process`, `log` or
 `allow` (default: `kill_process`).
@@ -278,6 +279,9 @@ shutdown, when the decode thread exits. It went unnoticed because the codec self
 allocates enough on the decode thread, before the filter, to trigger the read by luck.
 `prewarm_malloc_arena()` (`xpra/client/subsystem/decode.py`) now provokes it
 deterministically from a throwaway thread while the decode thread is still unfiltered.
+It only runs when a filter is actually going to be installed, and `XPRA_MALLOC_PREWARM=0`
+turns it off (at the risk of that `SIGSYS` at shutdown) should it ever misbehave on a
+different libc.
 
 ## The decode thread
 

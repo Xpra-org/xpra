@@ -11,6 +11,7 @@ from collections.abc import Callable
 
 from xpra.os_util import LINUX
 from xpra.exit_codes import ExitCode, ExitValue
+from xpra.util.env import envbool, envint
 from xpra.util.thread import start_thread
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -20,8 +21,10 @@ log = Logger("client", "decode")
 WorkItem = tuple[Callable, tuple]
 
 # see `prewarm_malloc_arena`:
-PREWARM_CHUNK = 128 * 1024
-PREWARM_COUNT = 64
+PREWARM: bool = envbool("XPRA_MALLOC_PREWARM", True)
+PREWARM_CHUNK: int = envint("XPRA_MALLOC_PREWARM_CHUNK", 128 * 1024)
+PREWARM_COUNT: int = envint("XPRA_MALLOC_PREWARM_COUNT", 64)
+PREWARM_TIMEOUT: int = envint("XPRA_MALLOC_PREWARM_TIMEOUT", 10)
 
 
 def prewarm_malloc_arena() -> None:
@@ -34,14 +37,21 @@ def prewarm_malloc_arena() -> None:
     but at shutdown, when the decode thread finally exits.
     So provoke that read here, from a throwaway thread, while we are still unfiltered.
     (harmless on a libc that does not do this - it is just some allocation churn)
+
+    Only worth doing when a filter is actually going to be installed, and it can be turned
+    off with `XPRA_MALLOC_PREWARM=0` - at the risk of that `SIGSYS` at shutdown.
     """
+    if not PREWARM:
+        log("prewarm_malloc_arena() disabled")
+        return
+
     def churn() -> None:
         chunks = [bytes(PREWARM_CHUNK) for _ in range(PREWARM_COUNT)]
         chunks.clear()
 
-    log("prewarm_malloc_arena()")
+    log("prewarm_malloc_arena() %i x %i bytes", PREWARM_COUNT, PREWARM_CHUNK)
     thread = start_thread(churn, "malloc-prewarm", daemon=True)
-    thread.join(10)
+    thread.join(PREWARM_TIMEOUT)
 
 
 class Decode(StubClientSubsystem):
@@ -118,9 +128,20 @@ class Decode(StubClientSubsystem):
                 continue
             with log.trap_error("Error preloading %s", subsystem):
                 subsystem.preload_decode()
-        # last, because it wants the allocations above to have happened:
-        with log.trap_error("Error pre-warming the malloc arena"):
-            prewarm_malloc_arena()
+        # last: it only matters if we are about to install a filter,
+        # and it wants the allocations above to have happened already
+        if self.seccomp_enabled():
+            with log.trap_error("Error pre-warming the malloc arena"):
+                prewarm_malloc_arena()
+
+    @staticmethod
+    def seccomp_enabled() -> bool:
+        # the same gate `install_thread` below uses, asked ahead of time:
+        try:
+            from xpra.seccomp import is_enabled
+        except ImportError:
+            return False
+        return is_enabled()
 
     @staticmethod
     def install_seccomp() -> None:
