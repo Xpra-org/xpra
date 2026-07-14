@@ -198,6 +198,7 @@ class ServerCore(GLibServer):
         self.ssh_upgrade = False
         self.rdp_upgrade = False
         self.http = False
+        self.http_origin = "auto"
         self._html: bool = False
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
@@ -241,6 +242,7 @@ class ServerCore(GLibServer):
         self.compression_level = opts.compression_level
         self.readonly = opts.readonly
         self.http = opts.http
+        self.http_origin = opts.http_origin
         self.websocket_upgrade = opts.websocket_upgrade
         self.ssh_upgrade = opts.ssh_upgrade
         self.rdp_upgrade = opts.rdp_upgrade
@@ -1358,7 +1360,7 @@ class ServerCore(GLibServer):
                 redirect_https = not is_ssl and ssl_mode in TRUE_OPTIONS
             WebSocketRequestHandler(sock, frominfo, new_websocket_client,
                                     self._www_dir, self._http_headers_dirs, scripts,
-                                    redirect_https)
+                                    redirect_https, self.http_origin)
             return
         except (OSError, ValueError) as e:
             # don't log a full backtrace for `SSLV3_ALERT_CERTIFICATE_UNKNOWN`

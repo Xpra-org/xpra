@@ -6,7 +6,61 @@
 
 import unittest
 
-from xpra.net.http.common import http_response, http_status_request, json_response
+from xpra.net.http.common import http_response, http_status_request, json_response, check_origin, parse_origin
+
+
+class TestHttpOrigin(unittest.TestCase):
+
+    def test_parse_origin(self):
+        assert parse_origin("https://desktop.example") == ("https", "desktop.example", 443)
+        assert parse_origin("HTTP://Desktop.Example:80") == ("http", "desktop.example", 80)
+        assert parse_origin("wss://desktop.example") == ("https", "desktop.example", 443)
+        assert parse_origin("ws://localhost:14500") == ("http", "localhost", 14500)
+        # anything we cannot parse:
+        for invalid in ("null", "", "desktop.example", "http://localhost:port"):
+            assert parse_origin(invalid) == ("", "", 0), f"{invalid!r} should not parse"
+
+    def test_no_origin_header_is_allowed(self):
+        # native xpra clients don't send an `Origin` header,
+        # and browsers cannot be made to omit it:
+        for policy in ("auto", "any", "none", "https://desktop.example"):
+            assert check_origin("", "localhost:14500", policy)
+
+    def test_auto_same_origin(self):
+        assert check_origin("http://localhost:14500", "localhost:14500", "auto")
+        assert check_origin("https://localhost:14500", "localhost:14500", "auto")
+        assert check_origin("http://desktop.example", "desktop.example", "auto")
+        # behind a TLS terminating proxy, the scheme we see does not match the browser's:
+        assert check_origin("https://desktop.example", "desktop.example", "auto")
+
+    def test_auto_cross_origin(self):
+        assert not check_origin("http://evil.example", "localhost:14500", "auto")
+        # another port on the same host is another origin:
+        assert not check_origin("http://localhost:8080", "localhost:14500", "auto")
+        # sandboxed iframes and `file://` pages:
+        assert not check_origin("null", "localhost:14500", "auto")
+        # fail closed without a `Host` header:
+        assert not check_origin("http://localhost:14500", "", "auto")
+
+    def test_any(self):
+        for policy in ("any", "all", "*"):
+            assert check_origin("http://evil.example", "localhost:14500", policy)
+            assert check_origin("null", "localhost:14500", policy)
+
+    def test_none(self):
+        # every request carrying an `Origin` header is rejected:
+        for policy in ("none", "no", "off"):
+            assert not check_origin("http://localhost:14500", "localhost:14500", policy)
+
+    def test_allowlist(self):
+        policy = "https://desktop.example, http://localhost:8080"
+        assert check_origin("https://desktop.example", "localhost:14500", policy)
+        assert check_origin("https://desktop.example:443", "localhost:14500", policy)
+        assert check_origin("http://localhost:8080", "localhost:14500", policy)
+        assert not check_origin("http://desktop.example", "localhost:14500", policy)
+        assert not check_origin("https://evil.example", "localhost:14500", policy)
+        # an unparsable origin must not match an unparsable allowlist entry:
+        assert not check_origin("null", "localhost:14500", "null,https://desktop.example")
 
 
 class TestHttpCommon(unittest.TestCase):

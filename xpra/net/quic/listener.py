@@ -20,6 +20,7 @@ from aioquic.h3.events import (
 )
 from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicEvent
 
+from xpra.net.http.common import check_origin
 from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
 from xpra.net.quic.http import HttpRequestHandler
 from xpra.net.quic.websocket import ServerWebSocketConnection
@@ -30,7 +31,7 @@ from xpra.net.websockets.protocol import WebSocketProtocol
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
-from xpra.util.str_fn import Ellipsizer
+from xpra.util.str_fn import Ellipsizer, std
 from xpra.log import Logger
 
 log = Logger("quic")
@@ -45,6 +46,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         self._xpra_server = kwargs.pop("xpra_server", None)
         log(f"HttpServerProtocol({args}, {kwargs}) xpra-server={self._xpra_server}")
+        self.http_origin: str = getattr(self._xpra_server, "http_origin", "auto")
         super().__init__(*args, **kwargs)
         self._handlers: dict[int, Handler] = {}
         self._http: HttpConnection | None = None
@@ -79,7 +81,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
         if handler:
             handler.http_event_received(event)
 
-    def new_http_handler(self, event) -> Handler:
+    def new_http_handler(self, event) -> Handler | None:
         authority = None
         headers = []
         raw_path = b""
@@ -128,9 +130,22 @@ class HttpServerProtocol(QuicConnectionProtocol):
         }
         if method == "CONNECT" and protocol == "websocket":
             subprotocols: list[str] = []
+            origin = ""
             for header, value in event.headers:
                 if header == b"sec-websocket-protocol":
                     subprotocols = [x.strip() for x in value.decode().split(",")]
+                elif header == b"origin":
+                    origin = value.decode("latin1")
+            host = (authority or b"").decode("latin1")
+            if not check_origin(origin, host, self.http_origin):
+                log.warn("Warning: rejected websocket connection")
+                log.warn(" from origin %r", std(origin))
+                log.warn(" the 'http-origin' option is set to %r", std(self.http_origin))
+                log.warn(" add this origin to the 'http-origin' option to allow it")
+                self._http.send_headers(stream_id=event.stream_id,
+                                        headers=[(b":status", b"403")], end_stream=True)
+                self.transmit()
+                return None
             scope |= {
                 "subprotocols": subprotocols,
                 "type": "websocket",

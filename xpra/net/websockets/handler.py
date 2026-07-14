@@ -6,9 +6,10 @@
 from collections.abc import Callable, Sequence
 
 from xpra.util.env import envbool
-from xpra.util.str_fn import is_valid_hostname, strtobytes
+from xpra.util.str_fn import is_valid_hostname, strtobytes, std
 from xpra.net.common import HttpResponse
 from xpra.net.websockets.common import make_websocket_accept_hash
+from xpra.net.http.common import check_origin
 from xpra.net.http.handler import HTTPRequestHandler, AUTH_USERNAME, AUTH_PASSWORD
 from xpra.log import Logger
 
@@ -31,16 +32,35 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                  http_headers_dir="/etc/xpra/http-headers",
                  script_paths: dict[str, Callable[[str], HttpResponse]] = None,
                  redirect_https=False,
+                 origin="auto",
                  username=AUTH_USERNAME,
                  password=AUTH_PASSWORD,
                  ):
         self.new_websocket_client: Callable = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
         self.redirect_https = redirect_https
+        self.origin = origin
         self.finish = self.finish_and_close
         super().__init__(sock, addr,
                          web_root, http_headers_dir, script_paths,
                          username, password)
+
+    def check_websocket_origin(self) -> None:
+        """
+        Prevent websites from hijacking the websocket connections of the browsers visiting them.
+        The `Origin` header identifies the site the connection originates from,
+        it is only sent by browsers - so requests without one are left alone.
+        """
+        origin = self.headers.get("Origin", "")
+        host = self.headers.get("Host", "")
+        if check_origin(origin, host, self.origin):
+            return
+        log.warn("Warning: rejected websocket connection")
+        log.warn(" from origin %r", std(origin))
+        log.warn(" the 'http-origin' option is set to %r", std(self.origin))
+        log.warn(" add this origin to the 'http-origin' option to allow it")
+        # don't echo the origin back to the client:
+        raise ValueError("websocket connection from an unauthorized origin")
 
     def handle_websocket(self) -> None:
         log("handle_websocket() calling %s, request=%s (%s)",
@@ -48,6 +68,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         log("headers:")
         for k, v in self.headers.items():
             log(f" {k}={v}")
+        self.check_websocket_origin()
         ver = self.headers.get("Sec-WebSocket-Version", "")
         if not ver:
             raise ValueError("Missing Sec-WebSocket-Version header")

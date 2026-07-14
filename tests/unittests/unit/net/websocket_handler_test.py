@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 
 class TestWebSocketHandler(unittest.TestCase):
 
-    def _make_handler(self, headers=None, path="/", redirect_https=False):
+    def _make_handler(self, headers=None, path="/", redirect_https=False, origin="auto"):
         """Build a WebSocketRequestHandler with mocked I/O."""
         from xpra.net.websockets.handler import WebSocketRequestHandler
 
@@ -18,6 +18,7 @@ class TestWebSocketHandler(unittest.TestCase):
         handler.headers = headers or {}
         handler.path = path
         handler.redirect_https = redirect_https
+        handler.origin = origin
         handler.only_upgrade = False
         handler.close_connection = False
         handler.new_websocket_client = MagicMock()
@@ -58,13 +59,44 @@ class TestWebSocketHandler(unittest.TestCase):
             handler.handle_websocket()
         assert "Key" in str(ctx.exception)
 
-    def test_handle_websocket_valid(self):
-        written = []
-        handler = self._make_handler(headers={
+    # handle_websocket - origin validation
+    def _upgrade_headers(self, **extra) -> dict:
+        headers = {
             "Sec-WebSocket-Version": "13",
             "Sec-WebSocket-Protocol": "binary",
             "Sec-WebSocket-Key": "dGhlIHNhbXBsZSBub25jZQ==",
-        })
+        }
+        headers.update(extra)
+        return headers
+
+    def test_handle_websocket_cross_origin(self):
+        handler = self._make_handler(headers=self._upgrade_headers(
+            Host="localhost:14500",
+            Origin="http://evil.example",
+        ))
+        with self.assertRaises(ValueError) as ctx:
+            handler.handle_websocket()
+        assert "origin" in str(ctx.exception).lower()
+        assert not handler.new_websocket_client.called
+        # the origin must not be echoed back to the client:
+        assert "evil.example" not in str(ctx.exception)
+
+    def test_handle_websocket_cross_origin_allowed(self):
+        handler = self._make_handler(headers=self._upgrade_headers(
+            Host="localhost:14500",
+            Origin="https://desktop.example",
+        ), origin="https://desktop.example")
+        handler.write_byte_strings = lambda *bs: None
+        handler.finish = lambda: None
+        handler.handle_websocket()
+        assert handler.new_websocket_client.called
+
+    def test_handle_websocket_valid(self):
+        written = []
+        handler = self._make_handler(headers=self._upgrade_headers(
+            Host="localhost:14500",
+            Origin="http://localhost:14500",
+        ))
         handler.write_byte_strings = lambda *bs: written.append(b"\r\n".join(bs))
 
         def fake_finish():

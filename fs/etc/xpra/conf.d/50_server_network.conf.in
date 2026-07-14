@@ -93,6 +93,14 @@ html = auto
 #http-scripts=Status,Info
 http-scripts = all
 
+# Which origins are allowed to open websocket connections from a browser.
+# 'auto' only allows the html5 client pages served by this server,
+# which prevents any other website from connecting to your sessions.
+# Set this if the html5 client is served from another host or port:
+#http-origin=https://desktop.example
+#http-origin=any
+http-origin = auto
+
 ########################################################################
 # RFB upgrades
 # Allows RFB clients (ie: VNC) to connect to a plain TCP socket
