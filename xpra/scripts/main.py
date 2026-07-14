@@ -30,7 +30,7 @@ from xpra.util.env import envint, envbool, osexpand, filter_env, save_env, get_s
 from xpra.util.parsing import (
     ALL_BOOLEAN_OPTIONS,
     parse_scaling, str_to_bool, parse_bool_or,
-    get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data,
+    get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data, FALSE_OPTIONS,
 )
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import getuid, getgid, is_admin, gi_import, WIN32, OSX, POSIX
@@ -356,7 +356,7 @@ def parse_seccomp_option(value: str) -> dict[str, str]:
     if value in ("", "auto"):
         return {}
     env: dict[str, str] = {}
-    if value in ("no", "off", "false", "none", "0", "disable", "disabled"):
+    if value in FALSE_OPTIONS:
         # force everything off (including the global fallback flag):
         env["XPRA_SECCOMP"] = "0"
         for thread in SECCOMP_THREADS:
@@ -379,7 +379,7 @@ def parse_seccomp_option(value: str) -> dict[str, str]:
         thread = thread.strip()
         action = action.strip()
         if thread not in SECCOMP_THREADS:
-            raise ValueError(f"invalid seccomp thread {thread!r}, must be one of: {csv(SECCOMP_THREADS)}")
+            raise ValueError(f"invalid seccomp thread {thread!r}, must be one of: {csv(SECCOMP_THREADS)} or 'default', 'strict'")
         if action and action not in SECCOMP_ACTIONS:
             raise ValueError(f"invalid seccomp action {action!r}, must be one of: {csv(SECCOMP_ACTIONS)}")
         actions[thread] = action
