@@ -268,19 +268,31 @@ This is why the pre-warm above matters, and why the debug file-dumps
 `xpra/client/subsystem/window/window_icon.py`, `get_save_cursors()` in
 `xpra/client/subsystem/cursor.py`) are disabled under seccomp.
 
+**glibc malloc caveat:** not every `openat` comes from xpra's own code. glibc reads
+`/proc/sys/vm/overcommit_memory` - and caches the answer for the whole process - the
+first time it trims a thread's malloc arena, and it does that when a thread *exits*
+(`__malloc_arena_thread_freeres` → `_int_free_maybe_trim` → `heap_trim` →
+`shrink_heap` → `check_may_shrink_heap`). If the first thread to reach that point is a
+filtered one, the read is blocked and the process is killed - not while decoding, but at
+shutdown, when the decode thread exits. It went unnoticed because the codec self-test
+allocates enough on the decode thread, before the filter, to trigger the read by luck.
+`prewarm_malloc_arena()` (`xpra/client/subsystem/decode.py`) now provokes it
+deterministically from a throwaway thread while the decode thread is still unfiltered.
+
 ## The decode thread
 
 The sandboxed decoding thread is not draw-specific: it is a shared worker owned by the
 `decode` subsystem (`xpra/client/subsystem/decode.py`), and any client subsystem can post
 work to it with `add_decode_work(method, *args)` (`StubClientSubsystem`). Its queue holds
 `(callable, args)` pairs, so the producer stays a trivial packet handler and the decoding
-itself happens on the filtered thread. Three consumers use it today:
+itself happens on the filtered thread. Its consumers today:
 
 | Packet | Enqueues | Decodes |
 |---|---|---|
 | `window-draw` / `eos` | `WindowDraw._process_window_draw` | `_do_draw` → `window.draw_region()` |
 | `window-icon` | `WindowIcon._process_window_icon` | `_decode_window_icon` → Pillow |
 | `cursor` / `cursor-data` | `CursorClient._process_cursor_data` | `_decode_cursor_data` → Pillow |
+| `notification-show` | `NotificationClient._process_notification_show` | `_decode_notification_icons` → Pillow |
 
 Two rules bind a new consumer:
 
@@ -289,14 +301,39 @@ Two rules bind a new consumer:
   unfiltered. A module imported for the first time *after* the filter is installed hits
   `openat` and, under a fatal action, kills the process. (This is why the window-icon and
   cursor subsystems import `PIL` / `xpra.codecs.pillow.decoder` from that hook: with
-  `--encodings=rgb`, `dec_pillow` is never loaded, so nothing else would have imported them.)
-* **Keep the packet handler on `main_thread=True`.** All three producers are UI packets, and
-  so is `new-window`. That shared UI-thread hop is what orders a draw or an icon *after* the
+  `--encodings=rgb`, `dec_pillow` is never loaded, so nothing else would have imported them.
+  The notification subsystem goes further and *encodes* a throwaway PNG there, because it
+  re-encodes icons - see below - and pillow's save path has lazy imports of its own.)
+* **Keep the packet handler on `main_thread=True`.** All the producers are UI packets, and so
+  is `new-window`. That shared UI-thread hop is what orders a draw or an icon *after* the
   window it refers to has been created; dispatching them straight from the parse thread would
   race window creation. The handler only enqueues, so it costs nothing to leave it there.
 
 The result is bounced back to the UI thread with `idle_add`, and the target window is looked
 up *then*, not before enqueuing - a window destroyed mid-decode simply drops its icon.
+
+### Notification icons
+
+Notifications are a special case, because their icons do not stay inside xpra: the backends
+hand them to the desktop notification daemon, as a *file* (`NotifierBase.temp_icon_file`) or
+as a GdkPixbuf (`xpra/gtk/notifier.py`), and the win32 and dbus backends decode them again
+themselves. Locking down the decode thread would not have helped: the server's bytes were
+being parsed in four different places, three of them outside the sandbox and one outside the
+process.
+
+So the icons are **re-encoded** rather than merely decoded. `sanitize_icon_data()`
+(`xpra/notification/common.py`) runs on the decode thread and turns each of the three
+server-controlled blobs - the `icon` field and the `app-icon-data` / `image-data` hints - into
+a PNG of xpra's own making: pillow decodes the bytes (sniffing the real image type, so the
+encoding the server *claims* does not matter), the image is clamped to
+`XPRA_NOTIFICATION_ICON_MAX_SIZE` (256 by default) and re-encoded. What reaches the backends,
+and the notification daemon, is then an image xpra generated: the dimensions are the real ones
+rather than what the server asserted, and anything smuggled in the container (trailing bytes,
+ancillary chunks) is gone. Undecodable icons are dropped and the notification is still shown.
+
+One consequence: `notification-show` now waits for its icons, so `notification-close` is
+posted through the same FIFO queue even though it has nothing to decode - otherwise a close
+could overtake the show it refers to and leave the notification stuck on screen.
 
 ## Thread coverage
 

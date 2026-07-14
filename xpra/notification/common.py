@@ -8,7 +8,7 @@ from io import BytesIO
 from typing import TypeAlias
 
 from xpra.os_util import gi_import, POSIX, OSX
-from xpra.util.env import first_time
+from xpra.util.env import first_time, envint
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
 
@@ -19,6 +19,11 @@ IconData: TypeAlias = tuple[str, int, int, bytes]
 SVG_SIZE = 96
 
 ICON_EXTENSIONS = ("png", "xpm", )
+
+# the icon encodings we are willing to decode from an untrusted peer:
+ICON_ENCODINGS = ("png", "jpeg", "webp")
+# larger than this is not an icon, it's a payload:
+ICON_MAX_SIZE = envint("XPRA_NOTIFICATION_ICON_MAX_SIZE", 256)
 
 
 def PIL_Image():
@@ -115,6 +120,46 @@ def image_data(img) -> IconData:
     from xpra.codecs.image import to_png
     w, h = img.size
     return "png", w, h, to_png(img)
+
+
+def sanitize_icon_data(icon: IconData | None) -> IconData | None:
+    """
+    Re-encode icon data received from a peer into a PNG of our own making.
+
+    This is the *only* place that parses the image bytes: every notification backend,
+    and the desktop notification daemon we hand the icon to, then sees an image we
+    generated ourselves rather than bytes off the network. It also makes the reported
+    dimensions real instead of whatever the peer claimed.
+    Returns None if the data cannot be decoded.
+
+    The client runs this on the sandboxed decode thread (see `docs/Usage/Seccomp.md`),
+    so it must not touch the filesystem.
+    """
+    if not icon:
+        return None
+    Image = PIL_Image()
+    if not Image:
+        return None
+    coding = str(icon[0])
+    data = icon[3]
+    try:
+        # pylint: disable=import-outside-toplevel
+        from xpra.codecs.pillow.decoder import open_only
+        # `open_only` sniffs the actual image type from the header:
+        # the encoding claimed by the peer is not trusted
+        img = open_only(data, ICON_ENCODINGS)
+        w, h = img.size
+        if w > ICON_MAX_SIZE or h > ICON_MAX_SIZE:
+            scale = min(ICON_MAX_SIZE / w, ICON_MAX_SIZE / h)
+            img = img.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.BILINEAR)
+        if img.mode not in ("RGB", "RGBA"):
+            img = img.convert("RGBA")
+        return image_data(img)
+    except Exception as e:
+        log("sanitize_icon_data(%s, %i, %i, %i bytes)", coding, icon[1], icon[2], len(data), exc_info=True)
+        log.warn("Warning: dropping unparsable %r notification icon", coding)
+        log.warn(" %s", e)
+        return None
 
 
 def get_notification_icon(icon_string: str) -> IconData | None:
