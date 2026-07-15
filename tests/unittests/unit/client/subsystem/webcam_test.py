@@ -24,6 +24,8 @@ class WebcamTest(ClientMixinTest):
     def test_suspend_resume_active(self):
         webcam = WebcamForwarder()
         webcam.send = MagicMock()
+        webcam.idle_add = lambda fn, *args: fn(*args)
+        webcam.emit = MagicMock()
         webcam.server_webcam = True
         webcam.webcam_device = MagicMock()
         webcam.webcam_device_no = 7
@@ -33,6 +35,7 @@ class WebcamTest(ClientMixinTest):
 
         assert webcam.webcam_resume_restart == (7, "/dev/video7")
         assert webcam.webcam_device is None
+        webcam.emit.assert_called_once_with("webcam-changed")
         with patch.object(webcam, "start_sending_webcam") as start:
             webcam.resume_webcam(None)
         assert webcam.webcam_resume_restart == ()
