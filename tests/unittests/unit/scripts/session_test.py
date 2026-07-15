@@ -42,6 +42,55 @@ class TestGetSessionDir(unittest.TestCase):
                 assert isinstance(result, str)
 
 
+class TestSanitizeSessionDirname(unittest.TestCase):
+
+    def test_display_forms_preserved(self):
+        from xpra.scripts.session import sanitize_session_dirname
+        # every display name form we generate must survive unchanged
+        # (after the leading ":" / colon handling):
+        cases = {
+            ":100": "100",
+            ":0.0": "0.0",              # X11 screen suffix
+            "1000": "1000",             # proxy port
+            "wayland-0": "wayland-0",
+            "runner-12345": "runner-12345",
+            "Main": "Main",             # win32 / macos shadow
+            "S12345": "S12345",         # posix shadow auto
+            "vdd_0": "vdd_0",           # shadow-device (already colon-mapped)
+        }
+        for display, expected in cases.items():
+            assert sanitize_session_dirname(display) == expected, \
+                f"{display!r} -> {sanitize_session_dirname(display)!r}, expected {expected!r}"
+
+    def test_traversal_neutralized(self):
+        from xpra.scripts.session import sanitize_session_dirname
+        for display in ("..", "../../etc/passwd", "foo/bar", "foo\\bar",
+                        ".hidden", "a/../../b", "foo\0bar", "foo bar", "foo:bar"):
+            sane = sanitize_session_dirname(display)
+            assert "/" not in sane, f"{display!r} -> {sane!r} still has a separator"
+            assert "\\" not in sane, f"{display!r} -> {sane!r} still has a separator"
+            assert ".." not in sane, f"{display!r} -> {sane!r} still traverses"
+            assert not sane.startswith("."), f"{display!r} -> {sane!r} is a dotfile"
+
+    def test_colon_mapped(self):
+        from xpra.scripts.session import sanitize_session_dirname
+        # interior colons (shadow-device specifiers) become dashes on all platforms:
+        assert ":" not in sanitize_session_dirname("vdd:0")
+
+
+class TestSessionDirConfinement(unittest.TestCase):
+
+    def test_traversal_stays_within_base(self):
+        from xpra.scripts.session import get_session_dir
+        with tempfile.TemporaryDirectory() as base:
+            for display in ("../../etc", ":../../../etc/passwd", "foo/bar"):
+                result = get_session_dir("start", base, display, 0)
+                real = os.path.realpath(result)
+                real_base = os.path.realpath(base)
+                assert real == real_base or real.startswith(real_base + os.sep), \
+                    f"{display!r} escaped the base dir: {real!r} not under {real_base!r}"
+
+
 class TestMakeSessionDir(unittest.TestCase):
 
     def test_creates_dir(self):

@@ -4,21 +4,41 @@
 # later version. See the file COPYING for details.
 
 import os
+import re
 import glob
 from shutil import rmtree
 
-from xpra.os_util import POSIX, WIN32, getuid
+from xpra.os_util import POSIX, getuid
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.env import osexpand, envbool
 from xpra.util.io import load_binary_file
 
 CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 
+# the session directory name is derived from the display name,
+# so restrict it to a conservative character set to prevent path traversal
+# or otherwise unexpected paths. All the display names we generate fit within
+# this set: X11 ":N" / ":N.S", wayland "wayland-N", "runner-PID", "SPID",
+# "Main", shadow-device "vdd:0" (-> "vdd_0"), ...
+# (matches `VALID_DISPLAY` in `xpra.net.session_discovery` and `UUID_CHARS`)
+UNSAFE_DISPLAY_CHARS = re.compile(r"[^A-Za-z0-9._-]")
+
+
+def sanitize_session_dirname(display_name: str) -> str:
+    name = (display_name or "").lstrip(":")
+    # colons are invalid in Windows paths (and used by shadow-device specifiers):
+    name = name.replace(":", "-")
+    # drop anything outside the safe character set:
+    name = UNSAFE_DISPLAY_CHARS.sub("-", name)
+    # `.` is allowed (ie: the X11 screen suffix in ":0.0"),
+    # so neutralize any `..` traversal and leading dots (no dotfiles) explicitly:
+    while ".." in name:
+        name = name.replace("..", ".")
+    return name.lstrip(".")
+
 
 def get_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int) -> str:
-    sane_display_name = (display_name or "").lstrip(":")
-    if WIN32:
-        sane_display_name = sane_display_name.replace(":", "-")
+    sane_display_name = sanitize_session_dirname(display_name)
     session_dir = osexpand(os.path.join(sessions_dir, sane_display_name), uid=uid)
     if not os.path.exists(session_dir):
         ROOT = POSIX and getuid() == 0
@@ -44,7 +64,7 @@ def make_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int =
             os.makedirs(session_dir, 0o750, exist_ok=True)
         except OSError:
             import tempfile
-            session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
+            session_dir = osexpand(os.path.join(tempfile.gettempdir(), sanitize_session_dirname(display_name)))
             os.makedirs(session_dir, 0o750, exist_ok=True)
         ROOT = POSIX and getuid() == 0
         mismatch = ROOT and uid != 0 or gid != 0
