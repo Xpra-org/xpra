@@ -64,6 +64,7 @@ class TestOSUtil(unittest.TestCase):
         for uuid in (
             "",                             # no uuid at all
             "a"*(MAX_UUID_LENGTH+1),        # too long
+            "agent", "agent.default",       # reserved for the ssh agent control symlinks
             ".", "..", "...",               # `get_ssh_agent_path` rejects these,
             ".hidden",                      # and any other dotfile,
             "foo..bar",                     # and anything that could traverse

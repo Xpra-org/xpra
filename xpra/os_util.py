@@ -185,6 +185,10 @@ def get_int_uuid() -> int:
 
 MAX_UUID_LENGTH = 128
 UUID_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.")
+# names reserved for the ssh agent control symlinks (`ssh/agent` and `ssh/agent.default`):
+# a client-supplied uuid must never collide with these, or it could clobber them,
+# see `get_ssh_agent_path` and `clean_agent_socket`
+RESERVED_UUIDS = frozenset(("agent", "agent.default"))
 
 
 def valid_uuid(uuid: str) -> bool:
@@ -195,6 +199,9 @@ def valid_uuid(uuid: str) -> bool:
         when the uuid ends up in a filename: ie the `ssh/$UUID` agent symlinks
     """
     if not uuid or len(uuid) > MAX_UUID_LENGTH:
+        return False
+    if uuid in RESERVED_UUIDS:
+        # would collide with the ssh agent control symlinks
         return False
     if uuid.startswith(".") or ".." in uuid:
         # no dotfiles, no path traversal - matches `get_ssh_agent_path`
