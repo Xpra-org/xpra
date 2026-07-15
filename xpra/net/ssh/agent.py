@@ -76,7 +76,9 @@ def set_ssh_agent(filename:str="") -> None:
 def clean_agent_socket(uuid:str="") -> None:
     sockpath = get_ssh_agent_path(uuid)
     try:
-        if os.path.exists(sockpath):
+        # use `lexists` (not `exists`): the per-client entry is a symlink,
+        # and a dead symlink (agent socket already gone) must still be removed
+        if os.path.lexists(sockpath):
             log(f"removing ssh agent socket {sockpath!r}")
             os.unlink(sockpath)
     except OSError as e:
