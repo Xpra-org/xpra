@@ -857,13 +857,10 @@ class ServerBase(ServerBaseClass):
             else:
                 if source.uuid:
                     clean_agent_socket(source.uuid)
-                agent = ""
-                for ss in remaining_sources:
-                    ssh_auth_sock = getattr(ss, "ssh_auth_sock", "")
-                    if ss.uuid and ssh_auth_sock:
-                        agent = ss.uuid
-                        break
-                set_ssh_agent(agent)
+                #`agent` is always a client uuid (or "" for the default agent),
+                #never a raw `ssh_auth_sock` path, so that `agent` keeps pointing
+                #at the `ssh/$UUID` symlink validated by `accept_client_ssh_agent`
+                set_ssh_agent(self.get_agent_uuid(exclude=source))
         source.close()
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("%s client %i disconnected.", ptype, source.counter)
@@ -886,6 +883,18 @@ class ServerBase(ServerBaseClass):
             self.clean_quit(False)
 
 
+    def get_agent_uuid(self, exclude=None) -> str:
+        #the client driving the session provides the agent,
+        #failing that, any client that has one:
+        agent = ""
+        for ss in self._server_sources.values():
+            if ss is exclude or not ss.uuid or not getattr(ss, "ssh_auth_sock", ""):
+                continue
+            if ss.uuid==self.ui_driver:
+                return ss.uuid
+            agent = agent or ss.uuid
+        return agent
+
     def set_ui_driver(self, source) -> None:
         if source and self.ui_driver==source.uuid:
             return
@@ -900,8 +909,8 @@ class ServerBase(ServerBaseClass):
             except ImportError:
                 pass
             else:
-                ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
-                set_ssh_agent(ssh_auth_sock)
+                #point `ssh/agent` at a client uuid, never the raw `ssh_auth_sock` path
+                set_ssh_agent(self.get_agent_uuid())
         for c in SERVER_BASES:
             if c!=ServerCore:
                 c.set_session_driver(self, source)
