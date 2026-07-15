@@ -148,7 +148,9 @@ class GTKDialogClient(StubClientSubsystem):
 
         title = label(title, "sans 14")
         add(title, 16)
-        add(label(self.client.get_challenge_prompt(prompt)), 10)
+        challenge = self.get_subsystem("challenge")
+        prompt_text = challenge.get_challenge_prompt(prompt) if challenge else "Password"
+        add(label(prompt_text), 10)
         password_input = Gtk.Entry()
         password_input.set_max_length(255)
         password_input.set_width_chars(32)
