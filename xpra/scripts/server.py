@@ -399,6 +399,11 @@ def init_virtual_devices(app, devices: dict) -> None:
 
 
 def harden_server_process() -> None:
+    if WIN32:
+        # best effort: the mitigation policies log their own warnings and never raise
+        from xpra.platform.win32.security import harden_process as win32_harden_process
+        win32_harden_process()
+        return
     if not LINUX:
         return
     from xpra.platform.posix.security import harden_process

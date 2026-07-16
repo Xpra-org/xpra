@@ -39,10 +39,12 @@ class TestMain(unittest.TestCase):
         security_module = ModuleType("xpra.platform.posix.security")
         security_module.harden_process = harden_process
         with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+             patch("xpra.scripts.server.WIN32", False), \
              patch("xpra.scripts.server.LINUX", False):
             harden_server_process()
         harden_process.assert_not_called()
         with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+             patch("xpra.scripts.server.WIN32", False), \
              patch("xpra.scripts.server.LINUX", True):
             harden_server_process()
         harden_process.assert_called_once_with()
@@ -51,9 +53,20 @@ class TestMain(unittest.TestCase):
         security_module = ModuleType("xpra.platform.posix.security")
         security_module.harden_process = Mock(side_effect=OSError(1, "not permitted"))
         with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+             patch("xpra.scripts.server.WIN32", False), \
              patch("xpra.scripts.server.LINUX", True), \
              self.assertRaisesRegex(InitException, "failed to harden the server process"):
             harden_server_process()
+
+    def test_harden_server_process_win32(self):
+        harden_process = Mock()
+        security_module = ModuleType("xpra.platform.win32.security")
+        security_module.harden_process = harden_process
+        with patch.dict(sys.modules, {"xpra.platform.win32.security": security_module}), \
+             patch("xpra.scripts.server.WIN32", True), \
+             patch("xpra.scripts.server.LINUX", False):
+            harden_server_process()
+        harden_process.assert_called_once_with()
 
     def test_enforce_server_landlock(self):
         enforce_landlock = Mock()
