@@ -12,7 +12,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, EncodingNotSupported
+from xpra.codecs.constants import VideoSpec, EncodingNotSupported, CodecStateException
 from xpra.codecs.vacommon import config_libva_logging
 from xpra.codecs.image import ImageWrapper
 from xpra.common import SizedBuffer
@@ -326,7 +326,12 @@ cdef class Decoder:
         if status != LIBVA_DEC_OK:
             detail = libva_decoder_get_last_error(self.context).decode("utf-8", "replace")
             last_sts = libva_decoder_get_last_status(self.context)
-            raise RuntimeError("libva decode error: %s (detail: %s, sts=%d)" % (
+            # CodecStateException (not RuntimeError): the paint code
+            # restarts the decoder on it (backing.py), whereas other
+            # exception types propagate and leave a stale decoder in
+            # place; a mid-stream failure here always invalidates the
+            # decoder state (DPB / reference chain)
+            raise CodecStateException("libva decode error: %s (detail: %s, sts=%d)" % (
                 libva_decode_status_str(status).decode("latin-1"), detail, last_sts))
 
         pixels = tuple(frame.planes[i][:frame.sizes[i]] for i in range(frame.nplanes))
