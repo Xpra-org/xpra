@@ -125,16 +125,21 @@ def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int 
 
 
 def choose_decoder(decoders_for_cs: list[CodecSpec], max_setup_cost=100) -> CodecSpec:
-    # for now, just rank by setup-cost, so slow-to-initialize decoders come last:
-    scores: dict[int, list[int]] = {}
+    # rank by setup-cost (so slow-to-initialize decoders come last),
+    # scaled by the spec's runtime factor - the same mechanism the
+    # server's pipeline scoring uses (video_scoring.py): a spec at its
+    # `max_instances` capacity returns 0 and loses to any available
+    # alternative, but remains eligible if there is nothing else
+    scores: dict[float, list[int]] = {}
     for index, decoder_spec in enumerate(decoders_for_cs):
         cost = decoder_spec.setup_cost
         if cost > max_setup_cost:
             continue
-        scores.setdefault(cost, []).append(index)
+        score = (100 - cost) * decoder_spec.get_runtime_factor()
+        scores.setdefault(score, []).append(index)
     if not scores:
         raise RuntimeError("no decoders available!")
-    best_score = sorted(scores)[0]
+    best_score = sorted(scores)[-1]
     options_for_score = scores[best_score]
     # if multiple decoders have the same score, just use the first one:
     chosen = decoders_for_cs[options_for_score[0]]
@@ -820,12 +825,41 @@ class WindowBackingBase:
                 if not all_decoders_for_cs:
                     raise RuntimeError(f"no video decoders for {coding!r} and {input_colorspace!r}")
                 decoders_for_cs = list(all_decoders_for_cs)
+
+                # filter out decoders whose hard limits this stream
+                # exceeds (min/max dimensions, max_pixels area, ie:
+                # driver decode envelopes), so that such streams fall
+                # back to another decoder instead of poisoning the
+                # shared spec's setup_cost via guaranteed init_context
+                # failures (which at >100 delists the decoder for the
+                # entire session).
+                # (`max_instances` capacity is handled by
+                # choose_decoder() via get_runtime_factor, like the
+                # server's pipeline scoring - and dimension masks are
+                # deliberately NOT checked here: real decoders handle
+                # padded+cropped sizes regardless of their alignment
+                # masks, and pre-filtering on them can leave an
+                # at-capacity decoder as the only candidate)
+                def within_limits(ds) -> bool:
+                    return (ds.min_w <= enc_width <= ds.max_w
+                            and ds.min_h <= enc_height <= ds.max_h
+                            and (ds.max_pixels <= 0 or enc_width * enc_height <= ds.max_pixels))
+
+                hard_ok = [ds for ds in decoders_for_cs if within_limits(ds)]
+                if hard_ok:
+                    decoders_for_cs = hard_ok
+                else:
+                    videolog.warn(f"Warning: no decoder is rated for {enc_width}x{enc_height} {coding} frames")
+                    videolog.warn(" trying anyway with: " + csv(d.codec_type for d in decoders_for_cs))
                 while not self._video_decoder:
                     decoder_spec = choose_decoder(decoders_for_cs)
                     videolog("paint_with_video_decoder: new %s%s",
                              decoder_spec.codec_type, (coding, enc_width, enc_height, input_colorspace))
                     try:
-                        vd = decoder_spec.codec_class()
+                        # make_instance (not codec_class()) so the spec's
+                        # instance WeakSet tracks live decoders — that is
+                        # what max_instances gating counts
+                        vd = decoder_spec.make_instance()
                         vd.init_context(coding, enc_width, enc_height, input_colorspace, options)
                         self._video_decoder = vd
                         break
@@ -833,7 +867,7 @@ class WindowBackingBase:
                         log("%s.init_context(..)", vd, exc_info=True)
                         log.warn(f"Warning: failed to initialize decoder {decoder_spec.codec_type}: {e}")
                         decoder_spec.setup_cost += 10
-                    except RuntimeError as e:
+                    except (RuntimeError, ValueError) as e:
                         log("%s.init_context(..)", vd, exc_info=True)
                         log.warn(f"Warning: failed to initialize decoder {decoder_spec.codec_type}: {e}")
                         decoder_spec.setup_cost += 50

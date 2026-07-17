@@ -1229,8 +1229,14 @@ static LibVADecodeStatus map_output(LibVADecoder *dec, VASurfaceID surface,
     frame->height = h;
     frame->depth = dec->output_444 ? 24 : 24;
     if (image.format.fourcc == VA_FOURCC_NV12) {
+        /* NV12 chroma rows hold 2 bytes per 2-pixel pair, so an odd
+         * display width needs w+1 bytes per chroma row; the source
+         * surface is coded-size aligned so the bytes always exist.
+         * (Odd display sizes are normal: h264 codes the padded even
+         * size and crops via the SPS.) */
+        int cw = (w + 1) & ~1;
         size_t ysize = (size_t)w * h;
-        size_t uvsize = (size_t)w * ((h + 1) / 2);
+        size_t uvsize = (size_t)cw * ((h + 1) / 2);
         if (!ensure_plane(dec, 0, ysize) || !ensure_plane(dec, 1, uvsize)) {
             vaUnmapBuffer(dec->display, image.buf);
             vaDestroyImage(dec->display, image.image_id);
@@ -1240,12 +1246,12 @@ static LibVADecodeStatus map_output(LibVADecoder *dec, VASurfaceID surface,
             memcpy(dec->planes[0] + (size_t)row * w,
                    (uint8_t *)data + image.offsets[0] + (size_t)row * image.pitches[0], w);
         for (int row = 0; row < (h + 1) / 2; row++)
-            memcpy(dec->planes[1] + (size_t)row * w,
-                   (uint8_t *)data + image.offsets[1] + (size_t)row * image.pitches[1], w);
+            memcpy(dec->planes[1] + (size_t)row * cw,
+                   (uint8_t *)data + image.offsets[1] + (size_t)row * image.pitches[1], cw);
         frame->planes[0] = dec->planes[0];
         frame->planes[1] = dec->planes[1];
         frame->strides[0] = w;
-        frame->strides[1] = w;
+        frame->strides[1] = cw;
         frame->sizes[0] = (int)ysize;
         frame->sizes[1] = (int)uvsize;
         frame->nplanes = 2;
