@@ -395,6 +395,7 @@ static int try_device(const char *device) {
         snprintf(g_error, sizeof(g_error), "vaQueryConfigProfiles failed: %s (%d)",
                  vaErrorStr(status), (int)status);
         vaTerminate(display);
+        libva_x11_close(display);
         if (fd >= 0)
             close(fd);
         return 0;
@@ -431,6 +432,7 @@ static int try_device(const char *device) {
         vp9_444 = vld_supported(display, VAProfileVP9Profile1, VA_RT_FORMAT_YUV444);
 
     vaTerminate(display);
+    libva_x11_close(display);
     if (fd >= 0)
         close(fd);
     if (h264_420 || h264_444 || vp8_420 || vp9_420 || vp9_444) {
@@ -490,6 +492,10 @@ LibVADecodeStatus libva_decode_startup(void) {
         }
         closedir(dir);
     }
+    /* no render node worked: try an X11 VA display (VDPAU-backed VA
+     * drivers have no DRM path at all) */
+    if (try_device("x11"))
+        return LIBVA_DEC_OK;
     if (!g_error[0])
         snprintf(g_error, sizeof(g_error), "no VA-API render node found");
     return LIBVA_DEC_NOT_AVAILABLE;
@@ -707,6 +713,7 @@ void libva_decoder_destroy(LibVADecoder *dec) {
         if (dec->config != VA_INVALID_ID)
             vaDestroyConfig(dec->display, dec->config);
         vaTerminate(dec->display);
+        libva_x11_close(dec->display);
     }
     if (dec->fd >= 0)
         close(dec->fd);
@@ -1186,8 +1193,29 @@ static LibVADecodeStatus map_output(LibVADecoder *dec, VASurfaceID surface,
 
     t0 = usec_now();
     status = vaDeriveImage(dec->display, surface, &image);
-    if (status != VA_STATUS_SUCCESS)
-        return set_error(dec, status, "vaDeriveImage");
+    if (status != VA_STATUS_SUCCESS) {
+        /* Fall back to vaCreateImage + vaGetImage for drivers without
+         * DeriveImage support (e.g. the VDPAU-backed VA driver, whose
+         * video surfaces have no linear CPU view) - the same pattern
+         * ffmpeg's hwcontext_vaapi uses.  The image covers the full
+         * (aligned) surface; the per-row copies below crop naturally. */
+        VAImageFormat fmt;
+        memset(&fmt, 0, sizeof(fmt));
+        fmt.fourcc = dec->output_444 ? VA_FOURCC_XYUV : VA_FOURCC_NV12;
+        fmt.byte_order = VA_LSB_FIRST;
+        fmt.bits_per_pixel = dec->output_444 ? 32 : 12;
+        status = vaCreateImage(dec->display, &fmt,
+                               dec->surface_width, dec->surface_height, &image);
+        if (status != VA_STATUS_SUCCESS)
+            return set_error(dec, status, "vaDeriveImage/vaCreateImage");
+        status = vaGetImage(dec->display, surface, 0, 0,
+                            (unsigned int)dec->surface_width,
+                            (unsigned int)dec->surface_height, image.image_id);
+        if (status != VA_STATUS_SUCCESS) {
+            vaDestroyImage(dec->display, image.image_id);
+            return set_error(dec, status, "vaGetImage");
+        }
+    }
     status = vaMapBuffer(dec->display, image.buf, &data);
     t1 = usec_now();
     if (status != VA_STATUS_SUCCESS) {

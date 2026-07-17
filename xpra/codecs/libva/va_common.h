@@ -12,6 +12,8 @@
 #include <va/va_win32.h>
 #else
 #include <va/va_drm.h>
+#include <va/va_x11.h>
+#include <X11/Xlib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #endif
@@ -167,17 +169,75 @@ static inline int libva_open_display(const char *device, int *fd_out, VADisplay 
     return 1;
 }
 #else
+/* X11 VADisplays (device "x11" or "x11:<name>") need their Display
+ * closed at teardown; VADisplay itself does not own it.  Small per-TU
+ * registry, looked up by libva_x11_close() which no-ops for DRM
+ * displays.  Rationale: VDPAU-backed VA drivers (nvidia-340 era) have
+ * no DRM path at all - vdp_device_create_x11 is VDPAU's only
+ * constructor - and such systems may have no render nodes either. */
+#define LIBVA_X11_DISPLAYS_MAX 8
+static Display *libva_x11_dpys[LIBVA_X11_DISPLAYS_MAX];
+static VADisplay libva_x11_vadpys[LIBVA_X11_DISPLAYS_MAX];
+static inline void libva_x11_register(VADisplay va, Display *dpy) {
+    for (int i = 0; i < LIBVA_X11_DISPLAYS_MAX; i++) {
+        if (!libva_x11_vadpys[i]) {
+            libva_x11_vadpys[i] = va;
+            libva_x11_dpys[i] = dpy;
+            return;
+        }
+    }
+    /* table full: the X connection is leaked on close */
+}
+static inline void libva_x11_close(VADisplay va) {
+    for (int i = 0; i < LIBVA_X11_DISPLAYS_MAX; i++) {
+        if (libva_x11_vadpys[i] == va) {
+            XCloseDisplay(libva_x11_dpys[i]);
+            libva_x11_vadpys[i] = NULL;
+            libva_x11_dpys[i] = NULL;
+            return;
+        }
+    }
+}
 static inline int libva_open_display(const char *device, int *fd_out, VADisplay *display_out,
                                      int *major_out, int *minor_out,
                                      char *vendor, size_t vendor_size,
                                      char *error, size_t error_size) {
-    int fd = open(device, O_RDWR | O_CLOEXEC);
+    int fd;
     VADisplay display;
     VAStatus status;
     const char *vstr;
 
     *fd_out = -1;
     *display_out = NULL;
+    if (strncmp(device, "x11", 3) == 0 && (device[3] == 0 || device[3] == ':')) {
+        /* "x11" opens $DISPLAY, "x11:<name>" a specific X display */
+        const char *dpy_name = (device[3] == ':') ? device + 4 : NULL;
+        Display *dpy = XOpenDisplay(dpy_name);
+        if (!dpy) {
+            snprintf(error, error_size, "XOpenDisplay failed for %.160s",
+                     dpy_name ? dpy_name : "$DISPLAY");
+            return 0;
+        }
+        display = vaGetDisplay(dpy);
+        if (!display) {
+            snprintf(error, error_size, "vaGetDisplay failed for X11 display");
+            XCloseDisplay(dpy);
+            return 0;
+        }
+        status = vaInitialize(display, major_out, minor_out);
+        if (status != VA_STATUS_SUCCESS) {
+            snprintf(error, error_size, "vaInitialize failed for X11 display: %s (%d)",
+                     vaErrorStr(status), (int)status);
+            XCloseDisplay(dpy);
+            return 0;
+        }
+        vstr = vaQueryVendorString(display);
+        snprintf(vendor, vendor_size, "%s", vstr ? vstr : "");
+        libva_x11_register(display, dpy);
+        *display_out = display;
+        return 1;
+    }
+    fd = open(device, O_RDWR | O_CLOEXEC);
     if (fd < 0)
         return 0;
     display = vaGetDisplayDRM(fd);

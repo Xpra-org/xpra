@@ -3689,10 +3689,10 @@ if vpl_encoder_ENABLED:
 toggle_packages(libva_ENABLED, "xpra.codecs.libva")
 if libva_encoder_ENABLED:
     ace("xpra.codecs.libva.encoder,xpra/codecs/libva/va_encode.c",
-        "libva,libva-win32" if WIN32 else "libva,libva-drm")
+        "libva,libva-win32" if WIN32 else "libva,libva-drm,libva-x11,x11")
 if libva_decoder_ENABLED:
     ace("xpra.codecs.libva.decoder,xpra/codecs/libva/va_decode.c",
-        "libva,libva-win32" if WIN32 else "libva,libva-drm")
+        "libva,libva-win32" if WIN32 else "libva,libva-drm,libva-x11,x11")
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
 toggle_packages(remote_encoder_ENABLED, "xpra.codecs.remote")
 

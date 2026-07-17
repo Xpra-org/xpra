@@ -603,6 +603,7 @@ static int try_device(const char *device) {
     vp8_ok = vp8_encode_supported(display);
     vp9_ok = vp9_encode_supported(display);
     vaTerminate(display);
+    libva_x11_close(display);
     if (fd >= 0)
         close(fd);
     if (h264_ok || vp8_ok || vp9_ok) {
@@ -900,6 +901,7 @@ void libva_encoder_destroy(LibVAEncoder *enc) {
         if (enc->config != VA_INVALID_ID)
             vaDestroyConfig(enc->display, enc->config);
         vaTerminate(enc->display);
+        libva_x11_close(enc->display);
     }
     if (enc->fd >= 0)
         close(enc->fd);
