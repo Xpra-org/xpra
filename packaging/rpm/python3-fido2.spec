@@ -72,7 +72,7 @@ rm -rf %{buildroot}
 %{python3_sitelib}/fido2-%{version}*
 
 %changelog
-* Thu Jul 17 2026 Antoine Martin <antoine@xpra.org> - 2.2.1-1
+* Wed Jul 17 2026 Antoine Martin <antoine@xpra.org> - 2.2.1-1
 - initial packaging for xpra
 
 * Thu Apr 16 2026 Antoine Martin <antoine@xpra.org> - 2.2.0-1
