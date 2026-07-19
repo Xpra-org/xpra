@@ -35,6 +35,27 @@ def cmpe(info: str, p1, p2, tolerance=2):
         raise ValueError(f"{info} delta={delta}")
 
 
+def roundtrip_tolerance(mod_out: str, full_range: bool) -> int:
+    """
+    Maximum per-channel error tolerated for a flat-colour RGB -> YUV -> RGB roundtrip.
+
+    Studio range only uses 220 of the 256 luma values, so the quantization error is scaled
+    back up by 256/220 on the way back and we allow twice as much as for full range.
+
+    `csc_libyuv` needs an extra unit in full-range mode: its `ARGBToJ420` and `ARGBToJ444`
+    approximate the JPEG luma weights as 77/150/29 over 256 (ie: 0.3008/0.5859/0.1133 instead of
+    0.299/0.587/0.114) and truncate the chroma instead of rounding it, so each plane can come out
+    one too low. (with libyuv 1922, cyan gives Y=178 U=170 V=0 instead of 178.8, 171.0 and 0.5)
+    Those errors then compound on the way back since B = Y + 1.772 * (U - 128),
+    which costs us almost 3 on the blue channel.
+    Only the encoding side is affected: feeding the correctly rounded YUV values to `J420ToARGB`
+    does give us back the exact input pixel.
+    """
+    if not full_range:
+        return 4
+    return 3 if mod_out == "csc_libyuv" else 2
+
+
 def plane_energy(p1, p2, Bpp: int = 1) -> tuple[int, int]:
     # sum of squared signal and squared error (noise), comparing Bpp-byte samples:
     n = min(len(p1), len(p2)) // Bpp
@@ -172,7 +193,8 @@ class Test_CSC_Colorspace(unittest.TestCase):
         if not textured:
             cmpe(f"roundtrip {mod_out}-{mod_in} {info} mismatch, expected %s but got %s" % (
                 pstr(in_pixels), pstr(roundtrip_pixels)),
-                in_pixels, roundtrip_pixels, tolerance=2 + 2*int(not options.boolget("full-range")))
+                in_pixels, roundtrip_pixels,
+                tolerance=roundtrip_tolerance(mod_out, options.boolget("full-range")))
             return 0.0
         # signal-to-noise ratio of the roundtrip, ignoring the unused 'X' channel:
         xi = in_csc.find("X")
