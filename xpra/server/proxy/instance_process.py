@@ -55,7 +55,7 @@ def set_blocking(conn) -> None:
         log("cannot set %s to blocking mode", conn)
 
 
-class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Process):
+class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     def __init__(self, uid: int, gid: int, env_options: dict[str, str], session_options: dict[str, str],
                  socket_dir: str,
@@ -67,12 +67,9 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
                                disp_desc, cipher, cipher_mode, encryption_key, caps)
         QueueScheduler.__init__(self)
         self.hello_request_handlers = {}
-        # the proxy instance is its own "server" (ControlHandler.__init__
-        # sets self.server = self); expose itself as the `control` subsystem
-        # so StubSubsystem.args_control / get_subsystem can find it.
-        self.subsystems: dict = {"control": self}
-        ControlHandler.__init__(self, self)
-        self.enabled = True
+        self.control_handler = ControlHandler(self)
+        self.control_handler.enabled = True
+        self.subsystems: dict = {"control": self.control_handler}
         Process.__init__(self, name=str(client_conn), daemon=False)
         self.client_conn = client_conn
         self.server_conn = server_conn
@@ -150,7 +147,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
 
     def run(self) -> ExitValue:
         register_SIGUSR_signals(self.idle_add)
-        ControlHandler.add_default_control_commands(self)
+        self.control_handler.add_default_control_commands()
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
         self.client_protocol = client_protocol_class(self.client_conn,
@@ -368,7 +365,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
             return True
         if request == "command":
             command_req = tuple(str(x) for x in caps.tupleget("command_request"))
-            self.idle_add(self.handle_command_request, proto, *command_req)
+            self.idle_add(self.control_handler.handle_command_request, proto, *command_req)
             return True
         if request == "version":
             version = XPRA_VERSION

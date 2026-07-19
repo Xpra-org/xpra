@@ -26,7 +26,9 @@ class ProxyServerTest(ServerTestUtil):
                                         client_conn, {"type": "tcp"}, {},
                                         "", "", b"", server_conn, typedict({}), MagicMock())
 
-        self.assertIs(instance.server, instance)
+        control_handler = instance.subsystems["control"]
+        self.assertIs(control_handler, instance.control_handler)
+        self.assertIs(control_handler.server, instance)
         self.assertIn("command", instance.hello_request_handlers)
         if POSIX:
             self.assertEqual(instance._start_method, "fork")
