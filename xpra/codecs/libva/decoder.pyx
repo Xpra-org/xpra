@@ -12,11 +12,12 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, EncodingNotSupported
+from xpra.codecs.constants import VideoSpec, EncodingNotSupported, CodecStateException
 from xpra.codecs.vacommon import config_libva_logging
 from xpra.codecs.image import ImageWrapper
 from xpra.common import SizedBuffer
 from xpra.util.objects import typedict
+from xpra.util.env import envint
 from xpra.log import Logger
 
 log = Logger("decoder", "libva")
@@ -155,7 +156,12 @@ cdef bint supports(str encoding, str colorspace):
     return bool(libva_decode_supports(enc, cs))
 
 
-MAX_WIDTH, MAX_HEIGHT = 8192, 8192
+# driver limits, overridable for hardware whose VA driver cannot
+# express them (ie: the VDPAU bridge on feature-set-A NVIDIA: H264
+# maxes at 2048x2048 AND 8192 macroblocks = 2097152 pixels):
+MAX_WIDTH = envint("XPRA_LIBVA_MAX_WIDTH", 8192)
+MAX_HEIGHT = envint("XPRA_LIBVA_MAX_HEIGHT", 8192)
+MAX_PIXELS = envint("XPRA_LIBVA_MAX_PIXELS", 0)
 
 
 def get_specs() -> Sequence[VideoSpec]:
@@ -174,10 +180,25 @@ def get_specs() -> Sequence[VideoSpec]:
                 codec_type=get_type(),
                 quality=80, speed=90,
                 size_efficiency=70,
-                setup_cost=50,
+                # setup_cost 0 (was 50): choose_decoder() ranks by
+                # setup_cost alone and openh264 declares 0, so any
+                # nonzero value here means the hardware decoder can
+                # NEVER be selected when openh264 is present.  With
+                # equal cost the tie-break is list order = the user's
+                # --video-decoders order, which is the right authority.
+                setup_cost=0,
+                # ONE live hardware decode stream at a time: on the
+                # VDPAU bridge (NVIDIA VP2 era) two concurrent decode
+                # streams corrupt each other's luma via the shared video
+                # engine's per-channel state (measured: whole-frame Y
+                # damage on 13-41% of frames, chroma bit-exact).  The
+                # selection layer routes additional streams to the next
+                # decoder (ie: openh264) while one is live.
+                max_instances=1,
                 min_w=64, min_h=64,
-                width_mask=0xFFFE, height_mask=0xFFFE,
+                width_mask=0xFFFF, height_mask=0xFFFF,
                 max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
+                max_pixels=MAX_PIXELS,
                 cpu_cost=10,
                 gpu_cost=80,
             ))
@@ -203,8 +224,15 @@ cdef class Decoder:
         log("libva.decoder.init_context%s", (encoding, width, height, colorspace, options))
         assert encoding in ENCODINGS, "unsupported encoding: %s" % encoding
         assert colorspace in COLORSPACES[encoding], "invalid colorspace %s for %s" % (colorspace, encoding)
-        if width & 1 or height & 1:
-            raise ValueError("invalid odd width %i or height %i" % (width, height))
+        # odd display sizes are fine: the bitstream is coded at the
+        # padded even size (SPS crop carries the display size) and the
+        # NV12 copy-out handles odd width/height (ceil'd chroma rows,
+        # even-rounded chroma stride)
+        if width > MAX_WIDTH or height > MAX_HEIGHT or (MAX_PIXELS > 0 and width * height > MAX_PIXELS):
+            # belt-and-braces for callers that bypass the size-aware
+            # decoder selection: fail here (cleanly, before creating a
+            # decoder that would error on every submit)
+            raise RuntimeError("%ix%i exceeds this device's decode limits" % (width, height))
         self.encoding = encoding
         self.colorspace = colorspace
         self.width = width
@@ -298,7 +326,12 @@ cdef class Decoder:
         if status != LIBVA_DEC_OK:
             detail = libva_decoder_get_last_error(self.context).decode("utf-8", "replace")
             last_sts = libva_decoder_get_last_status(self.context)
-            raise RuntimeError("libva decode error: %s (detail: %s, sts=%d)" % (
+            # CodecStateException (not RuntimeError): the paint code
+            # restarts the decoder on it (backing.py), whereas other
+            # exception types propagate and leave a stale decoder in
+            # place; a mid-stream failure here always invalidates the
+            # decoder state (DPB / reference chain)
+            raise CodecStateException("libva decode error: %s (detail: %s, sts=%d)" % (
                 libva_decode_status_str(status).decode("latin-1"), detail, last_sts))
 
         pixels = tuple(frame.planes[i][:frame.sizes[i]] for i in range(frame.nplanes))

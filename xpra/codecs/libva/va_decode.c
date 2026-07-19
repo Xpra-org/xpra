@@ -47,12 +47,32 @@ static int g_vp9_444_supported = 0;
 struct H264Params;
 struct VP8State;
 
+/* H.264 decoded picture buffer: up to 16 reference frames (spec DPB
+ * ceiling), progressive only (field coding is rejected at parse). */
+#define H264_DPB_SIZE 16
+/* surface pool: every DPB slot + the picture being decoded */
+#define H264_NUM_SURFACES (H264_DPB_SIZE + 1)
+
+struct H264DPBEntry {
+    VASurfaceID surface;
+    int surface_index;          /* index into LibVADecoder.surfaces */
+    int frame_num;              /* FrameNum as coded */
+    int top_foc;
+    int bottom_foc;
+    int is_long_term;
+    int long_term_frame_idx;
+    int in_use;
+};
+
 struct LibVADecoder {
     int             fd;
     VADisplay       display;
     VAConfigID      config;
     VAContextID     context;
-    VASurfaceID     surfaces[4];
+    /* h264 uses the whole pool; vp8/vp9 use only the first 4 entries
+     * (num_surfaces is 4 for them - their `& 3` rotation is untouched) */
+    VASurfaceID     surfaces[H264_NUM_SURFACES];
+    int             num_surfaces;
     int             surface_index;
     int             width;
     int             height;
@@ -63,10 +83,12 @@ struct LibVADecoder {
     unsigned int    rt_format;
     int             output_444;
     unsigned long   frames;
-    int             have_reference;
-    int             ref_surface_index;
-    int             ref_frame_num;
-    int             ref_poc_lsb;
+    struct H264DPBEntry dpb[H264_DPB_SIZE];
+    /* picture order count state (spec 8.2.1) */
+    int             poc_prev_lsb;
+    int             poc_prev_msb;
+    int             poc_prev_frame_num;
+    int             poc_prev_frame_num_offset;
     struct H264Params *h264_params;
     struct VP8State *vp8_state;
     int             vpx_last_surface;
@@ -160,6 +182,15 @@ struct H264SliceInfo {
     uint8_t chroma_weight_l0_flag;
     int16_t chroma_weight_l0[32][2];
     int16_t chroma_offset_l0[32][2];
+    int delta_poc_bottom;             /* delta_pic_order_cnt_bottom (poc type 0) */
+    /* dec_ref_pic_marking() */
+    int idr_long_term_reference_flag;
+    int adaptive_ref_pic_marking;
+    int n_mmco;
+    struct { int op; int arg1; int arg2; } mmco[H264_DPB_SIZE + 2];
+    /* ref_pic_list_modification(), list 0 */
+    int n_ref_mod_l0;
+    struct { int idc; int val; } ref_mod_l0[32];
     int bit_offset;
 };
 
@@ -395,6 +426,7 @@ static int try_device(const char *device) {
         snprintf(g_error, sizeof(g_error), "vaQueryConfigProfiles failed: %s (%d)",
                  vaErrorStr(status), (int)status);
         vaTerminate(display);
+        libva_x11_close(display);
         if (fd >= 0)
             close(fd);
         return 0;
@@ -431,6 +463,7 @@ static int try_device(const char *device) {
         vp9_444 = vld_supported(display, VAProfileVP9Profile1, VA_RT_FORMAT_YUV444);
 
     vaTerminate(display);
+    libva_x11_close(display);
     if (fd >= 0)
         close(fd);
     if (h264_420 || h264_444 || vp8_420 || vp9_420 || vp9_444) {
@@ -490,6 +523,10 @@ LibVADecodeStatus libva_decode_startup(void) {
         }
         closedir(dir);
     }
+    /* no render node worked: try an X11 VA display (VDPAU-backed VA
+     * drivers have no DRM path at all) */
+    if (try_device("x11"))
+        return LIBVA_DEC_OK;
     if (!g_error[0])
         snprintf(g_error, sizeof(g_error), "no VA-API render node found");
     return LIBVA_DEC_NOT_AVAILABLE;
@@ -598,8 +635,11 @@ LibVADecodeStatus libva_decoder_create(LibVADecoder **out, const char *encoding,
     dec->fd = -1;
     dec->config = VA_INVALID_ID;
     dec->context = VA_INVALID_ID;
-    for (int i = 0; i < 4; i++)
+    dec->num_surfaces = codec == LIBVA_CODEC_H264 ? H264_NUM_SURFACES : 4;
+    for (int i = 0; i < H264_NUM_SURFACES; i++)
         dec->surfaces[i] = VA_INVALID_SURFACE;
+    for (int i = 0; i < H264_DPB_SIZE; i++)
+        dec->dpb[i].surface = VA_INVALID_SURFACE;
     for (int i = 0; i < 8; i++)
         dec->vp9_refs[i] = VA_INVALID_SURFACE;
     dec->vpx_last_surface = -1;
@@ -671,7 +711,8 @@ LibVADecodeStatus libva_decoder_create(LibVADecoder **out, const char *encoding,
     status = vaCreateSurfaces(dec->display, dec->rt_format,
                               (unsigned int)dec->surface_width,
                               (unsigned int)dec->surface_height,
-                              dec->surfaces, 4, surface_attrs, 2);
+                              dec->surfaces, (unsigned int)dec->num_surfaces,
+                              surface_attrs, 2);
     if (status != VA_STATUS_SUCCESS) {
         set_error(dec, status, "vaCreateSurfaces");
         libva_decoder_destroy(dec);
@@ -680,7 +721,8 @@ LibVADecodeStatus libva_decoder_create(LibVADecoder **out, const char *encoding,
 
     status = vaCreateContext(dec->display, dec->config,
                              dec->surface_width, dec->surface_height,
-                             VA_PROGRESSIVE, dec->surfaces, 4, &dec->context);
+                             VA_PROGRESSIVE, dec->surfaces, dec->num_surfaces,
+                             &dec->context);
     if (status != VA_STATUS_SUCCESS) {
         set_error(dec, status, "vaCreateContext");
         libva_decoder_destroy(dec);
@@ -700,13 +742,14 @@ void libva_decoder_destroy(LibVADecoder *dec) {
     if (dec->display) {
         if (dec->context != VA_INVALID_ID)
             vaDestroyContext(dec->display, dec->context);
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < H264_NUM_SURFACES; i++) {
             if (dec->surfaces[i] != VA_INVALID_SURFACE)
                 vaDestroySurfaces(dec->display, &dec->surfaces[i], 1);
         }
         if (dec->config != VA_INVALID_ID)
             vaDestroyConfig(dec->display, dec->config);
         vaTerminate(dec->display);
+        libva_x11_close(dec->display);
     }
     if (dec->fd >= 0)
         close(dec->fd);
@@ -976,49 +1019,375 @@ static void parse_h264_params(const uint8_t *data, int size, struct H264Params *
     }
 }
 
-static int skip_h264_ref_pic_list_modification(struct BitReader *br, int slice_type_mod) {
-    int flags = slice_type_mod == 1 ? 2 : 1;
+static int parse_h264_ref_pic_list_modification(struct BitReader *br, int slice_type_mod,
+                                                struct H264SliceInfo *si) {
+    si->n_ref_mod_l0 = 0;
     if (slice_type_mod == 2 || slice_type_mod == 4)
+        return 1;                     /* I/SI slices carry no lists */
+    if (br_bits(br, 1)) {             /* ref_pic_list_modification_flag_l0 */
+        unsigned int idc;
+        do {
+            idc = br_ue(br);          /* modification_of_pic_nums_idc */
+            if (idc == 3)
+                break;
+            if (idc > 2)
+                return 0;             /* MVC ops (4/5) not supported */
+            int val = (int)br_ue(br); /* abs_diff_pic_num_minus1 / long_term_pic_num */
+            if (si->n_ref_mod_l0 < 32) {
+                si->ref_mod_l0[si->n_ref_mod_l0].idc = (int)idc;
+                si->ref_mod_l0[si->n_ref_mod_l0].val = val;
+                si->n_ref_mod_l0++;
+            }
+        } while (br_bits_left(br) > 0);
+    }
+    /* B slices would carry an L1 modification loop here; B slices are
+     * rejected at slice-header parse (this decoder is IPP-only) */
+    return 1;
+}
+
+static int parse_h264_dec_ref_pic_marking(struct BitReader *br, int nal_type,
+                                          struct H264SliceInfo *si) {
+    si->idr_long_term_reference_flag = 0;
+    si->adaptive_ref_pic_marking = 0;
+    si->n_mmco = 0;
+    if (!si->nal_ref_idc)
         return 1;
-    for (int list = 0; list < flags; list++) {
-        if (br_bits(br, 1)) {         /* ref_pic_list_modification_flag_l[01] */
-            unsigned int op;
-            do {
-                op = br_ue(br);       /* modification_of_pic_nums_idc */
-                if (op == 0 || op == 1)
-                    br_ue(br);        /* abs_diff_pic_num_minus1 */
-                else if (op == 2)
-                    br_ue(br);        /* long_term_pic_num */
-                else if (op == 4 || op == 5)
-                    br_ue(br);        /* abs_diff_view_idx_minus1 */
-            } while (op != 3 && br_bits_left(br) > 0);
-        }
+    if (nal_type == 5) {
+        br_bits(br, 1);               /* no_output_of_prior_pics_flag */
+        si->idr_long_term_reference_flag = (int)br_bits(br, 1);
+        return 1;
+    }
+    si->adaptive_ref_pic_marking = (int)br_bits(br, 1);
+    if (si->adaptive_ref_pic_marking) {
+        unsigned int op;
+        do {
+            op = br_ue(br);           /* memory_management_control_operation */
+            if (op == 0)
+                break;
+            if (op > 6)
+                return 0;
+            int arg1 = 0, arg2 = 0;
+            if (op == 1 || op == 3)
+                arg1 = (int)br_ue(br);    /* difference_of_pic_nums_minus1 */
+            if (op == 2)
+                arg1 = (int)br_ue(br);    /* long_term_pic_num */
+            if (op == 3 || op == 6)
+                arg2 = (int)br_ue(br);    /* long_term_frame_idx */
+            if (op == 4)
+                arg1 = (int)br_ue(br);    /* max_long_term_frame_idx_plus1 */
+            if (si->n_mmco < (int)(sizeof(si->mmco) / sizeof(si->mmco[0]))) {
+                si->mmco[si->n_mmco].op = (int)op;
+                si->mmco[si->n_mmco].arg1 = arg1;
+                si->mmco[si->n_mmco].arg2 = arg2;
+                si->n_mmco++;
+            }
+        } while (br_bits_left(br) > 0);
     }
     return 1;
 }
 
-static void skip_h264_dec_ref_pic_marking(struct BitReader *br, int nal_type, int nal_ref_idc) {
-    if (!nal_ref_idc)
-        return;
-    if (nal_type == 5) {
-        br_bits(br, 1);               /* no_output_of_prior_pics_flag */
-        br_bits(br, 1);               /* long_term_reference_flag */
-        return;
+/* ------------------------------------------------------------------ */
+/* H.264 decoded picture buffer (progressive frames only)              */
+/* ------------------------------------------------------------------ */
+
+static void h264_dpb_flush(LibVADecoder *dec) {
+    for (int i = 0; i < H264_DPB_SIZE; i++) {
+        dec->dpb[i].in_use = 0;
+        dec->dpb[i].surface = VA_INVALID_SURFACE;
     }
-    if (br_bits(br, 1)) {             /* adaptive_ref_pic_marking_mode_flag */
-        unsigned int op;
-        do {
-            op = br_ue(br);           /* memory_management_control_operation */
-            if (op == 1 || op == 3)
-                br_ue(br);            /* difference_of_pic_nums_minus1 */
-            if (op == 2)
-                br_ue(br);            /* long_term_pic_num */
-            if (op == 3 || op == 6)
-                br_ue(br);            /* long_term_frame_idx */
-            if (op == 4)
-                br_ue(br);            /* max_long_term_frame_idx_plus1 */
-        } while (op != 0 && br_bits_left(br) > 0);
+}
+
+/* PicNum for a frame (spec 8.2.4.1: FrameNumWrap, since for frames
+ * PicNum == FrameNumWrap) relative to the current frame_num */
+static int h264_pic_num(const struct H264DPBEntry *e, int cur_frame_num, int max_frame_num) {
+    if (e->frame_num > cur_frame_num)
+        return e->frame_num - max_frame_num;
+    return e->frame_num;
+}
+
+/* spec 8.2.1: picture order count, types 0 and 2 (type 1 unsupported).
+ * Progressive only. Returns 0 and fills *top_foc / *bottom_foc. */
+static int h264_compute_poc(LibVADecoder *dec, const struct H264Params *params,
+                            const struct H264SliceInfo *si, int is_idr,
+                            int *top_foc, int *bottom_foc) {
+    if (params->pic_order_cnt_type == 0) {
+        int max_lsb = 1 << (params->log2_max_pic_order_cnt_lsb_minus4 + 4);
+        int prev_lsb = is_idr ? 0 : dec->poc_prev_lsb;
+        int prev_msb = is_idr ? 0 : dec->poc_prev_msb;
+        int msb;
+        if (si->poc_lsb < prev_lsb && (prev_lsb - si->poc_lsb) >= max_lsb / 2)
+            msb = prev_msb + max_lsb;
+        else if (si->poc_lsb > prev_lsb && (si->poc_lsb - prev_lsb) > max_lsb / 2)
+            msb = prev_msb - max_lsb;
+        else
+            msb = prev_msb;
+        *top_foc = msb + si->poc_lsb;
+        *bottom_foc = *top_foc + si->delta_poc_bottom;
+        if (si->nal_ref_idc) {        /* prev state tracks reference pictures */
+            dec->poc_prev_lsb = si->poc_lsb;
+            dec->poc_prev_msb = msb;
+        }
+        return 0;
     }
+    if (params->pic_order_cnt_type == 2) {
+        int max_frame_num = 1 << (params->log2_max_frame_num_minus4 + 4);
+        int offset;
+        if (is_idr)
+            offset = 0;
+        else if (dec->poc_prev_frame_num > si->frame_num)
+            offset = dec->poc_prev_frame_num_offset + max_frame_num;
+        else
+            offset = dec->poc_prev_frame_num_offset;
+        int poc = 2 * (offset + si->frame_num);
+        if (!si->nal_ref_idc)
+            poc -= 1;
+        *top_foc = poc;
+        *bottom_foc = poc;
+        dec->poc_prev_frame_num = si->frame_num;
+        dec->poc_prev_frame_num_offset = offset;
+        return 0;
+    }
+    return -1;                        /* type 1: no real encoder emits it here */
+}
+
+/* pick a surface that is not referenced by the DPB (pool = DPB size + 1,
+ * so at least one is always free) */
+static int h264_pick_surface(LibVADecoder *dec) {
+    for (int n = 0; n < dec->num_surfaces; n++) {
+        int idx = (dec->surface_index + n) % dec->num_surfaces;
+        int busy = 0;
+        for (int i = 0; i < H264_DPB_SIZE; i++) {
+            if (dec->dpb[i].in_use && dec->dpb[i].surface_index == idx) {
+                busy = 1;
+                break;
+            }
+        }
+        if (!busy) {
+            dec->surface_index = (idx + 1) % dec->num_surfaces;
+            return idx;
+        }
+    }
+    return -1;
+}
+
+/* spec 8.2.5.3: sliding-window marking - make room for one more
+ * reference by unmarking the short-term entry with the smallest
+ * FrameNumWrap */
+static void h264_dpb_sliding_window(LibVADecoder *dec, const struct H264Params *params,
+                                    int cur_frame_num) {
+    int max_frame_num = 1 << (params->log2_max_frame_num_minus4 + 4);
+    int num_ref = params->max_num_ref_frames > 0 ? params->max_num_ref_frames : 1;
+    if (num_ref > H264_DPB_SIZE)
+        num_ref = H264_DPB_SIZE;
+    int used = 0;
+    for (int i = 0; i < H264_DPB_SIZE; i++)
+        if (dec->dpb[i].in_use)
+            used++;
+    while (used >= num_ref) {
+        int victim = -1, victim_pn = 0;
+        for (int i = 0; i < H264_DPB_SIZE; i++) {
+            struct H264DPBEntry *e = &dec->dpb[i];
+            if (!e->in_use || e->is_long_term)
+                continue;
+            int pn = h264_pic_num(e, cur_frame_num, max_frame_num);
+            if (victim < 0 || pn < victim_pn) {
+                victim = i;
+                victim_pn = pn;
+            }
+        }
+        if (victim < 0)
+            break;                    /* only long-term refs left */
+        dec->dpb[victim].in_use = 0;
+        used--;
+    }
+}
+
+/* spec 8.2.5.4: adaptive memory control (MMCO ops 1-6) */
+static void h264_dpb_apply_mmco(LibVADecoder *dec, const struct H264Params *params,
+                                const struct H264SliceInfo *si, int cur_frame_num,
+                                int *cur_is_long_term, int *cur_lt_idx, int *had_mmco5) {
+    int max_frame_num = 1 << (params->log2_max_frame_num_minus4 + 4);
+    *had_mmco5 = 0;
+    for (int m = 0; m < si->n_mmco; m++) {
+        int op = si->mmco[m].op;
+        if (op == 1) {                /* unmark short-term */
+            int pic_num = cur_frame_num - (si->mmco[m].arg1 + 1);
+            for (int i = 0; i < H264_DPB_SIZE; i++) {
+                struct H264DPBEntry *e = &dec->dpb[i];
+                if (e->in_use && !e->is_long_term &&
+                    h264_pic_num(e, cur_frame_num, max_frame_num) == pic_num)
+                    e->in_use = 0;
+            }
+        } else if (op == 2) {         /* unmark long-term by LongTermPicNum */
+            for (int i = 0; i < H264_DPB_SIZE; i++) {
+                struct H264DPBEntry *e = &dec->dpb[i];
+                if (e->in_use && e->is_long_term &&
+                    e->long_term_frame_idx == si->mmco[m].arg1)
+                    e->in_use = 0;
+            }
+        } else if (op == 3) {         /* short-term -> long-term */
+            int pic_num = cur_frame_num - (si->mmco[m].arg1 + 1);
+            for (int i = 0; i < H264_DPB_SIZE; i++) {
+                struct H264DPBEntry *e = &dec->dpb[i];
+                if (e->in_use && e->is_long_term &&
+                    e->long_term_frame_idx == si->mmco[m].arg2)
+                    e->in_use = 0;
+            }
+            for (int i = 0; i < H264_DPB_SIZE; i++) {
+                struct H264DPBEntry *e = &dec->dpb[i];
+                if (e->in_use && !e->is_long_term &&
+                    h264_pic_num(e, cur_frame_num, max_frame_num) == pic_num) {
+                    e->is_long_term = 1;
+                    e->long_term_frame_idx = si->mmco[m].arg2;
+                }
+            }
+        } else if (op == 4) {         /* max_long_term_frame_idx */
+            int max_idx = si->mmco[m].arg1 - 1;
+            for (int i = 0; i < H264_DPB_SIZE; i++) {
+                struct H264DPBEntry *e = &dec->dpb[i];
+                if (e->in_use && e->is_long_term && e->long_term_frame_idx > max_idx)
+                    e->in_use = 0;
+            }
+        } else if (op == 5) {         /* unmark everything, reset numbering */
+            h264_dpb_flush(dec);
+            *had_mmco5 = 1;
+        } else if (op == 6) {         /* current picture becomes long-term */
+            for (int i = 0; i < H264_DPB_SIZE; i++) {
+                struct H264DPBEntry *e = &dec->dpb[i];
+                if (e->in_use && e->is_long_term &&
+                    e->long_term_frame_idx == si->mmco[m].arg2)
+                    e->in_use = 0;
+            }
+            *cur_is_long_term = 1;
+            *cur_lt_idx = si->mmco[m].arg2;
+        }
+    }
+}
+
+static void h264_dpb_insert(LibVADecoder *dec, int surface_index, VASurfaceID surface,
+                            int frame_num, int top_foc, int bottom_foc,
+                            int is_long_term, int lt_idx) {
+    int slot = -1;
+    for (int i = 0; i < H264_DPB_SIZE; i++) {
+        if (!dec->dpb[i].in_use) {
+            slot = i;
+            break;
+        }
+    }
+    if (slot < 0)                     /* cannot happen after window/MMCO */
+        slot = 0;
+    struct H264DPBEntry *e = &dec->dpb[slot];
+    e->surface = surface;
+    e->surface_index = surface_index;
+    e->frame_num = frame_num;
+    e->top_foc = top_foc;
+    e->bottom_foc = bottom_foc;
+    e->is_long_term = is_long_term;
+    e->long_term_frame_idx = lt_idx;
+    e->in_use = 1;
+}
+
+static void h264_fill_va_picture(VAPictureH264 *p, const struct H264DPBEntry *e) {
+    p->picture_id = e->surface;
+    if (e->is_long_term) {
+        p->frame_idx = (uint32_t)e->long_term_frame_idx;
+        p->flags = VA_PICTURE_H264_LONG_TERM_REFERENCE;
+    } else {
+        p->frame_idx = (uint32_t)e->frame_num;
+        p->flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
+    }
+    p->TopFieldOrderCnt = e->top_foc;
+    p->BottomFieldOrderCnt = e->bottom_foc;
+}
+
+/* RefPicList0 (spec 8.2.4.2.1 default order + 8.2.4.3 modification).
+ * Note the VDPAU-bridge driver ignores this list entirely (VDPAU
+ * re-derives it from the slice headers); it is filled correctly for
+ * VA drivers that do consume it.  Simplification vs spec: a picture
+ * appears at most once in the produced list. */
+static int h264_build_ref_list_l0(LibVADecoder *dec, const struct H264Params *params,
+                                  const struct H264SliceInfo *si,
+                                  struct H264DPBEntry **list, int max_out) {
+    int max_frame_num = 1 << (params->log2_max_frame_num_minus4 + 4);
+    int cur = si->frame_num;
+    int n = 0;
+    /* short-term references by descending PicNum */
+    for (int i = 0; i < H264_DPB_SIZE && n < max_out; i++) {
+        struct H264DPBEntry *e = &dec->dpb[i];
+        if (!e->in_use || e->is_long_term)
+            continue;
+        int pn = h264_pic_num(e, cur, max_frame_num);
+        int j = n;
+        while (j > 0 && h264_pic_num(list[j - 1], cur, max_frame_num) < pn) {
+            list[j] = list[j - 1];
+            j--;
+        }
+        list[j] = e;
+        n++;
+    }
+    /* then long-term references by ascending LongTermFrameIdx */
+    int st_count = n;
+    for (int i = 0; i < H264_DPB_SIZE && n < max_out; i++) {
+        struct H264DPBEntry *e = &dec->dpb[i];
+        if (!e->in_use || !e->is_long_term)
+            continue;
+        int j = n;
+        while (j > st_count && list[j - 1]->long_term_frame_idx > e->long_term_frame_idx) {
+            list[j] = list[j - 1];
+            j--;
+        }
+        list[j] = e;
+        n++;
+    }
+    if (si->n_ref_mod_l0 && n > 1) {
+        int pred = cur;               /* picNumL0Pred = CurrPicNum */
+        int ref_idx = 0;
+        for (int m = 0; m < si->n_ref_mod_l0 && ref_idx < n; m++) {
+            struct H264DPBEntry *target = NULL;
+            if (si->ref_mod_l0[m].idc <= 1) {
+                int abs_diff = si->ref_mod_l0[m].val + 1;
+                int nowrap;
+                if (si->ref_mod_l0[m].idc == 0) {
+                    nowrap = pred - abs_diff;
+                    if (nowrap < 0)
+                        nowrap += max_frame_num;
+                } else {
+                    nowrap = pred + abs_diff;
+                    if (nowrap >= max_frame_num)
+                        nowrap -= max_frame_num;
+                }
+                pred = nowrap;
+                int picnum = nowrap > cur ? nowrap - max_frame_num : nowrap;
+                for (int i = 0; i < n; i++) {
+                    if (!list[i]->is_long_term &&
+                        h264_pic_num(list[i], cur, max_frame_num) == picnum) {
+                        target = list[i];
+                        break;
+                    }
+                }
+            } else {                  /* idc == 2: long-term */
+                for (int i = 0; i < n; i++) {
+                    if (list[i]->is_long_term &&
+                        list[i]->long_term_frame_idx == si->ref_mod_l0[m].val) {
+                        target = list[i];
+                        break;
+                    }
+                }
+            }
+            if (!target)
+                continue;             /* unresolvable op in a broken stream */
+            int from = 0;
+            while (from < n && list[from] != target)
+                from++;
+            if (from >= n)
+                continue;
+            for (int i = from; i > ref_idx; i--)
+                list[i] = list[i - 1];
+            list[ref_idx] = target;
+            ref_idx++;
+        }
+    }
+    return n;
 }
 
 static void init_h264_weight_defaults(struct H264SliceInfo *si) {
@@ -1071,6 +1440,8 @@ static int parse_h264_slice_header(const uint8_t *slice, int size, int nal_type,
     si->first_mb = (int)br_ue(&br);
     si->slice_type = (int)br_ue(&br);
     slice_type_mod = si->slice_type % 5;
+    if (slice_type_mod == 1)
+        return 0;                     /* B slices: single-direction DPB only */
     pic_parameter_set_id = (int)br_ue(&br);
     if (pic_parameter_set_id != 0)
         return 0;
@@ -1088,7 +1459,7 @@ static int parse_h264_slice_header(const uint8_t *slice, int size, int nal_type,
     if (params->pic_order_cnt_type == 0) {
         si->poc_lsb = (int)br_bits(&br, params->log2_max_pic_order_cnt_lsb_minus4 + 4);
         if (params->pic_order_present_flag)
-            br_se(&br);               /* delta_pic_order_cnt_bottom */
+            si->delta_poc_bottom = br_se(&br);
     } else if (params->pic_order_cnt_type == 1 && !params->delta_pic_order_always_zero_flag) {
         br_se(&br);                   /* delta_pic_order_cnt[0] */
         if (params->pic_order_present_flag)
@@ -1108,14 +1479,15 @@ static int parse_h264_slice_header(const uint8_t *slice, int size, int nal_type,
                 si->num_ref_idx_l1_active_minus1 = (int)br_ue(&br);
         }
     }
-    if (!skip_h264_ref_pic_list_modification(&br, slice_type_mod))
+    if (!parse_h264_ref_pic_list_modification(&br, slice_type_mod, si))
         return 0;
     if ((params->weighted_pred_flag && (slice_type_mod == 0 || slice_type_mod == 3)) ||
         (params->weighted_bipred_idc == 1 && slice_type_mod == 1))
         parse_h264_pred_weight_table(&br, params, si);
     else
         init_h264_weight_defaults(si);
-    skip_h264_dec_ref_pic_marking(&br, nal_type, si->nal_ref_idc);
+    if (!parse_h264_dec_ref_pic_marking(&br, nal_type, si))
+        return 0;
     if (params->entropy_coding_mode_flag && slice_type_mod != 2 && slice_type_mod != 4)
         si->cabac_init_idc = (int)br_ue(&br);
     si->slice_qp_delta = br_se(&br);
@@ -1186,8 +1558,29 @@ static LibVADecodeStatus map_output(LibVADecoder *dec, VASurfaceID surface,
 
     t0 = usec_now();
     status = vaDeriveImage(dec->display, surface, &image);
-    if (status != VA_STATUS_SUCCESS)
-        return set_error(dec, status, "vaDeriveImage");
+    if (status != VA_STATUS_SUCCESS) {
+        /* Fall back to vaCreateImage + vaGetImage for drivers without
+         * DeriveImage support (e.g. the VDPAU-backed VA driver, whose
+         * video surfaces have no linear CPU view) - the same pattern
+         * ffmpeg's hwcontext_vaapi uses.  The image covers the full
+         * (aligned) surface; the per-row copies below crop naturally. */
+        VAImageFormat fmt;
+        memset(&fmt, 0, sizeof(fmt));
+        fmt.fourcc = dec->output_444 ? VA_FOURCC_XYUV : VA_FOURCC_NV12;
+        fmt.byte_order = VA_LSB_FIRST;
+        fmt.bits_per_pixel = dec->output_444 ? 32 : 12;
+        status = vaCreateImage(dec->display, &fmt,
+                               dec->surface_width, dec->surface_height, &image);
+        if (status != VA_STATUS_SUCCESS)
+            return set_error(dec, status, "vaDeriveImage/vaCreateImage");
+        status = vaGetImage(dec->display, surface, 0, 0,
+                            (unsigned int)dec->surface_width,
+                            (unsigned int)dec->surface_height, image.image_id);
+        if (status != VA_STATUS_SUCCESS) {
+            vaDestroyImage(dec->display, image.image_id);
+            return set_error(dec, status, "vaGetImage");
+        }
+    }
     status = vaMapBuffer(dec->display, image.buf, &data);
     t1 = usec_now();
     if (status != VA_STATUS_SUCCESS) {
@@ -1201,8 +1594,14 @@ static LibVADecodeStatus map_output(LibVADecoder *dec, VASurfaceID surface,
     frame->height = h;
     frame->depth = dec->output_444 ? 24 : 24;
     if (image.format.fourcc == VA_FOURCC_NV12) {
+        /* NV12 chroma rows hold 2 bytes per 2-pixel pair, so an odd
+         * display width needs w+1 bytes per chroma row; the source
+         * surface is coded-size aligned so the bytes always exist.
+         * (Odd display sizes are normal: h264 codes the padded even
+         * size and crops via the SPS.) */
+        int cw = (w + 1) & ~1;
         size_t ysize = (size_t)w * h;
-        size_t uvsize = (size_t)w * ((h + 1) / 2);
+        size_t uvsize = (size_t)cw * ((h + 1) / 2);
         if (!ensure_plane(dec, 0, ysize) || !ensure_plane(dec, 1, uvsize)) {
             vaUnmapBuffer(dec->display, image.buf);
             vaDestroyImage(dec->display, image.image_id);
@@ -1212,12 +1611,12 @@ static LibVADecodeStatus map_output(LibVADecoder *dec, VASurfaceID surface,
             memcpy(dec->planes[0] + (size_t)row * w,
                    (uint8_t *)data + image.offsets[0] + (size_t)row * image.pitches[0], w);
         for (int row = 0; row < (h + 1) / 2; row++)
-            memcpy(dec->planes[1] + (size_t)row * w,
-                   (uint8_t *)data + image.offsets[1] + (size_t)row * image.pitches[1], w);
+            memcpy(dec->planes[1] + (size_t)row * cw,
+                   (uint8_t *)data + image.offsets[1] + (size_t)row * image.pitches[1], cw);
         frame->planes[0] = dec->planes[0];
         frame->planes[1] = dec->planes[1];
         frame->strides[0] = w;
-        frame->strides[1] = w;
+        frame->strides[1] = cw;
         frame->sizes[0] = (int)ysize;
         frame->sizes[1] = (int)uvsize;
         frame->nplanes = 2;
@@ -2182,23 +2581,40 @@ static LibVADecodeStatus h264_decoder_decode(LibVADecoder *dec,
     for (int i = 0; i < (int)(sizeof(buffers) / sizeof(buffers[0])); i++)
         buffers[i] = VA_INVALID_ID;
     is_idr = first->nal_type == 5;
-    surface_index = dec->surface_index++ & 3;
+    if (params.pic_order_cnt_type == 1)
+        return set_message(dec, LIBVA_DEC_UNSUPPORTED,
+                           "H.264 pic_order_cnt_type 1 is not supported");
+    if (is_idr) {
+        /* spec 8.2.5.1: IDR unmarks all reference pictures */
+        h264_dpb_flush(dec);
+        dec->poc_prev_lsb = 0;
+        dec->poc_prev_msb = 0;
+        dec->poc_prev_frame_num = 0;
+        dec->poc_prev_frame_num_offset = 0;
+    }
+    int top_foc = 0, bottom_foc = 0;
+    if (h264_compute_poc(dec, &params, first, is_idr, &top_foc, &bottom_foc) != 0)
+        return set_message(dec, LIBVA_DEC_UNSUPPORTED,
+                           "H.264 pic_order_cnt_type 1 is not supported");
+    surface_index = h264_pick_surface(dec);
+    if (surface_index < 0)
+        return set_message(dec, LIBVA_DEC_ERROR, "no free H.264 surface");
     surface = dec->surfaces[surface_index];
 
     memset(&pic, 0, sizeof(pic));
     pic.CurrPic.picture_id = surface;
     pic.CurrPic.frame_idx = (uint32_t)first->frame_num;
-    pic.CurrPic.flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
-    pic.CurrPic.TopFieldOrderCnt = first->poc_lsb;
-    pic.CurrPic.BottomFieldOrderCnt = first->poc_lsb;
+    pic.CurrPic.flags = first->nal_ref_idc ? VA_PICTURE_H264_SHORT_TERM_REFERENCE : 0;
+    pic.CurrPic.TopFieldOrderCnt = top_foc;
+    pic.CurrPic.BottomFieldOrderCnt = bottom_foc;
     for (int i = 0; i < 16; i++)
         fill_invalid_picture(&pic.ReferenceFrames[i]);
-    if (!is_idr && dec->have_reference) {
-        pic.ReferenceFrames[0].picture_id = dec->surfaces[dec->ref_surface_index];
-        pic.ReferenceFrames[0].frame_idx = (uint32_t)dec->ref_frame_num;
-        pic.ReferenceFrames[0].flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
-        pic.ReferenceFrames[0].TopFieldOrderCnt = dec->ref_poc_lsb;
-        pic.ReferenceFrames[0].BottomFieldOrderCnt = dec->ref_poc_lsb;
+    {
+        int n = 0;
+        for (int i = 0; i < H264_DPB_SIZE && n < 16; i++) {
+            if (dec->dpb[i].in_use)
+                h264_fill_va_picture(&pic.ReferenceFrames[n++], &dec->dpb[i]);
+        }
     }
     pic.picture_width_in_mbs_minus1 = (uint16_t)(params.valid_sps ?
                                                 params.width_mbs_minus1 :
@@ -2232,7 +2648,7 @@ static LibVADecodeStatus h264_decoder_decode(LibVADecoder *dec,
         (uint32_t)params.deblocking_filter_control_present_flag;
     pic.pic_fields.bits.redundant_pic_cnt_present_flag = (uint32_t)params.redundant_pic_cnt_present_flag;
     pic.pic_fields.bits.constrained_intra_pred_flag = (uint32_t)params.constrained_intra_pred_flag;
-    pic.pic_fields.bits.reference_pic_flag = 1;
+    pic.pic_fields.bits.reference_pic_flag = (uint32_t)(first->nal_ref_idc != 0);
     pic.frame_num = (uint16_t)first->frame_num;
     status = vaCreateBuffer(dec->display, dec->context, VAPictureParameterBufferType,
                             sizeof(pic), 1, &pic, &buffers[nbuf++]);
@@ -2278,12 +2694,11 @@ static LibVADecodeStatus h264_decoder_decode(LibVADecoder *dec,
             fill_invalid_picture(&slice.RefPicList0[i]);
             fill_invalid_picture(&slice.RefPicList1[i]);
         }
-        if (!is_idr && dec->have_reference) {
-            slice.RefPicList0[0].picture_id = dec->surfaces[dec->ref_surface_index];
-            slice.RefPicList0[0].frame_idx = (uint32_t)dec->ref_frame_num;
-            slice.RefPicList0[0].flags = VA_PICTURE_H264_SHORT_TERM_REFERENCE;
-            slice.RefPicList0[0].TopFieldOrderCnt = dec->ref_poc_lsb;
-            slice.RefPicList0[0].BottomFieldOrderCnt = dec->ref_poc_lsb;
+        if ((si->slice_type % 5) == 0 || (si->slice_type % 5) == 3) {
+            struct H264DPBEntry *l0[32];
+            int nl0 = h264_build_ref_list_l0(dec, &params, si, l0, 32);
+            for (int i = 0; i < nl0; i++)
+                h264_fill_va_picture(&slice.RefPicList0[i], l0[i]);
         }
         status = vaCreateBuffer(dec->display, dec->context, VASliceParameterBufferType,
                                 sizeof(slice), 1, &slice, &buffers[nbuf++]);
@@ -2320,10 +2735,33 @@ static LibVADecodeStatus h264_decoder_decode(LibVADecoder *dec,
         return dstatus;
     frame->us_submit = (int)(t1 - t0);
     frame->us_sync = (int)(t2 - t1);
-    dec->have_reference = 1;
-    dec->ref_surface_index = surface_index;
-    dec->ref_frame_num = first->frame_num;
-    dec->ref_poc_lsb = first->poc_lsb;
+    if (first->nal_ref_idc) {
+        int cur_is_lt = 0, cur_lt_idx = 0, had_mmco5 = 0;
+        int ins_frame_num = first->frame_num;
+        if (is_idr) {
+            /* DPB already flushed before decode */
+            cur_is_lt = first->idr_long_term_reference_flag;
+        } else if (first->adaptive_ref_pic_marking) {
+            h264_dpb_apply_mmco(dec, &params, first, first->frame_num,
+                                &cur_is_lt, &cur_lt_idx, &had_mmco5);
+        } else {
+            h264_dpb_sliding_window(dec, &params, first->frame_num);
+        }
+        if (had_mmco5) {
+            /* spec 8.2.1: after MMCO5 the current picture counts as
+             * frame_num 0 with its POC rebased to zero */
+            int temp = top_foc < bottom_foc ? top_foc : bottom_foc;
+            top_foc -= temp;
+            bottom_foc -= temp;
+            ins_frame_num = 0;
+            dec->poc_prev_lsb = top_foc;
+            dec->poc_prev_msb = 0;
+            dec->poc_prev_frame_num = 0;
+            dec->poc_prev_frame_num_offset = 0;
+        }
+        h264_dpb_insert(dec, surface_index, surface, ins_frame_num,
+                        top_foc, bottom_foc, cur_is_lt, cur_lt_idx);
+    }
     dec->frames++;
     return LIBVA_DEC_OK;
 }
