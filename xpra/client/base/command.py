@@ -138,6 +138,14 @@ class HelloRequestClient(SendCommandConnectClient):
     def make_hello_base(self) -> dict[str, Any]:
         return super().make_hello_base() | self.hello_request()
 
+    def make_hello(self) -> dict[str, Any]:
+        # `send_hello` only uses `make_hello_base` to ask for a challenge first,
+        # which it does only when a password is set; every other case sends the
+        # full hello, so the request has to be added here too - without it the
+        # server never sees `request` and falls through to authentication
+        # (see `UNAUTHENTICATED_HELLO_REQUESTS` in `xpra/server/core.py`):
+        return super().make_hello() | self.hello_request()
+
     def timeout(self, *_args) -> None:
         log("%s client reached the timeout", type(self))  # pragma: no cover
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not disconnect us")
