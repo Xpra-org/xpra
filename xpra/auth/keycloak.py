@@ -25,6 +25,11 @@ KEYCLOAK_GRANT_TYPE = os.environ.get("XPRA_KEYCLOAK_GRANT_TYPE", "authorization_
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = (
+        "auth_condition", "auth_groups", "claim_field", "client_id", "client_secret_key", "grant_type", "realm_name",
+        "redirect_uri", "scope", "server_url",
+    )
+
     def __init__(self, **kwargs):
         self.server_url = kwargs.pop("server_url", KEYCLOAK_SERVER_URL)
         self.realm_name = kwargs.pop("realm_name", KEYCLOAK_REALM_NAME)

@@ -40,6 +40,7 @@ def check(username: str, password: str, service: str = PAM_AUTH_SERVICE,
 
 
 class Authenticator(SysAuthenticator):
+    __slots__ = ("check_account", "service")
     CLIENT_USERNAME = getuid() == 0
 
     def __init__(self, **kwargs):

@@ -71,6 +71,11 @@ def get_channel_binding(connection, name: str):
 
 
 class Authenticator(SysAuthenticator):
+    __slots__ = (
+        "channel_binding_name", "configured_mechanisms", "connection", "iterations", "legacy_sha1",
+        "password_filedata", "password_filename", "password_filetime", "pending_challenge", "scram_mechanism",
+        "scram_server", "scram_stage", "sessions",
+    )
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):

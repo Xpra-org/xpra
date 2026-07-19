@@ -10,6 +10,8 @@ from xpra.auth.sys_auth_base import SysAuthenticator
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ("value",)
+
     def __init__(self, **kwargs):
         self.value: str = kwargs.pop("value", "")
         super().__init__(**kwargs)

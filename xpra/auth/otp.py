@@ -27,6 +27,7 @@ def b32(s):
 
 class Authenticator(SysAuthenticator):
     # DEFAULT_PROMPT = "OTP for '{username}'"
+    __slots__ = ("gid", "issuer_name", "secret", "uid", "valid_window")
     DEFAULT_PROMPT = "OTP"
 
     def __init__(self, **kwargs):

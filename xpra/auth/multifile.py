@@ -14,6 +14,7 @@ from xpra.net.digest import verify_digest
 
 
 class Authenticator(FileAuthenticatorBase):
+    __slots__ = ("sessions",)
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):

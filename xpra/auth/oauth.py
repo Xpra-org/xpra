@@ -85,6 +85,11 @@ def get_bearer_token(value: str) -> str:
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = (
+        "audience", "capability", "client_id", "client_secret", "gid", "header", "headers", "introspection_url",
+        "scope", "token", "uid", "username_claim",
+    )
+
     def __init__(self, **kwargs):
         log("oauth.Authenticator(..)")
         self.uid = -1

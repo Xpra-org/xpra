@@ -5,5 +5,7 @@
 
 
 class Authenticator:
+    __slots__ = ()
+
     def __init__(self, **kwargs):
         raise RuntimeError("failing")

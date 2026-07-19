@@ -26,6 +26,8 @@ def stat_filetime(full_path) -> float:
 
 
 class FileAuthenticatorBase(SysAuthenticator):
+    __slots__ = ("password_filedata", "password_filename", "password_filetime")
+
     def __init__(self, **kwargs):
         password_file = kwargs.pop("filename", "")
         log("FileAuthenticatorBase password_file=%s", password_file)

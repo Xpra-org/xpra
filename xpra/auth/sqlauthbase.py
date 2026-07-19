@@ -14,6 +14,7 @@ from xpra.auth.sys_auth_base import SysAuthenticator, log
 
 
 class SQLAuthenticator(SysAuthenticator):
+    __slots__ = ("password_query", "sessions_query")
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
@@ -64,6 +65,8 @@ class SQLAuthenticator(SysAuthenticator):
 
 
 class DatabaseUtilBase:
+
+    __slots__ = ("__weakref__", "param", "uri")
 
     def __init__(self, uri: str):
         self.uri = uri

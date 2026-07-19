@@ -9,6 +9,8 @@ from xpra.util.objects import typedict
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ()
+
     def __repr__(self):
         return "allow"
 

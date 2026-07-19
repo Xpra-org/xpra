@@ -10,6 +10,8 @@ from xpra.auth.sys_auth_base import SysAuthenticator
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ("var_name",)
+
     def __init__(self, **kwargs):
         self.var_name = kwargs.pop("name", "XPRA_PASSWORD")
         super().__init__(**kwargs)

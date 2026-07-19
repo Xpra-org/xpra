@@ -71,6 +71,10 @@ class Authenticator(SysAuthenticator):
         fired by `xpra.server.auth.AuthenticationManager`
         to find out how each connection ended up.
     """
+    __slots__ = (
+        "delay", "ip_key", "ipv4_prefix", "ipv6_prefix", "max_delay", "max_failures", "max_tracked", "rejected",
+        "window",
+    )
     # a new authenticator is instantiated for each connection,
     # so the failures have to be recorded at the class level
     # (just like `SysAuthenticatorBase.USED_SALT`)

@@ -28,6 +28,8 @@ APP_ID = os.environ.get("XPRA_FIDO_APP_ID", "Xpra")
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ("app_id", "public_keys")
+
     def __init__(self, **kwargs):
         self.app_id = kwargs.pop("app_id", APP_ID)
         key_hexstring = kwargs.pop("public_key", "")

@@ -15,6 +15,7 @@ from xpra.net.digest import get_salt, get_digests, gendigest
 
 
 class Authenticator(SysAuthenticatorBase):
+    __slots__ = ("gid", "service", "uid")
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):

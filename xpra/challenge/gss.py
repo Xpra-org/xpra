@@ -15,6 +15,8 @@ log = Logger("auth")
 
 class Handler(AuthenticationHandler):
 
+    __slots__ = ("gssapi", "services")
+
     def __init__(self, **kwargs):
         self.services = (kwargs.pop("gss-services", "") or os.environ.get("XPRA_GSS_SERVICES", "") or "*").split(",")
 

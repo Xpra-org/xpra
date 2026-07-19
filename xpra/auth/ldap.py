@@ -26,6 +26,7 @@ LDAP_USERNAME_FORMAT = os.environ.get("XPRA_LDAP_USERNAME_FORMAT", "cn=%username
 
 
 class Authenticator(SysAuthenticatorBase):
+    __slots__ = ("cacert", "encoding", "gid", "host", "port", "tls", "uid", "username_format")
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):

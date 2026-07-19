@@ -11,6 +11,8 @@ from xpra.util.objects import typedict
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.salt = None

@@ -10,6 +10,8 @@ from xpra.challenge.handler import AuthenticationHandler
 
 class Handler(AuthenticationHandler):
 
+    __slots__ = ("var_name",)
+
     def __init__(self, **kwargs):
         self.var_name = kwargs.pop("name", "XPRA_PASSWORD")
 

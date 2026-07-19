@@ -29,6 +29,8 @@ def log_kerberos_exception(e):
 
 class Handler(AuthenticationHandler):
 
+    __slots__ = ("services",)
+
     def __init__(self, **kwargs):
         services_str = kwargs.pop("kerberos-services", "") or os.environ.get("XPRA_KERBEROS_SERVICES", "") or "*"
         self.services = services_str.split(",")

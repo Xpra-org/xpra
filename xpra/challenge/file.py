@@ -14,6 +14,8 @@ log = Logger("auth")
 
 class Handler(AuthenticationHandler):
 
+    __slots__ = ("password_file",)
+
     def __init__(self, **kwargs):
         if "filename" in kwargs:
             self.password_file: str = kwargs.get("filename", "")

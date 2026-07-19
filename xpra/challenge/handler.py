@@ -9,6 +9,8 @@ from collections.abc import Sequence
 
 class AuthenticationHandler(metaclass=ABCMeta):
 
+    __slots__ = ("__weakref__",)
+
     @abstractmethod
     def get_digests(self) -> Sequence[str]:
         raise NotImplementedError()

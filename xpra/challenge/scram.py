@@ -44,6 +44,11 @@ def get_channel_binding(protocol, name: str):
 
 class Handler(AuthenticationHandler):
 
+    __slots__ = (
+        "challenge_prompt_function", "channel_binding_name", "configured_mechanisms", "display_desc", "done",
+        "legacy_sha1", "password", "password_files", "protocol", "scram_client", "scram_stage",
+    )
+
     def __init__(self, **kwargs):
         self.protocol = kwargs.get("protocol")
         self.display_desc = typedict(kwargs.get("display-desc", {}))

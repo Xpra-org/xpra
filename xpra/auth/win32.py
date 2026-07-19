@@ -12,6 +12,8 @@ from xpra.auth.sys_auth_base import SysAuthenticator, log
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ("password",)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # fugly: keep hold of the password so the win32 proxy can use it

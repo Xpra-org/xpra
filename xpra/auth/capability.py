@@ -9,6 +9,8 @@ from xpra.util.objects import typedict
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ("gid", "property", "uid", "value")
+
     def __init__(self, **kwargs):
         log("capability.Authenticator(%s)", kwargs)
         self.uid = -1

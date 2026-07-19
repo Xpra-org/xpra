@@ -11,6 +11,8 @@ from xpra.util.objects import typedict
 
 
 class Authenticator:
+    __slots__ = ("challenge_sent", "passed", "prompt")
+
     def __init__(self, **kwargs):
         self.challenge_sent = False
         self.prompt: str = kwargs.pop("prompt", "password")

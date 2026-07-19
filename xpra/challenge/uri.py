@@ -9,6 +9,8 @@ from xpra.challenge.handler import AuthenticationHandler
 
 class Handler(AuthenticationHandler):
 
+    __slots__ = ("password",)
+
     def __init__(self, **kwargs):
         self.password = kwargs.get("password", "")
 

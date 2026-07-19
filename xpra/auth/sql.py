@@ -13,6 +13,8 @@ from xpra.auth.sys_auth_base import log
 
 class Authenticator(SQLAuthenticator):
 
+    __slots__ = ("uri",)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.uri = kwargs.get("uri")
@@ -33,6 +35,8 @@ class Authenticator(SQLAuthenticator):
 
 
 class SQLDatabaseUtil(DatabaseUtilBase):
+
+    __slots__ = ()
 
     def __init__(self, uri):
         super().__init__(uri)

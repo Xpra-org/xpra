@@ -34,6 +34,10 @@ def xor(s1, s2) -> bytes:
 
 
 class SysAuthenticatorBase:
+    __slots__ = (
+        "__weakref__", "authenticate_check", "challenge_sent", "digest", "passed", "password_used", "prompt", "salt",
+        "salt_digest", "socket_dirs", "username",
+    )
     USED_SALT: deque[bytes] = deque(maxlen=USED_SALT_CACHE_SIZE)
     DEFAULT_PROMPT = "password for user '{username}'"
     CLIENT_USERNAME = False
@@ -249,6 +253,8 @@ class SysAuthenticatorBase:
 
 
 class SysAuthenticator(SysAuthenticatorBase):
+
+    __slots__ = ("pw",)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

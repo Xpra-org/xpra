@@ -17,6 +17,8 @@ from xpra.util.str_fn import csv
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ("gid", "peercred_check", "uid")
+
     def __init__(self, **kwargs):
         log("peercred.Authenticator(%s)", kwargs)
         self.uid = -1

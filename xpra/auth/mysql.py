@@ -42,6 +42,7 @@ def db_from_uri(uri: str):
 
 
 class Authenticator(SQLAuthenticator):
+    __slots__ = ("uri",)
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
@@ -64,6 +65,8 @@ class Authenticator(SQLAuthenticator):
 
 
 class MySQLDatabaseUtil(DatabaseUtilBase):
+
+    __slots__ = ()
 
     def __init__(self, uri):
         super().__init__(uri)

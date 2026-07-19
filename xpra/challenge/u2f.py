@@ -18,6 +18,8 @@ log = Logger("auth")
 
 class Handler(AuthenticationHandler):
 
+    __slots__ = ("app_id", "protocol")
+
     def __init__(self, **kwargs):
         self.protocol = kwargs["protocol"]
         self.app_id = kwargs.get("APP_ID", "") or os.environ.get("XPRA_U2F_APP_ID", "") or "Xpra"

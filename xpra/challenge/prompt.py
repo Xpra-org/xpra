@@ -18,6 +18,8 @@ def noprompt(_prompt: str) -> str:
 
 class Handler(AuthenticationHandler):
 
+    __slots__ = ("challenge_prompt_fn",)
+
     def __init__(self, **kwargs):
         self.challenge_prompt_fn: Callable[[str], str] = kwargs.get(PROMPT_FN_KEY, noprompt)
 

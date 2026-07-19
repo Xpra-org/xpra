@@ -30,6 +30,8 @@ def gen_secret(mode: str, count: int) -> str:
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ("count", "display", "gid", "mode", "otp_dialog", "secret", "timeout", "uid", "valid_until")
+
     def __init__(self, **kwargs):
         log("otpscreen.Authenticator(%s)", kwargs)
         self.mode = kwargs.pop("mode", "digits")

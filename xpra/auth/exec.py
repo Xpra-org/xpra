@@ -38,6 +38,11 @@ def get_default_auth_dialog() -> str:
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = (
+        "command", "connection_str", "display", "http_headers", "proc", "require_challenge", "timeout",
+        "timeout_event", "timer",
+    )
+
     def __init__(self, **kwargs):
         log(f"exec.Authenticator({kwargs})")
         self.command = shlex.split(kwargs.pop("command", "${auth_dialog} ${info} ${timeout}"))

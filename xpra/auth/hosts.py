@@ -39,6 +39,8 @@ def check_host(peername: str, host: str) -> bool:
 
 class Authenticator(SysAuthenticator):
 
+    __slots__ = ("host", "peername")
+
     def __init__(self, **kwargs):
         log("hosts.Authenticator(%s)", kwargs)
         if not POSIX:

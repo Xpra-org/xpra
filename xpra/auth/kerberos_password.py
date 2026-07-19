@@ -16,6 +16,7 @@ from xpra.util.io import stderr_print
 
 
 class Authenticator(SysAuthenticatorBase):
+    __slots__ = ("gid", "realm", "service", "uid")
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):

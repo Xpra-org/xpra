@@ -24,6 +24,8 @@ POLLING_TIME = envint("XPRA_FIDO2_POLLING_TIME", 10)
 
 class Handler(AuthenticationHandler):
 
+    __slots__ = ("app_id", "protocol")
+
     def __init__(self, **kwargs):
         self.protocol = kwargs["protocol"]
         self.app_id = kwargs.get("app_id", "") or os.environ.get("XPRA_FIDO_APP_ID", "") or APP_ID

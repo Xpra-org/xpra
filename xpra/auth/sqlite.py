@@ -15,6 +15,8 @@ from xpra.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
 
 class Authenticator(SQLAuthenticator):
 
+    __slots__ = ("filename",)
+
     def __init__(self, filename="sqlite.sdb", **kwargs):
         super().__init__(**kwargs)
         if filename and not os.path.isabs(filename):
@@ -64,6 +66,8 @@ class Authenticator(SQLAuthenticator):
 
 
 class SqliteDatabaseUtil(DatabaseUtilBase):
+
+    __slots__ = ()
 
     def __init__(self, uri):
         super().__init__(uri)
