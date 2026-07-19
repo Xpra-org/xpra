@@ -14,10 +14,13 @@ from xpra.client.base import aes
 from xpra.client.base.aes import AES
 from xpra.scripts.config import InitExit
 from xpra.util.objects import typedict
+from unit.test_util import stubbable
 
 
 def client(options=None, protocol_type="tcp"):
-    value = AES()
+    # the tests stub this subsystem's own methods (`get_encryption`, ...),
+    # which a slotted instance does not allow:
+    value = stubbable(AES)()
     conn = SimpleNamespace(options=options or {})
     protocol = SimpleNamespace(TYPE=protocol_type, _conn=conn, set_cipher_in=Mock(), set_cipher_out=Mock())
     # subsystems reach the protocol via `self.client._protocol`;

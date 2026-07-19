@@ -14,6 +14,8 @@ from xpra.util.signal_emitter import SignalEmitter
 from xpra.util.glib_scheduler import GLibScheduler
 from xpra.server.source.stub import StubClientConnection
 
+from unit.test_util import stubbable
+
 
 class FakeServerBase(GLibScheduler):
     """Minimal server stand-in for subsystem unit tests.
@@ -152,7 +154,9 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
         self.get_sources_by_type = lambda st, exclude=None: [
             ss for ss in self._server_sources.values() if isinstance(ss, st) and ss != exclude
         ]
-        x = self.mixin = mclass(self)
+        # subsystems are slotted, so tests cannot stub methods on the instance;
+        # `stubbable` gives back a `__dict__` while still rejecting undeclared names:
+        x = self.mixin = stubbable(mclass)(self)
         # Register the subsystem under its PREFIX so source classes that look
         # up via `server.subsystems[prefix].attr` (instance-based pattern)
         # can find it - and so peer-subsystem lookups via `self.get_subsystem`

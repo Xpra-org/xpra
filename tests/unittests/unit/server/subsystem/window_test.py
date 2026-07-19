@@ -7,6 +7,7 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
+from unit.test_util import stubbable
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
@@ -22,7 +23,7 @@ class WebcamMixinTest(ServerMixinTest):
             pass
 
         def _WindowServer(server):
-            ws = WindowServer(server)
+            ws = stubbable(WindowServer)(server)
             ws.load_existing_windows = load_existing_windows
             return ws
         self._test_mixin_class(_WindowServer, opts)

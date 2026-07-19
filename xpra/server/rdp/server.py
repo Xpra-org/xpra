@@ -38,6 +38,7 @@ class RDPServer(StubSubsystem):
     security protocols the server supports (and can upgrade the connection to
     TLS), but does not implement an RDP session (MCS, licensing, graphics).
     """
+    __slots__ = ()
     PREFIX = "rdp"
 
     def handle_rdp_connection(self, conn, data: bytes = b"") -> None:

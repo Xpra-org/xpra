@@ -31,6 +31,7 @@ class RFBServer(StubSubsystem):
     """
         Adds RFB packet handling and the RFB upgrade timer to a server.
     """
+    __slots__ = ("X11Keyboard", "_rfb_upgrade", "rfb_buttons", "socket_rfb_upgrade_timer")
     PREFIX = "rfb"
 
     def __init__(self, server=None):

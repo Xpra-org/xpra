@@ -38,6 +38,7 @@ class AuthenticationManager(StubSubsystem):
         This subsystem calls server-owned connection methods for disconnects,
         challenge timeouts, and successful hello processing.
     """
+    __slots__ = ("auth_classes", "password_file", "socket_dirs")
     PREFIX = "auth"
 
     def __init__(self, server=None):

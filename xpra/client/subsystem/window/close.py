@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections.abc import Callable
 
 from xpra.net.packet_type import WINDOW_CLOSE, SHUTDOWN_SERVER
 from xpra.util.objects import typedict
@@ -21,6 +22,11 @@ class WindowClose(StubClientSubsystem):
 
     def __init__(self):
         self.window_close_action: str = "forward"
+        # optional override, used by test / example harnesses that drive their own
+        # close handling (see `xpra/gtk/examples/fake_client_window.py`).
+        # This subsystem is slotted, so the `window_close_event` method below
+        # cannot be replaced on the instance - set this callback instead:
+        self.window_close_callback: Callable[[int], None] | None = None
 
     def init(self, opts) -> None:
         if opts.window_close in ("forward", "ignore", "disconnect", "shutdown", "auto"):
@@ -32,6 +38,9 @@ class WindowClose(StubClientSubsystem):
 
     # noinspection PyUnreachableCode
     def window_close_event(self, wid: int) -> None:
+        if self.window_close_callback:
+            self.window_close_callback(wid)
+            return
         log("window_close_event(%s) close window action=%s", wid, self.window_close_action)
         if self.window_close_action == "forward":
             self.send(WINDOW_CLOSE, wid)

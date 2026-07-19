@@ -43,7 +43,8 @@ class CursorLoopbackTest(LoopbackTest):
         client, _server, source = self._connect()
         # client-side window plumbing (provided by the window subsystem in production):
         client.enabled = True
-        client._id_to_window = {}
+        # the cursor subsystem reaches windows via `get_windows()` (the `window`
+        # subsystem), not via an `_id_to_window` of its own:
         client.set_windows_cursor = MagicMock()
         # server source ready to send a non-legacy cursor-data packet:
         source.send_cursors = True

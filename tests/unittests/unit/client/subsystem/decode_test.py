@@ -9,6 +9,7 @@ from threading import Event
 
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.client.subsystem.decode import Decode
+from unit.test_util import stubbable
 
 
 class FakeClient:
@@ -38,7 +39,7 @@ class DecodeTest(unittest.TestCase):
 
     @staticmethod
     def make_decode(client=None) -> Decode:
-        decode = Decode(client=client or FakeClient())
+        decode = stubbable(Decode)(client=client or FakeClient())
         # the seccomp filter and the codec preload are not what we are testing here,
         # and installing a filter would apply to the whole test run:
         decode.preload = lambda: None

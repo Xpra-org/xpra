@@ -32,6 +32,7 @@ Gtk = gi_import("Gtk")
 
 
 class GTKDialogClient(StubClientSubsystem):
+    __slots__ = ("pinentry_proc", "sub_dialogs")
     PREFIX = "dialogs"
 
     def __init__(self, client=None):

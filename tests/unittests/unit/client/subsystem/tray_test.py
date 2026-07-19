@@ -6,7 +6,6 @@
 
 import unittest
 
-from xpra.common import noop
 from xpra.util.objects import AdHocStruct
 from xpra.client.subsystem.tray import TrayClient
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
@@ -15,15 +14,13 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 class AudioClientTest(ClientMixinTest):
 
     def test_tray(self):
-        def _TrayClient():
-            x = TrayClient()
-            x.after_handshake = noop
-            return x
+        # `after_handshake` is called on the owning client (`self.client.after_handshake`),
+        # and the test harness provides it as the client stand-in:
         opts = AdHocStruct()
         opts.tray = True
         opts.delay_tray = 0
         opts.tray_icon = ""
-        self._test_mixin_class(_TrayClient, opts)
+        self._test_mixin_class(TrayClient, opts)
 
 
 def main():

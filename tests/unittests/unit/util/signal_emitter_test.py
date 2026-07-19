@@ -35,17 +35,26 @@ class MainLoop:
         return self.context
 
 
+class ConcreteEmitter(SignalEmitter):
+    """
+    `SignalEmitter` declares no slots of its own so that the servers can fuse it
+    with `GObject.GObject` (see the note there), which also means it holds no
+    state and cannot be used directly: subclasses supply the `__dict__` (or the
+    slots) that `_signal_callbacks` and `main_loop` live in.
+    """
+
+
 class SignalEmitterTest(unittest.TestCase):
 
     def test_base_get_main_loop(self):
-        emitter = SignalEmitter()
+        emitter = ConcreteEmitter()
         self.assertIsNone(emitter.get_main_loop())
         main_loop = MainLoop()
         emitter.main_loop = main_loop
         self.assertIs(emitter.get_main_loop(), main_loop)
 
     def test_should_call_direct_uses_main_loop(self):
-        emitter = SignalEmitter()
+        emitter = ConcreteEmitter()
         self.assertTrue(emitter._should_call_direct())
         emitter.main_loop = MainLoop(running=False)
         self.assertTrue(emitter._should_call_direct())

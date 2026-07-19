@@ -13,6 +13,8 @@ from xpra.util.objects import typedict, AdHocStruct
 from xpra.log import Logger
 from xpra.os_util import gi_import
 
+from unit.test_util import stubbable
+
 GLib = gi_import("GLib")
 
 
@@ -128,7 +130,9 @@ class ClientMixinTest(unittest.TestCase):
         return 0, 0
 
     def _test_mixin_class(self, mclass, opts, caps=None, protocol_type="xpra"):
-        x = self.mixin = mclass()
+        # subsystems are slotted, so tests cannot stub methods on the instance;
+        # `stubbable` gives back a `__dict__` while still rejecting undeclared names:
+        x = self.mixin = stubbable(mclass)()
         # subsystems are always owned by a client and reach it via `self.client`
         # (`send`, `quit`, `add_packet_handler`, ... all delegate to it);
         # this test harness stands in for the owning client:

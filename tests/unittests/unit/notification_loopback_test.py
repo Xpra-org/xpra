@@ -70,7 +70,7 @@ class NotificationLoopbackTest(LoopbackTest):
         # stand in for the client-side notifier / UI:
         client.enabled = True
         client.notifier = MagicMock()
-        client._ui_event = lambda *a: None
+        # `_ui_event` is called on the owning client, which the harness provides
         # the source needs to consider the client ready:
         source.send_notifications = True
         source.hello_sent = monotonic()

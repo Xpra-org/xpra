@@ -11,6 +11,7 @@ from xpra.net.common import Packet
 from xpra.client.subsystem.notification import NotificationClient
 from xpra.client.subsystem.decode import Decode
 from xpra.notification.common import ICON_MAX_SIZE
+from unit.test_util import stubbable
 
 
 PAYLOAD = b"payload-the-server-smuggled-in"
@@ -167,7 +168,7 @@ class NotificationIconsTest(unittest.TestCase):
     def test_close_cannot_overtake_its_show(self):
         # the show waits for its icon to be decoded, so the close must go through the same
         # FIFO queue - otherwise it would run first and leave the notification on screen
-        decode = Decode(client=self.client)
+        decode = stubbable(Decode)(client=self.client)
         decode.preload = lambda: None
         decode.install_seccomp = lambda: None
         self.client.subsystems["decode"] = decode

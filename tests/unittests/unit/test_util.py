@@ -47,6 +47,46 @@ class LoggerSilencer:
         return "LoggerSilencer"
 
 
+_stubbable_cache: dict[type, type] = {}
+
+
+def stubbable(cls: type) -> type:
+    """
+    Test-only subclass of a subsystem class.
+
+    Subsystems declare `__slots__` so that typos are caught at runtime
+    (see `SignalEmitter`): their instances have no `__dict__`, which also
+    means a test cannot replace a method on an instance
+    (`x.send = fake` fails with "attribute is read-only").
+
+    This subclass restores the `__dict__` so that stubbing works again,
+    but keeps the check that makes `__slots__` worth having: assigning a
+    name the class never declared - a typo, or state that belongs on the
+    owning client / server - still raises.
+    """
+    if not isinstance(cls, type):
+        # a factory function: it builds the instance itself, so it has to call
+        # `stubbable` on the class it instantiates - nothing to do here
+        return cls
+    subclass = _stubbable_cache.get(cls)
+    if subclass is not None:
+        return subclass
+
+    def __setattr__(self, name, value) -> None:
+        # `hasattr` on the type covers both the declared slots
+        # (which are descriptors) and the methods we want to allow stubbing:
+        if not hasattr(type(self), name):
+            raise AttributeError(f"{cls.__name__!r} has no declared attribute {name!r}")
+        object.__setattr__(self, name, value)
+
+    # no `__slots__` here: that is what gives the subclass its `__dict__`.
+    # build it with the class's own metaclass, some subsystems are GObject types:
+    metaclass = type(cls)
+    subclass = metaclass(f"Stubbable{cls.__name__}", (cls,), {"__setattr__": __setattr__})
+    _stubbable_cache[cls] = subclass
+    return subclass
+
+
 def get_free_tcp_port() -> int:
     s = socket.socket()
     s.bind(('', 0))

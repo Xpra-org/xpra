@@ -209,7 +209,7 @@ def test_gl_client_window(gl_client_window_class: Callable,
             from xpra.gtk.util import gtk_main
             from xpra.gtk.window import add_close_accel
             add_close_accel(window, window_close_event)
-            noclient.get_subsystem("window").window_close_event = window_close_event
+            noclient.get_subsystem("window").window_close_callback = window_close_event
             GLib.timeout_add(REPAINT_DELAY, draw)
             gtk_main()
         else:

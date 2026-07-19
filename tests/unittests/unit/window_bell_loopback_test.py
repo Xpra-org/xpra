@@ -45,11 +45,17 @@ class WindowBellLoopbackTest(LoopbackTest):
         from xpra.client.subsystem.window.bell import WindowBell
         from xpra.server.subsystem.window import WindowServer
         from xpra.server.source.window import WindowsConnection
+        # `WindowBell` is a mixin fused into `WindowClient`, which is what declares
+        # its attributes (the mixins keep `__slots__ = ()` so that they can be
+        # combined); testing it on its own means declaring them here instead:
+        bell_class = type("WindowBellSubsystem", (WindowBell,), {
+            "__slots__": ("bell_enabled", "client_supports_bell", "server_bell"),
+        })
         # setup() loads existing windows and wires server signal callbacks;
         # the source get_info() touches a packet_queue set up by other bases:
         with patch.object(WindowServer, "setup", lambda self: None), \
              patch.object(WindowsConnection, "get_info", lambda self: {}):
-            return self.connect(WindowBell, WindowServer, WindowsConnection,
+            return self.connect(bell_class, WindowServer, WindowsConnection,
                                 client_opts=_client_opts(), server_opts=_server_opts(),
                                 caps={"bell": True})
 

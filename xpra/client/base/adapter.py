@@ -95,6 +95,11 @@ class RemoteServerAdapter(baseclass):
     typically another server.
     This class handles re-connecting and basic packet handling.
     """
+    __slots__ = (
+        "_ordinary_packets", "connect_event", "connect_poll_delay", "connect_timer", "connecting",
+        "protocol", "reconnect_delay", "server_socket_timeout", "server_timeout", "sessions_dir",
+        "system_socket_path", "uri",
+    )
     SYSTEM_SOCKET_PATH = ""
     PACKET_TYPES = [
         "hello", "encodings", "startup-complete",

@@ -19,6 +19,17 @@ class SignalEmitter:
     by inheriting from this class.
     This allows us to exercise more functionality when running the unit tests.
     """
+    # This class must not add any instance layout of its own: the servers
+    # combine it (via `GLibServer` -> `ServerBase`) with `GObject.GObject`,
+    # ie: `DesktopServerBase(GObject.GObject, ServerBase)`, and a C type
+    # cannot be fused with a Python class that declares real slots
+    # ("multiple bases have instance lay-out conflict").
+    # So the state it uses - `_signal_callbacks`, and the optional `main_loop`
+    # read by `get_main_loop` - is declared by the subclasses that want to be
+    # strictly slotted (`StubSubsystem`, `StubClientSubsystem`); subclasses
+    # that keep a `__dict__` (`GLibServer`, `StubClientConnection`, ...) get
+    # them from there. As a result this class cannot be instantiated directly.
+    __slots__ = ()
     __signals__ = ()
 
     def __init__(self):

@@ -54,15 +54,9 @@ class ChildCommandMixinTest(ServerMixinTest):
         # pynotify can cause crashes,
         # probably due to threading issues?
 
-        def noop():
-            pass
-
-        def _ChildCommandServer(server):
-            ccs = command.ChildCommandServer(server)
-            ccs.setup_menu_watcher = noop
-            return ccs
-
-        self._test_mixin_class(_ChildCommandServer, opts)
+        # `setup_menu_watcher` belongs to `MenuProvider` (see `xpra/server/menu_provider.py`),
+        # not to this subsystem: stubbing it here never had any effect.
+        self._test_mixin_class(command.ChildCommandServer, opts)
         if not POSIX:
             return
         # test creating a temp file:

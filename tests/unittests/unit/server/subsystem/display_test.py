@@ -7,6 +7,7 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
+from unit.test_util import stubbable
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 from unit.process_test_util import DisplayContext
 
@@ -34,10 +35,13 @@ class DisplayMixinTest(ServerMixinTest):
         def set_desktop_geometry(*_args) -> None:
             pass
 
+        # `set_desktop_geometry` is called on the owning server
+        # (`self.server.set_desktop_geometry`), and this test class stands in for it:
+        self.set_desktop_geometry = set_desktop_geometry
+
         def make_display_manager(server):
-            dm = DisplayManager(server)
+            dm = stubbable(DisplayManager)(server)
             dm.calculate_workarea = calculate_workarea
-            dm.set_desktop_geometry = set_desktop_geometry
             return dm
         self._test_mixin_class(make_display_manager, opts, {}, DisplayConnection)
 

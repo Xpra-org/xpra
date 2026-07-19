@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from unit.test_util import silence_info
+from unit.test_util import silence_info, stubbable
 from unit.process_test_util import DisplayContext
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
@@ -19,7 +19,9 @@ class DisplayClientTest(ClientMixinTest):
             from xpra.client.subsystem import display  # pylint: disable=import-outside-toplevel
 
             def _DisplayClient():
-                dc = display.DisplayClient()
+                # `get_root_size` / `get_screen_sizes` are this subsystem's own
+                # methods, so stub them on a `stubbable` instance:
+                dc = stubbable(display.DisplayClient)()
 
                 def get_root_size():
                     return 1024, 768

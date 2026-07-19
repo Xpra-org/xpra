@@ -9,13 +9,14 @@ from unittest.mock import MagicMock, patch
 
 from xpra.util.objects import AdHocStruct
 from xpra.client.subsystem.webcam import WebcamForwarder
+from unit.test_util import stubbable
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class WebcamTest(ClientMixinTest):
 
     def test_suspend_resume_inactive(self):
-        webcam = WebcamForwarder()
+        webcam = stubbable(WebcamForwarder)()
         with patch.object(webcam, "start_sending_webcam") as start:
             webcam.suspend_webcam(None)
             webcam.resume_webcam(None)
@@ -23,7 +24,7 @@ class WebcamTest(ClientMixinTest):
         start.assert_not_called()
 
     def test_suspend_resume_active(self):
-        webcam = WebcamForwarder()
+        webcam = stubbable(WebcamForwarder)()
         webcam.client = MagicMock()
         webcam.server_enabled = True
         webcam.device = MagicMock()

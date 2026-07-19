@@ -40,8 +40,8 @@ class PowerLoopbackTest(LoopbackTest):
 
     def test_suspend_and_resume_reach_server(self):
         client, _server, source = self._connect()
-        # the BACKWARDS_COMPATIBLE branch of suspend()/resume() reads this:
-        client._id_to_window = {}
+        # the BACKWARDS_COMPATIBLE branch of suspend()/resume() reads `_id_to_window`
+        # from the `window` subsystem, which is not registered here, so it sends no wids
         events = []
         source.connect("suspend", lambda *a: events.append("suspend"))
         source.connect("resume", lambda *a: events.append("resume"))

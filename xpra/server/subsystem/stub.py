@@ -19,7 +19,11 @@ class StubSubsystem(SignalEmitter):
     Base class for server subsystems.
     Defines the default interface methods that each subsystem may override.
     """
-    __slots__ = ("idle_add", "server", "source_remove", "timeout_add")
+    # `_signal_callbacks` and `main_loop` belong to `SignalEmitter`, but it cannot
+    # declare them itself (see the note there), so they are declared here, where
+    # the slots actually take effect:
+    __slots__ = ("__weakref__", "_signal_callbacks", "idle_add", "main_loop",
+                 "server", "source_remove", "timeout_add")
     # every concrete subsystem should declare a non-empty PREFIX,
     # used as the key in `Server.subsystems`:
     PREFIX: str = ""

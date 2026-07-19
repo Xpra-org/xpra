@@ -18,6 +18,10 @@ from xpra.util.io import get_util_logger
 from xpra.util.signal_emitter import SignalEmitter
 
 
+class FakeServer(SignalEmitter):
+    """ stands in for the owning server: keeps a `__dict__`, so tests can set anything on it """
+
+
 class SourceMixinsTest(unittest.TestCase):
     event = Event()
     event.set()
@@ -43,8 +47,9 @@ class SourceMixinsTest(unittest.TestCase):
         else:
             mixin_class = type(f"Mixin-{mixin_classes}", mixin_classes, {})
         # test the instance:
-        # fake server object:
-        server = SignalEmitter()
+        # fake server object: a plain subclass, so it has the `__dict__` that
+        # `SignalEmitter` itself no longer provides, and takes arbitrary attributes
+        server = FakeServer()
         server.session_name = "foo"
         server.unix_socket_paths = ["/some/path"]
         server.limit = 0

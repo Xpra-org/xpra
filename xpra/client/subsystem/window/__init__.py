@@ -55,7 +55,8 @@ class WindowClient(WindowClientClass):
         "overlay_image", "pixel_counter", "pixel_depth", "pointer_grabbed", "poll_pointer_position",
         "poll_pointer_timer", "server_bell", "server_input_devices", "server_precise_wheel",
         "server_window_frame_extents", "server_window_signals", "server_window_states", "wheel_deltax",
-        "wheel_deltay", "wheel_map", "wheel_smooth", "window_close_action", "windows_enabled",
+        "wheel_deltay", "wheel_map", "wheel_smooth", "window_close_action", "window_close_callback",
+        "windows_enabled",
     )
 
     PREFIX = "window"

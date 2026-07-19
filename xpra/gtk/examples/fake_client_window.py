@@ -12,12 +12,12 @@ from typing import Any
 
 os.environ.setdefault("XPRA_USE_FAKE_BACKING", "1")
 
-from xpra.client.gui.fake_client import FakeClient
-from xpra.client.gui.window_border import WindowBorder
-from xpra.os_util import gi_import
-from xpra.util.objects import typedict
-from xpra.log import consume_verbose_argv
-from xpra.log import Logger
+from xpra.client.gui.fake_client import FakeClient  # noqa: E402
+from xpra.client.gui.window_border import WindowBorder  # noqa: E402
+from xpra.os_util import gi_import  # noqa: E402
+from xpra.util.objects import typedict  # noqa: E402
+from xpra.log import consume_verbose_argv  # noqa: E402
+from xpra.log import Logger  # noqa: E402
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -34,7 +34,7 @@ class TestClient(FakeClient):
     def __init__(self):
         super().__init__()
         self.title = "@title@"
-        self.get_subsystem("window").window_close_event = self.window_close_event
+        self.get_subsystem("window").window_close_callback = self.window_close_event
 
     def get_window_menu_helper(self):
         return None
