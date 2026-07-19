@@ -20,7 +20,7 @@
 %define debug_package %{nil}
 
 Name:           %{py3rpmname}-fido2
-Version:        2.2.0
+Version:        2.2.1
 Release:        1
 URL:            https://github.com/Yubico/python-fido2
 Summary:        For communicating with a FIDO device over USB as well as verifying attestation and assertion signatures.
@@ -42,7 +42,7 @@ This library aims to support the FIDO U2F and FIDO 2 protocols for communicating
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "0d8122e690096ad82afde42ac9d6433a4eeffda64084f36341ea02546b181dd1" ]; then
+if [ "${sha256}" != "85787428a94c3f8eaf72f0ff30afba983b559a1b1b795c93318c81b4ad4062c4" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -72,6 +72,9 @@ rm -rf %{buildroot}
 %{python3_sitelib}/fido2-%{version}*
 
 %changelog
+* Fri Jul 17 2026 Antoine Martin <antoine@xpra.org> - 2.2.1-1
+- initial packaging for xpra
+
 * Thu Apr 16 2026 Antoine Martin <antoine@xpra.org> - 2.2.0-1
 - initial packaging for xpra
 
