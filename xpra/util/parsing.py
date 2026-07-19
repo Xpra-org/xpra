@@ -27,6 +27,18 @@ SCALING_OPTIONS = [float(x) for x in
                    if MAX_SCALING >= float(x) >= MIN_SCALING]
 SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000")) / 1000
 DEFAULT_REFRESH_RATE = envint("XPRA_DEFAULT_REFRESH_RATE", 50*1000)
+MIN_REFRESH_DELAY = envint("XPRA_MIN_REFRESH_DELAY", 10)
+MAX_REFRESH_DELAY = envint("XPRA_MAX_REFRESH_DELAY", 10000)
+
+
+def clamp_refresh_delay(delay: int) -> int:
+    # a delay of zero would make the refresh timer busy loop,
+    # starving the main loop and everything else it services:
+    v = max(MIN_REFRESH_DELAY, min(MAX_REFRESH_DELAY, delay))
+    if v != delay:
+        log = Logger("util")
+        log.warn(f"Warning: clamping refresh delay from {delay}ms to {v}ms")
+    return v
 
 
 def r4cmp(v, rounding=1000.0):  # ignore small differences in floats for scale values

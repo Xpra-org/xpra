@@ -8,6 +8,7 @@ from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.x11.shadow.server import ShadowX11Server
 from xpra.server.shadow.root_window_model import CaptureWindowModel
+from xpra.util.parsing import clamp_refresh_delay
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.evdi.capture import EvdiDevice, find_evdi_devices, add_evdi_device  # pylint: disable=no-name-in-module
 from xpra.log import Logger
@@ -140,8 +141,7 @@ class ExpandServer(ShadowX11Server):
         """ not needed """
 
     def set_refresh_delay(self, v: int) -> None:
-        assert 0 < v < 10000
-        self.refresh_delay = v
+        self.refresh_delay = clamp_refresh_delay(v)
 
     def setup_capture(self):
         return None

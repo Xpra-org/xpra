@@ -30,7 +30,7 @@ class ShadowDisplayMixin:
     def apply_refresh_rate(self, ss) -> int:
         rrate = super().apply_refresh_rate(ss)
         if rrate > 0:
-            self.server.set_refresh_delay(max(10, 1000 // rrate))
+            self.server.set_refresh_delay(1000 // rrate)
         return rrate
 
     def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
