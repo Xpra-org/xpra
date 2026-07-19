@@ -72,6 +72,13 @@ class ClipboardClient(StubClientSubsystem):
     This subsystem owns the `clipboard-toggled` signal (via `SignalEmitter`):
     peers subscribe with `get_subsystem("clipboard").connect("clipboard-toggled", ...)`.
     """
+    __slots__ = (
+        "client_clipboard_direction", "client_clipboard_type", "client_supports_clipboard",
+        "clipboard_enabled", "clipboard_helper", "clipboard_notification_timer", "last_clipboard_notification",
+        "local_clipboard", "local_clipboard_requests", "remote_clipboard", "remote_clipboard_requests",
+        "server_clipboard", "server_clipboard_direction", "server_clipboard_greedy",
+        "server_clipboard_preferred_targets", "server_clipboard_selections", "server_clipboard_want_targets",
+    )
     PREFIX = "clipboard"
     __signals__ = ["clipboard-toggled"]
 

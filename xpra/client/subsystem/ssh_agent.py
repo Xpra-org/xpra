@@ -14,6 +14,7 @@ class SSHAgentClient(StubClientSubsystem):
     """
     Exposes ssh agent capability
     """
+    __slots__ = ()
     PREFIX = "ssh-agent"
 
     def get_caps(self) -> dict[str, Any]:

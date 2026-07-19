@@ -27,6 +27,10 @@ class LoggingClient(StubClientSubsystem):
     either sending local logging events to the server,
     or receiving logging events from the server.
     """
+    __slots__ = (
+        "in_remote_logging", "local_logging", "log_both", "logging_lock", "monotonic_start_time",
+        "remote_logging", "request_server_log",
+    )
     PREFIX = "logging"
 
     def __init__(self, client=None):

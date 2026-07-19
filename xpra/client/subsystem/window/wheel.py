@@ -53,6 +53,7 @@ def parse_mousewheel(mousewheel: str) -> tuple[bool, dict]:
 
 
 class WindowWheel(StubClientSubsystem):
+    __slots__ = ()
 
     def __init__(self):
         self.server_precise_wheel: bool = False

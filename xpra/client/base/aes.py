@@ -29,6 +29,7 @@ class AES(StubClientSubsystem):
     """
     Adds tcp encryption feature
     """
+    __slots__ = ("encryption", "encryption_keyfile", "server_padding_options")
     PREFIX = "aes"
 
     def __init__(self, client=None):

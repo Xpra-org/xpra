@@ -21,6 +21,7 @@ class Debug(StubClientSubsystem):
     """
     Adds some debug functions
     """
+    __slots__ = ()
     PREFIX = "debug"
 
     def run(self) -> ExitValue:

@@ -59,6 +59,7 @@ class CursorClient(StubClientSubsystem):
     """
     Add cursor handling
     """
+    __slots__ = ("_cursors", "client_supports", "default_data", "enabled", "last_data", "server_enabled")
     PREFIX = "cursor"
 
     def __init__(self, client=None):

@@ -46,6 +46,10 @@ class NetworkListener(StubClientSubsystem):
     - info request
     - control commands
     """
+    __slots__ = (
+        "_close_timers", "_potential_protocols", "bind_options", "client_socket_dirs", "local_bind",
+        "mmap_group", "socket_permissions", "sockets",
+    )
     PREFIX = "listener"
 
     def __init__(self, client=None):

@@ -74,6 +74,7 @@ class Decode(StubClientSubsystem):
     Anything a consumer will import from this thread must be imported from its
     `preload_decode()` hook, which runs before the filter is installed.
     """
+    __slots__ = ("_counter", "_queue", "_thread")
     PREFIX = "decode"
 
     def __init__(self, client=None):

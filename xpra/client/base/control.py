@@ -20,6 +20,7 @@ class Control(StubClientSubsystem):
 
     the actual dispatching of "control" requests is done in `UIXpraClient` for server connections
     """
+    __slots__ = ("control_commands",)
     PREFIX = "control"
 
     def __init__(self, client=None):

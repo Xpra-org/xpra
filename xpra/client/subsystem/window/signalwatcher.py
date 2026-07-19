@@ -80,6 +80,7 @@ class WindowSignalWatcher(StubClientSubsystem):
     """
     Adds ability to run a signal_watcher command for each window.
     """
+    __slots__ = ()
 
     def __init__(self):
         self._pid_to_signalwatcher = {}

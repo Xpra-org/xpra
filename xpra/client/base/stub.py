@@ -14,6 +14,7 @@ from xpra.util.signal_emitter import SignalEmitter
 
 
 class StubClientSubsystem(SignalEmitter):
+    __slots__ = ("client", "idle_add", "source_remove", "timeout_add")
     __signals__: list[str] = []
     # every concrete subsystem should declare a non-empty PREFIX,
     # used as the key in `client.subsystems`:

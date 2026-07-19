@@ -39,6 +39,7 @@ class XI2Client(StubClientSubsystem):
     (excluding OSX) when the `window` and `pointer` subsystems are both
     enabled - see `xpra.client.gui.factory.get_client_subsystems`.
     """
+    __slots__ = ("_x11_filter", "_xi_setup_failures")
     PREFIX = "xi2"
 
     def __init__(self, client=None):

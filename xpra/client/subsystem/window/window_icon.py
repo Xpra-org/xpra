@@ -67,6 +67,7 @@ def load_overlay_image(icon_filename: str):
 
 
 class WindowIcon(StubClientSubsystem):
+    __slots__ = ()
 
     def __init__(self):
         self.overlay_image = None

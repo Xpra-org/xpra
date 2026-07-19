@@ -32,6 +32,7 @@ class Printer(StubClientSubsystem):
     logic and reaches into the `file` subsystem (`features.printer` implies
     `features.file`, so it is always present) for everything else.
     """
+    __slots__ = ("exported_printers", "printer_attributes", "send_printers_timer")
     PREFIX = "printer"
 
     def __init__(self, client=None):

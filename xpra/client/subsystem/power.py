@@ -22,6 +22,7 @@ class PowerEventClient(StubClientSubsystem):
     """
     Adds power events callbacks
     """
+    __slots__ = ("_platform_watcher", "suspended", "ui_watcher")
     PREFIX = "power"
     __signals__: list[str] = ["suspend", "resume", "pause", "unpause"]
 

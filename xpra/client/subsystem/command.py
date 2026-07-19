@@ -22,6 +22,10 @@ class CommandClient(StubClientSubsystem):
     """
     Utility mixin for clients that execute remote commands
     """
+    __slots__ = (
+        "request_start", "request_start_child", "server_commands_info", "server_commands_signals",
+        "server_menu", "server_start_new_commands", "start_new_commands",
+    )
     PREFIX = "command"
 
     def __init__(self, client=None):

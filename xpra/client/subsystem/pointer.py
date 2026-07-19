@@ -32,6 +32,10 @@ class PointerClient(StubClientSubsystem):
     """
     Utility mixin for clients that handle pointer input
     """
+    __slots__ = (
+        "button_transform", "middle_click", "position", "position_delay", "position_pending",
+        "position_send_time", "position_timer", "sequence", "server_pointer",
+    )
     PREFIX = "pointer"
 
     def __init__(self, client=None):

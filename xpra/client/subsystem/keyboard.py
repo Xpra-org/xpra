@@ -32,6 +32,10 @@ class KeyboardClient(StubClientSubsystem):
     """
     Utility mixin for clients that handle keyboard input
     """
+    __slots__ = (
+        "_win32_keyboard_hook", "enabled", "grabbed", "helper", "helper_class", "key_repeat_delay",
+        "key_repeat_interval", "server_enabled", "sync", "warning",
+    )
     PREFIX = "keyboard"
 
     def __init__(self, client=None):

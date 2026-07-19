@@ -31,6 +31,10 @@ class PingClient(StubClientSubsystem):
     """
     Ping handling
     """
+    __slots__ = (
+        "_server_ok", "client_latency", "echo_timeout_timer", "echo_timers", "last_echoed_time", "pings",
+        "server_latency", "server_load", "timer",
+    )
     PREFIX = "ping"
     __signals__: list[str] = ["timeout"]
 

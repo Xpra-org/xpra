@@ -29,6 +29,10 @@ MAX_SIZE = envint("XPRA_MMAP_MAX_SIZE", 2048 * 1024 * 1024)
 
 
 class MmapArea(BaseMmapArea):
+    __slots__ = (
+        "delete", "enabled", "filename", "group", "mmap", "name", "size", "tempfile", "token", "token_bytes",
+        "token_index",
+    )
 
     def __init__(self, name: str, group="", filename="", size=0):
         super().__init__(name, filename, size)
@@ -92,6 +96,7 @@ class MmapClient(StubClientSubsystem):
     """
     Mixin for adding mmap support to a client
     """
+    __slots__ = ("mmap_group", "mmap_option", "mmap_read_area", "mmap_supported", "mmap_write_area")
     PREFIX = "mmap"
 
     def __init__(self, client=None):

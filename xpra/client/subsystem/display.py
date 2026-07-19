@@ -46,6 +46,15 @@ class DisplayClient(StubClientSubsystem):
     Utility mixin for clients that handle a desktop / display
     Adds client-side scaling handling
     """
+    __slots__ = (
+        "_cg_display", "_current_screen_sizes", "_last_screen_settings", "_x11_props", "can_scale",
+        "desktop_fullscreen", "desktop_scaling", "dpi", "initial_scaling", "log_screen_info", "refresh_rate",
+        "scale_change_embargo", "screen_size_change_counter", "screen_size_change_suspended",
+        "screen_size_change_timer", "server_actual_desktop_size", "server_add_monitor_label",
+        "server_desktop_size", "server_display", "server_is_desktop", "server_is_monitor",
+        "server_max_desktop_size", "server_monitors", "server_multi_monitors",
+        "server_new_monitor_resolutions", "server_opengl", "server_randr", "xscale", "yscale",
+    )
     __signals__ = ["scaling-changed"]
     PREFIX = "display"
 

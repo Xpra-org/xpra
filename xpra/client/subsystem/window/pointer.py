@@ -22,6 +22,8 @@ POLL_POINTER = envint("XPRA_POLL_POINTER", 0)
 
 
 class WindowPointer(StubClientSubsystem):
+    __slots__ = ()
+
     def __init__(self):
         self.server_input_devices = None
         self._button_state = {}

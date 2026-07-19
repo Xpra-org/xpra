@@ -22,6 +22,7 @@ class GSettingsClient(StubClientSubsystem):
     Forward an allowlisted set of the client's GSettings to the server,
     re-sending individual keys as they change.
     """
+    __slots__ = ("enabled", "server_enabled", "settings", "sync")
 
     PREFIX = "gsettings"
 

@@ -24,6 +24,7 @@ class TrayClient(StubClientSubsystem):
     Mixin for supporting our system tray
     (not forwarding other application's trays - that's handled in WindowClient)
     """
+    __slots__ = ("delay", "icon", "tray")
     PREFIX = "tray"
 
     def __init__(self, client=None):

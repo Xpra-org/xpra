@@ -56,6 +56,11 @@ class WebcamForwarder(StubClientSubsystem):
     """
     Mixin for clients that forward webcams
     """
+    __slots__ = (
+        "ack_check_timer", "csc", "device", "device_no", "device_str", "encoding", "forwarding", "frame_no",
+        "last_ack", "lock", "option", "resume_restart", "send_timer", "server_client_mode", "server_enabled",
+        "server_encodings", "server_rgb_formats",
+    )
     PACKET_TYPES = ("webcam-ack", "webcam-stop")
     PREFIX = "webcam"
     __signals__ = ["webcam-changed"]

@@ -16,6 +16,7 @@ class ClientID(StubClientSubsystem):
     """
     Essential client information
     """
+    __slots__ = ("session_id", "uuid")
     PREFIX = "clientid"
 
     def __init__(self, client=None):

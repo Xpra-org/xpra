@@ -97,6 +97,7 @@ class WindowBorderClient(StubClientSubsystem):
     Adds support for the window border:
     parse it or generate it from the connection info.
     """
+    __slots__ = ()
 
     def __init__(self):
         self.border = WindowBorder(False)

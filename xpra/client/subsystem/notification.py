@@ -31,6 +31,7 @@ class NotificationClient(StubClientSubsystem):
     """
     Mixin for clients that handle notifications
     """
+    __slots__ = ("callbacks", "client_supports", "enabled", "notifier", "server", "tray")
     PREFIX = "notification"
 
     def __init__(self, client=None):

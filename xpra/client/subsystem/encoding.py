@@ -87,6 +87,12 @@ class Encodings(StubClientSubsystem):
     """
     Mixin for adding encodings to a client
     """
+    __slots__ = (
+        "_codecs_loaded", "_codecs_lock", "allowed_encodings", "csc_modules", "encoding", "encoding_defaults",
+        "min_quality", "min_speed", "quality", "server_core_encodings", "server_encodings",
+        "server_encodings_with_lossless_mode", "server_encodings_with_quality", "server_encodings_with_speed",
+        "speed", "video_decoders", "video_max_size", "video_scaling",
+    )
     PREFIX = "encoding"
 
     def __init__(self, client=None):

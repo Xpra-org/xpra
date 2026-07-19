@@ -21,6 +21,16 @@ INIT_PRINTING_DELAY = envint("XPRA_INIT_PRINTING_DELAY", 2)
 
 
 class File(StubClientSubsystem, FileTransferHandler):
+    __slots__ = (
+        "_file_io_queue", "_file_io_thread", "data_send_requests", "file_ask_timeout", "file_chunks",
+        "file_descriptors", "file_request_callback", "file_size_limit", "file_transfer", "file_transfer_ask",
+        "files_accepted", "files_requested", "open_command", "open_files", "open_files_ask", "open_url",
+        "open_url_ask", "pending_send_data", "pending_send_data_timers", "printing", "printing_ask",
+        "receive_chunks_in_progress", "remote_file_ask_timeout", "remote_file_chunks", "remote_file_size_limit",
+        "remote_file_transfer", "remote_file_transfer_ask", "remote_open_files", "remote_open_files_ask",
+        "remote_open_url", "remote_open_url_ask", "remote_printing", "remote_printing_ask", "remote_request_file",
+        "send_chunks_in_progress",
+    )
     PREFIX = "file"
 
     def __init__(self, client=None):

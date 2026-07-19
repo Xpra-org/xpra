@@ -17,6 +17,7 @@ class Progress(StubClientSubsystem):
     """
     Encapsulates functions for managing the splash screen
     """
+    __slots__ = ("progress_process",)
     PREFIX = "progress"
 
     def __init__(self, client=None):

@@ -16,6 +16,7 @@ class Events(StubClientSubsystem):
     """
     Receives server events
     """
+    __slots__ = ()
     PREFIX = "events"
 
     def get_caps(self) -> dict[str, Any]:

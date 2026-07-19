@@ -59,6 +59,12 @@ def get_remote_lib_versions(c: typedict, libs=DEFAULT_LIBS) -> dict[str, tuple]:
 
 
 class RemoteInfo(StubClientSubsystem):
+    __slots__ = (
+        "_remote_branch", "_remote_build_date", "_remote_build_time", "_remote_display", "_remote_hostname",
+        "_remote_lib_versions", "_remote_machine_id", "_remote_modifications", "_remote_platform",
+        "_remote_server_log", "_remote_server_mode", "_remote_subcommands", "_remote_uuid", "_remote_version",
+        "server_packet_encoders", "server_start_time",
+    )
     PREFIX = "remote-info"
 
     def __init__(self, client=None):

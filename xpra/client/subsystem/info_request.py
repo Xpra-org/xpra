@@ -24,6 +24,7 @@ class InfoRequest(StubClientSubsystem):
     """
     Request `info` from server.
     """
+    __slots__ = ("last_info", "request_pending")
     PREFIX = "info-request"
 
     def __init__(self, client=None):

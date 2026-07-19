@@ -17,6 +17,7 @@ class ClientInfo(StubClientSubsystem):
     """
     Adds extra information about the client
     """
+    __slots__ = ()
     PREFIX = "clientinfo"
 
     def get_caps(self) -> dict[str, Any]:

@@ -21,6 +21,7 @@ class Network(StubClientSubsystem):
     """
     Protocol caps
     """
+    __slots__ = ("compression_level", "server_compressors", "server_packet_types")
     PREFIX = "network"
 
     def __init__(self, client=None):

@@ -17,6 +17,7 @@ class SSLUpgrade(StubClientSubsystem):
     """
     Adds ability to upgrade connections to ssl
     """
+    __slots__ = ()
     PREFIX = "ssl-upgrade"
 
     def parse_server_capabilities(self, c: typedict) -> bool:  # pylint: disable=unused-argument

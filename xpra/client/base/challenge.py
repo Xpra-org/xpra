@@ -38,6 +38,10 @@ class Challenge(StubClientSubsystem):
     """
     Adds ability to handle challenge packets
     """
+    __slots__ = (
+        "challenge_handlers", "challenge_handlers_option", "password", "password_file", "password_index",
+        "password_sent", "username",
+    )
     PREFIX = "challenge"
 
     def __init__(self, client=None):

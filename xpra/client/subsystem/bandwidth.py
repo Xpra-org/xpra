@@ -33,6 +33,7 @@ class BandwidthClient(StubClientSubsystem):
     """
     Expose bandwidth information
     """
+    __slots__ = ("detection", "limit", "server_limit")
     PREFIX = "bandwidth"
 
     def __init__(self, client=None):

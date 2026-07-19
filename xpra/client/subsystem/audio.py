@@ -96,6 +96,17 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     """
     Utility mixin for clients that handle audio
     """
+    __slots__ = (
+        "_remote_machine_id", "audio_echo_timeout_start", "audio_keepalive_check_timer",
+        "audio_keepalive_stale_warning", "audio_keepalive_timer", "audio_remote_keepalive", "av_sync",
+        "av_sync_delta", "in_bytecount", "latest_audio_timestamp", "latest_echoed_audio_timestamp",
+        "latest_sent_audio_timestamp", "microphone_allowed", "microphone_codecs", "microphone_device",
+        "microphone_enabled", "on_sink_ready", "out_bytecount", "properties", "queue_used_sent",
+        "resume_restart", "server_av_sync", "server_decoders", "server_encoders", "server_eos_sequence",
+        "server_pulseaudio_id", "server_pulseaudio_server", "server_receive", "server_send", "sink",
+        "sink_sequence", "source", "source_plugin", "source_sequence", "speaker_allowed", "speaker_codecs",
+        "speaker_enabled", "wants_capabilities",
+    )
     __signals__ = ["speaker-changed", "microphone-changed", "audio-initialized"]
     PREFIX = "audio"
 

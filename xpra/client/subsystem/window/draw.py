@@ -32,6 +32,7 @@ DRAW_TYPES: dict[type, str] = {bytes: "bytes", str: "bytes", tuple: "arrays", li
 
 
 class WindowDraw(StubClientSubsystem):
+    __slots__ = ()
 
     def __init__(self):
         self._draw_counter: int = 0

@@ -32,6 +32,10 @@ class OpenGLClient(StubClientSubsystem):
     `get_subsystem("opengl").connect("toggled", handler)` to react to opengl
     rendering being turned on/off (ie: the gtk3 client re-creates its windows).
     """
+    __slots__ = (
+        "GLClientWindowClass", "client_supports", "enabled", "force", "max_viewport_dims", "properties",
+        "texture_size_limit",
+    )
     PREFIX = "opengl"
     __signals__ = ["toggled"]
 

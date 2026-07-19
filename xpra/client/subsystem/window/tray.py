@@ -21,6 +21,7 @@ ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
 
 
 class WindowTray(StubClientSubsystem):
+    __slots__ = ()
 
     def __init__(self):
         self.client_supports_system_tray: bool = False

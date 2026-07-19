@@ -14,6 +14,7 @@ log = Logger("window", "focus")
 
 
 class WindowFocus(StubClientSubsystem):
+    __slots__ = ()
 
     def __init__(self):
         self.lost_focus_timer: int = 0

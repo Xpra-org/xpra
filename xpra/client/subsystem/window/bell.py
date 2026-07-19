@@ -20,6 +20,7 @@ class WindowBell(StubClientSubsystem):
     "bell-toggled" signal (see `WindowManagerClient`): peers subscribe with
     `get_subsystem("window").connect("bell-toggled", handler)`.
     """
+    __slots__ = ()
 
     def __init__(self):
         if not hasattr(self, "client"):
