@@ -341,7 +341,7 @@ Depends: xpra-common (= ${binary:Version})
 #resolute:              ,libopenjph0.26
 #bookworm:              ,libopenjph0.9
 #trixie:              ,libopenjph0.21
-#forky:              ,libopenjph0.27
+#forky:              ,libopenjph0.28
 #sid:              ,libopenjph0.28
               ,libaom3
               ,libvpl2
