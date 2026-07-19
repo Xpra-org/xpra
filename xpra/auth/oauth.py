@@ -25,11 +25,11 @@ Typical proxy flow:
 
 Example Xpra socket configuration using OAuth2 token introspection::
 
-    --bind-tcp=127.0.0.1:14500,auth=oauth,introspection-url=https://idp.example/oauth2/introspect,client-id=xpra,client-secret=secret,scope=xpra
+    --bind-tcp=127.0.0.1:14500,auth=oauth(introspection-url=https://idp.example/oauth2/introspect,client-id=xpra,client-secret=secret,scope=xpra)
 
 Example using a proxy-injected custom header::
 
-    --bind-tcp=127.0.0.1:14500,auth=oauth,header=X-Xpra-Authorization,introspection-url=https://idp.example/oauth2/introspect
+    --bind-tcp=127.0.0.1:14500,auth=oauth(header=X-Xpra-Authorization,introspection-url=https://idp.example/oauth2/introspect)
 
 In that case the proxy must send::
 
@@ -37,7 +37,7 @@ In that case the proxy must send::
 
 Example for simple tests or tightly controlled deployments::
 
-    --bind-tcp=127.0.0.1:14500,auth=oauth,token=shared-test-token
+    --bind-tcp=127.0.0.1:14500,auth=oauth(token=shared-test-token)
 
 Proxy notes:
 * Bind Xpra to localhost or a private network address when trusting proxy

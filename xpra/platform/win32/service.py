@@ -40,7 +40,7 @@ def main(argv: list[str]) -> int:
 
     args = argv[:1] + [
         "proxy",
-        "--bind-tcp=0.0.0.0:14500,auth=sys,client-username=true,verify-username=true",
+        "--bind-tcp=0.0.0.0:14500,auth=sys(client-username=true,verify-username=true)",
         "--tray=no",
         # "-d", "win32,proxy",
         # "--mdns=no",

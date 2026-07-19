@@ -73,8 +73,8 @@ class AuthenticationManager(StubSubsystem):
         sock_auth = sock_options.get("auth", "")
         if sock_auth:
             # per socket authentication option:
-            # ie: --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=pass.txt
-            # -> sock_auth = ["hosts", "file:filename=pass.txt"]
+            # ie: --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file(filename=pass.txt)
+            # -> sock_auth = ["hosts", "file(filename=pass.txt)"]
             # ie: --bind-tcp=0.0.0.0:10000,auth=exec(command=/bin/echo,foo=bar)
             # -> sock_auth = "exec(command=/bin/echo,foo=bar)"
             if not isinstance(sock_auth, (list, tuple)):
