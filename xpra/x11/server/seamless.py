@@ -212,20 +212,25 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.emit("server-event", event_type, args)
 
     def get_server_features(self, server_source=None) -> dict[str, Any]:
-        from xpra.x11.subsystem.window import WINDOW_SIGNALS
         capabilities = super().get_server_features(server_source)
         capabilities.setdefault("pointer", {})["grabs"] = True
-        capabilities.setdefault("window", {}).update({
-            "frame-extents": True,
-            "configure.delta": True,
-            "signals": WINDOW_SIGNALS,
-            "dragndrop": True,
-            "states": [
-                "iconified", "focused", "fullscreen",
-                "above", "below",
-                "sticky", "iconified", "maximized",
-            ],
-        })
+        window_sub = self.subsystems.get("window")
+        if window_sub:
+            # only import the window subsystem if it is enabled:
+            # `--windows=no` blocks the module (it is set to `None` in `sys.modules`),
+            # and there are no window capabilities to advertise anyway
+            from xpra.x11.subsystem.window import WINDOW_SIGNALS
+            capabilities.setdefault("window", {}).update({
+                "frame-extents": True,
+                "configure.delta": True,
+                "signals": WINDOW_SIGNALS,
+                "dragndrop": True,
+                "states": [
+                    "iconified", "focused", "fullscreen",
+                    "above", "below",
+                    "sticky", "iconified", "maximized",
+                ],
+            })
         return capabilities
 
     ##########################################################################
