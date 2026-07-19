@@ -46,7 +46,7 @@ class ShadowServerTest(ServerTestUtil):
         info = self.get_server_info(xvfb.display)
         assert info
         tinfo = typedict(info)
-        idisplay = tinfo.strget("server.display")
+        idisplay = tinfo.strget("display.name")
         assert idisplay==display, "expected display '%s' in info, but got '%s'" % (display, idisplay)
         try:
             import dbus
@@ -73,30 +73,15 @@ class ShadowServerTest(ServerTestUtil):
             info = self.get_server_info(display)
             assert info
             tinfo = typedict(info)
-            assert tinfo.strget("server.display")==display
+            assert tinfo.strget("display.name")==display
             rd = tinfo.intget("refresh-delay", 0)
             assert rd==new_delay, f"expected refresh-delay={new_delay}, got {rd}"
         self.stop_shadow_server(xvfb, server)
 
-    def test_root_window_model(self):
-        from xpra.server.shadow.root_window_model import RootWindowModel
+    def test_capture_window_model(self):
+        from xpra.server.shadow.root_window_model import CaptureWindowModel
         W = 640
         H = 480
-
-        class FakeDisplay:
-            def get_name(self):
-                return "fake-display"
-
-        class FakeScreen:
-            def get_display(self):
-                return FakeDisplay()
-
-        class FakeRootWindow:
-            def get_screen(self):
-                return FakeScreen()
-
-            def get_geometry(self):
-                return (0, 0, W, H)
 
         class FakeCapture:
             def take_screenshot(self):
@@ -109,8 +94,7 @@ class ShadowServerTest(ServerTestUtil):
             def get_info(self):
                 return {"type" : "fake"}
 
-        window = FakeRootWindow()
-        rwm = RootWindowModel(window, FakeCapture(), geometry=window.get_geometry()[:4])
+        rwm = CaptureWindowModel(FakeCapture(), geometry=(0, 0, W, H))
         assert repr(rwm)
         assert rwm.get_info()
         rwm.get_default_window_icon(32)
