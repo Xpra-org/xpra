@@ -43,15 +43,58 @@ class TestGetAuthModule(unittest.TestCase):
         self.assertEqual(name, "exec")
         self.assertEqual(options.get("display"), "auto")
 
-    def test_per_socket_auth_option(self):
-        # the whole path a "--bind-tcp=HOST:PORT,auth=MOD:opt=value" spec goes through:
+    def _get_bind_auth(self, bind_spec: str):
+        # the whole path a "--bind-tcp=HOST:PORT,auth=..." spec goes through:
+        # the bind string is parsed first, and whatever comes out of it
+        # is what `get_auth_module` has to make sense of
         from xpra.net.socket_util import parse_bind_ip
-        options = parse_bind_ip(["0.0.0.0:10000,auth=password:value=s3cret"])
-        auth_str = options[("0.0.0.0", 10000)]["auth"]
-        self.assertEqual(auth_str, "password:value=s3cret")
-        name, cls, auth_options = self._get(auth_str)
+        sock_options = parse_bind_ip([f"0.0.0.0:10000,{bind_spec}"])[("0.0.0.0", 10000)]
+        auth_str = sock_options["auth"]
+        self.assertIsInstance(auth_str, str, f"{bind_spec!r} did not parse as a string")
+        return self._get(auth_str)
+
+    def test_per_socket_bracket_syntax(self):
+        # the preferred syntax: "auth=MODULE(option=value,...)"
+        name, _cls, options = self._get_bind_auth("auth=file(filename=pass.txt)")
+        self.assertEqual(name, "file")
+        self.assertEqual(options.get("filename"), "pass.txt")
+
+    def test_per_socket_bracket_multiple_options(self):
+        # the commas inside the brackets must not be mistaken
+        # for separators between socket options:
+        name, _cls, options = self._get_bind_auth("auth=exec(command=/bin/echo,foo=bar)")
+        self.assertEqual(name, "exec")
+        self.assertEqual(options.get("command"), "/bin/echo")
+        self.assertEqual(options.get("foo"), "bar")
+
+    def test_per_socket_bracket_values_with_equal_signs(self):
+        # option values often contain '=': command lines, paths, uris
+        name, _cls, options = self._get_bind_auth("auth=exec(command=/bin/foo --arg=1)")
+        self.assertEqual(name, "exec")
+        self.assertEqual(options.get("command"), "/bin/foo --arg=1")
+
+    def test_per_socket_bracket_with_other_socket_options(self):
+        from xpra.net.socket_util import parse_bind_ip
+        spec = "0.0.0.0:10000,auth=file(filename=pass.txt),ssl-cert=/tmp/cert.pem"
+        sock_options = parse_bind_ip([spec])[("0.0.0.0", 10000)]
+        self.assertEqual(sock_options.get("ssl-cert"), "/tmp/cert.pem")
+        name, _cls, options = self._get(sock_options["auth"])
+        self.assertEqual(name, "file")
+        self.assertEqual(options.get("filename"), "pass.txt")
+
+    def test_per_socket_multiple_auth_modules(self):
+        from xpra.net.socket_util import parse_bind_ip
+        spec = "0.0.0.0:10000,auth=hosts,auth=file(filename=pass.txt)"
+        auth_strs = parse_bind_ip([spec])[("0.0.0.0", 10000)]["auth"]
+        self.assertEqual(auth_strs, ["hosts", "file(filename=pass.txt)"])
+        names = [self._get(auth_str)[0] for auth_str in auth_strs]
+        self.assertEqual(names, ["hosts", "file"])
+
+    def test_per_socket_colon_syntax(self):
+        # the older "auth=MODULE:option=value" syntax must keep working
+        name, _cls, options = self._get_bind_auth("auth=password:value=s3cret")
         self.assertEqual(name, "password")
-        self.assertEqual(auth_options.get("value"), "s3cret")
+        self.assertEqual(options.get("value"), "s3cret")
 
     def test_invalid_type(self):
         from xpra.scripts.config import InitException
