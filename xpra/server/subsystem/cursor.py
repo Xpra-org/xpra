@@ -39,7 +39,8 @@ class CursorManager(StubServerMixin):
         try:
             from xpra.server.source.window import WindowsConnection
         except ImportError:
-            windows_clients = ()
+            # the `window` subsystem is disabled (ie: `--windows=no`):
+            windows_clients = 0
         else:
             windows_clients = len(get_sources_by_type(self, WindowsConnection, ss))
         if windows_clients > 0:
