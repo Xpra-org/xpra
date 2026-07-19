@@ -312,7 +312,7 @@ class ProcessTestUtil(unittest.TestCase):
         return "%s%i" % (DISPLAY_PREFIX, cls.find_free_display_no())
 
     @classmethod
-    def start_Xvfb(cls, display="") -> subprocess.Popen:
+    def start_Xvfb(cls, display="", depth=24) -> subprocess.Popen:
         assert POSIX
         if not display:
             display = cls.find_free_display()
@@ -326,7 +326,7 @@ class ProcessTestUtil(unittest.TestCase):
                 #keep it
                 env[x] = os.environ.get(x)
         from xpra.scripts.config import xvfb_command
-        cmd = xvfb_command(cls.test_xvfb_command, depth=24, dpi=0, fps=0)
+        cmd = xvfb_command(cls.test_xvfb_command, depth=depth, dpi=0, fps=0)
         cmd.append(display)
         tmpdir = tempfile.gettempdir()
         env["XPRA_LOG_DIR"] = tmpdir
