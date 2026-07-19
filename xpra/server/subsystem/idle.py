@@ -5,14 +5,11 @@
 
 from typing import Any
 
-from xpra.os_util import gi_import
 from xpra.server import ServerExitMode
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("timeout")
-
-GLib = gi_import("GLib")
 
 
 class IdleTimeoutManager(StubSubsystem):
@@ -45,13 +42,13 @@ class IdleTimeoutManager(StubSubsystem):
         if self.server_timeout <= 0:
             return
         if self.server_timer:
-            GLib.source_remove(self.server_timer)
+            self.source_remove(self.server_timer)
             self.server_timer = 0
 
     def schedule_server_timeout(self, *args) -> None:
         log("schedule_server_timeout%s server_idle_timeout=%s", args, self.server_timeout)
         self.cancel_server_timeout()
-        self.server_timer = GLib.timeout_add(self.server_timeout * 1000, self.server_idle_timedout)
+        self.server_timer = self.timeout_add(self.server_timeout * 1000, self.server_idle_timedout)
 
     def server_idle_timedout(self) -> None:
         log.info("No valid client connections for %s seconds, exiting the server", self.server_timeout)

@@ -11,12 +11,11 @@ from subprocess import Popen
 
 from xpra.common import noop
 from xpra.net.common import BACKWARDS_COMPATIBLE
-from xpra.os_util import gi_import
 from xpra.server.source.keyboard import KeyboardConnection
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.env import envbool
 from xpra.util.io import find_libexec_command, which
-from xpra.util.objects import typedict
+from xpra.util.objects import typedict, Scheduler
 from xpra.server.subsystem.keyboard import KeyboardManager
 from xpra.util.system import stop_proc
 from xpra.x11.error import xsync, xswallow, xlog
@@ -24,8 +23,6 @@ from xpra.log import Logger
 
 log = Logger("x11", "server", "keyboard")
 ibuslog = Logger("keyboard", "ibus")
-
-GLib = gi_import("GLib")
 
 IBUS = envbool("XPRA_IBUS", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
@@ -82,7 +79,7 @@ def ibus_pid_file() -> str:
     return os.path.join(session_dir, "ibus-daemon.pid")
 
 
-def may_start_ibus(env: dict[str, str]):
+def may_start_ibus(env: dict[str, str], scheduler: Scheduler):
     # maybe we are inheriting one from a dead session?
     daemonizer = find_libexec_command("daemonizer")
     pidfile = ibus_pid_file()
@@ -141,12 +138,12 @@ def may_start_ibus(env: dict[str, str]):
             return False
 
         if daemonizer:
-            GLib.timeout_add(50, poll_daemonizer)
+            scheduler.timeout_add(50, poll_daemonizer)
         else:
             get_child_reaper().add_process(proc, "ibus-daemon", command,
                                            ignore=True, forget=False)
 
-    GLib.idle_add(late_start)
+    scheduler.idle_add(late_start)
 
 
 class X11KeyboardManager(KeyboardManager):
@@ -206,7 +203,7 @@ class X11KeyboardManager(KeyboardManager):
             if self.input_method == "ibus":
                 if IBUS:
                     env = self.server.get_child_env()
-                    may_start_ibus(env)
+                    may_start_ibus(env, self)
                 else:
                     log.warn("Warning: ibus is disabled, but input-method uses it")
                     log.warn(" either use another input method or start the daemon manually")
@@ -336,9 +333,7 @@ class X11KeyboardManager(KeyboardManager):
         if not self.keymap_changing_timer:
             # use idle_add to give all the pending
             # events a chance to run first (and get ignored)
-            from xpra.os_util import gi_import
-            GLib = gi_import("GLib")
-            self.keymap_changing_timer = GLib.timeout_add(100, reenable_keymap_changes)
+            self.keymap_changing_timer = self.timeout_add(100, reenable_keymap_changes)
         # if sharing, don't set the keymap, translate the existing one:
         other_kb_clients = self.get_sources_by_type(KeyboardConnection, server_source)
         translate_only = len(other_kb_clients) > 0

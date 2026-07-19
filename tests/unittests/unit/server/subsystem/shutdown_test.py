@@ -5,23 +5,32 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import patch
 
 from xpra.net.common import Packet
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import SHUTDOWN_SERVER, EXIT_SERVER
 from xpra.server import ServerExitMode
 from xpra.server.subsystem.shutdown import ShutdownServer
+from xpra.util.glib_scheduler import GLibScheduler
 from xpra.util.objects import typedict
 
 
-class FakeServer:
+class FakeServer(GLibScheduler):
+    """
+    The subsystem copies its scheduler methods from the server it is
+    constructed with, so run timers synchronously here to exercise
+    the shutdown paths without a main loop.
+    """
 
     def __init__(self):
         self.hello_request_handlers = {}
         self.packet_handlers = {}
         self.cleanup_reasons = []
         self.quit_modes = []
+
+    def timeout_add(self, _delay: int, fn, *args) -> int:
+        fn(*args)
+        return 0
 
     def add_packet_handler(self, packet_type: str, handler, main_thread=False) -> None:
         self.packet_handlers[packet_type] = (handler, main_thread)
@@ -46,17 +55,13 @@ class ShutdownTest(unittest.TestCase):
         self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": self.shutdown.client_shutdown})
 
     def test_exit_request(self) -> None:
-        with patch("xpra.server.subsystem.shutdown.GLib.timeout_add",
-                   side_effect=lambda _delay, fn, *args: fn(*args)):
-            self.server.packet_handlers[EXIT_SERVER][0](None, Packet(EXIT_SERVER, "restart"))
+        self.server.packet_handlers[EXIT_SERVER][0](None, Packet(EXIT_SERVER, "restart"))
         self.assertEqual(self.server.cleanup_reasons, ["restart"])
         self.assertEqual(self.server.quit_modes, [ServerExitMode.EXIT])
 
     def test_stop_request(self) -> None:
         self.shutdown.client_shutdown = True
-        with patch("xpra.server.subsystem.shutdown.GLib.timeout_add",
-                   side_effect=lambda _delay, fn, *args: fn(*args)):
-            handled = self.server.hello_request_handlers["stop"](None, typedict())
+        handled = self.server.hello_request_handlers["stop"](None, typedict())
         self.assertTrue(handled)
         self.assertEqual(self.server.cleanup_reasons, [ConnectionMessage.SERVER_SHUTDOWN])
         self.assertEqual(self.server.quit_modes, [ServerExitMode.NORMAL])

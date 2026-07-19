@@ -9,12 +9,9 @@ from typing import Any
 from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.common import Packet
-from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("network", "ping")
-
-GLib = gi_import("GLib")
 
 
 class PingServer(StubSubsystem):
@@ -33,12 +30,12 @@ class PingServer(StubSubsystem):
 
     def setup(self) -> None:
         if self.delay > 0:
-            self.timer = GLib.timeout_add(1000 * self.delay, self.send_ping)
+            self.timer = self.timeout_add(1000 * self.delay, self.send_ping)
 
     def cleanup(self) -> None:
         if pt := self.timer:
             self.timer = 0
-            GLib.source_remove(pt)
+            self.source_remove(pt)
 
     def get_info(self, _proto) -> dict[str, Any]:
         return self.get_caps(None)

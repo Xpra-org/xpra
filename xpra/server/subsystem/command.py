@@ -15,7 +15,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.util.child_reaper import get_child_reaper, ProcInfo
 from xpra.common import noop
-from xpra.os_util import OSX, WIN32, gi_import
+from xpra.os_util import OSX, WIN32
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, source_env
@@ -27,8 +27,6 @@ from xpra.scripts.parsing import parse_env
 from xpra.util.pid import write_pid
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("exec")
 
@@ -239,7 +237,7 @@ class ChildCommandServer(StubSubsystem):
             child_reaper.set_quit_callback(self.reaper_exit)
             child_reaper.check()
 
-        GLib.idle_add(set_reaper_callback)
+        self.idle_add(set_reaper_callback)
 
     def cleanup(self) -> None:
         # during cleanup, just ignore the reaper exit callback:
@@ -343,7 +341,7 @@ class ChildCommandServer(StubSubsystem):
                     started.append(proc)
         procs = tuple(x for x in started if x)
         if not self.server.session_name:
-            GLib.idle_add(self.guess_session_name, procs)
+            self.idle_add(self.guess_session_name, procs)
 
     def start_command(self, name: str, child_cmd, ignore: bool = False, callback: Callable | None = None,
                       use_wrapper: bool = True, shell: bool = False, source=None, **kwargs):
@@ -391,7 +389,7 @@ class ChildCommandServer(StubSubsystem):
         log(f"reaper_exit_check() exit_with_children={self.exit_with_children}")
         if self.exit_with_children and self.children_count:
             log.info("all children have exited and --exit-with-children was specified, exiting")
-            GLib.idle_add(self.server.clean_quit)
+            self.idle_add(self.server.clean_quit)
 
     def terminate_children_processes(self) -> None:
         cl = tuple(self.children_started)

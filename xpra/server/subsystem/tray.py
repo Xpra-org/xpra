@@ -15,8 +15,6 @@ from xpra.os_util import POSIX, OSX, gi_import, WIN32
 from xpra.util.i18n import _
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
-
 log = Logger("tray")
 
 
@@ -235,7 +233,7 @@ class TrayMenu(StubSubsystem):
 
     def tray_exit_callback(self, *_args) -> None:
         self.close_tray_menu()
-        GLib.idle_add(self.server.clean_quit, False)
+        self.idle_add(self.server.clean_quit, False)
 
     def close_tray_menu(self, *_args) -> None:
         if self.menu_shown:

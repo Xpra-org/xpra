@@ -11,6 +11,7 @@ from xpra.os_util import gi_import
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.common import Packet, PacketHandlerType
 from xpra.util.glib import register_os_signals, register_SIGUSR_signals
+from xpra.util.glib_scheduler import GLibScheduler
 from xpra.common import noerr
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.log import Logger
@@ -20,7 +21,7 @@ GLib = gi_import("GLib")
 log = Logger("server", "glib")
 
 
-class GLibServer(SignalEmitter, PacketDispatcher):
+class GLibServer(SignalEmitter, PacketDispatcher, GLibScheduler):
 
     def __init__(self):
         SignalEmitter.__init__(self)
@@ -62,7 +63,7 @@ class GLibServer(SignalEmitter, PacketDispatcher):
     def run(self) -> ExitValue:
         self.print_run_info()
         self.install_signal_handlers(self.signal_quit)
-        GLib.idle_add(self.server_is_ready)
+        self.idle_add(self.server_is_ready)
         try:
             self.do_run()
         except KeyboardInterrupt:
@@ -85,6 +86,6 @@ class GLibServer(SignalEmitter, PacketDispatcher):
         def call() -> None:
             handler(proto, packet)
         if main:
-            GLib.idle_add(call)
+            self.idle_add(call)
         else:
             call()

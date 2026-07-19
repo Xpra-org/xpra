@@ -11,14 +11,17 @@ from gi.repository import GLib  # @UnresolvedImport
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.signal_emitter import SignalEmitter
+from xpra.util.glib_scheduler import GLibScheduler
 from xpra.server.source.stub import StubClientConnection
 
 
-class FakeServerBase:
+class FakeServerBase(GLibScheduler):
     """Minimal server stand-in for subsystem unit tests.
 
     Provides the `subsystems` registry that subsystems and source classes
     look their peers up through, plus the common `get_subsystem` accessor.
+    Inherits the scheduler methods (as `GLibServer` does) so that subsystems
+    constructed with this as their server get a working `idle_add` & co.
     """
 
     def __init__(self):
@@ -28,7 +31,7 @@ class FakeServerBase:
         return self.subsystems.get(prefix)
 
 
-class ServerMixinTest(unittest.TestCase, SignalEmitter):
+class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
 
     @classmethod
     def setUpClass(cls):

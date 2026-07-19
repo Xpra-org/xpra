@@ -8,7 +8,6 @@ from time import sleep
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.os_util import gi_import
 from xpra.audio.common import AUDIO_KEEPALIVE_PACKET
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
@@ -18,8 +17,6 @@ from xpra.util.thread import start_thread
 from xpra.scripts.parsing import audio_option
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("audio")
 
@@ -127,7 +124,7 @@ class AudioServer(StubSubsystem):
         if not self.microphone_codecs:
             self.supports_microphone = False
         # some calls must happen from the main thread:
-        GLib.idle_add(self.init_ui_audio_options, audio_properties)
+        self.idle_add(self.init_ui_audio_options, audio_properties)
 
     def init_ui_audio_options(self, audio_properties: typedict):
         # query_pulseaudio_properties may access X11. PulseaudioServer is a

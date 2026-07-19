@@ -8,7 +8,7 @@ from typing import Any
 from subprocess import Popen
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import, POSIX
+from xpra.os_util import POSIX
 from xpra.server.source.display import DisplayConnection
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import XPRA_VERSION
@@ -26,8 +26,6 @@ from xpra.util.parsing import (
 from xpra.x11.xroot_props import root_set, root_get, root_del
 from xpra.server.subsystem.display import DisplayManager
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("screen")
 grablog = Logger("server", "grab")
@@ -571,7 +569,7 @@ class X11DisplayManager(DisplayManager):
                 log.info(msg)
 
             # show dpi via idle_add so server has time to change the screen size (mm)
-            GLib.idle_add(self.show_dpi, xdpi, ydpi)
+            self.idle_add(self.show_dpi, xdpi, ydpi)
         return root_w, root_h
 
     def show_dpi(self, xdpi: int, ydpi: int):

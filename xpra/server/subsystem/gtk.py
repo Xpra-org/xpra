@@ -18,8 +18,6 @@ from xpra.log import Logger
 
 log = Logger("server", "gtk")
 
-GLib = gi_import("GLib")
-
 get_default_window_icon_fallback = noop
 
 
@@ -138,7 +136,7 @@ class GTKServer(StubSubsystem):
     def cancel_screen_size_changed_timer(self):
         if ssct := self.screen_size_changed_timer:
             self.screen_size_changed_timer = 0
-            GLib.source_remove(ssct)
+            self.source_remove(ssct)
 
     def _screen_size_changed(self, screen) -> None:
         log(f"_screen_size_changed({screen})")
@@ -150,7 +148,7 @@ class GTKServer(StubSubsystem):
 
     def schedule_screen_changed(self, screen) -> None:
         self.cancel_screen_size_changed_timer()
-        self.screen_size_changed_timer = GLib.timeout_add(10, self.screen_size_changed, screen)
+        self.screen_size_changed_timer = self.timeout_add(10, self.screen_size_changed, screen)
 
     def screen_size_changed(self, screen) -> bool:
         self.screen_size_changed_timer = 0

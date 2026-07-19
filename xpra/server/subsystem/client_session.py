@@ -9,13 +9,11 @@ from collections.abc import Sequence
 
 from xpra.net.common import FULL_INFO
 from xpra.net.constants import ConnectionMessage
-from xpra.os_util import gi_import, valid_uuid
+from xpra.os_util import valid_uuid
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.background_worker import add_work_item
 from xpra.util.objects import typedict, merge_dicts
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("server")
 netlog = Logger("network")
@@ -71,7 +69,7 @@ class ClientSessionServer(StubSubsystem):
             raise
         self.sources[proto] = ss
         self.server.accept_protocol(proto, caps)
-        GLib.idle_add(self.process_hello_ui, ss, caps, auth_caps)
+        self.idle_add(self.process_hello_ui, ss, caps, auth_caps)
         return True
 
     def process_hello_ui(self, ss, caps: typedict, auth_caps: dict) -> None:
@@ -139,7 +137,7 @@ class ClientSessionServer(StubSubsystem):
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("%s client %i disconnected.", ptype, source.counter)
         if not remaining_sources:
-            GLib.idle_add(self.server.last_client_exited)
+            self.idle_add(self.server.last_client_exited)
 
     def last_client_exited(self) -> None:
         sharing = self.get_subsystem("sharing")

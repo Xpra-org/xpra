@@ -5,8 +5,8 @@
 
 from typing import Any
 from time import monotonic
+from collections.abc import Callable
 
-from xpra.os_util import gi_import
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.env import envint
 from xpra.util.thread import start_thread
@@ -15,14 +15,12 @@ from xpra.server.source.menu import MenuConnection
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
-
 log = Logger("menu")
 
 MENU_SEND_DELAY = envint("XPRA_MENU_SEND_DELAY", 5)
 
 
-def do_send_menu_data(ss, menu) -> None:
+def do_send_menu_data(ss, menu, idle_add: Callable) -> None:
     if ss.is_closed():
         return
     assert isinstance(ss, MenuConnection)
@@ -34,7 +32,7 @@ def do_send_menu_data(ss, menu) -> None:
     def do_send() -> None:
         ss.send_setting_change(attr, menu)
         log(f"{len(menu)} menu data entries sent to {ss}")
-    GLib.idle_add(do_send)
+    idle_add(do_send)
 
 
 class MenuServer(StubSubsystem):
@@ -96,12 +94,12 @@ class MenuServer(StubSubsystem):
         if ss.is_closed():
             return
         menu = self._get_menu_data() or {}
-        do_send_menu_data(ss, menu)
+        do_send_menu_data(ss, menu, self.idle_add)
 
     def cancel_send_menu_timer(self) -> None:
         if smt := self.send_menu_timer:
             self.send_menu_timer = 0
-            GLib.source_remove(smt)
+            self.source_remove(smt)
 
     def schedule_send_menu(self, menu: dict) -> None:
         self.pending_menu = menu
@@ -113,7 +111,7 @@ class MenuServer(StubSubsystem):
         if delay <= 0:
             self.send_updated_menu()
             return
-        self.send_menu_timer = GLib.timeout_add(int(delay * 1000), self.send_updated_menu)
+        self.send_menu_timer = self.timeout_add(int(delay * 1000), self.send_updated_menu)
 
     def send_updated_menu(self) -> bool:
         self.send_menu_timer = 0
@@ -123,7 +121,7 @@ class MenuServer(StubSubsystem):
         log("send_updated_menu(%s)", Ellipsizer(menu))
         menu_sources = self.get_sources_by_type(MenuConnection)
         for source in menu_sources:
-            do_send_menu_data(source, menu)
+            do_send_menu_data(source, menu, self.idle_add)
         return False
 
     def get_info(self, _proto) -> dict[str, Any]:

@@ -10,15 +10,13 @@ from typing import Any
 from xpra.net.common import Packet, FULL_INFO
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.os_util import get_hex_uuid, get_machine_id, gi_import
+from xpra.os_util import get_hex_uuid, get_machine_id
 from xpra.scripts.session import load_session_file
 from xpra.util.version import XPRA_NUMERIC_VERSION
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 # pylint: disable=import-outside-toplevel
-
-GLib = gi_import("GLib")
 
 log = Logger("server")
 

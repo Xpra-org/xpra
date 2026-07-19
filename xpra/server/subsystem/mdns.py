@@ -20,17 +20,6 @@ from xpra.log import Logger
 log = Logger("server", "mdns")
 
 
-def idle_work(fn: Callable[[], None]) -> None:
-    """
-    calls a function as a work item via GLib.idle_add,
-    so this will also wait for the main loop to be started
-    """
-    from xpra.os_util import gi_import
-    from xpra.util.background_worker import add_work_item
-    GLib = gi_import("GLib")
-    GLib.idle_add(add_work_item, fn)
-
-
 class MdnsServer(StubSubsystem):
     """
         Publishes sockets using mDNS
@@ -48,17 +37,25 @@ class MdnsServer(StubSubsystem):
         self.enabled = opts.mdns
         log("ServerCore.init(..) mdns=%s", self.enabled)
 
+    def idle_work(self, fn: Callable[[], None]) -> None:
+        """
+        calls a function as a work item via `idle_add`,
+        so this will also wait for the main loop to be started
+        """
+        from xpra.util.background_worker import add_work_item
+        self.idle_add(add_work_item, fn)
+
     def setup(self) -> None:
         if self.enabled:
-            # ugly: `idle_work` uses GLib.idle_add to wait for run()
+            # ugly: `idle_work` uses idle_add to wait for run()
             # which is where the server uuid is set:
-            idle_work(self.mdns_publish)
+            self.idle_work(self.mdns_publish)
 
     def cleanup(self) -> None:
         self.mdns_cleanup()
 
     def add_new_client(self, *_args) -> None:
-        idle_work(self.mdns_update)
+        self.idle_work(self.mdns_update)
 
     def mdns_publish(self) -> None:
         if not self.enabled:

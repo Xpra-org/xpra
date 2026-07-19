@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import patch
 
 from xpra.exit_codes import ExitCode
 from xpra.server.glib_server import GLibServer
@@ -18,6 +17,13 @@ class TestGLibServer(unittest.TestCase):
             def __init__(self):
                 super().__init__()
                 self.cleaned = False
+                self.scheduled = []
+
+            def idle_add(self, fn, *args, **kwargs) -> int:
+                # `GLibServer` inherits `GLibScheduler`; override it here so
+                # `run()` does not queue onto a main loop that never runs:
+                self.scheduled.append(fn)
+                return 0
 
             def server_is_ready(self):
                 pass
@@ -29,9 +35,9 @@ class TestGLibServer(unittest.TestCase):
                 self.cleaned = True
 
         server = KeyboardInterruptServer()
-        with patch("xpra.server.glib_server.GLib.idle_add"):
-            assert server.run() == ExitCode.OK
+        assert server.run() == ExitCode.OK
         assert server.cleaned is True
+        assert server.scheduled == [server.server_is_ready]
 
 
 def main():

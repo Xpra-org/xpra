@@ -11,7 +11,6 @@ from importlib import import_module
 
 from xpra.clipboard.common import get_local_selections
 from xpra.net.constants import ConnectionMessage
-from xpra.os_util import gi_import
 from xpra.server.source.clipboard import ClipboardConnection
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -19,8 +18,6 @@ from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("clipboard")
 
@@ -235,7 +232,7 @@ class ClipboardManager(StubSubsystem):
             return
         ch = self.helper
         assert ch, "received a clipboard packet but clipboard sharing is disabled"
-        GLib.idle_add(ch.process_clipboard_packet, packet)
+        self.idle_add(ch.process_clipboard_packet, packet)
 
     def _process_clipboard_status(self, proto, packet: Packet) -> None:
         assert self.enabled

@@ -8,7 +8,7 @@ import os.path
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.os_util import OSX, POSIX, gi_import
+from xpra.os_util import OSX, POSIX
 from xpra.server.source.notification import NotificationConnection
 from xpra.util.str_fn import Ellipsizer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
@@ -17,8 +17,6 @@ from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("notify")
-
-glib = gi_import("GLib")
 
 
 class NotificationForwarder(StubSubsystem):
@@ -102,7 +100,7 @@ class NotificationForwarder(StubSubsystem):
                         actions: Sequence[str], hints: dict, expire_timeout: int) -> None:
         assert self.forwarder and self.enabled
         # make sure that we run in the main thread:
-        glib.idle_add(self.do_notify_callback, dbus_id, nid,
+        self.idle_add(self.do_notify_callback, dbus_id, nid,
                       app_name, replaces_nid, app_icon,
                       summary, body,
                       actions, hints, expire_timeout)

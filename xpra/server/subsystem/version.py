@@ -9,7 +9,6 @@ from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.constants import ConnectionMessage
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.version import XPRA_VERSION, vparts
 
@@ -46,5 +45,4 @@ class VersionServer(StubSubsystem):
         version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
         proto.send_now(Packet("hello", {"version": version}))
         # client is meant to close the connection itself, but just in case:
-        GLib = gi_import("GLib")
-        GLib.timeout_add(5 * 1000, self.server.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
+        self.timeout_add(5 * 1000, self.server.send_disconnect, proto, ConnectionMessage.DONE, "version sent")

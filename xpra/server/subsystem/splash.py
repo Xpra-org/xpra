@@ -14,7 +14,6 @@ from xpra.scripts.main import SPLASH_EXIT_DELAY, make_progress_process
 from xpra.util.io import stderr_print
 from xpra.util.env import envbool, get_saved_env_var
 from xpra.log import Logger
-from xpra.os_util import gi_import
 from xpra.server.subsystem.stub import StubSubsystem
 
 log = Logger("server", "splash")
@@ -114,13 +113,11 @@ class SplashServer(StubSubsystem):
         self.progress_fn(pct, msg)
 
     def setup(self) -> None:
-        GLib = gi_import("GLib")
-
         def running() -> bool:
             self.progress(100, "running")
-            GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 + 100, self.stop_splash_process)
+            self.timeout_add(SPLASH_EXIT_DELAY * 1000 + 100, self.stop_splash_process)
             return False
-        GLib.idle_add(running)
+        self.idle_add(running)
 
     def cleanup(self) -> None:
         self.stop_splash_process()

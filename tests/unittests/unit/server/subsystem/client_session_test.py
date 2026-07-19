@@ -59,6 +59,13 @@ class FakeServer(FakeServerBase):
         self.accepted = []
         self.disconnected = []
         self._potential_protocols = []
+        self.idle_calls = []
+
+    def idle_add(self, *args) -> int:
+        # subsystems copy this from the server they are constructed with,
+        # so recording here verifies the scheduler injection too:
+        self.idle_calls.append(args)
+        return 0
 
     def send_disconnect(self, proto, *messages) -> None:
         self.disconnected.append((proto, messages))
@@ -115,18 +122,13 @@ class ClientSessionTest(unittest.TestCase):
     def test_hello_creates_source(self) -> None:
         proto = object()
         caps = typedict({"client_type": "test"})
-        idle_calls = []
-        with (
-            patch.object(ClientSessionServer, "get_client_connection_class", return_value=FakeConnection),
-            patch("xpra.server.subsystem.client_session.GLib.idle_add",
-                  side_effect=lambda *args: idle_calls.append(args)),
-        ):
+        with patch.object(ClientSessionServer, "get_client_connection_class", return_value=FakeConnection):
             self.assertTrue(self.session.hello_oked(proto, caps, {}))
         source = self.session.get_server_source(proto)
         self.assertIsInstance(source, FakeConnection)
         self.assertIs(source.caps, caps)
         self.assertEqual(self.server.accepted, [(proto, caps)])
-        self.assertEqual(idle_calls, [(self.session.process_hello_ui, source, caps, {})])
+        self.assertEqual(self.server.idle_calls, [(self.session.process_hello_ui, source, caps, {})])
 
     def test_source_state(self) -> None:
         proto1 = object()

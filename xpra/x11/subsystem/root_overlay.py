@@ -5,14 +5,11 @@
 
 from typing import Any
 
-from xpra.os_util import gi_import
 from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.error import xsync
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("screen")
 
@@ -64,12 +61,12 @@ class RootOverlay(StubSubsystem):
             self.root_overlay, self.repaint_timer, self.sync_xvfb)
         if self.repaint_timer:
             return
-        self.repaint_timer = GLib.timeout_add(self.sync_xvfb, self.do_repaint)
+        self.repaint_timer = self.timeout_add(self.sync_xvfb, self.do_repaint)
 
     def cancel_repaint(self) -> None:
         if timer := self.repaint_timer:
             self.repaint_timer = 0
-            GLib.source_remove(timer)
+            self.source_remove(timer)
 
     def do_repaint(self) -> None:
         self.repaint_timer = 0

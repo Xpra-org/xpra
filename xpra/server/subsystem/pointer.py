@@ -12,14 +12,11 @@ from collections.abc import Sequence
 from xpra.server.source.pointer import PointerConnection
 from xpra.util.env import envbool, envint
 from xpra.util.objects import typedict
-from xpra.os_util import gi_import
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("pointer")
-
-GLib = gi_import("GLib")
 
 INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
@@ -197,7 +194,7 @@ class PointerManager(StubSubsystem):
                 self.pointer_device = xtest
                 self.input_devices = "xtest"
 
-        GLib.timeout_add(1000, verify_uinput_moved)
+        self.timeout_add(1000, verify_uinput_moved)
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {

@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import DISPLAY_CONFIGURE
-from xpra.os_util import gi_import, POSIX, OSX
+from xpra.os_util import POSIX, OSX
 from xpra.util.rectangle import rectangle
 
 from xpra.server.source.display import DisplayConnection
@@ -18,8 +18,6 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import get_refresh_rate_for_value, DEFAULT_REFRESH_RATE
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("screen")
 
@@ -103,7 +101,7 @@ class DisplayManager(StubSubsystem):
         log("gui_init()")
         gui_init()
         self.bit_depth = self.get_display_bit_depth()
-        GLib.idle_add(self.print_screen_info)
+        self.idle_add(self.print_screen_info)
 
     def print_screen_info(self) -> None:
         for x in self.get_display_description().split("\n"):
@@ -293,7 +291,7 @@ class DisplayManager(StubSubsystem):
     def notify_screen_changed(self) -> None:
         log("notify_screen_changed()")
         self.emit("display-geometry-changed")
-        GLib.idle_add(self.send_updated_screen_size)
+        self.idle_add(self.send_updated_screen_size)
 
     def send_updated_screen_size(self) -> None:
         root_size = self.get_display_size()
@@ -536,7 +534,7 @@ class DisplayManager(StubSubsystem):
                 self.server.send_disconnect(proto, "screenshot failed")
                 return
             proto.send_now(packet)
-            GLib.timeout_add(5 * 1000, self.server.send_disconnect, proto, "screenshot sent")
+            self.timeout_add(5 * 1000, self.server.send_disconnect, proto, "screenshot sent")
         except Exception as e:
             log.error("failed to capture screenshot", exc_info=True)
             self.server.send_disconnect(proto, "screenshot failed: %s" % e)

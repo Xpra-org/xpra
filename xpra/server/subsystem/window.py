@@ -8,7 +8,6 @@ from time import monotonic
 from typing import Any, NoReturn
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.server.source.window import WindowsConnection
@@ -16,8 +15,6 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import WINDOW_CREATE
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("window")
 focuslog = Logger("focus")
@@ -88,7 +85,7 @@ class WindowServer(StubSubsystem):
         # the right one.
         self.update_size_constraints(minw, minh, maxw, maxh)
         # when the main loop runs, load the windows:
-        GLib.idle_add(self.load_existing_windows)
+        self.idle_add(self.load_existing_windows)
         self.server.connect("last-client-exited", self.reset_focus)
         self.add_window_control_commands()
 
@@ -453,7 +450,7 @@ class WindowServer(StubSubsystem):
             ss.refresh(wid, window, opts)
 
     def _idle_refresh_all_windows(self, proto) -> None:
-        GLib.idle_add(self._refresh_windows, proto, self._id_to_window, {})
+        self.idle_add(self._refresh_windows, proto, self._id_to_window, {})
 
     def refresh_all_windows(self) -> None:
         for ss in self.window_sources():

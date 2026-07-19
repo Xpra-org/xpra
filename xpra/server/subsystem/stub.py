@@ -23,12 +23,22 @@ class StubSubsystem(SignalEmitter):
     # used as the key in `Server.subsystems`:
     PREFIX: str = ""
 
-    def __init__(self, server):
+    def __init__(self, server=None):
         # Every subsystem holds a reference to its owning server.
         # Subsystem-local signals (e.g. `audio-initialized`,
         # `display-geometry-changed`) use this instance's SignalEmitter;
         # server-wide GObject signals are accessed via `self.server`.
         self.server = server
+        # copy scheduler methods from the server if it provides them, GLib otherwise.
+        # (unlike the client, subsystems are always constructed with a server,
+        # so the case that matters here is a stand-in that has no scheduler)
+        source = server
+        if not server or not hasattr(server, "idle_add"):
+            from xpra.util.glib_scheduler import GLibScheduler
+            source = GLibScheduler
+        self.idle_add: Callable = source.idle_add
+        self.timeout_add: Callable = source.timeout_add
+        self.source_remove: Callable = source.source_remove
         SignalEmitter.__init__(self)
 
     def get_main_loop(self):

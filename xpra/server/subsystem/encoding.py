@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from xpra.server.source.encoding import EncodingsConnection
 from xpra.util.env import envint
-from xpra.os_util import OSX, gi_import
+from xpra.os_util import OSX
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
@@ -21,7 +21,6 @@ from xpra.codecs.video import getVideoHelper
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
 log = Logger("encoding")
 
 INIT_DELAY = envint("XPRA_ENCODER_INIT_DELAY", 0)
@@ -143,7 +142,7 @@ class EncodingServer(StubSubsystem):
             # load video codecs:
             getVideoHelper().init()
         # dispatch to the main thread: updates encodings and notifies connected clients
-        GLib.idle_add(self.reinit_encodings)
+        self.idle_add(self.reinit_encodings)
 
     def cleanup(self) -> None:
         getVideoHelper().cleanup()

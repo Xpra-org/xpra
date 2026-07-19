@@ -9,7 +9,6 @@ from typing import Any
 from time import monotonic
 
 from xpra.net.constants import ConnectionMessage
-from xpra.os_util import gi_import
 from xpra.server.source.keyboard import KeyboardConnection
 from xpra.util.env import envbool
 from xpra.util.str_fn import Ellipsizer, csv
@@ -19,8 +18,6 @@ from xpra.common import noerr
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("keyboard")
 
@@ -100,7 +97,7 @@ class KeyboardManager(StubSubsystem):
     def keymap_changed(self, *_args) -> None:
         if self.keymap_changing_timer:
             return
-        self.keymap_changing_timer = GLib.timeout_add(500, self.do_keymap_changed)
+        self.keymap_changing_timer = self.timeout_add(500, self.do_keymap_changed)
 
     def do_keymap_changed(self) -> None:
         self.keymap_changing_timer = 0
@@ -109,7 +106,7 @@ class KeyboardManager(StubSubsystem):
     def stop_keymap_timer(self) -> None:
         if kct := self.keymap_changing_timer:
             self.keymap_changing_timer = 0
-            GLib.source_remove(kct)
+            self.source_remove(kct)
 
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         info = self.get_keyboard_info()
@@ -391,7 +388,7 @@ class KeyboardManager(StubSubsystem):
     def cancel_key_repeat_timer(self) -> None:
         if krt := self.key_repeat_timer:
             self.key_repeat_timer = 0
-            GLib.source_remove(krt)
+            self.source_remove(krt)
 
     def _key_repeat(self, wid: int, pressed: bool, keyname: str, keyval: int, keycode: int,
                     modifiers: list, is_mod: bool, delay_ms: int = 0) -> None:
@@ -401,7 +398,7 @@ class KeyboardManager(StubSubsystem):
             delay_ms = min(2000, max(1000, delay_ms))
             log("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             now = monotonic()
-            self.key_repeat_timer = GLib.timeout_add(delay_ms, self._key_repeat_timeout,
+            self.key_repeat_timer = self.timeout_add(delay_ms, self._key_repeat_timeout,
                                                      now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
 
     def _key_repeat_timeout(self, when, delay_ms: int, wid: int, keyname: str, keyval: int, keycode: int,

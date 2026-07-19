@@ -12,7 +12,7 @@ from threading import Event
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.os_util import OSX, WIN32, POSIX, gi_import, is_container, getuid, getgid
+from xpra.os_util import OSX, WIN32, POSIX, is_container, getuid, getgid
 from xpra.platform.paths import get_system_conf_dirs
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.io import pollwait, is_writable, which
@@ -26,8 +26,6 @@ from xpra.scripts.session import clean_session_files, session_file_path, pidexis
 from xpra.server import features
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("audio", "pulseaudio")
 
@@ -358,7 +356,7 @@ class PulseaudioServer(StubSubsystem):
             if self.server_socket:
                 log.info(" %r", self.server_socket)
                 os.environ["PULSE_SERVER"] = "unix:%s" % self.server_socket
-            GLib.timeout_add(2 * 1000, self.configure_pulse, env)
+            self.timeout_add(2 * 1000, self.configure_pulse, env)
 
     def configure_pulse(self, env: dict[str, str]) -> None:
         p = self.proc
@@ -377,7 +375,7 @@ class PulseaudioServer(StubSubsystem):
             return
         elapsed = monotonic() - self.started_at
         if elapsed < 2:
-            GLib.timeout_add(1000, pulseaudio_warning)
+            self.timeout_add(1000, pulseaudio_warning)
         else:
             log.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
         self.proc = None

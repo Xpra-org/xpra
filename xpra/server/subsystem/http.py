@@ -24,7 +24,7 @@ def invalid_path(uri: str) -> HttpResponse:
     return 404, {}, b""
 
 
-def http_icon_response(icon_type: str, icon_data: bytes) -> HttpResponse:
+def http_icon_response(icon_type: str, icon_data: bytes, idle_add: Callable) -> HttpResponse:
     log("http_icon_response%s", (icon_type, Ellipsizer(icon_data)))
     if not icon_data:
         icon_filename = get_icon_filename("noicon.png")
@@ -43,9 +43,7 @@ def http_icon_response(icon_type: str, icon_data: bytes) -> HttpResponse:
             icon[0] = svg_to_png("", icon_data, 48, 48), "png"
             event.set()
 
-        from xpra.os_util import gi_import
-        GLib = gi_import("GLib")
-        GLib.idle_add(convert)
+        idle_add(convert)
         event.wait()
         icon_data, icon_type = icon[0]
     if icon_type in ("png", "jpeg", "svg", "webp"):
@@ -136,7 +134,7 @@ class HttpServer(StubSubsystem):
             app_name = path[1]
         log("http_menu_icon_request: category_name=%s, app_name=%s", category_name, app_name)
         icon_type, icon_data = self.get_subsystem("menu").provider.get_menu_icon(category_name, app_name)
-        return http_icon_response(icon_type, icon_data)
+        return http_icon_response(icon_type, icon_data, self.idle_add)
 
     def http_desktop_menu_icon_request(self, uri: str, _post_data: bytes) -> HttpResponse:
         parts = unquote(uri).split("/DesktopMenuIcon/", 1)
@@ -147,7 +145,7 @@ class HttpServer(StubSubsystem):
         sessionname = parts[1].split("/")[0]
         log(f"http_desktop_menu_icon_request: {sessionname=}")
         icon_type, icon_data = self.get_subsystem("menu").provider.get_desktop_menu_icon(sessionname)
-        return http_icon_response(icon_type, icon_data)
+        return http_icon_response(icon_type, icon_data, self.idle_add)
 
     def http_displays_request(self, _uri: str, _post_data: bytes) -> HttpResponse:
         displays = self.server.get_displays()

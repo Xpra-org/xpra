@@ -12,7 +12,6 @@ from collections import deque
 from typing import Any
 from collections.abc import Sequence, Callable
 
-from xpra.os_util import gi_import
 from xpra.server.subsystem.window import WindowServer
 from xpra.server.source.window import WindowsConnection
 from xpra.util.objects import typedict
@@ -27,8 +26,6 @@ from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("server", "window")
 focuslog = Logger("server", "focus")
@@ -270,11 +267,11 @@ class SeamlessWindowServer(WindowServer):
             self.size_notify_clients(window)
             return
         if self.snc_timer > 0:
-            GLib.source_remove(self.snc_timer)
+            self.source_remove(self.snc_timer)
         # TODO: find a better way to choose the timer delay
         lcce = self.get_window_configure_time_time()
         delay = max(100, min(250, 250 + round(1000 * (lcce - monotonic()))))
-        self.snc_timer = GLib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
+        self.snc_timer = self.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
     def get_window_configure_time_time(self) -> float:
         lcce = 0.0
@@ -732,17 +729,17 @@ class SeamlessWindowServer(WindowServer):
             if window and window.is_managed():
                 self.refresh_window(window)
 
-        self.configure_damage_timers[wid] = GLib.timeout_add(delay, damage)
+        self.configure_damage_timers[wid] = self.timeout_add(delay, damage)
 
     def cancel_configure_damage(self, wid: int) -> None:
         if timer := self.configure_damage_timers.pop(wid, None):
-            GLib.source_remove(timer)
+            self.source_remove(timer)
 
     def cancel_all_configure_damage(self) -> None:
         timers = tuple(self.configure_damage_timers.values())
         self.configure_damage_timers = {}
         for timer in timers:
-            GLib.source_remove(timer)
+            self.source_remove(timer)
 
     def _set_client_properties(self, proto, wid: int, window, new_client_properties: dict) -> None:
         """

@@ -6,7 +6,6 @@
 
 import os
 
-from xpra.os_util import gi_import
 from xpra.server.common import SSH_AGENT_DISPATCH
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict
@@ -15,8 +14,6 @@ from xpra.server.source.ssh_agent import SSHAgentConnection
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.ssh.agent import setup_ssh_auth_sock, set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("network", "ssh")
 
@@ -109,7 +106,7 @@ class SshAgent(StubSubsystem):
                 clean_agent_socket(remove)
             set_ssh_agent(uuid)
 
-        GLib.idle_add(update)
+        self.idle_add(update)
 
     def add_new_client(self, ss, _c: typedict) -> None:
         if not self.enabled:
