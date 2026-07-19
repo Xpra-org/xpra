@@ -22,7 +22,7 @@ packaged as a GUI application which just calls
 
 This service just starts an xpra proxy server using the hard-coded arguments:
 ```shell
-Xpra proxy --bind-tcp=0.0.0.0:14500,auth=sys,client-username=true,verify-username=true
+Xpra proxy --bind-tcp=0.0.0.0:14500,auth=sys(client-username=true,verify-username=true)
 ```
 
 The proxy will log to a file.

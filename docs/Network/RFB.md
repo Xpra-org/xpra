@@ -52,7 +52,7 @@ vncviewer localhost:5900
 
 Secure it with the `rfb-auth` option (see [authentication](../Usage/Authentication.md)):
 ```shell
-xpra shadow --bind-rfb=0.0.0.0:5900,auth=file,filename=password.txt
+xpra shadow --bind-rfb=0.0.0.0:5900,auth=file(filename=password.txt)
 ```
 
 A plain `TCP` socket can also be upgraded to RFB automatically after a short delay, so a single port

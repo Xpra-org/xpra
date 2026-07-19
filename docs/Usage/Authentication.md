@@ -14,7 +14,8 @@ When using [SSH](../Network/SSH.md) to connect to a server, [encryption](../Netw
 ***
 
 ## Server Syntax
-Starting with version 6.5, options for individual authentication modules can be specified using brackets. \
+Starting with version 6.5, options for individual authentication modules are specified using brackets:
+`auth=MODULE(option=value,...)`. \
 ie for starting a [seamless](Seamless.md) server with a `TCP` socket protected by a password stored in a `file`:
 ```shell
 xpra seamless --start=xterm -d auth
@@ -26,6 +27,14 @@ xpra seamless --start=xterm -d auth \
      --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file(filename=password.txt) \
      --bind-tcp=0.0.0.0:10001,auth=sys
 ```
+This is the recommended syntax, and the only one that is unambiguous:
+* the brackets delimit the module's options, so their values can contain `,` and `=` characters,
+which is common for command lines, paths and uris
+* the options belong to the module they follow, which matters when chaining several modules on a single socket
+
+The older `auth=MODULE:option=value` and `auth=MODULE,option=value` forms are still accepted.
+The latter makes the option a *socket* option, which is then given to **every** authentication module
+used by that socket - so it cannot be used to give different values to two chained modules.
 
 ### Server Authentication Modules
 Xpra supports many authentication modules.
@@ -40,7 +49,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [fail](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/fail.py)                           | always fails authentication, no password required                                       | useful for testing                                                                  |
 | [reject](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/reject.py)                       | always fails authentication, pretends to ask for a password                             | useful for testing                                                                  |
 | [env](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/env.py)                             | matches against an environment variable (`XPRA_PASSWORD` by default)                    | alternative to file module                                                          |
-| [password](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/password.py)                   | matches against a password given as a module option, ie: `auth=password,value=mysecret` | alternative to file module                                                          |
+| [password](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/password.py)                   | matches against a password given as a module option, ie: `auth=password(value=mysecret)` | alternative to file module                                                          |
 | [multifile](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/multifile.py)                 | matches usernames and passwords against an authentication file                          | proxy: see password-file below                                                      |
 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/file.py)                           | compares the password against the contents of a password file, see password-file below  | simple password authentication                                                      |
 | [scram](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/scram.py)                         | SCRAM authentication using `python-scramp`                                              | supports plaintext files and SCRAM stored-key records                               |
@@ -73,11 +82,11 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
   <summary>more examples</summary>
 
 * `XPRA_PASSWORD=mysecret xpra seamless --bind-tcp=0.0.0.0:10000,auth=env`
-* `SOME_OTHER_ENV_VAR_NAME=mysecret xpra seamless --bind-tcp=0.0.0.0:10000,auth=env,name=SOME_OTHER_ENV_VAR_NAME`
-* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=password,value=mysecret`
-* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=file,filename=/path/to/mypasswordfile.txt`
-* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=sqlite,filename=/path/to/userlist.sdb`
-* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=otpscreen,mode=alphanumeric,count=8,timeout=60`
+* `SOME_OTHER_ENV_VAR_NAME=mysecret xpra seamless --bind-tcp=0.0.0.0:10000,auth=env(name=SOME_OTHER_ENV_VAR_NAME)`
+* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=password(value=mysecret)`
+* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=file(filename=/path/to/mypasswordfile.txt)`
+* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=sqlite(filename=/path/to/userlist.sdb)`
+* `xpra seamless --bind-tcp=0.0.0.0:10000,auth=otpscreen(mode=alphanumeric,count=8,timeout=60)`
 
 Beware when mixing environment variables and password files as the latter may contain a trailing newline character whereas the former often do not.
 
@@ -92,8 +101,8 @@ The `ratelimit` module protects a socket against brute force attacks: it records
 It does not authenticate anyone by itself - it is a gate that must be **chained before a real authentication module**, and it must be listed **first** so that a blocked address is turned away before the server even sends it a challenge:
 ```shell
 xpra start --bind-tcp=0.0.0.0:10000 \
-  --tcp-auth=ratelimit:max-failures=3,window=60,ipv6-prefix=64 \
-  --tcp-auth=password:value=mysecret
+  --tcp-auth=ratelimit(max-failures=3,window=60,ipv6-prefix=64) \
+  --tcp-auth=password(value=mysecret)
 ```
 
 | Option         | Default | Purpose                                                                                          |
@@ -259,7 +268,7 @@ A server can announce itself to a proxy at startup with the `--register=URI` opt
 
 ```shell
 # proxy side:
-xpra proxy --bind-tcp=0.0.0.0:14500 --session-registry=live --auth=password,value=secret
+xpra proxy --bind-tcp=0.0.0.0:14500 --session-registry=live --auth=password(value=secret)
 
 # server side (--session-name names the registered session):
 xpra seamless --start=xterm --session-name=demo --register=tcp://:secret@proxy.example.com:14500/

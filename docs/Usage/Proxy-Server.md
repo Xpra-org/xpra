@@ -78,7 +78,7 @@ xpra seamless :201 --bind-tcp=0.0.0.0:10101 --start=xterm
 ```
 Start a proxy server on port 14501 using the "`sqlite`" authentication module (we will call this server `PROXYHOST`):
 ```shell
-xpra proxy :100 --bind-tcp=0.0.0.0:14501,auth=sqlite,filename=./xpra-auth.sdb --socket-dirs=/tmp
+xpra proxy :100 --bind-tcp=0.0.0.0:14501,auth=sqlite(filename=./xpra-auth.sdb) --socket-dirs=/tmp
 ```
 and add user entries (ie: `foo` with password `bar`), pointing to the `TARGETHOST` sessions (ie: `192.168.1.200` is the `TARGETHOST`'s IP in this example):
 ```shell
@@ -130,7 +130,7 @@ This type of proxy server usually runs as root to be able to access the sessions
 
 This mode of operation cannot be used with the `sqlite` or `multifile` authentication modules since those modules specify the list of sessions explicitly.
 
-For some authentication modules the uid and gid can be derived from the username automatically using the password database (ie: `pam`, others allow for it to be specified as a module option (ie: `--tcp-auth=ldap,uid=xpraproxy,gid=xpraproxy`) which makes it possible for non-local accounts to execute the proxy process instance as a non-root user.
+For some authentication modules the uid and gid can be derived from the username automatically using the password database (ie: `pam`, others allow for it to be specified as a module option (ie: `--tcp-auth=ldap(uid=xpraproxy,gid=xpraproxy)`) which makes it possible for non-local accounts to execute the proxy process instance as a non-root user.
 The default value of `nobody` uid and `nobody` gid may or may not have sufficient privileges for executing a proxy process instance.
 
 You should not use the `file`, `env` or `exec` authentication modules, as those would allow access to all usernames with the same password value.
