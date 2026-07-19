@@ -22,7 +22,7 @@ from xpra.net.packet_type import WINDOW_CREATE
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
-from xpra.util.parsing import DEFAULT_REFRESH_RATE, str_to_bool
+from xpra.util.parsing import DEFAULT_REFRESH_RATE, clamp_refresh_delay, str_to_bool
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
 from xpra.log import Logger
@@ -68,7 +68,7 @@ def try_setup_capture(backends: dict[str, Callable], backend: str, *args):
 
 class ShadowServerBase(ServerBase):
     SIGNALS = ServerBase.__signals__
-    # 20 fps unless the client specifies more:
+    # 50Hz (ie: a 20ms refresh delay), unless the client specifies its own refresh rate:
     DEFAULT_REFRESH_RATE = DEFAULT_REFRESH_RATE
 
     def __init__(self, attrs: dict[str, str], capture=None):
@@ -79,7 +79,9 @@ class ShadowServerBase(ServerBase):
         self.mapped = []
         self.pulseaudio: bool = False
         self.sharing: bool | None = None
-        self.refresh_delay: int = 1000 // self.DEFAULT_REFRESH_RATE
+        # `DEFAULT_REFRESH_RATE` is in millihertz:
+        rate = max(1, self.DEFAULT_REFRESH_RATE // 1000)
+        self.refresh_delay: int = clamp_refresh_delay(1000 // rate)
         self.refresh_timer: int = 0
         self.notifications: bool = False
         self.notifier = None
@@ -153,7 +155,7 @@ class ShadowServerBase(ServerBase):
         rrate = super().apply_refresh_rate(ss)
         if rrate > 0:
             # adjust refresh delay to try to match:
-            self.set_refresh_delay(max(10, 1000 // rrate))
+            self.set_refresh_delay(1000 // rrate)
 
     def make_hello(self, source) -> dict[str, Any]:
         hello = super().make_hello(source)
@@ -266,8 +268,7 @@ class ShadowServerBase(ServerBase):
             self.refresh_timer = GLib.timeout_add(self.refresh_delay, self.refresh)
 
     def set_refresh_delay(self, v: int) -> None:
-        assert 0 < v < 10000
-        self.refresh_delay = v
+        self.refresh_delay = clamp_refresh_delay(v)
         if self.mapped:
             self.cancel_refresh_timer()
             for wid in self.mapped:
