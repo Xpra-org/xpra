@@ -162,17 +162,15 @@ class TestSafeLookup(unittest.TestCase):
 
     def test_import_error_returns_empty(self):
         from xpra.net.ssh.paramiko.client import safe_lookup
-        broken = MagicMock()
+        broken = MagicMock(spec=["lookup"])
         broken.lookup = MagicMock(side_effect=ImportError("test import error"))
-        broken._lookup = None
         result = safe_lookup(broken, "some.host")
         assert result == {}
 
     def test_key_error_returns_empty(self):
         from xpra.net.ssh.paramiko.client import safe_lookup
-        broken = MagicMock()
+        broken = MagicMock(spec=["lookup"])
         broken.lookup = MagicMock(side_effect=KeyError("test key error"))
-        broken._lookup = None
         result = safe_lookup(broken, "some.host")
         assert result == {}
 
