@@ -38,7 +38,8 @@ def parse_user_config_file(dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> 
         return {}
     with open(filename, "r", encoding="utf8") as f:
         data = f.read().replace("\r", "\n")
-        return parse_simple_dict(data, sep="\n")
+        # `nested` matches what `save_user_config_file` writes out as "k = dk=dv" lines:
+        return parse_simple_dict(data, sep="\n", nested=True)
 
 
 def save_user_config_file(options: dict,

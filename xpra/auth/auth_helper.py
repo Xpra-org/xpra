@@ -21,6 +21,8 @@ AuthDef: TypeAlias = tuple[str, Any, type, dict]
 
 def get_auth_module(auth_str: str, cwd=os.getcwd(), **auth_options) -> AuthDef:
     log("get_auth_module(%s, {..})", auth_str)
+    if not isinstance(auth_str, str):
+        raise InitException(f"invalid authentication module specification {auth_str!r}")
     # bracket syntax: "exec(command=/bin/echo,foo=bar)"
     bracket = auth_str.find("(")
     if bracket > 0 and auth_str.endswith(")"):

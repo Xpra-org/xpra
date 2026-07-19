@@ -43,6 +43,21 @@ class TestGetAuthModule(unittest.TestCase):
         self.assertEqual(name, "exec")
         self.assertEqual(options.get("display"), "auto")
 
+    def test_per_socket_auth_option(self):
+        # the whole path a "--bind-tcp=HOST:PORT,auth=MOD:opt=value" spec goes through:
+        from xpra.net.socket_util import parse_bind_ip
+        options = parse_bind_ip(["0.0.0.0:10000,auth=password:value=s3cret"])
+        auth_str = options[("0.0.0.0", 10000)]["auth"]
+        self.assertEqual(auth_str, "password:value=s3cret")
+        name, cls, auth_options = self._get(auth_str)
+        self.assertEqual(name, "password")
+        self.assertEqual(auth_options.get("value"), "s3cret")
+
+    def test_invalid_type(self):
+        from xpra.scripts.config import InitException
+        with self.assertRaises(InitException):
+            get_auth_module({"password:value": "s3cret"})
+
     def test_invalid_name_base(self):
         with self.assertRaises(ValueError):
             get_auth_module("sys_auth_base")

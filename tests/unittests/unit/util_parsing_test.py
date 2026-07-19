@@ -285,10 +285,22 @@ class TestParseSimpleDict(unittest.TestCase):
         self.assertEqual(d["a"], "1")
 
     def test_nested_dict(self):
-        # "a=b=c" -> {"a": {"b": "c"}}
-        d = parse_simple_dict("a=b=c")
+        # "a=b=c" -> {"a": {"b": "c"}}, but only when explicitly requested:
+        d = parse_simple_dict("a=b=c", nested=True)
         self.assertIsInstance(d["a"], dict)
         self.assertEqual(d["a"]["b"], "c")
+
+    def test_values_with_equal_signs_kept_as_strings(self):
+        # by default, a '=' in the value must not turn it into a dictionary,
+        # option values commonly contain '=': sub-options, paths, uris, command lines
+        for value in (
+            "password:value=s3cret",
+            "/usr/bin/check --strict=yes",
+            "tcp://host:20000/?token=abc",
+            "/path/to/a=b.txt",
+        ):
+            d = parse_simple_dict(f"a={value}")
+            self.assertEqual(d["a"], value)
 
     def test_repeated_key_becomes_list(self):
         d = parse_simple_dict("a=1,a=2")
