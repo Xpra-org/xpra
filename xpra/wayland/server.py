@@ -117,7 +117,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         # (WaylandManager.cleanup handles the compositor itself):
         if fd := self.wayland_fd_source:
             self.wayland_fd_source = 0
-            GLib.source_remove(fd)
+            self.source_remove(fd)
         super().cleanup()
 
 

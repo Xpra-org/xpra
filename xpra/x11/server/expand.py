@@ -112,7 +112,7 @@ class ExpandServer(ShadowX11Server):
 
     def do_run(self) -> None:
         self.start_refresh_timer()
-        # GLib.timeout_add(1*1000, self.start_evdi_watch)
+        # self.timeout_add(1*1000, self.start_evdi_watch)
         self.start_evdi_watch()
         super().do_run()
 
@@ -124,7 +124,7 @@ class ExpandServer(ShadowX11Server):
     def cleanup(self) -> None:
         if fdw := self.fd_watch:
             self.fd_watch = None
-            GLib.source_remove(fdw)
+            self.source_remove(fdw)
         if c := self.evdi_channel:
             self.evdi_channel = None
             c.shutdown(False)

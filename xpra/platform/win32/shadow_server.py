@@ -9,7 +9,6 @@ from typing import Any
 from ctypes import create_unicode_buffer, byref, c_ulong
 from ctypes.wintypes import RECT
 
-from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.constants import XPRA_APP_ID
 from xpra.net.common import Packet
@@ -36,9 +35,6 @@ shapelog = Logger("shape")
 keylog = Logger("keyboard")
 screenlog = Logger("screen")
 vddlog = Logger("vdd")
-
-GLib = gi_import("GLib")
-
 
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
 NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
@@ -76,11 +72,11 @@ def _check_gtk() -> bool:
 
 
 SHADOW_OPTIONS: dict = {
-    "auto":      lambda: True,
-    "dxgi":      _check_dxgi,
-    "gdi":       _check_gdi,
-    "nvfbc":     _check_nvfbc,
-    "gtk":       _check_gtk,
+    "auto": lambda: True,
+    "dxgi": _check_dxgi,
+    "gdi": _check_gdi,
+    "nvfbc": _check_nvfbc,
+    "gtk": _check_gtk,
 }
 
 
@@ -232,7 +228,7 @@ class ShadowServer(ShadowServerBase):
 
     def cleanup(self) -> None:
         if self._monitors_changed_timer:
-            GLib.source_remove(self._monitors_changed_timer)
+            self.source_remove(self._monitors_changed_timer)
             self._monitors_changed_timer = 0
         if self._vdd_slot >= 0 or self._vdd_multimonitor:
             el = get_win32_event_listener(False)
@@ -347,14 +343,14 @@ class ShadowServer(ShadowServerBase):
             raise RuntimeError("VDD add_display() failed")
         vddlog("add_display() returned slot %i, waiting for the monitor to appear", slot)
         # the new monitor appears asynchronously; poll for it without blocking the main loop:
-        GLib.timeout_add(100, self._finish_add_monitor, slot, width, height, before, 0)
+        self.timeout_add(100, self._finish_add_monitor, slot, width, height, before, 0)
 
     def _finish_add_monitor(self, slot: int, width: int, height: int, before: set, attempt: int) -> bool:
         from xpra.platform.win32.parsecvdd import list_vdd_monitors, set_resolution
         new = set(list_vdd_monitors()) - before
         if not new:
             if attempt < 30:
-                GLib.timeout_add(100, self._finish_add_monitor, slot, width, height, before, attempt + 1)
+                self.timeout_add(100, self._finish_add_monitor, slot, width, height, before, attempt + 1)
             else:
                 vddlog.warn("Warning: VDD slot %i added but no new monitor appeared", slot)
             return False
@@ -389,7 +385,7 @@ class ShadowServer(ShadowServerBase):
         # coalesce bursts of WM_DISPLAYCHANGE / add / remove into a single refresh:
         if self._monitors_changed_timer:
             return
-        self._monitors_changed_timer = GLib.timeout_add(200, self._do_monitors_changed)
+        self._monitors_changed_timer = self.timeout_add(200, self._do_monitors_changed)
 
     def _do_monitors_changed(self) -> bool:
         self._monitors_changed_timer = 0

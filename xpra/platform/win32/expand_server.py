@@ -5,7 +5,6 @@
 
 import os
 
-from xpra.os_util import gi_import
 from xpra.scripts.config import InitException
 from xpra.constants import XPRA_APP_ID
 from xpra.platform.win32.shadow_server import ShadowServer
@@ -13,8 +12,6 @@ from xpra.log import Logger
 
 log = Logger("server", "win32")
 vddlog = Logger("vdd")
-
-GLib = gi_import("GLib")
 
 
 def get_initial_resolution() -> tuple[int, int]:
@@ -52,7 +49,7 @@ class ExpandServer(ShadowServer):
         # create a virtual monitor when a client connects, rather than plugging
         # in a display while nobody is watching. The guard makes this a no-op
         # when monitors already exist (extra clients, or a still-live session):
-        GLib.idle_add(self._add_initial_monitor)
+        self.idle_add(self._add_initial_monitor)
 
     def _add_initial_monitor(self) -> bool:
         if not self._vdd_displays:

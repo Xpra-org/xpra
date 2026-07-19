@@ -7,7 +7,6 @@ import os
 from typing import Any
 from collections.abc import Sequence, Callable
 
-from xpra.os_util import gi_import
 from xpra.server.common import get_sources_by_type
 from xpra.server.shadow.common import parse_geometries
 from xpra.server.window import batch_config
@@ -24,8 +23,6 @@ from xpra.util.str_fn import csv
 from xpra.util.parsing import DEFAULT_REFRESH_RATE, str_to_bool
 from xpra.constants import NotificationID
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("shadow")
 notifylog = Logger("notify")
@@ -119,12 +116,12 @@ class ShadowServerBase(ServerBase):
 
     def run(self) -> ExitValue:
         if NOTIFY_STARTUP:
-            GLib.timeout_add(1000, self.notify_startup_complete)
+            self.timeout_add(1000, self.notify_startup_complete)
         return super().run()
 
     def setup(self) -> None:
         if not self.session_name:
-            GLib.idle_add(self.guess_session_name)
+            self.idle_add(self.guess_session_name)
         super().setup()
         self.connect("last-client-exited", self.stop_all_refresh)
 
@@ -267,7 +264,7 @@ class ShadowServerBase(ServerBase):
 
     def start_refresh_timer(self) -> None:
         if not self.refresh_timer:
-            self.refresh_timer = GLib.timeout_add(self.refresh_delay, self.refresh)
+            self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
 
     def set_refresh_delay(self, v: int) -> None:
         assert 0 < v < 10000
@@ -295,7 +292,7 @@ class ShadowServerBase(ServerBase):
         log("cancel_refresh_timer() timer=%s", t)
         if t:
             self.refresh_timer = 0
-            GLib.source_remove(t)
+            self.source_remove(t)
 
     def refresh(self) -> bool:
         log("refresh() mapped=%s, captures=%s", self.mapped, self._captures)
@@ -425,14 +422,14 @@ class ShadowServerBase(ServerBase):
         if self.pointer_poll_timer:
             self.cancel_poll_pointer()
         if features.pointer and POLL_POINTER > 0:
-            self.pointer_poll_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
+            self.pointer_poll_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
 
     def cancel_poll_pointer(self) -> None:
         ppt = self.pointer_poll_timer
         log("cancel_poll_pointer() pointer_poll_timer=%s", ppt)
         if ppt:
             self.pointer_poll_timer = 0
-            GLib.source_remove(ppt)
+            self.source_remove(ppt)
 
     def poll_pointer(self) -> bool:
         self.poll_pointer_position()

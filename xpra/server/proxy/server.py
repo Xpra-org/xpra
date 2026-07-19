@@ -20,7 +20,7 @@ from xpra.util.str_fn import repr_ellipsized, print_nested_dict, bytestostr
 from xpra.util.env import envint, envbool, envfloat
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import (
-    get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, get_group_id, get_xpra_group, gi_import,
+    get_username_for_uid, get_groups, get_home_for_uid, getuid, getgid, get_group_id, get_xpra_group,
     valid_uuid,
     WIN32, POSIX, OSX,
 )
@@ -43,8 +43,6 @@ from xpra.log import Logger
 
 log = Logger("proxy")
 authlog = Logger("auth")
-
-GLib = gi_import("GLib")
 
 freeze_support()
 MQueue = get_context("fork").Queue if POSIX else DefaultQueue
@@ -449,7 +447,7 @@ class ProxyServer(ServerCore):
             if not proto.is_closed():
                 self.send_disconnect(proto, "timeout")
 
-        GLib.timeout_add(10 * 1000, force_exit_request_client)
+        self.timeout_add(10 * 1000, force_exit_request_client)
 
     def proxy_auth(self, client_proto, c: typedict, auth_caps: dict) -> None:
         def disconnect(reason, *extras) -> None:

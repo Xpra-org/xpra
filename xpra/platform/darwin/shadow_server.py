@@ -7,7 +7,6 @@ from typing import Any
 
 import Quartz.CoreGraphics as CG
 
-from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.scripts.config import InitExit
@@ -17,8 +16,6 @@ from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("shadow", "osx")
 
@@ -163,7 +160,7 @@ class ShadowServer(ShadowServerBase):
         # coalesce bursts of frames into a single main-loop refresh.
         if not self._stream_refresh_pending:
             self._stream_refresh_pending = True
-            GLib.idle_add(self._do_stream_refresh)
+            self.idle_add(self._do_stream_refresh)
 
     def _do_stream_refresh(self) -> bool:
         self._stream_refresh_pending = False
@@ -182,7 +179,7 @@ class ShadowServer(ShadowServerBase):
             self.refresh_rectangle_count += 1
             rlist.append((int(r.origin.x), int(r.origin.y), int(r.size.width), int(r.size.height)))
         # return quickly, and process the list copy via idle add:
-        GLib.idle_add(self.do_screen_refresh, rlist)
+        self.idle_add(self.do_screen_refresh, rlist)
 
     def do_screen_refresh(self, rlist: list) -> None:
         # TODO: improve damage method to handle lists directly:
