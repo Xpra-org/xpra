@@ -189,8 +189,11 @@ def split_dict_str(s: str, sep: str = ",") -> list[str]:
     return parts
 
 
-def parse_simple_dict(s: str, sep: str = ",") -> dict[str, str | list[str] | dict[str, str]]:
+def parse_simple_dict(s: str, sep: str = ",", nested: bool = False) -> dict[str, str | list[str] | dict[str, str]]:
     # parse the options string and add the pairs:
+    # with `nested`, a value containing a '=' is parsed as a dictionary: "a=b=c" -> {"a": {"b": "c"}}
+    # this is only wanted for the configuration files we generate ourselves,
+    # option values often contain '=' characters: paths, uris, command lines, sub-options, etc
     d: dict[str, str | list[str] | dict[str, str]] = {}
     for el in split_dict_str(s, sep):
         if not el:
@@ -204,16 +207,18 @@ def parse_simple_dict(s: str, sep: str = ",") -> dict[str, str | list[str] | dic
 
             def may_add() -> str | list[str] | dict[str, str]:
                 cur = d.get(k)
-                vparts = v.split("=", 1)
                 if cur is None:
                     # first time we see this key 'k'
-                    if len(vparts) == 2 and "(" not in vparts[0]:
-                        # looks like a nested dictionary
-                        return {vparts[0]: vparts[1]}
+                    if nested:
+                        vparts = v.split("=", 1)
+                        if len(vparts) == 2 and "(" not in vparts[0]:
+                            # looks like a nested dictionary
+                            return {vparts[0]: vparts[1]}
                     # first value found for this key,
                     # keep it as a string - for now
                     return v
                 if isinstance(cur, dict):
+                    vparts = v.split("=", 1)
                     if len(vparts) != 2:
                         raise ValueError(f"cannot add {v} to dictionary {k}")
                     cur[vparts[0]] = vparts[1]
