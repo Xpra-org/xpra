@@ -65,6 +65,7 @@ class HttpServer(StubSubsystem):
     """
     Mixin for servers that can handle http requests
     """
+    __slots__ = ("scripts",)
     PREFIX = "http"
 
     def __init__(self, server=None):

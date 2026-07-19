@@ -13,6 +13,7 @@ log = Logger("server", "wayland")
 
 
 class WaylandKeyboardManager(KeyboardManager):
+    __slots__ = ()
     BACKEND = "wayland"
 
     def make_keyboard_device(self):

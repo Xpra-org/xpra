@@ -27,6 +27,11 @@ class AudioServer(StubSubsystem):
     """
     Mixin for servers that handle audio forwarding.
     """
+    __slots__ = (
+        "audio_properties", "audio_source_plugin", "av_sync", "microphone_allowed",
+        "microphone_codecs", "speaker_allowed", "speaker_codecs", "supports_microphone",
+        "supports_speaker",
+    )
     PREFIX = "audio"
     # `audio-initialized` is emitted on this subsystem (via `SignalEmitter`)
     # once `query_audio()` completes. The audio source class subscribes

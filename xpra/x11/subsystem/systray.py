@@ -11,6 +11,7 @@ log = Logger("server", "tray")
 
 
 class SystemTrayServer(StubSubsystem):
+    __slots__ = ("_tray", "system_tray")
     PREFIX = "systray"
 
     def __init__(self, server=None):

@@ -12,6 +12,7 @@ log = Logger("pointer")
 
 
 class X11PointerManager(PointerManager):
+    __slots__ = ("input_devices_format",)
 
     def __init__(self, server=None):
         PointerManager.__init__(self, server)

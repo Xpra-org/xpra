@@ -43,6 +43,10 @@ class KeyboardManager(StubSubsystem):
     """
     Mixin for servers that handle keyboards
     """
+    __slots__ = (
+        "config", "device", "key_repeat_delay", "key_repeat_interval", "key_repeat_timer",
+        "keymap_changing_timer", "keymap_options", "keys_pressed", "keys_timedout", "mod_meanings",
+    )
     PREFIX = "keyboard"
     BACKEND = ""
 

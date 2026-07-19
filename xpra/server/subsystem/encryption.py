@@ -169,6 +169,7 @@ def parse_encryption(protocol, socket_options: dict[str, Any], tcp_encryption: s
 
 
 class EncryptionServer(StubSubsystem):
+    __slots__ = ("encryption", "encryption_keyfile", "tcp_encryption", "tcp_encryption_keyfile")
     PREFIX = "encryption"
 
     def __init__(self, server=None):

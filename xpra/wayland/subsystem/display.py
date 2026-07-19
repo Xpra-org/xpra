@@ -17,6 +17,7 @@ log = Logger("server", "wayland")
 
 
 class WaylandDisplayManager(DisplayManager):
+    __slots__ = ("outputs",)
 
     def __init__(self, server=None):
         super().__init__(server)

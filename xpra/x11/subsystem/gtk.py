@@ -28,6 +28,7 @@ class GtkX11Server(GTKServer):
     Verifies the display, hooks into the X11 GDK display source and installs
     the X11 event filter.
     """
+    __slots__ = ("x11_filter", "xvfb")
 
     def __init__(self, server=None):
         super().__init__(server)

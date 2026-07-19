@@ -150,6 +150,15 @@ def get_attrs(source) -> dict[str, Any]:
 
 
 class ChildCommandServer(StubSubsystem):
+    __slots__ = (
+        "child_display", "children_count", "children_started", "exec_cwd", "exec_wrapper",
+        "exit_with_children", "reaper_exit", "source_env", "start_after_connect",
+        "start_after_connect_done", "start_child_after_connect", "start_child_commands",
+        "start_child_late_commands", "start_child_on_connect", "start_child_on_disconnect",
+        "start_child_on_last_client_exit", "start_commands", "start_env", "start_late_commands",
+        "start_new_commands", "start_on_connect", "start_on_disconnect",
+        "start_on_last_client_exit", "terminate_children",
+    )
     toggle_features = ("start-new-commands",)
     """
     Mixin for servers that start subcommands,

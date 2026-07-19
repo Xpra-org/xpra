@@ -20,6 +20,7 @@ READONLY_CONTROL_COMMANDS = frozenset(("hello", "help"))
 
 
 class ControlHandler(StubSubsystem):
+    __slots__ = ("commands", "enabled")
     PREFIX = "control"
 
     def __init__(self, server=None):

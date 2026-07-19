@@ -23,6 +23,7 @@ class NotificationForwarder(StubSubsystem):
     """
     Mixin for servers that forward notifications.
     """
+    __slots__ = ("enabled", "forwarder")
     PREFIX = "notifications" if BACKWARDS_COMPATIBLE else "notification"
     toggle_features = ("notifications",)
 

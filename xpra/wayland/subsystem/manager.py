@@ -22,6 +22,7 @@ class WaylandManager(StubSubsystem):
     `$XDG_RUNTIME_DIR`, `setup_display()` must run *after* privileges have been
     dropped (see `do_run_server`), so that the socket is owned by that user.
     """
+    __slots__ = ("compositor", "displayfd", "socket_name", "started")
     PREFIX = "wayland"
 
     def __init__(self, server=None):

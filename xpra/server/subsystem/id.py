@@ -28,6 +28,7 @@ class IDServer(StubSubsystem):
     """
     Servers that expose info data via info request.
     """
+    __slots__ = ("uuid",)
     PREFIX = "id"
 
     def __init__(self, server=None):

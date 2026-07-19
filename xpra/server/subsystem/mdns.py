@@ -24,6 +24,7 @@ class MdnsServer(StubSubsystem):
     """
         Publishes sockets using mDNS
     """
+    __slots__ = ("display", "enabled", "extra_info", "publishers")
     PREFIX = "mdns"
 
     def __init__(self, server=None):

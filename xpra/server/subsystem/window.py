@@ -32,6 +32,10 @@ class WindowServer(StubSubsystem):
     """
     Mixin for servers that forward windows.
     """
+    __slots__ = (
+        "_counter", "_id_to_window", "_max_window_id", "_window_to_id", "client_properties",
+        "window_filters", "window_max_size", "window_min_size",
+    )
     PREFIX = "window"
 
     def __init__(self, server=None):

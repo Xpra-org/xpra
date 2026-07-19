@@ -11,6 +11,7 @@ from xpra.util.thread import start_thread
 
 
 class DRMInfo(StubSubsystem):
+    __slots__ = ("display", "drm_info")
     PREFIX = "drm"
 
     def __init__(self, server=None):

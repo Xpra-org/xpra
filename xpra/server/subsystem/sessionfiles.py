@@ -112,6 +112,10 @@ def apply_config(opts, options: dict[str, Any], cmdline: list[str]) -> None:
 
 
 class SessionFilesServer(StubSubsystem):
+    __slots__ = (
+        "config_contents", "display_name", "gid", "mode", "session_dir", "session_files",
+        "sessions_dir", "uid",
+    )
     PREFIX = "session-files"
 
     def __init__(self, server):

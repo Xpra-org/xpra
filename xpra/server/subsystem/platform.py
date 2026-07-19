@@ -14,6 +14,7 @@ class PlatformServer(StubSubsystem):
     """
     Exposes platform info, populates the cache during threaded initialization.
     """
+    __slots__ = ()
     PREFIX = "platform"
 
     def setup(self) -> None:

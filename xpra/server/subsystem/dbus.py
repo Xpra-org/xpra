@@ -97,6 +97,7 @@ class DbusManager(StubSubsystem):
     """
     Mixin for servers that have a dbus server associated with them
     """
+    __slots__ = ("control", "enabled", "env", "launch", "pid", "service")
     PREFIX = "dbus"
 
     def __init__(self, server=None):

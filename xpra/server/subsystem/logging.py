@@ -33,6 +33,7 @@ class LoggingManager(StubSubsystem):
     """
     Mixin for servers that can receive and send logging packets
     """
+    __slots__ = ("both", "clients", "in_handler", "local_handler", "lock", "receive", "send")
     PREFIX = "logging"
 
     def __init__(self, server=None):

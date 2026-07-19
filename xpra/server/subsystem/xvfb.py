@@ -46,6 +46,11 @@ def validate_pixel_depth(pixel_depth, desktop_or_monitor=False) -> int:
 
 
 class XvfbManager(StubSubsystem):
+    __slots__ = (
+        "backend", "cwd", "displayfd", "gid", "input_devices", "log_dir", "pixel_depth",
+        "refresh_rate", "resize_display", "sessions_dir", "start_vfb", "uid", "use_display",
+        "username", "xauth_data", "xvfb_cmd", "xvfb_pidfile",
+    )
     PREFIX = "xvfb"
     __signals__ = ["display-name"]
 

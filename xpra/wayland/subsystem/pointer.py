@@ -13,6 +13,7 @@ log = Logger("server", "wayland")
 
 
 class WaylandPointerManager(PointerManager):
+    __slots__ = ()
 
     def make_pointer_device(self):
         return self.server.compositor.get_pointer_device()

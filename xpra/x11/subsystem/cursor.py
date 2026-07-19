@@ -29,6 +29,7 @@ class XCursorServer(CursorManager):
     Python object. This subsystem consumes the signal via
     `self.server.connect("x11-cursor-event", ...)`.
     """
+    __slots__ = ("last_cursor_serial",)
 
     def __init__(self, server=None):
         CursorManager.__init__(self, server)

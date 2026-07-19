@@ -86,6 +86,10 @@ class SeamlessWindowServer(WindowServer):
     the GObject signals and the root overlay rendering, but everything
     that touches actual window models and packet dispatch lives here.
     """
+    __slots__ = (
+        "_exit_with_windows", "_focus_history", "_has_focus", "_has_grab", "_wm",
+        "configure_damage_timers", "last_raised", "snc_timer", "wm_name",
+    )
 
     def __init__(self, server=None):
         WindowServer.__init__(self, server)

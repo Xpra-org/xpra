@@ -33,6 +33,7 @@ class SshAgent(StubSubsystem):
     ensures that the symlinks point to the active client,
     and reverts back to the default when the client goes away.
     """
+    __slots__ = ("enabled",)
     PREFIX = "ssh-agent"
 
     def __init__(self, server=None):

@@ -68,6 +68,7 @@ class SplashServer(StubSubsystem):
     """
         Manages the splash screen
     """
+    __slots__ = ("daemon", "mode", "progress_fn", "splash", "splash_process")
     PREFIX = "splash"
 
     def __init__(self, server=None):

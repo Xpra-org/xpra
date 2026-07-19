@@ -61,6 +61,7 @@ class RegPacketDispatcher:
     flip could either get stuck on the queue or be delivered to the
     server out of order.
     """
+    __slots__ = ("handed_off", "inbox", "lock", "server")
 
     def __init__(self, inbox: Queue, server):
         self.inbox = inbox
@@ -83,6 +84,10 @@ class RegPacketDispatcher:
 
 
 class RegisterSubsystem(StubSubsystem):
+    __slots__ = (
+        "_active", "_active_lock", "_compression_level", "_compressor", "_descs", "_encoder",
+        "_shutdown", "_threads",
+    )
     PREFIX = "register"
 
     def __init__(self, server):

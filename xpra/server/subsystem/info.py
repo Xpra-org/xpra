@@ -78,6 +78,7 @@ class InfoServer(StubSubsystem):
     """
     Servers that expose info data via info request.
     """
+    __slots__ = ()
     PREFIX = "info"
 
     def __init__(self, server=None):

@@ -22,6 +22,7 @@ class RootOverlay(StubSubsystem):
     """
     Mirrors seamless window content into the XComposite root overlay.
     """
+    __slots__ = ("repaint_timer", "root_overlay", "sync_xvfb")
     PREFIX = "root-overlay"
 
     def __init__(self, server=None):

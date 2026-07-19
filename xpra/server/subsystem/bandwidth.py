@@ -24,6 +24,7 @@ class BandwidthManager(StubSubsystem):
     """
     Adds bandwidth management
     """
+    __slots__ = ("detection", "limit")
     PREFIX = "bandwidth"
 
     @classmethod

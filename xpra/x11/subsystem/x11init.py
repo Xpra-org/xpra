@@ -15,6 +15,7 @@ FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
 
 
 class X11Init(StubSubsystem):
+    __slots__ = ("display",)
     PREFIX = "x11"
 
     def __init__(self, server=None):

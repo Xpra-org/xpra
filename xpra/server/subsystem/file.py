@@ -27,6 +27,7 @@ class FileServer(StubSubsystem):
     Mixin for servers that can handle file transfers.
     This is also required for printer forwarding.
     """
+    __slots__ = ("file_transfer",)
     PREFIX = "file"
 
     def __init__(self, server=None):

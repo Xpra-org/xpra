@@ -20,6 +20,7 @@ class SharingServer(StubSubsystem):
     """
     Adds management of sharing and locking of sessions
     """
+    __slots__ = ("exit_with_client", "lock", "sharing")
     PREFIX = "sharing"
 
     def __init__(self, server=None):

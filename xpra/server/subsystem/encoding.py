@@ -55,6 +55,12 @@ class EncodingServer(StubSubsystem):
     """
     Mixin for adding encodings to a server
     """
+    __slots__ = (
+        "allowed_encodings", "core_encodings", "default_encoding", "default_min_quality",
+        "default_min_speed", "default_quality", "default_speed", "encoding", "encodings",
+        "lossless_encodings", "lossless_mode_encodings", "scaling_control", "threaded_encoding_done",
+        "video",
+    )
     PREFIX = "encoding"
 
     def __init__(self, server=None):

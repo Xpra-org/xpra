@@ -15,6 +15,7 @@ class SuspendServer(StubSubsystem):
     """
     Handle suspend and resume event messages from the client
     """
+    __slots__ = ()
     PREFIX = "suspend"
 
     def _process_suspend(self, proto, packet: Packet) -> None:

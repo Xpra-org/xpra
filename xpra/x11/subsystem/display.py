@@ -101,6 +101,10 @@ def log_randr_warning(msg="no randr bindings", error="") -> None:
 
 
 class X11DisplayManager(DisplayManager):
+    __slots__ = (
+        "default_resolution", "display_pid", "initial_resolutions", "mirror_client_layout", "randr",
+        "randr_exact_size", "randr_sizes_added", "vfb_startup_state", "xvfb", "xvfb_cmd",
+    )
     toggle_features = ("randr",)
     """
     Mixin for servers that handle displays.

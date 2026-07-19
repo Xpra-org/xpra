@@ -69,6 +69,10 @@ class DisplayManager(StubSubsystem):
     """
     Mixin for servers that handle displays.
     """
+    __slots__ = (
+        "antialias", "bit_depth", "default_dpi", "display", "display_options", "dpi",
+        "original_desktop_display", "refresh_rate", "xdpi", "ydpi",
+    )
     DEFAULT_REFRESH_RATE = DEFAULT_REFRESH_RATE
     PREFIX = "display"
 

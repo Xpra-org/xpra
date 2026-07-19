@@ -73,6 +73,7 @@ class GTKServer(StubSubsystem):
     reporting on top of a running GTK display.
     Backend-specific setup (X11, Wayland, ...) is performed by subclasses.
     """
+    __slots__ = ("screen_size_changed_timer",)
     PREFIX = "gtk"
 
     def __init__(self, server=None):

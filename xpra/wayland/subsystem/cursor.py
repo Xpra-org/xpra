@@ -46,6 +46,7 @@ def make_default_cursor(size: int = CURSOR_SIZE) -> bytes:
 
 
 class WaylandCursorManager(CursorManager):
+    __slots__ = ("current_image", "cursor_tracker", "serial")
 
     def __init__(self, server=None):
         super().__init__(server)

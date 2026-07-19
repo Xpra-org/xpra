@@ -26,6 +26,7 @@ class BellServer(StubSubsystem):
     on each receiver and only accepts a GObject — `BellServer` is a plain
     Python object. Subsystems consume the signal via `self.server.connect`.
     """
+    __slots__ = ("bell",)
     PREFIX = "bell"
     toggle_features = ("bell",)
 

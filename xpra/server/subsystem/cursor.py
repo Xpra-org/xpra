@@ -18,6 +18,7 @@ class CursorManager(StubSubsystem):
     """
     Servers that send cursor bitmaps.
     """
+    __slots__ = ("default_image", "enabled", "last_image", "size", "suspended")
     PREFIX = "cursor"
     toggle_features = ("cursors",)
 

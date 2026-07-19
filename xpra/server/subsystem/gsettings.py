@@ -28,6 +28,7 @@ class GSettingsServer(StubSubsystem):
     one client is connected, or when the last client disconnects - because the server
     session is shared and there is no sensible way to merge conflicting preferences.
     """
+    __slots__ = ("defaults", "original", "sync_enabled")
 
     PREFIX = "gsettings"
 

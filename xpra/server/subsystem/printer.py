@@ -45,6 +45,10 @@ class PrinterServer(StubSubsystem):
     Mixin for servers that can handle forwarded printers.
     Printer forwarding is only supported on Posix servers with the cups backend script.
     """
+    __slots__ = (
+        "add_printer_options", "file_transfer", "lpadmin", "lpinfo", "pdf_printer",
+        "postscript_printer",
+    )
     PREFIX = "printer"
 
     def __init__(self, server=None):

@@ -10,6 +10,7 @@ log = Logger("wayland", "clipboard")
 
 
 class WaylandClipboardManager(ClipboardManager):
+    __slots__ = ()
 
     def init_clipboard(self) -> None:
         super().init_clipboard()

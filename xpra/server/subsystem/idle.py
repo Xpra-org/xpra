@@ -13,6 +13,7 @@ log = Logger("timeout")
 
 
 class IdleTimeoutManager(StubSubsystem):
+    __slots__ = ("server_timeout", "server_timer", "timeout")
     PREFIX = "idle"
 
     def __init__(self, server=None):

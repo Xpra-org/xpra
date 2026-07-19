@@ -160,6 +160,10 @@ class PulseaudioServer(StubSubsystem):
     """
     Handles starting and configuring pulseaudio
     """
+    __slots__ = (
+        "command", "configure_commands", "enabled", "init_done", "pid", "private_dir", "proc",
+        "server_dir", "server_socket", "started_at",
+    )
     PREFIX = "pulseaudio"
 
     def __init__(self, server=None):

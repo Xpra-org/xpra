@@ -39,6 +39,7 @@ class MenuServer(StubSubsystem):
     """
     Manages application menu data and sends it to connected clients.
     """
+    __slots__ = ("enabled", "last_menu_sent", "pending_menu", "provider", "send_menu_timer")
 
     PREFIX = "menu"
 

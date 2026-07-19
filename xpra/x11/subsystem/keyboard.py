@@ -147,6 +147,7 @@ def may_start_ibus(env: dict[str, str], scheduler: Scheduler):
 
 
 class X11KeyboardManager(KeyboardManager):
+    __slots__ = ("current_keyboard_group", "ibus_layouts", "input_method", "xkb")
     BACKEND = "x11"
 
     def __init__(self, server=None):

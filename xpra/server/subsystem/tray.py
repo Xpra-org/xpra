@@ -46,6 +46,7 @@ class TrayMenu(StubSubsystem):
     This server module adds a system tray menu,
     typically used with shadow servers to be able to exit the server.
     """
+    __slots__ = ("enabled", "icon", "menu", "menu_shown", "widget")
     PREFIX = "tray"
 
     def __init__(self, server=None):

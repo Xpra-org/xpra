@@ -17,6 +17,7 @@ class VersionServer(StubSubsystem):
     """
     Servers that expose version data via hello requests.
     """
+    __slots__ = ()
     PREFIX = "version"
 
     def __init__(self, server):

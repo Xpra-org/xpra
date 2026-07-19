@@ -26,6 +26,7 @@ class ClipboardManager(StubSubsystem):
     """
     Mixin for servers that handle clipboard synchronization.
     """
+    __slots__ = ("client", "direction", "enabled", "filter_file", "helper", "selections")
     PREFIX = "clipboard"
     toggle_features = ("clipboard",)
 

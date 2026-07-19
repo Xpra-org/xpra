@@ -11,6 +11,7 @@ class UIWatcher(StubSubsystem):
     """
     Monitors the UI thread
     """
+    __slots__ = ("ui_watcher",)
     PREFIX = "watcher"
 
     def __init__(self, server=None):

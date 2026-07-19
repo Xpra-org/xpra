@@ -23,6 +23,7 @@ class PowerEventServer(StubSubsystem):
     """
     Adds power events callbacks
     """
+    __slots__ = ()
     PREFIX = "power"
 
     def setup(self) -> None:

@@ -18,6 +18,7 @@ class PingServer(StubSubsystem):
     """
     Adds ping handling
     """
+    __slots__ = ("delay", "timer")
     PREFIX = "ping"
 
     def __init__(self, server):

@@ -44,6 +44,7 @@ def _get_antialias_hintstyle(antialias: typedict) -> str:
 
 
 class XSettingsServer(StubSubsystem):
+    __slots__ = ("_default_xsettings", "_settings", "_xsettings_enabled", "_xsettings_manager")
     PREFIX = "xsettings"
 
     def __init__(self, server=None):

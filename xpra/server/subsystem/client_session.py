@@ -23,6 +23,7 @@ class ClientSessionServer(StubSubsystem):
     """
     Owns accepted Xpra client sources and their UI-session lifecycle.
     """
+    __slots__ = ("sources", "ui_driver")
     PREFIX = "client-session"
 
     def __init__(self, server=None):

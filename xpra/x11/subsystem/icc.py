@@ -18,6 +18,7 @@ SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", True)
 
 
 class ICCServer(StubSubsystem):
+    __slots__ = ("icc_profile",)
     PREFIX = "icc"
 
     def __init__(self, server=None):

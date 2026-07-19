@@ -58,6 +58,11 @@ class PointerManager(StubSubsystem):
     Mixin for servers that handle pointer devices
     (mouse, etc)
     """
+    __slots__ = (
+        "_button1_drag", "double_click_distance", "double_click_time", "input_devices",
+        "input_devices_data", "last_mouse_user", "pointer_device", "pointer_device_map",
+        "pointer_sequence", "touchpad_device",
+    )
     PREFIX = "pointer"
 
     def __init__(self, server=None):

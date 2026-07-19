@@ -19,6 +19,7 @@ class DebugServer(StubSubsystem):
     """
     Mixin for system state debugging, leak detection (file descriptors, memory)
     """
+    __slots__ = ("cpu_info", "mem_bytes")
     PREFIX = "debug"
 
     def __init__(self, server=None):

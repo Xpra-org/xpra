@@ -18,6 +18,10 @@ log = Logger("server")
 
 
 class DaemonServer(StubSubsystem):
+    __slots__ = (
+        "daemon", "display_name", "extra_expand", "gid", "log_dir", "log_dir_option",
+        "log_file", "log_filename", "pidfile", "pidinode", "session_dir", "stderr", "stdout", "uid",
+    )
     PREFIX = "daemon"
 
     def __init__(self, server=None):

@@ -148,6 +148,10 @@ def setup_runtime_dir(opts_env: tuple[str, ...], uid: int, gid: int, protected_e
 
 
 class ProcessServer(StubSubsystem):
+    __slots__ = (
+        "applied", "chdir", "env", "gid", "pam", "protected_env", "source", "uid",
+        "wm_name", "xrd", "xvfb",
+    )
     PREFIX = "process"
 
     def __init__(self, server=None):

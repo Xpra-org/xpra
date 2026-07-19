@@ -98,6 +98,7 @@ def probe_opengl_module() -> dict[str, Any]:
 
 
 class OpenGLInfo(StubSubsystem):
+    __slots__ = ("display", "option", "props")
     PREFIX = "opengl"
 
     def __init__(self, server=None):

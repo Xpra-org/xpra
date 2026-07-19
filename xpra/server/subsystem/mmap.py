@@ -14,6 +14,7 @@ class MMAP_Server(StubSubsystem):
     """
     Mixin for servers that can handle mmap transfers
     """
+    __slots__ = ("filename", "min_size", "supported")
     PREFIX = "mmap"
 
     def __init__(self, server=None):

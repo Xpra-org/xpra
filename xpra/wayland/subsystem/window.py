@@ -41,6 +41,10 @@ PER_SUBSURFACE_EVENTS: Final[Sequence[str]] = (
 
 
 class WaylandWindowServer(WindowServer):
+    __slots__ = (
+        "focused", "pending_popups", "pointer_focus", "subsurface_facades", "subsurface_info",
+        "toplevel_wid",
+    )
 
     def __init__(self, server=None):
         super().__init__(server)

@@ -15,6 +15,7 @@ class ShellServer(StubSubsystem):
     """
     Mixin for adding `shell` support
     """
+    __slots__ = ("commands", "counter")
     PREFIX = "shell"
 
     def __init__(self, server=None):

@@ -23,6 +23,7 @@ class ShutdownServer(StubSubsystem):
     """
     Handles client requests that stop or exit a server.
     """
+    __slots__ = ("client_shutdown",)
     PREFIX = "shutdown"
     toggle_features = ("client-shutdown",)
 

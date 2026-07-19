@@ -47,6 +47,10 @@ def init_virtual_video_devices() -> int:
 
 
 class WebcamServer(StubSubsystem):
+    __slots__ = (
+        "client_connections", "client_mode", "client_processes", "device", "enabled", "encodings",
+        "rgb_formats", "virtual", "virtual_video_devices",
+    )
     toggle_features = ("webcam",)
     """
     Mixin for servers that handle webcam forwarding.
