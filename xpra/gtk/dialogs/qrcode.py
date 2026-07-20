@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
+from xpra.util.thread import check_main_thread
 from xpra.net.qrcode import qrencode
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.util import quit_on_signals, gtk_main
@@ -18,6 +19,7 @@ log = Logger("menu")
 
 
 def show_qr(uri: str, width: int = 640, height: int = 640):
+    check_main_thread()
     assert uri.find(":") > 0, "invalid uri"
     # Support legacy connection strings by rewriting them to canonical URIs,
     # ie: "tcp://host:port/".

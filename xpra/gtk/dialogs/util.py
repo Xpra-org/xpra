@@ -7,7 +7,7 @@ from typing import Callable
 
 from xpra.os_util import gi_import
 from xpra.scripts.pinentry import log
-from xpra.util.thread import is_main_thread
+from xpra.util.thread import check_main_thread, is_main_thread
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -15,6 +15,7 @@ Gio = gi_import("Gio")
 
 
 def do_run_dialog(dialog: Gtk.Dialog) -> int:
+    check_main_thread()
     from xpra.platform.gui import force_focus
     try:
         force_focus()
@@ -33,12 +34,16 @@ def dialog_run(run_fn: Callable) -> str | int:
     # block this thread and wait for the main thread to run the dialog
     from threading import Event
     e = Event()
-    code = []
+    code: list[str | int] = []
+    errors: list[BaseException] = []
 
     def main_thread_run() -> None:
         log("main_thread_run() calling %s", run_fn)
         try:
+            check_main_thread()
             code.append(run_fn())
+        except BaseException as exc:
+            errors.append(exc)
         finally:
             e.set()
 
@@ -46,6 +51,8 @@ def dialog_run(run_fn: Callable) -> str | int:
     log("dialog_run(%s) waiting for main thread to run", run_fn)
     e.wait()
     log("dialog_run(%s) code=%s", run_fn, code)
+    if errors:
+        raise errors[0]
     return code[0]
 
 

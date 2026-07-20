@@ -11,6 +11,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.util import gtk_main
 from xpra.util.glib import register_os_signals
 from xpra.os_util import gi_import
+from xpra.util.thread import check_main_thread
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -22,6 +23,7 @@ log = Logger("util")
 class AuthDialog(Gtk.Window):
 
     def __init__(self, title="Session Access Request", info="unknown user from unknown location", timeout=600):
+        check_main_thread()
         super().__init__()
         self.timeout = timeout
         self.exit_code = 1

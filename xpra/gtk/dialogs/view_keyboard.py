@@ -7,6 +7,7 @@ import warnings
 from collections import deque
 
 from xpra.util.str_fn import csv
+from xpra.util.thread import check_main_thread
 from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
@@ -25,6 +26,7 @@ log = Logger("gtk", "keyboard")
 class KeyboardStateInfoWindow:
 
     def __init__(self):
+        check_main_thread()
         self.init_constants()
         self.window = Gtk.Window()
         self.window.connect("destroy", self.destroy)

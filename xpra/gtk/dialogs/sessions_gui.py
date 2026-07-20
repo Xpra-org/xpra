@@ -27,6 +27,7 @@ from xpra.util.system import stop_proc, get_platform_icon_name
 from xpra.os_util import gi_import, WIN32, getuid, getgid
 from xpra.util.env import IgnoreWarningsContext, get_saved_env
 from xpra.util.i18n import _
+from xpra.util.thread import check_main_thread
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -90,6 +91,7 @@ def get_session_icon(sockpath: str, socktype: str):
 class SessionsGUI(Gtk.Window):
 
     def __init__(self, options, title="Xpra Session Browser"):
+        check_main_thread()
         super().__init__()
         title = _(title)
         self.options = options

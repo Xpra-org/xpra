@@ -13,7 +13,7 @@ from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.util.thread import start_thread
+from xpra.util.thread import check_main_thread, start_thread
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -47,6 +47,7 @@ def l(text):  # noqa: E743
 class DesktopGreeter(Gtk.Window):
 
     def __init__(self):
+        check_main_thread()
         self.exit_code = None
         super().__init__()
         self.set_border_width(20)

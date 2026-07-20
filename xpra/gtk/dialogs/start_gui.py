@@ -23,7 +23,7 @@ from xpra.scripts.config import get_defaults, OPTION_TYPES
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool
 from xpra.client.gtk3.menu_helper import BANDWIDTH_MENU_OPTIONS
 from xpra.util.objects import AtomicInteger
-from xpra.util.thread import start_thread
+from xpra.util.thread import check_main_thread, start_thread
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 
@@ -93,6 +93,7 @@ def get_default_port(mode):
 class StartSession(Gtk.Window):
 
     def __init__(self, options):
+        check_main_thread()
         self.set_options(options)
         self.exit_code = None
         self.options_window = None
@@ -672,6 +673,7 @@ class StartSession(Gtk.Window):
 
 class SessionOptions(Gtk.Window):
     def __init__(self, title, icon_name, options, run_mode, parent):
+        check_main_thread()
         super().__init__()
         self.options = options
         self.run_mode = run_mode

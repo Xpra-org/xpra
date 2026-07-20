@@ -8,6 +8,7 @@ import sys
 
 from xpra.os_util import gi_import
 from xpra.util.io import get_util_logger
+from xpra.util.thread import check_main_thread
 from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
@@ -24,6 +25,7 @@ log = get_util_logger()
 class PasswordInputDialogWindow(Gtk.Dialog):
 
     def __init__(self, title="Title", prompt="", icon=""):
+        check_main_thread()
         super().__init__()
         self.set_border_width(20)
         self.set_position(Gtk.WindowPosition.CENTER)

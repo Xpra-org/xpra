@@ -8,6 +8,7 @@ import sys
 import signal
 
 from xpra.os_util import gi_import
+from xpra.util.thread import check_main_thread
 from xpra.exit_codes import ExitValue
 from xpra.platform.gui import init as gui_init, force_focus
 from xpra.gtk.util import gtk_main
@@ -30,6 +31,7 @@ def _get_status() -> str:
 class AutostartWindow:
 
     def __init__(self):
+        check_main_thread()
         self.window = Gtk.Window()
         self.window.set_border_width(40)
         self.window.connect("delete-event", self.close)

@@ -21,6 +21,7 @@ from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.util.stats import std_unit
 from xpra.util.str_fn import Ellipsizer
+from xpra.util.thread import check_main_thread
 from xpra.platform.gui import force_focus
 from xpra.log import Logger
 
@@ -129,6 +130,7 @@ class GTKDialogClient(StubClientSubsystem):
         return values[0]
 
     def do_process_challenge_prompt_dialog(self, values: list, wait: Event, prompt="password") -> None:
+        check_main_thread()
         authlog = Logger("auth")
         # pylint: disable=import-outside-toplevel
         title = self.get_server_authentication_string()
@@ -270,6 +272,7 @@ class GTKDialogClient(StubClientSubsystem):
             dialog.close()
 
     def file_size_warning(self, action: str, location: str, basefilename: str, filesize: int, limit: int) -> None:
+        check_main_thread()
         parent = None
         msgs = (
             f"Warning: cannot {action} the file {basefilename!r}",

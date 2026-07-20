@@ -49,6 +49,7 @@ def btn(label, tooltip, callback, icon_name="") -> Gtk.Button:
 class StartNewCommand:
 
     def __init__(self, run_callback: Callable = noop, can_share=False, menu=None):
+        check_main_thread()
         self.run_callback = run_callback
         self.menu = typedict(menu or {})
         self.window = Gtk.Window()

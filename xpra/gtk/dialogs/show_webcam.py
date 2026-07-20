@@ -9,6 +9,7 @@ import sys
 
 from xpra.os_util import gi_import
 from xpra.util.str_fn import memoryview_to_bytes
+from xpra.util.thread import check_main_thread
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
@@ -56,6 +57,7 @@ def to_rgb(image: ImageWrapper) -> ImageWrapper:
 class WebcamWindow(Gtk.Window):
 
     def __init__(self, camera, device_str: str):
+        check_main_thread()
         super().__init__(title=f"Webcam ({device_str})")
         self.camera = camera
         self.csc = None
