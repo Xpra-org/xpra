@@ -5,6 +5,7 @@
 
 import os
 from queue import Empty
+from dataclasses import fields
 from collections.abc import Sequence
 from weakref import WeakValueDictionary
 
@@ -151,7 +152,6 @@ def init_module(options: dict) -> None:
     log(f"encoder.init_module({options})")
     # single server syntax uses "uri=protocol://host:port/.."
     # or one can use multiple servers with "uris=protocol://host1/?attr=value&,protocol://host2/"
-    global servers
     uris = options.get("uris", "")
     if uris:
         for uri in uris.split(";"):
@@ -166,25 +166,33 @@ def init_module(options: dict) -> None:
 
 def cleanup_module() -> None:
     log("remote.cleanup_module()")
-    global servers
     for server in servers:
         server.cancel_schedule_connect()
         server.disconnect()
     servers[:] = []
 
 
+# the spec attributes a remote server is allowed to set:
+# `codec_class`, `codec_args` and `skipped_fields` are local implementation details
+# and must never be taken from the network:
+SPEC_ATTRIBUTES: Sequence[str] = tuple(
+    f.name for f in fields(VideoSpec)
+    if f.name not in ("codec_class", "codec_args", "skipped_fields")
+)
+
+
 def make_spec(server: EncoderClient, espec: dict) -> VideoSpec:
     codec_type = espec["codec_type"]
-
-    class RemoteEncoder(Encoder):
-        def __init__(self):
-            super().__init__(server, codec_type)
-
-    spec = VideoSpec(codec_class=RemoteEncoder, codec_type=f"remote-{codec_type}")
+    # `Encoder` is instantiated by `make_instance()` with these arguments,
+    # so that all the specs share a single class - see `get_instances()`:
+    spec = VideoSpec(
+        codec_class=Encoder, codec_args=(server, codec_type),
+        codec_type=f"remote-{codec_type}",
+    )
     for k, v in espec.items():
         if k == "codec_type":
             continue
-        if not hasattr(spec, k):
+        if k not in SPEC_ATTRIBUTES:
             log.warn(f"Warning: unknown video spec attribute {k!r}")
             continue
         setattr(spec, k, v)
@@ -206,7 +214,6 @@ def get_encodings() -> Sequence[str]:
 def get_specs() -> Sequence[VideoSpec]:
     # the `server.specs` are dictionaries,
     # which we need to convert to real `VideoSpec` objects:
-    global servers
     specs: Sequence[VideoSpec] = []
     for server in servers:
         for encoding, csc_specs in server.specs.items():

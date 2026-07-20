@@ -6,8 +6,8 @@
 import os
 from enum import IntEnum
 from typing import Any
-from weakref import WeakSet
-from dataclasses import dataclass, field, asdict
+from weakref import WeakSet, WeakKeyDictionary
+from dataclasses import dataclass, fields
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.util.objects import typedict
@@ -205,11 +205,30 @@ class EncodingNotSupported(RuntimeError):
     pass
 
 
+# Live codec instances are tracked per `codec_class`, not per `CodecSpec` object:
+# specs are cheap throw-away objects, re-created by every `get_specs()` call since #4483,
+# so anything stored on the spec itself is lost as soon as the list is regenerated.
+# The resource we actually want to account for - typically a hardware engine -
+# is tied to the codec class, and one class covers all the encodings
+# and colorspaces a codec module exposes.
+_instances: WeakKeyDictionary[Callable, WeakSet[Any]] = WeakKeyDictionary()
+
+
+def get_instances(codec_class: Callable) -> WeakSet[Any]:
+    # `setdefault` is atomic, so concurrent encode threads all end up
+    # sharing whichever set was inserted first:
+    return _instances.setdefault(codec_class, WeakSet())
+
+
 # noinspection PyPep8
 @dataclass(kw_only=True)
 class CodecSpec:
 
     codec_class     : Callable
+    # arguments passed to `codec_class` by `make_instance()`,
+    # for codecs that cannot bake all their parameters into module state
+    # (ie: the `remote` encoder, which binds a server connection here):
+    codec_args      : tuple = ()
     codec_type      : str
     input_colorspace: str = "invalid"
     output_colorspaces : Sequence[str] = ()      # ie: ("YUV420P" : "YUV420P", ...)
@@ -228,9 +247,7 @@ class CodecSpec:
     width_mask      : int = 0xFFFF
     height_mask     : int = 0xFFFF
     max_instances   : int = 0
-    skipped_fields : Sequence[str] = ("instances", "skipped_fields", )
-    # not exported:
-    instances       : WeakSet[Any] = field(default_factory=WeakSet)
+    skipped_fields : Sequence[str] = ("skipped_fields", "codec_args", )
 
     def make_instance(self) -> Any:
         # pylint: disable=import-outside-toplevel
@@ -239,9 +256,10 @@ class CodecSpec:
         WARN_LIMIT = envint("XPRA_CODEC_INSTANCE_COUNT_WARN", 25)
         from xpra.log import Logger
         log = Logger("encoding")
-        cur = self.get_instance_count()
+        live = get_instances(self.codec_class)
+        cur = len(live)
         if 0 < self.max_instances < cur or cur >= WARN_LIMIT:
-            instances = tuple(self.instances)
+            instances = tuple(live)
             log.warn(f"Warning: already {cur} active instances of {self.codec_class}:")
             try:
                 import gc
@@ -252,26 +270,25 @@ class CodecSpec:
                 pass
         else:
             log("make_instance() %s - instance count=%s", self.codec_type, cur)
-        v = self.codec_class()
-        self.instances.add(v)
+        v = self.codec_class(*self.codec_args)
+        live.add(v)
         return v
 
     def get_instance_count(self) -> int:
-        return len(self.instances)
+        return len(get_instances(self.codec_class))
 
     def to_dict(self, *skip: str) -> dict[str, Any]:
-        v = asdict(self)
-        for k in self.skipped_fields:
-            v.pop(k, None)
-        for k in skip:
-            v.pop(k, None)
-        return v
+        # note: no `asdict()` here - it deep-copies every value before we get
+        # a chance to drop the fields we don't want to export,
+        # which chokes on the objects found in `codec_args`
+        skipped = tuple(self.skipped_fields) + skip
+        return dict((f.name, getattr(self, f.name)) for f in fields(self) if f.name not in skipped)
 
     def get_runtime_factor(self) -> float:
         # a cost multiplier that some encoder may want to override
         # 1.0 means no change:
         mi = self.max_instances
-        ic = len(self.instances)
+        ic = self.get_instance_count()
         if ic == 0 or mi == 0:
             return 1.0                      # no problem
         if ic >= mi:
