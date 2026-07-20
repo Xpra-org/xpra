@@ -861,6 +861,22 @@ class WindowBackingBase:
             except CodecStateException as e:
                 restart(str(e))
                 img = None
+            except TransientCodecException as e:
+                videolog("%s.decompress_image(..)", vd.get_type(), exc_info=True)
+                videolog.warn(f"Warning: transient error decoding {coding!r} frame with {vd.get_type()}: {e}")
+                restart("transient decoding error")
+                fire_paint_callbacks(callbacks, -1, "transient decoding error")
+                return
+            except (ValueError, AssertionError, RuntimeError, MemoryError) as e:
+                # the decoder has consumed part of the frame and its state is now
+                # out of sync with the encoder, so it cannot be re-used:
+                videolog("%s.decompress_image(..)", vd.get_type(), exc_info=True)
+                videolog.error("Error: %s failed to decode %i bytes of %s data",
+                               vd.get_type(), len(img_data), coding)
+                videolog.estr(e)
+                restart("decoding error")
+                fire_paint_callbacks(callbacks, False, f"decoding error: {e}")
+                return
             if not img:
                 if options.intget("delayed", 0) > 0:
                     # there are further frames queued up,
