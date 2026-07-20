@@ -14,6 +14,7 @@ from xpra.platform.paths import get_icon_dir
 from xpra.server import server_features
 from xpra.net.common import PacketType
 from xpra.os_util import is_Wayland
+from xpra.common import clamp_refresh_delay
 from xpra.util import envint, envbool, ConnectionMessage, NotificationID
 from xpra.log import Logger
 
@@ -48,7 +49,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.mapped = []
         self.pulseaudio : bool = False
         self.sharing : bool = True
-        self.refresh_delay : int = 1000//self.DEFAULT_REFRESH_RATE
+        self.refresh_delay : int = clamp_refresh_delay(1000//self.DEFAULT_REFRESH_RATE)
         self.refresh_timer : int = 0
         self.notifications : bool = False
         self.notifier = None
@@ -137,7 +138,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         rrate = super().apply_refresh_rate(ss)
         if rrate>0:
             #adjust refresh delay to try to match:
-            self.set_refresh_delay(max(10, 1000//rrate))
+            self.set_refresh_delay(1000//rrate)
 
 
     def make_hello(self, _source) -> Dict[str,Any]:
@@ -259,8 +260,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
 
     def set_refresh_delay(self, v:int) -> None:
-        assert 0<v<10000
-        self.refresh_delay = v
+        self.refresh_delay = clamp_refresh_delay(v)
         if self.mapped:
             self.cancel_refresh_timer()
             for wid in self.mapped:

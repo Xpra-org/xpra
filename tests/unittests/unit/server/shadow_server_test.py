@@ -54,7 +54,8 @@ class ShadowServerTest(ServerTestUtil):
             print("WARNING: python-dbus not found, the dbus interface cannot be tested")
         else:
             dstr = display.lstrip(":")
-            new_delay = 2
+            #must be within the range accepted by `clamp_refresh_delay`:
+            new_delay = 20
             cmd = [dbus_send, "--session", "--type=method_call",
                     f"--dest=org.xpra.Server{dstr}", "/org/xpra/Server",
                     "org.xpra.Server.SetRefreshDelay", f"int32:{new_delay}"]

@@ -83,6 +83,19 @@ MAX_DPI : int = envint("XPRA_MAX_DPI", 500)
 SYNC_ICC : bool = envbool("XPRA_SYNC_ICC", True)
 
 DEFAULT_REFRESH_RATE : int = envint("XPRA_DEFAULT_REFRESH_RATE", 50*1000)
+MIN_REFRESH_DELAY : int = envint("XPRA_MIN_REFRESH_DELAY", 10)
+MAX_REFRESH_DELAY : int = envint("XPRA_MAX_REFRESH_DELAY", 10000)
+
+def clamp_refresh_delay(delay:int) -> int:
+    #a delay of zero would make the refresh timer busy loop,
+    #starving the main loop and everything else it services:
+    v = max(MIN_REFRESH_DELAY, min(MAX_REFRESH_DELAY, delay))
+    if v!=delay:
+        from xpra.log import Logger
+        log = Logger("util")
+        log.warn(f"Warning: clamping refresh delay from {delay}ms to {v}ms")
+    return v
+
 
 SPLASH_EXIT_DELAY : int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 

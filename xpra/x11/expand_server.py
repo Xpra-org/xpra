@@ -12,6 +12,7 @@ from xpra.exit_codes import ExitCode
 from xpra.x11.shadow_x11_server import ShadowX11Server
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.gtk_common.gtk_util import get_default_root_window
+from xpra.common import clamp_refresh_delay
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.evdi.capture import EvdiDevice, find_evdi_devices  # pylint: disable=no-name-in-module
 from xpra.log import Logger
@@ -150,8 +151,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
 
 
     def set_refresh_delay(self, v:int) -> None:
-        assert 0<v<10000
-        self.refresh_delay = v
+        self.refresh_delay = clamp_refresh_delay(v)
 
     def setup_capture(self):
         return None
