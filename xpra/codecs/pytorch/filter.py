@@ -128,7 +128,7 @@ def _load_py_transform(transform_str: str) -> tuple[Any, dict]:
 
 
 class Filter:
-    __slots__ = ("closed", "width", "height", "device", "transform", "kwargs")
+    __slots__ = ("closed", "width", "height", "device", "transform", "kwargs", "__weakref__")
 
     def __init__(self):
         self.closed = False

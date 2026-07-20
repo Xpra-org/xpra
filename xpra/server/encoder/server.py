@@ -67,7 +67,7 @@ def _make_video_encoder(encoding: str, src_format: str, codec_type=""):
         return specs[0]
 
     spec = find_spec()
-    return spec.codec_class()
+    return spec.make_instance()
 
 
 def csc_image(image: ImageWrapper, format_options: Sequence[str]) -> ImageWrapper | None:
@@ -77,7 +77,7 @@ def csc_image(image: ImageWrapper, format_options: Sequence[str]) -> ImageWrappe
     for fmt in format_options:
         for csc_spec in getVideoHelper().get_csc_specs(pixel_format).get(fmt, ()):
             log(f"csc {pixel_format!r} -> {csc_spec.codec_type!r} via {csc_spec!r}")
-            converter = csc_spec.codec_class()
+            converter = csc_spec.make_instance()
             converter.init_context(width, height, pixel_format, width, height, fmt, typedict())
             result = converter.convert_image(image)
             converter.clean()

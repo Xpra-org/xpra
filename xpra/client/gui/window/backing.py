@@ -735,7 +735,7 @@ class WindowBackingBase:
         for score in sorted(csc_scores):
             for dst_format, spec in csc_scores.get(score, ()):
                 try:
-                    csc = spec.codec_class()
+                    csc = spec.make_instance()
                     width = dst_width if (spec.can_scale and PREFER_CSC_SCALING) else src_width
                     height = dst_height if (spec.can_scale and PREFER_CSC_SCALING) else src_height
                     csc.init_context(src_width, src_height, src_format,
@@ -825,7 +825,7 @@ class WindowBackingBase:
                     videolog("paint_with_video_decoder: new %s%s",
                              decoder_spec.codec_type, (coding, enc_width, enc_height, input_colorspace))
                     try:
-                        vd = decoder_spec.codec_class()
+                        vd = decoder_spec.make_instance()
                         vd.init_context(coding, enc_width, enc_height, input_colorspace, options)
                         self._video_decoder = vd
                         break

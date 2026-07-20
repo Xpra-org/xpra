@@ -65,7 +65,7 @@ MAX_HEIGHT = 16384
 
 
 class Filter:
-    __slots__ = ("closed", "width", "height", "transform")
+    __slots__ = ("closed", "width", "height", "transform", "__weakref__")
 
     def __init__(self):
         self.closed = False

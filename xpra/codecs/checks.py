@@ -9,10 +9,10 @@
 import struct
 import binascii
 from typing import Any, TypeAlias
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 
 from xpra.common import roundup
-from xpra.codecs.constants import EncodingNotSupported
+from xpra.codecs.constants import CodecSpec, EncodingNotSupported
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.log import Logger
@@ -582,14 +582,14 @@ def do_testencoding(encoder_module, encoding, W: int, H: int, full: bool, option
         if spec.encoding != encoding:
             continue
         for out_cs in spec.output_colorspaces:
-            test_encoder_spec(spec.codec_class, encoding, spec.input_colorspace, out_cs, W, H, full, options, limit_w, limit_h)
+            test_encoder_spec(spec, encoding, spec.input_colorspace, out_cs, W, H, full, options, limit_w, limit_h)
 
 
-def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out: str, W:int, H:int,
+def test_encoder_spec(spec: CodecSpec, encoding: str, cs_in: str, cs_out: str, W:int, H:int,
                       full: bool, options: typedict,
                       limit_w: int = TEST_LIMIT_W, limit_h: int = TEST_LIMIT_H) -> None:
-    log(f"testing {encoding} using {encoder_class}: {cs_in} to {cs_out}, {options=}")
-    e = encoder_class()
+    log(f"testing {encoding} using {spec.codec_type}: {cs_in} to {cs_out}, {options=}")
+    e = spec.make_instance()
     try:
         coptions = typedict(options)
         coptions.update({

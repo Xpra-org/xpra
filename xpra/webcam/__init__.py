@@ -155,7 +155,7 @@ def make_csc(src_format: str, w: int, h: int, dst_formats: Sequence[str]):
                 if dst_format not in spec.output_colorspaces:
                     continue
                 try:
-                    conv = spec.codec_class()
+                    conv = spec.make_instance()
                     conv.init_context(w, h, src_format, w, h, dst_format, typedict())
                     log("make_csc: using %s (%s) for %s->%s", name, spec.codec_class, src_format, dst_format)
                     return conv

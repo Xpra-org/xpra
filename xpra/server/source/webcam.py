@@ -315,7 +315,7 @@ class WebcamConnection(StubClientConnection):
                 return False
             tw = webcam.get_width()
             th = webcam.get_height()
-            csc = csc_spec.codec_class()
+            csc = csc_spec.make_instance()
             csc.init_context(w, h, rgb_pixel_format, tw, th, src_format, typedict())
             image = csc.convert_image(bgrx_image)
             webcam.push_image(image)

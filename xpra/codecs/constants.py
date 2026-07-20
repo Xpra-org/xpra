@@ -232,7 +232,7 @@ class CodecSpec:
     # not exported:
     instances       : WeakSet[Any] = field(default_factory=WeakSet)
 
-    def make_instance(self) -> object:
+    def make_instance(self) -> Any:
         # pylint: disable=import-outside-toplevel
         # I can't imagine why someone would have more than this many
         # encoders or csc modules active at the same time!
