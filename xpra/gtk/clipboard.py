@@ -29,7 +29,8 @@ class GTK_Clipboard(ClipboardTimeoutHelper):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.local_greedy |= is_Wayland()
+        if is_Wayland():
+            self.local_greedy = tuple(self.local_selections)
 
     def __repr__(self):
         return "GTK_Clipboard"

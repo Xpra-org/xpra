@@ -567,7 +567,7 @@ class WaylandClipboard(ClipboardTimeoutHelper):
         self.local_selections = WAYLAND_CLIPBOARDS
         self.remote_clipboards = WAYLAND_CLIPBOARDS
         self.local_want_targets = WAYLAND_CLIPBOARDS
-        self.local_greedy = True
+        self.local_greedy = WAYLAND_CLIPBOARDS
 
     def __repr__(self):
         return "WaylandClipboard"

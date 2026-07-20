@@ -8,7 +8,9 @@ import unittest
 
 from xpra.net.common import Packet
 from xpra.clipboard import core
+from xpra.clipboard.common import ALL_CLIPBOARDS, parse_greedy
 from xpra.clipboard.core import ClipboardProtocolHelperCore
+from xpra.util.objects import typedict
 
 
 class ClipboardProxy:
@@ -25,6 +27,9 @@ class ClipboardProxy:
 
     def got_token(self, targets, target_data, claim, synchronous_client) -> None:
         self.tokens.append((targets, target_data, claim, synchronous_client))
+
+    def set_greedy_client(self, greedy: bool) -> None:
+        self._greedy_client = greedy
 
 
 class ClipboardHelper(ClipboardProtocolHelperCore):
@@ -43,9 +48,10 @@ class ClipboardCoreTest(unittest.TestCase):
         helper.send = lambda *packet: packets.append(packet)
         helper._local_to_remote = {}
         helper._remote_to_local = {}
+        helper._greedy = ()
         helper._clipboard_proxies = {"CLIPBOARD": proxy}
         helper.local_selections = ("CLIPBOARD",)
-        helper.local_greedy = False
+        helper.local_greedy = ()
         helper.filter_res = ()
         helper.max_clipboard_packet_size = core.MAX_CLIPBOARD_PACKET_SIZE
         helper.max_clipboard_receive_size = -1
@@ -55,7 +61,7 @@ class ClipboardCoreTest(unittest.TestCase):
 
     def test_legacy_clipboard_token_packet(self):
         helper, proxy, packets = self.make_helper(True)
-        helper.local_greedy = True
+        helper.local_greedy = ("CLIPBOARD",)
         helper._send_clipboard_token_handler(
             proxy,
             {
@@ -86,7 +92,7 @@ class ClipboardCoreTest(unittest.TestCase):
 
     def test_modern_clipboard_data_packet(self):
         helper, proxy, packets = self.make_helper(False)
-        helper.local_greedy = True
+        helper.local_greedy = ("CLIPBOARD",)
         payload = b"hello" * 200
         helper._send_clipboard_token_handler(
             proxy,
@@ -163,6 +169,40 @@ class ClipboardCoreTest(unittest.TestCase):
             True,
         )])
         self.assertTrue(proxy._greedy_client)
+
+    def test_greedy_capability_backwards_compatibility(self):
+        caps = typedict({"greedy": ("CLIPBOARD",)})
+        self.assertTrue(caps.boolget("greedy"))
+        self.assertEqual(parse_greedy(caps), ("CLIPBOARD",))
+        self.assertEqual(parse_greedy(typedict({"greedy": True})), tuple(ALL_CLIPBOARDS))
+
+        helper, _proxy, _packets = self.make_helper(False)
+        helper.local_preferred_targets = ()
+        helper.local_want_targets = ()
+        helper.local_greedy = ("CLIPBOARD",)
+        self.assertEqual(helper.get_caps()["greedy"], ("CLIPBOARD",))
+
+    def test_per_selection_greedy(self):
+        helper, clipboard, _packets = self.make_helper(False)
+        primary = ClipboardProxy("PRIMARY")
+        helper._clipboard_proxies["PRIMARY"] = primary
+        helper.set_greedy_client(("PRIMARY",))
+        self.assertFalse(clipboard._greedy_client)
+        self.assertTrue(primary._greedy_client)
+
+        helper._local_to_remote["CLIPBOARD"] = "PRIMARY"
+        helper.set_greedy_client(("PRIMARY",))
+        self.assertTrue(clipboard._greedy_client)
+
+    def test_outgoing_greedy_is_per_selection(self):
+        helper, clipboard, packets = self.make_helper(False)
+        primary = ClipboardProxy("PRIMARY")
+        helper._clipboard_proxies["PRIMARY"] = primary
+        helper.local_greedy = ("PRIMARY",)
+        helper._send_clipboard_token_handler(clipboard, {})
+        helper._send_clipboard_token_handler(primary, {})
+        self.assertFalse(packets[0][2]["greedy"])
+        self.assertTrue(packets[1][2]["greedy"])
 
 
 def main():

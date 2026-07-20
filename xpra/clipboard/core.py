@@ -63,12 +63,13 @@ class ClipboardProtocolHelperCore:
         self._remote_to_local: dict[str, str] = {}
         self.init_translation(kwargs)
         self._want_targets: tuple[str, ...] = ()
+        self._greedy: tuple[str, ...] = ()
         self.init_packet_handlers()
         selections = get_local_selections()
         self.init_proxies(d.strtupleget("clipboards.local", selections))
         self.remote_clipboards = d.strtupleget("clipboards.remote", selections)
         self.local_want_targets = tuple(selections) if envbool("XPRA_CLIPBOARD_WANT_TARGETS") else ()
-        self.local_greedy = envbool("XPRA_CLIPBOARD_GREEDY")
+        self.local_greedy = tuple(selections) if envbool("XPRA_CLIPBOARD_GREEDY") else ()
         self.local_preferred_targets = PREFERRED_TARGETS
         self.local_selections = selections
 
@@ -82,7 +83,9 @@ class ClipboardProtocolHelperCore:
             caps["want_targets"] = self.local_want_targets
         # some implementation must set a value to claim the clipboard (ie: win32 and osx)
         if self.local_greedy:
-            caps["greedy"] = True
+            # Older peers read this using boolget(), so a non-empty tuple is
+            # backwards compatible with the old boolean capability.
+            caps["greedy"] = self.local_greedy
         if BACKWARDS_COMPATIBLE:
             caps["enabled"] = True
             caps[""] = True
@@ -103,6 +106,12 @@ class ClipboardProtocolHelperCore:
 
     def proxy_want_targets(self, selection: str) -> bool:
         return self.local_to_remote(selection) in self._want_targets
+
+    def proxy_greedy(self, selection: str) -> bool:
+        return self.local_to_remote(selection) in self._greedy
+
+    def local_greedy_selection(self, selection: str) -> bool:
+        return selection in self.local_greedy
 
     def set_want_targets_client(self, want_targets: Sequence[str] | bool) -> None:
         log("set_want_targets_client(%s)", want_targets)
@@ -159,6 +168,7 @@ class ClipboardProtocolHelperCore:
             "can-receive": self.can_receive,
             "remote": {
                 "want_targets": self._want_targets,
+                "greedy": self._greedy,
                 "remote-clipboards": self.remote_clipboards,
             },
             "local": {
@@ -202,9 +212,11 @@ class ClipboardProtocolHelperCore:
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_enabled(selection in selections)
 
-    def set_greedy_client(self, greedy: bool) -> None:
-        for proxy in self._clipboard_proxies.values():
-            proxy.set_greedy_client(greedy)
+    def set_greedy_client(self, greedy: Sequence[str] | bool) -> None:
+        log("set_greedy_client(%s)", greedy)
+        self._greedy = tuple(ALL_CLIPBOARDS if greedy is True else (greedy or ()))
+        for selection, proxy in self._clipboard_proxies.items():
+            proxy.set_greedy_client(self.proxy_greedy(selection))
 
     def set_preferred_targets(self, preferred_targets) -> None:
         for proxy in self._clipboard_proxies.values():
@@ -259,12 +271,12 @@ class ClipboardProtocolHelperCore:
                         if wire_data := self._may_compress(dtype, dformat, wire_data):
                             packet += [target, dtype, dformat, wire_encoding, wire_data]
                             claim = proxy._can_send
-                            packet += [claim, self.local_greedy]
+                            packet += [claim, self.local_greedy_selection(proxy._selection)]
                             break
         else:
             options: dict[str, PacketElement] = {
                 "claim": proxy._can_send,
-                "greedy": self.local_greedy,
+                "greedy": self.local_greedy_selection(proxy._selection),
             }
             if targets:
                 options["targets"] = targets

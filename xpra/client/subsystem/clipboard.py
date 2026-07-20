@@ -10,7 +10,7 @@ from typing import Any
 from importlib import import_module
 from collections.abc import Sequence
 
-from xpra.clipboard.common import ALL_CLIPBOARDS, parse_want_targets
+from xpra.clipboard.common import ALL_CLIPBOARDS, parse_greedy, parse_want_targets
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.platform.clipboard import get_backend_module
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
@@ -91,7 +91,7 @@ class ClipboardClient(StubClientSubsystem):
         self.server_clipboard_direction: str = "both"
         self.server_clipboard: bool = False
         self.server_clipboard_preferred_targets: Sequence[str] = ()
-        self.server_clipboard_greedy: bool = False
+        self.server_clipboard_greedy: tuple[str, ...] = ()
         self.server_clipboard_want_targets: tuple[str, ...] = ()
         self.server_clipboard_selections: Sequence[str] = ()
         self.clipboard_helper = None
@@ -220,8 +220,8 @@ class ClipboardClient(StubClientSubsystem):
         log("client clipboard: supported=%s, direction=%s",
             self.client_supports_clipboard, self.client_clipboard_direction)
         self.clipboard_enabled = bool(self.clipboard_helper) and self.client_supports_clipboard and self.server_clipboard
-        self.server_clipboard_greedy = caps.boolget("greedy")
-        self.server_clipboard_want_targets = parse_want_targets(caps)
+        self.server_clipboard_greedy = parse_greedy(caps, self.server_clipboard_selections)
+        self.server_clipboard_want_targets = parse_want_targets(caps, self.server_clipboard_selections)
         self.server_clipboard_preferred_targets = caps.strtupleget("preferred-targets", ())
         log("server clipboard: greedy=%s, want_targets=%s, selections=%s",
             self.server_clipboard_greedy, self.server_clipboard_want_targets, self.server_clipboard_selections)

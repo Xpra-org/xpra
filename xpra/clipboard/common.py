@@ -34,13 +34,22 @@ def get_local_selections() -> Sequence[str]:
     return "CLIPBOARD", "PRIMARY", "SECONDARY"
 
 
-def parse_want_targets(caps: typedict, selections: Sequence[str] = ALL_CLIPBOARDS) -> tuple[str, ...]:
-    v = caps.get("want_targets")
+def parse_selection_capability(caps: typedict, name: str,
+                               selections: Sequence[str] = ALL_CLIPBOARDS) -> tuple[str, ...]:
+    v = caps.get(name)
     if isinstance(v, (list, tuple)) or (isinstance(v, dict) and isinstance(v.get(""), (list, tuple))):
-        return caps.strtupleget("want_targets")
-    if caps.boolget("want_targets"):
+        return caps.strtupleget(name)
+    if caps.boolget(name):
         return tuple(selections)
     return ()
+
+
+def parse_want_targets(caps: typedict, selections: Sequence[str] = ALL_CLIPBOARDS) -> tuple[str, ...]:
+    return parse_selection_capability(caps, "want_targets", selections)
+
+
+def parse_greedy(caps: typedict, selections: Sequence[str] = ALL_CLIPBOARDS) -> tuple[str, ...]:
+    return parse_selection_capability(caps, "greedy", selections)
 
 
 def get_format_size(dformat: int) -> int:
