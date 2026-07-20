@@ -7,6 +7,10 @@ Each subsystem should be using its own prefix for capabilities and packet types.
 
 Most modules are optional, see [security considerations](../Usage/Security.md).
 
+See the [display server data inventory](Display-Server-Data.md) for the
+non-framebuffer data that can be retrieved from display servers and associated
+desktop-session services.
+
 ## Concepts
 
 * Client Module: feature implementation loaded by the client, it interfaces with the corresponding "Client Connection Module" on the server side
