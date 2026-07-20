@@ -13,7 +13,7 @@ from typing import Any, Tuple, List, Dict
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
-from xpra.codecs.constants import CSCSpec, get_subsampling_divs
+from xpra.codecs.constants import CSCSpec, get_subsampling_divs, get_plane_name
 from xpra.codecs.image import ImageWrapper
 
 from xpra.log import Logger
@@ -740,7 +740,7 @@ cdef class Converter:
         cdef unsigned short Rsum, Gsum, Bsum
         cdef unsigned char count, dx, dy
 
-        self.validate_rgb_image(image)
+        self.validate_rgb_image(image, Bpp)
         pixels = image.get_pixels()
         cdef unsigned int input_stride = image.get_rowstride()
         log("do_RGB_to_YUV420P(%s, %i, %i, %i, %i) input=%s, strides=%s", image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride)
@@ -872,7 +872,7 @@ cdef class Converter:
         cdef unsigned short Rsum, Gsum, Bsum
         cdef unsigned char count, dx, dy
 
-        self.validate_rgb_image(image)
+        self.validate_rgb_image(image, Bpp)
         pixels = image.get_pixels()
         cdef unsigned int input_stride = image.get_rowstride()
         log("do_RGB_to_YUV420P16(%s, %i, %i, %i, %i) input=%s, strides=%s", image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride)
@@ -959,7 +959,7 @@ cdef class Converter:
         cdef unsigned int sx, sy
         cdef unsigned char R, G, B
 
-        self.validate_rgb_image(image)
+        self.validate_rgb_image(image, Bpp)
         pixels = image.get_pixels()
         cdef unsigned int input_stride = image.get_rowstride()
         log("do_RGB_to_YUV444P(%s, %i, %i, %i, %i) input=%s, strides=%s", image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride)
@@ -1020,14 +1020,24 @@ cdef class Converter:
         out_image.cython_buffer = <uintptr_t> buf
         return out_image
 
-    def validate_rgb_image(self, image: ImageWrapper) -> None:
+    def validate_rgb_image(self, image: ImageWrapper, unsigned int Bpp=0) -> None:
         assert image.get_planes()==ImageWrapper.PACKED, "invalid input format: %s planes" % image.get_planes()
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         assert image.get_pixels(), "failed to get pixels from %s" % image
+        # the conversion reads `src_height` rows of `rowstride` bytes, so the buffer
+        # must really be that big - the image metadata is not proof of the buffer size:
+        cdef unsigned int stride = image.get_rowstride()
+        if Bpp and stride < self.src_width * Bpp:
+            raise ValueError("rowstride %i is too small for %i pixels at %i bytes per pixel" % (
+                stride, self.src_width, Bpp))
+        with buffer_context(image.get_pixels()) as bc:
+            if len(bc) < <Py_ssize_t> stride * self.src_height:
+                raise ValueError("pixel buffer is too small: %i bytes, %i needed for %ix%i at rowstride %i" % (
+                    len(bc), stride * self.src_height, self.src_width, self.src_height, stride))
 
     def r210_to_YUV444P10(self, image: ImageWrapper) -> CythonImageWrapper:
-        self.validate_rgb_image(image)
+        self.validate_rgb_image(image, 4)
         pixels = image.get_pixels()
         cdef unsigned int input_stride = image.get_rowstride()
         log("r210_to_YUV444P10(%s) input=%s, strides=%s", image, len(pixels), input_stride)
@@ -1162,7 +1172,7 @@ cdef class Converter:
         return self.packed_image_wrapper(output_image, 30)
 
     def r210_to_BGR48(self, image: ImageWrapper) -> CythonImageWrapper:
-        self.validate_rgb_image(image)
+        self.validate_rgb_image(image, 4)
         pixels = image.get_pixels()
         input_stride = image.get_rowstride()
         log("r210_to_BGR48(%s) input=%s, strides=%s", image, len(pixels), input_stride)
@@ -1198,6 +1208,21 @@ cdef class Converter:
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         assert image.get_pixels(), "failed to get pixels from %s" % image
+        # each plane is read for `src_height/ydiv` rows of `rowstride` bytes,
+        # so check that the buffers really are that big:
+        planes = image.get_pixels()
+        strides = image.get_rowstride()
+        divs = get_subsampling_divs(self.src_format)
+        cdef unsigned int ydiv, plane_height
+        cdef Py_ssize_t min_len
+        for i in range(3):
+            ydiv = divs[i][1]
+            plane_height = (self.src_height + ydiv - 1) // ydiv
+            min_len = <Py_ssize_t> strides[i] * plane_height
+            with buffer_context(planes[i]) as bc:
+                if len(bc) < min_len:
+                    raise ValueError("buffer for plane %s is too small: %i bytes, %i needed" % (
+                        get_plane_name(self.src_format, i), len(bc), min_len))
 
     def GBRP10_to_r210(self, image: ImageWrapper) -> CythonImageWrapper:
         self.validate_planar3_image(image)
@@ -1488,7 +1513,7 @@ cdef class Converter:
         cdef unsigned int x, y, o, i
         cdef unsigned char *output_image
 
-        self.validate_rgb_image(image)
+        self.validate_rgb_image(image, 3)
         pixels = image.get_pixels()
         cdef unsigned int input_stride = image.get_rowstride()
         cdef unsigned int src_width = self.src_width
@@ -1535,7 +1560,7 @@ cdef class Converter:
         cdef unsigned int x, y, o, i
         cdef unsigned char *output_image
 
-        self.validate_rgb_image(image)
+        self.validate_rgb_image(image, 3)
         pixels = image.get_pixels()
         cdef unsigned int input_stride = image.get_rowstride()
         cdef unsigned int src_width = self.src_width

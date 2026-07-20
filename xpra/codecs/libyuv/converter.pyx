@@ -16,7 +16,7 @@ log = Logger("csc", "libyuv")
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.codecs.constants import get_subsampling_divs, CSCSpec
+from xpra.codecs.constants import get_subsampling_divs, get_plane_name, CSCSpec
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, memfree, buffer_context    # pylint: disable=syntax-error
 
@@ -631,6 +631,36 @@ cdef class Converter:
     def is_closed(self) -> bool:
         return self.out_buffer_size==0
 
+    def validate_image_buffers(self, image: ImageWrapper) -> None:
+        """
+        the conversion routines read `rowstride` bytes per row for the full height of
+        each plane, so check the buffers really are that big: the image metadata is
+        not proof of the size of the buffer it came with
+        """
+        planes = image.get_pixels()
+        strides = image.get_rowstride()
+        cdef int nplanes = image.get_planes()
+        cdef Py_ssize_t min_len
+        cdef unsigned int ydiv, plane_height
+        if nplanes == ImageWrapper.PACKED:
+            min_len = <Py_ssize_t> strides * self.src_height
+            with buffer_context(planes) as bc:
+                if len(bc) < min_len:
+                    raise ValueError("pixel buffer is too small: %i bytes, %i needed for %ix%i at rowstride %i" % (
+                        len(bc), min_len, self.src_width, self.src_height, strides))
+            return
+        divs = get_subsampling_divs(self.src_format)
+        if nplanes != len(divs):
+            raise ValueError(f"invalid number of planes: {nplanes} for {self.src_format}")
+        for i in range(nplanes):
+            ydiv = divs[i][1]
+            plane_height = (self.src_height + ydiv - 1) // ydiv
+            min_len = <Py_ssize_t> strides[i] * plane_height
+            with buffer_context(planes[i]) as bc:
+                if len(bc) < min_len:
+                    raise ValueError("buffer for plane %s is too small: %i bytes, %i needed" % (
+                        get_plane_name(self.src_format, i), len(bc), min_len))
+
     def convert_image(self, image: ImageWrapper) -> ImageWrapper:
         cdef int width = image.get_width()
         cdef int height = image.get_height()
@@ -638,6 +668,7 @@ cdef class Converter:
             raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
         if height<self.src_height:
             raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
+        self.validate_image_buffers(image)
 
         if self.src_format in ("BGRX", "BGRA"):
             return self.convert_bgrx_image(image)
