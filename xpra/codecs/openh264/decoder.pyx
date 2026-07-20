@@ -9,7 +9,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, ColorRange
+from xpra.codecs.constants import VideoSpec, ColorRange, check_image_size, MAX_IMAGE_DIMENSION
 from xpra.codecs.h264_util import get_video_full_range
 from xpra.util.objects import typedict
 from xpra.common import SizedBuffer
@@ -173,6 +173,7 @@ cdef class Decoder:
         log("openh264.init_context%s", (encoding, width, height, colorspace))
         assert encoding == "h264", f"invalid encoding: {encoding}"
         assert colorspace == "YUV420P", f"invalid colorspace: {colorspace}"
+        check_image_size(width, height, "h264 decoder")
         self.width = width
         self.height = height
         self.colorspace = colorspace
@@ -254,14 +255,21 @@ cdef class Decoder:
         cdef int width = buf_info.UsrData.sSystemBuffer.iWidth
         cdef int height = buf_info.UsrData.sSystemBuffer.iHeight
         log(f"openh264 strides=%s, size=%s", strides, (width, height))
+        # the size and strides are decoded from the bitstream, so bound them before
+        # they are used to slice the decoder's output buffers below:
+        check_image_size(width, height, "h264 image")
         if width < self.width:
             raise ValueError(f"stream width {width} is smaller than decoder width {self.width}")
         if height < self.height:
             raise ValueError(f"stream width {height} is smaller than decoder width {self.height}")
+        if ystride < width or ystride > MAX_IMAGE_DIMENSION:
+            raise ValueError(f"invalid y plane stride {ystride} for width {width}")
+        if uvstride < (width + 1) // 2 or uvstride > MAX_IMAGE_DIMENSION:
+            raise ValueError(f"invalid uv plane stride {uvstride} for width {width}")
         cdef int wdelta = width - self.width
         cdef int hdelta = height - self.height
         if abs(wdelta) > 1 or abs(hdelta) > 1:
-            if (wdelta & 0xffe0) > 0 or (hdelta & 0xfffe0) > 0:
+            if (wdelta & 0xffe0) > 0 or (hdelta & 0xffe0) > 0:
                 log.warn("Warning: image bigger than expected")
                 log.warn(f" {width}x{height} instead of {self.width}x{self.height}")
         pixels = (

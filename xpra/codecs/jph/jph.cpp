@@ -30,6 +30,11 @@
 #include <ojph_version.h>
 #endif
 
+/* upper bound for the image dimensions parsed from an untrusted codestream,
+ * so that a tiny input cannot make us allocate an arbitrarily large buffer.
+ * Keep this in sync with MAX_IMAGE_DIMENSION in xpra/codecs/constants.py */
+#define JPH_MAX_DIMENSION 16384
+
 static void set_error(char *error, size_t error_size, const char *msg)
 {
     if (error == nullptr || error_size == 0)
@@ -217,6 +222,11 @@ int jph_decode(const uint8_t *data, size_t data_size,
 
         ojph::ui32 w = siz.get_recon_width(0);
         ojph::ui32 h = siz.get_recon_height(0);
+        if (w == 0 || h == 0 || w > JPH_MAX_DIMENSION || h > JPH_MAX_DIMENSION) {
+            set_error(error, error_size, "JPH image dimensions are out of range");
+            codestream.close();
+            return -1;
+        }
         size_t rowstride = static_cast<size_t>(w) * 4;
         size_t size = rowstride * h;
         uint8_t *buf = static_cast<uint8_t *>(std::malloc(size));

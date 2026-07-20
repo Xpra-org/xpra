@@ -9,7 +9,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, check_image_size, MAX_IMAGE_DIMENSION
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.common import SizedBuffer
@@ -276,15 +276,16 @@ cdef class Decoder:
                 raise RuntimeError(f"unsupported libde265 plane {i} depth: {bpp}")
             plane_width = de265_get_image_width(image, i)
             plane_height = de265_get_image_height(image, i)
-            if plane_width <= 0 or plane_height <= 0:
-                raise RuntimeError(f"invalid libde265 plane {i} size: {plane_width}x{plane_height}")
+            # the plane geometry comes from the bitstream, bound it before it is used
+            # to size the copy below:
+            check_image_size(plane_width, plane_height, f"libde265 plane {i}")
             plane = de265_get_image_plane(image, i, &stride)
             if plane == NULL:
                 raise RuntimeError(f"missing libde265 plane {i}")
-            if stride < plane_width:
-                raise RuntimeError(f"invalid libde265 plane {i} stride: {stride} < {plane_width}")
+            if stride < plane_width or stride > MAX_IMAGE_DIMENSION:
+                raise RuntimeError(f"invalid libde265 plane {i} stride: {stride} for width {plane_width}")
             pystrides.append(stride)
-            pyplanes.append(PyBytes_FromStringAndSize(<const char *> plane, stride * plane_height))
+            pyplanes.append(PyBytes_FromStringAndSize(<const char *> plane, <Py_ssize_t> stride * plane_height))
 
         if de265_get_image_width(image, 0) < self.width or de265_get_image_height(image, 0) < self.height:
             raise RuntimeError("decoded image is smaller than expected: "

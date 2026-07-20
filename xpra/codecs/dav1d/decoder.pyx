@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, check_image_size, MAX_IMAGE_DIMENSION
 from xpra.util.objects import typedict
 from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper, PlanarFormat
@@ -19,9 +19,9 @@ from xpra.log import Logger
 log = Logger("decoder", "dav1d")
 
 from libcpp cimport bool as bool_t
-from libc.string cimport memset
+from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int64_t, uintptr_t
-from xpra.buffers.membuf cimport memalign, memfree, makebuf, MemBuf, buffer_context  # pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign, memfree, getbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 
 cdef unsigned char debug_enabled = log.is_debug_enabled()
@@ -32,6 +32,10 @@ cdef inline unsigned int roundup(unsigned int n, unsigned int m) noexcept nogil:
 
 
 cdef unsigned int ENOMEM = errno.ENOMEM
+cdef unsigned int EINVAL = errno.EINVAL
+
+# upper bound for the frame dimensions we accept from the bitstream:
+cdef unsigned int MAX_DIMENSION = MAX_IMAGE_DIMENSION
 
 
 cdef extern from "stdarg.h":
@@ -169,8 +173,15 @@ cdef extern from "dav1d/picture.h":
         void * 	cookie
         ALLOC_PICTURE_CALLBACK alloc_picture_callback
         RELEASE_PICTURE_CALLBACK release_picture_callback
+    int DAV1D_PICTURE_ALIGNMENT
+
     ctypedef struct Dav1dPictureParameters:
-        pass
+        int w                       # width (in pixels)
+        int h                       # height (in pixels)
+        # `enum Dav1dPixelLayout` is not typedef'd in the dav1d headers,
+        # so declare it as an int here to avoid emitting an invalid C type name:
+        int layout                  # format of the picture
+        int bpc                     # bits per pixel component (8 or 10)
 
     ctypedef struct Dav1dPicture:
         Dav1dSequenceHeader *seq_hdr
@@ -300,27 +311,43 @@ def get_specs() -> Sequence[VideoSpec]:
 
 
 cdef int picture_allocator(Dav1dPicture *pic, void *cookie) noexcept nogil:
-    cdef AllocatorCookie *allocator_cookie = <AllocatorCookie *> cookie
+    # dav1d requires the buffer to be sized from `pic.p` - the dimensions of the picture
+    # dav1d is about to decode - and *not* from the dimensions we were configured with:
+    # the two can differ, since a stream is free to change resolution.
+    # The documented contract is that each plane is DAV1D_PICTURE_ALIGNMENT aligned,
+    # covers a width and height rounded up to a multiple of 128 pixels,
+    # and is padded by DAV1D_PICTURE_ALIGNMENT bytes.
+    cdef int w = pic.p.w
+    cdef int h = pic.p.h
+    if w <= 0 or h <= 0 or w > MAX_DIMENSION or h > MAX_DIMENSION:
+        return -EINVAL
+    if pic.p.layout != DAV1D_PIXEL_LAYOUT_I420:
+        return -EINVAL
+    if pic.p.bpc != 8:
+        return -EINVAL
+    cdef size_t aligned_w = roundup(w, 128)
+    cdef size_t aligned_h = roundup(h, 128)
+    cdef size_t ystride = aligned_w
+    cdef size_t uvstride = aligned_w // 2
+    cdef size_t ysize = ystride * aligned_h
+    cdef size_t uvsize = uvstride * (aligned_h // 2)
+    cdef size_t pad = DAV1D_PICTURE_ALIGNMENT
+    # one allocation for all three planes, so that a single pointer can be freed
+    # by `release_picture` - each plane is followed by `pad` bytes of padding,
+    # which also keeps the following plane aligned:
+    cdef uintptr_t base = <uintptr_t> memalign(ysize + uvsize * 2 + pad * 3)
+    if base == 0:
+        return -ENOMEM
+    pic.allocator_data = <void *> base
+    pic.stride[0] = <ptrdiff_t> ystride
+    pic.stride[1] = <ptrdiff_t> uvstride
+    pic.data[0] = <void *> base
+    pic.data[1] = <void *> (base + ysize + pad)
+    pic.data[2] = <void *> (base + ysize + pad + uvsize + pad)
     if debug_enabled:
         with gil:
-            log("picture_allocator(%#x, %#x) ystride=%i, yheight=%i, uvstride=%i, uvheight=%i",
-                <uintptr_t> pic, <uintptr_t> cookie,
-                allocator_cookie.ystride, allocator_cookie.yheight,
-                allocator_cookie.uvstride, allocator_cookie.uvheight)
-    pic.stride[0] = allocator_cookie.ystride
-    pic.stride[1] = allocator_cookie.uvstride
-    pic.data[0] = <void *> memalign(allocator_cookie.ystride * allocator_cookie.yheight)
-    if pic.data[0] is NULL:
-        return -ENOMEM
-    pic.data[1] = <void *> memalign(allocator_cookie.uvstride * allocator_cookie.uvheight)
-    if pic.data[1] is NULL:
-        return -ENOMEM
-    pic.data[2] = <void *> memalign(allocator_cookie.uvstride * allocator_cookie.uvheight)
-    if pic.data[2] is NULL:
-        return -ENOMEM
-    if debug_enabled:
-        with gil:
-            log("planes allocated: %#x, %#x, %#x",
+            log("picture_allocator(%#x, %#x) %ix%i ystride=%i, uvstride=%i, planes=%#x, %#x, %#x",
+                <uintptr_t> pic, <uintptr_t> cookie, w, h, ystride, uvstride,
                 <uintptr_t> pic.data[0], <uintptr_t> pic.data[1], <uintptr_t> pic.data[2])
     return 0
 
@@ -328,12 +355,14 @@ cdef int picture_allocator(Dav1dPicture *pic, void *cookie) noexcept nogil:
 cdef void release_picture(Dav1dPicture *pic, void *cookie) noexcept nogil:
     if debug_enabled:
         with gil:
-            log("release_picture(%#x, %#x) planes=%#x, %#x, %#x",
-                <uintptr_t> pic, <uintptr_t> cookie,
-                <uintptr_t> pic.data[0], <uintptr_t> pic.data[1], <uintptr_t> pic.data[2])
-    # memfree(pic.data[0])
-    # memfree(pic.data[1])
-    # memfree(pic.data[2])
+            log("release_picture(%#x, %#x) allocator_data=%#x",
+                <uintptr_t> pic, <uintptr_t> cookie, <uintptr_t> pic.allocator_data)
+    # dav1d only calls this once it has dropped all its own references to the picture
+    # (it keeps them for as long as the frame is used for prediction),
+    # so this is the only safe place to free the planes:
+    if pic.allocator_data != NULL:
+        memfree(pic.allocator_data)
+        pic.allocator_data = NULL
 
 
 cdef void logger_callback(void* cookie, const char *format, va_list arg) noexcept nogil:
@@ -348,20 +377,12 @@ cdef void logger_callback(void* cookie, const char *format, va_list arg) noexcep
         log.info("dav1d: %r", pystr)
 
 
-ctypedef struct AllocatorCookie:
-    unsigned int ystride
-    unsigned int uvstride
-    unsigned int yheight
-    unsigned int uvheight
-
-
 cdef class Decoder:
     cdef unsigned long frames
     cdef int width
     cdef int height
     cdef object colorspace
     cdef Dav1dContext *context
-    cdef AllocatorCookie allocator_cookie
 
     cdef object __weakref__
 
@@ -370,6 +391,7 @@ cdef class Decoder:
         raise RuntimeError("dav1d decoder disabled due to crashes with some AV1 streams")
         assert encoding == "av1", f"invalid encoding: {encoding}"
         assert colorspace == "YUV420P", f"invalid colorspace: {colorspace}"
+        check_image_size(width, height, "av1 decoder")
         self.width = width
         self.height = height
         self.colorspace = colorspace
@@ -380,11 +402,10 @@ cdef class Decoder:
         settings.n_threads = 0
         settings.max_frame_delay = 1
         settings.apply_grain = 0
-        self.allocator_cookie.ystride = roundup(width, 2)
-        self.allocator_cookie.uvstride = roundup(self.allocator_cookie.ystride // 2, 2)
-        self.allocator_cookie.yheight = roundup(height, 2)
-        self.allocator_cookie.uvheight = roundup(height, 2) // 2
-        settings.allocator.cookie = <void *> &self.allocator_cookie
+        # the allocator sizes each picture from `Dav1dPicture.p`, so it needs no cookie,
+        # but cap the frame size dav1d will accept so a tiny stream cannot ask for a huge one:
+        settings.frame_size_limit = <unsigned int> (width * height)
+        settings.allocator.cookie = <void *> NULL
         settings.allocator.alloc_picture_callback = &picture_allocator
         settings.allocator.release_picture_callback = &release_picture
         settings.logger.cookie = <void *> NULL
@@ -474,19 +495,43 @@ cdef class Decoder:
                 raise RuntimeError("decoder is waiting for more data: EAGAIN")
             raise RuntimeError("failed to get picture from decoder")
 
-        pyplanes: list[int] = []
+        # validate what the decoder produced before using it to size the planes below:
+        # the dimensions come from the bitstream, so a hostile stream could otherwise
+        # make us read past the buffers our allocator reserved for it
+        cdef int pic_w = pic.p.w
+        cdef int pic_h = pic.p.h
+        cdef int layout = pic.p.layout
+        try:
+            check_image_size(pic_w, pic_h, "av1 picture")
+            if layout != DAV1D_PIXEL_LAYOUT_I420:
+                raise ValueError(f"unsupported av1 pixel layout {layout}")
+            if pic_w < self.width or pic_h < self.height:
+                raise ValueError(f"av1 picture {pic_w}x{pic_h} is smaller than {self.width}x{self.height}")
+        except ValueError:
+            dav1d_picture_unref(&pic)
+            raise
+
+        cdef size_t ystride = pic.stride[0]
+        cdef size_t uvstride = pic.stride[1]
+        cdef size_t stride
+        cdef size_t height
+        cdef MemBuf plane
+        pyplanes = []
         pystrides = []
-        cdef unsigned int stride
-        cdef unsigned int height
+        # copy the planes out: dav1d keeps its own references to the picture for as long
+        # as it is used for prediction, and frees it via `release_picture` - so we must not
+        # hand this memory to a `MemBuf` that would free it from under the decoder:
         for i in range(3):
             if i == 0:
-                stride = self.allocator_cookie.ystride
-                height = self.allocator_cookie.yheight
+                stride = ystride
+                height = <size_t> pic_h
             else:
-                stride = self.allocator_cookie.uvstride
-                height = self.allocator_cookie.uvheight
+                stride = uvstride
+                height = <size_t> (pic_h + 1) // 2
+            plane = getbuf(stride * height, 0)
+            memcpy(<void *> plane.get_mem(), <const void *> pic.data[i], stride * height)
             pystrides.append(stride)
-            pyplanes.append(makebuf(<void*> pic.data[i], stride * height, readonly=True))
+            pyplanes.append(memoryview(plane))
         dav1d_picture_unref(&pic)
         self.frames += 1
         return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides, planes=PlanarFormat.PLANAR_3)

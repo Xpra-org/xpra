@@ -13,6 +13,7 @@ from libc.stddef cimport size_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context
 
 from xpra.common import SizedBuffer
+from xpra.codecs.constants import check_image_size, MAX_IMAGE_DIMENSION
 from xpra.codecs.debug import may_save_image
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict
@@ -70,6 +71,14 @@ def decompress(data: SizedBuffer, options: typedict = None) -> ImageWrapper:
         raise RuntimeError("jph decode failed: %s" % error.decode("utf-8", "replace"))
     if pixels == NULL or pixels_size == 0:
         raise RuntimeError("jph decode produced no pixels")
+    # the dimensions and rowstride are parsed from the codestream:
+    # make sure they are sane and that they actually describe the buffer we got back,
+    # since consumers will index it as `stride * height` bytes:
+    check_image_size(width, height, "jph image")
+    if stride < width * 4 or stride > MAX_IMAGE_DIMENSION * 4:
+        raise ValueError(f"invalid jph rowstride {stride} for width {width}")
+    if <size_t> stride * height > pixels_size:
+        raise ValueError(f"jph buffer is too small: {pixels_size} bytes for {width}x{height} at rowstride {stride}")
     cdef MemBuf membuf = makebuf(pixels, pixels_size, 1)
     may_save_image("jph", data)
     return ImageWrapper(0, 0, width, height, memoryview(membuf), "BGRX", 24, stride, planes=ImageWrapper.PACKED)

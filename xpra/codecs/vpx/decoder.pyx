@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
 
-from xpra.codecs.constants import VideoSpec, get_subsampling_divs
+from xpra.codecs.constants import VideoSpec, get_subsampling_divs, check_image_size, MAX_IMAGE_DIMENSION
 from xpra.codecs.image import ImageWrapper
 from xpra.common import SizedBuffer
 from xpra.util.objects import typedict
@@ -201,6 +201,7 @@ cdef class Decoder:
         log("vpx decoder init_context%s", (encoding, width, height, colorspace))
         assert encoding in CODECS, f"invalid encoding {encoding!r}"
         assert colorspace in COLORSPACES[encoding], f"invalid colorspace {colorspace!r} for encoding {encoding!r}"
+        check_image_size(width, height, f"{encoding} decoder")
         cdef int flags = 0
         cdef const vpx_codec_iface_t *codec_iface = make_codec_dx(encoding)
         self.encoding = encoding
@@ -310,6 +311,13 @@ cdef class Decoder:
         if img==NULL:
             log.error("Error: vpx_codec_get_frame: %s", self.codec_error_str())
             return None
+        # the planes are allocated by libvpx for the dimensions found in the bitstream,
+        # but we copy `self.height` lines out of them below - so a stream declaring
+        # a smaller frame than we were initialized with would make us read out of bounds:
+        if img.d_w < self.width or img.d_h < self.height:
+            log.error("Error: %s image is too small: %ix%i, expected at least %ix%i",
+                      self.encoding, img.d_w, img.d_h, self.width, self.height)
+            return None
         if img.fmt != self.pixfmt:
             expected = self.dst_format
             if img.fmt == VPX_IMG_FMT_I444:
@@ -336,9 +344,11 @@ cdef class Decoder:
             else:
                 raise ValueError(f"invalid height divisor {dy} for {self.get_colorspace()}")
             stride = img.stride[i]
+            if stride <= 0 or stride > MAX_IMAGE_DIMENSION * 4:
+                raise ValueError(f"invalid stride {stride} for plane {i}")
             strides.append(stride)
 
-            plane_len = height * stride
+            plane_len = <Py_ssize_t> height * stride
             #add one extra line of padding:
             output_buf = padbuf(plane_len, stride, 0)
             output = <void *>output_buf.get_mem()

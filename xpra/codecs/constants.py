@@ -115,6 +115,25 @@ class ColorRange(IntEnum):
     FULL = 1
 
 
+# Upper bound for any image dimension or rowstride we accept from a decoder.
+# Decoders parse these values out of the compressed stream, so they are attacker
+# controlled and must be validated before being used to size or index a buffer.
+# None of the formats we support can legitimately reach this limit:
+#  * webp dimensions are 14-bit fields, so capped at 16383x16383
+#  * av1 tops out at 16384x8704 (level 6.3)
+#  * vp9, h264 and hevc levels are all well below that
+#  * jpeg SOF dimensions are 16-bit, but no real encoder emits anything this big
+MAX_IMAGE_DIMENSION: int = envint("XPRA_MAX_IMAGE_DIMENSION", 16384)
+
+
+def check_image_size(width: int, height: int, what: str = "image") -> None:
+    """ validate dimensions decoded from an untrusted stream, raises ValueError """
+    if width <= 0 or height <= 0:
+        raise ValueError(f"invalid {what} size {width}x{height}")
+    if width > MAX_IMAGE_DIMENSION or height > MAX_IMAGE_DIMENSION:
+        raise ValueError(f"{what} size {width}x{height} exceeds the {MAX_IMAGE_DIMENSION} pixel limit")
+
+
 def get_subsampling(pixel_format: str) -> str:
     # "YUV420P16" and "YUV420P10" are the same as "YUV420P" when it comes to subsampling:
     return pixel_format.replace("P16", "P").replace("P10", "P")

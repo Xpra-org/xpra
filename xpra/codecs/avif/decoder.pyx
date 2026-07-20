@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from xpra.util.objects import typedict
 from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.constants import get_subsampling_divs
+from xpra.codecs.constants import get_subsampling_divs, check_image_size, MAX_IMAGE_DIMENSION
 from xpra.codecs.debug import may_save_image
 
 from libc.string cimport memset  # pylint: disable=syntax-error
@@ -87,13 +87,16 @@ def decompress(data: SizedBuffer, options: typedict, yuv=False) -> ImageWrapper:
         raise RuntimeError("failed to create avif decoder")
     decoder.ignoreExif = 1
     decoder.ignoreXMP = 1
-    #decoder.imageSizeLimit = 4096*4096
+    # cap the pixel count libavif is willing to decode, so that a small input
+    # cannot make it allocate an arbitrarily large image:
+    decoder.imageSizeLimit = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
     #decoder.imageCountLimit = 1
     #decoder.strictFlags = AVIF_STRICT_ENABLED
     cdef avifResult r
     cdef size_t data_len
     cdef const uint8_t* data_buf
-    cdef uint32_t width, height, stride, ydiv, size
+    cdef uint32_t width, height, stride, ydiv
+    cdef size_t size
     cdef uint8_t bpp = 32
     cdef MemBuf pixels
     cdef avifImage *image = NULL
@@ -119,6 +122,9 @@ def decompress(data: SizedBuffer, options: typedict, yuv=False) -> ImageWrapper:
             # * overall image sequence timing (including per-frame timing with avifDecoderNthImageTiming())
             width = image.width
             height = image.height
+            # these are parsed from the container, bound them before they are used
+            # to size the output buffer, so that `width*4*height` cannot wrap:
+            check_image_size(width, height, "avif image")
             r = avifDecoderNextImage(decoder)
             check(r, "failed to get next image")
             # Now available (for this frame):
@@ -137,7 +143,9 @@ def decompress(data: SizedBuffer, options: typedict, yuv=False) -> ImageWrapper:
                 strides = []
                 for i in range(3):
                     ydiv = divs[i][1]
-                    size = image.yuvRowBytes[i]*height//ydiv
+                    if image.yuvRowBytes[i] > MAX_IMAGE_DIMENSION * 4:
+                        raise ValueError(f"invalid avif rowstride {image.yuvRowBytes[i]} for plane {i}")
+                    size = <size_t> image.yuvRowBytes[i]*height//ydiv
                     planes.append(image.yuvPlanes[i][:size])
                     strides.append(image.yuvRowBytes[i])
                 return ImageWrapper(0, 0, width, height, planes, yuv_format, 24, strides,
@@ -155,13 +163,14 @@ def decompress(data: SizedBuffer, options: typedict, yuv=False) -> ImageWrapper:
                 bpp = 24
             rgb.format = AVIF_RGB_FORMAT_BGRA
             stride = width*4
-            pixels = getbuf(width*4*height, 0)
+            size = <size_t> stride * height
+            pixels = getbuf(size, 0)
             rgb.pixels = <uint8_t *> pixels.get_mem()
             rgb.rowBytes = stride
             if rgb.ignoreAlpha:
                 # 'ignoreAlpha' leaves the unused 'X' byte untouched: make it opaque (0xff),
                 # to match the BGRX padding convention used everywhere else in xpra:
-                memset(rgb.pixels, 0xff, width*4*height)
+                memset(rgb.pixels, 0xff, size)
             rgb.alphaPremultiplied = 1
             r = avifImageYUVToRGB(image, &rgb)
             check(r, "Conversion from YUV failed")

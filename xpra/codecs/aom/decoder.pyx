@@ -10,7 +10,7 @@ from time import sleep
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, check_image_size, MAX_IMAGE_DIMENSION
 from xpra.util.env import envbool
 from xpra.util.str_fn import hexstr
 from xpra.util.objects import typedict
@@ -259,6 +259,9 @@ cdef class Decoder:
             log("monochrome image")
         # aom_chroma_sample_position chroma_sample_position
         # the colour range is carried in the bitstream, with the option able to override it:
+        # the dimensions come from the bitstream, so bound them before the plane sizes
+        # below are computed from them:
+        check_image_size(image.w, image.h, "av1 image")
         if image.w < self.width or image.h < self.height:
             log.error("Error: image size %ix%i does not match expected size %ix%i",
                       image.w, image.h, self.width, self.height)
@@ -278,7 +281,11 @@ cdef class Decoder:
             plane_height = aom_img_plane_height(image, i)
             stride = image.stride[i]
             log("plane %s: %4ix%-4i, stride=%i", "YUV"[i], plane_width, plane_height, stride)
-            plane_buf = wrapbuf(<void *> image.planes[i], plane_height * stride)
+            if plane_width <= 0 or plane_height <= 0:
+                raise ValueError(f"invalid plane {i} size: {plane_width}x{plane_height}")
+            if stride < plane_width or stride > MAX_IMAGE_DIMENSION * bytes_per_sample:
+                raise ValueError(f"invalid plane {i} stride: {stride} for width {plane_width}")
+            plane_buf = wrapbuf(<void *> image.planes[i], <Py_ssize_t> plane_height * stride)
             pyplanes.append(memoryview(plane_buf))
             pystrides.append(stride)
 

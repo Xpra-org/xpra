@@ -12,6 +12,7 @@ log = Logger("encoder", "webp")
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.common import SizedBuffer
+from xpra.codecs.constants import check_image_size
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.debug import may_save_image
 from xpra.buffers.membuf cimport memalign, memfree, buffer_context
@@ -198,11 +199,14 @@ def decompress_to_rgb(data: SizedBuffer, options: typedict) -> ImageWrapper:
         webp_check(WebPGetFeatures(data_buf, data_len, &config.input))
         log("webp decompress_to_rgb found features: width=%4i, height=%4i, has_alpha=%-5s, input rgb_format=%s",
             config.input.width, config.input.height, bool(config.input.has_alpha), rgb_format)
+        # libwebp caps dimensions at 16383 (14-bit bitstream fields), but check anyway
+        # so that the buffer size computed below cannot overflow:
+        check_image_size(config.input.width, config.input.height, "webp image")
 
         with nogil:
             config.output.colorspace = MODE_BGRA
             stride = 4 * config.input.width
-            size = stride * config.input.height
+            size = <size_t> stride * config.input.height
             #allocate the buffer:
             buf = <uint8_t*> memalign(size + stride)      #add one line of padding
             config.output.u.RGBA.rgba   = buf
@@ -284,6 +288,8 @@ def decompress_to_yuv(data: SizedBuffer, options: typedict) -> WebpImageWrapper:
 
         w = config.input.width
         h = config.input.height
+        # bound the dimensions before the plane sizes are computed from them:
+        check_image_size(w, h, "webp image")
         YUVA = &config.output.u.YUVA
         YUVA.y_stride = roundup(w, ALIGN)
         YUVA.u_stride = roundup((w+1)//2, ALIGN)
