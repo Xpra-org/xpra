@@ -33,7 +33,7 @@ cdef int ENOMEM = errno.ENOMEM
 cdef int EINVAL = errno.EINVAL
 
 # upper bound for the frame dimensions we accept from the bitstream:
-cdef unsigned int MAX_DIMENSION = MAX_IMAGE_DIMENSION
+cdef int MAX_DIMENSION = MAX_IMAGE_DIMENSION
 
 
 cdef extern from "stdarg.h":
@@ -371,8 +371,8 @@ cdef void logger_callback(void* cookie, const char *format, va_list arg) noexcep
             log.error("dav1d_log: vsnprintf returned %s on format string '%s'", r, format)
         return
     cdef int length = r
-    if length >= sizeof(buf):
-        length = sizeof(buf) - 1
+    if length >= <int> sizeof(buf):
+        length = <int> sizeof(buf) - 1
     with gil:
         pystr = buf[:length].decode("latin1").rstrip("\n\r")
         log.info("dav1d: %r", pystr)
