@@ -33,6 +33,7 @@ ssl_upgrade = True
 ssh = True
 logging = True
 tray = True
+systray = True
 ping = True
 gsettings = True
 bandwidth = True
@@ -93,6 +94,7 @@ def set_client_features(opts) -> None:
     features.ssh = b(opts.ssh)
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
+    features.systray = b(opts.system_tray)
     from xpra.net.common import BACKWARDS_COMPATIBLE
     features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
     features.gsettings = b(opts.gsettings_sync) and icheck("xpra.client.subsystem.gsettings")
@@ -145,6 +147,7 @@ def enforce_client_features() -> None:
         "ssh": "paramiko,xpra.net.ssh",
         "logging": "xpra.client.subsystem.logging",
         "tray": "xpra.client.subsystem.tray",
+        "systray": "xpra.client.subsystem.window.tray",
         "ping": "xpra.client.subsystem.ping",
         "gsettings": "gi.repository.Gio,xpra.client.subsystem.gsettings",
         "bandwidth": "xpra.client.subsystem.bandwidth",
