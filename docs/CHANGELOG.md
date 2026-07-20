@@ -22,6 +22,7 @@
 * 🛡️ Security:
   * [`seccomp` hardening of image parsing](https://github.com/Xpra-org/xpra/issues/622)
   * [honour encodings restrictions in all subsystems](https://github.com/Xpra-org/xpra/issues/4943)
+  * [codec harderning](https://github.com/Xpra-org/xpra/issues/4967)
   * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
   * [`scram` authentication](https://github.com/Xpra-org/xpra/issues/1771)
   * [http origin validation](https://github.com/Xpra-org/xpra/issues/4957)
