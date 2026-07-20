@@ -31,7 +31,7 @@ def get_window_client_base_classes() -> tuple[type, ...]:
     classes.append(WindowGrab)
     from xpra.client.subsystem.window.signalwatcher import WindowSignalWatcher
     classes.append(WindowSignalWatcher)
-    if features.tray:
+    if features.systray:
         from xpra.client.subsystem.window.tray import WindowTray
         classes.append(WindowTray)
     from xpra.client.subsystem.window.wheel import WindowWheel

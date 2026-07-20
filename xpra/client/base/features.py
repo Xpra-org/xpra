@@ -32,6 +32,7 @@ ssl_upgrade = True
 ssh = True
 logging = True
 tray = True
+systray = True
 ping = True
 bandwidth = True
 socket = True
@@ -91,6 +92,7 @@ def set_client_features(opts) -> None:
     features.ssh = b(opts.ssh)
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
+    features.systray = b(opts.system_tray)
     from xpra.net.common import BACKWARDS_COMPATIBLE
     features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
     features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
@@ -142,6 +144,7 @@ def enforce_client_features() -> None:
         "ssh": "paramiko,xpra.net.ssh",
         "logging": "xpra.client.subsystem.logging",
         "tray": "xpra.client.subsystem.tray",
+        "systray": "xpra.client.subsystem.window.tray",
         "ping": "xpra.client.subsystem.ping",
         "bandwidth": "xpra.client.subsystem.bandwidth",
         "socket": "xpra.client.subsystem.socket",
