@@ -21,7 +21,7 @@ from xpra.util.thread import check_main_thread
 from xpra.codecs.loader import get_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
-from xpra.codecs.constants import TransientCodecException, CodecStateException
+from xpra.codecs.constants import TransientCodecException, CodecStateException, EncodingNotSupported
 from xpra.codecs.protocols import VideoDecoder, ColorspaceConverter
 from xpra.constants import Gravity
 from xpra.log import Logger
@@ -824,18 +824,26 @@ class WindowBackingBase:
                     decoder_spec = choose_decoder(decoders_for_cs)
                     videolog("paint_with_video_decoder: new %s%s",
                              decoder_spec.codec_type, (coding, enc_width, enc_height, input_colorspace))
+                    vd = decoder_spec.make_instance()
                     try:
-                        vd = decoder_spec.make_instance()
                         vd.init_context(coding, enc_width, enc_height, input_colorspace, options)
                         self._video_decoder = vd
                         break
                     except TransientCodecException as e:
                         log("%s.init_context(..)", vd, exc_info=True)
                         log.warn(f"Warning: failed to initialize decoder {decoder_spec.codec_type}: {e}")
+                        vd.clean()
                         decoder_spec.setup_cost += 10
-                    except RuntimeError as e:
+                    except EncodingNotSupported as e:
+                        # this codec will never be able to handle this stream, don't try it again:
+                        log("%s.init_context(..)", vd, exc_info=True)
+                        log.warn(f"Warning: decoder {decoder_spec.codec_type} does not support {coding!r}: {e}")
+                        vd.clean()
+                        decoder_spec.setup_cost += 9999
+                    except (ValueError, AssertionError, RuntimeError) as e:
                         log("%s.init_context(..)", vd, exc_info=True)
                         log.warn(f"Warning: failed to initialize decoder {decoder_spec.codec_type}: {e}")
+                        vd.clean()
                         decoder_spec.setup_cost += 50
                     if decoder_spec.setup_cost > 100:
                         decoders_for_cs.remove(decoder_spec)
