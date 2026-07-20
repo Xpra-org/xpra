@@ -51,6 +51,7 @@ def get_open_requests_window(show_file_upload_cb=noop, cancel_download=noop):
 class OpenRequestsWindow:
 
     def __init__(self, show_file_upload_cb=noop, cancel_download=noop):
+        check_main_thread()
         self.show_file_upload_cb = show_file_upload_cb
         self.cancel_download = cancel_download
         self.populate_timer = 0

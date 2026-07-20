@@ -8,6 +8,7 @@ from collections import deque
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
+from xpra.util.thread import check_main_thread
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.util.str_fn import csv
@@ -177,6 +178,7 @@ class ClipboardInstance:
 class ClipboardStateInfoWindow:
 
     def __init__(self):
+        check_main_thread()
         self.window = Gtk.Window()
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(640, 300)

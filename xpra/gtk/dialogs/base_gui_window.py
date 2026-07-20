@@ -20,6 +20,7 @@ from xpra.common import noop
 from xpra.constants import NotificationID
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
+from xpra.util.thread import check_main_thread
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -47,6 +48,7 @@ class BaseGUIWindow(Gtk.Window):
                  header_bar=(True, True, False),
                  parent: Gtk.Window | None = None,
                  ):
+        check_main_thread()
         self.exit_code = 0
         super().__init__()
         if header_bar:

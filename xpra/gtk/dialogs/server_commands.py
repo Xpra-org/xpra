@@ -64,6 +64,7 @@ def icon_widget(windows) -> Gtk.Label | Gtk.Image:
 class ServerCommandsWindow:
 
     def __init__(self, client):
+        check_main_thread()
         assert client
         self.client = client
         self.populate_timer = 0

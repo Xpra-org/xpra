@@ -28,6 +28,7 @@ from xpra.common import noerr, is_covered_by_opaque_region
 from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
 from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.util.stats import std_unit
+from xpra.util.thread import check_main_thread
 from xpra.scripts.config import InitExit
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, MIN_VREFRESH, MAX_VREFRESH
 from xpra.gtk.cursors import cursor_types, get_default_cursor
@@ -465,6 +466,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         return values[0]
 
     def do_process_challenge_prompt_dialog(self, values: list, wait: Event, prompt="password") -> None:
+        check_main_thread()
         authlog = Logger("auth")
         # pylint: disable=import-outside-toplevel
         title = self.get_server_authentication_string()
@@ -632,7 +634,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             dialog.close()
 
     def file_size_warning(self, action: str, location: str, basefilename: str, filesize: int, limit: int) -> None:
-
+        check_main_thread()
         parent = None
         msgs = (
             f"Warning: cannot {action} the file {basefilename!r}",

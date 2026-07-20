@@ -28,6 +28,7 @@ log = Logger("util")
 class UpdateStatusWindow:
 
     def __init__(self):
+        check_main_thread()
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)

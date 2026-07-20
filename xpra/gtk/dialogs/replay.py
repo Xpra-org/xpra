@@ -13,6 +13,7 @@ from xpra.common import noop
 from xpra.exit_codes import ExitCode
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.os_util import gi_import
+from xpra.util.thread import check_main_thread
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -38,6 +39,7 @@ class TimelineScale(Gtk.DrawingArea):
     TICK_H_SYNC = 22     # green, straddles the track
 
     def __init__(self, total_ms: int):
+        check_main_thread()
         super().__init__()
         self.total_ms = max(1, total_ms)
         self.current_ms = 0
@@ -126,10 +128,10 @@ class TimelineScale(Gtk.DrawingArea):
             return
         r = min(r, w / 2, h / 2)
         cr.new_path()
-        cr.arc(x + r,     y + r,     r, math.pi,         3 * math.pi / 2)
-        cr.arc(x + w - r, y + r,     r, 3 * math.pi / 2, 0)
-        cr.arc(x + w - r, y + h - r, r, 0,               math.pi / 2)
-        cr.arc(x + r,     y + h - r, r, math.pi / 2,     math.pi)
+        cr.arc(x + r, y + r, r, math.pi, 3 * math.pi / 2)
+        cr.arc(x + w - r, y + r, r, 3 * math.pi / 2, 0)
+        cr.arc(x + w - r, y + h - r, r, 0, math.pi / 2)
+        cr.arc(x + r, y + h - r, r, math.pi / 2, math.pi)
         cr.close_path()
 
     # ── heatmap ───────────────────────────────────────────────────────────────
@@ -209,13 +211,14 @@ class EventLog(Gtk.ScrolledWindow):
 
     # event-type → foreground colour (chosen to read on both light and dark themes)
     TYPE_COLORS: dict[str, str] = {
-        "key":            "#1a7fd4",   # blue
-        "pointer":        "#c03828",   # red
-        "clipboard":      "#b07800",   # dark amber
+        "key": "#1a7fd4",  # blue
+        "pointer": "#c03828",  # red
+        "clipboard": "#b07800",  # dark amber
     }
     DEFAULT_COLOR = "#606060"
 
     def __init__(self):
+        check_main_thread()
         super().__init__()
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.set_size_request(-1, 110)
@@ -270,6 +273,7 @@ class ControlWindow:
     """Floating playback-control window."""
 
     def __init__(self, replay):
+        check_main_thread()
         self.replay = replay
 
         win = Gtk.Window(title="Xpra Replay")

@@ -27,6 +27,7 @@ from xpra.util.objects import typedict
 from xpra.util.system import stop_proc, get_platform_icon_name
 from xpra.os_util import gi_import, WIN32, getuid, getgid
 from xpra.util.env import IgnoreWarningsContext, get_saved_env
+from xpra.util.thread import check_main_thread
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -161,6 +162,7 @@ def get_uri(password: str, interface, protocol, name: str, stype: str, domain, h
 class SessionsGUI(Gtk.Window):
 
     def __init__(self, options, title="Xpra Session Browser"):
+        check_main_thread()
         super().__init__()
         self.options = options
         self.exit_code = ExitCode.OK

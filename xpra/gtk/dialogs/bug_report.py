@@ -23,6 +23,7 @@ from xpra.exit_codes import ExitValue
 from xpra.util.str_fn import nonl, repr_ellipsized, hexstr
 from xpra.util.objects import typedict, ScreenshotData
 from xpra.util.env import envint
+from xpra.util.thread import check_main_thread
 from xpra.net.common import FULL_INFO
 from xpra.log import Logger
 
@@ -72,6 +73,7 @@ class BugReport:
         self.setup_window()
 
     def setup_window(self) -> None:
+        check_main_thread()
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)
@@ -401,6 +403,7 @@ class BugReport:
                     zf.writestr(info, str(s))
         except OSError as e:
             log("do_save(%s) failed to save zip file", filename, exc_info=True)
+            check_main_thread()
             dialog = Gtk.MessageDialog(transient_for=self.window, flags=Gtk.DialogFlags.DESTROY_WITH_PARENT,
                                        message_type=Gtk.MessageType.WARNING, buttons=Gtk.ButtonsType.CLOSE,
                                        text=f"Failed to save ZIP file: {e}")

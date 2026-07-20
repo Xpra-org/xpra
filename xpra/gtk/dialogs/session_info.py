@@ -28,6 +28,7 @@ from xpra.gtk.graph import make_graph_imagesurface
 from xpra.gtk.widget import imagebutton, title_box, slabel, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.util import gtk_main
+from xpra.util.thread import check_main_thread
 from xpra.log import Logger
 
 log = Logger("info")
@@ -344,6 +345,7 @@ def format_encoder_pipeline(encoder: str, decoder: str = "", renderer: str = "")
 class SessionInfo(Gtk.Window):
 
     def __init__(self, client, session_name, conn, show_client=True, show_server=True):
+        check_main_thread()
         assert show_client or show_server
         self.client = client
         self.session_name = session_name

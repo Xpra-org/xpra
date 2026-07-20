@@ -31,12 +31,14 @@ def main(argv: list[str]) -> int:
         if use_gui_prompt():
             from xpra.os_util import gi_import
             from xpra.gtk.util import quit_on_signals, gtk_main
+            from xpra.util.thread import check_main_thread
             Gtk = gi_import("Gtk")
             GLib = gi_import("GLib")
 
             quit_on_signals("U2F Tool")
 
             def show_dialog(message_type: Gtk.MessageType, *msgs: str):
+                check_main_thread()
                 dialog = Gtk.MessageDialog(transient_for=None, flags=0,
                                            message_type=message_type, buttons=Gtk.ButtonsType.CLOSE,
                                            text="\n".join(msgs))

@@ -8,6 +8,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.str_fn import sorted_nicely
+from xpra.util.thread import check_main_thread
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -33,6 +34,7 @@ def lal(text: str, font="") -> Gtk.Alignment:
 class ShortcutInfo(Gtk.Window):
 
     def __init__(self, shortcut_modifiers: Sequence[str], shortcuts: dict[str, Sequence]):
+        check_main_thread()
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
 
         def window_deleted(*_args):

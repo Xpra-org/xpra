@@ -12,7 +12,7 @@ from xpra.util.version import caps_to_version, full_version_str
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr, std
 from xpra.util.env import envint
-from xpra.util.thread import start_thread
+from xpra.util.thread import check_main_thread, start_thread
 from xpra.util.stats import std_unit
 from xpra.util.system import platform_name
 from xpra.common import gravity_str
@@ -336,6 +336,7 @@ class TopSessionGUI(Gtk.Window):
     """
 
     def __init__(self, client):
+        check_main_thread()
         super().__init__()
         self.client = client
         self.psprocess: dict[int, object] = {}

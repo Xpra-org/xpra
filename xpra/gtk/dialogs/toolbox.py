@@ -20,6 +20,7 @@ from xpra.gtk.examples.run import run_example
 from xpra.platform.paths import get_xpra_command
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.env import IgnoreWarningsContext
+from xpra.util.thread import check_main_thread
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -89,6 +90,7 @@ BUTTON_GROUPS: dict[str, Iterable[tuple[str, str, str, bool]]] = {
 class ToolboxGUI(Gtk.Window):
 
     def __init__(self, title=TITLE):
+        check_main_thread()
         self.exit_code = 0
         self.start_session = None
         super().__init__()

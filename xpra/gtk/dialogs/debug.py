@@ -15,6 +15,7 @@ from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
 from xpra.common import noop
+from xpra.util.thread import check_main_thread
 from xpra.log import (
     Logger, CATEGORY_INFO, STRUCT_KNOWN_FILTERS,
     enable_color, enable_debug_for, disable_debug_for, debug_enabled_categories,
@@ -82,6 +83,7 @@ class DebugConfig:
         self.setup_window()
 
     def setup_window(self) -> None:
+        check_main_thread()
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)

@@ -13,7 +13,7 @@ from xpra import __version__
 from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.system import SIGNAMES
-from xpra.util.thread import start_thread
+from xpra.util.thread import check_main_thread, start_thread
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.scripts.main import SPLASH_EXIT_DELAY
 from xpra.gtk.widget import label
@@ -104,6 +104,7 @@ def cond(mask: int) -> str:
 class SplashScreen(Gtk.Window):
 
     def __init__(self, title=TITLE, icon_name=ICON):
+        check_main_thread()
         self.exit_code = None
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.connect("delete_event", self.exit)

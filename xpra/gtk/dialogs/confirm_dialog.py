@@ -13,6 +13,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
 from xpra.util.io import get_util_logger
+from xpra.util.thread import check_main_thread
 
 Gtk = gi_import("Gtk")
 GdkPixbuf = gi_import("GdkPixbuf")
@@ -23,6 +24,7 @@ log = get_util_logger()
 class ConfirmDialogWindow(Gtk.Dialog):
 
     def __init__(self, title="Title", prompt="", info=(), icon="", buttons=()):
+        check_main_thread()
         log("ConfirmDialogWindow%s", (title, prompt, info, icon, buttons))
         super().__init__()
         self.set_border_width(20)

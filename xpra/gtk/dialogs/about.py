@@ -7,6 +7,7 @@
 import os.path
 
 from xpra.os_util import gi_import
+from xpra.util.thread import check_main_thread
 from xpra.util.version import XPRA_VERSION
 from xpra.scripts.config import get_build_info
 from xpra.gtk.window import add_close_accel
@@ -59,6 +60,7 @@ def destroy_about(*_args) -> None:
 
 
 def about(on_close=close_about, parent: Gtk.Window | None = None):
+    check_main_thread()
     global about_dialog
     if about_dialog:
         about_dialog.show()

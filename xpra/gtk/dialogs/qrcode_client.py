@@ -8,6 +8,7 @@ from typing import Any
 
 from xpra.common import noerr
 from xpra.util.objects import typedict
+from xpra.util.thread import check_main_thread
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.util.system import SIGNAMES
@@ -116,6 +117,7 @@ class QRCodeClient(InfoXpraClient):
 class QRCodeWindow(Gtk.Window):
 
     def __init__(self, uris):
+        check_main_thread()
         self.exit_code = None
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.connect("delete_event", self.exit)

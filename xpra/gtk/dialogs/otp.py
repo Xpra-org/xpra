@@ -13,6 +13,7 @@ from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.os_util import gi_import
 from xpra.log import Logger
 from xpra.util.env import envbool
+from xpra.util.thread import check_main_thread
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -50,6 +51,7 @@ button {
 
 class OTPDialog(Gtk.Window):
     def __init__(self, otp: str, lifetime: int = 30):
+        check_main_thread()
         super().__init__(title="One-Time Password")
         self.set_default_size(420, 200)
         self.set_border_width(12)
