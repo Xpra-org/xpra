@@ -265,6 +265,8 @@ BuildRequires:		pkgconfig(openjph)
 Requires:			libopenjph
 BuildRequires:		pkgconfig(libyuv)
 Requires:			libyuv
+BuildRequires:      libdav1d-devel
+Requires:           libdav1d
 BuildRequires:      libaom-devel
 Requires:           libaom
 %if ! 0%{?el8}
@@ -833,6 +835,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n %{package_prefix}-codecs
 %{python3_sitearch}/xpra/codecs/csc_cython
+%{python3_sitearch}/xpra/codecs/dav1d
 %{python3_sitearch}/xpra/codecs/aom
 %{python3_sitearch}/xpra/codecs/drm
 #/xpra/codecs/evdi

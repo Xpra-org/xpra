@@ -465,6 +465,7 @@ if not OPENH264_PKG_CONFIG:
 openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", OPENH264_PKG_CONFIG)
 openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
+dav1d_ENABLED           = DEFAULT and pkg_config_version("1.0", "dav1d")
 aom_ENABLED             = DEFAULT and pkg_config_version("3.0", "aom")
 de265_ENABLED           = DEFAULT and pkg_config_version("1.0", "libde265")
 de265_decoder_ENABLED   = de265_ENABLED
@@ -562,6 +563,7 @@ ENCODER_SWITCHES = [
 ]
 DECODER_SWITCHES = [
     "openh264_decoder",
+    "dav1d",
     "nvdec", "nvjpeg_decoder",
     "mf_decoder",
     "vt_decoder",
@@ -3611,6 +3613,8 @@ tace(enc_x264_ENABLED, "xpra.codecs.x264.encoder", "x264")
 toggle_packages(openh264_ENABLED, "xpra.codecs.openh264")
 tace(openh264_decoder_ENABLED, "xpra.codecs.openh264.decoder", OPENH264_PKG_CONFIG, language="c++")
 tace(openh264_encoder_ENABLED, "xpra.codecs.openh264.encoder", OPENH264_PKG_CONFIG, language="c++")
+toggle_packages(dav1d_ENABLED, "xpra.codecs.dav1d")
+tace(dav1d_ENABLED, "xpra.codecs.dav1d.decoder", "dav1d", language="c++")
 toggle_packages(aom_ENABLED, "xpra.codecs.aom")
 tace(aom_ENABLED, "xpra.codecs.aom.api", "aom", language="c++")
 tace(aom_ENABLED, "xpra.codecs.aom.decoder", "aom", language="c++")

@@ -329,6 +329,7 @@ Depends: xpra-common (= ${binary:Version})
 #trixie:              ,libopenh264-8
 #forky:              ,libopenh264-8
 #sid:              ,libopenh264-8
+#jammy:              ,libdav1d5
 #noble:              ,libdav1d7
 #questing:              ,libdav1d7
 #resolute:              ,libdav1d7

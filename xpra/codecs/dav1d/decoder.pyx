@@ -6,7 +6,6 @@
 #cython: wraparound=False
 
 import errno
-from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
@@ -18,7 +17,6 @@ from xpra.log import Logger
 
 log = Logger("decoder", "dav1d")
 
-from libcpp cimport bool as bool_t
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int64_t, uintptr_t
 from xpra.buffers.membuf cimport memalign, memfree, getbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
@@ -31,8 +29,8 @@ cdef inline unsigned int roundup(unsigned int n, unsigned int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
 
 
-cdef unsigned int ENOMEM = errno.ENOMEM
-cdef unsigned int EINVAL = errno.EINVAL
+cdef int ENOMEM = errno.ENOMEM
+cdef int EINVAL = errno.EINVAL
 
 # upper bound for the frame dimensions we accept from the bitstream:
 cdef unsigned int MAX_DIMENSION = MAX_IMAGE_DIMENSION
@@ -220,7 +218,7 @@ cdef extern from "dav1d/dav1d.h":
 
     ctypedef struct Dav1dLogger:
         void *cookie
-        void *callback
+        CALLBACK callback
 
     ctypedef enum Dav1dInloopFilterType:
         DAV1D_INLOOPFILTER_NONE
@@ -372,8 +370,11 @@ cdef void logger_callback(void* cookie, const char *format, va_list arg) noexcep
         with gil:
             log.error("dav1d_log: vsnprintf returned %s on format string '%s'", r, format)
         return
+    cdef int length = r
+    if length >= sizeof(buf):
+        length = sizeof(buf) - 1
     with gil:
-        pystr = buf[:r].decode("latin1").rstrip("\n\r")
+        pystr = buf[:length].decode("latin1").rstrip("\n\r")
         log.info("dav1d: %r", pystr)
 
 
@@ -388,7 +389,8 @@ cdef class Decoder:
 
     def init_context(self, encoding: str, int width, int height, colorspace: str, options: typedict) -> None:
         log("dav1d.init_context%s", (encoding, width, height, colorspace))
-        raise RuntimeError("dav1d decoder disabled due to crashes with some AV1 streams")
+        if self.context != NULL:
+            raise RuntimeError("decoder context is already initialized")
         assert encoding == "av1", f"invalid encoding: {encoding}"
         assert colorspace == "YUV420P", f"invalid colorspace: {colorspace}"
         check_image_size(width, height, "av1 decoder")
@@ -402,9 +404,10 @@ cdef class Decoder:
         settings.n_threads = 0
         settings.max_frame_delay = 1
         settings.apply_grain = 0
-        # the allocator sizes each picture from `Dav1dPicture.p`, so it needs no cookie,
-        # but cap the frame size dav1d will accept so a tiny stream cannot ask for a huge one:
-        settings.frame_size_limit = <unsigned int> (width * height)
+        # The coded frame may include padding beyond the visible size (a
+        # 1920x1080 stream is commonly coded as 1920x1088), so allow one AV1
+        # superblock of padding while still bounding allocations from the stream.
+        settings.frame_size_limit = roundup(width, 128) * roundup(height, 128)
         settings.allocator.cookie = <void *> NULL
         settings.allocator.alloc_picture_callback = &picture_allocator
         settings.allocator.release_picture_callback = &release_picture
@@ -430,7 +433,7 @@ cdef class Decoder:
         return self.height
 
     def is_closed(self) -> bool:
-        return bool(self.context != NULL)
+        return self.context == NULL
 
     def get_type(self) -> str:
         return "dav1d"
@@ -460,14 +463,21 @@ cdef class Decoder:
 
     def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         log("decompress_image(%i bytes, %s)", len(data), options)
+        if self.context == NULL:
+            raise RuntimeError("decoder is closed")
+        if not data:
+            raise ValueError("no AV1 data to decode")
         cdef Dav1dData input
         memset(&input, 0, sizeof(Dav1dData))
         cdef int r = 0
+        cdef uint8_t *input_buf = NULL
 
-        with buffer_context(data) as bc:
-            input.data = <uint8_t*> (<uintptr_t> int(bc))
-            input.sz = len(bc)
-            input.ref = NULL
+        try:
+            with buffer_context(data) as bc:
+                input_buf = dav1d_data_create(&input, len(bc))
+                if input_buf == NULL:
+                    raise MemoryError("failed to allocate dav1d input buffer")
+                memcpy(input_buf, <const void *> (<uintptr_t> int(bc)), len(bc))
             input.m.timestamp = 0
             input.m.duration = 0
             input.m.offset = -1
@@ -477,10 +487,13 @@ cdef class Decoder:
 
             with nogil:
                 r = dav1d_send_data(self.context, &input)
-        log("dav1d_send_data: %i", r)
-        if r:
+            log("dav1d_send_data: %i", r)
+        finally:
+            # dav1d advances or clears `input` after taking ownership of the
+            # consumed bytes. Unref any remainder still owned by the caller.
             dav1d_data_unref(&input)
-            raise RuntimeError("failed to send data to decoder")
+        if r:
+            raise RuntimeError(f"failed to send data to decoder: {r}")
 
         cdef Dav1dPicture pic
         memset(&pic, 0, sizeof(Dav1dPicture))
@@ -493,7 +506,7 @@ cdef class Decoder:
         if r:
             if r == -errno.EAGAIN:
                 raise RuntimeError("decoder is waiting for more data: EAGAIN")
-            raise RuntimeError("failed to get picture from decoder")
+            raise RuntimeError(f"failed to get picture from decoder: {r}")
 
         # validate what the decoder produced before using it to size the planes below:
         # the dimensions come from the bitstream, so a hostile stream could otherwise
@@ -501,18 +514,27 @@ cdef class Decoder:
         cdef int pic_w = pic.p.w
         cdef int pic_h = pic.p.h
         cdef int layout = pic.p.layout
+        cdef int bpc = pic.p.bpc
+        cdef ptrdiff_t ystride = pic.stride[0]
+        cdef ptrdiff_t uvstride = pic.stride[1]
         try:
             check_image_size(pic_w, pic_h, "av1 picture")
             if layout != DAV1D_PIXEL_LAYOUT_I420:
                 raise ValueError(f"unsupported av1 pixel layout {layout}")
+            if bpc != 8:
+                raise ValueError(f"unsupported av1 bit depth {bpc}")
             if pic_w < self.width or pic_h < self.height:
                 raise ValueError(f"av1 picture {pic_w}x{pic_h} is smaller than {self.width}x{self.height}")
+            if pic.data[0] == NULL or pic.data[1] == NULL or pic.data[2] == NULL:
+                raise ValueError("dav1d returned a picture with a missing plane")
+            if ystride < pic_w or ystride > roundup(MAX_DIMENSION, 128):
+                raise ValueError(f"invalid av1 luma stride {ystride} for width {pic_w}")
+            if uvstride < (pic_w + 1) // 2 or uvstride > roundup(MAX_DIMENSION, 128):
+                raise ValueError(f"invalid av1 chroma stride {uvstride} for width {pic_w}")
         except ValueError:
             dav1d_picture_unref(&pic)
             raise
 
-        cdef size_t ystride = pic.stride[0]
-        cdef size_t uvstride = pic.stride[1]
         cdef size_t stride
         cdef size_t height
         cdef MemBuf plane
@@ -521,18 +543,20 @@ cdef class Decoder:
         # copy the planes out: dav1d keeps its own references to the picture for as long
         # as it is used for prediction, and frees it via `release_picture` - so we must not
         # hand this memory to a `MemBuf` that would free it from under the decoder:
-        for i in range(3):
-            if i == 0:
-                stride = ystride
-                height = <size_t> pic_h
-            else:
-                stride = uvstride
-                height = <size_t> (pic_h + 1) // 2
-            plane = getbuf(stride * height, 0)
-            memcpy(<void *> plane.get_mem(), <const void *> pic.data[i], stride * height)
-            pystrides.append(stride)
-            pyplanes.append(memoryview(plane))
-        dav1d_picture_unref(&pic)
+        try:
+            for i in range(3):
+                if i == 0:
+                    stride = <size_t> ystride
+                    height = <size_t> pic_h
+                else:
+                    stride = <size_t> uvstride
+                    height = <size_t> (pic_h + 1) // 2
+                plane = getbuf(stride * height, 0)
+                memcpy(<void *> plane.get_mem(), <const void *> pic.data[i], stride * height)
+                pystrides.append(stride)
+                pyplanes.append(memoryview(plane))
+        finally:
+            dav1d_picture_unref(&pic)
         self.frames += 1
         return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides, planes=PlanarFormat.PLANAR_3)
 
