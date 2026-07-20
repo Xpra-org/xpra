@@ -720,12 +720,25 @@ cdef class Encoder:
         for i in range(3):
             memset(&py_buf[i], 0, sizeof(Py_buffer))
         cdef int r
+        cdef unsigned int ydiv
+        cdef Py_ssize_t plane_len
         try:
             assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
             assert len(strides)==3, "image strides does not have 3 values! (found %s)" % len(strides)
             for i in range(3):
+                # openh264 reads `iStride[i] * iPicHeight` bytes from each plane
+                # (subsampled by 2 for the chroma planes), so check that the buffer
+                # really is that big: the image metadata is not proof of the buffer size
+                ydiv = 1 if i == 0 else 2
+                plane_len = <Py_ssize_t> strides[i] * (height // ydiv)
                 if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
                     raise ValueError("failed to read pixel data from %s" % type(pixels[i]))
+                if strides[i] < width // ydiv:
+                    raise ValueError("invalid stride %i for width %i of plane %s" % (
+                        strides[i], width // ydiv, "YUV"[i]))
+                if py_buf[i].len < plane_len:
+                    raise ValueError("buffer for plane %s is too small: %i bytes, %i needed" % (
+                        "YUV"[i], py_buf[i].len, plane_len))
                 pic.pData[i] = <uint8_t*> py_buf[i].buf
             with nogil:
                 r = self.context.EncodeFrame(&pic, &frame_info)

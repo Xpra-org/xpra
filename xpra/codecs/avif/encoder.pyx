@@ -133,6 +133,12 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     client_options = {"quality" : quality}
 
     with buffer_context(pixels) as bc:
+        # libavif reads `rowBytes * height` bytes from the buffer, so check it is
+        # that big rather than trusting the image metadata to describe it:
+        if len(bc) < <Py_ssize_t> rgb.rowBytes * height:
+            avifImageDestroy(avif_image)
+            raise ValueError("pixel buffer is too small: %i bytes, %i needed for %ix%i at rowstride %i" % (
+                len(bc), rgb.rowBytes * height, width, height, rgb.rowBytes))
         rgb.pixels = <uint8_t*> (<uintptr_t> int(bc))
         log("avif.encode(%s, %s, %s) pixels=%#x", coding, image, options, int(bc))
         try:

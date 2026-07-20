@@ -18,7 +18,7 @@ from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
-from xpra.codecs.constants import VideoSpec, get_profile, get_x264_quality, get_x264_preset
+from xpra.codecs.constants import VideoSpec, get_profile, get_x264_quality, get_x264_preset, get_subsampling_divs
 from collections import deque
 
 from libc.string cimport memset
@@ -1010,6 +1010,12 @@ cdef class Encoder:
                 assert istrides>0
                 if PyObject_GetBuffer(pixels, &py_buf[0], PyBUF_ANY_CONTIGUOUS):
                     raise ValueError(f"failed to read pixel data from {type(pixels)}")
+                # x264 reads `i_stride * height` bytes from the plane, so make sure
+                # the buffer really is that big - the image metadata cannot be trusted
+                # to match the buffer it came with:
+                if py_buf[0].len < <Py_ssize_t> istrides * self.height:
+                    raise ValueError("pixel buffer is too small: %i bytes, %i needed for %ix%i at rowstride %i" % (
+                        py_buf[0].len, istrides * self.height, self.width, self.height, istrides))
                 pic_in.img.plane[0] = <uint8_t*> py_buf.buf
                 pic_in.img.i_stride[0] = istrides
                 self.bytes_in += py_buf.len
@@ -1017,9 +1023,17 @@ cdef class Encoder:
             else:
                 assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
                 assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
+                divs = get_subsampling_divs(self.src_format)
                 for i in range(3):
+                    xdiv, ydiv = divs[i]
                     if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
                         raise ValueError(f"failed to read pixel data from {type(pixels[i])}")
+                    if istrides[i] < self.width // xdiv:
+                        raise ValueError("invalid stride %i for width %i of plane %s" % (
+                            istrides[i], self.width // xdiv, "YUV"[i]))
+                    if py_buf[i].len < <Py_ssize_t> istrides[i] * (self.height // ydiv):
+                        raise ValueError("buffer for plane %s is too small: %i bytes, %i needed" % (
+                            "YUV"[i], py_buf[i].len, istrides[i] * (self.height // ydiv)))
                     pic_in.img.plane[i] = <uint8_t*> py_buf[i].buf
                     pic_in.img.i_stride[i] = istrides[i]
                     self.bytes_in += py_buf[i].len
