@@ -696,7 +696,8 @@ cdef class ColorspaceConverter:
                 raise ValueError("failed to read pixel data from %s" % type(planes[i]))
             YUV[i] = <const unsigned short *> py_buf[i].buf
             min_len = YUVstrides[i]*image.get_height()
-            assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
+            assert py_buf[i].len>=min_len, "buffer for %s plane is too small: %s bytes, expected at least %s" % (
+                "YUV"[i], py_buf[i].len, min_len)
 
         if image.is_thread_safe():
             with nogil:
@@ -832,8 +833,10 @@ cdef class ColorspaceConverter:
         for i in range(3):
             if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
                 raise ValueError("failed to read pixel data from %s" % type(planes[i]))
-            min_len = input_strides[i]*image.get_height()
-            assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
+            # the U and V planes of YUV420P are subsampled vertically:
+            min_len = input_strides[i]*((image.get_height() + 1) // 2 if i else image.get_height())
+            assert py_buf[i].len>=min_len, "buffer for %s plane is too small: %s bytes, expected at least %s" % (
+                "YUV"[i], py_buf[i].len, min_len)
         cdef unsigned char *Ybuf = <unsigned char *> py_buf[0].buf
         cdef unsigned char *Ubuf = <unsigned char *> py_buf[1].buf
         cdef unsigned char *Vbuf = <unsigned char *> py_buf[2].buf
@@ -911,7 +914,8 @@ cdef class ColorspaceConverter:
             if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
                 raise ValueError("failed to read pixel data from %s" % type(planes[i]))
             min_len = input_strides[i]*image.get_height()
-            assert py_buf.len>=min_len, "buffer for G plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
+            assert py_buf[i].len>=min_len, "buffer for %s plane is too small: %s bytes, expected at least %s" % (
+                "GBR"[i], py_buf[i].len, min_len)
         cdef unsigned char *Gbuf = <unsigned char*> py_buf[Gsrc].buf
         cdef unsigned char *Bbuf = <unsigned char*> py_buf[Bsrc].buf
         cdef unsigned char *Rbuf = <unsigned char*> py_buf[Rsrc].buf
