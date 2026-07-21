@@ -396,6 +396,7 @@ class WindowServer(StubSubsystem):
             ss.damage(wid, window, x, y, width, height, options)
 
     def _process_buffer_refresh(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._process_window_refresh(proto, packet)
 
     def _process_window_refresh(self, proto, packet: Packet) -> None:

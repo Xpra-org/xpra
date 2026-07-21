@@ -281,6 +281,7 @@ class PointerManager(StubSubsystem):
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
     def _process_button_action(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         log("process_button_action(%s, %s)", proto, packet)
         if self.is_readonly(proto):
             return
@@ -559,6 +560,7 @@ class PointerManager(StubSubsystem):
         self._maybe_record_drag_scroll(wid, pdata)
 
     def _process_pointer_position(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         log("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
             proto, packet, self.is_readonly(proto), self.server.ui_driver)
         if self.is_readonly(proto):

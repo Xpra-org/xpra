@@ -308,21 +308,27 @@ class EncodingServer(StubSubsystem):
         window._refresh_windows(proto, wid_windows, {})
 
     def _process_quality(self, proto, packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._modify_sq(proto, "quality", packet.get_u8(1))
 
     def _process_min_quality(self, proto, packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._modify_sq(proto, "min-quality", packet.get_u8(1))
 
     def _process_max_quality(self, proto, packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._modify_sq(proto, "max-quality", packet.get_u8(1))
 
     def _process_speed(self, proto, packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._modify_sq(proto, "speed", packet.get_u8(1))
 
     def _process_min_speed(self, proto, packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._modify_sq(proto, "min-speed", packet.get_u8(1))
 
     def _process_max_speed(self, proto, packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._modify_sq(proto, "max-speed", packet.get_u8(1))
 
     def _modify_sq(self, proto, attr: str, value: int) -> None:
