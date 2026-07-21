@@ -13,7 +13,7 @@ import tempfile
 from unittest.mock import MagicMock, patch
 from time import monotonic
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.net import file_transfer
 from xpra.net.file_transfer import (
@@ -399,15 +399,20 @@ class TestFileTransferHandler(unittest.TestCase):
         fth.cleanup()
 
     def test_parse_printer_caps(self):
-        fth = FileTransferHandler()
-        fth.init_attributes()
-        # parse_printer_caps reads the "file" namespace in legacy mode, "printer" otherwise:
-        caps_key = "file" if BACKWARDS_COMPATIBLE else "printer"
-        caps = typedict({caps_key: {"printing": True, "printing-ask": True}})
-        fth.parse_printer_caps(caps)
-        self.assertTrue(fth.remote_printing)
-        self.assertTrue(fth.remote_printing_ask)
-        fth.cleanup()
+        # parse_printer_caps reads the "file" namespace in legacy mode and "printer" otherwise.
+        # The flag is looked up at call time from the file_transfer module globals, so patch it
+        # there to exercise both modes in-process (the env var is only read once, at import time):
+        for backwards_compatible in (True, False):
+            with self.subTest(backwards_compatible=backwards_compatible), \
+                    patch.object(file_transfer, "BACKWARDS_COMPATIBLE", backwards_compatible):
+                caps_key = "file" if backwards_compatible else "printer"
+                fth = FileTransferHandler()
+                fth.init_attributes()
+                caps = typedict({caps_key: {"printing": True, "printing-ask": True}})
+                fth.parse_printer_caps(caps)
+                self.assertTrue(fth.remote_printing)
+                self.assertTrue(fth.remote_printing_ask)
+                fth.cleanup()
 
     def test_parse_printer_caps_disabled(self):
         fth = FileTransferHandler()
