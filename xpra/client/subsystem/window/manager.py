@@ -565,9 +565,6 @@ class WindowManagerClient(StubClientSubsystem):
         if window:
             window.restack(other_window, above)
 
-    def _process_configure_override_redirect(self, packet: Packet) -> None:
-        self._process_window_move_resize(packet)
-
     def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.get_window(wid):
