@@ -198,7 +198,14 @@ class Qt6Client:
         self._process_window_destroy(packet)
 
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
-        log(f"ignoring initiate-moveresize: {packet[1:]}")
+        wid = packet.get_wid()
+        if window := self.windows.get(wid):
+            x_root = packet.get_i16(2)
+            y_root = packet.get_i16(3)
+            direction = packet.get_i8(4)
+            button = packet.get_u8(5)
+            source_indication = packet.get_i8(6)
+            window.initiate_moveresize(x_root, y_root, direction, button, source_indication)
 
     def _process_initiate_moveresize(self, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE  # legacy packet name
