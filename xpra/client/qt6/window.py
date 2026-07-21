@@ -8,6 +8,7 @@ from PyQt6.QtCore import Qt, QPoint, QEvent
 from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeyEvent
 from PyQt6.QtWidgets import QMainWindow, QLabel, QSizePolicy
 
+from xpra.constants import MoveResize
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import POINTER_BUTTON, WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE, POINTER_MOTION
 from xpra.client.qt6.keys import key_names
@@ -183,6 +184,46 @@ class ClientWindow(QMainWindow):
             self.label.setPixmap(self.canvas)
         log(f"{obj}: {event} {event.type().name}")
         return False
+
+    def has_toplevel_focus(self) -> bool:
+        return self.isActiveWindow()
+
+    def present(self) -> None:
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def initiate_moveresize(self, x_root: int, y_root: int, direction: int, button: int, source_indication: int) -> None:
+        log("initiate_moveresize%s", (x_root, y_root, direction, button, source_indication))
+        win = self.windowHandle()
+        if not win:
+            log.warn("Warning: no window handle for initiate-moveresize")
+            return
+        if direction in (MoveResize.MOVE, MoveResize.MOVE_KEYBOARD):
+            win.startSystemMove()
+            return
+        edges = {
+            MoveResize.SIZE_TOPLEFT: Qt.Edge.TopEdge | Qt.Edge.LeftEdge,
+            MoveResize.SIZE_TOP: Qt.Edge.TopEdge,
+            MoveResize.SIZE_TOPRIGHT: Qt.Edge.TopEdge | Qt.Edge.RightEdge,
+            MoveResize.SIZE_RIGHT: Qt.Edge.RightEdge,
+            MoveResize.SIZE_BOTTOMRIGHT: Qt.Edge.BottomEdge | Qt.Edge.RightEdge,
+            MoveResize.SIZE_BOTTOM: Qt.Edge.BottomEdge,
+            MoveResize.SIZE_BOTTOMLEFT: Qt.Edge.BottomEdge | Qt.Edge.LeftEdge,
+            MoveResize.SIZE_LEFT: Qt.Edge.LeftEdge,
+        }.get(direction)
+        if edges is None:
+            log("ignoring unsupported initiate-moveresize direction %s", direction)
+            return
+        win.startSystemResize(edges)
+
+    def restack(self, other_window, above: int = 0) -> None:
+        # Qt only exposes global raise/lower for top-level windows,
+        # there is no API to stack relative to a specific sibling:
+        if above:
+            self.raise_()
+        else:
+            self.lower()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         self.send_key_event(event, True)

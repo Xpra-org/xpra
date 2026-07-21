@@ -148,6 +148,10 @@ class XpraPygletClient:
     def _process_connection_close(self, packet: Packet):
         self.quit(0)
 
+    def _process_disconnect(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_connection_close(packet)
+
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         netlog.info(f"ignoring setting-change for {setting!r}")
@@ -181,16 +185,49 @@ class XpraPygletClient:
         self.windows[wid] = window
         window.show()
 
-    def _process_window_close(self, packet: Packet) -> None:
+    def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.windows.get(wid):
             window.close()
             del self.windows[wid]
 
-    def _process_raise_window(self, packet: Packet) -> None:
+    def _process_lost_window(self, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
+        self._process_window_destroy(packet)
+
+    def _process_window_initiate_moveresize(self, packet: Packet) -> None:
+        log(f"ignoring initiate-moveresize: {packet[1:]}")
+
+    def _process_initiate_moveresize(self, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
+        self._process_window_initiate_moveresize(packet)
+
+    def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.windows.get(wid):
-            window.raise_()
+            if not window.has_toplevel_focus():
+                window.present()
+
+    def _process_raise_window(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_window_raise(packet)
+
+    def _process_window_restack(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        detail = packet.get_i8(2)
+        other_wid = packet.get_wid(3)
+        above = int(detail == 0)
+        if window := self.windows.get(wid):
+            other_window = self.windows.get(other_wid)
+            window.restack(other_window, above)
+
+    def _process_restack_window(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_window_restack(packet)
+
+    def _process_draw(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_window_draw(packet)
 
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()

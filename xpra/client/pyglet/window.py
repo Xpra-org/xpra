@@ -42,6 +42,7 @@ class ClientWindow(Window):
         self.set_caption(metadata.get("title", ""))
         self.set_location(x, y)
         self.set_size(w, h)
+        self.focused = False
 
         # A logger class, which prints events to stdout or to a file:
         win_event_logger = event.WindowEventLogger()
@@ -54,7 +55,23 @@ class ClientWindow(Window):
         self.client.send(WINDOW_CLOSE, self.wid)
 
     def on_activate(self) -> None:
+        self.focused = True
         self.client.update_focus(self.wid)
+
+    def on_deactivate(self) -> None:
+        self.focused = False
+
+    def has_toplevel_focus(self) -> bool:
+        return self.focused
+
+    def present(self) -> None:
+        self.set_visible(True)
+        self.activate()
+
+    def restack(self, other_window, above: int = 0) -> None:
+        # pyglet does not expose a stacking-order API, only activation:
+        if above:
+            self.activate()
 
     def on_show(self) -> None:
         x, y = self.get_location()
