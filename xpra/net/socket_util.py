@@ -1070,6 +1070,8 @@ def handle_socket_error(sockpath: str, sperms: int, e) -> None:
 
 
 def socket_connect(host: str, port: int, timeout: float = SOCKET_TIMEOUT) -> socket.socket | None:
+    if not 0 < port < 2 ** 16:
+        raise InitException(f"invalid port number: {port}")
     socktype = socket.SOCK_STREAM
     family = 0  # 0 means any
     try:

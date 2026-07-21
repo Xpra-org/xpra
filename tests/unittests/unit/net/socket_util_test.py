@@ -26,6 +26,7 @@ from xpra.net.socket_util import (
     hosts,
     close_sockets,
     create_tcp_socket,
+    socket_connect,
     setup_tcp_socket,
     setup_udp_socket,
 )
@@ -334,6 +335,14 @@ class TestCreateTcpSocket(unittest.TestCase):
             assert sock.family == socket.AF_INET6
         finally:
             sock.close()
+
+
+class TestSocketConnect(unittest.TestCase):
+
+    def test_invalid_port(self):
+        for port in (-1, 0, 65536, 100000):
+            with self.assertRaises(InitException):
+                socket_connect("localhost", port)
 
 
 class TestSetupTcpSocket(unittest.TestCase):
