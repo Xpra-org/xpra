@@ -19,7 +19,7 @@ from xpra.os_util import OSX, WIN32
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, source_env
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.system import stop_proc, is_child_alive
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
@@ -459,6 +459,7 @@ class ChildCommandServer(StubSubsystem):
         return True
 
     def _process_start_command(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._process_command_start(proto, packet)
 
     def _process_command_start(self, proto, packet: Packet) -> None:

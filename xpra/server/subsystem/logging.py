@@ -214,6 +214,7 @@ class LoggingManager(StubSubsystem):
             log.warn("Warning: unknown logging-control action '%r'", action)
 
     def _process_logging(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._process_logging_event(proto, packet)
 
     def _process_logging_event(self, proto, packet: Packet) -> None:

@@ -148,7 +148,7 @@ class Qt6Client:
         self.quit(0)
 
     def _process_disconnect(self, packet: Packet) -> None:
-        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
         self._process_connection_close(packet)
 
     def _process_setting_change(self, packet: Packet) -> None:
@@ -165,9 +165,11 @@ class Qt6Client:
         self.new_window(packet)
 
     def _process_new_window(self, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
         self.new_window(packet)
 
     def _process_new_override_redirect(self, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
         self.new_window(packet, True)
 
     def new_window(self, packet: Packet, is_or=False) -> None:
@@ -197,7 +199,7 @@ class Qt6Client:
                 window.present()
 
     def _process_raise_window(self, packet: Packet) -> None:
-        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
         self._process_window_raise(packet)
 
     def _process_window_restack(self, packet: Packet) -> None:
@@ -210,11 +212,11 @@ class Qt6Client:
             window.restack(other_window, above)
 
     def _process_restack_window(self, packet: Packet) -> None:
-        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
         self._process_window_restack(packet)
 
     def _process_draw(self, packet: Packet) -> None:
-        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
         self._process_window_draw(packet)
 
     def _process_window_draw(self, packet: Packet) -> None:

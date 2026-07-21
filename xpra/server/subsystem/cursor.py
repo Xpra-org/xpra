@@ -128,6 +128,7 @@ class CursorManager(StubSubsystem):
         return {CursorManager.PREFIX: info}
 
     def _process_set_cursors(self, proto, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._process_cursor_set(proto, packet)
 
     def _process_cursor_set(self, proto, packet: Packet) -> None:

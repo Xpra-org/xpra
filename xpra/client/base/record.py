@@ -303,6 +303,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             window.record("restack")
 
     def _process_configure_override_redirect(self, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE
         self._process_window_move_resize(packet)
 
     def _process_window_destroy(self, packet: Packet) -> None:
