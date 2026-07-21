@@ -82,6 +82,7 @@ class Qt6Client:
             "session-id": uuid.uuid4().hex,
             "windows": True,
             "keyboard": True,
+            "bell": True,
             "pointer": {"double_click": {}},
             "encodings": ("rgb32", "rgb24", "png", "jpeg", "webp"),
             "display": {"refresh-rate": 50},
@@ -186,11 +187,31 @@ class Qt6Client:
         self.windows[wid] = window
         window.show()
 
-    def _process_window_close(self, packet: Packet) -> None:
+    def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.windows.get(wid):
             window.close()
             del self.windows[wid]
+
+    def _process_lost_window(self, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
+        self._process_window_destroy(packet)
+
+    def _process_window_initiate_moveresize(self, packet: Packet) -> None:
+        log(f"ignoring initiate-moveresize: {packet[1:]}")
+
+    def _process_initiate_moveresize(self, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
+        self._process_window_initiate_moveresize(packet)
+
+    def _process_window_bell(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        log(f"bell for window {wid:#x}")
+        QApplication.beep()
+
+    def _process_bell(self, packet: Packet) -> None:
+        assert BACKWARDS_COMPATIBLE  # legacy packet name
+        self._process_window_bell(packet)
 
     def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
