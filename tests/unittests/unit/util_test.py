@@ -82,6 +82,8 @@ class TestMonitorLayout(unittest.TestCase):
         self.assertEqual(layout.relative_position(-1820, 50), (0, 100, 50))
         self.assertEqual(layout.relative_position(100, -1100), (1, 100, 100))
         self.assertIsNone(layout.relative_position(4000, 4000))
+        self.assertEqual(layout.normalized_position(-1820, 50), (100, 1250))
+        self.assertEqual(layout.normalized_position(100, -1100), (2020, 100))
         self.assertEqual(layout.position(0, 100, 50, normalized=False), (-1820, 50))
         self.assertEqual(layout.position(0, 100, 50), (100, 1250))
         self.assertEqual(layout.position(1, 100, 100), (2020, 100))

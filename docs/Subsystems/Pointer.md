@@ -28,9 +28,11 @@ The client should expose the following `pointer` dictionary in its `hello` packe
 | `initial-position` | `x` and `y` pair of coordinates | Optional                                                                      |
 | `double_click`     | dictionary                      | contains just two integer attributes: `time` (in milliseconds) and `distance` |
 
-Modern packets keep the `pointer` field as `(absolute_x, absolute_y)` and carry
-alternative coordinate spaces in the properties dictionary:
+Modern packets keep the `pointer` field as a non-negative
+`(absolute_x, absolute_y)` pair normalized against the client monitor layout.
+They carry alternative coordinate spaces in the properties dictionary:
 
+- `raw-position`: the absolute position before layout normalization
 - `window-position`: `(window_x, window_y)`
 - `monitor`: `{"index": monitor_index, "position": (monitor_x, monitor_y)}`
 

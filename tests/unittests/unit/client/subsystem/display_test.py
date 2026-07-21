@@ -61,6 +61,7 @@ class DisplayClientTest(ClientMixinTest):
                 platform_gui.get_monitors_info = orig
             self.assertEqual(called, [(self.mixin.xscale, self.mixin.yscale)])
             self.assertEqual(info, {0: {"geometry": (0, 0, 1024, 768)}})
+            self.assertEqual(self.mixin.get_server_position((-100, 50)), (-100, 50))
 
 
 def main():

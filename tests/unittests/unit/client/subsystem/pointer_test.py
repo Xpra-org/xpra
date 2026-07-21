@@ -20,6 +20,7 @@ class PointerClientTest(ClientMixinTest):
         self._test_mixin_class(PointerClient, opts, {})
         display = AdHocStruct()
         display.get_monitor_relative_position = lambda _position: (2, 10, 20)
+        display.get_server_position = lambda position: (position[0] + 1920, position[1] + 1200)
         self.subsystems = {"display": display}
         old_compat = pointer.BACKWARDS_COMPATIBLE
         pointer.BACKWARDS_COMPATIBLE = False
@@ -27,8 +28,9 @@ class PointerClientTest(ClientMixinTest):
             self.assertEqual(
                 self.mixin.split_pointer_position((100, 200, 5, 6)),
                 (
-                    (100, 200),
+                    (2020, 1400),
                     {
+                        "raw-position": (100, 200),
                         "window-position": (5, 6),
                         "monitor": {"index": 2, "position": (10, 20)},
                     },
@@ -37,8 +39,11 @@ class PointerClientTest(ClientMixinTest):
             self.assertEqual(
                 self.mixin.split_pointer_position((100, 200)),
                 (
-                    (100, 200),
-                    {"monitor": {"index": 2, "position": (10, 20)}},
+                    (2020, 1400),
+                    {
+                        "raw-position": (100, 200),
+                        "monitor": {"index": 2, "position": (10, 20)},
+                    },
                 ),
             )
         finally:
@@ -48,8 +53,9 @@ class PointerClientTest(ClientMixinTest):
             self.assertEqual(
                 self.mixin.split_pointer_position((100, 200, 5, 6)),
                 (
-                    (100, 200, 5, 6),
+                    (2020, 1400, 5, 6),
                     {
+                        "raw-position": (100, 200),
                         "window-position": (5, 6),
                         "monitor": {"index": 2, "position": (10, 20)},
                     },

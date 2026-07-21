@@ -28,3 +28,7 @@ class Win32DisplayClient(DisplayClient):
 
     def get_monitors_info(self) -> dict:
         return get_monitors_info(self.xscale, self.yscale)
+
+    def get_server_position(self, position: Sequence[int]) -> tuple[int, int]:
+        """Rebase native coordinates so the server always receives unsigned positions."""
+        return self._monitor_layout.normalized_position(int(position[0]), int(position[1]))

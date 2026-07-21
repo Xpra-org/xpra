@@ -230,6 +230,13 @@ class Packet(Sequence):
             return tuple(int(x) for x in v)
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
+    def get_u16s(self, i: int) -> Sequence[int]:
+        values = self.get_ints(i)
+        for value in values:
+            if value < 0 or value >= 2**16:
+                raise ValueError(f"invalid u16 value {value!r}")
+        return values
+
 
 PacketHandlerType: TypeAlias = Callable[[Any, Packet], None]
 ClientPacketHandlerType: TypeAlias = Callable[[Packet], None]

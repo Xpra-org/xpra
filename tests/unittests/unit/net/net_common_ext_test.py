@@ -160,6 +160,24 @@ class TestPacketGetU16(unittest.TestCase):
             p.get_u16(1)
 
 
+class TestPacketGetU16s(unittest.TestCase):
+
+    def test_valid(self):
+        from xpra.net.common import Packet
+        values = 0, 32768, 65535
+        self.assertEqual(Packet("t", values).get_u16s(1), values)
+
+    def test_negative(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(ValueError):
+            Packet("t", (0, -1)).get_u16s(1)
+
+    def test_too_large(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(ValueError):
+            Packet("t", (0, 65536)).get_u16s(1)
+
+
 class TestPacketGetI32(unittest.TestCase):
 
     def test_boundaries(self):

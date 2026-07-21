@@ -109,8 +109,8 @@ class WindowPointer(StubClientSubsystem):
                 b = sb
             server_buttons.append(b)
         self._button_state[button] = pressed
+        pointer, position_props = self.get_subsystem("pointer").split_pointer_position(pointer)
         if "pointer-button" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
-            pointer, position_props = self.get_subsystem("pointer").split_pointer_position(pointer)
             props = dict(props or {})
             props.update(position_props)
             if modifiers is not None:

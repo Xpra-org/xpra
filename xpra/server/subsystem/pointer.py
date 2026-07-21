@@ -270,7 +270,7 @@ class PointerManager(StubSubsystem):
         wid = packet.get_wid(3)
         button = packet.get_u8(4)
         pressed = packet.get_bool(5)
-        pointer = packet.get_ints(6)
+        pointer = packet.get_ints(6) if BACKWARDS_COMPATIBLE else packet.get_u16s(6)
         props = packet.get_dict(7)
         if device_id >= 0:
             # highest_seq = self.pointer_sequence.get(device_id, 0)
@@ -537,7 +537,7 @@ class PointerManager(StubSubsystem):
         device_id = packet.get_i64(1)
         seq = packet.get_u64(2)
         wid = packet.get_wid(3)
-        pdata = packet.get_ints(4)
+        pdata = packet.get_ints(4) if BACKWARDS_COMPATIBLE else packet.get_u16s(4)
         props = packet.get_dict(5)
         if device_id >= 0:
             highest_seq = self.pointer_sequence.get(device_id, 0)
@@ -595,7 +595,7 @@ class PointerManager(StubSubsystem):
         wid = packet.get_wid()
         button = packet.get_u8(2)
         distance = packet.get_i64(3)
-        pointer = packet.get_ints(4)
+        pointer = packet.get_ints(4) if BACKWARDS_COMPATIBLE else packet.get_u16s(4)
         modifiers = packet.get_strs(5)
         # buttons = packet.get_ints(6)
         device_id = -1

@@ -51,3 +51,7 @@ relative to that monitor.
 | `window-action`| `wid`, `action`                                     | Request a window manager action (eg: maximize, minimize)                 |
 | `window-refresh`| `wid`, options                                     | Request a full refresh of the window contents                            |
 | `window-draw-ack` | `wid`, `packet_sequence`, `decode_time`, `message` | Acknowledge receipt and decoding of a `window-draw` packet              |
+
+The Win32 native client rebases absolute window positions against the top-left
+of its monitor layout. Packets also include the pre-normalization coordinates
+as `raw-position` metadata.

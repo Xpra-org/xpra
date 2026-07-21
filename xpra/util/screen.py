@@ -45,6 +45,10 @@ class MonitorLayout:
                 return index, x - mx, y - my
         return None
 
+    def normalized_position(self, x: int, y: int) -> tuple[int, int]:
+        """Rebase an absolute point against the monitor layout's top-left edge."""
+        return x - self.min_x, y - self.min_y
+
     def position(self, index: int, x: int, y: int, normalized: bool = True) -> tuple[int, int] | None:
         """Resolve a monitor-relative point to raw or bounding-box-relative coordinates."""
         geometry = self.geometries.get(index)

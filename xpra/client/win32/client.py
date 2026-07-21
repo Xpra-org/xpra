@@ -121,7 +121,10 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     def get_mouse_position(self) -> tuple:
         pos = POINT()
         GetCursorPos(byref(pos))
-        return pos.x, pos.y
+        position = pos.x, pos.y
+        if display := self.get_subsystem("display"):
+            position = display.cp(*position)
+        return position
 
     def set_windows_cursor(self, windows, cursor_data):
         log("set_windows_cursor(%s, %s) not implemented in this backend", windows, cursor_data)
@@ -216,8 +219,14 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         geometry = (window.x, window.y, window.width, window.height)
         if display := self.get_subsystem("display"):
             geometry = display.crect(*geometry)
+            raw_position = geometry[:2]
+            geometry = display.get_server_position(raw_position) + geometry[2:]
+        else:
+            raw_position = geometry[:2]
         packet = [WINDOW_MAP, window.wid, *geometry, {}, {}]
-        if monitor := self.get_monitor_position(window):
+        monitor = self.get_monitor_position(window)
+        monitor["raw-position"] = raw_position
+        if monitor:
             packet.append(monitor)
         self.send(*packet)
 
@@ -259,11 +268,16 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         geometry = (window.x, window.y, window.width, window.height)
         if display := self.get_subsystem("display"):
             geometry = display.crect(*geometry)
+            raw_position = geometry[:2]
+            geometry = display.get_server_position(raw_position) + geometry[2:]
+        else:
+            raw_position = geometry[:2]
         log("send_configure: geometry=%s", geometry)
         config = {
             "state": window.state_updates,
             "geometry": geometry,
             "resize-counter": window.resize_counter,
+            "raw-position": raw_position,
         }
         if monitor := self.get_monitor_position(window):
             config["monitor"] = monitor

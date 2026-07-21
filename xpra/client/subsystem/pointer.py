@@ -87,16 +87,17 @@ class PointerClient(StubClientSubsystem):
 
     def get_caps(self) -> dict[str, Any]:
         double_click = get_double_click_caps()
+        initial_position, _props = self.split_pointer_position(self.get_mouse_position())
         caps: dict[str, Any] = {
             PointerClient.PREFIX: {
-                "initial-position": self.get_mouse_position(),
+                "initial-position": initial_position,
                 "double_click": double_click,
             },
         }
         if BACKWARDS_COMPATIBLE:
             caps["mouse"] = {
                 "show": True,  # assumed available in v6
-                "initial-position": self.get_mouse_position(),
+                "initial-position": initial_position,
             }
             caps["double_click"] = double_click
         return caps
@@ -120,9 +121,9 @@ class PointerClient(StubClientSubsystem):
         return seq
 
     def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
+        pos, position_props = self.split_pointer_position(pos)
         if "pointer" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
             # v5 packet type, most attributes are optional:
-            pos, position_props = self.split_pointer_position(pos)
             attrs = dict(props or {})
             attrs.update(position_props)
             if modifiers is not None:
@@ -170,25 +171,31 @@ class PointerClient(StubClientSubsystem):
         """Split pointer coordinates into an absolute pair and readable properties.
 
         Modern packets keep only ``(absolute_x, absolute_y)`` in their pointer
-        field. Legacy packets retain the full coordinate tuple. In both cases,
-        window-relative coordinates are stored as ``window-position`` and
-        monitor-relative coordinates are stored in a ``monitor`` descriptor
-        containing its ``index`` and relative ``position``.
+        field. Legacy packets retain the full coordinate tuple. Platform
+        coordinate normalization applies to both formats. Window-relative
+        coordinates are stored as ``window-position`` and monitor-relative
+        coordinates are stored in a ``monitor`` descriptor containing its
+        ``index`` and relative ``position``. The properties also retain the
+        pre-normalization absolute pair as ``raw-position``.
         """
         if not position:
             return (), {}
         values = tuple(int(v) for v in position)
         if len(values) < 2:
             return values, {}
-        props = {}
+        raw_position = values[:2]
+        props = {"raw-position": raw_position}
         if len(values) >= 4:
             props["window-position"] = values[2:4]
         display = self.get_subsystem("display")
-        monitor = display.get_monitor_relative_position(values) if display else None
+        monitor = display.get_monitor_relative_position(raw_position) if display else None
         if monitor:
             index, x, y = monitor
             props["monitor"] = {
                 "index": index,
                 "position": (x, y),
             }
-        return (values if BACKWARDS_COMPATIBLE else values[:2]), props
+        server_position = display.get_server_position(raw_position) if display else raw_position
+        if BACKWARDS_COMPATIBLE:
+            return server_position + values[2:], props
+        return server_position, props
