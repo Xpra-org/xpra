@@ -292,7 +292,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             window.geometry = (x, y, w, h)
             window.record("resize", size=(w, h))
 
-    def _process_raise_window(self, packet: Packet) -> None:
+    def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.get_window(wid):
             window.record("raise")
@@ -480,7 +480,8 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets("startup-complete", "encodings", main_thread=True)
         if BACKWARDS_COMPATIBLE:
-            self.add_packets("raise-window", "new-override-redirect")
+            self.add_packets("new-override-redirect")
+            self.add_legacy_alias("raise-window", "window-raise")
             self.add_legacy_alias("new-window", "window-create")
             self.add_legacy_alias("restack-window", "window-restack")
             self.add_legacy_alias("initiate-moveresize", "window-initiate-moveresize")
@@ -491,6 +492,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         self.add_packets(
             "startup-complete",
             "window-create",
+            "window-raise",
             "window-restack",
             "window-initiate-moveresize",
             "window-move-resize",
