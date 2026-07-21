@@ -130,8 +130,11 @@ class PointerClient(StubClientSubsystem):
             seq = self.next_pointer_sequence(device_id)
             packet = Packet(POINTER_MOTION, device_id, seq, wid, pos, attrs)
         else:
-            # pre v5 packet format:
-            packet = Packet("pointer-position", wid, pos, modifiers or (), buttons or (), props or {})
+            # pre-v5 packet format: no per-device id and no props.
+            # (the legacy code used to append `props.values()` here, but the bare
+            #  values cannot be reconstructed into a props dict server-side, so we
+            #  simply drop them - props only reach the server via the v5 packet.)
+            packet = Packet("pointer-position", wid, pos, modifiers or (), buttons or ())
         if self.position_timer:
             self.position_pending = packet
             return

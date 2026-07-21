@@ -559,10 +559,11 @@ class PointerManager(StubSubsystem):
             return
         ss.user_event("pointer-position")
         self.last_mouse_user = ss.uuid
+        # the legacy "pointer-position" packet carries no per-device id and no
+        # usable props (those only reach us via the v5 "pointer-motion" packet);
+        # any trailing elements from older clients are ignored:
         props: dict[str, Any] = {}
         device_id = -1
-        if len(packet) >= 6:
-            device_id = packet.get_i64(5)
         if self.process_mouse_common(proto, device_id, wid, pdata, props):
             self._update_modifiers(proto, wid, modifiers)
         self._maybe_record_drag_scroll(wid, pdata)
