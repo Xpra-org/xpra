@@ -580,7 +580,14 @@ class WindowServer(StubSubsystem):
                 # code more or less duplicated from _send_new_tray_window_packet:
                 w, h = window.get_dimensions()
                 if ss.system_tray:
-                    ss.new_tray(wid, window, w, h)
+                    if BACKWARDS_COMPATIBLE:
+                        # old clients expect a dedicated `new-tray` packet:
+                        ss.new_tray(wid, window, w, h)
+                    else:
+                        # trays are just `window-create` packets carrying `tray=True` in their metadata:
+                        x, y, w, h = window.get_property("geometry")
+                        wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
+                        ss.new_window(WINDOW_CREATE, wid, window, x, y, w, h, wprops)
                     ss.damage(wid, window, 0, 0, w, h)
                 elif not sharing:
                     # park it outside the visible area

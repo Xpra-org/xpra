@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.os_util import OSX
 from xpra.util.system import is_Ubuntu
 from xpra.util.objects import typedict, make_instance
@@ -48,27 +48,33 @@ class WindowTray(StubClientSubsystem):
 
     ######################################################################
     # system tray
-    def _process_new_tray(self, packet: Packet) -> None:
+    def make_new_tray(self, wid: int, w: int, h: int, metadata: typedict):
         assert self.client_supports_system_tray
-        self.client._ui_event()
-        wid = packet.get_wid()
-        w = packet.get_u16(2)
-        h = packet.get_u16(3)
         # scaling helpers are owned by the `display` subsystem:
         display = self.get_subsystem("display")
         w = max(1, display.sx(w))
         h = max(1, display.sy(h))
-        metadata = typedict()
-        if len(packet) >= 5:
-            metadata = typedict(packet.get_dict(4))
-        log("tray %#x metadata=%s", wid, metadata)
+        log("make_new_tray(%#x, %i, %i, %s)", wid, w, h, metadata)
         if wid in self._id_to_window:
             raise ValueError("we already have a window %#x: %s" % (wid, self.get_window(wid)))
         app_id = wid
         tray = self.setup_system_tray(self, app_id, wid, w, h, metadata)
-        log("process_new_tray(%s) tray=%s", packet, tray)
+        log("make_new_tray(..) tray=%s", tray)
         self._id_to_window[wid] = tray
         self._window_to_id[tray] = wid
+        return tray
+
+    def _process_new_tray(self, packet: Packet) -> None:
+        # legacy packet: newer servers overload `window-create` with `tray=True` metadata instead
+        assert BACKWARDS_COMPATIBLE
+        self.client._ui_event()
+        wid = packet.get_wid()
+        w = packet.get_u16(2)
+        h = packet.get_u16(3)
+        metadata = typedict()
+        if len(packet) >= 5:
+            metadata = typedict(packet.get_dict(4))
+        self.make_new_tray(wid, w, h, metadata)
 
     def make_system_tray(self, *args):
         """ tray used for application systray forwarding """
@@ -220,5 +226,7 @@ class WindowTray(StubClientSubsystem):
         tray.set_icon()
 
     def init_authenticated_packet_handlers(self) -> None:
-        # still need to be prefixed:
-        self.add_packets("new-tray", main_thread=True)
+        if BACKWARDS_COMPATIBLE:
+            # newer servers send trays as `window-create` packets with `tray=True` metadata,
+            # which are handled by the window manager subsystem:
+            self.add_packets("new-tray", main_thread=True)
