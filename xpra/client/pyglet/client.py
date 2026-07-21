@@ -149,6 +149,10 @@ class XpraPygletClient:
         log("%s", packet)
         self.quit(0)
 
+    def _process_disconnect(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_connection_close(packet)
+
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         netlog.info(f"ignoring setting-change for {setting!r}")
@@ -210,6 +214,10 @@ class XpraPygletClient:
     def _process_restack_window(self, packet: Packet) -> None:
         # legacy packet name (BACKWARDS_COMPATIBLE server):
         self._process_window_restack(packet)
+
+    def _process_draw(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_window_draw(packet)
 
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
