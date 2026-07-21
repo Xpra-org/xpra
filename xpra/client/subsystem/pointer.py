@@ -131,9 +131,7 @@ class PointerClient(StubClientSubsystem):
             packet = Packet(POINTER_MOTION, device_id, seq, wid, pos, attrs)
         else:
             # pre v5 packet format:
-            packet = Packet("pointer-position", wid, pos, modifiers or (), buttons or ())
-            if props:
-                packet += props.values()
+            packet = Packet("pointer-position", wid, pos, modifiers or (), buttons or (), props or {})
         if self.position_timer:
             self.position_pending = packet
             return
