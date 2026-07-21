@@ -131,8 +131,11 @@ class ProxyInstance:
                                                "keymap-changed", "server-settings"]
         self.client_protocol.large_packets.append(INFO_RESPONSE)
         if self.caps.boolget("file-transfer"):
-            self.server_protocol.large_packets += ["send-file", "send-file-chunk"]
-            self.client_protocol.large_packets += ["send-file", "send-file-chunk"]
+            file_large = [FILE_SEND, FILE_SEND_CHUNK]
+            if BACKWARDS_COMPATIBLE:
+                file_large += ["send-file", "send-file-chunk"]
+            self.server_protocol.large_packets += file_large
+            self.client_protocol.large_packets += file_large
         self.server_protocol.set_compression_level(int(self.session_options.get("compression_level", 0)))
         self.server_protocol.enable_default_encoder()
 

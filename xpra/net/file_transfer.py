@@ -18,7 +18,9 @@ from time import monotonic
 from dataclasses import dataclass
 from collections.abc import Callable
 
-from xpra.net.packet_type import FILE_SEND_CHUNK, FILE_DATA_REQUEST, FILE_DATA_RESPONSE, FILE_REQUEST
+from xpra.net.packet_type import (
+    FILE_SEND, FILE_ACK_CHUNK, FILE_SEND_CHUNK, FILE_DATA_REQUEST, FILE_DATA_RESPONSE, FILE_REQUEST,
+)
 from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import POSIX, WIN32, gi_import
 from xpra.util.io import umask_context, osclose
@@ -504,7 +506,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("cancel_file%s", (chunk_id, message, chunk))
         if chunk_state := self.receive_chunks_in_progress.get(chunk_id):
             if chunk_state.cancelled:
-                self.send("ack-file-chunk", chunk_id, False, message, chunk)
+                self.send(FILE_ACK_CHUNK, chunk_id, False, message, chunk)
                 return
             # mark it as cancelled:
             chunk_state.cancelled = True
@@ -531,7 +533,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog(f"os.unlink({filename})", exc_info=True)
                 filelog.error("Error: failed to delete temporary download file")
                 filelog.error(f" {filename!r} : {e}")
-        self.send("ack-file-chunk", chunk_id, False, message, chunk)
+        self.send(FILE_ACK_CHUNK, chunk_id, False, message, chunk)
 
     def _process_file_send_chunk(self, packet: Packet) -> None:
         # write the chunk to disk from the file I/O thread, off the parse thread:
@@ -592,7 +594,7 @@ class FileTransferHandler(FileTransferAttributes):
             error("more chunks requested after the declared file size was reached")
             return
 
-        self.send("ack-file-chunk", chunk_id, True, "", chunk)
+        self.send(FILE_ACK_CHUNK, chunk_id, True, "", chunk)
         if chunk_state.cancelled:
             # check again if the transfer has been cancelled
             filelog("got chunk for a cancelled file transfer, ignoring it")
@@ -722,7 +724,7 @@ class FileTransferHandler(FileTransferAttributes):
         if chunk_id and chunk_id in self.receive_chunks_in_progress:
             message = f"file transfer id {chunk_id!r} is already in use"
             log.error(f"Error: {message}")
-            self.send("ack-file-chunk", chunk_id, False, message, 0)
+            self.send(FILE_ACK_CHUNK, chunk_id, False, message, 0)
             return
 
         args = (send_id, "file", basefilename, printit, openit, mimetype, filesize, options)
@@ -784,7 +786,7 @@ class FileTransferHandler(FileTransferAttributes):
                 printit=printit, openit=openit, options=options,
                 digest=digest, written=0, cancelled=False, timer=timer, chunk=chunk,
             )
-            self.send("ack-file-chunk", chunk_id, True, b"", chunk)
+            self.send(FILE_ACK_CHUNK, chunk_id, True, b"", chunk)
             return
         # not chunked, full file:
         if not file_data:
@@ -1268,7 +1270,7 @@ class FileTransferHandler(FileTransferAttributes):
             # transfer is complete as soon as we send it:
             self.transfer_progress_update(True, send_id, monotonic() - start, filesize, filesize, None)
         basefilename = os.path.basename(filename)
-        self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options, send_id)
+        self.send(FILE_SEND, basefilename, mimetype, printit, openit, filesize, cdata, options, send_id)
         return True
 
     def _check_chunk_sending(self, chunk_id: str, chunk_no: int) -> None:
