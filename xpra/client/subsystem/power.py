@@ -108,7 +108,8 @@ class PowerEventClient(StubClientSubsystem):
             wids = tuple(win._id_to_window.keys()) if win else ()
             self.send("suspend", True, wids)
         else:
-            self.send("suspend")
+            # the boolean argument tells the server we are suspending:
+            self.send("suspend", True)
 
     def resume(self, *args) -> None:
         log("resume(%s)", args)
@@ -120,7 +121,8 @@ class PowerEventClient(StubClientSubsystem):
             wids = tuple(win._id_to_window.keys()) if win else ()
             self.send("resume", True, wids)
         else:
-            self.send("resume")
+            # a `suspend` packet with a `False` argument means "resume":
+            self.send("suspend", False)
         if elapsed < 1:
             # not really suspended
             # happens on macos when switching workspace!

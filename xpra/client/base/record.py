@@ -351,7 +351,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if x != 0 or y != 0 or (width, height) != window.geometry[2:4] or options.get("quality", 100) != 100:
             self.refresh_needed.add(wid)
 
-    def _process_eos(self, packet: Packet) -> None:
+    def _process_window_eos(self, packet: Packet) -> None:
         """ safe to ignore - we don't have streams to replay """
 
     def _process_keyboard_record(self, packet: Packet) -> None:
@@ -490,6 +490,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             self.add_legacy_alias("configure-override-redirect", "window-move-resize")
             self.add_legacy_alias("draw", "window-draw")
             self.add_legacy_alias("bell", "window-bell")
+            self.add_legacy_alias("eos", "window-eos")
         self.add_packets(
             "startup-complete",
             "window-create",
@@ -502,7 +503,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             "window-destroy",
             "window-draw",
             "window-bell",
-            "eos",
+            "window-eos",
             "keyboard-record",
             "cursor-data",
             "cursor-default",

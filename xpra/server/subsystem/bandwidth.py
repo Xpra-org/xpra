@@ -59,7 +59,7 @@ class BandwidthManager(StubSubsystem):
             }
         return caps
 
-    def _process_connection_data(self, proto, packet: Packet) -> None:
+    def _process_bandwidth_status(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.update_connection_data(packet.get_dict(1))
 
@@ -90,6 +90,6 @@ class BandwidthManager(StubSubsystem):
             log.info("bandwidth-limit changed to %sbps for client %s", std_unit(bandwidth_limit), client_id)
 
     def init_packet_handlers(self) -> None:
-        self.add_packets(
-            "connection-data", "bandwidth-limit",
-        )
+        self.add_packets("bandwidth-status", "bandwidth-limit")
+        if BACKWARDS_COMPATIBLE:
+            self.add_legacy_alias("connection-data", "bandwidth-status")

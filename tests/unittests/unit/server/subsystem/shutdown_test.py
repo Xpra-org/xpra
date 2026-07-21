@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import SHUTDOWN_SERVER, EXIT_SERVER
 from xpra.server import ServerExitMode
@@ -51,13 +51,29 @@ class ShutdownTest(unittest.TestCase):
 
     def test_handlers_and_features(self) -> None:
         self.assertEqual(set(self.server.hello_request_handlers), {"exit", "stop"})
-        self.assertEqual(set(self.server.packet_handlers), {EXIT_SERVER, SHUTDOWN_SERVER})
+        # `exit-server` is only a separate packet in backwards-compatible mode,
+        # otherwise it is folded into `shutdown-server`:
+        expected = {SHUTDOWN_SERVER}
+        if BACKWARDS_COMPATIBLE:
+            expected.add(EXIT_SERVER)
+        self.assertEqual(set(self.server.packet_handlers), expected)
         self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": self.shutdown.client_shutdown})
 
     def test_exit_request(self) -> None:
-        self.server.packet_handlers[EXIT_SERVER][0](None, Packet(EXIT_SERVER, "restart"))
+        if BACKWARDS_COMPATIBLE:
+            self.server.packet_handlers[EXIT_SERVER][0](None, Packet(EXIT_SERVER, "restart"))
+        else:
+            # exit is requested via a `shutdown-server` packet with the exit flag set:
+            self.server.packet_handlers[SHUTDOWN_SERVER][0](None, Packet(SHUTDOWN_SERVER, True, "restart"))
         self.assertEqual(self.server.cleanup_reasons, ["restart"])
         self.assertEqual(self.server.quit_modes, [ServerExitMode.EXIT])
+
+    def test_shutdown_request(self) -> None:
+        self.shutdown.client_shutdown = True
+        # a `shutdown-server` packet without the exit flag requests a shutdown:
+        self.server.packet_handlers[SHUTDOWN_SERVER][0](None, Packet(SHUTDOWN_SERVER))
+        self.assertEqual(self.server.cleanup_reasons, [ConnectionMessage.SERVER_SHUTDOWN])
+        self.assertEqual(self.server.quit_modes, [ServerExitMode.NORMAL])
 
     def test_stop_request(self) -> None:
         self.shutdown.client_shutdown = True

@@ -54,7 +54,7 @@ class WindowDraw(StubClientSubsystem):
         else:
             self.add_decode_work(self._do_draw, packet)
 
-    def _process_eos(self, packet: Packet) -> None:
+    def _process_window_eos(self, packet: Packet) -> None:
         self.add_decode_work(self._do_draw, packet)
 
     def send_damage_sequence(self, wid: int, packet_sequence: int, width: int, height: int,
@@ -67,7 +67,8 @@ class WindowDraw(StubClientSubsystem):
         """ this runs from the decode thread (see `xpra/client/subsystem/decode.py`) """
         wid = packet.get_wid()
         window = self.get_window(wid)
-        if packet.get_type() == "eos":
+        # legacy `eos` packets are rewritten to `window-eos` by the packet alias:
+        if packet.get_type() == "window-eos":
             if window:
                 window.eos()
             return
@@ -166,6 +167,7 @@ class WindowDraw(StubClientSubsystem):
     def init_authenticated_packet_handlers(self) -> None:
         if BACKWARDS_COMPATIBLE:
             self.add_legacy_alias("draw", "window-draw")
+            self.add_legacy_alias("eos", "window-eos")
         # `main_thread=True` is required for ordering, not for the (trivial) handlers:
         # see `_process_window_draw` above
-        self.add_packets("window-draw", "eos", main_thread=True)
+        self.add_packets("window-draw", "window-eos", main_thread=True)

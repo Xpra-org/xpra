@@ -17,7 +17,7 @@ from xpra.common import noerr, may_notify_client
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
 from xpra.net.common import Packet, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS
+from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
 from xpra.util.system import get_run_info
@@ -385,11 +385,11 @@ class UIXpraClient(XpraClientBase):
     # features:
     def send_sharing_enabled(self) -> None:
         assert self.server_sharing and self.server_sharing_toggle
-        self.send("sharing-toggle", self.client_supports_sharing)
+        self.send(SHARING_TOGGLE, self.client_supports_sharing)
 
     def send_lock_enabled(self) -> None:
         assert self.server_lock_toggle
-        self.send("lock-toggle", self.client_lock)
+        self.send(SHARING_LOCK, self.client_lock)
 
     def send_notify_enabled(self) -> None:
         notification = self.get_subsystem("notification")

@@ -17,7 +17,7 @@ from xpra.os_util import WIN32, POSIX
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.auth.auth_helper import AuthDef
 from xpra.util.objects import typedict
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubSubsystem
@@ -168,7 +168,7 @@ class PrinterServer(StubSubsystem):
         self.server.send_disconnect(proto, ConnectionMessage.DONE)
         return True
 
-    def _process_print_file(self, _proto, packet: Packet) -> None:
+    def _process_printer_file(self, _proto, packet: Packet) -> None:
         code, message = self.do_print_file(packet)
         if code != ExitCode.OK:
             log.warn(message)
@@ -256,7 +256,7 @@ class PrinterServer(StubSubsystem):
         log(message)
         return ExitCode.OK if sent > 0 else ExitCode.REMOTE_ERROR, message
 
-    def _process_print_devices(self, proto, packet: Packet) -> None:
+    def _process_printer_devices(self, proto, packet: Packet) -> None:
         if not self.file_transfer.printing or WIN32:
             log.error("Error: received printer definitions data")
             log.error(" but this server does not support printer forwarding")
@@ -273,9 +273,12 @@ class PrinterServer(StubSubsystem):
     def init_packet_handlers(self) -> None:
         # noqa: E241
         if self.file_transfer.printing:
-            self.add_legacy_alias("printers", "print-devices")
-            self.add_legacy_alias("print", "print-file")
-            # `print-devices` configures virtual printers (spawns `lpadmin`), so it
+            # `printer-devices` configures virtual printers (spawns `lpadmin`), so it
             # runs on the main thread rather than inline on the network parse thread:
-            self.add_packets("print-devices", main_thread=True)
-            self.add_packets("print-file")
+            self.add_packets("printer-devices", main_thread=True)
+            self.add_packets("printer-file")
+            if BACKWARDS_COMPATIBLE:
+                self.add_legacy_alias("printers", "printer-devices")
+                self.add_legacy_alias("print-devices", "printer-devices")
+                self.add_legacy_alias("print", "printer-file")
+                self.add_legacy_alias("print-file", "printer-file")

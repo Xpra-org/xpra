@@ -28,6 +28,7 @@ from xpra.server.window.compress import (
     LOG_ENCODERS,
 )
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import WINDOW_EOS
 from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
@@ -405,7 +406,7 @@ class WindowVideoSource(WindowSource):
             # and sending eos then would close the new stream, not the old one!)
             if self._video_encoder == ve:
                 log("sending eos for wid %i", self.wid)
-                self.queue_packet(("eos", self.wid))
+                self.queue_packet((WINDOW_EOS, self.wid))
             if SAVE_VIDEO_STREAMS:
                 self.close_video_stream_file()
 

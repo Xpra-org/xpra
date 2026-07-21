@@ -50,7 +50,8 @@ class WindowClose(StubClientSubsystem):
             log.info("window-close set to disconnect, exiting (window %#x)", wid)
             self.client.quit(0)
         elif self.window_close_action == "shutdown":
-            self.send(SHUTDOWN_SERVER, "shutdown on window close")
+            # `False`: request a shutdown (not a full server exit), followed by the reason:
+            self.send(SHUTDOWN_SERVER, False, "shutdown on window close")
         elif self.window_close_action == "auto":
             # forward unless this looks like a desktop,
             # this allows us to behave more like VNC:

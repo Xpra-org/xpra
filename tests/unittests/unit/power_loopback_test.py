@@ -16,6 +16,7 @@ StubClientConnection.
 
 import unittest
 
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import AdHocStruct
 from xpra.server.source.stub import StubClientConnection
 
@@ -52,8 +53,13 @@ class PowerLoopbackTest(LoopbackTest):
         # both events crossed the wire:
         self.assertTrue(any(p[0] == "suspend" for p in self.c2s),
                         "no suspend packet was sent: %s" % (self.c2s,))
-        self.assertTrue(any(p[0] == "resume" for p in self.c2s),
-                        "no resume packet was sent: %s" % (self.c2s,))
+        if BACKWARDS_COMPATIBLE:
+            self.assertTrue(any(p[0] == "resume" for p in self.c2s),
+                            "no resume packet was sent: %s" % (self.c2s,))
+        else:
+            # resume is sent as a `suspend` packet with a `False` argument:
+            self.assertTrue(any(p[0] == "suspend" and not p[1] for p in self.c2s),
+                            "no resume (suspend=False) packet was sent: %s" % (self.c2s,))
         # and the server decoded them and re-emitted them on the source:
         self.assertEqual(events, ["suspend", "resume"])
 

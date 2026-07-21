@@ -7,6 +7,7 @@
 import os
 import unittest
 
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.env import OSEnvContext
 from unit.test_util import silence_info
@@ -20,7 +21,10 @@ class BandwidthTest(ServerMixinTest):
             os.environ["XPRA_PING_TIMEOUT"] = "1"
             from xpra.server.subsystem.bandwidth import BandwidthManager, MAX_BANDWIDTH_LIMIT
             from xpra.server.source import bandwidth
-            assert bandwidth.BandwidthConnection.is_needed(typedict({"network-state": True}))
+            # `network-state` only triggers the subsystem in backwards-compatible mode:
+            if BACKWARDS_COMPATIBLE:
+                assert bandwidth.BandwidthConnection.is_needed(typedict({"network-state": True}))
+            assert bandwidth.BandwidthConnection.is_needed(typedict({"bandwidth": True}))
             opts = AdHocStruct()
             opts.bandwidth_limit = "1Gbps"
             opts.bandwidth_detection = False
@@ -36,12 +40,12 @@ class BandwidthTest(ServerMixinTest):
             self.assertEqual(capped_at, get_info_limit(self.mixin))
             for v in (None, "foo", 1, 2.0, [], (), set()):
                 try:
-                    self.handle_packet(("connection-data", v))
+                    self.handle_packet(("bandwidth-status", v))
                 except TypeError:
                     pass
                 else:
-                    raise Exception("should not allow %s (%s) as connection-data" % (v, type(v)))
-            self.handle_packet(("connection-data", {}))
+                    raise Exception("should not allow %s (%s) as bandwidth-status" % (v, type(v)))
+            self.handle_packet(("bandwidth-status", {}))
             for v in (None, "foo", 2.0, [], (), set()):
                 try:
                     self.handle_packet(("bandwidth-limit", v))

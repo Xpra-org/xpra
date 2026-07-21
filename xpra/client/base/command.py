@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.net.packet_type import PRINT_FILE, INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, EXIT_SERVER
+from xpra.net.packet_type import PRINT_FILE, INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, EXIT_SERVER, SHUTDOWN_SERVER
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
@@ -764,10 +764,12 @@ class ExitXpraClient(HelloRequestClient):
         }
 
     def do_command(self, caps: typedict) -> None:
-        self.idle_add(self.send,
-                      EXIT_SERVER,
-                      os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT.value)
-                      )
+        reason = os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT.value)
+        if BACKWARDS_COMPATIBLE:
+            self.idle_add(self.send, EXIT_SERVER, reason)
+        else:
+            # exit is requested via a `shutdown-server` packet with the exit flag set:
+            self.idle_add(self.send, SHUTDOWN_SERVER, True, reason)
 
 
 class StopXpraClient(HelloRequestClient):

@@ -196,9 +196,9 @@ def make_os_str(sys_platform, platform_release, platform_platform, platform_linu
 
 
 def get_client_server_last_info(client) -> dict:
-    # `last_info` is owned by the `info-request` subsystem on a full UI client;
+    # `last_info` is owned by the `info` subsystem on a full UI client;
     # standalone monitor clients (`InfoTimerClient`) fake it directly on themselves:
-    si = getattr(client, "get_subsystem", None) and client.get_subsystem("info-request")
+    si = getattr(client, "get_subsystem", None) and client.get_subsystem("info")
     if si:
         return si.last_info
     return getattr(client, "server_last_info", {}) or {}
@@ -455,7 +455,7 @@ class SessionInfo(Gtk.Window):
         if client_info_request := getattr(self.client, "send_info_request", None):
             client_info_request(*categories)
             return
-        if info_request := self.get_client_subsystem("info-request"):
+        if info_request := self.get_client_subsystem("info"):
             info_request.send_info_request(*categories)
 
     def get_core_encodings(self) -> Sequence[str]:

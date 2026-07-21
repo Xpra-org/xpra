@@ -427,7 +427,7 @@ class GTKDialogClient(StubClientSubsystem):
         self.sub_dialogs["session-info"] = dialog
 
     def show_bug_report(self, *_args) -> None:
-        info_request = self.get_subsystem("info-request")
+        info_request = self.get_subsystem("info")
         if info_request:
             info_request.send_info_request()
 

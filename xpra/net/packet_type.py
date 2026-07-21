@@ -19,6 +19,7 @@ WINDOW_METADATA: Final[str] = "window-metadata"
 WINDOW_DESTROY: Final[str] = "lost-window" if BACKWARDS_COMPATIBLE else "window-destroy"
 WINDOW_ICON: Final[str] = "window-icon"
 WINDOW_DRAW: Final[str] = "draw" if BACKWARDS_COMPATIBLE else "window-draw"
+WINDOW_EOS: Final[str] = "eos" if BACKWARDS_COMPATIBLE else "window-eos"
 
 # client to server:
 WINDOW_MAP: Final[str] = "map-window" if BACKWARDS_COMPATIBLE else "window-map"
@@ -43,8 +44,8 @@ POINTER_WHEEL: Final[str] = "wheel-motion" if BACKWARDS_COMPATIBLE else "pointer
 LOGGING_EVENT: Final[str] = "logging" if BACKWARDS_COMPATIBLE else "logging-event"
 LOGGING_CONTROL: Final[str] = "logging-control"
 
-PRINT_DEVICES: Final[str] = "printers" if BACKWARDS_COMPATIBLE else "print-devices"
-PRINT_FILE: Final[str] = "print-file"
+PRINT_DEVICES: Final[str] = "printers" if BACKWARDS_COMPATIBLE else "printer-devices"
+PRINT_FILE: Final[str] = "print-file" if BACKWARDS_COMPATIBLE else "printer-file"
 
 FILE_SEND: Final[str] = "file-send"
 FILE_ACK_CHUNK: Final[str] = "file-ack-chunk"
@@ -71,6 +72,9 @@ NOTIFICATION_CLOSE: Final[str] = "notify_close" if BACKWARDS_COMPATIBLE else "no
 NOTIFICATION_STATUS: Final[str] = "set-notify" if BACKWARDS_COMPATIBLE else "notification-status"
 
 BELL_SET: Final[str] = "set-bell" if BACKWARDS_COMPATIBLE else "bell-set"
+
+SHARING_TOGGLE: Final[str] = "sharing-toggle"
+SHARING_LOCK: Final[str] = "lock-toggle" if BACKWARDS_COMPATIBLE else "sharing-lock"
 
 INFO_REQUEST: Final[str] = "info-request"
 INFO_RESPONSE: Final[str] = "info-response"
