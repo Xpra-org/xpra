@@ -14,8 +14,8 @@ from xpra.audio.common import AUDIO_DATA_PACKET
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.packet_type import (
-    INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
-    CONNECTION_LOST,
+    INFO_RESPONSE, CHALLENGE, WINDOW_ICON, WINDOW_DRAW, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
+    CONNECTION_LOST, CONNECTION_CLOSE,
 )
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.constants import MAX_PACKET_SIZE, ConnectionMessage
@@ -320,7 +320,7 @@ class ProxyInstance:
             log("ping-echo: client latency=%.1fms", self.client_last_ping_latency)
             return
         # the packet types below are forwarded:
-        if packet_type == "disconnect":
+        if packet_type == CONNECTION_CLOSE:
             reasons = tuple(str(x) for x in packet[1:])
             log("got disconnect from client: %s", csv(reasons))
             if self.exit:
@@ -423,7 +423,7 @@ class ProxyInstance:
             self.stop(proto, "server connection lost")
             return
         self.server_has_more = proto.receive_pending
-        if packet_type == "disconnect":
+        if packet_type == CONNECTION_CLOSE:
             reason = packet.get_str(1)
             log("got disconnect from server: %s", reason)
             if self.exit:
@@ -462,7 +462,7 @@ class ProxyInstance:
             # "xpra info" is a new connection, which talks to the proxy server...
             info = packet.get_dict(1)
             info.update(self.get_proxy_info(proto))
-        elif packet_type == "draw":
+        elif packet_type == WINDOW_DRAW:
             size = 0
             if BACKWARDS_COMPATIBLE:
                 # older servers can have mmap offsets or scroll data sent as `pixel_data`:
