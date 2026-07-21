@@ -17,7 +17,9 @@ It handles forwarding of window contents and events.
 
 ## Capabilities
 
-TBD
+Modern clients attach a monitor descriptor to map and configure packets. The
+descriptor contains the client's monitor `index` and the window `position`
+relative to that monitor.
 
 ## Network Packets
 
@@ -41,9 +43,9 @@ TBD
 
 | Packet Type    | Arguments                                           | Information                                                              |
 |----------------|-----------------------------------------------------|--------------------------------------------------------------------------|
-| `window-map`   | `wid`, `x`, `y`, `w`, `h`, client properties       | The client is ready to display a window                                  |
+| `window-map`   | `wid`, `x`, `y`, `w`, `h`, client properties, state, monitor | The client is ready to display a window                           |
 | `window-unmap` | `wid`                                               | The client has hidden a window                                           |
-| `window-configure` | `wid`, `x`, `y`, `w`, `h`, properties          | The client has moved or resized a window                                 |
+| `window-configure` | `wid`, configuration dictionary                | The client has moved or resized a window                                 |
 | `window-close` | `wid`                                               | The user has requested to close the window                               |
 | `window-focus` | `wid`                                               | The window has received keyboard focus                                   |
 | `window-action`| `wid`, `action`                                     | Request a window manager action (eg: maximize, minimize)                 |

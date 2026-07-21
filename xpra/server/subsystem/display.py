@@ -416,9 +416,8 @@ class DisplayManager(StubSubsystem):
         vrefresh = attrs.intget("vrefresh")
         if 0 < vrefresh < 240 and hasattr(ss, "vrefresh") and getattr(ss, "vrefresh") != vrefresh:
             ss.vrefresh = vrefresh
-        monitors = attrs.dictget("monitors")
-        if monitors:
-            ss.set_monitors(monitors)
+        if "monitors" in attrs:
+            ss.set_monitors(attrs.dictget("monitors"))
         if desktop_size != (0, 0):
             self._apply_desktop_size(ss, *desktop_size)
         # DPI

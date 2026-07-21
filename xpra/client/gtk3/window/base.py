@@ -1289,6 +1289,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._set_backing_size(w, h)
         self._been_mapped = True
         packet = [WINDOW_MAP, self.wid, sx, sy, sw, sh, props, state]
+        if monitor := self.get_monitor_position(x, y):
+            packet.append(monitor)
         self.send(*packet)
         self._pos = (x, y)
         self._size = (w, h)
@@ -1313,6 +1315,25 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if display.get_monitor(i) == monitor:
                 return i
         return -1
+
+    def get_monitor_position(self, x: int | None = None, y: int | None = None) -> dict[str, Any]:
+        monitor = self._monitor
+        if monitor is None:
+            gdkwin = self.get_window()
+            if gdkwin:
+                monitor = gdkwin.get_display().get_monitor_at_window(gdkwin)
+        if monitor is None:
+            return {}
+        index = self._get_monitor_index(monitor)
+        if index < 0:
+            return {}
+        if x is None or y is None:
+            x, y = self.get_position()
+        geometry = monitor.get_geometry()
+        return {
+            "index": index,
+            "position": (self.cx(x - geometry.x), self.cy(y - geometry.y)),
+        }
 
     def monitor_changed(self, monitor) -> None:
         mid = self._get_monitor_index(monitor)
@@ -1452,11 +1473,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             config: dict[str, PacketElement] = {}
             if not self._client.readonly:
                 if pointer := self.get_subsystem("pointer"):
-                    config["pointer"] = {
+                    position, pointer_props = pointer.split_pointer_position(pointer.get_mouse_position())
+                    pointer_data = {
                         "wid": self.wid if not self.is_OR() else 0,
-                        "position": pointer.get_mouse_position(),
+                        "position": position,
                         # "device-id": -1,
                     }
+                    if pointer_props:
+                        pointer_data["properties"] = pointer_props
+                    config["pointer"] = pointer_data
                 if keyboard := self.get_subsystem("keyboard"):
                     config["modifiers"] = keyboard.get_current_modifiers()
             if props:
@@ -1466,14 +1491,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if not skip_geometry:
                 config["geometry"] = (sx, sy, sw, sh)
                 config["resize-counter"] = self._resize_counter
-                if self._monitor is not None:
-                    mg = self._monitor.get_geometry()
-                    mid = self._get_monitor_index(self._monitor)
-                    if mid >= 0:
-                        config["monitor"] = {
-                            "index": mid,
-                            "position": (self.cx(x - mg.x), self.cy(y - mg.y)),
-                        }
+                if monitor := self.get_monitor_position(x, y):
+                    config["monitor"] = monitor
             self.send(WINDOW_CONFIGURE, self.wid, config)
             geomlog("sending configure for %i: %s", self.wid, config)
 

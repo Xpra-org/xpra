@@ -28,6 +28,12 @@ The client should expose the following `pointer` dictionary in its `hello` packe
 | `initial-position` | `x` and `y` pair of coordinates | Optional                                                                      |
 | `double_click`     | dictionary                      | contains just two integer attributes: `time` (in milliseconds) and `distance` |
 
+Modern packets keep the `pointer` field as `(absolute_x, absolute_y)` and carry
+alternative coordinate spaces in the properties dictionary:
+
+- `window-position`: `(window_x, window_y)`
+- `monitor`: `{"index": monitor_index, "position": (monitor_x, monitor_y)}`
+
 Alternatively, the client can just supply the value `True` instead of the dictionary and the server will use default values.
 
 
@@ -35,7 +41,7 @@ Alternatively, the client can just supply the value `True` instead of the dictio
 
 | Packet Type      | Direction        | Arguments                                                                       |
 |------------------|------------------|---------------------------------------------------------------------------------|
-| `pointer-motion` | client to server | `device_id`, `sequence`, `wid`, position data, modifiers, properties           |
-| `pointer-button` | client to server | `device_id`, `sequence`, `wid`, `button`, `pressed`, position data, properties |
-| `pointer-wheel`  | client to server | `device_id`, `sequence`, `wid`, `button`, `distance`, position data, modifiers |
+| `pointer-motion` | client to server | `device_id`, `sequence`, `wid`, pointer, properties                            |
+| `pointer-button` | client to server | `device_id`, `sequence`, `wid`, `button`, `pressed`, pointer, properties       |
+| `pointer-wheel`  | client to server | `wid`, `button`, `distance`, pointer, modifiers, buttons, properties           |
 | `input-devices`  | client to server |                                                                                 |

@@ -5,8 +5,74 @@
 
 import re
 from typing import Any
+from collections.abc import Mapping, Sequence
 
 from xpra.util.io import get_util_logger
+
+
+class MonitorLayout:
+    """A snapshot of a peer's monitor geometry and coordinate origin."""
+
+    __slots__ = ("geometries", "min_x", "min_y")
+
+    def __init__(self, monitors: Mapping | None = None):
+        geometries: dict[int, tuple[int, int, int, int]] = {}
+        for index, monitor in (monitors or {}).items():
+            if not isinstance(monitor, Mapping):
+                continue
+            geometry = monitor.get("geometry")
+            if not isinstance(geometry, Sequence) or isinstance(geometry, (str, bytes)) or len(geometry) != 4:
+                continue
+            try:
+                x, y, width, height = (int(v) for v in geometry)
+                index = int(index)
+            except (TypeError, ValueError):
+                continue
+            if width <= 0 or height <= 0:
+                continue
+            geometries[index] = x, y, width, height
+        self.geometries = geometries
+        self.min_x = min((geometry[0] for geometry in geometries.values()), default=0)
+        self.min_y = min((geometry[1] for geometry in geometries.values()), default=0)
+
+    def __bool__(self) -> bool:
+        return bool(self.geometries)
+
+    def relative_position(self, x: int, y: int) -> tuple[int, int, int] | None:
+        """Return ``monitor-index, x, y`` for an absolute point."""
+        for index, (mx, my, width, height) in self.geometries.items():
+            if mx <= x < mx + width and my <= y < my + height:
+                return index, x - mx, y - my
+        return None
+
+    def position(self, index: int, x: int, y: int, normalized: bool = True) -> tuple[int, int] | None:
+        """Resolve a monitor-relative point to raw or bounding-box-relative coordinates."""
+        geometry = self.geometries.get(index)
+        if geometry is None:
+            return None
+        mx, my = geometry[:2]
+        if normalized:
+            mx -= self.min_x
+            my -= self.min_y
+        return mx + x, my + y
+
+    def normalized_monitors(self, monitors: Mapping) -> dict[int, dict[str, Any]]:
+        """Copy monitor definitions and rebase their geometries to a non-negative origin."""
+        normalized: dict[int, dict[str, Any]] = {}
+        for raw_index, monitor in monitors.items():
+            if not isinstance(monitor, Mapping):
+                continue
+            try:
+                index = int(raw_index)
+            except (TypeError, ValueError):
+                continue
+            mdef = dict(monitor)
+            geometry = self.geometries.get(index)
+            if geometry:
+                x, y, width, height = geometry
+                mdef["geometry"] = x - self.min_x, y - self.min_y, width, height
+            normalized[index] = mdef
+        return normalized
 
 
 def log_screen_sizes(root_w, root_h, sizes):

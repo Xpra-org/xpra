@@ -537,6 +537,20 @@ class SeamlessWindowServer(WindowServer):
                 return None
         return pos[0], pos[1]
 
+    def resolve_monitor_geometry(self, proto, geometry: Sequence[int], monitor: typedict) -> tuple[int, ...]:
+        if not monitor or not (ss := self.get_server_source(proto)) or not hasattr(ss, "get_monitor_position"):
+            return tuple(geometry)
+        index = monitor.intget("index", -1)
+        position = monitor.inttupleget("position")
+        if index < 0 or len(position) != 2:
+            return tuple(geometry)
+        resolved = ss.get_monitor_position(index, position)
+        if not resolved:
+            return tuple(geometry)
+        x, y = resolved
+        geomlog("resolved client monitor %i position %s to %s", index, position, resolved)
+        return x, y, geometry[2], geometry[3]
+
     @staticmethod
     def client_configure_window(win, geometry, resize_counter: int = 0) -> None:
         log("client_configure_window(%s, %s, %s)", win, geometry, resize_counter)
@@ -594,6 +608,9 @@ class SeamlessWindowServer(WindowServer):
         if window.is_OR():
             windowlog.warn("Warning: received map event on OR window %s", wid)
             return
+        if len(packet) >= 9:
+            monitor = typedict(packet.get_dict(8))
+            x, y, w, h = self.resolve_monitor_geometry(proto, (x, y, w, h), monitor)
         geomlog("client %s mapped window %#x - %s, at: %s", ss, wid, window, (x, y, w, h))
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         cp = {}
@@ -680,10 +697,11 @@ class SeamlessWindowServer(WindowServer):
             pwid = pointer_data.intget("wid", 0)
             position = pointer_data.inttupleget("position")
             device_id = pointer_data.intget("device-id")
+            props = pointer_data.dictget("properties")
             if pwid == wid and window.is_OR():
                 pwid = 0
             pointer = self.get_subsystem("pointer")
-            if pointer and pointer.process_mouse_common(proto, device_id, pwid, position):
+            if pointer and pointer.process_mouse_common(proto, device_id, pwid, position, props):
                 if self._has_focus == pwid and "modifiers" in pointer_data:
                     modifiers = pointer_data.strtupleget("modifiers")
                     pointer._update_modifiers(proto, pwid, modifiers)

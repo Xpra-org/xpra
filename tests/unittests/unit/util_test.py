@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util.objects import AtomicInteger, MutableInteger, typedict
-from xpra.util.screen import log_screen_sizes
+from xpra.util.screen import log_screen_sizes, MonitorLayout
 from xpra.util.str_fn import (
     std, alnum, nonl, pver,
     obsc, csv, is_valid_hostname,
@@ -66,6 +66,42 @@ class TestIntegerClasses(unittest.TestCase):
 
     def test_MutableInteger(self):
         self._test_IntegerClass(MutableInteger)
+
+
+class TestMonitorLayout(unittest.TestCase):
+
+    def test_monitor_coordinates(self):
+        monitors = {
+            0: {"geometry": (-1920, 0, 1920, 1080), "name": "left"},
+            1: {"geometry": (0, -1200, 2560, 1200), "name": "primary"},
+            2: {"geometry": (0, 0, 1280, 1024), "name": "lower"},
+        }
+        layout = MonitorLayout(monitors)
+        self.assertTrue(layout)
+        self.assertEqual((layout.min_x, layout.min_y), (-1920, -1200))
+        self.assertEqual(layout.relative_position(-1820, 50), (0, 100, 50))
+        self.assertEqual(layout.relative_position(100, -1100), (1, 100, 100))
+        self.assertIsNone(layout.relative_position(4000, 4000))
+        self.assertEqual(layout.position(0, 100, 50, normalized=False), (-1820, 50))
+        self.assertEqual(layout.position(0, 100, 50), (100, 1250))
+        self.assertEqual(layout.position(1, 100, 100), (2020, 100))
+        self.assertIsNone(layout.position(99, 0, 0))
+
+        normalized = layout.normalized_monitors(monitors)
+        self.assertEqual(normalized[0]["geometry"], (0, 1200, 1920, 1080))
+        self.assertEqual(normalized[1]["geometry"], (1920, 0, 2560, 1200))
+        self.assertEqual(normalized[2]["geometry"], (1920, 1200, 1280, 1024))
+        self.assertEqual(monitors[0]["geometry"], (-1920, 0, 1920, 1080))
+
+    def test_invalid_monitor_data(self):
+        layout = MonitorLayout({
+            "bad-index": {"geometry": (0, 0, 100, 100)},
+            1: {"geometry": (0, 0, 0, 100)},
+            2: {"geometry": (0, 0, 100)},
+            3: None,
+        })
+        self.assertFalse(layout)
+        self.assertIsNone(layout.relative_position(0, 0))
 
 
 class TestTypedict(unittest.TestCase):

@@ -325,20 +325,37 @@ class PointerManager(StubSubsystem):
         device = self.pointer_device_map.get(deviceid) or self.pointer_device
         return device
 
-    def _get_pointer_abs_coordinates(self, wid: int, pos) -> tuple[int, int]:
+    @staticmethod
+    def get_pointer_window_position(pos, props=None) -> tuple[int, int] | None:
+        """Return window-relative coordinates from properties or a legacy tuple."""
+        relative = (props or {}).get("window-position")
+        if isinstance(relative, (tuple, list)) and len(relative) == 2:
+            try:
+                return int(relative[0]), int(relative[1])
+            except (TypeError, ValueError):
+                pass
+        if len(pos) >= 4:
+            return int(pos[2]), int(pos[3])
+        return None
+
+    def _get_pointer_abs_coordinates(self, wid: int, pos, props=None) -> tuple[int, int]:
         # simple absolute coordinates
         x, y = pos[:2]
-        if len(pos) >= 4:
+        relative = self.get_pointer_window_position(pos, props)
+        if relative:
             window_sub = self.get_subsystem("window")
             if window_sub is not None:
                 # relative coordinates
                 if model := window_sub.get_window(wid):
-                    rx, ry = pos[2:4]
+                    rx, ry = relative
                     geom = model.get_geometry()
                     x = geom[0] + rx
                     y = geom[1] + ry
                     log("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
         return x, y
+
+    def get_pointer_target(self, proto, wid: int, pos, props=None) -> tuple[int, int]:
+        return self._get_pointer_abs_coordinates(wid, pos, props)
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         # (this is called within a `xswallow` context)
@@ -360,8 +377,9 @@ class PointerManager(StubSubsystem):
         if self.is_readonly(proto):
             return False
         pos = self.get_pointer_device(device_id).get_position()
-        if (pointer and pos != pointer[:2]) or self.input_devices == "xi":
-            self._move_pointer(device_id, wid, pointer, props)
+        target = self.get_pointer_target(proto, wid, pointer, props)
+        if (pointer and pos != target) or self.input_devices == "xi":
+            self._move_pointer(device_id, wid, target, props)
         return True
 
     def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
@@ -383,21 +401,23 @@ class PointerManager(StubSubsystem):
             self._update_modifiers(proto, wid, props.get("modifiers", ()))
         if DRAG_SCROLL_ENABLED and button == 1 and wid:
             if pressed:
-                self._button1_drag[wid] = self._make_button1_drag_state(wid, pointer)
+                self._button1_drag[wid] = self._make_button1_drag_state(wid, pointer, props)
             else:
                 self._button1_drag.pop(wid, None)
-        props = {}
-        if self.process_mouse_common(proto, device_id, wid, pointer, props):
+        pointer_props = {
+            key: props[key] for key in ("window-position", "monitor") if key in props
+        }
+        if self.process_mouse_common(proto, device_id, wid, pointer, pointer_props):
             seq = self.pointer_sequence.get(device_id, 0)
-            self.may_record_pointer_event("pointer-button", device_id, seq, wid, button, pressed, pointer, props)
-            self.button_action(device_id, wid, button, pressed, props)
+            self.may_record_pointer_event("pointer-button", device_id, seq, wid, button, pressed, pointer, {})
+            self.button_action(device_id, wid, button, pressed, {})
 
-    def _make_button1_drag_state(self, wid: int, pointer) -> dict:
+    def _make_button1_drag_state(self, wid: int, pointer, props=None) -> dict:
         """Snapshot the button-1 press for the drag-as-scroll heuristic.
 
         Computes whether the press landed inside the window's right-edge
-        scrollbar zone, using the window-relative x (``pointer[2]``) and the
-        window's geometry width when reachable.  Stores press coordinates so
+        scrollbar zone, using the window-relative position property and the
+        window's geometry width when reachable. Stores press coordinates so
         the motion handler can accumulate dx/dy.
         """
         try:
@@ -407,11 +427,8 @@ class PointerManager(StubSubsystem):
             press_x, press_y = 0, 0
         in_zone: bool | None = None
         rel_x: int | None = None
-        if pointer and len(pointer) >= 4:
-            try:
-                rel_x = int(pointer[2])
-            except (TypeError, ValueError):
-                rel_x = None
+        if relative := self.get_pointer_window_position(pointer, props):
+            rel_x = relative[0]
         window_width = self._lookup_window_width(wid)
         if rel_x is not None and window_width:
             in_zone = (window_width - rel_x) <= DRAG_SCROLLBAR_ZONE_PX
@@ -529,7 +546,7 @@ class PointerManager(StubSubsystem):
                 return
             self.pointer_sequence[device_id] = seq
         pointer = pdata[:2]
-        ss.mouse_last_relative_position = pdata[2:4] if len(pdata) >= 4 else (-1, -1)
+        ss.mouse_last_relative_position = self.get_pointer_window_position(pdata, props) or (-1, -1)
         ss.mouse_last_position = pointer
         if self.server.ui_driver and self.server.ui_driver != ss.uuid:
             return
@@ -582,7 +599,7 @@ class PointerManager(StubSubsystem):
         modifiers = packet.get_strs(5)
         # buttons = packet.get_ints(6)
         device_id = -1
-        props = {}
+        props = packet.get_dict(7) if len(packet) >= 8 and isinstance(packet[7], dict) else {}
         self.record_wheel_event(wid, button)
         if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
             self.last_mouse_user = ss.uuid

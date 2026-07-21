@@ -82,6 +82,10 @@ class SeamlessServer(GObject.GObject, ServerBase):
         from xpra.x11.subsystem.window import SeamlessWindowServer
         return SeamlessWindowServer
 
+    def get_pointer_subsystem_class(self) -> type:
+        from xpra.x11.server.pointer import X11SeamlessPointerManager
+        return X11SeamlessPointerManager
+
     def init(self, opts) -> None:
         if int(opts.sync_xvfb or 0) > 0:
             from xpra.x11.subsystem.root_overlay import RootOverlay

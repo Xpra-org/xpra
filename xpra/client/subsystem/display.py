@@ -5,6 +5,7 @@
 
 from time import monotonic
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.net.packet_type import DISPLAY_CONFIGURE
 from xpra.exit_codes import ExitCode
@@ -27,7 +28,7 @@ from xpra.util.parsing import (
     adjust_monitor_refresh_rate, MIN_VREFRESH, MAX_VREFRESH,
 )
 from xpra.util.objects import typedict
-from xpra.util.screen import log_screen_sizes
+from xpra.util.screen import log_screen_sizes, MonitorLayout
 from xpra.util.env import envbool, envint
 from xpra.util.system import is_Wayland
 from xpra.client.base.stub import StubClientSubsystem
@@ -47,7 +48,7 @@ class DisplayClient(StubClientSubsystem):
     Adds client-side scaling handling
     """
     __slots__ = (
-        "_cg_display", "_current_screen_sizes", "_last_screen_settings", "_x11_props", "can_scale",
+        "_cg_display", "_current_screen_sizes", "_last_screen_settings", "_monitor_layout", "_x11_props", "can_scale",
         "desktop_fullscreen", "desktop_scaling", "dpi", "initial_scaling", "log_screen_info", "refresh_rate",
         "scale_change_embargo", "screen_size_change_counter", "screen_size_change_suspended",
         "screen_size_change_timer", "server_actual_desktop_size", "server_add_monitor_label",
@@ -74,6 +75,7 @@ class DisplayClient(StubClientSubsystem):
         self.screen_size_change_suspended = False
         self._last_screen_settings = ()
         self._current_screen_sizes = []
+        self._monitor_layout = MonitorLayout()
 
         self.server_desktop_size = (0, 0)
         self.server_actual_desktop_size = (0, 0)
@@ -225,8 +227,9 @@ class DisplayClient(StubClientSubsystem):
         if BACKWARDS_COMPATIBLE:
             # legacy per-screen tuples; modern servers use the `monitors` dict instead:
             caps["screen_sizes"] = sss
-        monitors = self.get_monitors_info()
-        caps["monitors"] = adjust_monitor_refresh_rate(self.refresh_rate, monitors)
+        monitors = adjust_monitor_refresh_rate(self.refresh_rate, self.get_monitors_info())
+        self._monitor_layout = MonitorLayout(monitors)
+        caps["monitors"] = monitors
         caps.update(self.get_screen_caps())
         caps["dpi"] = self.get_dpi_caps()
         caps["screen-scaling"] = self.get_scaling_caps()
@@ -426,6 +429,11 @@ class DisplayClient(StubClientSubsystem):
         from xpra.platform.gui import get_monitors_info
         return get_monitors_info(self.xscale, self.yscale)
 
+    def get_monitor_relative_position(self, position: Sequence[int]) -> tuple[int, int, int] | None:
+        if len(position) < 2:
+            return None
+        return self._monitor_layout.relative_position(int(position[0]), int(position[1]))
+
     def _process_show_desktop(self, packet: Packet) -> None:
         show = packet.get_bool(1)
         log("calling %s(%s)", show_desktop, show)
@@ -613,6 +621,7 @@ class DisplayClient(StubClientSubsystem):
         log("get_screen_settings() vrefresh=%s", vrefresh)
         # expose both the real and the cooked per-monitor refresh rate, as in the hello caps:
         monitors = adjust_monitor_refresh_rate(self.refresh_rate, self.get_monitors_info())
+        self._monitor_layout = MonitorLayout(monitors)
         return root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh, monitors
 
     def update_screen_size(self) -> None:

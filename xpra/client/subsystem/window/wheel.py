@@ -13,6 +13,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
+from xpra.net.packet_type import POINTER_WHEEL
 
 log = Logger("window", "pointer")
 
@@ -90,9 +91,12 @@ class WindowWheel(StubClientSubsystem):
             # send the exact value multiplied by 1000 (as an int)
             idist = round(distance * 1000)
             if abs(idist) > 0:
-                packet = ["wheel-motion", wid,
+                pointer, position_props = self.get_subsystem("pointer").split_pointer_position(pointer)
+                props = dict(props or {})
+                props.update(position_props)
+                packet = [POINTER_WHEEL, wid,
                           button, idist,
-                          pointer, modifiers, buttons] + list((props or {}).values())
+                          pointer, modifiers, buttons, props]
                 log("send_wheel_delta(..) %s", packet)
                 self.get_subsystem("pointer").send_positional(*packet)
             return 0

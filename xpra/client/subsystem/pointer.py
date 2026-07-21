@@ -122,7 +122,9 @@ class PointerClient(StubClientSubsystem):
     def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
         if "pointer" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
             # v5 packet type, most attributes are optional:
-            attrs = props or {}
+            pos, position_props = self.split_pointer_position(pos)
+            attrs = dict(props or {})
+            attrs.update(position_props)
             if modifiers is not None:
                 attrs["modifiers"] = modifiers
             if buttons is not None:
@@ -163,3 +165,30 @@ class PointerClient(StubClientSubsystem):
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_pointer = c.boolget("pointer", True)
         return True
+
+    def split_pointer_position(self, position) -> tuple[tuple[int, ...], dict]:
+        """Split pointer coordinates into an absolute pair and readable properties.
+
+        Modern packets keep only ``(absolute_x, absolute_y)`` in their pointer
+        field. Legacy packets retain the full coordinate tuple. In both cases,
+        window-relative coordinates are stored as ``window-position`` and
+        monitor-relative coordinates are stored in a ``monitor`` descriptor
+        containing its ``index`` and relative ``position``.
+        """
+        if not position:
+            return (), {}
+        values = tuple(int(v) for v in position)
+        if len(values) < 2:
+            return values, {}
+        props = {}
+        if len(values) >= 4:
+            props["window-position"] = values[2:4]
+        display = self.get_subsystem("display")
+        monitor = display.get_monitor_relative_position(values) if display else None
+        if monitor:
+            index, x, y = monitor
+            props["monitor"] = {
+                "index": index,
+                "position": (x, y),
+            }
+        return (values if BACKWARDS_COMPATIBLE else values[:2]), props

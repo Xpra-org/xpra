@@ -9,7 +9,7 @@ from collections.abc import Iterable, Sequence
 from xpra.util.env import first_time, envint
 from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
-from xpra.util.screen import get_screen_info
+from xpra.util.screen import get_screen_info, MonitorLayout
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.parsing import validated_monitor_data
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed
@@ -48,6 +48,7 @@ class DisplayConnection(StubClientConnection):
         self.desktop_fullscreen: bool = False
         self.screen_sizes: list = []
         self.monitors: dict[int, Any] = {}
+        self.monitor_layout = MonitorLayout()
         self.desktops: int = 1
         self.desktop_names: Sequence[str] = ()
         self.show_desktop_allowed: bool = False
@@ -112,7 +113,13 @@ class DisplayConnection(StubClientConnection):
 
     def set_monitors(self, monitors: dict[int, dict]) -> None:
         self.monitors = validated_monitor_data(monitors)
+        self.monitor_layout = MonitorLayout(self.monitors)
         log("set_monitors(%s) monitors=%s", monitors, self.monitors)
+
+    def get_monitor_position(self, index: int, position: Sequence[int], normalized: bool = True) -> tuple[int, int] | None:
+        if len(position) != 2:
+            return None
+        return self.monitor_layout.position(index, int(position[0]), int(position[1]), normalized)
 
     def set_screen_sizes(self, screen_sizes: Iterable) -> None:
         log("set_screen_sizes(%s)", screen_sizes)
@@ -195,6 +202,13 @@ class DisplayConnection(StubClientConnection):
                 "height-mm": round(m[6]),
             }
         return mdef
+
+    def get_normalized_monitor_definitions(self) -> dict[int, Any] | None:
+        monitors = self.get_monitor_definitions()
+        if not monitors:
+            return monitors
+        layout = self.monitor_layout if self.monitors else MonitorLayout(monitors)
+        return layout.normalized_monitors(monitors)
 
     def get_client_workarea(self):
         """ the usable area of the client's display (excluding panels / taskbars), as a single rectangle.

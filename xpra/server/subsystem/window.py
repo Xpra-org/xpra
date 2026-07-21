@@ -536,7 +536,15 @@ class WindowServer(StubSubsystem):
             return
         wid = packet.get_wid()
         config = typedict(packet.get_dict(2))
+        geometry = config.inttupleget("geometry")
+        if geometry and len(geometry) == 4:
+            monitor = typedict(config.dictget("monitor"))
+            config["geometry"] = self.resolve_monitor_geometry(proto, geometry, monitor)
         self.do_process_window_configure(proto, wid, config)
+
+    def resolve_monitor_geometry(self, proto, geometry: Sequence[int], monitor: typedict) -> tuple[int, ...]:
+        """Allow coordinate-aware backends to prefer a monitor-relative position."""
+        return tuple(geometry)
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         log.info("do_process_window_configure(%s, %i, %s)", proto, wid, config)

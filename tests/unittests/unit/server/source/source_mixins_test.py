@@ -13,6 +13,7 @@ from time import monotonic
 from unit.test_util import LoggerSilencer, silence_error, silence_info
 
 from xpra.util.objects import typedict, AdHocStruct
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import POSIX, OSX
 from xpra.util.io import get_util_logger
 from xpra.util.signal_emitter import SignalEmitter
@@ -279,7 +280,20 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_display(self):
         from xpra.server.source.display import DisplayConnection
-        self._test_mixin_class(DisplayConnection)
+
+        def check_monitor_layout(_cls, source):
+            source.set_monitors({
+                0: {"geometry": (-1920, 0, 1920, 1080)},
+                1: {"geometry": (0, 0, 2560, 1440)},
+            })
+            self.assertEqual(source.get_monitor_position(0, (100, 50)), (100, 50))
+            self.assertEqual(source.get_monitor_position(1, (100, 50)), (2020, 50))
+            normalized = source.get_normalized_monitor_definitions()
+            self.assertEqual(normalized[0]["geometry"], (0, 0, 1920, 1080))
+            self.assertEqual(normalized[1]["geometry"], (1920, 0, 2560, 1440))
+
+        caps = None if BACKWARDS_COMPATIBLE else {"display": {"monitors": {}}}
+        self._test_mixin_class(DisplayConnection, client_caps=caps, test_fn=check_monitor_layout)
 
     def test_shell(self):
         from xpra.server.source import shell

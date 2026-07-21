@@ -213,7 +213,13 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def window_mapped_event(self, window) -> None:
         log("window_mapped_event(%s)", window)
-        self.send(WINDOW_MAP, window.wid, window.x, window.y, window.width, window.height, {}, {})
+        geometry = (window.x, window.y, window.width, window.height)
+        if display := self.get_subsystem("display"):
+            geometry = display.crect(*geometry)
+        packet = [WINDOW_MAP, window.wid, *geometry, {}, {}]
+        if monitor := self.get_monitor_position(window):
+            packet.append(monitor)
+        self.send(*packet)
 
     def window_closed(self, window) -> None:
         log("window_closed(%s)", window)
@@ -259,11 +265,19 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             "geometry": geometry,
             "resize-counter": window.resize_counter,
         }
-        if monitor := window.get_monitor_position():
+        if monitor := self.get_monitor_position(window):
             config["monitor"] = monitor
         self.send(WINDOW_CONFIGURE, window.wid, config)
         # we have consumed it, so we can reset it now:
         window.state_updates = {}
+
+    def get_monitor_position(self, window) -> dict[str, Any]:
+        monitor = window.get_monitor_position()
+        if not monitor:
+            return {}
+        if display := self.get_subsystem("display"):
+            monitor["position"] = display.cp(*monitor["position"])
+        return monitor
 
     def _pointer_data(self, window, x: int, y: int) -> tuple[int, int, int, int]:
         hwnd = window.hwnd
