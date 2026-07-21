@@ -1433,6 +1433,8 @@ def save_ssl_config_file(server_hostname:str, port=443, filename="cert.pem", fil
     return None
 
 def socket_connect(host:str, port:int, timeout:float=SOCKET_TIMEOUT):
+    if not 0 < port < 2 ** 16:
+        raise InitException(f"invalid port number: {port}")
     socktype = socket.SOCK_STREAM
     family = 0  #0 means any
     try:
