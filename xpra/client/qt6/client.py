@@ -192,6 +192,10 @@ class Qt6Client:
             if not window.has_toplevel_focus():
                 window.present()
 
+    def _process_raise_window(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_window_raise(packet)
+
     def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
         detail = packet.get_i8(2)
@@ -200,6 +204,10 @@ class Qt6Client:
         if window := self.windows.get(wid):
             other_window = self.windows.get(other_wid)
             window.restack(other_window, above)
+
+    def _process_restack_window(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_window_restack(packet)
 
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()

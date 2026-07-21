@@ -188,13 +188,17 @@ class XpraPygletClient:
             window.close()
             del self.windows[wid]
 
-    def _process_raise_window(self, packet: Packet) -> None:
+    def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.windows.get(wid):
             if not window.has_toplevel_focus():
                 window.present()
 
-    def _process_restack_window(self, packet: Packet) -> None:
+    def _process_raise_window(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_window_raise(packet)
+
+    def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
         detail = packet.get_i8(2)
         other_wid = packet.get_wid(3)
@@ -202,6 +206,10 @@ class XpraPygletClient:
         if window := self.windows.get(wid):
             other_window = self.windows.get(other_wid)
             window.restack(other_window, above)
+
+    def _process_restack_window(self, packet: Packet) -> None:
+        # legacy packet name (BACKWARDS_COMPATIBLE server):
+        self._process_window_restack(packet)
 
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
