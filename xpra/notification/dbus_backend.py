@@ -30,6 +30,7 @@ class DBUSNotifier(NotifierBase):
         super().__init__(*args)
         self.app_name_format = NOTIFICATION_APP_NAME
         self.last_notification: Sequence[Any] = ()
+        self.cleaning_up = False
         self.actual_notification_id: dict[int, int] = {}
         self.dbus_session = dbus.SessionBus()
         self.dbusnotify = self.setup_dbusnotify()
@@ -62,6 +63,11 @@ class DBUSNotifier(NotifierBase):
         return caps
 
     def cleanup(self) -> None:
+        # closing notifications from here races with the client shutting down
+        # (main loop / session bus going away), so the async `CloseNotification`
+        # calls below often fail with `NoReply: Remote peer disconnected` -
+        # those failures are expected and should not be logged as warnings:
+        self.cleaning_up = True
         nids = list(self.actual_notification_id.items())
         self.actual_notification_id = {}
         for nid, actual_id in nids:
@@ -210,7 +216,10 @@ class DBUSNotifier(NotifierBase):
             self.clean_notification(nid)
 
         def CloseNotificationError(dbus_error, *_args) -> None:
-            if first_time(f"close-notification-{actual_id}"):
+            if self.cleaning_up:
+                # shutting down: the close call failing is expected, don't warn
+                log("error closing notification %s during cleanup: %s", actual_id, dbus_error)
+            elif first_time(f"close-notification-{actual_id}"):
                 log.warn("Error: error closing notification:")
                 log.warn(" %s", dbus_error)
             self.clean_notification(nid)
