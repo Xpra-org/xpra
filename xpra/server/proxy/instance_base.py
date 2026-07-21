@@ -14,7 +14,7 @@ from xpra.audio.common import AUDIO_DATA_PACKET
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.packet_type import (
-    INFO_RESPONSE, CHALLENGE, WINDOW_ICON, WINDOW_DRAW, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
+    INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
     CONNECTION_LOST, CONNECTION_CLOSE,
 )
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
@@ -42,6 +42,9 @@ PING_TIMEOUT = max(5, envint("XPRA_PROXY_PING_TIMEOUT", 90))
 
 CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
+
+# draw packets can arrive under the current name or the legacy one:
+DRAW_PACKETS = ("window-draw", "draw") if BACKWARDS_COMPATIBLE else ("window-draw", )
 
 
 def number(k, v) -> int:
@@ -127,9 +130,12 @@ class ProxyInstance:
 
     def run(self) -> ExitValue:
         # server connection tweaks:
-        self.server_protocol.large_packets += ["input-devices", "draw", WINDOW_ICON,
-                                               "keymap-changed", "server-settings"]
-        self.client_protocol.large_packets.append(INFO_RESPONSE)
+        # packets forwarded to the server (client -> server direction):
+        self.server_protocol.large_packets += ["input-devices", "keymap-changed", "server-settings"]
+        # packets forwarded to the client (server -> client direction) - draw packets
+        # and window icons flow this way, so their large-packet exemption belongs on
+        # the client protocol (where they are actually sent):
+        self.client_protocol.large_packets += [WINDOW_ICON, INFO_RESPONSE, *DRAW_PACKETS]
         if self.caps.boolget("file-transfer"):
             file_large = [FILE_SEND, FILE_SEND_CHUNK]
             if BACKWARDS_COMPATIBLE:
@@ -462,7 +468,7 @@ class ProxyInstance:
             # "xpra info" is a new connection, which talks to the proxy server...
             info = packet.get_dict(1)
             info.update(self.get_proxy_info(proto))
-        elif packet_type == WINDOW_DRAW:
+        elif packet_type in DRAW_PACKETS:
             size = 0
             if BACKWARDS_COMPATIBLE:
                 # older servers can have mmap offsets or scroll data sent as `pixel_data`:
