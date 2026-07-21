@@ -818,7 +818,7 @@ def _enrich_monitors_dpi(monitors_info: dict[int, Any]) -> None:
 
 
 def get_monitors_info(xscale=1.0, yscale=1.0) -> dict[int, Any]:
-    from xpra.gtk.info import get_monitors_info
+    from xpra.platform.win32.monitors import get_monitors_info
     monitors_info = get_monitors_info(xscale, yscale)
     # colour depth of the desktop: Windows composites all monitors at the same depth,
     # so this is reported for every monitor. Per-monitor HDR / colourspace would require

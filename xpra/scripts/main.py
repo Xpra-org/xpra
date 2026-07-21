@@ -936,15 +936,25 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         from xpra.platform import keyboard
         return keyboard.main(cmdline)
     if mode == "root-size":
-        from xpra.gtk.util import get_root_size
-        sys.stdout.write("%ix%i\n" % get_root_size((0, 0)))
+        backend = options.backend or "gtk"
+        if backend == "win32":
+            no_gi_gtk_modules()
+            from xpra.platform.win32.gui import get_display_size
+            size = get_display_size()
+        else:
+            from xpra.gtk.util import get_root_size
+            size = get_root_size((0, 0))
+        sys.stdout.write("%ix%i\n" % size)
         return ExitCode.OK
     if mode == "gtk-info":
         check_gtk("gtk-info")
         from xpra.gtk import info
         return info.main(cmdline)
     if mode == "gui-info":
-        check_gtk("gui-info")
+        if (options.backend or "gtk") == "win32":
+            no_gi_gtk_modules()
+        else:
+            check_gtk("gui-info")
         from xpra.platform import gui as platform_gui
         return platform_gui.main(cmdline)
     if mode == "network-info":
@@ -1716,11 +1726,16 @@ def run_monitor_info(options, args: list[str]) -> int:
     # should we honour desktop scaling here?
     # parse_scaling(options.desktop_scaling, w, h)
     display, jsondata = _monitors_args(args, require_monitor_data=False)
-    if display:
-        from xpra.gtk.util import verify_gdk_display
-        verify_gdk_display(display)
+    backend = options.backend or "gtk"
+    if backend == "win32":
+        no_gi_gtk_modules()
+        from xpra.platform.win32.monitors import get_monitors_info
+    else:
+        if display:
+            from xpra.gtk.util import verify_gdk_display
+            verify_gdk_display(display)
+        from xpra.gtk.info import get_monitors_info
     import json
-    from xpra.gtk.info import get_monitors_info
     monitors = get_monitors_info()
     data = adjust_monitor_refresh_rate(options.refresh_rate, monitors)
     minfo = json.dumps(data, indent="\t")
