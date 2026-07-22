@@ -21,7 +21,7 @@ class ShadowKeyboardMixin:
     def set_keymap(self, server_source, force=False) -> None:
         log("set_keymap%s", (server_source, force))
         log.info("shadow server: setting default keymap translation")
-        self.config = server_source.set_default_keymap()
+        self.set_current_config(server_source.set_default_keymap())
 
 
 class ShadowKeyboardManager(ShadowKeyboardMixin, KeyboardManager):

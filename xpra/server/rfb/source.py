@@ -255,7 +255,7 @@ class RFBSource(PointerSource):
             self.keyboard_config.set_default_keymap()
         return self.keyboard_config
 
-    def set_keymap(self, _current_keyboard_config, keys_pressed, _force=False, _translate_only=False):
+    def set_keymap(self, _current_keyboard_config, _current_id, keys_pressed, _force=False, _translate_only=False):
         kc = self.keyboard_config
         kc.keys_pressed = keys_pressed
         kc.set_keymap(True)

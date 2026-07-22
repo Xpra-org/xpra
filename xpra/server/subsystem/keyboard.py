@@ -43,7 +43,7 @@ class KeyboardManager(StubSubsystem):
     Mixin for servers that handle keyboards
     """
     __slots__ = (
-        "config", "device", "key_repeat_delay", "key_repeat_interval", "key_repeat_timer",
+        "config", "config_hash", "device", "key_repeat_delay", "key_repeat_interval", "key_repeat_timer",
         "keymap_changing_timer", "keymap_options", "keys_pressed", "keys_timedout", "mod_meanings",
     )
     PREFIX = "keyboard"
@@ -55,6 +55,9 @@ class KeyboardManager(StubSubsystem):
         self.mod_meanings = {}
         self.device = None
         self.config = None
+        # the hash of `config` as it was when it was applied:
+        # (`config` is mutable and may have been modified since, so we cannot hash it again to find out)
+        self.config_hash = ""
         self.keymap_changing_timer = 0  # to ignore events when we know we are changing the configuration
         # ugly: we're duplicating the value pair from "key_repeat" here:
         self.key_repeat_delay = -1
@@ -81,7 +84,7 @@ class KeyboardManager(StubSubsystem):
             self.device = NoKeyboardDevice()
         log("keyboard_device=%s", self.device)
 
-        self.config = self.get_keyboard_config({"keymap": self.keymap_options})
+        self.set_current_config(self.get_keyboard_config({"keymap": self.keymap_options}))
         self.server.connect("last-client-exited", self.clear_keys_pressed)
         self.add_keyboard_control_commands()
 
@@ -92,10 +95,17 @@ class KeyboardManager(StubSubsystem):
         from xpra.platform.keyboard import get_keyboard_device
         return get_keyboard_device()
 
+    def set_current_config(self, config) -> None:
+        """ record the keyboard config currently applied, together with the hash it had at that point """
+        self.config = config
+        self.config_hash = config.get_hash() if (config and config.enabled) else ""
+        log("set_current_config(%s) hash=%s", config, self.config_hash)
+
     def cleanup(self) -> None:
         self.stop_keymap_timer()
         noerr(self.clear_keys_pressed)
         self.config = None
+        self.config_hash = ""
 
     def keymap_changed(self, *_args) -> None:
         if self.keymap_changing_timer:

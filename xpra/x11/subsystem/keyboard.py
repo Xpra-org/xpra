@@ -341,8 +341,8 @@ class X11KeyboardManager(KeyboardManager):
         log("set_keymap(%s, %s) translate_only=%s", server_source, force, translate_only)
         with xsync:
             # pylint: disable=access-member-before-definition
-            server_source.set_keymap(self.config, self.keys_pressed, force, translate_only)
-            self.config = server_source.keyboard_config
+            server_source.set_keymap(self.config, self.config_hash, self.keys_pressed, force, translate_only)
+            self.set_current_config(server_source.keyboard_config)
         # setxkbmap resets X11 autorepeat to defaults, so re-apply:
         if self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
             self.set_keyboard_repeat(self.key_repeat_delay, self.key_repeat_interval)
