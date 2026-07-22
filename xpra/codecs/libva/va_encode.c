@@ -104,6 +104,8 @@ struct LibVAEncoder {
     int             speed;
     int             qp;
     int             vp_qindex;
+    int             quality_levels;
+    int             quality_level;
     LibVACodec      codec;
     VAProfile       profile;
     VAEntrypoint    entrypoint;
@@ -126,6 +128,12 @@ static int quality_to_qp(int quality) {
 static int quality_to_vp_qindex(int quality) {
     int q = 127 - (clamp_int(quality, 0, 100) * 123 + 50) / 100;
     return clamp_int(q, 4, 127);
+}
+
+static int speed_to_quality_level(int speed, int quality_levels) {
+    if (quality_levels <= 1)
+        return 0;
+    return 1 + (int)(((int64_t)clamp_int(speed, 0, 100) * (quality_levels - 1) + 50) / 100);
 }
 
 static int h264_profile_idc(VAProfile profile) {
@@ -372,7 +380,9 @@ static int make_pps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     bw_ue(&bw, 0);                    /* num_ref_idx_l1_active_minus1 */
     bw_bit(&bw, 0);                   /* weighted_pred_flag */
     bw_bits(&bw, 0, 2);               /* weighted_bipred_idc */
-    bw_se(&bw, enc->qp - 26);         /* pic_init_qp_minus26 */
+    /* Keep the PPS QP stable so runtime quality changes do not require a new
+       PPS.  The requested QP is carried by slice_qp_delta instead. */
+    bw_se(&bw, 0);                    /* pic_init_qp_minus26 */
     bw_se(&bw, 0);                    /* pic_init_qs_minus26 */
     bw_se(&bw, 0);                    /* chroma_qp_index_offset */
     bw_bit(&bw, 1);                   /* deblocking_filter_control_present_flag */
@@ -400,7 +410,6 @@ static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size,
     struct BitWriter bw;
     int off = 0, bytes;
 
-    (void)enc;
     if (dst_size < 32)
         return 0;
     off += write_start_code(dst + off, is_idr ? 0x65 : 0x41);
@@ -423,7 +432,7 @@ static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size,
     } else {
         bw_bit(&bw, 0);               /* adaptive_ref_pic_marking_mode_flag */
     }
-    bw_se(&bw, 0);                    /* slice_qp_delta */
+    bw_se(&bw, enc->qp - 26);         /* slice_qp_delta */
     bw_ue(&bw, 0);                    /* disable_deblocking_filter_idc */
     bw_se(&bw, 0);                    /* slice_alpha_c0_offset_div2 */
     bw_se(&bw, 0);                    /* slice_beta_offset_div2 */
@@ -747,12 +756,33 @@ static void destroy_buffers(LibVAEncoder *enc, VABufferID *buffers, int count) {
     }
 }
 
+static LibVAEncodeStatus create_quality_level_buffer(LibVAEncoder *enc, VABufferID *buffer) {
+    struct {
+        VAEncMiscParameterType type;
+        VAEncMiscParameterBufferQualityLevel quality_level;
+    } data;
+
+    *buffer = VA_INVALID_ID;
+    if (enc->quality_level == 0)
+        return LIBVA_ENC_OK;
+    memset(&data, 0, sizeof(data));
+    data.type = VAEncMiscParameterTypeQualityLevel;
+    data.quality_level.quality_level = (uint32_t)enc->quality_level;
+    VAStatus status = vaCreateBuffer(enc->display, enc->context,
+                                     VAEncMiscParameterBufferType,
+                                     sizeof(data), 1, &data, buffer);
+    if (status != VA_STATUS_SUCCESS)
+        return set_error(enc, status, "vaCreateBuffer(quality level)");
+    return LIBVA_ENC_OK;
+}
+
 LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
                                        int width, int height,
                                        int quality, int speed) {
     LibVAEncoder *enc;
     VAStatus status;
     VAConfigAttrib attrs[3];
+    VAConfigAttrib quality_attr;
     VASurfaceAttrib surface_attrs[2];
     VASurfaceID surfaces[3];
     int major = 0, minor = 0;
@@ -788,10 +818,10 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
     enc->height_mbs = roundup(height, 16) / 16;
     enc->surface_width = codec == LIBVA_CODEC_VP9 ? roundup(width, 64) : enc->width_mbs * 16;
     enc->surface_height = codec == LIBVA_CODEC_VP9 ? roundup(height, 64) : enc->height_mbs * 16;
-    enc->quality = quality;
-    enc->speed = speed;
-    enc->qp = quality_to_qp(quality);
-    enc->vp_qindex = quality_to_vp_qindex(quality);
+    enc->quality = clamp_int(quality, 0, 100);
+    enc->speed = clamp_int(speed, 0, 100);
+    enc->qp = quality_to_qp(enc->quality);
+    enc->vp_qindex = quality_to_vp_qindex(enc->quality);
     enc->codec = codec;
     if (codec == LIBVA_CODEC_H264) {
         enc->profile = g_h264_profile;
@@ -817,6 +847,19 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         snprintf(enc->last_error, sizeof(enc->last_error), "failed to open VA display for %.200s", enc->device);
         libva_encoder_destroy(enc);
         return LIBVA_ENC_NOT_AVAILABLE;
+    }
+
+    quality_attr.type = VAConfigAttribEncQualityRange;
+    quality_attr.value = VA_ATTRIB_NOT_SUPPORTED;
+    status = vaGetConfigAttributes(enc->display, enc->profile, enc->entrypoint,
+                                   &quality_attr, 1);
+    if (status == VA_STATUS_SUCCESS && quality_attr.value != VA_ATTRIB_NOT_SUPPORTED &&
+        quality_attr.value > 1 && quality_attr.value <= INT32_MAX) {
+        enc->quality_levels = (int)quality_attr.value;
+        enc->quality_level = speed_to_quality_level(enc->speed, enc->quality_levels);
+    } else {
+        enc->quality_levels = 1;
+        enc->quality_level = 0;
     }
 
     attrs[0].type = VAConfigAttribRTFormat;
@@ -875,12 +918,13 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         return LIBVA_ENC_ERROR;
     }
 
-    libva_log("libva %s encoder create: %dx%d surface=%dx%d level=%d poc=%d aud=%d quality=%d speed=%d qp=%d qindex=%d device=%s vendor=%s",
+    libva_log("libva %s encoder create: %dx%d surface=%dx%d level=%d poc=%d aud=%d quality=%d speed=%d qp=%d qindex=%d quality-level=%d/%d device=%s vendor=%s",
               codec_name(enc->codec), width, height, enc->surface_width, enc->surface_height,
               enc->codec == LIBVA_CODEC_H264 ? h264_level_idc(enc) : 0,
               enc->codec == LIBVA_CODEC_H264 ? LIBVA_H264_POC_TYPE : 0,
               enc->codec == LIBVA_CODEC_H264,
-              quality, speed, enc->qp, enc->vp_qindex, enc->device, enc->vendor);
+              enc->quality, enc->speed, enc->qp, enc->vp_qindex,
+              enc->quality_level, enc->quality_levels, enc->device, enc->vendor);
     *out = enc;
     return LIBVA_ENC_OK;
 }
@@ -905,6 +949,28 @@ void libva_encoder_destroy(LibVAEncoder *enc) {
         close(enc->fd);
     free(enc->bitstream_data);
     free(enc);
+}
+
+LibVAEncodeStatus libva_encoder_set_quality(LibVAEncoder *enc, int quality) {
+    if (!enc)
+        return LIBVA_ENC_ERROR;
+    enc->quality = clamp_int(quality, 0, 100);
+    enc->qp = quality_to_qp(enc->quality);
+    enc->vp_qindex = quality_to_vp_qindex(enc->quality);
+    libva_log("libva %s quality set to %d: qp=%d qindex=%d",
+              codec_name(enc->codec), enc->quality, enc->qp, enc->vp_qindex);
+    return LIBVA_ENC_OK;
+}
+
+LibVAEncodeStatus libva_encoder_set_speed(LibVAEncoder *enc, int speed) {
+    if (!enc)
+        return LIBVA_ENC_ERROR;
+    enc->speed = clamp_int(speed, 0, 100);
+    enc->quality_level = speed_to_quality_level(enc->speed, enc->quality_levels);
+    libva_log("libva %s speed set to %d: quality-level=%d/%d",
+              codec_name(enc->codec), enc->speed,
+              enc->quality_level, enc->quality_levels);
+    return LIBVA_ENC_OK;
 }
 
 static LibVAEncodeStatus upload_nv12(LibVAEncoder *enc,
@@ -1081,7 +1147,7 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
                                              const uint8_t *y, int y_stride,
                                              const uint8_t *uv, int uv_stride,
                                              LibVAEncodedFrame *frame) {
-    VABufferID buffers[9];
+    VABufferID buffers[10];
     int nbuf = 0;
     VABufferID coded_buf = VA_INVALID_ID;
     VAEncSequenceParameterBufferH264 seq;
@@ -1193,7 +1259,8 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     pic.seq_parameter_set_id = 0;
     pic.last_picture = 0;
     pic.frame_num = (uint16_t)frame_num;
-    pic.pic_init_qp = (uint8_t)enc->qp;
+    /* This must match pic_init_qp_minus26 in the packed PPS. */
+    pic.pic_init_qp = 26;
     pic.num_ref_idx_l0_active_minus1 = 0;
     pic.num_ref_idx_l1_active_minus1 = 0;
     pic.chroma_qp_index_offset = 0;
@@ -1229,7 +1296,7 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
         slice.RefPicList0[0].TopFieldOrderCnt = enc->ref_poc_lsb;
         slice.RefPicList0[0].BottomFieldOrderCnt = enc->ref_poc_lsb;
     }
-    slice.slice_qp_delta = 0;
+    slice.slice_qp_delta = (int8_t)(enc->qp - 26);
     slice.disable_deblocking_filter_idc = 0;
     slice.slice_alpha_c0_offset_div2 = 0;
     slice.slice_beta_offset_div2 = 0;
@@ -1251,6 +1318,12 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
         destroy_buffers(enc, buffers, nbuf);
         return set_error(enc, status, "vaCreateBuffer(slice)");
     }
+    if (create_quality_level_buffer(enc, &buffers[nbuf]) != LIBVA_ENC_OK) {
+        destroy_buffers(enc, buffers, nbuf + 1);
+        return LIBVA_ENC_ERROR;
+    }
+    if (buffers[nbuf] != VA_INVALID_ID)
+        nbuf++;
 
     t0 = usec_now();
     status = vaBeginPicture(enc->display, enc->context, enc->src_surface);
@@ -1293,7 +1366,7 @@ static LibVAEncodeStatus vp8_encoder_encode(LibVAEncoder *enc,
                                             const uint8_t *y, int y_stride,
                                             const uint8_t *uv, int uv_stride,
                                             LibVAEncodedFrame *frame) {
-    VABufferID buffers[4];
+    VABufferID buffers[5];
     int nbuf = 0;
     VABufferID coded_buf = VA_INVALID_ID;
     VAEncSequenceParameterBufferVP8 seq;
@@ -1392,6 +1465,12 @@ static LibVAEncodeStatus vp8_encoder_encode(LibVAEncoder *enc,
         destroy_buffers(enc, buffers, nbuf);
         return set_error(enc, status, "vaCreateBuffer(VP8 qmatrix)");
     }
+    if (create_quality_level_buffer(enc, &buffers[nbuf]) != LIBVA_ENC_OK) {
+        destroy_buffers(enc, buffers, nbuf + 1);
+        return LIBVA_ENC_ERROR;
+    }
+    if (buffers[nbuf] != VA_INVALID_ID)
+        nbuf++;
 
     t0 = usec_now();
     status = vaBeginPicture(enc->display, enc->context, enc->src_surface);
@@ -1428,7 +1507,7 @@ static LibVAEncodeStatus vp9_encoder_encode(LibVAEncoder *enc,
                                             const uint8_t *y, int y_stride,
                                             const uint8_t *uv, int uv_stride,
                                             LibVAEncodedFrame *frame) {
-    VABufferID buffers[4];
+    VABufferID buffers[5];
     int nbuf = 0;
     VABufferID coded_buf = VA_INVALID_ID;
     VAEncSequenceParameterBufferVP9 seq;
@@ -1531,6 +1610,12 @@ static LibVAEncodeStatus vp9_encoder_encode(LibVAEncoder *enc,
         destroy_buffers(enc, buffers, nbuf);
         return set_error(enc, status, "vaCreateBuffer(VP9 segment)");
     }
+    if (create_quality_level_buffer(enc, &buffers[nbuf]) != LIBVA_ENC_OK) {
+        destroy_buffers(enc, buffers, nbuf + 1);
+        return LIBVA_ENC_ERROR;
+    }
+    if (buffers[nbuf] != VA_INVALID_ID)
+        nbuf++;
 
     t0 = usec_now();
     status = vaBeginPicture(enc->display, enc->context, enc->src_surface);
@@ -1595,6 +1680,14 @@ int libva_encoder_get_width(LibVAEncoder *enc) {
 
 int libva_encoder_get_height(LibVAEncoder *enc) {
     return enc ? enc->height : 0;
+}
+
+int libva_encoder_get_quality_levels(LibVAEncoder *enc) {
+    return enc ? enc->quality_levels : 0;
+}
+
+int libva_encoder_get_quality_level(LibVAEncoder *enc) {
+    return enc ? enc->quality_level : 0;
 }
 
 int libva_encoder_get_last_status(LibVAEncoder *enc) {

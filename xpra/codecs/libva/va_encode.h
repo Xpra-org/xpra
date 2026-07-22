@@ -53,6 +53,8 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
                                        int width, int height,
                                        int quality, int speed);
 void              libva_encoder_destroy(LibVAEncoder *enc);
+LibVAEncodeStatus libva_encoder_set_quality(LibVAEncoder *enc, int quality);
+LibVAEncodeStatus libva_encoder_set_speed(LibVAEncoder *enc, int speed);
 LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
                                        const uint8_t *y, int y_stride,
                                        const uint8_t *uv, int uv_stride,
@@ -61,6 +63,8 @@ LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
 
 int               libva_encoder_get_width(LibVAEncoder *enc);
 int               libva_encoder_get_height(LibVAEncoder *enc);
+int               libva_encoder_get_quality_levels(LibVAEncoder *enc);
+int               libva_encoder_get_quality_level(LibVAEncoder *enc);
 int               libva_encoder_get_last_status(LibVAEncoder *enc);
 const char       *libva_encoder_get_last_error(LibVAEncoder *enc);
 const char       *libva_encode_status_str(LibVAEncodeStatus status);

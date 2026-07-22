@@ -8,7 +8,7 @@
 # accepts NV12 system-memory frames only
 # emits periodic key frames and P frames
 # copies into VA surfaces; direct dmabuf/VA surface import is future work
-# future work: more encodings/profiles, async queues, set_speed, set_quality
+# future work: more encodings/profiles and async queues
 
 #cython: wraparound=False
 
@@ -78,6 +78,8 @@ cdef extern from "va_encode.h":
                                            int width, int height,
                                            int quality, int speed) nogil
     void              libva_encoder_destroy(LibVAEncoder *enc) nogil
+    LibVAEncodeStatus libva_encoder_set_quality(LibVAEncoder *enc, int quality) nogil
+    LibVAEncodeStatus libva_encoder_set_speed(LibVAEncoder *enc, int speed) nogil
     LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
                                            const uint8_t *y, int y_stride,
                                            const uint8_t *uv, int uv_stride,
@@ -86,6 +88,8 @@ cdef extern from "va_encode.h":
 
     int               libva_encoder_get_width(LibVAEncoder *enc)
     int               libva_encoder_get_height(LibVAEncoder *enc)
+    int               libva_encoder_get_quality_levels(LibVAEncoder *enc)
+    int               libva_encoder_get_quality_level(LibVAEncoder *enc)
     int               libva_encoder_get_last_status(LibVAEncoder *enc)
     const char       *libva_encoder_get_last_error(LibVAEncoder *enc)
     const char       *libva_encode_status_str(LibVAEncodeStatus status)
@@ -201,6 +205,10 @@ cdef class Encoder:
         self.height = height
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
+        if not 0 <= self.quality <= 100:
+            raise ValueError("invalid quality percentage: %s" % self.quality)
+        if not 0 <= self.speed <= 100:
+            raise ValueError("invalid speed percentage: %s" % self.speed)
         self.frames = 0
         self.full_range = options.boolget("full-range", True)
 
@@ -257,9 +265,39 @@ cdef class Encoder:
     # - RGB/YUV420P upload paths, or a direct dependency on libyuv CSC.
     # - dmabuf / VA surface import to avoid CPU staging copies.
     # - persistent VA buffers and async surface queues.
-    # - set_encoding_quality() via CQP QP updates or encoder reconfigure.
-    # - set_encoding_speed() via VA quality-level or driver-specific controls.
     # - bitrate/rate-control modes and better multi-GPU device scoring.
+
+    def set_encoding_quality(self, int pct) -> None:
+        if pct < 0:
+            return
+        if pct > 100:
+            raise ValueError("invalid quality percentage: %s" % pct)
+        if self.context == NULL:
+            raise RuntimeError("encoder is closed")
+        if self.quality == pct:
+            return
+        cdef LibVAEncodeStatus status
+        with nogil:
+            status = libva_encoder_set_quality(self.context, pct)
+        if status != LIBVA_ENC_OK:
+            raise RuntimeError("failed to set libva quality to %s" % pct)
+        self.quality = pct
+
+    def set_encoding_speed(self, int pct) -> None:
+        if pct < 0:
+            return
+        if pct > 100:
+            raise ValueError("invalid speed percentage: %s" % pct)
+        if self.context == NULL:
+            raise RuntimeError("encoder is closed")
+        if self.speed == pct:
+            return
+        cdef LibVAEncodeStatus status
+        with nogil:
+            status = libva_encoder_set_speed(self.context, pct)
+        if status != LIBVA_ENC_OK:
+            raise RuntimeError("failed to set libva speed to %s" % pct)
+        self.speed = pct
 
     def __repr__(self):
         if not self.ready:
@@ -297,6 +335,8 @@ cdef class Encoder:
             "encoding": self.encoding,
             "quality": self.quality,
             "speed": self.speed,
+            "quality-level": libva_encoder_get_quality_level(self.context),
+            "quality-levels": libva_encoder_get_quality_levels(self.context),
         }
         return info
 
@@ -311,6 +351,9 @@ cdef class Encoder:
         assert image.get_height() >= self.height
         if image.get_pixel_format() != "NV12":
             raise ValueError("expected NV12 but got %s" % image.get_pixel_format())
+
+        self.set_encoding_quality(options.intget("quality", -1))
+        self.set_encoding_speed(options.intget("speed", -1))
 
         pixels = image.get_pixels()
         strides = image.get_rowstride()
