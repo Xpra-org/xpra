@@ -15,7 +15,7 @@ from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.system import SIGNAMES
 from xpra.util.thread import check_main_thread, start_thread
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.scripts.main import SPLASH_EXIT_DELAY
+from xpra.scripts.main import SPLASH_EXIT_DELAY, SPLASH_KEEPALIVE_INTERVAL
 from xpra.gtk.widget import label
 from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -192,6 +192,7 @@ class SplashScreen(Gtk.Window):
         self.exit_timer = 0
         vbox.add(self.progress_bar)
         self.timeout_timer = 0
+        self.keepalive_timer = 0
         self.line_count = 0
         frame.add(vbox)
         self.add(frame)
@@ -215,6 +216,7 @@ class SplashScreen(Gtk.Window):
         force_focus()
         self.present()
         self.timeout_timer = GLib.timeout_add(TIMEOUT * 1000, self.timeout)
+        self.reset_keepalive_timer()
         scrash = envint("XPRA_SPLASH_CRASH", -1)
         if scrash >= 0:
             from xpra.os_util import crash
@@ -250,6 +252,24 @@ class SplashScreen(Gtk.Window):
             self.timeout_timer = 0
             GLib.source_remove(tt)
 
+    def reset_keepalive_timer(self) -> None:
+        self.cancel_keepalive_timer()
+        if SPLASH_KEEPALIVE_INTERVAL > 0:
+            self.keepalive_timer = GLib.timeout_add(
+                SPLASH_KEEPALIVE_INTERVAL * 1000, self.keepalive_timeout,
+            )
+
+    def keepalive_timeout(self) -> None:
+        log("keepalive_timeout()")
+        self.keepalive_timer = 0
+        self.exit_code = ExitCode.TIMEOUT
+        self.exit()
+
+    def cancel_keepalive_timer(self) -> None:
+        if kt := self.keepalive_timer:
+            self.keepalive_timer = 0
+            GLib.source_remove(kt)
+
     def read_thread(self) -> None:
         while self.exit_code is None:
             try:
@@ -268,6 +288,10 @@ class SplashScreen(Gtk.Window):
                 return
 
     def handle_stdin_line(self, line: str) -> None:
+        if line.strip() == "keepalive":
+            log("handle_stdin_line(%r) keepalive", line)
+            self.reset_keepalive_timer()
+            return
         parts = line.rstrip("\n\r").split(":", 1)
         log("handle_stdin_line(%r)", line)
         pct = self.pct
@@ -354,6 +378,7 @@ class SplashScreen(Gtk.Window):
             self.exit_code = 0
         self.cancel_progress_timer()
         self.cancel_timeout_timer()
+        self.cancel_keepalive_timer()
         self.cancel_fade_out_timer()
         self.cancel_exit_timer()
         Gtk.main_quit()

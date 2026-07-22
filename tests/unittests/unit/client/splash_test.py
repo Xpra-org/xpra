@@ -11,6 +11,7 @@ import unittest
 from subprocess import Popen, PIPE
 
 from xpra.util.env import envbool
+from xpra.exit_codes import ExitCode
 from xpra.os_util import POSIX, OSX
 from xpra.util.io import pollwait
 from unit.process_test_util import ProcessTestUtil, log
@@ -75,9 +76,10 @@ class SplashTest(ProcessTestUtil):
                 pass
             self.splash = None
 
-    def _run_splash(self):
+    def _run_splash(self, keepalive_interval=0):
         env = self.get_run_env()
         env["XPRA_SPLASH_FOCUS_EXIT"] = "0"
+        env["XPRA_SPLASH_KEEPALIVE_INTERVAL"] = str(keepalive_interval)
         if self.display:
             env["DISPLAY"] = self.display
         cmd = self.get_xpra_cmd()
@@ -130,6 +132,18 @@ class SplashTest(ProcessTestUtil):
         ])
         assert self.splash.poll() is None, "splash screen should still be running"
         self.stop_splash()
+
+    def test_keepalive(self):
+        proc = self._run_splash(2)
+        self.do_feed_splash(proc, ["keepalive"] * 3, 1)
+        assert proc.poll() is None, "keepalives should keep the splash screen running"
+        r = pollwait(proc, 5)
+        assert r == ExitCode.TIMEOUT, f"expected timeout exit code, got {r}"
+
+    def test_keepalive_timeout(self):
+        proc = self._run_splash(1)
+        r = pollwait(proc, 5)
+        assert r == ExitCode.TIMEOUT, f"expected timeout exit code, got {r}"
 
 
 def main():

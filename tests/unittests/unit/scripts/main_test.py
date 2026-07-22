@@ -11,6 +11,7 @@ import signal
 import sys
 import tempfile
 import unittest
+from io import BytesIO
 from subprocess import Popen, DEVNULL, PIPE
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
@@ -27,6 +28,7 @@ from xpra.scripts.main import (
     isdisplaytype,
     check_display,
     enforce_client_landlock,
+    make_progress_process,
     _monitors_args,
 )
 from xpra.scripts.picker import find_session_by_name
@@ -39,6 +41,59 @@ def _get_test_socket_dir():
 
 
 class TestMain(unittest.TestCase):
+
+    def test_splash_keepalive_sender(self):
+        class ProgressProcess:
+            def __init__(self):
+                self.stdin = BytesIO()
+                self.returncode = None
+
+            def poll(self):
+                return self.returncode
+
+            def terminate(self):
+                self.returncode = -signal.SIGTERM
+
+        class StopEvent:
+            def __init__(self):
+                self.stopped = False
+                self.wait_delays = []
+
+            def set(self):
+                self.stopped = True
+
+            def is_set(self):
+                return self.stopped
+
+            def wait(self, delay):
+                self.wait_delays.append(delay)
+                return len(self.wait_delays) >= 2
+
+        process = ProgressProcess()
+        stop_event = StopEvent()
+        keepalive_threads = []
+
+        def capture_thread(target, name, daemon=False, args=()):
+            keepalive_threads.append((target, name, daemon, args))
+            return Mock()
+
+        with patch("xpra.scripts.main.Popen", return_value=process), \
+             patch("xpra.scripts.main.add_process"), \
+             patch("xpra.scripts.main.SPLASH_KEEPALIVE_INTERVAL", 1), \
+             patch("threading.Event", return_value=stop_event), \
+             patch("xpra.util.thread.start_thread", side_effect=capture_thread):
+            assert make_progress_process("test") is process
+            assert len(keepalive_threads) == 1
+            target, name, daemon, args = keepalive_threads[0]
+            assert name == "splash-keepalive"
+            assert daemon is True
+            assert not args
+            target()
+            data = process.stdin.getvalue()
+            assert data.count(b"keepalive\n") == 2
+            assert stop_event.wait_delays == [1, 1]
+            process.terminate()
+            assert stop_event.stopped
 
     def test_enforce_client_landlock(self):
         enforce_landlock = Mock()

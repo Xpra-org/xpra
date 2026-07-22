@@ -94,6 +94,7 @@ SYSTEMD_RUN: bool = envbool("XPRA_SYSTEMD_RUN", True)
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 LIST_REPROBE_TIMEOUT: int = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 SPLASH_EXIT_DELAY: int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
+SPLASH_KEEPALIVE_INTERVAL: int = max(0, envint("XPRA_SPLASH_KEEPALIVE_INTERVAL", 5))
 
 NO_NETWORK_SUBCOMMANDS = (
     "sbom",
@@ -1649,6 +1650,7 @@ def make_progress_process(title="Xpra") -> Popen | None:
         env["GDK_BACKEND"] = "x11"
     env["XPRA_LOG_PREFIX"] = "splash: "
     env["XPRA_WAIT_FOR_INPUT"] = "0"
+    env["XPRA_SPLASH_KEEPALIVE_INTERVAL"] = str(SPLASH_KEEPALIVE_INTERVAL)
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command() + ["splash"]
     if debug_args := get_debug_args():
@@ -1659,15 +1661,35 @@ def make_progress_process(title="Xpra") -> Popen | None:
     except OSError as e:
         werr("Error launching 'splash' subprocess", " %s" % e)
         return None
+    from threading import Event, Lock
+    keepalive_stop = Event()
+    write_lock = Lock()
+
+    def write_stdin(data: bytes) -> bool:
+        with write_lock:
+            stdin = progress_process.stdin
+            if not stdin:
+                return False
+            try:
+                stdin.write(data)
+                stdin.flush()
+            except (OSError, ValueError):
+                log("write_stdin(%r)", data, exc_info=True)
+                keepalive_stop.set()
+                return False
+        return True
+
     # always close stdin when terminating the splash screen process:
     progress_process.saved_terminate = progress_process.terminate
 
     def terminate(*args) -> None:
-        stdin = progress_process.stdin
-        log("terminate%s stdin=%s", args, stdin)
-        if stdin:
-            progress_process.stdin = None
-            noerr(stdin.close)
+        keepalive_stop.set()
+        with write_lock:
+            stdin = progress_process.stdin
+            log("terminate%s stdin=%s", args, stdin)
+            if stdin:
+                progress_process.stdin = None
+                noerr(stdin.close)
         progress_process.saved_terminate()
         setattr(progress_process, "terminate", progress_process.saved_terminate)
 
@@ -1679,12 +1701,9 @@ def make_progress_process(title="Xpra") -> Popen | None:
         log("progress(%s, %r) poll=%s", pct, text, poll)
         if poll is not None:
             return
-        stdin = progress_process.stdin
-        if stdin:
-            from xpra.util.i18n import _
-            text = _(text)
-            stdin.write(("%i:%s\n" % (pct, text)).encode("utf8"))
-            stdin.flush()
+        from xpra.util.i18n import _
+        text = _(text)
+        write_stdin(("%i:%s\n" % (pct, text)).encode("utf8"))
         if pct == 100:
             # it should exit on its own, but just in case:
             glib = gi_import("GLib")
@@ -1695,6 +1714,16 @@ def make_progress_process(title="Xpra") -> Popen | None:
     add_process(progress_process, "splash", cmd, ignore=True, forget=True)
     progress(0, title)
     progress(10, "initializing")
+    if SPLASH_KEEPALIVE_INTERVAL > 0:
+        def keepalive() -> None:
+            while progress_process.poll() is None and not keepalive_stop.is_set():
+                if not write_stdin(b"keepalive\n"):
+                    return
+                if keepalive_stop.wait(SPLASH_KEEPALIVE_INTERVAL):
+                    return
+
+        from xpra.util.thread import start_thread
+        start_thread(keepalive, "splash-keepalive", daemon=True)
     return progress_process
 
 
