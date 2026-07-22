@@ -141,7 +141,12 @@ class KeyboardClient(StubClientSubsystem):
                 self.sync = False
             kh.sync = self.sync
             skip = ("keycodes", "x11_keycodes") if DELAY_KEYBOARD_DATA else ()
-            caps["keymap"] = kh.get_keymap_properties(skip)
+            keymap = kh.get_keymap_properties(skip)
+            if DELAY_KEYBOARD_DATA:
+                # tell the server not to configure the keymap using this incomplete data,
+                # but to wait for the keyboard config packet we will send after the handshake:
+                keymap["delay"] = True
+            caps["keymap"] = keymap
             # show the user a summary of what we have detected:
             self.helper.log_keyboard_info()
             if delay_ms > 0 and interval_ms > 0:

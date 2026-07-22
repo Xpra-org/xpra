@@ -13,7 +13,6 @@ from xpra.server.source.keyboard import KeyboardConnection
 from xpra.util.env import envbool
 from xpra.util.str_fn import Ellipsizer, csv
 from xpra.util.objects import typedict
-from xpra.keyboard.common import DELAY_KEYBOARD_DATA
 from xpra.common import noerr
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.server.subsystem.stub import StubSubsystem
@@ -165,7 +164,10 @@ class KeyboardManager(StubSubsystem):
             # always clear modifiers before setting a new keymap
             ss.make_keymask_match(c.strtupleget("modifiers"))
         self.set_keyboard_repeat(delay, interval)
-        if not DELAY_KEYBOARD_DATA:
+        if not typedict(c.dictget("keymap")).boolget("delay"):
+            # this client is not going to send its keyboard config separately,
+            # (ie: clients older than v6.5, or with `XPRA_DELAY_KEYBOARD_DATA=0`)
+            # so the hello packet is all the keyboard data we are ever going to get:
             self.set_keymap(ss)
 
     def get_keyboard_info(self) -> dict[str, Any]:
