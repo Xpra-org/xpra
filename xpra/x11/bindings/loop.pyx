@@ -15,6 +15,7 @@ from xpra.x11.bindings.xlib cimport (
     Display, Bool, Status, XEvent,
     XFree,
     XPending, XNextEvent, XSync, XFlush,
+    XNextRequest, XLastKnownRequestProcessed,
     XSetErrorHandler, XSetIOErrorHandler, XErrorEvent,
     XAddConnectionWatch, XPointer,
     XInternalConnectionNumbers,
@@ -168,15 +169,28 @@ cdef class EventLoop:
     def Xenter(self) -> None:
         log("Xenter")
 
+    cdef bint is_synced(self) noexcept:
+        # `XNextRequest` is the sequence number the next request will be given,
+        # so `XNextRequest-1` is the last request we have composed.
+        # If the server has already processed it, then it has also processed
+        # everything before it, and any error it may have caused
+        # has already been dispatched to our error handler:
+        # syncing again would only cost us a round-trip for nothing.
+        return XLastKnownRequestProcessed(self.display) >= XNextRequest(self.display) - 1
+
     def Xexit(self, flush=True):
         global last_error
         log("Xexit(%s) last_error=%s", flush, last_error)
-        if flush:
+        if not flush:
+            XFlush(self.display)
+        elif self.is_synced():
+            # nothing to sync, but replies may have queued up events
+            # whilst they were read from the connection:
+            GLib.timeout_add(0, self.process_events)
+        else:
             XSync(self.display, False)
             # check for new events in next GLib loop iteration:
             GLib.timeout_add(0, self.process_events)
-        else:
-            XFlush(self.display)
         if not last_error:
             return None
         err = last_error.get("error", "unknown")
