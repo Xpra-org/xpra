@@ -22,6 +22,7 @@ class WaylandPointerManager(PointerManager):
         return self.server.compositor.get_pointer_device()
 
     def cleanup(self) -> None:
+        super().cleanup()
         if device := self.pointer_device:
             device.cleanup()
             self.pointer_device = None

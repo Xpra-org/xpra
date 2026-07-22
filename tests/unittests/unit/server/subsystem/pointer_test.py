@@ -12,6 +12,8 @@ from xpra.server.subsystem.pointer import PointerManager
 
 def make_server():
     server = AdHocStruct()
+    server.signal_callbacks = {}
+    server.connect = lambda name, callback: server.signal_callbacks.__setitem__(name, callback)
     server.idle_add = lambda *args: None
     server.timeout_add = lambda *args: None
     server.source_remove = lambda *args: None
@@ -30,6 +32,9 @@ class RecordingPointerManager(PointerManager):
         self.pointer_device = AdHocStruct()
         self.pointer_device.get_position = lambda: (0, 0)
         self.pointer_device.click = lambda *args: self.calls.append(("click",) + args)
+
+    def make_pointer_device(self):
+        return self.pointer_device
 
     def is_readonly(self, _proto) -> bool:
         return False
@@ -117,6 +122,79 @@ class PointerPipelineTest(unittest.TestCase):
         props = {"modifiers": (), "window-position": (1, 2)}
         m.process_pointer_button(object(), 0, 1, 3, True, (10, 20), props)
         self.assertIn(("click", 3, True, props), m.calls)
+
+    def test_button_state_tracks_successful_actions(self):
+        m = self.make_manager()
+        m.button_action(1, 1, 1, True, {})
+        m.button_action(1, 1, 3, True, {})
+        m.button_action(2, 1, 2, True, {})
+        self.assertEqual(m.buttons_pressed, {1: {1, 3}, 2: {2}})
+        m.button_action(1, 1, 1, False, {})
+        self.assertEqual(m.buttons_pressed, {1: {3}, 2: {2}})
+
+    def test_disconnect_unpresses_all_buttons(self):
+        m = self.make_manager()
+        m.button_action(1, 1, 1, True, {})
+        m.button_action(1, 1, 3, True, {})
+        m.button_action(2, 1, 2, True, {})
+        m.calls.clear()
+
+        m.unpress_all_buttons(object(), object())
+
+        self.assertEqual(m.buttons_pressed, {})
+        self.assertCountEqual(m.calls, (
+            ("click", 1, False, {}),
+            ("click", 2, False, {}),
+            ("click", 3, False, {}),
+        ))
+        m.calls.clear()
+        m.unpress_all_buttons()
+        self.assertEqual(m.calls, [])
+
+    def test_client_exit_signal_unpresses_buttons(self):
+        m = self.make_manager()
+        m.setup()
+        m.button_action(1, 1, 1, True, {})
+        m.calls.clear()
+
+        m.server.signal_callbacks["client-exited"](m.server, object())
+
+        self.assertEqual(m.calls, [("click", 1, False, {})])
+        self.assertEqual(m.buttons_pressed, {})
+
+    def test_disconnect_clears_drag_state(self):
+        m = self.make_manager()
+        m._button1_drag[1] = {}
+        m.unpress_all_buttons()
+        self.assertEqual(m._button1_drag, {})
+
+    def test_failed_button_action_is_not_tracked(self):
+        m = self.make_manager()
+
+        def fail_click(*_args):
+            raise RuntimeError("click failed")
+
+        m.pointer_device.click = fail_click
+        with self.assertRaises(RuntimeError):
+            m.button_action(1, 1, 1, True, {})
+        self.assertEqual(m.buttons_pressed, {})
+
+    def test_disconnect_continues_after_release_failure(self):
+        m = self.make_manager()
+        m.buttons_pressed = {1: {1, 2}}
+
+        def release(button, pressed, props):
+            m.calls.append(("click", button, pressed, props))
+            if button == 1:
+                raise RuntimeError("release failed")
+
+        m.pointer_device.click = release
+        m.unpress_all_buttons()
+        self.assertEqual(m.buttons_pressed, {})
+        self.assertCountEqual(m.calls, (
+            ("click", 1, False, {}),
+            ("click", 2, False, {}),
+        ))
 
 
 def main():

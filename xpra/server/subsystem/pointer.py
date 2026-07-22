@@ -73,7 +73,7 @@ class PointerManager(StubSubsystem):
     never call back into the pipeline.
     """
     __slots__ = (
-        "_button1_drag", "double_click_distance", "double_click_time", "input_devices",
+        "_button1_drag", "buttons_pressed", "double_click_distance", "double_click_time", "input_devices",
         "input_devices_data", "last_mouse_user", "pointer_device", "pointer_device_map",
         "pointer_sequence", "touchpad_device",
     )
@@ -91,6 +91,7 @@ class PointerManager(StubSubsystem):
         self.pointer_device_map: dict = {}
         self.pointer_device = None
         self.touchpad_device = None
+        self.buttons_pressed: dict[int, set[int]] = {}
         self.double_click_time = -1
         self.double_click_distance = -1, -1
         # Per-window state for the drag-as-scroll heuristic.
@@ -115,6 +116,10 @@ class PointerManager(StubSubsystem):
             from xpra.pointer.nopointer import NoPointerDevice
             self.pointer_device = NoPointerDevice()
         log("pointer_device=%s", self.pointer_device)
+        self.server.connect("client-exited", self.unpress_all_buttons)
+
+    def cleanup(self) -> None:
+        self.unpress_all_buttons()
 
     def make_pointer_device(self):
         from xpra.platform.pointer import get_pointer_device
@@ -549,6 +554,24 @@ class PointerManager(StubSubsystem):
             self.record_wheel_event(wid, button)
         log("%s%s", device.click, (button, pressed, props))
         device.click(button, pressed, props)
+        self._update_button_state(device_id, button, pressed)
+
+    def _update_button_state(self, device_id: int, button: int, pressed: bool) -> None:
+        if pressed:
+            self.buttons_pressed.setdefault(device_id, set()).add(button)
+        elif buttons := self.buttons_pressed.get(device_id):
+            buttons.discard(button)
+            if not buttons:
+                self.buttons_pressed.pop(device_id, None)
+
+    def unpress_all_buttons(self, *_args) -> None:
+        buttons_pressed = self.buttons_pressed
+        self.buttons_pressed = {}
+        self._button1_drag.clear()
+        for device_id, buttons in buttons_pressed.items():
+            for button in buttons:
+                with log.trap_error("Error releasing pointer button %i on device %i", button, device_id):
+                    self.button_action(device_id, 0, button, False, {})
 
     def _process_pointer_motion(self, proto, packet: Packet) -> None:
         # v5 packet format

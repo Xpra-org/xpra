@@ -56,6 +56,7 @@ class RemoteDesktopPointerManager(ShadowPointerManager):
             log.warn("Warning: button %s not recognized", button)
             return
         self._portal_call("NotifyPointerButton", Int32(evdev_button), UInt32(pressed))
+        self._update_button_state(device_id, button, pressed)
 
 
 class ScreenCastPointerManager(ShadowPointerManager):
