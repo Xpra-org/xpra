@@ -577,7 +577,7 @@ class PointerServer(StubServerMixin):
         device_id = -1
         props = {}
         self.record_wheel_event(wid, button)
-        if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
+        if self.process_mouse_common(proto, device_id, wid, pointer, props):
             self.last_mouse_user = ss.uuid
             self._update_modifiers(proto, wid, modifiers)
             self.may_record_pointer_event("pointer-wheel", wid, button, distance, tuple(pointer), tuple(modifiers))
