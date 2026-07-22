@@ -971,6 +971,17 @@ class TestProcessFileDataResponse(unittest.TestCase):
             h._process_file_data_response(pkt)
         assert "s1" not in h.pending_send_data
 
+    def test_deny_completes_requested_file(self):
+        h = _FullHandler()
+        callback = MagicMock()
+        h.files_requested["requested"] = RequestedFile("${XPRA_SERVER_LOG}", False)
+        h.file_request_callback["requested"] = callback
+        pkt = Packet("file-data-response", "requested", DENY)
+        h._process_file_data_response(pkt)
+        callback.assert_not_called()
+        self.assertNotIn("requested", h.files_requested)
+        self.assertNotIn("requested", h.file_request_callback)
+
     def test_invalid_accept_removes_pending(self):
         h = _FullHandler()
         self._register(h, "s1b")

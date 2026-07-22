@@ -15,7 +15,8 @@ from xpra.util.io import load_binary_file
 from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.net.common import Packet
-from xpra.net.file_transfer import FileTransferAttributes
+from xpra.net.packet_type import FILE_DATA_RESPONSE
+from xpra.net.file_transfer import DENY, FileTransferAttributes
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -101,13 +102,15 @@ class FileServer(StubServerMixin):
             log.warn("Warning: invalid client source for file-request packet")
             return
         argf = packet.get_str(1)
-        if argf == "${XPRA_SERVER_LOG}" and not os.environ.get("XPRA_SERVER_LOG"):
-            log("no server log to send")
-            return
         openit = packet.get_bool(2)
         # echo back the send-id the client generated for this request (if any),
         # so the client can safely match the response against its own request:
         send_id = packet.get_str(3) if len(packet) > 3 else ""
+        if argf == "${XPRA_SERVER_LOG}" and not os.environ.get("XPRA_SERVER_LOG"):
+            log("no server log to send")
+            if send_id:
+                ss.send(FILE_DATA_RESPONSE, send_id, DENY)
+            return
         filename = os.path.abspath(osexpand(argf))
         if not os.path.exists(filename):
             log.warn("Warning: the file requested does not exist:")

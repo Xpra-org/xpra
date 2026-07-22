@@ -4,8 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import unittest
+from unittest.mock import MagicMock, patch
 
+from xpra.net.common import Packet
+from xpra.net.file_transfer import DENY
+from xpra.net.packet_type import FILE_DATA_RESPONSE
 from xpra.util.objects import AdHocStruct
 from xpra.os_util import POSIX
 from unit.test_util import silence_info
@@ -38,6 +43,14 @@ class FileMixinTest(ServerMixinTest):
         opts.pdf_printer = ""
         with silence_info(filesubsystem):
             self._test_mixin_class(filesubsystem.FileServer, opts)
+        self.source.send = MagicMock()
+        with patch.dict(os.environ):
+            os.environ.pop("XPRA_SERVER_LOG", None)
+            self.mixin._process_file_request(
+                self.protocol,
+                Packet("file-request", "${XPRA_SERVER_LOG}", False, "log-request"),
+            )
+        self.source.send.assert_called_once_with(FILE_DATA_RESPONSE, "log-request", DENY)
 
 
 def main():

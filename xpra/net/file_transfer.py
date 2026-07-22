@@ -1014,6 +1014,13 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = packet.get_str(1)
         accept = packet.get_i8(2)
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
+        # A denied response may also complete a file request that we sent.
+        # This lets the peer report an unavailable requested file without a
+        # notification or a new packet type.
+        if accept == DENY and send_id in self.files_requested:
+            self.files_requested.pop(send_id, None)
+            self.file_request_callback.pop(send_id, None)
+            return
         if timer := self.pending_send_data_timers.pop(send_id, None):
             GLib.source_remove(timer)
         try:
