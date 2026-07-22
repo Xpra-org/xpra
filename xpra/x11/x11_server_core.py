@@ -1004,7 +1004,7 @@ class X11ServerCore(GTKServerBase):
         props = {}
         self.record_wheel_event(wid, button)
         with xsync:
-            if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
+            if self.process_mouse_common(proto, device_id, wid, pointer, props):
                 self.last_mouse_user = ss.uuid
                 self._update_modifiers(proto, wid, modifiers)
                 self.pointer_device.wheel_motion(button, distance/1000.0)   #pylint: disable=no-member
