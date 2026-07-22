@@ -14,6 +14,9 @@ log = Logger("server", "wayland")
 
 class WaylandPointerManager(PointerManager):
     __slots__ = ()
+    # the compositor tracks its own cursor position,
+    # and every event needs the `flush()` that comes with a move:
+    SKIP_REDUNDANT_MOVES = False
 
     def make_pointer_device(self):
         return self.server.compositor.get_pointer_device()
@@ -44,22 +47,20 @@ class WaylandPointerManager(PointerManager):
                 window.pointer_focus = wid
         server.compositor.flush()
 
-    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        keyboard = self.server.subsystems.get("keyboard")
-        if props and "modifiers" in props and keyboard:
-            keyboard.update_keyboard_modifiers(props.get("modifiers", ()))
+    def _adjust_pointer(self, proto, device_id: int, wid: int, pointer):
+        # entering the surface is what makes the position meaningful:
         self.set_pointer_focus(wid, pointer)
-        log("pointer: %r", pointer)
+        return super()._adjust_pointer(proto, device_id, wid, pointer)
+
+    def get_pointer_target(self, proto, wid: int, pos, props=None) -> tuple[int, int]:
+        # wayland surfaces are fed surface-relative coordinates:
+        if len(pos) >= 4:
+            return pos[2], pos[3]
+        return pos[0], pos[1]
+
+    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         try:
-            if self.is_readonly(proto):
-                return False
-            if pointer:
-                if len(pointer) >= 4:
-                    x, y = pointer[2:4]
-                else:
-                    x, y = pointer[:2]
-                self.get_pointer_device(device_id).move_pointer(x, y, props or {})
-            return True
+            super()._move_pointer(device_id, wid, pos, props)
         finally:
             self.server.compositor.flush()
 

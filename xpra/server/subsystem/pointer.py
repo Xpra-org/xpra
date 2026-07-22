@@ -55,8 +55,22 @@ DRAG_SCROLL_SELECTION_DX_PCT = envint("XPRA_DRAG_SCROLL_SELECTION_DX_PCT", 40)
 
 class PointerManager(StubSubsystem):
     """
-    Mixin for servers that handle pointer devices
-    (mouse, etc)
+    Subsystem for servers that handle pointer devices (mouse, etc).
+
+    Packet handlers parse the client's events and funnel them into just two
+    pipeline methods, `process_mouse_common` and `process_pointer_button`,
+    which are not meant to be overridden.  Backends customise behaviour
+    through these hooks instead:
+
+        `_adjust_pointer`     resolve the event to a window, clamp or offset
+        `get_pointer_target`  turn the client position into device coordinates
+        `_move_pointer`       hand the position to the pointer device
+        `button_action`       hand the click to the pointer device
+        `_update_modifiers`   apply the modifier mask sent with the event
+
+    The first two return coordinates (or `None` to drop the event) and must
+    not have side effects on the device; the last three are terminal and must
+    never call back into the pipeline.
     """
     __slots__ = (
         "_button1_drag", "double_click_distance", "double_click_time", "input_devices",
@@ -64,6 +78,9 @@ class PointerManager(StubSubsystem):
         "pointer_sequence", "touchpad_device",
     )
     PREFIX = "pointer"
+    # skip `_move_pointer` when the device is already at the target position?
+    # (backends whose devices need every event to record their own state say `False`)
+    SKIP_REDUNDANT_MOVES = True
 
     def __init__(self, server=None):
         StubSubsystem.__init__(self, server)
@@ -240,14 +257,27 @@ class PointerManager(StubSubsystem):
         return pointer
 
     def process_mouse_common(self, proto, device_id: int, wid: int, opointer, props=None):
+        """
+        Move the pointer where the client asked us to.
+        Returns the adjusted pointer position, or `None` if the event was dropped.
+        """
+        log("process_mouse_common%s", (proto, device_id, wid, opointer, props))
+        if self.is_readonly(proto):
+            return None
         pointer = self._adjust_pointer(proto, device_id, wid, opointer)
         if not pointer:
             return None
-        if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
-            seq = self.pointer_sequence.get(device_id, 0)
-            self.may_record_pointer_event("pointer-motion", device_id, seq, wid, pointer, props or {})
-            return pointer
-        return None
+        target = self.get_pointer_target(proto, wid, pointer, props)
+        if not target:
+            return None
+        if self.SKIP_REDUNDANT_MOVES and self.input_devices != "xi" \
+                and self.get_pointer_device(device_id).get_position() == target:
+            log("pointer already at %s", target)
+        else:
+            self._move_pointer(device_id, wid, target, props)
+        seq = self.pointer_sequence.get(device_id, 0)
+        self.may_record_pointer_event("pointer-motion", device_id, seq, wid, pointer, props or {})
+        return pointer
 
     def may_record_pointer_event(self, packet_type: str, *data: PacketElement) -> None:
         pointer_sources = self.get_sources_by_type(PointerConnection)
@@ -278,7 +308,7 @@ class PointerManager(StubSubsystem):
             #    log(f"dropped outdated sequence {seq}, latest is {highest_seq}")
             #    return
             self.pointer_sequence[device_id] = seq
-        self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
+        self.process_pointer_button(proto, device_id, wid, button, pressed, pointer, props)
 
     def _process_button_action(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
@@ -302,7 +332,7 @@ class PointerManager(StubSubsystem):
         }
         if len(packet) >= 7:
             props["buttons"] = 6
-        self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
+        self.process_pointer_button(proto, device_id, wid, button, pressed, pointer, props)
 
     def _motion_signaled(self, model, event) -> None:
         log("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
@@ -359,9 +389,10 @@ class PointerManager(StubSubsystem):
         return self._get_pointer_abs_coordinates(wid, pos, props)
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
-        # (this is called within a `xswallow` context)
-        x, y = self._get_pointer_abs_coordinates(wid, pos)
-        self.device_move_pointer(device_id, wid, (x, y), props or {})
+        # `pos` has already been resolved by `get_pointer_target`,
+        # except when we are called directly by the dbus or rfb servers
+        # (in which case it is already in absolute coordinates)
+        self.device_move_pointer(device_id, wid, pos[:2], props or {})
 
     def device_move_pointer(self, device_id: int, wid: int, pos, props: dict):
         device = self.get_pointer_device(device_id)
@@ -372,16 +403,6 @@ class PointerManager(StubSubsystem):
         except Exception as e:
             log.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
             log.estr(e)
-
-    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        log("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
-        if self.is_readonly(proto):
-            return False
-        pos = self.get_pointer_device(device_id).get_position()
-        target = self.get_pointer_target(proto, wid, pointer, props)
-        if (pointer and pos != target) or self.input_devices == "xi":
-            self._move_pointer(device_id, wid, target, props)
-        return True
 
     def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
         if self.is_readonly(proto):
@@ -396,8 +417,11 @@ class PointerManager(StubSubsystem):
             if window_sub is not None and wid == window_sub.get_focus():
                 ss.user_event("focus-changed")
 
-    def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool,
-                                 pointer, props: dict) -> None:
+    def process_pointer_button(self, proto, device_id: int, wid: int, button: int, pressed: bool,
+                               pointer, props: dict) -> None:
+        """
+        Move the pointer to where the click happened, then click.
+        """
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers", ()))
         if DRAG_SCROLL_ENABLED and button == 1 and wid:
@@ -411,7 +435,7 @@ class PointerManager(StubSubsystem):
         if self.process_mouse_common(proto, device_id, wid, pointer, pointer_props):
             seq = self.pointer_sequence.get(device_id, 0)
             self.may_record_pointer_event("pointer-button", device_id, seq, wid, button, pressed, pointer, {})
-            self.button_action(device_id, wid, button, pressed, {})
+            self.button_action(device_id, wid, button, pressed, props)
 
     def _make_button1_drag_state(self, wid: int, pointer, props=None) -> dict:
         """Snapshot the button-1 press for the drag-as-scroll heuristic.
@@ -603,7 +627,7 @@ class PointerManager(StubSubsystem):
         device_id = -1
         props = packet.get_dict(7) if len(packet) >= 8 and isinstance(packet[7], dict) else {}
         self.record_wheel_event(wid, button)
-        if self.do_process_mouse_common(proto, device_id, wid, pointer, props):
+        if self.process_mouse_common(proto, device_id, wid, pointer, props):
             self.last_mouse_user = ss.uuid
             self._update_modifiers(proto, wid, modifiers)
             self.may_record_pointer_event("pointer-wheel", wid, button, distance, tuple(pointer), tuple(modifiers))
