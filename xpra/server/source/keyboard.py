@@ -114,7 +114,9 @@ class KeyboardConnection(StubClientConnection):
         log("set_keymap%s keyboard_config=%s", (current_keyboard_config, keys_pressed, force, translate_only), kc)
         if kc and kc.enabled:
             current_id = ""
-            if current_keyboard_config and current_keyboard_config.enabled:
+            if current_keyboard_config and current_keyboard_config.enabled and current_keyboard_config is not kc:
+                # (if it is the same object, comparing the hash with itself would always match,
+                # despite the config having been modified since it was applied)
                 current_id = current_keyboard_config.get_hash()
             keymap_id = kc.get_hash()
             log("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
