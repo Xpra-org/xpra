@@ -348,13 +348,17 @@ class KeyboardHelper:
             self.layout_option or self.layout, self.variant_option or self.variant) if bool(x))
 
     def send_config(self) -> None:
+        # this is the initial configuration, it must always be applied:
+        # (the server has been waiting for it, see `DELAY_KEYBOARD_DATA`)
         if BACKWARDS_COMPATIBLE:
             if self.layout:
                 self.send_layout()
             if not self.backend:
-                self.send_keymap(not self.layout)
+                self.send_keymap(True)
             return
-        self.send(KEYBOARD_CONFIG, self.get_keymap_properties())
+        props = self.get_keymap_properties()
+        props["force"] = True
+        self.send(KEYBOARD_CONFIG, props)
 
     def send_layout(self) -> None:
         log("send_layout() layout_option=%r, layout=%r, variant_option=%r, variant=%r, options=%r",
