@@ -784,23 +784,22 @@ class SeamlessWindowServer(WindowServer):
             new_client_properties.pop("workspace", None)
         super()._set_client_properties(proto, wid, window, new_client_properties)
 
-    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
+    def raise_window_under_pointer(self, wid: int) -> None:
         """
-        Override so we can raise the window under the cursor
+        Called by the pointer subsystem when the pointer moves,
+        so we can raise the window under the cursor
         (gtk raise does not change window stacking, just focus).
         """
-        if wid > 0 and (self.last_raised != wid or ALWAYS_RAISE_WINDOW):
-            window = self.get_window(wid)
-            if not window:
-                pointerlog("_move_pointer(%s, %s) invalid window id", wid, pos)
-            else:
-                self.last_raised = wid
-                pointerlog("raising %s", window)
-                with xswallow:
-                    window.raise_window()
-        pointer = self.get_subsystem("pointer")
-        if pointer:
-            pointer._move_pointer(device_id, wid, pos, props)
+        if wid <= 0 or (self.last_raised == wid and not ALWAYS_RAISE_WINDOW):
+            return
+        window = self.get_window(wid)
+        if not window:
+            pointerlog("raise_window_under_pointer(%s) invalid window id", wid)
+            return
+        self.last_raised = wid
+        pointerlog("raising %s", window)
+        with xswallow:
+            window.raise_window()
 
     def _process_window_close(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()

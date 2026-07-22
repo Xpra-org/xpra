@@ -13,6 +13,12 @@ log = Logger("pointer")
 class X11SeamlessPointerManager(X11PointerManager):
     """Resolve client monitor-relative pointer positions for seamless X11."""
 
+    def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
+        window = self.get_subsystem("window")
+        if window:
+            window.raise_window_under_pointer(wid)
+        super()._move_pointer(device_id, wid, pos, props)
+
     def get_pointer_target(self, proto, wid: int, pos, props=None) -> tuple[int, int]:
         ss = self.get_server_source(proto)
         monitor_value = (props or {}).get("monitor", {})

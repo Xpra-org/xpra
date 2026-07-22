@@ -18,7 +18,6 @@ Gdk = gi_import("Gdk")
 
 log = Logger("shadow")
 keylog = Logger("shadow", "keyboard")
-pointerlog = Logger("shadow", "pointer")
 
 
 class RemoteDesktop(PortalShadow):
@@ -33,42 +32,9 @@ class RemoteDesktop(PortalShadow):
     def set_keymap(self, server_source, force=False) -> None:
         keylog.info("key mapping not implemented - YMMV")
 
-    def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        if self.is_readonly(proto) or not self.input_devices_count:
-            return False
-        win = self.get_window(wid)
-        if not win:
-            pointerlog.error(f"Error: window {wid:#x} not found")
-            return False
-        x, y = pointer[:2]
-        node_id = win.pipewire_id
-        options = native_to_dbus([], "{sv}")
-        self.portal_interface.NotifyPointerMotionAbsolute(
-            self.session_handle,
-            options,
-            node_id,
-            x, y,
-            dbus_interface=REMOTEDESKTOP_IFACE)
-        return True
-
-    def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool, pointer,
-                                 props) -> None:
-        options = native_to_dbus([], "{sv}")
-        pointerlog(f"button-action: button={button}, pressed={pressed}")
-        evdev_button = {
-            1: 0x110,  # BTN_LEFT
-            2: 0x111,  # BTN_RIGHT
-            3: 0x112,  # BTN_MIDDLE
-        }.get(button, -1)
-        if evdev_button < 0:
-            pointerlog.warn(f"Warning: button {button} not recognized")
-            return
-        self.portal_interface.NotifyPointerButton(
-            self.session_handle,
-            options,
-            Int32(evdev_button),
-            UInt32(pressed),
-            dbus_interface=REMOTEDESKTOP_IFACE)
+    def get_pointer_subsystem_class(self) -> type:
+        from xpra.platform.posix.portal_pointer import RemoteDesktopPointerManager
+        return RemoteDesktopPointerManager
 
     def _process_keyboard_event(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto) or not self.input_devices_count or not self.keymap:

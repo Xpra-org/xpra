@@ -25,7 +25,6 @@ class ScreenCast(PortalShadow):
         no input devices
         """
 
-    def do_process_button_action(self, *args) -> None:
-        """
-        no input devices
-        """
+    def get_pointer_subsystem_class(self) -> type:
+        from xpra.platform.posix.portal_pointer import ScreenCastPointerManager
+        return ScreenCastPointerManager
