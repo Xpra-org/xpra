@@ -15,7 +15,8 @@ from xpra.util.io import load_binary_file
 from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.net.common import Packet
-from xpra.net.file_transfer import FileTransferAttributes
+from xpra.net.packet_type import FILE_DATA_RESPONSE
+from xpra.net.file_transfer import DENY, FileTransferAttributes
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -114,6 +115,8 @@ class FileServer(StubSubsystem):
     def do_process_file_request(self, ss, argf: str, openit: bool, send_id: str) -> None:
         if argf == "${XPRA_SERVER_LOG}" and not os.environ.get("XPRA_SERVER_LOG"):
             log("no server log to send")
+            if send_id:
+                ss.send(FILE_DATA_RESPONSE, send_id, DENY)
             return
         filename = os.path.abspath(osexpand(argf))
         if not os.path.exists(filename):

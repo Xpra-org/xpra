@@ -87,6 +87,7 @@ class FileServerBehaviorTest(unittest.TestCase):
             # run scheduled file work inline (synchronously) so the tests can assert
             # on `send_file` directly, without a real file worker thread / main loop:
             schedule_file_io=lambda fn, *args: fn(*args),
+            send=MagicMock(),
             send_file=MagicMock(),
             send_open_url=MagicMock(return_value=True),
             notify_client=MagicMock(),
@@ -187,10 +188,11 @@ class FileServerBehaviorTest(unittest.TestCase):
             notify.reset_mock()
             with patch.dict(os.environ, {}, clear=True):
                 self.server._process_file_request(
-                    None, Packet("file-request", "${XPRA_SERVER_LOG}", False),
+                    None, Packet("file-request", "${XPRA_SERVER_LOG}", False, "log-request"),
                 )
             notify.assert_not_called()
         source.send_file.assert_not_called()
+        source.send.assert_called_once_with("file-data-response", "log-request", 0)
 
     def test_request_file_size_limits(self):
         source = self.make_source()
