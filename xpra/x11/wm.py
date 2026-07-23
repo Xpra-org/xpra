@@ -106,10 +106,17 @@ class Wm(GObject.GObject):
         self._wm_selection = None
 
     def init_atoms(self) -> None:
+        from xpra.x11.common import NET_SUPPORTED
         with xsync:
             # some applications (like openoffice), do not work properly
-            # if some x11 atoms aren't defined, so we define them in advance:
-            X11CoreBindings().intern_atoms(WINDOW_TYPE_ATOMS)
+            # if some x11 atoms aren't defined, so we define them in advance.
+            # batch-intern all the atoms the window manager and window models will use here,
+            # so that setting the root window EWMH properties and managing windows later on
+            # is served from the atom cache instead of a round-trip per atom:
+            atoms = WINDOW_TYPE_ATOMS + tuple(NET_SUPPORTED) + (
+                "_NET_SUPPORTED", "DEFAULT_NET_FRAME_EXTENTS", "WM_S0", "_NET_WM_CM_S0",
+            )
+            X11CoreBindings().intern_atoms(atoms)
 
     def setup(self, replace_other_wm: bool) -> None:
         # According to ICCCM 2.8/4.3, a window manager for screen N is a client which

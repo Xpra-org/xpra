@@ -64,6 +64,10 @@ class XSettingsServer(StubSubsystem):
     def setup(self) -> None:
         self.server.connect("last-client-exited", self._on_last_client_exited)
         if self._xsettings_enabled:
+            from xpra.x11.bindings.core import X11CoreBindings
+            with xsync:
+                # pre-intern the root window property we set later on:
+                X11CoreBindings().intern_atoms(("RESOURCE_MANAGER", ))
             from xpra.x11.subsystem.xsettings_manager import XSettingsHelper
             self._default_xsettings = XSettingsHelper().get_settings()
             log("_default_xsettings=%s", self._default_xsettings)

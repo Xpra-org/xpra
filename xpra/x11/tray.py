@@ -145,6 +145,11 @@ class SystemTray(GObject.GObject):
     def setup_tray_window(self) -> None:
         try:
             with xsync:
+                from xpra.x11.bindings.core import X11CoreBindings
+                # batch-intern the atoms used to set up the tray window:
+                X11CoreBindings().intern_atoms((
+                    SELECTION, SYSTRAY_VISUAL, SYSTRAY_ORIENTATION, "MANAGER", "WM_TITLE",
+                ))
                 owner = X11Window.XGetSelectionOwner(SELECTION)
                 log(f"setup tray: current selection owner={owner:x}")
                 if owner != XNone:

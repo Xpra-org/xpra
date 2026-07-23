@@ -27,6 +27,12 @@ class ICCServer(StubSubsystem):
 
     def setup(self) -> None:
         self.server.connect("last-client-exited", self._on_last_client_exited)
+        if SYNC_ICC:
+            from xpra.x11.bindings.core import X11CoreBindings
+            from xpra.x11.error import xsync
+            with xsync:
+                # pre-intern the root window properties we set later on:
+                X11CoreBindings().intern_atoms(("_ICC_PROFILE", "_ICC_PROFILE_IN_X_VERSION"))
 
     def add_new_client(self, ss, caps: typedict) -> None:
         self.set_icc_profile()

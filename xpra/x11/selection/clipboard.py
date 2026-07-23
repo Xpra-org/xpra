@@ -78,6 +78,14 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     def __repr__(self):
         return "X11Clipboard"
 
+    def init_proxies(self, selections) -> None:
+        # batch-intern the selection atoms in a single round-trip,
+        # so that creating a proxy for each one below is served from the cache:
+        with xsync:
+            from xpra.x11.bindings.core import X11CoreBindings
+            X11CoreBindings().intern_atoms(tuple(selections))
+        super().init_proxies(selections)
+
     def cleanup_window(self) -> None:
         if xid := self.event_window_xid:
             self.event_window_xid = 0
