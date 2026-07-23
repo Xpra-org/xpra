@@ -74,6 +74,12 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
         # true device-pixel desktop surface, reported independently of the process
         # DPI awareness (whereas `GetMonitorInfo` is only physical when PMv2-aware):
         dcfg = display_config.get(device, {})
+        # the panel identity, resolved from the EDID via `QueryDisplayConfig`
+        # (the GTK backend gets these from `GdkMonitor`, which is unavailable here):
+        if dcfg.get("manufacturer"):
+            minfo["manufacturer"] = dcfg["manufacturer"]
+        if dcfg.get("model"):
+            minfo["model"] = dcfg["model"]
         src = dcfg.get("source")
         if src:
             sx, sy = src["position"]

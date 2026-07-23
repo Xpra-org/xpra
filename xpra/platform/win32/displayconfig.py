@@ -27,7 +27,7 @@ scanout - see `scaled` in the returned dictionaries.
 from typing import Any
 from ctypes import (
     Structure, Union, POINTER, byref, sizeof,
-    c_uint32, c_int32, c_uint64,
+    c_uint16, c_uint32, c_int32, c_uint64,
 )
 from ctypes.wintypes import WCHAR, LONG
 
@@ -45,6 +45,7 @@ DISPLAYCONFIG_MODE_INFO_TYPE_TARGET = 2
 
 # DISPLAYCONFIG_DEVICE_INFO_TYPE:
 DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME = 1
+DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME = 2
 
 # marks `modeInfoIdx` as unused (newer per-source/target index fields in use):
 DISPLAYCONFIG_PATH_MODE_IDX_INVALID = 0xFFFFFFFF
@@ -208,6 +209,25 @@ class DISPLAYCONFIG_SOURCE_DEVICE_NAME(Structure):
     ]
 
 
+class DISPLAYCONFIG_TARGET_DEVICE_NAME(Structure):
+    _fields_ = [
+        ("header", DISPLAYCONFIG_DEVICE_INFO_HEADER),
+        # `flags` is a bitfield; bit 2 (`edidIdsValid`) tells us whether the
+        # EDID manufacturer / product ids below are populated:
+        ("flags", UINT32),
+        ("outputTechnology", UINT32),
+        ("edidManufactureId", c_uint16),
+        ("edidProductCodeId", c_uint16),
+        ("connectorInstance", UINT32),
+        ("monitorFriendlyDeviceName", WCHAR * 64),
+        ("monitorDevicePath", WCHAR * 128),
+    ]
+
+
+# DISPLAYCONFIG_TARGET_DEVICE_NAME_FLAGS.edidIdsValid:
+DISPLAYCONFIG_EDID_IDS_VALID = 0x4
+
+
 GetDisplayConfigBufferSizes = user32.GetDisplayConfigBufferSizes
 GetDisplayConfigBufferSizes.argtypes = [UINT32, POINTER(UINT32), POINTER(UINT32)]
 GetDisplayConfigBufferSizes.restype = LONG
@@ -235,6 +255,35 @@ def _source_device_name(adapter_id: LUID, source_id: int) -> str:
     if DisplayConfigGetDeviceInfo(byref(req.header)) != ERROR_SUCCESS:
         return ""
     return req.viewGdiDeviceName
+
+
+def _decode_pnp_id(edid_mfg: int) -> str:
+    # Windows returns the EDID manufacturer id as a little-endian WORD; swap it
+    # back to EDID byte order, then unpack the three 5-bit letter codes (1 = 'A'):
+    v = ((edid_mfg & 0xff) << 8) | ((edid_mfg >> 8) & 0xff)
+    letters = "".join(chr(((v >> shift) & 0x1f) + 0x40) for shift in (10, 5, 0))
+    # only accept it if every code maps to an uppercase letter (ie: "DEL", "SAM"):
+    if all("A" <= c <= "Z" for c in letters):
+        return letters
+    return ""
+
+
+def _target_device_name(adapter_id: LUID, target_id: int) -> tuple[str, str]:
+    # resolve the human-friendly model name (ie: "DELL U2415") and the EDID
+    # manufacturer PNP id (ie: "DEL") for a target - the physical panel behind
+    # a source. Empty strings are returned when the data is unavailable:
+    req = DISPLAYCONFIG_TARGET_DEVICE_NAME()
+    req.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME
+    req.header.size = sizeof(DISPLAYCONFIG_TARGET_DEVICE_NAME)
+    req.header.adapterId = adapter_id
+    req.header.id = target_id
+    if DisplayConfigGetDeviceInfo(byref(req.header)) != ERROR_SUCCESS:
+        return "", ""
+    model = req.monitorFriendlyDeviceName or ""
+    manufacturer = ""
+    if req.flags & DISPLAYCONFIG_EDID_IDS_VALID:
+        manufacturer = _decode_pnp_id(req.edidManufactureId)
+    return manufacturer, model
 
 
 def get_display_config() -> dict[str, dict[str, Any]]:
@@ -301,6 +350,11 @@ def get_display_config() -> dict[str, dict[str, Any]]:
                          name or "?", src["width"], src["height"],
                          tgt["active-size"][0], tgt["active-size"][1], entry["scaling"])
         if name:
+            manufacturer, model = _target_device_name(path.targetInfo.adapterId, path.targetInfo.id)
+            if manufacturer:
+                entry["manufacturer"] = manufacturer
+            if model:
+                entry["model"] = model
             info[name] = entry
     log("get_display_config()=%s", info)
     return info
