@@ -827,8 +827,26 @@ fi
 
 
 %changelog
-* Tue Jul 14 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
-- TODO
+* Thu Jul 23 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+- Platforms, build and packaging:
+   almalinux build failures and rockylinux
+   missing default build list - unused arm64 list
+   RHEL builds need our private openh264 and CentOS
+   Python 3.6 syntax compatibility
+   no pyopengl to build here
+- Major:
+   chunked file transfer early rejection errors out
+   wheel events may land in the wrong location
+   misnamed X11 atoms
+- Minor:
+   Gtk X11 clients OpenGL errors
+   don't request OpenGL contexts with depth or stencil buffers
+   clean dead ssh agent symlinks
+   always point the ssh agent symlink at a client
+   clamp the shadow server refresh rate
+   Cython CSC validation
+   validate port numbers ourselves
+   skip notification warnings during cleanup
 * Tue Jun 30 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
 - Platforms, build and packaging:
    honour pkgconfig file for Gtk build paths + fixup

@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.7] 2026-07-14
+## [5.1.7] 2026-07-23
 * Platforms, build and packaging:
     * [almalinux build failures](https://github.com/Xpra-org/xpra/commit/e371556e6710cb19b02f215af7f4754313d59f00) [and rockylinux](https://github.com/Xpra-org/xpra/commit/dc839d9bc7bdd46b7161b37f89d98263b2405a1f)
     * [missing default build list](https://github.com/Xpra-org/xpra/commit/403e684f0cb731c01e2799ac4c335110268c0605) - [unused arm64 list](https://github.com/Xpra-org/xpra/commit/ebdcf11bb30609e541c5b47a7dded68affce2d12)
@@ -9,9 +9,17 @@
     * [no pyopengl to build here](https://github.com/Xpra-org/xpra/commit/bcd98f8557dff2609a448f7b357756dbaa870d0e)
 * Major:
     * [chunked file transfer early rejection errors out](https://github.com/Xpra-org/xpra/commit/075e60d24ca4e14b06321864afb32a51cf6b7514)
+    * [wheel events may land in the wrong location](https://github.com/Xpra-org/xpra/commit/dc79a541d7c9c933679ecdd5592103bfd75301ee)
+    * [misnamed X11 atoms](https://github.com/Xpra-org/xpra/commit/8415ce33966344590a169cf62ed2083cae93e79a)
 * Minor:
     * [Gtk X11 clients OpenGL errors](https://github.com/Xpra-org/xpra/commit/4c7dab57dc77fea015e58f4ecfe27714d5720403)
     * [don't request OpenGL contexts with depth or stencil buffers](https://github.com/Xpra-org/xpra/commit/67511f70785c6bc2e5741d0a68b5e8c349db10d0)
+    * [clean dead ssh agent symlinks](https://github.com/Xpra-org/xpra/commit/00074c3f140b86995c49dc48b04bac0a1ff085c6)
+    * [always point the ssh agent symlink at a client](https://github.com/Xpra-org/xpra/commit/c587579aae44e34d4efbeaacf68a8462a6d02e9f)
+    * [clamp the shadow server refresh rate](https://github.com/Xpra-org/xpra/commit/c71a1022c4854ec051c1ff48d0e447c5bdbfc6bd)
+    * [Cython CSC validation](https://github.com/Xpra-org/xpra/commit/a729bf03259bf37cd78d29d89b99cd92d2f1cf37)
+    * [validate port numbers ourselves](https://github.com/Xpra-org/xpra/commit/c23aa1018334e940feaeb3b12ffa8a9064d59fe0)
+    * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/d329fc942cd9475f67bdce1c13280dac98d1d9a5)
 
 ## [5.1.6] 2026-06-30
 * Platforms, build and packaging:
