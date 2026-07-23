@@ -108,8 +108,8 @@ cdef extern from "nvcuvid.h":
     ctypedef int (*PFNVIDSEQUENCECALLBACK)(void *, CUVIDEOFORMAT *) except 0
     ctypedef int (*PFNVIDDECODECALLBACK)(void *, CUVIDPICPARAMS *) except 0
     ctypedef int (*PFNVIDDISPLAYCALLBACK)(void *, CUVIDPARSERDISPINFO *) except 0
-    ctypedef int (*PFNVIDOPPOINTCALLBACK)(void *, CUVIDOPERATINGPOINTINFO*) except 0
-    ctypedef int (*PFNVIDSEIMSGCALLBACK)(void *, CUVIDSEIMESSAGEINFO *) except 0
+    ctypedef int (*PFNVIDOPPOINTCALLBACK)(void *, CUVIDOPERATINGPOINTINFO*) noexcept
+    ctypedef int (*PFNVIDSEIMSGCALLBACK)(void *, CUVIDSEIMESSAGEINFO *) noexcept
 
     ctypedef struct CUVIDEOFORMATEX:
         pass
@@ -468,27 +468,42 @@ def get_specs() -> Sequence[VideoSpec]:
     return specs
 
 
+# These parser callbacks are invoked synchronously by `cuvidParseVideoData`,
+# which we call with the GIL held - so they can (and do) run Python code.
+# `seq_cb`, `decode_cb` and `display_cb` use `except 0` *on purpose*: it lets an
+# exception raised inside `sequence_callback` / `decode_callback` /
+# `display_callback` propagate back to the `decompress_image` caller (which is
+# blocked on `self.event`). Do NOT "simplify" these to `noexcept`: that would
+# print and swallow the exception, turning a real decode error into a misleading
+# "parsing timed out". (Making them noexcept properly would require catching the
+# exception, stashing it on the Decoder and re-raising it after the wait.)
+# `getop_cb` / `getseimsg_cb` never dispatch to anything that raises meaningfully,
+# so they are plain `noexcept`.
+
 cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf) except 0:
+    """`except 0` is intentional: propagates callback exceptions to `decompress_image` (see note above)."""
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.sequence_callback(vf)
 
 
 cdef int decode_cb(void *user_data, CUVIDPICPARAMS *pp) except 0:
+    """`except 0` is intentional: propagates callback exceptions to `decompress_image` (see note above)."""
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.decode_callback(pp)
 
 
 cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi) except 0:
+    """`except 0` is intentional: propagates callback exceptions to `decompress_image` (see note above)."""
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.display_callback(pdi.picture_index, pdi.timestamp)
 
 
-cdef int getop_cb(void *user_data, CUVIDOPERATINGPOINTINFO *op) except 0:
+cdef int getop_cb(void *user_data, CUVIDOPERATINGPOINTINFO *op) noexcept:
     #av1 specific, we don't care
     return 1
 
 
-cdef int getseimsg_cb(void *user_data, CUVIDSEIMESSAGEINFO *seimsg) except 0:
+cdef int getseimsg_cb(void *user_data, CUVIDSEIMESSAGEINFO *seimsg) noexcept:
     log(f"getseimsg_cb {seimsg.sei_message_count} sei messages")
     #void *pSEIData                  #OUT: SEI Message Data
     #CUSEIMESSAGE *pSEIMessage       #OUT: SEI Message Info
