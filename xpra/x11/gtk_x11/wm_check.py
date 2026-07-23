@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 
 WM_S0 = "WM_S0"
-_NEW_WM_CM_S0 = "_NEW_WM_CM_S0"
+_NET_WM_CM_S0 = "_NET_WM_CM_S0"
 
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
 
@@ -42,7 +42,7 @@ def get_wm_info() -> Dict[str,Any]:
         info = {
             "root"      : root_xid,
             "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
-            "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
+            "_NET_WM_CM_S0" : X11Window.XGetSelectionOwner(_NET_WM_CM_S0) or 0,
             }
     ewmh_xid = get_ewmh_xid()
     if ewmh_xid:
@@ -73,7 +73,7 @@ def wm_check(upgrading=False) -> bool:
     display_name = info.get("display")
     name = info.get("wmname")
     wm_so = info.get("WM_S0")
-    cwm_so = info.get("_NEW_WM_CM_S0")
+    cwm_so = info.get("_NET_WM_CM_S0")
     ewmh_xid = info.get("_NET_SUPPORTING_WM_CHECK", 0)
     xpra_name = name and name.lower().startswith("xpra")
     if not upgrading and not (ewmh_xid or wm_so or cwm_so):
@@ -95,7 +95,7 @@ def wm_check(upgrading=False) -> bool:
         if FORCE_REPLACE_WM:
             log.warn(" XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")
             return True
-        log.warn(" it does not own the selection '%s' or '%s'", WM_S0, _NEW_WM_CM_S0)
+        log.warn(" it does not own the selection '%s' or '%s'", WM_S0, _NET_WM_CM_S0)
         log.warn(" so we cannot take over and make it exit")
         log.warn(" please stop %s so you can run xpra on this display",
                   name or "the existing window manager")

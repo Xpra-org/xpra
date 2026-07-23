@@ -92,7 +92,7 @@ DEFAULT_NET_SUPPORTED = [
         "WM_NORMAL_HINTS",
         "WM_TRANSIENT_FOR",
         "_NET_WM_STRUT",
-        "_NET_WM_STRUT_PARTIAL"
+        "_NET_WM_STRUT_PARTIAL",
         "_NET_WM_ICON",
 
         "_NET_CLOSE_WINDOW",
