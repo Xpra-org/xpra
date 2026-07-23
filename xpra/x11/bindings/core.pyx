@@ -281,6 +281,21 @@ def call_context_check(*args) -> None:
     context_check(*args)
 
 
+# The X11 atom<->name mapping is immutable for the life of a connection:
+# atoms are never unmapped or reassigned, so both directions can be cached
+# indefinitely, saving a round-trip on every repeated InternAtom / GetAtomName.
+# All `X11CoreBindingsInstance` subclasses (window, randr, ...) share these
+# through the inherited methods below. They are tied to the process-wide display
+# from `display_source`; `reset_atom_cache()` clears them if it is ever replaced.
+name_to_atom: dict = {}     # bytes -> Atom
+atom_to_name: dict = {}     # Atom  -> str
+
+
+def reset_atom_cache() -> None:
+    name_to_atom.clear()
+    atom_to_name.clear()
+
+
 cdef class X11CoreBindingsInstance:
 
     def __cinit__(self):
@@ -321,11 +336,19 @@ cdef class X11CoreBindingsInstance:
     cdef Atom str_to_atom(self, atomstr):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
-        self.context_check("str_to_atom")
         bstr = strtobytes(atomstr)
-        cdef char* string = bstr
+        cdef Atom atom = name_to_atom.get(bstr, 0)
+        if atom:
+            return atom
+        self.context_check("str_to_atom")
         assert self.display!=NULL, "display is closed"
-        return XInternAtom(self.display, string, False)
+        cdef char* string = bstr
+        # `only-if-exists=False`: the atom always exists afterwards, so it is safe to cache:
+        atom = XInternAtom(self.display, string, False)
+        if atom:
+            name_to_atom[bstr] = atom
+            atom_to_name[atom] = bstr.decode("latin1")
+        return atom
 
     cdef Atom xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
@@ -335,19 +358,30 @@ cdef class X11CoreBindingsInstance:
         return self.str_to_atom(str_or_int)
 
     def intern_atoms(self, atom_names: Sequence[str]) -> None:
-        cdef int count = len(atom_names)
+        # only intern the atoms not already in our cache:
+        todo = [name for name in atom_names if strtobytes(name) not in name_to_atom]
+        cdef int count = len(todo)
+        if count == 0:
+            return
         cdef char** names = <char **> malloc(sizeof(uintptr_t)*(count+1))
         assert names!=NULL
         cdef Atom* atoms_return = <Atom*> malloc(sizeof(Atom)*(count+1))
         assert atoms_return!=NULL
         from ctypes import create_string_buffer, addressof
-        str_names = [create_string_buffer(x.encode("latin1")) for x in atom_names]
+        str_names = [create_string_buffer(x.encode("latin1")) for x in todo]
         cdef uintptr_t ptr
         for i, x in enumerate(str_names):
             ptr = addressof(x)
             names[i] = <char*> ptr
         cdef Status s = XInternAtoms(self.display, names, count, 0, atoms_return)
         free(names)
+        # keep the results, so subsequent lookups avoid a round-trip:
+        cdef Atom atom
+        for i, name in enumerate(todo):
+            atom = atoms_return[i]
+            if atom:
+                name_to_atom[name.encode("latin1")] = atom
+                atom_to_name[atom] = name
         free(atoms_return)
         assert s!=0, "failed to intern some atoms"
 
@@ -364,9 +398,15 @@ cdef class X11CoreBindingsInstance:
         return r
 
     def get_atom_name(self, Atom atom) -> str:
-        self.context_check("XGetAtomName")
+        name = atom_to_name.get(atom)
+        if name is not None:
+            return name
         bin_name = self.XGetAtomName(atom)
-        return bin_name.decode("latin1")
+        name = bin_name.decode("latin1")
+        if bin_name:
+            atom_to_name[atom] = name
+            name_to_atom[bin_name] = atom
+        return name
 
     def get_error_text(self, code) -> str:
         if self.display == NULL:
