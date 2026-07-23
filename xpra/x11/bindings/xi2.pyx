@@ -19,7 +19,6 @@ from xpra.x11.bindings.xlib cimport (
     XGenericEventCookie,
     XQueryExtension,
     XGetEventData, XFreeEventData, XDefaultRootWindow, XQueryPointer,
-    XGetAtomName,
     XFlush,
     XFree,
     BadRequest, Success, XIAnyPropertyType,
