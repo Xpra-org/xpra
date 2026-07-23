@@ -4,9 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t
+from libc.stdint cimport uint8_t, uint32_t, uint64_t
 
-from xpra.x11.bindings.xlib cimport Display, Window, Pixmap, Bool, Atom, XID, XEvent, CARD8, CARD16, CARD32
+from xpra.x11.bindings.xlib cimport Display, Window, Pixmap, Bool, XID, XEvent
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, add_event_type
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check

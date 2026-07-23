@@ -28,13 +28,12 @@ from xpra.codecs.avif.avif cimport (
     AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH,
     #AVIF_STRICT_ENABLED,
 )
-from xpra.buffers.membuf cimport memalign, buffer_context
+from xpra.buffers.membuf cimport buffer_context
 
 from xpra.log import Logger
 log = Logger("encoder", "avif")
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
-from libc.stdlib cimport free
 
 cdef extern from *:
     ctypedef unsigned long size_t

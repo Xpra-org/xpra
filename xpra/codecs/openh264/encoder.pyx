@@ -6,7 +6,6 @@
 #cython: wraparound=False
 
 import os
-from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
@@ -20,7 +19,6 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import VideoSpec
-from collections import deque
 
 from libcpp cimport bool as bool_t
 from libc.string cimport memset
@@ -801,7 +799,7 @@ cdef class Encoder:
 def selftest(full=False) -> None:
     log("openh264 selftest: %s", get_info())
     global SAVE_TO_FILE
-    from xpra.codecs.checks import testencoder, get_encoder_max_sizes
+    from xpra.codecs.checks import testencoder
     from xpra.codecs.openh264 import encoder
     temp = SAVE_TO_FILE
     try:

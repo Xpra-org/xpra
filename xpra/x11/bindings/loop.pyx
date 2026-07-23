@@ -4,10 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from time import monotonic
-from typing import Dict, Tuple
-from collections.abc import Callable
+from typing import Dict
 
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport init_x11_events, parse_xevent
@@ -21,7 +19,7 @@ from xpra.x11.bindings.xlib cimport (
     XInternalConnectionNumbers,
 )
 from libc.stdint cimport uintptr_t
-from cpython.ref cimport PyObject, Py_INCREF, Py_DECREF
+from cpython.ref cimport PyObject
 
 cdef extern from "glib.h":
     ctypedef int gint
@@ -65,10 +63,7 @@ cdef extern from "glib.h":
 
 from xpra.x11.bindings.events import get_x_event_type_name, get_x_event_signals
 from xpra.x11.dispatch import route_event
-from xpra.x11.error import XError, xsync
-from xpra.x11.common import X11Event
 from xpra.util.env import envint
-from xpra.util.str_fn import csv
 from xpra.os_util import gi_import
 from xpra.log import Logger
 

@@ -13,11 +13,10 @@ from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import VideoSpec
 from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
-    NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
-    nvjpegStatus_t, nvjpegChromaSubsampling_t, nvjpegOutputFormat_t,
-    nvjpegInputFormat_t, nvjpegBackend_t, nvjpegJpegEncoding_t,
+    nvjpegStatus_t, nvjpegChromaSubsampling_t,
+    nvjpegInputFormat_t, nvjpegJpegEncoding_t,
     nvjpegImage_t, nvjpegHandle_t,
-    nvjpegGetProperty, nvjpegCreateSimple, nvjpegDestroy,
+    nvjpegCreateSimple, nvjpegDestroy,
     NVJPEG_ENCODING_BASELINE_DCT, NVJPEG_CSS_GRAY, NVJPEG_INPUT_RGBI, NVJPEG_INPUT_RGB,
     NVJPEG_CSS_444, NVJPEG_CSS_422, NVJPEG_CSS_420,
 )

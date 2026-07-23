@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from libc.stdint cimport uintptr_t
-
 DEF NVJPEG_MAX_COMPONENT = 4
 
 cdef extern from "library_types.h":

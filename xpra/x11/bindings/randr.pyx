@@ -6,13 +6,12 @@
 
 import struct
 from typing import Dict, List, Tuple
-from time import monotonic
 
 from libc.string cimport memset
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom, XEvent,
     XDefaultRootWindow,
-    XFree, XFlush, XSync,
+    XFree, XSync,
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
 )

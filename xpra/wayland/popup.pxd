@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 
-from libc.stdint cimport uint32_t
 from xpra.wayland.wlroots cimport wl_listener, wlr_xdg_popup, wlr_xdg_surface
 from xpra.wayland.wayland_surface cimport WaylandSurface
 

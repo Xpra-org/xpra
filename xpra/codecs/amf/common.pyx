@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple
+from typing import Dict
 from ctypes import CDLL, c_uint64, c_int, c_void_p, byref, POINTER
 
 from xpra.common import noop

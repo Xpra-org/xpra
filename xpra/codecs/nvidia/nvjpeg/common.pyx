@@ -52,7 +52,6 @@ from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
     NVJPEG_OUTPUT_BGR,
     NVJPEG_OUTPUT_RGBI,
     NVJPEG_OUTPUT_BGRI,
-    NVJPEG_OUTPUT_FORMAT_MAX,
     #get_version:
     nvjpegGetProperty,
 )

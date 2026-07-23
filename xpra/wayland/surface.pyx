@@ -12,7 +12,6 @@ from xpra.constants import MoveResize
 
 from libc.stdint cimport uintptr_t, uint32_t, int32_t
 
-from xpra.wayland.events cimport ListenerObject
 from xpra.wayland.wayland_surface cimport WaylandSurface, next_wid
 from xpra.wayland.subsurface cimport Subsurface
 # `surfaces` is the shared registry (Python dict) defined in wayland_surface.pyx
@@ -21,9 +20,8 @@ from xpra.wayland.wayland_surface import surfaces
 
 # Import definitions from .pxd file
 from xpra.wayland.wlroots cimport (
-    wl_listener, wl_signal,
+    wl_listener,
     wlr_subsurface, wlr_surface_for_each_surface,
-    wlr_scene_tree,
     wlr_surface,
     wlr_fbox, wlr_surface_get_buffer_source_box,
     wlr_xdg_toplevel, wlr_xdg_surface,

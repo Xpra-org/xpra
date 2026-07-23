@@ -4,18 +4,17 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Tuple
 
 from xpra.log import Logger
 
 from libc.stdlib cimport free, calloc
 from libc.string cimport memset
-from libc.stdint cimport uintptr_t, uint64_t, uint32_t, int32_t
+from libc.stdint cimport uintptr_t, uint32_t
 from xpra.wayland.wlroots cimport (
     wlr_seat, wlr_surface, wlr_xdg_surface, wlr_keyboard, wlr_keyboard_impl, wlr_keyboard_init, wlr_keyboard_finish,
     wlr_seat_set_keyboard, wlr_seat_keyboard_notify_key, wlr_seat_keyboard_notify_modifiers,
     wlr_seat_keyboard_notify_enter, wlr_seat_keyboard_clear_focus,
-    wlr_keyboard_modifiers, wlr_keyboard_set_repeat_info, wlr_keyboard_notify_modifiers,
+    wlr_keyboard_set_repeat_info, wlr_keyboard_notify_modifiers,
     WL_KEYBOARD_KEY_STATE_PRESSED, WL_KEYBOARD_KEY_STATE_RELEASED,
     xkb_context, xkb_context_new, xkb_context_unref,
     xkb_keymap, xkb_keymap_unref, wlr_keyboard_set_keymap, xkb_rule_names, xkb_keymap_new_from_names,

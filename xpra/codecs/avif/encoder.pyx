@@ -7,7 +7,7 @@ import os
 from typing import Tuple, Dict, Any
 from collections.abc import Sequence
 
-from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t    # pylint: disable=syntax-error
+from libc.stdint cimport uint8_t, uintptr_t    # pylint: disable=syntax-error
 from libc.string cimport memset  # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 from xpra.codecs.avif.avif cimport (
@@ -24,12 +24,9 @@ from xpra.codecs.avif.avif cimport (
     AVIF_RGB_FORMAT_BGRA, AVIF_RGB_FORMAT_BGR,
     AVIF_RGB_FORMAT_RGBA, AVIF_RGB_FORMAT_RGB,
     AVIF_RGB_FORMAT_ARGB, AVIF_RGB_FORMAT_ABGR,
-    avifRGBFormat,
     AVIF_CHROMA_UPSAMPLING_FASTEST,
-    avifChromaUpsampling,
     AVIF_ADD_IMAGE_FLAG_SINGLE,
-    avifAddImageFlags,
-    avifEncoder, avifEncoderCreate, avifEncoderAddImage, avifEncoderWrite, avifEncoderFinish, avifEncoderDestroy,
+    avifEncoder, avifEncoderCreate, avifEncoderAddImage, avifEncoderFinish, avifEncoderDestroy,
     avifRWDataFree,
     avifImageRGBToYUV,
     avifRGBImageSetDefaults,

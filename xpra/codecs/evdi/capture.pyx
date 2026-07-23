@@ -313,7 +313,7 @@ cdef class EvdiDevice:
         cdef int rowstride = self.mode.width*4
         if SAVE_TO_FILE:
             try:
-                from xpra.codecs.image import to_pil, to_bytesbuffer
+                from xpra.codecs.image import to_pil
                 pil_image = to_pil(self.mode.width, self.mode.height, memoryview(buf), "BGRA")
                 pil_image = pil_image.convert("RGB")
                 filename = f"{monotonic()}.jpg"

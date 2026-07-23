@@ -20,7 +20,7 @@ from xpra.log import Logger
 
 log = Logger("decoder", "aom")
 
-from libc.string cimport memset, memcpy
+from libc.string cimport memset
 from libc.stdint cimport uint8_t, uintptr_t
 from xpra.buffers.membuf cimport wrapbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 from xpra.codecs.argb.argb cimport show_plane_range
@@ -36,7 +36,7 @@ from xpra.codecs.aom.api cimport (
     aom_codec_dec_cfg_t, aom_codec_dec_init_ver, aom_codec_decode ,aom_codec_destroy,
     aom_codec_get_frame, aom_codec_iter_t, aom_image_t, aom_img_plane_width,
     aom_codec_error_detail,
-    aom_img_plane_height, aom_img_fmt_t, AOM_BITS_8, AOM_BITS_10, AOM_CR_FULL_RANGE,
+    aom_img_plane_height, AOM_BITS_8, AOM_BITS_10, AOM_CR_FULL_RANGE,
     AOM_DECODER_ABI_VERSION, AOM_CODEC_OK, AOM_CODEC_MEM_ERROR,
     AOM_CODEC_ABI_MISMATCH, AOM_CODEC_INCAPABLE, AOM_CODEC_UNSUP_BITSTREAM,
     AOM_CODEC_UNSUP_FEATURE, AOM_CODEC_CORRUPT_FRAME, AOM_CODEC_INVALID_PARAM

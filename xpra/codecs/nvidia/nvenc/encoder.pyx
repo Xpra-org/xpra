@@ -14,7 +14,7 @@ from collections.abc import Sequence
 from xpra.os_util import WIN32, LINUX
 from xpra.util.thread import start_thread
 from xpra.util.objects import AtomicInteger, typedict
-from xpra.util.str_fn import csv, pver
+from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.codecs.nvidia.cuda.context import (
@@ -42,14 +42,13 @@ from libc.string cimport memset, memcpy
 from xpra.codecs.nvidia.nvenc.nvencode cimport init_nvencode_library, create_nvencode_instance, get_current_cuda_context
 
 from xpra.codecs.nvidia.nvenc.api cimport (
-    MIN, MAX, nvencStatusInfo, guidstr, parseguid, presetstr,
+    MAX, nvencStatusInfo, guidstr, parseguid, presetstr,
     GUID,
     get_profile_guids, get_profile_name, is_transient_error,
     get_all_caps, get_caps_name,
     get_preset_name, get_tuning_name, get_tuning_value,
     get_buffer_formats, get_buffer_format_name, get_chroma_format,
     get_preset_speed, get_preset_quality, get_picture_type,
-
     NV_ENC_PIC_FLAG_EOS, NV_ENC_PIC_FLAG_FORCEIDR, NV_ENC_PIC_FLAG_OUTPUT_SPSPPS,
     NV_ENCODE_API_FUNCTION_LIST,
     NV_ENC_INITIALIZE_PARAMS, NV_ENC_INITIALIZE_PARAMS_VER,
@@ -2261,7 +2260,7 @@ def selftest(full=False) -> None:
     assert NVENCAPI_MAJOR_VERSION>=9, "unsupported NVENC version %i" % NVENCAPI_MAJOR_VERSION
     log("nvidia module version: %s", v)
     if full:
-        from xpra.codecs.checks import testencoder, get_encoder_max_sizes
+        from xpra.codecs.checks import get_encoder_max_sizes
         from xpra.codecs.nvidia.nvenc import encoder
         init_module({"full": full})
         # assert testencoder(encoder, False, typedict())

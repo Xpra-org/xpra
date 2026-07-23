@@ -17,7 +17,7 @@ from xpra.codecs.constants import VideoSpec, get_subsampling_divs, check_image_s
 from xpra.codecs.image import ImageWrapper
 from xpra.common import SizedBuffer
 from xpra.util.objects import typedict
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint
 
 from libc.stdint cimport uintptr_t, uint8_t
 from libc.string cimport memset, memcpy
@@ -28,11 +28,11 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_codec_ctx_t,
     vpx_codec_error, vpx_codec_destroy,
     vpx_codec_version_str, vpx_codec_build_config,
-    VPX_IMG_FMT_I420, VPX_IMG_FMT_I422, VPX_IMG_FMT_I444, VPX_IMG_FMT_I42016, VPX_IMG_FMT_HIGHBITDEPTH,
+    VPX_IMG_FMT_I420, VPX_IMG_FMT_I422, VPX_IMG_FMT_I444, VPX_IMG_FMT_I42016,
     VPX_CS_UNKNOWN, VPX_CS_BT_601, VPX_CS_BT_709,
     VPX_CS_SMPTE_170, VPX_CS_SMPTE_240, VPX_CS_BT_2020,
     VPX_CS_RESERVED, VPX_CS_SRGB,
-    vpx_image_t, vpx_color_space_t, vpx_color_range_t,
+    vpx_image_t,
     VPX_CR_STUDIO_RANGE, VPX_CR_FULL_RANGE,
 )
 from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context  # pylint: disable=syntax-error

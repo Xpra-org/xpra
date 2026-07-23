@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List, Dict
+from typing import List
 
 from xpra.x11.bindings.xlib cimport (
     Display, Window, XRectangle, Atom, Time, Bool, XEvent, XID,

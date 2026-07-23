@@ -9,7 +9,6 @@ from xpra.wayland.wlroots cimport (
     wlr_xdg_surface,
     wlr_xdg_toplevel_decoration_v1,
     wlr_scene_tree,
-    wl_signal,
     wl_listener,
     wlr_subsurface,
 )

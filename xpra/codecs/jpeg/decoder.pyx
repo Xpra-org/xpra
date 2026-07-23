@@ -16,7 +16,7 @@ from xpra.common import SizedBuffer
 from xpra.codecs.constants import check_image_size
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
-from libc.stdint cimport uintptr_t, uint8_t
+from libc.stdint cimport uintptr_t
 from libc.string cimport memset  # pylint: disable=syntax-error
 
 cdef int LOG_PERF = envbool("XPRA_JPEG_LOG_PERF", False)

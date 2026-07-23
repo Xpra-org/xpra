@@ -9,7 +9,7 @@
 import os
 import sys
 import time
-from typing import Any, Tuple, List, Dict
+from typing import Any, Tuple, Dict
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict

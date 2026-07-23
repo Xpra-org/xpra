@@ -24,7 +24,7 @@ from xpra.log import Logger
 log = Logger("decoder", "videotoolbox")
 
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.constants import VideoSpec, EncodingNotSupported
+from xpra.codecs.constants import VideoSpec
 from xpra.common import SizedBuffer
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict

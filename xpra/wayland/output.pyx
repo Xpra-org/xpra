@@ -5,12 +5,10 @@
 
 # cython: language_level=3
 
-from libc.stdint cimport uintptr_t
-
 from xpra.wayland.events cimport ListenerObject
 
 from xpra.wayland.wlroots cimport (
-    wlr_output, wlr_output_layout, wlr_box, wl_signal,
+    wlr_output, wlr_output_layout, wlr_box,
     wlr_scene_output_commit,
     wlr_output_state, wlr_output_state_init, wlr_output_commit_state, wlr_output_state_finish,
     wlr_output_state_set_enabled, wlr_output_state_set_scale, wlr_output_state_set_custom_mode,

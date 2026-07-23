@@ -6,7 +6,6 @@
 
 import struct
 from select import select
-from time import monotonic
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "record")

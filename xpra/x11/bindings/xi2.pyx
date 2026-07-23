@@ -7,8 +7,6 @@ import struct
 from typing import Dict
 from collections import deque
 
-from xpra.x11.error import xlog
-from xpra.x11.common import X11Event
 from xpra.util.str_fn import hexstr
 from xpra.x11.bindings.events import add_x_event_type_name
 
@@ -18,7 +16,7 @@ from xpra.x11.bindings.xlib cimport (
     Display, Bool, Time, Window, Atom, Status, XEvent, CARD32,
     XGenericEventCookie,
     XQueryExtension,
-    XGetEventData, XFreeEventData, XDefaultRootWindow, XQueryPointer,
+    XGetEventData, XFreeEventData, XDefaultRootWindow,
     XFlush,
     XFree,
     BadRequest, Success, XIAnyPropertyType,

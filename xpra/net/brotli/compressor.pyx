@@ -7,7 +7,6 @@ from libc.stdint cimport uint8_t, uint32_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
 from typing import Tuple
 
-from xpra.common import SizedBuffer
 from xpra.log import Logger
 log = Logger("brotli")
 

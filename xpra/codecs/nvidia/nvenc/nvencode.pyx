@@ -7,7 +7,7 @@ import os
 import ctypes
 from ctypes import cdll, POINTER
 
-from xpra.os_util import WIN32, LINUX
+from xpra.os_util import WIN32
 from xpra.codecs.nvidia.cuda.errors import get_error_name
 
 from libc.stdint cimport uintptr_t

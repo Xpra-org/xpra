@@ -8,8 +8,6 @@ import os
 from time import monotonic, sleep
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
-from ctypes import c_uint64, c_int, c_void_p, byref, POINTER
-from ctypes import CDLL
 
 from xpra.codecs.constants import VideoSpec, get_subsampling_divs, EncodingNotSupported
 from xpra.codecs.image import ImageWrapper
@@ -23,16 +21,13 @@ from libc.stdint cimport uint8_t, int64_t, uintptr_t
 from libc.string cimport memset, memcpy
 
 from xpra.codecs.amf.amf cimport (
-    amf_uint8,
-    PLANE_TYPE_STR, SURFACE_FORMAT_STR, FRAME_TYPE_STR, MEMORY_TYPE_STR, DATA_TYPE_STR,
-    AMF_FRAME_TYPE,
+    MEMORY_TYPE_STR,
     AMF_RESULT, AMF_EOF, AMF_REPEAT,
     AMF_DX11_0,
     AMF_MEMORY_TYPE, AMF_MEMORY_DX11, AMF_MEMORY_HOST,
     AMF_INPUT_FULL, AMF_NOT_SUPPORTED, AMF_ALREADY_INITIALIZED, AMF_OK,
     AMF_SURFACE_FORMAT, AMF_SURFACE_YUV420P, AMF_SURFACE_NV12, AMF_SURFACE_BGRA,
     AMF_VARIANT_TYPE, AMF_VARIANT_INT64, AMF_VARIANT_SIZE, AMF_VARIANT_RATE,
-    AMF_VIDEO_ENCODER_USAGE_ENUM,
     AMF_VIDEO_ENCODER_USAGE_LOW_LATENCY,
     AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY,
     AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM,
@@ -47,25 +42,21 @@ from xpra.codecs.amf.amf cimport (
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY,
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED,
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_BALANCED,
-    AMF_VIDEO_ENCODER_HEVC_USAGE_ENUM,
     AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED,
-    amf_handle, amf_long, amf_int32,
-    AMFDataAllocatorCB,
+    amf_int32,
     AMFSize, AMFRate,
     AMFCaps,
     AMFGuid,
     AMFBuffer,
-    AMFComponentOptimizationCallback,
-    AMFPlane, AMFPlaneVtbl,
-    AMFData, AMFDataVtbl,
-    AMFTrace,
+    AMFPlane,
+    AMFData,
     AMFVariantStruct, AMFVariantInit,
-    AMFVariantAssignInt64, AMFVariantAssignSize, AMFVariantAssignRate,
-    AMFSurface, AMFSurfaceVtbl,
+    AMFVariantAssignInt64,
+    AMFSurface,
     AMFContext, AMFContext1,
     AMFComponent,
     AMFFactory,
@@ -713,7 +704,7 @@ cdef class Encoder:
 
 def selftest(full=False) -> None:
     global CODECS, SAVE_TO_FILE
-    from xpra.codecs.checks import testencoder, get_encoder_max_size
+    from xpra.codecs.checks import testencoder
     from xpra.codecs.amf import encoder
     temp = SAVE_TO_FILE
     try:

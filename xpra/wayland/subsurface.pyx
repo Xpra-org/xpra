@@ -5,8 +5,6 @@
 
 # cython: language_level=3
 
-from libc.stdint cimport uintptr_t
-
 from xpra.log import Logger
 from xpra.wayland.wlroots cimport (
     wl_listener,

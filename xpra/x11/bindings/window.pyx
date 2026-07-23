@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import cython
-from typing import Any, Optional, Tuple, List, Dict
+from typing import Any, Tuple, List, Dict
 from xpra.x11.error import XError
 
 from xpra.x11.bindings.xlib cimport (

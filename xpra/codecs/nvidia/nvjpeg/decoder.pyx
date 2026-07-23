@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Iterable, Any
+from typing import Dict, Any
 from collections.abc import Sequence
 from time import monotonic
 
@@ -13,11 +13,9 @@ from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
     NVJPEG_OUTPUT_RGBI, NVJPEG_OUTPUT_BGRI, NVJPEG_OUTPUT_Y,
-    NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
     nvjpegStatus_t, nvjpegChromaSubsampling_t, nvjpegOutputFormat_t,
-    nvjpegInputFormat_t, nvjpegBackend_t, nvjpegJpegEncoding_t,
     nvjpegImage_t, nvjpegHandle_t,
-    nvjpegGetProperty, nvjpegCreateSimple, nvjpegDestroy,
+    nvjpegCreateSimple, nvjpegDestroy,
     nvjpegJpegState_t,
     nvjpegJpegStateCreate, nvjpegJpegStateDestroy,
     nvjpegGetImageInfo,

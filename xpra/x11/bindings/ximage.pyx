@@ -13,7 +13,7 @@ from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 from xpra.x11.bindings.xlib cimport (
     XImage, Display, Pixmap,
     XColor, Visual, VisualID,
-    Status, Window, Drawable, Bool,
+    Status, Window, Drawable,
     XWindowAttributes,
     MSBFirst, LSBFirst, ZPixmap,
     AllPlanes,

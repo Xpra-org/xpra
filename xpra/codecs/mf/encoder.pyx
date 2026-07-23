@@ -8,7 +8,6 @@
 
 #cython: wraparound=False
 
-from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 

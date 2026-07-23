@@ -3,12 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-import math
-
-from time import monotonic
-from typing import Any, Dict, Tuple
-from collections.abc import Sequence
+from typing import Any, Dict
 
 from xpra.log import Logger
 

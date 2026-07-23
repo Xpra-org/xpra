@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from collections.abc import Sequence
 from typing import Dict, Tuple
 
 from xpra.log import Logger
@@ -15,7 +14,6 @@ from xpra.wayland.wlroots cimport (
     wl_listener,
     wlr_cursor, wlr_seat, wlr_surface, wlr_xdg_surface,
     wl_pointer_axis, wlr_button_state,
-    wlr_cursor_warp, wlr_cursor_move,
     wlr_seat_pointer_notify_motion, wlr_seat_pointer_notify_button, wlr_seat_pointer_notify_axis,
     wlr_seat_pointer_notify_enter, wlr_seat_pointer_notify_frame,
     wlr_seat_pointer_notify_clear_focus,

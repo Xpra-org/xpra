@@ -4,29 +4,22 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-from time import monotonic
 from typing import Dict, Tuple
-from collections.abc import Callable
 
 from xpra.x11.error import XError, xsync
 from xpra.x11.common import X11Event
-from xpra.util.str_fn import csv
 
 from xpra.log import Logger
 
 log = Logger("x11", "bindings", "events")
 
 
-from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.core cimport get_atom_name_cached
 from xpra.x11.bindings.xlib cimport (
-    Display, Atom, Bool, Status,
+    Display, Atom,
     XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
     XSelectionEvent, XConfigureRequestEvent,
 )
-from libc.stdint cimport uintptr_t
-
 
 cdef extern from "X11/Xlib.h":
     int NotifyNormal

@@ -10,7 +10,7 @@ from typing import List, Dict, Tuple
 from collections.abc import Iterable
 
 from xpra.x11.bindings.xlib cimport (
-    Display, Bool, KeySym, KeyCode, Atom, Window, Status, Time, XRectangle, CARD32,
+    Display, Bool, KeySym, KeyCode, Atom, Window, Status,
     XModifierKeymap,
     XDefaultRootWindow,
     XOpenDisplay, XCloseDisplay, XFlush, XFree,

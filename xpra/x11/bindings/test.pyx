@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.x11.bindings.xlib cimport Display, XID, Bool, KeySym, KeyCode, Atom, Window, Status, Time
+from xpra.x11.bindings.xlib cimport Display, Bool
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 
 from xpra.log import Logger

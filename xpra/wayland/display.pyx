@@ -9,8 +9,7 @@ from libc.stdint cimport uintptr_t
 
 
 # Import definitions from .pxd file
-from xpra.wayland.wlroots cimport wl_display, wl_display_flush_clients
-
+from xpra.wayland.wlroots cimport wl_display_flush_clients
 
 cdef class Display:
 
