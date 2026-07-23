@@ -78,12 +78,7 @@ BALLOON_EVENTS = {
     NIN_BALLOONUSERCLICK: "NIN_BALLOONUSERCLICK",
 }
 KNOWN_WM_EVENTS.update(BALLOON_EVENTS)
-
-# anything else we don't have yet:
-for x in dir(win32con):
-    if x.startswith("WM_") and x not in KNOWN_WM_EVENTS:
-        v = getattr(win32con, x)
-        KNOWN_WM_EVENTS[v] = x
+# WNDPROC_EVENT_NAMES already covers every standard WM_* message from constants.py
 
 WINDOW_EVENTS = envbool("XPRA_WIN32_WINDOW_EVENTS", True)
 
