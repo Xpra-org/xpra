@@ -1094,16 +1094,42 @@ fi
 
 
 %changelog
-* Wed Jul 08 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
+* Thu Jul 23 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
 - 🔧 Platforms, build and packaging:
+   Cython fails to compile on arm64
+   python fido 2.2.1
+   DEB unwanted dependencies on `libdav1d`
 - Major:
    Gtk X11 clients OpenGL errors
    missing wheel events with MS Windows clients
+   shadow sessions can hang with VNC connections
+   parsing of bind options using legacy form
+   incomplete asynchronous keyboard initialization always apply initial settings
+   X11 atom-name typos
+- Clipboard:
+   some default targets missing
+   prevent stale emission
+   target ownership confusion
 - Minor:
+   tray and system-tray are independent
+   webcam does not restart following suspend + resume
    missing window raise / restack
    don't request OpenGL contexts with depth or stencil buffers
+   ssh agent symlink not cleaned up, update properly
+   Cython CSC module validation
+   ensure we never use dialogs from secondary threads
+   validate port numbers ourselves
+   `record` forwards compatibility
+   example clients now usable: handle more base packet types
+   wheel events may land in the wrong location
 - Cosmetic:
+   skip notification warnings during cleanup
    system tray does not detect mmap
+   clipboard type hint
+   webcam suspend test failure
+   invalid type used in unreachable runtime path
+   X11 client tests for all display bit depths
+   cleanup unavailable server log requests
 * Fri Jul 03 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
 - Platforms, build and packaging:
    `pynvml 13.610.43`

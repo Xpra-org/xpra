@@ -1,29 +1,41 @@
 # Changelog
 
-## [6.5.2] 2026-07-14
+## [6.5.2] 2026-07-23
 * 🔧 Platforms, build and packaging:
   * [Cython fails to compile on arm64](https://github.com/Xpra-org/xpra/commit/90f828ae524112688647d9f8d87778370c01e3a8)
   * [python fido 2.2.1](https://github.com/Xpra-org/xpra/commit/6d45def0ced223e396d887958eac7e9948c0fe95)
+  * [DEB unwanted dependencies on `libdav1d`](https://github.com/Xpra-org/xpra/commit/dfda654ccb5889ce8d1b230baab493ecfb5aff5a)
 * Major:
   * [Gtk X11 clients OpenGL errors](https://github.com/Xpra-org/xpra/commit/e7c95b2cd76e3c8a7a09bb13ea174bc9efd0b091)
   * [missing wheel events with MS Windows clients](https://github.com/Xpra-org/xpra/commit/3d9a6e96d45978beb881162ec55c5bf71695f7d7)
   * [shadow sessions can hang with VNC connections](https://github.com/Xpra-org/xpra/commit/918d68de2fc5d5b06effe78fd8f9b1538aa66eb3)
   * [parsing of bind options using legacy form](https://github.com/Xpra-org/xpra/commit/25e33d1a2d01346df7302448e3fdd34445a8804b)
+  * [incomplete asynchronous keyboard initialization](https://github.com/Xpra-org/xpra/commit/4485184cc19cab4525d9e66b581cc9afe5533a2b) [always apply initial settings](https://github.com/Xpra-org/xpra/commit/1d3af3bc7e78245ff404244449daf1d03cbdb048)
+  * [X11 atom-name typos](https://github.com/Xpra-org/xpra/commit/50bf3be03b4fbbf656baa8d854d90b255e31cb3f)
 * Clipboard:
   * [some default targets missing](https://github.com/Xpra-org/xpra/commit/5998f9b179bc0f5b81314f683f20443c73567e72)
   * [prevent stale emission](https://github.com/Xpra-org/xpra/commit/5aa73353055d91d9d165c0772643d4a8f1087a1a)
   * [target ownership confusion](https://github.com/Xpra-org/xpra/commit/194d9237fcdc616936dd9f4414f8a5a5110a8ff9)
 * Minor:
+  * [tray and system-tray are independent](https://github.com/Xpra-org/xpra/commit/8f759f24eef3d6bcfe2beadabb5d1a40908f9dfc)
   * [webcam does not restart following suspend + resume](https://github.com/Xpra-org/xpra/commit/e93d1941fa905507e858a20d09e5bbf25b05b3ab)
   * [missing window raise / restack](https://github.com/Xpra-org/xpra/commit/1911df851c80a5041a724a6eaaed64ac9af597c9)
   * [don't request OpenGL contexts with depth or stencil buffers](https://github.com/Xpra-org/xpra/commit/c384483670f22ff3f31d479688452ff13f134256)
   * [ssh agent symlink not cleaned up](https://github.com/Xpra-org/xpra/commit/d5360f36340d9aac57269cb7dcbdcaf592854fb5), [update properly](https://github.com/Xpra-org/xpra/commit/dec580f253aaedf12a826dfcc74f237b5c63df91)
+  * [Cython CSC module validation](https://github.com/Xpra-org/xpra/commit/3cccc18fa3268c4a9284088da82bdd3aea5aba2e)
+  * [ensure we never use dialogs from secondary threads](https://github.com/Xpra-org/xpra/commit/136e8d6738212c87bb356edcaaef80ab5f0c1b10)
+  * [validate port numbers ourselves](https://github.com/Xpra-org/xpra/commit/dd735ab28cc0b7d418ad75fd1859ff2c7a774359)
+  * [`record` forwards compatibility](https://github.com/Xpra-org/xpra/commit/ca3029cdb91e43379069b4c25294e4881c8ca8c0)
+  * [example clients now usable: handle more base packet types](https://github.com/Xpra-org/xpra/commit/7e9636f64f6ec173a44549d48e112a915d5e56e3)
+  * [wheel events may land in the wrong location](https://github.com/Xpra-org/xpra/commit/aaf2fec551efa18a7840e72ac3e0caac77023b85)
 * Cosmetic:
+  * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/dd4a177bb9262562a007103692bb594369a6df74)
   * [system tray does not detect mmap](https://github.com/Xpra-org/xpra/commit/d11c5e0f2b0fdeae6da143b7ef9acff433b8bd50)
   * [clipboard type hint](https://github.com/Xpra-org/xpra/commit/34b1d18d84b750a5ab522859a4d52526f0587b87)
   * [webcam suspend test failure](https://github.com/Xpra-org/xpra/commit/1f694e974d398fc3a7a81c2db26bebad8afb32b3)
   * [invalid type used in unreachable runtime path](https://github.com/Xpra-org/xpra/commit/04cd4a93480e6cbe61dff393f526ead9eed0b012)
   * [X11 client tests for all display bit depths](https://github.com/Xpra-org/xpra/commit/5f209127bf22cc3b08d350abee55c7e12b797d13)
+  * [cleanup unavailable server log requests](https://github.com/Xpra-org/xpra/commit/f7309ed26ce621504bac82df36b4a9a2e455471d)
 
 ## [6.5.1] 2026-07-03
 * 🔧 Platforms, build and packaging:
