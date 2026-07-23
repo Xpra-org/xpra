@@ -290,10 +290,52 @@ def call_context_check(*args) -> None:
 name_to_atom: dict = {}     # bytes -> Atom
 atom_to_name: dict = {}     # Atom  -> str
 
+# the entries are only valid for the connection they were interned on:
+cdef Display *cache_display = NULL
+
+
+cdef inline bint atom_cache_valid(Display *display) noexcept:
+    # Anchor the cache to the process-wide display from `display_source`.
+    # Subclasses that open their own X connection (e.g. the record extension)
+    # inherit these same methods but run on a different `Display*`; an atom is
+    # only meaningful on the connection it was interned on, so they must bypass.
+    global cache_display
+    if display == NULL or display != get_display():
+        return False
+    if display != cache_display:
+        # first use, or the canonical display was replaced: drop stale entries
+        name_to_atom.clear()
+        atom_to_name.clear()
+        cache_display = display
+    return True
+
 
 def reset_atom_cache() -> None:
+    global cache_display
     name_to_atom.clear()
     atom_to_name.clear()
+    cache_display = NULL
+
+
+cdef str get_atom_name_cached(Display *display, Atom atom):
+    # Module-level counterpart of `X11CoreBindingsInstance.get_atom_name`,
+    # for callers that hold a raw `Display*` rather than a bindings instance
+    # (e.g. X11 event parsing). The caller is responsible for the error trap.
+    cdef bint cache = atom_cache_valid(display)
+    if cache:
+        name = atom_to_name.get(atom)
+        if name is not None:
+            return name
+    cdef char *v = XGetAtomName(display, atom)
+    if v == NULL:
+        return ""
+    bname = v[:]
+    XFree(v)
+    name = bname.decode("latin1")
+    if cache:
+        atom_to_name[atom] = name
+        name_to_atom[bname] = atom
+    return name
 
 
 cdef class X11CoreBindingsInstance:
@@ -333,24 +375,27 @@ cdef class X11CoreBindingsInstance:
         assert self.display
         return XDefaultRootWindow(self.display)
 
-    cdef Atom str_to_atom(self, atomstr):
+    cdef Atom str_to_atom(self, atomstr) noexcept:
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
+        cdef bint cache = atom_cache_valid(self.display)
         bstr = strtobytes(atomstr)
-        cdef Atom atom = name_to_atom.get(bstr, 0)
-        if atom:
-            return atom
+        cdef Atom atom = 0
+        if cache:
+            atom = name_to_atom.get(bstr, 0)
+            if atom:
+                return atom
         self.context_check("str_to_atom")
         assert self.display!=NULL, "display is closed"
         cdef char* string = bstr
         # `only-if-exists=False`: the atom always exists afterwards, so it is safe to cache:
         atom = XInternAtom(self.display, string, False)
-        if atom:
+        if atom and cache:
             name_to_atom[bstr] = atom
             atom_to_name[atom] = bstr.decode("latin1")
         return atom
 
-    cdef Atom xatom(self, str_or_int):
+    cdef Atom xatom(self, str_or_int) noexcept:
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
         if isinstance(str_or_int, int):
@@ -358,9 +403,13 @@ cdef class X11CoreBindingsInstance:
         return self.str_to_atom(str_or_int)
 
     def intern_atoms(self, atom_names: Sequence[str]) -> None:
+        cdef bint cache = atom_cache_valid(self.display)
         # only intern the atoms not already in our cache:
-        todo = [name for name in atom_names if strtobytes(name) not in name_to_atom]
-        cdef int count = len(todo)
+        if cache:
+            missing = [name for name in atom_names if strtobytes(name) not in name_to_atom]
+        else:
+            missing = list(atom_names)
+        cdef int count = len(missing)
         if count == 0:
             return
         cdef char** names = <char **> malloc(sizeof(uintptr_t)*(count+1))
@@ -368,7 +417,7 @@ cdef class X11CoreBindingsInstance:
         cdef Atom* atoms_return = <Atom*> malloc(sizeof(Atom)*(count+1))
         assert atoms_return!=NULL
         from ctypes import create_string_buffer, addressof
-        str_names = [create_string_buffer(x.encode("latin1")) for x in todo]
+        str_names = [create_string_buffer(x.encode("latin1")) for x in missing]
         cdef uintptr_t ptr
         for i, x in enumerate(str_names):
             ptr = addressof(x)
@@ -377,11 +426,12 @@ cdef class X11CoreBindingsInstance:
         free(names)
         # keep the results, so subsequent lookups avoid a round-trip:
         cdef Atom atom
-        for i, name in enumerate(todo):
-            atom = atoms_return[i]
-            if atom:
-                name_to_atom[name.encode("latin1")] = atom
-                atom_to_name[atom] = name
+        if cache:
+            for i, name in enumerate(missing):
+                atom = atoms_return[i]
+                if atom:
+                    name_to_atom[name.encode("latin1")] = atom
+                    atom_to_name[atom] = name
         free(atoms_return)
         assert s!=0, "failed to intern some atoms"
 
@@ -398,12 +448,14 @@ cdef class X11CoreBindingsInstance:
         return r
 
     def get_atom_name(self, Atom atom) -> str:
-        name = atom_to_name.get(atom)
-        if name is not None:
-            return name
+        cdef bint cache = atom_cache_valid(self.display)
+        if cache:
+            name = atom_to_name.get(atom)
+            if name is not None:
+                return name
         bin_name = self.XGetAtomName(atom)
         name = bin_name.decode("latin1")
-        if bin_name:
+        if bin_name and cache:
             atom_to_name[atom] = name
             name_to_atom[bin_name] = atom
         return name

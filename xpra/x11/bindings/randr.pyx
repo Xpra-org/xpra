@@ -12,12 +12,11 @@ from libc.string cimport memset
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom, XEvent,
     XDefaultRootWindow,
-    XGetAtomName,
     XFree, XFlush, XSync,
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
 )
-from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
+from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check, get_atom_name_cached
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport add_parser, add_event_type
 
@@ -379,12 +378,8 @@ cdef dict get_output_info(Display *display, XRRScreenResources *rsc, RROutput ou
 
 
 cdef str get_XAtom(Display *display, Atom atom):
-    cdef char *v = XGetAtomName(display, atom)
-    if v == NULL:
-        return ""
-    r = v[:]
-    XFree(v)
-    return r.decode()
+    # served from the shared atom cache when possible (no round-trip):
+    return get_atom_name_cached(display, atom)
 
 
 cdef str s(const char *v):

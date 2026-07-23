@@ -9,8 +9,10 @@ from xpra.x11.bindings.xlib cimport Display, Atom
 cdef class X11CoreBindingsInstance:
     cdef Display * display
     cdef object display_name
-    cdef Atom xatom(self, str_or_int)
-    cdef Atom str_to_atom(self, atomstr)
+    cdef Atom xatom(self, str_or_int) noexcept
+    cdef Atom str_to_atom(self, atomstr) noexcept
 #    def get_error_text(self, code)
 
 cdef void import_check(modname)
+
+cdef str get_atom_name_cached(Display *display, Atom atom)

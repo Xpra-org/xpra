@@ -19,12 +19,11 @@ log = Logger("x11", "bindings", "events")
 
 
 from xpra.x11.bindings.display_source cimport get_display
+from xpra.x11.bindings.core cimport get_atom_name_cached
 from xpra.x11.bindings.xlib cimport (
     Display, Atom, Bool, Status,
     XEvent, XSelectionRequestEvent, XSelectionClearEvent, XCrossingEvent,
     XSelectionEvent, XConfigureRequestEvent,
-    XFree,
-    XGetAtomName,
 )
 from libc.stdint cimport uintptr_t
 
@@ -207,21 +206,16 @@ def get_x_event_type_name(event: int) -> str:
     return x_event_type_names.get(event, "")
 
 
-cdef str atom_str(Display *display, Atom atom):
+cdef inline str atom_str(Display *display, Atom atom):
     if not atom:
         return ""
-    cdef char* atom_name = NULL
     try:
         with xsync:
-            atom_name = XGetAtomName(display, atom)
+            # served from the shared atom cache when possible (no round-trip):
+            return get_atom_name_cached(display, atom)
     except XError:
         log.error(f"Error: invalid atom {atom:x}")
         return ""
-    r = ""
-    if atom_name!=NULL:
-        r = atom_name.decode("latin1")
-        XFree(atom_name)
-    return r
 
 
 cdef dict parse_GenericEvent(Display *d, XEvent *e):
