@@ -17,6 +17,7 @@ from xpra.platform.win32.common import (
     GetDeviceCaps, DeleteDC,
 )
 from xpra.platform.win32.displayconfig import get_display_config
+from xpra.util.screen import prettify_plug_name
 from xpra.log import Logger
 
 log = Logger("win32", "screen")
@@ -103,7 +104,11 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
             if "scaled" in dcfg:
                 minfo["scaled"] = dcfg["scaled"]
         if device:
-            minfo["name"] = device
+            # `device` is the raw GDI name (ie: "\\.\DISPLAY1"), kept for callers
+            # that need to re-resolve it against the display config or CreateDCA;
+            # `name` is the normalized, human-friendly form (ie: "DISPLAY1"):
+            minfo["device"] = device
+            minfo["name"] = prettify_plug_name(device)
             dc = _get_device_dc(device)
             if dc:
                 try:

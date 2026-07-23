@@ -31,6 +31,7 @@ from ctypes import (
 from ctypes.wintypes import HANDLE, DWORD, BOOL, WORD, LONG
 from enum import IntEnum
 
+from xpra.util.screen import prettify_plug_name
 from xpra.log import Logger
 
 log = Logger("vdd")
@@ -744,7 +745,7 @@ def list_vdd_monitors() -> list[str]:
         if not (adapter.StateFlags & _DISPLAY_DEVICE_ACTIVE):
             continue
         raw = adapter.DeviceName.decode("ascii", errors="replace")
-        out.append(raw.lstrip("\\\\.\\"))
+        out.append(prettify_plug_name(raw))
     return out
 
 
@@ -794,7 +795,7 @@ def find_monitor_by_slot(slot_index: int) -> str:
             continue
         if vdd_count == slot_index:
             raw = adapter.DeviceName.decode("ascii", errors="replace")
-            device = raw.lstrip("\\\\.\\")
+            device = prettify_plug_name(raw)
             log("find_monitor_by_slot(%d) -> %r (enum index %d)", slot_index, device, i - 1)
             return device
         vdd_count += 1

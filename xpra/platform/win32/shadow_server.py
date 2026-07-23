@@ -19,6 +19,7 @@ from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_display_size
 from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow.common import get_monitors
+from xpra.util.screen import prettify_plug_name
 from xpra.log import Logger
 
 # user32:
@@ -511,7 +512,7 @@ class ShadowServer(ShadowServerBase):
         """
         if self.monitor_device:
             for monitor in get_monitors():
-                plug_name = monitor["Device"].lstrip("\\\\.\\")
+                plug_name = prettify_plug_name(monitor["Device"])
                 if plug_name == self.monitor_device:
                     x1, y1, x2, y2 = monitor["Monitor"]
                     return x1, y1, x2 - x1, y2 - y1
@@ -666,7 +667,7 @@ class ShadowServer(ShadowServerBase):
             geom = monitor["Monitor"]
             x1, y1, x2, y2 = geom
             assert x1 < x2 and y1 < y2
-            plug_name = monitor["Device"].lstrip("\\\\.\\")
+            plug_name = prettify_plug_name(monitor["Device"])
             if self.monitor_device and plug_name != self.monitor_device:
                 screenlog("monitor %i: %10s skipped (target is %r)", i, plug_name, self.monitor_device)
                 continue
