@@ -26,5 +26,5 @@ cdef class MemBuf:
     cdef dealloc_callback *dealloc_cb_p
     cdef void *dealloc_cb_arg
 
-    cdef const void *get_mem(self)
+    cdef const void *get_mem(self) noexcept
 

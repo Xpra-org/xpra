@@ -125,7 +125,7 @@ cdef inline bytes b(value: str):
     return value.encode("latin1")
 
 
-cdef int password_conv(int n_msg, const pam_message **msg, pam_response **resp, void *appdata_ptr):
+cdef int password_conv(int n_msg, const pam_message **msg, pam_response **resp, void *appdata_ptr) noexcept:
     if appdata_ptr==NULL:
         return 1
     cdef pam_response* response = <pam_response*> calloc(n_msg, sizeof(pam_response))

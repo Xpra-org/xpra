@@ -412,12 +412,12 @@ cdef inline long long decode_long_long(char *data, unsigned int *pos, long long 
     return l
 
 
-cdef inline unsigned int decode_fixed_pos_int(char *data, unsigned int *pos):
+cdef inline unsigned int decode_fixed_pos_int(char *data, unsigned int *pos) noexcept:
     pos[0] += 1
     return data[pos[0] - 1] - INT_POS_FIXED_START
 
 
-cdef inline int decode_fixed_neg_int(char *data, unsigned int *pos):
+cdef inline int decode_fixed_neg_int(char *data, unsigned int *pos) noexcept:
     pos[0] += 1
     return (data[pos[0] - 1] - INT_NEG_FIXED_START + 1)*-1
 

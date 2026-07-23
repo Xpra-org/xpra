@@ -89,7 +89,7 @@ cdef class MemBuf:
     def __repr__(self):
         return "MemBuf(%#x)" % (<uintptr_t> self.p)
 
-    cdef const void *get_mem(self):
+    cdef const void *get_mem(self) noexcept:
         return self.p
 
     def get_mem_ptr(self):
