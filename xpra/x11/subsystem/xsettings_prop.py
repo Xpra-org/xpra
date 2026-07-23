@@ -202,7 +202,7 @@ def main() -> int:  # pragma: no cover
                 print(f"{len(settings)} settings:")
                 for s in settings:
                     print(s)
-            return 0
+    return 0
 
 
 if __name__ == "__main__":  # pragma: no cover

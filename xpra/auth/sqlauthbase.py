@@ -88,6 +88,7 @@ class DatabaseUtilBase:
 
     def add_user(self, username: str, password: str, uid: int = getuid(), gid: int = getgid(),
                  displays="", env_options="", session_options="") -> None:
+        # noinspection PyStringFormat
         sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) " \
               "VALUES(%s, %s, %s, %s, %s, %s, %s)" % ((self.param,) * 7)
         self.exec_database_sql_script(None, sql,

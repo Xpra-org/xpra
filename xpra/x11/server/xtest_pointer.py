@@ -23,6 +23,7 @@ class XTestPointerDevice:
         with xsync:
             XTestBindings().xtest_fake_motion(x, y)
 
+    # noinspection PyInconsistentReturns
     @staticmethod
     def get_position() -> tuple[int, int]:
         with xsync:

@@ -76,9 +76,9 @@ class XSettingsHelper:
             X11Window = X11WindowBindings()
             owner_x = X11Window.XGetSelectionOwner(self._selection)
             log("XGetSelectionOwner(%s)=%#x", self._selection, owner_x)
-            if owner_x == XNone:
-                return 0
-            return owner_x
+            if owner_x != XNone:
+                return owner_x
+        return 0
 
     def get_settings(self):
         owner = self.xsettings_owner()

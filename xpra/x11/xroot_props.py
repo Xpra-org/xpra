@@ -114,6 +114,7 @@ def get_number_of_desktops() -> int:
     return root_get("_NET_NUMBER_OF_DESKTOPS", "u32") or 1
 
 
+# noinspection PyInconsistentReturns
 def get_root_size() -> tuple[int, int]:
     with xsync:
         X11Window = X11WindowBindings()
