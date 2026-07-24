@@ -32,6 +32,7 @@ class X11PointerManager(PointerManager):
             log.warn(" %s", e)
         return None
 
+    # noinspection unreachable-code
     def get_pointer_position(self) -> tuple[int, int]:
         from xpra.x11.bindings.core import X11CoreBindings
         from xpra.x11.error import xswallow

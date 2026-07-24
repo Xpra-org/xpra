@@ -57,7 +57,7 @@ def main(argv: list[str]) -> int:
 
         GLib.idle_add(show_with_focus)
         gtk_main()
-        return 0
+    return 0
 
 
 if __name__ == "__main__":

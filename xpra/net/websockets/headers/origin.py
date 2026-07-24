@@ -19,6 +19,7 @@ def get_origin(host: str, port: int) -> str:
         return ""
     # servers only compare the scheme against explicit `http-origin` allowlists,
     # `auto` and `strict` ignore it - so `http` is good enough for `wss` connections:
+    # noinspection HttpUrlsUsage
     return f"http://{host}:{port}" if port else f"http://{host}"
 
 

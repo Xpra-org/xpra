@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from typing import Any
 
 from xpra.platform import platform_import
 
@@ -13,7 +14,7 @@ from xpra.platform import platform_import
 Keyboard: type | None = None
 
 
-def get_keyboard_device():
+def get_keyboard_device() -> Any:
     return None
 
 

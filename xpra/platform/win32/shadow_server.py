@@ -637,16 +637,14 @@ class ShadowServer(ShadowServerBase):
             models.append(model)
 
         for m in self.window_matches:
-            window = None
             try:
                 if m.startswith("0x"):
                     hwnd = int(m, 16)
                 else:
                     hwnd = int(m)
                 if hwnd:
-                    window = windows.pop(hwnd, None)
-                    if window:
-                        add_model(hwnd, *window)
+                    if wdefs := windows.pop(hwnd, ()):
+                        add_model(hwnd, *wdefs)
             except ValueError:
                 namere = re.compile(m, re.IGNORECASE)
                 for hwnd, window in tuple(windows.items()):

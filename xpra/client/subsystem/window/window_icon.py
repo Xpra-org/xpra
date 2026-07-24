@@ -40,6 +40,7 @@ def get_save_window_icons() -> bool:
 SAVE_WINDOW_ICONS: bool = get_save_window_icons()
 
 
+# noinspection unreachable-code
 def load_overlay_image(icon_filename: str):
     if ICON_OVERLAY < 0:
         return None
@@ -64,6 +65,7 @@ def load_overlay_image(icon_filename: str):
         img = Image.open(icon_filename)
         img.load()
         return img
+    return None
 
 
 class WindowIcon(StubClientSubsystem):

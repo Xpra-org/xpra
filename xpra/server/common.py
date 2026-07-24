@@ -22,6 +22,7 @@ def get_sources_by_type(server, subsystem_type=object, exclude=None) -> Sequence
         from xpra.log import Logger
         Logger("server").error("Error: no %r in %s", GET_SOURCES_BY_TYPE, server)
         return ()
+    # noinspection none-function-assignment
     return fn(subsystem_type, exclude)
 
 

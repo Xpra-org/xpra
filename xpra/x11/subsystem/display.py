@@ -302,6 +302,7 @@ class X11DisplayManager(DisplayManager):
         from xpra.x11.vfb_util import kill_xvfb
         kill_xvfb(self.display_pid)
 
+    # noinspection unreachable-code
     def get_display_bit_depth(self) -> int:
         with xlog:
             from xpra.x11.bindings.window import X11WindowBindings

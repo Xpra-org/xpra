@@ -432,7 +432,7 @@ class TopSessionGUI(Gtk.Window):
                     rinfo += cpu_str
         if cpuinfo := sldict("cpuinfo"):
             rinfo += ", " + cpuinfo.strget("hz_actual")
-        elapsed = monotonic() - c.server_last_info_time
+        elapsed = float(monotonic() - c.server_last_info_time)
         color = WHITE
         if c.server_last_info_time == 0:
             rinfo += " - no server data"

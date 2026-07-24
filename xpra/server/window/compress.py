@@ -2811,7 +2811,7 @@ class WindowSource(WindowIconSource):
             * 'rgb24' and 'rgb32' use 'rgb_encode'
             * etc..
         """
-        def nodata(msg: str, *args) -> None:
+        def nodata(msg: str, *args):
             log("make_data_packet: no data for window %s with sequence=%s: "+msg, self.wid, sequence, *args)
             free_image_wrapper(image)
             return None

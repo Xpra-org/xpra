@@ -5,6 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+
 from xpra.platform import platform_import
 
 
@@ -12,7 +14,7 @@ def get_position() -> tuple[int, int]:
     raise NotImplementedError()
 
 
-def get_pointer_device():
+def get_pointer_device() -> Any:
     return None
 
 

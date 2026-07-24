@@ -64,9 +64,6 @@ class Win32_Notifier(NotifierBase):
         if not getHWND:
             log.warn(f"Warning: missing 'getHWND' on {tray} ({type(tray)}")
             return
-        if tray is None:
-            log.warn("Warning: no system tray - cannot show notification!")
-            return
         hwnd = getHWND()
         app_id = tray.app_id
         log("show_notify%s hwnd=%#x, app_id=%i",

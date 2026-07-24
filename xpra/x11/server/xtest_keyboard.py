@@ -57,12 +57,14 @@ class XTestKeyboardDevice:
         with xlog:
             X11Keyboard.set_key_repeat_rate(delay, interval)
 
+    # noinspection unreachable-code,unreachable-code
     @staticmethod
     def get_keycodes_down() -> Sequence[int]:
         with xlog:
             return X11Keyboard.get_keycodes_down()
         return ()
 
+    # noinspection unreachable-code,unreachable-code
     @staticmethod
     def get_layout_group() -> int:
         with xlog:

@@ -189,7 +189,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         gl_window_class = gl.GLClientWindowClass if (gl and gl.enabled) else None
         if gl_window_class:
             # try the OpenGL window first, fall back to the GDI window:
-            return (gl_window_class, ClientWindow)
+            return gl_window_class, ClientWindow
         return (ClientWindow, )
 
     @staticmethod

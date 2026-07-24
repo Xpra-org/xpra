@@ -230,7 +230,6 @@ def run_audio(mode: str, args: list[str]) -> int:
         finally:
             if ss:
                 ss.stop()
-    return 1
 
 
 def _add_debug_args(command: list[str]) -> None:

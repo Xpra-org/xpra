@@ -97,7 +97,7 @@ class GLWin32Backing(GLWindowBackingBase):
         self.size = (width, height)
 
     def __repr__(self):
-        return "GLWin32Backing(%#x, %s)" % (self.hwnd or 0, self.size)
+        return "GLWin32Backing(%#x, %s)" % (int(self.hwnd or 0), self.size)
 
     def set_hwnd(self, hwnd: HWND) -> None:
         # the native window is created after the backing (see the client window's

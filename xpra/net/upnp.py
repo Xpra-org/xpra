@@ -150,7 +150,7 @@ def find_service(device, value: str):
 def upnp_add(socktype: str, info, options: dict):
     log("upnp_add%s", (socktype, info, options))
 
-    def err(*msgs) -> None:
+    def err(*msgs):
         log("pnp_add%s", (info, options), exc_info=True)
         log.error("Error: cannot add UPnP port mapping")
         for msg in msgs:

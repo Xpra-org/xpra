@@ -89,7 +89,7 @@ class KeyboardHelper:
     def mask_to_names(self, mask) -> list[str]:
         return self.keyboard.mask_to_names(mask)
 
-    def set_modifier_mappings(self, mappings: dict[str, str]):
+    def set_modifier_mappings(self, mappings: dict[str, str]) -> None:
         self.keyboard.set_modifier_mappings(mappings)
 
     def reset_state(self) -> None:

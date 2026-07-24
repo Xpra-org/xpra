@@ -10,7 +10,6 @@ from time import sleep, monotonic
 from typing import Any, NoReturn
 from collections.abc import Sequence
 
-from xpra.common import noop
 from xpra.net.ssh.paramiko.util import keymd5, get_key_fingerprints, load_private_key, SSHSocketConnection
 from xpra.scripts.main import InitException, InitExit
 from xpra.scripts.args import shellquote
@@ -126,12 +125,16 @@ class SSHProxyCommandConnection(SSHSocketConnection):
             log("SSHProxyCommandConnection.close()", exc_info=True)
 
 
+def nolookup(*_args, **_kwargs) -> dict:
+    return {}
+
+
 def safe_lookup(config_obj, hostname: str) -> dict:
     try:
-        _lookup = getattr(config_obj, "_lookup", noop)
+        _lookup = getattr(config_obj, "_lookup", nolookup)
         import paramiko
         # older versions don't have the same signature for `_lookup`:
-        if _lookup != noop and getattr(paramiko, "__version_info__", (0, )) >= (3, 3):
+        if getattr(paramiko, "__version_info__", (0, )) >= (3, 3):
             # completely duplicate the paramiko logic since they're unwilling to merge a trivial change :(
             options = _lookup(hostname=hostname)
             # Inject HostName if it was not set (this used to be done incidentally

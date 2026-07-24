@@ -21,7 +21,7 @@ def close_packet(code: int = 1000, reason: str = "") -> bytes:
     return header + data
 
 
-def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True) -> bytes:
+def encode_hybi_header(opcode: OPCODE, payload_len: int, has_mask=False, fin=True) -> bytes:
     """ Encode a HyBi style WebSocket frame """
     if (opcode & 0x0f) != opcode:
         raise ValueError(f"invalid opcode {opcode:x}")

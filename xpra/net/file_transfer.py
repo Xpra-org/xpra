@@ -50,6 +50,7 @@ CHUNK_TIMEOUT = 10 * 1000
 # it is all kept off the network parse thread:
 FILE_IO_THREAD = envbool("XPRA_FILE_IO_THREAD", True)
 FILE_IO_JOIN_TIMEOUT = envint("XPRA_FILE_IO_JOIN_TIMEOUT", 5)
+# noinspection HttpUrlsUsage
 URL_PREFIXES = tuple(prefix for prefix in os.environ.get("XPRA_URL_PREFIXES", "http://,https://").split(",") if prefix)
 
 MIMETYPE_EXTS: dict[str, str] = {

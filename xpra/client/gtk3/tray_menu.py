@@ -618,9 +618,9 @@ class GTKTrayMenu(GTKMenuHelper):
         modal.connect("toggled", modal_toggled)
         return modal
 
-    def make_picturemenuitem(self) -> Gtk.ImageMenuItem:
+    def make_picturemenuitem(self) -> Gtk.ImageMenuItem | None:
         if not features.window:
-            return
+            return None
         picture_menu_item = self.handshake_menuitem(_("Picture"), "picture.png")
         menu = Gtk.Menu()
 
