@@ -470,7 +470,7 @@ class WindowModel(BaseWindowModel):
 
     def send_configure_notify(self) -> None:
         with xlog:
-            return X11Window.sendConfigureNotify(self.xid)
+            X11Window.sendConfigureNotify(self.xid)
 
     #########################################
     # Actions specific to WindowModel

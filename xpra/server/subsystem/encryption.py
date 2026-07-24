@@ -192,7 +192,7 @@ class EncryptionServer(StubSubsystem):
         return proto_crypto_caps(None if source is None else source.protocol)
 
     def parse_encryption(self, protocol, socket_options: dict[str, Any]) -> None:
-        return parse_encryption(protocol, socket_options, self.tcp_encryption, self.tcp_encryption_keyfile)
+        parse_encryption(protocol, socket_options, self.tcp_encryption, self.tcp_encryption_keyfile)
 
     def get_info(self, _proto) -> dict[str, Any]:
         if FULL_INFO:
