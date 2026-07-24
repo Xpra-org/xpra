@@ -63,13 +63,13 @@ class AudioKeepaliveMixin:
             self.audio_keepalive_check_timer = 0
 
     def update_latest_received_audio_timestamp(self, metadata: typedict | dict) -> None:
-        timestamp = int(metadata.get("time", metadata.get(b"time", 0)) or 0)
+        timestamp = int(metadata.get("time", 0) or 0)
         if timestamp > self.latest_audio_timestamp:
             self.latest_audio_timestamp = timestamp
             self.schedule_audio_keepalive()
 
     def update_latest_sent_audio_timestamp(self, metadata: dict) -> None:
-        timestamp = max(int(metadata.get("time", 0) or 0), int(metadata.get(b"time", 0) or 0))
+        timestamp = int(metadata.get("time", 0) or 0)
         if timestamp > self.latest_sent_audio_timestamp:
             self.latest_sent_audio_timestamp = timestamp
             if not self.audio_echo_timeout_start:

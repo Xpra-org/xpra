@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from xpra.net.rdp.const import (
     TPKT_VERSION, TPKT_HEADER_SIZE,
     X224, X224_CR_CC_FIXED_SIZE,
-    RDPNeg, RDP_NEG_SIZE,
+    RDPNeg, RDPNegFailure, RDP_NEG_SIZE,
 )
 
 # X.224 CR/CC header following the LI octet: code(1) dst-ref(2) src-ref(2) class(1)
@@ -116,7 +116,7 @@ def format_rdp_neg_rsp(selected_protocol: int, flags: int = 0) -> bytes:
     return pack(RDP_NEG_STRUCT, RDPNeg.RESPONSE, flags, RDP_NEG_SIZE, selected_protocol)
 
 
-def format_rdp_neg_failure(failure_code: int) -> bytes:
+def format_rdp_neg_failure(failure_code: int | RDPNegFailure) -> bytes:
     return pack(RDP_NEG_STRUCT, RDPNeg.FAILURE, 0, RDP_NEG_SIZE, failure_code)
 
 

@@ -269,7 +269,7 @@ def validated_hints(h: dict) -> dict[str, int | bool | str]:
 # (try all attribute names from spec 0.9 onwards)
 def image_data_hint(hints: dict) -> IconData | None:
     for attr in ("image-data", "image_data", "image-path", "image_path", "icon_data"):
-        value: str = hints.pop(attr, "")
+        value = hints.pop(attr, "")
         if not value:
             continue
         if attr.endswith("path"):

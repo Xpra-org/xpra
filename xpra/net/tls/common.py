@@ -56,7 +56,8 @@ def get_ssl_logger():
     return logger
 
 
-def get_remote_proxy_command_output(options, args: list[str], cmdline: list[str], subcommand="setup-ssl") -> tuple[dict, bytes]:
+def get_remote_proxy_command_output(options, args: Sequence[str], cmdline: list[str],
+                                    subcommand="setup-ssl") -> tuple[dict, bytes]:
     if len(args) != 1:
         raise InitExit(ExitCode.FAILURE, "a single optional argument may be specified")
     arg = args[0]
@@ -91,7 +92,7 @@ def get_remote_proxy_command_output(options, args: list[str], cmdline: list[str]
     return disp, data
 
 
-def setup_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
+def setup_ssl(options, args: Sequence[str], cmdline: list[str]) -> ExitValue:
     from xpra.net.tls.file import strip_cert, gen_ssl_cert, save_ssl_config_file
     if args:
         disp, data = get_remote_proxy_command_output(options, args, cmdline, "setup-ssl")
@@ -108,7 +109,7 @@ def setup_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
     return 0
 
 
-def show_ssl(options, args: list[str], cmdline: list[str]) -> ExitValue:
+def show_ssl(options, args: Sequence[str], cmdline: list[str]) -> ExitValue:
     from xpra.net.tls.file import strip_cert, find_ssl_cert
     if args:
         _disp, data = get_remote_proxy_command_output(options, args, cmdline, "show-ssl")

@@ -427,7 +427,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             "key": display_desc.get("proxy_key", ""),
         }])
 
-    jumphosts = parse_proxyjump(configvalue("proxyjump", ""))
+    jumphosts = parse_proxyjump(configvalue("proxyjump", "") or "")
     if jumphosts:
         log(f"found ProxyJump jump hosts for {host!r}: {jumphosts}")
         return connect_via_jumphosts(jumphosts)
