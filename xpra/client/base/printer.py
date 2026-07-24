@@ -167,10 +167,7 @@ class Printer(StubClientSubsystem):
                 # add mimetypes:
                 attrs["mimetypes"] = get_mimetypes()
                 exported_printers[k] = attrs
-            if self.exported_printers is None:
-                # not been sent yet, ensure we can use the dict below:
-                self.exported_printers = {}
-            elif exported_printers == self.exported_printers:
+            if exported_printers == self.exported_printers:
                 printlog("send_printers_thread() exported printers unchanged: %s", self.exported_printers)
                 return
             # show summary of what has changed:
