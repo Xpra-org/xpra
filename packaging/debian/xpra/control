@@ -65,6 +65,17 @@ Build-Depends: debhelper (>= 8)
               ,libxxhash-dev
               ,libqrencode-dev
               ,libwayland-dev
+# wayland compositor backend (xpra-server-wayland), only where wlroots 0.19 is available:
+#sid:              ,libwlroots-0.19-dev
+#sid:              ,wayland-protocols
+#sid:              ,libxkbcommon-dev
+#sid:              ,libpixman-1-dev
+#sid:              ,libwayland-bin
+#resolute:              ,libwlroots-0.19-dev
+#resolute:              ,wayland-protocols
+#resolute:              ,libxkbcommon-dev
+#resolute:              ,libpixman-1-dev
+#resolute:              ,libwayland-bin
               ,pandoc
 Standards-Version: 3.9.3
 Homepage: https://xpra.org/
@@ -83,6 +94,7 @@ Recommends: xpra-audio (= ${binary:Version})
             ,xpra-codecs-extras (= ${binary:Version})
 Suggests:  xpra-codecs-nvidia (= ${binary:Version})
          ,xpra-codecs-amd (= ${binary:Version})
+         ,xpra-server-wayland (= ${binary:Version})
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
@@ -201,6 +213,18 @@ Suggests: xpra-codecs-nvidia (= ${binary:Version})
         ,python3-oauthlib
 Description: tool to detach/reattach running X programs,
  this is server component allowing you to start sessions
+
+
+Package: xpra-server-wayland
+Architecture: any
+Conflicts: python2-xpra, python3-xpra, xpra (<< 5)
+Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
+Depends: xpra-server (= ${binary:Version})
+        ,${misc:Depends}
+        ,${python3:Depends}
+        ,${shlibs:Depends}
+Description: tool to detach/reattach running X programs,
+ this is the experimental xpra server using wayland as backend
 
 
 Package: xpra-client
