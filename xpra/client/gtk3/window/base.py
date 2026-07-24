@@ -1130,7 +1130,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 # modifying the window is slower than moving the pointer,
                 # do it via a timer to batch things together
                 self.moveresize_data = data
-                if self.moveresize_timer is None:
+                if not self.moveresize_timer:
                     self.moveresize_timer = self.timeout_add(20, self.do_moveresize)
 
     def cancel_moveresize_timer(self) -> None:

@@ -91,7 +91,7 @@ class XCursorServer(CursorManager):
         if not self.enabled:
             return None, []
         cursor_image = self.get_cursor_image()
-        if cursor_image is None:
+        if not cursor_image:
             log("get_cursor_data() failed to get cursor image")
             return None, []
         self.last_image = list(cursor_image)

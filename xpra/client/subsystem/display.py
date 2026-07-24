@@ -69,7 +69,7 @@ class DisplayClient(StubClientSubsystem):
         self.scale_change_embargo = float("inf")
         self.refresh_rate = ""
         self.desktop_fullscreen = False
-        self.desktop_scaling = False
+        self.desktop_scaling = "no"
         self.screen_size_change_timer = 0
         self.screen_size_change_counter = 0
         self.screen_size_change_suspended = False
