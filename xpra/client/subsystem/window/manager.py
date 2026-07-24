@@ -97,6 +97,8 @@ class WindowManagerClient(StubClientMixin):
     def load(self) -> None:
         self.connect("suspend", self.suspend_windows)
         self.connect("resume", self.resume_windows)
+        self.connect("pause", self.pause_windows)
+        self.connect("unpause", self.unpause_windows)
 
     def run(self) -> ExitValue:
         return ExitCode.OK
@@ -572,14 +574,16 @@ class WindowManagerClient(StubClientMixin):
             self.reinit_windows()
         self.reinit_window_icons()
 
-    def pause(self) -> None:
+    def pause_windows(self, *args) -> None:
+        log("pause_windows%s", args)
         self.refresh_slowly()
 
     def refresh_slowly(self) -> None:
         # tell the server to slow down refresh for all the windows:
         self.control_refresh(-1, True, False)
 
-    def unpause(self) -> None:
+    def unpause_windows(self, *args) -> None:
+        log("unpause_windows%s", args)
         self.send_refresh_all()
 
     def control_refresh(self, wid: int, suspend_resume, refresh, quality=100,
