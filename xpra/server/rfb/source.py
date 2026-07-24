@@ -9,6 +9,7 @@ from threading import Event
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.common import SizedBuffer
 from xpra.os_util import gi_import
 from xpra.net.rfb.const import RFBEncoding, RFBServerMessage
 from xpra.net.rfb.encode import (
@@ -518,7 +519,7 @@ class RFBSource(PointerSource):
     def encode_regions(self, _wid: int, regions: Sequence[ENCODE_REGION]) -> None:
         if self.is_closed():
             return
-        encoded_regions: list[tuple[bytes, ...]] = []
+        encoded_regions: list[tuple[SizedBuffer, ...]] = []
         for image, x, y, w, h, encoding in regions:
             packets = self.encode_region(image, x, y, w, h, encoding)
             if packets:
@@ -531,7 +532,7 @@ class RFBSource(PointerSource):
         self.send_many(*packets)
 
     def encode_region(self, image, x: int, y: int, w: int, h: int,
-                      encoding: RFBEncoding = RFBEncoding.RAW) -> Sequence[bytes]:
+                      encoding: RFBEncoding = RFBEncoding.RAW) -> Sequence[SizedBuffer]:
         if self.is_closed():
             return ()
         encode = raw_encode_image
@@ -557,7 +558,7 @@ class RFBSource(PointerSource):
             kwargs = {"compressor": self.zlib_compressor}
         return encode(image, x, y, w, h, **kwargs)
 
-    def send_many(self, *packets: bytes):
+    def send_many(self, *packets: SizedBuffer):
         # merge small packets together:
         joined = []
 
@@ -607,6 +608,6 @@ class RFBSource(PointerSource):
         self.send(make_header(RFBEncoding.DESKTOPSIZE, 0, 0, root_w, root_h))
         return True
 
-    def send(self, msg: bytes) -> None:
+    def send(self, msg: SizedBuffer) -> None:
         if p := self.protocol:
             p.send(msg)

@@ -7,6 +7,7 @@ import struct
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.common import SizedBuffer
 from xpra.net.rfb.const import RFBEncoding
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.pillow.encoder import encode
@@ -34,13 +35,13 @@ def make_header(encoding: int, x: int, y: int, w: int, h: int) -> bytes:
     return fbupdate + rect
 
 
-def rgb222_encode(window: Any, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
+def rgb222_encode(window: Any, x: int, y: int, w: int, h: int) -> Sequence[SizedBuffer]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     return rgb222_encode_image(img, x, y, w, h)
 
 
-def rgb222_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
+def rgb222_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int) -> Sequence[SizedBuffer]:
     header = make_header(RFBEncoding.RAW, x, y, w, h)
     if img.get_pixel_format() != "BGRX":
         log.warn("Warning: cannot convert %s to rgb222", img.get_pixel_format())
@@ -51,18 +52,18 @@ def rgb222_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int) -> Se
     return header, data
 
 
-def raw_encode(window: Any, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
+def raw_encode(window: Any, x: int, y: int, w: int, h: int) -> Sequence[SizedBuffer]:
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     return raw_encode_image(img, x, y, w, h)
 
 
-def raw_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int) -> Sequence[bytes]:
+def raw_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int) -> Sequence[SizedBuffer]:
     header = make_header(RFBEncoding.RAW, x, y, w, h)
     return header, raw_pixels(img)
 
 
-def raw_pixels(img: ImageWrapper | None) -> bytes:
+def raw_pixels(img: ImageWrapper | None) -> SizedBuffer:
     if not img:
         return b""
     w = img.get_width()
@@ -87,8 +88,6 @@ def zlib_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int, compres
         return []
     pixels = raw_pixels(img)
     import zlib  # pylint: disable=import-outside-toplevel
-    if isinstance(pixels, memoryview):
-        pixels = pixels.tobytes()
     # the RFB Zlib pseudo-encoding requires a single zlib stream maintained
     # across all rectangles of a connection - the caller is expected to pass
     # in a persistent compressor and we flush with Z_SYNC_FLUSH so the stream
