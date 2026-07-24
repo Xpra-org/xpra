@@ -109,7 +109,7 @@ class WindowServer(StubServerMixin):
         ac("lock-batch-delay", "set a specific batch delay for a window", min_args=2, max_args=2, validation=[int, int])
         ac("unlock-batch-delay",
            "let the heuristics calculate the batch delay again for a window (following a 'lock-batch-delay')",
-           min_args=1, max_args=1, validation=[int]),
+           min_args=1, max_args=1, validation=[int])
         ac("remove-window-filters", "remove all window filters", min_args=0, max_args=0)
         ac("add-window-filter", "add a window filter", min_args=4, max_args=5)
         ac("image-filter", "configure the image filter", min_args=2, max_args=2, validation=[str, str])
