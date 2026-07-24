@@ -269,7 +269,7 @@ def get_host_target_string(display_desc: dict, port_key="port", prefix="") -> st
     username = display_desc.get(prefix + "username", "")
     host = display_desc[prefix + "host"]
     try:
-        port = int(display_desc.get(prefix + port_key))
+        port = int(display_desc.get(prefix + port_key, 0))
         if not 0 < port < 2 ** 16:
             port = 0
     except (ValueError, TypeError):
@@ -293,24 +293,25 @@ def host_target_string(dtype: str, username: str, host: str, port: int, display:
 
 
 def display_desc_to_uri(display_desc: dict[str, Any]) -> str:
-    dtype = display_desc.get("type")
+    props = typedict(display_desc)
+    dtype = props.strget("type")
     if not dtype:
         raise InitException("missing display type")
     uri = f"{dtype}://"
-    username = display_desc.get("username")
-    if username is not None:
+    username = props.strget("username")
+    if username:
         uri += username
-    if "password" in display_desc:
-        uri += ":" + display_desc.get("password", "")
-    if username is not None or "password" in display_desc:
+    if "password" in props:
+        uri += ":" + props.strget("password")
+    if username or "password" in display_desc:
         uri += "@"
     if dtype in ("ssh", "tcp", "ssl", "ws", "wss", "quic"):
         # TODO: re-add 'proxy_host' arguments here
-        host = display_desc.get("host")
+        host = props.strget("host")
         if not host:
             raise InitException("missing host from display parameters")
         uri += host
-        port = display_desc.get("port")
+        port = props.intget("port")
         if port and port != DEFAULT_PORTS.get(dtype, 0):
             assert port is not None
             uri += f":{port:d}"
@@ -328,15 +329,15 @@ def display_desc_to_uri(display_desc: dict[str, Any]) -> str:
 
 def display_desc_to_display_path(display_desc: dict[str, Any]) -> str:
     uri = ""
-    path = display_desc.get("path")
+    path = display_desc.get("path", "")
     if path:
         uri += path
-    display = display_desc.get("display")
+    display = display_desc.get("display", "")
     if display:
         if path:
             uri += "#"
         uri += display.lstrip(":")
-    options_str = display_desc.get("options_str")
+    options_str = display_desc.get("options_str", "")
     if options_str:
         uri += f"?{options_str}"
     return uri
