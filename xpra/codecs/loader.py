@@ -334,7 +334,8 @@ def load_codec(name: str, options: dict | None = None):
     return get_codec(name)
 
 
-def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=False, filters=True) -> Sequence[str]:
+def load_codecs(encoders: bool = True, decoders: bool = True, csc: bool = True,
+                video: bool = True, sources: bool = False, filters: bool = True) -> Sequence[str]:
     log("loading codecs")
     loaded: list[str] = []
 
