@@ -253,7 +253,9 @@ class AudioClient(StubClientMixin):
                  self.server_audio_receive, self.server_audio_send)
         if self.server_audio_send and self.speaker_enabled:
             self.show_progress(90, "starting speaker forwarding")
-            self.start_receiving_audio()
+            # start_receiving_audio emits "speaker-changed",
+            # so run it from the UI thread:
+            GLib.idle_add(self.start_receiving_audio)
         if self.server_audio_receive and self.microphone_enabled:
             #call via idle_add because we may query X11 properties
             #to find the pulseaudio server:
@@ -438,7 +440,9 @@ class AudioClient(StubClientMixin):
         ss = self.audio_sink
         if self.speaker_enabled:
             self.speaker_enabled = False
-            self.emit("speaker-changed")
+            # `stop_receiving_audio` can be called from the network thread (via `_process_sound_data`),
+            # so emit the signal from the UI thread (crashes on macOS otherwise):
+            GLib.idle_add(self.emit, "speaker-changed")
         if not ss:
             return
         if tell_server and ss.sequence==self.audio_sink_sequence:
@@ -577,7 +581,9 @@ class AudioClient(StubClientMixin):
                     self.stop_receiving_audio(True)
                     return
                 self.speaker_enabled = True
-                self.emit("speaker-changed")
+                # this packet handler runs in the network thread,
+                # so emit the signal from the UI thread (crashes on macOS otherwise):
+                GLib.idle_add(self.emit, "speaker-changed")
                 self.on_sink_ready = None
                 codec = metadata.strget("codec")
                 log("starting speaker on server request using codec %s", codec)
