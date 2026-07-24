@@ -825,7 +825,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/platform/
 %{python3_sitearch}/xpra/seccomp/
 %{python3_sitearch}/xpra/scripts/
-%{python3_sitearch}/xpra/wayland/
 %{python3_sitearch}/xpra/pointer/
 %{python3_sitearch}/xpra/webcam/
 %{python3_sitearch}/xpra-*.egg-info
