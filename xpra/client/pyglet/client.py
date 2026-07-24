@@ -18,6 +18,7 @@ from xpra.exit_codes import ExitValue
 from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_DRAW_ACK
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.util.objects import AtomicInteger
 from xpra.log import Logger
 
 log = Logger("client")
@@ -25,7 +26,9 @@ netlog = Logger("client", "network")
 
 
 class scheduled:
-    def __init__(self, fn: Callable, args, kwargs):
+    def __init__(self, tid: int, scheduler: "PygletScheduler", fn: Callable, args, kwargs):
+        self.tid = tid
+        self.scheduler = scheduler
         self.function = fn
         self.args = args
         self.kwargs = kwargs
@@ -38,24 +41,33 @@ class scheduled:
             log(f"scheduled error calling {self.function}{self.args}{self.kwargs}", exc_info=True)
             ret = False
         if not ret:
-            clock.unschedule(self.run)
+            self.scheduler.source_remove(self.tid)
 
 
 class PygletScheduler:
 
     def __init__(self):
-        self.scheduled = []
+        self.timer_id = AtomicInteger()
+        self.scheduled: dict[int, scheduled] = {}
 
-    def idle_add(self, fn: Callable, *args, **kwargs):
+    def idle_add(self, fn: Callable, *args, **kwargs) -> int:
         return self.timeout_add(0, fn, *args, **kwargs)
 
-    def timeout_add(self, delay: int, fn: Callable, *args, **kwargs):
+    def timeout_add(self, delay: int, fn: Callable, *args, **kwargs) -> int:
         # interval is in seconds:
         interval = delay / 1000
-        instance = scheduled(fn, args, kwargs)
-        self.scheduled.append(instance)
+        tid = self.timer_id.increase()
+        instance = scheduled(tid, self, fn, args, kwargs)
+        self.scheduled[tid] = instance
         log(f"pyglet_clock_scheduler: {instance} in {interval} seconds")
         clock.schedule_interval(instance.run, interval)
+        return tid
+
+    def source_remove(self, tid: int) -> None:
+        instance = self.scheduled.pop(tid, None)
+        log(f"source_remove({tid}) instance={instance}")
+        if instance is not None:
+            clock.unschedule(instance.run)
 
 
 class XpraPygletClient:
