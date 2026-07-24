@@ -5,6 +5,16 @@ on: [push, pull_request]
 jobs:
   unittest:
     runs-on: ubuntu-24.04
+    # Run the suite twice: once interpreted (the required baseline), and once
+    # against a `--with-cythonize_more` build so the concrete-type argument
+    # annotations become live runtime TypeError guards (Cython annotation_typing).
+    # The cythonized leg is non-blocking for now: it may surface latent type
+    # mismatches to fix before it can be made required.
+    strategy:
+      fail-fast: false
+      matrix:
+        cythonize: ["without", "with"]
+    continue-on-error: ${{ matrix.cythonize == 'with' }}
     steps:
     - uses: actions/checkout@v7
 
@@ -44,6 +54,9 @@ jobs:
         sudo pip3 install cython --break-system-packages
 
     - name: "Build/Install/Test"
+      env:
+        # honoured by tests/unittests/run -> setup.py install --${CYTHONIZE_MORE}-cythonize_more
+        CYTHONIZE_MORE: ${{ matrix.cythonize }}
       run: >
         python3 setup.py unittests
         --skip-fail unit.client.splash_test
