@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.util.env import envbool
 from xpra.util.str_fn import is_valid_hostname, strtobytes, std
@@ -27,14 +27,14 @@ SUPPORT_HyBi_PROTOCOLS: Sequence[str] = ("7", "8", "13")
 class WebSocketRequestHandler(HTTPRequestHandler):
     server_version = "Xpra-WebSocket-Server"
 
-    def __init__(self, sock, addr, new_websocket_client,
-                 web_root="/usr/share/xpra/www/",
-                 http_headers_dir="/etc/xpra/http-headers",
-                 script_paths: dict[str, Callable[[str], HttpResponse]] = None,
-                 redirect_https=False,
-                 origin="auto",
-                 username=AUTH_USERNAME,
-                 password=AUTH_PASSWORD,
+    def __init__(self, sock, addr, new_websocket_client: Callable,
+                 web_root: str = "/usr/share/xpra/www/",
+                 http_headers_dir: Iterable[str] = "/etc/xpra/http-headers",
+                 script_paths: dict[str, Callable[[str], HttpResponse]] | None = None,
+                 redirect_https: bool = False,
+                 origin: str = "auto",
+                 username: str = AUTH_USERNAME,
+                 password: str = AUTH_PASSWORD,
                  ):
         self.new_websocket_client: Callable = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
