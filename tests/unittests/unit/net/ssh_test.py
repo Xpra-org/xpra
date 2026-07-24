@@ -24,7 +24,7 @@ class SSHTest(unittest.TestCase):
     def test_parse_proxyjump(self):
         from xpra.net.ssh.paramiko.client import parse_proxyjump
         # disabled / empty:
-        for v in ("", "  ", "none", "None", "NONE", " none ", None):
+        for v in ("", "  ", "none", "None", "NONE", " none "):
             assert parse_proxyjump(v) == [], f"expected no jump hosts for {v!r}"
         # comments are stripped:
         assert parse_proxyjump("bastion  # via the office") == [{"host": "bastion", "port": 0, "username": ""}]

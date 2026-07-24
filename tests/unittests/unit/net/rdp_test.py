@@ -97,8 +97,8 @@ class TestRDP(unittest.TestCase):
 
     def test_protocols_str(self):
         self.assertEqual(protocols_str(0), "RDP")
-        self.assertEqual(protocols_str(SecurityProtocol.SSL), "SSL")
-        self.assertIn("HYBRID", protocols_str(SecurityProtocol.SSL | SecurityProtocol.HYBRID))
+        self.assertEqual(protocols_str(SecurityProtocol.SSL.value), "SSL")
+        self.assertIn("HYBRID", protocols_str((SecurityProtocol.SSL | SecurityProtocol.HYBRID).value))
 
 
 def main():

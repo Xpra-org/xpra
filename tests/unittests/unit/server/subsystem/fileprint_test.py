@@ -32,7 +32,7 @@ class FileMixinTest(ServerMixinTest):
         from xpra.server.subsystem import file as filesubsystem
         opts = AdHocStruct()
         opts.file_transfer = "yes"
-        opts.file_size_limit = 10
+        opts.file_size_limit = "10"
         opts.printing = "yes"
         opts.open_files = "no"
         opts.open_url = "yes"

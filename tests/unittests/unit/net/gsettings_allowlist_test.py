@@ -5,10 +5,10 @@
 # later version. See the file COPYING for details.
 
 import os
+import subprocess
+import sys
 import unittest
-import importlib
 
-from xpra.util.env import OSEnvContext
 from xpra.net import common
 
 
@@ -42,15 +42,18 @@ class TestGSettingsAllowlist(unittest.TestCase):
         self.assertNotIn(("org.example.fake", "made-up"), allowlist)
 
     def test_env_override(self):
-        with OSEnvContext():
-            os.environ["XPRA_GSETTINGS_ALLOWLIST"] = "a.b:one, c.d:two ,,garbage-no-colon"
-            mod = importlib.reload(common)
-            try:
-                self.assertEqual(mod.GSETTINGS_ALLOWLIST, (("a.b", "one"), ("c.d", "two")))
-            finally:
-                # restore the module to its default state for other tests:
-                os.environ.pop("XPRA_GSETTINGS_ALLOWLIST", None)
-                importlib.reload(common)
+        env = os.environ.copy()
+        env["XPRA_GSETTINGS_ALLOWLIST"] = "a.b:one, c.d:two ,,garbage-no-colon"
+        output = subprocess.check_output(
+            [
+                sys.executable,
+                "-c",
+                "from xpra.net.common import GSETTINGS_ALLOWLIST; print(repr(GSETTINGS_ALLOWLIST))",
+            ],
+            env=env,
+            text=True,
+        )
+        self.assertEqual(output.strip(), repr((("a.b", "one"), ("c.d", "two"))))
 
 
 def main():
