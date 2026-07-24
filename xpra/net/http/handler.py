@@ -49,7 +49,7 @@ def locked_reload_headers(http_headers_dirs: Iterable[str]) -> dict[str, str]:
         # do we need to refresh the cache?
         for d in http_headers_dirs:
             if os.path.exists(d) and os.path.isdir(d):
-                mtime = os.path.getmtime(d)
+                mtime = float(os.path.getmtime(d))
                 if mtime > http_headers_time.get(d, -1):
                     mtimes[d] = mtime
         if not mtimes:
