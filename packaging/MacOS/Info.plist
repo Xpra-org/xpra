@@ -44,6 +44,11 @@
 	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
+	<key>LSEnvironment</key>
+	<dict>
+		<key>CRYPTOGRAPHY_OPENSSL_NO_LEGACY</key>
+		<string>1</string>
+	</dict>
 
 	<key>CFBundleDocumentTypes</key>
 	<array>
