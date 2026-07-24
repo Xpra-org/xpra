@@ -8,6 +8,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import first_time, envbool
+from xpra.util.thread import check_main_thread
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.gtk.keymap import KEY_TRANSLATIONS
 from xpra.keyboard.common import KeyEvent
@@ -84,12 +85,16 @@ class KeyboardWindow(GtkStubWindow):
         return key_event
 
     def handle_key_press_event(self, _window, event) -> bool:
+        # shortcuts may access the UI (menus, other windows, ...),
+        # which crashes hard on some platforms (ie: macOS) if done off the main thread:
+        check_main_thread()
         key_event = self.parse_key_event(event, True)
         if kb := self.get_subsystem("keyboard"):
             kb.handle_key_action(self, key_event)
         return True
 
     def handle_key_release_event(self, _window, event) -> bool:
+        check_main_thread()
         key_event = self.parse_key_event(event, False)
         if kb := self.get_subsystem("keyboard"):
             kb.handle_key_action(self, key_event)

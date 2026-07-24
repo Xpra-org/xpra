@@ -19,6 +19,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
 from xpra.util.env import envint, envbool, first_time, ignorewarnings, IgnoreWarningsContext
 from xpra.util.gobject import no_arg_signal
+from xpra.util.thread import check_main_thread
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
@@ -1676,6 +1677,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return True
 
     def key_may_break_moveresize(self, _window, event) -> bool:
+        check_main_thread()
         keyval = event.keyval
         keyname = Gdk.keyval_name(keyval) or ""
         if self.moveresize_event and keyname in BREAK_MOVERESIZE:
