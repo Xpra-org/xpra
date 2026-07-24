@@ -55,6 +55,7 @@
   * [per-client readonly sessions](https://github.com/Xpra-org/xpra/issues/3468)
   * [client-server "loopback" tests](https://github.com/Xpra-org/xpra/issues/2357)
   * [improved test coverage](https://github.com/Xpra-org/xpra/issues/2873)
+  * [stricter type annotations](https://github.com/Xpra-org/xpra/issues/4977)
 
 ## [6.5] 2026-05-06
 * 🔧 Platforms, build and packaging:
