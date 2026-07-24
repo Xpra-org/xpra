@@ -204,11 +204,10 @@ class UIXpraClient(ClientBaseClass):
         """ initialize user interface """
 
         def noauto(val):
-            default = [] if isinstance(val, (list, tuple)) else None
-            if not val:
-                return default
-            if str(val).lower() == "auto":
-                return default
+            if not val or str(val).lower() == "auto":
+                # a keyboard option is either a string or a list of strings;
+                # return an empty default of the same shape
+                return "" if isinstance(val, str) else []
             return val
 
         overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
