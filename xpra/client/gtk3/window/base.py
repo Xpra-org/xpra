@@ -618,7 +618,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                  self, widget, repr(event), event.changed_mask, event.new_window_state)
         state_updates: dict[str, bool] = {}
         for flag in ("fullscreen", "above", "below", "sticky", "iconified", "maximized", "focused"):
-            wstate = getattr(Gdk.WindowState, flag.upper())  # ie: Gdk.WindowState.FULLSCREEN
+            wstate = int(getattr(Gdk.WindowState, flag.upper()))  # ie: Gdk.WindowState.FULLSCREEN
             if event.changed_mask & wstate:
                 state_updates[flag] = bool(event.new_window_state & wstate)
         self.update_window_state(state_updates)
