@@ -85,8 +85,10 @@ class NamedPipeListener(Thread):
     def __init__(self, pipe_name: str, new_connection_cb: Callable = noop, remote: bool = DEFAULT_REMOTE):
         log("NamedPipeListener(%s, %s, remote=%s)", pipe_name, new_connection_cb, remote)
         self.pipe_name = pipe_name
-        if new_connection_cb != noop:
-            self.new_connection_cb = new_connection_cb
+        # the handle of the connection currently being accepted,
+        # retrieved by the `new_connection_cb` callback (like `socket.accept` for regular sockets):
+        self.pending_handle: HANDLE = INVALID_HANDLE
+        self.new_connection_cb = self.new_connection if new_connection_cb == noop else new_connection_cb
         self.remote = remote
         self.exit_loop = False
         super().__init__(name="NamedPipeListener-%s" % pipe_name)
@@ -188,7 +190,8 @@ class NamedPipeListener(Thread):
                     break
             # from now on, the pipe_handle will be managed elsewhere:
             if not self._is_invalid(pipe_handle):
-                self.new_connection_cb("named-pipe", self, pipe_handle)
+                self.pending_handle = pipe_handle
+                self.new_connection_cb()
                 pipe_handle = INVALID_HANDLE
         self.close_handle(pipe_handle)
 
@@ -201,9 +204,10 @@ class NamedPipeListener(Thread):
         except Exception:
             log("CloseHandle(%s)", pipe_handle, exc_info=True)
 
-    def new_connection(self, socktype, listener, pipe_handle: HANDLE) -> None:
-        log("new_connection(%s, %s, %s)", socktype, listener, pipe_handle)
-        self.close_handle(pipe_handle)
+    def new_connection(self) -> None:
+        # default handler (when no callback is supplied): just close the pending handle
+        log("new_connection() closing pending handle %s", self.pending_handle)
+        self.close_handle(self.pending_handle)
 
     def CreatePipeHandle(self) -> HANDLE:
         sa = self.CreatePipeSecurityAttributes()

@@ -1599,10 +1599,10 @@ def enable_listen_mode(app, opts):
                                             get_username(), getuid(), getgid())
         sockets.update(local_sockets)
 
-    def new_connection(listener: SocketListener, handle=0) -> bool:
+    def new_connection(listener: SocketListener) -> bool:
         from xpra.util.thread import start_thread
         netlog = Logger("network")
-        netlog("new_connection%s", (listener, handle))
+        netlog("new_connection(%s)", listener)
         conn = accept_connection(listener)
         # start a new thread so that we can sleep doing IO in `peek_connection`:
         start_thread(handle_new_connection, f"handle new connection: {conn}", daemon=True, args=(conn,))

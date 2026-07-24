@@ -121,25 +121,25 @@ class NetworkListener(StubClientSubsystem):
         log("add_listen_socket address=%s", sock.address)
         add_listen_socket(sock, None, self._new_connection)
 
-    def _new_connection(self, listener: SocketListener, handle=0) -> bool:
+    def _new_connection(self, listener: SocketListener) -> bool:
         """
             Accept the new connection,
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
-        log("_new_connection%s", (listener, handle))
+        log("_new_connection(%s)", listener)
         if self.client.exit_code is not None:
             log("ignoring new connection during shutdown")
             return False
         with log.trap_error(f"Error handling new {listener.socktype} connection"):
-            self.handle_new_connection(listener, handle)
+            self.handle_new_connection(listener)
         return self.client.exit_code is None
 
-    def handle_new_connection(self, listener: SocketListener, handle: int) -> None:
+    def handle_new_connection(self, listener: SocketListener) -> None:
         socktype = listener.socktype
         if socktype == "named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-            conn = NamedPipeConnection(listener.socket.pipe_name, handle, listener.options)
+            conn = NamedPipeConnection(listener.socket.pipe_name, listener.socket.pending_handle, listener.options)
             log.info("New %s connection received on %s", socktype, conn.target)
             self.client.make_protocol(conn)
             return
@@ -156,7 +156,7 @@ class NetworkListener(StubClientSubsystem):
             sockname = conn._socket.getsockname()
         except (AttributeError, OSError):
             sockname = ""
-        log("handle_new_connection%s sockname=%s", (listener, handle), sockname)
+        log("handle_new_connection(%s) sockname=%s", listener, sockname)
         log_new_connection(conn, listener.address)
         self.accept_protocol(socktype, conn)
 

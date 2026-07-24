@@ -202,12 +202,12 @@ def add_listen_socket(listener: SocketListener, server, new_connection_cb: Calla
         # ugly that we have different ways of starting sockets,
         # TODO: abstract this into the socket class
         if socktype == "named-pipe":
-            # named pipe listener uses a thread, and calls back from that thread with
-            # (socktype, np_listener, handle).  The server / client `_new_connection`
-            # expects (SocketListener, handle) instead, so bridge the two here where
-            # the SocketListener wrapper is in scope:
-            def np_new_connection(_socktype, _np_listener, handle) -> bool:
-                return new_connection_cb(listener, handle)
+            # the named pipe listener runs its own thread and notifies us when a client
+            # connects; the accepted handle is left on `listener.socket.pending_handle`
+            # (like `socket.accept()` for regular sockets), so all this callback has to do
+            # is inject the `SocketListener` wrapper that is in scope here:
+            def np_new_connection() -> bool:
+                return new_connection_cb(listener)
             listener.socket.new_connection_cb = np_new_connection
             listener.socket.start()
             return None

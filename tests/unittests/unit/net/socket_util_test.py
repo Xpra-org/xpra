@@ -582,7 +582,11 @@ class TestAddListenSocketNamedPipe(unittest.TestCase):
         cb = MagicMock()
         result = add_listen_socket(listener, None, cb)
         assert result is None
-        assert mock_sock.new_connection_cb is cb
+        # the callback installed on the listener is a bridge that injects the SocketListener wrapper:
+        bridge = mock_sock.new_connection_cb
+        assert bridge is not cb
+        bridge()
+        cb.assert_called_once_with(listener)
         mock_sock.start.assert_called_once()
 
     def test_error_does_not_propagate(self):

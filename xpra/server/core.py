@@ -199,7 +199,7 @@ class ServerCore(GLibServer):
         self.rdp_upgrade = False
         self.http = False
         self.http_origin = "auto"
-        self._html: bool = False
+        self._html: bool | None = False
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
         self.socket_cleanup: list[Callable] = []
@@ -552,6 +552,7 @@ class ServerCore(GLibServer):
             self.websocket_upgrade = False
         return www_dir
 
+    # noinspection simplify-boolean-check
     def init_www_dir(self, www_dir: str) -> None:
         # make sure we have the web root:
         from xpra.platform.paths import get_resources_dir
@@ -806,19 +807,20 @@ class ServerCore(GLibServer):
         netlog("add_listen_socket(%s)", listener)
         add_listen_socket(listener, self, self._new_connection)
 
-    def _new_connection(self, listener: SocketListener, handle=0) -> bool:
+    def _new_connection(self, listener: SocketListener) -> bool:
         """
             Accept the new connection,
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
-        log("_new_connection%s", (listener, handle))
+        log("_new_connection(%s)", listener)
         if self._closing:
             netlog("ignoring new connection during shutdown")
             return False
         socktype = listener.socktype
         if socktype == "named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
+            handle = listener.socket.pending_handle
             conn: Connection = NamedPipeConnection(listener.socket.pipe_name, handle, listener.options)
             netlog.info("New %s connection received on %s", socktype, conn.target)
             self.make_protocol(socktype, conn, listener.options)
