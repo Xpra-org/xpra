@@ -126,7 +126,7 @@ def show_pass_dialog(argv):
     gui_ready()
     app.show()
     p = app.run()
-    if p is not None:
+    if p:
         sys.stdout.write(p)
         sys.stdout.flush()
         return 0

@@ -41,9 +41,9 @@ def load_binary_file(filename) -> bytes:
 
 def filedata_nocrlf(filename: str) -> bytes:
     v = load_binary_file(filename)
-    if v is None:
+    if not v:
         log = get_util_logger()
-        log.error(f"failed to load {filename!r}")
+        log.error(f"Error: failed to load {filename!r}, no data")
         return b""
     return v.strip(b"\n\r")
 

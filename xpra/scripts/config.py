@@ -1398,12 +1398,8 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
                 continue
         elif vt is int:
             v = parse_bool_or_number(int, k, v)
-            if v is None:
-                continue
         elif vt is float:
             v = parse_number(float, k, v)
-            if v is None:
-                continue
         elif vt is bool:
             v = parse_bool_or(k, v)
             if v is None:
