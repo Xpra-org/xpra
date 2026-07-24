@@ -520,7 +520,9 @@ class AudioClient(StubClientMixin):
         log("stop_receiving_audio(%s) audio sink=%s", tell_server, ss)
         if self.speaker_enabled:
             self.speaker_enabled = False
-            self.emit("speaker-changed")
+            # `stop_receiving_audio` can be called from the network thread (via `_process_audio_data`),
+            # so emit the signal from the UI thread (crashes on macOS otherwise):
+            self.idle_add(self.emit, "speaker-changed")
         if not ss:
             return
         if tell_server and ss.sequence == self.audio_sink_sequence:
@@ -696,7 +698,9 @@ class AudioClient(StubClientMixin):
                     self.stop_receiving_audio(True)
                     return
                 self.speaker_enabled = True
-                self.emit("speaker-changed")
+                # this packet handler runs in the network thread,
+                # so emit the signal from the UI thread (crashes on macOS otherwise):
+                self.idle_add(self.emit, "speaker-changed")
                 self.on_sink_ready = noop
                 codec = metadata.strget("codec")
                 log("starting speaker on server request using codec %s", codec)
