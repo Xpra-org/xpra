@@ -456,7 +456,7 @@ class SocketConnection(Connection):
                 "type": PROTOCOL_STR.get(s.type, int(s.type)),
                 "cork": self.cork,
             }
-            if s.type == socket.AF_UNIX:
+            if s.family == socket.AF_UNIX:
                 try:
                     info["path"] = s.getsockname()
                 except OSError:
