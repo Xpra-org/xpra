@@ -10,7 +10,6 @@ from typing import Any
 from collections.abc import Callable
 import cairo
 
-from xpra.common import noop
 from xpra.gtk.util import get_root_size, get_default_root_window
 from xpra.os_util import WIN32, gi_import
 from xpra.util.env import envint, envbool, IgnoreWarningsContext
@@ -210,11 +209,16 @@ def get_average_monitor_refresh_rate() -> int:
     return rate
 
 
+def noinfo() -> str:
+    return ""
+
+
 def get_monitor_info(monitor: Gdk.Monitor) -> dict[str, Any]:
     geom = monitor.get_geometry()
     info: dict[str, Any] = get_rectangle_info(geom)
     for x in ("manufacturer", "model"):
-        info[x] = getattr(monitor, f"get_{x}", noop)() or ""
+        if value := getattr(monitor, f"get_{x}", noinfo)():
+            info[x] = value
     for x in ("scale_factor", "width_mm", "height_mm", "refresh_rate"):
         if hasattr(monitor, f"get_{x}"):
             fn: Callable = getattr(monitor, f"get_{x}")
