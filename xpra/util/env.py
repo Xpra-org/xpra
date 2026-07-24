@@ -34,7 +34,7 @@ def envint(name: str, d: int = 0) -> int:
 def envbool(name: str, d: bool = False) -> bool:
     try:
         v = os.environ.get(name, "").lower()
-        if v is None:
+        if not v:
             return d
         if v in ("yes", "true", "on"):
             return True
