@@ -34,8 +34,7 @@ def hide_dock() -> None:
 def do_init_env() -> None:
     from xpra.platform import init_env_common
     init_env_common()
-    if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
-        os.environ["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = "1"
+    os.environ.setdefault("CRYPTOGRAPHY_OPENSSL_NO_LEGACY", "1")
     setup_app_bundle_env()
     setup_debug_logging()
 
