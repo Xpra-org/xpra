@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List
+from collections.abc import Sequence
 
 from xpra.x11.bindings.xlib cimport (
     Display, Window, XRectangle, Atom, Time, Bool, XEvent, XID,
@@ -169,10 +169,10 @@ cdef class XFixesBindingsInstance(X11CoreBindingsInstance):
                     log.warn("Warning: XFixes extension is missing")
         return bool(self.present)
 
-    def get_cursor_image(self) -> List | None:
+    def get_cursor_image(self) -> Sequence:
         self.context_check("get_cursor_image")
         if not self.hasXFixes():
-            return None
+            return ()
         cdef XFixesCursorImage* image = NULL
         cdef int n, i = 0
         cdef unsigned char r, g, b, a
@@ -196,8 +196,8 @@ cdef class XFixesBindingsInstance(X11CoreBindingsInstance):
                 pixels[i*4+2]   = b
                 pixels[i*4+3]   = a
                 i += 1
-            return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
-                int(image.cursor_serial), bytes(pixels), s(image.name)]
+            return (image.x, image.y, image.width, image.height, image.xhot, image.yhot,
+                int(image.cursor_serial), bytes(pixels), s(image.name))
         finally:
             if image!=NULL:
                 XFree(image)
