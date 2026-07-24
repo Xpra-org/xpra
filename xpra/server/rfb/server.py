@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+from collections.abc import Sequence
 from weakref import WeakKeyDictionary
 
 from xpra.os_util import gi_import
@@ -145,7 +146,7 @@ class RFBServer(StubSubsystem):
         if t := self.socket_rfb_upgrade_timer.pop(protocol, None):
             GLib.source_remove(t)
 
-    def process_rfb_packet(self, proto, packet) -> None:
+    def process_rfb_packet(self, proto, packet: Sequence) -> None:
         # log("RFB packet: '%s'", packet)
         fn_name = "_process_rfb_%s" % bytestostr(packet[0]).replace("-", "_")
         fn = getattr(self, fn_name, None)
@@ -160,13 +161,13 @@ class RFBServer(StubSubsystem):
         # w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
         return w, h, 32, 24, False, True, 255, 255, 255, 16, 8, 0
 
-    def _process_rfb_invalid(self, proto, packet) -> None:
+    def _process_rfb_invalid(self, proto, packet: Sequence) -> None:
         self.server.disconnect_protocol(proto, "invalid packet: %s" % repr_ellipsized(packet[1:]))
 
-    def _process_rfb_connection_lost(self, proto, packet) -> None:
+    def _process_rfb_connection_lost(self, proto, packet: Sequence) -> None:
         self.server._process_connection_lost(proto, packet)
 
-    def _process_rfb_authenticated(self, proto, _packet) -> None:
+    def _process_rfb_authenticated(self, proto, _packet: Sequence) -> None:
         model = self._get_rfb_desktop_model()
         if not model:
             proto.close()
@@ -203,7 +204,7 @@ class RFBServer(StubSubsystem):
             for wid in tuple(window.get_models().values()):
                 start_refresh(wid)  # pylint: disable=not-callable
 
-    def _process_rfb_PointerEvent(self, _proto, packet) -> None:
+    def _process_rfb_PointerEvent(self, _proto, packet: Sequence) -> None:
         source = self.get_server_source(_proto)
         readonly = self.server.readonly or bool(source and source.effective_readonly())
         if not features.pointer or readonly:
@@ -230,7 +231,7 @@ class RFBServer(StubSubsystem):
 
         GLib.idle_add(process_pointer_event)
 
-    def _process_rfb_KeyEvent(self, proto, packet) -> None:
+    def _process_rfb_KeyEvent(self, proto, packet: Sequence) -> None:
         source = self.get_server_source(proto)
         readonly = self.server.readonly or bool(source and source.effective_readonly())
         if not features.keyboard or readonly:
@@ -261,7 +262,7 @@ class RFBServer(StubSubsystem):
             if keyboard := self.get_subsystem("keyboard"):
                 keyboard._handle_key(wid, bool(pressed), keyname, keyval, keycode, modifiers, is_mod, True)
 
-    def _process_rfb_SetEncodings(self, proto, packet) -> None:
+    def _process_rfb_SetEncodings(self, proto, packet: Sequence) -> None:
         encodings = packet[3]
         source = self.get_server_source(proto)
         if not source:
@@ -270,7 +271,7 @@ class RFBServer(StubSubsystem):
         if RFBEncoding.CURSOR in source.encodings:
             GLib.idle_add(source.send_cursor)
 
-    def _process_rfb_SetPixelFormat(self, proto, packet) -> None:
+    def _process_rfb_SetPixelFormat(self, proto, packet: Sequence) -> None:
         pixel_format = packet[4:14]
         source = self.get_server_source(proto)
         if not source:
@@ -280,7 +281,7 @@ class RFBServer(StubSubsystem):
         if RFBEncoding.CURSOR in source.encodings:
             GLib.idle_add(source.send_cursor)
 
-    def _process_rfb_FramebufferUpdateRequest(self, proto, packet) -> None:
+    def _process_rfb_FramebufferUpdateRequest(self, proto, packet: Sequence) -> None:
         inc, x, y, w, h = packet[1:6]
         log("RFB: FramebufferUpdateRequest inc=%s, geometry=%s", inc, (x, y, w, h))
         model = self._get_rfb_desktop_model()
@@ -299,14 +300,14 @@ class RFBServer(StubSubsystem):
         # polling damage path may already be pushing updates.
         source.request_update(x, y, w, h)
 
-    def _process_rfb_EnableContinuousUpdates(self, proto, packet) -> None:
+    def _process_rfb_EnableContinuousUpdates(self, proto, packet: Sequence) -> None:
         enable, x, y, w, h = packet[1:6]
         source = self.get_server_source(proto)
         if not source:
             return
         source.set_continuous_updates(bool(enable), x, y, w, h)
 
-    def _process_rfb_ClientCutText(self, _proto, packet) -> None:
+    def _process_rfb_ClientCutText(self, _proto, packet: Sequence) -> None:
         # l = packet[4]
         text = packet[5]
         log("RFB got clipboard text: %r", text)
