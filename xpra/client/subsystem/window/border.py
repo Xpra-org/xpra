@@ -51,7 +51,7 @@ def parse_color(color_str: str) -> RGBColor:
     return RGBColor(256, 0, 0)
 
 
-def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
+def parse_border(border_str: str = "", display_name: str = "", warn: bool = False) -> WindowBorder:
     # ie: "auto,5:off"
     parts = [x.strip() for x in border_str.replace(",", ":").split(":", 2)]
     color_str = parts[0]

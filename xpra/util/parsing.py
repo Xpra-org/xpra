@@ -442,10 +442,10 @@ def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tup
     return tuple(parse_resolution(v, default_refresh_rate) for v in s.split(","))
 
 
-def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
-                          single_envkey="XPRA_DEFAULT_VFB_RESOLUTION",
-                          default_res="8192x4096",
-                          default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
+def parse_env_resolutions(envkey: str = "XPRA_DEFAULT_VFB_RESOLUTIONS",
+                          single_envkey: str = "XPRA_DEFAULT_VFB_RESOLUTION",
+                          default_res: str = "8192x4096",
+                          default_refresh_rate: int | str = DEFAULT_REFRESH_RATE//1000) -> tuple | None:
     s = os.environ.get(envkey)
     if s:
         return parse_resolutions(s, default_refresh_rate)
