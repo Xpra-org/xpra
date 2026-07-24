@@ -106,11 +106,7 @@ class LoggingClient(StubClientSubsystem):
             dtime = packet.get_u64(3)
             prefix += "@%02i.%03i " % ((dtime // 1000) % 60, dtime % 1000)
         try:
-            if isinstance(msg, (tuple, list)):
-                dmsg = " ".join(str(x) for x in msg)
-            else:
-                dmsg = str(msg)
-            for line in dmsg.splitlines():
+            for line in msg.splitlines():
                 self.do_log(level, prefix + line)
         except Exception as e:
             log("log message decoding error", exc_info=True)
