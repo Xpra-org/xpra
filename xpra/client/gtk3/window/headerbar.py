@@ -81,7 +81,7 @@ class HeaderBarWindow(GtkStubWindow):
             return True
         # we can't enable it if there are size-constraints:
         sc = metadata.dictget("size-constraints")
-        if sc is None:
+        if not sc:
             return True
         tsc = typedict(sc)
         maxs = tsc.intpair("maximum-size")

@@ -150,7 +150,7 @@ def parse_scaling(desktop_scaling: str, root_w: int, root_h: int,
         sy = sx
     else:
         sy = parse_item(values[1])
-        if sy is None:
+        if not sy:
             return 1, 1
     log("parse_scaling(%s) parsed items=%s", desktop_scaling, (sx, sy))
     # normalize absolute values into floats:
