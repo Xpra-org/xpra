@@ -293,9 +293,15 @@ class AudioClient(StubClientMixin):
             else:
                 self.wants_audio_capabilities = True
         else:
+            # `parse_server_capabilities` runs from the network thread,
+            # but `auto_start` and the `audio-initialized` signal must run in the UI thread
+            # (emitting from the wrong thread crashes on macOS):
             self.parse_audio_capabilities(audio)
-            self.auto_start()
-            self.emit("audio-initialized")
+
+            def ui_audio_initialized() -> None:
+                self.auto_start()
+                self.emit("audio-initialized")
+            self.idle_add(ui_audio_initialized)
         return True
 
     def send_audio_capabilities(self) -> None:
