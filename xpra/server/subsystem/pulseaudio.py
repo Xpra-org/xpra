@@ -170,7 +170,7 @@ class PulseaudioServer(StubSubsystem):
         StubSubsystem.__init__(self, server)
         self.init_done = Event()
         self.init_done.set()
-        self.enabled = False
+        self.enabled: bool | None = False
         self.command = ""
         self.configure_commands = ()
         self.pid = 0
