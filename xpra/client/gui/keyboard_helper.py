@@ -53,8 +53,8 @@ class KeyboardHelper:
 
     def __init__(self, net_send: Callable, keyboard_sync: bool = True,
                  shortcut_modifiers: str = "auto", key_shortcuts: Sequence = (),
-                 raw: bool = False, backend="", model="", layout="", layouts: Sequence = (),
-                 variant="", variants: Sequence = (), options="") -> None:
+                 raw: bool = False, backend: str = "", model: str = "", layout: str = "", layouts: Sequence = (),
+                 variant: str = "", variants: Sequence = (), options: str = "") -> None:
         self.reset_state()
         self.send = net_send
         self.locked = False
