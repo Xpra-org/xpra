@@ -1189,7 +1189,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT0)
 
-    def draw_rectangle(self, x: int, y: int, w: int, h: int, size=1, red=0, green=0, blue=0, alpha=0, bh=0) -> None:
+    def draw_rectangle(self, x: int, y: int, w: int, h: int, size: int = 1,
+                       red: int = 0, green: int = 0, blue: int = 0, alpha: int = 0, bh: int = 0) -> None:
         log("draw_rectangle%s", (x, y, w, h, size, red, green, blue, alpha, bh))
         rgba = charclamp(red), charclamp(green), charclamp(blue), charclamp(alpha)
         pixel = struct.pack(b"!BBBB", *rgba)
