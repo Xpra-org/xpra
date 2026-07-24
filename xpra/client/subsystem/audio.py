@@ -566,7 +566,7 @@ class AudioClient(StubClientMixin):
             # audio subprocess detected a device change — restart quickly:
             log.info("audio output device changed, restarting speaker")
             self.stop_receiving_audio()
-            self.idle_add(self._restart_audio_after_device_change)
+            self.timeout_add(self.DEVICE_RESTART_DELAY_MS, self.start_receiving_audio)
             return
         if _is_recoverable_audio_error(estr):
             # recoverable device error (e.g. WASAPI invalidation before monitor detected it):
@@ -578,17 +578,7 @@ class AudioClient(StubClientMixin):
             log.warn(" %s", estr)
         self.stop_receiving_audio()
 
-    DEVICE_RESTART_INITIAL_MS = 1000
-    DEVICE_RESTART_MAX_MS = 60000
-
-    def _restart_audio_after_device_change(self, delay: int = 200) -> None:
-        """Restart audio after a device change with exponential backoff on failure."""
-        def do_restart():
-            if not self.start_receiving_audio():
-                next_delay = min(delay * 2, self.DEVICE_RESTART_MAX_MS)
-                log.info("audio restart failed, retrying in %dms", next_delay)
-                self.timeout_add(next_delay, lambda: self._restart_audio_after_device_change(next_delay))
-        self.timeout_add(delay, do_restart)
+    DEVICE_RESTART_DELAY_MS = 1000
 
     def audio_process_stopped(self, audio_sink, *args) -> None:
         if self.exit_code is not None:
