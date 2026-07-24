@@ -16,5 +16,10 @@ repos:
     rev: 7.3.0
     hooks:
     -   id: flake8
+        # Flake8-pyproject lets flake8 read [tool.flake8] from pyproject.toml,
+        # so the per-file-ignores there (E241 on intentionally column-aligned
+        # files like setup.py / codecs/loader.py) actually apply. The CLI args
+        # below still win for the global policy (max-line-length / ignore).
+        additional_dependencies: [Flake8-pyproject]
         args: ["--max-line-length=200", "--ignore=E203,E231,E225,E226,E252,E221,E741,E262,E265,E501"]
 
