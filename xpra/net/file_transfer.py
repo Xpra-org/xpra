@@ -220,8 +220,9 @@ class FileTransferAttributes:
         self.init_attributes(opts.file_transfer, opts.file_size_limit,
                              opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
 
-    def init_attributes(self, file_transfer="no", file_size_limit="1G", printing="no",
-                        open_files="no", open_url="no", open_command=None, can_ask=True) -> None:
+    def init_attributes(self, file_transfer: str = "no", file_size_limit: str = "1G", printing: str = "no",
+                        open_files: str = "no", open_url: str = "no", open_command: str | None = None,
+                        can_ask: bool = True) -> None:
         filelog("file transfer: init_attributes%s",
                 (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
 
@@ -1084,8 +1085,9 @@ class FileTransferHandler(FileTransferAttributes):
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
 
-    def send_data_request(self, action: str, dtype: str, url: str, mimetype="", data=b"", filesize=0,
-                          printit=False, openit=True, options=None, send_id="") -> str:
+    def send_data_request(self, action: str, dtype: str, url: str, mimetype: str = "", data: SizedBuffer = b"",
+                          filesize: int = 0, printit: bool = False, openit: bool = True,
+                          options: dict | None = None, send_id: str = "") -> str:
         send_id = send_id or uuid.uuid4().hex
         if len(self.pending_send_data) >= MAX_CONCURRENT_FILES:
             filelog.warn("Warning: %s dropped", action)
