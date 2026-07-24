@@ -17,12 +17,11 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-def noauto(val: str | Sequence | None) -> str | Sequence | None:
-    default = [] if isinstance(val, Sequence) else None
-    if not val:
-        return default
-    if str(val).lower() == "auto":
-        return default
+def noauto(val: str | Sequence) -> str | Sequence:
+    if not val or str(val).lower() == "auto":
+        # a keyboard option is either a string or a list of strings;
+        # return an empty default of the same shape (str is a Sequence too)
+        return "" if isinstance(val, str) else []
     return val
 
 
