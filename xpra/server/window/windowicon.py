@@ -37,7 +37,7 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 MAX_ARGB_PIXELS = envint("XPRA_MAX_ARGB_PIXELS", 1024)
 
 
-def do_get_default_window_icon(size: int, name: str):
+def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, bytes] | None:
     log("do_get_default_window_icon(%i, %s)", size, name)
     if POSIX and not OSX and Image:
         try:
@@ -61,7 +61,7 @@ def do_get_default_window_icon(size: int, name: str):
                 return size, size, "png", data
         except (OSError, ValueError, TypeError, ImportError) as e:
             log("do_get_default_window_icon(%i, %r) %s", size, name, e)
-    return ""
+    return None
 
 
 get_default_window_icon = do_get_default_window_icon
@@ -151,7 +151,7 @@ class WindowIconSource:
                 WindowIconSource.fallback_window_icon = False
         return WindowIconSource.fallback_window_icon
 
-    def get_default_window_icon(self, size=48):
+    def get_default_window_icon(self, size=48) -> tuple[int, int, str, bytes] | None:
         # return the icon which would be used from the wmclass
         wmclass_name = self.get_window_wm_class_name()
         if not wmclass_name:

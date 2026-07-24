@@ -37,7 +37,7 @@ def inject_gtk_window_icon_lookup() -> None:
     windowicon.get_default_window_icon = get_default_window_icon
 
 
-def get_default_window_icon(size: int, wmclass_name: str):
+def get_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str, bytes] | None:
     Gtk = gi_import("Gtk")
     it = Gtk.IconTheme.get_default()  # pylint: disable=no-member
     log("get_default_window_icon(%i) icon theme=%s, wmclass_name=%s", size, it, wmclass_name)
