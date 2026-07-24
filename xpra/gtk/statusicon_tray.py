@@ -11,7 +11,7 @@ from time import time, monotonic
 
 from xpra.os_util import WIN32, OSX, POSIX, gi_import
 from xpra.util.env import envbool, ignorewarnings, SilenceWarningsContext
-from xpra.tray_base import TrayBase, log
+from xpra.tray_base import TrayBase, UNSET_GUESS, log
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_icon_from_file, get_pixbuf_from_data
 
@@ -114,18 +114,18 @@ class GTKStatusIconTray(TrayBase):
             ag = ignorewarnings(self.tray_widget.get_geometry)
             log("GTKStatusIconTray.get_geometry() %s.get_geometry()=%s", self.tray_widget, ag)
         if ag is None:
-            if not self.geometry_guess:
+            if self.geometry_guess == UNSET_GUESS:
                 self.may_guess()
             # probably win32 or OSX, gnome-shell or KDE5..
             log("GTKStatusIconTray.get_geometry() no geometry value available, returning guess: %s",
                 self.geometry_guess)
-            return self.geometry_guess or (0, 0, 0, 0)
+            return self.geometry_guess
         # `GTK3` adds an extra argument.. at the beginning,
         # so we index from the end of the array:
         geom = ag[-2]
         x, y, w, h = geom.x, geom.y, geom.width, geom.height
         log("GTKStatusIconTray.get_geometry() geometry area rectangle=%s", (x, y, w, h))
-        if x == 0 and y == 0 and w == 0 and h == 0 and self.geometry_guess:
+        if x == 0 and y == 0 and w == 0 and h == 0 and self.geometry_guess != UNSET_GUESS:
             return self.geometry_guess
         if x == 0 and y == 0 and w == 200 and h == 200:
             # this isn't right, take a better guess, at least for the size:

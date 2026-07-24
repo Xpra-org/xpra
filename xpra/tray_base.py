@@ -14,6 +14,8 @@ from xpra.log import Logger
 
 log = Logger("tray")
 
+UNSET_GUESS = (0, 0, 0, 0)
+
 
 class TrayBase:
     """
@@ -35,7 +37,7 @@ class TrayBase:
         self.tray_widget = None
         self.default_icon_filename = icon_filename  # ie: "xpra" or "/path/to/xpra.png"
         # some implementations need this for guessing the geometry (see recalculate_geometry):
-        self.geometry_guess: tuple[int, int, int, int] | None = None
+        self.geometry_guess: tuple[int, int, int, int] = UNSET_GUESS
         self.tray_event_locations: deque[tuple[int, int]] = deque(maxlen=512)
         self.default_icon_extension = "png"
         self.icon_timestamp = 0.0
@@ -109,9 +111,7 @@ class TrayBase:
     def recalculate_geometry(self, x: int, y: int, width: int, height: int) -> None:
         log("recalculate_geometry%s guess=%s, tray event locations: %s",
             (x, y, width, height), self.geometry_guess, len(self.tray_event_locations))
-        if x is None or y is None:
-            return
-        if self.geometry_guess is None:
+        if self.geometry_guess == UNSET_GUESS:
             # better than nothing!
             self.geometry_guess = x, y, width, height
         if self.tray_event_locations and self.tray_event_locations[-1] == (x, y):
