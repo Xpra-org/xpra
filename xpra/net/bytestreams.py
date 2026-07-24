@@ -15,7 +15,7 @@ from xpra.util import envint, envbool, hasenv, csv
 from xpra.common import FULL_INFO
 from xpra.make_thread import start_thread
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
-from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
+from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, IPV6_OPTIONS, SOCKET_OPTIONS
 from xpra.log import Logger
 
 log = Logger("network", "protocol")
@@ -458,7 +458,10 @@ class SocketConnection(Connection):
                     "SOCKET" : get_socket_options(s, socket.SOL_SOCKET, SOCKET_OPTIONS),
                     }
             if self.socktype_wrapped in IP_SOCKTYPES:
-                opts["IP"] = get_socket_options(s, socket.SOL_IP, IP_OPTIONS)
+                if s.family == socket.AF_INET6:
+                    opts["IP"] = get_socket_options(s, socket.IPPROTO_IPV6, IPV6_OPTIONS)
+                else:
+                    opts["IP"] = get_socket_options(s, socket.SOL_IP, IP_OPTIONS)
             if self.socktype_wrapped in TCP_SOCKTYPES:
                 opts["TCP"] = get_socket_options(s, socket.IPPROTO_TCP, TCP_OPTIONS)
                 try:
@@ -473,11 +476,6 @@ class SocketConnection(Connection):
                         if self.is_active() and not self.error_is_closed(e):
                             log.warn("Warning: failed to get tcp information")
                             log.warn(f" from {self.socktype} socket {self}")
-            #ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
-            # IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_NEXTHOP, IPV6_PATHMTU,
-            # IPV6_PKTINFO, IPV6_PREFER_TEMPADDR, IPV6_RECVDSTOPTS, IPV6_RECVHOPLIMIT, IPV6_RECVHOPOPTS,
-            # IPV6_RECVPATHMTU, IPV6_RECVPKTINFO, IPV6_RECVRTHDR, IPV6_RECVTCLASS, IPV6_RTHDR,
-            # IPV6_RTHDRDSTOPTS, IPV6_TCLASS, IPV6_UNICAST_HOPS, IPV6_USE_MIN_MTU, IPV6_V6ONLY
             info["options"] = opts
         return info
 

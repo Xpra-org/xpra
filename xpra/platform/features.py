@@ -54,6 +54,17 @@ IP_OPTIONS : Tuple[str, ...] = (
     "IP_DONTFRAG", "IP_OPTIONS", "IP_RECVLCLIFADDR",
     "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
     )
+# IPv6 equivalents, queried at the IPPROTO_IPV6 level for AF_INET6 sockets.
+# (kept to options that are reliably readable via getsockopt, to avoid noise)
+# other options exist but are not reliably readable: IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM,
+# IPV6_DSTOPTS, IPV6_HOPOPTS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_NEXTHOP,
+# IPV6_PATHMTU, IPV6_PKTINFO, IPV6_PREFER_TEMPADDR, IPV6_RECVDSTOPTS, IPV6_RECVHOPLIMIT,
+# IPV6_RECVHOPOPTS, IPV6_RECVPATHMTU, IPV6_RECVPKTINFO, IPV6_RECVRTHDR, IPV6_RECVTCLASS,
+# IPV6_RTHDR, IPV6_RTHDRDSTOPTS, IPV6_USE_MIN_MTU
+IPV6_OPTIONS : Tuple[str, ...] = (
+    "IPV6_DONTFRAG", "IPV6_MULTICAST_HOPS", "IPV6_TCLASS",
+    "IPV6_UNICAST_HOPS", "IPV6_V6ONLY",
+    )
 TCP_OPTIONS : Tuple[str, ...] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
 
 
@@ -77,6 +88,7 @@ _features_list_ : Tuple[str, ...] = (
                    "OPEN_COMMAND",
                    "SOCKET_OPTIONS",
                    "IP_OPTIONS",
+                   "IPV6_OPTIONS",
                    "TCP_OPTIONS",
                    )
 from xpra.platform import platform_import
