@@ -78,11 +78,12 @@ def ssl_handshake(ssl_sock) -> None:
         raise InitExit(status, f"SSL handshake failed: {e}") from None
 
 
-def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", ca_data="",
+def get_ssl_wrap_socket_context(cert: str = "", key: str = "", key_password: str = "",
+                                ca_certs: str = "", ca_data: str = "",
                                 protocol: str = "TLS",
                                 client_verify_mode: str = "optional", server_verify_mode: str = "required",
                                 verify_flags: str = "X509_STRICT",
-                                check_hostname: bool = False, server_hostname="",
+                                check_hostname: bool = False, server_hostname: str = "",
                                 options: str = "ALL,NO_COMPRESSION", ciphers: str = "DEFAULT",
                                 server_side: bool = True):
     if server_side and not cert:
