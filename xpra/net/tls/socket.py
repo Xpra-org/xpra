@@ -171,10 +171,10 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
                 raise InitException(f"{ca_certs!r} is not a valid ca file")
             context.load_verify_locations(cafile=ca_certs)
         # ca_data may be hex encoded:
-        ca_data = parse_encoded_bin_data(ca_data or "")
-        log(" cadata=%s", Ellipsizer(ca_data))
-        if ca_data:
-            context.load_verify_locations(cadata=ca_data)
+        parsed_ca_data = parse_encoded_bin_data(ca_data or "")
+        log(" cadata=%s", Ellipsizer(parsed_ca_data))
+        if parsed_ca_data:
+            context.load_verify_locations(cadata=parsed_ca_data)
     elif check_hostname and not server_side:
         log("cannot check hostname client side with verify mode %s", ssl_cert_reqs)
     return context, kwargs
