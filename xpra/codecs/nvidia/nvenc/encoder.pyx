@@ -72,6 +72,15 @@ YUV444_CODEC_SUPPORT = {
     }
 LOSSLESS_CODEC_SUPPORT = {}
 
+# 4:4:4 encoding (chromaFormatIDC=3) requires a profile that actually supports it.
+# The NVENC "auto" profile can resolve to a 4:2:0-only profile (ie: HEVC "main"),
+# which then rejects the whole configuration with NV_ENC_ERR_INVALID_PARAM.
+# So when no profile has been requested explicitly, default to a 4:4:4 capable one:
+YUV444_PROFILE = {
+    "h264" : "high-444",
+    "h265" : "frext",
+    }
+
 #so we can warn just once per unknown preset:
 UNKNOWN_PRESETS = []
 
@@ -1695,6 +1704,10 @@ cdef class Encoder:
         profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, profile)
         #now see if the client has requested a different value:
         profile = options.strget("h264.%s.profile" % csc_mode, profile)
+        #for 4:4:4 (chromaFormatIDC=3) don't fall back to the "auto" profile,
+        #which may resolve to a 4:2:0-only profile and get rejected at init time:
+        if not profile and self.pixel_format in ("BGRX", "r210", "YUV444P"):
+            profile = YUV444_PROFILE.get(self.encoding, "")
         return profile
 
 
