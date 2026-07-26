@@ -811,6 +811,10 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/opengl/
 %{python3_sitearch}/xpra/platform/
 %{python3_sitearch}/xpra/scripts/
+%dir %{python3_sitearch}/xpra/wayland/
+%pycached %{python3_sitearch}/xpra/wayland/__init__.py
+%pycached %{python3_sitearch}/xpra/wayland/wait.py
+%{python3_sitearch}/xpra/wayland/wait_for_display.*.so
 %{python3_sitearch}/xpra/pointer/
 %{python3_sitearch}/xpra/webcam/
 %{python3_sitearch}/xpra-*.egg-info
@@ -910,7 +914,21 @@ rm -rf $RPM_BUILD_ROOT
 
 %if 0%{?wayland}
 %files -n %{package_prefix}-server-wayland
-%{python3_sitearch}/xpra/wayland
+%{python3_sitearch}/xpra/wayland/clipboard.*.so
+%{python3_sitearch}/xpra/wayland/compositor.*.so
+%{python3_sitearch}/xpra/wayland/display.*.so
+%{python3_sitearch}/xpra/wayland/events.*.so
+%pycached %{python3_sitearch}/xpra/wayland/example.py
+%{python3_sitearch}/xpra/wayland/keyboard.*.so
+%pycached %{python3_sitearch}/xpra/wayland/keyboard_config.py
+%{python3_sitearch}/xpra/wayland/models/
+%{python3_sitearch}/xpra/wayland/output.*.so
+%{python3_sitearch}/xpra/wayland/pointer.*.so
+%{python3_sitearch}/xpra/wayland/popup.*.so
+%pycached %{python3_sitearch}/xpra/wayland/server.py
+%{python3_sitearch}/xpra/wayland/subsurface.*.so
+%{python3_sitearch}/xpra/wayland/surface.*.so
+%{python3_sitearch}/xpra/wayland/wayland_surface.*.so
 %endif
 
 %check

@@ -32,6 +32,8 @@ usr/lib/python3*/*/xpra/opengl/
 usr/lib/python3*/*/xpra/net/
 usr/lib/python3*/*/xpra/platform/
 usr/lib/python3*/*/xpra/scripts/
+usr/lib/python3*/*/xpra/wayland/__init__.py*
+usr/lib/python3*/*/xpra/wayland/wait*
 usr/lib/python3*/*/xpra/util/rectangle.*.so
 usr/lib/python3*/*/xpra/util/
 usr/lib/python3*/*/xpra/pointer/
