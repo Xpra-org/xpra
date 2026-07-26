@@ -161,7 +161,7 @@ def make_server_app(mode_attrs: dict[str, str], opts, clobber: int, mode: str,
             return RunnerServer()
     if mode in ("seamless", "upgrade"):
         if opts.backend == "wayland":
-            from xpra.wayland.server import WaylandSeamlessServer
+            from xpra.wayland.server.seamless import WaylandSeamlessServer
             return WaylandSeamlessServer()
         from xpra.x11.server.seamless import SeamlessServer
         return SeamlessServer(clobber)
@@ -634,7 +634,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     app.init_sockets(retry=10 * int(upgrading))
 
     if opts.backend == "wayland":
-        from xpra.wayland.subsystem.manager import WaylandManager
+        from xpra.wayland.server.subsystem.manager import WaylandManager
         wm = app.add_subsystem(WaylandManager)
         wm.init(opts)
         wm.connect("display-name", session_files.display_name_changed)

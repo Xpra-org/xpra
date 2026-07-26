@@ -3738,28 +3738,29 @@ tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 tace(seccomp_ENABLED, "xpra.seccomp._native", "libseccomp")
 
 toggle_packages(wayland_client_ENABLED or wayland_server_ENABLED, "xpra.wayland")
-tace(wayland_client_ENABLED, "xpra.wayland.wait_for_display", "wayland-client")
-XDG_SHELL_PROTOCOL_HEADER = "./xpra/wayland/xdg-shell-protocol.h"
+toggle_packages(wayland_client_ENABLED, "xpra.wayland.client")
+tace(wayland_client_ENABLED, "xpra.wayland.client.wait_for_display", "wayland-client")
+XDG_SHELL_PROTOCOL_HEADER = "./xpra/wayland/server/xdg-shell-protocol.h"
 if wayland_server_ENABLED:
+    toggle_packages(wayland_server_ENABLED, "xpra.wayland.server", "xpra.wayland.server.models", "xpra.wayland.server.subsystem")
     if not os.path.exists(XDG_SHELL_PROTOCOL_HEADER):
         print("generating %r" % XDG_SHELL_PROTOCOL_HEADER)
         subprocess.run(["wayland-scanner", "server-header",
                         "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml",
                         XDG_SHELL_PROTOCOL_HEADER])
-    wlr_args = ["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"]
-    ace("xpra.wayland.events", "wlroots-0.19", extra_compile_args=wlr_args)
-    ace("xpra.wayland.display", "wlroots-0.19", extra_compile_args=wlr_args)
-    ace("xpra.wayland.output", "wlroots-0.19,libdrm,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.pointer","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.keyboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.clipboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.wayland_surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.cursor","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.subsurface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.popup","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1", extra_compile_args=wlr_args)
-    toggle_packages(wayland_server_ENABLED, "xpra.wayland.models", "xpra.wayland.subsystem")
+    wlr_args = ["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/server/"]
+    ace("xpra.wayland.server.events", "wlroots-0.19", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.display", "wlroots-0.19", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.output", "wlroots-0.19,libdrm,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.pointer","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.keyboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.clipboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.wayland_surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.cursor","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.subsurface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.popup","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1", extra_compile_args=wlr_args)
 
 if cythonize_more_ENABLED:
     def ax(base):
@@ -3889,8 +3890,10 @@ if cythonize_more_ENABLED:
             ax("xpra.x11.server")
         if uinput_ENABLED:
             ax("xpra.x11.uinput")
-    if wayland_client_ENABLED or wayland_server_ENABLED:
-        ax("xpra.wayland")
+    if wayland_client_ENABLED:
+        ax("xpra.wayland.client")
+    if wayland_server_ENABLED:
+        ax("xpra.wayland.server")
 
     ax("xpra.util")
     ace("xpra.common")

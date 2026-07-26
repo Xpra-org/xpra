@@ -184,7 +184,7 @@ def enforce_server_features() -> None:
         "pointer": "xpra.server.subsystem.pointer,xpra.server.source.pointer",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
-        "wayland": "xpra.wayland",
+        "wayland": "xpra.wayland.server",
         "dbus": "xpra.dbus,xpra.server.dbus,xpra.server.source.dbus",
         "encoding": "xpra.server.subsystem.encoding,xpra.server.source.encodings",
         "logging": "xpra.server.subsystem.logging",

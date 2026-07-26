@@ -1,0 +1,581 @@
+# This file is part of Xpra.
+# Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+# cython: language_level=3
+
+import glob
+import os
+
+from collections.abc import Callable
+
+from xpra.log import Logger
+from xpra.server import features
+from xpra.util.str_fn import Ellipsizer
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
+
+from libc.stdint cimport uintptr_t
+
+from xpra.wayland.server.pointer import WaylandPointer
+from xpra.wayland.server.keyboard import WaylandKeyboard
+from xpra.wayland.server.surface cimport Surface
+from xpra.wayland.server.popup cimport Popup
+from xpra.wayland.server.display cimport Display
+from xpra.wayland.server.output cimport Output
+from xpra.wayland.server.events cimport ListenerObject
+from xpra.wayland.server.wayland_surface import surfaces
+
+
+# Import definitions from .pxd file
+from xpra.wayland.server.wlroots cimport (
+    wl_display, wlr_xdg_shell,
+    wl_display_create, wl_display_destroy_clients, wl_display_destroy, wl_display_run,
+    wl_listener,
+    wlr_xdg_surface, wlr_xdg_popup,
+    WLR_XDG_SURFACE_ROLE_TOPLEVEL,
+    wlr_backend, wlr_backend_start, wlr_backend_destroy,
+    wlr_seat, wlr_cursor,
+    wlr_seat_create, wlr_seat_set_capabilities, wlr_seat_destroy,
+    WL_SEAT_CAPABILITY_POINTER, WL_SEAT_CAPABILITY_KEYBOARD, WL_SEAT_CAPABILITY_TOUCH,
+    wlr_allocator, wlr_allocator_destroy, wlr_allocator_autocreate,
+    wlr_compositor, wlr_compositor_create,
+    wlr_subcompositor, wlr_subcompositor_create,
+    wlr_viewporter, wlr_viewporter_create,
+    wlr_xdg_toplevel,
+    wlr_xdg_decoration_manager_v1, wlr_xdg_toplevel_decoration_v1, wlr_xdg_decoration_manager_v1_create,
+    wlr_xdg_toplevel_decoration_v1_set_mode, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
+    wlr_cursor_create, wlr_cursor_destroy,
+    wlr_xdg_shell_create,
+    wlr_scene, wlr_scene_create, wlr_scene_node_destroy, wlr_scene_output_create,
+    wlr_scene_xdg_surface_create,
+    wl_display_add_socket_auto,
+    wl_event_loop, wl_display_get_event_loop, wl_event_loop_get_fd, wl_event_loop_dispatch,
+    wlr_renderer, wlr_renderer_autocreate, wlr_renderer_destroy, wlr_renderer_init_wl_display,
+    wlr_renderer_get_drm_fd, wlr_gles2_renderer_create_with_drm_fd,
+    wlr_headless_backend_create,
+    wlr_output,
+    wlr_output_layout_add, wlr_output_layout_create, wlr_output_layout_destroy, wlr_cursor_attach_output_layout,
+    wlr_output_init_render, wlr_output_layout,
+    wlr_xdg_output_manager_v1, wlr_xdg_output_manager_v1_create,
+    wlr_primary_selection_v1_device_manager, wlr_primary_selection_v1_device_manager_create,
+    wlr_seat_request_set_selection_event, wlr_seat_set_selection,
+    wlr_seat_request_set_primary_selection_event,
+    wlr_seat_set_primary_selection,
+    xpra_wlr_seat_request_set_selection_signal, xpra_wlr_seat_set_selection_signal,
+    xpra_wlr_seat_request_set_primary_selection_signal, xpra_wlr_seat_set_primary_selection_signal,
+    xpra_wlr_seat_selection_source, xpra_wlr_seat_primary_selection_source,
+    wlr_headless_add_output,
+    wlr_data_device_manager_create,
+    wlr_data_control_manager_v1, wlr_data_control_manager_v1_create,
+    wlr_xdg_activation_v1, wlr_xdg_activation_token_v1, wlr_xdg_activation_v1_request_activate_event,
+    wlr_xdg_activation_v1_create, wlr_xdg_activation_token_v1_get_name,
+)
+from xpra.wayland.server.pointer_protocols cimport (
+    wlr_relative_pointer_manager_v1, wlr_relative_pointer_manager_v1_create,
+    wlr_pointer_constraints_v1, wlr_pointer_constraints_v1_create,
+)
+
+
+log = Logger("wayland")
+
+
+def get_gpu_mode() -> str:
+    mode = os.environ.get("XPRA_WAYLAND_GPU", "auto").strip().lower()
+    if mode == "auto":
+        return "auto"
+    if mode in TRUE_OPTIONS:
+        return "yes"
+    if mode in FALSE_OPTIONS:
+        return "no"
+    log.warn("Warning: invalid XPRA_WAYLAND_GPU=%r, using 'auto'", mode)
+    return "auto"
+
+
+def get_render_node() -> str:
+    device = os.environ.get("XPRA_WAYLAND_DRM_DEVICE", "").strip()
+    if not device:
+        device = os.environ.get("WLR_RENDER_DRM_DEVICE", "").strip()
+    if device:
+        return device
+    devices = sorted(glob.glob("/dev/dri/renderD*"))
+    return devices[0] if devices else ""
+
+
+# Listener slot indices for WaylandCompositor; N_LISTENERS sizes the listeners array.
+cdef enum:
+    L_NEW_TOPLEVEL_DECORATION
+    L_NEW_TOPLEVEL
+    L_NEW_POPUP
+    L_NEW_OUTPUT
+    L_REQUEST_SET_SELECTION
+    L_SET_SELECTION
+    L_REQUEST_SET_PRIMARY_SELECTION
+    L_SET_PRIMARY_SELECTION
+    L_REQUEST_ACTIVATE
+    L_NEW_ACTIVATION_TOKEN
+    N_LISTENERS
+
+
+# Python interface
+cdef class WaylandCompositor(ListenerObject):
+    # ---- C-level pointers (formerly the `server` struct, now folded in) ----
+    # Accessed in C callbacks via `<WaylandCompositor>owner_of(listener)`.
+    cdef wl_display *display_ptr
+    cdef wlr_backend *backend
+    cdef wlr_renderer *renderer
+    cdef wlr_allocator *allocator
+    cdef wlr_compositor *wlr_compositor
+    cdef wlr_subcompositor *subcompositor
+    cdef wlr_viewporter *viewporter
+    cdef wlr_xdg_shell *xdg_shell
+    cdef wlr_scene *scene
+    cdef wlr_seat *seat
+    cdef wlr_xdg_decoration_manager_v1 *decoration_manager
+    cdef wlr_cursor *cursor
+    cdef wlr_output_layout *output_layout
+    cdef wlr_xdg_output_manager_v1 *xdg_output_manager
+    cdef wlr_primary_selection_v1_device_manager *primary_selection_manager
+    cdef wlr_data_control_manager_v1 *data_control_manager
+    cdef wlr_relative_pointer_manager_v1 *relative_pointer_manager
+    cdef wlr_pointer_constraints_v1 *pointer_constraints
+    cdef wlr_xdg_activation_v1 *activation_manager
+    cdef char *seat_name
+    cdef Display display
+    cdef str socket_name
+    cdef str drm_device
+    cdef wl_event_loop *event_loop
+    cdef dict event_listeners
+    cdef bint processing_events
+
+    def __cinit__(self):
+        # All cdef pointer fields are zero-initialised by Cython's tp_alloc.
+        self.socket_name = ""
+        self.drm_device = ""
+        self.event_listeners = {}
+
+    def __init__(self):
+        super().__init__(N_LISTENERS)
+
+    # Routes each compositor-level listener slot to its handler method.
+    cdef void dispatch(self, wl_listener *listener, void *data) noexcept:
+        cdef int slot = self.slot_of(listener)
+        if slot == L_NEW_TOPLEVEL_DECORATION:
+            self.new_toplevel_decoration(<wlr_xdg_toplevel_decoration_v1*> data)
+        elif slot == L_NEW_TOPLEVEL:
+            self.new_toplevel(<wlr_xdg_toplevel*> data)
+        elif slot == L_NEW_POPUP:
+            self.new_popup(<wlr_xdg_popup*> data)
+        elif slot == L_NEW_OUTPUT:
+            # Called by wlroots from within wl_event_loop_dispatch, which is invoked
+            # from Python-side WaylandCompositor.process_events() — so the GIL is held.
+            self.new_output(<wlr_output*> data)
+        elif slot == L_REQUEST_SET_SELECTION:
+            self.request_set_selection(<wlr_seat_request_set_selection_event*> data)
+        elif slot == L_SET_SELECTION:
+            self.set_selection()
+        elif slot == L_REQUEST_SET_PRIMARY_SELECTION:
+            self.request_set_primary_selection(<wlr_seat_request_set_primary_selection_event*> data)
+        elif slot == L_SET_PRIMARY_SELECTION:
+            self.set_primary_selection()
+        elif slot == L_REQUEST_ACTIVATE:
+            self.request_activate(<wlr_xdg_activation_v1_request_activate_event*> data)
+        elif slot == L_NEW_ACTIVATION_TOKEN:
+            self.new_activation_token(<wlr_xdg_activation_token_v1*> data)
+        else:
+            log.error("Error: unexpected compositor event slot %i", slot)
+
+    def initialize(self) -> str:
+        # one-shot: add the display socket and start the backend.
+        # Callers that need the socket name (and the rest of the subsystems
+        # connected via `connect("new-output", ...)` etc.) *before* the
+        # backend is started should call `add_socket()` and `start_backend()`
+        # separately - otherwise `new-output` fires during start_backend()
+        # with no Python listener attached and the event is lost.
+        self.add_socket()
+        self.start_backend()
+        return self.socket_name
+
+    def add_socket(self) -> str:
+        log("starting headless wayland compositor")
+
+        self.display_ptr = wl_display_create()
+        if not self.display_ptr:
+            raise RuntimeError("Failed to create display")
+
+        self.display = Display()
+        self.display.display = self.display_ptr
+
+        self.event_loop = wl_display_get_event_loop(self.display_ptr)
+        self.backend = wlr_headless_backend_create(self.event_loop)
+        if not self.backend:
+            raise RuntimeError("Failed to create headless backend")
+
+        wlr_headless_add_output(self.backend, 1920, 1080)
+
+        self.renderer = self.create_renderer()
+        if not self.renderer:
+            raise RuntimeError("Failed to create renderer")
+
+        if not wlr_renderer_init_wl_display(self.renderer, self.display_ptr):
+            raise RuntimeError("Failed to initialize wayland renderer display")
+
+        self.allocator = wlr_allocator_autocreate(self.backend, self.renderer)
+        if not self.allocator:
+            raise RuntimeError("Failed to create allocator")
+
+        self.wlr_compositor = wlr_compositor_create(self.display_ptr, 5, self.renderer)
+        self.subcompositor = wlr_subcompositor_create(self.display_ptr)
+        if not self.subcompositor:
+            raise RuntimeError("Failed to create subcompositor")
+        self.viewporter = wlr_viewporter_create(self.display_ptr)
+        if not self.viewporter:
+            raise RuntimeError("Failed to create viewporter")
+        wlr_data_device_manager_create(self.display_ptr)
+
+        self.xdg_shell = wlr_xdg_shell_create(self.display_ptr, 3)
+        self.add_listener(L_NEW_TOPLEVEL, &self.xdg_shell.events.new_toplevel)
+        self.add_listener(L_NEW_POPUP, &self.xdg_shell.events.new_popup)
+
+        self.scene = wlr_scene_create()
+
+        # Create output layout for multi-monitor support
+        self.output_layout = wlr_output_layout_create(self.display_ptr)
+        if not self.output_layout:
+            raise RuntimeError("Failed to create output layout")
+        self.xdg_output_manager = wlr_xdg_output_manager_v1_create(self.display_ptr, self.output_layout)
+        if not self.xdg_output_manager:
+            raise RuntimeError("Failed to create xdg-output manager")
+
+        self.decoration_manager = wlr_xdg_decoration_manager_v1_create(self.display_ptr)
+        if not self.decoration_manager:
+            log.warn("Warning: unable to create the decoration manager")
+        else:
+            self.add_listener(L_NEW_TOPLEVEL_DECORATION, &self.decoration_manager.events.new_toplevel_decoration)
+
+        self.activation_manager = wlr_xdg_activation_v1_create(self.display_ptr)
+        if not self.activation_manager:
+            log.warn("Warning: unable to create the xdg-activation manager")
+        else:
+            self.add_listener(L_REQUEST_ACTIVATE, &self.activation_manager.events.request_activate)
+            self.add_listener(L_NEW_ACTIVATION_TOKEN, &self.activation_manager.events.new_token)
+
+        self.relative_pointer_manager = wlr_relative_pointer_manager_v1_create(self.display_ptr)
+        if not self.relative_pointer_manager:
+            log.warn("Warning: unable to create the relative pointer manager")
+        self.pointer_constraints = wlr_pointer_constraints_v1_create(self.display_ptr)
+        if not self.pointer_constraints:
+            log.warn("Warning: unable to create the pointer constraints manager")
+
+        # Create cursor
+        self.cursor = wlr_cursor_create()
+        if not self.cursor:
+            raise RuntimeError("Failed to create cursor")
+        wlr_cursor_attach_output_layout(self.cursor, self.output_layout)
+
+        # Create seat for input handling
+        self.seat_name = b"seat0"
+        self.seat = wlr_seat_create(self.display_ptr, self.seat_name)
+        cdef int caps = WL_SEAT_CAPABILITY_POINTER | WL_SEAT_CAPABILITY_KEYBOARD | WL_SEAT_CAPABILITY_TOUCH
+        wlr_seat_set_capabilities(self.seat, caps)
+
+        if features.clipboard:
+            self.data_control_manager = wlr_data_control_manager_v1_create(self.display_ptr)
+            if not self.data_control_manager:
+                raise RuntimeError("Failed to create data control manager")
+            self.primary_selection_manager = wlr_primary_selection_v1_device_manager_create(self.display_ptr)
+            if not self.primary_selection_manager:
+                raise RuntimeError("Failed to create primary selection manager")
+            self.add_listener(L_REQUEST_SET_SELECTION, xpra_wlr_seat_request_set_selection_signal(self.seat))
+            self.add_listener(L_SET_SELECTION, xpra_wlr_seat_set_selection_signal(self.seat))
+            self.add_listener(L_REQUEST_SET_PRIMARY_SELECTION, xpra_wlr_seat_request_set_primary_selection_signal(self.seat))
+            self.add_listener(L_SET_PRIMARY_SELECTION, xpra_wlr_seat_set_primary_selection_signal(self.seat))
+
+        self.add_listener(L_NEW_OUTPUT, &self.backend.events.new_output)
+
+        bname = wl_display_add_socket_auto(self.display_ptr)
+        if not bname:
+            raise RuntimeError("Failed to add socket")
+        self.socket_name = bname.decode("utf8")
+        log("wayland display socket added: %s", self.socket_name)
+        return self.socket_name
+
+    cdef wlr_renderer *create_renderer(self) except NULL:
+        cdef wlr_renderer *renderer = NULL
+        cdef int drm_fd = -1
+        cdef int renderer_drm_fd = -1
+        mode = get_gpu_mode()
+        if mode != "no":
+            device = get_render_node()
+            if not device:
+                message = "no DRM render node found for wayland GPU renderer"
+                if mode == "yes":
+                    raise RuntimeError(message)
+                log.warn("Warning: %s", message)
+            else:
+                try:
+                    flags = os.O_RDWR
+                    if hasattr(os, "O_CLOEXEC"):
+                        flags |= os.O_CLOEXEC
+                    drm_fd = os.open(device, flags)
+                    log("opened DRM render node %r: fd=%i", device, drm_fd)
+                    renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd)
+                except OSError as e:
+                    message = "failed to open DRM render node %r: %s" % (device, e)
+                    if mode == "yes":
+                        raise RuntimeError(message) from e
+                    log.warn("Warning: %s", message)
+                finally:
+                    if drm_fd >= 0:
+                        os.close(drm_fd)
+                        drm_fd = -1
+
+                if renderer != NULL:
+                    self.drm_device = device
+                    renderer_drm_fd = wlr_renderer_get_drm_fd(renderer)
+                    log.info("wayland GPU renderer enabled using %s, renderer DRM fd=%i",
+                             device, renderer_drm_fd)
+                    return renderer
+
+                message = "failed to create GLES2 renderer for DRM render node %r" % device
+                if mode == "yes":
+                    raise RuntimeError(message)
+                log.warn("Warning: %s", message)
+
+        renderer = wlr_renderer_autocreate(self.backend)
+        if renderer != NULL:
+            renderer_drm_fd = wlr_renderer_get_drm_fd(renderer)
+            if renderer_drm_fd >= 0:
+                log.info("wayland renderer has DRM fd=%i", renderer_drm_fd)
+            else:
+                log("wayland renderer has no DRM fd")
+        return renderer
+
+    def start_backend(self) -> None:
+        if not wlr_backend_start(self.backend):
+            raise RuntimeError("Failed to start backend")
+        log.info("compositor running on WAYLAND_DISPLAY=%s", self.socket_name)
+
+    def get_event_loop_fd(self) -> int:
+        return wl_event_loop_get_fd(self.event_loop)
+
+    def connect(self, event_name: str, handler: Callable) -> None:
+        self.event_listeners.setdefault(event_name, []).append(handler)
+
+    cdef void new_toplevel_decoration(self, wlr_xdg_toplevel_decoration_v1 *decoration) noexcept nogil:
+        if decoration == NULL or decoration.toplevel == NULL or decoration.toplevel.base == NULL:
+            return
+        cdef wlr_xdg_toplevel *toplevel = decoration.toplevel
+        cdef bint ssd = decoration.requested_mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
+        with gil:
+            surface = surfaces.get(<uintptr_t> toplevel.base.surface)
+            if surface is not None:
+                (<Surface> surface).set_decoration(decoration)
+            elif toplevel.base.initialized:
+                wlr_xdg_toplevel_decoration_v1_set_mode(decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+            else:
+                log.warn("Warning: cannot apply decoration mode before xdg surface is initialized")
+            self.emit("ssd", <uintptr_t> toplevel, bool(ssd))
+
+    cdef void request_set_selection(self, wlr_seat_request_set_selection_event *event) noexcept:
+        if event == NULL:
+            return
+        wlr_seat_set_selection(self.seat, event.source, event.serial)
+
+    cdef void set_selection(self) noexcept:
+        if self.seat == NULL:
+            self.emit("selection", 0)
+            return
+        self.emit("selection", <uintptr_t> xpra_wlr_seat_selection_source(self.seat))
+
+    cdef void request_set_primary_selection(self, wlr_seat_request_set_primary_selection_event *event) noexcept:
+        if event == NULL:
+            return
+        wlr_seat_set_primary_selection(self.seat, event.source, event.serial)
+
+    cdef void set_primary_selection(self) noexcept:
+        if self.seat == NULL:
+            self.emit("primary-selection", 0)
+            return
+        self.emit("primary-selection", <uintptr_t> xpra_wlr_seat_primary_selection_source(self.seat))
+
+    cdef void request_activate(self, wlr_xdg_activation_v1_request_activate_event *event) noexcept:
+        log("request_activate(%#x)", <uintptr_t> event)
+        if event == NULL or event.surface == NULL:
+            return
+        cdef uintptr_t surface_ptr = <uintptr_t> event.surface
+        cdef const char *name = NULL
+        if event.token != NULL:
+            name = wlr_xdg_activation_token_v1_get_name(event.token)
+        token = name.decode("utf8") if name != NULL else ""
+        self.emit("activate-request", surface_ptr, token)
+
+    cdef void new_activation_token(self, wlr_xdg_activation_token_v1 *token) noexcept:
+        cdef const char *name = NULL
+        if token != NULL:
+            name = wlr_xdg_activation_token_v1_get_name(token)
+        token_name = name.decode("utf8") if name != NULL else ""
+        log("new_activation_token(%#x)=%s", <uintptr_t> token, token_name)
+
+    def get_display_ptr(self) -> int:
+        return <uintptr_t> self.display_ptr
+
+    def get_seat_ptr(self) -> int:
+        return <uintptr_t> self.seat
+
+    def get_selection_source_ptr(self) -> int:
+        if self.seat == NULL:
+            return 0
+        return <uintptr_t> xpra_wlr_seat_selection_source(self.seat)
+
+    def get_primary_selection_source_ptr(self) -> int:
+        if self.seat == NULL:
+            return 0
+        return <uintptr_t> xpra_wlr_seat_primary_selection_source(self.seat)
+
+    cdef void new_toplevel(self, wlr_xdg_toplevel *toplevel) noexcept:
+        cdef wlr_xdg_surface *xdg_surf = NULL
+        if toplevel == NULL:
+            return
+        xdg_surf = toplevel.base
+        if xdg_surf == NULL:
+            return
+        log("New XDG surface CREATED (role: %d, initialized: %d)", xdg_surf.role, xdg_surf.initialized)
+        if xdg_surf.role != WLR_XDG_SURFACE_ROLE_TOPLEVEL:
+            return
+
+        cdef Surface surface = Surface()
+        surface.wlr_xdg_surface = xdg_surf
+        surface.width = 0
+        surface.height = 0
+
+        surface.scene_tree = wlr_scene_xdg_surface_create(&self.scene.tree, xdg_surf)
+        surface.add_main_listeners()
+
+        surface.register_toplevel_handlers()
+        # Do not configure from the new_toplevel signal. wlroots can emit it
+        # before the xdg_surface is initialized, and schedule_configure asserts
+        # in that state. Surface.commit() sends the initial configure once the
+        # surface is initialized and still unconfigured.
+
+        title = toplevel.title.decode("utf8") if (toplevel and toplevel.title) else ""
+        app_id = toplevel.app_id.decode("utf8") if (toplevel and toplevel.app_id) else ""
+        size = (xdg_surf.geometry.width, xdg_surf.geometry.height)
+        log("new surface: wlr_xdg_surface=%#x, size=%s", <uintptr_t> xdg_surf, size)
+        log(" configured=%s, initialized=%s, initial_commit=%i", bool(xdg_surf.configured), bool(xdg_surf.initialized), bool(xdg_surf.initial_commit))
+        # Pass the Surface instance so consumers can connect per-surface signals.
+        self.emit("new-surface", surface, title, app_id, size)
+
+    cdef void new_popup(self, wlr_xdg_popup *popup) noexcept:
+        if popup == NULL or popup.base == NULL or popup.base.surface == NULL:
+            return
+        parent = surfaces.get(<uintptr_t> popup.parent)
+        if parent is None:
+            log.warn("Warning: cannot create popup without tracked parent surface %#x",
+                     <uintptr_t> popup.parent)
+            return
+        cdef Popup popup_surface = Popup()
+        popup_surface.attach(parent, popup)
+        size = (popup.base.geometry.width, popup.base.geometry.height)
+        position = popup_surface.get_position()
+        log("new popup: popup=%#x, parent=%s, position=%s, size=%s",
+            <uintptr_t> popup, parent, position, size)
+        # As with toplevels, wait until the popup's first commit before sending
+        # configure; new_popup may arrive before the xdg_surface is initialized.
+        self.emit("new-popup", parent.wid, popup_surface, position, size)
+
+    cdef void new_output(self, wlr_output *wlr_out) noexcept:
+        wlr_output_init_render(wlr_out, self.allocator, self.renderer)
+
+        cdef Output out = Output()
+        out.wlr_output = wlr_out
+        out.output_layout = self.output_layout
+        out.add_main_listeners()
+        out.initialize()
+
+        out.scene_output = wlr_scene_output_create(self.scene, wlr_out)
+        if not wlr_output_layout_add(self.output_layout, wlr_out, 0, 0):
+            log.warn("Warning: failed to add output %s to layout", out)
+
+        self.emit("new-output", out)
+
+    def emit(self, event_name: str, *args) -> None:
+        callbacks = self.event_listeners.get(event_name, ())
+        log("emit%s callbacks=%s", Ellipsizer(tuple([event_name] + list(args))), callbacks)
+        for callback in callbacks:
+            try:
+                callback(*args)
+            except Exception:
+                log.error("Error on %r event handler %s", event_name, callback, exc_info=True)
+
+    def get_display(self) -> Display:
+        return self.display
+
+    cdef void dispatch_pending(self):
+        if self.event_loop == NULL or self.processing_events:
+            return
+        self.processing_events = True
+        try:
+            wl_event_loop_dispatch(self.event_loop, 0)
+        finally:
+            self.processing_events = False
+
+    def process_events(self) -> None:
+        self.dispatch_pending()
+        self.flush_clients()
+
+    cdef void flush_clients(self):
+        if self.display is not None:
+            self.display.flush_clients()
+
+    def flush(self) -> None:
+        self.dispatch_pending()
+        self.flush_clients()
+
+    def run(self) -> None:
+        """Run the compositor event loop"""
+        log.info("Entering main event loop...")
+        wl_display_run(self.display_ptr)
+
+    def __dealloc__(self):
+        self.cleanup()
+
+    def cleanup(self) -> None:
+        """Clean up compositor resources"""
+        if not self.display_ptr:
+            return
+        wl_display_destroy_clients(self.display_ptr)
+
+        self._detach_all()
+
+        if self.scene:
+            wlr_scene_node_destroy(&self.scene.tree.node)
+            self.scene = NULL
+        if self.cursor:
+            wlr_cursor_destroy(self.cursor)
+            self.cursor = NULL
+        if self.output_layout:
+            wlr_output_layout_destroy(self.output_layout)
+            self.output_layout = NULL
+        if self.seat:
+            wlr_seat_destroy(self.seat)
+            self.seat = NULL
+        if self.allocator:
+            wlr_allocator_destroy(self.allocator)
+            self.allocator = NULL
+        if self.renderer:
+            wlr_renderer_destroy(self.renderer)
+            self.renderer = NULL
+        if self.backend:
+            wlr_backend_destroy(self.backend)
+            self.backend = NULL
+        wl_display_destroy(self.display_ptr)
+        self.display_ptr = NULL
+
+    def get_pointer_device(self):
+        return WaylandPointer(<uintptr_t> self.seat, <uintptr_t> self.cursor,
+                              <uintptr_t> self.relative_pointer_manager,
+                              <uintptr_t> self.pointer_constraints)
+
+    def get_keyboard_device(self):
+        return WaylandKeyboard(<uintptr_t> self.seat)

@@ -202,7 +202,11 @@ tests/unittests/test-file*
 /xpra/x11/uinput/*.c
 /xpra/x11/*.c
 /xpra/wayland/*.c
-/xpra/wayland/xdg-shell-protocol.h
+/xpra/wayland/client/*.c
+/xpra/wayland/server/*.c
+/xpra/wayland/server/models/*.c
+/xpra/wayland/server/subsystem/*.c
+/xpra/wayland/server/xdg-shell-protocol.h
 /xpra/*.c
 
 /xpra/**/*.so

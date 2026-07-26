@@ -66,7 +66,7 @@ CYTHONIZE_MORE_PACKAGES = {
     "xpra.server", "xpra.server.dbus", "xpra.server.encoder", "xpra.server.proxy",
     "xpra.server.rdp", "xpra.server.rfb", "xpra.server.runner", "xpra.server.shadow",
     "xpra.server.source", "xpra.server.subsystem", "xpra.server.window",
-    "xpra.util", "xpra.wayland", "xpra.x11", "xpra.x11.desktop", "xpra.x11.gtk",
+    "xpra.util", "xpra.wayland.client", "xpra.wayland.server", "xpra.x11", "xpra.x11.desktop", "xpra.x11.gtk",
     "xpra.x11.models", "xpra.x11.server", "xpra.x11.subsystem", "xpra.x11.uinput",
 }
 CYTHONIZE_MORE_MODULES = {

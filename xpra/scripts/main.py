@@ -1030,7 +1030,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         from xpra.x11.wait import main
         return main(args)
     if mode == "wait-for-wayland":
-        from xpra.wayland.wait import main
+        from xpra.wayland.client.wait import main
         return main(args)
     if mode == "xvfb-command":
         fps = get_refresh_rate_for_value(options.refresh_rate, 60) if options.refresh_rate else 0

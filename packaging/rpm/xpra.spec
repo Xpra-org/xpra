@@ -827,6 +827,8 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/scripts/
 %{python3_sitearch}/xpra/pointer/
 %{python3_sitearch}/xpra/webcam/
+%pycached %{python3_sitearch}/xpra/wayland/__init__.py
+%{python3_sitearch}/xpra/wayland/client/
 %{python3_sitearch}/xpra-*.egg-info
 
 %files -n %{package_prefix}-x11
@@ -934,7 +936,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %if 0%{?wayland}
 %files -n %{package_prefix}-server-wayland
-%{python3_sitearch}/xpra/wayland
+%{python3_sitearch}/xpra/wayland/server/
 %endif
 
 %check
