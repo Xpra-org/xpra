@@ -33,7 +33,7 @@ class IdleTimeoutManager(StubSubsystem):
 
     def add_idle_control_commands(self) -> None:
         self.args_control("server-idle-timeout", "set the server idle timeout", validation=[int])
-        self.args_control("idle-timeout", "set the idle timeout", validation=[int]),
+        self.args_control("idle-timeout", "set the idle timeout", validation=[int])
 
     def add_new_client(self, *_args) -> None:
         self.cancel_server_timeout()
