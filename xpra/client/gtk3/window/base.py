@@ -278,8 +278,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if widget:
             widget.queue_draw_area(x, y, w, h)
 
-    @staticmethod
-    def get_window_event_mask() -> Gdk.EventMask:
+    # can't be static because of method dispatch
+    def get_window_event_mask(self) -> Gdk.EventMask:
         return Gdk.EventMask.STRUCTURE_MASK | Gdk.EventMask.PROPERTY_CHANGE_MASK
 
     def init_widget_events(self, widget) -> None:
