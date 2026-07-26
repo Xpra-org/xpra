@@ -408,6 +408,7 @@ class RFBSource(PointerSource):
     def pending_write_bytes(self) -> int:
         if p := self.protocol:
             if pending_write_bytes := getattr(p, "pending_write_bytes", None):
+                # noinspection calling-non-callable
                 return pending_write_bytes()
         return 0
 
@@ -423,6 +424,7 @@ class RFBSource(PointerSource):
 
     def get_window_dimensions(self, window, regions: Sequence[rectangle]) -> tuple[int, int]:
         if get_dimensions := getattr(window, "get_dimensions", None):
+            # noinspection calling-non-callable
             return get_dimensions()
         full = merge_all(regions)
         return full.x + full.width, full.y + full.height

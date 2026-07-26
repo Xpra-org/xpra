@@ -435,8 +435,8 @@ class ShadowServerBase(ServerBase):
     def poll_pointer(self) -> bool:
         self.poll_pointer_position()
         cursor = self.get_subsystem("cursor")
-        poll_cursor = getattr(cursor, "poll_cursor", None)
-        if poll_cursor:
+        if poll_cursor := getattr(cursor, "poll_cursor", None):
+            # noinspection calling-non-callable
             poll_cursor()
         return True
 

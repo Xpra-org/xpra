@@ -126,8 +126,9 @@ class AuthenticationManager(StubSubsystem):
         # (ie: `ratelimit` counts the failures for each client IP)
         for authenticator in proto.authenticators or ():
             callback = getattr(authenticator, event, None)
-            if callback:
+            if callable(callback):
                 with log.trap_error(f"Error in {authenticator!r} {event!r} callback"):
+                    # noinspection calling-non-callable
                     callback()
 
     def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage, authenticator=None) -> None:

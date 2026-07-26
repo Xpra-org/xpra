@@ -8,7 +8,7 @@ import os
 from time import monotonic
 from threading import Lock
 from collections import deque
-from typing import Any, TypeAlias, MutableSequence
+from typing import Any, TypeAlias, MutableSequence, TYPE_CHECKING
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.net import compression
@@ -25,6 +25,9 @@ from xpra.codecs.constants import TransientCodecException, CodecStateException, 
 from xpra.codecs.protocols import VideoDecoder, ColorspaceConverter
 from xpra.constants import Gravity
 from xpra.log import Logger
+
+if TYPE_CHECKING:
+    from xpra.codecs.nvidia.cuda.context import cuda_device_context
 
 GLib = gi_import("GLib")
 
@@ -173,7 +176,7 @@ class WindowBackingBase:
     see CairoBackingBase and GTKWindowBacking subclasses for actual implementations
     """
     RGB_MODES: Sequence[str] = ()
-    alert_icon = ()
+    alert_icon: tuple = ()
 
     def __init__(self, wid: int, window_alpha: bool):
         load_video()
@@ -208,7 +211,7 @@ class WindowBackingBase:
         self.jph_decoder = get_codec("dec_jph")
         self.nvjpeg_decoder = get_codec("dec_nvjpeg")
         self.nvdec_decoder = get_codec("nvdec")
-        self.cuda_context = None
+        self.cuda_context: "cuda_device_context | None" = None
         self.draw_needs_refresh: bool = True
         self.repaint_all: bool = REPAINT_ALL
         self.mmap = None
@@ -440,7 +443,7 @@ class WindowBackingBase:
         # xpra publishes no server-side frame extents, so (x, y) needs no adjustment.
         return x, y
 
-    def assign_cuda_context(self, opengl=False):
+    def assign_cuda_context(self, opengl=False) -> "cuda_device_context":
         if self.cuda_context is None:
             from xpra.codecs.nvidia.cuda.context import (
                 get_default_device_context,  # @NoMove pylint: disable=no-name-in-module, import-outside-toplevel

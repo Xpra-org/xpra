@@ -76,7 +76,8 @@ class WGLWindowContext:
         log("swap_buffers: calling SwapBuffers(%#x)", self.paint_hdc)
         SwapBuffers(self.paint_hdc)
 
-    def get_scale_factor(self) -> float:
+    @staticmethod
+    def get_scale_factor() -> float:
         return 1
 
     def __repr__(self):
@@ -147,10 +148,12 @@ class WGLContext:
                 log.warn(" for class %r and module handle %#x:", classname, h_inst or 0)
                 log.warn(" '%s'", FormatError())
 
-    def get_bit_depth(self) -> int:
+    @staticmethod
+    def get_bit_depth() -> int:
         return 0
 
-    def is_double_buffered(self) -> bool:
+    @staticmethod
+    def is_double_buffered() -> bool:
         return DOUBLE_BUFFERED  # self.pixel_format_props.get("double-buffered", False)
 
     def get_paint_context(self, hwnd: int) -> WGLWindowContext:

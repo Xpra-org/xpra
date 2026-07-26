@@ -200,8 +200,8 @@ class WindowMenuHelper(GTKMenuHelper):
         def force_refresh(*args) -> None:
             log("force refresh%s", args)
             self.client.send_refresh(self.window.wid)
-            reset_icon = getattr(self.window, "reset_icon", None)
-            if reset_icon:
+            if reset_icon := getattr(self.window, "reset_icon", None):
+                # noinspection calling-non-callable
                 reset_icon()
 
         return self.menuitem("Refresh", "retry.png", cb=force_refresh)

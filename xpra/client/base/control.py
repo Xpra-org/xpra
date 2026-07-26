@@ -37,8 +37,8 @@ class Control(StubClientSubsystem):
         # let the concrete client add its own (UI-specific) control commands
         # (e.g. `UIXpraClient.add_control_commands`, a separate method on a
         # separate class - not a `super()` chain, since this subsystem is composed):
-        add_ui_commands = getattr(self.client, "add_control_commands", None)
-        if add_ui_commands:
+        if add_ui_commands := getattr(self.client, "add_control_commands", None):
+            # noinspection calling-non-callable
             add_ui_commands()
         return True
 

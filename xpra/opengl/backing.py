@@ -1517,10 +1517,11 @@ class GLWindowBackingBase(WindowBackingBase):
             ptype = PIXEL_UPLOAD_FORMAT.get(rgb_format)
             if pformat is None:
                 raise ValueError(f"could not find pixel type for {rgb_format!r}")
+            glformat = DATATYPE_TO_STR.get(ptype[0]) if isinstance(ptype, Sequence) else DATATYPE_TO_STR.get(ptype)
 
             gl_marker("%s update at (%d,%d) size %dx%d (%s bytes) to %dx%d, using GL %s format=%s / %s to internal=%s",
                       rgb_format, x, y, width, height, len(img_data), render_width, render_height,
-                      upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat), DATATYPE_TO_STR.get(ptype),
+                      upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat), glformat,
                       INTERNAL_FORMAT_TO_STR.get(self.internal_format))
 
             # Upload data as temporary RGB texture
@@ -1689,7 +1690,7 @@ class GLWindowBackingBase(WindowBackingBase):
             tex_name = get_tex_name(pixel_format, index)
             dformat = data_formats[index]  # data format: ie: GL_RED
             uformat = upload_formats[index]  # upload format: ie: UNSIGNED_BYTE
-            rowstride = rowstrides[index]
+            rowstride: int = rowstrides[index]
             div_w, div_h = divs[index]
             w = width // div_w
             if dformat == GL_RG:

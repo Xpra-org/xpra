@@ -110,6 +110,7 @@ class RDPServer(StubSubsystem):
         if not get_ssl_socket_options:
             return {}
         try:
+            # noinspection calling-non-callable
             return get_ssl_socket_options(conn.options)
         except Exception:
             log("get_ssl_socket_options(%s) failed", conn.options, exc_info=True)

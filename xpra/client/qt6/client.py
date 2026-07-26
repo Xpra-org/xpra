@@ -134,10 +134,11 @@ class Qt6Client:
         packet_type = packet.get_type()
         packet_type_fn_name = packet_type.replace("-", "_")
         meth = getattr(self, f"_process_{packet_type_fn_name}", None)
-        if not meth:
+        if not callable(meth):
             netlog.warn(f"Warning: missing handler for {packet_type!r}")
             netlog("packet=%r", packet)
             return
+        # noinspection calling-non-callable
         meth(packet)
 
     def _process_hello(self, packet: Packet) -> None:

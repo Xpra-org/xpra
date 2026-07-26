@@ -64,6 +64,7 @@ class Win32_Notifier(NotifierBase):
         if not getHWND:
             log.warn(f"Warning: missing 'getHWND' on {tray} ({type(tray)}")
             return
+        # noinspection calling-non-callable
         hwnd = getHWND()
         app_id = tray.app_id
         log("show_notify%s hwnd=%#x, app_id=%i",

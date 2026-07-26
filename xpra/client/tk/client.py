@@ -117,12 +117,13 @@ class XpraTkClient:
         packet_type = packet.get_type()
         packet_type_fn_name = packet_type.replace("-", "_")
         meth = getattr(self, f"_process_{packet_type_fn_name}", None)
-        if not meth:
-            netlog.warn(f"Warning: missing handler for {packet_type!r}")
+        if not callable(meth):
+            netlog.warn(f"Warning: missing callable handler for {packet_type!r}")
             netlog("packet=%r", packet)
             return
 
         def call_handler() -> None:
+            # noinspection calling-non-callable
             meth(packet)
         app.after(0, call_handler)
 

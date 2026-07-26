@@ -48,6 +48,7 @@ def load_session_registry(value: str, cwd: str = "", **extra_options) -> Session
     if cls is None:
         raise InitException(f"session registry module {name!r} has no Registry class")
     try:
+        # noinspection calling-non-callable
         return cls(**options)
     except Exception as e:
         log("cannot instantiate session registry %s", name, exc_info=True)

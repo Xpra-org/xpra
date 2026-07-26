@@ -78,7 +78,7 @@ class WebcamForwarder(StubClientSubsystem):
         self.ack_check_timer = 0
         self.send_timer = 0
         self.lock = RLock()
-        self.resume_restart = ()
+        self.resume_restart: tuple = ()
         self.csc = None
         self.encoding = ""
         self.server_enabled = False

@@ -91,8 +91,8 @@ class SSLSocketConnection(SocketConnection):
         # TLS 1.3 may have more decrypted data already in the SSL buffer
         # that won't make the socket fd readable again (pending() > 0).
         # Drain it now to avoid blocking on the next recv() call.
-        pending = getattr(self._socket, "pending", None)
-        if pending:
+        if pending := getattr(self._socket, "pending", None):
+            # noinspection calling-non-callable
             extra = pending()
             if extra > 0:
                 buf += self._read(self._ssl_io, True, self._socket.recv, extra)
@@ -130,14 +130,14 @@ class SSLSocketConnection(SocketConnection):
             "npn-protocol": "selected_npn_protocol",
             "version": "version",
         }.items():
-            sfn = getattr(self._socket, fn, None)
-            if sfn:
+            if sfn := getattr(self._socket, fn, None):
                 with SilenceWarningsContext(DeprecationWarning):
+                    # noinspection calling-non-callable
                     v = sfn()
                 if v is not None:
                     i[k] = v
-        cipher_fn = getattr(self._socket, "cipher", None)
-        if cipher_fn:
+        if cipher_fn := getattr(self._socket, "cipher", None):
+            # noinspection calling-non-callable
             cipher = cipher_fn()
             if cipher:
                 i["cipher"] = {

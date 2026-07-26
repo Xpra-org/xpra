@@ -245,33 +245,36 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
                 "subpixel-layout", "workarea",
         ):
             getter = getattr(monitor, "get_%s" % attr.replace("-", "_"), None)
-            if getter:
-                value = getter()
-                if value is None:
-                    continue
-                if isinstance(value, Gdk.Rectangle):
-                    value = (
-                        round(value.x / xscale),
-                        round(value.y / yscale),
-                        round(value.width / xscale),
-                        round(value.height / yscale),
-                    )
-                elif attr == "width-mm":
-                    value = round(value / xscale)
-                elif attr == "height-mm":
-                    value = round(value / yscale)
-                elif attr == "subpixel-layout":
-                    value = {
-                        Gdk.SubpixelLayout.UNKNOWN: "unknown",
-                        Gdk.SubpixelLayout.NONE: "none",
-                        Gdk.SubpixelLayout.HORIZONTAL_RGB: "horizontal-rgb",
-                        Gdk.SubpixelLayout.HORIZONTAL_BGR: "horizontal-bgr",
-                        Gdk.SubpixelLayout.VERTICAL_RGB: "vertical-rgb",
-                        Gdk.SubpixelLayout.VERTICAL_BGR: "vertical-bgr",
-                    }.get(value, "unknown")
-                if isinstance(value, str):
-                    value = value.strip()
-                minfo[attr] = value
+            if not callable(getter):
+                log("no %s getter", attr)
+                continue
+            # noinspection calling-non-callable
+            value = getter()
+            if value is None:
+                continue
+            if isinstance(value, Gdk.Rectangle):
+                value = (
+                    round(value.x / xscale),
+                    round(value.y / yscale),
+                    round(value.width / xscale),
+                    round(value.height / yscale),
+                )
+            elif attr == "width-mm":
+                value = round(value / xscale)
+            elif attr == "height-mm":
+                value = round(value / yscale)
+            elif attr == "subpixel-layout":
+                value = {
+                    Gdk.SubpixelLayout.UNKNOWN: "unknown",
+                    Gdk.SubpixelLayout.NONE: "none",
+                    Gdk.SubpixelLayout.HORIZONTAL_RGB: "horizontal-rgb",
+                    Gdk.SubpixelLayout.HORIZONTAL_BGR: "horizontal-bgr",
+                    Gdk.SubpixelLayout.VERTICAL_RGB: "vertical-rgb",
+                    Gdk.SubpixelLayout.VERTICAL_BGR: "vertical-bgr",
+                }.get(value, "unknown")
+            if isinstance(value, str):
+                value = value.strip()
+            minfo[attr] = value
     return info
 
 

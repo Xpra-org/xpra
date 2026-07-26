@@ -69,9 +69,9 @@ class FocusWindow(GtkStubWindow):
                     log.warn(" you may experience window focus issues")
             else:
                 gdkwindow = self.get_window()
-                get_xid = getattr(gdkwindow, "get_xid", None)
-                if get_xid:
+                if get_xid := getattr(gdkwindow, "get_xid", None):
                     log("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
+                    # noinspection calling-non-callable
                     xid = get_xid()
                     add_event_receiver(xid, self)
 

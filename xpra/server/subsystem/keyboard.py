@@ -331,8 +331,8 @@ class KeyboardManager(StubSubsystem):
             except AttributeError:
                 window_sources = ()
             for ws in window_sources:
-                rec = getattr(ws, "record_scroll_event", None)
-                if rec:
+                if rec := getattr(ws, "record_scroll_event", None):
+                    # noinspection calling-non-callable
                     rec(wid)
 
     def get_keycode(self, ss, client_keycode: int, keyname: str,

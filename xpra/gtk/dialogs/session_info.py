@@ -206,6 +206,7 @@ def get_client_server_last_info(client) -> dict:
 
 def get_client_subsystem(client, name: str):
     get_subsystem = getattr(client, "get_subsystem", None)
+    # noinspection calling-non-callable
     return get_subsystem(name) if get_subsystem else None
 
 
@@ -369,6 +370,10 @@ def format_encoder_pipeline(encoder: str, decoder: str = "", renderer: str = "")
     return " \u2192 ".join(parts)
 
 
+def nopopulate() -> bool:
+    return False
+
+
 class SessionInfo(Gtk.Window):
 
     def __init__(self, client, session_name, conn, show_client=True, show_server=True):
@@ -400,7 +405,7 @@ class SessionInfo(Gtk.Window):
         self.row = AtomicInteger()
         self.grid = None
 
-        self.populate_cb = None
+        self.populate_cb: Callable[[], bool] = nopopulate
         self.tab_box.pack_start(self.tab_button_box, expand=False, fill=True, padding=0)
 
         self.add_software_tab()
@@ -446,6 +451,7 @@ class SessionInfo(Gtk.Window):
 
     def send_ping(self) -> None:
         if client_ping := getattr(self.client, "send_ping", None):
+            # noinspection calling-non-callable
             client_ping()
             return
         if ping := self.get_client_subsystem("ping"):
@@ -453,6 +459,7 @@ class SessionInfo(Gtk.Window):
 
     def send_info_request(self, *categories: str) -> None:
         if client_info_request := getattr(self.client, "send_info_request", None):
+            # noinspection calling-non-callable
             client_info_request(*categories)
             return
         if info_request := self.get_client_subsystem("info"):
@@ -460,6 +467,7 @@ class SessionInfo(Gtk.Window):
 
     def get_core_encodings(self) -> Sequence[str]:
         if client_get_core_encodings := getattr(self.client, "get_core_encodings", None):
+            # noinspection calling-non-callable
             return client_get_core_encodings()
         encoding = self.get_client_subsystem("encoding")
         return encoding.get_core_encodings() if encoding else ()
@@ -777,8 +785,8 @@ class SessionInfo(Gtk.Window):
         if self.is_closed:
             return False
         # now re-populate the tab we are seeing:
-        if self.populate_cb and not self.populate_cb():
-            self.populate_cb = None
+        if not self.populate_cb():
+            self.populate_cb = nopopulate
         return not self.is_closed
 
     def show_opengl_state(self) -> None:

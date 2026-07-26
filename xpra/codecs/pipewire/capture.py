@@ -165,8 +165,8 @@ class Capture(GObject.GObject):
         try:
             image = self._make_image(frame)
         except Exception as e:
-            release = frame.get("release")
-            if release:
+            if release := frame.get("release"):
+                # noinspection calling-non-callable
                 release()
             log.warn("Warning: dropping PipeWire frame: %s", e)
             return

@@ -33,6 +33,7 @@ def get_channel_binding(protocol, name: str):
     if not getter:
         return None
     try:
+        # noinspection calling-non-callable
         data = getter(name)
     except Exception as e:
         log("cannot get %s channel binding from %s: %s", name, sock, e)
@@ -112,6 +113,7 @@ class Handler(AuthenticationHandler):
         if password := os.environ.get("XPRA_PASSWORD"):
             return password
         if self.challenge_prompt_function:
+            # noinspection calling-non-callable
             password = self.challenge_prompt_function(prompt)
             if password:
                 return str(password)

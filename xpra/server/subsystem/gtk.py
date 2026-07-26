@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.util.env import SilenceWarningsContext
@@ -18,7 +19,7 @@ from xpra.log import Logger
 
 log = Logger("server", "gtk")
 
-get_default_window_icon_fallback = noop
+get_default_window_icon_fallback: Callable[[int, str], Any] = noop
 
 
 def inject_gtk_window_icon_lookup() -> None:

@@ -112,6 +112,7 @@ class RFBServer(StubSubsystem):
             if len(auths) == 1:
                 auth = auths[0]
             get_ssl_socket_options = getattr(self.server, "get_ssl_socket_options", None)
+            # noinspection calling-non-callable
             ssl_options = get_ssl_socket_options(conn.options) if get_ssl_socket_options else {}
             log("creating RFB protocol with authentication=%s", auth)
             return RFBServerProtocol(conn, auth,
@@ -149,11 +150,12 @@ class RFBServer(StubSubsystem):
     def process_rfb_packet(self, proto, packet: Sequence) -> None:
         # log("RFB packet: '%s'", packet)
         fn_name = "_process_rfb_%s" % bytestostr(packet[0]).replace("-", "_")
-        fn = getattr(self, fn_name, None)
-        if not fn:
-            log.warn("Warning: no RFB handler for %s", fn_name)
+        if fn := getattr(self, fn_name, None):
+            # noinspection calling-non-callable
+            fn(proto, packet)
             return
-        fn(proto, packet)
+        log.warn("Warning: no RFB handler for %s", fn_name)
+        return
 
     def get_rfb_pixelformat(self) -> tuple[int, int, int, int, bool, bool, int, int, int, int, int, int]:
         model = self._get_rfb_desktop_model()
@@ -198,10 +200,10 @@ class RFBServer(StubSubsystem):
                 keyboard.set_keymap(source)
         # ugly weak dependency,
         # shadow servers need to be told to start the refresh timer:
-        start_refresh = getattr(self.server, "start_refresh", None)
-        if start_refresh:
+        if start_refresh := getattr(self.server, "start_refresh", None):
             window = self.server.get_subsystem("window")
             for wid in tuple(window.get_models().values()):
+                # noinspection calling-non-callable
                 start_refresh(wid)  # pylint: disable=not-callable
 
     def _process_rfb_PointerEvent(self, _proto, packet: Sequence) -> None:

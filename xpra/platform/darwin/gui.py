@@ -321,9 +321,9 @@ def _call_CG_conv(defs: Sequence[tuple[str, str, Callable]], argument) -> dict[s
     # missing functions are ignored, and None values are skipped
     info = {}
     for prop_name, fn_name, conv in defs:
-        fn = getattr(CG, fn_name, None)
-        if fn:
+        if fn := getattr(CG, fn_name, None):
             try:
+                # noinspection calling-non-callable
                 v = fn(argument)
             except Exception as e:
                 log("function %s failed: %s", fn_name, e)

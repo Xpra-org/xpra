@@ -773,7 +773,7 @@ DEFAULT_SRC_PLUGIN_OPTIONS: dict[str, Callable] = {
     "wasapi": get_wasapi_defaults,
     "wasapi2": get_wasapi_defaults,
 }
-DEFAULT_SINK_PLUGIN_OPTIONS : dict[str, Any] = {}
+DEFAULT_SINK_PLUGIN_OPTIONS : dict[str, Callable[[], Any]] = {}
 if POSIX and not OSX:
     DEFAULT_SINK_PLUGIN_OPTIONS["pulse"] = get_pulse_sink_defaults
     DEFAULT_SRC_PLUGIN_OPTIONS["pulse"] = get_pulse_source_defaults

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Callable
 
 import objc
 from Cocoa import (
@@ -162,7 +163,7 @@ class AGLContext:
     def _get_pfa(self, attr, screen):
         return self.pixel_format.getValues_forAttribute_forVirtualScreen_(None, attr, screen)
 
-    def _get_apfa(self, attr, fn=min):
+    def _get_apfa(self, attr, fn: Callable=min):
         return fn(self._get_pfa(attr, screen) for screen in range(self.pixel_format.numberOfVirtualScreens()))
 
     def get_bit_depth(self) -> int:

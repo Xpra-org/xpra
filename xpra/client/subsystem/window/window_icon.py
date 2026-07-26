@@ -97,8 +97,8 @@ class WindowIcon(StubClientSubsystem):
         log("reinit_window_icons()")
         for wid in tuple(self._id_to_window.keys()):
             if window := self.get_window(wid):
-                reset_icon = getattr(window, "reset_icon", None)
-                if reset_icon:
+                if reset_icon := getattr(window, "reset_icon", None):
+                    # noinspection calling-non-callable
                     reset_icon()
 
     ######################################################################

@@ -82,12 +82,12 @@ class WindowPointer(StubClientSubsystem):
         for i, w in self._id_to_window.items():
             # not all window implementations have this method:
             # (but GLClientWindow does)
-            show_pointer_overlay = getattr(w, "show_pointer_overlay", None)
-            if show_pointer_overlay:
+            if show_pointer_overlay := getattr(w, "show_pointer_overlay", None):
                 if i == wid:
                     value = rx, ry, size, start_time
                 else:
                     value = ()
+                # noinspection calling-non-callable
                 show_pointer_overlay(value)
 
     def send_button(self, device_id: int, wid: int, button: int, pressed: bool,

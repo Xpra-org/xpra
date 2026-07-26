@@ -169,18 +169,16 @@ def get_pillow_icc_info() -> dict[str, Any]:
                     ("default-intent", "getDefaultIntent", getDefaultIntentStr),
                     ("data", "getData", getData),
             ):
-                m = getattr(ImageCms, fn, None)
-                if m is None:
-                    screenlog("%s lacks %s", ImageCms, fn)
-                    continue
-                try:
-                    v = m(p)
-                    if conv:
-                        v = conv(v)
-                    info[k] = bytestostr(v).rstrip("\n\r")
-                except Exception as e:
-                    screenlog("get_icc_info()", exc_info=True)
-                    screenlog("ICC profile error on %s using %s: %s", k, fn, e)
+                if m := getattr(ImageCms, fn, None):
+                    try:
+                        # noinspection calling-non-callable
+                        v = m(p)
+                        if conv:
+                            v = conv(v)
+                        info[k] = bytestostr(v).rstrip("\n\r")
+                    except Exception as e:
+                        screenlog("get_icc_info()", exc_info=True)
+                        screenlog("ICC profile error on %s using %s: %s", k, fn, e)
     except Exception as e:
         screenlog("get_icc_info()", exc_info=True)
         screenlog.warn("Warning: cannot query ICC profiles:")

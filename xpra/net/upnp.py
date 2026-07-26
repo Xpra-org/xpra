@@ -147,10 +147,11 @@ def find_service(device, value: str):
     raise ValueError("device %r does not have a service with a port mapping action" % device)
 
 
+# noinspection calling-non-callable
 def upnp_add(socktype: str, info, options: dict):
     log("upnp_add%s", (socktype, info, options))
 
-    def err(*msgs):
+    def err(*msgs) -> Any:
         log("pnp_add%s", (info, options), exc_info=True)
         log.error("Error: cannot add UPnP port mapping")
         for msg in msgs:
@@ -242,6 +243,7 @@ def delete_service(service, protocol: str, socktype: str,
             "NewProtocol": protocol,
         }
         log("%s%s", delete, kwargs)
+        # noinspection calling-non-callable
         delete(**kwargs)
         log.info("UPnP port mapping removed for %s:%s", external_ip, external_port)
     except Exception as e:
@@ -264,9 +266,9 @@ def log_upnp_info(service) -> None:
     # UPNP_INFO = ("GetConnectionTypeInfo", "GetStatusInfo", "GetNATRSIPStatus")
     UPNP_INFO = ("GetConnectionTypeInfo", "GetStatusInfo")
     for action_name in UPNP_INFO:
-        action = get_action(service, action_name)
-        if action:
+        if action := get_action(service, action_name):
             try:
+                # noinspection calling-non-callable
                 r = action()
                 log("%s=%s", action_name, r)
             except Exception:
@@ -274,14 +276,13 @@ def log_upnp_info(service) -> None:
 
 
 def get_new_service_ip(service) -> str:
-    getip = get_action(service, "GetExternalIPAddress")
-    if not getip:
-        return ""
-    try:
-        reply = getip()
-        ip = (reply or {}).get("NewExternalIPAddress")
-        if ip:
-            return ip
-    except Exception:
-        log("%s", getip, exc_info=True)
+    if getip := get_action(service, "GetExternalIPAddress"):
+        try:
+            # noinspection calling-non-callable
+            reply = getip()
+            ip = (reply or {}).get("NewExternalIPAddress")
+            if ip:
+                return ip
+        except Exception:
+            log("%s", getip, exc_info=True)
     return ""

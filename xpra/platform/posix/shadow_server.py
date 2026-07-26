@@ -114,6 +114,7 @@ def ShadowServer(display: str, attrs: dict[str, str]):
     load_fn = globals().get(f"load_{setting}")
     if not load_fn:
         raise RuntimeError(f"missing shadow loader for {setting!r}")
+    # noinspection calling-non-callable
     shadow_server = load_fn(display)
     if not shadow_server:
         raise RuntimeError(f"shadow backend {setting} is not available")

@@ -199,6 +199,14 @@ def noop_destroy() -> None:
     log.warn("Warning: window destroy called twice!")
 
 
+def _get_monitor_index(monitor) -> int:
+    display = monitor.get_display()
+    for i in range(display.get_n_monitors()):
+        if display.get_monitor(i) == monitor:
+            return i
+    return -1
+
+
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     __gsignals__ = {
         "state-updated": no_arg_signal,
@@ -270,7 +278,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if widget:
             widget.queue_draw_area(x, y, w, h)
 
-    def get_window_event_mask(self) -> Gdk.EventMask:
+    @staticmethod
+    def get_window_event_mask() -> Gdk.EventMask:
         return Gdk.EventMask.STRUCTURE_MASK | Gdk.EventMask.PROPERTY_CHANGE_MASK
 
     def init_widget_events(self, widget) -> None:
@@ -1310,13 +1319,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 frame = wfs.get("frame", ())
         return frame
 
-    def _get_monitor_index(self, monitor) -> int:
-        display = monitor.get_display()
-        for i in range(display.get_n_monitors()):
-            if display.get_monitor(i) == monitor:
-                return i
-        return -1
-
     def get_monitor_position(self, x: int | None = None, y: int | None = None) -> dict[str, Any]:
         monitor = self._monitor
         if monitor is None:
@@ -1325,7 +1327,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 monitor = gdkwin.get_display().get_monitor_at_window(gdkwin)
         if monitor is None:
             return {}
-        index = self._get_monitor_index(monitor)
+        index = _get_monitor_index(monitor)
         if index < 0:
             return {}
         if x is None or y is None:
@@ -1337,7 +1339,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         }
 
     def monitor_changed(self, monitor) -> None:
-        mid = self._get_monitor_index(monitor)
+        mid = _get_monitor_index(monitor)
         geom = monitor.get_geometry()
         manufacturer = monitor.get_manufacturer()
         model = monitor.get_model()

@@ -91,6 +91,7 @@ def _progress_target(obj):
     # process); otherwise fall back to the object itself:
     get_subsystem = getattr(obj, "get_subsystem", None)
     if callable(get_subsystem):
+        # noinspection calling-non-callable
         return get_subsystem("progress") or obj
     return obj
 
@@ -117,6 +118,7 @@ def may_notify_client(obj, nid : NotificationID | int, summary, body, *args, **k
     target = obj
     get_subsystem = getattr(obj, "get_subsystem", None)
     if callable(get_subsystem):
+        # noinspection calling-non-callable
         target = get_subsystem("notification") or obj
     notify_client = getattr(target, "notify_client", notify_to_log)
     notify_client(nid, summary, body, *args, **kwargs)

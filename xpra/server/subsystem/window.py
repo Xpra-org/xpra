@@ -251,8 +251,8 @@ class WindowServer(StubSubsystem):
 
     def show_all_windows(self) -> None:
         for w in self._id_to_window.values():
-            show = getattr(w, "show", None)
-            if show:
+            if show := getattr(w, "show", None):
+                # noinspection calling-non-callable
                 show()
 
     def clamp_windows_to_screen(self, screen_w: int, screen_h: int) -> None:

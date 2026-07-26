@@ -353,6 +353,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         log(f"new_stream_sound() sample={sample!r}, exists={os.path.exists(sample)}")
         if not os.path.exists(sample):
             return
+        # noinspection deprecation
         gst_launch_cmd = which("gst-launch-1.0") or "gst-launch-1.0"
         gst_launch = os.path.abspath(os.path.normpath(gst_launch_cmd))
         cmd = [
@@ -407,6 +408,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         update_av_sync = getattr(self, "update_av_sync_delay_total", None)
         log("call_update_av_sync_delay update_av_sync=%s", update_av_sync)
         if callable(update_av_sync):
+            # noinspection calling-non-callable
             update_av_sync()  # pylint: disable=not-callable
 
     def new_audio_buffer(self, audio_source, data: bytes,
@@ -461,11 +463,12 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         fn = "audio_control_" + action.replace("-", "_")
         method = getattr(self, fn, None)
         log(f"audio_control({action}, {args}) {fn}={method}")
-        if not method:
+        if not callable(method):
             msg = f"unknown audio action {action!r}"
-            if first_time(f"unknown-{method}"):
+            if first_time(f"unknown-{action}"):
                 log.error("Error: %s", msg)
             return msg
+        # noinspection calling-non-callable
         return method(*args)  # pylint: disable=not-callable
 
     def audio_control_stop(self, sequence_str="") -> str:

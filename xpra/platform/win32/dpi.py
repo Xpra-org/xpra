@@ -184,9 +184,10 @@ def physical_point(hwnd: int, x: int, y: int) -> tuple[int, int]:
     process is *not* fully aware would use the window's monitor DPI. Under the
     enforced Per-Monitor-v2 awareness this never matters (identity transform).
     """
-    if not hwnd or _logical_to_physical is None:
+    if not hwnd or not callable(_logical_to_physical):
         return x, y
     pt = POINT(x, y)
+    # noinspection calling-non-callable
     if _logical_to_physical(hwnd, byref(pt)):
         return int(pt.x), int(pt.y)
     return x, y

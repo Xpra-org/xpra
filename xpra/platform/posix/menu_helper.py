@@ -77,7 +77,8 @@ def export(entry, properties: Sequence[str]) -> dict[str, Any]:
         fn_name = f"get{prop}"
         try:
             fn = getattr(entry, fn_name, None)
-            if fn:
+            if callable(fn):
+                # noinspection calling-non-callable
                 v = fn()
                 if isinstance(v, (list, tuple, Generator)):
                     log_fn(f"{prop}={v} (%s)", type(x for x in v))
@@ -136,6 +137,7 @@ if LOAD_FROM_THEME:
             def addtheme(name: str) -> None:
                 if not name or name in themes or len(themes) >= MAX_THEMES:
                     return
+                # noinspection calling-non-callable
                 for theme in get_themes(name):  # pylint: disable=not-callable
                     if theme and theme.name not in themes:
                         themes[theme.name] = theme

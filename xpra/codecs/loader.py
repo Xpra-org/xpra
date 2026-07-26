@@ -182,6 +182,7 @@ def codec_import_check(name: str, description: str, top_module: str, class_modul
             if name in CODEC_FAIL_SELFTEST:
                 raise ImportError("codec found in fail selftest list")
             try:
+                # noinspection calling-non-callable
                 selftest(FULL_SELFTEST)
             except Exception as e:
                 log(f"{selftest} failed", exc_info=True)

@@ -17,6 +17,7 @@ import ctypes
 from ctypes import Structure, POINTER, byref, c_void_p, c_long, WINFUNCTYPE, HRESULT
 from ctypes.wintypes import DWORD, LPCWSTR
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -109,7 +110,7 @@ class _Client(Structure):
 # module state
 _event = None           # Windows Event HANDLE
 _poll_timer = 0
-_on_change = None       # callback
+_on_change = noop       # callback
 _enumerator = None      # IMMDeviceEnumerator raw pointer
 _client = None          # _Client instance (prevent GC)
 _vtbl = None            # _Vtbl instance (prevent GC)
@@ -187,8 +188,7 @@ def _check_event() -> bool:
     if result == WAIT_OBJECT_0:
         ctypes.windll.kernel32.ResetEvent(_event)
         log("audio device change detected")
-        if _on_change:
-            _on_change()
+        _on_change()
     return True     # keep polling
 
 
@@ -265,6 +265,6 @@ def stop() -> None:
 
     _client = None
     _vtbl = None
-    _on_change = None
+    _on_change = noop
     _prevent_gc.clear()
     log("audio device monitor stopped")

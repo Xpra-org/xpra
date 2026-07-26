@@ -545,7 +545,8 @@ def get_socket_options(sock, level, options) -> dict:
                 opts[k] = v
     if errs:
         fileno = getattr(sock, "fileno", None)
-        if fileno and fileno() == -1:
+        # noinspection calling-non-callable
+        if callable(fileno) and fileno() == -1:
             log("socket is closed, ignoring: %s", csv(errs))
         else:
             log.warn("Warning: failed to query %s", csv(errs))

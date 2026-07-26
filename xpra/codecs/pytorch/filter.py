@@ -4,8 +4,10 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Any, Sequence
+from typing import Any
+from collections.abc import Sequence, Callable
 
+from xpra.common import noop
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import CSCSpec
@@ -135,7 +137,7 @@ class Filter:
         self.width = 0
         self.height = 0
         self.device = ""
-        self.transform = None
+        self.transform: Callable = noop
         self.kwargs = {}
 
     def init_context(self, src_width: int, src_height: int, src_format: str,

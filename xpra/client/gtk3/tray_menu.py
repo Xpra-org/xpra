@@ -1583,6 +1583,7 @@ class GTKTrayMenu(GTKMenuHelper):
                     log.warn("Warning: no '%s' function on %s", function, win)
                 else:
                     try:
+                        # noinspection calling-non-callable
                         fn(*args)
                     except Exception as e:
                         log.error("Error calling %s%s on %s:", function, args, win)
@@ -1769,7 +1770,7 @@ class GTKTrayMenu(GTKMenuHelper):
             # uri = self.client.display_desc.get("display_name")
             # if uri:
             #    messages.append("URI: %s" % uri)
-            if session_name := self.client.session_name or self.client.server_session_name:
+            if session_name := (self.client.session_name or self.client.server_session_name):
                 messages.append(_("Shutting down the session '%s' may result in data loss,") % session_name)
             else:
                 messages.append(_("Shutting down this session may result in data loss,"))

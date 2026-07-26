@@ -160,11 +160,12 @@ class AudioServer(StubSubsystem):
         if not ss:
             return
         audio_control = getattr(ss, "audio_control", None)
-        if not audio_control:
+        if not callable(audio_control):
             if first_time(f"no-audio-control-{ss}"):
                 log.warn(f"Warning: ignoring audio control requests from {ss}")
                 log.warn(" audio is not enabled for this connection")
             return
+        # noinspection calling-non-callable
         audio_control(*packet[1:])
 
     def _process_sound_data(self, proto, packet: Packet) -> None:

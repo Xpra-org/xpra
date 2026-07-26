@@ -179,6 +179,7 @@ class Authenticator(SysAuthenticator):
         log("oauth token_info=%r", token_info)
         if not isinstance(token_info, dict):
             return False
+        # noinspection simplify-boolean-check
         if token_info.get("active") is not True:
             log.warn("Warning: oauth authentication failed")
             log.warn(" token is not active")

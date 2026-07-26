@@ -118,7 +118,7 @@ class NTSTATUS(LONG):
     def __repr__(self):
         name = self.__class__.__name__
         status = ULONG.from_buffer(self)
-        return '{}({:#010x})'.format(name, status.value)
+        return f"{name}({status.value:#010x})"
 
 
 PNTSTATUS = POINTER(NTSTATUS)

@@ -50,6 +50,7 @@ class ShadowCursorManager(CursorManager):
                 # not all client connections support `send_cursor`,
                 # only a CursorsConnection, or a RFBSource do:
                 if send_cursor := getattr(ss, "send_cursor", None):
+                    # noinspection calling-non-callable
                     send_cursor()
 
     def log_cursor_change(self, prev, curr) -> None:

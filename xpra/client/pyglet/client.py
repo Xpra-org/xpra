@@ -144,12 +144,13 @@ class XpraPygletClient:
         packet_type = packet.get_type()
         packet_type_fn_name = packet_type.replace("-", "_")
         meth = getattr(self, f"_process_{packet_type_fn_name}", None)
-        if not meth:
+        if not callable(meth):
             netlog.warn(f"Warning: missing handler for {packet_type!r}")
             netlog("packet=%r", packet)
             return
 
         def call_handler(_elapsed) -> None:
+            # noinspection calling-non-callable
             meth(packet)
         clock.schedule_once(call_handler, 0)
 

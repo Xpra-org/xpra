@@ -255,9 +255,10 @@ def get_cipher(key: bytes, iv: bytes, mode: str = DEFAULT_MODE):
         raise ValueError("missing encryption iv")
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     mode_class = getattr(modes, mode, None)
-    if mode_class is None:
+    if not callable(mode_class):
         raise ValueError(f"no {mode} mode in this version of python-cryptography")
     from cryptography.hazmat.backends import default_backend
+    # noinspection calling-non-callable
     return Cipher(algorithms.AES(key), mode_class(iv), backend=default_backend())
 
 
@@ -279,8 +280,9 @@ def get_key(key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iter
     if key_hash.upper() not in KEY_HASHES:
         raise ValueError(f"invalid key hash {key_hash.upper()!r}, should be one of: " + csv(KEY_HASHES))
     algorithm = getattr(hashes, key_hash.upper(), None)
-    if not algorithm:
+    if not callable(algorithm):
         raise ValueError(f"{key_hash.upper()!r} not found in cryptography hashes")
+    # noinspection calling-non-callable
     hash_algo = algorithm()
     from cryptography.hazmat.backends import default_backend
     kdf = PBKDF2HMAC(algorithm=hash_algo, length=key_size,

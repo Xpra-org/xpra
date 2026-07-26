@@ -64,8 +64,8 @@ def addr_to_bytes(addr, length: int) -> bytes:
     (a typed pointer view), which exposes the underlying memory via
     ``as_buffer(length)``. Older bindings may hand back a plain integer pointer.
     """
-    as_buffer = getattr(addr, "as_buffer", None)
-    if as_buffer is not None:
+    if as_buffer := getattr(addr, "as_buffer", None):
+        # noinspection calling-non-callable
         return bytes(as_buffer(length))
     return ctypes.string_at(int(addr), length)
 

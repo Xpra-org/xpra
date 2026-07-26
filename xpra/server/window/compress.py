@@ -630,9 +630,9 @@ class WindowSource(WindowIconSource):
         })
         if ma := self.mapped_at:
             info["mapped-at"] = ma
-        get_xshm_bytes = getattr(self.window, "get_xshm_bytes", None)
-        if get_xshm_bytes:
+        if get_xshm_bytes := getattr(self.window, "get_xshm_bytes", None):
             try:
+                # noinspection calling-non-callable
                 xshm_bytes = int(get_xshm_bytes())
             except (TypeError, ValueError):
                 xshm_bytes = 0
@@ -2811,7 +2811,7 @@ class WindowSource(WindowIconSource):
             * 'rgb24' and 'rgb32' use 'rgb_encode'
             * etc..
         """
-        def nodata(msg: str, *args):
+        def nodata(msg: str, *args) -> Packet | None:
             log("make_data_packet: no data for window %s with sequence=%s: "+msg, self.wid, sequence, *args)
             free_image_wrapper(image)
             return None

@@ -41,8 +41,9 @@ def parse_padding_colors(colors_str: str) -> tuple[float, float, float]:
     padding_colors = 0.0, 0.0, 0.0
     if colors_str:
         try:
-            padding_colors = tuple(float(x.strip()) for x in colors_str.split(","))
-            assert len(padding_colors) == 3, "you must specify 3 components"
+            values = [float(x.strip()) for x in colors_str.split(",")]
+            assert len(values) == 3, "you must specify 3 components"
+            padding_colors = values[0], values[1], values[2]
         except Exception as e:
             log.warn("Warning: invalid padding colors specified,")
             log.warn(" %s", e)

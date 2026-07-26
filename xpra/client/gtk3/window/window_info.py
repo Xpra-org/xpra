@@ -55,6 +55,7 @@ def get_window_state(w) -> str:
             state.append(s)
     for s in ("modal",):
         fn = getattr(w, "get_%s" % s, None)
+        # noinspection calling-non-callable
         if fn and fn():
             state.append(s)
     return csv(state) or "none"
@@ -235,8 +236,8 @@ class WindowInfo(Gtk.Window):
         b = w._backing
         binfo = {}
         if b:
-            update_fps = getattr(b, "update_fps", None)
-            if callable(update_fps):
+            if update_fps := getattr(b, "update_fps", None):
+                # noinspection calling-non-callable
                 update_fps()
                 fps = str(getattr(b, "fps_value", "n/a"))
             binfo = b.get_info()

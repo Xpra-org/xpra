@@ -128,7 +128,7 @@ class ClipboardManager(StubSubsystem):
                           self.filter_file, exc_info=True)
                 return
         clipboard_class = self.get_clipboard_class()
-        if not clipboard_class:
+        if not callable(clipboard_class):
             log.warn("Warning: no clipboard backend class, clipboard is disabled!")
             self.enabled = True
             return
@@ -138,6 +138,7 @@ class ClipboardManager(StubSubsystem):
             "can-send": self.direction in ("to-client", "both"),
             "can-receive": self.direction in ("to-server", "both"),
         }
+        # noinspection calling-non-callable
         self.helper = clipboard_class(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
         self.helper.init_proxies_claim()
         self.selections = get_local_selections()

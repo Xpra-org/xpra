@@ -127,8 +127,8 @@ class Win32ClientEventsWatcher:
             self.window.update_focus(0, False)
         # workaround for windows losing their style:
         for window in self.window.get_windows():
-            fixup_window_style = getattr(window, "fixup_window_style", None)
-            if fixup_window_style:
+            if fixup_window_style := getattr(window, "fixup_window_style", None):
+                # noinspection calling-non-callable
                 fixup_window_style()
 
     def handle_console_event(self, event: int) -> int:

@@ -382,9 +382,9 @@ def get_sysconfig_info() -> dict[str, Any]:
             "paths",
     ):
         fn = "get_" + attr.replace("-", "_")
-        getter = getattr(sysconfig, fn, None)
-        if getter:
+        if getter := getattr(sysconfig, fn, None):
             try:
+                # noinspection calling-non-callable
                 sysinfo[attr] = getter()  # pylint: disable=not-callable
             except ModuleNotFoundError:
                 log("sysconfig.%s", fn, exc_info=True)

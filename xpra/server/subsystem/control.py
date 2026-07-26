@@ -146,5 +146,7 @@ class ControlHandler(StubSubsystem):
         cur = getattr(target, fn, None)
         setattr(target, fn, state)
         setting_changed = getattr(target, "setting_changed", self.server.setting_changed)
+        assert callable(setting_changed)
+        # noinspection calling-non-callable
         setting_changed(feature, state)
-        return f"{feature} set to {state} (was {cur!r}"
+        return f"{feature} set to {state} (was {cur!r})"

@@ -421,6 +421,7 @@ def do_get_python_execfile_command() -> list[str]:
     major, minor = sys.version_info.major, sys.version_info.minor
     from shutil import which
     suffix = "t" if is_free_threaded() else ""
+    # noinspection deprecation
     return [which("python%i.%i%s" % (major, minor, suffix)) or which("python%i" % major) or which("python") or "python"]
 
 

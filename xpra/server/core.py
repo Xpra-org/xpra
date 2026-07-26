@@ -443,10 +443,11 @@ class ServerCore(GLibServer):
             subs.reverse()
         for sub in subs:
             fn = getattr(sub, method, None)
-            if fn is None:
-                log.warn("Warning: no %r on %s", method, sub)
+            if not callable(fn):
+                log.warn("Warning: no %r callable on %s", method, sub)
                 continue
             try:
+                # noinspection calling-non-callable
                 fn(*args)
             except Exception:
                 log.warn(f"Error: in {sub}.{method}", exc_info=True)
@@ -456,6 +457,7 @@ class ServerCore(GLibServer):
         for sub in self.subsystems.values():
             fn = getattr(sub, method, None)
             try:
+                # noinspection calling-non-callable
                 d = fn(*args)
                 log("dispatch-merge: %s()=%s", fn, d)
             except Exception:
@@ -468,8 +470,9 @@ class ServerCore(GLibServer):
     def _dispatch_first_truthy(self, method: str, *args):
         for sub in self.subsystems.values():
             fn = getattr(sub, method, None)
-            if fn is None:
+            if not callable(fn):
                 continue
+            # noinspection calling-non-callable
             r = fn(*args)
             if r:
                 return r
@@ -1766,9 +1769,10 @@ class ServerCore(GLibServer):
             if subsystems and prefix not in subsystems:
                 continue
             fn = getattr(sub, "get_ui_info", None)
-            if not fn:
+            if not callable(fn):
                 continue
             try:
+                # noinspection calling-non-callable
                 mixin_info = fn(proto, **kwargs)
             except Exception:
                 log.warn(f"Error: in {sub}.get_ui_info", exc_info=True)
@@ -1904,7 +1908,7 @@ class ServerCore(GLibServer):
     # packet handling:
     def process_packet(self, proto, packet) -> None:
         authenticated = bool(self.get_server_source(proto))
-        return super().dispatch_packet(proto, packet, authenticated)
+        super().dispatch_packet(proto, packet, authenticated)
 
     def handle_invalid_packet(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)

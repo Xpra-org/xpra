@@ -185,12 +185,13 @@ class EncodingsConnection(StubClientConnection):
                 except ImportError:
                     pass
                 else:
-                    get_raw_socket = getattr(conn, "get_raw_socket", None)
-                    try:
-                        if get_raw_socket and (sock := get_raw_socket()):
-                            stats.record_tcp_info(now, get_socket_tcp_info(sock))
-                    except (OSError, ValueError):
-                        log("failed to query TCP_INFO for %s", conn, exc_info=True)
+                    if get_raw_socket := getattr(conn, "get_raw_socket", None):
+                        try:
+                            # noinspection calling-non-callable
+                            if sock := get_raw_socket():
+                                stats.record_tcp_info(now, get_socket_tcp_info(sock))
+                        except (OSError, ValueError):
+                            log("failed to query TCP_INFO for %s", conn, exc_info=True)
             stats.update_averages()
         may_update_bandwidth_limits(self)
         wids = tuple(self.calculate_window_ids)  # make a copy so we don't clobber new wids

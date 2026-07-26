@@ -3264,9 +3264,10 @@ def run_auth(_options, args) -> ExitValue:
     auth, auth_module = get_auth_module(auth_str)[:2]
     # see if the module has a "main" entry point:
     main_fn = getattr(auth_module, "main", None)
-    if not main_fn:
+    if not callable(main_fn):
         raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
     argv = [auth_module.__file__] + args[1:]
+    # noinspection calling-non-callable
     return main_fn(argv)
 
 

@@ -99,6 +99,7 @@ class ShapeWindow(GtkStubWindow):
         log("got %i bytes", len(monodata))
         # log.warn("monodata: %s (%i bytes) %ix%i", repr_ellipsized(monodata), len(monodata), ww, wh)
         assert callable(bit_to_rectangles)
+        # noinspection calling-non-callable
         rectangles = bit_to_rectangles(monodata, ww, wh)
         log("back to rectangles")
         return rectangles

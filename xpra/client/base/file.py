@@ -79,24 +79,24 @@ class File(StubClientSubsystem, FileTransferHandler):
     # provide them via the optional `dialogs` subsystem.
     def ask_data_request(self, cb_answer: Callable[[bool], None], *args, **kwargs) -> None:
         dialogs = self.get_subsystem("dialogs")
-        fn = getattr(dialogs, "ask_data_request", None)
-        if fn:
+        if fn := getattr(dialogs, "ask_data_request", None):
+            # noinspection calling-non-callable
             fn(cb_answer, *args, **kwargs)
         else:
             FileTransferHandler.ask_data_request(self, cb_answer, *args, **kwargs)
 
     def file_size_warning(self, *args) -> None:
         dialogs = self.get_subsystem("dialogs")
-        fn = getattr(dialogs, "file_size_warning", None)
-        if fn:
+        if fn := getattr(dialogs, "file_size_warning", None):
+            # noinspection calling-non-callable
             fn(*args)
         else:
             FileTransferHandler.file_size_warning(self, *args)
 
     def transfer_progress_update(self, *args, **kwargs) -> None:
         dialogs = self.get_subsystem("dialogs")
-        fn = getattr(dialogs, "transfer_progress_update", None)
-        if fn:
+        if fn := getattr(dialogs, "transfer_progress_update", None):
+            # noinspection calling-non-callable
             fn(*args, **kwargs)
         else:
             FileTransferHandler.transfer_progress_update(self, *args, **kwargs)

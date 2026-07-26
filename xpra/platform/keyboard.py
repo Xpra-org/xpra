@@ -49,6 +49,7 @@ def main(argv: list[str]) -> int:
         if not Keyboard:
             print("no keyboard implementation")
             return 1
+        # noinspection calling-non-callable
         keyboard = Keyboard()  # pylint: disable=not-callable
         mod_meanings, mod_managed, mod_pointermissing = keyboard.get_keymap_modifiers()
         print("Modifiers:")

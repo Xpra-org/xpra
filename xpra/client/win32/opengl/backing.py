@@ -46,7 +46,8 @@ class WGLPaintContext:
     def update_geometry(self) -> None:
         """ not needed on MS Windows """
 
-    def get_scale_factor(self) -> float:
+    @staticmethod
+    def get_scale_factor() -> float:
         return 1
 
     def __repr__(self):
@@ -72,7 +73,8 @@ class NullWidget:
     def destroy(self) -> None:
         """ nothing to destroy """
 
-    def get_mapped(self) -> bool:
+    @staticmethod
+    def get_mapped() -> bool:
         return True
 
 

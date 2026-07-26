@@ -61,6 +61,7 @@ def get_channel_binding(connection, name: str):
     if not getter:
         return None
     try:
+        # noinspection calling-non-callable
         data = getter(name)
     except Exception as e:
         log("cannot get %s channel binding from %s: %s", name, sock, e)

@@ -117,10 +117,11 @@ class XpraClientBase(PacketDispatcher):
             subs.reverse()
         for sub in subs:
             fn = getattr(sub, method, None)
-            if fn is None:
-                sublog.warn("Warning: no %r on %s", method, sub)
+            if not callable(fn):
+                sublog.warn("Warning: no %r callable on %s", method, sub)
                 continue
             try:
+                # noinspection calling-non-callable
                 fn(*args)
             except Exception:
                 sublog.warn(f"Error: in {sub}.{method}", exc_info=True)
@@ -131,6 +132,7 @@ class XpraClientBase(PacketDispatcher):
         for sub in self.subsystems.values():
             fn = getattr(sub, method, None)
             try:
+                # noinspection calling-non-callable
                 d = fn(*args)
             except Exception:
                 sublog.warn(f"Error: in {sub}.{method}", exc_info=True)
@@ -282,7 +284,8 @@ class XpraClientBase(PacketDispatcher):
         merge_dicts(info, self._dispatch_merge("get_info"))
         return info
 
-    def get_caps(self) -> dict[str, Any]:
+    @staticmethod
+    def get_caps() -> dict[str, Any]:
         """
         `XpraClientBase` itself has no `PREFIX` and is never composed, so this
         is never actually reached via `_call_subsystem` - it stays as the

@@ -380,8 +380,8 @@ class WindowManagerClient(StubClientSubsystem):
     def deiconify_windows(self) -> None:
         log("deiconify_windows()")
         for window in self._id_to_window.values():
-            deiconify = getattr(window, "deiconify", None)
-            if deiconify:
+            if deiconify := getattr(window, "deiconify", None):
+                # noinspection calling-non-callable
                 deiconify()
 
     def resize_windows(self, new_size_fn: Callable) -> None:
