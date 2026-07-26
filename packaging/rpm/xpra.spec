@@ -1093,18 +1093,23 @@ fi
 
 
 %changelog
-* Thu Jul 23 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
+* Sun Jul 26 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
 - 🔧 Platforms, build and packaging:
    Cython fails to compile on arm64
    python fido 2.2.1
    DEB unwanted dependencies on `libdav1d`
+   Cython 3.2.9
+   missing `xpra-server-wayland` DEB package, with full support on Debian Sid and Ubuntu Resolute
 - Major:
+   macOS client crash with audio enabled or speaker state changes
    Gtk X11 clients OpenGL errors
    missing wheel events with MS Windows clients
    shadow sessions can hang with VNC connections
    parsing of bind options using legacy form
    incomplete asynchronous keyboard initialization always apply initial settings
    X11 atom-name typos
+   power events not used
+   nvenc: choose a profile matching the chroma format
 - Clipboard:
    some default targets missing
    prevent stale emission
@@ -1121,6 +1126,15 @@ fi
    `record` forwards compatibility
    example clients now usable: handle more base packet types
    wheel events may land in the wrong location
+   audio: unnecessary restarts
+   `peercred` wrongly queried on all stream sockets
+   IPv6 socket warnings
+- Stricter Types:
+   full cythonization fixes
+   SSL CA data is binary
+   ensure types compared are always the same
+   keyboard option parsing type mismatch
+   minor annotation fixes, more
 - Cosmetic:
    skip notification warnings during cleanup
    system tray does not detect mmap
@@ -1129,6 +1143,9 @@ fi
    invalid type used in unreachable runtime path
    X11 client tests for all display bit depths
    cleanup unavailable server log requests
+   simplify: env values have a non-None default
+   stray commas
+   silence macOS legacy SSL warnings
 * Fri Jul 03 2026 Antoine Martin <antoine@xpra.org> 6.5.1-10
 - Platforms, build and packaging:
    `pynvml 13.610.43`

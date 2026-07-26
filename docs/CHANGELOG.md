@@ -1,17 +1,22 @@
 # Changelog
 
-## [6.5.2] 2026-07-23
+## [6.5.2] 2026-07-26
 * 🔧 Platforms, build and packaging:
   * [Cython fails to compile on arm64](https://github.com/Xpra-org/xpra/commit/90f828ae524112688647d9f8d87778370c01e3a8)
   * [python fido 2.2.1](https://github.com/Xpra-org/xpra/commit/6d45def0ced223e396d887958eac7e9948c0fe95)
   * [DEB unwanted dependencies on `libdav1d`](https://github.com/Xpra-org/xpra/commit/dfda654ccb5889ce8d1b230baab493ecfb5aff5a)
+  * [Cython 3.2.9](https://github.com/Xpra-org/xpra/commit/3b7b8b006aece7009b6b83d6d787ea72d50ab842)
+  * [missing `xpra-server-wayland` DEB package](https://github.com/Xpra-org/xpra/commit/51dc4f4a2877adbf1d0adf234ecbae1e0cb92370), [with full support on Debian Sid and Ubuntu Resolute](https://github.com/Xpra-org/xpra/commit/36dfd042e491965602168566890ab4c4f5b7826e)
 * Major:
+  * [macOS client crash with audio enabled](https://github.com/Xpra-org/xpra/commit/7384349e4111eca3e8fe3f911f72e079e4c7f810) [or speaker state changes](https://github.com/Xpra-org/xpra/commit/b99e2991df7b4d9d65236f6986c3bbdf606a5278)
   * [Gtk X11 clients OpenGL errors](https://github.com/Xpra-org/xpra/commit/e7c95b2cd76e3c8a7a09bb13ea174bc9efd0b091)
   * [missing wheel events with MS Windows clients](https://github.com/Xpra-org/xpra/commit/3d9a6e96d45978beb881162ec55c5bf71695f7d7)
   * [shadow sessions can hang with VNC connections](https://github.com/Xpra-org/xpra/commit/918d68de2fc5d5b06effe78fd8f9b1538aa66eb3)
   * [parsing of bind options using legacy form](https://github.com/Xpra-org/xpra/commit/25e33d1a2d01346df7302448e3fdd34445a8804b)
   * [incomplete asynchronous keyboard initialization](https://github.com/Xpra-org/xpra/commit/4485184cc19cab4525d9e66b581cc9afe5533a2b) [always apply initial settings](https://github.com/Xpra-org/xpra/commit/1d3af3bc7e78245ff404244449daf1d03cbdb048)
   * [X11 atom-name typos](https://github.com/Xpra-org/xpra/commit/50bf3be03b4fbbf656baa8d854d90b255e31cb3f)
+  * [power events not used](https://github.com/Xpra-org/xpra/commit/ccc87ddae53d759f23a87d43601ae8bec5da677d)
+  * [nvenc: choose a profile matching the chroma format](https://github.com/Xpra-org/xpra/commit/9fcc9edf262e3516a05dc5836020d39f49dead63)
 * Clipboard:
   * [some default targets missing](https://github.com/Xpra-org/xpra/commit/5998f9b179bc0f5b81314f683f20443c73567e72)
   * [prevent stale emission](https://github.com/Xpra-org/xpra/commit/5aa73353055d91d9d165c0772643d4a8f1087a1a)
@@ -28,6 +33,15 @@
   * [`record` forwards compatibility](https://github.com/Xpra-org/xpra/commit/ca3029cdb91e43379069b4c25294e4881c8ca8c0)
   * [example clients now usable: handle more base packet types](https://github.com/Xpra-org/xpra/commit/7e9636f64f6ec173a44549d48e112a915d5e56e3)
   * [wheel events may land in the wrong location](https://github.com/Xpra-org/xpra/commit/aaf2fec551efa18a7840e72ac3e0caac77023b85)
+  * [audio: unnecessary restarts](https://github.com/Xpra-org/xpra/commit/2ca0375ec458c8ac9bc8a7fa09fae53ffea4713f)
+  * [`peercred` wrongly queried on all stream sockets](https://github.com/Xpra-org/xpra/commit/64d5a73cdd26da8a593b42acb798c3e3fca86a38)
+  * [IPv6 socket warnings](https://github.com/Xpra-org/xpra/commit/a32ac0859e42ec3da946442c8b4c52d1650dfe47)
+* Stricter Types:
+  * [full cythonization fixes](https://github.com/Xpra-org/xpra/commit/7dd3617a7f9304bc3358fbf2891ea4f38f37ffcf)
+  * [SSL CA data is binary](https://github.com/Xpra-org/xpra/commit/a4a3d93a7795429afcc2b8bc1bca8e9daf8a66c4)
+  * [ensure types compared are always the same](https://github.com/Xpra-org/xpra/commit/98a8c04c1a1de4c37778049d5204e6afff01d854)
+  * [keyboard option parsing type mismatch](https://github.com/Xpra-org/xpra/commit/bf407a94ef5ff2c5ee23c6d49f6b5d356c77cdab)
+  * [minor annotation fixes](https://github.com/Xpra-org/xpra/commit/4d99f160236b18c8f3f0c8831a8ab9d8bc987662), [more](https://github.com/Xpra-org/xpra/commit/b293a11557e0c23fed3d0fb7ea29855596113696)
 * Cosmetic:
   * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/dd4a177bb9262562a007103692bb594369a6df74)
   * [system tray does not detect mmap](https://github.com/Xpra-org/xpra/commit/d11c5e0f2b0fdeae6da143b7ef9acff433b8bd50)
@@ -36,6 +50,9 @@
   * [invalid type used in unreachable runtime path](https://github.com/Xpra-org/xpra/commit/04cd4a93480e6cbe61dff393f526ead9eed0b012)
   * [X11 client tests for all display bit depths](https://github.com/Xpra-org/xpra/commit/5f209127bf22cc3b08d350abee55c7e12b797d13)
   * [cleanup unavailable server log requests](https://github.com/Xpra-org/xpra/commit/f7309ed26ce621504bac82df36b4a9a2e455471d)
+  * [simplify: env values have a non-None default](https://github.com/Xpra-org/xpra/commit/e6b1f5374d593238bb894a3a043d45626db3de6b)
+  * [stray comma](https://github.com/Xpra-org/xpra/commit/be5a0ab5bb10df0f5c88e2df8b2a0a300a3fedef)[s](https://github.com/Xpra-org/xpra/commit/b170b41d40887d1a983497510b4a1069388d607c)
+  * [silence macOS legacy SSL warnings](https://github.com/Xpra-org/xpra/commit/fce09030bc69b56b6dec644e27e9ad4da13c5774)
 
 ## [6.5.1] 2026-07-03
 * 🔧 Platforms, build and packaging:
