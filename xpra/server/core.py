@@ -246,7 +246,7 @@ class ServerCore(ServerBaseClass):
     def add_core_control_commands(self) -> None:
         from xpra.net.control.common import parse_boolean_value
         self.args_control("readonly", "set readonly state for client(s)", min_args=1, max_args=1,
-                          validation=[parse_boolean_value]),
+                          validation=[parse_boolean_value])
 
     ######################################################################
     # run / stop:
