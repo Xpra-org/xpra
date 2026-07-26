@@ -95,6 +95,7 @@ Recommends: xpra-audio (= ${binary:Version})
 Suggests:  xpra-codecs-nvidia (= ${binary:Version})
          ,xpra-codecs-amd (= ${binary:Version})
          ,xpra-server-wayland (= ${binary:Version})
+         ,xpra-wayland (= ${binary:Version})
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
@@ -143,7 +144,6 @@ Recommends: ${qrcode:Depends}
 # printer forwarding:
         ,python3-cups
 Suggests: openssh-server
-        ,libwayland-client0
 # yaml connections:
         ,python3-yaml
 Description: tool to detach/reattach running X programs,
@@ -220,11 +220,23 @@ Architecture: any
 Conflicts: python2-xpra, python3-xpra, xpra (<< 5)
 Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
 Depends: xpra-server (= ${binary:Version})
+        ,xpra-wayland (= ${binary:Version})
         ,${misc:Depends}
         ,${python3:Depends}
         ,${shlibs:Depends}
 Description: tool to detach/reattach running X programs,
  this is the experimental xpra server using wayland as backend
+
+
+Package: xpra-wayland
+Architecture: any
+Depends: xpra-common (= ${binary:Version})
+        ,${misc:Depends}
+        ,${python3:Depends}
+        ,${shlibs:Depends}
+Description: tool to detach/reattach running X programs,
+ this package contains the base xpra wayland support,
+ including the `xpra wait-for-wayland` subcommand
 
 
 Package: xpra-client

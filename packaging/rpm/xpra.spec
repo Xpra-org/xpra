@@ -132,6 +132,7 @@ Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
 Suggests:           %{package_prefix}-client-tk = %{version}-%{release}
 Suggests:			%{package_prefix}-server-wayland = %{version}-%{release}
+Suggests:           %{package_prefix}-wayland = %{version}-%{release}
 %if 0%{?pyqt6}
 Suggests:           %{package_prefix}-client-qt6 = %{version}-%{release}
 %endif
@@ -227,13 +228,6 @@ BuildRequires:		pkgconfig(gobject-introspection-1.0)
 %if 0%{?run_tests}
 BuildRequires:		%{py3rpmname}-cryptography
 BuildRequires:		%{py3rpmname}-numpy
-%endif
-# for now, this is only used by the `xpra wait-for-wayland` subcommand:
-BuildRequires:      wayland-devel
-%if 0%{?el10}
-Recommends:         libwayland-client
-%else
-Suggests:           libwayland-client
 %endif
 %description -n %{package_prefix}-common
 This package contains the files which are shared between the xpra client and server packages.
@@ -522,6 +516,8 @@ Requires:			xorg-x11-server-utils
 %if 0%{?el10}
 Requires:			weston
 Requires:			xorg-x11-server-Xwayland
+# `xpra_weston_xvfb` uses the `xpra wait-for-wayland` subcommand:
+Recommends:			%{package_prefix}-wayland = %{version}-%{release}
 %else
 Requires:			xorg-x11-drv-dummy
 %endif
@@ -613,6 +609,22 @@ Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbi
 This package contains the xpra server.
 
 
+%package -n %{package_prefix}-wayland
+Summary:			xpra wayland support
+Provides:           %{package_prefix}-wayland
+Requires:			%{package_prefix}-common = %{version}-%{release}
+# used by the `xpra wait-for-wayland` subcommand:
+BuildRequires:		wayland-devel
+%if 0%{?el10}
+Recommends:         libwayland-client
+%else
+Suggests:           libwayland-client
+%endif
+%description -n %{package_prefix}-wayland
+This package contains the base xpra wayland support,
+including the `xpra wait-for-wayland` subcommand.
+
+
 %if 0%{?wayland}
 %package -n %{package_prefix}-server-wayland
 Summary:			xpra wayland server
@@ -620,6 +632,7 @@ Provides:           %{package_prefix}-server-wayland
 Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
 Requires:			%{package_prefix}-server = %{version}-%{release}
+Requires:			%{package_prefix}-wayland = %{version}-%{release}
 Requires:           wlroots-0.19
 BuildRequires:		pkgconfig(wlroots-0.19)
 BuildRequires:		wayland-devel
@@ -827,8 +840,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/scripts/
 %{python3_sitearch}/xpra/pointer/
 %{python3_sitearch}/xpra/webcam/
-%pycached %{python3_sitearch}/xpra/wayland/__init__.py
-%{python3_sitearch}/xpra/wayland/client/
 %{python3_sitearch}/xpra-*.egg-info
 
 %files -n %{package_prefix}-x11
@@ -933,6 +944,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libexecdir}/xpra/auth_dialog
 %{_libexecdir}/xpra/xpra*
 %{_libexecdir}/xpra/daemonizer
+
+%files -n %{package_prefix}-wayland
+%pycached %{python3_sitearch}/xpra/wayland/__init__.py
+%{python3_sitearch}/xpra/wayland/client/
 
 %if 0%{?wayland}
 %files -n %{package_prefix}-server-wayland
