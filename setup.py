@@ -3107,6 +3107,9 @@ tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 
 toggle_packages(wayland_client_ENABLED or wayland_server_ENABLED, "xpra.wayland")
 tace(wayland_client_ENABLED, "xpra.wayland.wait_for_display", "wayland-client")
+if not wayland_server_ENABLED:
+    for module in ("example", "keyboard_config", "server"):
+        remove_packages(f"xpra.wayland.{module}")
 XDG_SHELL_PROTOCOL_HEADER = "./xpra/wayland/xdg-shell-protocol.h"
 if wayland_server_ENABLED:
     if not os.path.exists(XDG_SHELL_PROTOCOL_HEADER):
