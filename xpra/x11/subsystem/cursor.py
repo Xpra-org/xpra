@@ -96,7 +96,7 @@ class XCursorServer(CursorManager):
             return None, []
         self.last_image = list(cursor_image)
         pixels = self.last_image[7]
-        log("get_cursor_image() cursor=%s", cursor_image[:7] + ["%s bytes" % len(pixels)] + cursor_image[8:])
+        log("get_cursor_image() cursor=%s", self.last_image[:7] + ["%s bytes" % len(pixels)] + self.last_image[8:])
         is_default = self.default_image is not None and str(pixels) == str(self.default_image[7])
         if skip_default and is_default:
             log("get_cursor_data(): default cursor - clearing it")
