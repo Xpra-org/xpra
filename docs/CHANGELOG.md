@@ -11,6 +11,8 @@
     * [chunked file transfer early rejection errors out](https://github.com/Xpra-org/xpra/commit/075e60d24ca4e14b06321864afb32a51cf6b7514)
     * [wheel events may land in the wrong location](https://github.com/Xpra-org/xpra/commit/dc79a541d7c9c933679ecdd5592103bfd75301ee)
     * [misnamed X11 atoms](https://github.com/Xpra-org/xpra/commit/8415ce33966344590a169cf62ed2083cae93e79a)
+    * [macOS client crash with audio enabled](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8) [or speaker state changes](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8)
+    * [nvenc: choose a profile matching the chroma format](https://github.com/Xpra-org/xpra/commit/68767858b81bed6d3c6342048850ea57e50183ec)
 * Minor:
     * [Gtk X11 clients OpenGL errors](https://github.com/Xpra-org/xpra/commit/4c7dab57dc77fea015e58f4ecfe27714d5720403)
     * [don't request OpenGL contexts with depth or stencil buffers](https://github.com/Xpra-org/xpra/commit/67511f70785c6bc2e5741d0a68b5e8c349db10d0)
@@ -20,6 +22,11 @@
     * [Cython CSC validation](https://github.com/Xpra-org/xpra/commit/a729bf03259bf37cd78d29d89b99cd92d2f1cf37)
     * [validate port numbers ourselves](https://github.com/Xpra-org/xpra/commit/c23aa1018334e940feaeb3b12ffa8a9064d59fe0)
     * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/d329fc942cd9475f67bdce1c13280dac98d1d9a5)
+    * [IPv6 socket warnings](https://github.com/Xpra-org/xpra/commit/9ce8904e7a7a88263e62d76f68be4ecdcce0db86)
+* Stricter Types:
+    * [keyboard option parsing type mismatch](https://github.com/Xpra-org/xpra/commit/e1e7155d2f5b228a6d9195999c03655f0e6c1857)
+* Cosmetic:
+    * [silence macOS legacy SSL warnings](https://github.com/Xpra-org/xpra/commit/a1cfa47710b50ef57db447f7b9d08ce76c49ad89)
 
 ## [5.1.6] 2026-06-30
 * Platforms, build and packaging:
