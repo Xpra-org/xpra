@@ -948,7 +948,7 @@ cdef class Encoder:
         else:
             h264.sliceMode = 3            #sliceModeData specifies the number of slices
             h264.sliceModeData = 1        #1 slice!
-        h264.repeatSPSPPS = 0
+            h264.repeatSPSPPS = 0
         h264.outputAUD = 1
         h264.outputPictureTimingSEI = 1
         h264.idrPeriod = gopLength
