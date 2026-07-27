@@ -61,6 +61,11 @@ Build-Depends: debhelper (>= 8)
 #resolute:              ,libxkbcommon-dev
 #resolute:              ,libpixman-1-dev
 #resolute:              ,libwayland-bin
+#stonking:              ,libwlroots-0.19-dev
+#stonking:              ,wayland-protocols
+#stonking:              ,libxkbcommon-dev
+#stonking:              ,libpixman-1-dev
+#stonking:              ,libwayland-bin
               ,pandoc
 Standards-Version: 3.9.3
 Homepage: https://xpra.org/
@@ -333,6 +338,7 @@ Depends: xpra-common (= ${binary:Version})
 #noble:              ,libopenh264-7
 #questing:              ,libopenh264-8
 #resolute:              ,libopenh264-8
+#stonking:              ,libopenh264-8
 #bookworm:              ,libopenh264-7
 #trixie:              ,libopenh264-8
 #forky:              ,libopenh264-8
@@ -358,6 +364,7 @@ Depends: xpra-codecs (= ${binary:Version})
 #noble:              ,libavif16
 #questing:              ,libavif16
 #resolute:              ,libavif16
+#stonking:              ,libavif16
 #bookworm:              ,libavif15
 #trixie:              ,libavif16
 #forky:              ,libavif16
