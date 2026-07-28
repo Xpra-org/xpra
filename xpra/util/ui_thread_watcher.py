@@ -42,33 +42,48 @@ class UIThreadWatcher:
         We run a dedicated thread to verify that
         the UI thread has run since the last time it was
         scheduled to run.
-        Beware that the callbacks (fail, resume and alive)
-        will run from different threads..
+        Beware that the `alive` and `fail` callbacks run from the polling thread,
+        only the `resume` callbacks are run from the UI thread.
     """
 
     def __init__(self, polling_timeout: int, max_delta: int, announce_timeout: float):
         self.polling_timeout = polling_timeout
         self.max_delta = max_delta
         self.announce_timeout: float = announce_timeout / 1000.0 if announce_timeout else float('inf')
-        self.init_vars()
-
-    def init_vars(self) -> None:
+        # the callbacks and `show_message` belong to whoever registers them:
+        # this class never clears them, so that stopping the watcher
+        # (which is a process-wide singleton) cannot silently discard
+        # the callbacks registered by another subsystem - see `remove_*_callback`
         self.alive_callbacks: list[Callable[[], None]] = []
         self.fail_callbacks: list[Callable[[], None]] = []
         self.resume_callbacks: list[Callable[[], None]] = []
+        self.show_message: Callable[[str], None] = log_message
+        # this event is created once and re-used: `start` clears it and `stop` sets it,
+        # so that the watcher can be started again (ie: when the client re-connects)
+        self.exit: Event = Event()
+        self.started: bool = False
+        # bumped by every `start`, so that the polling thread of a previous run
+        # can tell that it has been superseded and must not touch the new run's state:
+        self.generation: int = 0
+        self.reset_state()
+
+    def reset_state(self) -> None:
+        # the polling state - reset by `start`, from the thread owning the watcher:
         self.ui_blocked: bool = False
         self.announced_blocked: bool = False
         self.last_ui_thread_time: float = 0
         self.ui_wakeup_timer: int = 0
-        self.exit: Event = Event()
-        self.show_message = log_message
 
     def start(self) -> None:
-        if self.last_ui_thread_time > 0:
+        if self.started:
             log.warn("UI thread watcher already started!")
             return
+        self.started = True
+        self.reset_state()
+        self.exit.clear()
+        self.generation += 1
         if self.polling_timeout > 0:
-            start_thread(self.poll_ui_loop, "UI thread polling", daemon=True)
+            start_thread(self.poll_ui_loop, "UI thread polling", daemon=True, args=(self.generation,))
         else:
             log("not starting an IO polling thread")
         if FAKE_UI_LOCKUPS > 0:
@@ -83,6 +98,7 @@ class UIThreadWatcher:
             GLib.timeout_add(10 * 1000 + FAKE_UI_LOCKUPS, sleep_in_ui_thread)
 
     def stop(self) -> None:
+        self.started = False
         self.cancel_ui_wakeup_timer()
         self.exit.set()
 
@@ -117,16 +133,16 @@ class UIThreadWatcher:
         # UI thread was blocked?
         if self.ui_blocked:
             if self.announced_blocked:
-                log.info("UI thread is running again, resuming")
+                self.show_message("UI thread is running again, resuming")
                 self.announced_blocked = False
             self.ui_blocked = False
             run_callbacks(self.resume_callbacks)
         self.ui_wakeup_timer = 0
         return False
 
-    def poll_ui_loop(self) -> None:
-        log("poll_ui_loop() running")
-        while not self.exit.is_set():
+    def poll_ui_loop(self, generation: int) -> None:
+        log("poll_ui_loop(%i) running", generation)
+        while self.generation == generation and not self.exit.is_set():
             if self.last_ui_thread_time > 0:
                 delta = monotonic() - self.last_ui_thread_time
                 if self.ui_blocked:
@@ -139,7 +155,7 @@ class UIThreadWatcher:
                         run_callbacks(self.fail_callbacks)
                     if not self.announced_blocked and delta > self.announce_timeout:
                         self.announced_blocked = True
-                        log.info("UI thread is now blocked")
+                        self.show_message("UI thread is now blocked")
                 else:
                     # seems to be ok:
                     log("poll_ui_loop() ok, firing %s", self.alive_callbacks)
@@ -166,9 +182,10 @@ class UIThreadWatcher:
                     self.ui_blocked = True
                     self.tick()
                     GLib.idle_add(self.ui_thread_wakeup)
-        self.init_vars()
-        log("poll_ui_loop() ended")
-        self.cancel_ui_wakeup_timer()
+        log("poll_ui_loop(%i) ended", generation)
+        if self.generation == generation:
+            # don't touch the state of a newer run:
+            self.cancel_ui_wakeup_timer()
 
     def cancel_ui_wakeup_timer(self) -> None:
         if uiwt := self.ui_wakeup_timer:
