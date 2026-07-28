@@ -231,9 +231,10 @@ class OSXMenuHelper(GTKTrayMenu):
             self.after_handshake(set_clipboard_menu)
         if features.audio and SHOW_SOUND_MENU:
             audio_menu = Gtk.Menu()
-            if self.client.speaker_allowed and self.client.speaker_codecs:
+            audio = self.get_subsystem("audio")
+            if audio and audio.speaker_allowed and audio.speaker_codecs:
                 add(audio_menu, self.make_speakermenuitem())
-            if self.client.microphone_allowed and self.client.microphone_codecs:
+            if audio and audio.microphone_allowed and audio.microphone_codecs:
                 add(audio_menu, self.make_microphonemenuitem())
             menus.append(("Audio", audio_menu))
         if features.window and SHOW_ENCODINGS_MENU:
@@ -264,11 +265,12 @@ class OSXMenuHelper(GTKTrayMenu):
             # so we only add the menu item if it does something
             def add_ah(*_args) -> None:
                 command = self.get_subsystem("command")
+                file_sub = self.get_subsystem("file")
                 if command and command.server_start_new_commands:
                     add(server_menu, self.make_runcommandmenuitem())
                 if SHOW_SERVER_COMMANDS and command and command.server_commands_info:
                     add(server_menu, self.make_servercommandsmenuitem())
-                if SHOW_UPLOAD and self.client.remote_file_transfer:
+                if SHOW_UPLOAD and file_sub and file_sub.remote_file_transfer:
                     add(server_menu, self.make_uploadmenuitem())
                 if SHOW_SERVER_DEBUG:
                     add(server_menu, self.make_serverdebugmenuitem())
