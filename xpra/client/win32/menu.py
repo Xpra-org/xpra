@@ -11,6 +11,7 @@ from xpra.platform.win32.common import (
     CreatePopupMenu, AppendMenuW, SetForegroundWindow, TrackPopupMenu, GetCursorPos,
     DestroyMenu, SendMessageW,
 )
+from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
 from xpra.client.gui.menu_helper import MenuHelper
 from xpra.log import Logger
 
@@ -48,7 +49,15 @@ class TrayMenu(MenuHelper):
         pos = POINT()
         GetCursorPos(byref(pos))
         SetForegroundWindow(hwnd)
-        cmd = TrackPopupMenu(self.menu, win32con.TPM_RETURNCMD, pos.x, pos.y, 0, hwnd, None)
+        # `TrackPopupMenu` (with TPM_RETURNCMD) runs its own modal message loop
+        # and blocks until the user picks an item or dismisses the menu; keep
+        # GLib serviced during that time so screen updates and the UI watcher
+        # keep running (the tray window's WndProc is not ours to hook):
+        start_modal_message_pump(hwnd)
+        try:
+            cmd = TrackPopupMenu(self.menu, win32con.TPM_RETURNCMD, pos.x, pos.y, 0, hwnd, None)
+        finally:
+            stop_modal_message_pump(hwnd)
         # PostMessageA(hwnd, win32con.WM_NULL, 0, 0)
         log("TrackPopupMenu(..)=%s", cmd)
         if cmd == 1001:

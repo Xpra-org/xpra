@@ -38,6 +38,7 @@ from xpra.platform.win32.common import (
 )
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
+from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
 from xpra.log import Logger
 
 log = Logger("client", "window")
@@ -301,6 +302,13 @@ class ClientWindow(GObject.GObject):
             if msg == win32con.WM_GETMINMAXINFO and lparam:
                 self.apply_size_constraints(lparam)
                 return 0
+            if msg in (win32con.WM_ENTERSIZEMOVE, win32con.WM_ENTERMENULOOP):
+                # entering a native modal loop (window drag/resize, or system /
+                # popup menu tracking): keep GLib serviced for its duration, then
+                # let DefWindowProc run the loop:
+                self.start_modal_loop()
+            if msg in (win32con.WM_EXITSIZEMOVE, win32con.WM_EXITMENULOOP):
+                self.stop_modal_loop()
             if msg == win32con.WM_WINDOWPOSCHANGING and self._below and lparam:
                 # re-assert "always on bottom" on every pending z-order change
                 # (there is no persistent/"sticky" HWND_BOTTOM, unlike HWND_TOPMOST):
@@ -769,6 +777,14 @@ class ClientWindow(GObject.GObject):
         ShowWindow(self.hwnd, win32con.SW_SHOW)
         UpdateWindow(self.hwnd)
         # InvalidateRect(self.hwnd, None, True)
+
+    def start_modal_loop(self) -> None:
+        if self.hwnd:
+            start_modal_message_pump(self.hwnd)
+
+    def stop_modal_loop(self) -> None:
+        if self.hwnd:
+            stop_modal_message_pump(self.hwnd)
 
     # keep at least this many pixels of the window (and its title bar) on-screen:
     MIN_ONSCREEN = 48

@@ -4,16 +4,20 @@
 # later version. See the file COPYING for details.
 
 import win32con
-from ctypes import byref
-from ctypes.wintypes import MSG
+from ctypes import byref, WINFUNCTYPE, c_size_t
+from ctypes.wintypes import MSG, HWND, UINT, DWORD
 
-from xpra.platform.win32.common import PeekMessageW, TranslateMessage, DispatchMessageW
+from xpra.platform.win32.common import PeekMessageW, TranslateMessage, DispatchMessageW, SetTimer, KillTimer
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("win32")
 
 GLib = gi_import("GLib")
+
+# the single Windows message source, set by `inject_windows_message_source`;
+# the modal-loop pump needs to reach it to make it inert (see `start_modal_message_pump`):
+_win_message_source = None
 
 
 class WindowsMessageSource(GLib.Source):
@@ -23,6 +27,11 @@ class WindowsMessageSource(GLib.Source):
         super().__init__()
         self.msg = MSG()
         self.main_loop = None
+        # while a native modal loop is running (window drag / resize), the win32
+        # message queue is pumped by `DefWindowProc` itself; this source must stay
+        # inert so it does not steal (via `PM_REMOVE`) the input messages that the
+        # modal loop relies on - see `iterate_main_context`:
+        self.modal = False
         # Set high priority so Windows messages are processed promptly
         self.set_priority(GLib.PRIORITY_HIGH)
 
@@ -31,6 +40,8 @@ class WindowsMessageSource(GLib.Source):
         """Check if messages are available without blocking"""
         # Return (ready, timeout)
         # timeout=-1 means wait indefinitely, 0 means don't wait
+        if self.modal:
+            return False, 10
         has_message = PeekMessageW(
             byref(self.msg),
             None,  # All windows
@@ -44,6 +55,8 @@ class WindowsMessageSource(GLib.Source):
 
     def check(self):
         """Check if source is ready to dispatch"""
+        if self.modal:
+            return False
         has_message = PeekMessageW(
             byref(self.msg),
             None,
@@ -101,10 +114,77 @@ def process_windows_messages():
     return True  # Continue timer
 
 
+# Native modal loops (window drag / resize, menu tracking) run their own
+# `GetMessage`/`DispatchMessage` loop inside `DefWindowProc` / `TrackPopupMenu`
+# and never return to GLib, which would starve every GLib idle/timeout callback
+# (screen updates, the UI watcher ping, ...) for the duration of the interaction.
+#
+# We install a win32 timer with a `TIMERPROC` callback: `WM_TIMER` messages are
+# delivered *inside* the modal loop, and because we pass a callback, the modal
+# loop's `DispatchMessage` invokes it directly (no window procedure involved), so
+# the very same mechanism works for any HWND without hooking its WndProc.
+MODAL_PUMP_TIMER_ID = 0xE17A  # arbitrary, unlikely to clash with app timers
+MODAL_PUMP_INTERVAL_MS = 10  # ~100Hz, matches the normal message-source polling
+
+# void CALLBACK TimerProc(HWND, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+TIMERPROC = WINFUNCTYPE(None, HWND, UINT, c_size_t, DWORD)
+
+# number of nested modal loops currently pumping (menus can nest, e.g. a submenu):
+_modal_depth = 0
+
+
+def _on_pump_timer(_hwnd, _msg, _timer_id, _dwtime) -> None:
+    iterate_main_context()
+
+
+# keep a single reference to the ctypes callback alive for the process lifetime
+# (if it were garbage-collected while a timer is armed, the callback would crash):
+_timer_proc_ref = TIMERPROC(_on_pump_timer)
+
+
+def start_modal_message_pump(hwnd: int) -> None:
+    """Called when `hwnd` is about to enter a native modal move/resize/menu loop."""
+    global _modal_depth
+    _modal_depth += 1
+    if _win_message_source is not None:
+        # stop our GLib source from stealing (via `PM_REMOVE`) the input messages
+        # the modal loop relies on - `iterate_main_context` will run the rest:
+        _win_message_source.modal = True
+    SetTimer(hwnd, MODAL_PUMP_TIMER_ID, MODAL_PUMP_INTERVAL_MS, _timer_proc_ref)
+    log("start_modal_message_pump(%#x) depth=%i", hwnd, _modal_depth)
+
+
+def stop_modal_message_pump(hwnd: int) -> None:
+    """Called when `hwnd` leaves a native modal move/resize/menu loop."""
+    global _modal_depth
+    KillTimer(hwnd, MODAL_PUMP_TIMER_ID)
+    _modal_depth = max(0, _modal_depth - 1)
+    if _modal_depth == 0 and _win_message_source is not None:
+        _win_message_source.modal = False
+    log("stop_modal_message_pump(%#x) depth=%i", hwnd, _modal_depth)
+
+
+def iterate_main_context(max_iterations: int = 32) -> None:
+    """
+    Flush pending GLib work without blocking.
+
+    Driven from the modal-loop timer callback: the `WindowsMessageSource` is
+    inert (`modal=True`) so this only dispatches idle/timeout sources - the modal
+    loop keeps ownership of the win32 message queue.
+    """
+    context = GLib.MainContext.default()
+    n = 0
+    while n < max_iterations and context.pending():
+        context.iteration(False)
+        n += 1
+
+
 def inject_windows_message_source(main_loop) -> int:
+    global _win_message_source
     context = main_loop.get_context()
     win_source = WindowsMessageSource()
     win_source.main_loop = main_loop  # Store reference for WM_QUIT handling
     main_loop._win_message_source = win_source  # Store reference ot prevent garbage collection
+    _win_message_source = win_source
 
     return win_source.attach(context)
