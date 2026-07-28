@@ -46,12 +46,15 @@ class PowerEventClient(StubClientMixin):
         if self.ui_watcher:
             return
         from xpra.util.ui_thread_watcher import get_ui_watcher
-        self.ui_watcher = get_ui_watcher()
-        assert self.ui_watcher
-        self.ui_watcher.start()
-        self.ui_watcher.add_resume_callback(self.ui_unpause)
-        self.ui_watcher.add_fail_callback(self.ui_pause)
-        self.ui_watcher.show_message = self.ui_message
+        ui_watcher = get_ui_watcher()
+        assert ui_watcher
+        # register before exposing the watcher, so that `cleanup`
+        # can only ever find a watcher we have registered with:
+        ui_watcher.add_resume_callback(self.ui_unpause)
+        ui_watcher.add_fail_callback(self.ui_pause)
+        ui_watcher.show_message = self.ui_message
+        self.ui_watcher = ui_watcher
+        ui_watcher.start()
 
     def cleanup(self) -> None:
         from xpra.platform.events import remove_handler
@@ -59,6 +62,13 @@ class PowerEventClient(StubClientMixin):
         remove_handler("resume", self.resume)
         if uw := self.ui_watcher:
             self.ui_watcher = None
+            # the watcher is a process-wide singleton which outlives this client,
+            # so we must remove our own callbacks or they would accumulate
+            # (one dead client's worth per re-connection):
+            from xpra.util.ui_thread_watcher import log_message
+            uw.remove_resume_callback(self.ui_unpause)
+            uw.remove_fail_callback(self.ui_pause)
+            uw.show_message = log_message
             uw.stop()
 
     def ui_thread_tick(self):
