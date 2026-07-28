@@ -25,7 +25,7 @@ from xpra.platform.win32.common import (
     LoadCursor,
     ShowWindow, UpdateWindow,
     DestroyIcon, CREATESTRUCT,
-    AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, SendMessageW,
+    AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, GetWindowRect, SendMessageW,
     GetKeyboardState, ToUnicode, MapVirtualKeyW,
     SetWindowTextW,
     InvalidateRect,
@@ -761,9 +761,57 @@ class ClientWindow(GObject.GObject):
         return int(self.hwnd) or 0
 
     def show_all(self):
+        # the server sends X11-style geometry (the position of the window
+        # *contents*); adding native decorations on top can push the title bar
+        # above the top of the screen, leaving the window impossible to move.
+        # Nudge it back so the title bar stays reachable:
+        self.ensure_titlebar_onscreen()
         ShowWindow(self.hwnd, win32con.SW_SHOW)
         UpdateWindow(self.hwnd)
         # InvalidateRect(self.hwnd, None, True)
+
+    # keep at least this many pixels of the window (and its title bar) on-screen:
+    MIN_ONSCREEN = 48
+
+    def ensure_titlebar_onscreen(self) -> None:
+        # override-redirect windows (menus, tooltips, combos) must stay exactly
+        # where the server places them - never nudge those:
+        if not self.hwnd or self.is_OR():
+            return
+        rect = RECT()
+        if not GetWindowRect(self.hwnd, byref(rect)):
+            return
+        # `GetWindowRect` fills the RECT with proper 32-bit signed screen
+        # coordinates (unlike the 16-bit packed values in a `WM_MOVE` lparam),
+        # so read the fields directly - do NOT use `rect_to_signed` here:
+        x1, y1, x2, y2 = rect.left, rect.top, rect.right, rect.bottom
+        w, h = x2 - x1, y2 - y1
+        if w <= 0 or h <= 0:
+            return
+        hmonitor = MonitorFromWindow(self.hwnd, win32con.MONITOR_DEFAULTTONEAREST)
+        try:
+            wl, wt, wr, wb = GetMonitorInfo(hmonitor)["Work"]
+        except (KeyError, OSError):
+            geomlog("ensure_titlebar_onscreen() no monitor info", exc_info=True)
+            return
+        m = self.MIN_ONSCREEN
+        nx, ny = x1, y1
+        # vertical: the title bar is at the very top of the window, so the top
+        # edge itself must stay within the work area:
+        if y1 < wt:
+            ny = wt
+        elif y1 > wb - m:
+            ny = wb - m
+        # horizontal: keep at least `m` pixels of the window visible on each side:
+        if x2 < wl + m:
+            nx = wl + m - w
+        elif x1 > wr - m:
+            nx = wr - m
+        if (nx, ny) != (x1, y1):
+            geomlog("ensure_titlebar_onscreen() moving %s -> %s (work area=%s)",
+                    (x1, y1), (nx, ny), (wl, wt, wr, wb))
+            flags = win32con.SWP_NOSIZE | win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER
+            SetWindowPos(self.hwnd, 0, nx, ny, 0, 0, flags)
 
     def has_toplevel_focus(self) -> bool:
         return bool(self.hwnd) and GetForegroundWindow() == self.hwnd
