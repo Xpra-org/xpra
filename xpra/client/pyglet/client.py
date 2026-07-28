@@ -265,7 +265,7 @@ class XpraPygletClient:
             message = f"Warning: window {wid:#x} not found"
             log.warn(message)
             decode_time = -1
-        self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
+        self.send(WINDOW_DRAW_ACK, wid, width, height, packet_sequence, decode_time, message)
 
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()

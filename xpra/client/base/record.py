@@ -13,7 +13,7 @@ from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.command import XpraClientBase
 from xpra.exit_codes import ExitValue
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import WINDOW_DRAW_ACK, WINDOW_REFRESH
+from xpra.net.packet_type import WINDOW_REFRESH, WINDOW_DRAW_ACK
 from xpra.platform.paths import initial_cwd
 from xpra.util.env import envint
 from xpra.util.objects import typedict
@@ -343,7 +343,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         window.record("draw", **kwargs)
         decode_time = 0
         message = ""
-        self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
+        self.send(WINDOW_DRAW_ACK, wid, width, height, packet_sequence, decode_time, message)
         if x != 0 or y != 0 or (width, height) != window.geometry[2:4] or options.get("quality", 100) != 100:
             self.refresh_needed.add(wid)
 

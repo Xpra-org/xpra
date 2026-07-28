@@ -57,11 +57,15 @@ class WindowDraw(StubClientSubsystem):
     def _process_window_eos(self, packet: Packet) -> None:
         self.add_decode_work(self._do_draw, packet)
 
-    def send_damage_sequence(self, wid: int, packet_sequence: int, width: int, height: int,
-                             decode_time: int, message="") -> None:
-        packet = packet_sequence, wid, width, height, decode_time, message
-        log("sending ack: %s", packet)
-        self.send_now(WINDOW_DRAW_ACK, *packet)
+    def send_draw_ack(self, wid: int, width: int, height: int, packet_sequence: int,
+                      decode_time: int, message="") -> None:
+        if BACKWARDS_COMPATIBLE:
+            # the legacy `damage-sequence` packet starts with the `packet_sequence`:
+            args = ("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
+        else:
+            args = (WINDOW_DRAW_ACK, wid, width, height, packet_sequence, decode_time, message)
+        log("sending ack: %s", args)
+        self.send_now(*args)
 
     def _do_draw(self, packet: Packet) -> None:
         """ this runs from the decode thread (see `xpra/client/subsystem/decode.py`) """
@@ -106,7 +110,7 @@ class WindowDraw(StubClientSubsystem):
                     # will get a chance to run first (preserving the order)
 
         def record_draw_error(code=WINDOW_NOT_FOUND, message="window not found") -> None:
-            self.send_damage_sequence(wid, packet_sequence, width, height, code, message)
+            self.send_draw_ack(wid, width, height, packet_sequence, code, message)
 
         def draw_abort(code=WINDOW_NOT_FOUND, message="window not found") -> None:
             draw_cleanup()
@@ -129,7 +133,7 @@ class WindowDraw(StubClientSubsystem):
                 decode_time = WINDOW_DECODE_SKIPPED
                 paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%#x, %s: %sx%s",
                          success, message, wid, coding, width, height)
-            self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, repr_ellipsized(message, 512))
+            self.send_draw_ack(wid, width, height, packet_sequence, decode_time, repr_ellipsized(message, 512))
 
         if not window:
             # window is gone
