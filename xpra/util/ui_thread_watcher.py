@@ -25,7 +25,7 @@ ANNOUNCE_TIMEOUT = envint("XPRA_ANNOUNCE_BLOCKED", POLLING)
 
 
 def run_callbacks(callbacks: list[Callable[[], None]]) -> None:
-    for callback in callbacks:
+    for callback in tuple(callbacks):
         with log.trap_error("Error running UI watcher callback %s", callback):
             callback()
 
