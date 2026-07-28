@@ -107,6 +107,7 @@ The local printers should be virtualized on the server.
 
 ## Other Documentation Links
 * [Client](Client.md) - launching the xpra client
+* [Clients](Clients.md) - the other client implementations and how they compare
 * [Client OpenGL](Client-OpenGL.md) - for better window rendering performance
 * [OpenGL](OpenGL.md) - running accelerated OpenGL application on the server
 * [Configuration](Configuration.md) - using configuration files

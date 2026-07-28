@@ -27,6 +27,7 @@
 * [picture encodings](Usage/Encodings.md) : quality and performance
 * [OpenGL applications](Usage/OpenGL.md) : server-side GPU acceleration
 * [Client OpenGL acceleration](Usage/Client-OpenGL.md)
+* [Client implementations](Usage/Clients.md) : html5, rust, go and others
 * [Xdummy](Usage/Xdummy.md) : alternative to `Xvfb`
 </details>
 
