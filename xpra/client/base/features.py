@@ -149,7 +149,7 @@ def enforce_client_features() -> None:
         "tray": "xpra.client.subsystem.tray",
         "systray": "xpra.client.subsystem.window.tray",
         "ping": "xpra.client.subsystem.ping",
-        "gsettings": "gi.repository.Gio,xpra.client.subsystem.gsettings",
+        "gsettings": "xpra.client.subsystem.gsettings",
         "bandwidth": "xpra.client.subsystem.bandwidth",
         "socket": "xpra.client.subsystem.socket",
         "ssh_agent": "xpra.client.subssytem.ssh_agent",
