@@ -175,6 +175,8 @@ class ClientWindow(GObject.GObject):
             metadata["override-redirect"] = override_redirect
         self.metadata = metadata
         self.pixel_depth = pixel_depth
+        self.border = border
+        self.max_window_size = max_window_size
         self.wnd_proc = WNDPROC(self.wnd_proc_cb)
         self.wc = self.create_wnd_class()
         self.class_atom = RegisterClassExW(byref(self.wc))
@@ -214,6 +216,7 @@ class ClientWindow(GObject.GObject):
         bw, bh = self._backing_size
         self.backing = GDIBacking(self.wid, self.hdc, self.hwnd, bw, bh, self.alpha)
         self.backing.init(self.width, self.height, bw, bh)
+        self.init_backing_props()
         # apply the metadata the window was created with:
         # (`set_metadata()` is otherwise only reached later, via `update_metadata()`,
         # on a subsequent server metadata packet)
@@ -233,6 +236,15 @@ class ClientWindow(GObject.GObject):
         wc.hbrBackground = win32con.COLOR_WINDOW + 1
         wc.lpszClassName = "XpraWindowClass%i" % self.wid
         return wc
+
+    def init_backing_props(self) -> None:
+        """
+        Forward the window-level rendering properties to the backing.
+        Only the OpenGL backing actually renders the border (it is drawn as part
+        of `do_present_fbo`), the GDI backing simply ignores it.
+        """
+        if backing := self.backing:
+            backing.border = self.border
 
     def update_backing_render_size(self, width: int, height: int) -> None:
         """
@@ -674,6 +686,11 @@ class ClientWindow(GObject.GObject):
         fwi.uCount = 0
         fwi.dwTimeout = 0
         FlashWindowEx(byref(fwi))
+        # the OpenGL backing also renders an in-window alert overlay,
+        # so it needs a repaint to pick the new state up:
+        if (backing := self.backing) and backing.alert_state != alert_state:
+            backing.alert_state = alert_state
+            self.redraw()
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
@@ -722,6 +739,13 @@ class ClientWindow(GObject.GObject):
             info.ptMinTrackSize.x = minw
             info.ptMinTrackSize.y = minh
         maxw, maxh = self.size_constraints.intpair("maximum-size")
+        # `max_window_size` is a hard limit (OpenGL windows lower it to the
+        # maximum texture / viewport size), it wins over the server's request:
+        mww, mwh = self.max_window_size
+        if mww > 0:
+            maxw = min(maxw, mww) if maxw > 0 else mww
+        if mwh > 0:
+            maxh = min(maxh, mwh) if maxh > 0 else mwh
         if maxw > 0 and maxh > 0:
             info.ptMaxTrackSize.x = maxw
             info.ptMaxTrackSize.y = maxh
