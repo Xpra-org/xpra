@@ -203,7 +203,11 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
         if line.startswith("Name: "):
             name = line.removeprefix("Name: ")
         if line.startswith("device.class = "):
-            device_class = line.removeprefix("device-class = ")
+            # the prefix removed here must match the one tested above ("device.class",
+            # not "device-class"), otherwise device_class keeps the whole line and no
+            # device is ever recognised as a monitor - which makes monitor lookups
+            # return nothing and callers fall back to the default source.
+            device_class = line.removeprefix("device.class = ")
         if line.startswith("Monitor of Sink: "):
             monitor_of_sink = line.removeprefix("Monitor of Sink: ")
         if line.startswith("device.description = "):
