@@ -1,5 +1,20 @@
 # Changelog
 
+## [6.5.3] 2026-07-29
+* 🔧 Platforms, build and packaging:
+  * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
+  * [don't include wayland server components in client-only builds](https://github.com/Xpra-org/xpra/commit/7d24bc8396a273d2f557b961800c2f0730af8afd)
+  * [Ubuntu Stonking packaging](https://github.com/Xpra-org/xpra/commit/5b218091bce8f2e784f6718fd19a8cf11987b439)
+* Major:
+  * [microphone forwarding selects the wrong device](https://github.com/Xpra-org/xpra/commit/58efffed30bcf9b54cc8c23f5ddaaf68b181e0ec)
+  * [system suspend + resume never unblocks window updates](https://github.com/Xpra-org/xpra/commit/60e2933a8a9b362ecc5d839949e1c726b2c97893)
+* Minor:
+  * [cursor logging errors](https://github.com/Xpra-org/xpra/commit/c77e6317b3c234d086ab44cc6b71221b6e15b7e2)
+* Cosmetic:
+  * [ensure repeatSPSPPS can be enabled for datagram mode](https://github.com/Xpra-org/xpra/commit/8352effbe8a87c634873b6fd9c2ccd695a41e446)
+  * [prevent potential callback errors](https://github.com/Xpra-org/xpra/commit/3adfdad1f319e22dce97826c4074bbea99720504)
+  * [ensure the UI watcher callbacks are released](https://github.com/Xpra-org/xpra/commit/2be2ca274012cd291d1470c6fd9dccbb2fd33ef9)
+
 ## [6.5.2] 2026-07-26
 * 🔧 Platforms, build and packaging:
   * [Cython fails to compile on arm64](https://github.com/Xpra-org/xpra/commit/90f828ae524112688647d9f8d87778370c01e3a8)

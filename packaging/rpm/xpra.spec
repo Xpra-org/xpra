@@ -79,7 +79,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.5.2
+Version:			6.5.3
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1111,6 +1111,20 @@ fi
 
 
 %changelog
+* Wed Jul 29 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
+- 🔧 Platforms, build and packaging:
+   fix the DEB wayland package split
+   don't include wayland server components in client-only builds
+   Ubuntu Stonking packaging
+- Major:
+   microphone forwarding selects the wrong device
+   system suspend + resume never unblocks window updates
+- Minor:
+   cursor logging errors
+- Cosmetic:
+   ensure repeatSPSPPS can be enabled for datagram mode
+   prevent potential callback errors
+   ensure the UI watcher callbacks are released
 * Sun Jul 26 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
 - 🔧 Platforms, build and packaging:
    Cython fails to compile on arm64

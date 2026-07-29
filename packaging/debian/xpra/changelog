@@ -1,3 +1,20 @@
+xpra (6.5.3-1) UNRELEASED; urgency=low
+  * 🔧 Platforms, build and packaging:
+    fix the DEB wayland package split
+    don't include wayland server components in client-only builds
+    Ubuntu Stonking packaging
+  * Major:
+    microphone forwarding selects the wrong device
+    system suspend + resume never unblocks window updates
+  * Minor:
+    cursor logging errors
+  * Cosmetic:
+    ensure repeatSPSPPS can be enabled for datagram mode
+    prevent potential callback errors
+    ensure the UI watcher callbacks are released
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 29 Jul 2026 15:23:08 +0700
+
 xpra (6.5.2-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
     Cython fails to compile on arm64
