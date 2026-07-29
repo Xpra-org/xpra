@@ -44,10 +44,17 @@ def get_modifiers() -> list[str]:
     modifiers = []
     if GetKeyState(win32con.VK_SHIFT) & 0x8000:
         modifiers.append("shift")
-    if GetKeyState(win32con.VK_CONTROL) & 0x8000:
-        modifiers.append("control")
-    if GetKeyState(win32con.VK_MENU) & 0x8000:
-        modifiers.append("mod1")  # Alt = mod1 in X11 terminology
+    # win32 reports `AltGr` as `Control`+`Alt`:
+    # the character it selects has already been resolved client side
+    # (see `keysym_name` in `xpra.client.win32.window`),
+    # so don't forward those two as modifiers or the server
+    # would turn ie: `AltGr`+`q` into `Control`+`Alt`+`@`
+    altgr = GetKeyState(win32con.VK_RMENU) & 0x8000
+    if not altgr:
+        if GetKeyState(win32con.VK_CONTROL) & 0x8000:
+            modifiers.append("control")
+        if GetKeyState(win32con.VK_MENU) & 0x8000:
+            modifiers.append("mod1")  # Alt = mod1 in X11 terminology
     # Check toggle keys (low bit set when toggled on)
     if GetKeyState(win32con.VK_CAPITAL) & 0x0001:
         modifiers.append("lock")  # Caps Lock
