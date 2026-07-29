@@ -24,11 +24,12 @@ from xpra.platform.win32.common import (
     ShowWindow, UpdateWindow,
     DestroyIcon, CREATESTRUCT,
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, SendMessageW,
-    GetKeyboardState, ToUnicode, MapVirtualKeyW,
+    GetKeyState, ToUnicode, MapVirtualKeyW,
     SetWindowTextW,
     InvalidateRect,
     BeginPaint, EndPaint, PAINTSTRUCT,
 )
+from xpra.keyboard.keysyms import keysym_name
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
 from xpra.log import Logger
@@ -337,7 +338,9 @@ class ClientWindow(GObject.GObject):
                 self.emit("wheel", x, y, vertical, vkeys, delta)
             if msg in (win32con.WM_KEYDOWN, win32con.WM_KEYUP):
                 vk_code = wparam
-                extended = lparam & (2 << 24)
+                # bit 24 of `lparam` is the extended key flag,
+                # it tells the right hand side keys apart from the left hand side ones:
+                extended = bool(lparam & (1 << 24))
                 scancode = (lparam >> 16) & 0xff
 
                 # Use ToUnicode to convert VK code to character
@@ -346,14 +349,24 @@ class ClientWindow(GObject.GObject):
                 result = (c_wchar * 4)()
                 count = ToUnicode(vk_code, 0, keyboard_state, result, 4, 0)
                 string = result.value if count > 0 else ""
-                # then with the current keyboard state:
-                GetKeyboardState(keyboard_state)
+                # then again, honouring only the modifiers that select a character:
+                # `Shift` and `AltGr` - which win32 reports as `Control`+`Alt`.
+                # (`Control` on its own is left out on purpose: it would turn
+                # ie: `Control`+`q` into the control character `\x11` instead of `q`)
+                altgr = bool(GetKeyState(win32con.VK_RMENU) & 0x8000)
+                if GetKeyState(win32con.VK_SHIFT) & 0x8000:
+                    keyboard_state[win32con.VK_SHIFT] = 0x80
+                if altgr:
+                    keyboard_state[win32con.VK_CONTROL] = 0x80
+                    keyboard_state[win32con.VK_MENU] = 0x80
                 result = (c_wchar * 4)()
                 count = ToUnicode(vk_code, 0, keyboard_state, result, 4, 0)
-                local_string = result.value if count > 0 else ""
+                local_string = result.value if count > 0 else string
 
                 # for now, we still translate to X11 key names:
-                keyname = VK_NAMES.get(vk_code, string)
+                # use the character the layout actually produces, so that
+                # ie: `AltGr`+`q` on a German keyboard is sent as `at` and not as `q`:
+                keyname = VK_NAMES.get(vk_code, "") or keysym_name(local_string)
                 log("vk_code: %d, string=%r, local_string=%r, scancode=%i, extended=%s, keyname=%r", vk_code, string, local_string, scancode, extended, keyname)
                 if keyname.startswith("VK_"):
                     keyname = VK_X11_MAP.get(keyname[3:], keyname)
@@ -361,7 +374,8 @@ class ClientWindow(GObject.GObject):
                     if vk_code == win32con.VK_CONTROL:
                         keyname = "Control_R" if extended else "Control_L"
                     elif vk_code == win32con.VK_MENU:
-                        keyname = "MENU"
+                        # the right hand side `Alt` key is `AltGr` on most non-US layouts:
+                        keyname = "Alt_R" if extended else "Alt_L"
                     elif vk_code == win32con.VK_SHIFT:
                         MAPVK_VSC_TO_VK_EX = 3
                         vk = MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK_EX)
@@ -371,9 +385,8 @@ class ClientWindow(GObject.GObject):
                             keyname = "Shift_L"
                         elif vk == VK_RSHIFT:
                             keyname = "Shift_R"
-                scancode = (lparam >> 16) & 0xff
                 pressed = msg == win32con.WM_KEYDOWN
-                self.emit("key", keyname, pressed, vk_code, string, scancode, extended)
+                self.emit("key", keyname, pressed, vk_code, local_string, scancode, extended)
             if msg == win32con.WM_ERASEBKGND:
                 log("skipped erase background")
                 return 1
