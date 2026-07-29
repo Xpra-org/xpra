@@ -6,6 +6,8 @@
 
 from xpra.platform.win32 import constants
 
+WM_MOUSEHWHEEL = 0x020e
+
 # `WNDPROC_EVENT_NAMES` maps a window-message code to a readable name.
 # It is used only for logging the messages received by xpra's own windows.
 #
@@ -47,7 +49,7 @@ _EXTRA: dict[int, str] = {
     0x020b: "WM_XBUTTONDOWN",
     0x020c: "WM_XBUTTONUP",
     0x020d: "WM_XBUTTONDBLCLK",
-    0x020e: "WM_MOUSEHWHEEL",
+    WM_MOUSEHWHEEL: "WM_MOUSEHWHEEL",
     0x0280: "WM_IME_REPORT",
     0x02a0: "WM_NCMOUSEHOVER",
     0x02a2: "WM_NCMOUSELEAVE",

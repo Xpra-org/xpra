@@ -14,6 +14,7 @@ from ctypes.util import find_library
 from ctypes.wintypes import HWND, HGDIOBJ
 
 from xpra.platform.win32 import constants as win32con
+from xpra.platform.win32.wndproc_events import WM_MOUSEHWHEEL
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.log import Logger
 
@@ -205,4 +206,4 @@ def add_window_hooks(window) -> None:
                 return 0
 
             win32hooks.add_window_event_handler(win32con.WM_MOUSEWHEEL, mousewheel)
-            win32hooks.add_window_event_handler(win32con.WM_MOUSEHWHEEL, mousehwheel)
+            win32hooks.add_window_event_handler(WM_MOUSEHWHEEL, mousehwheel)
