@@ -1,0 +1,102 @@
+name: Source Archive
+
+on:
+  push:
+    tags:
+      - "v*"
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+permissions:
+  # needed to attach the source archive to the release:
+  contents: write
+
+
+jobs:
+  sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # `add_build_info.py` needs the full history and all the tags
+          # to work out the branch, revision number and commit
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip setuptools
+
+      - name: Restore the branch name
+        # tag pushes leave us with a detached HEAD, which `add_build_info.py` would record
+        # as `BRANCH = '(HEAD detached at ...)'` in `src_info.py`
+        run: |
+          branches=$(git branch --remote --contains "${GITHUB_SHA}" --format='%(refname:lstrip=3)' | grep -v '^HEAD$' || true)
+          # prefer `master`, then the version branch (ie: `v6.5.x`),
+          # so that we don't record a moving alias like `stable` or `lts`:
+          for pattern in '^master$' '^v[0-9]+\.[0-9]+\.x$' '.'; do
+            branch=$(echo "${branches}" | grep -E "${pattern}" | head -n 1)
+            if [ -n "${branch}" ]; then
+              break
+            fi
+          done
+          if [ -z "${branch}" ]; then
+            echo "::warning::no branch contains ${GITHUB_SHA}, keeping the detached HEAD"
+          else
+            echo "recording branch ${branch}"
+            git checkout -B "${branch}" "${GITHUB_SHA}"
+          fi
+
+      - name: Create the source archive
+        # this calls `./fs/bin/add_build_info.py src` to generate `xpra/src_info.py`
+        run: python3 ./setup.py sdist --formats=xztar
+
+      - name: Verify the source archive
+        id: verify
+        run: |
+          archive=$(ls dist/xpra-*.tar.xz)
+          echo "archive=${archive}" >> "${GITHUB_OUTPUT}"
+          contents=$(tar -tJf "${archive}")
+          if ! echo "${contents}" | grep -q "/xpra/src_info.py$"; then
+            echo "::error::'xpra/src_info.py' is missing from ${archive}"
+            exit 1
+          fi
+          if echo "${contents}" | grep -q "/xpra/build_info.py$"; then
+            echo "::error::'xpra/build_info.py' must not be included in ${archive}"
+            exit 1
+          fi
+          echo "${archive}: $(du -h "${archive}" | cut -f1), $(echo "${contents}" | wc -l) files"
+          tar -xJf "${archive}" -O "$(basename "${archive}" .tar.xz)/xpra/src_info.py"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.verify.outputs.archive }}
+          if-no-files-found: error
+          # upload the tarball as-is: without this, the artifact is a zip
+          # containing the tar.xz, and the download has to be unpacked twice
+          # (the artifact is then named after the file: `xpra-6.6.tar.xz`)
+          archive: false
+          retention-days: 90
+
+      - name: Attach the archive to the release
+        # workflow artifacts expire, release assets don't:
+        # the tag is usually pushed before the release exists, in which case
+        # it is the `release: published` run that attaches the archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # `ref_name` is the tag for tag pushes, the branch for `workflow_dispatch`:
+          TAG: ${{ github.event.release.tag_name || github.ref_name }}
+        run: |
+          archive="${{ steps.verify.outputs.archive }}"
+          if gh release view "${TAG}" > /dev/null 2>&1; then
+            gh release upload "${TAG}" "${archive}" --clobber
+            echo "::notice::attached $(basename "${archive}") to release ${TAG}"
+          else
+            echo "::notice::no release found for '${TAG}': the source archive is only available as a workflow artifact"
+          fi
