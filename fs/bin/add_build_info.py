@@ -449,7 +449,10 @@ def check_file(filename: str) -> bool:
 def main(args):
     if not check_file(SRC_INFO_FILE) or "src" in args:
         record_src_info()
-    if not check_file(BUILD_INFO_FILE) or "build" in args:
+    # asking for "src" without "build" means source information only:
+    # source archives must not carry - or leak - the details of the system they were created on,
+    # `setup.py build` records this information again when building from the archive
+    if "build" in args or (not check_file(BUILD_INFO_FILE) and "src" not in args):
         record_build_info()
     if "revision" in args:
         props = get_vcs_props()
