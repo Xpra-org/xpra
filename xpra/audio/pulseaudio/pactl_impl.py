@@ -174,6 +174,13 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
                 return False
         return True
 
+    # a caller asking for non-monitor *output* devices wants a real sink
+    # (this is what `pulsesink device=` needs); everything else wants a source.
+    # Without this, sinks are never enumerated and callers such as
+    # get_pulse_sink_defaults() fall back to a monitor name, which pulsesink
+    # cannot negotiate ("not-negotiated (-4)") - breaking microphone forwarding.
+    section_prefix = "Sink #" if (monitors is False and input_or_output is False) else "Source #"
+
     name: str | None = None
     device_class: str | None = None
     monitor_of_sink: str | None = None
@@ -191,12 +198,16 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
             device_class = None
             monitor_of_sink = None
             device_description = None
-            in_source_section = line.startswith("Source #")
+            in_source_section = line.startswith(section_prefix)
         line = line.strip()
         if line.startswith("Name: "):
             name = line.removeprefix("Name: ")
         if line.startswith("device.class = "):
-            device_class = line.removeprefix("device-class = ")
+            # the prefix removed here must match the one tested above ("device.class",
+            # not "device-class"), otherwise device_class keeps the whole line and no
+            # device is ever recognised as a monitor - which makes monitor lookups
+            # return nothing and callers fall back to the default source.
+            device_class = line.removeprefix("device.class = ")
         if line.startswith("Monitor of Sink: "):
             monitor_of_sink = line.removeprefix("Monitor of Sink: ")
         if line.startswith("device.description = "):
