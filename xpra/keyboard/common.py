@@ -8,6 +8,13 @@ from xpra.util.env import envbool
 
 DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 
+# this allows platforms to inject keyname workarounds
+# the key is a tuple (keyname, keyval, keycode)
+# the value is the keyname override
+# (this lives here rather than in `xpra.gtk.keymap` so that
+# toolkit-free clients - ie: win32 - can populate it without importing any gtk bits)
+KEY_TRANSLATIONS: dict[tuple[str, int, int], str] = {}
+
 
 class KeyEvent:
     __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")

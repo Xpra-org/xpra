@@ -7,17 +7,13 @@
 
 from collections.abc import Sequence
 
+from xpra.keyboard.common import KEY_TRANSLATIONS
 from xpra.util.str_fn import Ellipsizer
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("keyboard")
 verboselog = Logger("keyboard", "verbose")
-
-# this allows platforms to inject keyname workarounds
-# the key is a tuple (keyname, keyval, keycode)
-# the value is the keyname override
-KEY_TRANSLATIONS: dict[tuple[str, int, int], str] = {}
 
 
 def get_default_keymap():

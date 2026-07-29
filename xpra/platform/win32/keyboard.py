@@ -22,9 +22,8 @@ from xpra.platform.win32.common import (
 )
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
-from xpra.keyboard.common import KeyEvent
+from xpra.keyboard.common import KeyEvent, KEY_TRANSLATIONS
 from xpra.keyboard.layouts import WIN32_LAYOUTS, WIN32_KEYBOARDS
-from xpra.gtk.keymap import KEY_TRANSLATIONS
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool
 from xpra.log import Logger

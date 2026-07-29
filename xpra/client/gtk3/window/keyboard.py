@@ -10,8 +10,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import first_time, envbool
 from xpra.util.thread import check_main_thread
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
-from xpra.gtk.keymap import KEY_TRANSLATIONS
-from xpra.keyboard.common import KeyEvent
+from xpra.keyboard.common import KeyEvent, KEY_TRANSLATIONS
 from xpra.log import Logger
 
 Gdk = gi_import("Gdk")
