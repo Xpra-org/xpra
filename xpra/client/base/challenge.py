@@ -40,7 +40,7 @@ class Challenge(StubClientSubsystem):
     """
     __slots__ = (
         "challenge_handlers", "challenge_handlers_option", "password", "password_file", "password_index",
-        "password_sent", "username",
+        "password_sent", "prompt_proc", "username",
     )
     PREFIX = "challenge"
 
@@ -53,6 +53,13 @@ class Challenge(StubClientSubsystem):
         self.password_sent = False
         self.challenge_handlers_option = ()
         self.challenge_handlers = []
+        self.prompt_proc = None
+
+    def cleanup(self) -> None:
+        # the password prompt is shown by a subprocess:
+        # make sure it is dismissed if we exit whilst it is still up
+        # (ie: the client was killed with control-c)
+        self.stop_prompt_proc()
 
     def init(self, opts) -> None:
         # `app.get_subsystem("challenge").username` is overwritten post-connect from
@@ -218,18 +225,37 @@ class Challenge(StubClientSubsystem):
         may_show_progress(self, 100, "challenge prompt")
         from xpra.platform.paths import get_nodock_command
         cmd = get_nodock_command() + ["_pass", prompt]
+        from subprocess import Popen, PIPE, TimeoutExpired
         try:
-            from subprocess import Popen, PIPE
             proc = Popen(cmd, stdout=PIPE)
-            from xpra.util.child_reaper import get_child_reaper
-            get_child_reaper().add_process(proc, "password-prompt", cmd, True, True)
-            out, err = proc.communicate(None, 60)
-            log("err(%s)=%s", cmd, err)
-            password = out.decode()
-            return password
         except OSError:
             log("Error: failed to show GUI for password prompt", exc_info=True)
             return None
+        from xpra.util.child_reaper import get_child_reaper
+        get_child_reaper().add_process(proc, "password-prompt", cmd, True, True)
+        # keep a reference to it so that `cleanup()` can dismiss the dialog:
+        self.prompt_proc = proc
+        try:
+            out, err = proc.communicate(None, 60)
+            log("err(%s)=%s", cmd, err)
+            return out.decode()
+        except TimeoutExpired:
+            log(f"timeout waiting for the password prompt {cmd}", exc_info=True)
+            return None
+        except OSError:
+            log("Error: failed to read the password from the prompt", exc_info=True)
+            return None
+        finally:
+            # `communicate` does not terminate the subprocess on timeout:
+            self.stop_prompt_proc()
+
+    def stop_prompt_proc(self) -> None:
+        proc = self.prompt_proc
+        log(f"stop_prompt_proc() {proc=}")
+        if proc:
+            self.prompt_proc = None
+            from xpra.util.system import stop_proc
+            stop_proc(proc, "password-prompt")
 
     def auth_error(self, code: ExitValue,
                    message: str,
