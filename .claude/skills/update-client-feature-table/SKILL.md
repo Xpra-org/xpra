@@ -16,11 +16,22 @@ horizontal scrollbar. It is now two layers, and a change usually has to land in 
 
 1. **The matrix** — one narrow `| Feature | xpra | html5 | vispra | rust | go |` table carrying only
    ✅ / ◐ / — so it fits on screen. No prose, ever; a qualifier here re-widens the table.
-2. **A `###` section per client** — a one-line intro sentence (maturity + platforms, which have no
-   matrix row) followed by a two-column `| Feature | Notes |` table holding all the detail.
+2. **A `###` section per client** — one intro sentence carrying what has no matrix row (maturity,
+   platforms, any server requirement) followed by a two-column `| Feature | Notes |` table with all
+   the detail.
 
 Feature names must match between the matrix and the per-client tables. A per-client table only lists
 the rows it has something to say about; a bare ✅ or — with no detail is left to the matrix alone.
+
+Above the legend sits the line that dates the whole section:
+
+```markdown
+This comparison should be correct as of **YYYY-MM-DD HH:MM ±ZZZZ**, the last time it was checked
+against each client's repository.
+```
+
+It records when the repos were *read*, which is the only honest claim this doc can make about
+clients it does not control — a refresh that finds nothing still moves it forward.
 
 ## The repos behind each client
 
@@ -37,10 +48,11 @@ worth raising when it comes up, but adding it is a bigger edit than a refresh.
 
 ## Method
 
-1. **Find what changed.** `git log -1 --format=%ad --date=short -- docs/Usage/Clients.md` in this
-   repo gives the date the table was last touched; `git log --format='%h %ad %s' --date=short
-   --since=<that date>` in each client repo gives the candidate changes. The README and CHANGELOG of
-   each client are the best summary of its current state — read them whole, not just the diff.
+1. **Find what changed.** The "correct as of" line above the legend is the cut-off: `git log
+   --format='%h %ad %s' --date=iso --since='<that datetime>'` in each client repo gives the candidate
+   changes. Compare timestamps, not dates — several rounds of this can land in one day. The README
+   and CHANGELOG of each client are the best summary of its current state: read them whole, not just
+   the diff, since a feature can regress or be re-scoped without a commit that says so.
 2. **Verify against the code, not the prose.** A README describes intent; the hello capabilities
    describe what the server will actually send. Anything not advertised in the hello is never sent,
    so an unadvertised feature is absent no matter what else the repo says:
@@ -57,6 +69,9 @@ worth raising when it comes up, but adding it is a bigger edit than a refresh.
    It also fails on a row whose cell count drifted from the header — usually an unescaped `|`.
 4. **Update the prose too** when a client moves enough to contradict it: the paragraph under
    "Client implementations" and each client's intro sentence are edited separately from the tables.
+5. **Stamp it.** Set the "correct as of" line to `date '+%Y-%m-%d %H:%M %z'` taken at the start of
+   the pass — every time, including a pass that changed nothing, since "checked and unchanged" is
+   exactly what the line is there to say.
 
 ## Rules that keep the comparison honest
 

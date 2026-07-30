@@ -21,9 +21,13 @@ The [xpra client](./Client.md) is the default client: it is the only one that im
 the only one available as a native package for Linux, MS Windows and MacOS.\
 The two browser based clients, `xpra-html5` and `vispra`, are served over `ws` / `wss` connections - the xpra server's
 builtin web server will pick up `xpra-html5` automatically when it is installed.\
-The `rust` and `go` clients are experimental implementations used mostly for validating the protocol.
+The `rust` and `go` clients are smaller native implementations with a deliberately limited feature set, also used
+for validating the protocol.
 
 ## Feature comparison
+
+This comparison should be correct as of **2026-07-30 12:38 +0700**, the last time it was checked
+against each client's repository.
 
 Legend: ✅ broad support · ◐ partial or platform-limited · — absent
 
@@ -161,7 +165,8 @@ Early stage third party rewrite of the html5 client; runs in any modern browser.
 
 ### Rust client
 
-Proof of concept - the README says it is not yet usable. Runs on MS Windows and on Linux, X11 or Wayland.
+Runs on MS Windows and on Linux, X11 or Wayland; requires an xpra 6.6 or later server, left in its default
+backwards-compatible mode.
 
 | Feature                  | Notes                                                                                        |
 |--------------------------|----------------------------------------------------------------------------------------------|
