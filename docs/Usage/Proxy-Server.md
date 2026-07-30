@@ -15,7 +15,7 @@ Depending on the [authentication](Authentication.md) module configured, the prox
 * provide access to a custom list of sessions (ie: using the `sqlite` authentication module)
 
 
-<details>
+<details markdown="1">
   <summary>Setup example</summary>
 
 *Beware*: to simplify these instructions, we use the `allow` authentication module, which does *no* checking whatsoever!
@@ -66,7 +66,7 @@ You can identify proxy instances in a number of ways:
 * from the proxy instance log file
 etc..
 
-<details>
+<details markdown="1">
   <summary>Remote Hosts Example</summary>
 
 This example uses a `sqlite` database to expose two remote server instances accessible from the proxy server via `TCP`.

@@ -22,7 +22,7 @@ If you want to turn off speaker forwarding, use the option `speaker=off` in your
 
 For low level implementation details, see [audio subsystem](../Subsystems/Audio.md).
 
-<details>
+<details markdown="1">
   <summary>Main options</summary>
 
 The main controls can be specified in the configuration file or on the command line, and they are documented in the [manual](https://xpra.org/manual.html):
@@ -33,7 +33,7 @@ ec order. Use the special value `help` to get a list of options. When unspecifie
 elp_. It is also possible to specify plugin options using the form ` "--audio-source=SOURCE:name1=value1,name2=value2,etc"`, ie: `"--audio-source=pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo"`
 </details>
 
-<details>
+<details markdown="1">
   <summary>Advanced options</summary>
 
 Other options are only available through environment variables for fine-tuning - which should rarely be needed:

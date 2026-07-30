@@ -13,7 +13,7 @@ Since then, the X11 server gained the ability to run without those `LD_SO_PRELOA
 This affects some X11 application's geometry and font rendering, and prevents the use of the `monitor` subcommand.
 
 ## Usage
-<details>
+<details markdown="1">
   <summary>Xdummy standalone</summary>
 
 You can start a new display using the dummy driver without needing any special privileges (no root, no suid), you should specify your own log and config files:
@@ -31,7 +31,7 @@ xpra xvfb :10
 Starting with version 6.3, you can configure xpra to use Xdummy as `xvfb` command using the GUI command `xpra configure vfb`. \
 Or from the command line using `xpra set xvfb Xdummy`.
 </details>
-<details>
+<details markdown="1">
   <summary>Xdummy with Xpra</summary>
 
 With the official Xpra packages, `Xdummy` should have been configured automatically for you when installing -  but this is not enabled on Debian or Ubuntu due to distribution bugs. \
@@ -112,7 +112,7 @@ Starting with dummy version 0.4.0, only one optional patch is added to the versi
 
 ### Other issues
 
-<details>
+<details markdown="1">
   <summary>libGL Driver Conflicts</summary>
 
 With older distributions that do not use [libglvnd](https://github.com/NVIDIA/libglvnd), proprietary drivers usually install their own copy of `libGL` which conflicts with the use of software OpenGL rendering. You cannot use this GL library to render directly on `Xdummy` (or `Xvfb`).
@@ -124,7 +124,7 @@ To make `vglrun` work properly with Nvidia proprietary drivers make sure to crea
 The alternative is often to disable `OpenGL` altogether, more information here: [#580](https://github.com/Xpra-org/xpra/issues/580)
 </details>
 
-<details>
+<details markdown="1">
   <summary>Debian and Ubuntu</summary>
 
 Debian and Ubuntu do weird things with their Xorg server which prevents it from running Xdummy (tty permission issues). \
@@ -133,7 +133,7 @@ Warning: this may also interfere with other sessions running on the same server 
 
 </details>
 
-<details>
+<details markdown="1">
   <summary>non-suid binary</summary>
 
 If you distribution ships the newer version but only installs a suid Xorg binary, Xpra should have installed the [xpra_Xdummy](https://github.com/Xpra-org/xpra/tree/master/fs/bin/xpra_Xdummy) wrapper script and configured xpra.conf to use it instead of the regular Xorg binary.

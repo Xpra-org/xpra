@@ -6,20 +6,20 @@
 
 [Simple examples](Usage/README.md) to get started.
 
-<details>
+<details markdown="1">
   <summary>Starting a session</summary>
 
 * [Seamless Session](Usage/Seamless.md) : individual windows
 * [Desktop Session](Usage/Desktop.md) : a full desktop session
 * [Shadow Session](Usage/Shadow.md) : view an existing display
 </details>
-<details>
+<details markdown="1">
   <summary>Configuration</summary>
 
 * [Authentication modules](Usage/Authentication.md) to secure access to sessions
 * [Options](Usage/Configuration.md) to configure xpra
 </details>
-<details>
+<details markdown="1">
   <summary>Advanced Topics</summary>
 
 * [proxy server](Usage/Proxy-Server.md) to manage access
@@ -34,7 +34,7 @@
 ---
 
 ## [Features](Features/README.md)
-<details>
+<details markdown="1">
   <summary>Device Forwarding</summary>
 
 * [Audio](Features/Audio.md) : speaker and microphone
@@ -42,7 +42,7 @@
 * [Webcams](Features/Webcam.md)
 * [Keyboard](Features/Keyboard.md)
 </details>
-<details>
+<details markdown="1">
   <summary>Data Synchronization</summary>
 
 * [Clipboard](Features/Clipboard.md)
@@ -50,11 +50,12 @@
 * [System tray](Features/System-Tray.md)
 * [Notifications](Features/Notifications.md)
 </details>
-<details>
+<details markdown="1">
   <summary>Display Characteristics</summary>
 
 * [Image Depth](Features/Image-Depth.md)
 * [DPI](Features/DPI.md)
+</details>
 
 ---
 
@@ -63,14 +64,14 @@ See [Multicast DNS](Network/Multicast-DNS.md) and [Encryption](Network/Encryptio
 
 ## Technical
 * [network protocol](Network/Protocol.md)
-* [subsystems](Subsystems.md)
+* [subsystems](Subsystems/README.md)
 * [security](Usage/Security.md)
 
 ---
 
 ## [Build](Build/README.md)
 Information for developers:
-<details>
+<details markdown="1">
   <summary>building from source</summary>
 
 * [Generic list of dependencies](Build/Dependencies.md)

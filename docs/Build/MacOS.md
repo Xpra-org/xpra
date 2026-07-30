@@ -7,7 +7,7 @@ If [homebrew](https://brew.sh/) or [macports](https://www.macports.org/) are ins
 Having these package managers installed will interfere with the `jhbuild` build process. (example [here](https://github.com/Xpra-org/gtk-osx-build/issues/47))
 
 
-<details>
+<details markdown="1">
   <summary>Setup gtk-osx</summary>
 
 Download the latest version of the [gtk-osx](https://wiki.gnome.org/Projects/GTK/OSX/Building) setup script and run it:
@@ -21,7 +21,7 @@ This will have installed `jhbuild` in `~/.new_local/bin`, so let's add this to o
 export PATH=$PATH:~/.new_local/bin/
 ```
 </details>
-<details>
+<details markdown="1">
   <summary>Configure `jhbuild` to use our modules</summary>
 
 From the `gtk-osx-build` directory, run:

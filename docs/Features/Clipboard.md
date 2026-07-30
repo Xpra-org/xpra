@@ -25,7 +25,7 @@ You must ensure that there are no other clipboard synchronization tools already 
 In particular, avoid using the clipboard synchronization from your virtualization solution if you use one (ie: virtualbox, vmware, etc), or from tools like synergy. Alternatively, you can disable xpra's clipboard instead. Just avoid running both at the same time.
 
 
-<details>
+<details markdown="1">
   <summary>Debugging</summary>
 
 ### Tool
@@ -60,7 +60,7 @@ And here is a good quote from it:
 of support for virtualization (Qemu, Xen, VMWare). Sharing the clipboard between a virtual machine and the desktop itself is painfully difficult to implement correctly (in case X11 is running on the host operating system)._
 
 
-<details>
+<details markdown="1">
   <summary>Related tickets</summary>
 
 * [#2312](https://github.com/Xpra-org/xpra/issues/2312) clipboard images with html5 client

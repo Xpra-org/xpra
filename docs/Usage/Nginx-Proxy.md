@@ -20,7 +20,7 @@ This command will not overwrite any existing certificates.
 
 ## Basic Configuration
 
-<details>
+<details markdown="1">
   <summary>show</summary>
 
 ### Create the config
@@ -87,7 +87,7 @@ xdg-open https://localhost/
 
 ## Multiple Servers
 
-<details>
+<details markdown="1">
   <summary>show</summary>
 
 This example configuration maps different URLs to servers on different ports.
@@ -135,7 +135,7 @@ http {
 
 ## Advanced Options
 
-<details>
+<details markdown="1">
   <summary>show</summary>
 
 Most of the options below can make the connection more robust

@@ -25,7 +25,7 @@ By default, local unix domain sockets (`--bind=auto` which is the default) also 
 See also: [Security Considerations](../Usage/Security.md)
 
 ## Examples:
-<details>
+<details markdown="1">
   <summary>TCP Upgrade to WebSocket</summary>
 
 ```shell
@@ -40,7 +40,7 @@ xdg-open http://localhost:10000/
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>SSH with password file</summary>
 
 ```shell

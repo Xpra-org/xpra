@@ -12,7 +12,7 @@ Caveats:
 * the HTML5 client currently does not support GCM mode: https://github.com/Xpra-org/xpra-html5/issues/94
 
 For step-by-step instructions on setting up AES, expand:
-<details>
+<details markdown="1">
   <summary>AES Usage Example</summary>
 
 generate a key:
@@ -36,7 +36,7 @@ The client can specify the exact mode using: `encryption=AES-GCM`.
 
 </details>
 
-<details>
+<details markdown="1">
   <summary>Specifying the key data</summary>
 
 ## keydata
@@ -50,7 +50,7 @@ However, it may be easier in some cases to generate commands that do not require
 This can also be used with `.xpra` session files, and those do not leak the data.
 </details>
 
-<details>
+<details markdown="1">
   <summary>Debugging</summary>
 
 To verify that your client connection is using AES, look for `cipher=AES`:

@@ -3,7 +3,7 @@
 
 ## OpenGL acceleration
 This setup results in this output from `glxinfo -B`:
-<details>
+<details markdown="1">
   <summary>glxinfo</summary>
 
 ```shell

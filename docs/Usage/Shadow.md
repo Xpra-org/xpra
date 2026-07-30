@@ -8,7 +8,7 @@ It is not optimized on all platforms and may cause high CPU load on both the ser
 On most platforms, the display being shadowed must be active: not locked or turned off.
 
 # Examples
-<details>
+<details markdown="1">
   <summary>All-in-one SSH command</summary>
 
 If you have SSH access to the machine whose X11 display you wish to access remotely, simply run from your client:
@@ -22,7 +22,7 @@ Xpra must already be installed on the server.
 The xpra shadow server will be accessible like any other xpra server through its unix domain socket (ie: `xpra info ssh://HOST/DISPLAY`), and it will show a system tray menu whilst active, and a different icon when a client is connected:
 ![shadow tray example](../images/win32-shadow-tray-menu.png)
 </details>
-<details>
+<details markdown="1">
   <summary>via a shell session</summary>
 
 If starting via SSH is not supported as above, as is the case on most MS Windows and MacOS systems, or simply if you want to start the shadow server manually, and potentially configure more options, you can start it from a shell.
@@ -40,12 +40,12 @@ Notes:
 </details>
 
 # Debugging
-<details>
+<details markdown="1">
   <summary>Diagnostics</summary>
 
 Use the `-d ssh` [debug logging](Logging.md) switch.
 </details>
-<details>
+<details markdown="1">
   <summary>Issues</summary>
 
 * [#899](https://github.com/Xpra-org/xpra/issues/899) generic shadow improvements

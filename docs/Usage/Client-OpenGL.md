@@ -29,7 +29,7 @@ For more details, run `xpra opengl`. On MS Windows, there is an `OpenGL_check.ex
 
 
 # Intel Driver Issues
-<details>
+<details markdown="1">
   <summary>Why is the Intel opengl driver greylisted?</summary>
 
 Because it doesn't work very well.

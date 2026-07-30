@@ -24,7 +24,7 @@ Gnome-shell: \
 ## Technical
 
 Please refer to [the `notifications` subsystem](../Subsystems/Notification.md).
-<details>
+<details markdown="1">
   <summary>Debugging</summary>
 
 * start both the client and server with the debug command line flags: `-d notify,dbus`

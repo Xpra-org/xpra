@@ -39,7 +39,7 @@ used by that socket - so it cannot be used to give different values to two chain
 ### Server Authentication Modules
 Xpra supports many authentication modules.
 Some of these modules require extra [dependencies](../Build/Dependencies.md).
-<details>
+<details markdown="1">
   <summary>server authentication modules</summary>
 
 | Module                                                                                           | Result                                                                                  | Purpose                                                                             |
@@ -78,7 +78,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [http-header](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/http_header.py)             | validate websocket http headers                                                         | [#4438](https://github.com/Xpra-org/xpra/issues/4438)                               |
 </details>
 
-<details>
+<details markdown="1">
   <summary>more examples</summary>
 
 * `XPRA_PASSWORD=mysecret xpra seamless --bind-tcp=0.0.0.0:10000,auth=env`
@@ -93,7 +93,7 @@ Beware when mixing environment variables and password files as the latter may co
 The `otpscreen` module accepts the following options: `mode` (`digits`, `alpha` or `alphanumeric`, default `digits`), `count` (number of characters in the generated secret, default `6`), `timeout` (how long the dialog stays up, in seconds, default `120`), and `display` (which display to open the dialog on, default `auto` which reuses the server's saved `DISPLAY` / `WAYLAND_DISPLAY`).
 </details>
 
-<details>
+<details markdown="1">
   <summary>rate limiting</summary>
 
 The `ratelimit` module protects a socket against brute force attacks: it records how many times each client IP address has recently failed to authenticate, delays the ones that keep failing, and eventually rejects them outright.
@@ -122,7 +122,7 @@ An attacker usually controls an entire IPv6 subnet, so limiting each individual 
 Loopback addresses, unix domain sockets and named pipes are never rate limited.
 </details>
 
-<details>
+<details markdown="1">
   <summary>syntax for older versions</summary>
 
 The syntax with older versions used a dedicated switch for each socket type:
@@ -152,7 +152,7 @@ echo -n "foo" > ./password.txt
 xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt --debug auth
 ```
 
-<details>
+<details markdown="1">
   <summary>client challenge handlers</summary>
 
 | Module                                                                              | Behaviour and options                                                                                    |
@@ -179,7 +179,7 @@ xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt -
 The username can be specified:
 * in the connection files you can save from the launcher
 * in the client connection string
-<details>
+<details markdown="1">
   <summary>tcp example</summary>
 
 ```shell
@@ -189,7 +189,7 @@ xpra attach tcp://username:password@host:port/
 
 When an authentication module is used to secure a single session, many modules will completely ignore the username part, and it can be omitted from the connection string.
 This [can be overriden for some modules](https://github.com/Xpra-org/xpra/issues/4294).
-<details>
+<details markdown="1">
   <summary>example: specifying the password only</summary>
 
 for connecting to the `TCP` socket and specifying the password only:
@@ -294,7 +294,7 @@ The proxy never dials out — it only ever accepts inbound connections, which ma
 ***
 
 ## Development Documentation
-<details>
+<details markdown="1">
   <summary>Authentication Process</summary>
 
 The steps below assume that the client and server have been configured to use authentication:
@@ -303,7 +303,7 @@ The steps below assume that the client and server have been configured to use au
 * if multiple authentication modules are specified, the client may bring up multiple authentication dialogs
 * how the client handles the challenges sent by the server can be configured using the `challenge-handlers` option, by default the client will try the following handlers in the specified order: `uri` (whatever password may have been specified in the connection string), `file` (if the `password-file` option was used), `env` (if the environment variable is present), `scram`, `kerberos`, `gss`, `keycloak`, `u2f` and finally `prompt`
 </details>
-<details>
+<details markdown="1">
   <summary>module and platform specific notes</summary>
 
 * this information applies to all clients except the HTML5 client: regular GUI clients as well as command line clients like `xpra info`
@@ -318,7 +318,7 @@ The steps below assume that the client and server have been configured to use au
 
 For more information on packets, see [network](../Network/README.md).
 </details>
-<details>
+<details markdown="1">
   <summary>Writing a new authentication module</summary>
 
 A new server-side authentication module is a Python file in [`xpra/auth/`](https://github.com/Xpra-org/xpra/tree/master/xpra/auth) that defines a class named `Authenticator`. Two base classes are provided:
@@ -360,7 +360,7 @@ Three optional callbacks are called on the authenticators of a connection, if th
 A new `Authenticator` is instantiated for every connection, so a module that needs to remember something across connections (like [`ratelimit`](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/ratelimit.py), which counts the failures of each client IP) must keep that state at the class level and protect it with a lock: `verify_auth` runs in a separate thread for each connection.
 
 </details>
-<details>
+<details markdown="1">
   <summary>Writing a new client challenge handler</summary>
 
 A new client-side challenge handler is a Python file in [`xpra/challenge/`](https://github.com/Xpra-org/xpra/tree/master/xpra/challenge) that defines a class named `Handler` implementing `AuthenticationHandler`.
@@ -374,7 +374,7 @@ A new client-side challenge handler is a Python file in [`xpra/challenge/`](http
 For multi-step handlers, keep protocol state on the handler instance. When `handle()` returns a response and `is_done()` is `False`, the client keeps that handler at the front of the handler list so the next server challenge is routed back to it.
 
 </details>
-<details>
+<details markdown="1">
   <summary>Salt handling is important</summary>
 
 * [64-bit entropy is nowhere near enough against a serious attacker](https://crypto.stackexchange.com/a/34162/48758): _If you want to defend against rainbow tables, salts are inevitable, because you need a full rainbow table per unique salt, which is computationally and storage-wise intense_

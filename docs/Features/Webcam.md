@@ -39,7 +39,7 @@ You can enable the webcam from the client's system tray menu, or using the comma
 ## Technical
 
 For further reference, see [the webcam subsystem](../Subsystems/Webcam.md).
-<details>
+<details markdown="1">
   <summary>Diagnostics</summary>
 
 * use the `-d webcam` [debug logging flag](../Usage/Logging.md)
@@ -51,7 +51,7 @@ For further reference, see [the webcam subsystem](../Subsystems/Webcam.md).
 * run `xpra webcam` on the client to run the webcam capture test application (aka `Webcam_Test` on MS Windows and MacOS).
 </details>
 
-<details>
+<details markdown="1">
   <summary>Issues</summary>
 
 * [#1030](https://github.com/Xpra-org/xpra/issues/1030) original feature ticket

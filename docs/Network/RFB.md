@@ -78,7 +78,7 @@ RFB port `5901` (`5900 + display`); `-localhost` only accepts connections from t
 > the `Xvnc`/`vncserver` wrappers shipped by some distributions, etc) use different options and
 > defaults - consult their own documentation.
 
-<details>
+<details markdown="1">
   <summary>No authentication</summary>
 
 ```shell
@@ -87,7 +87,7 @@ Xvnc :1 -rfbport 5901 -localhost -SecurityTypes None -geometry 1280x720 -desktop
 Connect with `xpra attach vnc://localhost:5901/`.
 </details>
 
-<details>
+<details markdown="1">
   <summary>VNC password</summary>
 
 Create an obfuscated password file with `vncpasswd` (TigerVNC's `-f` reads the password from stdin
@@ -100,7 +100,7 @@ Connect with `xpra attach vnc://localhost:5901/ --password-file=password.txt` (w
 contains the *plaintext* password), or let the client prompt for it.
 </details>
 
-<details>
+<details markdown="1">
   <summary>Encrypted, no password (VeNCrypt / X509None)</summary>
 
 Generate a throwaway self-signed certificate (see also [SSL](SSL.md)), then start the server with
@@ -116,7 +116,7 @@ Connect with `xpra attach vnc://localhost:5901/ --ssl-ca-certs=cert.pem` (or
 `unit.net.rfb.rfb_vencrypt_test` integration test.
 </details>
 
-<details>
+<details markdown="1">
   <summary>Encrypted with a password (VeNCrypt / X509Vnc)</summary>
 
 Combine a certificate and a password file, using the `X509Vnc` security type (TLS first, then the VNC
@@ -135,7 +135,7 @@ Connect with `xpra attach vnc://localhost:5901/ --ssl-ca-certs=cert.pem --passwo
 
 ### Connecting
 
-<details>
+<details markdown="1">
   <summary>Basic connection</summary>
 
 ```shell
@@ -145,7 +145,7 @@ The remote desktop appears as a single xpra window. The standard xpra client opt
 (window scaling, the system tray menu, etc).
 </details>
 
-<details>
+<details markdown="1">
   <summary>With a VNC password</summary>
 
 VNC password authentication (the classic DES challenge) is supported. The client will prompt for the
@@ -155,7 +155,7 @@ xpra attach vnc://localhost:5900/ --password-file=password.txt
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>Over an encrypted connection (VeNCrypt / TLS)</summary>
 
 If the VNC server offers `VeNCrypt` with an X509 certificate (see the `X509None` / `X509Vnc` server
@@ -173,7 +173,7 @@ xpra attach vnc://host:5900/ --ssl-server-verify-mode=none
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>Tunnelled over SSH</summary>
 
 `vnc+ssh://` connects to the VNC server through an SSH tunnel. When a display number is given in the

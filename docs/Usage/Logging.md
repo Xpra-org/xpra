@@ -2,7 +2,7 @@
 
 Logging is controlled by the `--debug` (or `-d`) option.
 
-<details>
+<details markdown="1">
   <summary>Examples</summary>
 
 Enable `geometry` debugging with a client:
@@ -22,7 +22,7 @@ xpra seamless -d focus --start=xterm
 ## Logging Categories
 Use the special category value `all` to enable all logging. (this will be very verbose and should be avoided)\
 You can also prefix a logging category with a dash "`-`" to disable debug logging for it.
-<details>
+<details markdown="1">
   <summary>example</summary>
 
 To log everything except the `window` and `focus` categories:
@@ -36,7 +36,7 @@ xpra seamless :10 -d all,-window,-focus
 Each logging category can also be enabled using environment variables. \
 This can be useful if you cannot modify the command line, or if the logging should happen
 very early on, or if you aren't calling the code from its normal wrappers.
-<details>
+<details markdown="1">
   <summary>example using an environment variable</summary>
 
 to enable "geometry" debugging with the `attach` subcommand use:
@@ -48,7 +48,7 @@ XPRA_GEOMETRY_DEBUG=1 xpra attach
 ***
 
 The full list of categories can be shown using `xpra -d help`, to see this list now, click on:
-<details>
+<details markdown="1">
   <summary>complete list of categories</summary>
 
 | Area                                 | Description                                                        |
@@ -177,7 +177,7 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 ## Runtime changes
 
 Logging settings can be modified at runtime:
-<details>
+<details markdown="1">
   <summary>via the control subcommand</summary>
 
 Using the `control` channel:
@@ -202,7 +202,7 @@ Or only enable loggers that match multiple categories with `+`:
 xpra control :2  debug disable focus+grab
 ```
 </details>
-<details>
+<details markdown="1">
   <summary>the server's dbus interface</summary>
 
 The debug control commands are also available through the server's dbus interface, see [#904](https://github.com/Xpra-org/xpra/issues/904).

@@ -7,7 +7,7 @@ Typically, you will need: `gcc` or `clang`, `gnu-make`, `libiconv`, `gettext`, `
 For building xpra itself and some of the python modules, you will also need [Cython](https://cython.org/)
 
 
-<details>
+<details markdown="1">
   <summary>Core Dependencies</summary>
 
 Those are required by almost every component.
@@ -44,7 +44,7 @@ ie: `lz4`, `libpng`, etc..
 
 </details>
 
-<details>
+<details markdown="1">
   <summary>Network Layer</summary>
 
 See [Network](../Network/README.md)
@@ -65,7 +65,7 @@ See [Network](../Network/README.md)
 | [PySocks](https://github.com/Anorov/PySocks)                           | https://github.com/Anorov/PySocks/releases              | client                                                            | SOCKS proxy support | https://github.com/Xpra-org/xpra/issues/2105         |
 </details>
 
-<details>
+<details markdown="1">
   <summary>Authentication</summary>
 
 See [authentication modules](../Usage/Authentication.md)
@@ -80,7 +80,7 @@ See [authentication modules](../Usage/Authentication.md)
 | [python-scramp](https://github.com/tlocke/scramp)          | https://pypi.org/project/scramp/      | SCRAM    | client + server  | optional SCRAM authentication                         |
 </details>
 
-<details>
+<details markdown="1">
   <summary>Python modules</summary>
 
 | Project                                                   | Source Download Link                                                                                          | Notes                                                |
@@ -103,7 +103,7 @@ See [authentication modules](../Usage/Authentication.md)
 | [pycups](https://github.com/zdohnal/pycups)               | https://pypi.org/project/pycups/#files                                                                        | [Printing](Printing.md)                                 |
 </details>
 
-<details>
+<details markdown="1">
   <summary>Encodings</summary>
 
 See [picture encodings](../Usage/Encodings.md)
@@ -124,7 +124,7 @@ See [picture encodings](../Usage/Encodings.md)
 | [pyNVML](http://pythonhosted.org/nvidia-ml-py/)                                    | https://pypi.python.org/pypi/nvidia-ml-py/                                                          | [NVENC](NVENC.md)                                                     | server           |
 </details>
 
-<details>
+<details markdown="1">
   <summary>Audio</summary>
 
 See [audio forwarding](../Features/Audio.md)
@@ -143,7 +143,7 @@ See [audio forwarding](../Features/Audio.md)
 | [TwoLame](http://www.twolame.org/)             | http://sourceforge.net/projects/twolame/files/twolame/ | MP3 encoder          |
 </details>
 
-<details>
+<details markdown="1">
   <summary>MacOS Dependency Graphs</summary>
 
   These graphs were generated using `jhbuild dot` on MacOS.
@@ -166,7 +166,7 @@ See [audio forwarding](../Features/Audio.md)
 
 </details>
 
-<details>
+<details markdown="1">
   <summary>MS Windows Dependency Graph</summary>
 
   This graph was generated from the [`SBOM`](https://github.com/Xpra-org/xpra/issues/4050)

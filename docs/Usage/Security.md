@@ -24,7 +24,7 @@ Most of the features below have explicit command line switches which can be used
 If a client or server turns off a subsystem then the remote end cannot enable the feature. Some switches only affect the on / off state of the feature instead, which does allow for the feature to be enabled through a user action once the connection is established. \
 These toggles may also be accessible through the server's control channel and dbus interface. \
 
-<details>
+<details markdown="1">
   <summary>Specific Subsystems</summary>
 
 ### [Clipboard](../Features/Clipboard.md)
@@ -90,7 +90,7 @@ On Linux kernels with Landlock ABI 9 or newer, the whole client or server proces
 
 ## Operation
 
-<details>
+<details markdown="1">
   <summary>Running mode, network connections and diagnostics, malicious peers, specific options</summary>
 
 ### Modes
@@ -149,7 +149,7 @@ Some specific options have a direct impact on the security of the system:
 
 ## Platforms
 
-<details>
+<details markdown="1">
   <summary>binaries, anti-viruses, system-integration, etc</summary>
 
 ### [Build options](../Build)

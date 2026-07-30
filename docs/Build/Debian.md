@@ -16,7 +16,7 @@ _(available in xpra v6.1 onwards)_
 
 
 Alternatively, you can install these sets yourself:
-<details>
+<details markdown="1">
   <summary>Common dependencies</summary>
 
 To be able to run xpra, you are likely to need:
@@ -25,7 +25,7 @@ apt-get install xvfb python3-cairo python3-gi-cairo \
     python3-opengl python3-pil
 ```
 </details>
-<details>
+<details markdown="1">
   <summary>X11</summary>
 
 ```shell
@@ -42,7 +42,7 @@ These X11 utilities are usually required at runtime:
 apt-get install xauth x11-xkb-utils
 ```
 </details>
-<details>
+<details markdown="1">
   <summary>GTK3</summary>
 
 GTK3 toolkit for the server and GUI client:
@@ -52,7 +52,7 @@ apt-get install libgtk-3-dev python3-dev python3-cairo-dev python-gi-dev cython3
 </details>
 
 ### Optional:
-<details>
+<details markdown="1">
   <summary>Extra codecs</summary>
 
 See [picture codecs](../Usage/Encodings.md)
@@ -70,7 +70,7 @@ apt-get install libnvidia-encode1 python3-numpy
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>HTML5 client</summary>
 
 for more details, see [html5 client](https://github.com/Xpra-org/xpra-html5)
@@ -79,7 +79,7 @@ apt-get install uglifyjs brotli libjs-jquery libjs-jquery-ui gnome-backgrounds
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>Client OpenGL acceleration</summary>
 
 [OpenGL](../Usage/Client-OpenGL.md)
@@ -88,7 +88,7 @@ apt-get install python3-opengl
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>Network layer</summary>
 
 For more details, see [network](../Network/README.md).
@@ -102,7 +102,7 @@ apt-get install openssh-client sshpass python3-paramiko
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>misc extras</summary>
 
 python libraries:
@@ -115,7 +115,7 @@ apt-get install libpam-dev quilt xserver-xorg-dev xutils-dev xserver-xorg-video-
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>authentication modules</summary>
 
 For more details, see [authentication](../Usage/Authentication.md).
@@ -124,7 +124,7 @@ apt-get install python3-kerberos python3-gssapi
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>audio forwarding</summary>
 
 See [audio](../Features/Audio.md) support and codecs
@@ -135,7 +135,7 @@ apt-get install gstreamer1.0-pulseaudio gstreamer1.0-alsa \
 ```
 </details>
 
-<details>
+<details markdown="1">
   <summary>printer forwarding</summary>
 
 See [printing](../Features/Printing.md)

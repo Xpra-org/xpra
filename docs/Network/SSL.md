@@ -3,7 +3,7 @@
 SSL is the colloquial term which refers to both `SSL` and `TLS` socket encryption.
 
 For step-by-step instructions, expand this:
-<details>
+<details markdown="1">
   <summary>Basic Example</summary>
 
 start a server with TCP and SSL support using an existing certificate `cert.pem` (see below for generating one):
@@ -67,7 +67,7 @@ Do not assume that you can just enable SSL to make your connection secure.
 ***
 
 For detailed instructions on using your own CA, click on:
-<details>
+<details markdown="1">
   <summary>Securing SSL with self-signed CA and certificates</summary>
 
 See [The Most Dangerous Code in the World: Validating SSL Certificates in Non-Browser Software](https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf) and [Beware of Unverified TLS Certificates in PHP & Python](https://blog.sucuri.net/2016/03/beware-unverified-tls-certificates-php-python.html). \

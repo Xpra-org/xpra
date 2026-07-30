@@ -31,7 +31,7 @@ The HTML5 client is written in Javascript, so it does not have access to the pri
 
 
 ## Debugging
-<details>
+<details markdown="1">
   <summary>Diagnostics</summary>
 
 * run the [printing.py](https://github.com/Xpra-org/xpra/tree/master/xpra/platform/printing.py) diagnostic script to see which printers are detected - this script is available as `Print.exe` on MS Windows and as `Xpra.app/Contents/Helpers/Print` on MacOS
@@ -40,7 +40,7 @@ The HTML5 client is written in Javascript, so it does not have access to the pri
 * look for the cups backend messages in your system log (ie: with journald: `sudo journalctl -f -t xpraforwarder`)
 * for debugging the cups server backend, run: `cupsctl --debug-logging`
 </details>
-<details>
+<details markdown="1">
   <summary>Issues</summary>
 
 * better printer options handling and forwarding: #1344

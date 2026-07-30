@@ -13,7 +13,7 @@ This command will start an `xterm` (or any graphical application of your choice)
 xpra seamless ssh://USERNAME@HOST/ --start-child=xterm
 ```
 
-<details>
+<details markdown="1">
   <summary>Step by step</summary>
 
 Instead of starting and attaching to the session using a single command:\
@@ -27,7 +27,7 @@ xpra attach ssh://USERNAME@HOST/100
 ```
 (replace `HOST` with the hostname or IP of the server)
 </details>
-<details>
+<details markdown="1">
   <summary>Connecting locally</summary>
 
 If you are attaching from the same machine and using the same user account, this is sufficient:
@@ -39,7 +39,7 @@ And if there is only a single xpra session running, you can omit the display and
 xpra attach
 ```
 </details>
-<details>
+<details markdown="1">
   <summary>Access without SSH</summary>
 
 SSH is great, it provides host verification, secure authentication and encryption, it is available on all platforms and is well tested.
@@ -56,7 +56,7 @@ xpra attach tcp://SERVERHOST:10000/
 
 Beware: this TCP socket is insecure in this example, see [authentication](Authentication.md).
 </details>
-<details>
+<details markdown="1">
   <summary>Attach with a session file</summary>
   Typing the same attach commands over and over again can be tedious, especially if you tweak the command line options.
 
