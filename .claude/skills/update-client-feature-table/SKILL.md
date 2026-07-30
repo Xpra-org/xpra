@@ -5,15 +5,28 @@ description: Refresh the alternative-client feature comparison table in docs/Usa
 
 # update-client-feature-table
 
-`docs/Usage/Clients.md` compares the xpra client implementations feature by feature. The columns
-describe *other* repositories, so the table goes stale on their commits, not on this one's — a
-refresh means reading those repos and rewriting only the cells that actually moved.
+`docs/Usage/Clients.md` compares the xpra client implementations feature by feature. It describes
+*other* repositories, so it goes stale on their commits, not on this one's — a refresh means reading
+those repos and rewriting only the entries that actually moved.
 
-## The repos behind each column
+## The shape of the section
 
-| Column             | Local clone             | Upstream                           |
+"Feature comparison" is deliberately **not** one wide table: prose in a six-column grid forced a
+horizontal scrollbar. It is now two layers, and a change usually has to land in both:
+
+1. **The matrix** — one narrow `| Feature | xpra | html5 | vispra | rust | go |` table carrying only
+   ✅ / ◐ / — so it fits on screen. No prose, ever; a qualifier here re-widens the table.
+2. **A `###` section per client** — a one-line intro sentence (maturity + platforms, which have no
+   matrix row) followed by a two-column `| Feature | Notes |` table holding all the detail.
+
+Feature names must match between the matrix and the per-client tables. A per-client table only lists
+the rows it has something to say about; a bare ✅ or — with no detail is left to the matrix alone.
+
+## The repos behind each client
+
+| Client             | Local clone             | Upstream                           |
 |--------------------|-------------------------|------------------------------------|
-| Native Xpra client | this repo               | `Xpra-org/xpra`                    |
+| Native xpra client | this repo               | `Xpra-org/xpra`                    |
 | xpra-html5         | `~/projects/xpra-html5` | `Xpra-org/xpra-html5`              |
 | vispra             | `~/projects/vispra`     | `MajidNajafi/vispra` (third party) |
 | Rust client        | `~/projects/rust-xpra`  | `Xpra-org/rust-xpra`               |
@@ -35,16 +48,17 @@ worth raising when it comes up, but adding it is a bigger edit than a refresh.
    - rust-xpra: `src/client/client.rs`
    - Backend coverage differs *within* a client — check for a per-backend file
      (`x11/cursor.go`, `wayland/cursor.go`, `win32/cursor.go`) before writing ✅ rather than ◐.
-3. **Edit the cells, then re-align.** Hand-edit the affected cells, then run the bundled script,
-   which pads every column and regenerates the separator row:
+3. **Edit both layers, then re-align.** Hand-edit the matrix symbol and the client's notes row, then
+   run the bundled script, which pads every column of every `| Feature ` table and regenerates the
+   separator rows (keeping the matrix's `:---:` centering):
    ```sh
    python3 .claude/skills/update-client-feature-table/retable.py docs/Usage/Clients.md
    ```
    It also fails on a row whose cell count drifted from the header — usually an unescaped `|`.
-4. **Update the prose too** when a column moves enough to contradict it: the maturity sentence under
-   "Client implementations" and the row list are edited separately from each other.
+4. **Update the prose too** when a client moves enough to contradict it: the paragraph under
+   "Client implementations" and each client's intro sentence are edited separately from the tables.
 
-## Rules that keep the table honest
+## Rules that keep the comparison honest
 
 - **Committed state only.** These clients are developed in parallel with this doc, so their working
   trees often hold the next feature (`git status --short`). Documenting uncommitted work publishes a
@@ -52,13 +66,13 @@ worth raising when it comes up, but adding it is a bigger edit than a refresh.
   and why, so the user can ask for it once it lands.
 - **The legend means what it says**: ✅ broad support · ◐ partial or platform-limited · — absent.
   A feature that works on one of three backends is ◐ with the limit named, never ✅.
-- **Name the limit, not just the feature.** "◐ PNG icons; on Wayland only with
-  `xdg-toplevel-icon-v1`" is the useful cell; "◐ Icons" is not. The per-client READMEs have a
+- **Name the limit, not just the feature.** "PNG icons; on Wayland only with
+  `xdg-toplevel-icon-v1`" is the useful note; "Icons" is not. The per-client READMEs have a
   "what it does not do" / "known limitations" section written for exactly this.
-- **Do not upgrade a maturity cell out of enthusiasm.** "⚠️ Proof of concept; README says not yet
-  usable" stays until that README says otherwise.
-- Rows are features, columns are clients: a new feature row needs a cell for *every* client,
-  including a `—` for the ones that lack it.
+- **Do not upgrade an intro sentence out of enthusiasm.** "Proof of concept - the README says it is
+  not yet usable" stays until that README says otherwise.
+- A new feature needs a matrix row with a cell for *every* client, including a `—` for the ones that
+  lack it — then a notes row only under the clients that have something to qualify.
 
 ## Committing
 

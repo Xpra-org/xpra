@@ -27,41 +27,197 @@ The `rust` and `go` clients are experimental implementations used mostly for val
 
 Legend: ✅ broad support · ◐ partial or platform-limited · — absent
 
-| Feature                           | Native Xpra client                                                                                       | xpra-html5                                                                                        | vispra                                                                  | Rust client                                                                                  | Go client                                                                                                                                                            |
-|-----------------------------------|----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Maturity                          | ✅ Production client                                                                                      | ✅ Production client, widely deployed                                                              | ⚠️ Early stage third party rewrite of the html5 client                  | ⚠️ Proof of concept; README says not yet usable                                              | ◐ Minimal client, usable on three window systems                                                                                                                     |
-| Platforms                         | Linux, Windows, macOS                                                                                    | Any modern browser                                                                                | Any modern browser                                                      | Windows; Linux X11/Wayland                                                                   | Linux X11 and Wayland; Windows                                                                                                                                       |
-| Transports                        | TCP, SSL, SSH, WS/WSS, QUIC, Unix sockets, named pipes, vsock; VNC support                               | WS/WSS, WebTransport (experimental)                                                               | WS/WSS, WebTransport (experimental)                                     | TCP, SSL, WS/WSS, SSH subprocess                                                             | TCP, SSL, WS/WSS, SSH subprocess                                                                                                                                     |
-| Transport security                | TLS verification/configuration, SSH, application-level AES                                               | HTTPS/WSS through the browser's TLS stack; application-level AES (CBC/CTR/CFB)                    | HTTPS/WSS through the browser's TLS stack; application-level AES        | TLS supported, but certificate verification is currently disabled; SSH supported             | TLS certificate and hostname verification against the system trust store for `ssl`/`wss`, private CA option; SSH through the system client; no application-level AES |
-| Authentication                    | Password, prompt, file, URI, SCRAM, Kerberos, GSS, U2F/FIDO2 and others                                  | HMAC-SHA256 password; refuses to send passwords over unencrypted remote links                     | HMAC-SHA256 password                                                    | HMAC-SHA256 password via connection dialog, environment, pinentry or built-in dialog         | HMAC-SHA256 password via URL, connection dialog, `XPRA_PASSWORD`, pinentry or the Windows credentials dialog; SSH logins left to OpenSSH                             |
-| Packet encoding                   | Rencodeplus and YAML                                                                                     | Rencodeplus                                                                                       | Rencodeplus                                                             | YAML                                                                                         | Rencodeplus                                                                                                                                                          |
-| Packet compression                | LZ4, Zstd, Brotli; bidirectional negotiation                                                             | Inbound LZ4 and Brotli                                                                            | Inbound LZ4 and Brotli                                                  | Inbound LZ4 only                                                                             | Inbound LZ4 only                                                                                                                                                     |
-| Packet types                      | ✅ Legacy and 6.5+ names, selected with `XPRA_BACKWARDS_COMPATIBLE`                                       | Legacy names, both directions                                                                     | Legacy names, both directions                                           | Sends 6.5+ names, receives legacy: needs a 6.6+ server left in its backwards-compatible mode | Sends 6.5+ names; receives legacy unless `XPRA_BACKWARDS_COMPATIBLE=0`                                                                                               |
-| Out-of-band chunks                | ✅                                                                                                        | ✅                                                                                                 | ✅                                                                       | ✅ Received from the server                                                                   | ✅ Received and spliced back in by index                                                                                                                              |
-| Basic forwarded windows           | ✅                                                                                                        | ✅ Create/destroy/draw/move/resize/raise                                                           | ✅ Create/destroy/draw/move/resize/raise                                 | ✅ Create/destroy/draw/move/resize/raise                                                      | ✅ Create/destroy/draw/move/resize/raise/minimize                                                                                                                     |
-| Advanced window state             | Shapes, workspaces, transient relationships, fullscreen, stacking, decorations, constraints, grabs, etc. | ◐ Fullscreen, maximize/minimize, above/below, modal, opacity - all confined to the browser canvas | ◐ Similar subset, confined to the browser canvas                        | ◐ Fullscreen, maximize/minimize, decorations, above/below, constraints and interactive moves | ◐ Title, size constraints, raise and minimize/restore; no positioning or stacking on Wayland                                                                         |
-| Override-redirect popups          | ✅                                                                                                        | ✅                                                                                                 | ✅                                                                       | ✅ X11; degraded on native Wayland                                                            | ✅ X11, Windows, and Wayland `xdg_popup`                                                                                                                              |
-| Picture encodings                 | RGB, JPEG, PNG, WebP, AVIF and others depending on codecs                                                | RGB (lz4), JPEG, PNG, WebP, AVIF, `scroll` - subject to browser support                           | RGB (lz4), JPEG, PNG, WebP, AVIF, `scroll` - subject to browser support | JPEG, PNG, WebP; no raw RGB                                                                  | RGB24/RGB32, JPEG, PNG (including palette and grayscale), WebP                                                                                                       |
-| Video encodings                   | H.264, VP8/VP9, AV1, HEVC and others depending on decoder availability                                   | ◐ H.264 and VP8 through `WebCodecs`, MPEG4 / VP8 through `MediaSource`                            | ◐ H.264 and VP8 through `WebCodecs`                                     | H.264 on Windows through Media Foundation                                                    | —                                                                                                                                                                    |
-| Accelerated rendering/codecs      | OpenGL plus VAAPI, NVIDIA, Media Foundation, VideoToolbox and other optional paths                       | ◐ Browser-native decoding, offscreen canvas and decode workers; no GPU control                    | ◐ Browser-native decoding, offscreen canvas and decode workers          | ◐ Media Foundation H.264 on Windows; CPU softbuffer otherwise                                | X11 pixmap backing store, GDI blits on Windows, `wl_shm` buffers on Wayland; no video acceleration                                                                   |
-| Speaker audio, server → client    | ✅ Multiple negotiated codecs through GStreamer                                                           | ✅ Opus, Vorbis, AAC, MP3, FLAC through `MediaSource`, with an `aurora` fallback                   | ◐ `MediaSource` and `aurora` codecs                                     | ◐ Bare Opus on Windows only, with jitter buffering and AV sync                               | —                                                                                                                                                                    |
-| Microphone, client → server       | ✅                                                                                                        | —                                                                                                 | —                                                                       | —                                                                                            | —                                                                                                                                                                    |
-| Clipboard                         | ✅ Multiple selections/targets, direction controls and filtering                                          | ◐ Text and HTML, CLIPBOARD selection only, subject to browser permissions                         | ◐ Plain text, subject to browser permissions                            | ◐ Bidirectional plain text, CLIPBOARD selection only; X11/XWayland or Windows                | —                                                                                                                                                                    |
-| Keyboard                          | Full keymap upload/synchronization, layouts, shortcuts and lock-state handling                           | ◐ Layout selection and browser keycodes; no keymap upload                                         | ◐ Layout selection and browser keycodes; no keymap upload               | ◐ Direct key events; no keymap upload, NumLock limitation on Wayland                         | ◐ X11 keysym names, the compositor's own keymap on Wayland, printable ASCII only on Windows; no keymap upload                                                        |
-| Pointer/input                     | Pointer, buttons, wheel, focus, relative input, grabs and XI2 support                                    | Pointer, buttons, wheel, focus and pointer lock                                                   | Pointer, buttons, wheel and focus                                       | Pointer, buttons, wheel, focus and server-requested grabs                                    | Pointer, buttons, wheel and focus                                                                                                                                    |
-| Server cursors                    | ✅ Multiple cursor formats and scaling                                                                    | ◐ PNG cursors                                                                                     | ◐ PNG cursors                                                           | ◐ PNG cursors                                                                                | ◐ PNG cursors on all three backends                                                                                                                                  |
-| Window icons                      | ✅                                                                                                        | ◐ PNG icons                                                                                       | ◐ PNG icons                                                             | ◐ PNG icons                                                                                  | ◐ PNG icons; on Wayland only with `xdg-toplevel-icon-v1`                                                                                                             |
-| Bell forwarding                   | ✅ Native/platform backend                                                                                | ✅ Audio sample                                                                                    | ◐ Tone generated with the Web Audio API                                 | ◐ Windows tone; terminal BEL on Linux                                                        | ◐ Native X11 and Win32 sound; none on Wayland                                                                                                                        |
-| Desktop notifications             | ✅ Native notification backends on supported platforms                                                    | ✅ Browser notifications                                                                           | ✅ Browser notifications                                                 | ◐ Windows tray balloons; logged on Linux                                                     | ◐ Logged only                                                                                                                                                        |
-| Client tray/menu                  | ✅ Extensive session controls                                                                             | ✅ Floating toolbar with session controls                                                          | ◐ Taskbar and session info panel                                        | ◐ Windows only, with an Exit command                                                         | —                                                                                                                                                                    |
-| Remote application system tray    | ✅                                                                                                        | ✅                                                                                                 | ◐ Tray windows are received and rendered                                | —                                                                                            | —                                                                                                                                                                    |
-| File transfer/open files and URLs | ✅                                                                                                        | ✅ Downloads and URL opening                                                                       | ◐ Basic file reception                                                  | —                                                                                            | —                                                                                                                                                                    |
-| Printer forwarding                | ✅ Optional platform dependencies                                                                         | ✅ Through the browser's print dialog                                                              | ◐ Present but disabled by default                                       | —                                                                                            | —                                                                                                                                                                    |
-| Webcam forwarding                 | ✅ Optional; client camera → Linux server                                                                 | —                                                                                                 | —                                                                       | —                                                                                            | —                                                                                                                                                                    |
-| Shared-memory transport           | ✅ mmap for local sessions                                                                                | —                                                                                                 | —                                                                       | —                                                                                            | —                                                                                                                                                                    |
-| DPI/display synchronization       | DPI, scaling, monitor layout, workspaces and high bit depth                                              | ◐ DPI and screen size reported, resizes with the browser window                                   | ◐ DPI and screen size reported, resizes with the browser window         | ◐ Windows DPI-aware manifest; no server DPI/monitor synchronization                          | ◐ Windows per-monitor DPI awareness; nothing reported to the server                                                                                                  |
-| Remote logging/server events      | ✅ Full diagnostics, session info and event handling                                                      | ✅ Remote logging, session info and diagnostics                                                    | ◐ Remote logging, session info and pings                                | ◐ Remote logging, lifecycle events and pings                                                 | ◐ Server lifecycle events and pings; no client-side remote logging                                                                                                   |
-| Bandwidth adaptation              | ✅ Detection, limits, codec adaptation and detailed latency metrics                                       | ◐ Bandwidth limit option, pings and latency metrics                                               | ◐ Bandwidth limit option and pings                                      | — Pings only                                                                                 | — Pings only                                                                                                                                                         |
+| Feature                  | xpra | html5 | vispra | rust | go |
+|--------------------------|:----:|:-----:|:------:|:----:|:--:|
+| Transports               | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Transport security       | ✅    | ✅     | ✅      | ◐    | ✅  |
+| Authentication           | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Packet encoding          | ✅    | ✅     | ✅      | ◐    | ✅  |
+| Packet compression       | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Packet types             | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Out-of-band chunks       | ✅    | ✅     | ✅      | ✅    | ✅  |
+| Forwarded windows        | ✅    | ✅     | ✅      | ✅    | ✅  |
+| Advanced window state    | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Override-redirect popups | ✅    | ✅     | ✅      | ◐    | ✅  |
+| Picture encodings        | ✅    | ✅     | ✅      | ◐    | ✅  |
+| Video encodings          | ✅    | ◐     | ◐      | ◐    | —  |
+| Accelerated rendering    | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Speaker audio            | ✅    | ✅     | ◐      | ◐    | —  |
+| Microphone               | ✅    | —     | —      | —    | —  |
+| Clipboard                | ✅    | ◐     | ◐      | ◐    | —  |
+| Keyboard                 | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Pointer / input          | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Server cursors           | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Window icons             | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Bell forwarding          | ✅    | ✅     | ◐      | ◐    | ◐  |
+| Desktop notifications    | ✅    | ✅     | ✅      | ◐    | ◐  |
+| Client tray / menu       | ✅    | ✅     | ◐      | ◐    | —  |
+| Remote app system tray   | ✅    | ✅     | ◐      | —    | —  |
+| File transfer / URLs     | ✅    | ✅     | ◐      | —    | —  |
+| Printer forwarding       | ✅    | ✅     | ◐      | —    | —  |
+| Webcam forwarding        | ✅    | —     | —      | —    | —  |
+| Shared memory (mmap)     | ✅    | —     | —      | —    | —  |
+| DPI / display sync       | ✅    | ◐     | ◐      | ◐    | ◐  |
+| Remote logging / events  | ✅    | ✅     | ◐      | ◐    | ◐  |
+| Bandwidth adaptation     | ✅    | ◐     | ◐      | —    | —  |
+
+The sections below detail what each client actually implements.
+
+### Native xpra client
+
+The reference implementation and the only complete one: a production client packaged for Linux, MS Windows and MacOS.
+
+| Feature                 | Notes                                                                                              |
+|-------------------------|----------------------------------------------------------------------------------------------------|
+| Transports              | TCP, SSL, SSH, WS/WSS, QUIC, Unix sockets, named pipes, vsock; VNC support                         |
+| Transport security      | TLS verification / configuration, SSH, application-level AES                                       |
+| Authentication          | Password, prompt, file, URI, SCRAM, Kerberos, GSS, U2F/FIDO2 and others                            |
+| Packet encoding         | Rencodeplus and YAML                                                                               |
+| Packet compression      | LZ4, Zstd, Brotli; bidirectional negotiation                                                       |
+| Packet types            | Legacy and 6.5+ names, selected with `XPRA_BACKWARDS_COMPATIBLE`                                   |
+| Advanced window state   | Shapes, workspaces, transient relationships, fullscreen, stacking, decorations, constraints, grabs |
+| Picture encodings       | RGB, JPEG, PNG, WebP, AVIF and others depending on codecs                                          |
+| Video encodings         | H.264, VP8/VP9, AV1, HEVC and others depending on decoder availability                             |
+| Accelerated rendering   | OpenGL plus VAAPI, NVIDIA, Media Foundation, VideoToolbox and other optional paths                 |
+| Speaker audio           | Multiple negotiated codecs through GStreamer                                                       |
+| Clipboard               | Multiple selections / targets, direction controls and filtering                                    |
+| Keyboard                | Full keymap upload / synchronization, layouts, shortcuts and lock-state handling                   |
+| Pointer / input         | Pointer, buttons, wheel, focus, relative input, grabs and XI2 support                              |
+| Server cursors          | Multiple cursor formats and scaling                                                                |
+| Bell forwarding         | Native platform backend                                                                            |
+| Desktop notifications   | Native notification backends on supported platforms                                                |
+| Client tray / menu      | Extensive session controls                                                                         |
+| Printer forwarding      | Optional platform dependencies                                                                     |
+| Webcam forwarding       | Optional; client camera → Linux server                                                             |
+| Shared memory (mmap)    | For local sessions                                                                                 |
+| DPI / display sync      | DPI, scaling, monitor layout, workspaces and high bit depth                                        |
+| Remote logging / events | Full diagnostics, session info and event handling                                                  |
+| Bandwidth adaptation    | Detection, limits, codec adaptation and detailed latency metrics                                   |
+
+### xpra-html5
+
+Production client, widely deployed; runs in any modern browser.
+
+| Feature                 | Notes                                                                                         |
+|-------------------------|-----------------------------------------------------------------------------------------------|
+| Transports              | WS/WSS, WebTransport (experimental)                                                           |
+| Transport security      | HTTPS/WSS through the browser's TLS stack; application-level AES (CBC/CTR/CFB)                |
+| Authentication          | HMAC-SHA256 password; refuses to send passwords over unencrypted remote links                 |
+| Packet encoding         | Rencodeplus                                                                                   |
+| Packet compression      | Inbound LZ4 and Brotli                                                                        |
+| Packet types            | Legacy names, both directions                                                                 |
+| Forwarded windows       | Create / destroy / draw / move / resize / raise                                               |
+| Advanced window state   | Fullscreen, maximize/minimize, above/below, modal and opacity, confined to the browser canvas |
+| Picture encodings       | RGB (lz4), JPEG, PNG, WebP, AVIF, `scroll` - subject to browser support                       |
+| Video encodings         | H.264 and VP8 through `WebCodecs`, MPEG4 / VP8 through `MediaSource`                          |
+| Accelerated rendering   | Browser-native decoding, offscreen canvas and decode workers; no GPU control                  |
+| Speaker audio           | Opus, Vorbis, AAC, MP3, FLAC through `MediaSource`, with an `aurora` fallback                 |
+| Clipboard               | Text and HTML, CLIPBOARD selection only, subject to browser permissions                       |
+| Keyboard                | Layout selection and browser keycodes; no keymap upload                                       |
+| Pointer / input         | Pointer, buttons, wheel, focus and pointer lock                                               |
+| Server cursors          | PNG cursors                                                                                   |
+| Window icons            | PNG icons                                                                                     |
+| Bell forwarding         | Audio sample                                                                                  |
+| Desktop notifications   | Browser notifications                                                                         |
+| Client tray / menu      | Floating toolbar with session controls                                                        |
+| File transfer / URLs    | Downloads and URL opening                                                                     |
+| Printer forwarding      | Through the browser's print dialog                                                            |
+| DPI / display sync      | DPI and screen size reported, resizes with the browser window                                 |
+| Remote logging / events | Remote logging, session info and diagnostics                                                  |
+| Bandwidth adaptation    | Bandwidth limit option, pings and latency metrics                                             |
+
+### vispra
+
+Early stage third party rewrite of the html5 client; runs in any modern browser.
+
+| Feature                 | Notes                                                                   |
+|-------------------------|-------------------------------------------------------------------------|
+| Transports              | WS/WSS, WebTransport (experimental)                                     |
+| Transport security      | HTTPS/WSS through the browser's TLS stack; application-level AES        |
+| Authentication          | HMAC-SHA256 password                                                    |
+| Packet encoding         | Rencodeplus                                                             |
+| Packet compression      | Inbound LZ4 and Brotli                                                  |
+| Packet types            | Legacy names, both directions                                           |
+| Forwarded windows       | Create / destroy / draw / move / resize / raise                         |
+| Advanced window state   | A subset of the html5 client's, also confined to the browser canvas     |
+| Picture encodings       | RGB (lz4), JPEG, PNG, WebP, AVIF, `scroll` - subject to browser support |
+| Video encodings         | H.264 and VP8 through `WebCodecs`                                       |
+| Accelerated rendering   | Browser-native decoding, offscreen canvas and decode workers            |
+| Speaker audio           | `MediaSource` and `aurora` codecs                                       |
+| Clipboard               | Plain text, subject to browser permissions                              |
+| Keyboard                | Layout selection and browser keycodes; no keymap upload                 |
+| Pointer / input         | Pointer, buttons, wheel and focus                                       |
+| Server cursors          | PNG cursors                                                             |
+| Window icons            | PNG icons                                                               |
+| Bell forwarding         | Tone generated with the Web Audio API                                   |
+| Desktop notifications   | Browser notifications                                                   |
+| Client tray / menu      | Taskbar and session info panel                                          |
+| Remote app system tray  | Tray windows are received and rendered                                  |
+| File transfer / URLs    | Basic file reception                                                    |
+| Printer forwarding      | Present but disabled by default                                         |
+| DPI / display sync      | DPI and screen size reported, resizes with the browser window           |
+| Remote logging / events | Remote logging, session info and pings                                  |
+| Bandwidth adaptation    | Bandwidth limit option and pings                                        |
+
+### Rust client
+
+Proof of concept - the README says it is not yet usable. Runs on MS Windows and on Linux, X11 or Wayland.
+
+| Feature                  | Notes                                                                                        |
+|--------------------------|----------------------------------------------------------------------------------------------|
+| Transports               | TCP, SSL, WS/WSS, SSH subprocess                                                             |
+| Transport security       | TLS supported, but certificate verification is currently disabled; SSH supported             |
+| Authentication           | HMAC-SHA256 password via connection dialog, environment, pinentry or built-in dialog         |
+| Packet encoding          | YAML                                                                                         |
+| Packet compression       | Inbound LZ4 only                                                                             |
+| Packet types             | Sends 6.5+ names, receives legacy: needs a 6.6+ server left in its backwards-compatible mode |
+| Out-of-band chunks       | Received from the server                                                                     |
+| Forwarded windows        | Create / destroy / draw / move / resize / raise                                              |
+| Advanced window state    | Fullscreen, maximize/minimize, decorations, above/below, constraints and interactive moves   |
+| Override-redirect popups | X11; degraded on native Wayland                                                              |
+| Picture encodings        | JPEG, PNG, WebP; no raw RGB                                                                  |
+| Video encodings          | H.264 on Windows through Media Foundation                                                    |
+| Accelerated rendering    | Media Foundation H.264 on Windows; CPU softbuffer otherwise                                  |
+| Speaker audio            | Bare Opus on Windows only, with jitter buffering and AV sync                                 |
+| Clipboard                | Bidirectional plain text, CLIPBOARD selection only; X11/XWayland or Windows                  |
+| Keyboard                 | Direct key events; no keymap upload, NumLock limitation on Wayland                           |
+| Pointer / input          | Pointer, buttons, wheel, focus and server-requested grabs                                    |
+| Server cursors           | PNG cursors                                                                                  |
+| Window icons             | PNG icons                                                                                    |
+| Bell forwarding          | Windows tone; terminal BEL on Linux                                                          |
+| Desktop notifications    | Windows tray balloons; logged on Linux                                                       |
+| Client tray / menu       | Windows only, with an Exit command                                                           |
+| DPI / display sync       | Windows DPI-aware manifest; no server DPI / monitor synchronization                          |
+| Remote logging / events  | Remote logging, lifecycle events and pings                                                   |
+| Bandwidth adaptation     | Pings only                                                                                   |
+
+### Go client
+
+Minimal client, usable on three window systems: Linux X11, Linux Wayland and MS Windows.
+
+| Feature                  | Notes                                                                                                                                                                |
+|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Transports               | TCP, SSL, WS/WSS, SSH subprocess                                                                                                                                     |
+| Transport security       | TLS certificate and hostname verification against the system trust store for `ssl`/`wss`, private CA option; SSH through the system client; no application-level AES |
+| Authentication           | HMAC-SHA256 password via URL, connection dialog, `XPRA_PASSWORD`, pinentry or the Windows credentials dialog; SSH logins left to OpenSSH                             |
+| Packet encoding          | Rencodeplus                                                                                                                                                          |
+| Packet compression       | Inbound LZ4 only                                                                                                                                                     |
+| Packet types             | Sends 6.5+ names; receives legacy unless `XPRA_BACKWARDS_COMPATIBLE=0`                                                                                               |
+| Out-of-band chunks       | Received and spliced back in by index                                                                                                                                |
+| Forwarded windows        | Create / destroy / draw / move / resize / raise / minimize                                                                                                           |
+| Advanced window state    | Title, size constraints, raise and minimize/restore; no positioning or stacking on Wayland                                                                           |
+| Override-redirect popups | X11, Windows, and Wayland `xdg_popup`                                                                                                                                |
+| Picture encodings        | RGB24/RGB32, JPEG, PNG (including palette and grayscale), WebP                                                                                                       |
+| Accelerated rendering    | X11 pixmap backing store, GDI blits on Windows, `wl_shm` buffers on Wayland; no video acceleration                                                                   |
+| Keyboard                 | X11 keysym names, the compositor's own keymap on Wayland, printable ASCII only on Windows; no keymap upload                                                          |
+| Pointer / input          | Pointer, buttons, wheel and focus                                                                                                                                    |
+| Server cursors           | PNG cursors on all three backends                                                                                                                                    |
+| Window icons             | PNG icons; on Wayland only with `xdg-toplevel-icon-v1`                                                                                                               |
+| Bell forwarding          | Native X11 and Win32 sound; none on Wayland                                                                                                                          |
+| Desktop notifications    | Logged only                                                                                                                                                          |
+| DPI / display sync       | Windows per-monitor DPI awareness; nothing reported to the server                                                                                                    |
+| Remote logging / events  | Server lifecycle events and pings; no client-side remote logging                                                                                                     |
+| Bandwidth adaptation     | Pings only                                                                                                                                                           |
 
 ## See also
 
