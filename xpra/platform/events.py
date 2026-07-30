@@ -35,10 +35,13 @@ def main(argv: list[str]) -> int:
         consume_verbose_argv(argv, "all")
         init()
 
-        def handler(event: str, args):
-            log.info(f"{event!r} {args}")
+        def make_handler(event: str) -> Callable:
+            def handler(*args) -> None:
+                log.info(f"{event!r} {args}")
+            return handler
 
-        for event in EVENTS:
+        handlers = {event: make_handler(event) for event in EVENTS}
+        for event, handler in handlers.items():
             add_handler(event, handler)
 
         GLib = gi_import("GLib")
@@ -47,7 +50,7 @@ def main(argv: list[str]) -> int:
             loop.run()
         except KeyboardInterrupt:
             pass
-        for event in EVENTS:
+        for event, handler in handlers.items():
             remove_handler(event, handler)
     return 0
 
