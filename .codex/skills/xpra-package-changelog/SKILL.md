@@ -14,6 +14,7 @@ Use this skill to mirror one Xpra release entry from `docs/CHANGELOG.md` into th
 3. Strip Markdown links by replacing `[description](url)` with `description`.
 4. Preserve release-note descriptions and inline punctuation. Do not include commit URLs.
 5. Convert Markdown category bullets to package changelog headings:
+   - Markdown sub-items use exactly two leading spaces: `  * description`.
    - RPM: `- Category:` and continuation lines indented with three spaces.
    - Debian: `  * Category:` and continuation lines indented with four spaces.
 6. Update the release datetime in every packaging file you touch:

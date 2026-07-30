@@ -38,8 +38,8 @@ def format_section(section: str, output_format: str) -> str:
             text = line[2:]
             prefix = "- " if output_format == "rpm" else "  * "
             lines.append(f"{prefix}{text}")
-        elif line.startswith("    * "):
-            text = line[6:]
+        elif line.startswith("  * "):
+            text = line[4:]
             prefix = "   " if output_format == "rpm" else "    "
             lines.append(f"{prefix}{text}")
         elif not line:
