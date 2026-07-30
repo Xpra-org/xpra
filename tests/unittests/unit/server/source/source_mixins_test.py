@@ -9,6 +9,7 @@ import unittest
 from io import BytesIO
 from threading import Event
 from time import monotonic
+from unittest.mock import patch
 
 from unit.test_util import LoggerSilencer, silence_error, silence_info
 
@@ -148,11 +149,33 @@ class SourceMixinsTest(unittest.TestCase):
         # self._test_mixin_class(ClientConnection)
 
     def test_clipboard(self):
+        from xpra.net.compression import Compressible, Compressed
         from xpra.server.source.clipboard import ClipboardConnection
         for fix in (False, True):
             self._test_mixin_class(ClipboardConnection, None, {
                 "clipboard.contents-slice-fix" : fix,
             })
+
+        data = b"clipboard data"
+        for compressors, expected in (
+                (("lz4",), "lz4"),
+                (("lz4", "brotli"), "brotli"),
+                ((), "")):
+            source = ClipboardConnection()
+            source.init_state()
+            source.parse_client_caps(typedict({
+                "clipboard": {"enabled": True},
+                "compressors": compressors,
+            }))
+            packets = []
+            source.queue_packet = packets.append
+            compressed = Compressed("test", b"compressed")
+            with patch("xpra.net.compression.compressed_wrapper", return_value=compressed) as wrapper:
+                source.compress_clipboard(("clipboard-contents", Compressible("text", data)))
+            kwargs = wrapper.call_args.kwargs
+            self.assertEqual(kwargs.get("brotli", False), expected == "brotli")
+            self.assertEqual(kwargs.get("lz4", False), expected == "lz4")
+            self.assertEqual(packets, [("clipboard-contents", compressed)])
 
     def test_dbus(self):
         try:

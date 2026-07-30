@@ -45,6 +45,8 @@ class ClipboardConnection(StubClientConnection):
         self.clipboard_selections = get_local_selections()
         self.clipboard_preferred_targets: Sequence[str] = ()
         self.clipboard_record = False
+        self.clipboard_lz4 = False
+        self.clipboard_brotli = False
 
     def cleanup(self) -> None:
         self.cancel_clipboard_progress_timer()
@@ -63,10 +65,15 @@ class ClipboardConnection(StubClientConnection):
             self.clipboard_want_targets = parse_want_targets(ccaps, self.clipboard_selections)
             self.clipboard_preferred_targets = ccaps.strtupleget("preferred-targets", ())
             self.clipboard_record = ccaps.boolget("record") and is_recording_allowed(self, "clipboard")
+        compressors = c.strtupleget("compressors")
+        self.clipboard_lz4 = "lz4" in compressors or (BACKWARDS_COMPATIBLE and c.boolget("lz4"))
+        self.clipboard_brotli = "brotli" in compressors or (BACKWARDS_COMPATIBLE and c.boolget("brotli"))
         log("client clipboard: enabled=%s, notifications=%s",
             self.clipboard_enabled, self.clipboard_notifications)
         log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
             self.clipboard_greedy, self.clipboard_want_targets, self.clipboard_selections)
+        log("client clipboard compressors: lz4=%s, brotli=%s",
+            self.clipboard_lz4, self.clipboard_brotli)
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -140,5 +147,10 @@ class ClipboardConnection(StubClientConnection):
         lpacket = list(packet)
         for i, item in enumerate(lpacket):
             if isinstance(item, Compressible):
-                lpacket[i] = compressed_wrapper(item.datatype, item.data, level=9, can_inline=False, brotli=True)
+                kwargs = {}
+                if self.clipboard_brotli:
+                    kwargs["brotli"] = True
+                elif self.clipboard_lz4:
+                    kwargs["lz4"] = True
+                lpacket[i] = compressed_wrapper(item.datatype, item.data, level=9, can_inline=False, **kwargs)
         self.queue_packet(tuple(lpacket))
