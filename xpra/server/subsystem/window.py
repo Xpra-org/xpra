@@ -373,27 +373,28 @@ class WindowServer(StubSubsystem):
                                     y += dy
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
-    def _process_damage_sequence(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
+    def _process_window_draw_ack(self, proto, packet: Packet) -> None:
+        # the legacy ack packet, also known as `damage-sequence`:
+        # it starts with the `packet_sequence` and the `message` is optional
         packet_sequence = packet.get_u64(1)
         wid = packet.get_wid(2)
         width = packet.get_u16(3)
         height = packet.get_u16(4)
         decode_time = packet.get_i32(5)
         message = packet.get_str(6) if len(packet) >= 7 else ""
-        self.do_process_window_draw_ack(proto, wid, width, height, packet_sequence, decode_time, message)
+        self.do_process_window_ack(proto, wid, width, height, packet_sequence, decode_time, message)
 
-    def _process_window_draw_ack(self, proto, packet: Packet) -> None:
+    def _process_window_ack(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         width = packet.get_u16(2)
         height = packet.get_u16(3)
         packet_sequence = packet.get_u64(4)
         decode_time = packet.get_i32(5)
         message = packet.get_str(6)
-        self.do_process_window_draw_ack(proto, wid, width, height, packet_sequence, decode_time, message)
+        self.do_process_window_ack(proto, wid, width, height, packet_sequence, decode_time, message)
 
-    def do_process_window_draw_ack(self, proto, wid: int, width: int, height: int,
-                                   packet_sequence: int, decode_time: int, message: str) -> None:
+    def do_process_window_ack(self, proto, wid: int, width: int, height: int,
+                              packet_sequence: int, decode_time: int, message: str) -> None:
         if ss := self.get_server_source(proto):
             ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
 
@@ -651,8 +652,9 @@ class WindowServer(StubSubsystem):
             self.add_legacy_alias("unmap-window", "window-unmap")
             self.add_legacy_alias("close-window", "window-close")
             self.add_legacy_alias("focus", "window-focus")
+            self.add_legacy_alias("damage-sequence", "window-draw-ack")
             # some packet mangling needed:
-            self.add_packets("buffer-refresh", "configure-window", "damage-sequence", main_thread=True)
+            self.add_packets("buffer-refresh", "configure-window", main_thread=True)
         self.add_packets(
             "window-map",
             "window-unmap",
@@ -661,6 +663,7 @@ class WindowServer(StubSubsystem):
             "window-focus",
             "window-refresh",
             "window-action",
+            "window-ack",
             "window-draw-ack",
             main_thread=True)
 

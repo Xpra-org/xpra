@@ -343,7 +343,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         window.record("draw", **kwargs)
         decode_time = 0
         message = ""
-        self.send(WINDOW_DRAW_ACK, wid, width, height, packet_sequence, decode_time, message)
+        self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
         if x != 0 or y != 0 or (width, height) != window.geometry[2:4] or options.get("quality", 100) != 100:
             self.refresh_needed.add(wid)
 

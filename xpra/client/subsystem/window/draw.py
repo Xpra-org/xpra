@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import WINDOW_DRAW_ACK
+from xpra.net.packet_type import WINDOW_ACK, WINDOW_DRAW_ACK
 from xpra.constants import WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
@@ -59,11 +59,11 @@ class WindowDraw(StubClientSubsystem):
 
     def send_draw_ack(self, wid: int, width: int, height: int, packet_sequence: int,
                       decode_time: int, message="") -> None:
-        if BACKWARDS_COMPATIBLE:
-            # the legacy `damage-sequence` packet starts with the `packet_sequence`:
-            args = ("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
+        if WINDOW_ACK in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
+            args = (WINDOW_ACK, wid, width, height, packet_sequence, decode_time, message)
         else:
-            args = (WINDOW_DRAW_ACK, wid, width, height, packet_sequence, decode_time, message)
+            # the legacy ack packet starts with the `packet_sequence`:
+            args = (WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
         log("sending ack: %s", args)
         self.send_now(*args)
 
