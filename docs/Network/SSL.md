@@ -14,11 +14,11 @@ xpra seamless --start=xterm \
 ```
 connect a client:
 ```
-xpra attach ssl://127.0.0.1:10001/
+xpra attach ssl://127.0.0.1:10000/
 ```
 To avoid this error when the server uses a self-signed certificate:
 ```
-[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:590)
+[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate
 ```
 You can:
 * *temporarily* add `--ssl-server-verify-mode=none` to your client command line
@@ -45,6 +45,12 @@ Once a server is configured for `SSL` - usually by adding the `--ssl-cert` optio
 The same way, any `ws` sockets specified with the `bind-ws` option can then be upgraded to `wss`.
 
 This allows a single port to be used with multiple protocols (including also [SSH](SSH.md)), which can more easily go through some firewalls and may be required by some network policies. Client certificates can also be used for authentication.
+
+Each type of upgrade can be turned off individually with its own option:
+`ssl-upgrade` is enabled whenever SSL is configured (unless `ssl=no`),
+`websocket-upgrade` and `ssh-upgrade` are enabled by default,
+`rfb-upgrade` is a delay in seconds (`5` by default, `0` to disable)
+and `rdp-upgrade` is disabled by default.
 
 ### SSL options
 There are many options to configure and certificates to deal with.
@@ -104,7 +110,7 @@ openssl s_client -connect 127.0.0.1:10000  -CAfile /path/to/ca.crt < /dev/null
 ```
 Connect the xpra client:
 ```
-xpra attach ssl://localhost:10000/ --ssl-ca-cert=/path/to/ca.crt
+xpra attach ssl://localhost:10000/ --ssl-ca-certs=/path/to/ca.crt
 ```
 
 ### Sending the CA data
@@ -113,11 +119,11 @@ In some cases, it may be desirable to supply the CA certificate on the command l
 
 Convert a CA file to a hexadecimal string:
 ```
-python -c "import sys,binascii;print(binascii.hexlify(open(sys.argv[1]).read()))" ca.crt
+python3 -c "import sys,binascii;print(binascii.hexlify(open(sys.argv[1],'rb').read()).decode())" ca.crt
 ```
 Convert hex back to data to verify (only part of the data shown here):
 ```
-python -c "import sys,binascii;print binascii.unhexlify(sys.argv[1])" \
+python3 -c "import sys,binascii;print(binascii.unhexlify(sys.argv[1]).decode())" \
 2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a4d4949
 ```
 Use it directly in the xpra command:
@@ -127,7 +133,7 @@ xpra attach ssl://localhost:10000/ \
 ```
 Alternatively, place all of these in a connection file you can just double-click on:
 ```
-echo > ssl-test.xpra <<EOF
+cat > ssl-test.xpra <<EOF
 host=localhost
 autoconnect=true
 port=10000
@@ -137,6 +143,6 @@ EOF
 ```
 The cadata can also be encoded using base64, which is shorter:
 ```
-$ python -c 'import sys,base64;print("base64:"+(base64.b64encode(open(sys.argv[1], "rb").read()).decode()))' ca.crt
+python3 -c 'import sys,base64;print("base64:"+(base64.b64encode(open(sys.argv[1], "rb").read()).decode()))' ca.crt
 ```
 </details>

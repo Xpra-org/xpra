@@ -1,4 +1,4 @@
-# ![Xpra Proxy Diagram](../images/icons/mdns.png) Multicast DNS
+# ![Multicast DNS](../images/icons/mdns.png) Multicast DNS
 
 By default, the xpra server will advertise the session it creates on the local network using [Multicast DNS](https://en.wikipedia.org/wiki/Multicast_DNS).
 
@@ -20,7 +20,9 @@ And you should be able to connect to those sessions simply by pressing the "conn
 ## Limitations
 * some features are only available in newer versions
 * some platforms may not have the required libraries
-* no IPv6 support: [#1345](https://github.com/Xpra-org/xpra/issues/1345)
+* IPv6 addresses are published since version 5.0, with the exception of the IPv6 loopback address
+which `python-zeroconf` does not support - see [#1345](https://github.com/Xpra-org/xpra/issues/1345). \
+It can be enabled at your own risk with `XPRA_ZEROCONF_IPV6_LOOPBACK=1`
 
 ## Links:
 * [mdns service type](https://github.com/Xpra-org/xpra/issues/731)

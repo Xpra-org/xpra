@@ -50,7 +50,7 @@ On most platforms the default external tool is the `ssh` command, but on MS Wind
 This mechanism relies on [openssh](https://www.openssh.com/) on Posix systems, optionally using [sshpass](https://sourceforge.net/projects/sshpass/) to supply passwords via the command line or connection files.
 
 Since this mechanism relies on executing the ssh client program, you can use the same command line options as you normally would and / or use the openssh configuration files for using tunnels, restricting ciphers, etc.
-ie: `--ssh="ssh -x -c blowfish-cbc"`
+ie: `--ssh="ssh -x -c aes128-gcm@openssh.com"`
 
 The `--exit-ssh` switch controls whether the SSH transport is killed when the client terminates, this can be useful if openssh is set up to use connection sharing. (see [#203](https://github.com/Xpra-org/xpra/issues/203) for details)
 
@@ -65,13 +65,13 @@ The downside is that since it does not use OpenSSH at all, it does not have the 
 Paramiko can accept configuration options in the command line.
 After `--ssh=paramiko`, add a double-colon `:` and then one or more of the available options:
 * `auth`: Specify the authentication methods used, in the order that they will be used.
-  Available values: `agent`, `key`, `password`, `none`
-  e.g.: `--ssh=paramiko:auth=agent+key`
+  Available values: `none`, `agent`, `publickey`, `password`
+  e.g.: `--ssh=paramiko:auth=agent+publickey`
 * `stricthostkeychecking`: _See `man ssh_config` --> `StrictHostKeyChecking`_
-  Available values: `yes (default)`, `no`
-  e.g.: `--ssh=paramiko:stricthostkeychecking=no`
+  Available values: `yes`, `no (default)`
+  e.g.: `--ssh=paramiko:stricthostkeychecking=yes`
 
-Multiple options can be given as a comma-separated string, e.g.: `--ssh=paramiko:auth=agent+key,stricthostkeychecking=no`
+Multiple options can be given as a comma-separated string, e.g.: `--ssh=paramiko:auth=agent+publickey,stricthostkeychecking=yes`
 
 ### passwords
 
