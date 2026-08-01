@@ -15,9 +15,17 @@ import argparse
 import sys
 
 
+def is_separator(line: str) -> bool:
+    """A `|---|:--:|` row: what tells a header apart from a body row that happens to match the prefix."""
+    return line.startswith("|") and set(line) <= set("|-: ") and "-" in line
+
+
 def find_tables(lines: list[str], start: int | None, prefix: str) -> list[tuple[int, int]]:
     if start is None:
-        starts = [i for i, line in enumerate(lines) if line.startswith(prefix)]
+        # a body row can start with the prefix too ("| Client tray / menu"), and taking one for a
+        # header eats the row below it as the new separator - so require the separator to be there
+        starts = [i for i, line in enumerate(lines)
+                  if line.startswith(prefix) and i + 1 < len(lines) and is_separator(lines[i + 1])]
         if not starts:
             sys.exit(f"no table header starting with {prefix!r}")
     else:
