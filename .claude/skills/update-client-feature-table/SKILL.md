@@ -214,9 +214,14 @@ time).
   and why, so the user can ask for it once it lands.
 - **The legend means what it says.** A feature that works on one of three backends is 🟠 with the
   limit named, never 🟢.
-- **Name the limit, not just the feature.** "PNG icons; on Wayland only with
-  `xdg-toplevel-icon-v1`" is the useful note; "Icons" is not. The per-client READMEs have a
-  "what it does not do" / "known limitations" section written for exactly this.
+- **Grade the client's code, not the platform's answer.** A client that asks through the mechanism
+  its platform provides has implemented the feature, even where the compositor, window manager or OS
+  is free to decline - go-xpra sending window icons through `xdg-toplevel-icon-v1` is 🟢, with whose
+  call it is named in the notes. 🟠 is for the client itself doing less: rust-xpra is 🟠 on the same
+  row because `winit` never sends an icon on Wayland at all.
+- **Name the limit, not just the feature.** "PNG icons; on Wayland through `xdg-toplevel-icon-v1`,
+  which the compositor is free to ignore" is the useful note; "Icons" is not. The per-client READMEs
+  have a "what it does not do" / "known limitations" section written for exactly this.
 - **Do not upgrade an intro sentence out of enthusiasm.** "Proof of concept - the README says it is
   not yet usable" stays until that README says otherwise.
 - A new feature needs a matrix row with a cell for *every* client, including a 🔴 for the ones that

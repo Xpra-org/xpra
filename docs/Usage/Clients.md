@@ -48,7 +48,7 @@ bundled libraries and an installer.
 
 ## Feature comparison
 
-This comparison should be correct as of **2026-08-01 21:28 +0700**, the last time it was checked
+This comparison should be correct as of **2026-08-02 00:20 +0700**, the last time it was checked
 against each client's repository.
 
 Legend: 🟢 supported · 🟠 partial, platform-limited or degraded · 🔴 absent
@@ -78,7 +78,7 @@ covers the browsers' `WebTransport`.
 | Keyboard                                   | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
 | Pointer / input                            | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
 | Server cursors                             | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
-| Window icons                               | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
+| Window icons                               | 🟢     | 🟢     | 🔴      | 🟠     | 🟢     |
 | Bell forwarding                            | 🟢     | 🟢     | 🟠      | 🟠     | 🟠     |
 | Desktop notifications                      | 🟢     | 🟢     | 🟢      | 🟠     | 🟠     |
 | Client tray / menu                         | 🟢     | 🟢     | 🟠      | 🟠     | 🔴     |
@@ -110,7 +110,7 @@ The reference implementation and the only complete one: a production client pack
 | Clipboard               | Multiple selections / targets, direction controls and filtering                                    |
 | Keyboard                | Full keymap upload / synchronization, layouts, shortcuts and lock-state handling                   |
 | Pointer / input         | Pointer, buttons, wheel, focus, relative input, grabs and XI2 support                              |
-| Server cursors          | Multiple cursor formats and scaling                                                                |
+| Server cursors          | `raw` and `png`, local themed cursors by name, desktop scaling and size negotiation                |
 | Bell forwarding         | Native platform backend                                                                            |
 | Desktop notifications   | Native notification backends on supported platforms                                                |
 | Client tray / menu      | Extensive session controls                                                                         |
@@ -140,8 +140,8 @@ Production client, widely deployed; runs in any modern browser.
 | Clipboard               | Text and HTML, CLIPBOARD selection only, subject to browser permissions                        |
 | Keyboard                | Layout selection and browser keycodes; no keymap upload                                        |
 | Pointer / input         | Pointer, buttons, wheel, focus and pointer lock                                                |
-| Server cursors          | PNG cursors                                                                                    |
-| Window icons            | PNG icons                                                                                      |
+| Server cursors          | PNG only, rescaled for the browser zoom; no cursor names, no size negotiation                  |
+| Window icons            | PNG icons, in the title bar, the window list and the page favicon                              |
 | Bell forwarding         | Audio sample                                                                                   |
 | Desktop notifications   | Browser notifications                                                                          |
 | Client tray / menu      | Floating toolbar with session controls                                                         |
@@ -170,8 +170,8 @@ Early stage third party rewrite of the html5 client; runs in any modern browser.
 | Clipboard               | Plain text, subject to browser permissions                            |
 | Keyboard                | Layout selection and browser keycodes; no keymap upload               |
 | Pointer / input         | Pointer, buttons, wheel and focus                                     |
-| Server cursors          | PNG cursors                                                           |
-| Window icons            | PNG icons                                                             |
+| Server cursors          | PNG only, at the size the server sends; no cursor names, no scaling   |
+| Window icons            | Decoded and dropped: every window shows the same branding icon        |
 | Bell forwarding         | Tone generated with the Web Audio API                                 |
 | Desktop notifications   | Browser notifications                                                 |
 | Client tray / menu      | Taskbar and session info panel                                        |
@@ -196,15 +196,15 @@ backwards-compatible mode.
 | Out-of-band chunks       | Received from the server                                                                                                                        |
 | Forwarded windows        | Create / destroy / draw / move / resize / raise                                                                                                 |
 | Advanced window state    | Fullscreen, maximize/minimize, decorations, above/below, constraints and interactive moves                                                      |
-| Override-redirect popups | X11; degraded on native Wayland                                                                                                                 |
+| Override-redirect popups | Real override-redirect on X11 only: undecorated but focus-stealing toplevels on MS Windows, placed by the compositor on Wayland                 |
 | Video encodings          | H.264 on Windows through Media Foundation                                                                                                       |
 | Accelerated rendering    | Media Foundation H.264 on Windows; CPU softbuffer otherwise                                                                                     |
 | Speaker audio            | Bare Opus on Windows only, with jitter buffering and AV sync                                                                                    |
 | Clipboard                | Bidirectional plain text, CLIPBOARD selection only; X11/XWayland or Windows                                                                     |
 | Keyboard                 | Direct key events; no keymap upload, NumLock limitation on Wayland                                                                              |
 | Pointer / input          | Pointer, buttons, wheel, focus and server-requested grabs                                                                                       |
-| Server cursors           | PNG cursors                                                                                                                                     |
-| Window icons             | PNG icons                                                                                                                                       |
+| Server cursors           | PNG only, at the size the server sends; no cursor names, no scaling                                                                             |
+| Window icons             | PNG icons on X11 and MS Windows; `winit` ignores them on Wayland                                                                                |
 | Bell forwarding          | Windows tone; terminal BEL on Linux                                                                                                             |
 | Desktop notifications    | Windows tray balloons; logged on Linux                                                                                                          |
 | Client tray / menu       | Windows only, with an Exit command                                                                                                              |
@@ -231,8 +231,8 @@ Minimal client, usable on three window systems: Linux X11, Linux Wayland and MS 
 | Accelerated rendering    | X11 pixmap backing store, GDI blits on Windows, `wl_shm` buffers on Wayland; no video acceleration                                                                   |
 | Keyboard                 | X11 keysym names, the compositor's own keymap on Wayland, printable ASCII only on Windows; no keymap upload                                                          |
 | Pointer / input          | Pointer, buttons, wheel and focus                                                                                                                                    |
-| Server cursors           | PNG cursors on all three backends                                                                                                                                    |
-| Window icons             | PNG icons; on Wayland only with `xdg-toplevel-icon-v1`                                                                                                               |
+| Server cursors           | PNG only on all three backends, at the size the server sends; no cursor names, no scaling                                                                            |
+| Window icons             | PNG icons; on Wayland through `xdg-toplevel-icon-v1`, which the compositor is free to ignore                                                                         |
 | Bell forwarding          | Native X11 and Win32 sound; none on Wayland                                                                                                                          |
 | Desktop notifications    | Logged only                                                                                                                                                          |
 | DPI / display sync       | Windows per-monitor DPI awareness; nothing reported to the server                                                                                                    |
