@@ -96,18 +96,15 @@ class WindowDraw(StubClientSubsystem):
         log(DRAW_LOG_FMT, len(data), dtype, wid, packet_sequence, width, height, x, y, coding, options)
         start = monotonic()
 
-        def draw_cleanup() -> None:
+        def record_draw_error(code=WINDOW_NOT_FOUND, message="window not found") -> None:
+            self.send_draw_ack(wid, width, height, packet_sequence, code, message)
+
+        def draw_abort(code=WINDOW_NOT_FOUND, message="window not found") -> None:
             if coding == "mmap":
                 # we need to ack the data to free the space!
                 # (the mmap read area is owned by the `mmap` subsystem)
                 if mmap := self.get_subsystem("mmap"):
                     mmap.free_packet_chunks(data, options)
-
-        def record_draw_error(code=WINDOW_NOT_FOUND, message="window not found") -> None:
-            self.send_draw_ack(wid, width, height, packet_sequence, code, message)
-
-        def draw_abort(code=WINDOW_NOT_FOUND, message="window not found") -> None:
-            draw_cleanup()
             record_draw_error(code, message)
 
         def record_decode_time(success: bool | int, message="") -> None:
