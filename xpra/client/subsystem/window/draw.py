@@ -101,10 +101,26 @@ class WindowDraw(StubClientSubsystem):
                 # the mmap read area is owned by the `mmap` subsystem:
                 mmap = self.get_subsystem("mmap")
                 if area := (mmap.mmap_read_area if mmap else None):
-                    from xpra.net.mmap.io import int_from_buffer
+                    from xpra.net.mmap.io import int_from_buffer, validate_chunks
+                    # newer versions use the 'chunks' option - see `paint_mmap`:
+                    chunks = options.tupleget("chunks")
+                    if not chunks and BACKWARDS_COMPATIBLE:
+                        # older versions overload the 'img_data':
+                        chunks = tuple(data)
+                    if not chunks:
+                        log.error("Error: no mmap chunks in draw packet for window %i", wid)
+                        return
+                    try:
+                        # the chunks come from the server, so they must be validated
+                        # before we can move the shared pointer:
+                        validate_chunks(area.mmap, chunks)
+                    except ValueError as e:
+                        log.error("Error: invalid mmap chunks in draw packet for window %i", wid)
+                        log.error(" %s", e)
+                        return
                     # we need to ack the data to free the space!
                     data_start = int_from_buffer(area.mmap, 0)
-                    offset, length = data[-1]
+                    offset, length = chunks[-1]
                     data_start.value = offset + length
                     # clear the mmap area via idle_add so any pending draw requests
                     # will get a chance to run first (preserving the order)
