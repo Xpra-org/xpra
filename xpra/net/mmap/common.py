@@ -50,8 +50,11 @@ class MmapPointerError(ValueError):
 
 
 MIN_SIZE = 64 * 1024 * 1024
-# the `data_start` and `data_end` pointers stored in the control header
-# are 32-bit, so we can't address areas of 4GB or more:
+# the `data_start` and `data_end` pointers stored in the control header are 32-bit
+# and hold absolute offsets in the range [8, size], so `size` itself must be
+# representable: anything from 4GB up would truncate to zero, which `read_pointer`
+# would then mistake for an unused area.
+# (the 8 byte header only costs us payload space, not address space)
 MAX_SIZE = 4 * 1024 * 1024 * 1024
 
 
