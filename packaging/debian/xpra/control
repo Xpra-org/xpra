@@ -41,7 +41,6 @@ Build-Depends: debhelper (>= 8)
 #questing:              ,libopenjph-dev
 #resolute:              ,libopenjph-dev
 #stonking:              ,libopenjph-dev
-#bookworm:              ,libopenjph-dev
 #trixie:              ,libopenjph-dev
 #forky:              ,libopenjph-dev
 #sid:              ,libopenjph-dev
@@ -383,7 +382,6 @@ Depends: xpra-common (= ${binary:Version})
 #questing:              ,libopenjph0.21
 #resolute:              ,libopenjph0.26
 #stonking:              ,libopenjph0.28
-#bookworm:              ,libopenjph0.9
 #trixie:              ,libopenjph0.21
 #forky:              ,libopenjph0.28
 #sid:              ,libopenjph0.28

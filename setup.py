@@ -330,9 +330,11 @@ def pkg_config_version(req_version: str, pkgname: str) -> bool:
     if r != 0 or not out:
         return False
     out = out.rstrip("\n\r").split(" ")[0]  # ie: "0.155.2917 0a84d98" -> "0.155.2917"
+    if not out:
+        return False
     # workaround for libx264 invalid version numbers:
     # ie: "0.163.x" or "0.164.3094M"
-    while out[-1].isalpha() or out[-1]==".":
+    while out and (out[-1].isalpha() or out[-1]=="."):
         out = out[:-1]
     return parse_version(out) >= parse_version(req_version)
 
@@ -485,7 +487,7 @@ avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif")
 avif_encoder_ENABLED    = avif_ENABLED
 avif_decoder_ENABLED    = avif_ENABLED
 OPENJPH_PKG_CONFIG      = "libopenjph" if pkg_config_exists("libopenjph") else "openjph"
-jph_ENABLED             = DEFAULT and pkg_config_exists(OPENJPH_PKG_CONFIG)
+jph_ENABLED             = DEFAULT and pkg_config_version("0.10", OPENJPH_PKG_CONFIG)
 jph_encoder_ENABLED     = jph_ENABLED
 jph_decoder_ENABLED     = jph_ENABLED
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
