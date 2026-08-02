@@ -41,6 +41,14 @@ def xpra_group() -> int:
     return 0
 
 
+class MmapPointerError(ValueError):
+    """
+    The peer has stored an invalid pointer in the shared control header.
+    This should never happen with a well behaved peer,
+    so the connection should be terminated.
+    """
+
+
 MIN_SIZE = 64 * 1024 * 1024
 # the `data_start` and `data_end` pointers stored in the control header
 # are 32-bit, so we can't address areas of 4GB or more:

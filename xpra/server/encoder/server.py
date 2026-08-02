@@ -17,6 +17,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet
 from xpra.net.compression import Compressed
+from xpra.net.mmap.common import MmapPointerError
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.constants import COMPRESS_RATIO, COMPRESS_FMT_SUFFIX
@@ -319,8 +320,17 @@ class EncoderServer(ServerBase):
             mmap_write_area = getattr(ss, "mmap_write_area", None)
             log(f"{len(bdata)} bytes, {client_options=}, {mmap_write_area=}")
             if mmap_write_area:
-                reply_opts["chunks"] = mmap_write_area.write_data(bdata)
-                data = b""
+                try:
+                    reply_opts["chunks"] = mmap_write_area.write_data(bdata)
+                    data = b""
+                except MmapPointerError as e:
+                    # the client has corrupted the control header of its own mmap area,
+                    # send the data the slow way instead:
+                    log("write_data(%i bytes)", len(bdata), exc_info=True)
+                    log.error("Error: %s", e)
+                    log.error(" the client is not using the mmap area correctly, mmap is now disabled")
+                    mmap_write_area.enabled = False
+                    ss.mmap_write_area = None
         ss.send("context-data", seq, data, client_options, reply_opts)
         end = monotonic()
         csize = len(bdata or b"")

@@ -17,6 +17,8 @@ from xpra.util.env import envint, OSEnvContext
 from xpra.util.thread import start_thread
 from xpra.net import compression
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.mmap.common import MmapPointerError
+from xpra.exit_codes import ExitCode
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.common import may_notify_client
 from xpra.constants import NotificationID
@@ -337,6 +339,14 @@ class WebcamForwarder(StubClientSubsystem):
             self.cancel_webcam_check_ack_timer()
             self.ack_check_timer = self.timeout_add(10 * 1000, self.webcam_check_acks)
             return True
+        except MmapPointerError as e:
+            # the server has corrupted the mmap area's control header,
+            # there is no point in trying to carry on talking to it:
+            log("send_webcam_frame()", exc_info=True)
+            log.error("Error: %s", e)
+            log.error(" the server is not using the mmap area correctly")
+            self.quit(ExitCode.MMAP_FAILURE)
+            return False
         except Exception as e:
             log.error("webcam frame %i failed", self.frame_no, exc_info=True)
             log.error("Error sending webcam frame: %s", e)

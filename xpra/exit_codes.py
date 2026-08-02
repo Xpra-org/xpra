@@ -43,6 +43,7 @@ class ExitCode(IntEnum):
     WM_ERROR = 32
     SERVER_NOT_FOUND = 33
     ARGUMENT_MISMATCH = 34
+    MMAP_FAILURE = 35
 
 
 ExitValue: TypeAlias = ExitCode | int

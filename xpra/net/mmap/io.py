@@ -9,7 +9,10 @@ import mmap
 from ctypes import c_ubyte, c_uint32
 from typing import Any
 
-from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, validate_size, get_mmap_dir, xpra_group, get_socket_group
+from xpra.net.mmap.common import (
+    DEFAULT_TOKEN_BYTES, MmapPointerError,
+    validate_size, get_mmap_dir, xpra_group, get_socket_group,
+)
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.common import roundup, noop
 from xpra.client.gui.window.backing import PaintCallback
@@ -233,6 +236,20 @@ def int_from_buffer(mmap_area, pos: int) -> c_uint32:
     return c_uint32.from_buffer(mmap_area, pos)  # @UndefinedVariable
 
 
+def read_pointer(mmap_area, mmap_size: int, pos: int) -> int:
+    """
+        Reads one of the two pointers from the control header.
+        `data_start` is updated by the reader and `data_end` by the writer,
+        both live in the shared area so the peer can store anything in there.
+        (a zero value means that nothing has been read or written yet)
+    """
+    value = int(int_from_buffer(mmap_area, pos).value)
+    if value and not 8 <= value <= mmap_size:
+        name = "data_start" if pos == 0 else "data_end"
+        raise MmapPointerError(f"invalid mmap {name} pointer: {value}, area size is {mmap_size}")
+    return max(8, value)
+
+
 def validate_chunks(mmap_area, descr_data: tuple[tuple[int, int], ...]) -> None:
     """
         The chunks are supplied by the peer, so we must ensure that they point
@@ -304,10 +321,9 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[tuple[int, int], ...]:
     # '+' is for data we have written
     # '*' is for data we have just written in this call
     # E and S show the location pointed to by data_start/data_end
-    mmap_data_start: c_uint32 = int_from_buffer(mmap_area, 0)
     mmap_data_end: c_uint32 = int_from_buffer(mmap_area, 4)
-    start = max(8, mmap_data_start.value)
-    end = max(8, mmap_data_end.value)
+    start = read_pointer(mmap_area, mmap_size, 0)
+    end = read_pointer(mmap_area, mmap_size, 4)
     log("mmap: start=%i, end=%i, size of data to write=%i", start, end, size)
     if end < start:
         # we have wrapped around but the client hasn't yet:
@@ -365,10 +381,8 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[tuple[int, int], ...]:
 
 
 def mmap_free_size(mmap_area, mmap_size: int) -> int:
-    mmap_data_start: c_uint32 = int_from_buffer(mmap_area, 0)
-    mmap_data_end: c_uint32 = int_from_buffer(mmap_area, 4)
-    start = max(8, mmap_data_start.value)
-    end = min(mmap_size, max(8, mmap_data_end.value))
+    start = read_pointer(mmap_area, mmap_size, 0)
+    end = read_pointer(mmap_area, mmap_size, 4)
     if end < start:
         # we have wrapped around but the client hasn't yet:
         # [++++++++E--------------------S+++++]

@@ -11,6 +11,7 @@ from xpra.client.base.command import HelloRequestClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.mmap.common import MmapPointerError
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -162,7 +163,14 @@ class EncodeClient(HelloRequestClient):
         mmap_sub = self.get_subsystem("mmap")
         mmap_write_area = mmap_sub.mmap_write_area if mmap_sub else None
         if mmap_write_area and mmap_write_area.enabled:
-            mmap_data = mmap_write_area.write_data(data)
+            try:
+                mmap_data = mmap_write_area.write_data(data)
+            except MmapPointerError as e:
+                log("write_data(%i bytes)", len(data), exc_info=True)
+                log.error("Error: %s", e)
+                log.error(" the server is not using the mmap area correctly")
+                self.quit(ExitCode.MMAP_FAILURE)
+                return
             log("mmap_write_area=%s, mmap_data=%s", mmap_write_area.get_info(), mmap_data)
             encoding = "mmap"
             data = b""

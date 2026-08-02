@@ -7,7 +7,8 @@
 import mmap
 import unittest
 
-from xpra.net.mmap.io import mmap_read, mmap_write
+from xpra.net.mmap.common import MmapPointerError
+from xpra.net.mmap.io import int_from_buffer, mmap_free_size, mmap_read, mmap_write
 
 
 SIZE = 4096
@@ -52,6 +53,23 @@ class MmapIOTest(unittest.TestCase):
         ):
             with self.assertRaises(ValueError):
                 mmap_read(area, *chunks)
+
+    def test_invalid_pointers(self):
+        area = self.area()
+        for pos in (0, 4):
+            for value in (7, SIZE + 1, 0xffffffff):
+                int_from_buffer(area, pos).value = value
+                with self.assertRaises(MmapPointerError):
+                    mmap_write(area, SIZE, b"x" * 100)
+                with self.assertRaises(MmapPointerError):
+                    mmap_free_size(area, SIZE)
+                int_from_buffer(area, pos).value = 8
+
+    def test_unused_area_pointers(self):
+        # a brand new area has both pointers set to zero:
+        area = self.area()
+        self.assertEqual(mmap_free_size(area, SIZE), SIZE - 8)
+        self.assertEqual(mmap_write(area, SIZE, b"abc"), ((8, 3), ))
 
 
 if __name__ == "__main__":

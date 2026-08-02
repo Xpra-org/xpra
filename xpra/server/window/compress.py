@@ -21,6 +21,7 @@ from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.thread import check_main_thread
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.mmap.common import MmapPointerError
 from xpra.net.packet_type import WINDOW_DRAW
 from xpra.constants import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.common import is_covered_by_opaque_region
@@ -2961,20 +2962,29 @@ class WindowSource(WindowIconSource):
         if not data:
             raise RuntimeError(f"failed to get pixels from {image}")
         mmap_data = ()
-        for i in range(5):
-            mmap_data = self._mmap.write_data(data)
-            # elapsed = monotonic()-start+0.000000001 # make sure never zero!
-            # log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
-            #    len(data), 1000*elapsed)
-            if mmap_data:
-                break
-            # busy wait in encode thread is OK for mmap:
-            sleep((1 + i * i) / 1000)
-        if not mmap_data:
-            log("mmap write failed!")
+        try:
+            for i in range(5):
+                mmap_data = self._mmap.write_data(data)
+                # elapsed = monotonic()-start+0.000000001 # make sure never zero!
+                # log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
+                #    len(data), 1000*elapsed)
+                if mmap_data:
+                    break
+                # busy wait in encode thread is OK for mmap:
+                sleep((1 + i * i) / 1000)
+            if not mmap_data:
+                log("mmap write failed!")
+                return ()
+            self.global_statistics.mmap_bytes_sent += len(data)
+            self.global_statistics.mmap_free_size = self._mmap.get_free_size()
+        except MmapPointerError as e:
+            # the client has corrupted the control header of its own mmap area:
+            # stop using it, the other encodings will still work
+            log("write_data(%i bytes)", len(data), exc_info=True)
+            log.error("Error: %s", e)
+            log.error(" the client is not using the mmap area correctly, mmap is now disabled")
+            self._mmap = None
             return ()
-        self.global_statistics.mmap_bytes_sent += len(data)
-        self.global_statistics.mmap_free_size = self._mmap.get_free_size()
         client_options = {"rgb_format": pf, "chunks": mmap_data}
         # the data we send is the index within the mmap area
         # send the list of chunks as both:
