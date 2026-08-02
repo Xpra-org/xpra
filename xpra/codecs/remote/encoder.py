@@ -12,6 +12,7 @@ from xpra.util.str_fn import Ellipsizer, print_nested_dict
 from xpra.util.objects import typedict
 from xpra.scripts.config import InitExit
 from xpra.net.common import Packet
+from xpra.net.mmap.common import MmapPointerError
 from xpra.codecs.constants import VideoSpec, CodecStateException
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.remote.common import get_type, get_version, get_info, RemoteCodecClient, RemoteCodec
@@ -102,15 +103,23 @@ class EncoderClient(RemoteCodecClient):
 
         mmap_write_area = getattr(self, "mmap_write_area", None)
         if mmap_write_area:
-            if nplanes == PlanarFormat.PACKED:
-                mmap_data = mmap_write_area.write_data(pixels)
-                log("sending image via mmap: %s", mmap_data)
-            else:
-                mmap_data = []
-                for plane in range(nplanes):
-                    plane_data = mmap_write_area.write_data(pixels[plane])
-                    log("sending plane %i via mmap: %s", plane, plane_data)
-                    mmap_data.append(plane_data)
+            try:
+                if nplanes == PlanarFormat.PACKED:
+                    mmap_data = mmap_write_area.write_data(pixels)
+                    log("sending image via mmap: %s", mmap_data)
+                else:
+                    mmap_data = []
+                    for plane in range(nplanes):
+                        plane_data = mmap_write_area.write_data(pixels[plane])
+                        log("sending plane %i via mmap: %s", plane, plane_data)
+                        mmap_data.append(plane_data)
+            except MmapPointerError as e:
+                # the encoder server is not using the mmap area correctly,
+                # stop talking to it and let the caller fall back to another encoder:
+                log("write_data(..)", exc_info=True)
+                log.error("Error: %s", e)
+                self.disconnect()
+                raise CodecStateException("the remote encoder corrupted the mmap area") from None
             send_opts["chunks"] = tuple(mmap_data)
             pixels = b""
         self.send("context-compress", seq, metadata, pixels, safe_dict(options), send_opts)
@@ -151,7 +160,6 @@ def init_module(options: dict) -> None:
     log(f"encoder.init_module({options})")
     # single server syntax uses "uri=protocol://host:port/.."
     # or one can use multiple servers with "uris=protocol://host1/?attr=value&,protocol://host2/"
-    global servers
     uris = options.get("uris", "")
     if uris:
         for uri in uris.split(";"):
@@ -166,7 +174,6 @@ def init_module(options: dict) -> None:
 
 def cleanup_module() -> None:
     log("remote.cleanup_module()")
-    global servers
     for server in servers:
         server.cancel_schedule_connect()
         server.disconnect()
@@ -206,7 +213,6 @@ def get_encodings() -> Sequence[str]:
 def get_specs() -> Sequence[VideoSpec]:
     # the `server.specs` are dictionaries,
     # which we need to convert to real `VideoSpec` objects:
-    global servers
     specs: Sequence[VideoSpec] = []
     for server in servers:
         for encoding, csc_specs in server.specs.items():
