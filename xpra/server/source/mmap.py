@@ -125,8 +125,7 @@ class MMAP_Connection(StubClientConnection):
             log.warn(" at least %iMB are needed and this area is only %iMB",
                      self.mmap_min_size // 1024 // 1024, size // 1024 // 1024)
             return None
-        area.mmap = mmap
-        area.size = size
+        area.set_mmap(mmap)
         if not area.verify_token():
             mmap.close()
             return None

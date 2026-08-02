@@ -50,6 +50,15 @@ class BaseMmapArea:
             self.mmap = None
         self.enabled = False
 
+    def set_mmap(self, mmap_area) -> None:
+        """
+            The length we have actually mapped is the only size we can trust:
+            the peer chooses the size it advertises in its capabilities,
+            and the area may well have been mapped with a different length.
+        """
+        self.mmap = mmap_area
+        self.size = len(mmap_area)
+
     def get_caps(self) -> dict[str, Any]:
         return {
             "file": self.filename,
@@ -71,7 +80,13 @@ class BaseMmapArea:
         self.token = mmap_caps.intget("token")
         self.token_index = mmap_caps.intget("token_index", 0)
         self.token_bytes = mmap_caps.intget("token_bytes", DEFAULT_TOKEN_BYTES)
-        self.size = self.size or mmap_caps.intget("size")
+        if self.mmap:
+            # the area is already mapped, so its real length wins
+            # over whatever size the peer may claim:
+            self.size = len(self.mmap)
+        else:
+            # we need a size to be able to map the area at all:
+            self.size = self.size or mmap_caps.intget("size")
 
     def verify_token(self) -> bool:
         if not self.mmap:

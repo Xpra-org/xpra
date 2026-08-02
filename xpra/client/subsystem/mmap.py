@@ -89,6 +89,8 @@ class MmapArea(BaseMmapArea):
         self.enabled, self.delete, self.mmap, self.size, self.tempfile, self.filename = \
             init_client_mmap(self.group, socket_filename, self.size, self.filename)
         if self.enabled:
+            # the length actually mapped may differ from the size we asked for:
+            self.size = len(self.mmap)
             self.gen_token()
             self.write_token()
 

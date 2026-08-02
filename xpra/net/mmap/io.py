@@ -209,6 +209,15 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None
                 log.error(" see mmap-group option?")
                 return None, 0
             actual_mmap_size = os.path.getsize(mmap_filename)
+            if mmap_size > actual_mmap_size:
+                # we would be mapping pages that aren't backed by the file,
+                # and accessing those would raise `SIGBUS`:
+                # (`mmap` also refuses to do this for regular files,
+                # but we want to fail with a meaningful error message)
+                log.error("Error: mmap file %r is smaller than the size requested", mmap_filename)
+                log.error(" %i bytes instead of %i", actual_mmap_size, mmap_size)
+                f.close()
+                return None, 0
             if mmap_size and actual_mmap_size != mmap_size:
                 log.warn("Warning: expected mmap file '%s' of size %i but got %i",
                          mmap_filename, mmap_size, actual_mmap_size)
@@ -216,7 +225,9 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None
             validate_size(mmap_size or actual_mmap_size)
             mmap_area = mmap.mmap(f.fileno(), mmap_size)
             f.close()
-            return mmap_area, actual_mmap_size
+            # `mmap_size` may be zero, in which case the whole file is mapped:
+            # only the length we have actually mapped can be trusted
+            return mmap_area, len(mmap_area)
         assert sys.platform == "win32"
         if mmap_size == 0:
             log.error("Error: client did not supply the mmap area size")
@@ -224,7 +235,7 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None
             return None, 0
         validate_size(mmap_size)
         mmap_area = mmap.mmap(0, mmap_size, mmap_filename)
-        return mmap_area, mmap_size
+        return mmap_area, len(mmap_area)
     except Exception:
         log.error("Error: cannot use mmap file '%s'", mmap_filename, exc_info=True)
         if mmap_area:
