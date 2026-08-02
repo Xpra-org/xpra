@@ -125,17 +125,36 @@ class WindowDraw(StubClientMixin):
         rowstride = packet.get_u32(9)
         if not window:
             # window is gone
+            options = typedict()
+            if len(packet) > 10:
+                options.update(packet.get_dict(10))
 
             def draw_cleanup() -> None:
                 if coding == "mmap":
                     if area := self.mmap_read_area:
-                        from xpra.net.mmap.io import int_from_buffer
-                        # we need to ack the data to free the space!
-                        data_start = int_from_buffer(area.mmap, 0)
-                        offset, length = data[-1]
-                        data_start.value = offset + length
-                        # clear the mmap area via idle_add so any pending draw requests
-                        # will get a chance to run first (preserving the order)
+                        from xpra.net.mmap.io import int_from_buffer, validate_chunks
+                        # newer versions use the 'chunks' option - see `paint_mmap`:
+                        chunks = options.tupleget("chunks")
+                        if not chunks and BACKWARDS_COMPATIBLE:
+                            # older versions overload the 'img_data':
+                            chunks = tuple(data)
+                        if not chunks:
+                            log.error("Error: no mmap chunks in draw packet for window %i", wid)
+                        else:
+                            try:
+                                # the chunks come from the server, so they must be validated
+                                # before we can move the shared pointer:
+                                validate_chunks(area.mmap, chunks)
+                            except ValueError as e:
+                                log.error("Error: invalid mmap chunks in draw packet for window %i", wid)
+                                log.error(" %s", e)
+                            else:
+                                # we need to ack the data to free the space!
+                                data_start = int_from_buffer(area.mmap, 0)
+                                offset, length = chunks[-1]
+                                data_start.value = offset + length
+                                # clear the mmap area via idle_add so any pending draw requests
+                                # will get a chance to run first (preserving the order)
                 self.send_damage_sequence(wid, packet_sequence, width, height, WINDOW_NOT_FOUND, "window not found")
 
             self.idle_add(draw_cleanup)
