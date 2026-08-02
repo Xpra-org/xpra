@@ -230,6 +230,24 @@ def int_from_buffer(mmap_area, pos: int) -> c_uint32:
     return c_uint32.from_buffer(mmap_area, pos)  # @UndefinedVariable
 
 
+def validate_chunks(mmap_area, descr_data: tuple[tuple[int, int], ...]) -> None:
+    """
+        The chunks are supplied by the peer, so we must ensure that they point
+        at valid data within the mmap area: memoryview slicing would silently
+        clamp out of range values and negative offsets would wrap around.
+        (the first 8 bytes are reserved for the control header)
+    """
+    size = len(mmap_area)
+    for chunk in descr_data:
+        if not isinstance(chunk, (list, tuple)) or len(chunk) != 2:
+            raise ValueError(f"invalid mmap chunk {chunk!r}: expected an offset and a length")
+        offset, length = chunk
+        if not isinstance(offset, int) or not isinstance(length, int):
+            raise ValueError(f"invalid mmap chunk {chunk!r}: offset and length must be integers")
+        if offset < 8 or length < 0 or offset + length > size:
+            raise ValueError(f"mmap chunk ({offset}, {length}) is out of range for an area of {size} bytes")
+
+
 # descr_data is a list of (offset, length)
 # areas from the mmap region
 def mmap_read(mmap_area, *descr_data: tuple[int, int]) -> tuple[bytes | memoryview, PaintCallback]:
@@ -237,6 +255,7 @@ def mmap_read(mmap_area, *descr_data: tuple[int, int]) -> tuple[bytes | memoryvi
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.
     """
+    validate_chunks(mmap_area, descr_data)
     data_start: c_uint32 = int_from_buffer(mmap_area, 0)
     mv = memoryview(mmap_area)
     if len(descr_data) == 1:
