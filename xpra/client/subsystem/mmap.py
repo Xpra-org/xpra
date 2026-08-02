@@ -24,7 +24,7 @@ GLib = gi_import("GLib")
 log = Logger("mmap")
 
 KEEP_MMAP_FILE = envbool("XPRA_KEEP_MMAP_FILE", False)
-MIN_SIZE = envint("XPRA_MMAP_MAX_SIZE", 2048 * 1024 * 1024)
+MIN_SIZE = envint("XPRA_MMAP_MIN_SIZE", 2048 * 1024 * 1024)
 MAX_SIZE = envint("XPRA_MMAP_MAX_SIZE", 2048 * 1024 * 1024)
 
 
