@@ -72,15 +72,16 @@ class PowerEventClient(StubClientMixin):
             uw.stop()
 
     def ui_thread_tick(self):
+        # only ever call this from the OS suspend / resume events:
+        # ticking from the watcher's own callbacks would reset
+        # the clock it uses to detect that the UI thread is blocked
         if uiw := self.ui_watcher:
             uiw.tick()
 
     def ui_pause(self):
-        self.ui_thread_tick()
         self.emit("pause")
 
     def ui_unpause(self):
-        self.ui_thread_tick()
         self.emit("unpause")
 
     def ui_message(self, message: str) -> None:
@@ -93,6 +94,7 @@ class PowerEventClient(StubClientMixin):
         log("suspend(%s)", args)
         log.info(f"{self} suspending")
         self.suspended = time()
+        self.ui_thread_tick()
         self.emit("suspend")
         if BACKWARDS_COMPATIBLE:
             # ("ui" and "window-ids" arguments are optional since v6.3)
@@ -102,6 +104,7 @@ class PowerEventClient(StubClientMixin):
 
     def resume(self, *args) -> None:
         log("resume(%s)", args)
+        self.ui_thread_tick()
         self.emit("resume")
         elapsed = max(0.0, time() - self.suspended) if self.suspended else 0.0
         self.suspended = 0.0
