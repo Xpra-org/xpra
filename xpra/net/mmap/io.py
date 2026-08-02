@@ -209,6 +209,8 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None
             if mmap_size and actual_mmap_size != mmap_size:
                 log.warn("Warning: expected mmap file '%s' of size %i but got %i",
                          mmap_filename, mmap_size, actual_mmap_size)
+            # the size is chosen by the peer, so it must be validated:
+            validate_size(mmap_size or actual_mmap_size)
             mmap_area = mmap.mmap(f.fileno(), mmap_size)
             f.close()
             return mmap_area, actual_mmap_size
@@ -217,6 +219,7 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None
             log.error("Error: client did not supply the mmap area size")
             log.error(" try updating your client version?")
             return None, 0
+        validate_size(mmap_size)
         mmap_area = mmap.mmap(0, mmap_size, mmap_filename)
         return mmap_area, mmap_size
     except Exception:

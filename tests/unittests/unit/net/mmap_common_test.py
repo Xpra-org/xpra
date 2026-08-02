@@ -16,13 +16,14 @@ class MmapCommonTest(unittest.TestCase):
 
     def test_size_boundaries(self):
         minimum = 64 * 1024 * 1024
-        maximum = 16 * 1024 * 1024 * 1024
+        maximum = 4 * 1024 * 1024 * 1024
         common.validate_size(minimum)
-        common.validate_size(maximum)
+        # the 32-bit pointers can't address 4GB, so the maximum is exclusive:
+        common.validate_size(maximum - 1)
         with self.assertRaisesRegex(ValueError, "minimum is 64MB"):
             common.validate_size(minimum - 1)
-        with self.assertRaisesRegex(ValueError, "maximum is 16GB"):
-            common.validate_size(maximum + 1)
+        with self.assertRaisesRegex(ValueError, "smaller than 4GB"):
+            common.validate_size(maximum)
 
     def test_socket_and_xpra_groups(self):
         with tempfile.NamedTemporaryFile() as socket_file:

@@ -41,11 +41,17 @@ def xpra_group() -> int:
     return 0
 
 
+MIN_SIZE = 64 * 1024 * 1024
+# the `data_start` and `data_end` pointers stored in the control header
+# are 32-bit, so we can't address areas of 4GB or more:
+MAX_SIZE = 4 * 1024 * 1024 * 1024
+
+
 def validate_size(size: int) -> None:
-    if size < 64 * 1024 * 1024:
+    if size < MIN_SIZE:
         raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
-    if size > 16 * 1024 * 1024 * 1024:
-        raise ValueError("mmap is too big: %sB (maximum is 16GB)" % std_unit(size))
+    if size >= MAX_SIZE:
+        raise ValueError("mmap is too big: %sB (must be smaller than 4GB)" % std_unit(size))
 
 
 def get_mmap_dir() -> str:
