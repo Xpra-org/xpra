@@ -155,7 +155,6 @@ class RFBServer(StubSubsystem):
             fn(proto, packet)
             return
         log.warn("Warning: no RFB handler for %s", fn_name)
-        return
 
     def get_rfb_pixelformat(self) -> tuple[int, int, int, int, bool, bool, int, int, int, int, int, int]:
         model = self._get_rfb_desktop_model()
