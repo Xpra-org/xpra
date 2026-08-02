@@ -16,6 +16,36 @@ The selected interpreter must be installed in the build environment, along with
 the matching development packages and any Python-version-specific build
 dependencies required by the spec.
 
+## Git snapshot sources
+
+Some upstreams have no releases and must be packaged from a git snapshot.
+Do not use a forge's on-the-fly archive endpoint for these, ie:
+
+```spec
+Source0:	https://chromium.googlesource.com/libyuv/libyuv/+archive/%{git_commit}.tar.gz
+```
+
+googlesource (and cgit) build those tarballs on demand and the result is not
+byte reproducible, so the `sha256` check in `%prep` breaks on every download
+even though the commit has not changed.
+
+Prefer an archive that stores the file: a GitHub release or `archive/<tag>`
+tarball, or a distribution's source package. `libyuv.spec` uses Debian's
+`orig.tar.xz`, which is immutable and identical to the upstream git tree:
+
+```spec
+Source0:	https://snapshot.debian.org/archive/debian/%{deb_snapshot}/pool/main/liby/libyuv/libyuv_%{deb_version}.orig.tar.xz
+```
+
+Use `snapshot.debian.org` rather than `deb.debian.org`: the pool only keeps the
+version currently in the archive, so a `deb.debian.org` URL breaks as soon as
+Debian updates the package, whereas snapshot keeps every version forever.
+The timestamp is the `first_seen` value reported by:
+
+```shell
+curl https://snapshot.debian.org/mr/package/libyuv/<version>/srcfiles?fileinfo=1
+```
+
 ## PyPI sources
 
 Use the stable source distribution URL form for PyPI archives:
