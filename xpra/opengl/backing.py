@@ -122,6 +122,18 @@ PIXEL_FORMAT_TO_CONSTANT: dict[str, IntConstant] = {
     "BGR565": GL_RGB,
     "RGB565": GL_RGB,
 }
+PIXEL_FORMAT_BPP: dict[str, int] = {
+    "r210": 4,
+    "R210": 4,
+    "BGR": 3,
+    "RGB": 3,
+    "BGRA": 4,
+    "BGRX": 4,
+    "RGBA": 4,
+    "RGBX": 4,
+    "BGR565": 2,
+    "RGB565": 2,
+}
 PIXEL_INTERNAL_FORMAT: dict[str, Sequence[IntConstant]] = {
     # defaults to: GL_R8, GL_R8, GL_R8, GL_R8
     # (meaning: up to 4 planes, 8 bits each)
@@ -1507,6 +1519,21 @@ class GLWindowBackingBase(WindowBackingBase):
             ptype = PIXEL_UPLOAD_FORMAT.get(rgb_format)
             if ptype is None:
                 raise ValueError(f"could not find pixel type for {rgb_format!r}")
+
+            # the pixel data comes from the server, so make sure that the buffer
+            # really does contain the number of pixels we are about to upload:
+            # (the GL driver would happily read past the end of it)
+            bpp = PIXEL_FORMAT_BPP.get(rgb_format, 0)
+            if not bpp:
+                raise ValueError(f"unknown bytes per pixel for {rgb_format!r}")
+            if width > 0 and height > 0:
+                if rowstride < width * bpp:
+                    raise ValueError(f"invalid rowstride {rowstride} for {width}x{height} {rgb_format}")
+                # the last row only needs `width * bpp` bytes:
+                needed = rowstride * (height - 1) + width * bpp
+                if len(img_data) < needed:
+                    raise ValueError(f"not enough pixel data: {len(img_data)} bytes, expected {needed}"
+                                     f" for {width}x{height} {rgb_format} with rowstride={rowstride}")
 
             gl_marker("%s update at (%d,%d) size %dx%d (%s bytes) to %dx%d, using GL %s format=%s / %s to internal=%s",
                       rgb_format, x, y, width, height, len(img_data), render_width, render_height,
