@@ -25,7 +25,8 @@ log = Logger("mmap")
 
 KEEP_MMAP_FILE = envbool("XPRA_KEEP_MMAP_FILE", False)
 MIN_SIZE = envint("XPRA_MMAP_MIN_SIZE", 2048 * 1024 * 1024)
-MAX_SIZE = envint("XPRA_MMAP_MAX_SIZE", 2048 * 1024 * 1024)
+# cannot exceed 4GB, see xpra.net.mmap.common for details
+MAX_SIZE = envint("XPRA_MMAP_MAX_SIZE", 4096 * 1024 * 1024)
 
 
 class MmapArea(BaseMmapArea):
