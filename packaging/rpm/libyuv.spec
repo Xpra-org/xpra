@@ -1,16 +1,27 @@
 %define _disable_source_fetch 0
-%global git_commit 6067afde563c3946eebd94f146b3824ab7a97a9c
-%global git_date 20260213
-%global git_short 6067afd
+%global git_commit 5d03bf9bab5693ccf692f18b538d8d9c00387c73
+%global git_date 20260706
+%global git_short 5d03bf9
+# the Debian source package version for the same git snapshot,
+# and the snapshot.debian.org timestamp it was first seen at:
+%global deb_version 0.0.1949.%{git_date}
+%global deb_snapshot 20260707T202226Z
 
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.62.%{git_date}git%{git_short}.1%{?dist}
+Release:	0.63.%{git_date}git%{git_short}.1%{?dist}
 License:	BSD-3-Clause
 URL:		https://chromium.googlesource.com/libyuv/libyuv
 VCS:		git:%{url}
-Source0:	%{url}/+archive/%{git_commit}.tar.gz
+# Do not use `%%{url}/+archive/%%{git_commit}.tar.gz`:
+# googlesource generates those tarballs on the fly and they are not reproducible,
+# so the checksum below would break on every download.
+# Debian ships the exact same tree as an immutable orig tarball
+# (verified byte for byte against upstream commit %%{git_commit}).
+# snapshot.debian.org keeps every version forever, so unlike the deb.debian.org
+# pool this URL will not disappear when sid moves on to a newer snapshot.
+Source0:	https://snapshot.debian.org/archive/debian/%{deb_snapshot}/pool/main/liby/%{name}/%{name}_%{deb_version}.orig.tar.xz
 # Fedora-specific. Upstream isn't interested in these patches.
 Patch1:		libyuv-0001-Use-a-proper-so-version.patch
 Patch2:		libyuv-0002-Link-against-shared-library.patch
@@ -46,7 +57,7 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "5959073a16a557ce21fb4dc4335282140bb43a74fda7b90bca9e0075bce90f3d" ]; then
+if [ "${sha256}" != "28c3cd7d109c93202ce3e7fd5a5534db7c137929b06c6792d6a904fe2ac130d1" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -60,7 +71,7 @@ echo "**********************************************************************"
 sleep 20
 %endif
 
-%autosetup -p1 -c -n %{name}-%{version}
+%autosetup -p1 -n %{name}-%{deb_version}
 
 cat > %{name}.pc << EOF
 prefix=%{_prefix}
@@ -100,6 +111,10 @@ install -D -p -m 0644 %{name}.pc %{buildroot}%{_libdir}/pkgconfig/%{name}.pc
 
 
 %changelog
+* Sun Aug 02 2026 Antoine Martin <totaam@xpra.org> - 0-0.63.20260706git5d03bf9.1
+- switch to Debian's immutable orig tarball: googlesource archives are not reproducible
+- update to the 20260706 snapshot (libyuv 1949)
+
 * Thu Jun 11 2026 Antoine Martin <totaam@xpra.org> - 0-0.62.20260213git6067afd.1
 - update to the Fedora Rawhide libyuv snapshot
 - use Fedora's current packaging patch stack
