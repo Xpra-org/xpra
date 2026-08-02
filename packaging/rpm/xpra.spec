@@ -615,7 +615,7 @@ Provides:           %{package_prefix}-wayland
 Requires:			%{package_prefix}-common = %{version}-%{release}
 # used by the `xpra wait-for-wayland` subcommand:
 BuildRequires:		wayland-devel
-Depends:         libwayland-client
+Requires:         libwayland-client
 %description -n %{package_prefix}-wayland
 This package contains the base xpra wayland support,
 including the `xpra wait-for-wayland` subcommand.
