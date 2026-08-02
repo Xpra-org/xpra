@@ -1,87 +1,149 @@
-# Xpra Documentation Index
+<div class="docs-hero" markdown="1">
+<div class="docs-hero-copy" markdown="1">
 
-## [FAQ](FAQ.md)
+<p class="docs-kicker">Persistent remote applications and desktops</p>
 
-## [Usage](Usage/README.md)
+Xpra lets you run applications on a remote machine, display them locally,
+and disconnect and reconnect without losing their state.
 
-[Simple examples](Usage/README.md) to get started.
+<div class="docs-actions" markdown="1">
+
+[Get started](Usage/README.md)
+[Install Xpra](https://github.com/Xpra-org/xpra/wiki/Download)
+[Read the FAQ](FAQ.md)
+
+</div>
+
+<p class="docs-version-note">These pages document the current development version of Xpra.</p>
+
+</div>
+
+<div class="docs-hero-visual">
+<img class="docs-hero-image" src="images/screenshots/win11-glxspheres.png"
+     alt="Remote Linux applications displayed on a Windows desktop">
+</div>
+</div>
+
+<div class="docs-section-heading" markdown="1">
+
+## Browse the documentation
+
+Start with a common task or explore a topic in more depth.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### [Start using Xpra](Usage/README.md)
+
+Launch individual applications, a full desktop, or view an existing display.
+
+- [Seamless applications](Usage/Seamless.md)
+- [Desktop sessions](Usage/Desktop.md)
+- [Shadow an existing display](Usage/Shadow.md)
 
 <details markdown="1">
-  <summary>Starting a session</summary>
+<summary>Configuration and advanced topics</summary>
 
-* [Seamless Session](Usage/Seamless.md) : individual windows
-* [Desktop Session](Usage/Desktop.md) : a full desktop session
-* [Shadow Session](Usage/Shadow.md) : view an existing display
+- [Configuration options](Usage/Configuration.md)
+- [Authentication modules](Usage/Authentication.md)
+- [Proxy server](Usage/Proxy-Server.md)
+- [System service](Usage/Service.md)
+- [Picture encodings](Usage/Encodings.md)
+- [Server OpenGL](Usage/OpenGL.md) and [client OpenGL](Usage/Client-OpenGL.md)
+- [Client implementations](Usage/Clients.md)
+- [Xdummy](Usage/Xdummy.md)
 </details>
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### [Desktop integration](Features/README.md)
+
+Forward devices and make remote applications feel at home on the local desktop.
+
+- [Audio](Features/Audio.md)
+- [Clipboard](Features/Clipboard.md)
+- [File transfers](Features/File-Transfers.md)
+- [Printers](Features/Printing.md)
+
 <details markdown="1">
-  <summary>Configuration</summary>
+<summary>More integrations</summary>
 
-* [Authentication modules](Usage/Authentication.md) to secure access to sessions
-* [Options](Usage/Configuration.md) to configure xpra
+- [Webcams](Features/Webcam.md)
+- [Keyboard](Features/Keyboard.md)
+- [System tray](Features/System-Tray.md)
+- [Notifications](Features/Notifications.md)
+- [Image depth](Features/Image-Depth.md)
+- [DPI](Features/DPI.md)
 </details>
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### [Networking and security](Network/README.md)
+
+Choose a connection method and secure access to Xpra sessions.
+
+- [SSH](Network/SSH.md)
+- [SSL / TLS](Network/SSL.md)
+- [QUIC](Network/QUIC.md)
+- [Encryption](Network/Encryption.md)
+- [Authentication](Usage/Authentication.md)
+
 <details markdown="1">
-  <summary>Advanced Topics</summary>
+<summary>More network topics</summary>
 
-* [proxy server](Usage/Proxy-Server.md) to manage access
-* [system service](Usage/Service.md) to start on boot
-* [picture encodings](Usage/Encodings.md) : quality and performance
-* [OpenGL applications](Usage/OpenGL.md) : server-side GPU acceleration
-* [Client OpenGL acceleration](Usage/Client-OpenGL.md)
-* [Client implementations](Usage/Clients.md) : html5, rust, go and others
-* [Xdummy](Usage/Xdummy.md) : alternative to `Xvfb`
+- [Multicast DNS discovery](Network/Multicast-DNS.md)
+- [AES](Network/AES.md)
+- [RFB](Network/RFB.md)
 </details>
 
----
+</section>
 
-## [Features](Features/README.md)
-<details markdown="1">
-  <summary>Device Forwarding</summary>
+<section class="docs-card" markdown="1">
 
-* [Audio](Features/Audio.md) : speaker and microphone
-* [Printers](Features/Printing.md)
-* [Webcams](Features/Webcam.md)
-* [Keyboard](Features/Keyboard.md)
-</details>
-<details markdown="1">
-  <summary>Data Synchronization</summary>
+### Technical reference
 
-* [Clipboard](Features/Clipboard.md)
-* [File transfers](Features/File-Transfers.md)
-* [System tray](Features/System-Tray.md)
-* [Notifications](Features/Notifications.md)
-</details>
-<details markdown="1">
-  <summary>Display Characteristics</summary>
+Details for developers, integrators, and anyone investigating Xpra internals.
 
-* [Image Depth](Features/Image-Depth.md)
-* [DPI](Features/DPI.md)
-</details>
+- [Network protocol](Network/Protocol.md)
+- [Subsystems](Subsystems/README.md)
+- [Security guidance](Usage/Security.md)
+- [Client implementations](Usage/Clients.md)
+- [Encoding options](Usage/Encodings.md)
 
----
+</section>
 
-## [Network](Network/README.md)
-See [Multicast DNS](Network/Multicast-DNS.md) and [Encryption](Network/Encryption.md): [AES](Network/AES.md), [SSL](Network/SSL.md), [SSH](Network/SSH.md)
+<section class="docs-card" markdown="1">
 
-## Technical
-* [network protocol](Network/Protocol.md)
-* [subsystems](Subsystems/README.md)
-* [security](Usage/Security.md)
+### [Build Xpra](Build/README.md)
 
----
+Build from source or prepare packages for a supported platform.
 
-## [Build](Build/README.md)
-Information for developers:
-<details markdown="1">
-  <summary>building from source</summary>
+- [Dependencies](Build/Dependencies.md)
+- [Fedora and Red Hat](Build/RPM.md)
+- [Debian and Ubuntu](Build/Debian.md)
+- [Microsoft Windows](Build/MSWindows.md)
+- [macOS](Build/MacOS.md)
+- [Other platforms](Build/Other.md)
 
-* [Generic list of dependencies](Build/Dependencies.md)
-* [Fedora / RedHat](Build/RPM.md)
-* [Debian](Build/Debian.md)
-* [MS Windows](Build/MSWindows.md)
-* [MacOS](Build/MacOS.md)
-* [Other](Build/Other.md)
-</details>
+</section>
 
----
+<section class="docs-card" markdown="1">
 
-## [Sponsors](SPONSORS.md)
+### Project and support
+
+Find downloads, answers, source code, and ways to support the project.
+
+- [Download Xpra](https://github.com/Xpra-org/xpra/wiki/Download)
+- [Frequently asked questions](FAQ.md)
+- [GitHub repository](https://github.com/Xpra-org/xpra)
+- [Community discussions](https://github.com/orgs/Xpra-org/discussions)
+- [Sponsors](SPONSORS.md)
+
+</section>
+</div>
