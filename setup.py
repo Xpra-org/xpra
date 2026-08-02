@@ -467,7 +467,7 @@ if not OPENH264_PKG_CONFIG:
 openh264_ENABLED        = DEFAULT and pkg_config_version("2.0", OPENH264_PKG_CONFIG)
 openh264_decoder_ENABLED = openh264_ENABLED
 openh264_encoder_ENABLED = openh264_ENABLED
-dav1d_ENABLED           = DEFAULT and pkg_config_version("1.0", "dav1d")
+dav1d_ENABLED           = DEFAULT and pkg_config_version("1.1", "dav1d")
 aom_ENABLED             = DEFAULT and pkg_config_version("3.0", "aom")
 de265_ENABLED           = DEFAULT and pkg_config_version("1.0", "libde265")
 de265_decoder_ENABLED   = de265_ENABLED
