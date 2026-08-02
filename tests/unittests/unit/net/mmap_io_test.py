@@ -7,8 +7,11 @@
 import mmap
 import unittest
 
-from xpra.net.mmap.common import MmapPointerError
-from xpra.net.mmap.io import int_from_buffer, mmap_free_size, mmap_read, mmap_write
+from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MmapPointerError
+from xpra.net.mmap.io import (
+    int_from_buffer, mmap_free_size, mmap_read, mmap_write,
+    read_mmap_token, write_mmap_token,
+)
 
 
 SIZE = 4096
@@ -64,6 +67,28 @@ class MmapIOTest(unittest.TestCase):
                 with self.assertRaises(MmapPointerError):
                     mmap_free_size(area, SIZE)
                 int_from_buffer(area, pos).value = 8
+
+    def test_invalid_token_range(self):
+        area = self.area()
+        for index, count in (
+            (0, 2 ** 31),           # would take forever to read
+            (0, 0),                 # no token at all
+            (0, -1),                # negative size
+            (0, MAX_TOKEN_BYTES + 1),
+            (SIZE - 10, DEFAULT_TOKEN_BYTES),   # runs past the end of the area
+            (-1, DEFAULT_TOKEN_BYTES),          # negative index
+            (SIZE, 1),
+        ):
+            with self.assertRaises(ValueError):
+                read_mmap_token(area, index, count)
+            with self.assertRaises(ValueError):
+                write_mmap_token(area, 0x1234, index, count)
+
+    def test_token_roundtrip(self):
+        area = self.area()
+        for count in (1, DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES):
+            write_mmap_token(area, 0x12, 100, count)
+            self.assertEqual(read_mmap_token(area, 100, count), 0x12)
 
     def test_unused_area_pointers(self):
         # a brand new area has both pointers set to zero:

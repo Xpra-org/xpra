@@ -14,6 +14,9 @@ log = Logger("mmap")
 
 MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
 DEFAULT_TOKEN_BYTES: int = 128
+# the token size is chosen by the peer, so it needs an upper bound:
+# (leave some room for peers using a larger token than we do)
+MAX_TOKEN_BYTES: int = DEFAULT_TOKEN_BYTES * 4
 
 """
 Utility functions for communicating via mmap

@@ -91,7 +91,15 @@ class BaseMmapArea:
     def verify_token(self) -> bool:
         if not self.mmap:
             raise RuntimeError("mmap object is not defined")
-        token = read_mmap_token(self.mmap, self.token_index, self.token_bytes)
+        try:
+            token = read_mmap_token(self.mmap, self.token_index, self.token_bytes)
+        except ValueError as e:
+            # the peer has chosen a token location or size we cannot use:
+            self.enabled = False
+            log.error(f"Error: invalid {self.name!r} mmap token attributes")
+            log.error(f" {e}")
+            log.error(" mmap is disabled")
+            return False
         if token == 0:
             log.info(f"the server is not using the {self.name!r} mmap area")
             return False
