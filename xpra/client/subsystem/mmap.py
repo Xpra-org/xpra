@@ -15,7 +15,7 @@ from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import csv
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.net.mmap.io import init_client_mmap, clean_mmap
+from xpra.net.mmap.io import init_client_mmap, clean_mmap, int_from_buffer, validate_chunks
 from xpra.net.mmap.objects import BaseMmapArea
 from xpra.log import Logger
 
@@ -229,6 +229,34 @@ class MmapClient(StubClientSubsystem):
             # not found, or not enabled:
             area.cleanup()
         return True
+
+    def free_packet_chunks(self, img_data, options: typedict) -> None:
+        """
+            Acknowledge the chunks used by a packet we have finished with,
+            so that the server can re-use this space:
+            the `data_start` pointer tells it how far we have read.
+        """
+        area = self.mmap_read_area
+        if not area:
+            return
+        # newer versions use the 'chunks' option - see `paint_mmap`:
+        chunks = options.tupleget("chunks")
+        if not chunks and BACKWARDS_COMPATIBLE:
+            # older versions overload the pixel data:
+            chunks = tuple(img_data)
+        if not chunks:
+            log.error("Error: no mmap chunks found in packet")
+            return
+        try:
+            # the chunks come from the server, so they must be validated
+            # before we can move the shared pointer:
+            validate_chunks(area.mmap, chunks)
+        except ValueError as e:
+            log.error("Error: invalid mmap chunks found in packet")
+            log.error(" %s", e)
+            return
+        offset, length = chunks[-1]
+        int_from_buffer(area.mmap, 0).value = offset + length
 
     def get_info(self) -> dict[str, Any]:
         info = {}
