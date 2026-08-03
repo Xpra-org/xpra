@@ -11,10 +11,13 @@ import unittest
 
 from xpra.os_util import WIN32
 from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MIN_SIZE, MmapPointerError
+from xpra.net.mmap import io
 from xpra.net.mmap.io import (
     init_client_mmap, int_from_buffer, mmap_free_size, mmap_read, mmap_write,
-    read_mmap_token, write_mmap_token,
+    read_mmap_token, write_mmap_token, safe_open_mmap_file,
 )
+
+from unit.test_util import silence_warn, silence_error
 
 
 SIZE = 4096
@@ -128,6 +131,70 @@ class MmapIOTest(unittest.TestCase):
             self.assertEqual(filename, path)
             area.close()
             os.unlink(path)
+
+    def safe_open(self, tmpdir: str, filename: str, uids=()) -> int:
+        with silence_warn(io), silence_error(io):
+            return safe_open_mmap_file(tmpdir, filename, uids or (os.getuid(), ))
+
+    def assert_refused(self, tmpdir: str, filename: str, uids=()) -> None:
+        fd = self.safe_open(tmpdir, filename, uids)
+        if fd >= 0:
+            os.close(fd)
+            raise AssertionError(f"{filename!r} should have been refused")
+
+    def test_safe_open(self):
+        if WIN32:
+            return
+        with tempfile.TemporaryDirectory() as tmpdir:
+            def mkfile(name: str) -> str:
+                path = os.path.join(tmpdir, name)
+                with open(path, "wb") as f:
+                    f.write(b"\0" * 1024)
+                return path
+
+            # a regular file we own can be used:
+            mkfile("good.mmap")
+            fd = self.safe_open(tmpdir, "good.mmap")
+            assert fd >= 0, "a regular file should have been accepted"
+            os.close(fd)
+            # but not if we expect it to belong to someone else:
+            self.assert_refused(tmpdir, "good.mmap", (os.getuid() + 1, ))
+            # symbolic links are never followed, whatever they point at:
+            os.symlink("/etc/passwd", os.path.join(tmpdir, "link.mmap"))
+            self.assert_refused(tmpdir, "link.mmap")
+            os.symlink(os.path.join(tmpdir, "good.mmap"), os.path.join(tmpdir, "link2.mmap"))
+            self.assert_refused(tmpdir, "link2.mmap")
+            # a hard link can point at a file we would have refused to open:
+            os.link(os.path.join(tmpdir, "good.mmap"), os.path.join(tmpdir, "hard.mmap"))
+            self.assert_refused(tmpdir, "hard.mmap")
+            # only regular files:
+            os.mkfifo(os.path.join(tmpdir, "fifo.mmap"))
+            self.assert_refused(tmpdir, "fifo.mmap")
+            os.mkdir(os.path.join(tmpdir, "subdir"))
+            self.assert_refused(tmpdir, "subdir")
+            # only a basename, so that no symlink can be followed on the way:
+            self.assert_refused(tmpdir, "../../etc/passwd")
+            self.assert_refused(tmpdir, "/etc/passwd")
+            self.assert_refused(tmpdir, "subdir/good.mmap")
+            self.assert_refused(tmpdir, "..")
+            self.assert_refused(tmpdir, "")
+            # and the file has to exist:
+            self.assert_refused(tmpdir, "missing.mmap")
+
+    def test_safe_open_directory_permissions(self):
+        if WIN32:
+            return
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, "good.mmap"), "wb") as f:
+                f.write(b"\0" * 1024)
+            # a directory anyone can create files in is not safe,
+            # unless the sticky bit prevents them from replacing our file:
+            os.chmod(tmpdir, 0o777)
+            self.assert_refused(tmpdir, "good.mmap")
+            os.chmod(tmpdir, 0o1777)
+            fd = self.safe_open(tmpdir, "good.mmap")
+            assert fd >= 0, "a sticky directory should have been accepted"
+            os.close(fd)
 
     def test_unused_area_pointers(self):
         # a brand new area has both pointers set to zero:

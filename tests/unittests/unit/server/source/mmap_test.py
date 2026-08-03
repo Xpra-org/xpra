@@ -10,10 +10,12 @@ import unittest
 
 from xpra.os_util import POSIX
 from xpra.util.objects import AdHocStruct
+from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MIN_SIZE
+from xpra.net.mmap.io import init_client_mmap, write_mmap_token
 from xpra.server.source import mmap as source_mmap
 from xpra.server.source.mmap import MMAP_Connection
 
-from unit.test_util import silence_warn
+from unit.test_util import silence_warn, silence_error, silence_info
 
 
 def make_source(dirs=(), files=(), peer_uid=-1) -> MMAP_Connection:
@@ -107,6 +109,78 @@ class MmapPathTest(unittest.TestCase):
         source = make_source(peer_uid=-1)
         for mmap_dir in source.allowed_dirs:
             assert not mmap_dir.startswith("/run/user/") or str(os.getuid()) in mmap_dir
+
+
+class ParseAreaCapsTest(unittest.TestCase):
+    """
+        Exercises the whole server side path:
+        the client creates a real mmap file and writes its token in it,
+        the server has to find it, open it safely and verify the token.
+    """
+
+    def client_area(self, mmap_dir: str) -> tuple[dict, object]:
+        enabled, _delete, area, size, tempfile_obj, filename = init_client_mmap(size=MIN_SIZE, filename=mmap_dir)
+        assert enabled, "failed to create the client mmap area"
+        self.addCleanup(area.close)
+        if tempfile_obj:
+            self.addCleanup(tempfile_obj.close)
+        token = 0x123456789
+        token_index = 512
+        write_mmap_token(area, token, token_index, DEFAULT_TOKEN_BYTES)
+        caps = {
+            "file": filename,
+            "size": size,
+            "token": token,
+            "token_index": token_index,
+            "token_bytes": DEFAULT_TOKEN_BYTES,
+        }
+        return caps, area
+
+    def test_client_area_is_accepted(self):
+        if not POSIX:
+            return
+        with tempfile.TemporaryDirectory() as mmap_dir:
+            caps, _area = self.client_area(mmap_dir)
+            source = make_source(dirs=(mmap_dir, ))
+            with silence_info(source_mmap):
+                area = source.parse_area_caps("read", caps, 0)
+            assert area, "the client's mmap area should have been accepted"
+            assert area.enabled
+            assert area.size >= MIN_SIZE
+            area.close()
+
+    def test_bad_token_is_refused(self):
+        if not POSIX:
+            return
+        with tempfile.TemporaryDirectory() as mmap_dir:
+            caps, _area = self.client_area(mmap_dir)
+            caps["token"] += 1
+            source = make_source(dirs=(mmap_dir, ))
+            with silence_error(source_mmap):
+                assert source.parse_area_caps("read", caps, 0) is None
+
+    def test_symlink_is_refused(self):
+        if not POSIX:
+            return
+        with tempfile.TemporaryDirectory() as mmap_dir, tempfile.TemporaryDirectory() as hidden:
+            caps, _area = self.client_area(hidden)
+            # the same file, reached through a symlink in an allowed directory:
+            link = os.path.join(mmap_dir, "xpra.link.mmap")
+            os.symlink(caps["file"], link)
+            caps["file"] = link
+            source = make_source(dirs=(mmap_dir, ))
+            with silence_error(source_mmap), silence_warn(source_mmap):
+                assert source.parse_area_caps("read", caps, 0) is None
+
+    def test_file_outside_the_allowed_directory_is_refused(self):
+        if not POSIX:
+            return
+        with tempfile.TemporaryDirectory() as mmap_dir, tempfile.TemporaryDirectory() as other:
+            caps, _area = self.client_area(other)
+            # the server only allows `mmap_dir`, and there is no such file in it:
+            source = make_source(dirs=(mmap_dir, ))
+            with silence_error(source_mmap), silence_warn(source_mmap):
+                assert source.parse_area_caps("read", caps, 0) is None
 
 
 def main():

@@ -13,7 +13,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.server.source.stub import StubClientConnection
 from xpra.net.mmap.common import get_default_mmap_dirs
-from xpra.net.mmap.io import init_server_mmap
+from xpra.net.mmap.io import init_server_mmap, init_server_mmap_section, safe_open_mmap_file
 from xpra.net.mmap.objects import BaseMmapArea
 
 from xpra.log import Logger
@@ -139,14 +139,35 @@ class MMAP_Connection(StubClientConnection):
         log.warn(" allowed: %s", csv(self.allowed_dirs) or "none")
         return ""
 
+    def open_mmap_file(self, path: str, index: int) -> int:
+        """
+            Opens the mmap file, returns a file descriptor or -1.
+            The file is only verified when the client chose its location:
+            a path specified by the server administrator is used as-is,
+            it can legitimately be a symbolic link, a device file
+            or a file belonging to another user.
+        """
+        if len(self.mmap_files) > index:
+            try:
+                return os.open(path, os.O_RDWR | os.O_CLOEXEC)
+            except OSError as e:
+                log(f"os.open({path!r})", exc_info=True)
+                log.error(f"Error: cannot access the mmap file {path!r}:")
+                log.estr(e)
+                return -1
+        uids = [os.getuid()]
+        if self.peer_uid >= 0 and self.peer_uid not in uids:
+            uids.append(self.peer_uid)
+        # the directory is one of ours, the basename is all that comes from the client:
+        return safe_open_mmap_file(os.path.dirname(path), os.path.basename(path), uids)
+
     def parse_area_caps(self, name: str, raw_caps: dict, index: int) -> BaseMmapArea | None:
         log("parse_area_caps(%r, %r, %i)", name, raw_caps, index)
         if not raw_caps:
             return None
         caps = typedict(raw_caps)
         filename = self.mmap_path(caps.strget("file"), index)
-        if not filename or not os.path.exists(filename):
-            log(f"mmap_file {filename!r} cannot be found!")
+        if not filename:
             return None
         size = caps.intget("size", 0)
         log("client supplied mmap_file=%r, size=%i", filename, size)
@@ -156,7 +177,17 @@ class MMAP_Connection(StubClientConnection):
         area.parse_caps(caps)
         if not area.enabled:
             return None
-        mmap, size = init_server_mmap(filename, size)
+        if WIN32:
+            mmap, size = init_server_mmap_section(filename, size)
+        else:
+            fd = self.open_mmap_file(filename, index)
+            if fd < 0:
+                return None
+            try:
+                mmap, size = init_server_mmap(fd, size)
+            finally:
+                # the mapping remains valid once the file descriptor is closed:
+                os.close(fd)
         log("found client mmap area: %s, %i bytes - min mmap size=%i in %r",
             mmap, size, self.mmap_min_size, filename)
         if size <= 0 or not mmap:

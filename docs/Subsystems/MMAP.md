@@ -46,6 +46,15 @@ the server's own mmap directory and, when the peer can be identified as
 another local user, that user's mmap directory.
 Clients specifying a file anywhere else are refused and mmap is then disabled.
 
+The file is opened relative to that directory and symbolic links are never
+followed, then the file descriptor itself is verified rather than the path:
+it must be a regular file, with a single link, belonging either to the server
+or to the client's user. The directory must not be writable by everyone
+unless the sticky bit prevents other users from replacing files in it.
+None of these checks apply to a path specified with the `mmap` option:
+that one is chosen by the administrator and can legitimately be a symbolic
+link, a device file, or a file belonging to another user.
+
 To use this mmap file, it must write a new token
 and return this information to the client.
 (using the same format, excluding the `file` and `size` that the client has already specified)

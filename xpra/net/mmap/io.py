@@ -6,8 +6,11 @@
 import os
 import sys
 import mmap
+import stat
+from errno import ELOOP
 from ctypes import c_ubyte, c_uint32
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.net.mmap.common import (
     DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MmapPointerError,
@@ -225,52 +228,136 @@ def read_mmap_token(mmap_area, index: int, count: int = DEFAULT_TOKEN_BYTES) -> 
     return v
 
 
-def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None, int]:
+def check_mmap_dir(dirfd: int, mmap_dir: str, uids: Sequence[int]) -> bool:
     """
-        Reads the mmap file provided by the client
-        and verifies the token if supplied.
+        A directory anyone can create files in is a directory anyone
+        can plant a symlink or a file of their choosing in.
+    """
+    st = os.fstat(dirfd)
+    if st.st_uid != 0 and st.st_uid not in uids:
+        log.warn(f"Warning: the mmap directory {mmap_dir!r}")
+        log.warn(f" belongs to uid {st.st_uid}")
+        return False
+    if st.st_mode & stat.S_IWOTH and not st.st_mode & stat.S_ISVTX:
+        log.warn(f"Warning: the mmap directory {mmap_dir!r}")
+        log.warn(" is writable by everyone and does not have the sticky bit set")
+        return False
+    return True
+
+
+def check_mmap_fd(fd: int, path: str, uids: Sequence[int]) -> bool:
+    """
+        Verifies the file we have opened rather than the path we were given:
+        the path can be replaced between the check and the open,
+        the file descriptor cannot.
+    """
+    st = os.fstat(fd)
+    if not stat.S_ISREG(st.st_mode):
+        log.warn(f"Warning: the mmap file {path!r} is not a regular file")
+        return False
+    if st.st_nlink != 1:
+        # a hard link to a file we would otherwise have refused to open:
+        log.warn(f"Warning: the mmap file {path!r} has {st.st_nlink} hard links")
+        return False
+    if st.st_uid not in uids:
+        log.warn(f"Warning: the mmap file {path!r} belongs to uid {st.st_uid}")
+        log.warn(" expected %s", csv(uids))
+        return False
+    return True
+
+
+def safe_open_mmap_file(mmap_dir: str, filename: str, uids: Sequence[int]) -> int:
+    """
+        Opens `filename` from the `mmap_dir` directory,
+        without ever following a symbolic link and without ever
+        resolving the path a second time: everything is verified
+        using the file descriptors we end up using.
+        Returns a file descriptor, or -1.
+    """
+    if not filename or filename != os.path.basename(filename) or filename in (os.curdir, os.pardir):
+        # `openat` would still walk a path with more than one component,
+        # following any symbolic link found on the way:
+        log.warn(f"Warning: invalid mmap filename {filename!r}")
+        return -1
+    flags = os.O_RDONLY | os.O_CLOEXEC | getattr(os, "O_DIRECTORY", 0)
+    try:
+        dirfd = os.open(mmap_dir, flags)
+    except OSError as e:
+        log(f"safe_open_mmap_file: cannot open mmap directory {mmap_dir!r}: {e}")
+        return -1
+    path = os.path.join(mmap_dir, filename)
+    try:
+        if not check_mmap_dir(dirfd, mmap_dir, uids):
+            return -1
+        flags = os.O_RDWR | os.O_NOFOLLOW | os.O_NOCTTY | os.O_CLOEXEC
+        try:
+            fd = os.open(filename, flags, dir_fd=dirfd)
+        except OSError as e:
+            log(f"os.open({filename!r}, {flags:x}, dir_fd={dirfd})", exc_info=True)
+            log.error(f"Error: cannot access mmap file {path!r}:")
+            log.estr(e)
+            if e.errno == ELOOP:
+                log.error(" it must not be a symbolic link")
+            else:
+                log.error(" see mmap-group option?")
+            return -1
+    finally:
+        os.close(dirfd)
+    if check_mmap_fd(fd, path, uids):
+        return fd
+    os.close(fd)
+    return -1
+
+
+def init_server_mmap(fd: int, mmap_size: int = 0) -> tuple[Any | None, int]:
+    """
+        Maps the mmap file the client has told us about,
+        using the file descriptor we have opened and verified.
         Returns the mmap object and its size: (mmap, size)
     """
     mmap_area = None
     try:
-        if not WIN32:
-            try:
-                f = open(mmap_filename, "r+b")
-            except Exception as e:
-                log.error(f"Error: cannot access mmap file {mmap_filename!r}:")
-                log.estr(e)
-                log.error(" see mmap-group option?")
-                return None, 0
-            actual_mmap_size = os.path.getsize(mmap_filename)
-            if mmap_size > actual_mmap_size:
-                # we would be mapping pages that aren't backed by the file,
-                # and accessing those would raise `SIGBUS`:
-                # (`mmap` also refuses to do this for regular files,
-                # but we want to fail with a meaningful error message)
-                log.error("Error: mmap file %r is smaller than the size requested", mmap_filename)
-                log.error(" %i bytes instead of %i", actual_mmap_size, mmap_size)
-                f.close()
-                return None, 0
-            if mmap_size and actual_mmap_size != mmap_size:
-                log.warn("Warning: expected mmap file '%s' of size %i but got %i",
-                         mmap_filename, mmap_size, actual_mmap_size)
-            # the size is chosen by the peer, so it must be validated:
-            validate_size(mmap_size or actual_mmap_size)
-            mmap_area = mmap.mmap(f.fileno(), mmap_size)
-            f.close()
-            # `mmap_size` may be zero, in which case the whole file is mapped:
-            # only the length we have actually mapped can be trusted
-            return mmap_area, len(mmap_area)
-        assert sys.platform == "win32"
+        actual_mmap_size = os.fstat(fd).st_size
+        if mmap_size > actual_mmap_size:
+            # we would be mapping pages that aren't backed by the file,
+            # and accessing those would raise `SIGBUS`:
+            # (`mmap` also refuses to do this for regular files,
+            # but we want to fail with a meaningful error message)
+            log.error("Error: the mmap file is smaller than the size requested")
+            log.error(" %i bytes instead of %i", actual_mmap_size, mmap_size)
+            return None, 0
+        if mmap_size and actual_mmap_size != mmap_size:
+            log.warn("Warning: expected an mmap file of size %i but got %i", mmap_size, actual_mmap_size)
+        # the size is chosen by the peer, so it must be validated:
+        validate_size(mmap_size or actual_mmap_size)
+        mmap_area = mmap.mmap(fd, mmap_size)
+        # `mmap_size` may be zero, in which case the whole file is mapped:
+        # only the length we have actually mapped can be trusted
+        return mmap_area, len(mmap_area)
+    except Exception:
+        log.error("Error: cannot use mmap file", exc_info=True)
+        if mmap_area:
+            mmap_area.close()
+        return None, 0
+
+
+def init_server_mmap_section(name: str, mmap_size: int) -> tuple[Any | None, int]:
+    """
+        MS Windows only: the client gives us the name of a shared memory section,
+        which is not a filesystem path.
+    """
+    assert sys.platform == "win32"
+    mmap_area = None
+    try:
         if mmap_size == 0:
             log.error("Error: client did not supply the mmap area size")
             log.error(" try updating your client version?")
             return None, 0
         validate_size(mmap_size)
-        mmap_area = mmap.mmap(0, mmap_size, mmap_filename)
+        mmap_area = mmap.mmap(0, mmap_size, name)
         return mmap_area, len(mmap_area)
     except Exception:
-        log.error("Error: cannot use mmap file '%s'", mmap_filename, exc_info=True)
+        log.error("Error: cannot use mmap area %r", name, exc_info=True)
         if mmap_area:
             mmap_area.close()
         return None, 0
