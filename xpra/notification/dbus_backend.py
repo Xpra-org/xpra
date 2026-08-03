@@ -117,9 +117,12 @@ class DBUSNotifier(NotifierBase):
             return self.NotifyError(nid, dbus_error)
 
         dbus_hints = self.to_dbus_hints(hints)
+        replaces_id = 0
+        if int(replaces_nid) > 0:
+            replaces_id = self.actual_notification_id.get(int(replaces_nid), 0)
         log("calling %s%s", self.dbusnotify.Notify,
-            (app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout))
-        self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout,
+            (app_str, replaces_id, icon_string, summary, body, actions, dbus_hints, expire_timeout))
+        self.dbusnotify.Notify(app_str, replaces_id, icon_string, summary, body, actions, dbus_hints, expire_timeout,
                                reply_handler=NotifyReply,
                                error_handler=NotifyError)
 
