@@ -5,11 +5,12 @@
 # later version. See the file COPYING for details.
 
 import os
+import hashlib
 import tempfile
 import unittest
 
 from xpra.os_util import POSIX
-from xpra.util.objects import AdHocStruct
+from xpra.util.objects import AdHocStruct, typedict
 from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MIN_SIZE
 from xpra.net.mmap.io import init_client_mmap, write_mmap_token
 from xpra.server.source import mmap as source_mmap
@@ -181,6 +182,93 @@ class ParseAreaCapsTest(unittest.TestCase):
             source = make_source(dirs=(mmap_dir, ))
             with silence_error(source_mmap), silence_warn(source_mmap):
                 assert source.parse_area_caps("read", caps, 0) is None
+
+
+class ConfusedDeputyTest(unittest.TestCase):
+    """
+        Regression test for the mmap confused-deputy vulnerability
+        (present up to and including 6.5.x):
+        the server used to open whatever path the client named, verify the
+        client's token, then write a fresh token of its own back into that file.
+        A client that named a file with known contents could satisfy the token
+        check and have the server corrupt an arbitrary file the server user owns.
+        Here the malicious client forges a matching token and we assert that the
+        victim file is left byte-for-byte unchanged.
+    """
+
+    # a fixed, predictable region the attacker can forge a token for:
+    TOKEN_INDEX = 4096
+    KNOWN = bytes((i * 7 + 13) & 0xFF for i in range(DEFAULT_TOKEN_BYTES))
+
+    def victim_file(self, mmap_dir: str) -> str:
+        # a MIN_SIZE file the server user owns, with known bytes at the token offset.
+        # created sparse so the test stays cheap while still reporting a 64MB size:
+        path = os.path.join(mmap_dir, "victim.dat")
+        fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            os.ftruncate(fd, MIN_SIZE)
+            os.pwrite(fd, self.KNOWN, self.TOKEN_INDEX)
+        finally:
+            os.close(fd)
+        self.addCleanup(lambda: os.path.exists(path) and os.unlink(path))
+        return path
+
+    def forged_caps(self, victim: str) -> dict:
+        # the token value the server will read at TOKEN_INDEX (little-endian, per read_mmap_token):
+        token = int.from_bytes(self.KNOWN, "little")
+        area = {
+            "enabled": True,
+            "file": victim,
+            "size": MIN_SIZE,
+            "token": token,
+            "token_index": self.TOKEN_INDEX,
+            "token_bytes": DEFAULT_TOKEN_BYTES,
+        }
+        # the server maps client "read"->write area(0) and "write"->read area(1),
+        # so point both at the victim to exercise the write path regardless of the swap:
+        return {"mmap": {"read": dict(area), "write": dict(area)}}
+
+    @staticmethod
+    def digest(path: str) -> str:
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()
+
+    def run_attack(self, source: MMAP_Connection, victim: str) -> None:
+        # drive the exact server flow: parse the hello (open+verify),
+        # then build the reply (which is where the server writes its own token):
+        with silence_info(source_mmap), silence_error(source_mmap), silence_warn(source_mmap):
+            source.parse_client_caps(typedict(self.forged_caps(victim)))
+            source.get_caps()
+            source.cleanup()
+
+    def test_file_outside_allowed_dirs_is_untouched(self):
+        if not POSIX:
+            return
+        with tempfile.TemporaryDirectory() as elsewhere:
+            victim = self.victim_file(elsewhere)
+            before = self.digest(victim)
+            # the default allow-list only covers the server's own mmap directory,
+            # so a client naming a file anywhere else must be rejected outright:
+            source = make_source()
+            assert not any(os.path.normpath(d) == os.path.normpath(elsewhere) for d in source.allowed_dirs)
+            self.run_attack(source, victim)
+            self.assertEqual(before, self.digest(victim), "the victim file was corrupted by the server")
+
+    def test_symlink_into_allowed_dir_is_untouched(self):
+        if not POSIX:
+            return
+        with tempfile.TemporaryDirectory() as allowed, tempfile.TemporaryDirectory() as hidden:
+            victim = self.victim_file(hidden)
+            before = self.digest(victim)
+            # the same file, reached through a symlink that does sit in an allowed directory:
+            link = os.path.join(allowed, "victim.dat")
+            os.symlink(victim, link)
+            source = make_source(dirs=(allowed, ))
+            self.run_attack(source, link)
+            self.assertEqual(before, self.digest(victim), "the victim file was corrupted through a symlink")
 
 
 def main():
