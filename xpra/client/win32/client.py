@@ -311,8 +311,8 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             # Layer 2: normalize to true physical device pixels, so the values
             # are correct even if the process somehow ended up with a lower DPI
             # awareness than Per-Monitor-v2 (a no-op when fully aware):
-            ox, oy = physical_point(hwnd, origin.x, origin.y)
-            absx, absy = physical_point(hwnd, ptr.x, ptr.y)
+            ox, oy = physical_point(hwnd, int(origin.x), int(origin.y))
+            absx, absy = physical_point(hwnd, int(ptr.x), int(ptr.y))
             # window-relative coordinates, normalized the same way:
             x, y = absx - ox, absy - oy
         else:
