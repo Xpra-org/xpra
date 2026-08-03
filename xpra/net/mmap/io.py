@@ -208,17 +208,25 @@ def read_mmap_token(mmap_area, index: int, count: int = DEFAULT_TOKEN_BYTES) -> 
     return v
 
 
-def init_server_mmap(mmap_filename: str, mmap_size: int = 0) -> tuple[Any | None, int]:
+def init_server_mmap(mmap_filename: str, mmap_size: int = 0, follow_symlinks: bool = False) -> tuple[Any | None, int]:
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.
         Returns the mmap object and its size: (mmap, size)
+        `follow_symlinks` is only enabled for paths chosen by the administrator
+        via the `mmap` option, which may legitimately be a symbolic link.
     """
     mmap_area = None
     try:
         if not WIN32:
             try:
-                f = open(mmap_filename, "r+b")
+                # O_NOFOLLOW: never follow a symbolic link planted in the mmap directory,
+                # so a client cannot redirect the server onto some other file:
+                flags = os.O_RDWR
+                if not follow_symlinks:
+                    flags |= os.O_NOFOLLOW
+                fd = os.open(mmap_filename, flags)
+                f = os.fdopen(fd, "r+b")
             except Exception as e:
                 log.error(f"Error: cannot access mmap file {mmap_filename!r}:")
                 log.estr(e)

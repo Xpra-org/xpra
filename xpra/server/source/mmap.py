@@ -11,6 +11,7 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.server.source.stub import StubClientConnection
 from xpra.net.mmap.io import init_server_mmap
+from xpra.net.mmap.common import get_mmap_dir
 from xpra.net.mmap.objects import BaseMmapArea
 
 from xpra.log import Logger
@@ -93,7 +94,13 @@ class MMAP_Connection(StubClientConnection):
             # server command line option overrides the path:
             filename = self.mmap_filenames[index]
             log(f"using global server specified mmap file path: {filename!r}")
-        return filename
+            return filename
+        # no server override: the client only gets to name a file by basename,
+        # inside the server's own mmap directory - never an arbitrary path,
+        # so it cannot trick the server into opening (and stamping a token into)
+        # some unrelated file that the server user happens to own:
+        mmap_dir = get_mmap_dir()
+        return os.path.join(mmap_dir, os.path.basename(filename))
 
     def parse_area_caps(self, name: str, raw_caps: dict, index: int) -> BaseMmapArea | None:
         log("parse_area_caps(%r, %r, %i)", name, raw_caps, index)
@@ -112,7 +119,11 @@ class MMAP_Connection(StubClientConnection):
         area.parse_caps(caps)
         if not area.enabled:
             return None
-        mmap, size = init_server_mmap(filename, size)
+        # only paths chosen by the administrator via the `mmap` option
+        # may be symbolic links (ie: a virtio-shmem device);
+        # a client-named file must never be reached through a symlink:
+        admin_path = bool(self.mmap_filenames)
+        mmap, size = init_server_mmap(filename, size, follow_symlinks=admin_path)
         log("found client mmap area: %s, %i bytes - min mmap size=%i in %r",
             mmap, size, self.mmap_min_size, filename)
         if size <= 0 or not mmap:
