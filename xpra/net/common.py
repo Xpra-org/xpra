@@ -316,6 +316,121 @@ def get_peercred(sock) -> tuple[int, int, int] | None:
     return None
 
 
+def proc_net_addr(family, addr) -> str:
+    """
+        Formats an address the way `/proc/net/{tcp,udp}{,6}` does:
+        the IP is shown as 32-bit words in host byte order, followed by the port,
+        both in uppercase hexadecimal. ie: "0100007F:1F90" for 127.0.0.1:8080
+    """
+    import socket
+    ip = str(addr[0]).split("%", 1)[0]  # strip the scope id: "fe80::1%eth0"
+    port = int(addr[1])
+    packed = socket.inet_pton(family, ip)
+    if sys.byteorder == "little":
+        packed = b"".join(packed[i:i + 4][::-1] for i in range(0, len(packed), 4))
+    return "%s:%04X" % (packed.hex().upper(), port)
+
+
+def proc_net_addr_keys(addr) -> tuple[str, str]:
+    """
+        Returns the `/proc/net` representation of this address
+        for the IPv4 and IPv6 files respectively (either one may be empty):
+        an IPv4 peer can be using an IPv6 socket with a v4 mapped address
+        (and it is then listed in the IPv6 file), and vice versa.
+    """
+    import socket
+    ip = str(addr[0]).split("%", 1)[0]
+    v4 = v6 = ""
+    if ip.count(":") == 0:
+        v4 = proc_net_addr(socket.AF_INET, addr)
+        v6 = proc_net_addr(socket.AF_INET6, (f"::ffff:{ip}", addr[1]))
+    else:
+        v6 = proc_net_addr(socket.AF_INET6, addr)
+        if ip.lower().startswith("::ffff:") and ip.count(".") == 3:
+            v4 = proc_net_addr(socket.AF_INET, (ip[len("::ffff:"):], addr[1]))
+    return v4, v6
+
+
+def find_proc_net_uid(filename: str, local_key: str, remote_key: str) -> int:
+    # ie: "  1: 0100007F:1F90 0100007F:B4CE 01 00000000:00000000 00:00000000 00000000  1000 ..."
+    #      sl  local_address  rem_address   st tx_queue:rx_queue  tr:when   retrnsmt   uid
+    log = get_logger()
+    try:
+        with open(filename, "r", encoding="latin1") as f:
+            for line in f:
+                fields = line.split()
+                if len(fields) < 8 or fields[1] != local_key or fields[2] != remote_key:
+                    continue
+                try:
+                    return int(fields[7])
+                except ValueError:
+                    log(f"find_proc_net_uid: invalid uid field in {line!r}")
+                    return -1
+    except OSError as e:
+        log(f"find_proc_net_uid({filename!r}, ..) {e}")
+    return -1
+
+
+def get_proc_net_uid(sock) -> int:
+    """
+        Finds the uid owning the other end of a network socket, or -1.
+        `/proc/net/{tcp,udp}{,6}` list every socket in our network namespace
+        with the uid of the user it belongs to.
+        The peer's entry, if the peer is on this host, is the mirror image of ours:
+        our remote address is its local address and vice versa.
+        Matching this full 4-tuple is what proves that the peer really is local -
+        no other host can own a socket in our network namespace.
+        (this also covers hosts connecting to themselves without using the loopback interface)
+    """
+    if not LINUX:
+        return -1
+    log = get_logger()
+    import socket
+    try:
+        family = sock.family
+        if family not in (socket.AF_INET, socket.AF_INET6):
+            return -1
+        local = sock.getsockname()
+        remote = sock.getpeername()
+        dgram = sock.type == socket.SOCK_DGRAM
+    except (OSError, AttributeError) as e:
+        log(f"get_proc_net_uid({sock}) {e}")
+        return -1
+    # the peer's socket has our addresses the other way around:
+    local4, local6 = proc_net_addr_keys(remote)
+    remote4, remote6 = proc_net_addr_keys(local)
+    proto = "udp" if dgram else "tcp"
+    for filename, local_key, remote_key in (
+        (f"/proc/net/{proto}", local4, remote4),
+        (f"/proc/net/{proto}6", local6, remote6),
+    ):
+        if not local_key or not remote_key:
+            continue
+        uid = find_proc_net_uid(filename, local_key, remote_key)
+        log("find_proc_net_uid(%r, %r, %r)=%i", filename, local_key, remote_key, uid)
+        if uid >= 0:
+            return uid
+    return -1
+
+
+def get_peer_uid(sock) -> int:
+    """
+        Returns the uid of the user owning the other end of this socket, or -1.
+        A value of -1 does not prove that the peer is remote:
+        the lookup is only implemented for unix domain sockets (all platforms)
+        and for local network sockets on Linux.
+    """
+    import socket
+    try:
+        family = sock.family
+    except AttributeError:
+        return -1
+    if family == socket.AF_UNIX:
+        cred = get_peercred(sock)
+        return cred[1] if cred else -1
+    return get_proc_net_uid(sock)
+
+
 def get_peercred_info(s) -> dict[str, int]:
     try:
         cred = get_peercred(s)

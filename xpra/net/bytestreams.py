@@ -12,7 +12,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.exit_codes import ExitCode
-from xpra.net.common import ConnectionClosedException, get_peercred_info, FULL_INFO, pretty_socket
+from xpra.net.common import ConnectionClosedException, get_peercred_info, get_peer_uid, FULL_INFO, pretty_socket
 from xpra.net.constants import IP_SOCKTYPES, TCP_SOCKTYPES, IP_OPTIONS, IPV6_OPTIONS, TCP_OPTIONS, SOCKET_OPTIONS
 from xpra.util.str_fn import csv
 from xpra.util.env import hasenv, envint, envbool
@@ -129,6 +129,23 @@ class Connection:
         # so the connection's owner can report the right exit code:
         self.error: ExitCode = ExitCode.OK
 
+    def get_peer_uid(self) -> int:
+        """
+            The uid of the user owning the other end of this connection,
+            or -1 if we have no way of finding out.
+            (subclasses override this)
+        """
+        return -1
+
+    def is_local(self) -> bool:
+        """
+            True only if the peer is known to be running on this host.
+            Never assume that a False value means that the peer is remote:
+            we cannot identify the peer of every connection type.
+            (subclasses override this)
+        """
+        return False
+
     def set_nodelay(self, nodelay: bool) -> None:
         """ TCP sockets override this method  """
 
@@ -198,6 +215,7 @@ class Connection:
             "type": self.socktype or "",
             "endpoint": self.endpoint or (),
             "active": self.active,
+            "local": self.is_local(),
             "input": {
                 "bytecount": self.input_bytecount,
                 "readcount": self.input_readcount,
@@ -293,6 +311,8 @@ class SocketConnection(Connection):
         self.local = local
         self.remote = remote
         self.protocol_type = "socket"
+        # the peer's uid is looked up lazily, then cached:
+        self._peer_uid: int | None = None
         if self.socktype_wrapped in TCP_SOCKTYPES:
             def boolget(k: str, default_value: bool | None) -> bool | None:
                 v = self.options.get(k)
@@ -357,6 +377,21 @@ class SocketConnection(Connection):
         if isinstance(sock, SocketPeekWrapper):
             return sock.socket
         return sock
+
+    def get_peer_uid(self) -> int:
+        if self._peer_uid is None:
+            sock = self.get_raw_socket()
+            self._peer_uid = get_peer_uid(sock) if sock else -1
+            log("get_peer_uid() %s=%i", sock, self._peer_uid)
+        return self._peer_uid
+
+    def is_local(self) -> bool:
+        sock = self.get_raw_socket()
+        if sock is not None and getattr(sock, "family", 0) == getattr(socket, "AF_UNIX", -1):
+            # unix domain sockets are always local,
+            # even on the platforms where we cannot identify the peer:
+            return True
+        return self.get_peer_uid() >= 0
 
     def _setsockopt(self, *args) -> None:
         if self.active:
@@ -464,6 +499,8 @@ class SocketConnection(Connection):
                 cred_info = get_peercred_info(s)
                 if cred_info:
                     info["peercred"] = cred_info
+            elif (peer_uid := self.get_peer_uid()) >= 0:
+                info["peercred"] = {"uid": peer_uid}
         except AttributeError:
             log("do_get_socket_info()", exc_info=True)
         if self.nodelay is not None:

@@ -182,6 +182,10 @@ class NamedPipeConnection(Connection):
     def __repr__(self):
         return self.target
 
+    def is_local(self) -> bool:
+        # named pipes are only used for connections to this host:
+        return True
+
     def get_info(self) -> dict[str, Any]:
         d = super().get_info()
         d["type"] = "named-pipe"
