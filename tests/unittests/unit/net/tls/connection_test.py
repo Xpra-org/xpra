@@ -27,6 +27,8 @@ class TestSSLSocketConnection(unittest.TestCase):
         conn = SSLSocketConnection.__new__(SSLSocketConnection)
         # minimal Connection/SocketConnection state
         conn._socket = sock
+        # the peer's uid is looked up lazily and cached, `None` means "not looked up yet":
+        conn._peer_uid = None
         # state normally set up by SSLSocketConnection.__init__:
         conn._ssl_lock = threading.RLock()
         conn.timeout = 0
