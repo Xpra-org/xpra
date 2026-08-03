@@ -85,35 +85,43 @@ class DBUSNotifier(NotifierBase):
             return
         self.may_retry = True
         with log.trap_error("Error: dbus notify failed"):
-            icon_string = self.get_icon_string(nid, app_icon, icon, hints)
-            log("get_icon_string%s=%s", (nid, app_icon, Ellipsizer(icon)), icon_string)
-            if app_name == "Xpra":
-                # don't show "Xpra (via Xpra)"
-                app_str = "Xpra"
-            else:
-                try:
-                    app_str = self.app_name_format % app_name
-                except TypeError:
-                    app_str = app_name or "Xpra"
             self.last_notification = (
-                dbus_id, tray, nid, app_name, replaces_nid,
-                app_icon, summary, body, actions, hints, expire_timeout, icon,
+                dbus_id, tray, nid,
+                app_name, replaces_nid, app_icon,
+                summary, body, actions, hints, expire_timeout,
+                icon,
             )
+            self.dbus_notify(*self.last_notification)
 
-            def NotifyReply(notification_id) -> None:
-                log("NotifyReply(%s) for nid=%i", notification_id, nid)
-                self.actual_notification_id[int(nid)] = int(notification_id)
+    def dbus_notify(self, dbus_id: str, tray, nid: NID,
+                    app_name: str, replaces_nid: NID, app_icon: str,
+                    summary: str, body: str, actions: Sequence[str], hints: dict, expire_timeout: int,
+                    icon: IconData | None) -> None:
+        icon_string = self.get_icon_string(nid, app_icon, icon, hints)
+        log("get_icon_string%s=%s", (nid, app_icon, Ellipsizer(icon)), icon_string)
+        if app_name == "Xpra":
+            # don't show "Xpra (via Xpra)"
+            app_str = "Xpra"
+        else:
+            try:
+                app_str = self.app_name_format % app_name
+            except TypeError:
+                app_str = app_name or "Xpra"
 
-            def NotifyError(dbus_error, *args) -> bool:
-                log("NotifyError(%s, %s) for nid=%i", dbus_error, args, nid)
-                return self.NotifyError(nid, dbus_error)
+        def NotifyReply(notification_id) -> None:
+            log("NotifyReply(%s) for nid=%i", notification_id, nid)
+            self.actual_notification_id[int(nid)] = int(notification_id)
 
-            dbus_hints = self.to_dbus_hints(hints)
-            log("calling %s%s", self.dbusnotify.Notify,
-                (app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout))
-            self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout,
-                                   reply_handler=NotifyReply,
-                                   error_handler=NotifyError)
+        def NotifyError(dbus_error, *args) -> bool:
+            log("NotifyError(%s, %s) for nid=%i", dbus_error, args, nid)
+            return self.NotifyError(nid, dbus_error)
+
+        dbus_hints = self.to_dbus_hints(hints)
+        log("calling %s%s", self.dbusnotify.Notify,
+            (app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout))
+        self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout,
+                               reply_handler=NotifyReply,
+                               error_handler=NotifyError)
 
     def to_dbus_hints(self, h: dict) -> dbus.types.Dictionary:
         vhints = validated_hints(h)
@@ -190,8 +198,7 @@ class DBUSNotifier(NotifierBase):
                 # try to connect to the notification again (just once):
                 self.setup_dbusnotify()
                 # and retry:
-                self.show_notify(*self.last_notification)
-                self.may_retry = False
+                self.dbus_notify(*self.last_notification)
         except Exception:
             log("cannot filter error", exc_info=True)
         log.error("Error processing notification:")
