@@ -1490,7 +1490,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="GSettings synchronization (client appearance preferences to the server)."
                           " Default: %s." % enabled_str(defaults.gsettings_sync))
     legacy_bool_parse("mmap")
-    group.add_option("--mmap", action="store", metavar="yes|no|mmap-filename",
+    group.add_option("--mmap", action="store", metavar="yes|no|path[%spath...]" % os.path.pathsep,
                      dest="mmap", default=defaults.mmap,
                      help="Use memory mapped transfers for local connections. Default: %s." % defaults.mmap)
     replace_option("--enable-sharing", "--sharing=yes")

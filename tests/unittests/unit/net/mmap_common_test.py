@@ -25,6 +25,21 @@ class MmapCommonTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "smaller than 4GB"):
             common.validate_size(maximum)
 
+    def test_split_paths(self):
+        sep = os.path.pathsep
+        self.assertEqual(common.split_paths(""), ())
+        self.assertEqual(common.split_paths("  "), ())
+        self.assertEqual(common.split_paths("yes"), ("yes", ))
+        self.assertEqual(common.split_paths("/tmp/a"), ("/tmp/a", ))
+        # any number of paths, using the platform's separator:
+        self.assertEqual(common.split_paths(sep.join(("/tmp/a", "/tmp/b", "/tmp/c"))), ("/tmp/a", "/tmp/b", "/tmp/c"))
+        # a comma is also accepted, and whitespace is stripped:
+        self.assertEqual(common.split_paths(" /tmp/a , /tmp/b "), ("/tmp/a", "/tmp/b"))
+        # empty entries are skipped:
+        self.assertEqual(common.split_paths(sep.join(("/tmp/a", "", "/tmp/b"))), ("/tmp/a", "/tmp/b"))
+        # the platform's separator wins over the comma:
+        self.assertEqual(common.split_paths(sep.join(("/tmp/a,b", "/tmp/c"))), ("/tmp/a,b", "/tmp/c"))
+
     def test_socket_and_xpra_groups(self):
         with tempfile.NamedTemporaryFile() as socket_file:
             self.assertEqual(common.get_socket_group(socket_file.name), os.stat(socket_file.name).st_gid)

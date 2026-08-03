@@ -64,15 +64,15 @@ class MMAP_Connection(StubClientConnection):
         self.mmap_read_area = None
         self.mmap_write_area = None
         self.mmap_min_size = 0
-        self.mmap_filenames: Sequence[str] = ()
+        self.mmap_dirs: Sequence[str] = ()
+        self.mmap_files: Sequence[str] = ()
 
     def init_from(self, _protocol, server) -> None:
         # `MMAP_Server` is the standalone subsystem instance:
         mmap_sub = server.subsystems["mmap"]
         self.mmap_supported = mmap_sub.supported
-        if mmap_sub.filename:
-            sep = "," if (mmap_sub.filename.count(",") == 1 or mmap_sub.filename.count(":") > 1) else os.path.pathsep
-            self.mmap_filenames = mmap_sub.filename.split(sep)
+        self.mmap_dirs = mmap_sub.dirs
+        self.mmap_files = mmap_sub.files
         self.mmap_min_size = mmap_sub.min_size
 
     def init_state(self) -> None:
@@ -85,16 +85,25 @@ class MMAP_Connection(StubClientConnection):
         clean_mmap_area(self.mmap_write_area)
         self.mmap_write_area = None
 
+    def mmap_dir(self, filename: str) -> str:
+        # use the directory the client's file is supposed to live in, if we know it,
+        # so that a client can choose between the directories the server has been given:
+        dirname = os.path.dirname(filename)
+        if dirname in self.mmap_dirs:
+            return dirname
+        return self.mmap_dirs[0]
+
     def mmap_path(self, filename: str, index: int) -> str:
-        if len(self.mmap_filenames) == 1 and os.path.isdir(self.mmap_filenames[0]):
+        if len(self.mmap_files) > index:
+            # server command line option overrides the path completely:
+            path = self.mmap_files[index]
+            log(f"using global server specified mmap file path: {path!r}")
+            return path
+        if self.mmap_dirs:
             # server directory specified: use the client's filename, but at the server path
-            mmap_dir = self.mmap_filenames[0]
+            mmap_dir = self.mmap_dir(filename)
             log(f"using global server specified mmap directory: {mmap_dir!r}")
             return os.path.join(mmap_dir, os.path.basename(filename))
-        if self.mmap_filenames and len(self.mmap_filenames) > index:
-            # server command line option overrides the path:
-            filename = self.mmap_filenames[index]
-            log(f"using global server specified mmap file path: {filename!r}")
         return filename
 
     def parse_area_caps(self, name: str, raw_caps: dict, index: int) -> BaseMmapArea | None:

@@ -2,6 +2,9 @@
 # Network Connection
 
 # Enable shared memory transfers:
+# this can also be a list of paths, separated by the path separator:
+# each one is either the file to use for one mmap area,
+# or a directory where the mmap files can be found
 mmap = %(mmap)s
 
 # Set group ownership of the mmap file:

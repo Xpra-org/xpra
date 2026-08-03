@@ -23,6 +23,19 @@ Utility functions for communicating via mmap
 """
 
 
+def split_paths(value: str) -> tuple[str, ...]:
+    """
+        Splits the list of paths specified using the `mmap` option.
+        The path separator for the platform is used: ";" on MS Windows and ":" everywhere else,
+        a comma is also accepted when the platform's separator is not found.
+        (never split on ":" on MS Windows: that would break "C:\\..." paths)
+    """
+    if not value.strip():
+        return ()
+    sep = os.path.pathsep if os.path.pathsep in value else ","
+    return tuple(x.strip() for x in value.split(sep) if x.strip())
+
+
 def get_socket_group(socket_filename: str) -> int:
     if socket_filename and os.path.exists(socket_filename):
         s = os.stat(socket_filename)

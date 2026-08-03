@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 import unittest
 from io import BytesIO
@@ -233,7 +234,14 @@ class SourceMixinsTest(unittest.TestCase):
         import tempfile
         tmp = tempfile.NamedTemporaryFile(prefix="xpra-mmap-test")
         tmp.write(b"0"*1024*1024)
-        for server_mmap_filename in (None, tmp.name, "/this-path/should-not-exist"):
+        tmpdir = tempfile.mkdtemp(prefix="xpra-mmap-test")
+        for server_mmap_dirs, server_mmap_files in (
+            ((), ()),
+            ((), (tmp.name, )),
+            ((), ("/this-path/should-not-exist", )),
+            ((tmpdir, ), ()),
+            ((tmpdir, ), (tmp.name, )),
+        ):
             for mmap_supported in (False, True):
                 for has_file in (True, False):
                     caps = {
@@ -245,10 +253,12 @@ class SourceMixinsTest(unittest.TestCase):
                         caps["mmap_file"] = tmp.name
                     with LoggerSilencer(mmap):
                         self._test_mixin_class(mmap.MMAP_Connection, {
-                            "filename": server_mmap_filename,
+                            "dirs": server_mmap_dirs,
+                            "files": server_mmap_files,
                             "supported": mmap_supported,
                             "min_size": 10000,
                         }, caps)
+        os.rmdir(tmpdir)
 
     def test_ping(self):
         from xpra.server.source.ping import PingConnection

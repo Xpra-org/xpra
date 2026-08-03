@@ -4,12 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import mmap
+import tempfile
 import unittest
 
-from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MmapPointerError
+from xpra.os_util import WIN32
+from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MIN_SIZE, MmapPointerError
 from xpra.net.mmap.io import (
-    int_from_buffer, mmap_free_size, mmap_read, mmap_write,
+    init_client_mmap, int_from_buffer, mmap_free_size, mmap_read, mmap_write,
     read_mmap_token, write_mmap_token,
 )
 
@@ -89,6 +92,42 @@ class MmapIOTest(unittest.TestCase):
         for count in (1, DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES):
             write_mmap_token(area, 0x12, 100, count)
             self.assertEqual(read_mmap_token(area, 100, count), 0x12)
+
+    def test_init_client_mmap_directory(self):
+        if WIN32:
+            return
+        # a directory can be specified instead of a filename:
+        # the mmap file is then created in it, using a temporary filename
+        with tempfile.TemporaryDirectory() as tmpdir:
+            enabled, delete, area, size, tempfile_obj, filename = init_client_mmap(size=MIN_SIZE, filename=tmpdir)
+            self.assertTrue(enabled)
+            self.assertTrue(delete)
+            self.assertGreaterEqual(size, MIN_SIZE)
+            self.assertEqual(os.path.dirname(filename), tmpdir)
+            self.assertEqual(os.listdir(tmpdir), [os.path.basename(filename)])
+            area.close()
+            # closing the temporary file removes it:
+            tempfile_obj.close()
+            self.assertEqual(os.listdir(tmpdir), [])
+
+    def test_init_client_mmap_filename(self):
+        if WIN32:
+            return
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "test.mmap")
+            enabled, _delete, area, size, tempfile_obj, filename = init_client_mmap(size=MIN_SIZE, filename=path)
+            self.assertTrue(enabled)
+            self.assertEqual(filename, path)
+            self.assertIsNone(tempfile_obj)
+            self.assertGreaterEqual(size, MIN_SIZE)
+            area.close()
+            # the file already exists now, so it is re-used as is:
+            enabled, delete, area, size, _tempfile_obj, filename = init_client_mmap(size=MIN_SIZE, filename=path)
+            self.assertTrue(enabled)
+            self.assertFalse(delete)
+            self.assertEqual(filename, path)
+            area.close()
+            os.unlink(path)
 
     def test_unused_area_pointers(self):
         # a brand new area has both pointers set to zero:

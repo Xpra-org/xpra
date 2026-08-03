@@ -457,17 +457,23 @@ Enable or disable the control channel of xpra sockets.
 This channel is accessed using the \fBcontrol\fP subcommand to interact with
 an xpra process.
 .TP
-\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|\fIABSOLUTEFILENAME\fP|\fIDIRECTORY\fP
+\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|\fIPATH\fP[:\fIPATH\fP...]
 Enable or disable memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
 This method of data transfer offers much lower overheads
 and reduces both CPU consumption and local network traffic.
-When attaching, you can also specify an absolute path where
-the mmap file will be created. When used on the server,
-one can specify the exact filename that the client will create,
-or just the directory where the file will be created so that
-multiple clients may connect and use mmap concurrently.
+.br
+Instead of a boolean value, one or more absolute paths can be specified,
+separated by the path separator for the platform
+(\fB:\fP on Unix, \fB;\fP on MS Windows), a comma is also accepted.
+Each path is either the exact filename to use for one mmap area,
+or a directory in which the mmap file will be created or found -
+so that multiple clients may connect and use mmap concurrently.
+.br
+When attaching, at most two paths can be given:
+the first one is used for the area the client reads from
+and the second one for the area it writes to.
 .TP
 \fB\-\-mmap\-group\fP=\fIGROUP\fP
 Sets the mmap file's gid to the group specified, and sets

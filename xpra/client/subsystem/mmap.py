@@ -15,6 +15,7 @@ from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import csv
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.mmap.common import split_paths
 from xpra.net.mmap.io import init_client_mmap, clean_mmap, int_from_buffer, validate_chunks
 from xpra.net.mmap.objects import BaseMmapArea
 from xpra.log import Logger
@@ -133,10 +134,10 @@ class MmapClient(StubClientSubsystem):
             read = write = True
             filenames = ("", "")
         else:
-            # assume file path(s) have been specified:
-            filenames = self.mmap_option.split(os.path.pathsep)
+            # assume path(s) have been specified: a file or a directory for each area
+            filenames = split_paths(self.mmap_option)
             if len(filenames) >= 3:
-                raise RuntimeError("too many mmap filenames specified: %r" % csv(filenames))
+                raise RuntimeError("too many mmap paths specified: %r" % csv(filenames))
             read = True
             write = len(filenames) == 2
         group = self.mmap_group

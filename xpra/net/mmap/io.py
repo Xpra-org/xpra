@@ -74,6 +74,13 @@ def set_mmap_group(fd: int, mmap_group: str, socket_filename: str) -> None:
         os.fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
 
 
+def create_mmap_temp_file(mmap_dir: str):
+    # the mkstemp that is called via NamedTemporaryFile ensures
+    # that the file is readable and writable only by the creating user ID
+    import tempfile
+    return tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
+
+
 def init_client_mmap(mmap_group="", socket_filename: str = "", size: int = 128 * 1024 * 1024, filename: str = "") \
         -> tuple[bool, bool, Any, int, Any, str]:
     """
@@ -99,7 +106,20 @@ def init_client_mmap(mmap_group="", socket_filename: str = "", size: int = 128 *
             delete = False
         else:
             assert POSIX
-            if filename:
+            if filename and os.path.isdir(filename):
+                # a directory was specified: create the mmap file in it
+                validate_size(mmap_size)
+                try:
+                    temp = create_mmap_temp_file(filename)
+                except OSError as e:
+                    log.error(f"Error: cannot create mmap file in {filename!r}:")
+                    log.estr(e)
+                    return rerr()
+                # keep a reference to it, so it does not disappear!
+                mmap_temp_file = temp
+                mmap_filename = temp.name
+                fd = temp.file.fileno()
+            elif filename:
                 if os.path.exists(filename):
                     fd = os.open(filename, os.O_EXCL | os.O_RDWR)
                     mmap_size = os.path.getsize(mmap_filename)
@@ -121,11 +141,8 @@ def init_client_mmap(mmap_group="", socket_filename: str = "", size: int = 128 *
             else:
                 validate_size(mmap_size)
                 mmap_dir = get_mmap_dir()
-                # create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
-                # that the file is readable and writable only by the creating user ID
-                import tempfile
                 try:
-                    temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
+                    temp = create_mmap_temp_file(mmap_dir)
                 except OSError as e:
                     log.error("Error: cannot create mmap temporary file:")
                     log.estr(e)

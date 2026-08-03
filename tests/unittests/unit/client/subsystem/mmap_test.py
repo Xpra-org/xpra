@@ -25,10 +25,14 @@ class MixinsTest(ClientMixinTest):
                 raise Exception("test close failure handling")
 
         tmp_dir = tempfile.gettempdir()
+        # a directory can be used instead of a filename:
+        mmap_dir = tempfile.mkdtemp(prefix="xpra-mmap-test-dir")
+        self.addCleanup(os.rmdir, mmap_dir)
         for mmap_option, ctx in {
             "off": nullcontext(),
             "on": silence_info(mmap),
             "auto": silence_info(mmap),
+            mmap_dir: silence_info(mmap),
             tmp_dir+"/xpra-mmap-test-file-%i" % os.getpid(): silence_info(mmap),
             tmp_dir+"/xpra-fail-mmap-test-file-%i" % os.getpid(): silence_error(mmap),
         }.items():
