@@ -1,19 +1,37 @@
 # Changelog
 
-## [6.5.3] 2026-07-29
+## [6.5.3] 2026-08-03
 * 🔧 Platforms, build and packaging:
   * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
   * [don't include wayland server components in client-only builds](https://github.com/Xpra-org/xpra/commit/7d24bc8396a273d2f557b961800c2f0730af8afd)
   * [Ubuntu Stonking packaging](https://github.com/Xpra-org/xpra/commit/5b218091bce8f2e784f6718fd19a8cf11987b439)
+  * [libyuv: googlesource archives checksums change](https://github.com/Xpra-org/xpra/commit/5203bda71c6b996114bcbd97994fba31e9d73d94)
+* [Mmap issues](https://github.com/Xpra-org/xpra/issues/4987):
+  * [confine client-name files](https://github.com/Xpra-org/xpra/commit/eb1c885c2dd3abeca7c06aed050271f1a2dfb212)
+  * [ensure the correct size is used](https://github.com/Xpra-org/xpra/commit/441a7d204d8d3e84db380ee35c18373fe19580d4)
+  * [validate pointers](https://github.com/Xpra-org/xpra/commit/873ad12c7e0631dfff5cddad988e5c063799a404)
+  * [validate chunks](https://github.com/Xpra-org/xpra/commit/6d4bc44abf38586aa408131093eaca07681ef89f)
+  * [validate area size: 4GB limit](https://github.com/Xpra-org/xpra/commit/3188cb720536a5fb03d4b1f42ddee625f9094f8a)
+  * [token DoS](https://github.com/Xpra-org/xpra/commit/8fbaa98217daf7a148aa7175af8956534ad2c720)
+  * [honour minimum size](https://github.com/Xpra-org/xpra/commit/083f95ded7bed5628c2baf8c7df87def20b6d270)
+  * [draw errors only free mmap area from legacy metadata](https://github.com/Xpra-org/xpra/commit/cec293aa62e964235acbf82cccf55a7f2f6688cb)
 * Major:
   * [microphone forwarding selects the wrong device](https://github.com/Xpra-org/xpra/commit/58efffed30bcf9b54cc8c23f5ddaaf68b181e0ec)
   * [system suspend + resume never unblocks window updates](https://github.com/Xpra-org/xpra/commit/60e2933a8a9b362ecc5d839949e1c726b2c97893)
+  * [missed main thread lockups](https://github.com/Xpra-org/xpra/commit/31b0e4cd652c0183d2dda7ab6a50ff10aba96097)
+  * [dbus notification can retry forever - hogging the CPU](https://github.com/Xpra-org/xpra/commit/44ee267bf5776960ab2575ebcaa2f249ff45465e)
 * Minor:
   * [cursor logging errors](https://github.com/Xpra-org/xpra/commit/c77e6317b3c234d086ab44cc6b71221b6e15b7e2)
+  * [add keysym table](https://github.com/Xpra-org/xpra/commit/f56bdd64fc0e4b305e627f15ffea89b0543e1b51) + [fix AltGr with native win32 client](https://github.com/Xpra-org/xpra/commit/1a73577385740f9be84033472e100aa7c963d213)
+  * [zero is a valid uid / gid](https://github.com/Xpra-org/xpra/commit/a177334d04d50350307680c61c3cadc1dd085159)
+* OpenGL:
+  * [actually check the pixel upload format exists](https://github.com/Xpra-org/xpra/commit/818d70044df4412bb9eea46cf3e5b4db12760c32)
+  * [verify the rgb buffer size before uploading it](https://github.com/Xpra-org/xpra/commit/e60277ead8c511d4794bf0d5f0cb36558300e174)
 * Cosmetic:
   * [ensure repeatSPSPPS can be enabled for datagram mode](https://github.com/Xpra-org/xpra/commit/8352effbe8a87c634873b6fd9c2ccd695a41e446)
   * [prevent potential callback errors](https://github.com/Xpra-org/xpra/commit/3adfdad1f319e22dce97826c4074bbea99720504)
   * [ensure the UI watcher callbacks are released](https://github.com/Xpra-org/xpra/commit/2be2ca274012cd291d1470c6fd9dccbb2fd33ef9)
+  * [events test errors](https://github.com/Xpra-org/xpra/commit/8bda94a650d8f684dd699e4e8439d99c909ff12f)
 
 ## [6.5.2] 2026-07-26
 * 🔧 Platforms, build and packaging:

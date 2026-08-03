@@ -1111,20 +1111,38 @@ fi
 
 
 %changelog
-* Wed Jul 29 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
+* Mon Aug 03 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
    don't include wayland server components in client-only builds
    Ubuntu Stonking packaging
+   libyuv: googlesource archives checksums change
+- Mmap issues:
+   confine client-name files
+   ensure the correct size is used
+   validate pointers
+   validate chunks
+   validate area size: 4GB limit
+   token DoS
+   honour minimum size
+   draw errors only free mmap area from legacy metadata
 - Major:
    microphone forwarding selects the wrong device
    system suspend + resume never unblocks window updates
+   missed main thread lockups
+   dbus notification can retry forever - hogging the CPU
 - Minor:
    cursor logging errors
+   add keysym table + fix AltGr with native win32 client
+   zero is a valid uid / gid
+- OpenGL:
+   actually check the pixel upload format exists
+   verify the rgb buffer size before uploading it
 - Cosmetic:
    ensure repeatSPSPPS can be enabled for datagram mode
    prevent potential callback errors
    ensure the UI watcher callbacks are released
+   events test errors
 * Sun Jul 26 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
 - 🔧 Platforms, build and packaging:
    Cython fails to compile on arm64
