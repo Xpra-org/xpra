@@ -197,7 +197,9 @@ def do_get_download_dir() -> str:
 
 
 def get_mmap_dir() -> str:
-    return env_or_delegate("XPRA_MMAP_DIR", do_get_mmap_dir)
+    # there is no env var override for this one:
+    # use the `mmap` option to specify a directory
+    return do_get_mmap_dir()
 
 
 def do_get_mmap_dir() -> str:
@@ -205,7 +207,10 @@ def do_get_mmap_dir() -> str:
 
 
 def get_xpra_tmp_dir() -> str:
-    return env_or_delegate("XPRA_TMP_DIR", do_get_xpra_tmp_dir)
+    # this one is always expanded, as it may be derived from the runtime directory,
+    # ie: "/run/user/$UID/xpra/tmp"
+    from xpra.util.env import osexpand
+    return osexpand(env_or_delegate("XPRA_TMP_DIR", do_get_xpra_tmp_dir))
 
 
 def do_get_xpra_tmp_dir() -> str:

@@ -152,8 +152,19 @@ def do_get_user_conf_dirs(uid) -> list[str]:
 
 
 def get_runtime_dir() -> str:
+    """
+        The runtime directory, which may still contain variables to expand,
+        ie: "/run/user/$UID" - use `osexpand` to get a usable path.
+        The `$UID` is preserved even when `XDG_RUNTIME_DIR` gives us the answer,
+        so that the same value can also be expanded for another user.
+    """
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR", "")
     if runtime_dir:
+        # the standard layout ends with the uid, ie: "/run/user/1000",
+        # expanding what we return then gives us this exact same path back:
+        parent, name = os.path.split(runtime_dir.rstrip(os.path.sep))
+        if parent and name == str(os.geteuid()):
+            return os.path.join(parent, "$UID")
         return runtime_dir
     if sys.platform.startswith("linux"):
         for d in ("/run/user", "/var/run/user"):

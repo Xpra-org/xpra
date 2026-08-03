@@ -16,7 +16,7 @@ import sys
 import tempfile
 from time import monotonic
 
-from xpra.util.env import envbool, osexpand
+from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
@@ -101,7 +101,7 @@ class AppindicatorTray(TrayBase):
         from xpra.gtk.pixbuf import get_pixbuf_from_data
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         png_data = pixbuf_save_to_memory(tray_icon)
-        tmp_dir = osexpand(get_xpra_tmp_dir())
+        tmp_dir = get_xpra_tmp_dir()
         if not os.path.exists(tmp_dir):
             os.mkdir(tmp_dir, 0o755)
         fd = None

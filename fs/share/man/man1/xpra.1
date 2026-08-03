@@ -474,6 +474,12 @@ so that multiple clients may connect and use mmap concurrently.
 When attaching, at most two paths can be given:
 the first one is used for the area the client reads from
 and the second one for the area it writes to.
+.br
+When used on the server, the directories specified are also the only
+locations where the clients' mmap files will be looked up.
+If no directory is specified, the server only accepts mmap files found
+in its own mmap directory (usually \fB$XDG_RUNTIME_DIR/xpra\fP) and,
+for clients identified as another local user, in that user's mmap directory.
 .TP
 \fB\-\-mmap\-group\fP=\fIGROUP\fP
 Sets the mmap file's gid to the group specified, and sets

@@ -7,9 +7,12 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.os_util import WIN32
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
+from xpra.util.str_fn import csv
 from xpra.server.source.stub import StubClientConnection
+from xpra.net.mmap.common import get_default_mmap_dirs
 from xpra.net.mmap.io import init_server_mmap
 from xpra.net.mmap.objects import BaseMmapArea
 
@@ -64,16 +67,27 @@ class MMAP_Connection(StubClientConnection):
         self.mmap_read_area = None
         self.mmap_write_area = None
         self.mmap_min_size = 0
+        # the directories and files specified with the `mmap` option:
         self.mmap_dirs: Sequence[str] = ()
         self.mmap_files: Sequence[str] = ()
+        # the directories the client's mmap file may live in:
+        self.allowed_dirs: Sequence[str] = ()
+        self.peer_uid = -1
 
-    def init_from(self, _protocol, server) -> None:
+    def init_from(self, protocol, server) -> None:
         # `MMAP_Server` is the standalone subsystem instance:
         mmap_sub = server.subsystems["mmap"]
         self.mmap_supported = mmap_sub.supported
         self.mmap_dirs = mmap_sub.dirs
         self.mmap_files = mmap_sub.files
         self.mmap_min_size = mmap_sub.min_size
+        conn = getattr(protocol, "_conn", None)
+        get_peer_uid = getattr(conn, "get_peer_uid", None)
+        self.peer_uid = get_peer_uid() if get_peer_uid else -1
+        # the paths given on the command line are trusted,
+        # otherwise we can only accept the standard locations:
+        self.allowed_dirs = self.mmap_dirs or get_default_mmap_dirs(self.peer_uid)
+        log("mmap: peer uid=%i, allowed directories=%s", self.peer_uid, self.allowed_dirs)
 
     def init_state(self) -> None:
         self.mmap_read_area = None
@@ -85,26 +99,45 @@ class MMAP_Connection(StubClientConnection):
         clean_mmap_area(self.mmap_write_area)
         self.mmap_write_area = None
 
-    def mmap_dir(self, filename: str) -> str:
-        # use the directory the client's file is supposed to live in, if we know it,
-        # so that a client can choose between the directories the server has been given:
-        dirname = os.path.dirname(filename)
-        if dirname in self.mmap_dirs:
-            return dirname
-        return self.mmap_dirs[0]
-
     def mmap_path(self, filename: str, index: int) -> str:
+        """
+            The path we should use for the area the client has described,
+            or an empty string if the client's filename is not acceptable.
+            Only the basename of the client's filename is ever used:
+            the directory always comes from the server's configuration,
+            so a client can never point us at an arbitrary location.
+        """
         if len(self.mmap_files) > index:
             # server command line option overrides the path completely:
             path = self.mmap_files[index]
             log(f"using global server specified mmap file path: {path!r}")
             return path
+        if not filename:
+            return ""
+        if WIN32:
+            # not a filesystem path, but the name of a shared memory section:
+            return filename
+        basename = os.path.basename(filename)
+        if not basename or basename in (os.curdir, os.pardir):
+            log.warn(f"Warning: invalid mmap filename {filename!r}")
+            return ""
+        dirname = os.path.normpath(os.path.dirname(filename))
+        for mmap_dir in self.allowed_dirs:
+            # use the directory the client's file is supposed to live in,
+            # so that a client can choose between the directories we allow:
+            if os.path.normpath(mmap_dir) == dirname:
+                return os.path.join(mmap_dir, basename)
         if self.mmap_dirs:
-            # server directory specified: use the client's filename, but at the server path
-            mmap_dir = self.mmap_dir(filename)
+            # the directories were specified by the server administrator:
+            # the client's file is expected to be found in the first one,
+            # no matter where the client believes it is
+            mmap_dir = self.mmap_dirs[0]
             log(f"using global server specified mmap directory: {mmap_dir!r}")
-            return os.path.join(mmap_dir, os.path.basename(filename))
-        return filename
+            return os.path.join(mmap_dir, basename)
+        log.warn("Warning: the mmap file specified by the client is not in an allowed directory")
+        log.warn(f" {filename!r}")
+        log.warn(" allowed: %s", csv(self.allowed_dirs) or "none")
+        return ""
 
     def parse_area_caps(self, name: str, raw_caps: dict, index: int) -> BaseMmapArea | None:
         log("parse_area_caps(%r, %r, %i)", name, raw_caps, index)

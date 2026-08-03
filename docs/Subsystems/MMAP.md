@@ -38,6 +38,14 @@ and sends the following attributes:
 The server should attempt to open the mmap file specified,
 and verify that the token is found.
 
+The client does not get to choose which directory the server opens the file from:
+the server only uses the basename of the `file` attribute, and looks for it
+in one of the directories it accepts.
+Unless directories have been specified with the `mmap` option, these are
+the server's own mmap directory and, when the peer can be identified as
+another local user, that user's mmap directory.
+Clients specifying a file anywhere else are refused and mmap is then disabled.
+
 To use this mmap file, it must write a new token
 and return this information to the client.
 (using the same format, excluding the `file` and `size` that the client has already specified)

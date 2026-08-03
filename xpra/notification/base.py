@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from typing import TypeAlias
 
 from xpra.notification.common import IconData
-from xpra.util.env import osexpand, envint
+from xpra.util.env import envint
 from xpra.log import Logger
 from xpra.common import noop
 from xpra.constants import NotificationID
@@ -63,7 +63,7 @@ class NotifierBase(ABC):
             return ""
         icon_data = icon[3]
         from xpra.platform.paths import get_xpra_tmp_dir
-        tmp = osexpand(get_xpra_tmp_dir())
+        tmp = get_xpra_tmp_dir()
         d = tmp
         missing = []
         while d and not os.path.exists(d):

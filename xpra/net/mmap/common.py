@@ -4,8 +4,9 @@
 # later version. See the file COPYING for details.
 
 import os
+import tempfile
 
-from xpra.util.env import shellsub
+from xpra.util.env import shellsub, osexpand
 from xpra.os_util import get_group_id, POSIX
 from xpra.util.stats import std_unit
 from xpra.log import Logger
@@ -79,6 +80,58 @@ def validate_size(size: int) -> None:
         raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
     if size >= MAX_SIZE:
         raise ValueError("mmap is too big: %sB (must be smaller than 4GB)" % std_unit(size))
+
+
+def get_user_mmap_dir(uid: int) -> str:
+    """
+        The mmap directory of a given user, ie: `/run/user/1000/xpra`.
+        For any user but ourselves this is only a guess:
+        we cannot know how that user's session is configured,
+        so this directory may not exist - and it is never created here.
+    """
+    from xpra.platform.posix.paths import get_runtime_dir
+    runtime_dir = get_runtime_dir()
+    if "$UID" not in runtime_dir and uid != os.getuid():
+        # a non-standard runtime directory: it is ours,
+        # which tells us nothing about any other user
+        log(f"cannot use runtime directory {runtime_dir!r} for uid {uid}")
+        return ""
+    xrd = osexpand(runtime_dir, uid=uid)
+    if not os.path.isabs(xrd):
+        log(f"unusable runtime directory {xrd!r} for uid {uid}")
+        return ""
+    return os.path.join(xrd, "xpra")
+
+
+def get_default_mmap_dirs(peer_uid: int = -1) -> tuple[str, ...]:
+    """
+        The directories where a client's mmap file is allowed to be found
+        when no directory has been specified using the `mmap` option:
+        our own mmap directory and, if the peer belongs to another user,
+        the standard mmap directory for that user.
+        The system temporary directory is never allowed implicitly:
+        every user can create files there.
+    """
+    dirs = []
+    try:
+        mmap_dir = get_mmap_dir()
+    except (OSError, RuntimeError) as e:
+        log(f"get_default_mmap_dirs: no mmap directory: {e}")
+        mmap_dir = ""
+    if mmap_dir:
+        if mmap_dir != tempfile.gettempdir():
+            dirs.append(mmap_dir)
+        else:
+            # `do_get_mmap_dir` falls back to the temporary directory
+            # when there is no runtime directory - that is not a location we can trust,
+            # the `mmap` option must be used to allow it explicitly:
+            log(f"not using the system temporary directory {mmap_dir!r} as mmap directory")
+    if POSIX and peer_uid >= 0:
+        peer_dir = get_user_mmap_dir(peer_uid)
+        if peer_dir and peer_dir not in dirs:
+            dirs.append(peer_dir)
+    log("get_default_mmap_dirs(%i)=%s", peer_uid, dirs)
+    return tuple(dirs)
 
 
 def get_mmap_dir() -> str:
