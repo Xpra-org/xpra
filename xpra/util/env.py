@@ -82,7 +82,7 @@ def shellsub(s: str, subs: dict) -> str:
     return s
 
 
-def osexpand(s: str, actual_username="", uid=0, gid=0, subs=None) -> str:
+def osexpand(s: str, actual_username="", uid=-1, gid=-1, subs=None) -> str:
     if not s:
         return s
 
@@ -99,8 +99,9 @@ def osexpand(s: str, actual_username="", uid=0, gid=0, subs=None) -> str:
     }
     if os.name == "posix":
         d |= {
-            "UID": uid or os.geteuid(),
-            "GID": gid or os.getegid(),
+            # zero is a valid uid: only a negative value means "not specified"
+            "UID": uid if uid >= 0 else os.geteuid(),
+            "GID": gid if gid >= 0 else os.getegid(),
         }
         from xpra.os_util import OSX
         if not OSX:
