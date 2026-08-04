@@ -14,6 +14,7 @@
 
 ## [Display Characteristics](Display.md)
 * [Image Depth](Image-Depth.md)
+* [Colourspace](Colourspace.md)
 * [DPI](DPI.md)
 
 

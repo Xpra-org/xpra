@@ -77,6 +77,7 @@ Forward devices and make remote applications feel at home on the local desktop.
 - [System tray](Features/System-Tray.md)
 - [Notifications](Features/Notifications.md)
 - [Image depth](Features/Image-Depth.md)
+- [Colourspace](Features/Colourspace.md)
 - [DPI](Features/DPI.md)
 </details>
 

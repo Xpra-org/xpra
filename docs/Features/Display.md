@@ -2,6 +2,7 @@
 
 ## Display Characteristics
 * [Image Depth](Image-Depth.md)
+* [Colourspace](Colourspace.md)
 * [DPI](DPI.md)
 * [Client OpenGL](../Usage/Client-OpenGL.md)
 * [Server OpenGL](../Usage/OpenGL.md)

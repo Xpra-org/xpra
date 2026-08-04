@@ -27,6 +27,7 @@ from xpra.util.parsing import (
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME, FALSE_OPTIONS, get_refresh_rate_for_value,
     adjust_monitor_refresh_rate, MIN_VREFRESH, MAX_VREFRESH,
 )
+from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes, MonitorLayout
 from xpra.util.env import envbool, envint
@@ -39,7 +40,9 @@ workspacelog = Logger("client", "workspace")
 scalinglog = Logger("scaling")
 
 MONITOR_CHANGE_REINIT = envbool("XPRA_MONITOR_CHANGE_REINIT", WIN32 or OSX)
-SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", True)
+# legacy: send our ICC profile to the server so that it applies it to the vfb.
+# the server now declares the colourspace it renders into instead, see `server_colourspace`.
+SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", False)
 
 
 class DisplayClient(StubClientSubsystem):
@@ -52,7 +55,7 @@ class DisplayClient(StubClientSubsystem):
         "desktop_fullscreen", "desktop_scaling", "dpi", "initial_scaling", "log_screen_info", "refresh_rate",
         "scale_change_embargo", "screen_size_change_counter", "screen_size_change_suspended",
         "screen_size_change_timer", "server_actual_desktop_size", "server_add_monitor_label",
-        "server_desktop_size", "server_display", "server_is_desktop", "server_is_monitor",
+        "server_colourspace", "server_desktop_size", "server_display", "server_is_desktop", "server_is_monitor",
         "server_max_desktop_size", "server_monitors", "server_multi_monitors",
         "server_new_monitor_resolutions", "server_opengl", "server_randr", "xscale", "yscale",
     )
@@ -89,6 +92,9 @@ class DisplayClient(StubClientSubsystem):
         self.server_add_monitor_label = ""
         self.server_is_desktop = False
         self.server_is_monitor = False
+        # the colourspace the server renders into,
+        # which we are expected to convert to whatever our display uses:
+        self.server_colourspace: Colourspace = SRGB
         self.log_screen_info = True
         # X11 XSettings / root-window property watching (DPI, workarea, desktop names)
         # feeds this subsystem; it's an OS/display-server concern, not a toolkit one:
@@ -161,6 +167,7 @@ class DisplayClient(StubClientSubsystem):
         screen["dpi"] = self.get_dpi_caps()
         return {
             "screen": screen,
+            "server-colourspace": self.server_colourspace.to_dict(),
         }
 
     ######################################################################
@@ -326,6 +333,14 @@ class DisplayClient(StubClientSubsystem):
             self.server_multi_monitors, self.server_monitors, self.server_new_monitor_resolutions)
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")
         self.server_is_monitor = c.boolget("monitor")
+        # the colourspace capability is not part of the `display` namespace,
+        # servers without it are assumed to be rendering into sRGB:
+        self.server_colourspace = Colourspace.from_dict(caps.dictget("colourspace"))
+        log("server colourspace=%s", self.server_colourspace)
+        if self.server_colourspace != SRGB:
+            log.warn("Warning: the server renders into %s", self.server_colourspace)
+            log.warn(" this client cannot convert it to the colourspace used by your display")
+            log.warn(" the colours shown will be inaccurate")
         self.print_desktop_size(c)
         return True
 
