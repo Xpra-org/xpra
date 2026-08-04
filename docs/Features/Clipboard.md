@@ -6,20 +6,21 @@ For various reasons, this doesn't always work quite as well as expected - see be
 
 ## Platform specific issues:
 * Mac OSX and MS Windows clients only have a single clipboard selection whereas X11 has three: `CLIPBOARD`, `PRIMARY` and `SECONDARY`; therefore we need to choose which one to exchange with: see `local-clipboard` and `remote-clipboard` switches
-* Mac OSX and MS Windows clients can still synchronize the remote `PRIMARY` selection with `--clipboard=all`: see [selections](#selections) below
+* Mac OSX and MS Windows clients synchronize the remote `PRIMARY` selection by default: see [selections](#selections) below
 * on MS Windows, the OS requests the clipboard data as soon as we claim ownership
 * on MacOS, we have to use polling to see client-side changes
 * the HTML5 client can only access the clipboard when the browser decides it is appropriate to do so: usually following clicks or specific key combinations, it may also request permission once and this cannot be easily enabled afterwards once it has been denied
 * Wayland severely restricts access to the clipboard, making it impossible to synchronize it properly
 
 ## Configuration Options
-* `clipboard`: `yes`, `no`, `all`, or the name of a clipboard implementation
+* `clipboard`: `auto`, `yes`, `no`, `all`, or the name of a clipboard implementation
 * `clipboard-direction`: can be used to restrict the direction of the clipboard data transfers. This setting is also available from the system tray menu.
 * `clipboard-filter-file`: can be used to filter out clipboard contents using a file containing regular expressions
 * `local-clipboard` / `remote-clipboard`: can be used to select which clipboard selection to synchronize with
 
 ### Selections
-By default, clients only synchronize the selections that exist on their platform: just `CLIPBOARD` on MS Windows and MacOS.
+The default `auto` setting synchronizes all the selections supported by the platform.
+On MS Windows and MacOS, `auto` is equivalent to `all`.
 
 `--clipboard=all` enables every selection that the platform can handle.
 On Mac OSX and MS Windows clients, this adds the `PRIMARY` selection, which is handled as a special case since it does not exist locally:

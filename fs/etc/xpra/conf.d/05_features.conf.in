@@ -11,8 +11,7 @@
 #clipboard = GDK
 #clipboard = translated
 #clipboard = default
-#clipboard = auto
-clipboard = yes
+clipboard = auto
 
 # Direction of clipboard transfers:
 #clipboard-direction = to-server

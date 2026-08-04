@@ -26,7 +26,7 @@ log("clipboard: PRIMARY_DELAY=%i", PRIMARY_DELAY)
 class PrimaryProxyMixin:
     """
     Mixin for the `PRIMARY` selection on the platforms which do not have one:
-    MS Windows and MacOS. (only enabled with `--clipboard=all`)
+    MS Windows and MacOS. (enabled with `--clipboard=all`, the default on these platforms)
 
     This proxy can only receive: it never claims the selection and never sends a token.
     The peer notifies us when the remote `PRIMARY` selection changes,

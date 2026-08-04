@@ -1442,7 +1442,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Disable keyboard input and mouse events from the clients. "
                           " Default: %s." % enabled_str(defaults.readonly))
     legacy_bool_parse("clipboard")
-    group.add_option("--clipboard", action="store", metavar="yes|no|all|clipboard-type",
+    group.add_option("--clipboard", action="store", metavar="auto|yes|no|all|clipboard-type",
                      dest="clipboard", default=defaults.clipboard,
                      help="Enable clipboard support. Default: %s." % defaults.clipboard)
     group.add_option("--clipboard-direction", action="store", metavar="to-server|to-client|both",

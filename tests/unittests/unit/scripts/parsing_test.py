@@ -19,9 +19,28 @@ from xpra.scripts.parsing import (
     parse_display_name, parse_cmdline,
 )
 from xpra.scripts.args import get_start_server_args
+from xpra.scripts.config import fixup_clipboard, get_defaults
+from xpra.util.objects import AdHocStruct
 
 
 class TestParsing(unittest.TestCase):
+
+    def test_clipboard_auto(self):
+        self.assertEqual(get_defaults()["clipboard"], "auto")
+
+        def fixup(clipboard: str, win32: bool, osx: bool) -> str:
+            options = AdHocStruct()
+            options.clipboard = clipboard
+            options.clipboard_direction = "both"
+            with patch("xpra.scripts.config.WIN32", win32), \
+                    patch("xpra.scripts.config.OSX", osx):
+                fixup_clipboard(options)
+            return options.clipboard
+
+        self.assertEqual(fixup("auto", False, False), "auto")
+        self.assertEqual(fixup("auto", True, False), "all")
+        self.assertEqual(fixup("auto", False, True), "all")
+        self.assertEqual(fixup("yes", True, False), "yes")
 
     def test_socket_dir_is_deprecated(self):
         with warnings.catch_warnings(record=True) as records:

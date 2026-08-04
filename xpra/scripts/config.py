@@ -1130,7 +1130,7 @@ def get_defaults() -> dict[str, Any]:
         "keyboard-variant"  : "",
         "keyboard-variants" : [],
         "keyboard-options"  : "",
-        "clipboard"         : "yes",
+        "clipboard"         : "auto",
         "clipboard-direction" : "both",
         "clipboard-filter-file" : "",
         "remote-clipboard"  : "CLIPBOARD",
@@ -1683,6 +1683,8 @@ def fixup_backend(options) -> None:
 
 
 def fixup_clipboard(options) -> None:
+    if options.clipboard.lower() == "auto" and (WIN32 or OSX):
+        options.clipboard = "all"
     cd = options.clipboard_direction.lower().replace("-", "")
     if cd == "toserver":
         options.clipboard_direction = "to-server"

@@ -6,7 +6,7 @@
 
 """
 Tests for the win32 clipboard helper, and in particular for the `PRIMARY` selection
-which is only enabled with `--clipboard=all`.
+which is enabled with `--clipboard=all` (the default on Windows).
 All tests are skipped on non-Windows platforms.
 """
 
