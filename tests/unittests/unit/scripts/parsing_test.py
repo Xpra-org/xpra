@@ -232,6 +232,16 @@ class TestNormalizeDisplayName(unittest.TestCase):
         if POSIX:
             result = normalize_display_name("10")
             self.assertEqual(result, ":10")
+            # with a screen number:
+            self.assertEqual(normalize_display_name("10.0"), ":10.0")
+
+    @unittest.skipUnless(POSIX, "POSIX only")
+    def test_session_name_starting_with_digit(self):
+        # only fully numeric names are display numbers,
+        # anything else must be left alone so that it can be looked up
+        # as a session name - see `find_session_by_name`:
+        for name in ("2nd", "2nd session", "10ok"):
+            self.assertEqual(normalize_display_name(name), name)
 
     def test_url_passthrough(self):
         result = normalize_display_name("tcp://host:10000/")
