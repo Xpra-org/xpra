@@ -373,6 +373,8 @@ def get_peer_uid(sock) -> int:
         the lookup is only implemented for unix domain sockets (all platforms)
         and for local network sockets on Linux.
     """
+    if WIN32:
+        return -1
     import socket
     try:
         family = sock.family
