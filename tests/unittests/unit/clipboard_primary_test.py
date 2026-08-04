@@ -56,7 +56,7 @@ class PrimaryProxyTest(unittest.TestCase):
         # the request must be delayed:
         self.assertTrue(proxy.request_timer)
         self.assertEqual(proxy.requests, [])
-        self.assertTrue(proxy.get_info()["request-pending"])
+        self.assertTrue(proxy.get_info()["request-scheduled"])
         # a second token does not schedule a second request:
         timer = proxy.request_timer
         proxy.got_token(())
@@ -85,6 +85,42 @@ class PrimaryProxyTest(unittest.TestCase):
         # cancelling again is a no-op:
         proxy.cancel_request()
         self.assertFalse(proxy.request_timer)
+
+    def test_cancel_discards_the_reply(self):
+        proxy, texts = self.make_proxy()
+        proxy.schedule_request()
+        proxy.request_contents()
+        # too late to cancel the request itself, but the reply must be discarded:
+        proxy.cancel_request()
+        self.assertEqual(proxy.get_info()["requests-stale"], 1)
+        proxy.got_contents("UTF8_STRING", "UTF8_STRING", 8, b"stale")
+        self.assertEqual(texts, [])
+        self.assertEqual(proxy.get_info()["requests-stale"], 0)
+        # but the reply to the next request is used:
+        proxy.request_contents()
+        proxy.got_contents("UTF8_STRING", "UTF8_STRING", 8, b"fresh")
+        self.assertEqual(texts, ["fresh"])
+
+    def test_cancel_discards_every_request_sent(self):
+        proxy, texts = self.make_proxy()
+        proxy.request_contents()
+        proxy.request_contents()
+        proxy.cancel_request()
+        self.assertEqual(proxy.get_info()["requests-stale"], 2)
+        for _ in range(2):
+            proxy.got_contents("UTF8_STRING", "UTF8_STRING", 8, b"stale")
+        self.assertEqual(texts, [])
+        self.assertEqual(proxy.get_info()["requests-pending"], 0)
+
+    def test_token_data_is_not_discarded(self):
+        proxy, texts = self.make_proxy()
+        # a request is in flight when the token arrives with the data:
+        proxy.request_contents()
+        proxy.got_token(("UTF8_STRING",), {"UTF8_STRING": ("UTF8_STRING", 8, b"hello")})
+        self.assertEqual(texts, ["hello"])
+        # and the reply to the superseded request is still discarded:
+        proxy.got_contents("UTF8_STRING", "UTF8_STRING", 8, b"stale")
+        self.assertEqual(texts, ["hello"])
 
     def test_cleanup_cancels_request(self):
         proxy, _ = self.make_proxy()

@@ -26,7 +26,7 @@ On Mac OSX and MS Windows clients, this adds the `PRIMARY` selection, which is h
 * it is only ever synchronized from the server to the client, we never claim it
 * the server just notifies us when its contents change, and we then request the data using a slow timer (200ms, configurable with the `XPRA_CLIPBOARD_PRIMARY_DELAY` environment variable) so that selecting text with the mouse does not flood the connection
 * the data we receive is saved to the local `CLIPBOARD` selection, without claiming the remote `CLIPBOARD`
-* a `CLIPBOARD` token or a local clipboard change cancels any pending `PRIMARY` request, so that a real copy always wins over a mouse selection
+* a `CLIPBOARD` token or a local clipboard change cancels any pending `PRIMARY` request, so that a real copy always wins over a mouse selection: if the request had already been sent, its reply is discarded instead
 
 This is implemented by `PrimaryProxyMixin` in [xpra/clipboard/primary.py](../../xpra/clipboard/primary.py), which both platform backends share.
 

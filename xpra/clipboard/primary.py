@@ -43,6 +43,10 @@ class PrimaryProxyMixin:
 
     def init_primary(self, set_clipboard_text: Callable[[str], None]) -> None:
         self.request_timer = 0
+        # requests sent and still waiting for a reply:
+        self.pending_requests = 0
+        # replies to discard: requests which were cancelled after they were sent
+        self.stale_requests = 0
         self.set_text = set_clipboard_text
 
     def set_direction(self, can_send: bool, can_receive: bool) -> None:
@@ -51,7 +55,11 @@ class PrimaryProxyMixin:
 
     def get_info(self) -> dict[str, Any]:
         info = super().get_info()
-        info["request-pending"] = bool(self.request_timer)
+        info |= {
+            "request-scheduled": bool(self.request_timer),
+            "requests-pending": self.pending_requests,
+            "requests-stale": self.stale_requests,
+        }
         return info
 
     def cleanup(self) -> None:
@@ -77,7 +85,7 @@ class PrimaryProxyMixin:
             td_def = target_data.get(target)
             if td_def:
                 dtype, dformat, data = td_def
-                self.got_contents(target, bytestostr(dtype), dformat, data)
+                self.save_text(target, bytestostr(dtype), dformat, data)
                 return
         log("no plain text in %s", csv(target_data.keys()))
 
@@ -91,15 +99,30 @@ class PrimaryProxyMixin:
         if rt := self.request_timer:
             self.request_timer = 0
             GLib.source_remove(rt)
+        # whatever cancelled the request supersedes the contents we asked for,
+        # so the replies to the requests already sent must be discarded:
+        self.stale_requests += self.pending_requests
+        self.pending_requests = 0
 
     def request_contents(self) -> None:
         self.request_timer = 0
         self._request_contents_events += 1
+        self.pending_requests += 1
         log("requesting the %r selection contents", self._selection)
         self.send_clipboard_request_handler(self, self._selection, "UTF8_STRING")
 
     def got_contents(self, target: str, dtype="", dformat=0, data=b"") -> None:
-        log("got_contents%s", (target, dtype, dformat, Ellipsizer(data)))
+        # every request gets exactly one reply (contents, no contents, or a timeout),
+        # so we can discard them in the order they were sent:
+        if self.stale_requests > 0:
+            self.stale_requests -= 1
+            log("ignoring the reply to a cancelled %r request", self._selection)
+            return
+        self.pending_requests = max(0, self.pending_requests - 1)
+        self.save_text(target, dtype, dformat, data)
+
+    def save_text(self, target: str, dtype="", dformat=0, data=b"") -> None:
+        log("save_text%s", (target, dtype, dformat, Ellipsizer(data)))
         if dformat != 8 or not data or target not in PLAIN_TEXT_TARGETS:
             log("no plain text to save to the 'CLIPBOARD' selection")
             return
