@@ -377,6 +377,42 @@ class TestSetSocketTimeout(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# SocketConnection socket info
+# ---------------------------------------------------------------------------
+
+class TestSocketConnectionInfo(unittest.TestCase):
+
+    def test_unix_socket_path(self):
+        from xpra.net.bytestreams import SocketConnection
+        conn = SocketConnection.__new__(SocketConnection)
+        conn.cork = False
+        conn.nodelay = False
+        conn.local = ""
+        conn.socktype_wrapped = "socket"
+
+        sock = MagicMock()
+        sock.proto = 0
+        sock.family = socket.AF_UNIX
+        sock.type = socket.SOCK_STREAM
+        sock.gettimeout.return_value = None
+        sock.fileno.return_value = -1
+
+        paths = {
+            "abstract string": ("\0xpra/1", "@xpra/1"),
+            "abstract bytes": (b"\0xpra/1", "@xpra/1"),
+            "filesystem": ("/tmp/xpra-1", "/tmp/xpra-1"),
+        }
+        with (
+            patch("xpra.net.bytestreams.get_peercred_info", return_value={}),
+            patch("xpra.net.bytestreams.get_socket_options", return_value={}),
+        ):
+            for description, (sockname, expected) in paths.items():
+                with self.subTest(description):
+                    sock.getsockname.return_value = sockname
+                    assert conn.do_get_socket_info(sock)["path"] == expected
+
+
+# ---------------------------------------------------------------------------
 # log_new_connection
 # ---------------------------------------------------------------------------
 

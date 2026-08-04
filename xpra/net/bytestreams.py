@@ -421,7 +421,7 @@ class SocketConnection(Connection):
             }
             if s.family == socket.AF_UNIX:
                 try:
-                    info["path"] = s.getsockname()
+                    info["path"] = pretty_socket(s.getsockname())
                 except OSError:
                     pass
                 cred_info = get_peercred_info(s)
