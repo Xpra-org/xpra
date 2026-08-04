@@ -10,6 +10,7 @@ from xpra.platform.win32.events import KNOWN_EVENTS, Win32Eventlistener, get_win
 from xpra.platform.win32.gui import (
     WM_WTSSESSION_CHANGE, WTS_SESSION_EVENTS, WTS_SESSION_LOGOFF,
     WTS_SESSION_LOCK, WTS_SESSION_LOGON, WTS_SESSION_UNLOCK,
+    init_session_locked, set_session_locked,
 )
 from xpra.exit_codes import ExitCode
 from xpra.util.env import envbool
@@ -51,6 +52,9 @@ class Win32ClientEventsWatcher:
                 el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
                 el.add_event_callback(win32con.WM_MOVE, self.wm_move)
                 el.add_event_callback(WM_WTSSESSION_CHANGE, self.session_change_event)
+                # we now get told about lock / unlock transitions,
+                # establish the state we are starting from:
+                init_session_locked()
                 el.add_event_callback(win32con.WM_INPUTLANGCHANGE, self.inputlangchange)
                 el.add_event_callback(win32con.WM_WININICHANGE, self.inichange)
                 el.add_event_callback(win32con.WM_ENDSESSION, self.end_session)
@@ -97,9 +101,13 @@ class Win32ClientEventsWatcher:
         log("WM_WTSSESSION_CHANGE: %s on session %#x", event_name, session)
         handler = None
         if event in (WTS_SESSION_LOGOFF, WTS_SESSION_LOCK):
+            # record the state synchronously: `new-window` packets arriving before the
+            # handler below runs must already see the session as locked
+            set_session_locked(True)
             handler = self.window.freeze
             log(f"will freeze all the windows: {handler=!r}")
         elif event in (WTS_SESSION_LOGON, WTS_SESSION_UNLOCK):
+            set_session_locked(False)
             handler = self.window.unfreeze
             log(f"will unfreeze all the windows: {handler=!r}")
         if handler:

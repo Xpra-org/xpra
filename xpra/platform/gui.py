@@ -321,6 +321,14 @@ def can_access_display() -> bool:
     return True
 
 
+def is_session_locked() -> bool:
+    """
+    is the desktop session currently locked?
+    (platforms that cannot tell us always answer `False`)
+    """
+    return False
+
+
 def set_window_progress(_window, _pct: int) -> None:
     """ some platforms can indicate progress for a specific window """
 
@@ -396,6 +404,7 @@ platform_import(globals(), "gui", False,
                 "get_display_name",
                 "get_display_size",
                 "can_access_display",
+                "is_session_locked",
                 "set_window_progress",
                 "get_info",
                 "setup_gl_drawing_area",

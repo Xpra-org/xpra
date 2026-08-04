@@ -911,6 +911,33 @@ WTS_SESSION_EVENTS: dict[int, str] = {
     WTS_SESSION_REMOTE_CONTROL: "SESSION_REMOTE_CONTROL",
 }
 
+# updated from `WM_WTSSESSION_CHANGE`, see `window_events.py`:
+_session_locked = False
+
+
+def set_session_locked(locked: bool) -> None:
+    global _session_locked
+    log("set_session_locked(%s)", locked)
+    _session_locked = locked
+
+
+def init_session_locked() -> None:
+    """
+    `WTS` only notifies us of transitions, so query the current state to get our
+    initial value - without this, a client started whilst the session is already
+    locked would believe that it is unlocked until the first unlock event.
+    """
+    from xpra.platform.win32.wtsapi import WTS_SESSIONSTATE_LOCK, get_session_lock_state
+    state = get_session_lock_state()
+    log("init_session_locked() session lock state=%s", state)
+    # if the state is unknown, assume unlocked: showing a window we could have deferred
+    # is a much smaller problem than never showing one at all
+    set_session_locked(state == WTS_SESSIONSTATE_LOCK)
+
+
+def is_session_locked() -> bool:
+    return _session_locked
+
 
 WM_SETCURSOR = 0x0020
 _GL_SUBCLASS_UID = 0xC055  # arbitrary uIdSubclass passed to SetWindowSubclass; unique per HWND, identifies our GL cursor hook

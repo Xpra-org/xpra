@@ -10,7 +10,7 @@
 from typing import Any, Final
 from collections.abc import Callable, Sequence
 
-from xpra.platform.gui import get_window_min_size, get_window_max_size
+from xpra.platform.gui import get_window_min_size, get_window_max_size, is_session_locked
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, PacketElement
 from xpra.net.packet_type import WINDOW_UNMAP, WINDOW_REFRESH
 from xpra.client.subsystem.window.grab import should_force_grab
@@ -87,6 +87,9 @@ class WindowManagerClient(StubClientSubsystem):
 
         self.server_window_frame_extents: bool = False
         self.server_window_states: Sequence[str] = ()
+        # windows created whilst the session was locked, which we have not shown yet:
+        # wid -> (window, metadata, override_redirect), see `show_window_when_unlocked`
+        self._locked_windows: dict[int, tuple] = {}
         # win32 WM/session event listener:
         self._win32_events = None
 
@@ -340,11 +343,41 @@ class WindowManagerClient(StubClientSubsystem):
             log.warn("no more options.. this window will not be shown, sorry")
             return None
         self.register_window(wid, window)
-        if SHOW_DELAY >= 0:
+        if is_session_locked() and not override_redirect:
+            self.show_window_when_unlocked(wid, window, metadata, override_redirect)
+        elif SHOW_DELAY >= 0:
             self.timeout_add(SHOW_DELAY, self.show_window, wid, window, metadata, override_redirect)
         else:
             self.show_window(wid, window, metadata, override_redirect)
         return window
+
+    def show_window_when_unlocked(self, wid: int, window, metadata, override_redirect: bool) -> None:
+        """
+        Don't show this window until the session is unlocked.
+        Showing it would realize it and create its backing, and creating an OpenGL context
+        on a locked session fails on some drivers (the input desktop is the secure one).
+        Leaving the window unmapped keeps `_backing` at `None`, and the backing is created
+        by the map event we generate from `show_locked_windows` once the session is unlocked.
+
+        We must tell the server to stop sending damage for it, otherwise `draw_region` would
+        fail every draw packet with `WINDOW_DECODE_ERROR`, which the server answers with a
+        full quality refresh - and that would loop for as long as the session stays locked.
+        `unmap-window` is rejected for override-redirect windows, so those are never deferred.
+        """
+        log("show_window_when_unlocked(%#x, %s, ..) session is locked", wid, window)
+        assert not override_redirect
+        self._locked_windows[wid] = (window, metadata, override_redirect)
+        # tell the server to treat it as minimized, so it stops sending us damage:
+        self.send(WINDOW_UNMAP, wid, True, {})
+
+    def show_locked_windows(self) -> None:
+        locked = self._locked_windows
+        self._locked_windows = {}
+        log("show_locked_windows() %i window(s) to show", len(locked))
+        for wid, (window, metadata, override_redirect) in locked.items():
+            # this maps the window, which creates its backing
+            # and tells the server to resume sending damage:
+            self.show_window(wid, window, metadata, override_redirect)
 
     def register_window(self, wid: int, window) -> None:
         log("register_window(..) window(%#x)=%s", wid, window)
@@ -374,6 +407,8 @@ class WindowManagerClient(StubClientSubsystem):
 
     def unfreeze(self) -> None:
         log("unfreeze()")
+        # windows created whilst we were locked have never been shown:
+        self.show_locked_windows()
         for window in self._id_to_window.values():
             window.unfreeze()
 
@@ -595,6 +630,8 @@ class WindowManagerClient(StubClientSubsystem):
 
     def destroy_window(self, wid: int, window) -> None:
         log("destroy_window(%s#x, %s)", wid, window)
+        # it may have been closed before we ever got a chance to show it:
+        self._locked_windows.pop(wid, None)
         window.destroy()
         if self._window_with_grab == wid:
             log("destroying window %s which has grab, ungrabbing!", wid)

@@ -6,10 +6,10 @@
 
 from typing import Any
 from ctypes import (
-    POINTER, Structure, c_int, byref, cast, sizeof,
+    POINTER, Structure, Union, c_int, byref, cast, sizeof,
     WinDLL,  # @UnresolvedImport
 )
-from ctypes.wintypes import WORD, DWORD, HANDLE, BOOL, LPSTR
+from ctypes.wintypes import WORD, DWORD, ULONG, LONG, CHAR, HANDLE, BOOL, LPSTR, LARGE_INTEGER
 from xpra.util.str_fn import print_nested_dict
 
 PDWORD = POINTER(DWORD)
@@ -19,6 +19,7 @@ wtsapi32 = WinDLL("WtsApi32")
 NOTIFY_FOR_THIS_SESSION = 0
 
 WTS_CURRENT_SERVER_HANDLE = 0
+WTS_CURRENT_SESSION = 0xFFFFFFFF
 
 # no idea where we're supposed to get those from:
 WM_WTSSESSION_CHANGE = 0x02b1
@@ -41,6 +42,51 @@ class WTS_CLIENT_DISPLAY(Structure):
         ("ColorDepth", DWORD),
     ]
 
+
+WINSTATIONNAME_LENGTH = 32
+USERNAME_LENGTH = 20
+DOMAIN_LENGTH = 17
+
+
+class WTSINFOEX_LEVEL1_A(Structure):
+    _fields_ = [
+        ("SessionId", ULONG),
+        ("SessionState", c_int),
+        ("SessionFlags", LONG),
+        ("WinStationName", CHAR * (WINSTATIONNAME_LENGTH + 1)),
+        ("UserName", CHAR * (USERNAME_LENGTH + 1)),
+        ("DomainName", CHAR * (DOMAIN_LENGTH + 1)),
+        ("LogonTime", LARGE_INTEGER),
+        ("ConnectTime", LARGE_INTEGER),
+        ("DisconnectTime", LARGE_INTEGER),
+        ("LastInputTime", LARGE_INTEGER),
+        ("CurrentTime", LARGE_INTEGER),
+        ("IncomingBytes", DWORD),
+        ("OutgoingBytes", DWORD),
+        ("IncomingFrames", DWORD),
+        ("OutgoingFrames", DWORD),
+        ("IncomingCompressedBytes", DWORD),
+        ("OutgoingCompressedBytes", DWORD),
+    ]
+
+
+class WTSINFOEX_LEVEL_A(Union):
+    _fields_ = [
+        ("WTSInfoExLevel1", WTSINFOEX_LEVEL1_A),
+    ]
+
+
+class WTSINFOEXA(Structure):
+    _fields_ = [
+        ("Level", DWORD),
+        ("Data", WTSINFOEX_LEVEL_A),
+    ]
+
+
+# `WTSINFOEX_LEVEL1.SessionFlags` values:
+WTS_SESSIONSTATE_UNKNOWN = -1
+WTS_SESSIONSTATE_LOCK = 0
+WTS_SESSIONSTATE_UNLOCK = 1
 
 PWTS_SESSION_INFOA = POINTER(WTS_SESSION_INFOA)
 PPWTS_SESSION_INFOA = POINTER(PWTS_SESSION_INFOA)
@@ -172,6 +218,32 @@ WTSTerminateProcess.argtypes = [HANDLE, DWORD, DWORD]
 
 # WTSVirtualChannelOpen
 # WTSWaitSystemEvent
+
+
+def get_session_lock_state(session: int = WTS_CURRENT_SESSION) -> int:
+    """
+    returns one of the `WTS_SESSIONSTATE_*` values above,
+    `WTS_SESSIONSTATE_UNKNOWN` if we cannot tell.
+    (the meaning of `LOCK` and `UNLOCK` is reversed on Windows 7 and Server 2008 R2,
+    which we don't support)
+    """
+    buf = LPSTR()
+    size = DWORD()
+    if not WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, session,
+                                       WTSSessionInfoEx, byref(buf), byref(size)):
+        return WTS_SESSIONSTATE_UNKNOWN
+    try:
+        if size.value < sizeof(WTSINFOEXA):
+            return WTS_SESSIONSTATE_UNKNOWN
+        infoex = cast(buf, POINTER(WTSINFOEXA)).contents
+        if infoex.Level != 1:
+            return WTS_SESSIONSTATE_UNKNOWN
+        flags = infoex.Data.WTSInfoExLevel1.SessionFlags
+        if flags not in (WTS_SESSIONSTATE_LOCK, WTS_SESSIONSTATE_UNLOCK):
+            return WTS_SESSIONSTATE_UNKNOWN
+        return flags
+    finally:
+        WTSFreeMemory(buf)
 
 
 def get_session_info(session) -> dict[str, Any]:
