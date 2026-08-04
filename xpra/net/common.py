@@ -4,11 +4,9 @@
 # later version. See the file COPYING for details.
 
 import os
-import re
 import sys
 import struct
 import threading
-from functools import lru_cache
 from typing import Any, TypeAlias
 from collections.abc import Callable, Sequence
 
@@ -18,7 +16,7 @@ from xpra.common import noop, SizedBuffer
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import LINUX, WIN32, OSX
 from xpra.scripts.config import InitExit
-from xpra.util.parsing import str_to_bool, TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.util.parsing import str_to_bool
 from xpra.util.system import platform_name
 from xpra.util.str_fn import std, csv
 from xpra.util.objects import typedict
@@ -42,101 +40,6 @@ def get_logger():
         from xpra.log import Logger
         logger = Logger("network")
     return logger
-
-
-# (schema, key) regular expression pairs matching the GSettings which the
-# "gsettings" subsystem synchronizes by default: the client only reads and sends
-# the keys matching its own allowlist, and the server only accepts and applies
-# the keys matching its own one - each end can use a different allowlist by giving
-# the `gsettings-sync` option a list of "schema:key" patterns instead of a boolean.
-# This default list is overridable via XPRA_GSETTINGS_ALLOWLIST
-# (comma-separated "schema:key" patterns):
-_DEFAULT_GSETTINGS_ALLOWLIST = (
-    "org.gnome.desktop.interface:gtk-theme",
-    "org.gnome.desktop.interface:icon-theme",
-    "org.gnome.desktop.interface:cursor-theme",
-    "org.gnome.desktop.interface:cursor-size",
-    "org.gnome.desktop.interface:font-name",
-    "org.gnome.desktop.interface:monospace-font-name",
-    "org.gnome.desktop.interface:document-font-name",
-    "org.gnome.desktop.interface:color-scheme",
-    "org.gnome.desktop.interface:font-antialiasing",
-    "org.gnome.desktop.interface:font-hinting",
-    "org.gnome.desktop.wm.preferences:theme",
-    "org.gnome.desktop.wm.preferences:button-layout",
-    "org.gnome.desktop.wm.preferences:titlebar-font",
-    "org.gnome.desktop.sound:theme-name",
-    "org.gnome.desktop.sound:event-sounds",
-    "org.gnome.desktop.a11y.interface:high-contrast",
-)
-
-# `all` and `*` are user friendly aliases for the "match everything" pattern:
-ALL_GSETTINGS: Sequence[str] = ("all", "*")
-ALL_GSETTINGS_PATTERN = ".*"
-
-
-def gsettings_key(schema: str, key: str) -> str:
-    return f"{schema}:{key}"
-
-
-def parse_gsettings_key(name: str) -> tuple[str, str]:
-    schema, key = name.split(":", 1)
-    return schema, key
-
-
-@lru_cache(maxsize=256)
-def _compile(pattern: str):
-    return re.compile(pattern)
-
-
-def gsettings_match(allowlist: Sequence[tuple[str, str]], schema: str, key: str) -> bool:
-    """ Does this (schema, key) pair match any of the allowlist patterns? """
-    return any(_compile(sp).fullmatch(schema) and _compile(kp).fullmatch(key) for sp, kp in allowlist)
-
-
-def _parse_gsettings_allowlist(value: str) -> tuple[tuple[str, str], ...]:
-    patterns: list[tuple[str, str]] = []
-    for entry in value.split(","):
-        entry = entry.strip()
-        if not entry:
-            continue
-        # entries without a separator match every key of the matching schemas:
-        schema, key = parse_gsettings_key(entry) if ":" in entry else (entry, ALL_GSETTINGS_PATTERN)
-        try:
-            _compile(schema)
-            _compile(key)
-        except re.error as e:
-            get_logger().warn("Warning: ignoring invalid gsettings pattern %r: %s", entry, e)
-            continue
-        patterns.append((schema, key))
-    return tuple(patterns)
-
-
-GSETTINGS_ALLOWLIST: tuple[tuple[str, str], ...] = _parse_gsettings_allowlist(
-    os.environ.get("XPRA_GSETTINGS_ALLOWLIST", ",".join(_DEFAULT_GSETTINGS_ALLOWLIST))
-)
-
-
-def parse_gsettings_allowlist(value: str, auto: bool = True) -> tuple[tuple[str, str], ...]:
-    """
-    Parse the value of the `gsettings-sync` option into a list of (schema, key) regex pairs.
-    Boolean values and `auto` select the default allowlist (`auto` only if `auto` is True),
-    `all` (or `*`) matches everything,
-    anything else is parsed as a comma separated list of `schema:key` patterns.
-    An empty tuple means that synchronization is disabled.
-    """
-    v = (value or "auto").strip()
-    lv = v.lower()
-    if lv in FALSE_OPTIONS:
-        return ()
-    if lv in ALL_GSETTINGS:
-        return ((ALL_GSETTINGS_PATTERN, ALL_GSETTINGS_PATTERN), )
-    if lv in TRUE_OPTIONS:
-        return GSETTINGS_ALLOWLIST
-    if lv == "auto":
-        return GSETTINGS_ALLOWLIST if auto else ()
-    # an explicit list of patterns is always honoured:
-    return _parse_gsettings_allowlist(v)
 
 
 HttpResponse: TypeAlias = tuple[int, dict, bytes]

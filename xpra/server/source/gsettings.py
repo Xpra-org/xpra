@@ -6,7 +6,7 @@
 from typing import Any
 
 from xpra.util.objects import typedict
-from xpra.net.common import gsettings_key
+from xpra.util.gsettings import gsettings_key
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 

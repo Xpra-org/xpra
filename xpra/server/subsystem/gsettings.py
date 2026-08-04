@@ -7,11 +7,14 @@ from typing import Any
 
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.str_fn import bytestostr
-from xpra.net.common import Packet, parse_gsettings_allowlist, gsettings_match, parse_gsettings_key
+from xpra.net.common import Packet
+from xpra.util.gsettings import (
+    parse_gsettings_allowlist, gsettings_match, parse_gsettings_key,
+    parse_gsettings_value,
+)
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
-GLib = gi_import("GLib")
 Gio = gi_import("Gio")
 
 log = Logger("server", "gsettings")
@@ -134,7 +137,7 @@ class GSettingsServer(StubSubsystem):
                 # key no longer targeted: revert to its original value
                 self._set(sk, original)
                 continue
-            variant = self._parse(text)
+            variant = parse_gsettings_value(text)
             if variant is not None:
                 self._set(sk, variant)
 
@@ -160,16 +163,6 @@ class GSettingsServer(StubSubsystem):
             log("error reading gsettings %s:%s", schema, key, exc_info=True)
             log.error("Error reading GSettings %r / %r:", schema, key)
             log.estr(e)
-
-    @staticmethod
-    def _parse(text: str):
-        # parse annotated GVariant text (sent by the client) back into a `GLib.Variant`;
-        # a malformed value must not break the rest of the update:
-        try:
-            return GLib.Variant.parse(None, text, None, None)
-        except Exception:
-            log("failed to parse gsettings value %r", text, exc_info=True)
-            return None
 
     def _set(self, sk: tuple[str, str], variant) -> None:
         schema, key = sk
