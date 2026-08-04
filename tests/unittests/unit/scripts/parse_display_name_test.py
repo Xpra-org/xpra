@@ -117,6 +117,18 @@ class TestMain(unittest.TestCase):
         t("vnc+ssh://host/0")
         t("tcp://localhost:10000/", {"host": "localhost", "port": 10000, "type": "tcp"})
 
+    def test_percent_encoded_path(self):
+        # the path can be a session name, which may need percent-encoding:
+        r = _test_parse_display_name("ssh://host/my%20session")
+        self.assertEqual(r.get("display"), "my session")
+        self.assertEqual(r.get("display_as_args", [])[:1], ["my session"])
+        # "," and "=" are consumed as option separators,
+        # so they have to be escaped to be part of the session name:
+        self.assertEqual(_test_parse_display_name("ssh://host/a%2Cb").get("display"), "a,b")
+        self.assertEqual(_test_parse_display_name("ssh://host/x%3Dy").get("display"), "x=y")
+        # unencoded paths are unchanged:
+        self.assertEqual(_test_parse_display_name("ssh://host/plain").get("display"), "plain")
+
     def test_query_string_not_strict_by_default(self):
         # by default (XPRA_PARSING_STRICT off) any query option is accepted,
         # including ones that are not in the URL allow-list:

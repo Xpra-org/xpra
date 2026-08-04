@@ -386,7 +386,11 @@ def parse_display_name(opts, display_name: str, cmdline=(),
                 # ie: path="foo=bar"
                 process_query_string(path)
                 return
-            desc["display"] = path
+            # the path can be a session name, which may contain characters
+            # that have to be percent-encoded in a URI:
+            # ie: "ssh://host/my%20session" -> "my session"
+            # ("," and "=" are consumed above, so use "%2C" and "%3D" for those)
+            desc["display"] = parse.unquote(path)
 
     def process_query_string(s) -> None:
         # query strings can carry connection options (ie: "tcp://host/?proxy-host=...").
