@@ -41,6 +41,7 @@ _DEFAULT_GSETTINGS_ALLOWLIST = (
 
 # `all` and `*` are user friendly aliases for the "match everything" pattern:
 ALL_GSETTINGS: Sequence[str] = ("all", "*")
+NO_GSETTINGS: Sequence[str] = ("none", )
 ALL_GSETTINGS_PATTERN = ".*"
 GVARIANT_TYPE_ALIASES = {
     "bool": "b",
@@ -126,18 +127,14 @@ def split_gsettings_value(specification: str) -> tuple[str, str]:
     raise ValueError("expected value(type)")
 
 
-def parse_gsettings_value(text: str):
-    """Parse canonical GVariant text or a client-supplied ``value(type)`` literal."""
+def parse_gsettings_value(text: str, expected_type: str = ""):
+    """Parse canonical GVariant text, ``value(type)``, or a value using an expected type."""
     # Keep GLib lazy: fixed-value clients import this module but only servers
     # need to parse the forwarded GVariant value.
     from xpra.os_util import gi_import
     GLib = gi_import("GLib")
-    try:
-        return GLib.Variant.parse(None, text, None, None)
-    except Exception:
-        pass
-    try:
-        value, variant_type = split_gsettings_value(text)
+
+    def parse_typed(value: str, variant_type: str):
         variant_type = GVARIANT_TYPE_ALIASES.get(variant_type.lower(), variant_type)
         if not GLib.VariantType.string_is_valid(variant_type):
             raise ValueError(f"invalid GVariant type {variant_type!r}")
@@ -147,6 +144,24 @@ def parse_gsettings_value(text: str):
         if variant_type in ("s", "o", "g") and not value.startswith(("'", '"')):
             return GLib.Variant(variant_type, value)
         return GLib.Variant.parse(value_type, value, None, None)
+
+    try:
+        # An explicit suffix takes precedence over the server schema type.
+        try:
+            value, variant_type = split_gsettings_value(text)
+        except ValueError:
+            value = variant_type = ""
+        if variant_type:
+            normalized_type = GVARIANT_TYPE_ALIASES.get(variant_type.lower(), variant_type)
+            if GLib.VariantType.string_is_valid(normalized_type):
+                return parse_typed(value, normalized_type)
+            # A non-empty value followed by parentheses is an explicit but
+            # invalid type specification, not a bare string value.
+            if value:
+                raise ValueError(f"invalid GVariant type {variant_type!r}")
+        if expected_type:
+            return parse_typed(text, expected_type)
+        return GLib.Variant.parse(None, text, None, None)
     except Exception:
         log("failed to parse gsettings value %r", text, exc_info=True)
         return None
@@ -158,21 +173,8 @@ def _parse_gsettings_allowlist(value: str) -> tuple[tuple[str, str], ...]:
         entry = entry.strip()
         if not entry:
             continue
-        # Fixed values are interpreted by clients; on servers their left-hand
-        # side is the selector which authorizes that schema and key.
-        fixed_value = "=" in entry
-        if fixed_value:
-            entry = entry.split("=", 1)[0].strip()
-            if ":" not in entry:
-                log.warn("Warning: ignoring invalid gsettings value selector %r", entry)
-                continue
         # entries without a separator match every key of the matching schemas:
         schema, key = parse_gsettings_key(entry) if ":" in entry else (entry, ALL_GSETTINGS_PATTERN)
-        if fixed_value:
-            if not schema or not key:
-                log.warn("Warning: ignoring invalid gsettings value selector %r", entry)
-                continue
-            schema, key = re.escape(schema), re.escape(key)
         try:
             _compile(schema)
             _compile(key)
@@ -196,18 +198,20 @@ def parse_gsettings_allowlist(value: str, auto: bool = True) -> tuple[tuple[str,
     anything else is parsed as a comma separated list of `schema:key` patterns.
     An empty tuple means that synchronization is disabled.
     """
-    v = (value or "auto").strip()
-    lv = v.lower()
-    if lv in FALSE_OPTIONS:
+    entries = tuple(entry.strip() for entry in split_gsettings_entries(value or "auto") if entry.strip())
+    lower_entries = tuple(entry.lower() for entry in entries)
+    # `none` / false always wins, which is the safe behaviour for conflicting CSV tokens.
+    if any(entry in FALSE_OPTIONS or entry in NO_GSETTINGS for entry in lower_entries):
         return ()
-    if lv in ALL_GSETTINGS:
+    if any(entry in ALL_GSETTINGS for entry in lower_entries):
         return ((ALL_GSETTINGS_PATTERN, ALL_GSETTINGS_PATTERN), )
-    if lv in TRUE_OPTIONS:
-        return GSETTINGS_ALLOWLIST
-    if lv == "auto":
-        return GSETTINGS_ALLOWLIST if auto else ()
-    # an explicit list of patterns is always honoured:
-    return _parse_gsettings_allowlist(v)
+    patterns: list[tuple[str, str]] = []
+    for entry, lower_entry in zip(entries, lower_entries):
+        if lower_entry in TRUE_OPTIONS or (lower_entry == "auto" and auto):
+            patterns.extend(GSETTINGS_ALLOWLIST)
+        elif lower_entry != "auto":
+            patterns.extend(_parse_gsettings_allowlist(entry))
+    return tuple(dict.fromkeys(patterns))
 
 
 def parse_gsettings_option(value: str, auto: bool) -> \

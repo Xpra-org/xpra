@@ -9,7 +9,7 @@ from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.str_fn import bytestostr
 from xpra.net.common import Packet
 from xpra.util.gsettings import (
-    parse_gsettings_allowlist, gsettings_match, parse_gsettings_key,
+    parse_gsettings_option, gsettings_match, parse_gsettings_key,
     parse_gsettings_value,
 )
 from xpra.server.subsystem.stub import StubSubsystem
@@ -48,10 +48,12 @@ class GSettingsServer(StubSubsystem):
     def init(self, opts) -> None:
         # `auto` enables synchronization of the default allowlist
         # everywhere except MacOS and MS Windows,
-        # the option can also specify the `schema:key` patterns to accept:
-        self.allowlist = parse_gsettings_allowlist(opts.gsettings_sync, not (OSX or WIN32))
-        self.sync_enabled = bool(self.allowlist)
-        log("gsettings_sync(%s)=%s, allowlist=%s", opts.gsettings_sync, self.sync_enabled, self.allowlist)
+        # selectors control client access while assignments define the
+        # server-side baseline:
+        self.allowlist, self.defaults = parse_gsettings_option(opts.gsettings_sync, not (OSX or WIN32))
+        self.sync_enabled = bool(self.allowlist or self.defaults)
+        log("gsettings_sync(%s)=%s, allowlist=%s, defaults=%s",
+            opts.gsettings_sync, self.sync_enabled, self.allowlist, self.defaults)
 
     def setup(self) -> None:
         if self.sync_enabled:
@@ -65,7 +67,7 @@ class GSettingsServer(StubSubsystem):
         self.original = {}
 
     def get_caps(self, _source) -> dict[str, Any]:
-        if self.sync_enabled:
+        if self.allowlist:
             return {"gsettings": True}
         return {}
 
@@ -137,7 +139,9 @@ class GSettingsServer(StubSubsystem):
                 # key no longer targeted: revert to its original value
                 self._set(sk, original)
                 continue
-            variant = parse_gsettings_value(text)
+            original = self.original.get(sk)
+            expected_type = original.get_type_string() if original is not None else ""
+            variant = parse_gsettings_value(text, expected_type)
             if variant is not None:
                 self._set(sk, variant)
 

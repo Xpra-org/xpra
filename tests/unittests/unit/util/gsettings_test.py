@@ -26,6 +26,16 @@ class TestGSettingsAllowlist(unittest.TestCase):
         self.assertEqual(gsettings.split_gsettings_value("(1, 2)((ii))"), ("(1, 2)", "(ii)"))
         self.assertTrue(gsettings.parse_gsettings_option("", True)[0])
         self.assertEqual(gsettings.parse_gsettings_option("", False), ((), {}))
+        allowlist, values = gsettings.parse_gsettings_option(
+            "none,org.example:key=server-default", True,
+        )
+        self.assertEqual(allowlist, ())
+        self.assertEqual(values, {("org.example", "key"): "server-default"})
+        allowlist, values = gsettings.parse_gsettings_option(
+            "all,org.example:key=server-default", False,
+        )
+        self.assertTrue(gsettings.gsettings_match(allowlist, "any.schema", "any-key"))
+        self.assertEqual(values, {("org.example", "key"): "server-default"})
 
     def test_key_roundtrip(self):
         for schema, key in (
@@ -64,6 +74,13 @@ class TestGSettingsAllowlist(unittest.TestCase):
         # `auto` can be turned off (ie: on MacOS and MS Windows):
         self.assertEqual(gsettings.parse_gsettings_allowlist("auto", False), ())
         self.assertEqual(gsettings.parse_gsettings_allowlist("yes", False), default)
+        # Boolean policy tokens are recognized within a CSV list:
+        self.assertEqual(gsettings.parse_gsettings_allowlist("none,a.b:one", True), ())
+        self.assertEqual(gsettings.parse_gsettings_allowlist("all,a.b:one", False),
+                         ((gsettings.ALL_GSETTINGS_PATTERN, gsettings.ALL_GSETTINGS_PATTERN), ))
+        combined = gsettings.parse_gsettings_allowlist("yes,a.b:one", False)
+        self.assertTrue(gsettings.gsettings_match(combined, "a.b", "one"))
+        self.assertTrue(gsettings.gsettings_match(combined, "org.gnome.desktop.interface", "gtk-theme"))
         # `all` and `*` are aliases for the match-everything pattern:
         for value in ("all", "ALL", " * ", ".*"):
             allowlist = gsettings.parse_gsettings_allowlist(value, False)
@@ -74,14 +91,6 @@ class TestGSettingsAllowlist(unittest.TestCase):
                          (("a.b", "one"), ("c.d", "two"), ("e.f", ".*")))
         # invalid patterns are skipped:
         self.assertEqual(gsettings.parse_gsettings_allowlist("a.b:one,c.d:*oops", False), (("a.b", "one"), ))
-        # On the server, a client fixed-value specification authorizes its
-        # literal left-hand selector; the value itself is client-only.
-        fixed = gsettings.parse_gsettings_allowlist(
-            "a.b:one=hello(s),c.d:items=['a', 'b'](as)", False,
-        )
-        self.assertEqual(fixed, (("a\\.b", "one"), ("c\\.d", "items")))
-        self.assertTrue(gsettings.gsettings_match(fixed, "a.b", "one"))
-        self.assertFalse(gsettings.gsettings_match(fixed, "axb", "one"))
 
     def test_match(self):
         allowlist = (("org\\.gnome\\.desktop\\..*", "font-.*"), ("exact\\.schema", "exact-key"))
@@ -130,6 +139,12 @@ class TestGSettingsAllowlist(unittest.TestCase):
                 self.assertIsNotNone(variant)
                 self.assertEqual(variant.get_type_string(), variant_type)
                 self.assertEqual(variant.print_(True), canonical)
+        inferred = gsettings.parse_gsettings_value("Adwaita", "s")
+        self.assertIsNotNone(inferred)
+        self.assertEqual(inferred.print_(True), "'Adwaita'")
+        inferred = gsettings.parse_gsettings_value("12", "u")
+        self.assertIsNotNone(inferred)
+        self.assertEqual(inferred.print_(True), "uint32 12")
 
     def test_invalid_client_values(self):
         for text in ("missing-type", "value()", "value(not-a-type)", "abc(i)"):
