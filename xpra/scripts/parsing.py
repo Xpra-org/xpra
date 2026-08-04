@@ -1867,7 +1867,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--backend", action="store",
                      dest="backend", default=defaults.backend,
                      help="Which backend to use for accessing the display."
-                          " Default: '%default'.")
+                          "%s Default: '%%default'." % (" 'native' is an alias for 'win32'." if WIN32 else ""))
     legacy_bool_parse("gstreamer")
     group.add_option("--gstreamer", action="store",
                      dest="gstreamer", default=defaults.gstreamer,

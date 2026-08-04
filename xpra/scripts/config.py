@@ -1676,6 +1676,12 @@ def fixup_keyboard(options) -> None:
     options.keyboard_raw = str_to_bool(options.keyboard_raw)
 
 
+def fixup_backend(options) -> None:
+    # 'native' is an alias for the platform specific backend:
+    if options.backend.lower() == "native" and WIN32:
+        options.backend = "win32"
+
+
 def fixup_clipboard(options) -> None:
     cd = options.clipboard_direction.lower().replace("-", "")
     if cd == "toserver":
@@ -1726,6 +1732,7 @@ def fixup_options(options) -> None:
     fixup_socketdirs(options)
     fixup_clipboard(options)
     fixup_keyboard(options)
+    fixup_backend(options)
     abs_paths(options)
     # remote-xpra is meant to be a list, but the user can specify a string using the command line,
     # in which case we replace all the default values with this single entry:

@@ -1818,7 +1818,7 @@ def no_gi_gtk_modules(mods=NOGI) -> None:
 
 def make_client(opts):
     backend = opts.backend or "gtk"
-    BACKENDS = ("qt", "gtk", "pyglet", "tk", "win32", "auto")
+    BACKENDS = ("qt", "gtk", "pyglet", "tk", "win32", "auto") + ("native", ) * int(WIN32)
     if backend == "qt":
         no_gi_gtk_modules()
         try:

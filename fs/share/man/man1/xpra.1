@@ -1544,8 +1544,10 @@ The keyboard model to use on the server (passed to the X server).
 
 .TP
 \fB\-\-backend\fP=\fINAME\fP
-Which backend to use for accessing the display
-(ie: \fIxvfb\fP, \fIxdummy\fP).
+Which backend to use for accessing the display.
+Servers support: \fIauto\fP, \fIgtk\fP, \fIx11\fP, \fIwayland\fP.
+Clients support: \fIauto\fP, \fIgtk\fP, \fIqt\fP, \fIpyglet\fP, \fItk\fP, \fIwin32\fP.
+On MS Windows, \fInative\fP is an alias for \fIwin32\fP.
 
 .TP
 \fB\-\-remote\-logging\fP=\fIboth\fP|\fIall\fP|\fIsend\fP|\fIreceive\fP|\fIno\fP
