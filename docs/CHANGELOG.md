@@ -46,6 +46,7 @@
   * [clipboard support for URIs on MS Windows](https://github.com/Xpra-org/xpra/issues/4917)
   * [audio keepalive](https://github.com/Xpra-org/xpra/issues/4913)
   * [virtual monitors for MS Windows shadow servers](https://github.com/Xpra-org/xpra/issues/4909)
+  * [localized menus and dialogs](https://github.com/Xpra-org/xpra/issues/4934)
   * [`expand` server for MS Windows](https://github.com/Xpra-org/xpra/issues/4911)
   * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885), [also for client](https://github.com/Xpra-org/xpra/issues/4948)
   * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)

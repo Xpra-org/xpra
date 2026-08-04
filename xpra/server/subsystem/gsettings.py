@@ -7,8 +7,7 @@ from typing import Any
 
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.str_fn import bytestostr
-from xpra.util.parsing import str_to_bool
-from xpra.net.common import Packet, GSETTINGS_ALLOWLIST, parse_gsettings_key
+from xpra.net.common import Packet, parse_gsettings_allowlist, gsettings_match, parse_gsettings_key
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -28,13 +27,15 @@ class GSettingsServer(StubSubsystem):
     one client is connected, or when the last client disconnects - because the server
     session is shared and there is no sensible way to merge conflicting preferences.
     """
-    __slots__ = ("defaults", "original", "sync_enabled")
+    __slots__ = ("allowlist", "defaults", "original", "sync_enabled")
 
     PREFIX = "gsettings"
 
     def __init__(self, server=None):
         super().__init__(server)
         self.sync_enabled = False
+        # the (schema, key) regular expressions we are willing to accept from the client:
+        self.allowlist: tuple[tuple[str, str], ...] = ()
         # server-side baseline applied for the server's lifetime,
         # variant servers may inject values here - {(schema, key): gvariant_text}:
         self.defaults: dict[tuple[str, str], str] = {}
@@ -42,9 +43,12 @@ class GSettingsServer(StubSubsystem):
         self.original: dict[tuple[str, str], Any] = {}
 
     def init(self, opts) -> None:
-        # `auto` enables synchronization everywhere except MacOS and MS Windows:
-        self.sync_enabled = str_to_bool(opts.gsettings_sync, not (OSX or WIN32))
-        log("gsettings_sync(%s)=%s", opts.gsettings_sync, self.sync_enabled)
+        # `auto` enables synchronization of the default allowlist
+        # everywhere except MacOS and MS Windows,
+        # the option can also specify the `schema:key` patterns to accept:
+        self.allowlist = parse_gsettings_allowlist(opts.gsettings_sync, not (OSX or WIN32))
+        self.sync_enabled = bool(self.allowlist)
+        log("gsettings_sync(%s)=%s, allowlist=%s", opts.gsettings_sync, self.sync_enabled, self.allowlist)
 
     def setup(self) -> None:
         if self.sync_enabled:
@@ -67,6 +71,7 @@ class GSettingsServer(StubSubsystem):
             "gsettings": {
                 "enabled": self.sync_enabled,
                 "defaults": {f"{schema}:{key}": value for (schema, key), value in self.defaults.items()},
+                "allowlist": tuple(f"{schema}:{key}" for schema, key in self.allowlist),
             }
         }
 
@@ -86,8 +91,10 @@ class GSettingsServer(StubSubsystem):
                 sk = parse_gsettings_key(bytestostr(name))
             except ValueError:
                 continue
-            if sk in GSETTINGS_ALLOWLIST:
+            if self.allowed(sk):
                 gsettings[sk] = bytestostr(value)
+            else:
+                log("skipped %r - not found in allow list", sk)
         log("updated client gsettings: %s", gsettings)
         self.update_gsettings()
 
@@ -101,13 +108,16 @@ class GSettingsServer(StubSubsystem):
 
     # --- core apply / restore logic ---
 
+    def allowed(self, sk: tuple[str, str]) -> bool:
+        return gsettings_match(self.allowlist, *sk)
+
     def desired(self) -> dict[tuple[str, str], str]:
         target = dict(self.defaults)
         sources = tuple(self.server._server_sources.values())
         # only honour client values when exactly one client is connected:
         if len(sources) == 1:
             for sk, value in getattr(sources[0], "gsettings", {}).items():
-                if sk in GSETTINGS_ALLOWLIST:
+                if self.allowed(sk):
                     target[sk] = value
         return target
 

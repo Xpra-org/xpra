@@ -1485,9 +1485,11 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="xsettings", default=defaults.xsettings,
                      help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
     legacy_bool_parse("gsettings-sync")
-    group.add_option("--gsettings-sync", action="store", metavar="auto|yes|no",
+    group.add_option("--gsettings-sync", action="store", metavar="auto|yes|no|all|SCHEMA:KEY,..",
                      dest="gsettings_sync", default=defaults.gsettings_sync,
                      help="GSettings synchronization (client appearance preferences to the server)."
+                          " A comma separated list of 'schema:key' regular expressions can be used"
+                          " instead of the default set of keys, or 'all' (aka '.*') for all of them."
                           " Default: %s." % enabled_str(defaults.gsettings_sync))
     legacy_bool_parse("mmap")
     group.add_option("--mmap", action="store", metavar="yes|no|path[%spath...]" % os.path.pathsep,

@@ -38,12 +38,50 @@ class TestGSettingsAllowlist(unittest.TestCase):
             schema, key = entry
             self.assertTrue(schema and key)
         # a known appearance key is allowlisted, a made-up one is not:
-        self.assertIn(("org.gnome.desktop.interface", "gtk-theme"), allowlist)
-        self.assertNotIn(("org.example.fake", "made-up"), allowlist)
+        self.assertTrue(common.gsettings_match(allowlist, "org.gnome.desktop.interface", "gtk-theme"))
+        self.assertFalse(common.gsettings_match(allowlist, "org.example.fake", "made-up"))
+
+    def test_parse_option_value(self):
+        default = common.GSETTINGS_ALLOWLIST
+        # boolean and `auto` values select the default allowlist:
+        for value in ("yes", "true", "1", "on", "auto", "AUTO", "", None):
+            self.assertEqual(common.parse_gsettings_allowlist(value), default)
+        for value in ("no", "false", "0", "off"):
+            self.assertEqual(common.parse_gsettings_allowlist(value), ())
+        # `auto` can be turned off (ie: on MacOS and MS Windows):
+        self.assertEqual(common.parse_gsettings_allowlist("auto", False), ())
+        self.assertEqual(common.parse_gsettings_allowlist("yes", False), default)
+        # `all` and `*` are aliases for the match-everything pattern:
+        for value in ("all", "ALL", " * ", ".*"):
+            allowlist = common.parse_gsettings_allowlist(value, False)
+            self.assertTrue(common.gsettings_match(allowlist, "org.example.fake", "made-up"))
+        # an explicit list of patterns is always honoured,
+        # entries without a separator match every key of the matching schemas:
+        self.assertEqual(common.parse_gsettings_allowlist("a.b:one, c.d:two ,,e.f", False),
+                         (("a.b", "one"), ("c.d", "two"), ("e.f", ".*")))
+        # invalid patterns are skipped:
+        self.assertEqual(common.parse_gsettings_allowlist("a.b:one,c.d:*oops", False), (("a.b", "one"), ))
+
+    def test_match(self):
+        allowlist = (("org\\.gnome\\.desktop\\..*", "font-.*"), ("exact\\.schema", "exact-key"))
+        for schema, key in (
+            ("org.gnome.desktop.interface", "font-name"),
+            ("org.gnome.desktop.interface", "font-hinting"),
+            ("exact.schema", "exact-key"),
+        ):
+            self.assertTrue(common.gsettings_match(allowlist, schema, key))
+        for schema, key in (
+            # the patterns must match the whole string:
+            ("org.gnome.desktop.interface", "no-font-name"),
+            ("not.org.gnome.desktop.interface", "font-name"),
+            ("exact.schema", "exact-key2"),
+            ("org.gnome.desktop.interface", "gtk-theme"),
+        ):
+            self.assertFalse(common.gsettings_match(allowlist, schema, key))
 
     def test_env_override(self):
         env = os.environ.copy()
-        env["XPRA_GSETTINGS_ALLOWLIST"] = "a.b:one, c.d:two ,,garbage-no-colon"
+        env["XPRA_GSETTINGS_ALLOWLIST"] = "a.b:one, c.d:two ,,"
         output = subprocess.check_output(
             [
                 sys.executable,

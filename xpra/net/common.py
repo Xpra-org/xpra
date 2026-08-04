@@ -4,9 +4,11 @@
 # later version. See the file COPYING for details.
 
 import os
+import re
 import sys
 import struct
 import threading
+from functools import lru_cache
 from typing import Any, TypeAlias
 from collections.abc import Callable, Sequence
 
@@ -16,7 +18,7 @@ from xpra.common import noop, SizedBuffer
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import LINUX, WIN32, OSX
 from xpra.scripts.config import InitExit
-from xpra.util.parsing import str_to_bool
+from xpra.util.parsing import str_to_bool, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.system import platform_name
 from xpra.util.str_fn import std, csv
 from xpra.util.objects import typedict
@@ -29,11 +31,26 @@ FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO >= 0
 
 
-# (schema, key) GSettings pairs that the "gsettings" subsystem is allowed to
-# synchronize from client to server. Both ends consult this same allowlist:
-# the client only reads and sends these keys, and the server only accepts and
-# applies them. Overridable via XPRA_GSETTINGS_ALLOWLIST (comma-separated
-# "schema:key" entries):
+logger = None
+
+
+def get_logger():
+    # no locking needed,
+    # creating an extra logger is not a problem
+    global logger
+    if logger is None:
+        from xpra.log import Logger
+        logger = Logger("network")
+    return logger
+
+
+# (schema, key) regular expression pairs matching the GSettings which the
+# "gsettings" subsystem synchronizes by default: the client only reads and sends
+# the keys matching its own allowlist, and the server only accepts and applies
+# the keys matching its own one - each end can use a different allowlist by giving
+# the `gsettings-sync` option a list of "schema:key" patterns instead of a boolean.
+# This default list is overridable via XPRA_GSETTINGS_ALLOWLIST
+# (comma-separated "schema:key" patterns):
 _DEFAULT_GSETTINGS_ALLOWLIST = (
     "org.gnome.desktop.interface:gtk-theme",
     "org.gnome.desktop.interface:icon-theme",
@@ -53,6 +70,10 @@ _DEFAULT_GSETTINGS_ALLOWLIST = (
     "org.gnome.desktop.a11y.interface:high-contrast",
 )
 
+# `all` and `*` are user friendly aliases for the "match everything" pattern:
+ALL_GSETTINGS: Sequence[str] = ("all", "*")
+ALL_GSETTINGS_PATTERN = ".*"
+
 
 def gsettings_key(schema: str, key: str) -> str:
     return f"{schema}:{key}"
@@ -63,30 +84,59 @@ def parse_gsettings_key(name: str) -> tuple[str, str]:
     return schema, key
 
 
+@lru_cache(maxsize=256)
+def _compile(pattern: str):
+    return re.compile(pattern)
+
+
+def gsettings_match(allowlist: Sequence[tuple[str, str]], schema: str, key: str) -> bool:
+    """ Does this (schema, key) pair match any of the allowlist patterns? """
+    return any(_compile(sp).fullmatch(schema) and _compile(kp).fullmatch(key) for sp, kp in allowlist)
+
+
 def _parse_gsettings_allowlist(value: str) -> tuple[tuple[str, str], ...]:
-    pairs: list[tuple[str, str]] = []
+    patterns: list[tuple[str, str]] = []
     for entry in value.split(","):
         entry = entry.strip()
-        if entry and ":" in entry:
-            pairs.append(parse_gsettings_key(entry))
-    return tuple(pairs)
+        if not entry:
+            continue
+        # entries without a separator match every key of the matching schemas:
+        schema, key = parse_gsettings_key(entry) if ":" in entry else (entry, ALL_GSETTINGS_PATTERN)
+        try:
+            _compile(schema)
+            _compile(key)
+        except re.error as e:
+            get_logger().warn("Warning: ignoring invalid gsettings pattern %r: %s", entry, e)
+            continue
+        patterns.append((schema, key))
+    return tuple(patterns)
 
 
 GSETTINGS_ALLOWLIST: tuple[tuple[str, str], ...] = _parse_gsettings_allowlist(
     os.environ.get("XPRA_GSETTINGS_ALLOWLIST", ",".join(_DEFAULT_GSETTINGS_ALLOWLIST))
 )
 
-logger = None
 
-
-def get_logger():
-    # no locking needed,
-    # creating an extra logger is not a problem
-    global logger
-    if logger is None:
-        from xpra.log import Logger
-        logger = Logger("network")
-    return logger
+def parse_gsettings_allowlist(value: str, auto: bool = True) -> tuple[tuple[str, str], ...]:
+    """
+    Parse the value of the `gsettings-sync` option into a list of (schema, key) regex pairs.
+    Boolean values and `auto` select the default allowlist (`auto` only if `auto` is True),
+    `all` (or `*`) matches everything,
+    anything else is parsed as a comma separated list of `schema:key` patterns.
+    An empty tuple means that synchronization is disabled.
+    """
+    v = (value or "auto").strip()
+    lv = v.lower()
+    if lv in FALSE_OPTIONS:
+        return ()
+    if lv in ALL_GSETTINGS:
+        return ((ALL_GSETTINGS_PATTERN, ALL_GSETTINGS_PATTERN), )
+    if lv in TRUE_OPTIONS:
+        return GSETTINGS_ALLOWLIST
+    if lv == "auto":
+        return GSETTINGS_ALLOWLIST if auto else ()
+    # an explicit list of patterns is always honoured:
+    return _parse_gsettings_allowlist(v)
 
 
 HttpResponse: TypeAlias = tuple[int, dict, bytes]
