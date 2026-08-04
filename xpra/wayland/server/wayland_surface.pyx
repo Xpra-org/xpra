@@ -13,6 +13,8 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import first_time
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.dmabuf.image import DMABufImageWrapper
+from xpra.util.colourspace import SRGB
+from xpra.wayland.server.colourspace import get_colourspace as parse_colourspace
 
 from libc.string cimport memset
 from libc.stdint cimport uintptr_t, uint32_t
@@ -31,6 +33,7 @@ from xpra.wayland.server.wlroots cimport (
     wlr_texture_read_pixels_options, wlr_texture_read_pixels, wlr_texture_preferred_read_format,
     wlr_dmabuf_attributes, wlr_buffer_get_dmabuf,
     wlr_surface_send_frame_done, wlr_surface_get_buffer_source_box,
+    wlr_image_description_v1_data, wlr_surface_get_image_description_v1_data,
     DRM_FORMAT_ARGB8888, DRM_FORMAT_ABGR8888, DRM_FORMAT_XRGB8888, DRM_FORMAT_XBGR8888,
 )
 
@@ -114,6 +117,20 @@ cdef class WaylandSurface(ListenerObject):
         cdef timespec now
         clock_gettime(CLOCK_MONOTONIC, &now)
         wlr_surface_send_frame_done(self.wlr_surface, &now)
+
+    def get_colourspace(self) -> dict:
+        """The colourspace this surface's pixels are in, as a `Colourspace` dictionary.
+
+        Surfaces tagged through `wp_color_management_surface_v1` say what they render;
+        everything else (and every surface once the manager is unavailable)
+        is sRGB, which is both the protocol default and ours.
+        """
+        cdef const wlr_image_description_v1_data *data = NULL
+        if self.wlr_surface != NULL:
+            data = wlr_surface_get_image_description_v1_data(self.wlr_surface)
+        if data == NULL:
+            return SRGB.to_dict()
+        return parse_colourspace(data.primaries_named, data.tf_named).to_dict()
 
     cdef tuple get_surface_size(self):
         if self.wlr_surface == NULL:

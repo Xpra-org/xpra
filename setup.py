@@ -325,6 +325,13 @@ def pkg_config_exists(*names: str) -> bool:
     return pkg_config_ok("--exists", *names)
 
 
+def pkg_config_variable(pkgname: str, variable: str) -> str:
+    r, out, _ = get_status_output([PKG_CONFIG, "--variable=" + variable, pkgname])
+    if r != 0 or not out:
+        return ""
+    return out.strip()
+
+
 def pkg_config_version(req_version: str, pkgname: str) -> bool:
     r, out, _ = get_status_output([PKG_CONFIG, "--modversion", pkgname])
     if r != 0 or not out:
@@ -3742,14 +3749,26 @@ tace(seccomp_ENABLED, "xpra.seccomp._native", "libseccomp")
 toggle_packages(wayland_client_ENABLED or wayland_server_ENABLED, "xpra.wayland")
 toggle_packages(wayland_client_ENABLED, "xpra.wayland.client")
 tace(wayland_client_ENABLED, "xpra.wayland.client.wait_for_display", "wayland-client")
-XDG_SHELL_PROTOCOL_HEADER = "./xpra/wayland/server/xdg-shell-protocol.h"
+# wayland protocol headers we generate with `wayland-scanner`:
+# `wlr/types/wlr_color_management_v1.h` includes the colour management one,
+# which wlroots generates for itself but does not install.
+# {header filename: protocol xml path relative to the wayland-protocols data dir}
+WAYLAND_PROTOCOL_HEADERS = {
+    "xdg-shell-protocol.h": "stable/xdg-shell/xdg-shell.xml",
+    "color-management-v1-protocol.h": "staging/color-management/color-management-v1.xml",
+}
 if wayland_server_ENABLED:
     toggle_packages(wayland_server_ENABLED, "xpra.wayland.server", "xpra.wayland.server.models", "xpra.wayland.server.subsystem")
-    if not os.path.exists(XDG_SHELL_PROTOCOL_HEADER):
-        print("generating %r" % XDG_SHELL_PROTOCOL_HEADER)
-        subprocess.run(["wayland-scanner", "server-header",
-                        "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml",
-                        XDG_SHELL_PROTOCOL_HEADER])
+    protocols_dir = pkg_config_variable("wayland-protocols", "pkgdatadir") or "/usr/share/wayland-protocols"
+    for header, xml in WAYLAND_PROTOCOL_HEADERS.items():
+        header_path = "./xpra/wayland/server/" + header
+        if os.path.exists(header_path):
+            continue
+        xml_path = os.path.join(protocols_dir, xml)
+        if not os.path.exists(xml_path):
+            raise RuntimeError(f"{xml_path!r} not found, please install a more recent 'wayland-protocols'")
+        print("generating %r" % header_path)
+        subprocess.run(["wayland-scanner", "server-header", xml_path, header_path])
     wlr_args = ["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/server/"]
     ace("xpra.wayland.server.events", "wlroots-0.19", extra_compile_args=wlr_args)
     ace("xpra.wayland.server.display", "wlroots-0.19", extra_compile_args=wlr_args)

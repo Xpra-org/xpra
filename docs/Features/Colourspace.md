@@ -33,10 +33,25 @@ xpra info | grep colourspace
 ## Per window and per monitor
 
 A single framebuffer can only have one colourspace, so under X11 the session value is all there is.
-Wayland can tag each surface individually,
-in which case the window's own colourspace is sent as window metadata
-and takes precedence over the session value.
-Monitor definitions can carry one too:
+Wayland can tag each surface individually:
+with the wayland backend (`--backend=wayland`) the compositor implements
+`wp_color_manager_v1`, so applications can say what each of their surfaces renders into.
+The tag is read on every commit and sent as that window's metadata,
+where it takes precedence over the session value.
+
+Only *named* primaries and transfer functions are accepted -
+custom primaries, transfer powers and ICC profiles are not advertised -
+so every tag maps onto an H.273 code point without any approximation.
+The named values on offer are:
+
+| | |
+|-|-|
+| primaries | `srgb`, `display_p3`, `dci_p3`, `bt2020` |
+| transfer functions | `srgb`, `gamma22`, `ext_linear`, `st2084_pq`, `hlg` |
+
+Surfaces that carry no tag are sRGB, which is the protocol's default as well as ours.
+
+Monitor definitions can carry a colourspace too:
 the colourspace a monitor is composited into for
 [desktop and monitor modes](../Usage/Desktop.md),
 and, from the client, a hint for the colourspace it would prefer the session to render into.

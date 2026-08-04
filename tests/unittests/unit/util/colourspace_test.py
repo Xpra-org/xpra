@@ -134,6 +134,54 @@ class TestColourspaceMetadata(unittest.TestCase):
         self.assertEqual(Colourspace.from_dict(mon[0]["colourspace"]), P3)
 
 
+class TestWaylandColourspace(unittest.TestCase):
+    """ `wp_color_manager_v1` named enums -> H.273 code points """
+
+    def setUp(self):
+        # pure python mapping tables: no wayland or wlroots needed
+        from xpra.wayland.server.colourspace import get_colourspace, PRIMARIES, TRANSFER_FUNCTIONS
+        self.get_colourspace = get_colourspace
+        self.PRIMARIES = PRIMARIES
+        self.TRANSFER_FUNCTIONS = TRANSFER_FUNCTIONS
+
+    def test_untagged_is_srgb(self):
+        # zero means "unset" for both values:
+        self.assertEqual(self.get_colourspace(0, 0), SRGB)
+
+    def test_srgb(self):
+        # wp `primaries.srgb` = 1, `transfer_function.srgb` = 9
+        self.assertEqual(self.get_colourspace(1, 9), SRGB)
+
+    def test_hdr10(self):
+        # wp `primaries.bt2020` = 6, `transfer_function.st2084_pq` = 11
+        cs = self.get_colourspace(6, 11)
+        self.assertEqual(cs.primaries, Primaries.BT2020)
+        self.assertEqual(cs.transfer, TransferFunction.PQ)
+        # wayland surfaces are always RGB and full range:
+        self.assertEqual(cs.matrix, MatrixCoefficients.IDENTITY)
+        self.assertEqual(cs.range, Range.FULL)
+
+    def test_display_p3(self):
+        # wp `primaries.display_p3` = 9
+        self.assertEqual(self.get_colourspace(9, 9), P3)
+
+    def test_partial_tag(self):
+        # a surface may name only one of the two, the other keeps its sRGB value:
+        self.assertEqual(self.get_colourspace(6, 0).transfer, SRGB.transfer)
+        self.assertEqual(self.get_colourspace(0, 11).primaries, SRGB.primaries)
+
+    def test_unknown_values_fall_back(self):
+        # ie: `adobe_rgb` (10), which has no H.273 code point, or a newer enum value:
+        self.assertEqual(self.get_colourspace(10, 99), SRGB)
+
+    def test_tables_are_valid_code_points(self):
+        # guards against a typo turning into a bogus code point on the wire:
+        for value in self.PRIMARIES.values():
+            self.assertIsInstance(value, Primaries)
+        for value in self.TRANSFER_FUNCTIONS.values():
+            self.assertIsInstance(value, TransferFunction)
+
+
 def main():
     unittest.main()
 

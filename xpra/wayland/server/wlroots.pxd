@@ -636,6 +636,60 @@ cdef extern from "wlr/types/wlr_xdg_output_v1.h":
                                                                  wlr_output_layout *layout)
 
 
+cdef extern from "wlr/types/wlr_color_management_v1.h":
+    # `wp_color_manager_v1` enum values are wire values, so we only need the ones we advertise.
+    # they are mapped to ITU-T H.273 code points in `xpra.wayland.server.colourspace`:
+    cdef enum wp_color_manager_v1_render_intent:
+        WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL
+        WP_COLOR_MANAGER_V1_RENDER_INTENT_RELATIVE
+
+    cdef enum wp_color_manager_v1_transfer_function:
+        WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR
+        WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB
+        WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ
+        WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG
+        WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22
+
+    cdef enum wp_color_manager_v1_primaries:
+        WP_COLOR_MANAGER_V1_PRIMARIES_SRGB
+        WP_COLOR_MANAGER_V1_PRIMARIES_BT2020
+        WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3
+        WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3
+
+    cdef struct wlr_image_description_v1_data:
+        uint32_t tf_named            # wp_color_manager_v1_transfer_function, zero if unset
+        uint32_t primaries_named     # wp_color_manager_v1_primaries, zero if unset
+        bint has_mastering_luminance
+        uint32_t max_cll
+        uint32_t max_fall
+
+    cdef struct wlr_color_manager_v1_features:
+        bint icc_v2_v4
+        bint parametric
+        bint set_primaries
+        bint set_tf_power
+        bint set_luminances
+        bint set_mastering_display_primaries
+        bint extended_target_volume
+        bint windows_scrgb
+
+    cdef struct wlr_color_manager_v1_options:
+        wlr_color_manager_v1_features features
+        const wp_color_manager_v1_render_intent *render_intents
+        size_t render_intents_len
+        const wp_color_manager_v1_transfer_function *transfer_functions
+        size_t transfer_functions_len
+        const wp_color_manager_v1_primaries *primaries
+        size_t primaries_len
+
+    cdef struct wlr_color_manager_v1:
+        pass
+
+    wlr_color_manager_v1 *wlr_color_manager_v1_create(wl_display *display, uint32_t version,
+                                                      const wlr_color_manager_v1_options *options)
+    const wlr_image_description_v1_data *wlr_surface_get_image_description_v1_data(wlr_surface *surface) nogil
+
+
 cdef extern from "wlr/types/wlr_input_device.h":
     cdef enum wlr_input_device_type:
         WLR_INPUT_DEVICE_KEYBOARD

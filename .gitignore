@@ -206,7 +206,7 @@ tests/unittests/test-file*
 /xpra/wayland/server/*.c
 /xpra/wayland/server/models/*.c
 /xpra/wayland/server/subsystem/*.c
-/xpra/wayland/server/xdg-shell-protocol.h
+/xpra/wayland/server/*-protocol.h
 /xpra/*.c
 
 /xpra/**/*.so

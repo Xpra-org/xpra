@@ -26,17 +26,30 @@ from dataclasses import dataclass, fields
 class Primaries(IntEnum):
     BT709 = 1               # also sRGB
     UNSPECIFIED = 2
+    BT470M = 4
+    BT470BG = 5             # PAL
+    SMPTE170M = 6           # NTSC
+    GENERIC_FILM = 8
     BT2020 = 9
+    XYZ = 10                # SMPTE ST 428-1, CIE 1931 XYZ
+    DCI_P3 = 11             # SMPTE RP 431-2
     DISPLAY_P3 = 12         # SMPTE EG 432-1
 
 
 class TransferFunction(IntEnum):
     BT709 = 1
     UNSPECIFIED = 2
+    GAMMA22 = 4
+    GAMMA28 = 5
+    SMPTE240M = 7
     LINEAR = 8
+    LOG = 9
+    LOG_SQRT = 10
+    IEC61966_2_4 = 11       # xvYCC
     SRGB = 13               # IEC 61966-2-1
     BT2020 = 14
     PQ = 16                 # SMPTE ST 2084
+    ST428 = 17              # SMPTE ST 428-1
     HLG = 18                # ARIB STD-B67
 
 

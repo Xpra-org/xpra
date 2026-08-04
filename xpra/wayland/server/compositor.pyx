@@ -16,6 +16,7 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 
 from libc.stdint cimport uintptr_t
+from libc.string cimport memset
 
 from xpra.wayland.server.pointer import WaylandPointer
 from xpra.wayland.server.keyboard import WaylandKeyboard
@@ -70,6 +71,14 @@ from xpra.wayland.server.wlroots cimport (
     wlr_data_control_manager_v1, wlr_data_control_manager_v1_create,
     wlr_xdg_activation_v1, wlr_xdg_activation_token_v1, wlr_xdg_activation_v1_request_activate_event,
     wlr_xdg_activation_v1_create, wlr_xdg_activation_token_v1_get_name,
+    wlr_color_manager_v1, wlr_color_manager_v1_create, wlr_color_manager_v1_options,
+    wp_color_manager_v1_render_intent, wp_color_manager_v1_transfer_function, wp_color_manager_v1_primaries,
+    WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
+    WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB, WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+    WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR,
+    WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ, WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG,
+    WP_COLOR_MANAGER_V1_PRIMARIES_SRGB, WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3,
+    WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3, WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
 )
 from xpra.wayland.server.pointer_protocols cimport (
     wlr_relative_pointer_manager_v1, wlr_relative_pointer_manager_v1_create,
@@ -137,6 +146,7 @@ cdef class WaylandCompositor(ListenerObject):
     cdef wlr_xdg_output_manager_v1 *xdg_output_manager
     cdef wlr_primary_selection_v1_device_manager *primary_selection_manager
     cdef wlr_data_control_manager_v1 *data_control_manager
+    cdef wlr_color_manager_v1 *color_manager
     cdef wlr_relative_pointer_manager_v1 *relative_pointer_manager
     cdef wlr_pointer_constraints_v1 *pointer_constraints
     cdef wlr_xdg_activation_v1 *activation_manager
@@ -260,6 +270,8 @@ cdef class WaylandCompositor(ListenerObject):
             self.add_listener(L_REQUEST_ACTIVATE, &self.activation_manager.events.request_activate)
             self.add_listener(L_NEW_ACTIVATION_TOKEN, &self.activation_manager.events.new_token)
 
+        self.create_color_manager()
+
         self.relative_pointer_manager = wlr_relative_pointer_manager_v1_create(self.display_ptr)
         if not self.relative_pointer_manager:
             log.warn("Warning: unable to create the relative pointer manager")
@@ -299,6 +311,48 @@ cdef class WaylandCompositor(ListenerObject):
         self.socket_name = bname.decode("utf8")
         log("wayland display socket added: %s", self.socket_name)
         return self.socket_name
+
+    cdef void create_color_manager(self):
+        # `wp_color_manager_v1`: lets clients tag their surfaces with a colourspace.
+        # we never composite those surfaces ourselves (the xpra client does),
+        # so we only have to be able to *describe* what a surface is tagged with.
+        # `parametric` is the only feature we enable: it is what lets a client
+        # build an image description at all, and on its own it restricts them to
+        # `set_tf_named` and `set_primaries_named`.
+        # every other feature stays disabled, so clients cannot ask for custom
+        # primaries, transfer powers or an ICC profile - which keeps every tag we
+        # ever have to read to the named values advertised below,
+        # and those are exactly the ones `xpra.wayland.server.colourspace` maps
+        # to the H.273 code points we send to the xpra client as window metadata.
+        cdef wlr_color_manager_v1_options options
+        cdef wp_color_manager_v1_render_intent[1] render_intents = [
+            WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
+        ]
+        cdef wp_color_manager_v1_transfer_function[5] transfer_functions = [
+            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB,
+            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR,
+            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
+            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG,
+        ]
+        cdef wp_color_manager_v1_primaries[4] primaries = [
+            WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+            WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3,
+            WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3,
+            WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
+        ]
+        memset(&options, 0, sizeof(wlr_color_manager_v1_options))
+        options.features.parametric = True
+        options.render_intents = render_intents
+        options.render_intents_len = 1
+        options.transfer_functions = transfer_functions
+        options.transfer_functions_len = 5
+        options.primaries = primaries
+        options.primaries_len = 4
+        self.color_manager = wlr_color_manager_v1_create(self.display_ptr, 1, &options)
+        if not self.color_manager:
+            log.warn("Warning: unable to create the colour management manager")
+            log.warn(" all surfaces will be assumed to be sRGB")
 
     cdef wlr_renderer *create_renderer(self) except NULL:
         cdef wlr_renderer *renderer = NULL

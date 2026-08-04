@@ -81,6 +81,7 @@ class WaylandWindowServer(WindowServer):
             "client-machine": gethostname(),
             "display": self.server.compositor.get_display(),
             "surface": surface,
+            "colourspace": surface.get_colourspace(),
             "title": title,
             "app-id": app_id,
             "parent": 0,
@@ -129,6 +130,7 @@ class WaylandWindowServer(WindowServer):
             "client-machine": gethostname(),
             "display": self.server.compositor.get_display(),
             "surface": popup,
+            "colourspace": popup.get_colourspace(),
             "title": "",
             "app-id": "",
             "parent": parent_wid,
@@ -240,7 +242,9 @@ class WaylandWindowServer(WindowServer):
         window = self.get_window(wid)
         if not window:
             return
-        self.track_toplevel(self.get_surface(wid))
+        surface = self.get_surface(wid)
+        self.track_toplevel(surface)
+        self.update_colourspace(window, surface)
         self.update_size(window, size)
         for sub_wid, sx, sy, logical_w, logical_h, native_w, native_h in subsurfaces:
             self.subsurface_info[sub_wid] = (wid, sx, sy, logical_w, logical_h, native_w, native_h)
@@ -283,6 +287,13 @@ class WaylandWindowServer(WindowServer):
             sub_ws = ss.make_subsurface_source(wid, parent_wid, ox, oy, facade,
                                                logical_w, logical_h, native_w, native_h)
             sub_ws.damage(0, 0, logical_w, logical_h, {})
+
+    @staticmethod
+    def update_colourspace(window, surface) -> None:
+        # the `wp_color_management_surface_v1` tag is double buffered state,
+        # so it only takes effect when the surface is committed:
+        if surface:
+            window._updateprop("colourspace", surface.get_colourspace())
 
     def update_size(self, window, size: tuple[int, int]) -> None:
         old_geom = window.get_property("geometry")
@@ -334,6 +345,7 @@ class WaylandWindowServer(WindowServer):
             window = self._ensure_popup_window(parent_wid, popup, position, size)
             if not window:
                 return
+        self.update_colourspace(window, self.get_surface(wid))
         self.update_geometry(window, position, size)
         if mapped and has_image:
             w, h = size
