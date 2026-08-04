@@ -142,6 +142,7 @@ DEFAULT_METADATA_SUPPORTED = (
     "content-type", "content-types",
     "parent", "relative-position",
     "actions",
+    "colourspace",
 )
 DEFAULT_XDG_DATA_DIRS: str = ":".join(
     (

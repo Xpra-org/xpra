@@ -542,6 +542,11 @@ def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
             "colorspace": td.strget,
             "hdr": td.boolget,
             "icc": td.dictget,
+            # `xpra.util.colourspace.Colourspace` in its dictionary form:
+            # the colourspace this monitor is composited into (server side),
+            # or a hint for the one we would prefer the session to use (client side).
+            # (distinct from `colorspace` above, which is free-form platform information)
+            "colourspace": td.dictget,
         }
         for attr, conv in aconv.items():
             v = conv(attr)

@@ -16,6 +16,7 @@ from xpra.client.gui.window.backing import fire_paint_callbacks
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
 from xpra.common import gravity_str, force_size_constraint
+from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
@@ -165,6 +166,9 @@ class ClientWindowBase(ClientWidgetBase):
         self.size_constraints = typedict()
         self.geometry_hints = typedict()
         self.content_type = ""
+        # the colourspace the server tagged this window with, if any:
+        # `None` means it did not, and we fall back to the session colourspace
+        self.colourspace: Colourspace | None = None
         self._fullscreen = None
         self._maximized = False
         self._above = False
@@ -235,6 +239,7 @@ class ClientWindowBase(ClientWidgetBase):
             "size-constraints": dict(self.size_constraints),
             "geometry-hints": dict(self.geometry_hints),
             "content-type": self.content_type,
+            "colourspace": self.get_colourspace().to_dict(),
             "attributes": attributes,
             "gravity": gravity_str(self.window_gravity),
             # "border"                : self.border or "",
@@ -350,6 +355,24 @@ class ClientWindowBase(ClientWidgetBase):
     def is_OR(self) -> bool:
         return self._override_redirect
 
+    def get_session_colourspace(self) -> Colourspace:
+        """ the colourspace the session renders into, which is what we use for untagged windows """
+        display = self._client.get_subsystem("display")
+        if not display:
+            return SRGB
+        return getattr(display, "server_colourspace", SRGB)
+
+    def get_colourspace(self) -> Colourspace:
+        """
+        The colourspace this window's pixels are in,
+        which is what we have to convert from to render them accurately:
+        the value the server tagged this window with if it provided one,
+        otherwise the colourspace the whole session renders into, otherwise sRGB.
+        """
+        if self.colourspace is not None:
+            return self.colourspace
+        return self.get_session_colourspace()
+
     def update_metadata(self, metadata: typedict) -> None:
         metalog("update_metadata(%s)", metadata)
         if self._client.readonly:
@@ -405,6 +428,12 @@ class ClientWindowBase(ClientWidgetBase):
             self.content_type = metadata.strget("content-type")
             if b := self._backing:
                 b.content_type = self.content_type
+
+        if "colourspace" in metadata:
+            # fall back to the session colourspace for anything the server left out:
+            self.colourspace = Colourspace.from_dict(metadata.dictget("colourspace"),
+                                                     self.get_session_colourspace())
+            metalog("window %i colourspace=%s", self.wid, self.colourspace)
 
         if "transient-for" in metadata:
             self.apply_transient_for(metadata.intget("transient-for"))

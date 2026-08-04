@@ -8,6 +8,7 @@ import os
 from typing import Any
 
 from xpra.util.io import get_util_logger
+from xpra.util.colourspace import SRGB
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.constants import WORKSPACE_UNSET
 
@@ -41,6 +42,11 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "workspace": WORKSPACE_UNSET,
     "bypass-compositor": 0,
     "depth": 24,
+    # the colourspace this window's pixels are in:
+    # only window models that can tell them apart declare this property
+    # (ie: individually tagged wayland surfaces),
+    # for everything else the client falls back to the session colourspace
+    "colourspace": SRGB.to_dict(),
     "opacity": -1,
     "quality": -1,
     "speed": -1,

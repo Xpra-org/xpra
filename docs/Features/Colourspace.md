@@ -9,7 +9,10 @@ The only sensible interpretation of its contents is
 [sRGB](https://en.wikipedia.org/wiki/SRGB) (BT.709 primaries, D65 white point, full range),
 which is also what every toolkit assumes when no metadata is available.
 
-The server therefore declares the colourspace it renders into, once, when the session starts:
+The server therefore declares the colourspace it renders into, once, when the session starts.
+This is the session's *default*: individual windows can override it (see below),
+and the client resolves the two.
+
 * the matching ICC profile is set on the root window as `_ICC_PROFILE` / `_ICC_PROFILE_IN_X_VERSION`,
   so that colour managed applications running in the session know what they are rendering into
   (this requires [pillow](https://python-pillow.org/) with `ImageCms` support -
@@ -26,6 +29,20 @@ It can be inspected with:
 ```shell
 xpra info | grep colourspace
 ```
+
+## Per window and per monitor
+
+A single framebuffer can only have one colourspace, so under X11 the session value is all there is.
+Wayland can tag each surface individually,
+in which case the window's own colourspace is sent as window metadata
+and takes precedence over the session value.
+Monitor definitions can carry one too:
+the colourspace a monitor is composited into for
+[desktop and monitor modes](../Usage/Desktop.md),
+and, from the client, a hint for the colourspace it would prefer the session to render into.
+
+The client resolves these in order: **window metadata, then the session, then sRGB**.
+It never has to guess: an untagged window is by definition in the session colourspace.
 
 ## Legacy client profile synchronization
 
