@@ -65,7 +65,7 @@ class ClipboardProtocolHelperCore:
         self._want_targets: tuple[str, ...] = ()
         self._greedy: tuple[str, ...] = ()
         self.init_packet_handlers()
-        selections = get_local_selections()
+        selections = get_local_selections(d.boolget("all-selections"))
         self.init_proxies(d.strtupleget("clipboards.local", selections))
         self.remote_clipboards = d.strtupleget("clipboards.remote", selections)
         self.local_want_targets = tuple(selections) if envbool("XPRA_CLIPBOARD_WANT_TARGETS") else ()

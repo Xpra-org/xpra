@@ -24,11 +24,13 @@ CARD32_SIZE: Final[int] = sizeof_long * 8
 ALL_CLIPBOARDS: Final[Sequence[str]] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
 
 
-def get_local_selections() -> Sequence[str]:
+def get_local_selections(all_selections: bool = False) -> Sequence[str]:
     if "XPRA_CLIPBOARDS" in os.environ:
         return tuple(x for x in os.environ.get("XPRA_CLIPBOARDS", "").split(",") if x)
     if WIN32 or OSX:
-        return "CLIPBOARD",
+        # there is no `PRIMARY` selection on MS Windows or MacOS,
+        # but we can still receive it and save it to the local `CLIPBOARD`:
+        return ("CLIPBOARD", "PRIMARY") if all_selections else ("CLIPBOARD", )
     if is_Wayland():
         return "CLIPBOARD", "PRIMARY"
     return "CLIPBOARD", "PRIMARY", "SECONDARY"

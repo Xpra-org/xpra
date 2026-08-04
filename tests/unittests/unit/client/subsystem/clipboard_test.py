@@ -14,6 +14,16 @@ from unit.process_test_util import DisplayContext
 
 class ClipboardClientTest(ClientMixinTest):
 
+    def test_clipboard_types(self):
+        from xpra.client.subsystem.clipboard import get_clipboard_helper_classes
+        default = get_clipboard_helper_classes("auto")
+        self.assertTrue(default)
+        # `all` only changes the selections used, not the backend:
+        self.assertEqual(get_clipboard_helper_classes("all"), default)
+        self.assertEqual(get_clipboard_helper_classes("yes"), default)
+        self.assertEqual(get_clipboard_helper_classes("no"), [])
+        self.assertEqual(get_clipboard_helper_classes("nosuchbackend"), [])
+
     def test_clipboard(self):
         from xpra.client.subsystem.clipboard import ClipboardClient
         opts = AdHocStruct()

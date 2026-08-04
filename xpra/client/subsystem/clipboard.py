@@ -25,6 +25,10 @@ log = Logger("clipboard")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS", "")
 CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
 
+# `--clipboard=all` enables the clipboard using the default backend,
+# but with all the selections supported by the platform:
+ALL_SELECTIONS = "all"
+
 
 def get_clipboard_helper_classes(clipboard_type: str) -> list[type]:
     ct = clipboard_type
@@ -36,7 +40,7 @@ def get_clipboard_helper_classes(clipboard_type: str) -> list[type]:
         get_backend_module(),
     ]
     log("get_clipboard_helper_classes() unfiltered list=%s", clipboard_classes)
-    if ct and ct.lower() != "auto" and ct.lower() not in TRUE_OPTIONS:
+    if ct and ct.lower() not in ("auto", ALL_SELECTIONS) and ct.lower() not in TRUE_OPTIONS:
         # try to match the string specified:
         filtered = [x for x in clipboard_classes if x and x.lower().find(ct) >= 0]
         if not filtered:
@@ -269,6 +273,10 @@ class ClipboardClient(StubClientSubsystem):
         options = {}
         if len(parts) > 1:
             options = parse_simple_dict(parts[1])
+        if clipboard_type.lower() == ALL_SELECTIONS:
+            # synchronize all the selections this platform can handle,
+            # and not just the default one:
+            options["all-selections"] = True
         clipboard_classes = get_clipboard_helper_classes(clipboard_type)
         log("make_clipboard_helper() options=%s", clipboard_classes)
         for helperclass in clipboard_classes:

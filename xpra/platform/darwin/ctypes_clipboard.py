@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from AppKit import (
     NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,
@@ -14,6 +14,7 @@ from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.common import ClipboardCallback
 from xpra.clipboard.targets import _filter_targets, TEXT_TARGETS
+from xpra.clipboard.primary import PrimaryProxyMixin, PrimaryHelperMixin
 from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
 from xpra.util.ui_thread_watcher import get_ui_watcher
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
@@ -230,17 +231,42 @@ class OSXClipboardProxy(ClipboardProxyCore):
         self.do_owner_changed()
 
 
-class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
+class OSXPrimaryProxy(PrimaryProxyMixin, OSXClipboardProxy):
+    """
+    The `PRIMARY` selection does not exist on MacOS,
+    see `PrimaryProxyMixin`
+    """
+
+    def __init__(self, selection, pasteboard, send_clipboard_request_handler, send_clipboard_token_handler,
+                 set_clipboard_text: Callable[[str], None]):
+        self.init_primary(set_clipboard_text)
+        super().__init__(selection, pasteboard, send_clipboard_request_handler, send_clipboard_token_handler)
+
+    def __repr__(self):
+        return "OSXPrimaryProxy"
+
+    def local_clipboard_changed(self) -> None:
+        # a local clipboard change takes precedence
+        # over any remote `PRIMARY` contents we were about to fetch:
+        log("local_clipboard_changed()")
+        self.cancel_request()
+
+
+class OSXClipboardProtocolHelper(PrimaryHelperMixin, ClipboardTimeoutHelper):
 
     def __init__(self, *args, **kwargs):
         self.pasteboard = NSPasteboard.generalPasteboard()
         if self.pasteboard is None:
             raise RuntimeError("cannot load Pasteboard, maybe not running from a GUI session?")
         kwargs["clipboard.local"] = "CLIPBOARD"
-        kwargs["clipboards.local"] = ["CLIPBOARD"]
         super().__init__(*args, **kwargs)
-        self.local_greedy = ("CLIPBOARD",)
-        self.local_want_targets = ("CLIPBOARD",)
+        # the OS requests the data as soon as we claim the clipboard,
+        # so we must ask the peer to send it with the token.
+        # `PRIMARY` is excluded: it is only ever saved to the `CLIPBOARD` selection,
+        # and it changes far too often to request its contents every time:
+        selections = tuple(x for x in self.local_selections if x != "PRIMARY")
+        self.local_greedy = selections
+        self.local_want_targets = selections
 
     def __repr__(self):
         return "OSXClipboardProtocolHelper"
@@ -250,10 +276,30 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
         self.pasteboard = None
 
     def make_proxy(self, selection) -> OSXClipboardProxy:
-        proxy = OSXClipboardProxy(selection, self.pasteboard,
-                                  self._send_clipboard_request_handler, self._send_clipboard_token_handler)
+        if selection == "PRIMARY":
+            proxy = OSXPrimaryProxy(selection, self.pasteboard,
+                                    self._send_clipboard_request_handler, self._send_clipboard_token_handler,
+                                    self.set_local_clipboard_text)
+            self.primary_proxy = proxy
+        else:
+            proxy = OSXClipboardProxy(selection, self.pasteboard,
+                                      self._send_clipboard_request_handler, self._send_clipboard_token_handler)
         proxy.set_direction(self.can_send, self.can_receive)
         return proxy
+
+    def set_local_clipboard_text(self, text: str) -> None:
+        # this is used to save the remote `PRIMARY` selection to the local `CLIPBOARD`:
+        # we go through the `CLIPBOARD` proxy so that it does not claim the selection
+        # when it sees the change we are making here
+        proxy = self._clipboard_proxies.get("CLIPBOARD")
+        if not proxy:
+            log.warn("Warning: no 'CLIPBOARD' proxy to save the 'PRIMARY' selection to")
+            return
+        proxy.set_clipboard_text(text)
+        # this pasteboard change is ours:
+        # no proxy should report it as a local clipboard change
+        for other in self._clipboard_proxies.values():
+            other.update_change_count()
 
     ############################################################################
     # just pass ATOM targets through

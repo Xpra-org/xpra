@@ -538,11 +538,14 @@ Sets the maximum size for all windows.
 Read only mode ignores all keyboard and mouse activity.
 .TP
 
-\fB\-\-clipboard\fP=\fIyes\fP|\fIno|clipboard-type\fP
+\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP|\fIall\fP|\fIclipboard-type\fP
 Enable or disable clipboard synchronization.
 If disabled on the server, no clients will be able to use clipboard
 synchronization at all. If turned off on the client, only this
 particular connection will ignore clipboard data from the server.
+\fBall\fP enables all the selections supported by the platform:
+on MS Windows and MacOS clients, the remote \fBPRIMARY\fP selection
+is then also synchronized to the local clipboard.
 This can also be used to specify a different clipboard implementation.
 The clipboard types available will vary from platform to platform and
 also depend on build time environment and options

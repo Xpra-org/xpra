@@ -37,6 +37,7 @@ from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.core import MAX_CLIPBOARD_PACKET_SIZE
 from xpra.clipboard.common import ClipboardCallback
 from xpra.clipboard.targets import _filter_targets, TEXT_TARGETS
+from xpra.clipboard.primary import PrimaryProxyMixin, PrimaryHelperMixin
 from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
 from xpra.common import roundup, noop
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
@@ -926,7 +927,22 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         return "Win32ClipboardProxy"
 
 
-class Win32Clipboard(ClipboardTimeoutHelper):
+class Win32PrimaryProxy(PrimaryProxyMixin, Win32ClipboardProxy):
+    """
+    The `PRIMARY` selection does not exist on MS Windows,
+    see `PrimaryProxyMixin`
+    """
+
+    def __init__(self, window, selection, send_clipboard_request_handler, send_clipboard_token_handler,
+                 set_clipboard_text: Callable[[str], None]):
+        self.init_primary(set_clipboard_text)
+        super().__init__(window, selection, send_clipboard_request_handler, send_clipboard_token_handler)
+
+    def __repr__(self):
+        return "Win32PrimaryProxy"
+
+
+class Win32Clipboard(PrimaryHelperMixin, ClipboardTimeoutHelper):
     """
         Use Native win32 API to access the clipboard
     """
@@ -934,7 +950,11 @@ class Win32Clipboard(ClipboardTimeoutHelper):
     def __init__(self, send_packet_cb, progress_cb=noop, **kwargs):
         self.init_window()
         super().__init__(send_packet_cb, progress_cb, **kwargs)
-        self.local_greedy = tuple(self.local_selections)
+        # the OS requests the data as soon as we claim the clipboard,
+        # so we must ask the peer to send it with the token.
+        # `PRIMARY` is excluded: it is only ever saved to the `CLIPBOARD` selection,
+        # and it changes far too often to request its contents every time:
+        self.local_greedy = tuple(x for x in self.local_selections if x != "PRIMARY")
 
     def init_window(self) -> None:
         log("Win32Clipboard.init_window() creating clipboard window class and instance")
@@ -975,8 +995,11 @@ class Win32Clipboard(ClipboardTimeoutHelper):
                 return r
             min_delay = 500 * int(is_syncdelay(owner_info))
             log("CLIPBOARDUPDATE coming from '%s', min_delay=%i", owner_info, min_delay)
+            # a local clipboard change takes precedence
+            # over any remote `PRIMARY` contents we were about to fetch:
+            self.cancel_primary_request()
             for proxy in self._clipboard_proxies.values():
-                if not proxy._block_owner_change:
+                if proxy._can_send and not proxy._block_owner_change:
                     proxy.schedule_emit_token(min_delay)
         return r
 
@@ -995,11 +1018,27 @@ class Win32Clipboard(ClipboardTimeoutHelper):
             UnregisterClassW(CLIPBOARD_WINDOW_CLASS_NAME, GetModuleHandleA(0))
 
     def make_proxy(self, selection: str) -> Win32ClipboardProxy:
-        proxy = Win32ClipboardProxy(self.window, selection,
-                                    self._send_clipboard_request_handler, self._send_clipboard_token_handler)
+        if selection == "PRIMARY":
+            proxy = Win32PrimaryProxy(self.window, selection,
+                                      self._send_clipboard_request_handler, self._send_clipboard_token_handler,
+                                      self.set_local_clipboard_text)
+            self.primary_proxy = proxy
+        else:
+            proxy = Win32ClipboardProxy(self.window, selection,
+                                        self._send_clipboard_request_handler, self._send_clipboard_token_handler)
         proxy.set_want_targets(self.proxy_want_targets(selection))
         proxy.set_direction(self.can_send, self.can_receive)
         return proxy
+
+    def set_local_clipboard_text(self, text: str) -> None:
+        # this is used to save the remote `PRIMARY` selection to the local `CLIPBOARD`:
+        # we go through the `CLIPBOARD` proxy so that it blocks its own owner change events
+        # and we don't end up claiming the `CLIPBOARD` selection with this data
+        proxy = self._clipboard_proxies.get("CLIPBOARD")
+        if not proxy:
+            log.warn("Warning: no 'CLIPBOARD' proxy to save the 'PRIMARY' selection to")
+            return
+        proxy.set_clipboard_text(text)
 
     ############################################################################
     # just pass ATOM targets through

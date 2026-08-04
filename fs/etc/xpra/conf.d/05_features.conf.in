@@ -4,6 +4,9 @@
 # Enable clipboard forwarding:
 #clipboard = yes
 #clipboard = no
+# Synchronize all the selections supported by the platform
+# (ie: also the `PRIMARY` selection with MS Windows and MacOS clients):
+#clipboard = all
 # Can also be used to specify a different keyboard implementation:
 #clipboard = GDK
 #clipboard = translated
