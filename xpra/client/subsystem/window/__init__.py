@@ -48,7 +48,7 @@ WindowClientClass = type("WindowClientClass", WINDOW_CLIENT_BASES, {"__slots__":
 
 class WindowClient(WindowClientClass):
     __slots__ = (
-        "_button_state", "_draw_counter", "_focused", "_id_to_window", "_pid_to_signalwatcher",
+        "_button_state", "_draw_counter", "_focused", "_id_to_window", "_locked_windows", "_pid_to_signalwatcher",
         "_signalwatcher_to_wids", "_win32_events", "_window_to_id", "_window_with_grab", "auto_refresh_delay",
         "bell_enabled", "border", "border_str", "client_supports_bell", "client_supports_system_tray",
         "input_devices", "lost_focus_timer", "max_window_size", "min_window_size", "modal_windows",
