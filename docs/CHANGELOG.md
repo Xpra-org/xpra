@@ -7,6 +7,7 @@
   * [new macOS screen capture backend](https://github.com/Xpra-org/xpra/issues/1872)
   * [setup scripts for pycuda](https://github.com/Xpra-org/xpra/issues/2400)
   * [automatic RPM package scripts](https://github.com/Xpra-org/xpra/issues/4920)
+  * [MS Windows session lock prevented OpenGL acceleration](https://github.com/Xpra-org/xpra/issues/1138)
 * 🖧 Network:
   * [proxy registration](https://github.com/Xpra-org/xpra/issues/2125)
   * [automatic session proxying](https://github.com/Xpra-org/xpra/issues/4902)
@@ -28,6 +29,7 @@
   * [http origin validation](https://github.com/Xpra-org/xpra/issues/4957)
   * [rate-limit authentication requests](https://github.com/Xpra-org/xpra/issues/4959)
   * [process level protections: prevent ptrace / core dumps](https://github.com/Xpra-org/xpra/issues/4958)
+  * [mmap tightening](https://github.com/Xpra-org/xpra/issues/4987)
 * 🌈 Encodings:
   * [`zstd` stream compression](https://github.com/Xpra-org/xpra/issues/4946)
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
