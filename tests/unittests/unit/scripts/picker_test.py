@@ -345,6 +345,34 @@ class TestFindSessionByName(unittest.TestCase):
             result = find_session_by_name(opts, "mysession")
         self.assertEqual(result, "")
 
+    def test_no_matching_session_lists_the_names_found(self):
+        # the same session is reachable from more than one socket dir,
+        # so each name must only be shown once:
+        dotxpra = MagicMock()
+        dotxpra.socket_paths.return_value = ["/run/xpra/:10", "/home/user/.xpra/:10", "/tmp/:11"]
+        outputs = iter([
+            "session-name=other\nuuid=abc123\n",
+            "session-name=other\nuuid=abc123\n",
+            "session-name=another\nuuid=def456\n",
+        ])
+
+        def make_proc(_cmd, stdout, stderr):
+            return self._make_proc(0, next(outputs))
+
+        opts = _make_opts()
+        with patch("xpra.scripts.picker._DotXpra", return_value=dotxpra), \
+             patch("xpra.scripts.picker.Popen", side_effect=make_proc), \
+             patch("xpra.platform.paths.get_nodock_command", return_value=["xpra"]), \
+             patch("xpra.scripts.picker.monotonic", side_effect=[0.0, 100.0]), \
+             patch("xpra.scripts.picker._werr") as werr:
+            result = find_session_by_name(opts, "mysession")
+        self.assertEqual(result, "")
+        werr.assert_called_once()
+        msg = werr.call_args[0][0]
+        self.assertIn("'another', 'other'", msg)
+        # "other" was found twice, but must only be listed once:
+        self.assertEqual(msg.count("'other'"), 1)
+
     def test_multiple_matches_raises(self):
         dotxpra = MagicMock()
         dotxpra.socket_paths.return_value = ["/tmp/a", "/tmp/b"]

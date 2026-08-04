@@ -18,7 +18,7 @@ from typing import Any
 from xpra.exit_codes import ExitCode
 from xpra.os_util import getuid, getgid, get_username_for_uid, WIN32
 from xpra.net.constants import SocketState
-from xpra.util.str_fn import bytestostr
+from xpra.util.str_fn import bytestostr, csv, sorted_nicely
 from xpra.util.io import stderr_print
 from xpra.util.env import envint
 from xpra.scripts.config import InitException, InitExit, InitInfo
@@ -54,6 +54,7 @@ def find_session_by_name(opts, session_name: str) -> str:
     while any(proc.poll() is None for proc in id_sessions.values()) and monotonic() - now < 10:
         time.sleep(0.5)
     session_uuid_to_path = {}
+    found_names: set[str] = set()
     for socket_path, proc in id_sessions.items():
         if proc.poll() == 0:
             out, err = proc.communicate()
@@ -66,12 +67,19 @@ def find_session_by_name(opts, session_name: str) -> str:
                     continue
             name = d.get("session-name")
             uuid = d.get("uuid")
+            if name:
+                found_names.add(name)
             if name == session_name and uuid:
                 session_uuid_to_path[uuid] = socket_path
     if not session_uuid_to_path:
+        if found_names:
+            # show the names the user could have used:
+            _werr("no session named %r, current sessions are: %s" % (
+                session_name, csv(repr(x) for x in sorted_nicely(found_names))))
         return ""
     if len(session_uuid_to_path) > 1:
-        raise InitException(f"more than one session found matching {session_name!r}")
+        raise InitException("more than one session found matching %r: %s" % (
+            session_name, csv(sorted_nicely(session_uuid_to_path.values()))))
     socket_path = tuple(session_uuid_to_path.values())[0]
     return f"socket://{socket_path}"
 
