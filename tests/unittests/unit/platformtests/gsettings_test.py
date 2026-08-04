@@ -13,7 +13,10 @@ from xpra.os_util import WIN32
 class PlatformGSettingsTest(unittest.TestCase):
 
     def test_macos_values(self):
-        from xpra.platform.darwin import gsettings
+        try:
+            from xpra.platform.darwin import gsettings
+        except ModuleNotFoundError:
+            self.skipTest("macOS gsettings module is not installed")
         with (
             patch.object(gsettings, "_uses_dark_theme", return_value=True),
             patch.object(gsettings, "_uses_high_contrast", return_value=False),
