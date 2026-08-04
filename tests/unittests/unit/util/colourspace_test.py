@@ -162,8 +162,12 @@ class TestWaylandColourspace(unittest.TestCase):
     """ `wp_color_manager_v1` named enums -> H.273 code points """
 
     def setUp(self):
-        # pure python mapping tables: no wayland or wlroots needed
-        from xpra.wayland.server.colourspace import get_colourspace, PRIMARIES, TRANSFER_FUNCTIONS
+        # the mapping tables are pure python (no wayland or wlroots needed to exercise them),
+        # but the package they live in is only installed when the wayland backend is built:
+        try:
+            from xpra.wayland.server.colourspace import get_colourspace, PRIMARIES, TRANSFER_FUNCTIONS
+        except ImportError:
+            raise unittest.SkipTest("the wayland server backend is not installed") from None
         self.get_colourspace = get_colourspace
         self.PRIMARIES = PRIMARIES
         self.TRANSFER_FUNCTIONS = TRANSFER_FUNCTIONS
