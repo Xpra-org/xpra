@@ -305,7 +305,10 @@ def normalize_display_name(display_name: str) -> str:
                 return "vsock://" + netloc[:-len(s)] + "0/" + extra
         return display_name
     # maybe this is just the display number without the ":" prefix?
-    if display_name and display_name[0] in "0123456789" and POSIX:
+    # (the "." allows for a screen number: "10.0")
+    # only do this if the whole string is numeric, so that a session name
+    # which happens to start with a digit can still be looked up by name
+    if display_name and display_name.replace(".", "").isnumeric() and POSIX:
         return ":" + display_name
     if WIN32 and display_name[0].isalpha() and display_name.find(":") < 0:
         # pragma: no cover
