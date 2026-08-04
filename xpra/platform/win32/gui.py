@@ -234,12 +234,13 @@ def get_desktop_name() -> str:
     try:
         desktop = OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
         if desktop:
-            buf = create_string_buffer(128)
-            r = GetUserObjectInformationA(desktop, win32con.UOI_NAME, buf, len(buf), None)
-            if r != 0:
-                desktop_name = buf.value.decode("latin1")
-                return desktop_name
-            CloseDesktop(desktop)
+            try:
+                buf = create_string_buffer(128)
+                r = GetUserObjectInformationA(desktop, win32con.UOI_NAME, buf, len(buf), None)
+                if r != 0:
+                    return buf.value.decode("latin1")
+            finally:
+                CloseDesktop(desktop)
     except Exception as e:
         log.warn("Warning: failed to get desktop name")
         log.warn(" %s", e)
