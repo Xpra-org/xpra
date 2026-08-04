@@ -403,7 +403,9 @@ def get_nsscreen_for_display(adid):
 
 
 def add_monitor_colour_info(minfo: dict[str, Any], adid) -> None:
-    # colourspace name from the display's colour space:
+    # free-form colourspace name from the display's colour space.
+    # (this belongs under `colorspace`: `colourspace` is the structured
+    # `xpra.util.colourspace.Colourspace` descriptor, which is a dictionary)
     try:
         cs = CG.CGDisplayCopyColorSpace(adid)
     except Exception:
@@ -412,7 +414,7 @@ def add_monitor_colour_info(minfo: dict[str, Any], adid) -> None:
     if cs:
         name = get_colorspace_info(cs).get("name")
         if name:
-            minfo["colourspace"] = name
+            minfo["colorspace"] = name
     # colour depth and HDR (EDR) capability from the matching NSScreen:
     screen = get_nsscreen_for_display(adid)
     if screen is not None:

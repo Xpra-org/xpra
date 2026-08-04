@@ -6,11 +6,15 @@
 """
 Colourspace descriptors.
 
-A colourspace is described by four independent code points rather than by an ICC profile:
+A colourspace is described by four independent attributes rather than by an ICC profile:
 primaries, transfer function, matrix coefficients and range.
-The numbering is the one from ITU-T H.273 (ISO/IEC 23091-2),
+
+Their *values* are the code points from ITU-T H.273 (ISO/IEC 23091-2),
 which is what x264, libvpx, aom, avif and ffmpeg already use,
-so these values can be handed to the encoders without a translation table.
+so they can be handed to the encoders without a translation table.
+Those numbers never reach the wire though: colourspaces are serialized using the
+lower case attribute names (ie: `"bt2020"`, `"display-p3"`), so that both the packets
+and `xpra info` can be read without a copy of the specification at hand.
 
 A virtual framebuffer has no colourimetry of its own
 (no EDID, no ICC profile, and the X11 core protocol cannot express primaries at all),
@@ -21,6 +25,8 @@ and it is what every toolkit assumes in the absence of any metadata.
 from enum import IntEnum
 from typing import Any
 from dataclasses import dataclass, fields
+
+from xpra.util.str_fn import bytestostr
 
 
 class Primaries(IntEnum):
@@ -65,10 +71,17 @@ class Range(IntEnum):
     FULL = 1
 
 
+def wire_name(value: IntEnum) -> str:
+    """ the name a colourspace attribute is serialized as, ie: `MatrixCoefficients.BT2020_NCL` -> `"bt2020-ncl"` """
+    return value.name.lower().replace("_", "-")
+
+
 def _parse(enum_class, value, default):
+    """ Look an attribute up by its wire name, falling back to `default` for anything we don't know """
+    name = bytestostr(value).upper().replace("-", "_")
     try:
-        return enum_class(int(value))
-    except (ValueError, TypeError):
+        return enum_class[name]
+    except KeyError:
         return default
 
 
@@ -82,8 +95,8 @@ class Colourspace:
     matrix: MatrixCoefficients = MatrixCoefficients.IDENTITY
     range: Range = Range.FULL
 
-    def to_dict(self) -> dict[str, int]:
-        return {f.name: int(getattr(self, f.name)) for f in fields(self)}
+    def to_dict(self) -> dict[str, str]:
+        return {f.name: wire_name(getattr(self, f.name)) for f in fields(self)}
 
     @classmethod
     def from_dict(cls, value: Any, default: "Colourspace | None" = None) -> "Colourspace":

@@ -22,10 +22,28 @@ class TestColourspace(unittest.TestCase):
 
     def test_to_dict(self):
         d = SRGB.to_dict()
-        self.assertEqual(d, {"primaries": 1, "transfer": 13, "matrix": 0, "range": 1})
-        # the values must be plain integers so they can be sent as capabilities:
+        # names, not H.273 numbers: the wire and `xpra info` have to be readable.
+        # (this pins the wire format: renaming an enum member would change it)
+        self.assertEqual(d, {"primaries": "bt709", "transfer": "srgb", "matrix": "identity", "range": "full"})
         for v in d.values():
-            self.assertEqual(type(v), int)
+            self.assertEqual(type(v), str)
+
+    def test_wire_names(self):
+        from xpra.util.colourspace import wire_name
+        self.assertEqual(wire_name(Primaries.DISPLAY_P3), "display-p3")
+        self.assertEqual(wire_name(MatrixCoefficients.BT2020_NCL), "bt2020-ncl")
+        self.assertEqual(wire_name(TransferFunction.IEC61966_2_4), "iec61966-2-4")
+        # every attribute must have a distinct name within its own enum,
+        # otherwise `from_dict` could not tell them apart:
+        for enum_class in (Primaries, TransferFunction, MatrixCoefficients, Range):
+            names = [wire_name(v) for v in enum_class]
+            self.assertEqual(len(names), len(set(names)), f"duplicate wire names in {enum_class}")
+
+    def test_h273_values(self):
+        # the values stay H.273 code points, so they can be given to the encoders as-is:
+        self.assertEqual(int(Primaries.BT2020), 9)
+        self.assertEqual(int(TransferFunction.PQ), 16)
+        self.assertEqual(int(MatrixCoefficients.IDENTITY), 0)
 
     def test_round_trip(self):
         for cs in (
@@ -38,14 +56,20 @@ class TestColourspace(unittest.TestCase):
             self.assertEqual(Colourspace.from_dict(cs.to_dict()), cs)
 
     def test_from_dict_invalid(self):
-        # anything we cannot make sense of must fall back to sRGB:
+        # anything we cannot make sense of must fall back to sRGB,
+        # including the H.273 numbers themselves: those are not a wire format
         for value in (None, {}, "", 0, [], (), {"primaries": "invalid"}, {"transfer": None},
-                      {"primaries": 999, "transfer": 999, "matrix": 999, "range": 999}):
+                      {"primaries": 9, "transfer": 16, "matrix": 0, "range": 0},
+                      {"primaries": "nope", "transfer": "nope", "matrix": "nope", "range": "nope"}):
             self.assertEqual(Colourspace.from_dict(value), SRGB, f"for {value!r}")
+
+    def test_from_dict_bytes(self):
+        # some packet encoders hand us bytes rather than strings:
+        self.assertEqual(Colourspace.from_dict({"primaries": b"bt2020"}).primaries, Primaries.BT2020)
 
     def test_from_dict_partial(self):
         # unknown values must not discard the ones we can parse:
-        cs = Colourspace.from_dict({"primaries": int(Primaries.BT2020), "transfer": 999})
+        cs = Colourspace.from_dict({"primaries": "bt2020", "transfer": "nope"})
         self.assertEqual(cs.primaries, Primaries.BT2020)
         self.assertEqual(cs.transfer, SRGB.transfer)
         self.assertEqual(cs.matrix, SRGB.matrix)

@@ -20,14 +20,18 @@ and the client resolves the two.
 * it is sent to the client as a capability, so that the client can convert the pixels
   to whatever colourspace its own display uses
 
-The colourspace is described by four code points -
+A colourspace is described by four attributes -
 primaries, transfer function, matrix coefficients and range -
-using the numbering from ITU-T H.273 (ISO/IEC 23091-2),
-which is the one the video encoders already use.
+whose values are the code points from ITU-T H.273 (ISO/IEC 23091-2),
+the numbering the video encoders already use.
+They are sent and shown by name rather than by number:
 
-It can be inspected with:
 ```shell
-xpra info | grep colourspace
+$ xpra info | grep -i colourspace
+windows.1.colourspace.matrix=identity
+windows.1.colourspace.primaries=bt709
+windows.1.colourspace.range=full
+windows.1.colourspace.transfer=srgb
 ```
 
 ## Per window and per monitor
