@@ -113,6 +113,21 @@ Connect using secure websocket protocol. (websocket with SSL)
 .SS ssh://[[USERNAME][:PASSWORD]@]HOST[:SSH_PORT]/[DISPLAY][?OPTIONS]
 Connect using secure shell. (SSH)
 
+Instead of a display, the \fBDISPLAY\fP component can be a session name
+(as given to \fB\-\-session\-name\fP, and shown by \fBxpra list\-sessions\fP
+on the server), ie: \fIssh://frodo/mysession\fP
+.P
+The name is resolved on the server, which must find exactly one live
+session matching it, amongst the sessions belonging to the user
+logged in via ssh.
+Names which have to be percent-encoded to be valid in a URI must be
+given in their encoded form, ie: \fIssh://frodo/my%20session\fP for a
+session named "my session"; use \fI%2C\fP for "," and \fI%3D\fP for "=" as
+those characters are otherwise used to separate connection options.
+A value which looks like a display is always used as a display: this is
+the case for purely numeric values and for anything starting with ":",
+"@" or "wayland\-".
+
 Further SSH options can be specified using the \fB\-\-ssh\fP command line option.
 The \fBOPTIONS\fP can be used to specify an ssh proxy:
 ?proxy=ssh://[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]
@@ -269,6 +284,14 @@ on that machine), then you can omit the number entirely; \fBxpra
 attach\fP alone will attach to the lone xpra server on the current
 machine regardless of its number, \fBxpra attach ssh://frodo\fP will
 similarly attach to the lone xpra session on a remote machine.
+
+Sessions can also be selected by name rather than by display number,
+using the name given to \fB\-\-session\-name\fP:
+\fBxpra attach\fP \fImysession\fP for a local session, or
+\fBxpra attach\fP \fIssh://frodo/mysession\fP for a remote one.
+\fBxpra list\-sessions\fP shows the name of each session.
+This is resolved by querying every live session of that user, so it only
+works if exactly one of them carries that name.
 
 Connecting using the display number assumes that the client and server
 use the same configuration for socket directories, or at least that

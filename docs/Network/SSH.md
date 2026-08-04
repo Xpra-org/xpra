@@ -11,6 +11,21 @@ xpra attach ssh://USERNAME@HOST/DISPLAY
 ```
 (the `DISPLAY` value may be omitted if the user only has a single active session)
 
+Instead of a display, you can use the name of the session, as given to `--session-name`:
+```
+xpra attach ssh://USERNAME@HOST/mysession
+```
+`xpra list-sessions` on the server shows the name of each session.
+The name is resolved on the server, by querying each of the live sessions belonging to
+the user logging in via ssh, so it only works if exactly one of them carries that name.
+If no session matches, the error message will list the names that are available.
+
+Since this is a URI, names containing characters which are not valid in a URI path have to be
+percent-encoded: use `ssh://USERNAME@HOST/my%20session` for a session named `my session`,
+and `%2C` / `%3D` for `,` and `=` (which are otherwise used to separate connection options).
+Values which look like a display are always used as a display: purely numeric values, and
+anything starting with `:`, `@` or `wayland-`.
+
 Similarly, it is possible to start new sessions and connect to them in one command:
 ```
 xpra seamless ssh://USERNAME@HOST/ --start=xterm
