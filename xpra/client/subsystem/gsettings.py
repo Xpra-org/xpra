@@ -39,11 +39,14 @@ class GSettingsClient(StubClientSubsystem):
 
     def init(self, opts) -> None:
         self.sync = opts.gsettings_sync
-        # `auto` enables synchronization of the default allowlist
-        # everywhere except MacOS and MS Windows,
+        # `auto` enables synchronization of the default allowlist on POSIX;
+        # MacOS and MS Windows provide native appearance values instead,
         # the option can also specify `schema:key` patterns to synchronize,
         # or fixed values using `schema:key=value(type)`:
         self.allowlist, assignments = parse_gsettings_option(opts.gsettings_sync, not (OSX or WIN32))
+        if (OSX or WIN32) and (self.sync or "").strip().lower() == "auto":
+            from xpra.platform.gsettings import get_auto_gsettings
+            assignments.update(get_auto_gsettings())
         self.values = assignments
         self.enabled = bool(self.allowlist or self.values)
         log("gsettings_sync(%s)=%s, allowlist=%s, values=%s",

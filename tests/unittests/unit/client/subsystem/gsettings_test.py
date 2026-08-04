@@ -34,6 +34,48 @@ class Client:
 
 class GSettingsClientTest(unittest.TestCase):
 
+    def test_platform_auto_values(self):
+        values = {
+            ("org.gnome.desktop.wm.preferences", "button-layout"): "'close,minimize,maximize:'",
+            ("org.gnome.desktop.interface", "color-scheme"): "'prefer-dark'",
+            ("org.gnome.desktop.a11y.interface", "high-contrast"): "true",
+        }
+        with (
+            patch("xpra.client.subsystem.gsettings.OSX", True),
+            patch("xpra.client.subsystem.gsettings.WIN32", False),
+            patch("xpra.platform.gsettings.get_auto_gsettings", return_value=values) as get_auto,
+        ):
+            owner = Client()
+            client = GSettingsClient(owner)
+            opts = AdHocStruct()
+            opts.gsettings_sync = "auto"
+            client.init(opts)
+            self.assertEqual(client.allowlist, ())
+            self.assertEqual(client.values, values)
+            with patch("xpra.os_util.gi_import", side_effect=AssertionError) as gi_import:
+                client.setup_gsettings()
+            gi_import.assert_not_called()
+        get_auto.assert_called_once_with()
+        self.assertEqual(owner.packets, [("gsettings-update", {
+            "org.gnome.desktop.wm.preferences:button-layout": "'close,minimize,maximize:'",
+            "org.gnome.desktop.interface:color-scheme": "'prefer-dark'",
+            "org.gnome.desktop.a11y.interface:high-contrast": "true",
+        })])
+
+    def test_platform_defaults_only_apply_to_auto(self):
+        with (
+            patch("xpra.client.subsystem.gsettings.OSX", False),
+            patch("xpra.client.subsystem.gsettings.WIN32", True),
+            patch("xpra.platform.gsettings.get_auto_gsettings") as get_auto,
+        ):
+            client = GSettingsClient(Client())
+            opts = AdHocStruct()
+            opts.gsettings_sync = "yes"
+            client.init(opts)
+        get_auto.assert_not_called()
+        self.assertTrue(client.allowlist)
+        self.assertEqual(client.values, {})
+
     def test_fixed_values(self):
         owner = Client()
         client = GSettingsClient(owner)
