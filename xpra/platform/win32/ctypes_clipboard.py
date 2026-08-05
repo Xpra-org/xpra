@@ -1020,7 +1020,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 callback(b)
                 return True
             finally:
-                GlobalUnlock(data)
+                GlobalUnlock(data_handle)
 
         self.with_clipboard_lock(get_text, errback)
 
