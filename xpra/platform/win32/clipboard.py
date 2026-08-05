@@ -405,6 +405,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.window = window
         self.send_clipboard_request_handler = send_clipboard_request_handler
         self.send_clipboard_token_handler = send_clipboard_token_handler
+        #the targets and the data the peer sent us with the last token:
+        self.targets = ()
+        self.target_data = {}
         super().__init__(selection)
 
     def with_clipboard_lock(self, success_callback, failure_callback, retries=RETRY, delay=DELAY):
