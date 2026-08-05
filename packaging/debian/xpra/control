@@ -282,6 +282,7 @@ Depends: xpra-common (= ${binary:Version})
 #noble:              ,libopenh264-7
 #questing:              ,libopenh264-8
 #resolute:              ,libopenh264-8
+#stonking:              ,libopenh264-8
 #bookworm:              ,libopenh264-7
 #trixie:              ,libopenh264-8
 #forky:              ,libopenh264-8
@@ -297,6 +298,7 @@ Depends: xpra-common (= ${binary:Version})
 #noble:              ,libavif16
 #questing:              ,libavif16
 #resolute:              ,libavif16
+#stonking:              ,libavif16
 #bookworm:              ,libavif15
 #trixie:              ,libavif16
 #forky:              ,libavif16
