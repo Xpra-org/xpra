@@ -1331,7 +1331,7 @@ class GLWindowBackingBase(WindowBackingBase):
             if pformat is None:
                 raise ValueError(f"could not find pixel format for {rgb_format!r}")
             ptype = PIXEL_UPLOAD_FORMAT.get(rgb_format)
-            if pformat is None:
+            if ptype is None:
                 raise ValueError(f"could not find pixel type for {rgb_format!r}")
 
             self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes) to %dx%d, using GL %s format=%s / %s to internal format=%s",
