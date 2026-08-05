@@ -21,15 +21,25 @@ from AppKit import (
     NSWorkspaceWillSleepNotification,
     NSWorkspaceDidWakeNotification,
     NSAppleEventManager,
+    NSNotificationCenter,
+    NSMenuDidBeginTrackingNotification,
+    NSMenuDidEndTrackingNotification,
 )
 
-from xpra.util.env import envbool
+from xpra.os_util import gi_import
+from xpra.util.env import envbool, envint
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
+menulog = Logger("osx", "events", "menu")
 
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
+MENU_TRACKING = envbool("XPRA_OSX_MENU_TRACKING", True)
+# how long to wait before firing `unpause` when a menu closes:
+MENU_TRACKING_DELAY = envint("XPRA_OSX_MENU_TRACKING_DELAY", 250)
 
 
 def four_char_to_int(code: bytes) -> int:
@@ -49,6 +59,12 @@ class AppDelegate(NSObject):
         objc_self.callbacks: dict[str, list[Callable]] = {}
         objc_self.workspace = None
         objc_self.notificationCenter = None
+        # number of menus currently tracking (submenus are nested),
+        # whether we have fired the `pause` event for them,
+        # and the timer used to delay the matching `unpause`:
+        objc_self.menu_tracking: int = 0
+        objc_self.menu_paused: bool = False
+        objc_self.menu_untrack_timer: int = 0
         return objc_self
 
     @objc.python_method
@@ -103,6 +119,59 @@ class AppDelegate(NSObject):
         add_observer(self.receiveSleepNotification_, NSWorkspaceWillSleepNotification)
         add_observer(self.receiveWakeNotification_, NSWorkspaceDidWakeNotification)
         add_observer(self.receiveWorkspaceChangeNotification_, NSWorkspaceActiveSpaceDidChangeNotification)
+
+    @objc.python_method
+    def register_menu_tracking_handlers(self) -> None:
+        menulog("register_menu_tracking_handlers()")
+        # these notifications are posted by any `NSMenu` of this process:
+        # the application menu bar, the tray menu, context menus and their submenus
+        center = NSNotificationCenter.defaultCenter()
+
+        def add_observer(fn: Callable, val) -> None:
+            center.addObserver_selector_name_object_(self, fn, val, None)
+
+        add_observer(self.receiveMenuBeginTrackingNotification_, NSMenuDidBeginTrackingNotification)
+        add_observer(self.receiveMenuEndTrackingNotification_, NSMenuDidEndTrackingNotification)
+
+    @objc.typedSelector(b'v@:I')
+    def receiveMenuBeginTrackingNotification_(self, notification) -> None:
+        # whilst a menu is open, `AppKit` runs a nested event loop
+        # which does not service the main loop at all:
+        # tell the server to slow down before we get starved,
+        # rather than waiting for the UI thread watcher to figure it out
+        self.cancel_menu_untrack_timer()
+        self.menu_tracking += 1
+        menulog("receiveMenuBeginTrackingNotification_(%s) menu_tracking=%i", notification, self.menu_tracking)
+        if not self.menu_paused:
+            self.menu_paused = True
+            self.call_handlers("pause")
+
+    @objc.typedSelector(b'v@:I')
+    def receiveMenuEndTrackingNotification_(self, notification) -> None:
+        self.menu_tracking = max(0, self.menu_tracking - 1)
+        menulog("receiveMenuEndTrackingNotification_(%s) menu_tracking=%i", notification, self.menu_tracking)
+        if self.menu_tracking or self.menu_untrack_timer:
+            return
+        # don't resume immediately: moving from one menu to the next in the menu bar
+        # ends the first menu's tracking just before the next one begins,
+        # and we don't want to trigger a full refresh in between.
+        # (this timer can only fire once the main loop is being serviced again)
+        self.menu_untrack_timer = GLib.timeout_add(MENU_TRACKING_DELAY, self.menu_untrack)
+
+    @objc.python_method
+    def menu_untrack(self) -> bool:
+        self.menu_untrack_timer = 0
+        menulog("menu_untrack() menu_tracking=%i, menu_paused=%s", self.menu_tracking, self.menu_paused)
+        if not self.menu_tracking and self.menu_paused:
+            self.menu_paused = False
+            self.call_handlers("unpause")
+        return False
+
+    @objc.python_method
+    def cancel_menu_untrack_timer(self) -> None:
+        if mut := self.menu_untrack_timer:
+            self.menu_untrack_timer = 0
+            GLib.source_remove(mut)
 
     @objc.typedSelector(b'B@:#B')
     def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag) -> bool:
@@ -181,6 +250,8 @@ def get_app_delegate(create=True) -> AppDelegate:
         delegate.retain()
         if SLEEP_HANDLER:
             delegate.register_sleep_handlers()
+        if MENU_TRACKING:
+            delegate.register_menu_tracking_handlers()
         delegate.register_file_handler()
         delegate.register_url_handler()
         log("registered!")

@@ -22,7 +22,7 @@ class PowerEventClient(StubClientSubsystem):
     """
     Adds power events callbacks
     """
-    __slots__ = ("_platform_watcher", "suspended", "ui_watcher")
+    __slots__ = ("_platform_watcher", "paused", "suspended", "ui_watcher")
     PREFIX = "power"
     __signals__: list[str] = ["suspend", "resume", "pause", "unpause"]
 
@@ -30,6 +30,7 @@ class PowerEventClient(StubClientSubsystem):
         StubClientSubsystem.__init__(self, client)
         self.ui_watcher = None
         self.suspended = 0.0
+        self.paused = False
         # extra, platform-specific suspend/resume signal sources feeding the
         # same `suspend()`/`resume()` below:
         self._platform_watcher = None
@@ -42,6 +43,11 @@ class PowerEventClient(StubClientSubsystem):
         from xpra.platform.events import add_handler
         add_handler("suspend", self.suspend)
         add_handler("resume", self.resume)
+        # some platforms can tell us that the UI thread is about to be starved
+        # (ie: macos native menus), which is much more reliable and immediate
+        # than having the UI thread watcher detect it after the fact:
+        add_handler("pause", self.ui_pause)
+        add_handler("unpause", self.ui_unpause)
         if FAKE_SUSPEND_RESUME:
             def fake_suspend() -> bool:
                 self.suspend()
@@ -75,6 +81,8 @@ class PowerEventClient(StubClientSubsystem):
         from xpra.platform.events import remove_handler
         remove_handler("suspend", self.suspend)
         remove_handler("resume", self.resume)
+        remove_handler("pause", self.ui_pause)
+        remove_handler("unpause", self.ui_unpause)
         if uw := self.ui_watcher:
             self.ui_watcher = None
             # the watcher is a process-wide singleton which outlives this client,
@@ -96,14 +104,25 @@ class PowerEventClient(StubClientSubsystem):
         if uiw := self.ui_watcher:
             uiw.tick()
 
-    def ui_pause(self):
+    def ui_pause(self, *args):
+        # this can be triggered both by the platform events
+        # and by the UI thread watcher noticing the same stall later on,
+        # so only ever emit the state changes:
+        log("ui_pause(%s) paused=%s", args, self.paused)
+        if self.paused:
+            return
+        self.paused = True
         self.emit("pause")
 
-    def ui_unpause(self):
+    def ui_unpause(self, *args):
+        log("ui_unpause(%s) paused=%s", args, self.paused)
+        if not self.paused:
+            return
+        self.paused = False
         self.emit("unpause")
 
     def ui_message(self, message: str) -> None:
-        if self.suspended:
+        if self.suspended or self.paused:
             log(message)
         else:
             log.info(message)

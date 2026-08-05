@@ -11,7 +11,11 @@ from collections.abc import Callable, Sequence
 from xpra.platform import platform_import
 
 
-EVENTS: Sequence[str] = ("suspend", "resume", )
+# "pause" and "unpause" are emitted when the UI thread is about to be starved
+# (ie: on macos, whilst a native menu is open) and when it is serviced again:
+# unlike "suspend" and "resume", these are not power events
+# and the connection to the server is left untouched
+EVENTS: Sequence[str] = ("suspend", "resume", "pause", "unpause", )
 
 
 def add_handler(event: str, handler: Callable) -> None:
