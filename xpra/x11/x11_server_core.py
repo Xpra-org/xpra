@@ -548,7 +548,7 @@ class X11ServerCore(GTKServerBase):
             return None, []
         self.last_cursor_image = list(cursor_image)
         pixels = self.last_cursor_image[7]
-        cursorlog("get_cursor_image() cursor=%s", cursor_image[:7]+["%s bytes" % len(pixels)]+cursor_image[8:])
+        cursorlog("get_cursor_image() cursor=%s", self.last_cursor_image[:7]+["%s bytes" % len(pixels)]+self.last_cursor_image[8:])
         is_default = self.default_cursor_image is not None and str(pixels)==str(self.default_cursor_image[7])
         if skip_default and is_default:
             cursorlog("get_cursor_data(): default cursor - clearing it")
