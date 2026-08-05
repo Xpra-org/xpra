@@ -125,6 +125,28 @@ class Win32ClipboardTest(unittest.TestCase):
         primary.got_contents("image/png", "image/png", 8, b"not text")
         self.assertEqual(texts, ["hello"])
 
+    def test_image_target_without_data_is_requested(self):
+        helper, packets = self.make_helper()
+        options = {"targets": ("UTF8_STRING", "image/png")}
+        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", options))
+        self.assertEqual(len(packets), 1)
+        packet_type, _, selection, target = packets[0]
+        self.assertEqual((packet_type, selection, target), ("clipboard-request", "CLIPBOARD", "image/png"))
+
+    def test_image_sent_with_the_token_is_not_requested_again(self):
+        helper, packets = self.make_helper()
+        proxy = helper._clipboard_proxies["CLIPBOARD"]
+        images = []
+        proxy.set_clipboard_image = lambda img_format, data: images.append((img_format, data))
+        options = {
+            "targets": ("UTF8_STRING", "image/png"),
+            "data": {"image/png": ("image/png", 8, "bytes", b"fake png")},
+        }
+        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", options))
+        # we already have the image, so we must not ask for it again:
+        self.assertEqual(packets, [])
+        self.assertEqual(images, [("png", b"fake png")])
+
     def test_primary_token_with_data(self):
         helper, _ = self.make_helper()
         primary = helper.primary_proxy

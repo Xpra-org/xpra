@@ -755,7 +755,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             # TODO: tell system what targets we have
             log("got_contents: tell OS we have %s", csv(self.targets))
             image_formats = tuple(x for x in ("image/png", "image/jpeg") if x in self.targets)
-            if image_formats:
+            # only request the image data if we don't have it yet:
+            if image_formats and not any(x in self.target_data for x in image_formats):
                 # request it:
                 self.send_clipboard_request_handler(self, self._selection, image_formats[0])
         elif dformat == 8 and dtype == "text/html":
