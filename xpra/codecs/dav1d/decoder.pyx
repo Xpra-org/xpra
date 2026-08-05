@@ -129,6 +129,7 @@ cdef extern from "dav1d/headers.h":
 
     ctypedef struct Dav1dSequenceHeader:
         uint8_t profile
+        uint8_t color_range
         # etc..
 
     ctypedef struct Dav1dFrameHeader:
@@ -515,6 +516,7 @@ cdef class Decoder:
         cdef int pic_h = pic.p.h
         cdef int layout = pic.p.layout
         cdef int bpc = pic.p.bpc
+        cdef int bitstream_full_range = 1
         cdef ptrdiff_t ystride = pic.stride[0]
         cdef ptrdiff_t uvstride = pic.stride[1]
         try:
@@ -527,6 +529,9 @@ cdef class Decoder:
                 raise ValueError(f"av1 picture {pic_w}x{pic_h} is smaller than {self.width}x{self.height}")
             if pic.data[0] == NULL or pic.data[1] == NULL or pic.data[2] == NULL:
                 raise ValueError("dav1d returned a picture with a missing plane")
+            if pic.seq_hdr == NULL:
+                raise ValueError("dav1d returned a picture with a missing sequence header")
+            bitstream_full_range = bool(pic.seq_hdr.color_range)
             if ystride < pic_w or ystride > roundup(MAX_DIMENSION, 128):
                 raise ValueError(f"invalid av1 luma stride {ystride} for width {pic_w}")
             if uvstride < (pic_w + 1) // 2 or uvstride > roundup(MAX_DIMENSION, 128):
@@ -558,7 +563,9 @@ cdef class Decoder:
         finally:
             dav1d_picture_unref(&pic)
         self.frames += 1
-        return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides, planes=PlanarFormat.PLANAR_3)
+        cdef bint full_range = options.boolget("full-range", bitstream_full_range)
+        return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides,
+                            planes=PlanarFormat.PLANAR_3, full_range=full_range)
 
 
 def selftest(full=False) -> None:
