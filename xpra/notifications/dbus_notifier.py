@@ -193,6 +193,7 @@ class DBUS_Notifier(NotifierBase):
                 self.setup_dbusnotify()
                 #and retry:
                 self.show_notify(*self.last_notification)
+                self.may_retry = False
         except Exception:
             log("cannot filter error", exc_info=True)
         log.error("Error processing notification:")
