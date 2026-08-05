@@ -71,10 +71,23 @@ URI_TARGETS: Sequence[str] = tuple(
 PLAIN_TEXT_TARGETS: Sequence[str] = tuple(
     target for target in TEXT_TARGETS if target not in HTML_TARGETS and target not in URI_TARGETS
 )
+RTF_TARGETS: Sequence[str] = tuple(
+    os.environ.get("XPRA_CLIPBOARD_RTF_TARGETS", "text/rtf,application/rtf").split(",")
+)
+PDF_TARGETS: Sequence[str] = tuple(
+    os.environ.get("XPRA_CLIPBOARD_PDF_TARGETS", "application/pdf").split(",")
+)
+IMAGE_TARGETS: Sequence[str] = tuple(
+    os.environ.get("XPRA_CLIPBOARD_IMAGE_TARGETS", "image/png,image/jpeg,image/tiff").split(",")
+)
+# the targets we send with the clipboard token to greedy clients,
+# in the order in which they are collected:
+# the cheap ones come first, so that they always fit within the token size limit
 EAGER_TARGETS: Sequence[str] = tuple(
     os.environ.get(
         "XPRA_CLIPBOARD_EAGER_TARGETS",
-        "UTF8_STRING,text/plain;charset=utf-8,text/plain,text/html,text/uri-list,TEXT,STRING,image/png,image/jpeg",
+        "UTF8_STRING,text/plain;charset=utf-8,text/plain,text/html,text/uri-list,TEXT,STRING,"
+        "text/rtf,image/png,image/jpeg,application/pdf",
     ).split(",")
 )
 

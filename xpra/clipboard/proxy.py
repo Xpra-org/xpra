@@ -11,7 +11,7 @@ from typing import Any
 
 from xpra.util.env import envint, envbool
 from xpra.clipboard.common import ClipboardCallback, ClipboardData, ClipboardDataCallback, get_format_size
-from xpra.clipboard.targets import choose_eager_targets
+from xpra.clipboard.targets import choose_eager_targets, IMAGE_TARGETS
 from xpra.util.str_fn import bytestostr
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -26,7 +26,7 @@ MAX_CLIPBOARD_TOKEN_SIZE = envint("XPRA_CLIPBOARD_TOKEN_MAX_SIZE", 4 * 1024 * 10
 
 def filter_data(dtype: str = "", dformat: int = 0, data=b"", trusted: bool = False, output_dtype="") -> bytes:
     log("filter_data(%s, %s, %i %s, %s, %s)", dtype, dformat, len(data), type(data), trusted, output_dtype)
-    isimage = dtype in ("image/png", "image/jpeg", "image/tiff")
+    isimage = dtype in IMAGE_TARGETS
     if not data or not isimage:
         return data
     IMAGE_OVERLAY = os.environ.get("XPRA_CLIPBOARD_IMAGE_OVERLAY", None)
