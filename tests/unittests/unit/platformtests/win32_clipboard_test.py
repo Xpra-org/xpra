@@ -32,6 +32,16 @@ def make_test_class():
     return TestClipboard
 
 
+def flush() -> None:
+    # run the pending `GLib.idle_add` callbacks
+    from xpra.os_util import gi_import
+    context = gi_import("GLib").MainContext.default()
+    for _ in range(100):
+        if not context.pending():
+            break
+        context.iteration(False)
+
+
 @unittest.skipUnless(WIN32, "the win32 clipboard is only available on MS Windows")
 class Win32ClipboardTest(unittest.TestCase):
 
@@ -124,6 +134,104 @@ class Win32ClipboardTest(unittest.TestCase):
         primary.got_contents("UTF8_STRING", "", 8, b"")
         primary.got_contents("image/png", "image/png", 8, b"not text")
         self.assertEqual(texts, ["hello"])
+
+    def use_new_packet_format(self):
+        # only the 6.5+ packet format can carry more than one clipboard format:
+        from xpra.clipboard import core
+        self.addCleanup(setattr, core, "BACKWARDS_COMPATIBLE", core.BACKWARDS_COMPATIBLE)
+        core.BACKWARDS_COMPATIBLE = False
+
+    def test_non_greedy_token_does_not_touch_the_clipboard(self):
+        # the common case: the peer is not greedy, so it gets a bare token
+        # and requests whatever it needs later
+        self.use_new_packet_format()
+        helper, packets = self.make_helper()
+        proxy = helper._clipboard_proxies["CLIPBOARD"]
+        self.assertFalse(proxy._greedy_client)
+
+        def fail(*_args, **_kwargs):
+            raise AssertionError("the clipboard must not be opened for a non-greedy peer")
+
+        proxy.with_clipboard_lock = fail
+        proxy.do_emit_token()
+        flush()
+        self.assertEqual(len(packets), 1)
+        packet_type, selection, options = packets[0]
+        self.assertEqual((packet_type, selection), ("clipboard-data", "CLIPBOARD"))
+        self.assertNotIn("targets", options)
+        self.assertNotIn("data", options)
+
+    def make_greedy_proxy(self, formats, contents, sequence=(1, 1)):
+        from xpra.platform.win32 import ctypes_clipboard
+        self.use_new_packet_format()
+        helper, packets = self.make_helper()
+        proxy = helper._clipboard_proxies["CLIPBOARD"]
+        proxy._greedy_client = True
+        # never touch the real clipboard:
+        proxy.with_clipboard_lock = lambda success, _failure, **_kwargs: success()
+        self.addCleanup(setattr, ctypes_clipboard, "get_clipboard_formats",
+                        ctypes_clipboard.get_clipboard_formats)
+        ctypes_clipboard.get_clipboard_formats = lambda: formats
+        numbers = list(sequence)
+        self.addCleanup(setattr, ctypes_clipboard, "GetClipboardSequenceNumber",
+                        ctypes_clipboard.GetClipboardSequenceNumber)
+        ctypes_clipboard.GetClipboardSequenceNumber = lambda: numbers.pop(0) if len(numbers) > 1 else numbers[0]
+        collected = []
+
+        def get_contents(target, callback):
+            collected.append(target)
+            callback(target, 8, contents.get(target, b""))
+
+        proxy.get_contents = get_contents
+        return helper, packets, proxy, collected
+
+    def clipboard_formats(self):
+        from xpra.platform.win32 import win32con
+        from xpra.platform.win32.common import LPCSTR, RegisterClipboardFormatA
+        html = RegisterClipboardFormatA(LPCSTR(b"HTML Format\0"))
+        self.assertTrue(html)
+        return (win32con.CF_UNICODETEXT, win32con.CF_TEXT, win32con.CF_DIBV5, html)
+
+    def test_greedy_token_sends_one_target_per_format(self):
+        contents = {
+            "UTF8_STRING": b"some text",
+            "text/html": b"<b>some html</b>",
+            "image/png": b"fake png",
+        }
+        _, packets, proxy, collected = self.make_greedy_proxy(self.clipboard_formats(), contents)
+        proxy.do_emit_token()
+        flush()
+        self.assertEqual(len(packets), 1)
+        packet_type, selection, options = packets[0]
+        self.assertEqual((packet_type, selection), ("clipboard-data", "CLIPBOARD"))
+        # one target per clipboard format, most descriptive first:
+        self.assertEqual(collected, ["UTF8_STRING", "text/html", "image/png"])
+        self.assertEqual(tuple(options["data"].keys()), ("UTF8_STRING", "text/html", "image/png"))
+        for target, data in contents.items():
+            self.assertEqual(options["data"][target], (target, 8, "bytes", data))
+        # the aliases are still advertised, their data is just not duplicated:
+        for alias in ("text/plain", "TEXT", "STRING", "image/jpeg"):
+            self.assertIn(alias, options["targets"])
+            self.assertNotIn(alias, options["data"])
+
+    def test_greedy_token_dropped_when_the_clipboard_changes(self):
+        contents = {"UTF8_STRING": b"some text"}
+        _, packets, proxy, _ = self.make_greedy_proxy(self.clipboard_formats(), contents,
+                                                      sequence=(1, 2))
+        proxy.do_emit_token()
+        flush()
+        # the contents would have been a mix of two different clipboard owners:
+        self.assertEqual(packets, [])
+
+    def test_greedy_token_with_no_usable_formats(self):
+        from xpra.platform.win32 import win32con
+        _, packets, proxy, collected = self.make_greedy_proxy((win32con.CF_ENHMETAFILE,), {})
+        proxy.do_emit_token()
+        flush()
+        self.assertEqual(collected, [])
+        self.assertEqual(len(packets), 1)
+        _, _, options = packets[0]
+        self.assertNotIn("data", options)
 
     def test_image_target_without_data_is_requested(self):
         helper, packets = self.make_helper()

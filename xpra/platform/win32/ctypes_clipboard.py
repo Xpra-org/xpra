@@ -28,6 +28,7 @@ from xpra.platform.win32.common import (
     WideCharToMultiByte,
     AddClipboardFormatListener, RemoveClipboardFormatListener,
     SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA, GetClipboardOwner,
+    GetClipboardSequenceNumber,
     RegisterClipboardFormatA,
     GetWindowThreadProcessId, QueryFullProcessImageNameA, OpenProcess, CloseHandle,
     CreateDIBitmap, DeleteObject,
@@ -441,6 +442,36 @@ def free_clipboard_handle(fmt: int, handle: int) -> None:
         GlobalFree(handle)
 
 
+# the targets which expose the same clipboard format:
+# we advertise all of them, but we only ever send the data for one of each group,
+# otherwise the same text would be sent 5 times,
+# and the image would be encoded both as `PNG` and as `JPEG`:
+TARGET_GROUPS: dict[str, str] = {
+    "UTF8_STRING": "text",
+    "text/plain;charset=utf-8": "text",
+    "text/plain": "text",
+    "TEXT": "text",
+    "STRING": "text",
+    "text/html": "html",
+    "text/uri-list": "uris",
+    "image/png": "image",
+    "image/jpeg": "image",
+}
+
+
+def dedup_targets(targets: Sequence[str]) -> Sequence[str]:
+    # keep the first target of each group, preserving the order given:
+    chosen: list[str] = []
+    groups: set[str] = set()
+    for target in targets:
+        group = TARGET_GROUPS.get(target, target)
+        if group in groups:
+            continue
+        groups.add(group)
+        chosen.append(target)
+    return tuple(chosen)
+
+
 class Win32ClipboardProxy(ClipboardProxyCore):
     def __init__(self, window, selection, send_clipboard_request_handler, send_clipboard_token_handler):
         self.window = window
@@ -489,6 +520,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             targets.append("text/html")
         return targets
 
+    def choose_send_targets(self, targets: Sequence[str]) -> Sequence[str]:
+        # the targets we send the data for with the token:
+        # the ones the peer prefers, minus the duplicates
+        return dedup_targets(self.get_eager_targets(targets))
+
     def do_emit_token(self):
         if not self._greedy_client:
             # send just the token
@@ -498,43 +534,57 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         # greedy clients want data with the token,
         # so we have to get the clipboard lock
 
-        def send_token(formats: Sequence[int]) -> None:
+        def send_token(targets: Sequence[str], target_data: ClipboardData) -> None:
+            log("do_emit_token() sending %s with the data for %s",
+                csv(targets), csv(target_data.keys()))
+            self.send_clipboard_token_handler(self, {
+                "targets": tuple(targets),
+                "data": target_data,
+            })
+
+        def collect(formats: Sequence[int], sequence: int) -> None:
+            # (the clipboard lock has been released by the time we get here)
             targets = self.get_targets_for_formats(formats)
-            # default payload target (prefer plain text, then image):
-            target = "UTF8_STRING"
-            if formats:
-                tnames = format_names(formats)
-                if win32con.CF_UNICODETEXT in formats:
-                    target = "UTF8_STRING"
-                elif win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
-                    target = "STRING"
-                elif "PNG" in tnames:
-                    target = "image/png"
+            send_targets = self.choose_send_targets(targets)
+            log("do_emit_token() formats=%s, targets=%s, collecting %s",
+                csv(format_names(formats)), csv(targets), csv(send_targets))
+            if not send_targets:
+                send_token(targets, {})
+                return
 
-            def got_contents(dtype: str, dformat: int, data: Any) -> None:
-                self.send_clipboard_token_handler(self, {
-                    "targets": tuple(targets or (target,)),
-                    "data": {
-                        target: (dtype, dformat, data),
-                    },
-                })
+            def got_target_data(target_data: ClipboardData) -> None:
+                if GetClipboardSequenceNumber() != sequence:
+                    # the clipboard changed whilst we were collecting the data:
+                    # the contents we have are a mix of two different owners,
+                    # and the owner change will emit a new token for the new ones
+                    log("not sending the token: the clipboard contents have changed")
+                    return
+                send_token(targets, target_data)
 
-            self.get_contents(target, got_contents)
+            self.collect_contents(send_targets, got_target_data)
 
         def got_clipboard_lock() -> bool:
-            fmts = get_clipboard_formats()
-            log("do_emit_token() formats=%s", format_names(fmts))
-            send_token(fmts)
+            # collect the data with the lock released:
+            # `get_contents` has to open the clipboard again for each target
+            GLib.idle_add(collect, get_clipboard_formats(), GetClipboardSequenceNumber())
             return True
 
-        def errback(errmsg=None) -> None:
+        def errback(errmsg="") -> None:
             # nothing we can do!
             log("not sending the token since we failed to get the clipboard lock: %s", errmsg)
 
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
-    def get_contents(self, target: str, got_contents: ClipboardCallback):
-        log("get_contents%s", (target, got_contents))
+    def get_contents(self, target: str, callback: ClipboardCallback):
+        log("get_contents%s", (target, callback))
+
+        def got_contents(*args) -> None:
+            # every getter below calls back whilst the clipboard is still open,
+            # and our caller may want to open it again straight away
+            # (`collect_contents` collects the next target from this callback),
+            # so the result is always handed back from the main loop:
+            GLib.idle_add(callback, *args)
+
         if target == "TARGETS":
             def got_clipboard_lock() -> bool:
                 formats = get_clipboard_formats()
