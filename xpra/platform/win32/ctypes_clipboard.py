@@ -17,19 +17,19 @@ from xpra.os_util import gi_import
 from xpra.platform.win32.common import (
     GetDC, ReleaseDC,
     WNDCLASSEX, GetLastError,
-    WNDPROC, LPCWSTR, LPWSTR, LPCSTR, DWORD,
+    WNDPROC, LPCWSTR, LPCSTR, DWORD,
     BITMAPINFOHEADER, PBITMAPV5HEADER, BITMAPINFO,
     DefWindowProcW,
     GetModuleHandleA, RegisterClassExW, UnregisterClassW,
     CreateWindowExW, DestroyWindow,
     OpenClipboard, EmptyClipboard, CloseClipboard, GetClipboardData,
     GlobalLock, GlobalUnlock, GlobalAlloc, GlobalFree, GlobalSize,
-    WideCharToMultiByte, MultiByteToWideChar,
+    WideCharToMultiByte,
     AddClipboardFormatListener, RemoveClipboardFormatListener,
     SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA, GetClipboardOwner,
     RegisterClipboardFormatA,
     GetWindowThreadProcessId, QueryFullProcessImageNameA, OpenProcess, CloseHandle,
-    CreateDIBitmap,
+    CreateDIBitmap, DeleteObject,
 )
 from xpra.platform.win32 import win32con
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
@@ -48,7 +48,6 @@ log = Logger("clipboard", "win32")
 GLib = gi_import("GLib")
 
 CP_UTF8 = 65001
-MB_ERR_INVALID_CHARS = 0x00000008
 GMEM_MOVEABLE = 0x0002
 
 WM_CLIPBOARDUPDATE = 0x031D
@@ -299,6 +298,54 @@ def empty_clipboard() -> bool:
     return True
 
 
+def get_global_data(data_handle) -> bytes:
+    # copy the contents of a global memory handle,
+    # returns an empty value if the handle cannot be locked
+    size = GlobalSize(data_handle)
+    data = GlobalLock(data_handle)
+    if not data:
+        log("failed to lock global memory handle %#x", data_handle)
+        return b""
+    try:
+        # noinspection PyTypeChecker
+        return bytes((c_char * size).from_address(data))
+    finally:
+        # `GlobalUnlock` takes the handle, not the pointer returned by `GlobalLock`:
+        GlobalUnlock(data_handle)
+
+
+def alloc_global(data) -> int:
+    # copy `data` into the moveable global memory block that `SetClipboardData` requires,
+    # the caller owns the handle returned until `SetClipboardData` has succeeded
+    if not isinstance(data, bytes):
+        data = bytes(data)
+    size = len(data)
+    # zero sized moveable blocks cannot be locked:
+    handle = GlobalAlloc(GMEM_MOVEABLE, size or 1)
+    if not handle:
+        raise RuntimeError("failed to allocate %i bytes of global memory" % size)
+    locked = GlobalLock(handle)
+    if not locked:
+        GlobalFree(handle)
+        raise RuntimeError("failed to lock buffer %#x" % handle)
+    try:
+        memmove(locked, data, size)
+    finally:
+        # `GlobalUnlock` takes the handle, not the pointer returned by `GlobalLock`:
+        GlobalUnlock(handle)
+    return handle
+
+
+def free_clipboard_handle(fmt: int, handle: int) -> None:
+    # release a handle that `SetClipboardData` did not take ownership of:
+    if not handle:
+        return
+    if fmt == win32con.CF_BITMAP:
+        DeleteObject(handle)
+    else:
+        GlobalFree(handle)
+
+
 class Win32ClipboardProxy(ClipboardProxyCore):
     def __init__(self, window, selection, send_clipboard_request_handler, send_clipboard_token_handler):
         self.window = window
@@ -419,21 +466,15 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 fmt = RegisterClipboardFormatA(fmt_name)
                 if fmt:
                     data_handle = GetClipboardData(fmt)
+                    log("GetClipboardData(%s)=%#x", img_format.upper(), data_handle or 0)
                     if data_handle:
-                        size = GlobalSize(data_handle)
-                        data = GlobalLock(data_handle)
-                        log("GetClipboardData(%s)=%#x size=%s, data=%#x",
-                            img_format.upper(), data_handle, size, data)
-                        if data and size:
-                            try:
-                                cdata = (c_char * size).from_address(data)
-                            finally:
-                                GlobalUnlock(data)
-                            got_image(bytes(cdata), False)
+                        cdata = get_global_data(data_handle)
+                        if cdata:
+                            got_image(cdata, False)
                             return True
 
             data_handle = GetClipboardData(win32con.CF_DIBV5)
-            log("CF_BITMAP=%s", data_handle)
+            log("CF_DIBV5=%s", data_handle)
             data = GlobalLock(data_handle)
             if not data:
                 log("failed to lock data handle %#x (may try again)", data_handle)
@@ -471,11 +512,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 if header.bV5Height > 0:
                     img = ImageOps.flip(img)
                 from xpra.codecs.image import to_bytesbuffer
-                data = to_bytesbuffer(img, save_format)
-                got_image(data, True)
+                got_image(to_bytesbuffer(img, save_format), True)
                 return True
             finally:
-                GlobalUnlock(data)
+                # `GlobalUnlock` takes the handle, not the pointer returned by `GlobalLock`:
+                GlobalUnlock(data_handle)
 
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
@@ -534,53 +575,58 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 target, dtype, dformat, Ellipsizer(data))
 
     def set_clipboard_image(self, img_format: str, img_data) -> None:
-        image_formats = {}
+        image_formats: dict[int, int] = {}
         if COMPRESSED_IMAGES:
             # first save it as binary compressed data:
             fmt_name = LPCSTR(img_format.upper().encode("latin1") + b"\0")  # ie: "PNG"
             fmt = RegisterClipboardFormatA(fmt_name)
             if fmt:
-                l = len(img_data)
-                # noinspection PyTypeChecker
-                buftype = c_char * l
-                # noinspection PyCallingNonCallable
-                buf = buftype()
-                buf.value = img_data
-                pbuf = cast(byref(buf), c_void_p)
-                data_handle = GlobalAlloc(GMEM_MOVEABLE, l)
-                if not data_handle:
-                    log.error("Error: failed to allocate %i bytes of global memory", l)
-                    return
-                data = GlobalLock(data_handle)
-                if not data:
-                    log("failed to lock data handle %#x (may try again)", data_handle)
-                    return
-                log("got data handle lock %#x for %i bytes of '%s' data", data, l, img_format)
                 try:
-                    memmove(data, pbuf, l)
-                finally:
-                    GlobalUnlock(data)
-                image_formats[fmt] = data_handle
-        bitmap = data_to_bitmap(img_data)
-        image_formats[win32con.CF_BITMAP] = bitmap
+                    image_formats[fmt] = alloc_global(img_data)
+                except RuntimeError as e:
+                    log("alloc_global(%s)", Ellipsizer(img_data), exc_info=True)
+                    log.error("Error: cannot copy %i bytes of %r data", len(img_data), img_format)
+                    log.estr(e)
+        try:
+            if bitmap := data_to_bitmap(img_data):
+                image_formats[win32con.CF_BITMAP] = bitmap
+        except Exception as e:
+            log("data_to_bitmap(%s)", Ellipsizer(img_data), exc_info=True)
+            log.error("Error: cannot convert %r data to a bitmap", img_format)
+            log.estr(e)
+            # don't leak the handles we allocated above:
+            for fmt, handle in image_formats.items():
+                free_clipboard_handle(fmt, handle)
+            return
         self.do_set_clipboard_image(image_formats)
 
-    def do_set_clipboard_image(self, image_formats: dict) -> None:
+    def do_set_clipboard_image(self, image_formats: dict[int, int]) -> None:
+        if not image_formats:
+            # nothing to set: don't empty the clipboard for nothing
+            log("do_set_clipboard_image: no image formats to set")
+            return
+
         def got_clipboard_lock() -> bool:
-            EmptyClipboard()
-            c = 0
+            if not EmptyClipboard():
+                log("EmptyClipboard()=0 (%s)", WinError(GetLastError()))
+                # we still own every handle, so we can try again:
+                return False
             for fmt, handle in image_formats.items():
                 log("do_set_clipboard_image: %s", format_name(fmt))
-                r = SetClipboardData(fmt, handle)
-                if not r:
+                if not SetClipboardData(fmt, handle):
                     e = WinError(GetLastError())
-                    log("SetClipboardData(%s, %#x)=%s (%s)", format_name(fmt), handle, r, e)
-                else:
-                    c += 1
-            return bool(c)
+                    log("SetClipboardData(%s, %#x)=0 (%s)", format_name(fmt), handle, e)
+                    log.warn("Warning: failed to set the clipboard %r data", format_name(fmt))
+                    log.warn(" %s", e)
+                    # the system did not take ownership of this handle:
+                    free_clipboard_handle(fmt, handle)
+            # the clipboard has been emptied: trying again would not help
+            return True
 
         def nolock(*_args) -> None:
             log.warn("Warning: failed to copy image data to the clipboard")
+            for fmt, handle in image_formats.items():
+                free_clipboard_handle(fmt, handle)
 
         self.with_clipboard_lock(got_clipboard_lock, nolock)
 
@@ -639,41 +685,20 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 callback(b)
                 return True
             finally:
-                GlobalUnlock(data)
+                GlobalUnlock(data_handle)
 
         self.with_clipboard_lock(get_text, errback)
 
     def set_clipboard_text(self, text: str) -> None:
-        # convert to wide char
-        # get the length in wide chars:
         if CONVERT_LINE_ENDINGS:
-            text = text.replace("\n", "\r\n").encode("utf8")
-        wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), None, 0)
-        if not wlen:
-            set_err("failed to prepare to convert to wide char")
-            return
-        log("MultiByteToWideChar wlen=%i", wlen)
-        # allocate some memory for it:
-        l = (wlen + 1) * 2
-        buf = GlobalAlloc(GMEM_MOVEABLE, l)
-        if not buf:
-            set_err("failed to allocate %i bytes of global memory" % l)
-            return
-        log("GlobalAlloc buf=%#x", buf)
-        locked = GlobalLock(buf)
-        if not locked:
-            set_err("failed to lock buffer %#x" % buf)
-            GlobalFree(buf)
-            return
+            text = text.replace("\n", "\r\n")
+        # `CF_UNICODETEXT` data is UTF-16 and must be NUL terminated:
         try:
-            locked_buf = cast(locked, LPWSTR)
-            wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), locked_buf, wlen)
-            if not wlen:
-                set_err("failed to convert to wide char")
-                GlobalFree(buf)
-                return
-        finally:
-            GlobalUnlock(locked)
+            buf = alloc_global(text.encode("utf-16-le") + b"\0\0")
+        except (RuntimeError, UnicodeEncodeError) as e:
+            set_err(str(e))
+            return
+        log("GlobalAlloc buf=%#x for %i characters", buf, len(text))
         # we're going to alter the clipboard ourselves,
         # ignore messages until we're done,
         # this may take a while so ensure we do unblock eventually:
@@ -691,13 +716,19 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("EmptyClipboard()=%s", r)
             if not r:
                 set_err("failed to empty the clipboard")
+                # we still own the buffer, so we can try again:
                 return False
             r = SetClipboardData(win32con.CF_UNICODETEXT, buf)
             if not r:
                 e = WinError(GetLastError())
-                log("SetClipboardData(CF_UNICODETEXT, %i chars)=%s (%s)", wlen, r, e)
-                return False
-            log("SetClipboardData(CF_UNICODETEXT, %i chars)=%s", wlen, r)
+                log("SetClipboardData(CF_UNICODETEXT, %i chars)=%s (%s)", len(text), r, e)
+                set_err("failed to set the clipboard text: %s" % e)
+                # the system did not take ownership of the buffer:
+                GlobalFree(buf)
+                cleanup()
+                # the clipboard has been emptied: trying again would not help
+                return True
+            log("SetClipboardData(CF_UNICODETEXT, %i chars)=%s", len(text), r)
             cleanup()
             return True
 
@@ -706,6 +737,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             if error_text:
                 log.warn("Warning: failed to set clipboard data")
                 log.warn(" %s", error_text)
+            GlobalFree(buf)
             cleanup()
 
         self.with_clipboard_lock(set_clipboard_data, set_clipboard_error)
