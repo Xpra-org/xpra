@@ -123,6 +123,10 @@ CONVERT_LINE_ENDINGS = envbool("XPRA_CONVERT_LINE_ENDINGS", True)
 log("win32 clipboard: RETRY=%i, DELAY=%i, CONVERT_LINE_ENDINGS=%s",
     RETRY, DELAY, CONVERT_LINE_ENDINGS)
 
+# how long we ignore owner change events for,
+# whilst we are setting the clipboard contents ourselves:
+BLOCK_DELAY = 2000
+
 
 # can be used to blocklist problematic clipboard peers:
 # ie: VBoxTray.exe
@@ -217,6 +221,26 @@ def format_name(fmt: int) -> str:
 
 def format_names(fmts) -> Sequence[str]:
     return tuple(format_name(x) for x in fmts)
+
+
+# `EnumClipboardFormats` returns the formats in the order they were set,
+# and applications paste the first one they can handle,
+# so the most descriptive formats must be set first:
+FORMAT_PRIORITY: dict[int, int] = {
+    win32con.CF_DIBV5: 10,
+    win32con.CF_DIB: 11,
+    win32con.CF_BITMAP: 12,
+    win32con.CF_UNICODETEXT: 20,
+    win32con.CF_TEXT: 21,
+    win32con.CF_OEMTEXT: 22,
+}
+
+
+def format_priority(fmt: int) -> int:
+    if fmt >= 0xC000:
+        # registered formats (ie: "HTML Format", "PNG") are the most descriptive:
+        return 0
+    return FORMAT_PRIORITY.get(fmt, 30)
 
 
 def get_clipboard_formats() -> Sequence[int]:
@@ -422,7 +446,18 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.window = window
         self.send_clipboard_request_handler = send_clipboard_request_handler
         self.send_clipboard_token_handler = send_clipboard_token_handler
+        # the memory handles queued by `queue_clipboard_formats`,
+        # which `commit_clipboard_formats` will set on the clipboard:
+        self.pending_formats: dict[int, int] = {}
+        # whether the next batch replaces the clipboard contents or adds to them:
+        self.pending_replace = False
+        self.commit_timer = 0
         super().__init__(selection)
+
+    def cleanup(self) -> None:
+        self.cancel_commit()
+        self.free_pending_formats()
+        super().cleanup()
 
     def with_clipboard_lock(self,
                             success_callback: Callable[[], bool],
@@ -431,6 +466,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         with_clipboard_lock(self.window, success_callback, failure_callback, retries=retries, delay=delay)
 
     def clear(self):
+        self.cancel_commit()
+        self.free_pending_formats()
         self.with_clipboard_lock(empty_clipboard, clear_error)
 
     def get_targets_for_formats(self, formats: Sequence[int]) -> list[str]:
@@ -685,6 +722,10 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if self._can_receive:
             self.targets = _filter_targets(targets or ())
             self.target_data = target_data or {}
+            # everything we set from now on belongs to this token:
+            # the first batch replaces the contents we had set for the previous one,
+            # any target that arrives later is added to it
+            self.replace_clipboard_contents()
             if targets:
                 self.got_contents("TARGETS", "ATOM", 32, targets)
             if target_data:
@@ -731,6 +772,103 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("no handling: target=%s, dtype=%s, dformat=%s, data=%s",
                 target, dtype, dformat, Ellipsizer(data))
 
+    ############################################################################
+    # setting the clipboard contents:
+    # `SetClipboardData` can only ever add a format to the clipboard,
+    # and the only way to remove one is `EmptyClipboard`, which removes them all.
+    # So the formats are queued and set in a single batch,
+    # and the clipboard is only emptied when we are claiming new contents.
+    ############################################################################
+
+    def replace_clipboard_contents(self) -> None:
+        # the next batch of formats is new clipboard contents:
+        # the clipboard must be emptied before they are set
+        self.pending_replace = True
+
+    def free_pending_formats(self) -> None:
+        formats, self.pending_formats = self.pending_formats, {}
+        self.pending_replace = False
+        for fmt, handle in formats.items():
+            free_clipboard_handle(fmt, handle)
+
+    def queue_clipboard_formats(self, formats: dict[int, int]) -> None:
+        # takes ownership of the memory handles given
+        if not formats:
+            return
+        for fmt, handle in formats.items():
+            # a newer handle for the same format supersedes the one already queued:
+            if previous := self.pending_formats.get(fmt):
+                free_clipboard_handle(fmt, previous)
+            self.pending_formats[fmt] = handle
+        log("queue_clipboard_formats(%s) pending=%s, replace=%s",
+            csv(format_names(formats)), csv(format_names(self.pending_formats)), self.pending_replace)
+        # we're going to alter the clipboard ourselves,
+        # ignore owner change events until we're done,
+        # this may take a while so ensure we do unblock eventually:
+        self.cancel_unblock()
+        self._block_owner_change = GLib.timeout_add(BLOCK_DELAY, self.remove_block)
+        if not self.commit_timer:
+            # collect every format queued before the next main loop iteration:
+            self.commit_timer = GLib.idle_add(self.commit_clipboard_formats)
+
+    def cancel_commit(self) -> None:
+        if ct := self.commit_timer:
+            self.commit_timer = 0
+            GLib.source_remove(ct)
+
+    def unblock_owner_change(self) -> None:
+        if self._block_owner_change:
+            # re-schedule it to run from the main loop,
+            # once the clipboard events we caused have been processed:
+            self.cancel_unblock()
+            self._block_owner_change = GLib.idle_add(self.remove_block)
+
+    def commit_clipboard_formats(self) -> bool:
+        self.commit_timer = 0
+        formats, self.pending_formats = self.pending_formats, {}
+        replace, self.pending_replace = self.pending_replace, False
+        if not formats:
+            self.unblock_owner_change()
+            return False
+        log("commit_clipboard_formats() formats=%s, replace=%s", csv(format_names(formats)), replace)
+
+        def set_clipboard_data() -> bool:
+            # `SetClipboardData` requires us to own the clipboard,
+            # which `EmptyClipboard` gives us - at the cost of removing every format:
+            if replace or (GetClipboardOwner() or 0) != (self.window or 0):
+                if not EmptyClipboard():
+                    log("EmptyClipboard()=0 (%s)", WinError(GetLastError()))
+                    # we still own every handle, so we can try again:
+                    return False
+                log("EmptyClipboard() done")
+            # the most descriptive formats must be set first:
+            for fmt in sorted(formats, key=format_priority):
+                handle = formats[fmt]
+                if SetClipboardData(fmt, handle):
+                    log("SetClipboardData(%s, %#x) done", format_name(fmt), handle)
+                    continue
+                e = WinError(GetLastError())
+                log("SetClipboardData(%s, %#x)=0 (%s)", format_name(fmt), handle, e)
+                log.warn("Warning: failed to set the clipboard %r data", format_name(fmt))
+                log.warn(" %s", e)
+                # the system did not take ownership of this handle:
+                free_clipboard_handle(fmt, handle)
+            self.unblock_owner_change()
+            # we may have emptied the clipboard: trying again would not help
+            return True
+
+        def set_clipboard_error(error_text="") -> None:
+            log("set_clipboard_error(%s)", error_text)
+            if error_text:
+                log.warn("Warning: failed to set the clipboard data")
+                log.warn(" %s", error_text)
+            for fmt, handle in formats.items():
+                free_clipboard_handle(fmt, handle)
+            self.unblock_owner_change()
+
+        self.with_clipboard_lock(set_clipboard_data, set_clipboard_error)
+        return False
+
     def set_clipboard_image(self, img_format: str, img_data) -> None:
         image_formats: dict[int, int] = {}
         if COMPRESSED_IMAGES:
@@ -755,37 +893,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             for fmt, handle in image_formats.items():
                 free_clipboard_handle(fmt, handle)
             return
-        self.do_set_clipboard_image(image_formats)
-
-    def do_set_clipboard_image(self, image_formats: dict[int, int]) -> None:
-        if not image_formats:
-            # nothing to set: don't empty the clipboard for nothing
-            log("do_set_clipboard_image: no image formats to set")
-            return
-
-        def got_clipboard_lock() -> bool:
-            if not EmptyClipboard():
-                log("EmptyClipboard()=0 (%s)", WinError(GetLastError()))
-                # we still own every handle, so we can try again:
-                return False
-            for fmt, handle in image_formats.items():
-                log("do_set_clipboard_image: %s", format_name(fmt))
-                if not SetClipboardData(fmt, handle):
-                    e = WinError(GetLastError())
-                    log("SetClipboardData(%s, %#x)=0 (%s)", format_name(fmt), handle, e)
-                    log.warn("Warning: failed to set the clipboard %r data", format_name(fmt))
-                    log.warn(" %s", e)
-                    # the system did not take ownership of this handle:
-                    free_clipboard_handle(fmt, handle)
-            # the clipboard has been emptied: trying again would not help
-            return True
-
-        def nolock(*_args) -> None:
-            log.warn("Warning: failed to copy image data to the clipboard")
-            for fmt, handle in image_formats.items():
-                free_clipboard_handle(fmt, handle)
-
-        self.with_clipboard_lock(got_clipboard_lock, nolock)
+        self.queue_clipboard_formats(image_formats)
 
     def set_clipboard_html(self, html_data) -> None:
         if isinstance(html_data, str):
@@ -795,40 +903,13 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if not fmt:
             set_err("failed to register the 'HTML Format' clipboard format")
             return
-        l = len(cf_html)
         try:
             buf = alloc_global(cf_html)
         except RuntimeError as e:
             set_err(str(e))
             return
-
-        def set_clipboard_data() -> bool:
-            r = EmptyClipboard()
-            log("EmptyClipboard()=%s", r)
-            if not r:
-                set_err("failed to empty the clipboard")
-                # we still own the buffer, so we can try again:
-                return False
-            r = SetClipboardData(fmt, buf)
-            if not r:
-                e = WinError(GetLastError())
-                log("SetClipboardData(HTML Format, %i bytes)=%s (%s)", l, r, e)
-                set_err("failed to set the HTML clipboard data: %s" % e)
-                # the system did not take ownership of the buffer:
-                GlobalFree(buf)
-                # the clipboard has been emptied: trying again would not help
-                return True
-            log("SetClipboardData(HTML Format, %i bytes)=%s", l, r)
-            return True
-
-        def set_clipboard_error(error_text="") -> None:
-            log("set_clipboard_error(%s)", error_text)
-            if error_text:
-                log.warn("Warning: failed to set HTML clipboard data")
-                log.warn(" %s", error_text)
-            GlobalFree(buf)
-
-        self.with_clipboard_lock(set_clipboard_data, set_clipboard_error)
+        log("GlobalAlloc buf=%#x for %i bytes of HTML Format data", buf, len(cf_html))
+        self.queue_clipboard_formats({fmt: buf})
 
     def get_clipboard_text(self, utf8, callback: Callable[[str | bytes], []], errback: Callable[[str], []]):
         def get_text() -> bool:
@@ -899,48 +980,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             set_err(str(e))
             return
         log("GlobalAlloc buf=%#x for %i characters", buf, len(text))
-        # we're going to alter the clipboard ourselves,
-        # ignore messages until we're done,
-        # this may take a while so ensure we do unblock eventually:
-        long_timeout = GLib.timeout_add(2000, self.remove_block)
-        self._block_owner_change = long_timeout
-
-        def cleanup() -> None:
-            if self._block_owner_change == long_timeout:
-                # now safe to re-schedule and run now in the UI thread:
-                self.cancel_unblock()
-                self._block_owner_change = GLib.idle_add(self.remove_block)
-
-        def set_clipboard_data() -> bool:
-            r = EmptyClipboard()
-            log("EmptyClipboard()=%s", r)
-            if not r:
-                set_err("failed to empty the clipboard")
-                # we still own the buffer, so we can try again:
-                return False
-            r = SetClipboardData(win32con.CF_UNICODETEXT, buf)
-            if not r:
-                e = WinError(GetLastError())
-                log("SetClipboardData(CF_UNICODETEXT, %i chars)=%s (%s)", len(text), r, e)
-                set_err("failed to set the clipboard text: %s" % e)
-                # the system did not take ownership of the buffer:
-                GlobalFree(buf)
-                cleanup()
-                # the clipboard has been emptied: trying again would not help
-                return True
-            log("SetClipboardData(CF_UNICODETEXT, %i chars)=%s", len(text), r)
-            cleanup()
-            return True
-
-        def set_clipboard_error(error_text="") -> None:
-            log("set_clipboard_error(%s)", error_text)
-            if error_text:
-                log.warn("Warning: failed to set clipboard data")
-                log.warn(" %s", error_text)
-            GlobalFree(buf)
-            cleanup()
-
-        self.with_clipboard_lock(set_clipboard_data, set_clipboard_error)
+        self.queue_clipboard_formats({win32con.CF_UNICODETEXT: buf})
 
     def __repr__(self):
         return "Win32ClipboardProxy"
@@ -1057,6 +1097,8 @@ class Win32Clipboard(PrimaryHelperMixin, ClipboardTimeoutHelper):
         if not proxy:
             log.warn("Warning: no 'CLIPBOARD' proxy to save the 'PRIMARY' selection to")
             return
+        # this text is unrelated to whatever the `CLIPBOARD` selection was holding:
+        proxy.replace_clipboard_contents()
         proxy.set_clipboard_text(text)
 
     ############################################################################
