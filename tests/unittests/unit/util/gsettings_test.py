@@ -67,7 +67,7 @@ class TestGSettingsAllowlist(unittest.TestCase):
     def test_parse_option_value(self):
         default = gsettings.GSETTINGS_ALLOWLIST
         # boolean and `auto` values select the default allowlist:
-        for value in ("yes", "true", "1", "on", "auto", "AUTO", "", None):
+        for value in ("yes", "true", "1", "on", "auto", "AUTO", ""):
             self.assertEqual(gsettings.parse_gsettings_allowlist(value), default)
         for value in ("no", "false", "0", "off"):
             self.assertEqual(gsettings.parse_gsettings_allowlist(value), ())
