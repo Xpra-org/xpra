@@ -93,7 +93,7 @@ class UI_thread_watcher:
 
     @staticmethod
     def run_callbacks(callbacks:List[Callable]) -> None:
-        for x in callbacks:
+        for x in tuple(callbacks):
             try:
                 x()
             except Exception:
