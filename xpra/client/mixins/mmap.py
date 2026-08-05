@@ -80,18 +80,26 @@ class MmapClient(StubClientMixin):
             mmap_token = iget("token")
             mmap_token_index = iget("token_index", 0)
             mmap_token_bytes = iget("token_bytes", DEFAULT_TOKEN_BYTES)
-            token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
-            if token!=mmap_token:
-                log.error("Error: mmap token verification failed!")
-                log.error(f" expected {token:x}")
-                log.error(f" found {mmap_token:x}")
+            try:
+                token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
+            except ValueError as e:
                 self.mmap_enabled = False
-                if token:
-                    self.quit(ExitCode.MMAP_TOKEN_FAILURE)
-                    return False
+                log.error("Error: invalid mmap token attributes")
+                log.error(f" {e}")
                 log.error(" mmap is disabled")
-                return True
-            log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
+                self.clean_mmap()
+            else:
+                if token!=mmap_token:
+                    log.error("Error: mmap token verification failed!")
+                    log.error(f" expected {token:x}")
+                    log.error(f" found {mmap_token:x}")
+                    self.mmap_enabled = False
+                    if token:
+                        self.quit(ExitCode.MMAP_TOKEN_FAILURE)
+                        return False
+                    log.error(" mmap is disabled")
+                    return True
+                log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
         #the server will have a handle on the mmap file by now, safe to delete:
         if not KEEP_MMAP_FILE:
             self.clean_mmap()

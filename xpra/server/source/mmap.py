@@ -100,29 +100,38 @@ class MMAP_Connection(StubSourceMixin):
             if self.mmap_size>0 and self.mmap is not None:
                 index = c.intget(f"{prefix}token_index", 0)
                 count = c.intget(f"{prefix}token_bytes", DEFAULT_TOKEN_BYTES)
-                v = read_mmap_token(self.mmap, index, count)
-                if v!=mmap_token:
-                    log.warn("Warning: mmap token verification failed, not using mmap area!")
-                    log.warn(f" expected {mmap_token:x}, found {v:x}")
-                    self.mmap.close()
-                    self.mmap = None
-                    self.mmap_size = 0
-                elif self.mmap_size<self.min_mmap_size:
-                    log.warn("Warning: client supplied mmap area is too small, discarding it")
-                    log.warn(" we need at least %iMB and this area is %iMB",
-                             self.min_mmap_size//1024//1024, self.mmap_size//1024//1024)
+                try:
+                    v = read_mmap_token(self.mmap, index, count)
+                except ValueError as e:
+                    log.error("Error: invalid mmap token attributes")
+                    log.error(f" {e}")
+                    log.error(" mmap is disabled")
                     self.mmap.close()
                     self.mmap = None
                     self.mmap_size = 0
                 else:
-                    from xpra.os_util import get_int_uuid
-                    self.mmap_client_token = get_int_uuid()
-                    self.mmap_client_token_bytes = DEFAULT_TOKEN_BYTES
-                    self.mmap_client_token_index = randint(0, self.mmap_size-self.mmap_client_token_bytes)
-                    write_mmap_token(self.mmap,
-                                     self.mmap_client_token,
-                                     self.mmap_client_token_index,
-                                     self.mmap_client_token_bytes)
+                    if v!=mmap_token:
+                        log.warn("Warning: mmap token verification failed, not using mmap area!")
+                        log.warn(f" expected {mmap_token:x}, found {v:x}")
+                        self.mmap.close()
+                        self.mmap = None
+                        self.mmap_size = 0
+                    elif self.mmap_size<self.min_mmap_size:
+                        log.warn("Warning: client supplied mmap area is too small, discarding it")
+                        log.warn(" we need at least %iMB and this area is %iMB",
+                                 self.min_mmap_size//1024//1024, self.mmap_size//1024//1024)
+                        self.mmap.close()
+                        self.mmap = None
+                        self.mmap_size = 0
+                    else:
+                        from xpra.os_util import get_int_uuid
+                        self.mmap_client_token = get_int_uuid()
+                        self.mmap_client_token_bytes = DEFAULT_TOKEN_BYTES
+                        self.mmap_client_token_index = randint(0, self.mmap_size-self.mmap_client_token_bytes)
+                        write_mmap_token(self.mmap,
+                                         self.mmap_client_token,
+                                         self.mmap_client_token_index,
+                                         self.mmap_client_token_bytes)
         if self.mmap_size>0:
             from xpra.simple_stats import std_unit
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)

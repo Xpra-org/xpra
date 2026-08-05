@@ -180,9 +180,27 @@ def clean_mmap(mmap_filename:str) -> None:
             log.estr(e)
 
 DEFAULT_TOKEN_BYTES : int = 128
+#the token size is chosen by the peer, so it needs an upper bound:
+#(leave some room for peers using a larger token than we do)
+MAX_TOKEN_BYTES : int = DEFAULT_TOKEN_BYTES*4
+
+def validate_token_range(mmap_area, index:int, count:int) -> None:
+    """
+        The location and size of the token are chosen by the peer,
+        so they must be validated before we can use them:
+        a huge count would have us spin for a very long time
+        and an out of range index would raise an obscure ValueError
+        from the very first from_buffer call.
+    """
+    if not 0<count<=MAX_TOKEN_BYTES:
+        raise ValueError(f"invalid mmap token size {count!r}: must be between 1 and {MAX_TOKEN_BYTES}")
+    size = len(mmap_area)
+    if index<0 or index+count>size:
+        raise ValueError(f"mmap token at {index} using {count} bytes is out of range"
+                         f" for an area of {size} bytes")
 
 def write_mmap_token(mmap_area, token, index:int, count:int=DEFAULT_TOKEN_BYTES) -> None:
-    assert count>0
+    validate_token_range(mmap_area, index, count)
     #write the token one byte at a time - no endianness
     log("write_mmap_token(%s, %#x, %#x, %#x)", mmap_area, token, index, count)
     v = token
@@ -193,7 +211,7 @@ def write_mmap_token(mmap_area, token, index:int, count:int=DEFAULT_TOKEN_BYTES)
     assert v==0, "token value is too big"
 
 def read_mmap_token(mmap_area, index:int, count:int=DEFAULT_TOKEN_BYTES) -> int:
-    assert count>0
+    validate_token_range(mmap_area, index, count)
     v = 0
     for i in range(0, count):
         v = v<<8
