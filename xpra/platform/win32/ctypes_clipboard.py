@@ -1020,6 +1020,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 callback(b)
                 return True
             finally:
+                # `GlobalUnlock` takes the handle, not the pointer returned by `GlobalLock`:
                 GlobalUnlock(data_handle)
 
         self.with_clipboard_lock(get_text, errback)
