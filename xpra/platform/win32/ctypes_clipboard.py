@@ -35,7 +35,7 @@ from xpra.platform.win32.common import (
 from xpra.platform.win32 import win32con
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.core import MAX_CLIPBOARD_PACKET_SIZE
-from xpra.clipboard.common import ClipboardCallback
+from xpra.clipboard.common import ClipboardCallback, ClipboardData
 from xpra.clipboard.targets import _filter_targets, TEXT_TARGETS
 from xpra.clipboard.primary import PrimaryProxyMixin, PrimaryHelperMixin
 from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
@@ -446,6 +446,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.window = window
         self.send_clipboard_request_handler = send_clipboard_request_handler
         self.send_clipboard_token_handler = send_clipboard_token_handler
+        # the targets and the data the peer sent us with the last token:
+        self.targets: Sequence[str] = ()
+        self.target_data: ClipboardData = {}
         # the memory handles queued by `queue_clipboard_formats`,
         # which `commit_clipboard_formats` will set on the clipboard:
         self.pending_formats: dict[int, int] = {}
