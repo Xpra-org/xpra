@@ -158,6 +158,10 @@ body {
   gap: 1rem;
 }
 
+.docs-card-wide {
+  grid-column: 1 / -1;
+}
+
 .docs-card {
   min-width: 0;
   padding: 1.4rem 1.45rem;
@@ -206,6 +210,43 @@ body {
   margin-bottom: 0.75rem;
 }
 
+.docs-screenshot-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.docs-screenshot-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 280px;
+  padding: 0.75rem;
+  margin: 0.25rem 0 1rem;
+  overflow: hidden;
+  background: #edf2f6;
+  border: 1px solid #dfe7ee;
+  border-radius: 8px;
+}
+
+.docs-screenshot-link:hover {
+  background: #e5eef6;
+  border-color: #a9c8e6;
+}
+
+.markdown-body .docs-screenshot-link img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 100%;
+  margin: 0;
+  background: transparent;
+  box-shadow: 0 6px 18px rgba(28, 48, 68, 0.18);
+}
+
+.docs-screenshot-card > p:last-child {
+  margin-bottom: 0;
+}
+
 .footer {
   color: var(--xpra-muted) !important;
 }
@@ -227,6 +268,10 @@ body {
   .docs-grid {
     grid-template-columns: 1fr;
   }
+
+  .docs-card-wide {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: 440px) {
@@ -241,11 +286,16 @@ body {
   .docs-actions a {
     justify-content: center;
   }
+
+  .docs-screenshot-link {
+    height: 220px;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .docs-actions a,
-  .docs-card {
+  .docs-card,
+  .docs-screenshot-link {
     transition: color 120ms ease, background 120ms ease, border-color 120ms ease,
       box-shadow 120ms ease, transform 120ms ease;
   }
