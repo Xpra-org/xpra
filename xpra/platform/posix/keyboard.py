@@ -256,7 +256,7 @@ class Keyboard(KeyboardBase):
         log("get_keymap_spec()=%r", query_struct)
         return query_struct
 
-    def get_all_x11_layouts(self):
+    def get_all_x11_layouts(self) -> dict[str, str]:
         return get_all_x11_layouts()
 
     def get_layout_spec(self) -> tuple[str, str, Sequence[str], str, Sequence[str], str]:

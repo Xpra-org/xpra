@@ -1097,12 +1097,12 @@ class KeyboardWindow(SessionOptions):
         layouts = {
             "": "auto",
         }
-        x11_layouts = kbd.get_all_x11_layouts()
+        x11_layouts: dict[str, str] = kbd.get_all_x11_layouts()
         # many layouts can have the same name (ie: "English"),
         # only keep the first one that provides it:
         names = set()
         for x11_layout, name in x11_layouts.items():
-            if x11_layout and name not in names:
+            if x11_layout and name and (name not in names):
                 layouts[x11_layout] = name
                 names.add(name)
         self.combo("Keyboard Layout", "keyboard-layout", layouts)
