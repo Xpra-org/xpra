@@ -121,7 +121,19 @@ class MMAP_Connection(StubClientConnection):
         if not basename or basename in (os.curdir, os.pardir):
             log.warn(f"Warning: invalid mmap filename {filename!r}")
             return ""
-        dirname = os.path.normpath(os.path.dirname(filename))
+        dirname = os.path.dirname(filename)
+        if not dirname:
+            # the client did not specify a directory,
+            # so look for its file in the directories we allow:
+            for mmap_dir in self.allowed_dirs:
+                path = os.path.join(mmap_dir, basename)
+                if os.path.exists(path):
+                    log(f"found mmap file {basename!r} in {mmap_dir!r}")
+                    return path
+            log.warn(f"Warning: mmap file {basename!r} not found")
+            log.warn(" in any of the allowed directories: %s", csv(self.allowed_dirs) or "none")
+            return ""
+        dirname = os.path.normpath(dirname)
         for mmap_dir in self.allowed_dirs:
             # use the directory the client's file is supposed to live in,
             # so that a client can choose between the directories we allow:
