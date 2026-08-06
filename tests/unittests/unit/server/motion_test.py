@@ -159,6 +159,35 @@ class TestMotion(unittest.TestCase):
         #log("na1:\n%s" % (na1, ))
         #log("na2:\n%s" % (na2, ))
 
+    def test_geometry_change(self):
+        W, H, BPP = 16, 32, 4
+
+        def image(offset):
+            # each row is a solid colour, unique within the image:
+            return b"".join(bytes(((offset+y) % 256, 0, 0, 0xFF))*W for y in range(H))
+
+        def scroll_values(x1, y1, x2, y2):
+            sd = motion.ScrollData(x1, y1, W, H)
+            sd.update(image(0), x1, y1, W, H, W*BPP, BPP)
+            sd.update(image(2), x2, y2, W, H, W*BPP, BPP)
+            sd.calculate(H)
+            return sd.get_scroll_values()
+
+        # same geometry: the shift of 2 lines is detected
+        v = scroll_values(0, 0, 0, 0)
+        assert v, "no scroll values for two images at the same position"
+        scrolls = v[0]
+        line_defs = scrolls.get(-2)
+        assert line_defs, "distance -2 not found in scroll data: %s" % (scrolls, )
+        assert sum(line_defs.values()) == H-2, "expected %i matching lines, got %s" % (H-2, line_defs)
+
+        # same size but a different position:
+        # the reference checksums were calculated for another area of the window,
+        # matching against them would move the wrong pixels
+        for x2, y2 in ((0, 300), (300, 0), (5, 5)):
+            v = scroll_values(0, 0, x2, y2)
+            assert not v, "scroll values %s found for images at %s and %s" % (v, (0, 0), (x2, y2))
+
     def test_csum_data(self):
         a1=[
             5992220345606009987, 15040563112965825180, 420530012284267555, 3380071419019115782, 14243596304267993264, 834861281570233459, 10803583843784306120, 1379296002677236226,
