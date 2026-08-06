@@ -303,18 +303,56 @@ class CairoBackingBase(WindowBackingBase):
         scroll_data = options.tupleget("scroll", img_data)
         GLib.idle_add(self.do_paint_scroll, scroll_data, callbacks)
 
+    def snapshot_source(self, scrolls) -> tuple[ImageSurface, int, int] | None:
+        """
+            Copy the area covered by the source rectangles of the `scrolls` list
+            into a new surface, so that every rectangle can be painted
+            from the window contents as they were before any of them was applied.
+            Returns the snapshot and its position within the backing.
+        """
+        backing = self._backing
+        bw, bh = backing.get_width(), backing.get_height()
+        # bounding box of all the source rectangles, clipped to the backing:
+        x1 = min(sx for sx, _, _, _, _, _ in scrolls)
+        y1 = min(sy for _, sy, _, _, _, _ in scrolls)
+        x2 = max(sx + sw for sx, _, sw, _, _, _ in scrolls)
+        y2 = max(sy + sh for _, sy, _, sh, _, _ in scrolls)
+        x1 = max(0, min(bw, x1))
+        y1 = max(0, min(bh, y1))
+        x2 = max(0, min(bw, x2))
+        y2 = max(0, min(bh, y2))
+        if x2 <= x1 or y2 <= y1:
+            return None
+        snapshot = ImageSurface(Format.ARGB32, x2 - x1, y2 - y1)
+        gc = Context(snapshot)
+        gc.set_operator(Operator.SOURCE)
+        gc.set_source_surface(backing, -x1, -y1)
+        gc.paint()
+        snapshot.flush()
+        return snapshot, x1, y1
+
     def do_paint_scroll(self, scrolls, callbacks: PaintCallbacks) -> None:
-        old_backing = self._backing
-        if not old_backing:
+        backing = self._backing
+        if not backing:
             fire_paint_callbacks(callbacks, False, message="no backing")
             return
-        gc = self.create_surface()
-        if not gc:
-            fire_paint_callbacks(callbacks, False, message="no context")
+        if not scrolls:
+            fire_paint_callbacks(callbacks)
             return
+        # all the rectangles are relative to the same reference picture:
+        # the window contents as they were *before* any of them was applied,
+        # so they must all be painted from a snapshot
+        # (see `paint_scroll` in `WindowBackingBase`)
+        snap = self.snapshot_source(scrolls)
+        if not snap:
+            fire_paint_callbacks(callbacks, False, message="no scroll source area")
+            return
+        snapshot, ox, oy = snap
+        gc = Context(backing)
         gc.set_operator(Operator.SOURCE)
         for sx, sy, sw, sh, xdelta, ydelta in scrolls:
-            gc.set_source_surface(old_backing, xdelta, ydelta)
+            # place the snapshot so that its pixel (sx, sy) lands on (sx+xdelta, sy+ydelta):
+            gc.set_source_surface(snapshot, ox + xdelta, oy + ydelta)
             x = sx + xdelta
             y = sy + ydelta
             gc.rectangle(x, y, sw, sh)
@@ -322,7 +360,7 @@ class CairoBackingBase(WindowBackingBase):
             if self.paint_box_line_width > 0:
                 self.cairo_paint_box(gc, "scroll", x, y, sw, sh)
         del gc
-        self._backing.flush()
+        backing.flush()
         fire_paint_callbacks(callbacks)
 
     def cairo_draw(self, context, w: int, h: int) -> None:
