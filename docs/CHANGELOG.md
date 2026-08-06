@@ -8,6 +8,7 @@
   * [setup scripts for pycuda](https://github.com/Xpra-org/xpra/issues/2400)
   * [automatic RPM package scripts](https://github.com/Xpra-org/xpra/issues/4920)
   * [MS Windows session lock prevented OpenGL acceleration](https://github.com/Xpra-org/xpra/issues/1138)
+  * [stable, native MS Windows client backend](https://github.com/Xpra-org/xpra/issues/921)
 * 🖧 Network:
   * [proxy registration](https://github.com/Xpra-org/xpra/issues/2125)
   * [automatic session proxying](https://github.com/Xpra-org/xpra/issues/4902)
