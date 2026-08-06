@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
+from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.parsing import str_to_bool
 from xpra.gtk.configure.common import run_gui
 from xpra.util.config import update_config_attribute, with_config
@@ -23,15 +24,15 @@ def label(text, tooltip="", **kwargs):
 
 
 FEATURES = (
-    ("Audio", "Audio forwarding: speaker and microphone", "xpra.audio"),
-    ("Video", "Video codecs: h264, vpx, etc", "xpra.codecs.vpx"),
-    # ("Webcam", "Webcam forwarding", "xpra.webcam"),
-    ("System Tray", "System tray forwarding", "xpra.client"),
-    ("File transfer", "Upload and download of files to and from the server", "xpra.net"),
-    ("Printing", "Printer forwarding to the client's printer", "xpra.net"),
-    ("Clipboard", "Copy & Paste to and from the server", "xpra.clipboard"),
-    ("Notifications", "Notification forwarding", "xpra.notification"),
-    ("Windows", "Window forwarding", "xpra.client.gtk3"),
+    ("audio.png", "Audio", "Audio forwarding: speaker and microphone", "xpra.audio"),
+    ("video.png", "Video", "Video codecs: h264, vpx, etc", "xpra.codecs.vpx"),
+    # ("webcam.png", "Webcam", "Webcam forwarding", "xpra.webcam"),
+    ("up.png", "System Tray", "System tray forwarding", "xpra.client"),
+    ("directory.png", "File transfer", "Upload and download of files to and from the server", "xpra.net"),
+    ("printer.png", "Printing", "Printer forwarding to the client's printer", "xpra.net"),
+    ("clipboard.png", "Clipboard", "Copy & Paste to and from the server", "xpra.clipboard"),
+    ("information.png", "Notifications", "Notification forwarding", "xpra.notification"),
+    ("windows.png", "Windows", "Window forwarding", "xpra.client.gtk3"),
     # ("MMap", "Fast shared memory transfers", "xpra.net.mmap"),
     # ("Readonly", "Prevent any keyboard or pointer events from being forwarded", "xpra.client.gtk3"),
 )
@@ -77,7 +78,11 @@ class ConfigureGUI(BaseGUIWindow):
         grid.set_column_homogeneous(False)
         self.add_widget(grid)
 
-        for i, (subsystem, description, module) in enumerate(FEATURES):
+        for i, (icon_name, subsystem, description, module) in enumerate(FEATURES):
+            icon = get_icon_pixbuf(icon_name)
+            if icon:
+                image = Gtk.Image.new_from_pixbuf(icon)
+                grid.attach(image, 0, i, 1, 1)
             import importlib
             try:
                 found = bool(importlib.import_module(module))
@@ -85,11 +90,11 @@ class ConfigureGUI(BaseGUIWindow):
             except ImportError as e:
                 found = False
                 tooltip = _("this feature is missing: %s") % e
-            grid.attach(plabel(subsystem, tooltip, found), 0, i, 1, 1)
-            grid.attach(plabel(description, tooltip, found, font="sans 10"), 1, i, 1, 1)
+            grid.attach(plabel(subsystem, tooltip, found), 1, i, 1, 1)
+            grid.attach(plabel(description, tooltip, found, font="sans 10"), 2, i, 1, 1)
             switch = Gtk.Switch()
             switch.set_sensitive(False)
-            grid.attach(switch, 2, i, 1, 1)
+            grid.attach(switch, 3, i, 1, 1)
             if found:
                 sub = subsystem.lower().replace(" ", "-")
                 self.subsystem_switch[sub] = switch
