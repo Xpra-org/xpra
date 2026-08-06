@@ -76,7 +76,9 @@ def wm_check(upgrading=False) -> bool:
     cwm_so = info.get("_NET_WM_CM_S0")
     ewmh_xid = info.get("_NET_SUPPORTING_WM_CHECK", 0)
     xpra_name = name and name.lower().startswith("xpra")
-    if not upgrading and not (ewmh_xid or wm_so or cwm_so):
+    if not (ewmh_xid or wm_so or cwm_so):
+        # no window manager at all, so we can take over -
+        # when upgrading, this means that the previous server has exited cleanly
         log("no window manager on %s", display_name)
         return True
     if upgrading and xpra_name:
