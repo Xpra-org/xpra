@@ -489,6 +489,8 @@ def clean_session_path(path) -> None:
 SERVER_SAVE_SKIP_OPTIONS : Tuple[str,...] = (
     "systemd-run",
     "daemon",
+    # `mode` is saved separately, at the top of the file:
+    "mode",
     )
 
 SERVER_LOAD_SKIP_OPTIONS : Tuple[str,...] = (
@@ -539,6 +541,13 @@ def load_options() -> Dict[str,Any]:
     config_file = session_file_path("config")
     return read_config(config_file)
 
+def get_config_mode(options: Dict[str,Any]) -> str:
+    mode = options.get("mode", "")
+    if isinstance(mode, (list, tuple)):
+        # older versions saved the mode more than once:
+        mode = mode[-1] if mode else ""
+    return str(mode)
+
 def apply_config(opts, mode:str, cmdline:str) -> str:
     #if we had saved the start / start-desktop config, reload it:
     options = load_options()
@@ -546,7 +555,8 @@ def apply_config(opts, mode:str, cmdline:str) -> str:
         return mode
     if mode.find("upgrade")>=0:
         #unspecified upgrade, try to find the original mode used:
-        mode = options.pop("mode") or mode
+        mode = get_config_mode(options) or mode
+    options.pop("mode", None)
     upgrade_config = dict_to_validated_config(options)
     #apply the previous session options:
     for k in options:
