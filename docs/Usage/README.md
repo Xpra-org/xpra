@@ -75,7 +75,7 @@ other [session features](../Features/README.md).
 
 </section>
 
-<section class="docs-card docs-screenshot-card docs-card-wide" markdown="1">
+<section class="docs-card docs-screenshot-card" markdown="1">
 
 ### Configure Xpra
 
@@ -85,8 +85,23 @@ other [session features](../Features/README.md).
 </a>
 
 Use **Configure** to change persistent defaults, check optional packages, tune
-picture compression, enable debugging, and configure server components. These
+picture compression, enable debugging, and configure server components. The
 settings can also be managed through [configuration files](Configuration.md).
+
+</section>
+
+<section class="docs-card docs-screenshot-card" markdown="1">
+
+### Configure features
+
+<a class="docs-screenshot-link" href="../images/screenshots/xpra-configure-features.png">
+<img src="../images/screenshots/xpra-configure-features.png"
+     alt="Configure Xpra features window with switches for forwarded session features">
+</a>
+
+Choose which [session features](../Features/README.md) Xpra forwards, including
+audio, video, the system tray, files, printers, clipboard contents,
+notifications, and windows.
 
 </section>
 </div>
