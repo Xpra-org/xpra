@@ -734,6 +734,12 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks, False, msg)
 
         bw, bh = self.size
+        # every rectangle is relative to the window contents
+        # as they were before any of them was applied,
+        # so we snapshot the fbo and blit from that copy:
+        # applying them in place would corrupt the ones
+        # whose source overlaps another one's destination
+        # (see `paint_scroll` in `WindowBackingBase`)
         self.copy_fbo(bw, bh)
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)

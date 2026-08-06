@@ -2175,6 +2175,11 @@ class WindowVideoSource(WindowSource):
         scrolllog(" will send scroll data=%s, non-scroll=%s", raw_scroll, non_scroll)
         flush = len(non_scroll)
         # convert to a screen rectangle list for the client:
+        # all the rectangles below are expressed relative to the same reference picture
+        # (the checksums in `scroll_data.a1`, ie: the window contents the client currently has),
+        # they are not ordered so that they can be applied in place:
+        # the client must paint them all from a snapshot taken before the first one,
+        # see `paint_scroll` in `xpra.client.gui.window.backing`
         scrolls: list[tuple[int, int, int, int, int, int]] = []
         for scroll, line_defs in raw_scroll.items():
             if scroll == 0:

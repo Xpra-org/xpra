@@ -973,6 +973,26 @@ class WindowBackingBase:
                           options, callbacks)
 
     def paint_scroll(self, img_data, options: typedict, callbacks: PaintCallbacks) -> None:
+        """
+            The `scroll` encoding carries a list of `(x, y, w, h, xdelta, ydelta)` rectangles
+            in the `scroll` option (older servers overload the packet's image data instead),
+            each one meaning: copy the pixels found at `(x, y, w, h)`
+            to `(x+xdelta, y+ydelta)`.
+
+            All the rectangles are relative to the same reference picture:
+            the window contents as they were *before* any of them was applied.
+            Implementations MUST therefore copy from a snapshot of the backing
+            taken before the first rectangle is painted, and not from the backing
+            as it is being modified.
+            The server does not order the rectangles so that they can be applied in place:
+            the source of one rectangle regularly overlaps the destination of another,
+            and the list can even describe two areas swapping places,
+            which no ordering can satisfy.
+            Applying them sequentially in place corrupts the window contents.
+
+            See `xpra.opengl.backing` for the reference implementation:
+            it blits from a copy of the FBO made before the loop.
+        """
         log("paint_scroll%s", (img_data, options, callbacks))
         raise NotImplementedError(f"no paint scroll on {type(self)}")
 

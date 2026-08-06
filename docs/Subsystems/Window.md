@@ -55,3 +55,27 @@ relative to that monitor.
 The Win32 native client rebases absolute window positions against the top-left
 of its monitor layout. Packets also include the pre-normalization coordinates
 as `raw-position` metadata.
+
+## The `scroll` encoding
+
+Instead of pixel data, a `window-draw` packet using the `scroll` encoding carries a list
+of motion vectors in the `scroll` client option (very old servers overload the packet's
+data argument instead). Each entry is a `(x, y, w, h, xdelta, ydelta)` tuple meaning:
+
+> copy the rectangle at `(x, y, w, h)` to `(x+xdelta, y+ydelta)`
+
+The areas which could not be expressed as motion vectors are sent as regular picture
+encodings in the packets that follow, using the `flush` option to tell the client
+how many more packets belong to the same screen update.
+
+**All the rectangles in the list are relative to the same reference picture: the window
+contents as they were before any of them was applied.**
+Clients MUST copy from a snapshot of their window backing taken before painting the first
+rectangle. The server does not order the list so that it can be applied in place - the
+source of one rectangle regularly overlaps the destination of another, and the list can
+describe two areas swapping places, which no ordering can satisfy. Applying the rectangles
+sequentially in place corrupts the window contents.
+
+The reference implementation is
+[xpra.opengl.backing](https://github.com/Xpra-org/xpra/blob/master/xpra/opengl/backing.py):
+it copies the FBO once, then blits every rectangle from that copy.

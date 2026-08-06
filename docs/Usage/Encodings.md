@@ -20,7 +20,7 @@ The `xpra configure encodings` is designed to help you do exactly that. Use it f
 The following pseudo encodings just control which actual encodings can be selected by the engine:
 * `auto` which is the default, allows all options
 * `grayscale` does the same, but without sending colours - which saves some bandwidth (this saving is not always significant)
-* `scroll` will try harder to send the screen updates using a list of motion vectors, if possible
+* `scroll` will try harder to send the screen updates using a list of motion vectors, if possible - see [the `scroll` encoding](../Subsystems/Window.md#the-scroll-encoding) for the semantics client implementations must honour
 
 You can select the pseudo-encoding using the `--encoding=ENC` switch.
 </details>
