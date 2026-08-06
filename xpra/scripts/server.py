@@ -159,7 +159,7 @@ def make_server_app(mode_attrs: dict[str, str], opts, clobber: int, mode: str,
             os.environ.pop("XPRA_UNIT_TEST", None)
             from xpra.server.runner.server import RunnerServer
             return RunnerServer()
-    if mode in ("seamless", "upgrade"):
+    if mode == "seamless":
         if opts.backend == "wayland":
             from xpra.wayland.server.seamless import WaylandSeamlessServer
             return WaylandSeamlessServer()
@@ -558,13 +558,24 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     if POSIX and not OSX and (upgrading or shadowing):
         opts.input_method = "keep"
 
-    from xpra.server.features import set_server_features
-    set_server_features(opts, mode)
-
     from xpra.log import Logger
     log = Logger("server")
+
+    # the `upgrade` modes use the same features and server classes as the mode they upgrade to:
+    server_mode = mode.removeprefix("upgrade-")
+    if server_mode == "upgrade":
+        # unspecified upgrade mode: use the mode of the session we're upgrading
+        # (the full session configuration is only re-loaded later, see `apply_config`)
+        from xpra.server.subsystem.sessionfiles import load_session_mode
+        saved_mode = load_session_mode(opts.sessions_dir, display_name, opts.uid)
+        server_mode = saved_mode if saved_mode in ("seamless", "desktop", "monitor") else "seamless"
+        log(f"upgrading {display_name!r}: {saved_mode=}, {server_mode=}")
+
+    from xpra.server.features import set_server_features
+    set_server_features(opts, server_mode)
+
     try:
-        app = make_server_app(mode_attrs, opts, clobber, mode, display_name)
+        app = make_server_app(mode_attrs, opts, clobber, server_mode, display_name)
     except ImportError as e:
         log("failed to make server class", exc_info=True)
         log.error("Error: the server cannot be started,")
@@ -592,6 +603,9 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         # if we had saved the start / start-desktop config, reload it:
         session_files.apply_config(opts, cmdline)
         opts.mode = mode = opts.mode.removeprefix("upgrade-").removeprefix("start-")
+        if mode == "upgrade":
+            # no mode found in the saved config:
+            opts.mode = mode = server_mode
 
     if splash := app.get_subsystem("splash"):
         splash.init(opts)

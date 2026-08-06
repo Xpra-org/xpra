@@ -26,6 +26,8 @@ log = Logger("server")
 SERVER_SAVE_SKIP_OPTIONS: tuple[str, ...] = (
     "systemd-run",
     "daemon",
+    # `mode` is saved separately, at the top of the file:
+    "mode",
 )
 
 SERVER_LOAD_SKIP_OPTIONS: tuple[str, ...] = (
@@ -82,11 +84,33 @@ def load_options() -> dict[str, Any]:
     return read_config(config_file)
 
 
+def get_config_mode(options: dict[str, Any]) -> str:
+    mode = options.get("mode", "")
+    if isinstance(mode, (list, tuple)):
+        # older versions saved the mode more than once:
+        mode = mode[-1] if mode else ""
+    return str(mode)
+
+
+def load_session_mode(sessions_dir: str, display_name: str, uid: int) -> str:
+    """
+    find the mode used by an existing session, from its saved configuration file
+    (the session directory is not setup yet when we need this)
+    """
+    import os.path
+    session_dir = get_session_dir("upgrade", sessions_dir, display_name, uid)
+    config_file = os.path.join(session_dir, "config")
+    if not os.path.exists(config_file):
+        return ""
+    return get_config_mode(read_config(config_file))
+
+
 def apply_config(opts, options: dict[str, Any], cmdline: list[str]) -> None:
     # if we had saved the start / start-desktop config, reload it:
     if opts.mode.find("upgrade") >= 0:
         # unspecified upgrade, try to find the original mode used:
-        opts.mode = options.pop("mode") or opts.mode
+        opts.mode = get_config_mode(options) or opts.mode
+    options.pop("mode", None)
     upgrade_config = dict_to_validated_config(options)
     # apply the previous session options:
     for k in options:
