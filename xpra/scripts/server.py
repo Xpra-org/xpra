@@ -317,6 +317,8 @@ def write_displayfd(display_name: str, fd: int) -> None:
 SERVER_SAVE_SKIP_OPTIONS: Sequence[str] = (
     "systemd-run",
     "daemon",
+    # `mode` is saved separately, at the top of the file:
+    "mode",
 )
 
 SERVER_LOAD_SKIP_OPTIONS: Sequence[str] = (
@@ -370,6 +372,14 @@ def load_options() -> dict[str, Any]:
     return read_config(config_file)
 
 
+def get_config_mode(options: dict[str, Any]) -> str:
+    mode = options.get("mode", "")
+    if isinstance(mode, (list, tuple)):
+        # older versions saved the mode more than once:
+        mode = mode[-1] if mode else ""
+    return str(mode)
+
+
 def apply_config(opts, mode: str, cmdline: list[str]) -> str:
     # if we had saved the start / start-desktop config, reload it:
     options = load_options()
@@ -377,7 +387,8 @@ def apply_config(opts, mode: str, cmdline: list[str]) -> str:
         return mode
     if mode.find("upgrade") >= 0:
         # unspecified upgrade, try to find the original mode used:
-        mode = options.pop("mode") or mode
+        mode = get_config_mode(options) or mode
+    options.pop("mode", None)
     upgrade_config = dict_to_validated_config(options)
     # apply the previous session options:
     for k in options:
