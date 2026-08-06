@@ -124,6 +124,12 @@ def make_server_app(mode_attrs: dict[str, str], opts, clobber: int, mode: str,
                     display_name: str):
     if "backend" not in mode_attrs:
         mode_attrs["backend"] = opts.backend
+    if mode.startswith("upgrade"):
+        # callers should have resolved the mode of the session being upgraded,
+        # fall back to the default mode if they haven't:
+        mode = mode.removeprefix("upgrade-")
+        if mode == "upgrade":
+            mode = "seamless"
     if mode.startswith("shadow"):
         # "shadow"        -> multi-window=True,  capture all monitors
         # "shadow-screen" -> multi-window=False, capture all monitors as one surface
