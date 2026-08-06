@@ -89,14 +89,19 @@ cdef class ScrollData:
         if DEBUG:
             log("%s.update%s a1=%#x, a2=%#x, distances=%#x, current size: %ix%i", self, (repr_ellipsized(pixels), x, y, width, height, rowstride, bpp), <uintptr_t> self.a1, <uintptr_t> self.a2, <uintptr_t> self.distances, self.width, self.height)
         assert width>0 and height>0, "invalid dimensions: %ix%i" % (width, height)
-        #scroll area can move within the window:
-        self.x = x
-        self.y = y
-        #but cannot change size (checksums would not match):
-        if height!=self.height or width!=self.width:
+        #the checksums are indexed relative to the origin of the region
+        #they were calculated for, and `encode_scrolling` emits the scroll
+        #rectangles relative to the origin of the new one:
+        #so only regions sharing the same geometry can be compared.
+        #(the data could be re-used after a move, but that means tracking
+        # the geometry `a1` belongs to, and invalidating its rows too)
+        if x!=self.x or y!=self.y or width!=self.width or height!=self.height:
             if self.a1!=NULL or self.a2!=NULL or self.distances!=NULL:
-                log("new image size: %ix%i (was %ix%i), clearing reference checksums", width, height, self.width, self.height)
+                log("new image geometry: %ix%i at %i,%i (was %ix%i at %i,%i), clearing reference checksums",
+                    width, height, x, y, self.width, self.height, self.x, self.y)
                 self.free()
+            self.x = x
+            self.y = y
             self.width = width
             self.height = height
         #this is a new picture, shift a2 into a1 if we have it:
