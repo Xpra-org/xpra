@@ -31,7 +31,6 @@ def get_x11_property(atom_name: str) -> str:
     try:
         from xpra.x11.error import xswallow
         from xpra.x11.bindings.display_source import X11DisplayContext
-        from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.window import X11WindowBindingsInstance
     except ImportError as e:
         log("get_x11_property(%s)", atom_name, exc_info=True)
@@ -41,8 +40,11 @@ def get_x11_property(atom_name: str) -> str:
     try:
         with X11DisplayContext(display):
             with xswallow:
+                # use the instance's own display: the module-level `get_root_xid()`
+                # goes through a process-wide singleton which may still be bound to
+                # a temporary display opened - and closed - by an earlier context
                 X11Window = X11WindowBindingsInstance()
-                root = get_root_xid()
+                root = X11Window.get_root_xid()
                 log("getDefaultRootWindow()=%#x", root)
                 try:
                     prop = X11Window.XGetWindowProperty(root, atom_name, "STRING")
