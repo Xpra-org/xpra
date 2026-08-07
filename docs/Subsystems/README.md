@@ -11,7 +11,17 @@ See the [display server data inventory](Display-Server-Data.md) for the
 non-framebuffer data that can be retrieved from display servers and associated
 desktop-session services.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Concepts
+
+Subsystems are independently loaded feature modules with matching client and
+server-side responsibilities.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card docs-card-wide" markdown="1">
 
 * Client Module: feature implementation loaded by the client, it interfaces with the corresponding "Client Connection Module" on the server side
 * Client Connection Module: for each connection with a client, the server will instantiate a handler
@@ -21,11 +31,30 @@ desktop-session services.
 A client or server may choose to completely disable a subsystem.\
 When this is the case, it will not load the module into memory and will not know how to handle requests for this feature.
 
+</section>
+</div>
+
 Most subsystems are independent of each other. The diagram below shows the dependencies enforced at subsystem load time (see [`xpra/server/features.py`](https://github.com/Xpra-org/xpra/blob/master/xpra/server/features.py)).
 Solid arrows mark a *hard* requirement &mdash; the dependent subsystem cannot be enabled unless its parent is also enabled.
 Dashed arrows mark *soft* or alternative dependencies &mdash; the subsystem can use the parent if it is available, or has an alternative code path on some platforms.
 
-```mermaid
+<div class="docs-grid" markdown="1">
+<section class="docs-card docs-card-wide" markdown="1">
+
+### Dependency graph
+
+<a class="docs-diagram-link" href="subsystems.svg">
+<img class="docs-diagram" src="subsystems.svg"
+     alt="Dependency graph showing Xpra subsystem groups and their hard or soft dependencies">
+</a>
+
+The SVG is generated from the [Graphviz source](subsystems.dot); click the
+diagram to open it at full size.
+
+<details markdown="1">
+<summary>View original Mermaid source</summary>
+
+```text
 graph LR
     classDef core fill:#fde,stroke:#a04,stroke-width:2px,color:#000;
     classDef group fill:#eef,stroke:#446,color:#000;
@@ -133,17 +162,34 @@ graph LR
     class Backend,Surface,Media,X11Ext,UI,Net,Session group;
 ```
 
-Notes:
+</details>
+</section>
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card docs-card-wide" markdown="1">
+
+### Graph notes
+
 * `display` is auto-enabled when any of `window`, `keyboard` or `pointer` is enabled &mdash; it is the union of those features rather than a prerequisite.
 * `notification` requires `dbus` on Linux, but has native code paths on Windows and macOS (shown as dashed via `DBus`).
 * `tray` requires `gtk` and (for the system tray icon on X11) the `systray` extension.
 * The `ICC`, `bell server` and `systray` subsystems are loaded only on X11 sessions, and require both `x11` and the corresponding feature flag.
 * `pulseaudio` and `av_sync` are strict refinements of `audio`, which itself requires `gstreamer`.
 
+</section>
+</div>
 
-## Protocol Subsystems
+<div class="docs-section-heading" markdown="1">
+
+## Protocol subsystems
 
 These subsystems involve communication between client and server.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card docs-card-wide" markdown="1">
 
 | Subsystem                       | [Client Module](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/)               | [Server Module](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem)                | [Client Connection Module](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/) | User Documentation                                    |
 |---------------------------------|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|-------------------------------------------------------|
@@ -174,10 +220,19 @@ These subsystems involve communication between client and server.
 | [Webcam](Webcam.md)             | [webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/webcam.py)             | [webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/webcam.py)             | [webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/webcam.py)         | [webcam usage](../Features/Webcam.md)                 |
 | [Window](Window.md)             | [window](https://github.com/Xpra-org/xpra/tree/master/xpra/client/subsystem/window)                | [window](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/window.py)             | [window](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/window.py)         |                                                       |
 
+</section>
+</div>
 
-## Server-Only Subsystems
+<div class="docs-section-heading" markdown="1">
+
+## Server-only subsystems
 
 These subsystems handle server-side infrastructure and have no corresponding client module or client connection module.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card docs-card-wide" markdown="1">
 
 | Subsystem      | [Server Module](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem)                | User Documentation                               |
 |----------------|----------------------------------------------------------------------------------------------------|--------------------------------------------------|
@@ -205,3 +260,6 @@ These subsystems handle server-side infrastructure and have no corresponding cli
 | Version        | [version](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/version.py)           | n/a                                              |
 | Watcher        | [watcher](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/watcher.py)           | n/a                                              |
 | Xvfb           | [xvfb](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/xvfb.py)                 | n/a                                              |
+
+</section>
+</div>

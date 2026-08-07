@@ -247,6 +247,28 @@ body {
   margin-bottom: 0;
 }
 
+.docs-diagram-link {
+  display: block;
+  padding: 0.85rem;
+  overflow: auto;
+  background: #edf2f6;
+  border: 1px solid #dfe7ee;
+  border-radius: 8px;
+}
+
+.docs-diagram-link:hover {
+  background: #e5eef6;
+  border-color: #a9c8e6;
+}
+
+.markdown-body .docs-diagram {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  margin: 0;
+}
+
 .footer {
   color: var(--xpra-muted) !important;
 }
