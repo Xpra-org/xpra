@@ -299,8 +299,10 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
 
     def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
+        detail = packet.get_i16(2)
+        other_wid = packet.get_wid(3)
         if window := self.get_window(wid):
-            window.record("restack")
+            window.record("restack", detail=detail, other=other_wid)
 
     def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
