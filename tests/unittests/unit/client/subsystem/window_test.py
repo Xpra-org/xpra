@@ -29,6 +29,7 @@ class WindowManagerTest(ClientMixinTest):
             opts.max_size = "2000x2000"
             opts.pixel_depth = 24
             opts.windows = True
+            opts.sharing = "no"
             opts.window_close = "forward"
             opts.modal_windows = True
             opts.border = "red"
