@@ -21,6 +21,7 @@ class WindowBell(StubClientSubsystem):
     `get_subsystem("window").connect("bell-toggled", handler)`.
     """
     __slots__ = ()
+    SLOT_NAMES = ("bell_enabled", "client_supports_bell", "server_bell")
 
     def __init__(self):
         if not hasattr(self, "client"):

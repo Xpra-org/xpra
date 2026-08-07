@@ -44,21 +44,15 @@ def get_window_client_base_classes() -> tuple[type, ...]:
 
 WINDOW_CLIENT_BASES = get_window_client_base_classes()
 WindowClientClass = type("WindowClientClass", WINDOW_CLIENT_BASES, {"__slots__": ()})
+WINDOW_CLIENT_SLOTS = tuple(
+    name
+    for base in WINDOW_CLIENT_BASES
+    for name in base.__dict__.get("SLOT_NAMES", ())
+)
 
 
 class WindowClient(WindowClientClass):
-    __slots__ = (
-        "_button_state", "_draw_counter", "_focused", "_id_to_window", "_locked_windows", "_pid_to_signalwatcher",
-        "_signalwatcher_to_wids", "_win32_events", "_window_to_id", "_window_with_grab", "auto_refresh_delay",
-        "bell_enabled", "border", "border_str", "client_supports_bell", "client_supports_system_tray",
-        "input_devices", "lost_focus_timer", "max_window_size", "min_window_size", "modal_windows",
-        "overlay_image", "pixel_counter", "pixel_depth", "pointer_grabbed", "poll_pointer_position",
-        "poll_pointer_timer", "server_bell", "server_input_devices", "server_precise_wheel",
-        "server_window_frame_extents", "server_window_signals", "server_window_states",
-        "wheel_deltax",
-        "wheel_deltay", "wheel_map", "wheel_smooth", "window_close_action", "window_close_callback",
-        "windows_enabled",
-    )
+    __slots__ = WINDOW_CLIENT_SLOTS
 
     PREFIX = "window"
     # owned by the leaf classes muxed into this composite (manager.py, bell.py),

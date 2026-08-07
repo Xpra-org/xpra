@@ -51,6 +51,7 @@ def should_force_grab(metadata: typedict) -> bool:
 
 class WindowGrab(StubClientSubsystem):
     __slots__ = ()
+    SLOT_NAMES = ("_window_with_grab", "pointer_grabbed")
 
     def __init__(self):
         self._window_with_grab = None

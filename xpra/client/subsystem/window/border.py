@@ -98,6 +98,7 @@ class WindowBorderClient(StubClientSubsystem):
     parse it or generate it from the connection info.
     """
     __slots__ = ()
+    SLOT_NAMES = ("border", "border_str")
 
     def __init__(self):
         self.border = WindowBorder(False)

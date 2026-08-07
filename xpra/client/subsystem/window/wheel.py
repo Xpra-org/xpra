@@ -55,6 +55,9 @@ def parse_mousewheel(mousewheel: str) -> tuple[bool, dict]:
 
 class WindowWheel(StubClientSubsystem):
     __slots__ = ()
+    SLOT_NAMES = (
+        "server_precise_wheel", "wheel_deltax", "wheel_deltay", "wheel_map", "wheel_smooth",
+    )
 
     def __init__(self):
         self.server_precise_wheel: bool = False

@@ -67,6 +67,11 @@ def log_windows_info(windows: tuple) -> None:
 
 class WindowManagerClient(StubClientSubsystem):
     __slots__ = ()
+    SLOT_NAMES = (
+        "_id_to_window", "_locked_windows", "_win32_events", "_window_to_id",
+        "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
+        "pixel_depth", "server_window_frame_extents", "server_window_states", "windows_enabled",
+    )
 
     def __init__(self):
         # the `window` subsystem owns these signals (via `SignalEmitter`); peers

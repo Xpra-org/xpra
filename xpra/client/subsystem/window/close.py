@@ -19,6 +19,7 @@ TITLE_CLOSEEXIT: list[str] = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").spl
 
 class WindowClose(StubClientSubsystem):
     __slots__ = ()
+    SLOT_NAMES = ("window_close_action", "window_close_callback")
 
     def __init__(self):
         self.window_close_action: str = "forward"
