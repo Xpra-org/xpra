@@ -557,6 +557,17 @@ class WindowServer(StubServerMixin):
         # if the client focused one of our windows, count this as a user event:
         if wid > 0:
             ss.emit("user-event", "focus")
+            self.sync_focus(ss, wid)
+
+    def sync_focus(self, ss, wid: int) -> None:
+        """ raise the window on the record client """
+        window = self._id_to_window.get(wid)
+        if not window:
+            return
+        for s in self.window_sources(exclude=ss):
+            if s.window_record:
+                focuslog("sync_focus: raising window %#x on %s", wid, s)
+                s.raise_window(wid, window)
 
     def _focus(self, _server_source, wid: int, modifiers) -> None:
         focuslog("_focus(%#x, %s)", wid, modifiers)
