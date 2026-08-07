@@ -595,7 +595,7 @@ class WindowsConnection(StubClientConnection):
             (since it knows when the "draw" packet was sent)
         """
         if not self.window_enabled:
-            log.error("client_ack_damage when we don't send any window data!?")
+            log.error("Error: draw ack received for window %#x, but it is not enabled!")
             return
         if decode_time > 0:
             self.statistics.client_decode_time.append((wid, monotonic(), width * height, decode_time))

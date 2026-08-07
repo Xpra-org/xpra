@@ -367,7 +367,7 @@ class SeamlessWindowServer(WindowServer):
         geom = window.get_property("geometry")
         x, y, w, h = geom
         if w >= 32768 or h >= 32768:
-            geomlog.error("not sending new invalid window dimensions: %ix%i !", w, h)
+            geomlog.error("Error: not sending new invalid window dimensions: %ix%i !", w, h)
             return
         geomlog("or_window_geometry_changed: %s (window=%s)", geom, window)
         wid = self.get_wid(window)
