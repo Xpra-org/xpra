@@ -1,109 +1,371 @@
 # Frequently Asked Questions
 
+Find answers to common questions about installing, using, and troubleshooting
+Xpra. For a broader overview, start with the [documentation home](README.md) or
+the [Usage guide](Usage/README.md).
+
+<div class="docs-section-heading" markdown="1">
+
 ## Installation
-### Which version shall I be using?
-Always use the [latest released version](https://github.com/Xpra-org/xpra/wiki/Versions)
+
+Choose a supported release and resolve package-signing or distribution-specific
+installation warnings before starting a session.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### Which version should I use?
+
+Always use the [latest released version](https://github.com/Xpra-org/xpra/wiki/Versions).
+
+</section>
+
+<section class="docs-card" markdown="1">
+
 ### Should I use the version shipped with my Linux distribution?
-Emphatically [NO](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages)
-### Which versions are supported? Which ones are compatible with which versions? On which platforms?
-See [versions](https://github.com/Xpra-org/xpra/wiki/Versions) and [platforms](https://github.com/Xpra-org/xpra/wiki/Platforms)
-### Why do I get a GPG signature warning when I try to install
-You probably forgot to import the GPG key before installing the package.\
-The key to use is `0x17978FAF`, its signature is `B499 3B57 3231 48E3 7977 E5D8 7325 4CAD 1797 8FAF`.
-### I get a GPG error: `KEYEXPIRED 1273837137`
-This key had expired.
-Please use the [new key](https://github.com/Xpra-org/xpra/issues/3863).
-### Debian's APT says *Origin changed*, *this must be accepted explicitly...* when updating
-Run `apt-get update --allow-releaseinfo-change`.
-### Debian's Aptitude says *Some index files failed to download* when updating
-See above.
+
+Emphatically [no](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Which versions are supported?
+
+See the [supported versions](https://github.com/Xpra-org/xpra/wiki/Versions) and
+[platforms](https://github.com/Xpra-org/xpra/wiki/Platforms) pages for
+compatibility information.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Why do I get a GPG signature warning when installing?
+
+You probably forgot to import the GPG key before installing the package. Use
+key `0x17978FAF`, with signature
+`B499 3B57 3231 48E3 7977 E5D8 7325 4CAD 1797 8FAF`.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### What does `KEYEXPIRED 1273837137` mean?
+
+The old key expired. Please use the
+[new key](https://github.com/Xpra-org/xpra/issues/3863).
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Debian says “Origin changed” when updating
+
+Run:
+
+```shell
+apt-get update --allow-releaseinfo-change
+```
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Aptitude says some index files failed to download
+
+See the previous Debian update answer above.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
 ### I found a security issue
-Please [tell us](SECURITY.md)
 
-***
+Please [report it privately](SECURITY.md).
 
+</section>
+</div>
+
+<div class="docs-section-heading" markdown="1">
 
 ## Usage questions
-### Where is xpra's system tray icon?
-Some desktop environments [make it impossible to show a system tray icon](Features/System-Tray.md#caveats).
-### Why does Xpra use any CPU when the session is idle?
-[Audio forwarding](Features/Audio.md) will consume a fairly constant amount of CPU and bandwidth. Turn speaker forwarding off if you don't need it.\
-Some applications will also repaint their windows unnecessarily. If you don't use them, try minimizing their windows.
-### Why does the clipboard keep flashing? Why is clipboard synchronization unreliable?
-Make sure that no other tool is also doing clipboard synchronization. Avoid clipboard managers at all cost.
-### I use [RDP #696](https://github.com/Xpra-org/xpra/issues/696) or [x2go #735](https://github.com/Xpra-org/xpra/issues/735), and I have clipboard or other problems
-These tools will do their own clipboard synchronization which will definitely interfere with xpra's.\
-Try disabling one of the clipboard synchronization mechanisms, and if possible, do not layer remote desktop protocols on top of each other.
-### Where is the command output when I use `Xpra.exe`?
-`Xpra.exe` is a graphical application, the command output will go to a `Xpra.log` file found in `%APPDATA%\Xpra`.\
-Use `Xpra_cmd.exe` instead.
-### How can I start `gpg-agent`, `dbus`, etc for each session?
-The solution is often distribution specific.
-You may want to add `--start=/path/to/Xsession` to your server options.\
-Or you may want to add each application individually using a `start` option for each application.
-### VirtualBox won't release mouse
-[disable auto capture keyboard](https://github.com/Xpra-org/xpra/issues/3118#issuecomment-838985119)
 
-***
+These answers cover desktop integration, clipboard forwarding, Windows clients,
+and starting services inside sessions.
 
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### Where is Xpra’s system tray icon?
+
+Some desktop environments
+[cannot show a system tray icon](Features/System-Tray.md#caveats).
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Why does Xpra use CPU when the session is idle?
+
+[Audio forwarding](Features/Audio.md) consumes a fairly constant amount of CPU
+and bandwidth. Turn speaker forwarding off if you do not need it. Some
+applications also repaint their windows unnecessarily; try minimizing them.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Why does the clipboard keep flashing?
+
+Make sure no other tool is also synchronizing the clipboard. Avoid clipboard
+managers whenever possible.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### RDP or x2go causes clipboard problems
+
+[RDP #696](https://github.com/Xpra-org/xpra/issues/696) and
+[x2go #735](https://github.com/Xpra-org/xpra/issues/735) perform their own
+clipboard synchronization, which interferes with Xpra. Disable one of the
+synchronization mechanisms and avoid layering remote-desktop protocols.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Where does `Xpra.exe` write command output?
+
+`Xpra.exe` is a graphical application, so output goes to `Xpra.log` in
+`%APPDATA%\\Xpra`. Use `Xpra_cmd.exe` when you need command-line output.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### How can I start `gpg-agent`, `dbus`, and similar services?
+
+The solution is often distribution-specific. Add
+`--start=/path/to/Xsession` to the server options, or add each application
+individually with a `start` option.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### VirtualBox will not release the mouse
+
+[Disable auto-capture keyboard](https://github.com/Xpra-org/xpra/issues/3118#issuecomment-838985119).
+
+</section>
+</div>
+
+<div class="docs-section-heading" markdown="1">
 
 ## Problems
-### Some gnome applications take a long time to start (ie: `gnome-terminal`)
-Try adding `--source-start=gnome-keyring-daemon` to your server. (see [gnome-terminal takes too long to launch](https://github.com/Xpra-org/xpra/issues/3109), not supported with older versions so use `--start=gnome-keyring-daemon` instead)
-### My xpra seamless or desktop session has crashed! Can I recover it?
-Generally yes, as long as the virtual display server (vfb) has not crashed - and it very rarely does. Use `xpra recover`.\
-If the xpra server is completely gone, you can start a new one to re-use the existing display.\
-If the xpra server is still running but unresponsive, you should kill it first (and use `kill -9` to prevent the tear down code from also stopping the vfb display)
-### Application X creates a new tab or window on an existing display, not the display I want to use
-If the application does not provide an option to prevent this behaviour, you may need to use a different user account to launch multiple instances of this application on different displays - this is a common issue with some applications, in particular browsers
-### Why are my applications missing their menu bar on Ubuntu?
-Always start your applications with `xpra seamless --start=APP` and not `DISPLAY=:N APP` (see #1419)
 
+Use these recovery steps when an application is slow to start, a session has
+stopped responding, or a desktop behaves differently inside Xpra.
 
-***
+</div>
 
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### GNOME applications take a long time to start
+
+Try adding `--source-start=gnome-keyring-daemon` to the server. See
+[the GNOME Terminal issue](https://github.com/Xpra-org/xpra/issues/3109); older
+versions may require `--start=gnome-keyring-daemon` instead.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Can I recover a crashed seamless or desktop session?
+
+Generally yes, as long as the virtual display server (VFB) is still running.
+Use `xpra recover`. If the Xpra server is gone, start a new one to reuse the
+existing display. If it is running but unresponsive, kill it first; use
+`kill -9` to prevent teardown code from stopping the VFB.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Why does an application open on the wrong display?
+
+If the application has no option to prevent this, use a different user account
+to launch multiple instances on different displays. This is a common issue with
+some applications, especially browsers.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Why are application menus missing on Ubuntu?
+
+Start applications with `xpra seamless --start=APP`, not
+`DISPLAY=:N APP` (see [#1419](https://github.com/Xpra-org/xpra/issues/1419)).
+
+</section>
+</div>
+
+<div class="docs-section-heading" markdown="1">
 
 ## Network
-### How can I allow multiple users to connect through a single port?
+
+For connection types, encryption, and performance diagnostics, see the
+[networking guide](Network/README.md).
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### How can multiple users connect through one port?
+
 Use the [proxy server](Usage/Proxy-Server.md).
-### How can I use an SSH key with MS Windows clients?
-If your SSH key is not detected and used correctly by default, you may want to use `pageant`: [putty FAQ: How do I use public keys](http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#faq-options) and tell xpra to use putty: `--ssh=plink`.
 
+</section>
 
-***
+<section class="docs-card" markdown="1">
 
+### How can Windows clients use an SSH key?
 
-## Warnings and Messages
-### "`cannot create group socket '/run/xpra/USERNAME'`", usually followed by `[Errno 13] Permission denied`
-Harmless warning, safe to ignore. Or you can add your user to the `xpra` group.\
-The server tries to create a socket in the shared group directory `/run/xpra`. This is only useful for sharing access to sessions via unix group membership, in combination with the `socket-permissions` option.
+If the key is not detected correctly, use `pageant`: see the
+[PuTTY FAQ](http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#faq-options)
+and tell Xpra to use PuTTY with `--ssh=plink`.
+
+</section>
+</div>
+
+<div class="docs-section-heading" markdown="1">
+
+## Warnings and messages
+
+Most messages below are harmless diagnostics. The answer explains when a
+warning can be ignored and when a configuration change is appropriate.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### “`cannot create group socket '/run/xpra/USERNAME'`”
+
+Usually followed by `[Errno 13] Permission denied`. This is harmless and safe
+to ignore, or add your user to the `xpra` group. The server creates this socket
+for sharing sessions through Unix group membership and the `socket-permissions`
+option.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
 ### `/run/user/$UID` does not exist
-You probably used `su` or and `ssh` login (not all distributions are afflicted by the ssh variant of this bug).
-See [The directory /run/user/ID is not created when the user is switched via su or sudo](https://bugzilla.redhat.com/show_bug.cgi?id=967509)
-Use `machinectl shell --uid=username` instead of `su` / `sudo`.
-### `uinput` warnings:
-`uinput` is optional, all these warnings are safe to ignore:
-* "`Error: cannot query uinput device path`" or "`cannot access python uinput module: No module named uinput`"
-* "`cannot use uinput for virtual devices`"
-* "`cannot access python uinput module: name 'ABS_MAX' is not defined`" - your python-uinput package is broken, complain to your distributor
-* "`Failed to open the uinput device: Permission denied`" - you do not have the permissions required for opening the `/dev/uinput` device
-### "`found an existing window manager on screen ...`"
-Xpra is a window manager, you cannot run two window managers on the same X11 display at the same time.\
-If you want to forward a whole desktop, including its window manager, see [desktop mode](Usage/Desktop.md), otherwise stop the other window manager.
-### "`cannot register our notification forwarder ...`"
-The xpra server was started from a GUI session which already had a dbus instance and a notification daemon, notifications forwarding cannot be enabled.
-### "DPI set to NN x NN (wanted MM x MM), you may experience scaling problems, such as huge or small fonts, etc - to fix this issue, try the dpi switch, or use a patched Xorg dummy driver"
-The vfb command in use does not preserve DPI settings. You may want to switch to using a patched [Xdummy](Usage/Xdummy.md).
-### "`xpra [errno 2] no such file or directory`" when connecting via ssh.
+
+You probably used `su` or an `ssh` login. See
+[why `/run/user/ID` is not created after `su` or `sudo`](https://bugzilla.redhat.com/show_bug.cgi?id=967509)
+and use `machinectl shell --uid=username` instead.
+
+</section>
+
+<section class="docs-card docs-card-wide" markdown="1">
+
+### `uinput` warnings
+
+`uinput` is optional, so these warnings are safe to ignore:
+
+- `Error: cannot query uinput device path`
+- `cannot access python uinput module: No module named uinput`
+- `cannot use uinput for virtual devices`
+- `cannot access python uinput module: name 'ABS_MAX' is not defined` — the
+  python-uinput package is broken; contact your distributor
+- `Failed to open the uinput device: Permission denied` — the user lacks
+  permission to open `/dev/uinput`
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### “`found an existing window manager on screen ...`”
+
+Xpra is a window manager, so two window managers cannot run on the same X11
+display. To forward a whole desktop, see [desktop mode](Usage/Desktop.md);
+otherwise stop the other window manager.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### “`cannot register our notification forwarder ...`”
+
+The server started from a GUI session that already has a D-Bus instance and a
+notification daemon, so notification forwarding cannot be enabled.
+
+</section>
+
+<section class="docs-card docs-card-wide" markdown="1">
+
+### DPI mismatch warnings
+
+“DPI set to NN x NN (wanted MM x MM)” means the VFB command does not preserve
+DPI settings. You may want to use a patched [Xdummy](Usage/Xdummy.md).
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### `xpra [errno 2] no such file or directory` over SSH
+
 Xpra is not installed on the remote host.
-### X11 keyboard warnings: `Unsupported high keycode XXX for name <INNN> ignored`
-These are harmless and unavoidable, see [Bug 1615700 - warning shows up after run "Xvfb :99 &"](https://bugzilla.redhat.com/show_bug.cgi?id=1615700#c1)
-* `gtk_window_add_accel_group: assertion 'GTK_IS_WINDOW (window)' failed` - harmless and unavoidable on MacOS
-* `gui.py: Warning: invalid cast from 'GtkMenuBar?' to 'GtkWindow?'` - harmless and unavoidable on MacOS
-### MacOS complains about "damaged application"
-```
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### X11 keyboard warnings
+
+`Unsupported high keycode XXX for name <INNN> ignored` is harmless and
+unavoidable. See [Bug 1615700](https://bugzilla.redhat.com/show_bug.cgi?id=1615700#c1).
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### MacOS reports a damaged application
+
+Run:
+
+```shell
 sudo xattr -rd com.apple.quarantine /Applications/Xpra.app
 ```
-### `gi/overrides/Gtk.py:1632: Warning: g_object_ref: assertion 'G_IS_OBJECT (object)' failed`
-This is a mostly harmless warning coming from the GTK library.
-It is completely pointless as it doesn't specify what object is triggering the problem or from where. But unfortunately, we can't silence it either.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### GTK reports an invalid object warning
+
+`gi/overrides/Gtk.py:1632: Warning: g_object_ref: assertion 'G_IS_OBJECT (object)' failed`
+is mostly harmless. It comes from GTK and cannot currently be silenced.
+
+</section>
+
+<section class="docs-card docs-card-wide" markdown="1">
+
+### Other harmless macOS warnings
+
+These messages are harmless and unavoidable on macOS:
+
+- `gtk_window_add_accel_group: assertion 'GTK_IS_WINDOW (window)' failed`
+- `gui.py: Warning: invalid cast from 'GtkMenuBar?' to 'GtkWindow?'`
+
+</section>
+</div>

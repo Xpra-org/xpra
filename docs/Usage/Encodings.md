@@ -1,182 +1,291 @@
-# ![Encoding](../images/icons/encoding.png) Encodings
+# Encodings
 
-Xpra supports a wide variety of picture and video encodings for sending the window contents to the client fast and efficiently.\
-For some background information on picture encodings, see [https://images.guide/](https://images.guide/).
+Xpra supports a wide variety of picture and video encodings for sending window
+contents to the client quickly and efficiently. For background information on
+picture encodings, see [images.guide](https://images.guide/).
 
-Choosing which encoding to use for a given window is best left to the xpra engine.\
-It will make this decision using the window's characteristics (size, state, metadata, etc), network performance (latency, congestion, etc), user preference, client and server capabilities and performance, etc
+Choosing an encoding is best left to the Xpra engine. It considers the window’s
+characteristics, network performance, user preferences, client and server
+capabilities, and available processing power.
 
-Generally, if any tuning is needed, instead of trying to guess what should be used and overriding the `encodings` and `encoding` options, it is best to use the `min-speed` and `min-quality` options instead.
+If tuning is needed, use `min-speed` and `min-quality` before overriding the
+`encodings` or `encoding` options. The `xpra configure encodings` tool is
+designed to help with this; use it first and try other options only later.
 
-The `xpra configure encodings` is designed to help you do exactly that. Use it first and only try other options later.
+<div class="docs-section-heading" markdown="1">
 
-***
+## Available encodings
 
+These encodings control how Xpra selects and compresses screen updates.
 
-## Encodings:
-<details markdown="1">
-  <summary>pseudo encodings</summary>
+</div>
 
-The following pseudo encodings just control which actual encodings can be selected by the engine:
-* `auto` which is the default, allows all options
-* `grayscale` does the same, but without sending colours - which saves some bandwidth (this saving is not always significant)
-* `scroll` will try harder to send the screen updates using a list of motion vectors, if possible - see [the `scroll` encoding](../Subsystems/Window.md#the-scroll-encoding) for the semantics client implementations must honour
+<div class="docs-grid" markdown="1">
+<section class="docs-card docs-card-wide" markdown="1">
 
-You can select the pseudo-encoding using the `--encoding=ENC` switch.
-</details>
-<details markdown="1">
-  <summary>picture encodings</summary>
+### Pseudo encodings
 
-| Codename | [Bit Depths](../Features/Image-Depth.md) | Characteristics | Details                                                                     |
-|----------|------------------------------------------|-----------------|-----------------------------------------------------------------------------|
-| `mmap`   | all                                      | fastest         | only available with local connections, selected automatically               |
-| `rgb`    | all                                      | very fast       | raw RGB pixels, potentially compressed with a stream compressor (ie: `lz4`) |
-| `webp`   | 24 / 32                                  | good            | fast, supports transparency, lossy and lossless modes                       |
-| `jpeg`   | 24                                       | fast            | easy to support                                                             |
-| `avif`   | 24                                       | average         | limited support                                                             |
-| `png`    | 24 / 32                                  | slow            | easy to support                                                             |
-| `png/P`  | 8                                        | slow            | only useful for 8-bit [desktop mode](Desktop.md)                            |
-| `png/L`  | 8                                        | slow            | greyscale                                                                   |
-</details>
-<details markdown="1">
-  <summary>video encodings</summary>
+Pseudo encodings control which actual encodings the engine may select:
 
-Using a video stream is often the most efficient way of sending large amounts of screen updates without consuming too much bandwidth.
-The xpra engine should automatically detect when it makes sense to switch to a video codec.
+- **`auto`** — the default; allows all options
+- **`grayscale`** — allows all options without sending colours, which can save
+  bandwidth
+- **`scroll`** — tries harder to send screen updates using motion vectors; see
+  [the `scroll` encoding](../Subsystems/Window.md#the-scroll-encoding) for the
+  semantics client implementations must honour
 
-| Codename | [Bit Depths](../Features/Image-Depth.md) | Characteristics                         |
-|----------|------------------------------------------|-----------------------------------------|
-| `vp8`    | 24                                       | fast but less efficient                 |
-| `vp9`    | 24 / 30                                  | more efficient but somewhat slower      |
-| `h264`   | 24 / 30                                  | licensing issues                        |
-| `hevc`   | 24 / 30                                  | licensing issues - usually slower       |
-| `av1`    | 24                                       | most efficient, but lacks lossless mode |
+Select one with `--encoding=ENC`.
 
-Which ones of these video encodings are available depends on the video encoders enabled:
+</section>
 
+<section class="docs-card" markdown="1">
 
-### Video Encoders
-Xpra ships the following encoder modules:
+### Local and raw pixels
 
-| Codename            | Encodings supported    | Notes                       |
-|---------------------|------------------------|-----------------------------|
-| `vpx`               | `vp8`, `vp9`           |
-| `x264`              | `h264`                 | fast                        |
-| [`nvenc`](NVENC.md) | `h264`, `hevc`, `av1`  | fastest (requires hardware) |
+- **`mmap`** — all bit depths; fastest; only available with local connections
+  and selected automatically
+- **`rgb`** — all bit depths; very fast; raw RGB pixels, potentially compressed
+  with a stream compressor such as `lz4`
 
-Which encodings are actually supported by each encoder may vary, depending on the version used, the build options, hardware capabilities, etc.
+</section>
 
-You can choose which video encoders are loaded at runtime using the `video-encoders` option.
+<section class="docs-card" markdown="1">
 
-Some of these video encoders may require a colorspace conversion step:
-</details>
-<details markdown="1">
-  <summary>colorspace conversion</summary>
+### Compressed picture encodings
 
-These modules are used for:
-* converting the pixel data received by the xpra server into a pixel format that can be consumed by the video encoders
-* converting the pixel data from the video decoders into a pixel format that can be used to paint the client's window (different windows may have different capabilities)
-* up / down scaling the pixel data when needed
+- **`webp`** — 24 / 32 bit; good; fast, with transparency and lossy or lossless
+  modes
+- **`jpeg`** — 24 bit; fast and easy to support
+- **`avif`** — 24 bit; average; limited support
+- **`png`** — 24 / 32 bit; slow and easy to support
+- **`png/P`** — 8 bit; slow; useful for 8-bit [desktop mode](Desktop.md)
+- **`png/L`** — 8 bit; slow; greyscale
 
-| Codename  | Colorspaces supported                                                                                     | Notes                                         |
-|-----------|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------|
-| `cython`  | `r210`, `BGR48`, `GBRP10`, `YUV444P10`                                                                    | slow but useful for some high bit depth modes |
-| `libyuv`  | `BGRX`, `YUV420P`, `NV12`                                                                                 | fastest                                       |
+</section>
+</div>
 
-You can choose which colorspace conversion modules are loaded at runtime using the `csc-modules` option.
-</details>
-<details markdown="1">
-  <summary>video decoders</summary>
+<div class="docs-section-heading" markdown="1">
 
-Xpra ships the following decoder modules:
+## Video encodings
 
-| Codename   | Encodings supported |
-|------------|---------------------|
-| `openh264` | `h264`              |
-| `vpx`      | `vp8`, `vp9`        |
-| `aom`      | `av1`               |
-You can choose which video decoders are loaded at runtime using the `video-decoders` option.
-</details>
+Video streams are often the most efficient way to send large amounts of screen
+updates without consuming too much bandwidth. Xpra automatically detects when
+switching to a video codec makes sense.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### VP8 and VP9
+
+- **`vp8`** — 24 bit; fast but less efficient
+- **`vp9`** — 24 / 30 bit; more efficient but somewhat slower
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### H.264 and HEVC
+
+- **`h264`** — 24 / 30 bit; licensing issues
+- **`hevc`** — 24 / 30 bit; licensing issues and usually slower
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### AV1
+
+**`av1`** supports 24-bit colour. It is the most efficient video encoding, but
+does not provide a lossless mode.
+
+</section>
+
+<section class="docs-card docs-card-wide" markdown="1">
+
+### Video encoders
+
+Xpra ships these encoder modules. Availability and supported encodings can vary
+with the Xpra version, build options, and hardware capabilities.
+
+- **`vpx`** — `vp8`, `vp9`
+- **`x264`** — `h264`; fast
+- **[`nvenc`](NVENC.md)** — `h264`, `hevc`, `av1`; fastest, requires hardware
+
+Choose which modules are loaded at runtime with `video-encoders`.
+
+</section>
+
+<section class="docs-card docs-card-wide" markdown="1">
+
+### Colorspace conversion
+
+Some video encoders require a colorspace conversion step. These modules can:
+
+- convert pixels received by the server into a format consumed by video
+  encoders
+- convert decoded pixels into a format that can paint the client window
+- scale pixels up or down when needed
+
+Available modules include:
+
+- **`cython`** — `r210`, `BGR48`, `GBRP10`, `YUV444P10`; slow but useful for
+  high-bit-depth modes
+- **`libyuv`** — `BGRX`, `YUV420P`, `NV12`; fastest
+
+Choose loaded modules at runtime with `csc-modules`.
+
+</section>
+
+<section class="docs-card docs-card-wide" markdown="1">
+
+### Video decoders
+
+Xpra ships these decoder modules:
+
+- **`openh264`** — `h264`
+- **`vpx`** — `vp8`, `vp9`
+- **`aom`** — `av1`
+
+Choose which modules are loaded at runtime with `video-decoders`.
+
+</section>
+</div>
+
+<div class="docs-section-heading" markdown="1">
 
 ## Diagnostics
-<details markdown="1">
-  <summary>list all the encodings available with the current installation</summary>
+
+Use these commands to see which encodings, codecs, and conversion modules are
+available in the current installation.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### List available encodings
 
 ```shell
 xpra encoding
 ```
-(on MS Windows and MacOS, you can also use the `Encodings_info` wrapper)
-</details>
-<details markdown="1">
-  <summary>list all the video codecs and colorspace conversion modules available</summary>
+
+On Windows and macOS, you can also use the `Encodings_info` wrapper.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### List video codecs and conversion modules
 
 ```shell
 xpra video
 ```
-</details>
-<details markdown="1">
-  <summary>list encodings available to the client</summary>
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### List client encodings
 
 ```shell
 xpra attach --encoding=help
 ```
-</details>
-<details markdown="1">
-  <summary>list encodings available to the server</summary>
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### List server encodings
 
 ```shell
 xpra seamless --encoding=help
 ```
-</details>
-<details markdown="1">
-  <summary>debug logging switches</summary>
+
+</section>
+
+<section class="docs-card docs-card-wide" markdown="1">
+
+### Enable encoding debug logs
 
 ```shell
 xpra seamless -d damage,compress,encoding
 ```
-</details>
 
+</section>
+</div>
 
-***
+<div class="docs-section-heading" markdown="1">
 
+## Tuning
 
-# Tuning
-Warning: tuning is very often misused and ends up being counterproductive.
-<details markdown="1">
-  <summary>Preventing blurry screen updates</summary>
+Tuning is often misused and can make performance worse. Start with the
+automatic selection and minimum quality or speed settings before forcing a
+specific encoding.
 
-Rather than selecting a lossless picture encoding, which may use far too much bandwidth and cause performance issues:
-* make sure that the applications are correctly detected: either using the application's command [content-type](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/content-type) and [content-categories](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/content-categories/10_default.conf) mapping
-* raise the `min-quality` and / or lower the `min-speed`
-* maybe lower the `auto-refresh` delay - just be aware that the lossless auto-refresh can be costly (as all lossless frames are)
-</details>
-<details markdown="1">
-  <summary>Quality</summary>
+</div>
 
-Acceptable values range from 1 (lowest) to 100 (lossless). \
-Rather than tuning the `quality` option, it is almost always preferable to set the `min-quality` instead. \
-Using lower values saves bandwidth and CPU, but the screen updates may become more blurry.
-</details>
-<details markdown="1">
-  <summary>Speed</summary>
+<div class="docs-grid" markdown="1">
+<section class="docs-card docs-card-wide" markdown="1">
 
-Acceptable values range from 1 (lowest) to 100 (lossless). \
-Rather than tuning the `speed` option, it is almost always preferable to set the `min-speed` instead. \
-Using lower values costs more CPU, which reduces bandwidth consumption but may also lower the framerate.
-</details>
-<details markdown="1">
-  <summary>Best</summary>
+### Prevent blurry screen updates
 
-The best possible setup is to use [NVENC](NVENC.md) or another hardware encoder supported by `libva`: hardware encoders compress very well and do so incredibly fast.
-</details>
-<details markdown="1">
-  <summary>Further reading!</summary>
+Rather than selecting a lossless picture encoding, which may use too much
+bandwidth and cause performance issues:
 
-* [x264 tradeoffs](http://alax.info/blog/1394)
-* [fps vs noise](http://blog.malayter.com/2010/12/presets-versus-quality-in-x264-encoding.html)
-* [fps vs size](http://blogs.motokado.com/yoshi/2011/06/25/comparison-of-x264-presets/)
-* [Falsehoods programmers believe about video](https://haasn.xyz/posts/2016-12-25-falsehoods-programmers-believe-about-%5Bvideo-stuff%5D.html)
+- make sure applications are detected correctly using the
+  [content-type](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/content-type)
+  and
+  [content-categories](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/content-categories/10_default.conf)
+  mappings
+- raise `min-quality` and/or lower `min-speed`
+- consider lowering the `auto-refresh` delay, while remembering that lossless
+  refreshes can be costly
 
-When comparing performance, make sure that you use the right metrics... \
-The number of updates per second (aka `fps`) is not always a good one: if there are many small regions, this can be a good or a bad thing.
-</details>
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Quality
+
+Values range from 1 (lowest) to 100 (lossless). Rather than tuning `quality`,
+use `min-quality`. Lower values save bandwidth and CPU but may make updates
+more blurry.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Speed
+
+Values range from 1 (lowest) to 100 (lossless). Rather than tuning `speed`, use
+`min-speed`. Lower values use more CPU, reducing bandwidth consumption but
+possibly lowering the framerate.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Best performance
+
+Use [NVENC](NVENC.md) or another hardware encoder supported by `libva` when
+available. Hardware encoders compress very well and do so extremely quickly.
+
+</section>
+
+<section class="docs-card docs-card-wide" markdown="1">
+
+### Further reading
+
+- [x264 tradeoffs](http://alax.info/blog/1394)
+- [FPS versus noise](http://blog.malayter.com/2010/12/presets-versus-quality-in-x264-encoding.html)
+- [FPS versus size](http://blogs.motokado.com/yoshi/2011/06/25/comparison-of-x264-presets/)
+- [Falsehoods programmers believe about video](https://haasn.xyz/posts/2016-12-25-falsehoods-programmers-believe-about-%5Bvideo-stuff%5D.html)
+
+When comparing performance, use the right metrics. Updates per second (`fps`)
+are not always meaningful: many small regions can make a high or low count
+misleading.
+
+</section>
+</div>

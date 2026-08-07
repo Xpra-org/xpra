@@ -1,137 +1,320 @@
-# ![Network](../images/icons/connect.png) Network
+# Networking
 
-See also: [protocol](Protocol.md), [authentication](../Usage/Authentication.md), [encryption](Encryption.md), [RFB / VNC](RFB.md) and [multicast DNS](Multicast-DNS.md)
+Xpra can connect through local sockets or a range of network transports. Start
+with SSH for a straightforward encrypted connection, or choose another
+transport when you need browser access, lower latency, or compatibility with
+other remote-desktop clients.
 
-## Connection Types
-| Type                 | Bind option  | Availability                                                                 | Information                                                                                         |
-|----------------------|--------------|------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
-| `TCP`                | `bind-tcp`   | All                                                                          |
-| [QUIC](QUIC.md)      | `bind-quic`  | All                                                                          |
-| [SSL](SSL.md)        | `bind-ssl`   | All                                                                          |
-| [SSH](SSH.md)        | `bind-ssh`   | All                                                                          |
-| `WebSocket`          | `bind-ws`    | All                                                                          |
-| `Secure WebSocket`   | `bind-wss`   | All                                                                          |
-| [RFB](RFB.md)        | `bind-rfb`   | [desktop](../Usage/Desktop.md), `monitor` and [shadow](../Usage/Shadow.md) servers only | Allows VNC clients to connect; xpra can also connect *to* a VNC server with `vnc://`                |
-| `RDP`                | `bind-rdp`   | [desktop](../Usage/Desktop.md), `monitor` and [shadow](../Usage/Shadow.md) servers only | Only the connection handshake is implemented so far - see [#4476](https://github.com/Xpra-org/xpra/issues/4476) |
-| `unix domain socket` | `bind`       | Posix                                                                        | Local connections or via [SSH](SSH.md)                                                              |
-| `named-pipe`         | `bind`       | MS Windows                                                                   | [#1150](https://github.com/Xpra-org/xpra/issues/1150)                                               |
-| `vsock`              | `bind-vsock` | Linux                                                                        | host - guest virtual machines connections - see [#983](https://github.com/Xpra-org/xpra/issues/983) |
+<div class="docs-section-heading" markdown="1">
 
-`TCP` sockets can also be upgraded transparently to (`Secure`) `WebSocket`, `SSL`, `SSH`, `RFB` and `RDP`, so a single `TCP` port can support 7 different protocols automatically.\
-Unencrypted modes like plain-`TCP` and plain-`WebSocket` can also be secured with [AES](AES.md).\
-All the sockets that can be accessed via a network connection (all but `vsock` and `named-pipe`) will usually be published via [multicast DNS](Multicast-DNS.md). On Posix, `unix-domain-sockets` are exposed as `SSH` as we assume that a local SSH server is always available.
+## Choose a connection type
 
-By default, local unix domain sockets (`--bind=auto` which is the default) also create [`abstract sockets`](https://github.com/Xpra-org/xpra/issues/4098), use `--bind=noabstract` if needed.
+The bind option creates a server endpoint. Clients connect using the matching
+URL scheme, such as `ssh://`, `ssl://`, or `quic://`.
 
-See also: [Security Considerations](../Usage/Security.md)
+</div>
 
-## Examples:
-<details markdown="1">
-  <summary>TCP Upgrade to WebSocket</summary>
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### [SSH](SSH.md)
+
+Use `--bind-ssh` on any platform. SSH provides host verification,
+authentication, and encryption, and is the usual choice for connecting across
+a network.
+
+Local Unix domain sockets can also be reached through an existing SSH server.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### [TLS](SSL.md), [QUIC](QUIC.md), and secure WebSocket
+
+These encrypted transports are available on all platforms:
+
+- `--bind-ssl` creates a TLS endpoint
+- `--bind-quic` creates a QUIC endpoint
+- `--bind-wss` creates a secure WebSocket endpoint
+
+QUIC should offer the lowest latency and handles packet loss well, though it
+may need [some tuning](https://github.com/Xpra-org/xpra/issues/3376).
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### TCP and WebSocket
+
+Use `--bind-tcp` or `--bind-ws` on any platform. Plain TCP and WebSocket
+connections are not encrypted; protect them with [AES](AES.md), place them
+behind a secure proxy, or use an encrypted transport instead.
+
+A TCP endpoint can also serve the HTML5 client and automatically recognize
+WebSocket connections.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Local and virtual-machine connections
+
+- `--bind` creates Unix domain sockets on POSIX systems
+- `--bind` creates a
+  [named pipe](https://github.com/Xpra-org/xpra/issues/1150) on Windows
+- `--bind-vsock` connects Linux hosts and guest virtual machines; see
+  [#983](https://github.com/Xpra-org/xpra/issues/983)
+
+The default `--bind=auto` also creates
+[abstract sockets](https://github.com/Xpra-org/xpra/issues/4098) on supported
+systems. Use `--bind=noabstract` to disable them.
+
+</section>
+
+<section class="docs-card docs-card-wide" markdown="1">
+
+### [RFB / VNC](RFB.md) and RDP compatibility
+
+`--bind-rfb` allows VNC clients to connect to
+[desktop](../Usage/Desktop.md), `monitor`, and [shadow](../Usage/Shadow.md)
+servers. Xpra can also connect to a VNC server using a `vnc://` URL.
+
+`--bind-rdp` is available for the same server types, but only the connection
+handshake is implemented so far; follow [#4476](https://github.com/Xpra-org/xpra/issues/4476)
+for progress.
+
+</section>
+</div>
+<div class="docs-section-heading" markdown="1">
+
+## How endpoints behave
+
+One listening port can support several clients and protocols.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### Automatic protocol upgrades
+
+A TCP socket can recognize and upgrade WebSocket, secure WebSocket, TLS, SSH,
+RFB, and RDP connections. Including plain TCP, one port can therefore support
+seven protocols automatically.
+
+This makes it possible to serve native Xpra clients, compatible remote-desktop
+clients, and the HTML5 client from the same address. See the
+[protocol reference](Protocol.md) for details of Xpra's application-level
+messages.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Discovery and security
+
+Network-accessible sockets are normally published through
+[multicast DNS](Multicast-DNS.md). This excludes `vsock` and Windows named
+pipes; POSIX Unix domain sockets are advertised as SSH connections when a local
+SSH server is available.
+
+Before exposing an endpoint, configure [authentication](../Usage/Authentication.md),
+[encryption](Encryption.md), and review the [security guidance](../Usage/Security.md).
+
+</section>
+</div>
+
+<div class="docs-section-heading" markdown="1">
+
+## Connection examples
+
+The examples below expose port `10000`. Check the firewall and security policy
+on the server before making a port reachable from other machines.
+
+</div>
+
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### TCP upgraded to WebSocket
+
+Start a seamless session with a TCP listener:
 
 ```shell
 xpra seamless --start=xterm --bind-tcp=0.0.0.0:10000
 ```
+
+Connect using WebSocket:
+
 ```shell
 xpra attach ws://localhost:10000/
 ```
-The same address (10000 here) can also be opened in a browser to use the HTML5 client:
+
+Open the same address in a browser to use the HTML5 client:
+
 ```shell
 xdg-open http://localhost:10000/
 ```
-</details>
 
-<details markdown="1">
-  <summary>SSH with password file</summary>
+</section>
+
+<section class="docs-card" markdown="1">
+
+### SSH with a password file
+
+Create the password file and start an SSH listener with file authentication:
 
 ```shell
 echo -n thepassword > password.txt
 xpra seamless --start=xterm --bind-ssh=0.0.0.0:10000,auth=file(filename=password.txt)
 ```
+
+Then attach to it:
+
 ```shell
 xpra attach ssh://localhost:10000/
 ```
-The client will prompt for the password, as found in the `password.txt` file and not the regular shell account password.
-</details>
 
-***
+The client prompts for the password stored in `password.txt`, not the regular
+shell account password.
 
-## Network Performance
-Xpra will try to detect your network adapter and connection characteristics,
-and it should adapt to changing network capacity and performance.
-However, it may not always get it right,
-and you may need to turn off bandwidth detection (`bandwidth-detection` option) and / or
-specify your own bandwidth constraints. (`bandwidth-limit` option).
+</section>
+</div>
 
----
+<div class="docs-section-heading" markdown="1">
 
-The performance of each session will be affected by the network link speed, in particular [bufferbloat](https://en.wikipedia.org/wiki/Bufferbloat) is known to cause severe performance degradations as xpra is quite sensitive to network jitter and latency, try to [eliminate bufferbloat in your network](https://www.bufferbloat.net/projects/bloat/wiki/What_can_I_do_about_Bufferbloat/).
-[This is now a solvable problem](https://cacm.acm.org/practice/you-dont-know-jack-about-bandwidth/)
-See [A little bump in the wire that makes your Internet faster](https://apenwarr.ca/log/?m=201808), [bufferbloat faq](https://gettys.wordpress.com/bufferbloat-faq/).
+## Network performance
 
-QUIC should offer the lowest latency, though it may need [some tuning](https://github.com/Xpra-org/xpra/issues/3376).
+Xpra adapts picture delivery to the connection, but network configuration and
+queueing still have a large effect on responsiveness.
 
-For Linux systems, [Queueing in the Linux Network Stack](http://www.coverfire.com/articles/queueing-in-the-linux-network-stack/) is recommended reading for a deeper understanding.
+</div>
 
----
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
 
-You can see how much bandwidth is used and how good the picture latency is using the "Graphs" tab of the "Session Info" dialog found in Xpra's own menu:
+### Bandwidth adaptation
 
-![Session Info : Graphs](../images/session-info-graphs.png)
+Xpra tries to detect the network adapter and connection characteristics, and
+adapts when capacity changes. If detection is inaccurate, disable
+`bandwidth-detection` and set an explicit `bandwidth-limit`.
 
-More network information is available elsewhere in the "Session Info" dialog or via the "xpra info" command.
+</section>
 
+<section class="docs-card" markdown="1">
 
-## Diagnostics
+### Latency and queueing
 
-### General
-Tunnels and VPNs can and often do mangle traffic, causing extra latency and
-generally making it more difficult to identify issues.
-When investigating connection or latency issues, prefer direct connections that bypass any proxy, VPN, firewall, tunnel, etc
-Then only re-add these potential bottlenecks if the direct connection exhibits the same behaviour.
-Also prefer plain TCP connections over their WebSocket / SSL / QUIC counterparts - comparing different connection types can also provide useful data points.
-Always ensure that there are no major warnings in the server log or client output, these may already point to the root cause (ie: GPU contention, encoding or decoding errors, etc).
+[Bufferbloat](https://en.wikipedia.org/wiki/Bufferbloat) can cause severe
+performance degradation because Xpra is sensitive to jitter and latency. The
+[Bufferbloat project](https://www.bufferbloat.net/projects/bloat/wiki/What_can_I_do_about_Bufferbloat/)
+explains practical ways to reduce it.
 
+For background, see
+[You Don't Know Jack About Bandwidth](https://cacm.acm.org/practice/you-dont-know-jack-about-bandwidth/),
+[A little bump in the wire that makes your Internet faster](https://apenwarr.ca/log/?m=201808),
+the [bufferbloat FAQ](https://gettys.wordpress.com/bufferbloat-faq/), and
+[Queueing in the Linux Network Stack](http://www.coverfire.com/articles/queueing-in-the-linux-network-stack/).
 
-### Tools and Samples
+</section>
 
-Running `xpra info | grep latency` does capture some important measurements, these differ from network testing tools like `ping`
-because the samples are captured from the application itself, as it is experienced by the software,
-and after traversing all the operating system and library layers that sit between the wire and the software.
-Comparing these values with the more crude values obtained from `ping`, `tcpping` or `nmap` can already expose significant sources of latency because the application is much more sensitive to system load and memory bandwidth than raw wire data.
+<section class="docs-card docs-screenshot-card docs-card-wide" markdown="1">
 
-`xpra info` is normally used against a server when no address is specified,
-but it can also be used to collect data directly from a client process.
-The client does send some of this data to the server, but more of it is accessible by connecting directly to the client.
+### Monitor a live session
 
+<a class="docs-screenshot-link" href="../images/session-info-graphs.png">
+<img src="../images/session-info-graphs.png"
+     alt="Session Info graphs showing bandwidth and picture latency">
+</a>
 
-### Definitions
+The **Graphs** tab in the **Session Info** dialog shows bandwidth use and
+picture latency. More network measurements are available elsewhere in that
+dialog and from the `xpra info` command.
 
-From the output of `xpra info`:
-* `connection.client.ping_latency` this is the application ping latency as experienced by the client when it pings the server
-* `connection.server.ping_latency` this is the application ping latency as experienced by the server when it pings the client
-* `damage.frame-total-latency` the average total time it takes for a screen update to be displayed on the client (to the backbuffer only - not including vblank or any compositor buffering)
-* `damage.client-latency` the average frame time without decoding or displaying it
-* `damage.in_latency` the average delay between receiving screen update notifications from an application and actually processing them
+</section>
+</div>
 
-As for the suffixes:
-* `avg`: average
-* `cur`: current
-* `min`: minimum value seen
-* `max`: maximum value seen
-*  `90p`: 90 percentile
+<div class="docs-section-heading" markdown="1">
 
+## Diagnose network problems
 
-### Common Issues
+Measure the connection as the application experiences it, then compare that
+with simpler network tests to locate latency outside Xpra.
 
-* latency swings are more damaging than more stable high latency values - the xpra engine will try to adjust, but this may take time and things can quickly get worse before it does
-* packet loss (ie: wifi connections) can have a dramatic effect on all types of connection except QUIC, this is not directly exposed to the application which makes it hard to adapt
-* some applications have problematic behaviour that may require more fine-tuning: screen update storms, unnecessarily high refresh rate, unused alpha channel, etc
-* if the `ping_latency` is much higher on the server, this usually indicates an overloaded server
+</div>
 
+<div class="docs-grid" markdown="1">
+<section class="docs-card docs-card-wide" markdown="1">
 
-### Caveats
+### Establish a direct baseline
 
-* quantum state: collecting data with `xpra info` does interfere somewhat with the process being queried, as it creates some extra contention for resources, which can affect the behaviour of the application or the data collected or both
-* try to capture the data when the problem occurs, not before or after - this may require using scripting or a second pair of hands
-* generally, there are few telltale values - only problematic combinations or changes
+Tunnels, VPNs, proxies, and firewalls can add latency or alter traffic. Test a
+direct connection first, then reintroduce each layer. Prefer plain TCP while
+diagnosing because comparing it with WebSocket, TLS, or QUIC helps isolate the
+transport layer.
+
+Check the client output and server log for warnings before focusing on the
+network. GPU contention and encoding or decoding errors can look like network
+problems.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Collect application-level samples
+
+```shell
+xpra info | grep latency
+```
+
+These samples include the operating-system and library layers between the wire
+and Xpra. Compare them with `ping`, `tcpping`, or `nmap`: a large difference
+can reveal system load or memory-bandwidth bottlenecks that raw network tests
+do not show.
+
+With no address, `xpra info` queries a server. It can also query a client
+process directly, where additional client-side measurements are available.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Interpret the measurements
+
+- `connection.client.ping_latency` — client-to-server application ping latency
+- `connection.server.ping_latency` — server-to-client application ping latency
+- `damage.frame-total-latency` — average time until an update reaches the
+  client backbuffer, excluding vblank and compositor buffering
+- `damage.client-latency` — average frame time without decoding or display
+- `damage.in_latency` — average delay before a screen update is processed
+
+Suffixes describe the sample: `avg`, `cur`, `min`, `max`, and `90p` for the
+90th percentile.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Common warning signs
+
+- Latency swings are often more disruptive than stable high latency because
+  adaptation takes time.
+- Packet loss, particularly over Wi-Fi, can strongly affect every transport
+  except QUIC and is not directly exposed to the application.
+- Screen-update storms, high refresh rates, or unused alpha channels can make
+  particular applications require more tuning.
+- Much higher server-side `ping_latency` often indicates an overloaded server.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Measurement caveats
+
+Querying a process with `xpra info` creates some extra resource contention and
+can affect the application or the measurements. Capture data while the problem
+is happening—this may require automation or a second person—and focus on
+combinations and changes rather than treating one value as conclusive.
+
+</section>
+</div>
