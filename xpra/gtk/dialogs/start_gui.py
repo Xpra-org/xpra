@@ -967,7 +967,12 @@ class NetworkWindow(SessionOptions):
                        "Open Network Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
         # "https://github.com/Xpra-org/xpra/blob/master/docs/Network/Multicast-DNS.md")
-        self.radio_cb_auto("Session Sharing", "sharing")
+        # `sync` is a client-side option which implies sharing:
+        self.radio_cb("Session Sharing", "sharing", options={
+            "yes": tuple(TRUE_OPTIONS) + ("sync", ),
+            "no": FALSE_OPTIONS,
+            "auto": ("auto", "", None),
+        })
         self.radio_cb_auto("Session Lock", "lock", "Prevent sessions from being taken over by new clients")
         self.sep()
         self.bool_cb("Multicast DNS", "mdns", "Publish the session via mDNS")

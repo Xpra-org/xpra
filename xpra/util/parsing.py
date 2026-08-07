@@ -331,6 +331,18 @@ def parse_bool_or(k: str, v: Any, auto: bool | None = None) -> bool | None:
         return auto
 
 
+def is_sharing_sync(v: Any) -> bool:
+    """ is the `sharing` option set to `sync`? (sharing with window geometry synchronization) """
+    return isinstance(v, str) and v.lower().strip() == "sync"
+
+
+def parse_sharing(v: Any) -> bool | None:
+    """ the `sharing` option is a boolean which also accepts the `sync` value """
+    if is_sharing_sync(v):
+        return True
+    return parse_bool_or("sharing", v)
+
+
 def print_bool(k, v, true_str='yes', false_str='no') -> str:
     if v is None:
         return "auto"

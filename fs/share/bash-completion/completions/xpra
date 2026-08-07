@@ -99,7 +99,7 @@ _xpra() {
             return 0
             ;;
         --speaker|--microphone|--clipboard|--notifications|--bell|--cursors|\
-        --mmap|--system-tray|--tray|--readonly|--sharing|--lock|--daemon|\
+        --mmap|--system-tray|--tray|--readonly|--lock|--daemon|\
         --html|--mdns|--pulseaudio|--dbus|--opengl|--audio|--video|--printing|\
         --file-transfer|--open-files|--open-url|--forward-xdg-open|\
         --resize-display|--keyboard-sync|--xsettings|--gsettings-sync|--swap-keys|\
@@ -111,6 +111,10 @@ _xpra() {
         --commands|--control|--shell|--register|--terminate-children|\
         --keyboard-raw|--input-devices)
             COMPREPLY=( $(compgen -W "yes no auto" -- "$cur") )
+            return 0
+            ;;
+        --sharing)
+            COMPREPLY=( $(compgen -W "yes no auto sync" -- "$cur") )
             return 0
             ;;
         --clipboard-direction)

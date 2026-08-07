@@ -91,6 +91,9 @@ class WindowsConnection(StubClientConnection):
         self.window_min_size: tuple[int, int] = (0, 0)
         self.window_max_size: tuple[int, int] = (0, 0)
         self.window_restack = False
+        # `sharing=sync`: move and resize the windows
+        # when another client modifies their geometry
+        self.window_sync_position = False
         self.window_metadata_supported: Sequence[str] = ()
         self.pointer_grabs = False
         self.system_tray = False
@@ -154,6 +157,8 @@ class WindowsConnection(StubClientConnection):
         self.window_min_size = wcaps.inttupleget("min-size", (0, 0))
         self.window_max_size = wcaps.inttupleget("max-size", (0, 0))
         self.window_restack = wcaps.boolget("restack", False)
+        # ui clients send this flag in the `window` namespace:
+        self.window_sync_position = wcaps.boolget("sync-position") or c.boolget("window.sync-position")
         # window filters:
         try:
             for object_name, property_name, operator, value in c.tupleget("window-filters"):
@@ -173,6 +178,7 @@ class WindowsConnection(StubClientConnection):
             "bell": self.window_bell,
             "system-tray": self.system_tray,
             "restack": self.window_restack,
+            "sync-position": self.window_sync_position,
         }
         wsize: dict[str, Any] = {
             "min": self.window_min_size,

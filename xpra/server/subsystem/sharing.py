@@ -9,7 +9,7 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.util.parsing import str_to_bool
+from xpra.util.parsing import str_to_bool, parse_sharing
 from xpra.net.constants import ConnectionMessage
 from xpra.log import Logger
 
@@ -30,7 +30,9 @@ class SharingServer(StubSubsystem):
         self.exit_with_client = False
 
     def init(self, opts) -> None:
-        self.sharing = opts.sharing
+        # `sync` is just `yes` as far as the server is concerned,
+        # the clients decide if they want their window geometry synchronized:
+        self.sharing = parse_sharing(opts.sharing)
         self.lock = opts.lock
         self.exit_with_client = opts.exit_with_client
 

@@ -1506,9 +1506,10 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Use memory mapped transfers for local connections. Default: %s." % defaults.mmap)
     replace_option("--enable-sharing", "--sharing=yes")
     legacy_bool_parse("sharing")
-    group.add_option("--sharing", action="store", metavar="yes|no",
+    group.add_option("--sharing", action="store", metavar="yes|no|sync",
                      dest="sharing", default=defaults.sharing,
-                     help="Allow more than one client to connect to the same session. "
+                     help="Allow more than one client to connect to the same session,"
+                          " 'sync' also synchronizes the window geometry between clients."
                           " Default: %s." % enabled_or_auto(defaults.sharing))
     legacy_bool_parse("lock")
     group.add_option("--lock", action="store", metavar="yes|no",

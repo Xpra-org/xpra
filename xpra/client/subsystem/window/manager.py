@@ -19,6 +19,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
+from xpra.util.parsing import is_sharing_sync
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.signal_emitter import SignalEmitter
@@ -70,7 +71,8 @@ class WindowManagerClient(StubClientSubsystem):
     SLOT_NAMES = (
         "_id_to_window", "_locked_windows", "_win32_events", "_window_to_id",
         "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
-        "pixel_depth", "server_window_frame_extents", "server_window_states", "windows_enabled",
+        "pixel_depth", "server_window_frame_extents", "server_window_states", "sync_position",
+        "windows_enabled",
     )
 
     def __init__(self):
@@ -89,6 +91,8 @@ class WindowManagerClient(StubClientSubsystem):
         self.windows_enabled: bool = True
         self.pixel_depth: int = 0
         self.modal_windows: bool = True
+        # `sharing=sync`: have the server synchronize the window geometry between clients
+        self.sync_position: bool = False
 
         self.server_window_frame_extents: bool = False
         self.server_window_states: Sequence[str] = ()
@@ -108,6 +112,7 @@ class WindowManagerClient(StubClientSubsystem):
             self.pixel_depth = 0
         self.windows_enabled = opts.windows
         self.modal_windows = self.windows_enabled and opts.modal_windows
+        self.sync_position = is_sharing_sync(opts.sharing)
 
     def init_ui(self, opts) -> None:
         # opengl setup is owned by the `opengl` subsystem:
@@ -170,6 +175,7 @@ class WindowManagerClient(StubClientSubsystem):
             "min-size": self.min_window_size,
             "max-size": self.max_window_size,
             "read-only": self.client.readonly,
+            "sync-position": self.sync_position,
         }
         for wid, window in tuple(self._id_to_window.items()):
             info[wid] = window.get_info()
@@ -197,6 +203,9 @@ class WindowManagerClient(StubClientSubsystem):
             "max-size": self.max_window_size,
             "restack": True,
             "pre-map": True,
+            # ask the server to move and resize our windows
+            # when another client changes their geometry:
+            "sync-position": self.sync_position,
         }
 
     def parse_server_capabilities(self, c: typedict) -> bool:

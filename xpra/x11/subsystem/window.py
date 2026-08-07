@@ -736,13 +736,19 @@ class SeamlessWindowServer(WindowServer):
             if ocg != ncg:
                 ss.window_configure_time = monotonic()
                 self.repaint_root_overlay()
-                if ocg[2:4] != ncg[2:4] and SHARING_SYNC_SIZE:
-                    counter = max(0, resize_counter - 1)
-                    nw, nh = ncg[2:4]
-                    for s in self.window_sources():
-                        if s != ss:
-                            s.resize_window(wid, window, nw, nh, resize_counter=counter)
                 damage = True
+                if len(ncg) == 4:
+                    counter = max(0, resize_counter - 1)
+                    nx, ny, nw, nh = ncg
+                    resized = ocg[2:4] != ncg[2:4]
+                    for s in self.window_sources():
+                        if s == ss:
+                            continue
+                        if s.window_sync_position:
+                            # this client also wants to follow the window position:
+                            s.move_resize_window(wid, window, nx, ny, nw, nh, resize_counter=counter)
+                        elif resized and SHARING_SYNC_SIZE:
+                            s.resize_window(wid, window, nw, nh, resize_counter=counter)
             if damage:
                 self.schedule_configure_damage(wid)
 

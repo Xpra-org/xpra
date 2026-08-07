@@ -20,6 +20,7 @@ from xpra.net.common import Packet, print_proxy_caps, FULL_INFO, BACKWARDS_COMPA
 from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
+from xpra.util.parsing import parse_sharing
 from xpra.util.system import get_run_info
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized
 from xpra.util.env import envint, envbool
@@ -108,7 +109,7 @@ class UIXpraClient(XpraClientBase):
         self.title = opts.title
         self.session_name = opts.session_name
         self.readonly = opts.readonly
-        self.client_supports_sharing = opts.sharing is True
+        self.client_supports_sharing = parse_sharing(opts.sharing) is True
         self.client_lock = opts.lock is True
         self.headerbar = opts.headerbar
 

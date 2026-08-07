@@ -743,7 +743,7 @@ OPTION_TYPES: dict[str, Any] = {
     "xsettings"         : str,
     "gsettings-sync"    : str,
     "system-tray"       : bool,
-    "sharing"           : bool,
+    "sharing"           : str,
     "lock"              : bool,
     "delay-tray"        : bool,
     "windows"           : bool,
@@ -1748,7 +1748,7 @@ def main(argv=()):
     def print_options(o):
         for k, ot in sorted(OPTION_TYPES.items()):
             v = getattr(o, name_to_field(k), "")
-            if ot is bool and v is None:
+            if ot in (bool, str) and v is None:
                 v = "Auto"
             if isinstance(v, list):
                 v = csv(str(x) for x in v)

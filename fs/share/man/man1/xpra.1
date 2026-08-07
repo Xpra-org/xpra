@@ -1809,13 +1809,17 @@ Decrease the \fBmin-speed\fP or \fBspeed\fP setting
 .PP
 
 .TP
-\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP|\fIauto\fP|\fIsync\fP
 Sharing allows more than one client to connect to the same session.
 This must be enabled on both the server and all co-operating clients
 to function.
 When used server-side, the default value \fIauto\fP allows the clients
 to decide if they are willing to share the session.
 When used client-side, the default value \fIauto\fP evaluates to \fIno\fP.
+The \fIsync\fP value enables sharing and also asks the server to keep
+the window geometry synchronized: whenever another client moves or resizes
+a window, this client's window follows.
+(servers treat this value as \fIyes\fP)
 To allow sharing to work with unix domain sockets (either using local
 connections or via ssh), you should create at least one socket in a group
 accessible directory. On Posix with a default configuration, being a
