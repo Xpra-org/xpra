@@ -4,6 +4,9 @@
 This is one of the most used subsystems.\
 It handles forwarding of window contents and events.
 
+For background on how the `window-focus` packet is translated into the various X11
+focus, activation and stacking mechanisms, see [X11 focus](Window-Focus.md).
+
 
 ## Implementations
 
