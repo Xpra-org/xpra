@@ -122,6 +122,6 @@ cdef XDamageBindingsInstance singleton = None
 
 def XDamageBindings() -> XDamageBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = XDamageBindingsInstance()
     return singleton

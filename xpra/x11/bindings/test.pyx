@@ -89,6 +89,6 @@ cdef XTestBindingsInstance singleton = None
 
 def XTestBindings() -> XTestBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = XTestBindingsInstance()
     return singleton

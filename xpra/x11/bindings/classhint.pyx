@@ -46,6 +46,6 @@ cdef X11ClassHintBindingsInstance singleton = None
 
 def XClassHintBindings() -> X11ClassHintBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = X11ClassHintBindingsInstance()
     return singleton

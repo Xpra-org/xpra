@@ -27,6 +27,6 @@ cdef X11CursorBindingsInstance singleton = None
 
 def X11CursorBindings() -> X11CursorBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = X11CursorBindingsInstance()
     return singleton

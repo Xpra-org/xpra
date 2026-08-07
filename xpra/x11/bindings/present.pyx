@@ -272,6 +272,6 @@ cdef XPresentBindingsInstance singleton = None
 
 def XPresentBindings() -> XPresentBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = XPresentBindingsInstance()
     return singleton

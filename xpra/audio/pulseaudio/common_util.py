@@ -42,9 +42,8 @@ def get_x11_property(atom_name: str) -> str:
     try:
         with X11DisplayContext(display):
             with xswallow:
-                # use the instance's own display: the module-level `get_root_xid()`
-                # goes through a process-wide singleton which may still be bound to
-                # a temporary display opened - and closed - by an earlier context
+                # use the instance's own display rather than the module-level
+                # `get_root_xid()`, which goes through a process-wide singleton
                 X11Window = X11WindowBindingsInstance()
                 root = X11Window.get_root_xid()
                 log("getDefaultRootWindow()=%#x", root)

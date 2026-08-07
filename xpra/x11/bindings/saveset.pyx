@@ -25,6 +25,6 @@ cdef X11SaveSetBindingsInstance singleton = None
 
 def XSaveSetBindings() -> X11SaveSetBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = X11SaveSetBindingsInstance()
     return singleton

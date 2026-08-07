@@ -672,6 +672,9 @@ cdef RecordBindingsInstance singleton = None
 
 def RecordBindings() -> RecordBindingsInstance:
     global singleton
+    # unlike the other bindings, this one must not use `is_stale()`:
+    # it opens its own X11 connection, so `self.display` is expected
+    # to differ from the canonical one and it would be rebuilt every time
     if singleton is None:
         singleton = RecordBindingsInstance()
     return singleton

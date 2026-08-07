@@ -9,6 +9,7 @@ from xpra.x11.bindings.xlib cimport Display, Atom
 cdef class X11CoreBindingsInstance:
     cdef Display * display
     cdef object display_name
+    cdef bint is_stale(self) noexcept
     cdef Atom xatom(self, str_or_int) noexcept
     cdef Atom str_to_atom(self, atomstr) noexcept
 #    def get_error_text(self, code)

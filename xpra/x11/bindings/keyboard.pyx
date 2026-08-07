@@ -1020,6 +1020,6 @@ cdef X11KeyboardBindingsInstance singleton = None
 
 def X11KeyboardBindings() -> X11KeyboardBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = X11KeyboardBindingsInstance()
     return singleton

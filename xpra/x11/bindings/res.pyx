@@ -112,6 +112,6 @@ cdef ResBindingsInstance singleton = None
 
 def ResBindings() -> ResBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = ResBindingsInstance()
     return singleton

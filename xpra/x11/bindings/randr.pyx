@@ -1405,6 +1405,6 @@ cdef RandRBindingsInstance singleton = None
 
 def RandRBindings() -> RandRBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = RandRBindingsInstance()
     return singleton

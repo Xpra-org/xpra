@@ -988,6 +988,6 @@ cdef X11WindowBindingsInstance singleton = None
 
 def X11WindowBindings() -> X11WindowBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = X11WindowBindingsInstance()
     return singleton

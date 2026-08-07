@@ -153,6 +153,6 @@ cdef XShapeBindingsInstance singleton = None
 
 def XShapeBindings() -> XShapeBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = XShapeBindingsInstance()
     return singleton

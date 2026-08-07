@@ -755,6 +755,6 @@ cdef X11XI2BindingsInstance singleton = None
 
 def X11XI2Bindings() -> X11XI2BindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = X11XI2BindingsInstance()
     return singleton

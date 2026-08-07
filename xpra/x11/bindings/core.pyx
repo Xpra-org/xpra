@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import cython
+import traceback
 from collections.abc import Callable, Sequence
 
 from xpra.x11.bindings.xlib cimport (
@@ -368,6 +369,28 @@ cdef class X11CoreBindingsInstance:
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
 
+    cdef bint is_stale(self) noexcept:
+        # `self.display` is captured in `__cinit__` and never refreshed:
+        # if the canonical display has been replaced since
+        # (ie: a temporary `X11DisplayContext` was opened and closed)
+        # then this instance holds a dangling pointer and must not be re-used.
+        # Subclasses which open their own X11 connection must not use this.
+        if self.display == get_display():
+            return False
+        # this is a bug in the caller: it kept using a bindings singleton
+        # created for a display which has since been closed or replaced.
+        # replacing the instance avoids the crash, but the code which caused it
+        # should be fixed to not straddle the lifetime of an X11 connection:
+        log.warn("Warning: %s is bound to a stale X11 connection", type(self).__name__)
+        log.warn(" created for %r @ %#x", self.display_name, <uintptr_t> self.display)
+        log.warn(" but the current display is %r @ %#x", get_display_name(), <uintptr_t> get_display())
+        log.warn(" a new instance will be created, from:")
+        # note: only pure-Python frames show up here, the bindings are compiled
+        for x in traceback.format_stack():
+            for line in x.splitlines():
+                log.warn("  %s", line)
+        return True
+
     def get_connection_number(self) -> int:
         return XConnectionNumber(self.display)
 
@@ -536,7 +559,7 @@ cdef X11CoreBindingsInstance singleton = None
 
 def X11CoreBindings() -> X11CoreBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = X11CoreBindingsInstance()
     return singleton
 

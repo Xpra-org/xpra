@@ -86,6 +86,6 @@ cdef XCompositeBindingsInstance singleton = None
 
 def XCompositeBindings() -> XCompositeBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = XCompositeBindingsInstance()
     return singleton

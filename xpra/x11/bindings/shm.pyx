@@ -391,7 +391,7 @@ cdef XShmBindingsInstance singleton = None
 
 def XShmBindings() -> XShmBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = XShmBindingsInstance()
     return singleton
 

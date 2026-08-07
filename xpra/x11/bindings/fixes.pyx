@@ -238,6 +238,6 @@ cdef XFixesBindingsInstance singleton = None
 
 def XFixesBindings() -> XFixesBindingsInstance:
     global singleton
-    if singleton is None:
+    if singleton is None or singleton.is_stale():
         singleton = XFixesBindingsInstance()
     return singleton
