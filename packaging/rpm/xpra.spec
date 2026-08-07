@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Mon Aug 03 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
+* Fri Aug 07 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
    don't include wayland server components in client-only builds
@@ -1131,18 +1131,30 @@ fi
    system suspend + resume never unblocks window updates
    missed main thread lockups
    dbus notification can retry forever - hogging the CPU
+   MS Windows desktop handle leak
+   MS Windows clipboard memory handle bugs
+   `xpra upgrade` fails with duplicated `mode` in session files
+   allow upgrades on displays where no window manager is left
 - Minor:
    cursor logging errors
    add keysym table + fix AltGr with native win32 client
    zero is a valid uid / gid
+   allow lookup of session names starting with a digit
+   CI build of Wayland client bindings
+   only request clipboard image if we don't have it yet
+   scroll encoding visual corruption
+   safer scroll paints with unaccelerated client windows
+   always send window move / resize events to record clients
 - OpenGL:
    actually check the pixel upload format exists
    verify the rgb buffer size before uploading it
 - Cosmetic:
+   `xpra info` tagged as binary due to abstract socket null byte
    ensure repeatSPSPPS can be enabled for datagram mode
    prevent potential callback errors
    ensure the UI watcher callbacks are released
    events test errors
+   ensure attributes are initialized early
 * Sun Jul 26 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
 - 🔧 Platforms, build and packaging:
    Cython fails to compile on arm64

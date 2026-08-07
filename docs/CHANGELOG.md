@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.3] 2026-08-03
+## [6.5.3] 2026-08-07
 * 🔧 Platforms, build and packaging:
   * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
   * [don't include wayland server components in client-only builds](https://github.com/Xpra-org/xpra/commit/7d24bc8396a273d2f557b961800c2f0730af8afd)
@@ -20,18 +20,30 @@
   * [system suspend + resume never unblocks window updates](https://github.com/Xpra-org/xpra/commit/60e2933a8a9b362ecc5d839949e1c726b2c97893)
   * [missed main thread lockups](https://github.com/Xpra-org/xpra/commit/31b0e4cd652c0183d2dda7ab6a50ff10aba96097)
   * [dbus notification can retry forever - hogging the CPU](https://github.com/Xpra-org/xpra/commit/44ee267bf5776960ab2575ebcaa2f249ff45465e)
+  * [MS Windows desktop handle leak](https://github.com/Xpra-org/xpra/commit/df548810431edb37df2841df974121904c8dbfa3)
+  * [MS Windows clipboard memory handle bugs](https://github.com/Xpra-org/xpra/commit/f9b4cfadf4aeb8af532fad9834dc6479ea6c31fa)
+  * [`xpra upgrade` fails with duplicated `mode` in session files](https://github.com/Xpra-org/xpra/commit/feed8f5ac683c84ad42e1c4147db841159d52a0f)
+  * [allow upgrades on displays where no window manager is left](https://github.com/Xpra-org/xpra/commit/51682019c19082e17ba2995900d5b61291aec39c)
 * Minor:
   * [cursor logging errors](https://github.com/Xpra-org/xpra/commit/c77e6317b3c234d086ab44cc6b71221b6e15b7e2)
   * [add keysym table](https://github.com/Xpra-org/xpra/commit/f56bdd64fc0e4b305e627f15ffea89b0543e1b51) + [fix AltGr with native win32 client](https://github.com/Xpra-org/xpra/commit/1a73577385740f9be84033472e100aa7c963d213)
   * [zero is a valid uid / gid](https://github.com/Xpra-org/xpra/commit/a177334d04d50350307680c61c3cadc1dd085159)
+  * [allow lookup of session names starting with a digit](https://github.com/Xpra-org/xpra/commit/38e7111b6a79aee075c47efb71d892b8530a58be)
+  * [CI build of Wayland client bindings](https://github.com/Xpra-org/xpra/commit/0ef1f44dfc6435a3e3ff85b2ff79d538ca9ff287)
+  * [only request clipboard image if we don't have it yet](https://github.com/Xpra-org/xpra/commit/9c01c00434a308d3db3603d7ecae7877bebb5421)
+  * [scroll encoding visual corruption](https://github.com/Xpra-org/xpra/commit/72cef15e5ed8fff6592268a9f25c23f74aa91fff)
+  * [safer scroll paints with unaccelerated client windows](https://github.com/Xpra-org/xpra/commit/5f282ddd9654f80fb336fd27fb0139f26a0e8726)
+  * [always send window move / resize events to record clients](https://github.com/Xpra-org/xpra/commit/8a30c84622cf9d9837871b3e1441e2431c6a9a36)
 * OpenGL:
   * [actually check the pixel upload format exists](https://github.com/Xpra-org/xpra/commit/818d70044df4412bb9eea46cf3e5b4db12760c32)
   * [verify the rgb buffer size before uploading it](https://github.com/Xpra-org/xpra/commit/e60277ead8c511d4794bf0d5f0cb36558300e174)
 * Cosmetic:
+  * [`xpra info` tagged as binary due to abstract socket null byte](https://github.com/Xpra-org/xpra/commit/520caad013c6ad3ff693af4f463ae527e4a9e924)
   * [ensure repeatSPSPPS can be enabled for datagram mode](https://github.com/Xpra-org/xpra/commit/8352effbe8a87c634873b6fd9c2ccd695a41e446)
   * [prevent potential callback errors](https://github.com/Xpra-org/xpra/commit/3adfdad1f319e22dce97826c4074bbea99720504)
   * [ensure the UI watcher callbacks are released](https://github.com/Xpra-org/xpra/commit/2be2ca274012cd291d1470c6fd9dccbb2fd33ef9)
   * [events test errors](https://github.com/Xpra-org/xpra/commit/8bda94a650d8f684dd699e4e8439d99c909ff12f)
+  * [ensure attributes are initialized early](https://github.com/Xpra-org/xpra/commit/d3910f11e6f094bb02662de03769f476acbcc6ff)
 
 ## [6.5.2] 2026-07-26
 * 🔧 Platforms, build and packaging:
