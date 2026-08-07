@@ -94,6 +94,8 @@ class WindowsConnection(StubClientConnection):
         # `sharing=sync`: move and resize the windows
         # when another client modifies their geometry
         self.window_sync_position = False
+        # `sharing=sync`: raise the windows focused by another client
+        self.window_sync_focus = False
         self.window_metadata_supported: Sequence[str] = ()
         self.pointer_grabs = False
         self.system_tray = False
@@ -165,6 +167,7 @@ class WindowsConnection(StubClientConnection):
             filterslog.error("Error parsing window-filters: %s", e)
         self.window_record = wcaps.boolget("record") and is_recording_allowed(self, "windows")
         self.window_sync_position = wcaps.boolget("sync-position", self.window_record)
+        self.window_sync_focus = wcaps.boolget("sync-focus", self.window_record)
 
     def get_caps(self) -> dict[str, Any]:
         return {}
@@ -178,6 +181,7 @@ class WindowsConnection(StubClientConnection):
             "system-tray": self.system_tray,
             "restack": self.window_restack,
             "sync-position": self.window_sync_position,
+            "sync-focus": self.window_sync_focus,
         }
         wsize: dict[str, Any] = {
             "min": self.window_min_size,

@@ -25,6 +25,18 @@ Modern clients attach a monitor descriptor to map and configure packets. The
 descriptor contains the client's monitor `index` and the window `position`
 relative to that monitor.
 
+| Capability      | Information                                                                      |
+|-----------------|----------------------------------------------------------------------------------|
+| `restack`       | The client can handle `window-restack` packets, not just `window-raise`          |
+| `sync-position` | Send `window-move-resize` when another client moves or resizes a window          |
+| `sync-focus`    | Send `window-raise` when another client focuses a window                         |
+
+`sync-position` and `sync-focus` are enabled by the `sharing=sync` client option,
+and default to enabled for recording clients.
+They only take effect when more than one client is connected: the packets are sent
+to every other client that requested the synchronization, never back to the client
+that caused the change.
+
 ## Network Packets
 
 ### Server-to-Client

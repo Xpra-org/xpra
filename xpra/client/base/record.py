@@ -178,7 +178,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         caps: dict[str, Any] = {}
         if self.windows:
             caps = {
-                "windows": {"record": True, "restack": True, "sync-position": True},
+                "windows": {"record": True, "restack": True, "sync-position": True, "sync-focus": True},
                 "encoding": self.encoding_options,
                 "share": True,
                 "keyboard": {"record": True},

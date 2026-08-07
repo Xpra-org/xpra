@@ -1817,8 +1817,9 @@ When used server-side, the default value \fIauto\fP allows the clients
 to decide if they are willing to share the session.
 When used client-side, the default value \fIauto\fP evaluates to \fIno\fP.
 The \fIsync\fP value enables sharing and also asks the server to keep
-the window geometry synchronized: whenever another client moves or resizes
-a window, this client's window follows.
+the window geometry and focus synchronized: whenever another client moves or
+resizes a window, this client's window follows, and whenever another client
+focuses a window, this client raises it.
 (servers treat this value as \fIyes\fP)
 To allow sharing to work with unix domain sockets (either using local
 connections or via ssh), you should create at least one socket in a group

@@ -1509,7 +1509,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--sharing", action="store", metavar="yes|no|sync",
                      dest="sharing", default=defaults.sharing,
                      help="Allow more than one client to connect to the same session,"
-                          " 'sync' also synchronizes the window geometry between clients."
+                          " 'sync' also synchronizes the window geometry and focus between clients."
                           " Default: %s." % enabled_or_auto(defaults.sharing))
     legacy_bool_parse("lock")
     group.add_option("--lock", action="store", metavar="yes|no",

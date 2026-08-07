@@ -25,7 +25,7 @@ socket-permissions = 600
 # Share session with other users:
 #sharing = yes
 #sharing = no
-# 'sync' also synchronizes the window geometry between clients:
+# 'sync' also synchronizes the window geometry and focus between clients:
 #sharing = sync
 # Leave it up to the client, where it defaults to no
 # and this setting can then be changed from the system tray menu:

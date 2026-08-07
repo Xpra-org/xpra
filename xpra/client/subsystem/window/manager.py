@@ -71,8 +71,8 @@ class WindowManagerClient(StubClientSubsystem):
     SLOT_NAMES = (
         "_id_to_window", "_locked_windows", "_win32_events", "_window_to_id",
         "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
-        "pixel_depth", "server_window_frame_extents", "server_window_states", "sync_position",
-        "windows_enabled",
+        "pixel_depth", "server_window_frame_extents", "server_window_states", "sync_focus",
+        "sync_position", "windows_enabled",
     )
 
     def __init__(self):
@@ -93,6 +93,8 @@ class WindowManagerClient(StubClientSubsystem):
         self.modal_windows: bool = True
         # `sharing=sync`: have the server synchronize the window geometry between clients
         self.sync_position: bool = False
+        # `sharing=sync`: have the server synchronize the window focus between clients
+        self.sync_focus: bool = False
 
         self.server_window_frame_extents: bool = False
         self.server_window_states: Sequence[str] = ()
@@ -112,7 +114,7 @@ class WindowManagerClient(StubClientSubsystem):
             self.pixel_depth = 0
         self.windows_enabled = opts.windows
         self.modal_windows = self.windows_enabled and opts.modal_windows
-        self.sync_position = is_sharing_sync(opts.sharing)
+        self.sync_position = self.sync_focus = is_sharing_sync(opts.sharing)
 
     def init_ui(self, opts) -> None:
         # opengl setup is owned by the `opengl` subsystem:
@@ -176,6 +178,7 @@ class WindowManagerClient(StubClientSubsystem):
             "max-size": self.max_window_size,
             "read-only": self.client.readonly,
             "sync-position": self.sync_position,
+            "sync-focus": self.sync_focus,
         }
         for wid, window in tuple(self._id_to_window.items()):
             info[wid] = window.get_info()
@@ -206,6 +209,9 @@ class WindowManagerClient(StubClientSubsystem):
             # ask the server to move and resize our windows
             # when another client changes their geometry:
             "sync-position": self.sync_position,
+            # ask the server to raise our windows
+            # when another client focuses them:
+            "sync-focus": self.sync_focus,
         }
 
     def parse_server_capabilities(self, c: typedict) -> bool:
