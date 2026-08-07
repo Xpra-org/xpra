@@ -157,8 +157,6 @@ class WindowsConnection(StubClientConnection):
         self.window_min_size = wcaps.inttupleget("min-size", (0, 0))
         self.window_max_size = wcaps.inttupleget("max-size", (0, 0))
         self.window_restack = wcaps.boolget("restack", False)
-        # ui clients send this flag in the `window` namespace:
-        self.window_sync_position = wcaps.boolget("sync-position") or c.boolget("window.sync-position")
         # window filters:
         try:
             for object_name, property_name, operator, value in c.tupleget("window-filters"):
@@ -166,6 +164,7 @@ class WindowsConnection(StubClientConnection):
         except Exception as e:
             filterslog.error("Error parsing window-filters: %s", e)
         self.window_record = wcaps.boolget("record") and is_recording_allowed(self, "windows")
+        self.window_sync_position = wcaps.boolget("sync-position", self.window_record)
 
     def get_caps(self) -> dict[str, Any]:
         return {}
