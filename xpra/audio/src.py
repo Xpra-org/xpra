@@ -66,6 +66,54 @@ def _get_source_channels(src_type: str, src_options: dict) -> int:
         return 0
 
 
+def get_source_pipeline_elements(src_type: str, src_options: dict,
+                                 encoder: str, fmt: str, codec_options: dict, volume=1.0) -> list[str]:
+    """Build the list of GStreamer elements for the capture pipeline."""
+    src_options["name"] = "src"
+    source_str = plugin_str(src_type, src_options)
+    # FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
+    pipeline_els = [source_str]
+    log("has plugin(timestamp)=%s", has_plugins("timestamp"))
+    if has_plugins("timestamp"):
+        pipeline_els.append("timestamp name=timestamp")
+    if SOURCE_QUEUE_TIME > 0:
+        pipeline_els.append(get_element_str("queue", {
+            "name": "queue",
+            "min-threshold-time": 0,
+            "max-size-buffers": 0,
+            "max-size-bytes": 0,
+            "max-size-time": SOURCE_QUEUE_TIME,
+            "leaky": GST_QUEUE_LEAK_DOWNSTREAM,
+        }))
+    # if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
+    pipeline_els += ["audioconvert"]
+    # preserve the source's native channel count to prevent GStreamer
+    # from negotiating down to mono during backward caps fixation:
+    channels = _get_source_channels(src_type, src_options)
+    if channels > 0:
+        pipeline_els.append(f"audio/x-raw,channels={channels}")
+    # `removesilence` pad templates are fixed at `channels=1`, so it cannot be used
+    # with a multi-channel source: it would both fail to link with the caps filter above
+    # and pin the whole pipeline to mono.
+    # It is also a no-op with the default properties we instantiate it with
+    # (`remove=false`, silence thresholds disabled), so skipping it costs us nothing:
+    if channels <= 1 and has_plugins("removesilence"):
+        pipeline_els += [
+            "removesilence",
+            "audioconvert",
+            "audioresample"
+        ]
+    pipeline_els.append(get_element_str("volume", {"name": "volume", "volume": volume}))
+    if encoder:
+        encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
+        pipeline_els.append(encoder_str)
+    if fmt:
+        fmt_str = plugin_str(fmt, MUXER_DEFAULT_OPTIONS.get(fmt, {}))
+        pipeline_els.append(fmt_str)
+    pipeline_els.append(get_element_str("appsink", get_default_appsink_attributes()))
+    return pipeline_els
+
+
 class AudioSource(AudioPipeline):
     __gsignals__ = AudioPipeline.__generic_signals__.copy()
     __gsignals__ |= {
@@ -120,43 +168,7 @@ class AudioSource(AudioPipeline):
         self.jitter_queue = None
         self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
         self.stream_compressor = stream_compressor
-        src_options["name"] = "src"
-        source_str = plugin_str(src_type, src_options)
-        # FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
-        pipeline_els = [source_str]
-        log("has plugin(timestamp)=%s", has_plugins("timestamp"))
-        if has_plugins("timestamp"):
-            pipeline_els.append("timestamp name=timestamp")
-        if SOURCE_QUEUE_TIME > 0:
-            pipeline_els.append(get_element_str("queue", {
-                "name": "queue",
-                "min-threshold-time": 0,
-                "max-size-buffers": 0,
-                "max-size-bytes": 0,
-                "max-size-time": SOURCE_QUEUE_TIME,
-                "leaky": GST_QUEUE_LEAK_DOWNSTREAM,
-            }))
-        # if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
-        pipeline_els += ["audioconvert"]
-        # preserve the source's native channel count to prevent GStreamer
-        # from negotiating down to mono during backward caps fixation:
-        channels = _get_source_channels(src_type, src_options)
-        if channels > 0:
-            pipeline_els.append(f"audio/x-raw,channels={channels}")
-        if has_plugins("removesilence"):
-            pipeline_els += [
-                "removesilence",
-                "audioconvert",
-                "audioresample"
-            ]
-        pipeline_els.append(get_element_str("volume", {"name": "volume", "volume": volume}))
-        if encoder:
-            encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
-            pipeline_els.append(encoder_str)
-        if fmt:
-            fmt_str = plugin_str(fmt, MUXER_DEFAULT_OPTIONS.get(fmt, {}))
-            pipeline_els.append(fmt_str)
-        pipeline_els.append(get_element_str("appsink", get_default_appsink_attributes()))
+        pipeline_els = get_source_pipeline_elements(src_type, src_options, encoder, fmt, codec_options, volume)
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
         self.timestamp = self.pipeline.get_by_name("timestamp")
@@ -184,7 +196,6 @@ class AudioSource(AudioPipeline):
                 gstlog("no %s property on %s: %s", x, self.src, e)
                 self.buffer_latency = False
         # if the env vars have been set, try to honour the settings:
-        global BUFFER_TIME, LATENCY_TIME
         if BUFFER_TIME > 0:
             if BUFFER_TIME < LATENCY_TIME:
                 log.warn("Warning: latency (%ims) must be lower than the buffer time (%ims)", LATENCY_TIME, BUFFER_TIME)
