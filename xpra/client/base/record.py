@@ -29,6 +29,27 @@ SYNC_GAP = envint("XPRA_SYNC_GAP", 1)
 
 NO_GEOMETRY = (0, 0, 0, 0)
 
+# window types which never take the keyboard focus when they are mapped:
+NO_FOCUS_WINDOW_TYPES = (
+    "DESKTOP", "DOCK", "SPLASH", "MENU", "DROPDOWN_MENU", "POPUP_MENU",
+    "TOOLTIP", "NOTIFICATION", "COMBO", "DND",
+)
+# metadata flags which prevent a window from taking the focus:
+NO_FOCUS_FLAGS = ("override-redirect", "tray", "below", "iconic", "shaded")
+
+
+def can_focus(metadata: typedict) -> bool:
+    """
+    Should this window take the keyboard focus when it is mapped?
+    The server does not tell us, so this is a heuristic:
+    windows that are kept below, unmapped or of a type that never
+    receives input are assumed not to steal the focus.
+    """
+    if any(metadata.boolget(flag) for flag in NO_FOCUS_FLAGS):
+        return False
+    window_types = metadata.strtupleget("window-type")
+    return not any(wt in NO_FOCUS_WINDOW_TYPES for wt in window_types)
+
 
 def save_json(path: str, data: dict) -> None:
     try:
@@ -77,6 +98,8 @@ class WindowModel:
         self.event_no = 0
         self.start = start
         self.sync_timer = 0
+        # does this window have the keyboard focus? (see `RecordClient.set_focused`)
+        self.focused = False
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
 
@@ -107,7 +130,11 @@ class WindowModel:
         self.event_no += 1
         if event == "destroy":
             self.cancel_sync_timer()
-        elif event != "sync" and not self.sync_timer:
+        elif event != "sync":
+            self.schedule_sync()
+
+    def schedule_sync(self) -> None:
+        if not self.sync_timer:
             self.sync_timer = GLib.timeout_add(SYNC_GAP * 1000, self.record_sync)
 
     def cancel_sync_timer(self) -> None:
@@ -120,6 +147,7 @@ class WindowModel:
         kwargs: dict[str, Any] = {
             "metadata": self.metadata,
             "cursor-data": self.cursor_data,
+            "focused": self.focused,
         }
         if self.geometry != NO_GEOMETRY:
             kwargs["geometry"] = self.geometry
@@ -143,6 +171,8 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         self.refresh_needed: set[int] = set()
         self.refresh_timer = 0
         self.start = monotonic()
+        # the window which currently has the keyboard focus, 0 for none:
+        self.focused = 0
 
     def init(self, opts) -> None:
         for cc in CLIENT_BASES:
@@ -236,6 +266,23 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
     def get_window(self, wid: int) -> WindowModel | None:
         return self._id_to_window.get(wid)
 
+    def set_focused(self, wid: int) -> None:
+        """
+        Update the window which has the keyboard focus.
+        The focus state is saved at sync points, so both the window losing
+        the focus and the one gaining it must record a new one.
+        """
+        if self.focused == wid:
+            return
+        log("set_focused(%#x) previous focus: %#x", wid, self.focused)
+        if self.focused > 0 and (window := self.get_window(self.focused)):
+            window.focused = False
+            window.schedule_sync()
+        self.focused = wid
+        if wid > 0 and (window := self.get_window(wid)):
+            window.focused = True
+            window.schedule_sync()
+
     def _process_window_create(self, packet: Packet) -> None:
         self._process_new_common(packet, False)
 
@@ -274,7 +321,11 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         window = WindowModel(wid, geom, override_redirect, directory, self.start)
         window.update_metadata(metadata)
         self._id_to_window[wid] = window
-        window.record("new", geometry=(x, y, w, h), metadata=metadata)
+        # new windows usually steal the focus:
+        if can_focus(metadata):
+            self.set_focused(wid)
+        # `new` events are sync points, so they must carry the focus state too:
+        window.record("new", geometry=(x, y, w, h), metadata=metadata, focused=window.focused)
 
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         # should not be received!
@@ -285,6 +336,9 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         metadata = packet.get_dict(2)
         if window := self.get_window(wid):
             window.update_metadata(metadata)
+            if self.focused == wid and typedict(metadata).boolget("iconic"):
+                # an iconified window cannot keep the focus:
+                self.set_focused(0)
             window.record("metadata", metadata=metadata)
 
     def _process_window_move_resize(self, packet: Packet) -> None:
@@ -309,12 +363,23 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
     def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.get_window(wid):
+            # the server only raises windows that gained the focus
+            # (see the `sync-focus` capability):
+            self.set_focused(wid)
             window.record("raise")
 
     def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
+        detail = packet.get_i16(2)
+        other_wid = packet.get_wid(3)
         if window := self.get_window(wid):
-            window.record("restack")
+            if detail == 0 and not other_wid:
+                # raised to the top of the stack:
+                self.set_focused(wid)
+            elif detail != 0 and self.focused == wid:
+                # lowered: it cannot have the focus any more
+                self.set_focused(0)
+            window.record("restack", detail=detail, other=other_wid)
 
     def _process_configure_override_redirect(self, packet: Packet) -> None:
         self._process_window_move_resize(packet)
@@ -324,6 +389,9 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         if window := self.get_window(wid):
             assert window is not None
             del self._id_to_window[wid]
+            if self.focused == wid:
+                # we don't know which window gets the focus next:
+                self.set_focused(0)
             window.record("destroy")
 
     def _process_window_draw(self, packet: Packet) -> None:

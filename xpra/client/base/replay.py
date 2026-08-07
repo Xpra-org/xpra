@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from typing import NoReturn
 
 from xpra.client.base.gobject import GObjectClientAdapter
+from xpra.common import noop
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.platform.paths import initial_cwd
 from xpra.util.io import load_binary_file
@@ -228,6 +229,7 @@ class WindowReplay:
                 self.window = self.client.make_client_window(self.wid, geom, metadata)
             log("new-window: %s", self.window)
             self.window.show()
+            self.may_focus(event)
         elif etype == "destroy":
             self.window.destroy()
             self.window = None
@@ -283,6 +285,7 @@ class WindowReplay:
                 self.window.set_cursor_data(to_cursor_data(typedict(cursor)))
             self.window.update_metadata(metadata)
             self.window.move_resize(*geometry)
+            self.may_focus(event)
         elif etype == "metadata":
             metadata = typedict(event.dictget("metadata", {}))
             log("metadata: %s", metadata)
@@ -299,6 +302,15 @@ class WindowReplay:
                 self.window.move_resize(*geometry)
         else:
             log.warn("%r not handled yet!", etype)
+
+    def may_focus(self, event: typedict) -> None:
+        """
+        `new` and `sync` events carry the focus state of the window.
+        Only the window that had the focus is of interest: the others
+        simply don't claim it.
+        """
+        if event.boolget("focused"):
+            self.client.set_focused(self.wid, event.intget("timestamp", 0))
 
     def find_sync_index(self, target_ts: int):
         sync_idx: int = 0
@@ -335,27 +347,8 @@ class WindowModel:
 
     def __init__(self, wid: int, *args):
         self.wid = wid
-
-    def show(self):
-        pass
-
-    def draw_region(self, x, y, width, height, coding, data, rowstride, options, callbacks):
-        pass
-
-    def set_cursor_data(self, data):
-        pass
-
-    def show_pointer_overlay(self, position):
-        pass
-
-    def resize(self, *size):
-        pass
-
-    def move_resize(self, *geometry):
-        pass
-
-    def update_metadata(self, metadata):
-        pass
+        self.show = self.draw_region = self.set_cursor_data = self.show_pointer_overlay = noop
+        self.resize = self.move_resize = self.update_metadata = self.present = noop
 
 
 def log_notable_event(etype: str, msg: str) -> None:
@@ -380,6 +373,9 @@ class Replay(GObjectClientAdapter):
         self._wall_start: float = 0.0    # monotonic seconds when play last (re)started
         self._replay_start: int = 0      # time_index value at that moment
         self.notable_event_cb = log_notable_event
+        # the window which had the focus, and the timestamp it was claimed at:
+        self.focused = 0
+        self.focus_timestamp = 0
 
     def __repr__(self):
         return "Replay"
@@ -389,6 +385,23 @@ class Replay(GObjectClientAdapter):
 
     def make_client_window(self, wid: int, geometry: tuple[int, int, int, int], metadata: typedict):
         return WindowModel(wid)
+
+    def set_focused(self, wid: int, timestamp: int = 0) -> None:
+        """
+        For now, we don't replay the focus itself:
+        we just ensure that the window which had it ends up on top.
+        Sync points are replayed in window order rather than in chronological
+        order, so the most recent claim wins.
+        """
+        if timestamp < self.focus_timestamp:
+            return
+        self.focus_timestamp = timestamp
+        self.focused = wid
+        wr = self.window_replay.get(wid)
+        window = wr.window if wr else None
+        log("set_focused(%#x, %i) window=%s", wid, timestamp, window)
+        if window:
+            window.present()
 
     def load(self) -> None:
         windows = os.listdir(self.record_directory)
@@ -458,6 +471,9 @@ class Replay(GObjectClientAdapter):
         self.cancel_event_timer()
 
         self.time_index = target_ms
+        # the focus is re-claimed from the sync points we are about to replay,
+        # which may be older than the ones we had already seen:
+        self.focus_timestamp = 0
         for wr in self.window_replay.values():
             wr.seek(target_ms)
 
