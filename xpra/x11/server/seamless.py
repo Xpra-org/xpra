@@ -983,13 +983,16 @@ class SeamlessServer(GObject.GObject, ServerBase):
             if ocg != ncg:
                 ss.window_configure_time = monotonic()
                 self.repaint_root_overlay()
-                if ocg[2:4] != ncg[2:4] and SHARING_SYNC_SIZE:
-                    # try to ensure this won't trigger a resizing loop:
-                    counter = max(0, resize_counter - 1)
-                    nw, nh = ncg[2:4]
-                    for s in self.window_sources():
-                        if s != ss:
-                            s.resize_window(wid, window, nw, nh, resize_counter=counter)
+                nx, ny, nw, nh = ncg[:4]
+                # try to ensure this won't trigger a resizing loop:
+                counter = max(0, resize_counter - 1)
+                for s in self.window_sources():
+                    if s == ss:
+                        continue
+                    if s.window_record:
+                        s.move_resize_window(wid, window, nx, ny, nw, nh, resize_counter=counter)
+                    elif ocg[2:4] != ncg[2:4] and SHARING_SYNC_SIZE:
+                        s.resize_window(wid, window, nw, nh, resize_counter=counter)
                 damage = True
             if damage:
                 self.schedule_configure_damage(wid)
