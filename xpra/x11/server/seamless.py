@@ -176,6 +176,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 sleep(0.010 * count)
         window_sub._wm.connect("quit", lambda _: self.clean_quit(True))
         window_sub._wm.connect("show-desktop", window_sub._show_desktop)
+        window_sub._wm.connect("x11-focus-in-event", window_sub.do_x11_focus_in_event)
 
     def do_cleanup(self) -> None:
         window_sub = self.subsystems.get("window")
