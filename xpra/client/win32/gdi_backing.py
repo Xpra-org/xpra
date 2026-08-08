@@ -18,22 +18,11 @@ from xpra.platform.win32.common import (
     BITMAPV5HEADER, CreateDIBSection,
     BitBlt, StretchBlt, SetStretchBltMode,
 )
-from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks, PaintCallbacks
+from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks, PaintCallbacks, clip_span
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("draw")
-
-
-def clip_span(pos: int, size: int, delta: int, limit: int) -> tuple[int, int]:
-    """
-    Clip a one dimensional span so that both the source `[pos, pos+size)`
-    and the destination `[pos+delta, pos+delta+size)` fit within `[0, limit)`.
-    Returns the clipped `(pos, size)`, with a size of zero if nothing is left.
-    """
-    start = max(0, -pos, -pos - delta)
-    end = min(size, limit - pos, limit - pos - delta)
-    return pos + start, max(0, end - start)
 
 
 class GDIBacking(WindowBackingBase):

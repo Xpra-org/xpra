@@ -6,11 +6,13 @@
 
 """
 Tests for the `scroll` paint of the win32 GDI backing.
-All tests are skipped on non-Windows platforms.
+The tests which need the GDI backing itself are skipped on non-Windows platforms.
 """
 
 import sys
 import unittest
+
+from xpra.client.gui.window.backing import clip_span
 
 WIN32 = sys.platform == "win32"
 
@@ -52,36 +54,27 @@ def get_row(backing, y: int) -> bytes:
     return get_pixels(backing)[y * bw * 4:(y + 1) * bw * 4]
 
 
-@unittest.skipUnless(WIN32, "the GDI backing is only available on MS Windows")
 class ClipSpanTest(unittest.TestCase):
-    """
-    `clip_span` is pure python, but it lives in a module
-    which can only be imported on MS Windows
-    """
+    """`clip_span` is pure python, it can be tested anywhere"""
 
     def test_no_clipping_needed(self):
-        from xpra.client.win32.gdi_backing import clip_span
         self.assertEqual(clip_span(10, 20, 5, 100), (10, 20))
         self.assertEqual(clip_span(10, 20, -5, 100), (10, 20))
 
     def test_destination_overflows_end(self):
-        from xpra.client.win32.gdi_backing import clip_span
         # [90, 100) moved by +5 would end at 105:
         self.assertEqual(clip_span(90, 10, 5, 100), (90, 5))
 
     def test_destination_overflows_start(self):
-        from xpra.client.win32.gdi_backing import clip_span
         # [0, 10) moved by -5 would start at -5:
         self.assertEqual(clip_span(0, 10, -5, 100), (5, 5))
 
     def test_source_overflows(self):
-        from xpra.client.win32.gdi_backing import clip_span
         # the source itself is out of bounds:
         self.assertEqual(clip_span(95, 20, -5, 100), (95, 5))
         self.assertEqual(clip_span(-5, 20, 5, 100), (0, 15))
 
     def test_nothing_left(self):
-        from xpra.client.win32.gdi_backing import clip_span
         self.assertEqual(clip_span(0, 10, -100, 100)[1], 0)
         self.assertEqual(clip_span(0, 10, 100, 100)[1], 0)
         self.assertEqual(clip_span(200, 10, 0, 100)[1], 0)

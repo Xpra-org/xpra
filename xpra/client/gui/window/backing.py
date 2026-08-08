@@ -170,6 +170,18 @@ def load_alert_icon() -> tuple[int, int, bytes]:
     return iw, ih, pixels
 
 
+def clip_span(pos: int, size: int, delta: int, limit: int) -> tuple[int, int]:
+    """
+    Clip a one dimensional span so that both the source `[pos, pos+size)`
+    and the destination `[pos+delta, pos+delta+size)` fit within `[0, limit)`.
+    Returns the clipped `(pos, size)`, with a size of zero if nothing is left.
+    Used by the `scroll` paints, see `paint_scroll` below.
+    """
+    start = max(0, -pos, -pos - delta)
+    end = min(size, limit - pos, limit - pos - delta)
+    return pos + start, max(0, end - start)
+
+
 def get_backing_client_properties(backing, encoding_defaults: dict[str, Any]) -> dict[str, Any]:
     """
     The encoding properties of this backing instance,
