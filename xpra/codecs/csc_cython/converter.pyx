@@ -86,6 +86,7 @@ COLORSPACES: Dict[str, Sequence[str]] = {
     "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
     "r210"       : get_CS("r210",    ["YUV420P", "BGR48", "YUV444P10"]),
     "YUV444P10"  : get_CS("YUV444P10", ["r210"]),
+    "YUV420P10"  : get_CS("YUV420P10", ["BGRX"]),
     "YUV444P"    : get_CS("YUV444P",  ["BGRX", "RGBX"]),
     "GBRP10"     : get_CS("GBRP10",  ["r210", ]),
 }
@@ -111,7 +112,7 @@ def get_specs() -> Sequence[CSCSpec]:
         can_scale = True
         width_mask = height_mask = 0xFFFF
         for out_cs in out_css:
-            if in_cs in ("r210", "YUV444P") or out_cs=="r210":
+            if in_cs in ("r210", "YUV444P", "YUV420P10") or out_cs=="r210":
                 can_scale = False
             elif in_cs == "GBRP10":
                 can_scale = False
@@ -119,7 +120,7 @@ def get_specs() -> Sequence[CSCSpec]:
                 can_scale = False
             elif (in_cs == "BGR" and out_cs in ("BGRX", "RGB")) or (in_cs == "RGB" and out_cs in ("RGBX", "BGR")):
                 can_scale = False
-            if in_cs == "YUV420P":
+            if in_cs in ("YUV420P", "YUV420P10"):
                 #safer not to try to handle odd dimensions as input:
                 width_mask = height_mask = 0xFFFE
             # low score as this should be used as fallback only:
@@ -178,6 +179,7 @@ DEF VC = 8388608
 
 DEF MAX_CLAMP = 16777216    #2**(16+8)
 DEF MAX_CLAMP10 = 67108864  #2**(16+10)
+DEF MAX_CLAMP10_8 = 67108864    #2**(18+8)
 
 
 # YUV to RGB full range:
@@ -257,6 +259,17 @@ cdef inline unsigned short clamp10(const long value) noexcept nogil:
     if v >= MAX_CLAMP10:
         return 0x3ff        #2**10-1
     return <unsigned short> (v>>16)
+
+
+cdef inline unsigned char clamp10_8(const long value) noexcept nogil:
+    # the coefficients are scaled by 2**16 and the input samples are 10-bit,
+    # so we have to shift down by 2 more bits than `clamp` to get an 8-bit value:
+    if value <= 0:
+        return 0
+    cdef long v = value + 2**17
+    if v >= MAX_CLAMP10_8:
+        return 0xff         #2**8-1
+    return <unsigned char> (v>>18)
 
 
 cdef inline unsigned char clamp_studio_UV(const long value) noexcept nogil:
@@ -454,6 +467,55 @@ cdef inline void YUV444P_to_RGBX_copy(uintptr_t rgbxdata,
                     )
 
 
+cdef inline void YUV420P10_to_BGRX_copy(uintptr_t bgrxdata,
+                                        const unsigned short *Ybuf, const unsigned short *Ubuf, const unsigned short *Vbuf,
+                                        unsigned int width, unsigned int height,
+                                        unsigned int rgb_stride,
+                                        unsigned int Ystride, unsigned int Ustride, unsigned int Vstride,
+                                        unsigned char full_range) noexcept nogil:
+        cdef const unsigned short *Yrow
+        cdef const unsigned short *Urow
+        cdef const unsigned short *Vrow
+        cdef short Y, U, V
+        cdef unsigned int *bgrxrow
+        cdef unsigned int x, y
+        # the offsets are scaled up to 10-bit, the coefficients don't need to be
+        # since `clamp10_8` shifts the result down by the extra 2 bits:
+        cdef short yc = Yc*4, uc = Uc*4, vc = Vc*4
+        cdef int ry = RY, ru = RU, rv = RV
+        cdef int gy = GY, gu = GU, gv = GV
+        cdef int by = BY, bu = BU, bv = BV
+        if not full_range:
+            yc = SYc*4
+            uc = SUc*4
+            vc = SVc*4
+            ry = SRY
+            ru = SRU
+            rv = SRV
+            gy = SGY
+            gu = SGU
+            gv = SGV
+            by = SBY
+            bu = SBU
+            bv = SBV
+        for y in range(height):
+            Yrow = <const unsigned short*> ((<uintptr_t> Ybuf) + y*Ystride)
+            # the U and V planes are subsampled by 2 in both directions:
+            Urow = <const unsigned short*> ((<uintptr_t> Ubuf) + (y//2)*Ustride)
+            Vrow = <const unsigned short*> ((<uintptr_t> Vbuf) + (y//2)*Vstride)
+            bgrxrow = <unsigned int*> (bgrxdata + y*rgb_stride)
+            for x in range(width):
+                Y = (Yrow[x] & 0x3ff) - yc
+                U = (Urow[x//2] & 0x3ff) - uc
+                V = (Vrow[x//2] & 0x3ff) - vc
+                bgrxrow[x] = (
+                    (<unsigned int> (0xff)<<24) |
+                    (clamp10_8(ry * Y + ru * U + rv * V)<<16) |
+                    (clamp10_8(gy * Y + gu * U + gv * V)<<8) |
+                    (clamp10_8(by * Y + bu * U + bv * V))
+                )
+
+
 cdef class Converter:
     cdef unsigned int src_width
     cdef unsigned int src_height
@@ -579,6 +641,10 @@ cdef class Converter:
             assert_no_scaling()
             allocate_rgb(4)
             self.convert_image_function = self.YUV444P10_to_r210
+        elif src_format=="YUV420P10" and dst_format=="BGRX":
+            assert_no_scaling()
+            allocate_rgb(4)
+            self.convert_image_function = self.YUV420P10_to_BGRX
         elif src_format=="YUV444P" and (dst_format=="BGRX" or dst_format=="RGBX"):
             assert_no_scaling()
             # BGRX / RGBX are 4 bytes per pixel (YUV444P_to_BGRX_copy writes 4):
@@ -1109,6 +1175,54 @@ cdef class Converter:
         for i in range(3):
             PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(output_image, 30)
+
+    def YUV420P10_to_BGRX(self, image: ImageWrapper) -> CythonImageWrapper:
+        self.validate_planar3_image(image)
+        planes = image.get_pixels()
+        input_strides = image.get_rowstride()
+        log("YUV420P10_to_BGRX(%s) strides=%s", image, input_strides)
+
+        #copy to local variables:
+        cdef unsigned int width = self.dst_width
+        cdef unsigned int height = self.dst_height
+
+        #allocate output buffer:
+        cdef char *output_image = <char *> memalign(self.buffer_size)
+        cdef unsigned int stride = self.dst_strides[0]
+        cdef unsigned char full_range = self.full_range
+
+        cdef unsigned int YUVstrides[3]
+        cdef Py_buffer py_buf[3]
+        cdef const unsigned short * YUV[3]
+        cdef unsigned int plane_height
+        cdef int i
+        for i in range(3):
+            YUVstrides[i] = input_strides[i]
+            if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                raise ValueError("failed to read pixel data from %s" % type(planes[i]))
+            YUV[i] = <const unsigned short *> py_buf[i].buf
+            # the U and V planes are subsampled vertically:
+            plane_height = (image.get_height() + 1) // 2 if i else image.get_height()
+            min_len = YUVstrides[i]*plane_height
+            assert py_buf[i].len>=min_len, "buffer for %s plane is too small: %s bytes, expected at least %s" % (
+                "YUV"[i], py_buf[i].len, min_len)
+
+        if image.is_thread_safe():
+            with nogil:
+                YUV420P10_to_BGRX_copy(<uintptr_t> output_image, YUV[0], YUV[1], YUV[2],
+                                       width, height,
+                                       stride,
+                                       YUVstrides[0], YUVstrides[1], YUVstrides[2],
+                                       full_range)
+        else:
+            YUV420P10_to_BGRX_copy(<uintptr_t> output_image, YUV[0], YUV[1], YUV[2],
+                                   width, height,
+                                   stride,
+                                   YUVstrides[0], YUVstrides[1], YUVstrides[2],
+                                   full_range)
+        for i in range(3):
+            PyBuffer_Release(&py_buf[i])
+        return self.packed_image_wrapper(output_image, 24)
 
     def YUV444P_to_RGB(self, image: ImageWrapper) -> CythonImageWrapper:
         self.validate_planar3_image(image)
