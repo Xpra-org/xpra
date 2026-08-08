@@ -50,7 +50,7 @@ class RecordingPointerManager(PointerManager):
     def _move_pointer(self, device_id, wid, pos, props=None) -> None:
         self.calls.append(("move", wid, tuple(pos[:2])))
 
-    def may_record_pointer_event(self, packet_type, *data) -> None:
+    def may_record_pointer_event(self, packet_type, *data, exclude=None) -> None:
         self.calls.append(("record", packet_type))
 
 

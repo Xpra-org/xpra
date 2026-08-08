@@ -39,6 +39,8 @@ The client should expose the following `pointer` dictionary in its `hello` packe
 |--------------------|---------------------------------|-------------------------------------------------------------------------------|
 | `initial-position` | `x` and `y` pair of coordinates | Optional                                                                      |
 | `double_click`     | dictionary                      | contains just two integer attributes: `time` (in milliseconds) and `distance` |
+| `sync`             | boolean                         | Optional, see [pointer synchronization](#pointer-synchronization)             |
+| `record`           | boolean                         | Optional, legacy alias for `sync`                                             |
 
 Modern packets keep the `pointer` field as a non-negative
 `(absolute_x, absolute_y)` pair normalized against the client monitor layout.
@@ -63,3 +65,25 @@ Alternatively, the client can just supply the value `True` instead of the dictio
 | `pointer-button` | client to server | `device_id`, `sequence`, `wid`, `button`, `pressed`, pointer, properties       |
 | `pointer-wheel`  | client to server | `wid`, `button`, `distance`, pointer, modifiers, buttons, properties           |
 | `input-devices`  | client to server |                                                                                 |
+| `pointer-motion` | server to client | `device_id`, `sequence`, `wid`, pointer, properties                            |
+| `pointer-button` | server to client | `device_id`, `sequence`, `wid`, `button`, `pressed`, pointer, properties       |
+| `pointer-wheel`  | server to client | `wid`, `button`, `distance`, pointer, modifiers                                |
+
+
+<div class="docs-section-heading" markdown="1">
+
+## Pointer synchronization
+
+</div>
+
+When a client enables the `sync` capability, the server echoes back to it the pointer events
+it receives from **all the other** clients connected to the same session,
+using the exact same packet types.\
+This is used by the recording client to capture the input events,
+and by regular clients started with `sharing=sync`,
+so that each user can see what the other users are doing:
+the position received is shown as a pointer overlay,
+in the same way as the pointer position updates sent by shadow servers.
+
+Only the `pointer-motion` packets carry a `window-position` property,
+so this is the only packet type which can update the overlay.

@@ -281,13 +281,17 @@ class PointerManager(StubSubsystem):
         else:
             self._move_pointer(device_id, wid, target, props)
         seq = self.pointer_sequence.get(device_id, 0)
-        self.may_record_pointer_event("pointer-motion", device_id, seq, wid, pointer, props or {})
+        self.may_record_pointer_event("pointer-motion", device_id, seq, wid, pointer, props or {},
+                                      exclude=self.get_server_source(proto))
         return pointer
 
-    def may_record_pointer_event(self, packet_type: str, *data: PacketElement) -> None:
+    def may_record_pointer_event(self, packet_type: str, *data: PacketElement, exclude=None) -> None:
+        """ forward this event to all the clients which have pointer synchronization enabled,
+            except for `exclude`, which is usually the client the event originates from.
+        """
         pointer_sources = self.get_sources_by_type(PointerConnection)
         for ss in pointer_sources:
-            if ss.pointer_record:
+            if ss.pointer_sync and ss is not exclude:
                 ss.send_async(packet_type, *data)
 
     def _process_pointer_button(self, proto, packet: Packet) -> None:
@@ -439,7 +443,8 @@ class PointerManager(StubSubsystem):
         }
         if self.process_mouse_common(proto, device_id, wid, pointer, pointer_props):
             seq = self.pointer_sequence.get(device_id, 0)
-            self.may_record_pointer_event("pointer-button", device_id, seq, wid, button, pressed, pointer, {})
+            self.may_record_pointer_event("pointer-button", device_id, seq, wid, button, pressed, pointer, {},
+                                          exclude=self.get_server_source(proto))
             self.button_action(device_id, wid, button, pressed, props)
 
     def _make_button1_drag_state(self, wid: int, pointer, props=None) -> dict:
@@ -653,7 +658,8 @@ class PointerManager(StubSubsystem):
         if self.process_mouse_common(proto, device_id, wid, pointer, props):
             self.last_mouse_user = ss.uuid
             self._update_modifiers(proto, wid, modifiers)
-            self.may_record_pointer_event("pointer-wheel", wid, button, distance, tuple(pointer), tuple(modifiers))
+            self.may_record_pointer_event("pointer-wheel", wid, button, distance, tuple(pointer), tuple(modifiers),
+                                          exclude=ss)
             self.pointer_device.wheel_motion(button, distance / 1000.0)  # pylint: disable=no-member
 
     def record_wheel_event(self, wid: int, button: int) -> None:

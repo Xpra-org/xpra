@@ -12,6 +12,7 @@ from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import POINTER_MOTION
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
+from xpra.util.parsing import is_sharing_sync
 from xpra.log import Logger
 
 log = Logger("pointer")
@@ -34,13 +35,14 @@ class PointerClient(StubClientSubsystem):
     """
     __slots__ = (
         "button_transform", "middle_click", "position", "position_delay", "position_pending",
-        "position_send_time", "position_timer", "sequence", "server_pointer",
+        "position_send_time", "position_timer", "sequence", "server_pointer", "sync",
     )
     PREFIX = "pointer"
 
     def __init__(self, client=None):
         StubClientSubsystem.__init__(self, client)
         self.sequence = {}
+        self.sync = False
         self.position_delay = 5
         self.position: Packet | None = None
         self.position_pending: Packet | None = None
@@ -50,6 +52,11 @@ class PointerClient(StubClientSubsystem):
         self.button_transform: dict[tuple[str, int], int] = {}
         self.server_pointer = True
         self.middle_click = True
+
+    def init(self, opts) -> None:
+        # with `sharing=sync`, ask the server to forward the pointer events of the other clients,
+        # so that we can show what the other users are doing:
+        self.sync = is_sharing_sync(getattr(opts, "sharing", False))
 
     def init_ui(self, opts) -> None:
         self.middle_click = getattr(opts, "middle_click", True)
@@ -88,11 +95,14 @@ class PointerClient(StubClientSubsystem):
     def get_caps(self) -> dict[str, Any]:
         double_click = get_double_click_caps()
         initial_position, _props = self.split_pointer_position(self.get_mouse_position())
+        pointer_caps: dict[str, Any] = {
+            "initial-position": initial_position,
+            "double_click": double_click,
+        }
+        if self.sync:
+            pointer_caps["sync"] = True
         caps: dict[str, Any] = {
-            PointerClient.PREFIX: {
-                "initial-position": initial_position,
-                "double_click": double_click,
-            },
+            PointerClient.PREFIX: pointer_caps,
         }
         if BACKWARDS_COMPATIBLE:
             caps["mouse"] = {

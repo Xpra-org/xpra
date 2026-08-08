@@ -31,14 +31,17 @@ class PointerConnection(StubClientConnection, PointerSource):
         # mouse echo:
         self.mouse_last_position: tuple[int, int] = (0, 0)
         self.mouse_last_relative_position: tuple[int, int] | None = None
-        self.pointer_record = False
+        # send the pointer events of the other clients to this client?
+        # (used by the recording client, and by clients using `sharing=sync`)
+        self.pointer_sync = False
 
     def requires_sharing(self) -> bool:
-        return not self.pointer_record
+        return not self.pointer_sync
 
     def parse_client_caps(self, c: typedict) -> None:
         pointer = typedict(c.dictget("pointer"))
-        self.pointer_record = pointer.boolget("record")
+        # `record` is the legacy name for `sync`:
+        self.pointer_sync = pointer.boolget("sync", pointer.boolget("record", False))
         log(f"parse_client_caps(..) {pointer=}")
         dc = typedict(pointer.dictget("double_click"))
         if not BACKWARDS_COMPATIBLE:
@@ -64,7 +67,7 @@ class PointerConnection(StubClientConnection, PointerSource):
             dc_info["time"] = dct
         if dcd := self.double_click_distance:
             dc_info["distance"] = dcd
-        info = {}
+        info: dict[str, Any] = {"sync": self.pointer_sync}
         if dc_info:
             info["double-click"] = dc_info
         return info

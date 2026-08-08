@@ -77,10 +77,36 @@ class WindowPointer(StubClientSubsystem):
             ry = packet.get_i16(5)
         else:
             rx, ry = -1, -1
+        log("process_pointer_position: %i,%i (%i,%i relative to wid %i)", x, y, rx, ry, wid)
+        self.show_remote_pointer(wid, rx, ry)
+
+    def _process_pointer_motion(self, packet: Packet) -> None:
+        # another client moved the pointer, and the server is synchronizing it with us
+        # (see the `sync` pointer capability)
+        wid = packet.get_wid(3)
+        pdata = packet.get_ints(4)
+        props = typedict(packet.get_dict(5))
+        # modern clients send the window relative position as a property,
+        # older ones packed it into the pointer data:
+        rel = props.inttupleget("window-position", max_items=2) or tuple(pdata[2:4])
+        log("process_pointer_motion: %s (%s relative to wid %i)", pdata[:2], rel, wid)
+        if len(rel) == 2:
+            self.show_remote_pointer(wid, *rel)
+
+    def _process_pointer_button(self, packet: Packet) -> None:
+        # another client clicked: the position was already synchronized
+        # by the `pointer-motion` packet which always precedes it
+        log("process_pointer_button: %s", packet[1:])
+
+    def _process_pointer_wheel(self, packet: Packet) -> None:
+        # another client used the wheel, there is nothing to show for it
+        log("process_pointer_wheel: %s", packet[1:])
+
+    def show_remote_pointer(self, wid: int, rx: int, ry: int) -> None:
+        """ show the pointer of another client (or of the shadowed display) as an overlay """
         cx, cy = self.get_mouse_position()
+        log("show_remote_pointer(%i, %i, %i) current position is %i,%i", wid, rx, ry, cx, cy)
         start_time = monotonic()
-        log("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i",
-            x, y, rx, ry, wid, cx, cy)
         size = 10
         for i, w in self._id_to_window.items():
             # not all window implementations have this method:
@@ -156,3 +182,6 @@ class WindowPointer(StubClientSubsystem):
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets("pointer-position", "pointer-grab", "pointer-ungrab", main_thread=True)
+        # the server sends us the pointer events of the other clients
+        # when the `sync` pointer capability is enabled:
+        self.add_packets("pointer-motion", "pointer-button", "pointer-wheel", main_thread=True)
