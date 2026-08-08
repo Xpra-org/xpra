@@ -1749,10 +1749,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
             extra_text = ", this will also disable notifications"
         else:
             extra_text = ""
-        parser.add_option("--tray", action="store", metavar="yes|no",
+        parser.add_option("--tray", action="store", metavar="yes|no|auto|native|gtk",
                           dest="tray", default=defaults.tray,
-                          help=f"Enable Xpra's own system tray menu{extra_text}."
-                               " Default: %s" % enabled_str(defaults.tray))
+                          help="Enable Xpra's own system tray menu, and which toolkit draws it"
+                               f"{extra_text}."
+                               " 'native' uses the platform menu, 'gtk' the full featured Gtk one,"
+                               " 'auto' and 'yes' prefer 'gtk' and fall back to 'native'."
+                               " Default: %s" % defaults.tray)
         do_legacy_bool_parse(cmdline, "delay-tray")
         parser.add_option("--delay-tray", action="store", metavar="yes|no",
                           dest="delay_tray", default=defaults.delay_tray,

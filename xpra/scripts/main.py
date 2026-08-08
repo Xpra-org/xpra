@@ -1820,6 +1820,18 @@ def no_gi_gtk_modules(mods=NOGI) -> None:
         sys.modules[mod_path] = None
 
 
+def allow_gi_gtk_modules(mods=NOGI) -> None:
+    """
+    Undo `no_gi_gtk_modules`: it only poisons the `sys.modules` entries
+    (nothing was ever imported), so removing them restores importability.
+    Used by the Gtk-free backends to load Gtk lazily for menus and dialogs.
+    """
+    for mod in mods:
+        mod_path = f"gi.repository.{mod}"
+        if mod_path in sys.modules and sys.modules[mod_path] is None:
+            del sys.modules[mod_path]
+
+
 def make_client(opts):
     backend = opts.backend or "gtk"
     BACKENDS = ("qt", "gtk", "pyglet", "tk", "win32", "auto") + ("native", ) * int(WIN32)
@@ -1851,7 +1863,7 @@ def make_client(opts):
         no_gi_gtk_modules()
         try:
             from xpra.client.win32.client import make_client as make_win32_client
-            return make_win32_client()
+            return make_win32_client(opts)
         except ImportError as e:
             get_logger().debug("importing win32 client", backtrace=True)
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the tk client component is missing: {e}") from None

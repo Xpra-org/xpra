@@ -132,6 +132,26 @@ TIMERPROC = WINFUNCTYPE(None, HWND, UINT, c_size_t, DWORD)
 # number of nested modal loops currently pumping (menus can nest, e.g. a submenu):
 _modal_depth = 0
 
+# `Gdk` attaches its own event source to the default main context, and it drains
+# the win32 message queue exactly like `WindowsMessageSource` does
+# (`PeekMessageW(NULL, PM_REMOVE)` + `DispatchMessageW`).
+# That is harmless in normal operation - either pump delivers each message to the
+# window procedure that owns it - but it is fatal inside a native modal loop:
+# the loop needs to see `WM_MOUSEMOVE` / `WM_LBUTTONUP` itself, and a stolen
+# button-up means the drag never ends.
+# `WindowsMessageSource` has the `modal` flag for this; `Gdk`'s source does not,
+# so `iterate_main_context` demotes it below `MODAL_PRIORITY_CUTOFF` and skips it.
+# Left as `None` unless Gtk was actually loaded (see `xpra.client.win32.gtk`),
+# in which case `iterate_main_context` behaves exactly as it always has:
+_gdk_source = None
+MODAL_PRIORITY_CUTOFF = GLib.PRIORITY_LOW
+
+
+def set_gdk_event_source(source) -> None:
+    global _gdk_source
+    log("set_gdk_event_source(%s)", source)
+    _gdk_source = source
+
 
 def _on_pump_timer(_hwnd, _msg, _timer_id, _dwtime) -> None:
     iterate_main_context()
@@ -173,10 +193,29 @@ def iterate_main_context(max_iterations: int = 32) -> None:
     loop keeps ownership of the win32 message queue.
     """
     context = GLib.MainContext.default()
-    n = 0
-    while n < max_iterations and context.pending():
-        context.iteration(False)
-        n += 1
+    if _gdk_source is None:
+        n = 0
+        while n < max_iterations and context.pending():
+            context.iteration(False)
+            n += 1
+        return
+    # Gtk is loaded: `context.iteration()` would dispatch `Gdk`'s event source,
+    # which would steal the messages the modal loop needs, so demote it and
+    # dispatch by hand, stopping short of its priority:
+    _gdk_source.set_priority(MODAL_PRIORITY_CUTOFF)
+    try:
+        n = 0
+        while n < max_iterations:
+            ready, priority = context.prepare()
+            if not ready or priority >= MODAL_PRIORITY_CUTOFF:
+                break
+            context.query(priority)
+            if not context.check(priority, []):
+                break
+            context.dispatch()
+            n += 1
+    finally:
+        _gdk_source.set_priority(GLib.PRIORITY_DEFAULT)
 
 
 def inject_windows_message_source(main_loop) -> int:

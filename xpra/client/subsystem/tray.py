@@ -8,6 +8,7 @@ from xpra.platform.systray import get_backends
 from xpra.os_util import WIN32, OSX
 from xpra.util.objects import make_instance
 from xpra.util.env import envint, envbool
+from xpra.util.parsing import FALSE_OPTIONS
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import XPRA_APP_ID
 from xpra.client.base.stub import StubClientSubsystem
@@ -36,7 +37,11 @@ class TrayClient(StubClientSubsystem):
         self.delay = False
 
     def init(self, opts) -> None:
-        if not opts.tray:
+        # `--tray` also names the toolkit that draws the menu ("native", "gtk"),
+        # but that has to be resolved before the client is constructed - see
+        # `make_client` in `xpra.client.win32.client` - so all we do here is
+        # honour the values that switch the tray off entirely:
+        if str(opts.tray).lower() in FALSE_OPTIONS:
             return
         self.delay = opts.delay_tray
         self.icon = opts.tray_icon

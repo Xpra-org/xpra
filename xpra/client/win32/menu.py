@@ -18,6 +18,26 @@ from xpra.log import Logger
 log = Logger("menu")
 
 
+def get_systray_hwnd(client, warn=True) -> HWND:
+    """
+    The `HWND` of the native tray icon's window, shared by both menu backends.
+    The native menu cannot be shown without it, but the Gtk menu only wants it
+    to take the foreground, so it passes `warn=False` (the menu can also be
+    triggered from a window shortcut, with no tray involved at all).
+    """
+    if not client:
+        if warn:
+            log.warn("Warning: unable to show menu without a client object")
+        return 0
+    tray_subsystem = client.get_subsystem("tray")
+    tray = tray_subsystem.tray if tray_subsystem else None
+    if not tray:
+        if warn:
+            log.warn("Warning: unable to show menu without a tray object")
+        return 0
+    return tray.getHWND()
+
+
 class TrayMenu(MenuHelper):
 
     def __repr__(self):
@@ -31,16 +51,7 @@ class TrayMenu(MenuHelper):
         return menu
 
     def get_systray_hwnd(self) -> HWND:
-        client = self.client
-        if not client:
-            log.warn("Warning: unable to show menu without a client object")
-            return 0
-        tray_subsystem = client.get_subsystem("tray")
-        tray = tray_subsystem.tray if tray_subsystem else None
-        if not tray:
-            log.warn("Warning: unable to show menu without a tray object")
-            return 0
-        return tray.getHWND()
+        return get_systray_hwnd(self.client)
 
     def do_show_menu(self, button: int, time):
         hwnd = self.get_systray_hwnd()

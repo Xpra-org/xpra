@@ -208,71 +208,11 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         Gdk.notify_startup_complete()
         self.remove_packet_handlers("startup-complete")
 
-    def _call_dialogs(self, method: str, *args, **kwargs):
-        dialogs = self.get_subsystem("dialogs")
-        assert dialogs, "no dialogs subsystem"
-        return getattr(dialogs, method)(*args, **kwargs)
-
+    # every other dialog delegation lives on `UIXpraClient`, which any backend
+    # composing a `dialogs` subsystem inherits; only this one is Gtk-only,
+    # because the `challenge` subsystem has a working non-GUI fallback:
     def do_process_challenge_prompt(self, *args, **kwargs):
         return self._call_dialogs("do_process_challenge_prompt", *args, **kwargs)
-
-    def show_server_commands(self, *args) -> None:
-        self._call_dialogs("show_server_commands", *args)
-
-    def show_start_new_command(self, *args) -> None:
-        self._call_dialogs("show_start_new_command", *args)
-
-    ################################
-    # monitors
-    def send_remove_monitor(self, index) -> None:
-        assert self.get_subsystem("display").server_monitors
-        self.send("configure-monitor", "remove", "index", index)
-
-    def send_add_monitor(self, resolution="1024x768") -> None:
-        assert self.get_subsystem("display").server_monitors
-        self.send("configure-monitor", "add", resolution)
-
-    def ask_data_request(self, *args, **kwargs) -> None:
-        self._call_dialogs("ask_data_request", *args, **kwargs)
-
-    def show_ask_data_dialog(self, *args) -> None:
-        self._call_dialogs("show_ask_data_dialog", *args)
-
-    def transfer_progress_update(self, *args, **kwargs) -> None:
-        self._call_dialogs("transfer_progress_update", *args, **kwargs)
-
-    def file_size_warning(self, *args) -> None:
-        self._call_dialogs("file_size_warning", *args)
-
-    def download_server_log(self, *args, **kwargs) -> None:
-        self._call_dialogs("download_server_log", *args, **kwargs)
-
-    def send_download_request(self, *args) -> None:
-        self._call_dialogs("send_download_request", *args)
-
-    def show_file_upload(self, *args) -> None:
-        self._call_dialogs("show_file_upload", *args)
-
-    def configure_server_debug(self, *args) -> None:
-        self._call_dialogs("configure_server_debug", *args)
-
-    def show_about(self, *args) -> None:
-        self._call_dialogs("show_about", *args)
-
-    def show_docs(self, *args) -> None:
-        self._call_dialogs("show_docs", *args)
-
-    def show_shortcuts(self, *args) -> None:
-        self._call_dialogs("show_shortcuts", *args)
-
-    def show_session_info(self, *args) -> None:
-        self._call_dialogs("show_session_info", *args)
-
-    def show_bug_report(self, *args) -> None:
-        self._call_dialogs("show_bug_report", *args)
-
-    def show_debug_config(self, *args) -> None:
-        self._call_dialogs("show_debug_config", *args)
 
     def get_image(self, icon_name: str, size=None) -> Gtk.Image | None:
         with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):

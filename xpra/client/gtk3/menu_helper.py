@@ -430,7 +430,18 @@ class GTKMenuHelper(MenuHelper):
             self.menu.popup(None, None, None, None, button, time)
 
     def get_image(self, icon_name, size=None):
-        return self.client.get_image(icon_name, size)
+        # loading an icon is pure toolkit work, so do it here if the client
+        # does not provide its own (the Gtk-free backends never do):
+        get_image = getattr(self.client, "get_image", None)
+        if get_image:
+            return get_image(icon_name, size)
+        with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):
+            from xpra.gtk.pixbuf import get_icon_pixbuf
+            pixbuf = get_icon_pixbuf(icon_name)
+            if not pixbuf:
+                return None
+            return scaled_image(pixbuf, size)
+        return None
 
     def menuitem(self, title, icon_name="", tooltip="", cb: Callable = noop, **kwargs) -> ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """

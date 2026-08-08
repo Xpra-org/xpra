@@ -14,10 +14,12 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitValue
 from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from xpra.os_util import gi_import
+from xpra.util.parsing import TRUE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.gobject import no_arg_signal
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gui.ui_client_base import UIXpraClient
+from xpra.client.win32.gtk import is_loaded as gtk_is_loaded, load_gtk
 from xpra.client.win32.subsystem.display import Win32DisplayClient
 from xpra.platform.gui import get_xdpi, get_ydpi
 from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
@@ -88,6 +90,11 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     def get_subsystem_classes() -> dict[str, type]:
         classes = dict(UIXpraClient.get_subsystem_classes())
         classes["display"] = Win32DisplayClient
+        if gtk_is_loaded():
+            # `--tray=gtk` (or `auto`): reuse the Gtk dialogs rather than
+            # leaving every menu entry that opens a window unimplemented
+            from xpra.client.gtk3.dialogs import GTKDialogClient
+            classes["dialogs"] = GTKDialogClient
         return classes
 
     def __init__(self):
@@ -201,6 +208,9 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     @staticmethod
     def get_menu_helper_class():
+        if gtk_is_loaded():
+            from xpra.client.win32.gtk_menu import Win32GTKTrayMenu
+            return Win32GTKTrayMenu
         from xpra.client.win32.menu import TrayMenu
         return TrayMenu
 
@@ -384,6 +394,14 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 GObject.type_register(XpraWin32Client)
 
 
-def make_client() -> XpraWin32Client:
+def make_client(opts) -> XpraWin32Client:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
+    # `--tray` decides whether Gtk is loaded at all, and that has to be settled
+    # before the client is constructed: `get_subsystem_classes` composes the
+    # `dialogs` subsystem based on it.
+    # "native" and "no" never load Gtk, so they keep this backend Gtk-free:
+    mode = str(getattr(opts, "tray", "auto")).lower()
+    if mode in TRUE_OPTIONS or mode in ("auto", "gtk"):
+        if not load_gtk() and mode == "gtk":
+            log.warn("Warning: falling back to the native tray menu")
     return XpraWin32Client()

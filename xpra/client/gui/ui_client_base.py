@@ -144,14 +144,76 @@ class UIXpraClient(XpraClientBase):
             info["session-name"] = self.session_name
         return info
 
-    def show_about(self, *_args) -> None:
-        log.warn(f"show_about() is not implemented in {self!r}")
+    ######################################################################
+    # dialogs: every one of these is served by the optional `dialogs`
+    # subsystem, which is toolkit specific (see `xpra.client.gtk3.dialogs`).
+    # They live here rather than on a toolkit client so that any backend
+    # composing a `dialogs` subsystem gets them - the win32 backend reuses
+    # the Gtk one when started with `--tray=gtk`.
+    def _call_dialogs(self, method: str, *args, **kwargs):
+        dialogs = self.get_subsystem("dialogs")
+        if not dialogs:
+            log.warn(f"Warning: {method}() is not implemented in {self!r}")
+            return None
+        return getattr(dialogs, method)(*args, **kwargs)
 
-    def show_session_info(self, *_args) -> None:
-        log.warn(f"show_session_info() is not implemented in {self!r}")
+    def show_about(self, *args) -> None:
+        self._call_dialogs("show_about", *args)
 
-    def show_bug_report(self, *_args) -> None:
-        log.warn(f"show_bug_report() is not implemented in {self!r}")
+    def show_docs(self, *args) -> None:
+        self._call_dialogs("show_docs", *args)
+
+    def show_shortcuts(self, *args) -> None:
+        self._call_dialogs("show_shortcuts", *args)
+
+    def show_session_info(self, *args) -> None:
+        self._call_dialogs("show_session_info", *args)
+
+    def show_bug_report(self, *args) -> None:
+        self._call_dialogs("show_bug_report", *args)
+
+    def show_debug_config(self, *args) -> None:
+        self._call_dialogs("show_debug_config", *args)
+
+    def show_server_commands(self, *args) -> None:
+        self._call_dialogs("show_server_commands", *args)
+
+    def show_start_new_command(self, *args) -> None:
+        self._call_dialogs("show_start_new_command", *args)
+
+    def show_file_upload(self, *args) -> None:
+        self._call_dialogs("show_file_upload", *args)
+
+    def show_ask_data_dialog(self, *args) -> None:
+        self._call_dialogs("show_ask_data_dialog", *args)
+
+    def ask_data_request(self, *args, **kwargs) -> None:
+        self._call_dialogs("ask_data_request", *args, **kwargs)
+
+    def transfer_progress_update(self, *args, **kwargs) -> None:
+        self._call_dialogs("transfer_progress_update", *args, **kwargs)
+
+    def file_size_warning(self, *args) -> None:
+        self._call_dialogs("file_size_warning", *args)
+
+    def download_server_log(self, *args, **kwargs) -> None:
+        self._call_dialogs("download_server_log", *args, **kwargs)
+
+    def send_download_request(self, *args) -> None:
+        self._call_dialogs("send_download_request", *args)
+
+    def configure_server_debug(self, *args) -> None:
+        self._call_dialogs("configure_server_debug", *args)
+
+    ######################################################################
+    # monitors
+    def send_remove_monitor(self, index) -> None:
+        assert self.get_subsystem("display").server_monitors
+        self.send("configure-monitor", "remove", "index", index)
+
+    def send_add_monitor(self, resolution="1024x768") -> None:
+        assert self.get_subsystem("display").server_monitors
+        self.send("configure-monitor", "add", resolution)
 
     def _ui_event(self) -> None:
         if self._ui_events == 0:
