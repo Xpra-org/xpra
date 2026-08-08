@@ -1,4 +1,4 @@
-# ![Memory](../images/icons/server.png) Memory Usage
+# Memory Usage
 
 This document covers how much RAM an xpra session consumes, which
 subsystems and codecs dominate the footprint, and the tunables that
@@ -10,7 +10,11 @@ For sizing the dummy X server's `VideoRam`, see [Xdummy](Xdummy.md).
 For OpenGL applications, see also [OpenGL](OpenGL.md) — `vglrun` has a
 significant memory impact on the X11 server side.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Quick reference
+
+</div>
 
 - Resident set size (`RSS`) of the xpra server and `Xorg` is the
   primary metric.
@@ -28,7 +32,11 @@ significant memory impact on the X11 server side.
   5. Per-window XShm segments (≈ `width × height × bytes_per_pixel`
      each).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Measuring a session
+
+</div>
 
 Every running xpra server now reports the data needed to size and
 diagnose its own memory use through `xpra info`. No extra setup, no
@@ -79,7 +87,11 @@ an XShm wrapper that isn't being released.
 already log warnings when they grow — but they're now also surfaced in
 `xpra info` if you want to track them programmatically.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Baseline numbers
+
+</div>
 
 Test rig: X11 seamless server (Fedora 43, Python 3.14, glibc malloc),
 packaged `xorg.conf`, GTK3 Python client on the same host, single
@@ -112,7 +124,11 @@ Notes:
   ~6 MB (freedesktop menu cache + IBus keymap), with no functional
   impact on a basic `xterm` session.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Tunables
+
+</div>
 
 Each row is one option, toggled in isolation against the baseline. ΔRSS
 columns show the saving (or cost) on the relevant process.
@@ -202,7 +218,11 @@ works.
 
 See [OpenGL](OpenGL.md) for VirtualGL setup and caveats.
 
+<div class="docs-section-heading" markdown="1">
+
 ## XShm accounting
+
+</div>
 
 XShm (`MIT-SHM`) is a SysV shared memory segment created by xpra and
 attached to **both** xpra (so the encoder reads pixels) and Xorg (so
@@ -228,7 +248,11 @@ that ~8 MB will appear in **both** Xorg's and xpra's `RSS`. A naive
 xpra info :100 | grep -E '\.(pss|sysv_shm\.bytes)$'
 ```
 
+<div class="docs-section-heading" markdown="1">
+
 ## X11 server (`Xorg` / Xdummy) memory behaviour
+
+</div>
 
 - **The vfb's RSS stays high even after a client application
   terminates.** When an X11 client (Firefox, a game, …) exits, its
@@ -247,7 +271,11 @@ xpra info :100 | grep -E '\.(pss|sysv_shm\.bytes)$'
   kernel pages pixmaps back in, but capacity-wise the host doesn't
   need to keep all of `VideoRam` resident.
 
+<div class="docs-section-heading" markdown="1">
+
 ## References / further reading
+
+</div>
 
 - The Linux `proc(5)` manual page documents
   `/proc/<pid>/status` (`VmRSS`, `RssAnon`, `RssShmem`, …) and
@@ -262,7 +290,11 @@ xpra info :100 | grep -E '\.(pss|sysv_shm\.bytes)$'
 - [OpenGL.md](OpenGL.md) — xpra's OpenGL configuration matrix.
 - [Xdummy.md](Xdummy.md) — sizing the dummy X server's framebuffer.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Developer notes
+
+</div>
 
 `XPRA_MEMORY_DEBUG=1` (with optional `XPRA_MEMORY_DEBUG_INTERVAL=<ms>`,
 default 5000) on the server starts a background thread that logs

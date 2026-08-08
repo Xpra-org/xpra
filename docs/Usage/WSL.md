@@ -1,7 +1,11 @@
 # WSL - Windows Subsystem for Linux
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## OpenGL acceleration
+
+</div>
 This setup results in this output from `glxinfo -B`:
 <details markdown="1">
   <summary>glxinfo</summary>

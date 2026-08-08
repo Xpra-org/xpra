@@ -2,6 +2,11 @@
 
 This service is only included in full builds.
 
+<div class="docs-section-heading" markdown="1">
+
+## Installation and management
+
+</div>
 
 The [`Xpra-Service.cpp`](https://github.com/Xpra-org/xpra/blob/master/packaging/MSWindows/service/Xpra-Service.cpp)
 is compiled into `Xpra-Service.exe` using `vscode` or just via `msbuild` during the build.
@@ -15,6 +20,12 @@ The xpra `.exe` installer should have created the registry key `HKLM\Software\Xp
 typically pointing to `C:\Program Files\Xpra`.
 
 The `start` action for this service will run `Xpra-Proxy.exe start` from this `InstallPath`.
+
+<div class="docs-section-heading" markdown="1">
+
+## Proxy behavior
+
+</div>
 
 The `Xpra-Proxy.exe` scripts is a simple delegation wrapper ([source](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/win32/scripts/proxy.py))
 packaged as a GUI application which just calls

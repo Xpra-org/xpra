@@ -1,9 +1,13 @@
-# ![Webcam](../images/icons/webcam.png) Webcam
+# Webcam
 
 For usage related information, see [webcam feature](../Features/Webcam.md).
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 The prefix for all packets and capabilities is `webcam`.
 
@@ -14,7 +18,11 @@ The prefix for all packets and capabilities is `webcam`.
 | server            | [xpra.server.subsystem.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/webcam.py) |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 The client exposes a single `webcam` boolean capability. \
 The server exposes the following attributes using the  `webcam` capability prefix:
@@ -23,7 +31,11 @@ The server exposes the following attributes using the  `webcam` capability prefi
 * `devices` integer - the number of virtual video devices available
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 | Packet Type           | Arguments                                                      | Direction        |
 |-----------------------|----------------------------------------------------------------|------------------|

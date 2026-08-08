@@ -7,7 +7,11 @@ alternative clients exist, with varying degrees of completeness.
 Servers negotiate their capabilities with each client during the `hello` handshake, so features that a client does not
 implement are simply not enabled for that connection.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Client implementations
+
+</div>
 
 | Client                                               | Maintained by                                | License |
 |------------------------------------------------------|----------------------------------------------|---------|
@@ -24,7 +28,11 @@ builtin web server will pick up `xpra-html5` automatically when it is installed.
 The `rust` and `go` clients are smaller native implementations with a deliberately limited feature set, also used
 for validating the protocol.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Project size and build
+
+</div>
 
 These are not the same kind of project, and what it costs to build and ship them differs by two orders of magnitude:
 
@@ -46,7 +54,11 @@ Build times are wall clock, from cold, on one 8 thread x86_64 desktop, with the 
 xpra's is long enough to matter, and it is much longer on the two platforms that also build the toolchain, the
 bundled libraries and an installer.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Feature comparison
+
+</div>
 
 This comparison should be correct as of **2026-08-02 00:20 +0700**, the last time it was checked
 against each client's repository.
@@ -239,7 +251,11 @@ Minimal client, usable on three window systems: Linux X11, Linux Wayland and MS 
 | Remote logging / events  | Server lifecycle events and pings; no client-side remote logging                                                                                                     |
 | Bandwidth adaptation     | Pings only                                                                                                                                                           |
 
+<div class="docs-section-heading" markdown="1">
+
 ## See also
+
+</div>
 
 * [Xpra client](./Client.md) - the default client: launcher, session files, URL mapping and command line
 * [Client OpenGL](./Client-OpenGL.md) - accelerated window rendering in the default client
@@ -247,7 +263,11 @@ Minimal client, usable on three window systems: Linux X11, Linux Wayland and MS 
 * [Network protocol](../Network/Protocol.md) - what a client implementation has to support
 * [Subsystems](../Subsystems/README.md) - the feature modules found on both ends of the connection
 
+<div class="docs-section-heading" markdown="1">
+
 ## Defunct clients
+
+</div>
 
 These clients are no longer maintained and will not work with the
 [currently supported versions](https://github.com/Xpra-org/xpra/wiki/Versions) of the xpra server.\

@@ -12,7 +12,11 @@ This page covers both. See also: [network](README.md), [SSL](SSL.md), [authentic
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## What this adds to xpra
+
+</div>
 
 RFB is a single-framebuffer protocol: a session is one screen of pixels, with pointer and keyboard
 input, an optional text clipboard and a server-rendered cursor. It has no concept of individual
@@ -33,7 +37,11 @@ the remote cursor locally, and synchronizes the text clipboard in both direction
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Using xpra as a VNC server
+
+</div>
 
 Any [desktop](../Usage/Desktop.md) or [shadow](../Usage/Shadow.md) server can listen for VNC clients
 by adding a `bind-rfb` socket:
@@ -63,7 +71,11 @@ xpra desktop --start=xterm --bind-tcp=0.0.0.0:10000 --rfb-upgrade=5
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Connecting to a real VNC server
+
+</div>
 
 Use a `vnc://` URL (the `rfb://` scheme is an alias). The default port is `5900`:
 
@@ -186,7 +198,11 @@ This logs in over SSH and connects to `vnc://localhost:5902/` on the remote host
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities and limitations (VNC client)
+
+</div>
 
 The VNC client is intended to be lightweight and interoperable, not a full-featured VNC viewer.
 

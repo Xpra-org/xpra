@@ -1,4 +1,4 @@
-# ![Debian](../images/icons/debian.png)   ![Ubuntu](../images/icons/ubuntu.png) Building DEB packages
+# ![Ubuntu](../images/icons/ubuntu.png) Building DEB packages
 
 The debian packaging files can be found here: [packaging/debian](https://github.com/Xpra-org/xpra/blob/master/packaging/debian).
 
@@ -6,7 +6,11 @@ Debian and Ubuntu also ships xpra packages, though their _stable_ versions are c
 
 For general information, see [building](README.md).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Build requirements
+
+</div>
 The easiest way to install the build dependencies
 is using the `dev-env` build subcommand which will honour setup arguments. ie:
 ```shell
@@ -144,7 +148,11 @@ apt-get install cups-filters cups-common cups-pdf python3-cups
 ```
 </details>
 
+<div class="docs-section-heading" markdown="1">
+
 ## Local Installation
+
+</div>
 
 Please make sure to remove any packages before installing from source.
 ```shell
@@ -154,7 +162,11 @@ cp fs/bin/* /bin/
 ```
 You may also need to `export SETUPTOOLS_USE_DISTUTILS=stdlib`
 
+<div class="docs-section-heading" markdown="1">
+
 ## DEB Packaging
+
+</div>
 Install the packaging tools
 ```shell
 apt-get install devscripts build-essential lintian debhelper pandoc

@@ -1,10 +1,14 @@
-# ![Clipboard](../images/icons/clipboard.png) Clipboard
+# Clipboard
 
 This feature allows you to copy from outside the xpra session and paste inside it, and vice versa.
 For various reasons, this doesn't always work quite as well as expected - see below for more details.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Platform specific issues:
+
+</div>
 * Mac OSX and MS Windows clients only have a single clipboard selection whereas X11 has three: `CLIPBOARD`, `PRIMARY` and `SECONDARY`; therefore we need to choose which one to exchange with: see `local-clipboard` and `remote-clipboard` switches
 * Mac OSX and MS Windows clients synchronize the remote `PRIMARY` selection by default: see [selections](#selections) below
 * on MS Windows, the OS requests the clipboard data as soon as we claim ownership
@@ -12,7 +16,11 @@ For various reasons, this doesn't always work quite as well as expected - see be
 * the HTML5 client can only access the clipboard when the browser decides it is appropriate to do so: usually following clicks or specific key combinations, it may also request permission once and this cannot be easily enabled afterwards once it has been denied
 * Wayland severely restricts access to the clipboard, making it impossible to synchronize it properly
 
+<div class="docs-section-heading" markdown="1">
+
 ## Configuration Options
+
+</div>
 * `clipboard`: `auto`, `yes`, `no`, `all`, or the name of a clipboard implementation
 * `clipboard-direction`: can be used to restrict the direction of the clipboard data transfers. This setting is also available from the system tray menu.
 * `clipboard-filter-file`: can be used to filter out clipboard contents using a file containing regular expressions
@@ -32,7 +40,11 @@ On Mac OSX and MS Windows clients, this adds the `PRIMARY` selection, which is h
 This is implemented by `PrimaryProxyMixin` in [xpra/clipboard/primary.py](../../xpra/clipboard/primary.py), which both platform backends share.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Technical Constraints
+
+</div>
 Clipboard support is an ongoing struggle.
 
 You must ensure that there are no other clipboard synchronization tools already running as those are very likely to interfere and cause synchronization loops, wasted bandwidth, trigger application bugs, etc
@@ -63,7 +75,11 @@ just add `-d clipboard` to your xpra command line.
 </details>
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Useful Pointers
+
+</div>
 For low level implementation details, see [clipboard subsystem](../Subsystems/Clipboard.md).
 
 * [How does X11 clipboard handle multiple data formats?](http://stackoverflow.com/questions/3571179/how-does-x11-clipboard-handle-multiple-data-formats)

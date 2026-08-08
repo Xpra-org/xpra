@@ -1,7 +1,11 @@
-# ![package](../images/icons/package.png) Building RPMs
+# Building RPMs
 
+
+<div class="docs-section-heading" markdown="1">
 
 ## Repositories
+
+</div>
 You must enable the following repositories to be able to install all the build dependencies:
 
 | Distributions     | Dependency                                         | Installation                                         | Notes                                                  |
@@ -11,7 +15,11 @@ You must enable the following repositories to be able to install all the build d
 | RHEL 9 and clones | `CRB`                                              | `dnf config-manager --set-enabled crb`               |
 | All               | [rpmfusion](https://rpmfusion.org/)                | [configuration](https://rpmfusion.org/Configuration) |
 
+<div class="docs-section-heading" markdown="1">
+
 ## Install Build Requirements
+
+</div>
 The spec file can be found here:
 https://github.com/Xpra-org/xpra/tree/master/packaging/rpm/xpra.spec
 
@@ -28,12 +36,20 @@ you can use the `dev-env` build subcommand which will honour setup arguments. ie
 _(available in xpra v6.1 onwards)_
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Build
+
+</div>
 ```shell
 python3 ./setup.py install
 ```
 
+<div class="docs-section-heading" markdown="1">
+
 ## ![RPM](../images/icons/rpm.png)
+
+</div>
 The quick and easy way:
 ```shell
 mkdir -p ~/rpmbuild/SOURCES/ >& /dev/null

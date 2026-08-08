@@ -19,7 +19,11 @@ xpra seamless -d focus --start=xterm
 </details>
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Logging Categories
+
+</div>
 Use the special category value `all` to enable all logging. (this will be very verbose and should be avoided)\
 You can also prefix a logging category with a dash "`-`" to disable debug logging for it.
 <details markdown="1">
@@ -174,7 +178,11 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Runtime changes
+
+</div>
 
 Logging settings can be modified at runtime:
 <details markdown="1">
@@ -210,7 +218,11 @@ The debug control commands are also available through the server's dbus interfac
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Extra Detailed Logging
+
+</div>
 Some subsystems require special environment variables to enable logging, this is done to minimize the cost of logging in performance critical paths.\
 In particular the X11 bindings, as those can process thousands of events per second.
 

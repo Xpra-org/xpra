@@ -7,7 +7,11 @@ in particular sending updated screen configuration whenever the number of monito
 The client may also apply scaling, which changes the display size exposed to the server. \
 This can be used to reduce the amount of pixels needed to cover a monitor.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 | Component         | Link                                                                                                           |
 |-------------------|----------------------------------------------------------------------------------------------------------------|
@@ -16,7 +20,11 @@ This can be used to reduce the amount of pixels needed to cover a monitor.
 | server            | [xpra.server.subsystem.display](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/display.py) |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 | Capability              | Value                       | Information                             |
 |-------------------------|-----------------------------|-----------------------------------------|
@@ -28,7 +36,11 @@ This can be used to reduce the amount of pixels needed to cover a monitor.
 
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 | Packet Type                  | Direction        | Arguments                                               | Information                                                                              |
 |------------------------------|------------------|---------------------------------------------------------|------------------------------------------------------------------------------------------|

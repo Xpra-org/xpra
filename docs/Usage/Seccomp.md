@@ -14,7 +14,11 @@ exploit of one of those threads could do.
 **Linux only** (it has no effect on other platforms) and **disabled by default**.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## What it protects
+
+</div>
 
 Xpra installs a separate, thread-local filter on each of the threads that handle
 untrusted input:
@@ -30,7 +34,11 @@ running normally. The same filters are available whether xpra is running as a
 client, a server or a [proxy](Proxy-Server.md).
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Enabling it
+
+</div>
 
 Use the `--seccomp` command line option:
 
@@ -64,7 +72,11 @@ violations simply fail) to confirm your normal workflow is unaffected, and only
 then switch to `--seccomp=strict` for full enforcement.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Actions
+
+</div>
 
 The *action* decides what happens when a sandboxed thread attempts a syscall that
 is not on its allow-list:
@@ -80,7 +92,11 @@ is not on its allow-list:
 `--seccomp=default` uses `errno`, `--seccomp=strict` uses `kill_process`.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Things to be aware of
+
+</div>
 
 * **File transfers and URL opening.** When a *fatal* action is used (`strict`,
   `kill`, `kill_process`), receiving a file or an [`open-url`](../Features/File-Transfers.md)
@@ -107,7 +123,11 @@ is not on its allow-list:
   accepting VNC clients is not covered by the `rfb` filter.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Diagnosing and tuning
+
+</div>
 
 Different transports (TLS, QUIC, WebSocket) and platforms may need a slightly
 different set of syscalls. If a filter is too strict for your setup, two modes
@@ -133,7 +153,11 @@ help you find the missing syscall:
 To turn on xpra's own logging of the filter installation, add `-d seccomp`.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Environment variables
+
+</div>
 
 The `--seccomp` option is a convenience wrapper: it sets a handful of environment
 variables early enough for the threads to pick them up. You can also set them
@@ -158,13 +182,21 @@ Each `*_ACTION` accepts `errno`, `kill`, `kill_thread`, `kill_process`, `log` or
 
 ---
 
-# Technical details
+<div class="docs-section-heading" markdown="1">
+
+## Technical details
+
+</div>
 
 The rest of this document describes how the filters are implemented and how the
 threads were audited. It is only relevant if you want to understand or extend the
 sandboxing - end users can stop reading here.
 
+<div class="docs-section-heading" markdown="1">
+
 ## How it works
+
+</div>
 
 Each filter is a per-thread [`seccomp`](https://www.kernel.org/doc/html/latest/userspace-api/seccomp_filter.html)
 BPF allow-list, built with `libseccomp` in the native helper
@@ -207,7 +239,11 @@ before subsystem setup. Menu loading posts completion callbacks to this worker;
 creating it lazily from the filtered menu thread would make unrelated work inherit
 the menu policy.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Syscall lists
+
+</div>
 
 `xpra/seccomp/draw.py` defines a permissive `BASE_SYSCALLS` baseline. From it:
 
@@ -283,7 +319,11 @@ It only runs when a filter is actually going to be installed, and `XPRA_MALLOC_P
 turns it off (at the risk of that `SIGSYS` at shutdown) should it ever misbehave on a
 different libc.
 
+<div class="docs-section-heading" markdown="1">
+
 ## The decode thread
+
+</div>
 
 The sandboxed decoding thread is not draw-specific: it is a shared worker owned by the
 `decode` subsystem (`xpra/client/subsystem/decode.py`), and any client subsystem can post
@@ -339,7 +379,11 @@ One consequence: `notification-show` now waits for its icons, so `notification-c
 posted through the same FIFO queue even though it has nothing to decode - otherwise a close
 could overtake the show it refers to and leave the notification stuck on screen.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Thread coverage
+
+</div>
 
 Four thread roles carry filters today: **decode**, **parse**, client-side **rfb** and
 **menu loading**. The rest of the thread inventory, and why each is or is not sandboxed:
@@ -392,7 +436,11 @@ parser. Once upgraded, WS frames are unmasked and fed into the filtered parse
 thread, so the websocket data plane is already covered. The handler also serves the
 HTML5 client from disk (needs `openat`), so it could not be sandboxed anyway.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Packet handler audit
+
+</div>
 
 The parse thread runs packet handlers inline, so the filter also covers them.
 Handlers that do file I/O or spawn subprocesses are the ones that trip a fatal
@@ -456,7 +504,11 @@ joins the thread, so any in-flight write completes before teardown
 (`XPRA_FILE_IO_JOIN_TIMEOUT`, default 5s). Set `XPRA_FILE_IO_THREAD=0` to run the
 work inline on the parse thread instead (the previous behaviour).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Future work
+
+</div>
 
 * The parse allow-list now drops file access, but this has only been reasoned
   through statically - validate a real deployment in `log` mode

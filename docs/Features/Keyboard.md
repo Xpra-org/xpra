@@ -1,9 +1,13 @@
-# ![Keyboard](../images/icons/keyboard.png) Keyboard
+# Keyboard
 
 Keyboard handling is an area that is constantly seeing improvements and bug fixes.
 That's because each platform does things slightly differently and xpra has to somehow convert this data into meaningful keyboard events on the remote end.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Xpra Keyboard Shortcuts
+
+</div>
 
 Xpra utilizes keyboard shortcuts to facilitate quick access to its features.
 
@@ -23,7 +27,11 @@ In the Xpra Keyboard Shortcuts window, the `#` placeholder is named as "Prefix:"
 
 ![The Xpra Keyboard Shortcuts window as of v5.0.5-r27 in Ubuntu 20.04](Keyboard-Shortcut-Window.png "Xpra Keyboard Shortcuts Window in Ubuntu 20.04")
 
+<div class="docs-section-heading" markdown="1">
+
 ## Common Issues
+
+</div>
 * When connecting over high latency links, use the `--no-keyboard-sync` option to prevent keys from repeating.
   This toggle is also accessible from the system tray menu. (this switch may cause other problems though)
 * US layout and most common layouts should work OK
@@ -34,7 +42,11 @@ In the Xpra Keyboard Shortcuts window, the `#` placeholder is named as "Prefix:"
 * Input grabs: [#139](https://github.com/Xpra-org/xpra/issues/139)
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Reporting Bugs
+
+</div>
 First, please check for existing issues that may match your problem.
 Failing that, make sure to read the [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs) guidelines,
 and generally you will need to include (only those that apply):

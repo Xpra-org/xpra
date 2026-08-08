@@ -6,6 +6,11 @@ The tools required for building all of these projects are not listed here. \
 Typically, you will need: `gcc` or `clang`, `gnu-make`, `libiconv`, `gettext`, `cmake`, `autoconf`, `automake`, `pkg-config` or `pkgconf`, `bison`, `flex`, `intltool`, etc
 For building xpra itself and some of the python modules, you will also need [Cython](https://cython.org/)
 
+<div class="docs-section-heading" markdown="1">
+
+## Dependency groups
+
+</div>
 
 <details markdown="1">
   <summary>Core Dependencies</summary>

@@ -7,7 +7,11 @@ and the client.
 The prefix for all packets and capabilities is `cursor`.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 | Component         | Link                                                                                                          |
 |-------------------|---------------------------------------------------------------------------------------------------------------|
@@ -16,7 +20,11 @@ The prefix for all packets and capabilities is `cursor`.
 | server            | [xpra.server.subsystem.cursor](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/cursor.py)  |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Client Capabilities
+
+</div>
 
 | Capability     | Type             | Purpose                                                |
 |----------------|------------------|--------------------------------------------------------|
@@ -27,7 +35,11 @@ The supported encodings are:
 * `png`: pixel data compressed using lossless full color `PNG`
 * `default`: the client can update the default cursor
 
+<div class="docs-section-heading" markdown="1">
+
 ## Server Capabilities
+
+</div>
 
 | Capability     | Type               | Purpose                                   |
 |----------------|--------------------|-------------------------------------------|
@@ -57,7 +69,11 @@ The supported encodings are:
 ```
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 | Packet Type      | Direction        | Arguments          | Purpose                                      |
 |------------------|------------------|--------------------|----------------------------------------------|

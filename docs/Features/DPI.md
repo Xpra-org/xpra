@@ -5,21 +5,33 @@ This may affect fonts, window sizes, cursors sizes, etc.
 
 See also: [image depth](Image-Depth.md)
 
+<div class="docs-section-heading" markdown="1">
+
 ## Important caveats:
+
+</div>
 * support varies greatly depending on the operating system and version, desktop environment, number of monitors attached and their resolution, etc
 * with X11, there are far too many places where the DPI can be looked up, many places where it can be overridden
 * for virtualized "hardware DPI" which some applications calculate from the virtual monitor dimensions, you will need a v0.4.0 or later [Xdummy](../Usage/Xdummy.md) driver. With Xvfb or with older versions of the `dummy` driver, the hardware DPI - as reported by `xdpyinfo` - cannot be updated at runtime and must be set in advance, either in the `/etc/xpra/xorg.conf` file or on the `Xvfb` command line
 * many applications will not reload the DPI settings, so they must be started _after_ the client connects to get the correct DPI value (you may want to use `start-after-connect`)
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Debugging
+
+</div>
 For [debugging](../Debugging.md) or [reporting issues](https://github.com/Xpra-org/xpra/issues/new), the most relevant pieces of information can be collected from:
 * client and server debug output with `-d dpi` command line switch
 * `xdpyinfo` output
 * `xrandr` output
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Technical details
+
+</div>
 * [Physical vs logical DPI on X](https://www.mail-archive.com/xorg-devel@lists.x.org/msg57713.html)
 * [Of DPIs, desktops, and toolkits](https://www.happyassassin.net/2015/07/09/of-dpis-desktops-and-toolkits/)
 * win32 API:
@@ -39,7 +51,11 @@ For [debugging](../Debugging.md) or [reporting issues](https://github.com/Xpra-o
 * with `Gnome`, there are many more scaling and font settings, ie: `gsettings set org.gnome.desktop.interface text-scaling-factor 1.5`
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## xpra DPI issues
+
+</div>
 * [#882](https://github.com/Xpra-org/xpra/issues/882) Do not use Debian or Ubuntu - these distributions seem unable to run `dummy` properly
 * [Ubuntu packaging problems](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages-Ubuntu)
 * [#697](https://github.com/Xpra-org/xpra/issues/697) GTK screen dimension detection is broken with high DPI displays on windows7 and later

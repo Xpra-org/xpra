@@ -7,7 +7,11 @@ These statistics do not include the build or packaging files.
 The binary package sizes vary widely, see for example [lightweight win32 installations](https://github.com/Xpra-org/xpra/issues/4100).
 
 
-# Metrics
+<div class="docs-section-heading" markdown="1">
+
+## Metrics
+
+</div>
 
 | Ref | Branch Date | Files | SLOC | Py Files | Py SLOC | Pyx Files | Pyx SLOC | Modules | Codecs | Commits Since Base |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -18,7 +22,11 @@ The binary package sizes vary widely, see for example [lightweight win32 install
 | v3.1.x | 2019 | 575 | 124,452 | 491 | 101,459 | 52 | 19,828 | 543 | 19 | 2,130 |
 | v1.0.x | 2016 | 373 | 78,116 | 320 | 64,215 | 37 | 13,675 | 357 | 20 | 777 |
 
+<div class="docs-section-heading" markdown="1">
+
 ## Copyrights
+
+</div>
 
 | Holder | File Count | Files |
 | --- | ---: | --- |
@@ -46,15 +54,27 @@ The binary package sizes vary widely, see for example [lightweight win32 install
 
 ---
 
-# Quality
+<div class="docs-section-heading" markdown="1">
 
-# Sonarqube:
+## Quality
+
+</div>
+
+<div class="docs-section-heading" markdown="1">
+
+## Sonarqube:
+
+</div>
 ![Sonarqube](./sonarqube-overview.png)
 Updated 2025-08-13
 
 The code coverage is not currently recorded by sonarqube.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Github Workflows
+
+</div>
 
 The [unit tests](https://github.com/Xpra-org/xpra/tree/master/tests/unittests)
 are run with every `git push` via [`test.yml`](https://github.com/Xpra-org/xpra/blob/master/.github/workflows/test.yml).
@@ -63,7 +83,11 @@ The source code is also compiled with [extra cythonization](https://github.com/X
 which takes advantage of type hints to verify stronger type safety.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Other linters used
+
+</div>
 
 * `pycharm` builtin linter, during development
 * `ruff` via a [git pre-commit hook](https://github.com/Xpra-org/xpra/blob/master/.pre-commit-config.yaml)

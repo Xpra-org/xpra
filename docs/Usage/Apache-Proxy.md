@@ -5,7 +5,11 @@ Just like xpra's proxy, the apache proxy can provide multiple sessions, potentia
 
 This works well with both the [html5 client](https://github.com/Xpra-org/xpra-html5) and the regular xpra client with `ws://` and `wss://` URLs.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Example Configuration
+
+</div>
 ```shell
 cat > /etc/httpd/conf.modules.d/20-proxy.conf << EOF
 <Location "/xpra1">
@@ -28,7 +32,11 @@ cat > /etc/httpd/conf.modules.d/20-proxy.conf << EOF
 EOF
 ```
 
+<div class="docs-section-heading" markdown="1">
+
 ## Usage
+
+</div>
 Start the xpra servers defined in the apache configuration above:
 ```shell
 xpra seamless --bind-tcp=0.0.0.0:20001 --start=xterm

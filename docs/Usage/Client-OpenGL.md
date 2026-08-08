@@ -1,62 +1,99 @@
-![OpenGL](../images/icons/opengl.png)
+# Client OpenGL acceleration
 
-The native client can use OpenGL for better window rendering performance.
+The native Xpra client can use OpenGL to render forwarded windows efficiently.
+This is a client-side feature: it is separate from the [OpenGL support for
+applications running in an Xpra session](OpenGL.md).
 
-This is in no way related to the [OpenGL capabilities of the server](OpenGL.md).
+## How it works
 
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
 
-# Configuration
-This feature normally enabled by default if all the required components are installed correctly, which should be the case with the official packages.
-This acceleration is not currently supported with Wayland clients.
+### Automatic setup
 
-During startup, the client will probe the operating system's OpenGL capabilities to ensure that this acceleration can be enabled safely.\
-This check may take a few seconds to complete. It can be skipped using the `opengl=yes` option, alternatively acceleration can be disabled completely with `opengl=no`.
+Official packages include the required components and enable client OpenGL by
+default where the native client supports it. At startup, Xpra probes the local
+OpenGL implementation before enabling acceleration. The probe may take a few
+seconds.
 
-The client will only actually enable this acceleration for some windows as OpenGL acceleration provides no real benefit for very small windows, ephemeral windows or windows that do not receive many screen updates.
+</section>
 
+<section class="docs-card" markdown="1">
 
-# Benefits
-The window's pixels are kept in GPU buffers and so re-painting the window can be done quickly and efficiently.
+### Selective rendering
 
-Some screen updates, in particular for some of the [video codecs](Encodings.md), can also be processed directly on the GPU - at least partially.
+Xpra does not use OpenGL for every window. Small, short-lived, or rarely
+updated windows are normally rendered without it because acceleration would
+not provide a measurable benefit.
 
+</section>
 
-# GPUs and drivers
-Due to some known bugs and incompatibilities, some drivers are disabled by default. (see [gl driver list](https://github.com/Xpra-org/xpra/blob/master/xpra/opengl/drivers.py))
+<section class="docs-card docs-card-wide" markdown="1">
 
-Basic information about the OpenGL driver in use can be found in the "Features" pane of the "Session Info" dialog or the client's command line output.\
-For more details, run `xpra opengl`. On MS Windows, there is an `OpenGL_check.exe` shortcut.
+### GPU-backed pixels
 
+Window pixels are kept in GPU buffers, making repaints faster. Some updates,
+including parts of the [video codec](Encodings.md) pipeline, can also be
+processed directly on the GPU.
 
-# Intel Driver Issues
+</section>
+</div>
+
+## Configure acceleration
+
+The client checks OpenGL automatically. Override that decision with the
+`opengl` option:
+
+```shell
+# Skip the safety probe and enable OpenGL
+xpra attach --opengl=yes
+
+# Disable client OpenGL completely
+xpra attach --opengl=no
+```
+
+Use `opengl=yes` only when you understand the driver and have verified that it
+is stable. If the native client is running on a Wayland display, client OpenGL
+acceleration is not currently available.
+
+## Inspect the driver
+
+Open the **Features** pane in **Session Info** or check the client startup
+output for basic driver information. For a detailed report, run:
+
+```shell
+xpra opengl
+```
+
+On Windows, the **OpenGL_check.exe** shortcut provides the same diagnostic
+probe.
+
+Xpra keeps a small list of drivers that are known to be unsafe or unsuitable;
+see the [driver list](https://github.com/Xpra-org/xpra/blob/master/xpra/opengl/drivers.py)
+for the current values. Software renderers such as `llvmpipe` are treated
+differently from hardware drivers because they provide no GPU acceleration.
+
+### Intel drivers
+
+Intel hardware is not currently greylisted. Older Xpra releases did greylist
+Intel drivers for a long period because of rendering glitches and crashes in
+some driver versions. The historical reports remain useful when diagnosing an
+older release or a particular legacy driver:
+
 <details markdown="1">
-  <summary>Why is the Intel opengl driver greylisted?</summary>
+<summary>Historical Intel driver reports</summary>
 
-Because it doesn't work very well.
-See:
-* [#1367 enable more opengl chipsets](https://github.com/Xpra-org/xpra/issues/1367)
-* [#1233 whitelist some more intel chipsets](https://github.com/Xpra-org/xpra/issues/1233)
-* [#1364 painting random window as solid white upon connection](https://github.com/Xpra-org/xpra/issues/1364)
-* window resizing problems: [#1469](https://github.com/Xpra-org/xpra/issues/1469) / [#1468](https://github.com/Xpra-org/xpra/issues/1468)
-* [#1050 fullscreen crash on win32](https://github.com/Xpra-org/xpra/issues/1050)
-* [#1024 `glTexParameteri` error](https://github.com/Xpra-org/xpra/issues/1024)
-* [#968 rendering dimensions](https://github.com/Xpra-org/xpra/issues/968)
-* [#809 rendering fails](https://github.com/Xpra-org/xpra/issues/809)
-* OSX crashes: [#808](https://github.com/Xpra-org/xpra/issues/808) / [#563](https://github.com/Xpra-org/xpra/issues/563) / [#1087](https://github.com/Xpra-org/xpra/issues/1087)
-* [#745 windows greyed out](https://github.com/Xpra-org/xpra/issues/745)
-* [#565 Linux opengl errors](https://github.com/Xpra-org/xpra/issues/565)
-* [#147 original feature ticket - odd behaviour already reported](https://github.com/Xpra-org/xpra/issues/147)
-* [#1358 glclear bug in driver](https://github.com/Xpra-org/xpra/issues/1358)
-* [#1362 high cpu usage due to non-opengl rendering](https://github.com/Xpra-org/xpra/issues/1362)
-* [#3633 Windows→Windows connection: unwanted window transparency](https://github.com/Xpra-org/xpra/issues/3633)
+- [#1367](https://github.com/Xpra-org/xpra/issues/1367) enable more OpenGL chipsets
+- [#1233](https://github.com/Xpra-org/xpra/issues/1233) whitelist more Intel chipsets
+- [#1364](https://github.com/Xpra-org/xpra/issues/1364) random window painted solid white
+- [#1469](https://github.com/Xpra-org/xpra/issues/1469) and [#1468](https://github.com/Xpra-org/xpra/issues/1468) window resizing problems
+- [#1024](https://github.com/Xpra-org/xpra/issues/1024) `glTexParameteri` errors
+- [#968](https://github.com/Xpra-org/xpra/issues/968) rendering dimensions
+- [#809](https://github.com/Xpra-org/xpra/issues/809) rendering failures
 </details>
 
-# `OpenGL` Reference Links
-* [mesamatrix](https://mesamatrix.net/): mesa driver implementation coverage
-* [opengl.org wiki](https://www.opengl.org/wiki/Main_Page)
-* [open.gl](http://open.gl/) _This guide will teach you the basics of using OpenGL to develop modern graphics applications_
-* [opengl-tutorial.org](http://www.opengl-tutorial.org/) _This site is dedicated to tutorials for OpenGL 3.3 and later !_
-* [OpenGL 2 Tutorials](http://www.swiftless.com/opengltuts.html) at [swiftless.com](http://www.swiftless.com)
-* [wikibooks.org: OpenGL Programming](http://en.wikibooks.org/wiki/OpenGL_Programming)
-* [Premultiplied Alpha (in OpenGL)](http://blog.rarepebble.com/111/premultiplied-alpha-in-opengl/)
-* [Modern OpenGL tutorial (python)](http://www.labri.fr/perso/nrougier/teaching/opengl/)
+## Further reading
+
+- [Mesa driver documentation](https://docs.mesa3d.org/)
+- [Mesa renderer coverage](https://mesamatrix.net/)
+- [OpenGL wiki](https://www.opengl.org/wiki/Main_Page)

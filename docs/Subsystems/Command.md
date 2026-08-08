@@ -4,7 +4,11 @@
 This subsystem allows clients to execute new commands on the server.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 | Component         | Link                                                                                                           |
 |-------------------|----------------------------------------------------------------------------------------------------------------|
@@ -13,7 +17,11 @@ This subsystem allows clients to execute new commands on the server.
 | server            | [xpra.server.subsystem.command](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/command.py) |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Client Capabilities
+
+</div>
 
 | Capability | Type    | Purpose                                                                  |
 |------------|---------|--------------------------------------------------------------------------|
@@ -21,7 +29,11 @@ This subsystem allows clients to execute new commands on the server.
 
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 ### Server-to-Client
 

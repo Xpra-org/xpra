@@ -1,14 +1,22 @@
-# ![QUIC](../images/icons/quic.png) QUIC Transport
+# QUIC Transport
 
 See also [network](README.md)
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Overview
+
+</div>
 
 QUIC is a new low-latency encrypted transport protocol, built on top of UDP.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Packaging
+
+</div>
 The [xpra.org RPM repositories](https://github.com/Xpra-org/xpra/wiki/Download) include the dependencies required
 for running QUIC servers and clients for most distributions, namely `aioquic` and its dependencies.
 
@@ -21,11 +29,19 @@ pip3.XX install certifi pyOpenSSL cryptography
 ```
 (be aware that these packages will not receive security updates from your package manager)
 
+<div class="docs-section-heading" markdown="1">
+
 ## SSL Options
+
+</div>
 SSL encryption is built into the QUIC protocol, so you need to provide the same
 configuration options as [SSL](SSL.md).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Notes
+
+</div>
 * QUIC is UDP based, you need to open the UDP port of your choosing on your firewall.
 * [some tuning](https://github.com/Xpra-org/xpra/issues/3376#issuecomment-1311271256) may be needed
 * xpra version 5.0 or later is required

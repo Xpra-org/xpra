@@ -1,11 +1,15 @@
-# ![Webcam](../images/icons/webcam.png) Webcam
+# Webcam
 
 This feature allows client webcams attached to be exposed to the applications running on the server.
 
 The webcam is not forwarded by default unless the webcam command line option enabled, or the webcam is activated manually from the system tray menu.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Installation
+
+</div>
 Clients use a platform capture backend: DirectShow on MS Windows, AVFoundation on MacOS,
 and [libcamera](https://libcamera.org/) on Linux.
 
@@ -18,13 +22,21 @@ Some distributions may load the module with the wrong setting: `exclusive_caps=1
 The user running the xpra session must be able to access the video devices (ie: usually requires adding the user to the `video` group)
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Usage
+
+</div>
 The server should work out of the box provided that the kernel module is loaded.
 
 You can enable the webcam from the client's system tray menu, or using the command line option `webcam=on`, you can also specify which video device to forward on the command line `--webcam=/dev/video2`.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Limitations
+
+</div>
 * only supported with Linux servers
 * work in progress, see [#1030](https://github.com/Xpra-org/xpra/issues/1030)
 * framerate is low
@@ -36,7 +48,11 @@ You can enable the webcam from the client's system tray menu, or using the comma
 * MS Windows client builds have very unreliable support
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Technical
+
+</div>
 
 For further reference, see [the webcam subsystem](../Subsystems/Webcam.md).
 <details markdown="1">

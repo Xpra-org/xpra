@@ -1,7 +1,11 @@
-# ![Pointer](../../fs/share/xpra/icons/pointer.png) Pointer
+# Pointer
 
+
+<div class="docs-section-heading" markdown="1">
 
 ## Implementations
+
+</div>
 
 The prefix for all packets and capabilities should be `pointer`.\
 (older versions used the `mouse` prefix)
@@ -14,12 +18,20 @@ The prefix for all packets and capabilities should be `pointer`.\
 | server            | [xpra.server.subsystem.pointer](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/pointer.py) |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Platforms
+
+</div>
 
 There is some platform specific code to handle mouse wheel.\
 Links pending.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 The client should expose the following `pointer` dictionary in its `hello` packet:
 
@@ -39,7 +51,11 @@ They carry alternative coordinate spaces in the properties dictionary:
 Alternatively, the client can just supply the value `True` instead of the dictionary and the server will use default values.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 | Packet Type      | Direction        | Arguments                                                                       |
 |------------------|------------------|---------------------------------------------------------------------------------|

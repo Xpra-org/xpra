@@ -10,7 +10,11 @@ A default xpra installation should be quite secure by default, but there are tra
 Be aware that these defenses all count for nothing when using [downstream out of date packages](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Architecture
+
+</div>
 The way xpra is structured into independent python submodules allows it to partition off each subsystem. \
 When features are disabled, they are not just unused, they are [not even loaded into memory](https://github.com/Xpra-org/xpra/issues/1861#issuecomment-76549942500) in the first place. Those subsystem interfaces cannot be abused since they don't even exist in that process space - very much like when features are not installed on the system at all. \
 When combined with fine-grained [sub-packages](../Build/Packaging.md), you can also do exactly that: install only what is strictly needed. \
@@ -19,7 +23,11 @@ The same principle applies to [codecs](https://github.com/Xpra-org/xpra/issues/2
 Moreover, the use of pure Python code for the vast majority of the data handling completely prevents whole classes of vulnerabilities. The parts of the code that do require high performance (data mangling, (de)compression, etc) use heavily optimized libraries (see _audio_ and _encodings_ below) - which are all optional.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Subsystems
+
+</div>
 Most of the features below have explicit command line switches which can be used to completely disable the subsystem, to start with the feature turned off or to restrict the feature in its scope or impact. \
 If a client or server turns off a subsystem then the remote end cannot enable the feature. Some switches only affect the on / off state of the feature instead, which does allow for the feature to be enabled through a user action once the connection is established. \
 These toggles may also be accessible through the server's control channel and dbus interface. \
@@ -88,7 +96,11 @@ On Linux kernels with Landlock ABI 9 or newer, the whole client or server proces
 
 ---
 
+<div class="docs-section-heading" markdown="1">
+
 ## Operation
+
+</div>
 
 <details markdown="1">
   <summary>Running mode, network connections and diagnostics, malicious peers, specific options</summary>
@@ -147,7 +159,11 @@ Some specific options have a direct impact on the security of the system:
 
 ---
 
+<div class="docs-section-heading" markdown="1">
+
 ## Platforms
+
+</div>
 
 <details markdown="1">
   <summary>binaries, anti-viruses, system-integration, etc</summary>
@@ -194,7 +210,11 @@ As a good starting point, the xpra repository includes some [container scripts](
 ---
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Vulnerabilities
+
+</div>
 It is difficult to keep track of all the security related issues that have affected the project over the years. \
 Some have been assigned CVEs, most have not. \
 Likewise, it is quite hard to keep track of all the bugs affecting the libraries xpra is built on. But here are some examples:

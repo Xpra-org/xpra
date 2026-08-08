@@ -1,10 +1,14 @@
-# ![Multicast DNS](../images/icons/mdns.png) Multicast DNS
+# Multicast DNS
 
 By default, the xpra server will advertise the session it creates on the local network using [Multicast DNS](https://en.wikipedia.org/wiki/Multicast_DNS).
 
 To turn off this feature, use the `mdns=no` option.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Usage
+
+</div>
 To view the list of sessions, run:\
    `xpra list-mdns`
 
@@ -17,14 +21,22 @@ The user interface should look like this:
 And you should be able to connect to those sessions simply by pressing the "connect" button.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Limitations
+
+</div>
 * some features are only available in newer versions
 * some platforms may not have the required libraries
 * IPv6 addresses are published since version 5.0, with the exception of the IPv6 loopback address
 which `python-zeroconf` does not support - see [#1345](https://github.com/Xpra-org/xpra/issues/1345). \
 It can be enabled at your own risk with `XPRA_ZEROCONF_IPV6_LOOPBACK=1`
 
+<div class="docs-section-heading" markdown="1">
+
 ## Links:
+
+</div>
 * [mdns service type](https://github.com/Xpra-org/xpra/issues/731)
 * [mdns gui](https://github.com/Xpra-org/xpra/issues/1334)
 * [mdns discovery](https://github.com/Xpra-org/xpra/issues/1332)

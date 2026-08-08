@@ -1,3 +1,5 @@
+# AES encryption
+
 Use this option if you can securely distribute the AES key to each client.\
 It is somewhat similar to [SSL](SSL.md) mode with a self-signed certificate.
 
@@ -29,7 +31,11 @@ xpra seamless --start=xterm \
 xpra attach "tcp://localhost:10000/?encryption=AES&keyfile=./key.txt"
 ```
 
+<div class="docs-section-heading" markdown="1">
+
 ## Modes
+
+</div>
 AES encryption supports 3 different [modes of operation](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation): `CBC`, `CFB` and `CTR`. \
 `CBC` is used by default.
 
@@ -40,7 +46,11 @@ The client can specify the exact mode using: `encryption=AES-CTR`.
 <details markdown="1">
   <summary>Specifying the key data</summary>
 
+<div class="docs-section-heading" markdown="1">
+
 ## keydata
+
+</div>
 Instead of storing the encryption key in a file, it is also possible to inline the `keydata` value in the bind and attach strings:
 * `keydata=0x...` for hexadecimal encoded keys
 * `keydata=base64:...` for base64 encoded keys

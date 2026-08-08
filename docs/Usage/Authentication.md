@@ -1,4 +1,4 @@
-# ![Authentication](../images/icons/authentication.png) Authentication
+# Authentication
 
 Xpra's authentication modules can be useful for:
 * securing socket connections
@@ -13,7 +13,11 @@ When using [SSH](../Network/SSH.md) to connect to a server, [encryption](../Netw
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Server Syntax
+
+</div>
 Starting with version 6.5, options for individual authentication modules are specified using brackets:
 `auth=MODULE(option=value,...)`. \
 ie for starting a [seamless](Seamless.md) server with a `TCP` socket protected by a password stored in a `file`:
@@ -136,7 +140,11 @@ For more information on the different socket types, see [network examples](../Ne
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Client Syntax
+
+</div>
 
 By default, `challenge-handlers=all` which means that the python client will try all authentication handlers available until one succeeds.
 If the server is configured with multiple authentications modules for the same socket, the client will do the same.
@@ -210,7 +218,11 @@ The username is usually more relevant when authenticating against a [proxy serve
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Session lookup and the proxy server
+
+</div>
 
 The [proxy server](Proxy-Server.md) needs more than a yes/no answer from authentication: it also needs to know **which xpra sessions** the authenticated client may reach, and **as which uid/gid** to spawn (or connect to) the proxy instance.
 
@@ -293,7 +305,11 @@ The proxy never dials out — it only ever accepts inbound connections, which ma
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Development Documentation
+
+</div>
 <details markdown="1">
   <summary>Authentication Process</summary>
 

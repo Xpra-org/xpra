@@ -1,9 +1,13 @@
-# ![Keyboard](../images/icons/keyboard.png) Keyboard
+# Keyboard
 
 For usage related information, see [keyboard feature](../Features/Keyboard.md).
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 The prefix for all packets and capabilities should be `keyboard` - unfortunately, this work is not complete yet.
 
@@ -14,7 +18,11 @@ The prefix for all packets and capabilities should be `keyboard` - unfortunately
 | server            | [xpra.server.subsystem.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/keyboard.py) |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Platforms
+
+</div>
 
 [xpra.keyboard](https://github.com/Xpra-org/xpra/tree/master/xpra/keyboard/)
 contains the platform independent code, mostly constants.
@@ -26,7 +34,11 @@ contains the platform independent code, mostly constants.
 | `MacOS`  | [xpra.platform.darwin.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/darwin/keyboard.py)                       |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 The client should expose the following capabilities in its `hello` packet:
 
@@ -43,7 +55,11 @@ The `keymap` may also be updated by the client at any time using the `keyboard-l
 To save space in the initial `hello` packet, the full keymap may be sent separately afterwards.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 | Packet Type       | Direction        | Arguments                                                                                                                                             | Information                                                         |
 |-------------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
@@ -54,7 +70,11 @@ To save space in the initial `hello` packet, the full keymap may be sent separat
 The `keyboard-config` attributes should contain a `keymap` key with another dictionary.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Keymap Dictionary
+
+</div>
 
 | Attribute | Data Type                   | Description                                                           | Example values                                              |
 |-----------|-----------------------------|-----------------------------------------------------------------------|-------------------------------------------------------------|

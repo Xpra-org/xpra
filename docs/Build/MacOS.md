@@ -1,6 +1,10 @@
-# ![MacOS](../images/icons/osx.png) Building MacOS Binaries
+# Building MacOS Binaries
+
+<div class="docs-section-heading" markdown="1">
 
 ## Setup
+
+</div>
 Install [XCode](https://developer.apple.com/xcode/) and its command line tools.
 
 If [homebrew](https://brew.sh/) or [macports](https://www.macports.org/) are installed, either remove them completely or at least move them out of the way. \
@@ -38,7 +42,11 @@ jhbuild bootstrap-gtk-osx
 
 Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 
+<div class="docs-section-heading" markdown="1">
+
 ## Build all the libraries
+
+</div>
 
 First, make sure that all the modulesets will be using the same system libffi
 as the one used by Python, so run this command from a `jhbuild shell`:
@@ -60,7 +68,11 @@ jhbuild update
 jhbuild build
 ```
 
+<div class="docs-section-heading" markdown="1">
+
 ## Build and Package Xpra
+
+</div>
 ```shell
 git clone https://github.com/Xpra-org/xpra
 cd xpra/packaging/MacOS/

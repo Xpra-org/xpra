@@ -1,5 +1,10 @@
 # Power
 
+<div class="docs-section-heading" markdown="1">
+
+## Purpose
+
+</div>
 
 This subsystem synchronizes power events.
 

@@ -6,7 +6,11 @@ Just like xpra's proxy, the apache proxy can provide multiple sessions, potentia
 This works well with both the [html5 client](https://github.com/Xpra-org/xpra-html5) and the regular xpra client with `ws://` and `wss://` URLs.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## SSL
+
+</div>
 
 In these examples, it may be useful to have [SSL](../Network/SSL.md) certificates ready to use. \
 Having [mkcert](https://mkcert.org/) installed can help to ensure that the certificates generated are trusted locally. \
@@ -18,7 +22,11 @@ This command will not overwrite any existing certificates.
 
 ---
 
+<div class="docs-section-heading" markdown="1">
+
 ## Basic Configuration
+
+</div>
 
 <details markdown="1">
   <summary>show</summary>
@@ -85,7 +93,11 @@ xdg-open https://localhost/
 ---
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Multiple Servers
+
+</div>
 
 <details markdown="1">
   <summary>show</summary>
@@ -133,7 +145,11 @@ http {
 </details>
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Advanced Options
+
+</div>
 
 <details markdown="1">
   <summary>show</summary>

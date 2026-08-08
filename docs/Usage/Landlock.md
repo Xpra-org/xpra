@@ -14,7 +14,11 @@ that the policy applies to threads which were created during initialization as
 well as threads created later. If Landlock was explicitly enabled and cannot be
 installed, startup fails rather than continuing with incomplete confinement.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Policies
+
+</div>
 
 Both policies allow reads from standard system roots, the active Python
 installation, the current directory, `HOME`, and the XDG configuration, data,
@@ -34,7 +38,11 @@ Both policies grant device access below `/dev/dri` and `/dev/accel`. This allows
 graphics APIs and hardware codecs to open render nodes read/write and use
 `ioctl`, without granting permission to create, remove or rename device nodes.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Subprocesses and limitations
+
+</div>
 
 Landlock restrictions are inherited across `fork` and `exec`. Applications and
 helpers started after confinement therefore receive the same policy. This

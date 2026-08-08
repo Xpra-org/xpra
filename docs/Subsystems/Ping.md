@@ -1,7 +1,11 @@
 # Ping
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 | Component         | Link                                                                                                                     |
 |-------------------|--------------------------------------------------------------------------------------------------------------------------|
@@ -10,10 +14,18 @@
 | server            | [xpra.server.subsystem.ping](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/ping.py) |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
 
+</div>
+
+
+<div class="docs-section-heading" markdown="1">
 
 ## Network Packets
+
+</div>
 
 | Packet Type           | Arguments |
 |-----------------------|-----------|

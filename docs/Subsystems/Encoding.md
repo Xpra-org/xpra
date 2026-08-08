@@ -5,7 +5,11 @@ This subsystem synchronizes the client and the server's encodings so that each e
 codecs for exchanging data.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 | Component         | Link                                                                                                             |
 |-------------------|------------------------------------------------------------------------------------------------------------------|
@@ -15,10 +19,18 @@ codecs for exchanging data.
 
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 TBD
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 TBD

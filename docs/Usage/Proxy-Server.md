@@ -9,7 +9,11 @@ When started as `root`, which is the case when the proxy server runs as a [syste
 Alternatively, you can use an [apache](Apache-Proxy.md) or [nginx](Nginx-Proxy.md) as proxies.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Configuration
+
+</div>
 Depending on the [authentication](Authentication.md) module configured, the proxy server can:
 * expose all the local sessions and start new ones (this is the default behaviour)
 * provide access to a custom list of sessions (ie: using the `sqlite` authentication module)
@@ -48,13 +52,21 @@ Notes:
 * to use ports lower than 1024 either use `--min-port` and run as root or see [allow non-root process to bind to port 80 and 443](https://superuser.com/questions/710253/)
 </details>
 
+<div class="docs-section-heading" markdown="1">
+
 ## Info and Control
+
+</div>
 When the client requests information from the server (ie: for the session info dialog or for internal use), the requests are passed through the proxy instance to the real server just like other packets, but the response is augmented with some extra information from the proxy server. (it is prefixed to prevent any interference)
 
 Just like any other xpra server instance, a proxy instance can be also be queried directly. Since proxy instances do not have their own display number, each proxy instance will create a socket using the process ID instead (ie: `:proxy-15452`), you can find their names using `xpra list`.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Stopping
+
+</div>
 You can stop the proxy server just like any other servers with `xpra stop :$PROXYDISPLAY`.
 
 If you want to stop an individual proxy connection instead, you must identify the proxy instance that you want to stop then use `xpra stop :proxy-$PROXYPID`.
@@ -121,7 +133,11 @@ Further notes:
 * you can specify more than one remote session string for each username and password pair using CSV format - but the client will then have to specify which one it wants on the connection URL
 </details>
 
+<div class="docs-section-heading" markdown="1">
+
 ## Username Matters
+
+</div>
 The proxy server can also be used to expose all local sessions dynamically.\
 This is what the [system service](Service.md) (aka "system-wide proxy server") does.
 

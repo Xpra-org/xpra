@@ -1,9 +1,13 @@
-# ![sound](../images/icons/sound.png) Audio Subsystem
+# Audio Subsystem
 
 For usage related information, see [audio feature](../Features/Audio.md).
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 The prefix for all packets and capabilities is `audio`.
 
@@ -13,7 +17,11 @@ The prefix for all packets and capabilities is `audio`.
 | client connection | [xpra.server.source.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/audio.py) |
 | server            | [xpra.server.subsystem.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/audio.py) |
 
+<div class="docs-section-heading" markdown="1">
+
 ## Common
+
+</div>
 
 [xpra.audio](https://github.com/Xpra-org/xpra/tree/master/xpra/audio/) contains the components used for capturing and playing back audio streams
 using [GStreamer](https://gstreamer.freedesktop.org/). \
@@ -30,7 +38,11 @@ The xpra server will usually start a pulseaudio instance hidden away
 in a per-session user prefix so that multiple sessions can forward audio streams
 independently.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 The client and server should expose the following capabilities in their `hello` packet
 with the `audio` prefix:
@@ -47,7 +59,11 @@ You can run [xpra.audio.gstreamer_util](https://github.com/Xpra-org/xpra/blob/ma
 encoders and decoders are available on the system.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 This protocol is identical in both directions.
 Audio being forwarded from the server to the client (aka "_speaker forwarding_")

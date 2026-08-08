@@ -3,7 +3,11 @@
 For usage related information, see [notitications feature](../Features/Notifications.md).
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 The prefix for all packets and capabilities is `notification`.
 
@@ -14,12 +18,20 @@ The prefix for all packets and capabilities is `notification`.
 | server            | [xpra.server.subsystem.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/notification.py) |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 The server exposes a single `enabled` flag using the `notifications` capability prefix.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 | Packet Type           | Arguments                                                                                | Direction        |
 |-----------------------|------------------------------------------------------------------------------------------|------------------|

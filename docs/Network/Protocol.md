@@ -1,4 +1,4 @@
-# ![Protocol](../images/icons/connect.png) Protocol
+# Protocol
 
 See also: [network layer](../).
 
@@ -10,7 +10,11 @@ Only when a connection uses a protocol which cannot be identified,
 xpra may respond with a plain-text error message without any packet header.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Framing
+
+</div>
 
 When connecting over websockets, SSL, SSH or QUIC, the transport layer
 will obviously add its own framing. \
@@ -20,7 +24,11 @@ Only xpra's own application layer protocol is documented here.
 
 ---
 
+<div class="docs-section-heading" markdown="1">
+
 ## Packet Header
+
+</div>
 
 The [packet header](https://github.com/Xpra-org/xpra/blob/master/xpra/net/protocol/header.py)
 is made of 8 bytes, all multi-byte values use network byte order (big endian):
@@ -104,7 +112,11 @@ See [encryption](Encryption.md) and [AES](AES.md) for details.
 
 ---
 
+<div class="docs-section-heading" markdown="1">
+
 ## Payload
+
+</div>
 
 The main payload has a chunk index of zero. \
 Once decompressed according to the _compression flags_ if needed,
@@ -148,7 +160,11 @@ Payloads smaller than 378 bytes (`XPRA_MIN_COMPRESS_SIZE`) are not compressed.
 
 ---
 
+<div class="docs-section-heading" markdown="1">
+
 ## Hello
+
+</div>
 
 The `hello` packet is the initial packet used as handshake.
 The connection is not fully established until both ends have received a `hello` packet.

@@ -27,7 +27,11 @@ xpra unset dpi
 
 ***
 
-### Configuration Files Location
+<div class="docs-section-heading" markdown="1">
+
+## Configuration files location
+
+</div>
 
 The exact location of the configuration files varies widely from platform to platform, and even from one version of the OS to another.
 * for unix-like operating systems, the system configuration files can usually be found in `/etc/xpra` and the per-user settings can be placed in `~/.config/xpra` - you can also run the `xpra/platform/paths.py` script for more details

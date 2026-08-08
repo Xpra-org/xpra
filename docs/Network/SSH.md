@@ -1,10 +1,14 @@
-# ![SSH](../images/icons/ssh.png) SSH Transport
+# SSH Transport
 
 See also [network](README.md)
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## OpenSSH
+
+</div>
 With Posix servers already running an SSH server, xpra sessions can be accessed without any extra configuration. ie:
 ```
 xpra attach ssh://USERNAME@HOST/DISPLAY
@@ -35,7 +39,11 @@ The sessions do not require any specific `bind` command line options: the defaul
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Builtin SSH Server
+
+</div>
 This mode can be used to enable SSH connections on servers that do not include an SSH server by default (ie: MS Windows servers), or to use SSH authentication and encryption but without allowing full shell logins via SSH on the server system. (as the connection can only be used to connect to the xpra server)
 
 This mode can be used with plain TCP sockets which end up being upgraded to SSH. The server also supports the `bind-ssh` option: these sockets will only allow SSH connections. ie:
@@ -54,7 +62,11 @@ For details, see [#1920](https://github.com/Xpra-org/xpra/issues/1920), use the 
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Client
+
+</div>
 
 The client can either use the builtin ssh client (based on [paramiko](http://www.paramiko.org/)), or an external tool. \
 This can be configured using the `ssh` command line option. The default setting is `auto` which will use `paramiko` if it is present and fallback to the platform's default external tool when it is not.

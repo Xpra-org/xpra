@@ -18,6 +18,12 @@ Assuming that the https://xpra.org/ repositories are installed correctly,
 installing `xpra` using your package manager should install the client and server components as well as most picture codecs and audio support.
 For slimmer installations, you may also want to use `apt`'s `--no-install-recommends` or `dnf`'s `--setopt=install_weak_deps=False` and select individual xpra sub-packages:
 
+<div class="docs-section-heading" markdown="1">
+
+## Package selection
+
+</div>
+
 | Package                            | Details                                                                                                                                                                                |
 |------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | <nobr>`xpra-filesystem`</nobr>     | this package contains configuration files and is independent of the python version<br/>See [multiple python targets](https://github.com/Xpra-org/xpra/issues/3945) (version 6 onwards) |

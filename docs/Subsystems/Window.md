@@ -9,7 +9,11 @@ and stacking mechanisms of X11, MS Windows, macOS and Wayland,
 see [window focus](Window-Focus.md).
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 | Component         | Link                                                                                                           |
 |-------------------|----------------------------------------------------------------------------------------------------------------|
@@ -19,7 +23,11 @@ see [window focus](Window-Focus.md).
 
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 Modern clients attach a monitor descriptor to map and configure packets. The
 descriptor contains the client's monitor `index` and the window `position`
@@ -37,7 +45,11 @@ They only take effect when more than one client is connected: the packets are se
 to every other client that requested the synchronization, never back to the client
 that caused the change.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 ### Server-to-Client
 
@@ -72,7 +84,11 @@ The Win32 native client rebases absolute window positions against the top-left
 of its monitor layout. Packets also include the pre-normalization coordinates
 as `raw-position` metadata.
 
+<div class="docs-section-heading" markdown="1">
+
 ## The `scroll` encoding
+
+</div>
 
 Instead of pixel data, a `window-draw` packet using the `scroll` encoding carries a list
 of motion vectors in the `scroll` client option (very old servers overload the packet's

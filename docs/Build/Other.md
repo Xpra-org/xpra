@@ -1,16 +1,24 @@
+# Other build platforms
+
 **This page may well be out of date**, as these platforms are [not officially supported](https://github.com/Xpra-org/xpra/wiki/Platforms).
 
 
-# ![FreeBSD](../images/icons/freebsd.png)
+<div class="docs-section-heading" markdown="1">
 
 ## [FreeBSD Ports](https://www.freebsd.org/ports/)
+
+</div>
 To install xpra using ports, just run:
 ```shell
 cd /usr/ports/x11/xpra
 make install clean
 ```
 
+<div class="docs-section-heading" markdown="1">
+
 ## Compiling on FreeBSD
+
+</div>
 _These instructions are incomplete and outdated - feel free to update them!_
 
 The Xvfb tool can be found in the package: `xorg-vfbserver` (not obvious!)
@@ -25,11 +33,19 @@ Other packages you will need for:
 
 ***
 
-# Raspberry Pi OS
+<div class="docs-section-heading" markdown="1">
+
+## Raspberry Pi OS
+
+</div>
 
 Follow https://github.com/Xpra-org/xpra/issues/3288#issuecomment-931851564
 
+<div class="docs-section-heading" markdown="1">
+
 ## displayfd workaround
+
+</div>
 Because of the Raspberry Pi's limited power, getting an answer from `displayfd` might take more than the ten seconds specified as the standard timeout. In order to change this, you can start xpra like this:
 ```shell
 xpra seamless --env=XPRA_DISPLAY_FD_TIMEOUT=30 ...

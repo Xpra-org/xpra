@@ -3,7 +3,11 @@
 The `mmap` modules are used for fast memory transfers
 between client and server when both reside on the same host.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 The prefix for all packets and capabilities is `mmap`.
 
@@ -14,7 +18,11 @@ The prefix for all packets and capabilities is `mmap`.
 | server            | [xpra.server.subsystem.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/mmap.py) |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 The client and server should expose the following capabilities in their `hello` packet
 using the `clipboard` prefix.
@@ -62,12 +70,20 @@ and return this information to the client.
 The client then verifies that the mmap file can be used.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 There are no specific `mmap` packets used, `mmap` is used as an [encoding](../Usage/Encodings.md).
 
 
-# virtio-shmem
+<div class="docs-section-heading" markdown="1">
+
+## virtio-shmem
+
+</div>
 
 Xpra can use `mmap` with `virtio-shmem` to speed up connections between a host and guest or even between two guests.
 

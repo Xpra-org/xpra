@@ -12,7 +12,11 @@ The inventory covers all supported platforms and distinguishes data that is:
 Availability depends on the platform, server mode, configuration, and optional
 display-server extensions.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Window and Surface Metadata - X11
+
+</div>
 
 **F / I / Q**
 
@@ -83,7 +87,11 @@ the X11 sources defined in
 [`xpra/x11/models/base.py`](../../xpra/x11/models/base.py), and
 [`xpra/x11/models/window.py`](../../xpra/x11/models/window.py).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Window-System Events
+
+</div>
 
 **Mostly I; selected results become F**
 
@@ -123,7 +131,11 @@ forwarding. These events otherwise drive window lifecycle, metadata, refresh,
 clipboard, cursor, and bell packets. The raw event parsers are in
 [`xpra/x11/bindings/events.pyx`](../../xpra/x11/bindings/events.pyx).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Cursor and Pointer Data
+
+</div>
 
 **F / I / Q**
 
@@ -166,7 +178,11 @@ and macOS acquisition are in
 and
 [`xpra/platform/darwin/shadow_cursor.py`](../../xpra/platform/darwin/shadow_cursor.py).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Display, Screen, and Monitor Topology
+
+</div>
 
 **F / I / Q**
 
@@ -223,7 +239,11 @@ The base capabilities expose root size, maximum size, display identity, depth,
 DPI, and refresh rate in
 [`xpra/server/subsystem/display.py`](../../xpra/server/subsystem/display.py).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Desktop and Root-Window State
+
+</div>
 
 **F / I / Q**
 
@@ -253,7 +273,11 @@ The root-property readers are in
 [`xpra/x11/xroot_props.py`](../../xpra/x11/xroot_props.py), including ICC and
 Xresources data.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Keyboard and Input-Device Configuration
+
+</div>
 
 **Mostly I / Q**
 
@@ -294,7 +318,11 @@ This data is primarily used to establish and diagnose input mappings. Normal
 remote keyboard and pointer actions originate from the Xpra client, so those
 client-originated events are outside this server-data inventory.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Clipboard and Selections
+
+</div>
 
 **F / I / Q**
 
@@ -331,7 +359,11 @@ Native formats include:
 The generic clipboard packet schema is implemented in
 [`xpra/clipboard/core.py`](../../xpra/clipboard/core.py).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Desktop Notifications
+
+</div>
 
 **F / Q**
 
@@ -368,7 +400,11 @@ Xpra does not capture arbitrary session-bus traffic. Notifications, portal
 responses, and power-related signals are the specific subscribed D-Bus
 channels.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Session Audio
+
+</div>
 
 **F / I / Q**
 
@@ -399,7 +435,11 @@ Audio buffer metadata originates in
 microphone input is excluded because it does not originate from the server
 desktop.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Menus, Application Entries, and Tray Data
+
+</div>
 
 **F / I / Q**
 
@@ -430,7 +470,11 @@ X11 system-tray retrieval includes:
 * XEmbed messages and state,
 * tray icon or window metadata and lifecycle events.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Wayland Portal and PipeWire Metadata
+
+</div>
 
 **Mostly I / Q; source or window descriptions become F**
 
@@ -463,7 +507,11 @@ The portal response path is in
 and native frame descriptors are constructed in
 [`xpra/codecs/pipewire/_native.pyx`](../../xpra/codecs/pipewire/_native.pyx).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Native Shadow-Platform Data
+
+</div>
 
 **F / I / Q**
 
@@ -516,7 +564,11 @@ and native frame descriptors are constructed in
 * Cursor-set and cursor-move events.
 * DDC/CI address, flags, and raw buffer.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Session Lifecycle and Settings Services
+
+</div>
 
 **Mostly I; selected events become F notifications or server events**
 
@@ -538,7 +590,11 @@ and native frame descriptors are constructed in
 POSIX signal subscriptions are shown in
 [`xpra/platform/posix/events.py`](../../xpra/platform/posix/events.py).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capability and Diagnostic-Only Display Data
+
+</div>
 
 **Q / I**
 
@@ -560,7 +616,11 @@ POSIX signal subscriptions are shown in
   identifiers.
 * GTK display-backend capabilities and enumerated GDK devices.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Scope Boundary
+
+</div>
 
 Included despite containing bitmap data:
 

@@ -1,6 +1,10 @@
 # Colourspace
 
+<div class="docs-section-heading" markdown="1">
+
 ## The session colourspace
+
+</div>
 
 A virtual framebuffer (`Xvfb`, `Xdummy` or `Xwayland`) has no colourimetry of its own:
 there is no monitor attached, so there is no EDID, no ICC profile,
@@ -34,7 +38,11 @@ windows.1.colourspace.range=full
 windows.1.colourspace.transfer=srgb
 ```
 
+<div class="docs-section-heading" markdown="1">
+
 ## Per window and per monitor
+
+</div>
 
 A single framebuffer can only have one colourspace, so under X11 the session value is all there is.
 Wayland can tag each surface individually:
@@ -63,7 +71,11 @@ and, from the client, a hint for the colourspace it would prefer the session to 
 The client resolves these in order: **window metadata, then the session, then sRGB**.
 It never has to guess: an untagged window is by definition in the session colourspace.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Legacy client profile synchronization
+
+</div>
 
 Older versions did the opposite: the client's ICC profile was applied to the virtual framebuffer,
 so that applications rendered pre-adapted for that particular client's monitor.
@@ -79,6 +91,10 @@ by setting the environment variable on both the client and the server:
 XPRA_SYNC_ICC=1
 ```
 
+<div class="docs-section-heading" markdown="1">
+
 ## See also
+
+</div>
 * [Image Depth](Image-Depth.md) - a wider gamut needs more than 8 bits per channel
 * [Encodings](../Usage/Encodings.md)

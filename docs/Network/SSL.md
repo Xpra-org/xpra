@@ -2,6 +2,12 @@
 
 SSL is the colloquial term which refers to both `SSL` and `TLS` socket encryption.
 
+<div class="docs-section-heading" markdown="1">
+
+## Basic example
+
+</div>
+
 For step-by-step instructions, expand this:
 <details markdown="1">
   <summary>Basic Example</summary>
@@ -37,7 +43,11 @@ For trusting your own certificates and testing with localhost, see [certificates
 
 ***
 
-### Socket upgrades
+<div class="docs-section-heading" markdown="1">
+
+## Socket upgrades
+
+</div>
 Once a server is configured for `SSL` - usually by adding the `--ssl-cert` option, its TCP sockets (`bind-tcp` option) can automatically be upgraded to:
 * `ssl`, obviously
 * `http` and `ws` (`websockets`) connections can be upgraded to `https` and `wss` (`secure websockets`)
@@ -52,20 +62,32 @@ Each type of upgrade can be turned off individually with its own option:
 `rfb-upgrade` is a delay in seconds (`5` by default, `0` to disable)
 and `rdp-upgrade` is disabled by default.
 
-### SSL options
+<div class="docs-section-heading" markdown="1">
+
+## SSL options
+
+</div>
 There are many options to configure and certificates to deal with.
 See https://docs.python.org/3/library/ssl.html, on which this is based.
 
 For more details see [#1252](https://github.com/Xpra-org/xpra/issues/1252).
 
-### Default Certificate
+<div class="docs-section-heading" markdown="1">
+
+## Default certificate
+
+</div>
 When using the binary packages from https://xpra.org, a self-signed SSL certificate will be generated during the first installation.\
 It is placed in:
 * `/etc/xpra/ssl-cert.pem` on Posix platforms
 * `C:\ProgramData\Xpra\ssl-cert.pem` on MS Windows
 * `/Library/Application Support/Xpra/ssl-cert.pem` on Mac OS
 
-### Warnings
+<div class="docs-section-heading" markdown="1">
+
+## Warnings
+
+</div>
 SSL options are not applicable to unix domain sockets, named pipes or vsock. \
 Do not assume that you can just enable SSL to make your connection secure.
 

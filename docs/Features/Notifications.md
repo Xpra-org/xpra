@@ -4,12 +4,20 @@ This feature allows server side applications to send system notifications (aka n
 
 It is supported on all platforms and controlled by the `notifications` [configuration option](../Usage/Configuration.md).
 
+<div class="docs-section-heading" markdown="1">
+
 ## Platform support
+
+</div>
 * MS Windows use system _bubbles_ - you may need to [configure your system](http://www.howtogeek.com/75510/beginner-how-to-customize-and-tweak-your-system-tray-icons-in-windows-7/) to show the xpra system tray icon and / or the bubbles
 * MacOS clients use a custom GTK window since there was no system API until OSX 10.8.x (this should be replaced with native code at some point)
 * posix clients can use `python-notify` or `python-dbus` (the exact name of the packages required vary)
 
+<div class="docs-section-heading" markdown="1">
+
 ## Screenshots
+
+</div>
 MS Windows XP: \
 ![MS Windows Notification](../images/screenshots/win32-notification.png)
 
@@ -21,7 +29,11 @@ Gnome-shell: \
 
 ***
 
+<div class="docs-section-heading" markdown="1">
+
 ## Technical
+
+</div>
 
 Please refer to [the `notifications` subsystem](../Subsystems/Notification.md).
 <details markdown="1">

@@ -10,7 +10,11 @@ a window manager or compositor, and the `window-focus` packet it receives from t
 has to be translated into whichever set of mechanisms the session is using.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## X11
+
+</div>
 
 There are four independent things which are all called "focus" in X11, plus a set of
 protocols layered on top of them.
@@ -194,7 +198,11 @@ The practical rules which fall out of this:
   which the window manager never sees), and with `PointerRoot`
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## MS Windows
+
+</div>
 
 Win32 also has three notions of focus, but it splits them differently: by _scope_ rather
 than by _device_.
@@ -250,7 +258,11 @@ form, equivalent to `_NET_WM_STATE_DEMANDS_ATTENTION`.
 Focus follows mouse exists as `SPI_SETACTIVEWINDOWTRACKING` but is off by default.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## macOS
+
+</div>
 
 macOS also has three levels, but the top one is the **application**, not the window.
 This is the single biggest difference from X11, where nothing groups windows by application
@@ -293,7 +305,11 @@ an application can become active at all: `.accessory` (`LSUIElement`) applicatio
 Dock icon and no menu bar, and cannot normally be activated.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Wayland
+
+</div>
 
 The Wayland answer is short: **a client cannot focus or raise itself, and there is no
 request to do so**. Focus is entirely the compositor's decision and the protocol only
@@ -361,7 +377,11 @@ The two models coexist but do not fully align, which is why activation across th
 boundary is a recurring source of bugs.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Platform comparison
+
+</div>
 
 |                            | X11                                          | MS Windows                                | macOS                                        | Wayland                                       |
 |----------------------------|----------------------------------------------|-------------------------------------------|----------------------------------------------|-----------------------------------------------|
@@ -382,7 +402,11 @@ boundary is a recurring source of bugs.
 | Focus follows mouse        | `PointerRoot` or WM policy                   | `SPI_SETACTIVEWINDOWTRACKING`, off        | not supported                                | compositor policy                             |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## How xpra uses this
+
+</div>
 
 The xpra server is a window manager
 ([xpra.x11.wm](https://github.com/Xpra-org/xpra/blob/master/xpra/x11/wm.py))

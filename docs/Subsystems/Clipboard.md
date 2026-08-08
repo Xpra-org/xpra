@@ -1,9 +1,13 @@
-# ![Clipboard](../images/icons/clipboard.png) Clipboard
+# Clipboard
 
 For usage related information, see [clipboard feature](../Features/Clipboard.md).
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementations
+
+</div>
 
 The prefix for all packets and capabilities is `clipboard`.
 
@@ -14,7 +18,11 @@ The prefix for all packets and capabilities is `clipboard`.
 | server            | [xpra.server.subsystem.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/clipboard.py) |
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Platforms
+
+</div>
 
 [xpra.clipboard](https://github.com/Xpra-org/xpra/tree/master/xpra/clipboard/) contains the platform independent base class
 used by all the backends.
@@ -29,7 +37,11 @@ It contains common features such as basic configuration, scheduling, filtering, 
 
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Capabilities
+
+</div>
 
 The client and server should expose the following capabilities in their `hello` packet
 using the `clipboard` prefix:
@@ -74,7 +86,11 @@ Notes:
 }
 ```
 
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
+
+</div>
 
 This protocol is identical in both directions,
 as either end can send and receive clipboard events.

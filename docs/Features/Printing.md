@@ -1,10 +1,14 @@
-# ![Printer](../images/icons/printer.png) Printing
+# Printing
 
 This feature allows printers connected to the client to show as virtual printers on the server so that printing can transparently be forwarded back to the client's printer(s).
 
 This functionality shares most of the code with the [file transfers](File-Transfers.md), as the print job is first rendered to a file before being sent to the client.
 
+<div class="docs-section-heading" markdown="1">
+
 ## Installation and platform support
+
+</div>
 * MS Windows and MacOS clients should work out of the box
 * [CentOS](https://www.centos.org/) requires manual setup to support MacOS clients as the [cups-pdf](http://www.cups-pdf.de/) package is not available in the default repositories
 * Debian and Ubuntu: the dependencies are listed as "suggestions" only, so you may need to run `apt-get install cups-filters cups-common cups-pdf python3-cups` to install the missing pieces
@@ -19,7 +23,11 @@ This functionality shares most of the code with the [file transfers](File-Transf
 * MacOS [shadow server](../Usage/Shadow.md) Support starting with version `10.10` (aka Yosemite) prevents the xpra cups backend from connecting to the xpra server, to fix this run: `sudo sh -c 'echo "Sandboxing Relaxed" >> /etc/cups/cups-files.conf';sudo launchctl stop org.cups.cupsd`
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Implementation
+
+</div>
 
 _How does this work?_
 The xpra client exports the list of local printers to the xpra server, the server can then create the same list of virtual printers using the `lpadmin` command.\
@@ -30,7 +38,11 @@ The xpra client then sends this PDF / postscript document straight to the actual
 The HTML5 client is written in Javascript, so it does not have access to the printer device information and the PDF document is presented for printing via the standard browser's print dialog.
 
 
+<div class="docs-section-heading" markdown="1">
+
 ## Debugging
+
+</div>
 <details markdown="1">
   <summary>Diagnostics</summary>
 
