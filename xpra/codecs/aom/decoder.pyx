@@ -237,10 +237,11 @@ cdef class Decoder:
         log("got aom av1 image at %#x, pixel format %s", <uintptr_t> image, pixel_format)
         if pixel_format not in COLORSPACES:
             raise RuntimeError(f"Unsupported image format %r" % pixel_format)
-        Bpp = 6 if pixel_format.endswith("P16") else 3
+        # bytes per sample: 2 for the 16-bit (P10/P16) containers, 1 otherwise:
+        cdef int bytes_per_sample = 2 if pixel_format.endswith("P16") else 1
         if image.bit_depth != AOM_BITS_8:
             raise RuntimeError("image bit depth %i is not supported yet" % image.bit_depth)
-        depth = Bpp * image.bit_depth
+        depth = bytes_per_sample * 3 * 8
 
         # expose these eventually:
         # aom_color_primaries color_primaries
@@ -278,7 +279,7 @@ cdef class Decoder:
 
         self.frames += 1
         wrapper = ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, depth,
-                               pystrides, bytesperpixel=Bpp, planes=PlanarFormat.PLANAR_3, full_range=full_range)
+                               pystrides, bytesperpixel=bytes_per_sample, planes=PlanarFormat.PLANAR_3, full_range=full_range)
         self.image_wrapper = weakref.ref(wrapper)
         return wrapper
 
