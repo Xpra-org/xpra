@@ -12,7 +12,7 @@ from collections.abc import Callable, MutableSequence
 
 from xpra.os_util import OSX, WIN32
 from xpra.client.gui.widget_base import ClientWidgetBase
-from xpra.client.gui.window.backing import fire_paint_callbacks
+from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
 from xpra.common import gravity_str, force_size_constraint
@@ -316,23 +316,9 @@ class ClientWindowBase(ClientWidgetBase):
     def setup_window(self, bw: int, bh: int) -> None:
         self.new_backing(bw, bh)
         # tell the server about the encoding capabilities of this backing instance:
-        # but don't bother if they're the same as what we sent as defaults
-        # (with a bit of magic to collapse the missing namespace from encoding_defaults)
-        backing_props = self._backing.get_encoding_properties()
         enc = self.get_subsystem("encoding")
         encoding_defaults = enc.encoding_defaults if enc else {}
-        for k in tuple(backing_props.keys()):
-            v = backing_props[k]
-            try:
-                # ie: "encodings.rgb_formats" -> "rgb_formats"
-                # ie: "encoding.full_csc_modes" -> "full_csc_modes"
-                ek = k.split(".", 1)[1]
-            except IndexError:
-                ek = k
-            dv = encoding_defaults.get(ek)
-            if dv is not None and dv == v:
-                del backing_props[k]
-        self._client_properties.update(backing_props)
+        self._client_properties.update(get_backing_client_properties(self._backing, encoding_defaults))
 
     def send(self, packet_type: str, *args: PacketElement) -> None:
         self._client.send(packet_type, *args)

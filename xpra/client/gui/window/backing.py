@@ -170,6 +170,23 @@ def load_alert_icon() -> tuple[int, int, bytes]:
     return iw, ih, pixels
 
 
+def get_backing_client_properties(backing, encoding_defaults: dict[str, Any]) -> dict[str, Any]:
+    """
+    The encoding properties of this backing instance,
+    to be sent to the server as client properties with the `map-window` packet.
+    The ones that match the defaults we already sent in our capabilities are omitted,
+    (those are not namespaced, so the namespace has to be collapsed to compare them)
+    """
+    props = backing.get_encoding_properties()
+    for k in tuple(props.keys()):
+        # ie: "encodings.rgb_formats" -> "rgb_formats"
+        # ie: "encoding.full_csc_modes" -> "full_csc_modes"
+        dv = encoding_defaults.get(k.split(".", 1)[-1])
+        if dv is not None and dv == props[k]:
+            del props[k]
+    return props
+
+
 class WindowBackingBase:
     """
     Generic superclass for all Backing code,
