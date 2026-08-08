@@ -162,7 +162,7 @@ cdef class Decoder:
         return self.height
 
     def is_closed(self) -> bool:
-        return bool(self.codec != NULL)
+        return self.codec == NULL
 
     def get_type(self) -> str:
         return "aom"
