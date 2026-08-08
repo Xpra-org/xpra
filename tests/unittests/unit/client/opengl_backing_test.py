@@ -599,6 +599,46 @@ class TestGLInit(unittest.TestCase):
         return ctx
 
     # ------------------------------------------------------------------
+    # packed RGB painting
+    # ------------------------------------------------------------------
+
+    def test_paint_rgbx_discards_padding_alpha(self):
+        """The X component of BGRX and RGBX must not become backing alpha."""
+        from OpenGL.GL import (
+            glBindFramebuffer, glReadBuffer, glReadPixels,
+            GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGBA, GL_UNSIGNED_BYTE,
+        )
+        from xpra.util.objects import typedict
+
+        w, h = 2, 1
+        backing, win = self._make_gl_backing(window_alpha=True, pixel_depth=32)
+        backing.size = backing.render_size = (w, h)
+        try:
+            ctx = self._full_gl_init(backing)
+            if not ctx:
+                self.skipTest("no OpenGL context")
+            test_data = {
+                "BGRX": bytes((0x30, 0x20, 0x10, 0x00,
+                               0x60, 0x50, 0x40, 0x7f)),
+                "RGBX": bytes((0x10, 0x20, 0x30, 0x00,
+                               0x40, 0x50, 0x60, 0x7f)),
+            }
+            expected = bytes((0x10, 0x20, 0x30, 0xff,
+                              0x40, 0x50, 0x60, 0xff))
+            for pixel_format, pixels in test_data.items():
+                with ctx:
+                    backing.do_paint_rgb(ctx, "test", pixel_format, pixels,
+                                         0, 0, w, h, w, h, w * 4, typedict(), [])
+                    glBindFramebuffer(GL_READ_FRAMEBUFFER, backing.offscreen_fbo)
+                    glReadBuffer(GL_COLOR_ATTACHMENT0)
+                    data = glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE)
+                actual = bytes(data) if not isinstance(data, bytes) else data
+                assert actual == expected, f"{pixel_format}: expected {expected!r}, got {actual!r}"
+        finally:
+            backing.close()
+            win.destroy()
+
+    # ------------------------------------------------------------------
     # planar painting
     # ------------------------------------------------------------------
 
