@@ -565,7 +565,7 @@ cdef class Decoder:
         self.frames += 1
         cdef bint full_range = options.boolget("full-range", bitstream_full_range)
         return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides,
-                            planes=PlanarFormat.PLANAR_3, full_range=full_range)
+                            bytesperpixel=1, planes=PlanarFormat.PLANAR_3, full_range=full_range)
 
 
 def selftest(full=False) -> None:
