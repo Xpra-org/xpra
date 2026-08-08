@@ -5,7 +5,9 @@
 # later version. See the file COPYING for details.
 
 import win32con
-from ctypes import c_void_p, byref, addressof, sizeof, WinError, get_last_error, memmove
+from ctypes import (
+    c_void_p, byref, addressof, sizeof, WinError, get_last_error, memmove, create_string_buffer,
+)
 from ctypes.wintypes import HBITMAP, HDC, HWND
 from collections.abc import Sequence, Callable
 
@@ -21,6 +23,17 @@ from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("draw")
+
+
+def clip_span(pos: int, size: int, delta: int, limit: int) -> tuple[int, int]:
+    """
+    Clip a one dimensional span so that both the source `[pos, pos+size)`
+    and the destination `[pos+delta, pos+delta+size)` fit within `[0, limit)`.
+    Returns the clipped `(pos, size)`, with a size of zero if nothing is left.
+    """
+    start = max(0, -pos, -pos - delta)
+    end = min(size, limit - pos, limit - pos - delta)
+    return pos + start, max(0, end - start)
 
 
 class GDIBacking(WindowBackingBase):
@@ -152,6 +165,97 @@ class GDIBacking(WindowBackingBase):
                 dst = c_void_p(self.pixels.value + offset + i * bitmap_stride)
                 src = addressof(c_void_p.from_buffer(img_data)) + i * rowstride
                 memmove(dst, src, rowlen)
+        fire_paint_callbacks(callbacks)
+
+    def paint_scroll(self, img_data, options: typedict, callbacks: PaintCallbacks) -> None:
+        # newer servers use an option,
+        # older ones overload the img_data:
+        scroll_data = options.tupleget("scroll", img_data)
+        self.with_gfx_context(self.do_scroll_paints, scroll_data, callbacks)
+
+    def clip_scrolls(self, scrolls) -> list[tuple[int, int, int, int, int, int]]:
+        """
+        Clip the scroll rectangles so that both their source and their destination
+        fit within the backing buffer, dropping the ones that end up empty.
+        These should be errors, but desktop-scaling can cause a mismatch
+        between the backing size and the real window size server-side,
+        so we clip the dimensions instead.
+        """
+        bw, bh = self.size
+        rects = []
+        for x, y, w, h, xdelta, ydelta in scrolls:
+            if xdelta == 0 and ydelta == 0:
+                log.warn("Warning: scroll rectangle %s has no delta", (x, y, w, h))
+                continue
+            cx, cw = clip_span(x, w, xdelta, bw)
+            cy, ch = clip_span(y, h, ydelta, bh)
+            if cw <= 0 or ch <= 0:
+                log.warn("Warning: scroll rectangle %s by %s does not fit in the backing buffer %s",
+                         (x, y, w, h), (xdelta, ydelta), self.size)
+                continue
+            rects.append((cx, cy, cw, ch, xdelta, ydelta))
+        return rects
+
+    def snapshot_source(self, scrolls):
+        """
+        Copy the area covered by the source rectangles of the `scrolls` list
+        into a new buffer, so that every rectangle can be painted
+        from the backing contents as they were before any of them was applied.
+        Returns the snapshot, its position within the backing and its rowstride.
+        """
+        x1 = min(x for x, _, _, _, _, _ in scrolls)
+        y1 = min(y for _, y, _, _, _, _ in scrolls)
+        x2 = max(x + w for x, _, w, _, _, _ in scrolls)
+        y2 = max(y + h for _, y, _, h, _, _ in scrolls)
+        stride = (x2 - x1) * 4
+        rows = y2 - y1
+        snapshot = create_string_buffer(stride * rows)
+        bitmap_stride = self.size[0] * 4
+        dst = addressof(snapshot)
+        src = self.pixels.value + y1 * bitmap_stride + x1 * 4
+        if stride == bitmap_stride:
+            # full width: the rows are contiguous in both buffers, copy them all at once
+            memmove(dst, src, stride * rows)
+        else:
+            for i in range(rows):
+                memmove(dst + i * stride, src + i * bitmap_stride, stride)
+        return snapshot, x1, y1, stride
+
+    def do_scroll_paints(self, context, scrolls, callbacks: PaintCallbacks) -> None:
+        log("do_scroll_paints%s", (context, scrolls, callbacks))
+        if not self.bitmap:
+            fire_paint_callbacks(callbacks, False, "window has already been destroyed")
+            return
+        if not scrolls:
+            fire_paint_callbacks(callbacks)
+            return
+        rects = self.clip_scrolls(scrolls)
+        if not rects:
+            fire_paint_callbacks(callbacks, False, "no valid scroll rectangles")
+            return
+        # every rectangle is relative to the backing contents
+        # as they were before any of them was applied,
+        # so we copy from a snapshot taken before the loop:
+        # applying them in place would corrupt the ones
+        # whose source overlaps another one's destination
+        # (see `paint_scroll` in `WindowBackingBase`)
+        snapshot, ox, oy, stride = self.snapshot_source(rects)
+        bitmap_stride = self.size[0] * 4
+        for x, y, w, h, xdelta, ydelta in rects:
+            src = addressof(snapshot) + (y - oy) * stride + (x - ox) * 4
+            dst = self.pixels.value + (y + ydelta) * bitmap_stride + (x + xdelta) * 4
+            rowlen = w * 4
+            log(f"scroll {(x, y, w, h)} by {(xdelta, ydelta)}: {src=} - {dst=} {stride=} {bitmap_stride=}")
+            if rowlen == stride == bitmap_stride:
+                # full width: the rows are contiguous in both buffers, copy them all at once
+                memmove(dst, src, rowlen * h)
+            else:
+                for i in range(h):
+                    memmove(dst + i * bitmap_stride, src + i * stride, rowlen)
+        if len(rects) < len(scrolls):
+            # some rectangles were dropped, ask the server to repaint the area:
+            fire_paint_callbacks(callbacks, False, "some scroll rectangles could not be applied")
+            return
         fire_paint_callbacks(callbacks)
 
     def close(self) -> None:
