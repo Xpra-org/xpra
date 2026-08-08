@@ -68,6 +68,9 @@
 		${prefix}/lib/libvpx.*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/libdav1d.*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libavif.*.dylib
 	</binary>
 	<binary>
