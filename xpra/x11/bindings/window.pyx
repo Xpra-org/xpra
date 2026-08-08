@@ -66,6 +66,8 @@ cdef extern from "X11/Xlib.h":
     int CWHeight
     int InputOnly
     int InputOutput
+    int RevertToNone
+    int RevertToPointerRoot
     int RevertToParent
     int ClientMessage
     int ButtonPress
@@ -323,10 +325,10 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return depth
 
     # Focus management
-    def XSetInputFocus(self, Window xwindow, Time time=CurrentTime) -> None:
+    def XSetInputFocus(self, Window xwindow, Time time=CurrentTime,
+                       int revert_to=RevertToParent) -> None:
         self.context_check("XSetInputFocus")
-        # Always does RevertToParent
-        XSetInputFocus(self.display, xwindow, RevertToParent, time)
+        XSetInputFocus(self.display, xwindow, revert_to, time)
 
     def XGetInputFocus(self) -> Tuple[int, int]:
         #context check not needed!

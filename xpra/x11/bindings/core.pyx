@@ -57,6 +57,8 @@ cdef extern from "X11/Xlib.h":
     int CWHeight
     int InputOnly
     int InputOutput
+    int RevertToNone
+    int RevertToPointerRoot
     int RevertToParent
     int ClientMessage
     int ButtonPress
@@ -167,6 +169,8 @@ constants: Dict[str, int] = {
     "CurrentTime"       : CurrentTime,
     "IsUnmapped"        : IsUnmapped,
     "InputOnly"         : InputOnly,
+    "RevertToNone"      : RevertToNone,
+    "RevertToPointerRoot" : RevertToPointerRoot,
     "RevertToParent"    : RevertToParent,
     "ClientMessage"     : ClientMessage,
     "ButtonPress"       : ButtonPress,
