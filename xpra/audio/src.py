@@ -115,12 +115,6 @@ class AudioSource(AudioPipeline):
                 }))
         #if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
         pipeline_els += ["audioconvert"]
-        if has_plugins("removesilence"):
-            pipeline_els += [
-                "removesilence",
-                "audioconvert",
-                "audioresample"
-                ]
         pipeline_els.append(get_element_str("volume", {"name" : "volume", "volume" : volume}))
         if encoder:
             encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
