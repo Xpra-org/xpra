@@ -272,15 +272,22 @@ class CairoBackingBase(WindowBackingBase):
         if rowstride == 0:
             rowstride = width * roundup(bpp, 8) // 8
         try:
+            # `BGRX` and `RGBX` carry padding rather than alpha,
+            # and the value of the `X` byte is undefined:
+            # painting them into an `ARGB32` surface would turn it into transparency,
+            # `RGB24` ignores it instead (and can still be painted without a copy)
+            paint_alpha = self._alpha_enabled and rgb_format.find("A") >= 0
             fmt = {
                 16: Format.RGB16_565,
                 24: Format.RGB24,
                 30: Format.RGB30,
-                32: Format.ARGB32 if self._alpha_enabled else Format.RGB24,
+                32: Format.ARGB32 if paint_alpha else Format.RGB24,
             }.get(bpp, Format.INVALID)
             if fmt == Format.INVALID:
                 raise ValueError(f"invalid rgb format {rgb_format!r} with bit depth {bpp}")
             options["rgb_format"] = rgb_format
+            # the `GdkPixbuf` fallback needs to know how many bytes per pixel the data has,
+            # not whether we want to paint with alpha:
             alpha = bpp == 32 and self._alpha_enabled
             self._do_paint_rgb(fmt, alpha, img_data,
                                x, y, width, height, render_width, render_height, rowstride, options)

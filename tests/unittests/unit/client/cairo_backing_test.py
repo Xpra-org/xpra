@@ -472,6 +472,35 @@ class TestDoPaintRgb(unittest.TestCase):
         b.do_paint_rgb(None, "", "X", b"\x00" * 100, 0, 0, 10, 10, 10, 10, 10, typedict(), cbs)
         assert results and results[0][0] is False
 
+    def _paint_format(self, rgb_format: str, alpha=True):
+        """the cairo format chosen for painting `rgb_format` pixels"""
+        from xpra.util.objects import typedict
+        b = _make_backing(alpha=alpha)
+        results, cbs = self._callbacks()
+        b.do_paint_rgb(None, "", rgb_format, b"\x00" * 400, 0, 0, 10, 10, 10, 10, 40, typedict(), cbs)
+        assert results and results[0][0] is True
+        assert b._do_paint_rgb_calls, f"{rgb_format} was not painted"
+        return b._do_paint_rgb_calls[0][0]
+
+    def test_padding_formats_never_use_argb32(self):
+        # the `X` byte is undefined, it must not end up as transparency:
+        from cairo import Format
+        for rgb_format in ("BGRX", "RGBX"):
+            fmt = self._paint_format(rgb_format)
+            assert fmt == Format.RGB24, f"{rgb_format} should be painted as RGB24, not {fmt}"
+
+    def test_alpha_formats_use_argb32(self):
+        from cairo import Format
+        for rgb_format in ("BGRA", "RGBA"):
+            fmt = self._paint_format(rgb_format)
+            assert fmt == Format.ARGB32, f"{rgb_format} should be painted as ARGB32, not {fmt}"
+
+    def test_alpha_formats_without_window_alpha(self):
+        from cairo import Format
+        for rgb_format in ("BGRA", "RGBA"):
+            fmt = self._paint_format(rgb_format, alpha=False)
+            assert fmt == Format.RGB24, f"{rgb_format} should be painted as RGB24, not {fmt}"
+
 
 # ---------------------------------------------------------------------------
 # do_paint_scroll
