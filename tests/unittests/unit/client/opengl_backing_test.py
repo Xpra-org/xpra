@@ -50,6 +50,66 @@ class TestModuleFunctions(unittest.TestCase):
         # default args: YUV420P, index 0 → "Y"
         assert get_tex_name() == "Y"
 
+    def test_get_tex_name_10bit(self):
+        from xpra.opengl.backing import get_tex_name
+        # P10 formats are also uploaded as 16-bit samples:
+        assert get_tex_name("YUV420P10", 0) == "YY"
+        assert get_tex_name("YUV422P10", 1) == "UU"
+
+
+class TestPlanarFormats(unittest.TestCase):
+    """Every planar format must have a full set of GL constants and a shader."""
+
+    def test_upload_and_internal_formats(self):
+        from xpra.opengl.backing import PLANAR_FORMATS, PIXEL_UPLOAD_FORMAT, PIXEL_INTERNAL_FORMAT
+        from xpra.codecs.constants import get_subsampling_divs
+        for fmt in PLANAR_FORMATS:
+            nplanes = len(get_subsampling_divs(fmt))
+            self.assertIn(fmt, PIXEL_UPLOAD_FORMAT, f"no upload format for {fmt!r}")
+            assert len(PIXEL_UPLOAD_FORMAT[fmt]) >= nplanes, f"not enough upload formats for {fmt!r}"
+            # the internal format is optional, but must cover every plane if present:
+            iformats = PIXEL_INTERNAL_FORMAT.get(fmt, ())
+            if iformats:
+                assert len(iformats) >= nplanes, f"not enough internal formats for {fmt!r}"
+
+    def test_shaders(self):
+        from xpra.opengl.backing import PLANAR_FORMATS
+        from xpra.opengl.shaders import SOURCE
+        for fmt in PLANAR_FORMATS:
+            # "YUV420P16" is uploaded as 16-bit and rendered with the 8-bit shader:
+            name = fmt.replace("P16", "P")
+            if name.startswith("GBRP"):
+                # there is no GBRP shader (yet)
+                continue
+            for suffix in ("", "_FULL"):
+                self.assertIn(f"{name}_to_RGB{suffix}", SOURCE, f"no shader for {fmt!r}")
+
+
+class TestShaders(unittest.TestCase):
+
+    def test_10bit_scaling(self):
+        """The 10-bit shaders must scale the samples back up from the 16-bit texture range."""
+        from xpra.opengl.shaders import SOURCE
+        scale = str((2 ** 16 - 1) / (2 ** 10 - 1))
+        for fmt in ("YUV420P10", "YUV422P10", "YUV444P10"):
+            for suffix in ("", "_FULL"):
+                source = SOURCE[f"{fmt}_to_RGB{suffix}"]
+                assert source.count(scale) == 3, f"{fmt}{suffix} does not scale all 3 planes"
+
+    def test_8bit_not_scaled(self):
+        from xpra.opengl.shaders import SOURCE
+        for fmt in ("YUV420P", "YUV422P", "YUV444P"):
+            for suffix in ("", "_FULL"):
+                assert "64.0" not in SOURCE[f"{fmt}_to_RGB{suffix}"]
+
+    def test_invalid_bit_depth(self):
+        from xpra.opengl.shaders import gen_YUV_to_RGB
+        self.assertRaises(ValueError, gen_YUV_to_RGB, "YUV420P", bits=12)
+
+    def test_invalid_colorspace(self):
+        from xpra.opengl.shaders import gen_YUV_to_RGB
+        self.assertRaises(ValueError, gen_YUV_to_RGB, "YUV420P", "bt2100")
+
 
 def _make_mock_backing(wid=1, window_alpha=False, pixel_depth=0):
     """Create a GLWindowBackingBase subclass with all abstract methods mocked out."""
@@ -537,6 +597,81 @@ class TestGLInit(unittest.TestCase):
                 backing.gl_init(ctx)
                 backing.init_shaders()
         return ctx
+
+    # ------------------------------------------------------------------
+    # planar painting
+    # ------------------------------------------------------------------
+
+    def test_paint_planar_10bit(self):
+        """Painting 10-bit planar images must give back the expected colours."""
+        import struct
+        from OpenGL.GL import (
+            glBindFramebuffer, glReadBuffer, glReadPixels,
+            GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGBA, GL_UNSIGNED_BYTE,
+        )
+        from xpra.util.objects import typedict
+        from xpra.codecs.image import ImageWrapper
+        from xpra.codecs.constants import get_subsampling_divs
+        # the pixel values are in BGRX byte order,
+        # the colour names are just labels (as in `csc_colorspace_test`):
+        test_data = {
+            False: (
+                ("black", "000000ff", 0x10, 0x80, 0x80),
+                ("white", "ffffffff", 0xeb, 0x80, 0x80),
+                ("green", "00ff00ff", 0x90, 0x36, 0x22),
+                ("red", "ff0000ff", 0x29, 0xef, 0x6e),
+                ("blue", "0000ffff", 0x52, 0x5a, 0xef),
+                ("magenta", "ff00ffff", 0x6a, 0xc9, 0xdd),
+            ),
+            True: (
+                ("black", "000000ff", 0x00, 0x80, 0x80),
+                ("white", "ffffffff", 0xff, 0x80, 0x80),
+                ("green", "00ff00ff", 0x95, 0x2c, 0x15),
+                ("red", "ff0000ff", 0x1d, 0xff, 0x6b),
+                ("blue", "0000ffff", 0x4d, 0x55, 0xff),
+                ("magenta", "ff00ffff", 0x6a, 0xd4, 0xeb),
+            ),
+        }
+        w = h = 64
+        backing, win = self._make_gl_backing()
+        backing.size = backing.render_size = (w, h)
+        try:
+            ctx = self._full_gl_init(backing)
+            if not ctx:
+                self.skipTest("no OpenGL context")
+            for pixel_format in ("YUV420P10", "YUV422P10", "YUV444P10"):
+                divs = get_subsampling_divs(pixel_format)
+                for full_range, colors in test_data.items():
+                    shader = f"{pixel_format}_to_RGB" + ("_FULL" if full_range else "")
+                    for name, pixel, *yuv in colors:
+                        planes = []
+                        strides = []
+                        for i, (xdiv, ydiv) in enumerate(divs):
+                            pw = w // xdiv
+                            # 8-bit sample scaled up to 10-bit, in 16-bit little-endian words:
+                            planes.append(struct.pack("<H", yuv[i] << 2) * (pw * (h // ydiv)))
+                            strides.append(pw * 2)
+                        img = ImageWrapper(0, 0, w, h, planes, pixel_format, 24, strides,
+                                           planes=ImageWrapper.PLANAR_3)
+                        img.set_full_range(full_range)
+                        with ctx:
+                            backing.paint_planar(ctx, shader, "test", img, 0, 0, w, h, w, h,
+                                                 typedict(), [])
+                            glBindFramebuffer(GL_READ_FRAMEBUFFER, backing.offscreen_fbo)
+                            glReadBuffer(GL_COLOR_ATTACHMENT0)
+                            data = glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE)
+                        bgrx = bytes.fromhex(pixel)
+                        expected = (bgrx[2], bgrx[1], bgrx[0])
+                        # `glReadPixels` gives us either bytes or a (h, w, 4) array,
+                        # the image is a flat colour so any pixel will do:
+                        first = data if isinstance(data, bytes) else data[0][0]
+                        rgb = tuple(int(v) for v in first[:3])
+                        delta = max(abs(a - b) for a, b in zip(rgb, expected))
+                        info = f"{pixel_format} {name} full_range={full_range}"
+                        assert delta <= 3, f"{info}: expected {expected} but got {rgb}"
+        finally:
+            backing.close()
+            win.destroy()
 
     # ------------------------------------------------------------------
     # resize_fbo / copy_fbo / swap_fbos

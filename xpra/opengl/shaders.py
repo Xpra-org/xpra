@@ -53,16 +53,30 @@ CS_MULTIPLIERS: dict[str, tuple[float, float, float, float, float]] = {
 }
 
 
-def gen_YUV_to_RGB(fmt="YUV420P", cs="bt601", full_range=True) -> str:
+def gen_YUV_to_RGB(fmt="YUV420P", cs="bt601", full_range=True, bits=8) -> str:
     if cs not in CS_MULTIPLIERS:
         raise ValueError(f"unsupported colorspace {cs}")
+    if bits not in (8, 10):
+        raise ValueError(f"unsupported bit depth {bits}")
 
     a, b, c, d, e = CS_MULTIPLIERS[cs]
     f = - c * d / b
     g = - a * e / b
-    ymult = "" if full_range else " * 1.1643835616438356"
-    uvmult = "" if full_range else " * 1.1383928571428572"
-    yoffset = "" if full_range else " - 0.062745098"
+    if bits == 10:
+        # the 10-bit samples are stored in the low bits of 16-bit words,
+        # but the sampler normalizes them as if they used the full 16-bit range,
+        # so scale them back up to 0..1:
+        scale = f" * {(2 ** 16 - 1) / (2 ** 10 - 1)}"
+        # 10-bit narrow range: Y 64-940, UV 64-960 out of 0-1023
+        # (different from 8-bit's 16-235/16-240 out of 0-255)
+        ymult = "" if full_range else " * 1.1678082191780821"
+        uvmult = "" if full_range else " * 1.1417410714285714"
+        yoffset = "" if full_range else " - 0.0625610948191593"
+    else:
+        scale = ""
+        ymult = "" if full_range else " * 1.1643835616438356"
+        uvmult = "" if full_range else " * 1.1383928571428572"
+        yoffset = "" if full_range else " - 0.062745098"
     defines = []
 
     def add_div(name: str, xdiv=1, ydiv=1):
@@ -83,7 +97,7 @@ def gen_YUV_to_RGB(fmt="YUV420P", cs="bt601", full_range=True) -> str:
     has_alpha = fmt.find("A") >= 0
     if has_alpha:
         alphasampler = "uniform sampler2DRect A;"
-        alpha = "texture(A, pos/Adiv).r"
+        alpha = f"texture(A, pos/Adiv).r{scale}"
     else:
         alphasampler = ""
         alpha = "1.0"
@@ -104,9 +118,9 @@ layout(location = 0) out vec4 frag_color;
 void main()
 {{
     vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
-    highp float y = (texture(Y, pos/Ydiv).r{yoffset}){ymult};
-    highp float u = (texture(U, pos/Udiv).r - 0.5){uvmult};
-    highp float v = (texture(V, pos/Vdiv).r - 0.5){uvmult};
+    highp float y = (texture(Y, pos/Ydiv).r{scale}{yoffset}){ymult};
+    highp float u = (texture(U, pos/Udiv).r{scale} - 0.5){uvmult};
+    highp float v = (texture(V, pos/Vdiv).r{scale} - 0.5){uvmult};
     highp float a = {alpha};
 
     highp float r = y +           {e} * v;
@@ -402,6 +416,9 @@ for full in (False, True):
         "YUVA420P", "YUVA422P", "YUVA444P",
     ):
         SOURCE[f"{fmt}_to_RGB{suffix}"] = gen_YUV_to_RGB(fmt, full_range=full)
+
+    for fmt in ("YUV420P10", "YUV422P10", "YUV444P10"):
+        SOURCE[f"{fmt}_to_RGB{suffix}"] = gen_YUV_to_RGB(fmt, full_range=full, bits=10)
 
 
 def main() -> None:
