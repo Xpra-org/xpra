@@ -46,6 +46,13 @@ _SIG_INV_SCALE = 1.0 / _SIG_SCALE
 _SIG_OFF_SCALE = _SIG_OFFSET / _SIG_SCALE
 
 
+# 10-bit samples are stored in the low bits of 16-bit words,
+# but the sampler normalizes them as if they used the full 16-bit range,
+# so the shaders have to scale them back up by 65535/1023.
+# (the divisor must be a float: with `cdivision`, cython folds
+#  a division between two integer literals into an integer division)
+P10_SCALE = (2 ** 16 - 1) / (2.0 ** 10 - 1)
+
 CS_MULTIPLIERS: dict[str, tuple[float, float, float, float, float]] = {
     "bt601": (0.299, 0.587, 0.114, 1.772, 1.402),
     "bt709": (0.2126, 0.7152, 0.0722, 1.8556, 1.5748),
@@ -63,10 +70,8 @@ def gen_YUV_to_RGB(fmt="YUV420P", cs="bt601", full_range=True, bits=8) -> str:
     f = - c * d / b
     g = - a * e / b
     if bits == 10:
-        # the 10-bit samples are stored in the low bits of 16-bit words,
-        # but the sampler normalizes them as if they used the full 16-bit range,
-        # so scale them back up to 0..1:
-        scale = f" * {(2 ** 16 - 1) / (2 ** 10 - 1)}"
+        # scale the samples back up to 0..1:
+        scale = f" * {P10_SCALE}"
         # 10-bit narrow range: Y 64-940, UV 64-960 out of 0-1023
         # (different from 8-bit's 16-235/16-240 out of 0-255)
         ymult = "" if full_range else " * 1.1678082191780821"
