@@ -140,9 +140,10 @@ class _EchoServer:
         # brief pause so the listener thread enters WaitForSingleObject before clients try
         time.sleep(0.08)
 
-    def _on_connect(self, socktype: str, listener, pipe_handle) -> None:
+    def _on_connect(self) -> None:
+        # the listener leaves the accepted handle on `pending_handle` (like `socket.accept()`)
         from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-        conn = NamedPipeConnection(self.pipe_name, pipe_handle, {})
+        conn = NamedPipeConnection(self.pipe_name, self.listener.pending_handle, {})
         with self._lock:
             self._conns.append(conn)
             self.connection_count += 1
@@ -314,7 +315,8 @@ class TestNamedPipeBasic(unittest.TestCase):
         pipe_name = _unique_pipe("stop")
         closed_handles = []
 
-        def on_connect(socktype, listener, pipe_handle):
+        def on_connect():
+            pipe_handle = listener.pending_handle
             closed_handles.append(pipe_handle)
             CloseHandle(pipe_handle)
 
