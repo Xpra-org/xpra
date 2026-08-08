@@ -336,7 +336,7 @@ Recommends: gstreamer1.0-tools
         ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
         ,gstreamer1.0-plugins-bad
-#                  ^^ removesilence
+#                  ^^ opusparse, faad ^^
         ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
 Suggests: xpra-audio-server

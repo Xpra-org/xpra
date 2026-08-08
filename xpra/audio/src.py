@@ -92,17 +92,6 @@ def get_source_pipeline_elements(src_type: str, src_options: dict,
     channels = _get_source_channels(src_type, src_options)
     if channels > 0:
         pipeline_els.append(f"audio/x-raw,channels={channels}")
-    # `removesilence` pad templates are fixed at `channels=1`, so it cannot be used
-    # with a multi-channel source: it would both fail to link with the caps filter above
-    # and pin the whole pipeline to mono.
-    # It is also a no-op with the default properties we instantiate it with
-    # (`remove=false`, silence thresholds disabled), so skipping it costs us nothing:
-    if channels <= 1 and has_plugins("removesilence"):
-        pipeline_els += [
-            "removesilence",
-            "audioconvert",
-            "audioresample"
-        ]
     pipeline_els.append(get_element_str("volume", {"name": "volume", "volume": volume}))
     if encoder:
         encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))

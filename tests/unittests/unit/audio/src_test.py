@@ -26,18 +26,12 @@ class TestSourcePipelineElements(unittest.TestCase):
     def test_no_caps_filter_when_unknown(self):
         assert not [x for x in _elements(0) if x.startswith("audio/x-raw")]
 
-    def test_removesilence_skipped_for_multichannel(self):
-        # `removesilence` pad templates are fixed at channels=1,
-        # so it must never appear alongside a multi-channel caps filter:
-        for channels in (2, 6):
+    def test_no_removesilence(self):
+        # `removesilence` pad templates are fixed at channels=1, and it is a no-op
+        # with the default properties, so it must never be added to the pipeline:
+        for channels in (0, 1, 2, 6):
             els = _elements(channels)
-            assert "removesilence" not in els, f"removesilence must be skipped for {channels} channels: {els}"
-
-    def test_removesilence_used_for_mono(self):
-        if not has_plugins("removesilence"):
-            raise unittest.SkipTest("removesilence plugin is not installed")
-        for channels in (0, 1):
-            assert "removesilence" in _elements(channels), f"removesilence missing for {channels} channels"
+            assert "removesilence" not in els, f"removesilence must not be used ({channels} channels): {els}"
 
 
 class TestSourcePipelineParses(unittest.TestCase):

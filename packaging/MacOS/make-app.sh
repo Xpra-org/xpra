@@ -641,7 +641,7 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
   GST_PLUGIN_DIR="${RSCDIR}/lib/gstreamer-1.0"
 	KEEP="${RSCDIR}/lib/gstreamer-1.0.keep"
 	mkdir "${KEEP}" || exit 1
-	PLUGINS="app applemedia audioconvert audiolatency audioparsers audiorate audioresample audiotestsrc coreelements cutter faac flac gdp isomp4 matroska ogg opus opusparse oss4 osxaudio removesilence rtp speex volume vorbis wavenc wavparse"
+	PLUGINS="app applemedia audioconvert audiolatency audioparsers audiorate audioresample audiotestsrc coreelements cutter faac flac gdp isomp4 matroska ogg opus opusparse oss4 osxaudio rtp speex volume vorbis wavenc wavparse"
 	for x in $PLUGINS; do
 		KMP="${KMP} $x"
 		mv "${GST_PLUGIN_DIR}/libgst${x}.dylib" "${KEEP}/"
