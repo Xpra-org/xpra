@@ -617,15 +617,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         bc = self.get_backing_class()
         alphalog("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s",
                  self._has_alpha, bc, bc.HAS_ALPHA, self.get_realized())
-        # by default, only RGB (no transparency):
-        # rgb_formats = tuple(BACKING_CLASS.RGB_MODES)
-        self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
+        # note: the rgb formats are not set here,
+        # `setup_window` runs after this and overwrites them
+        # with the ones the backing instance can really paint with
         # only set the visual if we need to enable alpha:
         # (breaks the headerbar otherwise!)
         if not self.get_realized() and self._has_alpha:
             if set_visual(self, True):
-                if self._has_alpha:
-                    self._client_properties["encodings.rgb_formats"] = ["RGBA", "RGB", "RGBX"]
                 self._window_alpha = self._has_alpha
             else:
                 alphalog("failed to set RGBA visual")

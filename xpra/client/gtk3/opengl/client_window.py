@@ -72,15 +72,6 @@ class GLClientWindowBase(ClientWindow):
                 self.repaint(0, 0, *self._size)
         log("gl magic_key%s border=%s, backing=%s", args, self.border, b)
 
-    def set_alpha(self) -> None:
-        super().set_alpha()
-        rgb_formats = self._client_properties.setdefault("encodings.rgb_formats", [])
-        # gl.backing supports BGR(A) too:
-        if "RGBA" in rgb_formats:
-            rgb_formats.append("BGRA")
-        if "RGB" in rgb_formats:
-            rgb_formats.append("BGR")
-
     def do_configure_event(self, event) -> None:
         log("GL do_configure_event(%s)", event)
         ClientWindow.do_configure_event(self, event)
