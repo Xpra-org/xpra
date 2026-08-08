@@ -2064,7 +2064,7 @@ if WIN32:
             # add the gstreamer plugins we need:
             GST_PLUGINS = (
                 "app",
-                "cutter", "removesilence",
+                "cutter",
                 # muxers:
                 "gdp", "matroska", "ogg", "isomp4",
                 "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",

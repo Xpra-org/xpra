@@ -143,12 +143,6 @@ class AudioSource(AudioPipeline):
         channels = _get_source_channels(src_type, src_options)
         if channels > 0:
             pipeline_els.append(f"audio/x-raw,channels={channels}")
-        if has_plugins("removesilence"):
-            pipeline_els += [
-                "removesilence",
-                "audioconvert",
-                "audioresample"
-            ]
         pipeline_els.append(get_element_str("volume", {"name": "volume", "volume": volume}))
         if encoder:
             encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
