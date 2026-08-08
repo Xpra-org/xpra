@@ -200,11 +200,19 @@ class CairoBackingBase(WindowBackingBase):
 
     def _do_paint_rgb32(self, img_data, x:int, y:int, width:int, height:int,
                         render_width:int, render_height:int, rowstride:int, options) -> bool:
-        if self._alpha_enabled:
+        # `BGRX` and `RGBX` carry padding rather than alpha,
+        # and the value of the `X` byte is undefined:
+        # painting them into an `ARGB32` surface would turn it into transparency,
+        # `RGB24` ignores it instead (and can still be painted without a copy)
+        rgb_format = options.strget("rgb_format", "RGBX")
+        paint_alpha = self._alpha_enabled and rgb_format.find("A") >= 0
+        if paint_alpha:
             cformat = FORMAT_ARGB32
         else:
             cformat = FORMAT_RGB24
-        return self._do_paint_rgb(cformat, True, img_data,
+        # the `GdkPixbuf` fallback needs to know how many bytes per pixel the data has,
+        # not whether we want to paint with alpha:
+        return self._do_paint_rgb(cformat, self._alpha_enabled, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb(self, *args) -> bool:
