@@ -295,7 +295,7 @@ cdef class Decoder:
         self.frames += 1
         full_range = options.boolget("full-range", image.range == AOM_CR_FULL_RANGE)
         wrapper = ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, depth,
-                               pystrides, planes=PlanarFormat.PLANAR_3, bytesperpixel=Bpp, full_range=full_range)
+                               pystrides, bytesperpixel=Bpp, planes=PlanarFormat.PLANAR_3, full_range=full_range)
         self.image_wrapper = weakref.ref(wrapper)
         return wrapper
 
