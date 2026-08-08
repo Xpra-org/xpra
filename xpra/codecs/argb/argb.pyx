@@ -249,10 +249,11 @@ cdef memoryview rgbdata_to_bgrx(const unsigned char *rgb, const int rgb_len):
     cdef MemBuf output_buf = getbuf(mi*4, 0)
     cdef unsigned int* bgrx = <unsigned int*> output_buf.get_mem()
     cdef int si = 0, di = 0
-    cdef unsigned int p
     with nogil:
         while di < mi:
-            bgrx[di] = rgb[si] | (rgb[si+1]<<8) | (rgb[si+2]<<16)
+            #the `X` byte must be set to `0xff`,
+            #so that the pixel data is also valid as `BGRA`:
+            bgrx[di] = rgb[si] | (rgb[si+1]<<8) | (rgb[si+2]<<16) | (<unsigned int> 0xff000000)
             di += 1
             si += 3
     return memoryview(output_buf)
