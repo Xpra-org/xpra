@@ -44,7 +44,17 @@ class GDIBacking(WindowBackingBase):
         self._backing = True
         SelectObject(hdc, self.bitmap)
 
-    def create_bitmap(self, width, height) -> HBITMAP:
+    def bitmap_header(self, width: int, height: int) -> BITMAPV5HEADER:
+        """
+        Describe the DIB section to GDI.
+        The `BGRX` case must declare *no* alpha channel: the `X` byte of the pixels
+        the server sends us is padding, and its value is undefined.
+        Some producers do fill it in - `rgb_to_bgrx` writes `0xff`,
+        so does libyuv's `*ToARGB` family - but nothing guarantees it:
+        an X11 depth-24 capture ships whatever the pad bits happened to hold,
+        and `TJPF_BGRX` is documented as leaving the `X` component undefined.
+        Declaring an alpha mask over it would let GDI - and DWM - interpret that padding.
+        """
         header = BITMAPV5HEADER()
         header.bV5Size = sizeof(BITMAPV5HEADER)
         header.bV5Width = width
@@ -58,7 +68,14 @@ class GDIBacking(WindowBackingBase):
             header.bV5BlueMask = 0x000000FF  # Blue in byte 0
             header.bV5AlphaMask = 0xFF000000  # ← Alpha in byte 3 (non-zero!)
         else:
+            # 32-bit `BI_RGB` is the "top byte unused" format:
+            # GDI copies it but never interprets it, which is exactly what `BGRX` needs
             header.bV5Compression = win32con.BI_RGB
+            header.bV5AlphaMask = 0  # (already the default, spelled out: `X` is not alpha)
+        return header
+
+    def create_bitmap(self, width, height) -> HBITMAP:
+        header = self.bitmap_header(width, height)
         bitmap = CreateDIBSection(self.hdc, byref(header), win32con.DIB_RGB_COLORS, byref(self.pixels), None, 0)
         if not self.pixels or not bitmap:
             log.error("Error creating bitmap backing of size %ix%i", width, height)
@@ -100,6 +117,16 @@ class GDIBacking(WindowBackingBase):
         self.size = (width, height)
 
     def paint(self, hdc: HDC) -> None:
+        """
+        Blit the backing into the DC `WM_PAINT` gave us.
+        Neither raster operation below specifies what happens to the top byte,
+        but it does not matter: the destination is an ordinary window DC,
+        and nothing reads the top byte of one of those.
+        The calls that *do* consume it - `AlphaBlend` with `AC_SRC_ALPHA`,
+        `UpdateLayeredWindow` with `ULW_ALPHA` -
+        must only ever be used with an alpha-enabled backing.
+        (`TransparentBlt` is not one of them: it colour-keys on an RGB value.)
+        """
         if not self.bitmap:
             return
         bw, bh = self.size
