@@ -273,6 +273,19 @@ TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int], TEST_DATA]]] = {
                 unhex("1200322439afbc1040001040c0000000c0004000900080006000300018000d14000600f1e476d240"),
             ),
         },
+        # gstreamer's `av1enc` has no 10-bit input caps, so this one comes from `aomenc`,
+        # fed the raw output of the same `videotestsrc` pipeline with format=I420_10LE:
+        # aomenc --ivf --width=320 --height=240 --input-bit-depth=10 --bit-depth=10 --profile=0
+        #        --lag-in-frames=0 --passes=1 --end-usage=q --cq-level=32 --limit=5 -o frames.ivf white10.raw
+        "YUV420P10": {
+            (320, 240): (
+                unhex("12000a0b000000043cffbdfff9c040321b100084e00000800000800c58dd90054afcf0d35d9411f29524a3e8"),
+                unhex("1200321d300380800000468a800000900000a00000569dcc3944616e69ee1111fc"),
+                unhex("1200321b3004c1000200468a400000900000700000010bcb56597f099d4620"),
+                unhex("120032193006c2040400468a4000009000007000001806f3b9f779b890"),
+                unhex("120032183008c4088600468a4000009000007000003c74f8b6186ab8"),
+            ),
+        },
         # gstreamer's `av1enc` has no grayscale input caps, so this one comes from `aomenc`:
         # aomenc --ivf --width=320 --height=240 --monochrome --lag-in-frames=0 --passes=1
         #        --end-usage=q --cq-level=32 --limit=5 -o frames.ivf white.i420
