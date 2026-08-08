@@ -10,7 +10,7 @@ from collections.abc import MutableSequence, Callable
 from ctypes.wintypes import HWND, BYTE, HICON, HDC
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
-from xpra.client.gui.window.backing import fire_paint_callbacks
+from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.win32.gdi_backing import GDIBacking
 from xpra.os_util import gi_import
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
@@ -172,6 +172,9 @@ class ClientWindow(GObject.GObject):
         self.width = max(1, geom[2])
         self.height = max(1, geom[3])
         self._backing_size = backing_size
+        # the properties to send to the server with the `map-window` packet,
+        # the backing adds its encoding properties to them in `update_client_properties`:
+        self._client_properties: dict[str, Any] = dict(client_properties or {})
         self.alpha = metadata.boolget("has-alpha", False)
         if override_redirect:
             metadata["override-redirect"] = override_redirect
@@ -219,6 +222,7 @@ class ClientWindow(GObject.GObject):
         self.backing = GDIBacking(self.wid, self.hdc, self.hwnd, bw, bh, self.alpha)
         self.backing.init(self.width, self.height, bw, bh)
         self.init_backing_props()
+        self.window_created()
         # apply the metadata the window was created with:
         # (`set_metadata()` is otherwise only reached later, via `update_metadata()`,
         # on a subsequent server metadata packet)
@@ -248,6 +252,40 @@ class ClientWindow(GObject.GObject):
         if backing := self.backing:
             backing.border = self.border
 
+    def window_created(self) -> None:
+        """
+        Called once both the native window and its backing are ready:
+        the `map-window` packet can only be sent at this point since it carries
+        the encoding properties of the backing instance.
+        It must be emitted before the metadata is applied,
+        so that the server sees the window mapped before any `window-configure`
+        triggered by the geometry changes the metadata may cause.
+        """
+        self.update_client_properties()
+        self.emit("mapped")
+
+    def update_client_properties(self) -> None:
+        """
+        Tell the server about the encoding capabilities of this backing instance:
+        without them, the server can only use the generic capabilities we sent at
+        connection time, which may not be supported by this particular backing.
+        """
+        if not self.backing:
+            return
+        enc = self.client.get_subsystem("encoding") if self.client else None
+        encoding_defaults = enc.encoding_defaults if enc else {}
+        self._client_properties.update(get_backing_client_properties(self.backing, encoding_defaults))
+
+    def pop_client_properties(self) -> dict[str, Any]:
+        """
+        Consume the client properties queued for the next
+        `map-window` or `window-configure` packet:
+        the server keeps them, so they only have to be sent when they change.
+        """
+        props = self._client_properties
+        self._client_properties = {}
+        return props
+
     def update_backing_render_size(self, width: int, height: int) -> None:
         """
         The native window's on-screen (client) size changed - either because the OS
@@ -265,6 +303,9 @@ class ClientWindow(GObject.GObject):
         else:
             bw, bh = width, height
         backing.init(width, height, bw, bh)
+        # the render size is part of the encoding properties,
+        # queue them for the `window-configure` packet that follows:
+        self.update_client_properties()
 
     def get_system_geometry(self, exstyle: int) -> tuple[int, int, int, int]:
         """
@@ -324,7 +365,9 @@ class ClientWindow(GObject.GObject):
                     self.update_backing_render_size(create.cx, create.cy)
                     self.width = create.cx
                     self.height = create.cy
-                self.emit("mapped")
+                # the window is not mapped from here:
+                # the GDI backing does not exist yet at this point,
+                # `create()` emits `mapped` once it does (see `window_created`)
             if msg == win32con.WM_CLOSE:
                 self.emit("closed")
                 return 0

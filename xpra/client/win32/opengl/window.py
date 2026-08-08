@@ -122,6 +122,7 @@ class GLClientWindow(ClientWindow):
         bw, bh = self._backing_size
         self.backing.init(self.width, self.height, bw, bh)
         self.init_backing_props()
+        self.window_created()
         self.set_metadata(typedict(self.metadata))
 
     def realize(self) -> None:

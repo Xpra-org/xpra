@@ -240,7 +240,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             geometry = display.get_server_position(raw_position) + geometry[2:]
         else:
             raw_position = geometry[:2]
-        packet = [WINDOW_MAP, window.wid, *geometry, {}, {}]
+        packet = [WINDOW_MAP, window.wid, *geometry, window.pop_client_properties(), {}]
         monitor = self.get_monitor_position(window)
         monitor["raw-position"] = raw_position
         if monitor:
@@ -296,6 +296,9 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             "resize-counter": window.resize_counter,
             "raw-position": raw_position,
         }
+        # the backing's encoding properties change with the render size:
+        if props := window.pop_client_properties():
+            config["properties"] = props
         if monitor := self.get_monitor_position(window):
             config["monitor"] = monitor
         self.send(WINDOW_CONFIGURE, window.wid, config)
