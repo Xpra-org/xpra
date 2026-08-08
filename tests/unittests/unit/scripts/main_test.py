@@ -12,11 +12,12 @@ import sys
 import tempfile
 import unittest
 from io import BytesIO
-from subprocess import Popen, DEVNULL, PIPE
+from subprocess import Popen, DEVNULL, PIPE, run
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.os_util import getuid, POSIX, OSX
+from xpra.exit_codes import ExitCode
 from xpra.util.env import OSEnvContext
 from xpra.util.io import pollwait
 from xpra.util.objects import AdHocStruct
@@ -330,6 +331,38 @@ class TestMain(unittest.TestCase):
         with OSEnvContext():
             os.environ["XPRA_NOMD5"] = "1"
             self._test_subcommand("version-info")
+
+    def test_net_common_not_imported_early(self):
+        # `xpra.net.common` freezes `BACKWARDS_COMPATIBLE` when it is first imported,
+        # and `xpra.net.packet_type` derives all its packet names from it,
+        # so importing it before `configure_env` has applied the `env` option
+        # would silently ignore `env=XPRA_BACKWARDS_COMPATIBLE=0`
+        # (from the command line via `--env` or from a configuration file)
+        script = "\n".join((
+            "import sys",
+            "from xpra.platform import init, set_default_name",
+            "set_default_name('Xpra')",
+            "init()",
+            "import xpra.scripts.main",
+            "assert 'xpra.net.common' not in sys.modules, "
+            "'xpra.net.common must not be imported before configure_env() runs'",
+        ))
+        r = run([sys.executable, "-c", script], stdout=DEVNULL, stderr=PIPE)
+        assert r.returncode == 0, f"early import check failed: {r.stderr.decode()}"
+
+    def test_backwards_compatible_env_option(self):
+        if not POSIX:
+            # `initenv` is unsupported on other platforms for unrelated reasons
+            return
+        # `initenv` is refused when backwards compatibility is turned off,
+        # which makes it an observable end-to-end check that `--env` is applied
+        # early enough to reach `xpra.net.common`:
+        proc = self._run_subcommand("--env=XPRA_BACKWARDS_COMPATIBLE=0 initenv")
+        assert proc.returncode == ExitCode.UNSUPPORTED, \
+            f"expected {int(ExitCode.UNSUPPORTED)} with backwards compatibility disabled, got {proc.returncode}"
+        # and that the check is not vacuous:
+        proc = self._run_subcommand("--env=XPRA_BACKWARDS_COMPATIBLE=1 initenv")
+        assert proc.returncode == 0, f"initenv failed with {proc.returncode}"
 
 
 def main():

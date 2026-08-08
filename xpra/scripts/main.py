@@ -22,7 +22,6 @@ from typing import Any, NoReturn
 from collections.abc import Callable, Iterable
 
 from xpra.common import noerr, noop, may_show_progress, may_notify_client, set_progress_process
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import csv, print_nested_dict, sorted_nicely, bytestostr
@@ -993,6 +992,11 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         from xpra.gtk.dialogs import toolbox
         return toolbox.main(args)
     if mode == "initenv":
+        # this import must stay local:
+        # `xpra.net.common` freezes `BACKWARDS_COMPATIBLE` (and the packet names derived from it
+        # in `xpra.net.packet_type`) when it is first imported,
+        # so it must not be imported before `configure_env` has applied the `env` option
+        from xpra.net.common import BACKWARDS_COMPATIBLE
         if not BACKWARDS_COMPATIBLE:
             raise InitExit(ExitCode.UNSUPPORTED, "initenv is no longer supported")
         # legacy subcommand should be removed in v7
