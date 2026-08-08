@@ -48,7 +48,7 @@ class TestParsing(unittest.TestCase):
             opts, _args = parse_cmdline([
                 "xpra", "start",
                 "--socket-dir=/tmp/a",
-                "--socket-dirs=/tmp/b:/tmp/c",
+                "--socket-dirs=" + os.path.pathsep.join(("/tmp/b", "/tmp/c")),
             ])
         self.assertEqual(opts.socket_dir, "/tmp/a")
         self.assertEqual(opts.socket_dirs, ["/tmp/a", "/tmp/b", "/tmp/c"])
@@ -63,7 +63,7 @@ class TestParsing(unittest.TestCase):
             opts, _args = parse_cmdline([
                 "xpra", "start",
                 "--socket-dir=/tmp/a",
-                "--socket-dirs=/tmp/b:/tmp/a:/tmp/c",
+                "--socket-dirs=" + os.path.pathsep.join(("/tmp/b", "/tmp/a", "/tmp/c")),
             ])
         self.assertEqual(opts.socket_dirs, ["/tmp/a", "/tmp/b", "/tmp/c"])
         self.assertEqual(len(records), 1)
@@ -72,7 +72,7 @@ class TestParsing(unittest.TestCase):
         cmdline = [
             "xpra", "start",
             "--socket-dir=/tmp/a",
-            "--socket-dirs=/tmp/b:/tmp/c",
+            "--socket-dirs=" + os.path.pathsep.join(("/tmp/b", "/tmp/c")),
         ]
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
