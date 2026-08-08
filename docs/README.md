@@ -141,6 +141,7 @@ Build from source or prepare packages for a supported platform.
 Find downloads, answers, source code, and ways to support the project.
 
 - [Download Xpra](https://github.com/Xpra-org/xpra/wiki/Download)
+- [Debugging Xpra](Debugging.md)
 - [Frequently asked questions](FAQ.md)
 - [GitHub repository](https://github.com/Xpra-org/xpra)
 - [Community discussions](https://github.com/orgs/Xpra-org/discussions)

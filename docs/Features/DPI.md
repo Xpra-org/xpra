@@ -13,7 +13,7 @@ See also: [image depth](Image-Depth.md)
 
 
 ## Debugging
-For [debugging](https://github.com/Xpra-org/xpra/wiki/Debugging) or [reporting issues](https://github.com/Xpra-org/xphttps://github.com/Xpra-org/xpra/issues/new), the most relevant pieces of information can be collected from:
+For [debugging](../Debugging.md) or [reporting issues](https://github.com/Xpra-org/xpra/issues/new), the most relevant pieces of information can be collected from:
 * client and server debug output with `-d dpi` command line switch
 * `xdpyinfo` output
 * `xrandr` output

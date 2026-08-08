@@ -1,0 +1,77 @@
+digraph Subsystems {
+    graph [rankdir=LR, bgcolor="transparent", fontname="sans-serif", fontsize=16,
+           nodesep=0.28, ranksep=0.75, pad=0.2, compound=true,
+           labelloc=t, label="Xpra subsystem dependencies"];
+    node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#9aaabd",
+          fontname="sans-serif", fontsize=11, margin="0.12,0.07"];
+    edge [color="#46627d", arrowsize=0.7, penwidth=1.2];
+
+    Core [label="Server core\n(sockets, auth, dispatch)", fillcolor="#fff0f4", color="#a04", penwidth=2];
+
+    subgraph cluster_Backend {
+        label="Display backend (mutually exclusive)";
+        color="#8ea9c2"; style="rounded,filled"; fillcolor="#f4f8fc";
+        X11 [label="x11"]; Wayland [label="wayland"];
+    }
+
+    subgraph cluster_Surface {
+        label="Display surface";
+        color="#8ea9c2"; style="rounded,filled"; fillcolor="#f4f8fc";
+        Window [label="window"]; Keyboard [label="keyboard"]; Pointer [label="pointer"];
+        Display [label="display"]; Cursor [label="cursor"]; OpenGL [label="opengl"]; Bell [label="bell"];
+        {rank=same; Window; Keyboard; Pointer;}
+    }
+
+    subgraph cluster_Media {
+        label="Media pipeline";
+        color="#8ea9c2"; style="rounded,filled"; fillcolor="#f4f8fc";
+        GStreamer [label="gstreamer"]; Audio [label="audio"]; Pulseaudio [label="pulseaudio"];
+        AVSync [label="av_sync"]; Webcam [label="webcam"]; Encoding [label="encoding"];
+    }
+
+    subgraph cluster_X11Ext {
+        label="X11-only extensions";
+        color="#8ea9c2"; style="rounded,filled"; fillcolor="#f4f8fc";
+        ICC [label="icc"]; BellSrv [label="bell server"]; SysTray [label="systray"];
+    }
+
+    subgraph cluster_UI {
+        label="UI / lifecycle";
+        color="#8ea9c2"; style="rounded,filled"; fillcolor="#f4f8fc";
+        GTK [label="gtk"]; Tray [label="tray"]; Watcher [label="watcher"]; Power [label="power"];
+        Suspend [label="suspend"]; Idle [label="idle"]; Debug [label="debug"]; Splash [label="splash"];
+    }
+
+    subgraph cluster_Net {
+        label="Network / transport";
+        color="#8ea9c2"; style="rounded,filled"; fillcolor="#f4f8fc";
+        SSL [label="ssl"]; SSH [label="ssh"]; HTTP [label="http"]; MDNS [label="mdns"];
+        RFB [label="rfb"]; Control [label="control"]; SSHAgent [label="ssh_agent"];
+    }
+
+    subgraph cluster_Session {
+        label="Session features";
+        color="#8ea9c2"; style="rounded,filled"; fillcolor="#f4f8fc";
+        Clipboard [label="clipboard"]; FileT [label="file"]; Printer [label="printer"];
+        Notification [label="notification"]; Command [label="command"]; Logging [label="logging"];
+        Ping [label="ping"]; Bandwidth [label="bandwidth"]; Shell [label="shell"]; MMap [label="mmap"];
+        DBus [label="dbus"]; Encryption [label="encryption"]; Sharing [label="sharing"];
+        ClientSession [label="client_session"];
+    }
+
+    Window -> Display; Keyboard -> Display; Pointer -> Display;
+    Display -> Cursor; Display -> OpenGL; Display -> Bell;
+    GStreamer -> Audio; Audio -> Pulseaudio; Audio -> AVSync;
+    GStreamer -> Webcam [style=dashed]; GStreamer -> Encoding [style=dashed];
+    X11 -> ICC; Display -> ICC; X11 -> BellSrv; Bell -> BellSrv; X11 -> SysTray;
+    GTK -> Tray; SysTray -> Tray [style=dashed];
+    SSL -> HTTP [style=dashed]; SSH -> SSHAgent;
+    Printer -> FileT; DBus -> Notification; DBus -> Tray [style=dashed];
+
+    Core -> X11 [lhead=cluster_Backend];
+    Core -> Window [lhead=cluster_Surface];
+    Core -> GStreamer [lhead=cluster_Media];
+    Core -> GTK [lhead=cluster_UI];
+    Core -> SSL [lhead=cluster_Net];
+    Core -> Clipboard [lhead=cluster_Session];
+}
