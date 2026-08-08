@@ -1361,9 +1361,15 @@ class GLWindowBackingBase(WindowBackingBase):
                     raise ValueError(f"not enough pixel data: {len(img_data)} bytes, expected {needed}"
                                      f" for {width}x{height} {rgb_format} with rowstride={rowstride}")
 
+            # BGRX and RGBX contain padding rather than alpha.  Storing those
+            # uploads in an RGB texture discards the X component; framebuffer
+            # reads supply the missing alpha component as 1.0 when we blit to
+            # an alpha-capable backing.
+            upload_internal_format = GL_RGB8 if rgb_format in ("BGRX", "RGBX") else self.internal_format
+
             self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes) to %dx%d, using GL %s format=%s / %s to internal format=%s",
                            rgb_format, x, y, width, height, len(img_data), render_width, render_height,
-                           upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat), DATATYPE_TO_STR.get(ptype), INTERNAL_FORMAT_TO_STR.get(self.internal_format))
+                           upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat), DATATYPE_TO_STR.get(ptype), INTERNAL_FORMAT_TO_STR.get(upload_internal_format))
 
             # Upload data as temporary RGB texture
             target = GL_TEXTURE_RECTANGLE_ARB
@@ -1377,7 +1383,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
             glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
-            glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, ptype, img_data)
+            glTexImage2D(target, 0, upload_internal_format, width, height, 0, pformat, ptype, img_data)
 
             # Draw textured RGB quad at the right coordinates
             glBegin(GL_QUADS)
