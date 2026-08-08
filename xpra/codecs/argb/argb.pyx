@@ -212,7 +212,7 @@ def bgrx_to_rgb(buf: SizedBuffer) -> memoryview:
 
 cdef memoryview bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
     if bgrx_len <= 0:
-        return None
+        return emptymem
     assert bgrx_len>0 and bgrx_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgrx_len
     #number of pixels:
     cdef int mi = bgrx_len//4
@@ -241,7 +241,7 @@ def rgb_to_bgrx(buf: SizedBuffer) -> memoryview:
 
 cdef memoryview rgbdata_to_bgrx(const unsigned char *rgb, const int rgb_len):
     if rgb_len <= 0:
-        return None
+        return emptymem
     assert rgb_len>0 and rgb_len % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % rgb_len
     #number of pixels:
     cdef int mi = rgb_len//3
@@ -307,7 +307,7 @@ def rgb_to_l(buf: SizedBuffer) -> memoryview:
 cdef memoryview rgbdata_to_l(const unsigned char *rgb, const int rgb_len,
                   const unsigned char rindex, const unsigned char gindex, const unsigned char bindex):
     if rgb_len <= 0:
-        return None
+        return emptymem
     assert rgb_len>0 and rgb_len % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % rgb_len
     #number of pixels:
     cdef int mi = rgb_len//3
@@ -622,7 +622,7 @@ def alpha(image) -> memoryview:
 
 cdef memoryview alpha_data(const unsigned char* rgba, const int rgba_len, const char index):
     if rgba_len <= 0:
-        return None
+        return emptymem
     assert rgba_len>0 and rgba_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % rgba_len
     cdef MemBuf output_buf = getbuf(rgba_len//4, 0)
     cdef unsigned char* alpha = <unsigned char*> output_buf.get_mem()
