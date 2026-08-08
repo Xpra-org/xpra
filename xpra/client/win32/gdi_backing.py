@@ -9,7 +9,7 @@ from ctypes import (
     c_void_p, byref, addressof, sizeof, WinError, get_last_error, memmove, create_string_buffer,
 )
 from ctypes.wintypes import HBITMAP, HDC, HWND
-from collections.abc import Sequence, Callable
+from collections.abc import Callable
 
 from xpra.platform.win32.common import (
     SelectObject, DeleteObject,
@@ -38,7 +38,10 @@ def clip_span(pos: int, size: int, delta: int, limit: int) -> tuple[int, int]:
 
 class GDIBacking(WindowBackingBase):
 
-    RGB_MODES = ("BGRX", )
+    # the DIB section is always 32-bit, so both formats are painted the same way:
+    # `BGRA` is only offered when the window is transparent
+    # (see `get_rgb_formats` in the superclass)
+    RGB_MODES = ("BGRA", "BGRX")
 
     def __init__(self, wid: int, hdc: HDC, hwnd: HWND, width: int, height: int, alpha: bool):
         super().__init__(wid, alpha)
@@ -51,11 +54,6 @@ class GDIBacking(WindowBackingBase):
         # the superclass requires this attribute to be set to enable rendering:
         self._backing = True
         SelectObject(hdc, self.bitmap)
-
-    def get_rgb_formats(self) -> Sequence[str]:
-        if self._alpha_enabled:
-            return ("BGRA", )
-        return ("BGRX", )
 
     def create_bitmap(self, width, height) -> HBITMAP:
         header = BITMAPV5HEADER()
