@@ -249,8 +249,7 @@ cdef class Decoder:
             raise RuntimeError("image bit depth %i is not supported yet" % bit_depth)
         # bytes per sample: 2 for the 16-bit (P10/P16) containers, 1 otherwise:
         cdef int bytes_per_sample = 2 if bit_depth > AOM_BITS_8 else 1
-        Bpp = 3 * bytes_per_sample
-        depth = Bpp * 8
+        depth = bytes_per_sample * 3 * 8
 
         # expose these eventually:
         # aom_color_primaries color_primaries
@@ -296,7 +295,7 @@ cdef class Decoder:
         self.frames += 1
         full_range = options.boolget("full-range", image.range == AOM_CR_FULL_RANGE)
         wrapper = ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, depth,
-                               pystrides, bytesperpixel=Bpp, planes=PlanarFormat.PLANAR_3, full_range=full_range)
+                               pystrides, bytesperpixel=bytes_per_sample, planes=PlanarFormat.PLANAR_3, full_range=full_range)
         self.image_wrapper = weakref.ref(wrapper)
         return wrapper
 
