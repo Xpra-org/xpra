@@ -6,5 +6,5 @@
 
 cdef argbdata_to_rgba(const unsigned int* argb, const int argb_len)  #pylint: disable=syntax-error
 cdef argbdata_to_rgb(const unsigned int* argb, const int argb_len)
-cdef bgradata_to_rgb(const unsigned int* bgra, const int bgra_len)
+cdef bgrxdata_to_rgb(const unsigned int* bgra, const int bgra_len)
 cdef bgradata_to_rgba(const unsigned int* bgra, const int bgra_len)

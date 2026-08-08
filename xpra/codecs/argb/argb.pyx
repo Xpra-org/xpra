@@ -173,7 +173,7 @@ def bgrx_to_rgb(buf) -> ByteString:
         bgrx = <const unsigned int*> (<uintptr_t> int(bc))
         return bgrxdata_to_rgb(bgrx, len(bc))
 
-cdef bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
+cdef bgrxdata_to_rgb(const unsigned int* bgrx, const int bgrx_len):
     if bgrx_len <= 0:
         return None
     assert bgrx_len>0 and bgrx_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgrx_len
@@ -187,9 +187,9 @@ cdef bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
     with nogil:
         while si < mi:
             p = bgrx[si]
-            rgb[di]   = p & 0xFF                #R
+            rgb[di]   = (p>>16) & 0xFF          #R
             rgb[di+1] = (p>>8) & 0xFF           #G
-            rgb[di+2] = (p>>16) & 0xFF          #B
+            rgb[di+2] = p & 0xFF                #B
             di += 3
             si += 1
     return memoryview(output_buf)
@@ -401,28 +401,7 @@ def bgra_to_rgb(buf) -> ByteString:
     cdef const unsigned int* bgra
     with buffer_context(buf) as bc:
         bgra = <const unsigned int*> (<uintptr_t> int(bc))
-        return bgradata_to_rgb(bgra, len(bc))
-
-cdef bgradata_to_rgb(const unsigned int* bgra, const int bgra_len):
-    if bgra_len <= 0:
-        return b""
-    assert bgra_len>0 and bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
-    #number of pixels:
-    cdef int mi = bgra_len//4
-    #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi*3)
-    cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
-    cdef int di = 0, si = 0
-    cdef unsigned int p
-    with nogil:
-        while si < mi:
-            p = bgra[si]
-            rgb[di]   = (p>>16) & 0xFF          #R
-            rgb[di+1] = (p>>8) & 0xFF           #G
-            rgb[di+2] = p & 0xFF                #B
-            di += 3
-            si += 1
-    return memoryview(output_buf)
+        return bgrxdata_to_rgb(bgra, len(bc))
 
 
 def bgra_to_rgba(buf) -> ByteString:
