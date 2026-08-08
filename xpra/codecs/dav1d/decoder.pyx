@@ -488,7 +488,8 @@ cdef class Decoder:
             pyplanes.append(makebuf(<void*> pic.data[i], stride * height, readonly=True))
         dav1d_picture_unref(&pic)
         self.frames += 1
-        return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides, planes=PlanarFormat.PLANAR_3)
+        return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides,
+                            bytesperpixel=1, planes=PlanarFormat.PLANAR_3)
 
 
 def selftest(full=False) -> None:
