@@ -52,8 +52,12 @@ def get_row(backing, y: int) -> bytes:
     return get_pixels(backing)[y * bw * 4:(y + 1) * bw * 4]
 
 
+@unittest.skipUnless(WIN32, "the GDI backing is only available on MS Windows")
 class ClipSpanTest(unittest.TestCase):
-    """`clip_span` is pure python, it can be tested anywhere"""
+    """
+    `clip_span` is pure python, but it lives in a module
+    which can only be imported on MS Windows
+    """
 
     def test_no_clipping_needed(self):
         from xpra.client.win32.gdi_backing import clip_span
