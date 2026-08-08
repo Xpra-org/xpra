@@ -45,6 +45,10 @@ They only take effect when more than one client is connected: the packets are se
 to every other client that requested the synchronization, never back to the client
 that caused the change.
 
+`sync-position` and `sync-focus` can be refused by the server using the `sync` socket option
+(as the `position` and `focus` subsystems),
+see [pointer synchronization](./Pointer.md#pointer-synchronization).
+
 <div class="docs-section-heading" markdown="1">
 
 ## Network Packets

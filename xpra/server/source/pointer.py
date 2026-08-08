@@ -7,7 +7,7 @@
 from typing import Any
 
 from xpra.net.common import BACKWARDS_COMPATIBLE
-from xpra.server.source.stub import StubClientConnection, PointerSource
+from xpra.server.source.stub import StubClientConnection, PointerSource, is_sync_allowed
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
@@ -41,7 +41,8 @@ class PointerConnection(StubClientConnection, PointerSource):
     def parse_client_caps(self, c: typedict) -> None:
         pointer = typedict(c.dictget("pointer"))
         # `record` is the legacy name for `sync`:
-        self.pointer_sync = pointer.boolget("sync", pointer.boolget("record", False))
+        sync = pointer.boolget("sync", pointer.boolget("record", False))
+        self.pointer_sync = sync and is_sync_allowed(self, "pointer")
         log(f"parse_client_caps(..) {pointer=}")
         dc = typedict(pointer.dictget("double_click"))
         if not BACKWARDS_COMPATIBLE:

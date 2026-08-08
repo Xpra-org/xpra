@@ -87,3 +87,13 @@ in the same way as the pointer position updates sent by shadow servers.
 
 Only the `pointer-motion` packets carry a `window-position` property,
 so this is the only packet type which can update the overlay.
+
+The server can refuse the synchronization requested by a client
+using the `sync` socket option, which applies to the `pointer` synchronization
+and to the window [`position` and `focus` synchronization](./Window.md#capabilities).\
+Unlike the `record` socket option, it is enabled by default.
+The value can be a boolean, `all`, or a comma separated list of subsystems:
+```shell
+xpra start --bind-tcp=0.0.0.0:10000,sync=no
+xpra start --bind-tcp=0.0.0.0:10000,sync=pointer,focus
+```

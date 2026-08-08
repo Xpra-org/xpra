@@ -15,7 +15,7 @@ from xpra.net.packet_type import (
 )
 from xpra.os_util import gi_import
 from xpra.server.common import may_update_bandwidth_limits
-from xpra.server.source.stub import StubClientConnection, is_recording_allowed
+from xpra.server.source.stub import StubClientConnection, is_recording_allowed, is_sync_allowed
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
@@ -166,8 +166,8 @@ class WindowsConnection(StubClientConnection):
         except Exception as e:
             filterslog.error("Error parsing window-filters: %s", e)
         self.window_record = wcaps.boolget("record") and is_recording_allowed(self, "windows")
-        self.window_sync_position = wcaps.boolget("sync-position", self.window_record)
-        self.window_sync_focus = wcaps.boolget("sync-focus", self.window_record)
+        self.window_sync_position = wcaps.boolget("sync-position", self.window_record) and is_sync_allowed(self, "position")
+        self.window_sync_focus = wcaps.boolget("sync-focus", self.window_record) and is_sync_allowed(self, "focus")
 
     def get_caps(self) -> dict[str, Any]:
         return {}

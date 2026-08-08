@@ -10,21 +10,39 @@ from xpra.util.signal_emitter import SignalEmitter
 from xpra.net.common import PacketElement
 
 
-def is_recording_allowed(server_source, subsystem: str) -> bool:
+def is_option_allowed(server_source, option: str, subsystem: str, default: str) -> bool:
+    """
+    Is this client allowed to `option` the events of the `subsystem` given?
+    This is controlled by the socket option of the same name,
+    which can be a boolean, `all`, or a comma separated list of subsystem names.
+    """
     proto = getattr(server_source, "protocol", None)
     conn = getattr(proto, "_conn", None)
     options = getattr(conn, "options", None) or {}
-    record = options.get("record", "no")
+    value = str(options.get(option, default))
     from xpra.log import Logger
     log = Logger("server", "auth")
-    log("client wants to record %r events", subsystem)
-    log(" proto=%s, conn=%s, options=%s, record=%s", proto, conn, options, record)
+    log("client wants to %s %r events", option, subsystem)
+    log(" proto=%s, conn=%s, options=%s, %s=%s", proto, conn, options, option, value)
     from xpra.util.parsing import str_to_bool
-    if str_to_bool(record) or subsystem in record.split(",") or "all" in record.split(","):
-        log.info("%r recording enabled for connection %s", subsystem, conn)
+    values = tuple(x.strip() for x in value.split(","))
+    if str_to_bool(value, False) or subsystem in values or "all" in values:
+        if option in options:
+            # only worth reporting when the option was set explicitly:
+            log.info("%r %s enabled for connection %s", subsystem, option, conn)
         return True
-    log.warn("Warning: client %s is not allowed to record %r events", conn, subsystem)
+    log.warn("Warning: client %s is not allowed to %s %r events", conn, option, subsystem)
     return False
+
+
+def is_recording_allowed(server_source, subsystem: str) -> bool:
+    """ recording the events of the other clients is denied unless the `record` socket option allows it """
+    return is_option_allowed(server_source, "record", subsystem, "no")
+
+
+def is_sync_allowed(server_source, subsystem: str) -> bool:
+    """ synchronizing with the other clients is allowed unless the `sync` socket option denies it """
+    return is_option_allowed(server_source, "sync", subsystem, "yes")
 
 
 class PointerSource:
