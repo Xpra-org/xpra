@@ -166,7 +166,8 @@ Create the password file and start an SSH listener with file authentication:
 
 ```shell
 echo -n thepassword > password.txt
-xpra seamless --start=xterm --bind-ssh=0.0.0.0:10000,auth=file(filename=password.txt)
+xpra seamless --start=xterm \
+    --bind-ssh=0.0.0.0:10000,auth=file(filename=password.txt)
 ```
 
 Then attach to it:
