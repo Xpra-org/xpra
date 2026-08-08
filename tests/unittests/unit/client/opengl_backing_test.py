@@ -516,6 +516,121 @@ class TestGLInit(unittest.TestCase):
         return ctx
 
     # ------------------------------------------------------------------
+    # packed RGB painting
+    # ------------------------------------------------------------------
+
+    def test_paint_rgbx_discards_padding_alpha(self):
+        """The X component of BGRX and RGBX must not become backing alpha."""
+        from OpenGL.GL import (
+            glBindFramebuffer, glReadBuffer, glReadPixels,
+            GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGBA, GL_UNSIGNED_BYTE,
+        )
+        from xpra.util.objects import typedict
+
+        w, h = 2, 1
+        backing, win = self._make_gl_backing(window_alpha=True, pixel_depth=32)
+        backing.size = backing.render_size = (w, h)
+        try:
+            ctx = self._full_gl_init(backing)
+            if not ctx:
+                self.skipTest("no OpenGL context")
+            test_data = {
+                "BGRX": bytes((0x30, 0x20, 0x10, 0x00,
+                               0x60, 0x50, 0x40, 0x7f)),
+                "RGBX": bytes((0x10, 0x20, 0x30, 0x00,
+                               0x40, 0x50, 0x60, 0x7f)),
+            }
+            expected = bytes((0x10, 0x20, 0x30, 0xff,
+                              0x40, 0x50, 0x60, 0xff))
+            for pixel_format, pixels in test_data.items():
+                with ctx:
+                    backing.do_paint_rgb(ctx, "test", pixel_format, pixels,
+                                         0, 0, w, h, w, h, w * 4, typedict(), [])
+                    glBindFramebuffer(GL_READ_FRAMEBUFFER, backing.offscreen_fbo)
+                    glReadBuffer(GL_COLOR_ATTACHMENT0)
+                    data = glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE)
+                actual = bytes(data) if not isinstance(data, bytes) else data
+                assert actual == expected, f"{pixel_format}: expected {expected!r}, got {actual!r}"
+        finally:
+            backing.close()
+            win.destroy()
+
+    # ------------------------------------------------------------------
+    # planar painting
+    # ------------------------------------------------------------------
+
+    def test_paint_planar_10bit(self):
+        """Painting 10-bit planar images must give back the expected colours."""
+        import struct
+        from OpenGL.GL import (
+            glBindFramebuffer, glReadBuffer, glReadPixels,
+            GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RGBA, GL_UNSIGNED_BYTE,
+        )
+        from xpra.util.objects import typedict
+        from xpra.codecs.image import ImageWrapper
+        from xpra.codecs.constants import get_subsampling_divs
+        # the pixel values are in BGRX byte order,
+        # the colour names are just labels (as in `csc_colorspace_test`):
+        test_data = {
+            False: (
+                ("black", "000000ff", 0x10, 0x80, 0x80),
+                ("white", "ffffffff", 0xeb, 0x80, 0x80),
+                ("green", "00ff00ff", 0x90, 0x36, 0x22),
+                ("red", "ff0000ff", 0x29, 0xef, 0x6e),
+                ("blue", "0000ffff", 0x52, 0x5a, 0xef),
+                ("magenta", "ff00ffff", 0x6a, 0xc9, 0xdd),
+            ),
+            True: (
+                ("black", "000000ff", 0x00, 0x80, 0x80),
+                ("white", "ffffffff", 0xff, 0x80, 0x80),
+                ("green", "00ff00ff", 0x95, 0x2c, 0x15),
+                ("red", "ff0000ff", 0x1d, 0xff, 0x6b),
+                ("blue", "0000ffff", 0x4d, 0x55, 0xff),
+                ("magenta", "ff00ffff", 0x6a, 0xd4, 0xeb),
+            ),
+        }
+        w = h = 64
+        backing, win = self._make_gl_backing()
+        backing.size = backing.render_size = (w, h)
+        try:
+            ctx = self._full_gl_init(backing)
+            if not ctx:
+                self.skipTest("no OpenGL context")
+            for pixel_format in ("YUV420P10", "YUV422P10", "YUV444P10"):
+                divs = get_subsampling_divs(pixel_format)
+                for full_range, colors in test_data.items():
+                    shader = f"{pixel_format}_to_RGB" + ("_FULL" if full_range else "")
+                    for name, pixel, *yuv in colors:
+                        planes = []
+                        strides = []
+                        for i, (xdiv, ydiv) in enumerate(divs):
+                            pw = w // xdiv
+                            # 8-bit sample scaled up to 10-bit, in 16-bit little-endian words:
+                            planes.append(struct.pack("<H", yuv[i] << 2) * (pw * (h // ydiv)))
+                            strides.append(pw * 2)
+                        img = ImageWrapper(0, 0, w, h, planes, pixel_format, 24, strides,
+                                           planes=ImageWrapper.PLANAR_3)
+                        img.set_full_range(full_range)
+                        with ctx:
+                            backing.paint_planar(ctx, shader, "test", img, 0, 0, w, h, w, h,
+                                                 typedict(), [])
+                            glBindFramebuffer(GL_READ_FRAMEBUFFER, backing.offscreen_fbo)
+                            glReadBuffer(GL_COLOR_ATTACHMENT0)
+                            data = glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE)
+                        bgrx = bytes.fromhex(pixel)
+                        expected = (bgrx[2], bgrx[1], bgrx[0])
+                        # `glReadPixels` gives us either bytes or a (h, w, 4) array,
+                        # the image is a flat colour so any pixel will do:
+                        first = data if isinstance(data, bytes) else data[0][0]
+                        rgb = tuple(int(v) for v in first[:3])
+                        delta = max(abs(a - b) for a, b in zip(rgb, expected))
+                        info = f"{pixel_format} {name} full_range={full_range}"
+                        assert delta <= 3, f"{info}: expected {expected} but got {rgb}"
+        finally:
+            backing.close()
+            win.destroy()
+
+    # ------------------------------------------------------------------
     # resize_fbo / copy_fbo / swap_fbos
     # ------------------------------------------------------------------
 
