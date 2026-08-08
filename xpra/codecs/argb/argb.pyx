@@ -502,6 +502,41 @@ cdef memoryview bgradata_to_rgbx(const unsigned char* bgra, const int bgra_len):
     return memoryview(output_buf)
 
 
+#the padding byte lives at offset 3 in both `RGBX` and `BGRX`,
+#this is the mask that makes it opaque, whatever the native endianness:
+cdef unsigned int XMASK = struct.unpack(b"=L", b"\0\0\0\xff")[0]
+
+
+def rgbx_to_rgba(buf: SizedBuffer) -> memoryview:
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    cdef const unsigned int* rgbx
+    with buffer_context(buf) as bc:
+        rgbx = <const unsigned int*> (<uintptr_t> int(bc))
+        return rgbxdata_to_rgba(rgbx, len(bc))
+
+
+def bgrx_to_bgra(buf: SizedBuffer) -> memoryview:
+    #same: only the padding byte is touched, and it is at the same offset in both formats
+    return rgbx_to_rgba(buf)
+
+
+cdef memoryview rgbxdata_to_rgba(const unsigned int* rgbx, const int rgbx_len):
+    if rgbx_len <= 0:
+        return emptymem
+    assert rgbx_len>0 and rgbx_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % rgbx_len
+    #same number of bytes, only the padding byte changes:
+    #its value is undefined in `RGBX`, so it must be made opaque
+    #before the data can be used as `RGBA`
+    cdef int mi = rgbx_len//4
+    cdef MemBuf output_buf = getbuf(rgbx_len, 0)
+    cdef unsigned int* rgba = <unsigned int*> output_buf.get_mem()
+    cdef int i
+    with nogil:
+        for i in range(mi):
+            rgba[i] = rgbx[i] | XMASK
+    return memoryview(output_buf)
+
+
 def premultiply_argb(buf: SizedBuffer) -> memoryview:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     # b is a Python buffer object

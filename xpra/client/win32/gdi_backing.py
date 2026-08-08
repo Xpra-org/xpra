@@ -162,6 +162,12 @@ class GDIBacking(WindowBackingBase):
                 log.error("Error: paint must convert from %s to BGRX", rgb_format)
                 fire_paint_callbacks(callbacks, False, "pixel format conversion needed")
                 return
+        elif rgb_format == "BGRX" and self._alpha_enabled:
+            # the DIB section of an alpha-enabled backing declares an alpha channel
+            # (see `bitmap_header`), but the `X` byte of these pixels is undefined padding:
+            # make it opaque, which is what the server means by sending us `BGRX`
+            from xpra.codecs.argb.argb import bgrx_to_bgra
+            img_data = bgrx_to_bgra(img_data)
 
         bw, bh = self.size
         bitmap_stride = bw * 4

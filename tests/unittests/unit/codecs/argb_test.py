@@ -8,7 +8,9 @@ import unittest
 from time import monotonic
 
 from xpra.util.str_fn import hexstr
-from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgbx, argb_to_rgba, bgra_to_rgba     # pylint: disable=no-name-in-module
+from xpra.codecs.argb.argb import (     # pylint: disable=no-name-in-module
+    r210_to_rgba, r210_to_rgbx, argb_to_rgba, bgra_to_rgba, rgbx_to_rgba, bgrx_to_bgra,
+)
 
 
 def measure_fn(fn, data, *args):
@@ -85,6 +87,27 @@ class ARGBTest(unittest.TestCase):
         h = 1080
         data = bytes(bytearray(w*h*4))
         measure_fn(bgra_to_rgba, data)
+
+    def test_rgbx_to_rgba(self):
+        # the colour bytes are left alone, whatever the padding byte was:
+        for x in (0x00, 0x7e, 0xff):
+            cmp((0xff, 0xfe, 0x7f, x),
+                (0xff, 0xfe, 0x7f, 0xff),
+                rgbx_to_rgba,
+                )
+        cmp((0x17, 0x0f, 0x31, 0x8f),
+            (0x17, 0x0f, 0x31, 0xff),
+            rgbx_to_rgba,
+            )
+        # `BGRX` has its padding at the same offset, so it is the exact same operation:
+        cmp((0x17, 0x0f, 0x31, 0x8f),
+            (0x17, 0x0f, 0x31, 0xff),
+            bgrx_to_bgra,
+            )
+        w = 1920
+        h = 1080
+        data = bytes(bytearray(w*h*4))
+        measure_fn(rgbx_to_rgba, data)
 
 
 def main():
