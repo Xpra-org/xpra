@@ -130,6 +130,7 @@ cdef class Decoder:
     def init_context(self, encoding: str, int width, int height, colorspace: str, options: typedict) -> None:
         log("aom.init_context%s", (encoding, width, height, colorspace))
         assert encoding == "av1", f"invalid encoding: {encoding}"
+        check_image_size(width, height, "aom image")
         if colorspace not in COLORSPACES:
             raise ValueError(f"invalid colorspace: {colorspace!r}, expected one of {COLORSPACES}")
         self.width = width
