@@ -11,7 +11,7 @@ import unittest
 from xpra.os_util import WIN32, POSIX, OSX
 from xpra.util.objects import AdHocStruct
 from xpra.client.subsystem.audio import AudioClient
-from xpra.audio.common import AUDIO_DATA_PACKET
+from xpra.audio.common import AUDIO_CONTROL_PACKET, AUDIO_DATA_PACKET
 from xpra.audio.gstreamer_util import CODEC_ORDER
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
@@ -92,6 +92,12 @@ class AudioClientSendRequest(AudioClientSendTestUtil):
 class AudioClientReceiveTest(AudioClientTestUtil):
 
     def test_audio_receive(self):
+        if POSIX and not OSX:
+            # unittest discovery bypasses this module's main() guard.
+            from subprocess import getstatusoutput
+            if getstatusoutput("pactl info")[0] != 0:
+                self.skipTest("PulseAudio is not running")
+
         opts = default_audio_options()
         opts.speaker = "yes"
         x = self._test_audio(opts, {
@@ -126,6 +132,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
              {b'duration': 20000000, b'timestamp': 73500000, b'time': 159963616, 'sequence': 0}),
             ('audio-data', 'opus', b'', {'end-of-stream': True, 'sequence': 0}),
         ]
+        packet_data = [(AUDIO_DATA_PACKET, *packet[1:]) for packet in packet_data]
         L = len(packet_data)
 
         def feed_data() -> bool:
@@ -140,7 +147,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
         def check_start() -> bool:
             if not self.packets:
                 return True
-            self.verify_packet(0, ("audio-control", "start", "opus"))
+            self.verify_packet(0, (AUDIO_CONTROL_PACKET, "start", "opus"))
             self.glib.timeout_add(100, feed_data)
             return False
 
@@ -150,8 +157,8 @@ class AudioClientReceiveTest(AudioClientTestUtil):
         self.main_loop.run()
         assert len(packet_data) < L, "none of the data was fed to the receiver"
         assert not packet_data, "not all the data was fed to the receiver: remains: %s" % len(packet_data)
-        self.verify_packet(0, ("audio-control", "start", "opus"))
-        self.verify_packet(1, ("audio-control", "new-sequence", 1))
+        self.verify_packet(0, (AUDIO_CONTROL_PACKET, "start", "opus"))
+        self.verify_packet(1, (AUDIO_CONTROL_PACKET, "new-sequence", 1))
         # assert not self.packets, "sent some unexpected packets: %s" % (self.packets,)
         assert self.mixin.sink is None, "sink is still active: %s" % self.mixin.sink
 
@@ -188,7 +195,10 @@ class DeviceInvalidationTest(unittest.TestCase):
 
     def _make_client(self):
         x = AudioClient()
-        x.exit_code = None
+        # AudioClient is a composed subsystem and reads lifecycle state from
+        # its owning client, even in these isolated tests.
+        x.client = AdHocStruct()
+        x.client.exit_code = None
         x.send = lambda *a: None
         x._signal_callbacks = {}
         x.idle_add = lambda fn, *a: 0
