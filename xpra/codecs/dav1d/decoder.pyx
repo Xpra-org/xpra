@@ -294,19 +294,37 @@ def get_min_size(encoding) -> Tuple[int, int]:
 
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
+COLORSPACES = ("YUV420P", "YUV422P", "YUV444P", "YUV400P")
+
+# the pixel layout each colorspace expects to find in the bitstream:
+LAYOUTS = {
+    "YUV420P": DAV1D_PIXEL_LAYOUT_I420,
+    "YUV422P": DAV1D_PIXEL_LAYOUT_I422,
+    "YUV444P": DAV1D_PIXEL_LAYOUT_I444,
+    "YUV400P": DAV1D_PIXEL_LAYOUT_I400,
+}
+
+# monochrome pictures have no chroma planes to hand to the csc step,
+# so neutral ones are synthesized and the image is exposed as `YUV420P`:
+MONOCHROME_OUTPUT = "YUV420P"
+
 
 def get_specs() -> Sequence[VideoSpec]:
-    return (
-        VideoSpec(
-            encoding="av1", input_colorspace="YUV420P", output_colorspaces=("YUV420P", ),
-            has_lossless_mode=False,
-            codec_class=Decoder, codec_type=get_type(),
-            quality=40, speed=50,
-            size_efficiency=60,
-            setup_cost=0, width_mask=0xFFFE, height_mask=0xFFFE,
-            max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
-        ),
-    )
+    specs = []
+    for cs in COLORSPACES:
+        out_cs = MONOCHROME_OUTPUT if cs == "YUV400P" else cs
+        specs.append(
+            VideoSpec(
+                encoding="av1", input_colorspace=cs, output_colorspaces=(out_cs, ),
+                has_lossless_mode=False,
+                codec_class=Decoder, codec_type=get_type(),
+                quality=40, speed=50,
+                size_efficiency=60,
+                setup_cost=0, width_mask=0xFFFE, height_mask=0xFFFE,
+                max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
+            )
+        )
+    return specs
 
 
 cdef int picture_allocator(Dav1dPicture *pic, void *cookie) noexcept nogil:
@@ -320,18 +338,26 @@ cdef int picture_allocator(Dav1dPicture *pic, void *cookie) noexcept nogil:
     cdef int h = pic.p.h
     if w <= 0 or h <= 0 or w > MAX_DIMENSION or h > MAX_DIMENSION:
         return -EINVAL
-    if pic.p.layout != DAV1D_PIXEL_LAYOUT_I420:
+    cdef int layout = pic.p.layout
+    if layout != DAV1D_PIXEL_LAYOUT_I400 and layout != DAV1D_PIXEL_LAYOUT_I420 and \
+       layout != DAV1D_PIXEL_LAYOUT_I422 and layout != DAV1D_PIXEL_LAYOUT_I444:
         return -EINVAL
     if pic.p.bpc != 8:
         return -EINVAL
+    # chroma subsampling factors, matching dav1d's own default allocator:
+    # I400 has no chroma planes at all, I420 is subsampled both ways,
+    # I422 horizontally only, I444 not at all.
+    cdef int has_chroma = layout != DAV1D_PIXEL_LAYOUT_I400
+    cdef int ss_ver = layout == DAV1D_PIXEL_LAYOUT_I420
+    cdef int ss_hor = layout != DAV1D_PIXEL_LAYOUT_I444
     cdef size_t aligned_w = roundup(w, 128)
     cdef size_t aligned_h = roundup(h, 128)
     cdef size_t ystride = aligned_w
-    cdef size_t uvstride = aligned_w // 2
+    cdef size_t uvstride = (ystride >> ss_hor) if has_chroma else 0
     cdef size_t ysize = ystride * aligned_h
-    cdef size_t uvsize = uvstride * (aligned_h // 2)
+    cdef size_t uvsize = uvstride * (aligned_h >> ss_ver)
     cdef size_t pad = DAV1D_PICTURE_ALIGNMENT
-    # one allocation for all three planes, so that a single pointer can be freed
+    # one allocation for all the planes, so that a single pointer can be freed
     # by `release_picture` - each plane is followed by `pad` bytes of padding,
     # which also keeps the following plane aligned:
     cdef uintptr_t base = <uintptr_t> memalign(ysize + uvsize * 2 + pad * 3)
@@ -341,8 +367,12 @@ cdef int picture_allocator(Dav1dPicture *pic, void *cookie) noexcept nogil:
     pic.stride[0] = <ptrdiff_t> ystride
     pic.stride[1] = <ptrdiff_t> uvstride
     pic.data[0] = <void *> base
-    pic.data[1] = <void *> (base + ysize + pad)
-    pic.data[2] = <void *> (base + ysize + pad + uvsize + pad)
+    if has_chroma:
+        pic.data[1] = <void *> (base + ysize + pad)
+        pic.data[2] = <void *> (base + ysize + pad + uvsize + pad)
+    else:
+        pic.data[1] = NULL
+        pic.data[2] = NULL
     if debug_enabled:
         with gil:
             log("picture_allocator(%#x, %#x) %ix%i ystride=%i, uvstride=%i, planes=%#x, %#x, %#x",
@@ -384,6 +414,7 @@ cdef class Decoder:
     cdef int width
     cdef int height
     cdef object colorspace
+    cdef int pixel_layout
     cdef Dav1dContext *context
 
     cdef object __weakref__
@@ -393,11 +424,13 @@ cdef class Decoder:
         if self.context != NULL:
             raise RuntimeError("decoder context is already initialized")
         assert encoding == "av1", f"invalid encoding: {encoding}"
-        assert colorspace == "YUV420P", f"invalid colorspace: {colorspace}"
+        if colorspace not in COLORSPACES:
+            raise ValueError(f"invalid colorspace: {colorspace!r}, expected one of {COLORSPACES}")
         check_image_size(width, height, "av1 decoder")
         self.width = width
         self.height = height
         self.colorspace = colorspace
+        self.pixel_layout = LAYOUTS[colorspace]
         self.frames = 0
         cdef Dav1dSettings settings
         memset(&settings, 0, sizeof(Dav1dSettings))
@@ -448,6 +481,7 @@ cdef class Decoder:
         self.width = 0
         self.height = 0
         self.colorspace = ""
+        self.pixel_layout = DAV1D_PIXEL_LAYOUT_I420
         if self.context is not NULL:
             dav1d_close(&self.context)
             self.context = NULL
@@ -519,22 +553,29 @@ cdef class Decoder:
         cdef int bitstream_full_range = 1
         cdef ptrdiff_t ystride = pic.stride[0]
         cdef ptrdiff_t uvstride = pic.stride[1]
+        # a monochrome sequence is always acceptable: it carries less data than we asked for,
+        # any other layout must be the one we were configured for:
+        cdef int monochrome = layout == DAV1D_PIXEL_LAYOUT_I400
+        cdef int ss_ver = layout == DAV1D_PIXEL_LAYOUT_I420
+        cdef int ss_hor = layout != DAV1D_PIXEL_LAYOUT_I444
         try:
             check_image_size(pic_w, pic_h, "av1 picture")
-            if layout != DAV1D_PIXEL_LAYOUT_I420:
-                raise ValueError(f"unsupported av1 pixel layout {layout}")
+            if not monochrome and layout != self.pixel_layout:
+                raise ValueError(f"unsupported av1 pixel layout {layout}, expected {self.pixel_layout}")
             if bpc != 8:
                 raise ValueError(f"unsupported av1 bit depth {bpc}")
             if pic_w < self.width or pic_h < self.height:
                 raise ValueError(f"av1 picture {pic_w}x{pic_h} is smaller than {self.width}x{self.height}")
-            if pic.data[0] == NULL or pic.data[1] == NULL or pic.data[2] == NULL:
+            if pic.data[0] == NULL:
                 raise ValueError("dav1d returned a picture with a missing plane")
+            if not monochrome and (pic.data[1] == NULL or pic.data[2] == NULL):
+                raise ValueError("dav1d returned a picture with a missing chroma plane")
             if pic.seq_hdr == NULL:
                 raise ValueError("dav1d returned a picture with a missing sequence header")
             bitstream_full_range = bool(pic.seq_hdr.color_range)
             if ystride < pic_w or ystride > roundup(MAX_DIMENSION, 128):
                 raise ValueError(f"invalid av1 luma stride {ystride} for width {pic_w}")
-            if uvstride < (pic_w + 1) // 2 or uvstride > roundup(MAX_DIMENSION, 128):
+            if not monochrome and (uvstride < (pic_w + ss_hor) >> ss_hor or uvstride > roundup(MAX_DIMENSION, 128)):
                 raise ValueError(f"invalid av1 chroma stride {uvstride} for width {pic_w}")
         except ValueError:
             dav1d_picture_unref(&pic)
@@ -553,18 +594,26 @@ cdef class Decoder:
                 if i == 0:
                     stride = <size_t> ystride
                     height = <size_t> pic_h
+                elif monochrome:
+                    # no chroma was coded, so synthesize neutral planes at 4:2:0 sizes:
+                    stride = <size_t> roundup((pic_w + 1) // 2, 16)
+                    height = <size_t> ((pic_h + 1) // 2)
                 else:
                     stride = <size_t> uvstride
-                    height = <size_t> (pic_h + 1) // 2
+                    height = <size_t> ((pic_h + ss_ver) >> ss_ver)
                 plane = getbuf(stride * height, 0)
-                memcpy(<void *> plane.get_mem(), <const void *> pic.data[i], stride * height)
+                if i > 0 and monochrome:
+                    memset(<void *> plane.get_mem(), 0x80, stride * height)
+                else:
+                    memcpy(<void *> plane.get_mem(), <const void *> pic.data[i], stride * height)
                 pystrides.append(stride)
                 pyplanes.append(memoryview(plane))
         finally:
             dav1d_picture_unref(&pic)
         self.frames += 1
+        pixel_format = MONOCHROME_OUTPUT if monochrome else self.colorspace
         cdef bint full_range = options.boolget("full-range", bitstream_full_range)
-        return ImageWrapper(0, 0, self.width, self.height, pyplanes, "YUV420P", 24, pystrides,
+        return ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, 24, pystrides,
                             bytesperpixel=1, planes=PlanarFormat.PLANAR_3, full_range=full_range)
 
 

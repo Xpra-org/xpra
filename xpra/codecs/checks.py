@@ -252,6 +252,40 @@ TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int], TEST_DATA]]] = {
                 unhex("12000a0e00000042abbfc3f0086640404061325d1001050101041040400040080120182013d0d1d9ce8863558243b3fb18c22065eca93b2adc73a4f26a67b3a849de98f4acbf45384979de56eaf34381b2d0c099d9c78faa2a25ed316ee6bb4c28637ce4816d949ae7bb00c071976bc280"),
             ),
         },
+        # same pipeline as the (320, 240) 4:2:0 stream above, with format=Y42B (Profile 2)
+        # `lag-in-frames=0` keeps every temporal unit a real shown frame
+        "YUV422P": {
+            (320, 240): (
+                unhex("12000a0b400000043cffbf83fff302321a135f580100000064da5eaa0fbffffffe7101f034f1ae255300d0"),
+                unhex("1200322539afb004080000000000000000000000000000000000000000000114000000f16f9f789ecc"),
+                unhex("1200322539afb408100010000000000040000000800040002000100008000514000000f16f9f789ecc"),
+                unhex("1200322439afb80c200010400000000080002000800080004000200010000914000600f1e476d240"),
+                unhex("1200322439afbc1040001040c0000000c0004000900080006000300018000d14000600f1e476d240"),
+            ),
+        },
+        # same pipeline, with format=Y444 (Profile 1)
+        "YUV444P": {
+            (320, 240): (
+                unhex("12000a0b200000043cffbf83fff304321e135f580100000064da5eaa0fbffffffffe7101ff919be2abfac8dbed66a0"),
+                unhex("1200322539afb004080000000000000000000000000000000000000000000114000000f16f9f789ecc"),
+                unhex("1200322539afb408100010000000000040000000800040002000100008000514000000f16f9f789ecc"),
+                unhex("1200322439afb80c200010400000000080002000800080004000200010000914000600f1e476d240"),
+                unhex("1200322439afbc1040001040c0000000c0004000900080006000300018000d14000600f1e476d240"),
+            ),
+        },
+        # gstreamer's `av1enc` has no grayscale input caps, so this one comes from `aomenc`:
+        # aomenc --ivf --width=320 --height=240 --monochrome --lag-in-frames=0 --passes=1
+        #        --end-usage=q --cq-level=32 --limit=5 -o frames.ivf white.i420
+        # a monochrome sequence codes no chroma at all, so decoders expand it to `YUV420P`
+        "YUV400P": {
+            (320, 240): (
+                unhex("12000a0a000000043cffbdfff9a232101000840000020008123913d586ba1250"),
+                unhex("12003212300380800000468a200002400200da995cb4"),
+                unhex("120032113004c1000200468a000002400700e22ae4"),
+                unhex("120032103006c2040400468a000002400700e407"),
+                unhex("120032103008c4088600468a000002400700e63c"),
+            ),
+        },
     },
 }
 
