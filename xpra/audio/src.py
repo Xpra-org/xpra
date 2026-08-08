@@ -92,6 +92,19 @@ def get_source_pipeline_elements(src_type: str, src_options: dict,
     channels = _get_source_channels(src_type, src_options)
     if channels > 0:
         pipeline_els.append(f"audio/x-raw,channels={channels}")
+    # `cutter` drops the silent buffers itself (`leaky=True`), here rather than at the appsink:
+    # upstream of the encoder we don't pay to encode what we are about to throw away,
+    # and the muxer never has any of its own output removed from under it.
+    if CUTTER_THRESHOLD > 0 and has_plugins("cutter"):
+        pipeline_els.append(get_element_str("cutter", {
+            "name": "cutter",
+            "threshold": CUTTER_THRESHOLD,
+            "run-length": CUTTER_RUN_LENGTH * MS_TO_NS,
+            "pre-length": CUTTER_PRE_LENGTH * MS_TO_NS,
+            "leaky": True,
+        }))
+        # `cutter` only accepts S8 and S16LE, and the encoder may want another rate:
+        pipeline_els += ["audioconvert", "audioresample"]
     pipeline_els.append(get_element_str("volume", {"name": "volume", "volume": volume}))
     if encoder:
         encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
@@ -150,8 +163,8 @@ class AudioSource(AudioPipeline):
         self.src = None
         self.src_type = src_type
         self.timestamp = None
-        self.min_timestamp = 0
-        self.max_timestamp = 0
+        self.cutter_above = True
+        self.cutter_timestamp = 0
         self.pending_metadata = []
         self.buffer_latency = True
         self.jitter_queue = None
@@ -218,9 +231,11 @@ class AudioSource(AudioPipeline):
         info = super().get_info()
         if self.queue:
             info["queue"] = {"cur": self.queue.get_property("current-level-time") // MS_TO_NS}
-        if CUTTER_THRESHOLD > 0 and (self.min_timestamp or self.max_timestamp):
-            info["cutter.min-timestamp"] = self.min_timestamp
-            info["cutter.max-timestamp"] = self.max_timestamp
+        if CUTTER_THRESHOLD > 0 and self.cutter_timestamp:
+            info["cutter"] = {
+                "above": self.cutter_above,
+                "timestamp": self.cutter_timestamp,
+            }
         if self.buffer_latency:
             for x in ("actual-buffer-time", "actual-latency-time"):
                 v = self.src.get_property(x)
@@ -238,17 +253,14 @@ class AudioSource(AudioPipeline):
 
     def do_parse_element_message(self, _message, name, props=None) -> None:
         if name == "cutter" and props:
+            # `cutter` does the dropping itself (`leaky=True`),
+            # so these messages are only used for reporting:
             above = props.get("above")
-            ts = props.get("timestamp", 0)
-            if above is False:
-                self.max_timestamp = ts
-                self.min_timestamp = 0
-            elif above is True:
-                self.max_timestamp = 0
-                self.min_timestamp = ts
+            if above is not None:
+                self.cutter_above = bool(above)
+                self.cutter_timestamp = props.get("timestamp", 0)
             log_fn = gstlog.info if LOG_CUTTER else gstlog.debug
-            log_fn("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s",
-                   above, self.min_timestamp, self.max_timestamp)
+            log_fn("cutter message, above=%s, timestamp=%s", above, props.get("timestamp", 0))
 
     @staticmethod
     def on_new_preroll(_appsink) -> int:
@@ -259,12 +271,6 @@ class AudioSource(AudioPipeline):
         sample = self.sink.emit("pull-sample")
         buf = sample.get_buffer()
         pts = normv(buf.pts)
-        if self.min_timestamp > 0 and pts < self.min_timestamp:
-            gstlog("cutter: skipping buffer with pts=%s (min-timestamp=%s)", pts, self.min_timestamp)
-            return GST_FLOW_OK
-        if self.max_timestamp and pts > self.max_timestamp:
-            gstlog("cutter: skipping buffer with pts=%s (max-timestamp=%s)", pts, self.max_timestamp)
-            return GST_FLOW_OK
         size = buf.get_size()
         data = buf.extract_dup(0, size)
         duration = normv(buf.duration)
