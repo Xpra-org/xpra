@@ -18,6 +18,7 @@ from xpra.platform.win32.common import (
     BITMAPV5HEADER, CreateDIBSection,
     BitBlt, StretchBlt, SetStretchBltMode,
 )
+from xpra.buffers.membuf import BufferContext  # @UnresolvedImport
 from xpra.client.gui.window.backing import WindowBackingBase, fire_paint_callbacks, PaintCallbacks, clip_span
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -172,19 +173,34 @@ class GDIBacking(WindowBackingBase):
         bw, bh = self.size
         bitmap_stride = bw * 4
         offset = y * bitmap_stride + x * 4
-        src = addressof(c_void_p.from_buffer(img_data))
-        dst = c_void_p(self.pixels.value + offset)
-        log(f"draw_region {offset=} {src=} - {dst=} {bitmap_stride=} {rowstride=}")
-        if rowstride == bitmap_stride and x == 0 and y >= 0 and width == bw and y + height <= bh:
-            # happy path: copy all at once
-            memmove(dst, src, rowstride * height)
-        else:
-            # slow path: copy each row separately
-            rowlen = min(width, bw - x) * 4
-            for i in range(min(height, bh - y)):
-                dst = c_void_p(self.pixels.value + offset + i * bitmap_stride)
-                src = addressof(c_void_p.from_buffer(img_data)) + i * rowstride
-                memmove(dst, src, rowlen)
+        dst = self.pixels.value + offset
+        if rowstride < width * 4:
+            fire_paint_callbacks(callbacks, False, f"invalid rowstride {rowstride} for {width}x{height} {rgb_format}")
+            return
+        # `BufferContext` uses the buffer protocol to find the address of the pixels,
+        # and it keeps the buffer alive for as long as we need it.
+        # (`ctypes.from_buffer` cannot be used here: it requires a writeable buffer,
+        # and the pixel data is often read-only - `bytes`, or a `memoryview` of one)
+        with BufferContext(img_data) as bc:
+            src = int(bc)
+            log(f"draw_region {offset=} {src=} - {dst=} {bitmap_stride=} {rowstride=} buffer size={len(bc)}")
+            # the pixel data comes from the server, so make sure that the buffer
+            # really does contain the pixels we are about to copy from it:
+            # (the last row only needs `width * 4` bytes)
+            needed = rowstride * (height - 1) + width * 4
+            if len(bc) < needed:
+                fire_paint_callbacks(callbacks, False,
+                                     f"not enough pixel data: {len(bc)} bytes, expected {needed}"
+                                     f" for {width}x{height} {rgb_format} with {rowstride=}")
+                return
+            if rowstride == bitmap_stride and x == 0 and y >= 0 and width == bw and y + height <= bh:
+                # happy path: copy all at once
+                memmove(dst, src, rowstride * height)
+            else:
+                # slow path: copy each row separately
+                rowlen = min(width, bw - x) * 4
+                for i in range(min(height, bh - y)):
+                    memmove(dst + i * bitmap_stride, src + i * rowstride, rowlen)
         fire_paint_callbacks(callbacks)
 
     def paint_scroll(self, img_data, options: typedict, callbacks: PaintCallbacks) -> None:
