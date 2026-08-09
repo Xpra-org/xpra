@@ -111,7 +111,7 @@ DEFAULT_EAGER_TARGETS = (
     "text/html,text/html;charset=utf-8,text/html;charset=UTF-8,"
     "text/html; charset=utf-8,text/html; charset=UTF-8,text/uri-list,TEXT,STRING,"
     f"{','.join(UTF8_TEXT_FALLBACK_TARGETS)},"
-    "text/rtf,image/png,image/jpeg,application/pdf"
+    f"{','.join(RTF_TARGETS)},image/png,image/jpeg,application/pdf"
 )
 # the targets we send with the clipboard token to greedy clients,
 # in the order in which they are collected:

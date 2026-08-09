@@ -6,9 +6,12 @@
 
 import unittest
 
+from xpra.clipboard.core import PREFERRED_TARGETS
 from xpra.clipboard.targets import (
+    EAGER_TARGETS,
     HTML_TARGETS,
     PLAIN_TEXT_TARGETS,
+    RTF_TARGETS,
     TEXT_TARGETS,
     URI_TARGETS,
     UTF8_TEXT_FALLBACK_TARGETS,
@@ -107,6 +110,15 @@ class TestClipboardTargets(unittest.TestCase):
         aliases = ("text/plain;charset=UTF-8", "text/html; charset=utf-8")
         assert choose_eager_targets(aliases) == aliases
         assert choose_eager_targets(UTF8_TEXT_FALLBACK_TARGETS) == UTF8_TEXT_FALLBACK_TARGETS
+
+    def test_rtf_negotiation(self):
+        assert "text/rtf" in RTF_TARGETS
+        assert "application/rtf" in RTF_TARGETS
+        for target in RTF_TARGETS:
+            assert target in EAGER_TARGETS
+            assert target in PREFERRED_TARGETS
+        assert "image/tiff" not in EAGER_TARGETS
+        assert "image/tiff" not in PREFERRED_TARGETS
 
 
 def main():

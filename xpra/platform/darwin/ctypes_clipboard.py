@@ -537,7 +537,7 @@ class OSXClipboardProtocolHelper(PrimaryHelperMixin, ClipboardTimeoutHelper):
         if "XPRA_CLIPBOARD_PREFERRED_TARGETS" not in os.environ:
             # tell the peer about all the formats the pasteboard can expose,
             # so that it sends them to us with the token:
-            extra = tuple(IMAGE_TARGETS_TYPES.keys()) + tuple(RTF_TARGETS[:1]) + tuple(PDF_TARGETS)
+            extra = tuple(IMAGE_TARGETS_TYPES.keys()) + tuple(PDF_TARGETS)
             self.local_preferred_targets = tuple(dict.fromkeys(PREFERRED_TARGETS + extra))
 
     def __repr__(self):
