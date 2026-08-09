@@ -4,21 +4,34 @@
 # later version. See the file COPYING for details.
 
 import os
+from ctypes import WinError, byref, c_char, get_last_error, sizeof  # @UnresolvedImport
+from ctypes.wintypes import DWORD, ULARGE_INTEGER
+
+from xpra.platform.win32.common import (
+    MEMORYSTATUSEX,
+    GetPhysicallyInstalledSystemMemory,
+    GetUserNameA,
+    GlobalMemoryStatusEx,
+)
 
 
 def get_total_physical_memory() -> int:
+    # don't use `wmi` here: it requires COM to be initialized on the calling thread,
+    # and this can be called from any thread (ie: the server's info thread)
     try:
-        import wmi
-    except ImportError:
-        return 0
-    try:
-        c = wmi.WMI()
-        mem_bytes = 0
-        for system in c.Win32_ComputerSystem():
-            mem_bytes += int(system.TotalPhysicalMemory)
-        return mem_bytes
+        # this is the amount of RAM installed, as reported by the SMBIOS,
+        # but it fails with ERROR_INVALID_DATA if the SMBIOS data is malformed (ie: in some VMs):
+        total_kb = ULARGE_INTEGER(0)
+        if GetPhysicallyInstalledSystemMemory(byref(total_kb)) and total_kb.value:
+            return int(total_kb.value) * 1024
+        # fallback: the memory usable by the OS, slightly lower than the amount installed
+        memstatus = MEMORYSTATUSEX()
+        memstatus.dwLength = sizeof(MEMORYSTATUSEX)
+        if GlobalMemoryStatusEx(byref(memstatus)):
+            return int(memstatus.ullTotalPhys)
     except OSError:
-        return 0
+        pass
+    return 0
 
 
 def get_sys_info() -> dict:
@@ -29,12 +42,6 @@ def get_sys_info() -> dict:
 
 def get_name() -> str:
     try:
-        from ctypes import (
-            WinError, get_last_error,  # @UnresolvedImport
-            c_char, byref,
-        )
-        from ctypes.wintypes import DWORD
-        from xpra.platform.win32.common import GetUserNameA
         max_len = 256
         size = DWORD(max_len)
         # noinspection PyTypeChecker,PyCallingNonCallable

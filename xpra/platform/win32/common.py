@@ -18,7 +18,7 @@ from ctypes.wintypes import (
     HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
     HINSTANCE, HMENU, ULONG, HHOOK, LPMSG,
-    LCID, HKL,
+    LCID, HKL, ULARGE_INTEGER,
 )
 
 # imported from this module but not used here:
@@ -220,6 +220,23 @@ class SECURITY_ATTRIBUTES(Structure):
 LPSECURITY_ATTRIBUTES = POINTER(SECURITY_ATTRIBUTES)
 
 
+class MEMORYSTATUSEX(Structure):
+    _fields_ = [
+        ("dwLength", DWORD),
+        ("dwMemoryLoad", DWORD),
+        ("ullTotalPhys", ULARGE_INTEGER),
+        ("ullAvailPhys", ULARGE_INTEGER),
+        ("ullTotalPageFile", ULARGE_INTEGER),
+        ("ullAvailPageFile", ULARGE_INTEGER),
+        ("ullTotalVirtual", ULARGE_INTEGER),
+        ("ullAvailVirtual", ULARGE_INTEGER),
+        ("ullAvailExtendedVirtual", ULARGE_INTEGER),
+    ]
+
+
+PMEMORYSTATUSEX = POINTER(MEMORYSTATUSEX)
+
+
 def GetMonitorInfo(hmonitor) -> dict[str, Any]:
     info = MONITORINFOEX()
     info.szDevice = ""
@@ -278,6 +295,12 @@ CloseHandle.restype = BOOL
 GetProductInfo = kernel32.GetProductInfo
 GetProductInfo.argtypes = [DWORD, DWORD, DWORD, DWORD, PDWORD]
 GetProductInfo.restype = BOOL
+GetPhysicallyInstalledSystemMemory = kernel32.GetPhysicallyInstalledSystemMemory
+GetPhysicallyInstalledSystemMemory.argtypes = [POINTER(ULARGE_INTEGER)]
+GetPhysicallyInstalledSystemMemory.restype = BOOL
+GlobalMemoryStatusEx = kernel32.GlobalMemoryStatusEx
+GlobalMemoryStatusEx.argtypes = [PMEMORYSTATUSEX]
+GlobalMemoryStatusEx.restype = BOOL
 GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", kernel32))
 HGLOBAL = HANDLE
 GlobalAlloc = kernel32.GlobalAlloc
