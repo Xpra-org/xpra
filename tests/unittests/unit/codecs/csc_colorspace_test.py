@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import math
+import sys
 import unittest
 
 try:
@@ -146,6 +147,28 @@ CS_TEST_DATA = {
 
 
 class Test_CSC_Colorspace(unittest.TestCase):
+
+    def test_r210_to_YUV420P(self):
+        csc_mod = loader.load_codec("csc_cython")
+        if not csc_mod:
+            self.skipTest("csc_cython is not available")
+        width = height = 2
+        # r210 stores red in bits 20-29 and blue in bits 0-9.
+        samples = (
+            ("red", 0x3FF00000, (0x4C, 0x55, 0xFF)),
+            ("blue", 0x000003FF, (0x1D, 0xFF, 0x6B)),
+        )
+        for color_name, pixel, expected in samples:
+            with self.subTest(color=color_name):
+                pixel_data = pixel.to_bytes(4, sys.byteorder).hex()
+                image = make_test_image("r210", width, height, pixel_data)
+                converter = csc_mod.Converter()
+                converter.init_context(width, height, "r210",
+                                       width, height, "YUV420P", typedict())
+                converted = converter.convert_image(image)
+                converter.clean()
+                values = tuple(memoryview_to_bytes(plane)[0] for plane in converted.get_pixels())
+                self.assertEqual(values, expected)
 
     def _do_test_RGB_to_YUV(self, mod_out: str, mod_in: str,
                             width=16, height=16,

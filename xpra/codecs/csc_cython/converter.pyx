@@ -857,9 +857,9 @@ cdef class Converter:
                                 sx = ox*src_width//dst_width
                                 o = sy*input_stride + sx*Bpp
                                 r210 = input_r210[o//4]
-                                B = (r210&0x3ff00000) >> 22
+                                R = (r210&0x3ff00000) >> 22
                                 G = (r210&0x000ffc00) >> 12
-                                R = (r210&0x000003ff) >> 2
+                                B = (r210&0x000003ff) >> 2
                                 o = oy*Ystride + ox
                                 Y[o] = clamp(YR * R + YG * G + YB * B + YC)
                                 count += 1
