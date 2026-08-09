@@ -23,6 +23,63 @@ log = Logger("cursor")
 UINT_MAX = 2 ** 32 - 1
 
 
+def monochrome_cursor_pixels(hbmMask) -> tuple[bytes, int, int] | None:
+    """
+    Convert the mask bitmap of a black and white cursor into `BGRA` pixels.
+
+    These cursors have no colour bitmap: `hbmMask` is a 1-bit bitmap twice as tall
+    as the cursor, holding the `AND` mask on top of the `XOR` mask.
+    Combining both bits for each pixel gives:
+        AND=0, XOR=0 : opaque black
+        AND=0, XOR=1 : opaque white
+        AND=1, XOR=0 : transparent
+        AND=1, XOR=1 : inverted screen content
+    We have no screen content to invert, so those pixels are painted black:
+    this is what keeps the text `I-beam` cursor visible on light backgrounds.
+    """
+    bm = Bitmap()
+    if not GetObjectA(hbmMask, sizeof(Bitmap), byref(bm)):
+        raise OSError()  # @UndefinedVariable
+    log("cursor mask bitmap: width=%i, height=%i, width bytes=%i, planes=%i, bits pixel=%i",
+        bm.bmWidth, bm.bmHeight, bm.bmWidthBytes, bm.bmPlanes, bm.bmBitsPixel)
+    if bm.bmBitsPixel != 1 or bm.bmPlanes != 1 or bm.bmHeight % 2 or bm.bmWidth <= 0:
+        log.warn("Warning: unsupported black and white cursor mask")
+        log.warn(" %ix%i with %i plane(s) and %i bit(s) per pixel",
+                 bm.bmWidth, bm.bmHeight, bm.bmPlanes, bm.bmBitsPixel)
+        return None
+    w = bm.bmWidth
+    h = bm.bmHeight // 2
+    stride = bm.bmWidthBytes
+    buf_size = stride * bm.bmHeight
+    buftype = c_char * buf_size
+    # noinspection PyCallingNonCallable
+    buf = buftype()
+    r = GetBitmapBits(hbmMask, buf_size, byref(buf))
+    if r != buf_size:
+        log.warn("Warning: invalid cursor mask size, got %i bytes but expected %i", r, buf_size)
+        return None
+    mask = buf.raw
+    # zeroed, which is already what the transparent pixels need:
+    pixels = bytearray(w * h * 4)
+    for row in range(h):
+        and_offset = row * stride
+        xor_offset = (row + h) * stride
+        for col in range(w):
+            bit = 0x80 >> (col & 0x7)
+            byte = col >> 3
+            xor_bit = mask[xor_offset + byte] & bit
+            if mask[and_offset + byte] & bit:
+                if not xor_bit:
+                    continue                        # transparent
+                value = 0                           # inverted: painted black
+            else:
+                value = 0xFF if xor_bit else 0      # white or black
+            i = (row * w + col) * 4
+            pixels[i] = pixels[i + 1] = pixels[i + 2] = value
+            pixels[i + 3] = 0xFF
+    return bytes(pixels), w, h
+
+
 def get_cursor_data(hCursor) -> list | None:
     # w, h = get_fixed_cursor_size()
     if not hCursor:
@@ -44,9 +101,6 @@ def get_cursor_data(hCursor) -> list | None:
         y = ii.yHotspot
         log("get_cursor_data(%#x) hotspot at %ix%i, hbmColor=%#x, hbmMask=%#x",
             hCursor, x, y, ii.hbmColor or 0, ii.hbmMask or 0)
-        if not ii.hbmColor:
-            # FIXME: we don't handle black and white cursors
-            return None
         iie = ICONINFOEXW()
         iie.cbSize = sizeof(ICONINFOEXW)
         if not GetIconInfoExW(hCursor, byref(iie)):
@@ -54,6 +108,13 @@ def get_cursor_data(hCursor) -> list | None:
         icon_bitmaps += [handle for handle in (iie.hbmColor, iie.hbmMask) if handle]
         name = iie.szResName[:MAX_PATH]
         log("wResID=%#x, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
+        if not ii.hbmColor:
+            # black and white cursor: the shape is encoded in the mask bitmap
+            mono = monochrome_cursor_pixels(ii.hbmMask)
+            if not mono:
+                return None
+            mono_pixels, mono_w, mono_h = mono
+            return [0, 0, mono_w, mono_h, x, y, hCursor, mono_pixels, strtobytes(name)]
         bm = Bitmap()
         if not GetObjectA(ii.hbmColor, sizeof(Bitmap), byref(bm)):
             raise OSError()  # @UndefinedVariable
