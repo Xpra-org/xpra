@@ -7,7 +7,7 @@ import os
 import tempfile
 
 from xpra.util.env import shellsub, osexpand
-from xpra.os_util import get_group_id, POSIX
+from xpra.os_util import get_group_id, getuid, getgid, POSIX
 from xpra.util.stats import std_unit
 from xpra.log import Logger
 
@@ -91,7 +91,7 @@ def get_user_mmap_dir(uid: int) -> str:
     """
     from xpra.platform.posix.paths import get_runtime_dir
     runtime_dir = get_runtime_dir()
-    if "$UID" not in runtime_dir and uid != os.getuid():
+    if "$UID" not in runtime_dir and uid != getuid():
         # a non-standard runtime directory: it is ours,
         # which tells us nothing about any other user
         log(f"cannot use runtime directory {runtime_dir!r} for uid {uid}")
@@ -139,8 +139,8 @@ def get_mmap_dir() -> str:
     mmap_dir = get_platform_mmap_dir()
     subs = os.environ.copy()
     subs |= {
-        "UID": str(os.getuid()),
-        "GID": str(os.getgid()),
+        "UID": str(getuid()),
+        "GID": str(getgid()),
         "PID": str(os.getpid()),
     }
     mmap_dir = shellsub(mmap_dir, subs)
