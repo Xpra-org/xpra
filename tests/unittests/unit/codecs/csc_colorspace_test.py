@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import unittest
 import binascii
 
@@ -27,6 +28,28 @@ def cmpp(p1, p2):
 
 
 class Test_CSC_Colorspace(unittest.TestCase):
+
+    def test_r210_to_YUV420P(self):
+        csc_mod = loader.load_codec("csc_cython")
+        if not csc_mod:
+            self.skipTest("csc_cython is not available")
+        width = height = 2
+        # r210 stores red in bits 20-29 and blue in bits 0-9.
+        samples = (
+            ("red", 0x3FF00000, (0x4C, 0x55, 0xFF)),
+            ("blue", 0x000003FF, (0x1D, 0xFF, 0x6B)),
+        )
+        for color_name, pixel, expected in samples:
+            with self.subTest(color=color_name):
+                image = make_test_image("r210", width, height)
+                image.set_pixels(pixel.to_bytes(4, sys.byteorder) * width * height)
+                converter = csc_mod.ColorspaceConverter()
+                converter.init_context(width, height, "r210",
+                                       width, height, "YUV420P")
+                converted = converter.convert_image(image)
+                converter.clean()
+                values = tuple(memoryview_to_bytes(plane)[0] for plane in converted.get_pixels())
+                self.assertEqual(values, expected)
 
     def _test_csc(self, mod,
                  width=16, height=16,
