@@ -1036,10 +1036,14 @@ class GLWindowBackingBase(WindowBackingBase):
         glUseProgram(program)
         from OpenGL.GL import (
             glEnable, glDisable,
-            GL_BLEND, GL_FUNC_ADD, glBlendEquation, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+            GL_BLEND, GL_FUNC_ADD, glBlendEquation, glBlendFuncSeparate,
+            GL_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
         )
         glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glBlendFuncSeparate(
+            GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+            GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
+        )
         glBlendEquation(GL_FUNC_ADD)
 
         glBindVertexArray(self.spinner_vao)

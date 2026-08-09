@@ -298,6 +298,7 @@ void main()
         w = 1.0;
     }}
     frag_color = mix(tex_color, dst_color, w);
+    frag_color.a = tex_color.a + dst_color.a * (1.0 - tex_color.a);
 }}
 """
 
