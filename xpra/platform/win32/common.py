@@ -15,7 +15,7 @@ from ctypes import (
 from ctypes.wintypes import (
     HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE,
     SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE,
-    HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
+    HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ, HRGN,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
     HINSTANCE, HMENU, ULONG, HHOOK, LPMSG,
     LCID, HKL,
@@ -1219,3 +1219,28 @@ RemoveWindowSubclass.restype = BOOL
 DefSubclassProc = comctl32.DefSubclassProc
 DefSubclassProc.argtypes = [HWND, UINT, WPARAM, LPARAM]
 DefSubclassProc.restype = LRESULT
+
+
+dwmapi = WinDLL("dwmapi", use_last_error=True)
+
+# https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ns-dwmapi-dwm_blurbehind
+DWM_BB_ENABLE = 0x01
+DWM_BB_BLURREGION = 0x02
+DWM_BB_TRANSITIONONMAXIMIZED = 0x04
+
+
+class DWM_BLURBEHIND(Structure):
+    # noinspection PyTypeChecker
+    _fields_ = [
+        ("dwFlags", DWORD),
+        ("fEnable", BOOL),
+        ("hRgnBlur", HRGN),
+        ("fTransitionOnMaximized", BOOL),
+    ]
+
+
+DwmEnableBlurBehindWindow = dwmapi.DwmEnableBlurBehindWindow
+DwmEnableBlurBehindWindow.argtypes = [HWND, POINTER(DWM_BLURBEHIND)]
+# the real return type is `HRESULT`, but `ctypes.HRESULT` turns a failure
+# into an `OSError`, and every caller here wants to log and carry on:
+DwmEnableBlurBehindWindow.restype = LONG
