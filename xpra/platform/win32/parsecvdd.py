@@ -76,6 +76,9 @@ CM_PROB_FAILED_POST_START = 0x0000002B
 
 CR_SUCCESS = 0x00000000
 
+ERROR_IO_PENDING = 997
+WAIT_TIMEOUT     = 258
+
 
 # ---------------------------------------------------------------------------
 # SetupDi structures
@@ -221,6 +224,16 @@ _GetOverlappedResultEx.restype  = BOOL
 _GetOverlappedResultEx.argtypes = [
     HANDLE, POINTER(OVERLAPPED), POINTER(DWORD), DWORD, BOOL,
 ]
+
+_GetOverlappedResult = kernel32.GetOverlappedResult
+_GetOverlappedResult.restype  = BOOL
+_GetOverlappedResult.argtypes = [
+    HANDLE, POINTER(OVERLAPPED), POINTER(DWORD), BOOL,
+]
+
+_CancelIoEx = kernel32.CancelIoEx
+_CancelIoEx.restype  = BOOL
+_CancelIoEx.argtypes = [HANDLE, POINTER(OVERLAPPED)]
 
 _SetupDiGetClassDevsA = setupapi.SetupDiGetClassDevsA
 _SetupDiGetClassDevsA.restype  = HANDLE   # HDEVINFO
@@ -510,6 +523,25 @@ def close_device(handle: HANDLE) -> None:
 # Core IOCTL helper
 # ---------------------------------------------------------------------------
 
+# buffers belonging to requests the driver never completed:
+# these must stay alive for as long as the process does
+_leaked_requests: list[tuple] = []
+
+
+def _wait_io_done(handle: HANDLE, overlapped: OVERLAPPED, transferred: DWORD) -> bool:
+    """
+    Wait for an overlapped request to leave the kernel's hands.
+    Returns True once it has finished - successfully, with an error, or
+    cancelled - which is the point at which its buffers may be released.
+    """
+    if _GetOverlappedResultEx(handle, byref(overlapped), byref(transferred), 5000, False):
+        return True
+    # `WAIT_TIMEOUT` is the only status that means the request is still running:
+    # anything else (`ERROR_OPERATION_ABORTED` after a cancel, or an error code
+    # from the driver) means it has completed.
+    return get_last_error() != WAIT_TIMEOUT
+
+
 def _vdd_iocontrol(handle: HANDLE, code: int, data: bytes | None = None) -> int:
     """
     Send an IOCTL to the VDD adapter and return the DWORD output buffer.
@@ -524,28 +556,57 @@ def _vdd_iocontrol(handle: HANDLE, code: int, data: bytes | None = None) -> int:
         n = min(len(data), 32)
         in_buf.raw = data[:n] + b"\x00" * (32 - n)
 
-    out_buf    = DWORD(0)
-    overlapped = OVERLAPPED()
-    event      = _CreateEventA(None, True, False, None)
+    out_buf     = DWORD(0)
+    overlapped  = OVERLAPPED()
+    transferred = DWORD(0)
+    event       = _CreateEventA(None, True, False, None)
     if not event:
         return -1
     overlapped.hEvent = event
 
+    # the device is opened with `FILE_FLAG_OVERLAPPED`, so the request can outlive
+    # this call: until it completes, the kernel owns `in_buf`, `out_buf` and
+    # `overlapped`, which are all Python objects on the process heap.
+    # Returning early would free them and let the driver write into whatever gets
+    # allocated there next - which corrupts the heap and kills the process with
+    # `STATUS_HEAP_CORRUPTION`. So every exit path below must first make sure the
+    # request is no longer in flight.
+    pending = False
     try:
-        transferred = DWORD(0)
-        _DeviceIoControl(
+        if _DeviceIoControl(
             handle, code,
             in_buf, sizeof(in_buf),
             byref(out_buf), sizeof(out_buf),
             None,
             byref(overlapped),
-        )
-        if not _GetOverlappedResultEx(handle, byref(overlapped), byref(transferred), 5000, False):
+        ):
+            # completed synchronously
+            return out_buf.value
+        err = get_last_error()
+        if err != ERROR_IO_PENDING:
+            log("DeviceIoControl(%#x) failed: %s", code, WinError(err))
             return -1
+        pending = True
+        if not _GetOverlappedResultEx(handle, byref(overlapped), byref(transferred), 5000, False):
+            log("GetOverlappedResultEx(%#x) failed: %s", code, WinError(get_last_error()))
+            return -1
+        pending = False
+        return out_buf.value
     finally:
-        _CloseHandle(event)
-
-    return out_buf.value
+        if pending:
+            # cancel, then wait for the request to actually be torn down
+            # before the buffers can be released:
+            _CancelIoEx(handle, byref(overlapped))
+            if _wait_io_done(handle, overlapped, transferred):
+                _CloseHandle(event)
+            else:
+                # the driver still hasn't let go: keep the buffers (and the event)
+                # alive forever rather than hand corrupted memory back to the heap
+                log.warn("Warning: VDD ioctl %#x could not be cancelled", code)
+                log.warn(" leaking its buffers to avoid corrupting the heap")
+                _leaked_requests.append((in_buf, out_buf, overlapped, event))
+        else:
+            _CloseHandle(event)
 
 
 # ---------------------------------------------------------------------------
@@ -582,7 +643,7 @@ def remove_display(handle: HANDLE, index: int) -> None:
     Unplug the virtual display at *index*.
     The index must be the value originally returned by add_display().
     """
-    # Driver expects a 16-bit big-endian index in the input buffer
+    # Driver expects a 16-bit little-endian index in the input buffer
     index_data = bytes([index & 0xFF, (index >> 8) & 0xFF])
     _vdd_iocontrol(handle, VDD_IOCTL_REMOVE, index_data)
     vdd_update(handle)
