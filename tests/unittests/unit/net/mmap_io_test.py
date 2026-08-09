@@ -10,15 +10,14 @@ import tempfile
 import unittest
 
 from xpra.os_util import WIN32
-from xpra.net.common import MmapPointerError
-from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MIN_SIZE
+from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MIN_SIZE, MmapPointerError
 from xpra.net.mmap import io
 from xpra.net.mmap.io import (
     init_client_mmap, int_from_buffer, mmap_free_size, mmap_read, mmap_write,
     read_mmap_token, write_mmap_token, safe_open_mmap_file,
 )
 
-from unit.test_util import silence_warn, silence_error
+from unit.test_util import silence_warn, silence_error, silence_info
 
 
 SIZE = 4096
@@ -196,6 +195,37 @@ class MmapIOTest(unittest.TestCase):
             fd = self.safe_open(tmpdir, "good.mmap")
             assert fd >= 0, "a sticky directory should have been accepted"
             os.close(fd)
+
+    def test_init_server_mmap_section(self):
+        if not WIN32:
+            return
+        from xpra.net.mmap.io import init_server_mmap_section
+        with silence_info(io), silence_error(io):
+            # the name of a section that does not exist must not create one:
+            self.assertEqual(init_server_mmap_section("xpra-does-not-exist", MIN_SIZE), (None, 0))
+            # ie: the mmap file path of a client running on another system:
+            self.assertEqual(init_server_mmap_section("/run/user/1000/xpra/xpra.test.mmap", MIN_SIZE), (None, 0))
+            # the size is required:
+            self.assertEqual(init_server_mmap_section("xpra-does-not-exist", 0), (None, 0))
+            # a real client area can be found and mapped:
+            enabled, _delete, area, size, _tempfile_obj, filename = init_client_mmap(size=MIN_SIZE)
+            self.assertTrue(enabled)
+            try:
+                server_area, server_size = init_server_mmap_section(filename, size)
+                self.assertIsNotNone(server_area)
+                self.assertEqual(server_size, size)
+                # verify that this really is the same memory:
+                area.seek(8)
+                area.write(b"hello mmap")
+                server_area.seek(8)
+                self.assertEqual(server_area.read(10), b"hello mmap")
+                server_area.close()
+                # but not using a size larger than the client's area:
+                self.assertEqual(init_server_mmap_section(filename, size * 2), (None, 0))
+            finally:
+                area.close()
+            # the section is gone once the client has closed it:
+            self.assertEqual(init_server_mmap_section(filename, size), (None, 0))
 
     def test_unused_area_pointers(self):
         # a brand new area has both pointers set to zero:
