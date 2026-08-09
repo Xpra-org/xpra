@@ -63,6 +63,7 @@ WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 PREFER_IBUS_LAYOUTS = envbool("XPRA_PREFER_IBUS_LAYOUTS", True)
+KEYBOARD_CAD = envbool("XPRA_KEYBOARD_CAD", True)
 
 FULL_LAYOUT_LIST = envbool("XPRA_FULL_LAYOUT_LIST", True)
 
@@ -578,6 +579,18 @@ class GTKTrayMenu(GTKMenuHelper):
     def make_viewshortcutsmenuitem(self) -> Gtk.CheckMenuItem:
         return self.menuitem(_("View Shortcuts"), tooltip=_("Show all active keyboard shortcuts"),
                              cb=self.client.show_shortcuts)
+
+    def make_cadmenuitem(self) -> Gtk.ImageMenuItem:
+        def send_cad() -> None:
+            keyboard = self.get_subsystem("keyboard")
+            if keyboard:
+                keyboard.send_control_alt_delete()
+
+        cad = self.menuitem(_("Send Control-Alt-Delete"), "keyboard.png", cb=send_cad)
+        sens_tooltip(cad, not self.client.readonly,
+                     _("Send the Control-Alt-Delete key sequence to the server"),
+                     _("Connection is read-only"))
+        return cad
 
     def make_openglmenuitem(self) -> Gtk.ImageMenuItem:
         gl = checkitem(_("OpenGL"))
@@ -1257,6 +1270,8 @@ class GTKTrayMenu(GTKMenuHelper):
             menu.append(self.make_shortcutsmenuitem())
             menu.append(self.make_viewshortcutsmenuitem())
             menu.append(self.make_layoutsmenuitem())
+            if KEYBOARD_CAD:
+                menu.append(self.make_cadmenuitem())
             menu.show_all()
         later(populate_keyboardmenu)
         keyboard_menu_item.show_all()

@@ -9,9 +9,11 @@ from collections.abc import Sequence
 
 from xpra.client.base import features
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.client.gui.keyboard_helper import KeyboardHelper
+from xpra.client.gui.keyboard_helper import KeyboardHelper, KEYCODE_DEF
 from xpra.keyboard.common import KeyEvent, DELAY_KEYBOARD_DATA
+from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
+from xpra.util.str_fn import csv
 from xpra.common import noop
 from xpra.os_util import WIN32
 from xpra.log import Logger
@@ -178,6 +180,65 @@ class KeyboardClient(StubClientSubsystem):
             return False
         kh.process_key_event(wid, key_event)
         return False
+
+    def find_keycode_entry(self, keyname: str) -> KEYCODE_DEF | None:
+        # find the keymap entry matching this key name,
+        # preferring the entries which don't require any modifier (level 0):
+        best = None
+        for entry in self.helper.keycodes if self.helper else ():
+            if entry[1] != keyname:
+                continue
+            if entry[4] == 0:
+                return entry
+            if best is None:
+                best = entry
+        return best
+
+    def send_key_sequence(self, keynames: Sequence[str]) -> None:
+        """
+        Synthesize the key press events for all the key names given (in order),
+        followed by the matching key release events (in reverse order).
+        """
+        kh = self.helper
+        if not kh:
+            log.warn("Warning: cannot send key sequence %s", csv(keynames))
+            log.warn(" keyboard support is not available")
+            return
+        if self.client.readonly:
+            log.info("key sequence %s not sent: connection is read-only", csv(keynames))
+            return
+        # send the events to the window which currently has the focus, if any:
+        window_sub = self.get_subsystem("window")
+        wid = getattr(window_sub, "_focused", 0) or 0
+        mod_meanings = kh.mod_meanings or DEFAULT_MODIFIER_MEANINGS
+        # the modifiers held down as we walk through the sequence:
+        modifiers: list[str] = []
+
+        def send(keyname: str, pressed: bool) -> None:
+            key_event = KeyEvent()
+            key_event.keyname = keyname
+            key_event.pressed = pressed
+            key_event.modifiers = list(modifiers)
+            if entry := self.find_keycode_entry(keyname):
+                key_event.keyval, _, key_event.keycode, key_event.group = entry[:4]
+            log("send_key_sequence: %s", key_event)
+            kh.send_key_action(wid, key_event)
+
+        log("send_key_sequence(%s) wid=%i", keynames, wid)
+        for keyname in keynames:
+            send(keyname, True)
+            mod = mod_meanings.get(keyname, "")
+            if mod and mod not in modifiers:
+                modifiers.append(mod)
+        for keyname in reversed(tuple(keynames)):
+            # the modifier is still held down when its key is released:
+            send(keyname, False)
+            mod = mod_meanings.get(keyname, "")
+            if mod in modifiers:
+                modifiers.remove(mod)
+
+    def send_control_alt_delete(self) -> None:
+        self.send_key_sequence(("Control_L", "Alt_L", "Delete"))
 
     def mask_to_names(self, mask) -> list[str]:
         if self.helper is None:
