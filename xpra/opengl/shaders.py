@@ -271,9 +271,6 @@ void main()
 {{
     vec2 pos = gl_FragCoord.xy-viewport_pos.xy;
     frag_color = texture(rgba, mod(pos, textureSize(rgba)));
-    if ( frag_color.a < 0.3 ) {{
-        discard;
-    }}
 }}
 """
 

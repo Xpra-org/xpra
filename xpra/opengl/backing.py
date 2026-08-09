@@ -932,9 +932,6 @@ class GLWindowBackingBase(WindowBackingBase):
                                   round(x*xscale), round(y*yscale), round((x+w)*xscale), round((y+h)*yscale),
                                   GL_COLOR_BUFFER_BIT, sampling)
 
-        if self.pointer_overlay:
-            self.draw_pointer(xscale, yscale)
-
         border = self.border
         if self.alert_state:
             if "shade" in ALERT_MODE:
@@ -960,6 +957,10 @@ class GLWindowBackingBase(WindowBackingBase):
 
         if self.is_show_fps():
             self.draw_fps()
+
+        # Keep the remote pointer above all the other overlays.
+        if self.pointer_overlay:
+            self.draw_pointer(xscale, yscale)
 
         # Show the backbuffer on screen
         glFlush()
@@ -1118,8 +1119,37 @@ class GLWindowBackingBase(WindowBackingBase):
         texture = int(self.textures[TEX_CURSOR])
         self.overlay_texture(texture, x, y, w, h)
 
-    def overlay_texture(self, texture: int, x: int, y: int, w: int, h: int, opacity=0.4) -> None:
-        self.combine_texture("overlay", x, y, w, h, {"rgba": texture}, {"opacity": opacity})
+    def overlay_texture(self, texture: int, x: int, y: int, w: int, h: int) -> None:
+        from OpenGL.GL import (
+            glEnable, glIsEnabled, glBlendEquationSeparate, glBlendFuncSeparate,
+            GL_BLEND, GL_FUNC_ADD, GL_ONE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+            GL_BLEND_EQUATION_RGB, GL_BLEND_EQUATION_ALPHA,
+            GL_BLEND_SRC_RGB, GL_BLEND_DST_RGB, GL_BLEND_SRC_ALPHA, GL_BLEND_DST_ALPHA,
+        )
+        blend_enabled = bool(glIsEnabled(GL_BLEND))
+        blend_equation = (
+            int(glGetIntegerv(GL_BLEND_EQUATION_RGB)),
+            int(glGetIntegerv(GL_BLEND_EQUATION_ALPHA)),
+        )
+        blend_function = (
+            int(glGetIntegerv(GL_BLEND_SRC_RGB)),
+            int(glGetIntegerv(GL_BLEND_DST_RGB)),
+            int(glGetIntegerv(GL_BLEND_SRC_ALPHA)),
+            int(glGetIntegerv(GL_BLEND_DST_ALPHA)),
+        )
+        try:
+            glEnable(GL_BLEND)
+            glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD)
+            glBlendFuncSeparate(
+                GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+                GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
+            )
+            self.combine_texture("overlay", x, y, w, h, {"rgba": texture}, {})
+        finally:
+            glBlendEquationSeparate(*blend_equation)
+            glBlendFuncSeparate(*blend_function)
+            if not blend_enabled:
+                glDisable(GL_BLEND)
 
     def combine_texture(self, program_name: str, x: int, y: int, w: int, h: int, texture_map: dict, uniforms: dict) -> None:
         log("combine_texture%s", (program_name, x, y, w, h, texture_map))

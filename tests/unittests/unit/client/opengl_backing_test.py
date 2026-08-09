@@ -418,6 +418,40 @@ class TestDrawPointerLogic(unittest.TestCase):
         assert b.pointer_overlay != ()    # not expired, so not cleared
 
 
+class TestOverlayTextureLogic(unittest.TestCase):
+
+    def test_blend_state_is_restored(self):
+        from OpenGL.GL import (
+            GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT,
+            GL_ONE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+            GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
+        )
+        b = _make_mock_backing()
+        old_equation = GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT
+        old_function = GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR
+        old_state = old_equation + old_function
+        with (
+            patch("xpra.opengl.backing.glGetIntegerv", side_effect=old_state),
+            patch("OpenGL.GL.glIsEnabled", return_value=False),
+            patch("OpenGL.GL.glEnable") as enable,
+            patch("xpra.opengl.backing.glDisable") as disable,
+            patch("OpenGL.GL.glBlendEquationSeparate") as blend_equation,
+            patch("OpenGL.GL.glBlendFuncSeparate") as blend_function,
+            patch.object(b, "combine_texture") as combine_texture,
+        ):
+            b.overlay_texture(1, 2, 3, 4, 5)
+
+        enable.assert_called_once()
+        disable.assert_called_once()
+        assert blend_equation.call_args_list[0].args == (GL_FUNC_ADD, GL_FUNC_ADD)
+        assert blend_equation.call_args_list[-1].args == old_equation
+        assert blend_function.call_args_list[0].args == (
+            GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
+        )
+        assert blend_function.call_args_list[-1].args == old_function
+        combine_texture.assert_called_once_with("overlay", 2, 3, 4, 5, {"rgba": 1}, {})
+
+
 class TestPaintBoxEarlyReturn(unittest.TestCase):
     """paint_box() with line_width=0 returns immediately with no GL calls."""
 
