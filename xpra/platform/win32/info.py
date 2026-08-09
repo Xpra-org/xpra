@@ -4,10 +4,39 @@
 # later version. See the file COPYING for details.
 
 import os
+from ctypes import byref, sizeof
+from ctypes.wintypes import ULARGE_INTEGER
+
+from xpra.platform.win32.common import (
+    MEMORYSTATUSEX,
+    GetPhysicallyInstalledSystemMemory,
+    GlobalMemoryStatusEx,
+)
+
+
+def get_total_physical_memory() -> int:
+    # don't use `wmi` here: it requires COM to be initialized on the calling thread,
+    # and this can be called from any thread (ie: the server's info thread)
+    try:
+        # this is the amount of RAM installed, as reported by the SMBIOS,
+        # but it fails with ERROR_INVALID_DATA if the SMBIOS data is malformed (ie: in some VMs):
+        total_kb = ULARGE_INTEGER(0)
+        if GetPhysicallyInstalledSystemMemory(byref(total_kb)) and total_kb.value:
+            return int(total_kb.value) * 1024
+        # fallback: the memory usable by the OS, slightly lower than the amount installed
+        memstatus = MEMORYSTATUSEX()
+        memstatus.dwLength = sizeof(MEMORYSTATUSEX)
+        if GlobalMemoryStatusEx(byref(memstatus)):
+            return int(memstatus.ullTotalPhys)
+    except OSError:
+        pass
+    return 0
 
 
 def get_sys_info():
-    return  {}
+    return {
+        "total-physical-memory": get_total_physical_memory(),
+    }
 
 def get_name():
     try:
