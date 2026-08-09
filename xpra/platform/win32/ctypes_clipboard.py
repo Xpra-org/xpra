@@ -35,10 +35,11 @@ from xpra.platform.win32.common import (
 )
 from xpra.platform.win32 import win32con
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
-from xpra.clipboard.core import MAX_CLIPBOARD_PACKET_SIZE
+from xpra.clipboard.core import MAX_CLIPBOARD_PACKET_SIZE, PREFERRED_TARGETS
 from xpra.clipboard.common import ClipboardCallback, ClipboardData
 from xpra.clipboard.targets import (
     HTML_TARGETS,
+    IMAGE_TARGETS,
     PLAIN_TEXT_TARGETS,
     TEXT_TARGETS,
     _filter_targets,
@@ -148,6 +149,12 @@ SYNCDELAY_CLIPBOARD_CLIENTS = get_clients("NOSYNC", "VBoxTray.exe")
 log("BLOCKLISTED_CLIPBOARD_CLIENTS=%s", BLOCKLISTED_CLIPBOARD_CLIENTS)
 log("SYNCDELAY_CLIPBOARD_CLIENTS=%s", SYNCDELAY_CLIPBOARD_CLIENTS)
 COMPRESSED_IMAGES = envbool("XPRA_CLIPBOARD_COMPRESSED_IMAGES", True)
+
+# TIFF remains supported by the shared clipboard conversion code, but it is
+# deliberately excluded from native Windows advertisement and negotiation.
+WIN32_IMAGE_TARGETS: Sequence[str] = tuple(
+    target for target in IMAGE_TARGETS if target != "image/tiff"
+)
 
 CLIPBOARD_WINDOW_CLASS_NAME = "XpraWin32Clipboard"
 
@@ -456,8 +463,7 @@ TARGET_GROUPS: dict[str, str] = {
     **dict.fromkeys(PLAIN_TEXT_TARGETS, "text"),
     **dict.fromkeys(HTML_TARGETS, "html"),
     "text/uri-list": "uris",
-    "image/png": "image",
-    "image/jpeg": "image",
+    **dict.fromkeys(WIN32_IMAGE_TARGETS, "image"),
 }
 
 
@@ -513,9 +519,13 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             targets += ["text/plain;charset=utf-8", "UTF8_STRING", "CF_UNICODETEXT"]
         if win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
             targets += ["TEXT", "STRING", "text/plain"]
-        # if any(x in fnames for x in ("CF_DIB", "CF_BITMAP", "CF_DIBV5")):
+        # Applications may publish compressed image formats directly.
+        for target in WIN32_IMAGE_TARGETS:
+            if target.split("/", 1)[1].upper() in fnames:
+                targets.append(target)
+        # A DIB can be converted to any of our preferred image formats.
         if "CF_DIBV5" in fnames:
-            targets += ["image/png", "image/jpeg"]
+            targets += [target for target in WIN32_IMAGE_TARGETS if target not in targets]
         if win32con.CF_HDROP in formats:
             targets.append("text/uri-list")
         if CF_HTML_NAME.decode("latin1") in fnames:
@@ -606,7 +616,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("nodata%s", args)
             got_contents(target, 8, b"")
 
-        if target in ("image/png", "image/jpeg"):
+        if target in WIN32_IMAGE_TARGETS:
             def got_image(img_data, trusted=False):
                 log("got_image(%i bytes)", len(img_data))
                 img_data = filter_data(dtype=target, dformat=8, data=img_data, trusted=trusted)
@@ -707,7 +717,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 if header.bV5Height > 0:
                     img = ImageOps.flip(img)
                 from xpra.codecs.image import to_bytesbuffer
-                got_image(to_bytesbuffer(img, save_format), True)
+                got_image(to_bytesbuffer(img, img_format.lower()), True)
                 return True
             finally:
                 # `GlobalUnlock` takes the handle, not the pointer returned by `GlobalLock`:
@@ -806,7 +816,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             self.targets = _filter_targets(data)
             # TODO: tell system what targets we have
             log("got_contents: tell OS we have %s", csv(self.targets))
-            image_formats = tuple(x for x in ("image/png", "image/jpeg") if x in self.targets)
+            image_formats = tuple(x for x in WIN32_IMAGE_TARGETS if x in self.targets)
             # only request the image data if we don't have it yet:
             if image_formats and not any(x in self.target_data for x in image_formats):
                 # request it:
@@ -1071,6 +1081,8 @@ class Win32Clipboard(PrimaryHelperMixin, ClipboardTimeoutHelper):
         # `PRIMARY` is excluded: it is only ever saved to the `CLIPBOARD` selection,
         # and it changes far too often to request its contents every time:
         self.local_greedy = tuple(x for x in self.local_selections if x != "PRIMARY")
+        if "XPRA_CLIPBOARD_PREFERRED_TARGETS" not in os.environ:
+            self.local_preferred_targets = tuple(dict.fromkeys(PREFERRED_TARGETS + WIN32_IMAGE_TARGETS))
 
     def init_window(self) -> None:
         log("Win32Clipboard.init_window() creating clipboard window class and instance")

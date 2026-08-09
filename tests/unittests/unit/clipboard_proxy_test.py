@@ -5,8 +5,10 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from io import BytesIO
 
-from xpra.clipboard.proxy import ClipboardProxyCore
+from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
+from xpra.codecs.image_type import get_image_type
 
 
 class SynchronousProxy(ClipboardProxyCore):
@@ -37,6 +39,16 @@ class AsynchronousProxy(ClipboardProxyCore):
 
 
 class ClipboardProxyTest(unittest.TestCase):
+    def test_filter_additional_image_formats(self):
+        from PIL import Image
+        buf = BytesIO()
+        Image.new("RGBA", (2, 2), (1, 2, 3, 255)).save(buf, "PNG")
+        png = buf.getvalue()
+        for target in ("image/webp", "image/bmp"):
+            with self.subTest(target=target):
+                converted = filter_data("image/png", 8, png, trusted=True, output_dtype=target)
+                self.assertEqual(get_image_type(converted), target.split("/", 1)[1])
+
     def test_get_eager_targets(self):
         proxy = SynchronousProxy({})
         proxy.set_preferred_targets(("text/html", "UTF8_STRING"))

@@ -80,11 +80,19 @@ class DarwinClipboardTest(unittest.TestCase):
         image_targets = pasteboard_targets(("public.tiff", ))
         self.assertIn("image/png", image_targets)
         self.assertIn("image/tiff", image_targets)
+        self.assertIn("image/webp", image_targets)
+        self.assertIn("image/bmp", image_targets)
         # we only request one target per pasteboard format:
         offered = ("UTF8_STRING", "text/plain", "text/html", "image/png", "image/tiff")
         self.assertEqual(select_targets(offered), ("UTF8_STRING", "text/html", "image/png"))
         # and never the formats we already have:
         self.assertEqual(select_targets(offered, have=("STRING", "image/tiff")), ("text/html", ))
+
+    def test_image_preferences(self):
+        helper, _ = self.make_helper()
+        preferred = helper.get_caps()["preferred-targets"]
+        self.assertIn("image/webp", preferred)
+        self.assertIn("image/bmp", preferred)
 
     def test_uri_types(self):
         from xpra.platform.darwin.ctypes_clipboard import parse_uri_list, uri_types

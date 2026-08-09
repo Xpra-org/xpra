@@ -102,7 +102,10 @@ PDF_TARGETS: Sequence[str] = tuple(
     os.environ.get("XPRA_CLIPBOARD_PDF_TARGETS", "application/pdf").split(",")
 )
 IMAGE_TARGETS: Sequence[str] = tuple(
-    os.environ.get("XPRA_CLIPBOARD_IMAGE_TARGETS", "image/png,image/jpeg,image/tiff").split(",")
+    os.environ.get(
+        "XPRA_CLIPBOARD_IMAGE_TARGETS",
+        "image/png,image/jpeg,image/tiff,image/webp,image/bmp",
+    ).split(",")
 )
 DEFAULT_EAGER_TARGETS = (
     "UTF8_STRING,text/plain;charset=utf-8,text/plain;charset=UTF-8,"
@@ -111,7 +114,7 @@ DEFAULT_EAGER_TARGETS = (
     "text/html,text/html;charset=utf-8,text/html;charset=UTF-8,"
     "text/html; charset=utf-8,text/html; charset=UTF-8,text/uri-list,TEXT,STRING,"
     f"{','.join(UTF8_TEXT_FALLBACK_TARGETS)},"
-    f"{','.join(RTF_TARGETS)},image/png,image/jpeg,application/pdf"
+    f"{','.join(RTF_TARGETS)},image/png,image/jpeg,image/webp,image/bmp,application/pdf"
 )
 # the targets we send with the clipboard token to greedy clients,
 # in the order in which they are collected:

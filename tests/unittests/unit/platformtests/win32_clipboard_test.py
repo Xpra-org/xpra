@@ -65,6 +65,10 @@ class Win32ClipboardTest(unittest.TestCase):
         # `PRIMARY` must not be greedy: we don't want the data with every token
         self.assertEqual(helper.local_greedy, ("CLIPBOARD",))
         self.assertEqual(helper.get_caps()["greedy"], ("CLIPBOARD",))
+        preferred = helper.get_caps()["preferred-targets"]
+        self.assertIn("image/webp", preferred)
+        self.assertIn("image/bmp", preferred)
+        self.assertNotIn("image/tiff", preferred)
 
     def test_primary_is_receive_only(self):
         helper, packets = self.make_helper()
@@ -210,7 +214,7 @@ class Win32ClipboardTest(unittest.TestCase):
         for target, data in contents.items():
             self.assertEqual(options["data"][target], (target, 8, "bytes", data))
         # the aliases are still advertised, their data is just not duplicated:
-        for alias in ("text/plain", "TEXT", "STRING", "image/jpeg"):
+        for alias in ("text/plain", "TEXT", "STRING", "image/jpeg", "image/webp", "image/bmp"):
             self.assertIn(alias, options["targets"])
             self.assertNotIn(alias, options["data"])
 
@@ -234,12 +238,17 @@ class Win32ClipboardTest(unittest.TestCase):
         self.assertNotIn("data", options)
 
     def test_image_target_without_data_is_requested(self):
-        helper, packets = self.make_helper()
-        options = {"targets": ("UTF8_STRING", "image/png")}
-        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", options))
-        self.assertEqual(len(packets), 1)
-        packet_type, _, selection, target = packets[0]
-        self.assertEqual((packet_type, selection, target), ("clipboard-request", "CLIPBOARD", "image/png"))
+        for image_target in ("image/png", "image/webp", "image/bmp"):
+            with self.subTest(image_target=image_target):
+                helper, packets = self.make_helper()
+                options = {"targets": ("UTF8_STRING", image_target)}
+                helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", options))
+                self.assertEqual(len(packets), 1)
+                packet_type, _, selection, target = packets[0]
+                self.assertEqual(
+                    (packet_type, selection, target),
+                    ("clipboard-request", "CLIPBOARD", image_target),
+                )
 
     def test_image_sent_with_the_token_is_not_requested_again(self):
         helper, packets = self.make_helper()

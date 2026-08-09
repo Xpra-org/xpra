@@ -10,6 +10,7 @@ from xpra.clipboard.core import PREFERRED_TARGETS
 from xpra.clipboard.targets import (
     EAGER_TARGETS,
     HTML_TARGETS,
+    IMAGE_TARGETS,
     PLAIN_TEXT_TARGETS,
     RTF_TARGETS,
     TEXT_TARGETS,
@@ -119,6 +120,13 @@ class TestClipboardTargets(unittest.TestCase):
             assert target in PREFERRED_TARGETS
         assert "image/tiff" not in EAGER_TARGETS
         assert "image/tiff" not in PREFERRED_TARGETS
+
+    def test_additional_image_targets(self):
+        for target in ("image/webp", "image/bmp"):
+            assert target in IMAGE_TARGETS
+            assert target in EAGER_TARGETS
+        assert "image/tiff" in IMAGE_TARGETS
+        assert "image/tiff" not in EAGER_TARGETS
 
 
 def main():

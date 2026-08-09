@@ -63,6 +63,14 @@ def is_tiff(data: bytes) -> bool:
     return False
 
 
+BMP_HEADER = b"BM"
+BMP_DIB_HEADER_SIZES = (12, 40, 52, 56, 64, 108, 124)
+
+
+def is_bmp(data: bytes) -> bool:
+    return data[:2] == BMP_HEADER and struct.unpack_from("<I", data, 14)[0] in BMP_DIB_HEADER_SIZES
+
+
 HEADERS: dict[Callable[[bytes], bool], str] = {
     is_png: "png",
     is_webp: "webp",
@@ -70,6 +78,7 @@ HEADERS: dict[Callable[[bytes], bool], str] = {
     is_svg: "svg",
     is_xpm: "xpm",
     is_tiff: "tiff",
+    is_bmp: "bmp",
 }
 
 
