@@ -150,7 +150,11 @@ class Win32Eventlistener:
         self.wc.lpszMenuName = 0
         self.wc.lpszClassName = "Xpra-Event-Window"
         self.wc.hIconSm = 0
-        self.wc.hbrBackground = win32con.COLOR_WINDOW
+        # no background brush: this window is never shown, it only exists to
+        # receive the messages that are addressed to a window rather than to a
+        # thread (`WM_WTSSESSION_CHANGE`, `WM_POWERBROADCAST`, ..), so it is
+        # never painted and `WM_ERASEBKGND` never reaches it:
+        self.wc.hbrBackground = 0
         self.wc_atom = RegisterClassExW(byref(self.wc))
         if self.wc_atom == 0:
             raise WinError(get_last_error())
