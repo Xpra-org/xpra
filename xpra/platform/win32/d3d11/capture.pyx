@@ -344,21 +344,21 @@ cdef extern from *:
 
 # DXGI format -> (pixel_format_string, bit_depth)
 # DXGI_FORMAT values as integers to avoid cimport dependency on device.pyx
+#
+# `DuplicateOutput` always hands back `DXGI_FORMAT_B8G8R8A8_UNORM` (87),
+# the other entries are only reachable if we ever switch to `DuplicateOutput1`.
+#
+# The 4th byte is always mapped to padding (`BGRX` / `RGBX`) and never to alpha:
+# the desktop image is DWM's already composited output, which is opaque by
+# construction, and DXGI does not define what this byte contains.
+# Drivers do leave zeroes there (hardware overlays, protected content, ...),
+# so exposing it as alpha would make those areas transparent.
 _FORMAT_MAP: dict[int, tuple[str, int]] = {
-    87:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8X8_UNORM
-    91:  ("BGRA", 32),    # DXGI_FORMAT_B8G8R8A8_UNORM_SRGB  (uncommon)
-    28:  ("RGBA", 32),    # DXGI_FORMAT_R8G8B8A8_UNORM
-    26:  ("r210", 30),    # DXGI_FORMAT_R10G10B10A2_UNORM
-    # most common: 87 = BGRX, 88 = BGRA
-    88:  ("BGRA", 32),    # DXGI_FORMAT_B8G8R8A8_UNORM (with alpha)
-}
-# Rebuild cleanly (the duplicate keys above were just for documentation)
-_FORMAT_MAP = {
-    87:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8X8_UNORM
-    88:  ("BGRA", 32),    # DXGI_FORMAT_B8G8R8A8_UNORM
-    91:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
-    28:  ("RGBA", 32),    # DXGI_FORMAT_R8G8B8A8_UNORM
-    26:  ("r210", 30),    # DXGI_FORMAT_R10G10B10A2_UNORM
+    87:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8A8_UNORM - the only format `DuplicateOutput` returns
+    88:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8X8_UNORM
+    91:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
+    93:  ("BGRX", 32),    # DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
+    28:  ("RGBX", 32),    # DXGI_FORMAT_R8G8B8A8_UNORM
 }
 
 
