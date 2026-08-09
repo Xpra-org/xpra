@@ -10,7 +10,7 @@ from typing import Tuple, Optional, Any, Callable
 
 from xpra.util import roundup
 from xpra.common import noop
-from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, WIN32, POSIX
+from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, getuid, getgid, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.log import Logger
@@ -103,8 +103,8 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
                 mmap_dir = get_mmap_dir()
                 subs = os.environ.copy()
                 subs.update({
-                    "UID"               : str(os.getuid()),
-                    "GID"               : str(os.getgid()),
+                    "UID"               : str(getuid()),
+                    "GID"               : str(getgid()),
                     "PID"               : str(os.getpid()),
                     })
                 mmap_dir = shellsub(mmap_dir, subs)
