@@ -189,7 +189,7 @@ def enforce_server_features() -> None:
         "encoding": "xpra.server.subsystem.encoding,xpra.server.source.encodings",
         "logging": "xpra.server.subsystem.logging",
         "ping": "xpra.server.subsystem.ping,xpra.server.source.ping",
-        "gsettings": "gi.repository.Gio,xpra.server.subsystem.gsettings,xpra.server.source.gsettings",
+        "gsettings": "xpra.server.subsystem.gsettings,xpra.server.source.gsettings",
         "register": "xpra.server.subsystem.register",
         "bandwidth": "xpra.server.subsystem.bandwidth,xpra.server.source.bandwidth",
         "shell": "xpra.server.subsystem.shell,xpra.server.source.shell",
