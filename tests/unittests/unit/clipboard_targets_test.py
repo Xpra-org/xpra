@@ -11,6 +11,7 @@ from xpra.clipboard.targets import (
     PLAIN_TEXT_TARGETS,
     TEXT_TARGETS,
     URI_TARGETS,
+    UTF8_TEXT_FALLBACK_TARGETS,
     _filter_targets,
     choose_eager_targets,
     is_utf8_target,
@@ -86,6 +87,18 @@ class TestClipboardTargets(unittest.TestCase):
         assert not is_utf8_target("STRING")
         assert not is_utf8_target("text/plain")
 
+    def test_utf8_text_fallback_targets(self):
+        expected = {
+            "text/csv",
+            "text/tab-separated-values",
+            "text/markdown",
+        }
+        assert expected == set(UTF8_TEXT_FALLBACK_TARGETS)
+        for target in expected:
+            assert target in TEXT_TARGETS
+            assert target in PLAIN_TEXT_TARGETS
+            assert is_utf8_target(target)
+
     def test_choose_eager_targets(self):
         targets = ("custom", "text/html", "UTF8_STRING", "text/uri-list", "UTF8_STRING")
         assert choose_eager_targets(targets) == ("UTF8_STRING", "text/html", "text/uri-list")
@@ -93,6 +106,7 @@ class TestClipboardTargets(unittest.TestCase):
         assert choose_eager_targets(("custom",), ("custom",)) == ("custom",)
         aliases = ("text/plain;charset=UTF-8", "text/html; charset=utf-8")
         assert choose_eager_targets(aliases) == aliases
+        assert choose_eager_targets(UTF8_TEXT_FALLBACK_TARGETS) == UTF8_TEXT_FALLBACK_TARGETS
 
 
 def main():

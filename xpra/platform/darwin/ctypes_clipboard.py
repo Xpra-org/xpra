@@ -23,6 +23,7 @@ from xpra.clipboard.core import PREFERRED_TARGETS
 from xpra.clipboard.targets import (
     _filter_targets,
     HTML_TARGETS, IMAGE_TARGETS, PDF_TARGETS, PLAIN_TEXT_TARGETS, RTF_TARGETS, URI_TARGETS,
+    UTF8_TEXT_FALLBACK_TARGETS,
 )
 from xpra.clipboard.primary import PrimaryProxyMixin, PrimaryHelperMixin
 from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
@@ -39,14 +40,20 @@ GLib = gi_import("GLib")
 # `AppKit` has no constant for this one:
 NSPasteboardTypeJPEG: Final[str] = "public.jpeg"
 
-TSV_TARGETS: Sequence[str] = ("text/tab-separated-values", )
+TSV_TARGETS: Sequence[str] = tuple(
+    target for target in UTF8_TEXT_FALLBACK_TARGETS if target == "text/tab-separated-values"
+)
 
 # the pasteboard types we can exchange with the peer,
 # mapped to the clipboard targets which can carry them.
 # the order matters: it is the order in which the formats are chosen,
 # and the first target of each type is the one we use to send its data:
 PASTEBOARD_TARGETS: dict[str, Sequence[str]] = {
-    NSPasteboardTypeString: PLAIN_TEXT_TARGETS,
+    # Structured text is accepted as a plain text fallback when received,
+    # but must not be advertised for arbitrary strings copied locally.
+    NSPasteboardTypeString: tuple(
+        target for target in PLAIN_TEXT_TARGETS if target not in UTF8_TEXT_FALLBACK_TARGETS
+    ),
     NSPasteboardTypeHTML: HTML_TARGETS,
     NSPasteboardTypeRTF: RTF_TARGETS,
     NSPasteboardTypeTabularText: TSV_TARGETS,
@@ -117,6 +124,10 @@ def get_target_groups() -> dict[str, str]:
         group = "image" if nstype in IMAGE_TYPES_TARGETS else nstype
         for target in tuple(nstargets) + (IMAGE_TARGETS if group == "image" else ()):
             groups.setdefault(target, group)
+    # CSV and Markdown have no richer pasteboard representation, so receiving
+    # either one falls back to the native string type. TSV is mapped above.
+    for target in UTF8_TEXT_FALLBACK_TARGETS:
+        groups.setdefault(target, NSPasteboardTypeString)
     return groups
 
 
@@ -279,6 +290,8 @@ class OSXClipboardProxy(ClipboardProxyCore):
         got_contents(target, 8, data or b"")
 
     def get_target_data(self, target: str) -> bytes | str:
+        if target in TSV_TARGETS:
+            return self.get_pasteboard_string(NSPasteboardTypeTabularText).encode("utf8")
         if target in PLAIN_TEXT_TARGETS:
             return self.get_clipboard_text()
         if target in IMAGE_TARGETS:
@@ -295,8 +308,6 @@ class OSXClipboardProxy(ClipboardProxyCore):
             return self.get_pasteboard_data(NSPasteboardTypePDF)
         if target in URI_TARGETS:
             return self.get_uri_list()
-        if target in TSV_TARGETS:
-            return self.get_pasteboard_string(NSPasteboardTypeTabularText).encode("utf8")
         # we don't know how to handle this target:
         log("no pasteboard type for target %r", target)
         return b""

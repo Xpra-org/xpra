@@ -58,15 +58,28 @@ DISCARD_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets(
         r"^application/vnd.portal.",  # portal uses dbus, which is not forwarded
     )
 ))
+UTF8_TEXT_FALLBACK_TARGETS: Sequence[str] = tuple(
+    os.environ.get(
+        "XPRA_CLIPBOARD_UTF8_TEXT_FALLBACK_TARGETS",
+        "text/csv,text/tab-separated-values,text/markdown",
+    ).split(",")
+)
+UTF8_TEXT_FALLBACK_TARGET_NAMES = frozenset(
+    target.lower().replace(" ", "") for target in UTF8_TEXT_FALLBACK_TARGETS
+)
+DEFAULT_TEXT_TARGETS = (
+    "UTF8_STRING,TEXT,STRING,"
+    "text/plain;charset=utf-8,text/plain;charset=UTF-8,"
+    "text/plain;charset=utf8,text/plain;charset=UTF8,"
+    "text/plain; charset=utf-8,text/plain; charset=UTF-8,text/plain,"
+    "text/html,text/html;charset=utf-8,text/html;charset=UTF-8,"
+    "text/html; charset=utf-8,text/html; charset=UTF-8,"
+    f"{','.join(UTF8_TEXT_FALLBACK_TARGETS)}"
+)
 TEXT_TARGETS: Sequence[str] = tuple(
     os.environ.get(
         "XPRA_CLIPBOARD_TEXT_TARGETS",
-        "UTF8_STRING,TEXT,STRING,"
-        "text/plain;charset=utf-8,text/plain;charset=UTF-8,"
-        "text/plain;charset=utf8,text/plain;charset=UTF8,"
-        "text/plain; charset=utf-8,text/plain; charset=UTF-8,text/plain,"
-        "text/html,text/html;charset=utf-8,text/html;charset=UTF-8,"
-        "text/html; charset=utf-8,text/html; charset=UTF-8",
+        DEFAULT_TEXT_TARGETS,
     ).split(",")
 )
 HTML_TARGETS: Sequence[str] = tuple(
@@ -91,18 +104,22 @@ PDF_TARGETS: Sequence[str] = tuple(
 IMAGE_TARGETS: Sequence[str] = tuple(
     os.environ.get("XPRA_CLIPBOARD_IMAGE_TARGETS", "image/png,image/jpeg,image/tiff").split(",")
 )
+DEFAULT_EAGER_TARGETS = (
+    "UTF8_STRING,text/plain;charset=utf-8,text/plain;charset=UTF-8,"
+    "text/plain;charset=utf8,text/plain;charset=UTF8,"
+    "text/plain; charset=utf-8,text/plain; charset=UTF-8,text/plain,"
+    "text/html,text/html;charset=utf-8,text/html;charset=UTF-8,"
+    "text/html; charset=utf-8,text/html; charset=UTF-8,text/uri-list,TEXT,STRING,"
+    f"{','.join(UTF8_TEXT_FALLBACK_TARGETS)},"
+    "text/rtf,image/png,image/jpeg,application/pdf"
+)
 # the targets we send with the clipboard token to greedy clients,
 # in the order in which they are collected:
 # the cheap ones come first, so that they always fit within the token size limit
 EAGER_TARGETS: Sequence[str] = tuple(
     os.environ.get(
         "XPRA_CLIPBOARD_EAGER_TARGETS",
-        "UTF8_STRING,text/plain;charset=utf-8,text/plain;charset=UTF-8,"
-        "text/plain;charset=utf8,text/plain;charset=UTF8,"
-        "text/plain; charset=utf-8,text/plain; charset=UTF-8,text/plain,"
-        "text/html,text/html;charset=utf-8,text/html;charset=UTF-8,"
-        "text/html; charset=utf-8,text/html; charset=UTF-8,text/uri-list,TEXT,STRING,"
-        "text/rtf,image/png,image/jpeg,application/pdf",
+        DEFAULT_EAGER_TARGETS,
     ).split(",")
 )
 
@@ -115,6 +132,7 @@ def is_utf8_target(target: str) -> bool:
         "charset=utf-8" in name,
         "charset=utf8" in name,
         name == "public.utf8-plain-text",
+        name in UTF8_TEXT_FALLBACK_TARGET_NAMES,
     ))
 
 

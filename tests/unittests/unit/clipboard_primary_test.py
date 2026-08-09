@@ -165,6 +165,13 @@ class PrimaryProxyTest(unittest.TestCase):
         proxy.got_contents("UTF8_STRING", "UTF8_STRING", 8, "été".encode("utf8"))
         self.assertEqual(texts, ["été"])
 
+    def test_utf8_fallback_contents(self):
+        proxy, texts = self.make_proxy()
+        for target in ("text/csv", "text/tab-separated-values", "text/markdown"):
+            with self.subTest(target=target):
+                proxy.got_contents(target, target, 8, "été".encode("utf8"))
+        self.assertEqual(texts, ["été", "été", "été"])
+
 
 def main():
     unittest.main()

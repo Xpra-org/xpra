@@ -62,11 +62,17 @@ class DarwinClipboardTest(unittest.TestCase):
         return proxy, packets
 
     def test_target_mapping(self):
+        from AppKit import NSPasteboardTypeTabularText
         from xpra.platform.darwin.ctypes_clipboard import pasteboard_targets, select_targets
         targets = pasteboard_targets(("public.utf8-plain-text", "public.html", "com.adobe.pdf"))
         self.assertIn("UTF8_STRING", targets)
         self.assertIn("text/html", targets)
         self.assertIn("application/pdf", targets)
+        # A generic string must not claim to contain structured text.
+        for target in ("text/csv", "text/tab-separated-values", "text/markdown"):
+            self.assertNotIn(target, targets)
+        tabular_targets = pasteboard_targets((NSPasteboardTypeTabularText, ))
+        self.assertIn("text/tab-separated-values", tabular_targets)
         # native pasteboard types must never be exposed to the peer:
         for nstype in ("com.apple.traditional-mac-plain-text", "dyn.ah62d", "NeXT TIFF v4.0 pasteboard type"):
             self.assertNotIn(nstype, pasteboard_targets((nstype, )))
