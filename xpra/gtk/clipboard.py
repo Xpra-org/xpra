@@ -7,7 +7,7 @@ from time import monotonic
 
 from xpra.util.gobject import n_arg_signal, one_arg_signal
 from xpra.clipboard.common import ClipboardCallback
-from xpra.clipboard.targets import TEXT_TARGETS
+from xpra.clipboard.targets import TEXT_TARGETS, is_utf8_target
 from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.os_util import gi_import
@@ -86,7 +86,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     continue
                 text = str(data)
                 if isinstance(data, bytes):
-                    if text_target.lower().find("utf8") >= 0:
+                    if is_utf8_target(text_target):
                         try:
                             text = data.decode("utf8")
                         except UnicodeDecodeError:

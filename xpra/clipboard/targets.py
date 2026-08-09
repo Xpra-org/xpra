@@ -59,11 +59,22 @@ DISCARD_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets(
     )
 ))
 TEXT_TARGETS: Sequence[str] = tuple(
-    os.environ.get("XPRA_CLIPBOARD_TEXT_TARGETS",
-                   "UTF8_STRING,TEXT,STRING,text/plain;charset=utf-8,text/plain,text/html").split(",")
+    os.environ.get(
+        "XPRA_CLIPBOARD_TEXT_TARGETS",
+        "UTF8_STRING,TEXT,STRING,"
+        "text/plain;charset=utf-8,text/plain;charset=UTF-8,"
+        "text/plain;charset=utf8,text/plain;charset=UTF8,"
+        "text/plain; charset=utf-8,text/plain; charset=UTF-8,text/plain,"
+        "text/html,text/html;charset=utf-8,text/html;charset=UTF-8,"
+        "text/html; charset=utf-8,text/html; charset=UTF-8",
+    ).split(",")
 )
 HTML_TARGETS: Sequence[str] = tuple(
-    os.environ.get("XPRA_CLIPBOARD_HTML_TARGETS", "text/html").split(",")
+    os.environ.get(
+        "XPRA_CLIPBOARD_HTML_TARGETS",
+        "text/html,text/html;charset=utf-8,text/html;charset=UTF-8,"
+        "text/html; charset=utf-8,text/html; charset=UTF-8",
+    ).split(",")
 )
 URI_TARGETS: Sequence[str] = tuple(
     os.environ.get("XPRA_CLIPBOARD_URI_TARGETS", "text/uri-list").split(",")
@@ -86,10 +97,25 @@ IMAGE_TARGETS: Sequence[str] = tuple(
 EAGER_TARGETS: Sequence[str] = tuple(
     os.environ.get(
         "XPRA_CLIPBOARD_EAGER_TARGETS",
-        "UTF8_STRING,text/plain;charset=utf-8,text/plain,text/html,text/uri-list,TEXT,STRING,"
+        "UTF8_STRING,text/plain;charset=utf-8,text/plain;charset=UTF-8,"
+        "text/plain;charset=utf8,text/plain;charset=UTF8,"
+        "text/plain; charset=utf-8,text/plain; charset=UTF-8,text/plain,"
+        "text/html,text/html;charset=utf-8,text/html;charset=UTF-8,"
+        "text/html; charset=utf-8,text/html; charset=UTF-8,text/uri-list,TEXT,STRING,"
         "text/rtf,image/png,image/jpeg,application/pdf",
     ).split(",")
 )
+
+
+def is_utf8_target(target: str) -> bool:
+    """Return whether a text target carries UTF-8 encoded data."""
+    name = bytestostr(target).lower().replace(" ", "")
+    return any((
+        name == "utf8_string",
+        "charset=utf-8" in name,
+        "charset=utf8" in name,
+        name == "public.utf8-plain-text",
+    ))
 
 
 def choose_eager_targets(targets: Iterable[str], preferred_targets: Iterable[str] = ()) -> Sequence[str]:

@@ -6,7 +6,7 @@
 from typing import Any
 from collections.abc import Callable
 
-from xpra.clipboard.targets import PLAIN_TEXT_TARGETS
+from xpra.clipboard.targets import PLAIN_TEXT_TARGETS, is_utf8_target
 from xpra.os_util import gi_import
 from xpra.util.env import envint
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
@@ -126,7 +126,7 @@ class PrimaryProxyMixin:
         if dformat != 8 or not data or target not in PLAIN_TEXT_TARGETS:
             log("no plain text to save to the 'CLIPBOARD' selection")
             return
-        if dtype.lower().find("utf8") >= 0:
+        if is_utf8_target(dtype):
             text = data.decode("utf8")
         else:
             text = bytestostr(data)

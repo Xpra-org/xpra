@@ -20,7 +20,15 @@ from xpra.clipboard.common import (
     ALL_CLIPBOARDS,
     get_format_size, sizeof_long, sizeof_short, compile_filters, get_local_selections,
 )
-from xpra.clipboard.targets import _filter_targets, must_discard, DISCARD_EXTRA_TARGETS, DISCARD_TARGETS
+from xpra.clipboard.targets import (
+    HTML_TARGETS,
+    PLAIN_TEXT_TARGETS,
+    URI_TARGETS,
+    _filter_targets,
+    must_discard,
+    DISCARD_EXTRA_TARGETS,
+    DISCARD_TARGETS,
+)
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("clipboard")
@@ -30,7 +38,7 @@ MAX_CLIPBOARD_PACKET_SIZE: Final[int] = 16 * 1024 * 1024
 MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
-DEFAULT_PREFERRED_TARGETS = "UTF8_STRING,TEXT,STRING,text/plain;charset=utf-8,text/plain,text/html,text/uri-list"
+DEFAULT_PREFERRED_TARGETS = ",".join(PLAIN_TEXT_TARGETS + HTML_TARGETS + URI_TARGETS)
 if POSIX:
     DEFAULT_PREFERRED_TARGETS += ",image/png"
 PREFERRED_TARGETS = tuple(os.environ.get("XPRA_CLIPBOARD_PREFERRED_TARGETS", DEFAULT_PREFERRED_TARGETS).split(","))

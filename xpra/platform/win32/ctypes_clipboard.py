@@ -37,7 +37,13 @@ from xpra.platform.win32 import win32con
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.core import MAX_CLIPBOARD_PACKET_SIZE
 from xpra.clipboard.common import ClipboardCallback, ClipboardData
-from xpra.clipboard.targets import _filter_targets, TEXT_TARGETS
+from xpra.clipboard.targets import (
+    HTML_TARGETS,
+    PLAIN_TEXT_TARGETS,
+    TEXT_TARGETS,
+    _filter_targets,
+    is_utf8_target,
+)
 from xpra.clipboard.primary import PrimaryProxyMixin, PrimaryHelperMixin
 from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
 from xpra.common import roundup, noop
@@ -447,12 +453,8 @@ def free_clipboard_handle(fmt: int, handle: int) -> None:
 # otherwise the same text would be sent 5 times,
 # and the image would be encoded both as `PNG` and as `JPEG`:
 TARGET_GROUPS: dict[str, str] = {
-    "UTF8_STRING": "text",
-    "text/plain;charset=utf-8": "text",
-    "text/plain": "text",
-    "TEXT": "text",
-    "STRING": "text",
-    "text/html": "html",
+    **dict.fromkeys(PLAIN_TEXT_TARGETS, "text"),
+    **dict.fromkeys(HTML_TARGETS, "html"),
     "text/uri-list": "uris",
     "image/png": "image",
     "image/jpeg": "image",
@@ -624,7 +626,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
             self.get_clipboard_uris(got_uris, nodata)
             return
-        if target == "text/html":
+        if target in HTML_TARGETS:
             def got_html(html_data) -> None:
                 log("got_html(%i bytes)", len(html_data))
                 html_data = filter_data(dtype=target, dformat=8, data=html_data)
@@ -632,7 +634,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
             self.get_clipboard_html(got_html, nodata)
             return
-        if target not in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
+        if target not in PLAIN_TEXT_TARGETS:
             # we don't know how to handle this target,
             # return an empty response:
             nodata()
@@ -649,7 +651,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 log.warn(" %s", error_text)
             got_contents(target, 8, b"")
 
-        utf8 = target.lower().find("utf") >= 0
+        utf8 = is_utf8_target(target)
         self.get_clipboard_text(utf8, got_text, errback)
 
     def get_clipboard_image(self, img_format, got_image, errback):
@@ -809,12 +811,12 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             if image_formats and not any(x in self.target_data for x in image_formats):
                 # request it:
                 self.send_clipboard_request_handler(self, self._selection, image_formats[0])
-        elif dformat == 8 and dtype == "text/html":
+        elif dformat == 8 and dtype in HTML_TARGETS:
             log("we got HTML data: %s", Ellipsizer(data))
             self.set_clipboard_html(data)
         elif dformat == 8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", Ellipsizer(data))
-            if dtype.lower().find("utf8") >= 0:
+            if is_utf8_target(dtype):
                 text = data.decode("utf8")
             else:
                 text = bytestostr(data)

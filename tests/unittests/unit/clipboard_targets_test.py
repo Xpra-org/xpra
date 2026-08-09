@@ -13,6 +13,7 @@ from xpra.clipboard.targets import (
     URI_TARGETS,
     _filter_targets,
     choose_eager_targets,
+    is_utf8_target,
     must_discard,
     must_discard_extra,
 )
@@ -61,11 +62,37 @@ class TestClipboardTargets(unittest.TestCase):
         assert not set(PLAIN_TEXT_TARGETS) & set(HTML_TARGETS)
         assert not set(PLAIN_TEXT_TARGETS) & set(URI_TARGETS)
 
+    def test_text_aliases(self):
+        for target in (
+            "text/plain;charset=utf-8",
+            "text/plain;charset=UTF-8",
+            "text/plain;charset=utf8",
+            "text/plain;charset=UTF8",
+            "text/plain; charset=utf-8",
+            "text/plain; charset=UTF-8",
+        ):
+            assert target in PLAIN_TEXT_TARGETS
+            assert is_utf8_target(target)
+        for target in (
+            "text/html;charset=utf-8",
+            "text/html;charset=UTF-8",
+            "text/html; charset=utf-8",
+            "text/html; charset=UTF-8",
+        ):
+            assert target in HTML_TARGETS
+            assert target in TEXT_TARGETS
+            assert is_utf8_target(target)
+        assert not is_utf8_target("TEXT")
+        assert not is_utf8_target("STRING")
+        assert not is_utf8_target("text/plain")
+
     def test_choose_eager_targets(self):
         targets = ("custom", "text/html", "UTF8_STRING", "text/uri-list", "UTF8_STRING")
         assert choose_eager_targets(targets) == ("UTF8_STRING", "text/html", "text/uri-list")
         assert choose_eager_targets(targets, ("text/html", "custom")) == ("text/html",)
         assert choose_eager_targets(("custom",), ("custom",)) == ("custom",)
+        aliases = ("text/plain;charset=UTF-8", "text/html; charset=utf-8")
+        assert choose_eager_targets(aliases) == aliases
 
 
 def main():
