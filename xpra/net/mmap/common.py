@@ -6,7 +6,7 @@
 import os
 
 from xpra.util.env import shellsub
-from xpra.os_util import get_group_id, POSIX
+from xpra.os_util import get_group_id, getuid, getgid, POSIX
 from xpra.util.stats import std_unit
 from xpra.log import Logger
 
@@ -64,8 +64,8 @@ def get_mmap_dir() -> str:
     mmap_dir = get_platform_mmap_dir()
     subs = os.environ.copy()
     subs |= {
-        "UID": str(os.getuid()),
-        "GID": str(os.getgid()),
+        "UID": str(getuid()),
+        "GID": str(getgid()),
         "PID": str(os.getpid()),
     }
     mmap_dir = shellsub(mmap_dir, subs)
