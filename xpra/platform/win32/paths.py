@@ -201,26 +201,15 @@ def do_get_desktop_background_paths() -> list[str]:
     log = get_util_logger()
     wallpapers: list[str] = []
     try:
-        import wmi
-        import win32api
-        import win32con
-
-        c = wmi.WMI()
-        full_username = win32api.GetUserNameEx(win32con.NameSamCompatible)
-        for desktop in c.Win32_Desktop():
-            if desktop.Name == full_username and desktop.Wallpaper:
-                wallpapers.append(desktop.Wallpaper)
-    except ImportError:
-        log("unable to query wallpaper via wmi", exc_info=True)
-    try:
+        # this is the registry value that `Win32_Desktop.Wallpaper` is derived from,
+        # querying it directly avoids having to initialize COM to use `wmi`:
         from winreg import OpenKey, HKEY_CURRENT_USER, KEY_READ, QueryValueEx  # @Reimport
         key_path = "Control Panel\\Desktop"
-        key = OpenKey(HKEY_CURRENT_USER, key_path, 0, KEY_READ)
-        wallpaper = QueryValueEx(key, 'WallPaper')[0]
-        if wallpaper and wallpaper not in wallpapers:
+        with OpenKey(HKEY_CURRENT_USER, key_path, 0, KEY_READ) as key:
+            wallpaper = QueryValueEx(key, 'WallPaper')[0]
+        if wallpaper:
             wallpapers.append(wallpaper)
-    except Exception:
-        log = get_util_logger()
+    except OSError:
         log("do_get_desktop_background_paths()", exc_info=True)
     log("do_get_desktop_background_paths()=%s", wallpapers)
     return wallpapers
