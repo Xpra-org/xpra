@@ -19,6 +19,7 @@ from xpra.x11.bindings.xlib cimport (
     AllPlanes,
 )
 from xpra.buffers.membuf cimport memalign, memfree
+from xpra.util.env import first_time
 from libc.stdlib cimport free
 from libc.string cimport memcpy
 from libc.stdint cimport uintptr_t
@@ -114,6 +115,11 @@ RGBX    = "RGBX"
 R210    = "R210"
 r210    = "r210"
 
+EXPECTED_30BIT_MASKS = {
+    R210: (0x3ff00000, 0x000ffc00, 0x000003ff),
+    r210: (0x3ff00000, 0x000ffc00, 0x000003ff),
+}
+
 RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210, RGB565, BGR565, RLE8]
 
 
@@ -191,6 +197,12 @@ cdef class XImageWrapper:
                 self.pixel_format = R210
             else:
                 self.pixel_format = r210
+            masks = image.red_mask, image.green_mask, image.blue_mask
+            expected_masks = EXPECTED_30BIT_MASKS[self.pixel_format]
+            if masks != expected_masks and first_time(f"{self.pixel_format}-masks-{masks}"):
+                log.warn("Warning: unexpected %s channel masks: red=%#x, green=%#x, blue=%#x"
+                         " (expected red=%#x, green=%#x, blue=%#x); continuing",
+                         self.pixel_format, *masks, *expected_masks)
         else:
             raise ValueError(f"invalid image depth: {self.depth} bpp")
 
@@ -614,4 +626,3 @@ def XImageBindings() -> XImageBindingsInstance:
     if singleton is None or singleton.is_stale():
         singleton = XImageBindingsInstance()
     return singleton
-
