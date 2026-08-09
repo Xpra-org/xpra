@@ -10,6 +10,11 @@ from ctypes.wintypes import POINT
 from xpra.platform.win32 import win32con
 from xpra.platform.win32.common import SetPhysicalCursorPos, GetPhysicalCursorPos, mouse_event
 
+# `mouse_event` xbutton identifiers, missing from the pywin32 `win32con` dump
+# used to generate `constants.py`:
+XBUTTON1 = 0x0001
+XBUTTON2 = 0x0002
+
 NOEVENT = (0, 0)
 BUTTON_EVENTS: dict[tuple[int, bool], tuple[int, int]] = {
     # (button,up-or-down)  : win-event-name
@@ -27,10 +32,10 @@ BUTTON_EVENTS: dict[tuple[int, bool], tuple[int, int]] = {
     (6, False): NOEVENT,
     (7, True): (win32con.MOUSEEVENTF_HWHEEL, -win32con.WHEEL_DELTA),
     (7, False): NOEVENT,
-    (8, True): (win32con.MOUSEEVENTF_XDOWN, win32con.XBUTTON1),
-    (8, False): (win32con.MOUSEEVENTF_XUP, win32con.XBUTTON1),
-    (9, True): (win32con.MOUSEEVENTF_XDOWN, win32con.XBUTTON2),
-    (9, False): (win32con.MOUSEEVENTF_XUP, win32con.XBUTTON2),
+    (8, True): (win32con.MOUSEEVENTF_XDOWN, XBUTTON1),
+    (8, False): (win32con.MOUSEEVENTF_XUP, XBUTTON1),
+    (9, True): (win32con.MOUSEEVENTF_XDOWN, XBUTTON2),
+    (9, False): (win32con.MOUSEEVENTF_XUP, XBUTTON2),
 }
 
 
