@@ -23,6 +23,9 @@ class Win32ShadowCursorManager(ShadowCursorManager):
     def __init__(self, server=None):
         super().__init__(server)
         self.cursor_handle = None
+        # `get_cursor_data` returns nothing for some cursors (ie: black and white ones):
+        # remember that, so that we don't retry the same handle on every single poll
+        self.cursor_handle_failed = False
 
     def do_get_cursor_data(self) -> tuple | None:
         ci = CURSORINFO()
@@ -33,13 +36,18 @@ class Win32ShadowCursorManager(ShadowCursorManager):
             # cursorlog("do_get_cursor_data() cursor not shown")
             return None
         handle = int(ci.hCursor)
-        if handle == self.cursor_handle and self.last_cursor_data:
+        # re-use what we already know about this handle, either because we have its
+        # data or because we already know that we cannot get any.
+        # (`last_cursor_data` is cleared whenever the cursor is hidden,
+        # in which case we do want to grab the data again)
+        if handle == self.cursor_handle and (self.last_cursor_data or self.cursor_handle_failed):
             # cursorlog("do_get_cursor_data() cursor handle unchanged")
             return self.last_cursor_data
         self.cursor_handle = handle
         cd = get_cursor_data(handle)
+        self.cursor_handle_failed = not cd
         if not cd:
-            cursorlog("do_get_cursor_data() no cursor data")
+            cursorlog("do_get_cursor_data() no cursor data for handle %#x", handle)
             return self.last_cursor_data
         cd[0] = ci.ptScreenPos.x
         cd[1] = ci.ptScreenPos.y
