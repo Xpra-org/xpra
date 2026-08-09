@@ -37,7 +37,6 @@ def get_cursor_data(hCursor) -> list | None:
     icon_bitmaps: list[int] = []
     try:
         ii = ICONINFO()
-        ii.cbSize = sizeof(ICONINFO)
         if not GetIconInfo(hCursor, byref(ii)):
             raise OSError()  # @UndefinedVariable
         icon_bitmaps += [handle for handle in (ii.hbmColor, ii.hbmMask) if handle]
