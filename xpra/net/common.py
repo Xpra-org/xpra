@@ -202,6 +202,14 @@ class ConnectionClosedException(Exception):
     pass
 
 
+class MmapPointerError(ValueError):
+    """
+    The peer has stored an invalid pointer in the shared control header.
+    This should never happen with a well behaved peer,
+    so the connection should be terminated.
+    """
+
+
 def no_packet() -> tuple[Packet, bool, bool]:
     return Packet("closed"), False, False
 

@@ -15,9 +15,8 @@ from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.net.common import Packet
+from xpra.net.common import Packet, MmapPointerError
 from xpra.net.compression import Compressed
-from xpra.net.mmap.common import MmapPointerError
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.constants import COMPRESS_RATIO, COMPRESS_FMT_SUFFIX

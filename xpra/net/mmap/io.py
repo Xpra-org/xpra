@@ -13,9 +13,10 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.mmap.common import (
-    DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MmapPointerError,
+    DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES,
     validate_size, get_mmap_dir, xpra_group, get_socket_group,
 )
+from xpra.net.common import MmapPointerError
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.common import roundup, noop
 from xpra.client.gui.window.backing import PaintCallback

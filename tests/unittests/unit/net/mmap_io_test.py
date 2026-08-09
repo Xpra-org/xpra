@@ -10,7 +10,8 @@ import tempfile
 import unittest
 
 from xpra.os_util import WIN32
-from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MIN_SIZE, MmapPointerError
+from xpra.net.common import MmapPointerError
+from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MIN_SIZE
 from xpra.net.mmap import io
 from xpra.net.mmap.io import (
     init_client_mmap, int_from_buffer, mmap_free_size, mmap_read, mmap_write,

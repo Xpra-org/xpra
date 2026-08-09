@@ -16,8 +16,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, OSEnvContext
 from xpra.util.thread import start_thread
 from xpra.net import compression
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.mmap.common import MmapPointerError
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, MmapPointerError
 from xpra.exit_codes import ExitCode
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.common import may_notify_client

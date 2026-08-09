@@ -10,8 +10,7 @@ from typing import Sequence, Any
 from xpra.client.base.command import HelloRequestClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.mmap.common import MmapPointerError
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, MmapPointerError
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.log import Logger

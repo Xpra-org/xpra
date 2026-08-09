@@ -20,8 +20,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.thread import check_main_thread
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.mmap.common import MmapPointerError
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, MmapPointerError
 from xpra.net.packet_type import WINDOW_DRAW
 from xpra.constants import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.common import is_covered_by_opaque_region
