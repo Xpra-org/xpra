@@ -251,17 +251,62 @@ def init_server_mmap(mmap_filename: str, mmap_size: int = 0, follow_symlinks: bo
             # only the length we have actually mapped can be trusted
             return mmap_area, len(mmap_area)
         assert sys.platform == "win32"
-        if mmap_size == 0:
-            log.error("Error: client did not supply the mmap area size")
-            log.error(" try updating your client version?")
-            return None, 0
-        mmap_area = mmap.mmap(0, mmap_size, mmap_filename)
-        return mmap_area, len(mmap_area)
+        return init_server_mmap_section(mmap_filename, mmap_size)
     except Exception:
         log.error("Error: cannot use mmap file '%s'", mmap_filename, exc_info=True)
         if mmap_area:
             mmap_area.close()
         return None, 0
+
+
+def open_mmap_section(name: str) -> int:
+    """
+        MS Windows only: returns a handle on the named shared memory section,
+        or zero if there is no such section.
+        This is the only way to find out if the client's area really exists:
+        `mmap.mmap` uses `CreateFileMapping`, which silently *creates* a section
+        when the name does not match an existing one - taking `mmap_size` bytes
+        from the paging file to give us an area that nobody else will ever use.
+    """
+    from xpra.platform.win32.common import FILE_MAP_READ, FILE_MAP_WRITE, OpenFileMappingW
+    # `ctypes` maps a `NULL` handle to `None`:
+    return OpenFileMappingW(FILE_MAP_READ | FILE_MAP_WRITE, False, name) or 0
+
+
+def init_server_mmap_section(name: str, mmap_size: int) -> tuple[Any | None, int]:
+    """
+        MS Windows only: the client gives us the name of a shared memory section,
+        which is not a filesystem path.
+    """
+    assert sys.platform == "win32"
+    if mmap_size == 0:
+        log.error("Error: client did not supply the mmap area size")
+        log.error(" try updating your client version?")
+        return None, 0
+    handle = open_mmap_section(name)
+    if not handle:
+        # not an error: the client may simply not be running on this system
+        log.info("the mmap area %r was not found", name)
+        if name != os.path.basename(name):
+            # ie: the path of a posix client's mmap file
+            log.info(" this is a filesystem path, not the name of a shared memory section")
+        log.info(" mmap can only be used with clients running on this system")
+        return None, 0
+    # hold on to the handle until the area is mapped,
+    # so that it cannot go away and be re-created behind our back:
+    from xpra.platform.win32.common import CloseHandle
+    mmap_area = None
+    try:
+        validate_size(mmap_size)
+        mmap_area = mmap.mmap(0, mmap_size, name)
+        return mmap_area, len(mmap_area)
+    except Exception:
+        log.error("Error: cannot use mmap area %r", name, exc_info=True)
+        if mmap_area:
+            mmap_area.close()
+        return None, 0
+    finally:
+        CloseHandle(handle)
 
 
 def int_from_buffer(mmap_area, pos: int) -> c_uint32:
