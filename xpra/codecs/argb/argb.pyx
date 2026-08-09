@@ -194,6 +194,42 @@ cdef bgrxdata_to_rgb(const unsigned int* bgrx, const int bgrx_len):
             si += 1
     return memoryview(output_buf)
 
+def rgbx_to_rgb(buf) -> ByteString:
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    cdef const unsigned int* rgbx
+    with buffer_context(buf) as bc:
+        rgbx = <const unsigned int*> (<uintptr_t> int(bc))
+        return rgbxdata_to_rgb(rgbx, len(bc))
+
+
+def rgba_to_rgb(buf) -> ByteString:
+    #same: the 4th byte is dropped, whether it is padding or alpha
+    return rgbx_to_rgb(buf)
+
+
+cdef rgbxdata_to_rgb(const unsigned int* rgbx, const int rgbx_len):
+    if rgbx_len <= 0:
+        return None
+    assert rgbx_len>0 and rgbx_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % rgbx_len
+    #number of pixels:
+    cdef int mi = rgbx_len//4
+    #3 bytes per pixel:
+    cdef MemBuf output_buf = getbuf(mi*3)
+    cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
+    cdef int si = 0, di = 0
+    cdef unsigned int p
+    with nogil:
+        while si < mi:
+            p = rgbx[si]
+            #the red byte comes first in `RGBX`, only the 4th byte is dropped:
+            rgb[di]   = p & 0xFF                #R
+            rgb[di+1] = (p>>8) & 0xFF           #G
+            rgb[di+2] = (p>>16) & 0xFF          #B
+            di += 3
+            si += 1
+    return memoryview(output_buf)
+
+
 def rgb_to_bgrx(buf) -> ByteString:
     assert len(buf) % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % len(buf)
     cdef const unsigned char* rgb
@@ -207,14 +243,16 @@ cdef rgbdata_to_bgrx(const unsigned char *rgb, const int rgb_len):
     assert rgb_len>0 and rgb_len % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % rgb_len
     #number of pixels:
     cdef int mi = rgb_len//3
-    #3 bytes per pixel:
+    #4 bytes per pixel:
     cdef MemBuf output_buf = getbuf(mi*4)
     cdef unsigned int* bgrx = <unsigned int*> output_buf.get_mem()
     cdef int si = 0, di = 0
-    cdef unsigned int p
     with nogil:
         while di < mi:
-            bgrx[di] = rgb[si] | (rgb[si+1]<<8) | (rgb[si+2]<<16) | (<unsigned int> 0xff000000)
+            #the blue byte comes first in `BGRX`, so the red and blue bytes must be swapped,
+            #and the `X` byte must be set to `0xff`,
+            #so that the pixel data is also valid as `BGRA`:
+            bgrx[di] = rgb[si+2] | (rgb[si+1]<<8) | (rgb[si]<<16) | (<unsigned int> 0xff000000)
             di += 1
             si += 3
     return memoryview(output_buf)
@@ -233,7 +271,7 @@ cdef bgrxdata_to_l(const unsigned int *bgrx, const int bgrx_len):
     assert bgrx_len>0 and bgrx_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgrx_len
     #number of pixels:
     cdef int mi = bgrx_len//4
-    #3 bytes per pixel:
+    #1 byte per pixel:
     cdef MemBuf output_buf = getbuf(mi)
     cdef unsigned char* l = <unsigned char*> output_buf.get_mem()
     cdef int i = 0
@@ -242,9 +280,10 @@ cdef bgrxdata_to_l(const unsigned int *bgrx, const int bgrx_len):
     with nogil:
         while i < mi:
             p = bgrx[i]
-            r = p & 0xFF                #R
+            #the blue byte comes first in `BGRX`:
+            b = p & 0xFF                #B
             g = (p>>8) & 0xFF           #G
-            b = (p>>16) & 0xFF          #B
+            r = (p>>16) & 0xFF          #R
             l[i] = (r*3+b+g*4)>>3
             i += 1
     return memoryview(output_buf)
@@ -271,18 +310,18 @@ cdef rgbdata_to_l(const unsigned char *rgb, const int rgb_len,
     assert rgb_len>0 and rgb_len % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % rgb_len
     #number of pixels:
     cdef int mi = rgb_len//3
-    #3 bytes per pixel:
+    #1 byte per pixel:
     cdef MemBuf output_buf = getbuf(mi)
     cdef unsigned char* l = <unsigned char*> output_buf.get_mem()
-    cdef int i = 0
+    cdef int si = 0, di = 0
     cdef unsigned char r, g, b
     with nogil:
-        while i < mi:
-            r = rgb[i+rindex]
-            g = rgb[i+gindex]
-            b = rgb[i+bindex]
-            l[i] = (r*3+b+g*4)>>3
-            i += 3
+        for di in range(mi):
+            r = rgb[si+rindex]
+            g = rgb[si+gindex]
+            b = rgb[si+bindex]
+            l[di] = (r*3+b+g*4)>>3
+            si += 3
     return memoryview(output_buf)
 
 
@@ -299,7 +338,7 @@ cdef bgradata_to_la(const unsigned int *bgra, const int bgra_len):
     assert bgra_len>0 and bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
     #number of pixels:
     cdef int mi = bgra_len//4
-    #3 bytes per pixel:
+    #2 bytes per pixel:
     cdef MemBuf output_buf = getbuf(mi*2)
     cdef unsigned char* la = <unsigned char*> output_buf.get_mem()
     cdef int si = 0, di = 0
@@ -308,9 +347,10 @@ cdef bgradata_to_la(const unsigned int *bgra, const int bgra_len):
     with nogil:
         while si < mi:
             p = bgra[si]
-            r = p & 0xFF
+            #the blue byte comes first in `BGRA`:
+            b = p & 0xFF
             g = (p>>8) & 0xFF
-            b = (p>>16) & 0xFF
+            r = (p>>16) & 0xFF
             a = (p>>24) & 0xFF
             la[di] = (r*3+b+g*4)>>3
             la[di+1] = a
@@ -625,11 +665,15 @@ def argb_swap(image, rgb_formats, supports_transparency=False) -> bool:
             log("argb_swap: bgrx_to_l for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgrx_to_l(pixels))
             image.set_pixel_format("L")
+            #`L` uses a single byte per pixel:
+            image.set_rowstride(rs//4)
             return True
         if pixel_format=="BGRA" and "LA" in rgb_formats:
             log("argb_swap: bgra_to_la for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_la(pixels))
             image.set_pixel_format("LA")
+            #`LA` uses two bytes per pixel:
+            image.set_rowstride(rs//2)
             return True
         if pixel_format=="BGRA" and supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
@@ -666,11 +710,12 @@ def argb_swap(image, rgb_formats, supports_transparency=False) -> bool:
             log("argb_swap: rgba_to_bgra for %s on %s", pixel_format, type(pixels))
             image.set_pixels(rgba_to_bgra(pixels))
             image.set_pixel_format("BGRA")
-            image.set_rowstride(rs*3//4)
+            #both formats use 4 bytes per pixel: the rowstride is unchanged
             return True
         if "RGB" in rgb_formats:
-            log("argb_swap: bgrx_to_rgb for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(bgrx_to_rgb(pixels))
+            #the red byte already comes first, only the 4th byte must be dropped:
+            log("argb_swap: rgbx_to_rgb for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(rgbx_to_rgb(pixels))
             image.set_pixel_format("RGB")
             image.set_rowstride(rs*3//4)
             return True
