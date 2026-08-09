@@ -21,6 +21,12 @@ log = Logger("x11", "util")
 
 GObject = gi_import("GObject")
 
+# GTK exports one `_GTK_WORKAREAS_D#` property per desktop,
+# each one containing the workarea of every monitor:
+GTK_WORKAREAS_PREFIX: Final[str] = "_GTK_WORKAREAS_D"
+# matches the limit used when exporting the desktop list:
+MAX_DESKTOPS: Final[int] = 20
+
 
 def root_set(prop: str, vtype: str, value) -> None:
     rxid = get_root_xid()
@@ -52,31 +58,76 @@ def set_supported() -> None:
     root_array_set("_NET_SUPPORTED", "atom", NET_SUPPORTED)
 
 
+def split_rects(values: Sequence[int]) -> tuple[tuple[int, int, int, int], ...]:
+    # both `_NET_WORKAREA` and `_GTK_WORKAREAS_D#` are flat lists of `(x, y, w, h)` CARDINALs
+    if not values or (len(values) % 4) != 0:
+        return ()
+    return tuple(tuple(values[i:i + 4]) for i in range(0, len(values), 4))  # type: ignore[misc]
+
+
 def set_workarea(x: int, y: int, width: int, height: int) -> None:
     v = (x, y, width, height)
     log("_NET_WORKAREA=%s", v)
     root_array_set("_NET_WORKAREA", "u32", v)
 
 
-def get_workareas() -> Sequence[tuple[int, int, int, int]]:
+def set_workareas(workareas: Sequence[tuple[int, int, int, int]], desktops: int = 0) -> None:
+    """ export the per-monitor workareas as `_GTK_WORKAREAS_D#`, one property per desktop.
+        (we use the same workareas on every desktop)
+        GTK will only look at this property if `_GTK_WORKAREAS` is listed in `_NET_SUPPORTED`.
+    """
+    ndesktops = desktops or get_number_of_desktops()
+    flat: list[int] = []
+    for workarea in workareas:
+        flat += list(workarea)
+    log("_GTK_WORKAREAS=%s on %i desktops", workareas, ndesktops)
+    for i in range(ndesktops):
+        prop = f"{GTK_WORKAREAS_PREFIX}{i}"
+        if flat:
+            root_array_set(prop, "u32", flat)
+        else:
+            root_del(prop)
+    # remove any properties left over from a larger desktop count:
+    for i in range(ndesktops, MAX_DESKTOPS):
+        prop = f"{GTK_WORKAREAS_PREFIX}{i}"
+        if root_array_get(prop, "u32") is None:
+            break
+        root_del(prop)
+
+
+def get_net_workareas() -> Sequence[tuple[int, int, int, int]]:
+    # `_NET_WORKAREA` contains one workarea for each desktop:
     net_workarea = root_array_get("_NET_WORKAREA", "u32") or ()
-    # workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
-    nworkareas = len(net_workarea) // 4
+    workareas = split_rects(net_workarea)
+    log("get_net_workareas() _NET_WORKAREA=%s (%s)=%s", net_workarea, type(net_workarea), workareas)
+    return workareas
+
+
+def get_gtk_workareas() -> Sequence[tuple[int, int, int, int]]:
+    # `_GTK_WORKAREAS_D#` contains one workarea for each monitor, for the desktop `#`:
     desktop = get_current_desktop()
-    log("get_workarea() _NET_WORKAREA=%s (%s), len=%s, desktop=%s",
-        net_workarea, type(net_workarea), len(net_workarea), desktop)
-    if not net_workarea or (len(net_workarea) % 4) != 0 or desktop < 0 or desktop >= nworkareas:
-        return ()
-    # slice it:
-    workareas = []
-    for i in range(nworkareas):
-        workareas.append(tuple(net_workarea[i * 4:(i + 1) * 4]))
-    return tuple(workareas)
+    prop = f"{GTK_WORKAREAS_PREFIX}{max(0, desktop)}"
+    values = root_array_get(prop, "u32") or ()
+    workareas = split_rects(values)
+    log("get_gtk_workareas() %s=%s (%s)=%s", prop, values, type(values), workareas)
+    return workareas
+
+
+def get_workareas() -> Sequence[tuple[int, int, int, int]]:
+    # one workarea per monitor - only `_GTK_WORKAREAS_D#` can provide that,
+    # `_NET_WORKAREA` is per desktop and must not be mistaken for a per-monitor list:
+    return get_gtk_workareas()
 
 
 def get_workarea() -> tuple[int, int, int, int]:
+    # a single workarea for the whole screen:
+    gtk_workareas = get_gtk_workareas()
+    if len(gtk_workareas) == 1:
+        # unambiguous: a single monitor, so this is also the screen workarea.
+        # (with more monitors, merging them would just lose the panels we care about)
+        return gtk_workareas[0]
     desktop = get_current_desktop()
-    workareas = get_workareas()
+    workareas = get_net_workareas()
     if desktop < 0 or desktop >= len(workareas):
         root_w, root_h = get_root_size()
         return 0, 0, root_w, root_h
@@ -221,9 +272,12 @@ class XRootPropWatcher(GObject.GObject):
         "x11-property-notify-event": one_arg_signal,
     }
 
-    def __init__(self, props: Iterable[str]):
+    def __init__(self, props: Iterable[str], prefixes: Iterable[str] = ()):
         super().__init__()
         self._props = props
+        # `prefixes` matches families of properties whose name varies at runtime,
+        # ie: `_GTK_WORKAREAS_D#` where `#` is the current desktop
+        self._prefixes = tuple(prefixes)
         with xsync:
             rxid = get_root_xid()
             X11Window = X11WindowBindings()
@@ -246,8 +300,9 @@ class XRootPropWatcher(GObject.GObject):
 
     def do_x11_property_notify_event(self, event: X11Event) -> None:
         log("XRootPropWatcher.do_x11_property_notify_event(%s)", event)
-        if event.atom in self._props:
-            self.do_notify(str(event.atom))
+        atom = str(event.atom)
+        if atom in self._props or atom.startswith(self._prefixes):
+            self.do_notify(atom)
 
     def do_notify(self, prop: str) -> None:
         log("XRootPropWatcher.do_notify(%s)", prop)
@@ -271,6 +326,8 @@ def main() -> int:
         from xpra.x11.bindings.display_source import init_display_source
         init_display_source()
 
+        log.info("net-workareas=%s", get_net_workareas())
+        log.info("gtk-workareas=%s", get_gtk_workareas())
         log.info("workareas=%s", get_workareas())
         log.info("workarea=%s", get_workarea())
         log.info("current-desktop=%s", get_current_desktop())

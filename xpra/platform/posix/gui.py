@@ -212,6 +212,14 @@ def get_workarea() -> tuple[int, int, int, int] | None:
     return None
 
 
+# per monitor workareas, from `_GTK_WORKAREAS_D#`:
+def get_workareas() -> Sequence[tuple[int, int, int, int]]:
+    if x11_bindings():
+        from xpra.x11 import xroot_props
+        return xroot_props.get_workareas()
+    return ()
+
+
 def get_number_of_desktops() -> int:
     if x11_bindings():
         from xpra.x11 import xroot_props

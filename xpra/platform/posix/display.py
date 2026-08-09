@@ -75,13 +75,14 @@ class X11DisplayPropsWatcher:
             self.init_x11_filter()
             # pylint: disable=import-outside-toplevel
             from xpra.x11.subsystem.xsettings_manager import XSettingsWatcher
-            from xpra.x11.xroot_props import XRootPropWatcher
+            from xpra.x11.xroot_props import XRootPropWatcher, GTK_WORKAREAS_PREFIX
             if self._xsettings_watcher is None:
                 self._xsettings_watcher = XSettingsWatcher()
                 self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
                 self._handle_xsettings_changed()
             if self._root_props_watcher is None:
-                self._root_props_watcher = XRootPropWatcher(ROOT_PROPS)
+                # the workarea property name varies with the current desktop, so match on its prefix:
+                self._root_props_watcher = XRootPropWatcher(ROOT_PROPS, (GTK_WORKAREAS_PREFIX, ))
                 self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
                 # ensure we get the initial value:
                 self._root_props_watcher.do_notify("RESOURCE_MANAGER")
@@ -110,12 +111,17 @@ class X11DisplayPropsWatcher:
             if rm is not None:
                 self.display.send("server-settings", {"resource-manager": rm})
             return
-        method_name = {
-            "_NET_WORKAREA": "screen_size_changed",
-            "_NET_CURRENT_DESKTOP": "workspace_changed",
-            "_NET_DESKTOP_NAMES": "desktops_changed",
-            "_NET_NUMBER_OF_DESKTOPS": "desktops_changed",
-        }.get(prop, "")
+        from xpra.x11.xroot_props import GTK_WORKAREAS_PREFIX
+        if prop.startswith(GTK_WORKAREAS_PREFIX):
+            # ie: `_GTK_WORKAREAS_D0`, the per-monitor workareas
+            method_name = "screen_size_changed"
+        else:
+            method_name = {
+                "_NET_WORKAREA": "screen_size_changed",
+                "_NET_CURRENT_DESKTOP": "workspace_changed",
+                "_NET_DESKTOP_NAMES": "desktops_changed",
+                "_NET_NUMBER_OF_DESKTOPS": "desktops_changed",
+            }.get(prop, "")
         if not method_name:
             log.error("Error: unknown property %r", prop)
             return

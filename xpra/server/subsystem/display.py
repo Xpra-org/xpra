@@ -490,6 +490,21 @@ class DisplayManager(StubSubsystem):
             workarea = rectangle(0, 0, maxw, maxh)
         # variant-overridable on the server:
         self.server.set_workarea(workarea)
+        self.server.set_workareas(self.calculate_workareas(maxw, maxh, display_sources))
+
+    def calculate_workareas(self, maxw: int, maxh: int, display_sources) -> list[tuple[int, int, int, int]]:
+        """ the per-monitor workareas, which can only be honoured for a single display client
+            (with more than one, the monitor layouts don't match and there is nothing sensible to export) """
+        if len(display_sources) != 1:
+            return []
+        screen = rectangle(0, 0, maxw, maxh)
+        workareas = []
+        for client_workarea in display_sources[0].get_client_workareas():
+            common = screen.intersection_rect(rectangle(*client_workarea))
+            if common:
+                workareas.append((common.x, common.y, common.width, common.height))
+        log("calculate_workareas(%s, %s) workareas=%s", maxw, maxh, workareas)
+        return workareas
 
     ######################################################################
     # screenshots:

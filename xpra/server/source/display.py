@@ -193,7 +193,7 @@ class DisplayConnection(StubClientConnection):
         monitors = self.screen_sizes[0][5]
         mdef = {}
         for i, m in enumerate(monitors):
-            mdef[int(i)] = {
+            monitor = {
                 "name": bytestostr(m[0]),
                 # "primary"?
                 # "automatic" : True?
@@ -201,6 +201,10 @@ class DisplayConnection(StubClientConnection):
                 "width-mm": round(m[5]),
                 "height-mm": round(m[6]),
             }
+            if len(m) >= 11:
+                # the workarea is optional: (work_x, work_y, work_width, work_height)
+                monitor["workarea"] = tuple(round(v) for v in m[7:11])
+            mdef[int(i)] = monitor
         return mdef
 
     def get_normalized_monitor_definitions(self) -> dict[int, Any] | None:
@@ -231,3 +235,14 @@ class DisplayConnection(StubClientConnection):
             if isinstance(display, (list, tuple)) and len(display) >= 10 and display[8] > 0 and display[9] > 0:
                 return rectangle(*display[6:10])
         return None
+
+    def get_client_workareas(self) -> list[tuple[int, int, int, int]]:
+        """ the usable area of each of the client's monitors, in the normalized coordinate space
+            used for the monitor geometries - this is what `_GTK_WORKAREAS_D#` expects.
+            Empty if the client did not provide any. """
+        rects = []
+        for mdef in (self.get_normalized_monitor_definitions() or {}).values():
+            wa = mdef.get("workarea")
+            if wa and len(wa) == 4 and wa[2] > 0 and wa[3] > 0:
+                rects.append(tuple(wa))
+        return rects

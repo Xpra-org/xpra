@@ -61,7 +61,7 @@ class MonitorLayout:
         return mx + x, my + y
 
     def normalized_monitors(self, monitors: Mapping) -> dict[int, dict[str, Any]]:
-        """Copy monitor definitions and rebase their geometries to a non-negative origin."""
+        """Copy monitor definitions and rebase their geometries and workareas to a non-negative origin."""
         normalized: dict[int, dict[str, Any]] = {}
         for raw_index, monitor in monitors.items():
             if not isinstance(monitor, Mapping):
@@ -75,6 +75,15 @@ class MonitorLayout:
             if geometry:
                 x, y, width, height = geometry
                 mdef["geometry"] = x - self.min_x, y - self.min_y, width, height
+                # the workarea uses the same coordinate space as the geometry:
+                workarea = mdef.get("workarea")
+                if isinstance(workarea, Sequence) and not isinstance(workarea, (str, bytes)) and len(workarea) == 4:
+                    try:
+                        wx, wy, ww, wh = (int(v) for v in workarea)
+                    except (TypeError, ValueError):
+                        del mdef["workarea"]
+                    else:
+                        mdef["workarea"] = wx - self.min_x, wy - self.min_y, ww, wh
             normalized[index] = mdef
         return normalized
 

@@ -297,6 +297,9 @@ class ServerBase(ServerCore):
     def set_workarea(self, workarea) -> None:
         """ optionally overridden by server variants """
 
+    def set_workareas(self, workareas) -> None:
+        """ optionally overridden by server variants """
+
     def calculate_desktops(self) -> None:
         """ optionally overridden by server variants """
 

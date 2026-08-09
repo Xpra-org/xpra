@@ -362,11 +362,18 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1) -> list[tuple[int, in
     # GTK 3.22 onwards always returns just a single screen,
     # potentially with multiple monitors
     n_monitors = display.get_n_monitors()
+    # a list of workareas, not necessarily in the same order as the monitors
+    # (ie: `_GTK_WORKAREAS_D#` on X11), so they are matched by intersection - as GTK does:
     workareas = get_workareas()
-    if workareas and len(workareas) != n_monitors:
-        screenlog(" workareas: %s", workareas)
-        screenlog(" number of monitors does not match number of workareas!")
-        workareas = []
+    screenlog(" workareas: %s", workareas)
+
+    def monitor_workarea(geom) -> tuple[int, int, int, int] | None:
+        for wa in workareas:
+            if geom.x < wa[0] + wa[2] and wa[0] < geom.x + geom.width and \
+                    geom.y < wa[1] + wa[3] and wa[1] < geom.y + geom.height:
+                return wa
+        return None
+
     monitors = []
     for j in range(n_monitors):
         monitor = display.get_monitor(j)
@@ -404,8 +411,8 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1) -> list[tuple[int, in
         if GTK_WORKAREA and hasattr(monitor, "get_workarea"):
             rect = monitor.get_workarea()
             monitor_info += valid_workarea(rect.x, rect.y, rect.width, rect.height)
-        elif workareas:
-            monitor_info += valid_workarea(*workareas[j])
+        elif (wa := monitor_workarea(geom)):
+            monitor_info += valid_workarea(*wa)
         monitors.append(tuple(monitor_info))
     screen = display.get_default_screen()
     with IgnoreWarningsContext():

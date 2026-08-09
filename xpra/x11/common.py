@@ -52,6 +52,8 @@ DEFAULT_NET_SUPPORTED: list[str] = [
     "_NET_NUMBER_OF_DESKTOPS",
     "_NET_DESKTOP_NAMES",
     "_NET_WORKAREA",
+    # GTK only reads `_GTK_WORKAREAS_D#` (per monitor workareas) if this is advertised:
+    "_GTK_WORKAREAS",
     "_NET_ACTIVE_WINDOW",
     "_NET_CURRENT_DESKTOP",
     "_NET_SHOWING_DESKTOP",

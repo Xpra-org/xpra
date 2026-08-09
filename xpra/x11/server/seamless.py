@@ -8,6 +8,7 @@
 import os
 from time import sleep
 from typing import Any, NoReturn
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitExit
@@ -73,6 +74,8 @@ class SeamlessServer(GObject.GObject, ServerBase):
         ServerBase.__init__(self)
         self.session_type = "seamless"
         self._xsettings_enabled = True
+        # the per-monitor workareas exported as `_GTK_WORKAREAS_D#`:
+        self.workareas: Sequence[tuple[int, int, int, int]] = ()
 
     def get_display_subsystem_class(self) -> type:
         from xpra.x11.server.display import X11SeamlessDisplayManager
@@ -265,12 +268,13 @@ class SeamlessServer(GObject.GObject, ServerBase):
         wm = window_sub._wm if window_sub else None
         if not wm:
             return
+        from xpra.x11.xroot_props import MAX_DESKTOPS, set_desktop_list, set_workareas
         count = 1
         sources = get_sources_by_type(self, DisplayConnection)
         for ss in sources:
             if ss.desktops:
                 count = max(count, ss.desktops)
-        count = max(1, min(20, count))
+        count = max(1, min(MAX_DESKTOPS, count))
         names: list[str] = []
         for i in range(count):
             name = "Main" if i == 0 else f"Desktop {i + 1}"
@@ -280,12 +284,18 @@ class SeamlessServer(GObject.GObject, ServerBase):
                     if v != "0" or i != 0:
                         name = v
             names.append(name)
-        from xpra.x11.xroot_props import set_desktop_list
         set_desktop_list(names)
+        # `_GTK_WORKAREAS_D#` is per desktop, so the new desktops need one too:
+        set_workareas(self.workareas, desktops=count)
 
     def set_workarea(self, workarea) -> None:
         from xpra.x11.xroot_props import set_workarea
         set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
+
+    def set_workareas(self, workareas) -> None:
+        self.workareas = tuple(workareas)
+        from xpra.x11.xroot_props import set_workareas
+        set_workareas(self.workareas)
 
     def set_desktop_geometry(self, width: int, height: int) -> None:
         window_sub = self.subsystems.get("window")

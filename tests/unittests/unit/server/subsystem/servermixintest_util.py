@@ -128,6 +128,9 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
     def set_workarea(self, *_args, **_kwargs) -> None:
         pass
 
+    def set_workareas(self, *_args, **_kwargs) -> None:
+        pass
+
     def calculate_desktops(self, *_args, **_kwargs) -> None:
         pass
 

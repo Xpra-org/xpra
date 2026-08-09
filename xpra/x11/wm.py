@@ -19,7 +19,7 @@ from xpra.x11.dispatch import add_event_receiver, add_fallback_receiver, remove_
 from xpra.x11.window_info import window_name, window_info
 from xpra.x11.xroot_props import (
     set_desktop_list, set_current_desktop, set_desktop_viewport, set_desktop_geometry, get_desktop_geometry,
-    set_supported, set_workarea,
+    set_supported, set_workarea, set_workareas,
     root_set, array_set, root_array_get, root_array_set,
 )
 from xpra.x11.bindings.core import constants, get_root_xid, X11CoreBindings
@@ -142,6 +142,7 @@ class Wm(GObject.GObject):
         set_supported()
         # Start with the full display as workarea:
         set_workarea(0, 0, root_w, root_h)
+        set_workareas(((0, 0, root_w, root_h), ), desktops=1)
         set_desktop_geometry(root_w, root_h)
         set_desktop_viewport(0, 0)
 
