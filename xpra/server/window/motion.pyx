@@ -14,7 +14,7 @@ from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.log import Logger
 log = Logger("encoding", "scroll")
 
-from xpra.buffers.membuf cimport memalign, buffer_context  # pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign, memfree, buffer_context  # pylint: disable=syntax-error
 from xpra.buffers.xxh cimport xxh3
 from xpra.util.rectangle import rectangle
 
@@ -67,7 +67,7 @@ cdef class ScrollData:
     #only used by the unit tests:
     def test_update(self, arr) -> None:
         if self.a1:
-            free(self.a1)
+            memfree(self.a1)
             self.a1 = NULL
         if self.a2:
             self.a1 = self.a2
@@ -106,7 +106,7 @@ cdef class ScrollData:
             self.height = height
         #this is a new picture, shift a2 into a1 if we have it:
         if self.a1:
-            free(self.a1)
+            memfree(self.a1)
             self.a1 = NULL
         if self.a2:
             self.a1 = self.a2
@@ -357,15 +357,18 @@ cdef class ScrollData:
         self.free()
 
     def free(self) -> None:
+        # all three arrays come from `memalign`, which is `_aligned_malloc` on win32:
+        # those pointers are offset into their heap block and calling `free` on them
+        # corrupts the heap, so they must go back through `memfree`
         cdef void* ptr = <void*> self.distances
         if ptr:
             self.distances = NULL
-            free(ptr)
+            memfree(ptr)
         ptr = <void*> self.a1
         if ptr:
             self.a1 = NULL
-            free(ptr)
+            memfree(ptr)
         ptr = <void*> self.a2
         if ptr:
             self.a2 = NULL
-            free(ptr)
+            memfree(ptr)
