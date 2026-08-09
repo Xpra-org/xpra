@@ -239,7 +239,13 @@ class ClientWindow(GObject.GObject):
         wc.lpfnWndProc = self.wnd_proc
         wc.hInstance = self.module_handle
         wc.hCursor = LoadCursor(0, win32con.IDC_ARROW)
-        wc.hbrBackground = win32con.COLOR_WINDOW + 1
+        # no class background brush: every pixel of the client area comes from
+        # the backing. `hbrBackground` is only ever used by `DefWindowProcW` to
+        # answer `WM_ERASEBKGND`, which `wnd_proc_cb` claims as handled without
+        # ever falling through, so this brush was already dead - and painting an
+        # opaque `COLOR_WINDOW` here is exactly what we do not want for a window
+        # with per-pixel alpha.
+        wc.hbrBackground = 0
         wc.lpszClassName = "XpraWindowClass%i" % self.wid
         return wc
 
@@ -314,6 +320,19 @@ class ClientWindow(GObject.GObject):
         """
         return system_geometry(self.x, self.y, self.width, self.height, self.style, exstyle)
 
+    def get_alpha_exstyle(self) -> int:
+        """
+        The extended window style required to honour `has-alpha`.
+
+        A `WS_EX_LAYERED` top-level window is not composited from its `WM_PAINT`
+        output: its contents have to come from `UpdateLayeredWindow` with
+        `ULW_ALPHA`, which the GDI backing does not call yet.
+        Subclasses that get their transparency some other way must override this
+        and return 0 - see the OpenGL window, which uses DWM composition.
+        """
+        log.warn("Warning: painting with alpha requires using UpdateLayeredWindow!")
+        return win32con.WS_EX_LAYERED
+
     def create_window(self) -> HWND:
         title = self.metadata.strget("title", "")
         dwexstyle = 0
@@ -325,8 +344,7 @@ class ClientWindow(GObject.GObject):
             dwexstyle |= win32con.WS_EX_ACCEPTFILES | win32con.WS_EX_OVERLAPPEDWINDOW | win32con.WS_EX_APPWINDOW
             style |= win32con.WS_OVERLAPPEDWINDOW
         if self.alpha:
-            log.warn("Warning: painting with alpha requires using UpdateLayeredWindow!")
-            dwexstyle |= win32con.WS_EX_LAYERED
+            dwexstyle |= self.get_alpha_exstyle()
         self.style = style
         x, y, w, h = self.get_system_geometry(dwexstyle)
         log("create_window() system-geometry(%s)=%s", (self.x, self.y, self.width, self.height), (x, y, w, h))
