@@ -160,6 +160,10 @@ class ShadowServer(ShadowServerBase):
         self.monitor_device = monitor
         log.info("shadow-device vdd:%i -> monitor %r", slot, monitor)
 
+    def get_display_subsystem_class(self) -> type:
+        from xpra.platform.win32.shadow_display import Win32ShadowDisplayManager
+        return Win32ShadowDisplayManager
+
     def get_keyboard_subsystem_class(self) -> type:
         from xpra.platform.win32.shadow_keyboard import Win32ShadowKeyboardManager
         return Win32ShadowKeyboardManager
@@ -494,9 +498,6 @@ class ShadowServer(ShadowServerBase):
         log("get_desktop_name()=%s", desktop_name)
         if desktop_name:
             self.session_name = desktop_name
-
-    def get_display_size(self) -> tuple[int, int]:
-        return get_display_size()
 
     def make_tray_widget(self):
         from xpra.platform.win32.tray import Win32Tray
