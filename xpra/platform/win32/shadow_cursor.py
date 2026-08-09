@@ -30,11 +30,16 @@ def get_cursor_data(hCursor):
     memdc = None
     bitmap = None
     old_handle = None
+    # `GetIconInfo` and `GetIconInfoExW` both create `hbmMask` and `hbmColor`
+    # bitmaps which belong to us: collect them so that we can delete them below,
+    # otherwise we leak two GDI objects every time the cursor shape changes
+    icon_bitmaps = []
     try:
         ii = ICONINFO()
         ii.cbSize = sizeof(ICONINFO)
         if not GetIconInfo(hCursor, byref(ii)):
             raise WindowsError()    #@UndefinedVariable
+        icon_bitmaps += [handle for handle in (ii.hbmColor, ii.hbmMask) if handle]
         x = ii.xHotspot
         y = ii.yHotspot
         log("get_cursor_data(%#x) hotspot at %ix%i, hbmColor=%#x, hbmMask=%#x",
@@ -46,6 +51,7 @@ def get_cursor_data(hCursor):
         iie.cbSize = sizeof(ICONINFOEXW)
         if not GetIconInfoExW(hCursor, byref(iie)):
             raise WindowsError()    #@UndefinedVariable
+        icon_bitmaps += [handle for handle in (iie.hbmColor, iie.hbmMask) if handle]
         name = iie.szResName[:MAX_PATH]
         log("wResID=%#x, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
         bm = Bitmap()
@@ -112,3 +118,5 @@ def get_cursor_data(hCursor):
             DeleteDC(memdc)
         if dc:
             ReleaseDC(None, dc)
+        for handle in icon_bitmaps:
+            DeleteObject(handle)
