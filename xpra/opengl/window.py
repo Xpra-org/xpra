@@ -132,10 +132,12 @@ def test_gl_client_window(gl_client_window_class: Callable,
     draw_result: dict[str, int | bool | str] = {}
     window = None
     try:
-        x, y = -100, -100
+        ww, wh = 250, 250
+        # far enough offscreen that the whole window clears the screen,
+        # for backends that really do map it (ie: win32 always sets `WS_VISIBLE`):
+        x, y = -500, -500
         if show:
             x, y = 100, 100
-        ww, wh = 250, 250
         from xpra.codecs.loader import load_codec
         load_codec("dec_pillow")
         from xpra.client.gui.window_border import WindowBorder
@@ -143,7 +145,13 @@ def test_gl_client_window(gl_client_window_class: Callable,
         noclient = FakeClient()
         # test with alpha, but not on win32
         # because we can't do alpha on win32 with opengl
-        metadata = typedict({"has-alpha": not WIN32})
+        metadata = typedict({
+            "has-alpha": not WIN32,
+            # this window is positioned deliberately - offscreen unless `show` -
+            # so backends that would otherwise leave the placement to the window
+            # manager (ie: `CW_USEDEFAULT` on win32) must honour these coordinates:
+            "set-initial-position": True,
+        })
 
         class NoHeaderGLClientWindow(gl_client_window_class):
 
