@@ -1627,6 +1627,17 @@ heuristics or specified using the dbus interface.
 
 .SS Options for attach
 .TP
+\fB\-\-attach\-urls\fP=\fIyes\fP|\fIno\fP|\fIstrict\fP
+How to handle \fIxpra://\fP URLs (ie: \fBxpra attach xpra+tcp://host:port/?title=Foo\fP).
+URLs are untrusted input: they can come from a clicked link, a web page,
+a QR code, etc.
+With \fIyes\fP (the default), only a small allow\-list of harmless display
+and connection preferences found in the URL is honoured, everything else
+is ignored with a warning.
+With \fIstrict\fP, all the options are ignored and only the connection
+address part of the URL is used.
+With \fIno\fP, URLs are rejected altogether.
+.TP
 \fB\-\-client\-socket\-dirs\fP=\fIDIR\fP
 Directories where the client creates its control socket.
 The path separator (\fB:\fP on Posix) may be used to specify

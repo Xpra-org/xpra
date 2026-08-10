@@ -151,7 +151,11 @@ def parse_env(env) -> dict[str, str]:
     return d
 
 
-def parse_URL(url: str) -> tuple[str, dict]:
+def parse_URL(url: str, attach_urls="yes") -> tuple[str, dict]:
+    if attach_urls not in ("yes", "no", "strict"):
+        raise InitException(f"invalid value for `attach-urls`: {attach_urls!r} (must be `yes`, `no` or `strict`)")
+    if attach_urls == "no":
+        raise InitException(f"URLs are not allowed: {url!r} (see the `attach-urls` option)")
     from urllib.parse import urlparse, parse_qs
     up = urlparse(url)
     address = str(up.netloc)
@@ -164,7 +168,9 @@ def parse_URL(url: str) -> tuple[str, dict]:
         for k, v in params.items():
             # URLs are untrusted: only allow a safe subset of options,
             # never commands, environment, file paths, auth or encryption settings:
-            if k not in URL_SAFE_OPTIONS:
+            # with `attach-urls=strict`, no options at all are allowed,
+            # only the address part of the URL is used:
+            if attach_urls == "strict" or k not in URL_SAFE_OPTIONS:
                 warn(f"Warning: option {k!r} is not allowed in URLs and will be ignored")
                 continue
             t = OPTION_TYPES.get(k)
@@ -1004,7 +1010,7 @@ def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, lis
             fullprefix = f"{prefix}://"
             if url.startswith(fullprefix):
                 url = f"{mode}://" + url[len(fullprefix):]
-                address, params = parse_URL(url)
+                address, params = parse_URL(url, options.attach_urls)
                 for k, v in validate_config(params).items():
                     setattr(options, k.replace("-", "_"), v)
                 # replace with our standard URL format,
@@ -1661,6 +1667,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--reconnect", action="store", metavar="yes|no",
                      dest="reconnect", default=defaults.reconnect,
                      help="Reconnect to the server. Default: %s." % enabled_or_auto(defaults.reconnect))
+    legacy_bool_parse("attach-urls")
+    group.add_option("--attach-urls", action="store", metavar="yes|no|strict",
+                     dest="attach_urls", default=defaults.attach_urls,
+                     help="How to handle 'xpra://' URLs: 'yes' honours a safe subset of the options"
+                          " found in the URL, 'strict' only uses the connection address,"
+                          " 'no' rejects URLs entirely."
+                          " Default: %s." % defaults.attach_urls)
     legacy_bool_parse("opengl")
     group.add_option("--opengl", action="store", metavar="(yes|no|auto)[:backends]",
                      dest="opengl", default=defaults.opengl,

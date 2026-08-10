@@ -729,6 +729,7 @@ OPTION_TYPES: dict[str, Any] = {
     "daemon"            : bool,
     "start-via-proxy"   : bool,
     "attach"            : bool,
+    "attach-urls"       : str,
     "use-display"       : str,
     "resize-display"    : str,
     "reconnect"         : bool,
@@ -904,6 +905,7 @@ CLIENT_ONLY_OPTIONS: list[str] = [
     "username", "swap-keys", "dock-icon",
     "tray", "delay-tray", "tray-icon",
     "attach",
+    "attach-urls",
     "reconnect",
 ]
 
@@ -1228,6 +1230,7 @@ def get_defaults() -> dict[str, Any]:
         "daemon"            : CAN_DAEMONIZE,
         "start-via-proxy"   : False,
         "attach"            : None,
+        "attach-urls"       : "yes",
         "use-display"       : "auto",
         "resize-display"    : ["no", "auto"][not OSX and not WIN32],
         "reconnect"         : True,
@@ -1349,6 +1352,9 @@ NO_FILE_OPTIONS = ("daemon", )
 # achieve code execution, MITM or information disclosure on the client.
 # This is an allow-list on purpose: anything not listed here is rejected,
 # so newly added options are denied by default.
+# The `attach-urls` option controls how URLs are handled:
+# `yes` allows the options listed below, `strict` ignores all of them
+# and only uses the address, `no` rejects URLs altogether.
 URL_SAFE_OPTIONS: tuple[str, ...] = (
     # encoding / picture quality:
     "encoding", "encodings",

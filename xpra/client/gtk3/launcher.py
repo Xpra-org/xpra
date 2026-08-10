@@ -1097,7 +1097,7 @@ class ApplicationWindow:
 
     def update_options_from_url(self, url: str) -> None:
         from xpra.scripts.parsing import parse_URL
-        address, props = parse_URL(url)
+        address, props = parse_URL(url, getattr(self.config, "attach_urls", "yes"))
         pa = address.split("://")
         if pa[0] in (MODE_TCP, MODE_SSH, MODE_SSL, MODE_QUIC, MODE_WS, MODE_WSS) and len(pa) >= 2:
             props["mode"] = pa[0]

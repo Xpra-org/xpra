@@ -19,7 +19,7 @@ from xpra.scripts.parsing import (
     parse_display_name, parse_cmdline,
 )
 from xpra.scripts.args import get_start_server_args
-from xpra.scripts.config import fixup_clipboard, get_defaults
+from xpra.scripts.config import fixup_clipboard, get_defaults, InitException
 from xpra.util.objects import AdHocStruct
 
 
@@ -201,6 +201,24 @@ class TestParseURL(unittest.TestCase):
     def test_path_included(self):
         address, opts = parse_URL("socket:///tmp/mysocket")
         self.assertIn("/tmp/mysocket", address)
+
+    def test_unsafe_option_ignored(self):
+        address, opts = parse_URL("tcp://host:10000/?start=xterm")
+        self.assertEqual(opts, {})
+        self.assertIn("host:10000", address)
+
+    def test_strict_ignores_all_options(self):
+        address, opts = parse_URL("tcp://host:10000/?compression_level=1", "strict")
+        self.assertEqual(opts, {})
+        self.assertIn("host:10000", address)
+
+    def test_urls_disabled(self):
+        with self.assertRaises(InitException):
+            parse_URL("tcp://host:10000/", "no")
+
+    def test_invalid_attach_urls_value(self):
+        with self.assertRaises(InitException):
+            parse_URL("tcp://host:10000/", "maybe")
 
 
 class TestParseCmdline(unittest.TestCase):

@@ -76,3 +76,13 @@ desktop-fullscreen = no
 
 # Re-connect to the server if the connection to the server is lost:
 reconnect = yes
+
+# How to handle 'xpra://' URLs, which are untrusted input
+# (they can come from a clicked link, a web page, a QR code, etc):
+# - honour the safe subset of options found in the URL:
+#attach-urls = yes
+# - ignore all the options and only use the connection address:
+#attach-urls = strict
+# - refuse to attach to URLs:
+#attach-urls = no
+attach-urls = yes
