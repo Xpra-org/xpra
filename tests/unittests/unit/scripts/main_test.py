@@ -17,7 +17,7 @@ from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.os_util import getuid, POSIX, OSX
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, exit_str
 from xpra.util.env import OSEnvContext
 from xpra.util.io import pollwait
 from xpra.util.objects import AdHocStruct
@@ -39,6 +39,10 @@ from xpra.net.connect import connect_to, get_host_target_string
 
 def _get_test_socket_dir():
     return tempfile.gettempdir()
+
+
+# `get_xpra_command()` only has to be validated once per test run:
+xpra_command_checked = False
 
 
 class TestMain(unittest.TestCase):
@@ -244,24 +248,65 @@ class TestMain(unittest.TestCase):
 
     def _test_subcommand(self, args, timeout=60, **kwargs):
         proc = self._run_subcommand(args, timeout, **kwargs)
-        if proc.poll() is None:
-            proc.terminate()
-            raise Exception("%s did not terminate after %i seconds" % (args, timeout))
+        try:
+            if proc.poll() is None:
+                proc.terminate()
+                raise Exception("%s did not terminate after %i seconds%s" % (
+                    args, timeout, self._subcommand_output(proc)))
+        finally:
+            self._close_subcommand_output(proc)
 
     def _run_subcommand(self, args, wait=60, **kwargs):
         cmd = get_xpra_command()+shlex.split(args)
-        if "stdout" not in kwargs:
-            kwargs["stdout"] = DEVNULL
-        if "stderr" not in kwargs:
-            kwargs["stderr"] = DEVNULL
+        # capture the output to a temporary file so that it can be shown when a test fails:
+        # a pipe would have to be read from continuously, or it may fill up and block the subcommand
+        output = tempfile.TemporaryFile(prefix="xpra-subcommand-")
+        kwargs.setdefault("stdout", output)
+        kwargs.setdefault("stderr", output)
         try:
             proc = Popen(cmd, **kwargs)
-            pollwait(proc, wait)
-            return proc
         except Exception as e:
+            noerr(output.close)
             raise Exception("failed on %s" % (cmd,)) from e
+        proc.subcommand_output = output
+        pollwait(proc, wait)
+        return proc
+
+    @staticmethod
+    def _subcommand_output(proc) -> str:
+        # the output collected by `_run_subcommand`, formatted for appending to an error message
+        output = getattr(proc, "subcommand_output", None)
+        if not output:
+            return ""
+        output.seek(0)
+        out = output.read().decode("utf8", "replace").strip()
+        return "\n"+out if out else " (no output)"
+
+    @staticmethod
+    def _close_subcommand_output(proc) -> None:
+        output = getattr(proc, "subcommand_output", None)
+        if output:
+            noerr(output.close)
+
+    def _check_xpra_command(self) -> None:
+        # a subcommand that fails to start also terminates immediately,
+        # which would satisfy the subcommand tests below without running any xpra code at all,
+        # so make sure that `get_xpra_command()` really is executable:
+        global xpra_command_checked
+        if xpra_command_checked:
+            return
+        proc = self._run_subcommand("version-info")
+        try:
+            if proc.returncode != 0:
+                # (the exit code is not necessarily an `ExitCode`: the command may not have started at all)
+                raise Exception("%r is not usable: 'version-info' exited with %s%s" % (
+                    " ".join(get_xpra_command()), proc.returncode, self._subcommand_output(proc)))
+        finally:
+            self._close_subcommand_output(proc)
+        xpra_command_checked = True
 
     def test_nongui_subcommands(self):
+        self._check_xpra_command()
         for args in (
             "initenv",
             "list",
@@ -294,6 +339,7 @@ class TestMain(unittest.TestCase):
         if POSIX and not OSX:
             #can't test commands that require a display yet
             return
+        self._check_xpra_command()
         subcommands = [
             "mdns-gui",
             "sessions",
@@ -312,22 +358,28 @@ class TestMain(unittest.TestCase):
             "transparent-colors",
         ]
         for args in subcommands:
-            proc = self._run_subcommand(args, 10, stdout=PIPE, stderr=PIPE)
-            r = proc.poll()
-            if r is not None:
-                raise Exception("%s subcommand should not have terminated" % (args,))
-            noerr(proc.send_signal, signal.SIGTERM)
-            if pollwait(proc, 2) is None:
-                noerr(proc.terminate)
+            proc = self._run_subcommand(args, 10)
+            try:
+                r = proc.poll()
+                if r is not None:
+                    raise Exception("%s subcommand should not have terminated, it exited with %s%s" % (
+                        args, exit_str(r), self._subcommand_output(proc)))
+                noerr(proc.send_signal, signal.SIGTERM)
                 if pollwait(proc, 2) is None:
-                    noerr(proc.kill)
+                    noerr(proc.terminate)
+                    if pollwait(proc, 2) is None:
+                        noerr(proc.kill)
+            finally:
+                self._close_subcommand_output(proc)
 
     def test_debug_option(self):
+        self._check_xpra_command()
         for debug in ("all", "util", "platform,-import", "foo,,bar"):
             args = "version-info --debug %s" % debug
             self._test_subcommand(args, 20)
 
     def test_misc_env_switches(self):
+        self._check_xpra_command()
         with OSEnvContext():
             os.environ["XPRA_NOMD5"] = "1"
             self._test_subcommand("version-info")
@@ -358,11 +410,18 @@ class TestMain(unittest.TestCase):
         # which makes it an observable end-to-end check that `--env` is applied
         # early enough to reach `xpra.net.common`:
         proc = self._run_subcommand("--env=XPRA_BACKWARDS_COMPATIBLE=0 initenv")
-        assert proc.returncode == ExitCode.UNSUPPORTED, \
-            f"expected {int(ExitCode.UNSUPPORTED)} with backwards compatibility disabled, got {proc.returncode}"
+        try:
+            assert proc.returncode == ExitCode.UNSUPPORTED, \
+                f"expected {int(ExitCode.UNSUPPORTED)} with backwards compatibility disabled, " \
+                f"got {proc.returncode}{self._subcommand_output(proc)}"
+        finally:
+            self._close_subcommand_output(proc)
         # and that the check is not vacuous:
         proc = self._run_subcommand("--env=XPRA_BACKWARDS_COMPATIBLE=1 initenv")
-        assert proc.returncode == 0, f"initenv failed with {proc.returncode}"
+        try:
+            assert proc.returncode == 0, f"initenv failed with {proc.returncode}{self._subcommand_output(proc)}"
+        finally:
+            self._close_subcommand_output(proc)
 
 
 def main():
