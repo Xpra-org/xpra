@@ -28,7 +28,7 @@ _xpra() {
         encoding path-info html5 docs help recover top proxy
         opengl opengl-probe opengl-test
         gtk-info gui-info network-info crypto-info monitor-info nvinfo
-        keyboard webcam video sbom"
+        keyboard keymap keymap-test webcam video sbom"
 
     local opts="--attach --audio --audio-source --auth --auto-refresh-delay
         --av-sync --backend --bandwidth-detection --bandwidth-limit --bell

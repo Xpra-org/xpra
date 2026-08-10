@@ -51,6 +51,9 @@ First, please check for existing issues that may match your problem.
 Failing that, make sure to read the [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs) guidelines,
 and generally you will need to include (only those that apply):
 * try the keyboard debugging tool found in the `xpra toolbox`
+* the keymap of the client: `xpra keymap keymap.json`, which can then be replayed against a server
+  keymap without needing the client: `xpra keymap-test keymap.json`
+  (this applies the keymap to a temporary X11 display and shows the keys the server cannot generate)
 * active keyboard layout(s)
 * input methods
 * keyboard related configuration setup/files

@@ -110,7 +110,8 @@ NO_NETWORK_SUBCOMMANDS = (
     "autostart",
     "encoding", "video",
     "nvinfo", "webcam",
-    "keyboard", "gtk-info", "gui-info", "network-info", "monitor-info",
+    "keyboard", "keymap", "keymap-test",
+    "gtk-info", "gui-info", "network-info", "monitor-info",
     "compression", "packet-encoding", "path-info",
     "printing-info", "version-info", "version-check", "toolbox",
     "initenv", "setup-ssl", "show-ssl",
@@ -934,6 +935,13 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
     if mode == "keyboard":
         from xpra.platform import keyboard
         return keyboard.main(cmdline)
+    if mode in ("keymap", "keymap-test"):
+        # dumping the keymap of this system requires gtk,
+        # `keymap-test` only needs it if no keymap file is specified:
+        if mode == "keymap" or not any(os.path.isfile(arg) for arg in args):
+            check_gtk(mode)
+        from xpra.scripts import keymap_tool
+        return keymap_tool.main(mode, args, cmdline)
     if mode == "root-size":
         backend = options.backend or "gtk"
         if backend == "win32":
