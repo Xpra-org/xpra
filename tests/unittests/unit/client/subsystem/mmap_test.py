@@ -11,6 +11,7 @@ import unittest
 from contextlib import nullcontext
 from xpra.util.objects import AdHocStruct, typedict
 from xpra.client.subsystem import mmap
+from xpra.net.mmap import objects
 
 from unit.test_util import silence_info, silence_error
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
@@ -59,6 +60,17 @@ class MixinsTest(ClientMixinTest):
             if x:
                 x.tempfile = badfile()
                 m.cleanup()
+
+    def test_unused_area_is_disabled(self):
+        # a peer which does not write a token is not using the area:
+        # the area must end up disabled so that it can be freed
+        area = mmap.MmapArea("read")
+        area.mmap = bytearray(1024)
+        caps = typedict({"token": 0, "token_index": 0, "token_bytes": 128})
+        with silence_info(objects):
+            enabled = area.enable_from_caps(caps)
+        assert not enabled, "the area should not be enabled without a valid token"
+        assert not area.enabled, f"{area} should be disabled"
 
     def make_caps(self, caps=None) -> typedict:
         d = super().make_caps(caps)
