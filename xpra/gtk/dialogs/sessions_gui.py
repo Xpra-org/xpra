@@ -15,8 +15,9 @@ from xpra.util.child_reaper import get_child_reaper
 from xpra.exit_codes import exit_str
 from xpra.scripts.config import OPTION_TYPES
 from xpra.scripts.args import get_command_args
+from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.window import add_close_accel
-from xpra.gtk.widget import scaled_image, imagebutton, label, modify_fg, color_parse
+from xpra.gtk.widget import scaled_image, imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.glib import register_os_signals
 from xpra.gtk.dialogs.util import hb_button
@@ -35,6 +36,88 @@ GLib = gi_import("GLib")
 Gio = gi_import("Gio")
 
 log = Logger("client", "util")
+
+CSS = b"""
+window.sessions-window {
+    background-color: @theme_bg_color;
+}
+
+.sessions-window headerbar {
+    min-height: 38px;
+    padding: 4px 8px;
+    margin: 0;
+}
+
+.sessions-window headerbar button {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 2px 6px;
+    border-radius: 7px;
+}
+
+.sessions-window .sessions-body {
+    padding: 20px;
+}
+
+.sessions-window .sessions-toolbar,
+.sessions-window .sessions-grid {
+    padding: 10px 14px;
+    border: 1px solid alpha(@theme_fg_color, 0.12);
+    border-radius: 10px;
+    background-color: alpha(@theme_fg_color, 0.04);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sessions-window .sessions-toolbar entry {
+    min-height: 30px;
+    padding: 3px 8px;
+    border-radius: 7px;
+}
+
+.sessions-window .session-heading {
+    padding: 4px 6px 8px 6px;
+    color: alpha(@theme_fg_color, 0.68);
+    font-weight: 600;
+}
+
+.sessions-window .session-cell,
+.sessions-window .session-uri,
+.sessions-window .session-icon {
+    padding: 7px 6px;
+}
+
+.sessions-window .session-uri {
+    font-family: monospace;
+}
+
+.sessions-window .session-action {
+    min-height: 30px;
+    padding: 5px 10px;
+    border-radius: 8px;
+}
+
+.sessions-window .sessions-warning {
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #ffffff;
+    background-color: #c01c28;
+}
+
+.sessions-window .sessions-empty {
+    padding: 36px 24px;
+    color: alpha(@theme_fg_color, 0.68);
+    font-size: 1.1em;
+}
+"""
+
+_css_loaded = False
+
+
+def load_sessions_css() -> None:
+    global _css_loaded
+    if not _css_loaded:
+        add_screen_css(CSS)
+        _css_loaded = True
 
 
 def pil_image_to_pixbuf(img):
@@ -93,11 +176,13 @@ class SessionsGUI(Gtk.Window):
     def __init__(self, options, title="Xpra Session Browser"):
         check_main_thread()
         super().__init__()
+        load_sessions_css()
+        self.get_style_context().add_class("sessions-window")
         title = _(title)
         self.options = options
         self.exit_code = ExitCode.OK
         self.set_title(title)
-        self.set_border_width(20)
+        self.set_border_width(0)
         self.set_resizable(True)
         self.set_default_size(800, 220)
         self.set_decorated(True)
@@ -113,27 +198,28 @@ class SessionsGUI(Gtk.Window):
 
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
-        hb.props.title = "Xpra"
-        hb.add(hb_button(_("About"), "help-about", self.show_about))
+        hb.props.title = title
+        about_button = hb_button(_("About"), "help-about", self.show_about)
+        about_button.get_style_context().add_class("flat")
+        hb.pack_end(about_button)
         hb.show_all()
         self.set_titlebar(hb)
 
         self.clients = {}
         self.clients_disconnecting = set()
 
-        self.vbox = Gtk.VBox(homogeneous=False, spacing=20)
+        self.vbox = Gtk.VBox(homogeneous=False, spacing=14)
+        self.vbox.get_style_context().add_class("sessions-body")
         self.add(self.vbox)
 
-        title_label = label(title, font="sans 14")
-        title_label.show()
-        self.vbox.add(title_label)
-
-        self.warning = label(" ")
-        modify_fg(self.warning, color_parse("red"))
-        self.warning.show()
+        self.warning = label("")
+        self.warning.get_style_context().add_class("sessions-warning")
+        self.warning.set_no_show_all(True)
         self.vbox.add(self.warning)
 
         self.password_box = Gtk.HBox(homogeneous=False, spacing=10)
+        self.password_box.set_halign(Gtk.Align.CENTER)
+        self.password_box.get_style_context().add_class("sessions-toolbar")
         self.password_label = label(_("Password:"))
         al = Gtk.Alignment(xalign=1, yalign=0.5)
         al.add(self.password_label)
@@ -193,6 +279,10 @@ class SessionsGUI(Gtk.Window):
     def show_about(self, *_args) -> None:
         from xpra.gtk.dialogs.about import about
         about(parent=self)
+
+    def set_warning(self, message: str) -> None:
+        self.warning.set_text(message)
+        self.warning.set_visible(bool(message))
 
     def update(self) -> bool:
         if self.poll_local_sessions():
@@ -284,23 +374,28 @@ class SessionsGUI(Gtk.Window):
             self.contents = None
         if not self.endpoints:
             self.contents = label(_("No sessions found"))
+            self.contents.get_style_context().add_class("sessions-empty")
             self.vbox.add(self.contents)
             self.contents.show()
             self.set_size_request(440, 200)
             self.password_box.hide()
             return
-        self.password_box.show()
+        self.password_box.show_all()
         self.set_size_request(-1, -1)
         grid = Gtk.Grid()
+        grid.set_column_spacing(8)
+        grid.set_row_spacing(4)
+        grid.set_hexpand(True)
+        grid.get_style_context().add_class("sessions-grid")
 
-        def l(s="") -> Gtk.Label:  # noqa: E743
+        def l(s="", style_class="session-cell") -> Gtk.Label:  # noqa: E743
             widget = label(s)
-            widget.set_margin_start(5)
-            widget.set_margin_end(5)
+            widget.set_halign(Gtk.Align.START)
+            widget.get_style_context().add_class(style_class)
             return widget
 
         for i, text in enumerate(_(x) for x in ("Host", "Display", "Name", "Icon", "Type", "URI", "Connect", "Open in Browser")):
-            grid.attach(l(text), i, 1, 1, 1)
+            grid.attach(l(text, "session-heading"), i, 1, 1, 1)
         row = 2
         for key, session in group_session_endpoints(self.endpoints).items():
             if isinstance(key, tuple):
@@ -323,6 +418,10 @@ class SessionsGUI(Gtk.Window):
             if not pwidget:
                 pwidget = l(session.platform)
             w, c, b = self.make_connect_widgets(session)
+            pwidget.get_style_context().add_class("session-icon")
+            w.get_style_context().add_class("session-uri")
+            c.get_style_context().add_class("session-action")
+            b.get_style_context().add_class("session-action")
             widgets = (
                 host_label,
                 l(session.display),
@@ -341,7 +440,7 @@ class SessionsGUI(Gtk.Window):
         self.vbox.add(grid)
 
     def attach(self, key, uri: str) -> None:
-        self.warning.set_text("")
+        self.set_warning("")
         # preserve ssl command line arguments
         option_types = {k: v for k, v in OPTION_TYPES.items() if k.startswith("ssl")}
         cmd = get_xpra_command() + ["attach", uri] + get_command_args(
@@ -359,7 +458,7 @@ class SessionsGUI(Gtk.Window):
             log.error("Error: failed to launch client command:")
             log.error(" %s", cmd_str)
             log.estr(e)
-            self.warning.set_text(str(e))
+            self.set_warning(str(e))
             return
         log("attach() %s=%s", cmd_str, proc)
 
@@ -371,7 +470,7 @@ class SessionsGUI(Gtk.Window):
             elif c not in (0, None):
                 log.warn("Warning: client command exited with code %s:", c)
                 log.warn(" %s", cmd_str)
-                self.warning.set_text(exit_str(c).replace("_", " "))
+                self.set_warning(exit_str(c).replace("_", " "))
             if self.clients.pop(key, None):
                 def update() -> None:
                     self.update()
@@ -436,6 +535,7 @@ class SessionsGUI(Gtk.Window):
                 self.attach(key, uri)
 
             btn = imagebutton(_("Connect"), icon, clicked_callback=clicked)
+            btn.get_style_context().add_class("suggested-action")
             return label(uri), btn, bopen
 
         # multiple modes / uris
@@ -474,6 +574,7 @@ class SessionsGUI(Gtk.Window):
 
         uri_menu.set_active(0)
         btn = imagebutton(_("Connect"), icon, clicked_callback=connect)
+        btn.get_style_context().add_class("suggested-action")
 
         def uri_changed(*_args) -> None:
             uri = uri_menu.get_active_text()
