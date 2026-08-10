@@ -93,7 +93,7 @@ class TestAudioServerMeter(unittest.TestCase):
         self.owner = FakeServer()
         self.server = AudioServer(self.owner)
         self.server.supports_speaker = True
-        self.server.audio_properties = typedict({"initialized": True})
+        self.server.properties = typedict({"initialized": True})
         self.server.meter_state = "pending"
         self.source = FakeSource()
         self.owner.sources.append(self.source)
@@ -104,8 +104,8 @@ class TestAudioServerMeter(unittest.TestCase):
         assert self.server.meter_state == "disabled"
         assert self.server.meter_start_timer == 0
 
-    def test_no_info_without_audio_properties(self):
-        self.server.audio_properties = typedict()
+    def test_no_info_without_properties(self):
+        self.server.properties = typedict()
         assert self.server.get_info(None) == {}
 
     def test_cleanup_prevents_late_start(self):

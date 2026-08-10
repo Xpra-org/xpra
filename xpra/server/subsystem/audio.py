@@ -35,10 +35,10 @@ class AudioServer(StubSubsystem):
     Mixin for servers that handle audio forwarding.
     """
     __slots__ = (
-        "audio_properties", "audio_source_plugin", "av_sync", "level", "meter",
-        "meter_start_timer", "meter_state", "meter_stop", "microphone_allowed",
-        "microphone_codecs", "speaker_allowed", "speaker_codecs", "supports_microphone",
-        "supports_speaker", "signal_candidate", "signal_state", "signal_timer",
+        "av_sync", "level", "meter", "meter_start_timer", "meter_state", "meter_stop",
+        "microphone_allowed", "microphone_codecs", "properties", "signal_candidate",
+        "signal_state", "signal_timer", "source_plugin", "speaker_allowed", "speaker_codecs",
+        "supports_microphone", "supports_speaker",
     )
     PREFIX = "audio"
     # `audio-initialized` is emitted on this subsystem (via `SignalEmitter`)
@@ -48,14 +48,14 @@ class AudioServer(StubSubsystem):
 
     def __init__(self, server=None):
         StubSubsystem.__init__(self, server)
-        self.audio_source_plugin = ""
+        self.source_plugin = ""
         self.supports_speaker = False
         self.supports_microphone = False
         self.speaker_allowed = False
         self.microphone_allowed = False
         self.speaker_codecs: Sequence[str] = ()
         self.microphone_codecs: Sequence[str] = ()
-        self.audio_properties = typedict()
+        self.properties = typedict()
         self.av_sync = False
         self.level: dict[str, Any] = {}
         self.meter: Any = None
@@ -73,7 +73,7 @@ class AudioServer(StubSubsystem):
         self.signal_timer = 0
 
     def init(self, opts) -> None:
-        self.audio_source_plugin = opts.audio_source
+        self.source_plugin = opts.audio_source
         self.supports_speaker = audio_option(opts.speaker) in ("on", "off")
         if self.supports_speaker:
             self.speaker_codecs = opts.speaker_codec
@@ -102,10 +102,10 @@ class AudioServer(StubSubsystem):
         self.args_control("audio-output", "control audio forwarding", min_args=1, max_args=2)
 
     def get_info(self, _proto) -> dict[str, Any]:
-        if not self.audio_properties:
+        if not self.properties:
             # audio is unsupported or not initialized yet, so the meter cannot run either
             return {}
-        info = dict(self.audio_properties)
+        info = dict(self.properties)
         meter_info: dict[str, Any] = {
             "state": self.meter_state,
             "interval": AUDIO_LEVEL_INTERVAL,
@@ -289,7 +289,7 @@ class AudioServer(StubSubsystem):
             return ()
 
         def noaudio() -> None:
-            self.audio_properties["initialized"] = True
+            self.properties["initialized"] = True
             self.emit("audio-initialized")
             self.supports_speaker = self.supports_microphone = False
             self.speaker_allowed = self.microphone_allowed = False
@@ -338,7 +338,7 @@ class AudioServer(StubSubsystem):
             from xpra.server.subsystem.pulseaudio import query_pulseaudio_properties
             audio_properties |= query_pulseaudio_properties()
         audio_properties["initialized"] = True
-        self.audio_properties = audio_properties
+        self.properties = audio_properties
         self.log_audio_properties()
         self.emit("audio-initialized")
 
@@ -347,7 +347,7 @@ class AudioServer(StubSubsystem):
         log("init_audio_options:")
         log(" speaker: supported=%s, encoders=%s",self.supports_speaker, csv(self.speaker_codecs))
         log(" microphone: supported=%s, decoders=%s", self.supports_microphone, csv(self.microphone_codecs))
-        log(" audio properties=%s", self.audio_properties)
+        log(" audio properties=%s", self.properties)
 
     def _process_sound_control(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE

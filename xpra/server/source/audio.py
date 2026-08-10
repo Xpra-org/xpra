@@ -102,17 +102,17 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         if BACKWARDS_COMPATIBLE:
             # synchronous initialization: wait for audio
             until = monotonic() + 5
-            while not audio.audio_properties and monotonic() < until:
+            while not audio.properties and monotonic() < until:
                 log("audio init waiting for audio properties")
                 sleep(0.01)
-            if not audio.audio_properties:
+            if not audio.properties:
                 log.warn("Warning: timeout waiting for audio initialization")
         self.init_audio_from(audio)
         audio.connect("audio-initialized", self.server_audio_initialized)
 
     def init_audio_from(self, audio) -> None:
-        self.audio_properties = audio.audio_properties
-        self.audio_source_plugin = audio.audio_source_plugin
+        self.audio_properties = audio.properties
+        self.audio_source_plugin = audio.source_plugin
         self.supports_speaker = audio.supports_speaker
         self.supports_microphone = audio.supports_microphone
         self.speaker_codecs = audio.speaker_codecs

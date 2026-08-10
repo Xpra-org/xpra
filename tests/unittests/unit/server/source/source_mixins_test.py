@@ -30,8 +30,8 @@ class SourceMixinsTest(unittest.TestCase):
     event.set()
     AUDIO_SERVER_PROPS = {
         "audio_initialized": event,
-        "audio_properties": {},
-        "audio_source_plugin": None,
+        "properties": {},
+        "source_plugin": None,
         "supports_microphone": True,
         "microphone_codecs": (),
         "supports_speaker": False,
@@ -422,7 +422,7 @@ class SourceMixinsTest(unittest.TestCase):
         server_props = SourceMixinsTest.AUDIO_SERVER_PROPS.copy()
         server_props.update({
             "av_sync": True,
-            "audio_properties": {"foo": "bar"},
+            "properties": {"foo": "bar"},
             "sound.pulseaudio_id": "fake-one",
             "sound.pulseaudio.server": "some-path",
         })
