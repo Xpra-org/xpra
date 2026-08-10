@@ -1678,7 +1678,7 @@ def fixup_keyboard(options) -> None:
 
 def fixup_backend(options) -> None:
     # 'native' is an alias for the platform specific backend:
-    if options.backend.lower() == "native" and WIN32:
+    if options.backend.lower() in ("auto", "native") and WIN32:
         options.backend = "win32"
 
 
