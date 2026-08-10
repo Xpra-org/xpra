@@ -193,6 +193,7 @@ class PulseaudioServer(StubSubsystem):
 
     def setup(self) -> None:
         # initialize pulseaudio in a separate thread
+        self.init_done.clear()
         start_thread(self.init_pulseaudio, "init-pulseaudio", True)
 
     def late_cleanup(self, stop=True) -> None:
@@ -250,16 +251,15 @@ class PulseaudioServer(StubSubsystem):
         log("configure_pulse_dirs() pulse_dir=%s, socket=%s", self.server_dir, self.server_socket)
 
     def init_pulseaudio(self) -> None:
-        log("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%r",
-            enabled_or_auto(self.enabled), self.command)
-        # noinspection PySimplifyBooleanCheck
-        if self.enabled is False:
-            return
-        if not self.command:
-            log.warn("Warning: pulseaudio command is not defined")
-            return
         try:
-            self.init_done.clear()
+            log("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%r",
+                enabled_or_auto(self.enabled), self.command)
+            # noinspection PySimplifyBooleanCheck
+            if self.enabled is False:
+                return
+            if not self.command:
+                log.warn("Warning: pulseaudio command is not defined")
+                return
             self.do_init_pulseaudio()
         finally:
             self.init_done.set()
