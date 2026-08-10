@@ -59,7 +59,9 @@ class MmapArea(BaseMmapArea):
         try:
             self.parse_caps(mmap_caps)
             if self.enabled:
-                self.verify_token()
+                # a valid token is the only proof that the peer is really using this area,
+                # `verify_token` does not always clear the `enabled` flag itself:
+                self.enabled = self.verify_token()
             if not self.enabled:
                 self.clean_mmap()
             return self.enabled
