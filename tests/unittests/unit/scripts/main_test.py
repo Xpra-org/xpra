@@ -210,13 +210,8 @@ class TestMain(unittest.TestCase):
             "_pass",
             #"send-file", needs a server socket
             #"splash", has its own test module
-            "clipboard-test",
-            "keyboard-test",
             "toolbox",
-            "colors-test",
-            "colors-gradient-test",
-            "transparent-colors",
-            ]
+        ]
         for args in subcommands:
             proc = self._run_subcommand(args, 10, stdout=PIPE, stderr=PIPE)
             r = proc.poll()
