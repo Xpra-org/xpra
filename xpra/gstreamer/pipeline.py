@@ -284,9 +284,7 @@ class Pipeline(GObject.GObject):
         elif t == Gst.MessageType.INFO:
             self.gstloginfo("pipeline message: %s", message)
         elif t == Gst.MessageType.WARNING:
-            w = message.parse_warning()
-            for message in warning_messages(w):
-                self.gstlogwarn(message)
+            self.handle_warning(message.parse_warning())
         elif t in (Gst.MessageType.NEED_CONTEXT, Gst.MessageType.HAVE_CONTEXT):
             log("context message: %s", message)
         elif t == Gst.MessageType.QOS:
@@ -296,6 +294,11 @@ class Pipeline(GObject.GObject):
             self.gstlogwarn("unhandled bus message type %s: %s", t, message)
         self.emit_info()
         return GST_FLOW_OK
+
+    def handle_warning(self, warning: Sequence) -> None:
+        """ subclasses can override this to ignore harmless warnings """
+        for msg in warning_messages(warning):
+            self.gstlogwarn(msg)
 
     def parse_element_message(self, message) -> None:
         structure = message.get_structure()

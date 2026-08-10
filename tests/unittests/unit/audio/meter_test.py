@@ -68,6 +68,27 @@ class TestAudioLevelMeter(unittest.TestCase):
         finally:
             meter.cleanup()
 
+    def test_overrun_warnings_are_ignored(self):
+        if not has_plugins("pulsesrc", "level", "fakesink"):
+            raise unittest.SkipTest("audio level meter plugins are missing")
+
+        class FakeError:
+            def __init__(self, message):
+                self.message = message
+
+        with patch("xpra.audio.meter.get_source_channels", return_value=2):
+            meter = AudioLevelMeter("Xpra-Speaker.monitor", 250)
+        try:
+            logged = []
+            meter.gstlogwarn = lambda msg, *args: logged.append(msg % args if args else msg)
+            meter.handle_warning((FakeError("Can't record audio fast enough"), "dropped 1234 samples"))
+            assert not logged
+            assert meter.info["overruns"] == 1
+            meter.handle_warning((FakeError("some other problem"), ""))
+            assert logged
+        finally:
+            meter.cleanup()
+
     def test_subprocess_command(self):
         wrapper = MeterSubprocessWrapper("Xpra-Speaker.monitor", 250)
         assert wrapper.command[-5:] == [
