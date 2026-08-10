@@ -3,6 +3,13 @@
 The `mmap` modules are used for fast memory transfers
 between client and server when both reside on the same host.
 
+The client creates its mmap areas before the connection is established,
+so it cannot know yet whether the server will be able to use them.
+On MS Windows, where the areas are charged to the system commit limit as soon
+as they are created and the server is very rarely local, the default value of
+the `mmap` option (`auto`) therefore means `no`: it must be enabled explicitly
+with `mmap=yes`.
+
 <div class="docs-section-heading" markdown="1">
 
 ## Implementations

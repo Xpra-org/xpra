@@ -484,6 +484,9 @@ an xpra process.
 Enable or disable memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
+On MS Windows, clients do not enable it automatically: the server is very
+rarely running on the same host, and the memory is reserved before we can
+find out - use \fB\-\-mmap\fP=\fIyes\fP to enable it explicitly.
 This method of data transfer offers much lower overheads
 and reduces both CPU consumption and local network traffic.
 .br

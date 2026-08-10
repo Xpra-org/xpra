@@ -9,6 +9,7 @@ import tempfile
 import unittest
 
 from contextlib import nullcontext
+from xpra.os_util import WIN32
 from xpra.util.objects import AdHocStruct, typedict
 from xpra.client.subsystem import mmap
 from xpra.net.mmap import objects
@@ -60,6 +61,20 @@ class MixinsTest(ClientMixinTest):
             if x:
                 x.tempfile = badfile()
                 m.cleanup()
+
+    def test_auto(self):
+        # `auto` means `no` on MS Windows, where the server is very rarely local:
+        opts = AdHocStruct()
+        opts.mmap = "auto"
+        opts.mmap_group = "none"
+        m = mmap.MmapClient()
+        m.init(opts)
+        m.load()
+        self.assertEqual(m.mmap_supported, not WIN32)
+        self.assertEqual(m.mmap_read_area is None, WIN32)
+        self.assertIsNone(m.mmap_write_area, "`auto` should never create a write area")
+        self.assertFalse(m.get_caps().get("mmap", {}), "no mmap caps should be sent before the areas are mapped")
+        m.cleanup()
 
     def test_unused_area_is_disabled(self):
         # a peer which does not write a token is not using the area:
