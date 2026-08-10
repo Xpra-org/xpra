@@ -168,6 +168,11 @@ def test_gl_client_window(gl_client_window_class: Callable,
         window_backing = window._backing
         window.realize()
         window_backing.paint_screen = True
+        # `painted()` would otherwise hand the present off to a refresh callback
+        # which never runs, since there is no main loop here - leaving
+        # `present_fbo` / `do_gl_show` / `swap_buffers` untested and the
+        # "failed to present FBO" check below vacuous:
+        window_backing.draw_needs_refresh = False
         # we run this function single threaded,
         # so this is already the UI thread,
         # bypass the call to idle_add:
