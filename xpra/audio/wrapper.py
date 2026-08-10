@@ -65,7 +65,7 @@ def get_audio_wrapper_env() -> dict[str, str]:
 #
 # the command line should look something like:
 # xpra MODE IN OUT PLUGIN PLUGIN_OPTIONS CODECS CODEC_OPTIONS VOLUME
-# * MODE can be _audio_record or _audio_play
+# * MODE can be _audio_record, _audio_play or _audio_meter
 # * IN is where we read the encoded commands from, specify "-" for stdin
 # * OUT is where we write the encoded output stream, specify "-" for stdout
 # * PLUGIN is the audio source (for recording) or sink (for playing) to use, can be omitted (will be auto detected)
@@ -151,6 +151,15 @@ class AudioPlay(AudioSubprocess):
         super().__init__(audio_pipeline, ["add_data"], [])
 
 
+class AudioMeter(AudioSubprocess):
+    """Wraps the session-wide PulseAudio level meter."""
+
+    def __init__(self, device: str, interval: int):
+        from xpra.audio.meter import AudioLevelMeter
+        audio_pipeline = AudioLevelMeter(device, interval)
+        super().__init__(audio_pipeline, [], ["level"])
+
+
 def run_audio(mode: str, args: list[str]) -> int:
     """ this function just parses command line arguments to feed into the audio subprocess class,
         which in turn just feeds them into the audio pipeline class (sink.py or src.py)
@@ -162,10 +171,21 @@ def run_audio(mode: str, args: list[str]) -> int:
     from xpra.platform import program_context
     with program_context(f"Xpra-Audio-{info}", f"Xpra Audio {info}"):
         log("run_audio%s gst=%s", (mode, args), gst)
+        pipeline_args: tuple = ()
         if info == "record":
             subproc = AudioRecord
         elif info == "play":
             subproc = AudioPlay
+        elif info == "meter":
+            if len(args) < 4:
+                log.error("not enough audio meter arguments")
+                return 1
+            subproc = AudioMeter
+            try:
+                pipeline_args = (args[2], int(args[3]))
+            except ValueError:
+                log.error("invalid audio meter interval %r", args[3])
+                return 1
         elif info == "query":
             plugins = get_all_plugin_names()
             sources = [x for x in get_source_plugins() if x in plugins]
@@ -197,25 +217,27 @@ def run_audio(mode: str, args: list[str]) -> int:
         else:
             log.error(f"Error: unknown mode {mode!r}")
             return 1
-        assert len(args) >= 6, "not enough arguments"
+        if not pipeline_args:
+            assert len(args) >= 6, "not enough arguments"
 
-        # the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
-        plugin = args[2]
-        # plugin options (ie: "device=monitor_device,something=value")
-        options = parse_simple_dict(args[3])
-        # codecs:
-        codecs = [x.strip() for x in args[4].split(",")]
-        # codec options:
-        codec_options = parse_simple_dict(args[5])
-        # volume (optional):
-        try:
-            volume = int(args[6])
-        except (ValueError, IndexError):
-            volume = 1.0
+            # the plugin to use (ie: 'pulsesrc' for src.py or 'autoaudiosink' for sink.py)
+            plugin = args[2]
+            # plugin options (ie: "device=monitor_device,something=value")
+            options = parse_simple_dict(args[3])
+            # codecs:
+            codecs = [x.strip() for x in args[4].split(",")]
+            # codec options:
+            codec_options = parse_simple_dict(args[5])
+            # volume (optional):
+            try:
+                volume = int(args[6])
+            except (ValueError, IndexError):
+                volume = 1.0
+            pipeline_args = (plugin, options, codecs, codec_options, volume)
 
         ss = None
         try:
-            ss = subproc(plugin, options, codecs, codec_options, volume)
+            ss = subproc(*pipeline_args)
             ss.start()
             return 0
         except InitExit as e:
@@ -381,6 +403,21 @@ class SinkSubprocessWrapper(AudioSubprocessWrapper):
         return "sink_subprocess_wrapper(%s)" % proc
 
 
+class MeterSubprocessWrapper(AudioSubprocessWrapper):
+    __signals__ = AudioSubprocessWrapper.__signals__ + ("level",)
+
+    def __init__(self, device: str, interval: int):
+        super().__init__("audio level meter")
+        self.command = get_full_audio_command() + [
+            "_audio_meter", "-", "-", device, str(interval),
+        ]
+        _add_debug_args(self.command)
+
+    def __repr__(self):
+        proc = self.process
+        return "meter_subprocess_wrapper(%s)" % getattr(proc, "pid", proc)
+
+
 def start_sending_audio(plugins, audio_source_plugin: str, device: str, codec: str, volume: float,
                         want_monitor_device: bool,
                         remote_decoders: Iterable[str],
@@ -408,6 +445,10 @@ def start_receiving_audio(codec: str) -> SinkSubprocessWrapper:
     log("start_receiving_audio(%s)", codec)
     with log.trap_error("Error starting audio sink"):
         return SinkSubprocessWrapper(None, codec, 1.0, {})
+
+
+def start_audio_meter(device: str, interval: int) -> MeterSubprocessWrapper:
+    return MeterSubprocessWrapper(device, interval)
 
 
 def query_audio() -> typedict:

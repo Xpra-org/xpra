@@ -283,7 +283,7 @@ def configure_logging(options, mode: str) -> None:
             "recover",
             "attach", "listen", "proxy", "gui",
             "version", "info", "id",
-            "_audio_record", "_audio_play",
+            "_audio_record", "_audio_play", "_audio_meter",
             "stop", "print", "showconfig", "configure", "sbom",
             "otp",
             "_dialog", "_pass",
@@ -845,7 +845,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
     if mode == "_proxy" or mode.startswith("_proxy_"):
         nox()
         return run_proxy(options, script_file, cmdline, args, mode, defaults)
-    if mode in ("_audio_record", "_audio_play", "_audio_query"):
+    if mode in ("_audio_record", "_audio_play", "_audio_meter", "_audio_query"):
         if not has_audio_support():
             raise InitExit(ExitCode.COMPONENT_MISSING, "no audio support!")
         from xpra.audio.wrapper import run_audio
