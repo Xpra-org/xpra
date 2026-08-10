@@ -13,7 +13,7 @@ from xpra.util.io import CaptureStdErr
 from xpra.platform.win32 import is_terminal
 from xpra.platform.win32.constants import (
     CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW,
-    WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT,
+    WS_CLIPCHILDREN, WS_CLIPSIBLINGS, CW_USEDEFAULT,
 )
 from xpra.platform.win32.common import (
     GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat,
@@ -123,7 +123,10 @@ class WGLContext:
         log("check_support() RegisterClassExW()=%#x", reg_atom or 0)
         if not reg_atom:
             return {"info": "disabled: failed to register window class, %s" % FormatError()}
-        style = WS_OVERLAPPED | WS_SYSMENU
+        # `WS_CLIPCHILDREN | WS_CLIPSIBLINGS` are required for OpenGL rendering windows.
+        # This one is never mapped (no `WS_VISIBLE`) and is only here to own a device
+        # context long enough to query the driver:
+        style = WS_CLIPCHILDREN | WS_CLIPSIBLINGS
         window_name = b"Xpra OpenGL Test"
         self.hwnd = CreateWindowExA(0, reg_atom, window_name, style,
                                     CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,

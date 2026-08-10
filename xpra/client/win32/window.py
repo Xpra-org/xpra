@@ -336,7 +336,11 @@ class ClientWindow(GObject.GObject):
     def create_window(self) -> HWND:
         title = self.metadata.strget("title", "")
         dwexstyle = 0
-        style = win32con.WS_VISIBLE
+        # `WS_CLIPCHILDREN | WS_CLIPSIBLINGS` are required for OpenGL rendering windows
+        # and harmless for the GDI ones.
+        # No `WS_VISIBLE`: the window is mapped by `show_all()` once it is set up,
+        # which is also when its geometry has been nudged onscreen.
+        style = win32con.WS_VISIBLE | win32con.WS_CLIPCHILDREN | win32con.WS_CLIPSIBLINGS
         if self.is_OR():
             dwexstyle |= win32con.WS_EX_TOOLWINDOW | win32con.WS_EX_NOACTIVATE | win32con.WS_EX_TOPMOST
             style |= win32con.WS_POPUP
