@@ -4,6 +4,9 @@
 # later version. See the file COPYING for details.
 
 from xpra.gtk.css_overrides import add_screen_css
+from xpra.os_util import gi_import
+
+Gtk = gi_import("Gtk")
 
 
 CSS = b"""
@@ -80,6 +83,27 @@ window.xpra-styled-window {
     color: alpha(@theme_fg_color, 0.68);
     font-size: 1.1em;
 }
+
+.xpra-styled-window .xpra-actions {
+    margin-top: 8px;
+}
+
+.xpra-styled-window .xpra-dialog-title {
+    font-size: 1.15em;
+    font-weight: 600;
+}
+
+.xpra-styled-window .xpra-table {
+    padding: 10px 14px;
+}
+
+.xpra-styled-window .xpra-cell {
+    padding: 6px;
+}
+
+.xpra-styled-window .xpra-countdown {
+    color: alpha(@theme_fg_color, 0.68);
+}
 """
 
 _loaded = False
@@ -96,3 +120,34 @@ def add_style_class(widget, *names: str) -> None:
     context = widget.get_style_context()
     for name in names:
         context.add_class(name)
+
+
+def style_window(window, *names: str) -> None:
+    load_common_style()
+    add_style_class(window, "xpra-styled-window", "xpra-dialog-window", *names)
+    window.set_border_width(0)
+
+
+def style_body(widget) -> None:
+    add_style_class(widget, "xpra-body")
+
+
+def style_button(button, primary=False) -> None:
+    add_style_class(button, "xpra-action")
+    if primary:
+        add_style_class(button, "suggested-action")
+
+
+def style_actions(widget) -> None:
+    add_style_class(widget, "xpra-actions")
+    widget.set_spacing(10)
+    widget.set_halign(Gtk.Align.END)
+
+
+def style_dialog(dialog, *names: str) -> None:
+    style_window(dialog, *names)
+    style_body(dialog.get_content_area())
+    actions = dialog.get_action_area()
+    style_actions(actions)
+    for button in actions.get_children():
+        style_button(button)

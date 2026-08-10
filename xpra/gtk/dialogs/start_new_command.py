@@ -11,6 +11,9 @@ from collections.abc import Callable
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import (
+    add_style_class, style_actions, style_body, style_button, style_window,
+)
 from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.util.glib import register_os_signals
 from xpra.util.objects import typedict
@@ -38,6 +41,7 @@ def load_config() -> dict:
 
 def btn(label, tooltip, callback, icon_name="") -> Gtk.Button:
     b = Gtk.Button(label=label)
+    style_button(b)
     b.set_tooltip_text(tooltip)
     b.connect("clicked", callback)
     icon = get_icon_pixbuf(icon_name)
@@ -53,7 +57,7 @@ class StartNewCommand:
         self.run_callback = run_callback
         self.menu = typedict(menu or {})
         self.window = Gtk.Window()
-        self.window.set_border_width(20)
+        style_window(self.window, "start-command-dialog")
         self.window.connect("delete-event", self.close)
         self.window.set_default_size(400, 150)
         self.window.set_title("Start New Command")
@@ -66,7 +70,8 @@ class StartNewCommand:
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
-        vbox.set_spacing(0)
+        vbox.set_spacing(10)
+        style_body(vbox)
 
         self.entry = Gtk.Entry()
         self.entry.set_max_length(255)
@@ -96,7 +101,8 @@ class StartNewCommand:
             # this will populate the command combo:
             self.category_changed()
         # always show the command as text so that it can be edited:
-        entry_label = label("Command to run:", font="sans 14")
+        entry_label = label("Command to run:")
+        add_style_class(entry_label, "xpra-heading")
         entry_al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         entry_al.add(entry_label)
         vbox.add(entry_al)
@@ -113,8 +119,11 @@ class StartNewCommand:
 
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
-        vbox.pack_start(hbox)
-        hbox.pack_start(btn("Run", "Run this command", self.run_command, "forward.png"))
+        style_actions(hbox)
+        vbox.pack_end(hbox, False, False, 0)
+        run_btn = btn("Run", "Run this command", self.run_command, "forward.png")
+        style_button(run_btn, primary=True)
+        hbox.pack_start(run_btn)
         hbox.pack_start(btn("Cancel", "", self.close, "quit.png"))
 
         def accel_close(*_args) -> None:

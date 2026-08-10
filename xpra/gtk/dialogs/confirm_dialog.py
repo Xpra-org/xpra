@@ -8,8 +8,9 @@ import sys
 
 from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
-from xpra.gtk.widget import label, modify_fg, color_parse
+from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import add_style_class, style_dialog
 from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
 from xpra.util.io import get_util_logger
@@ -27,7 +28,7 @@ class ConfirmDialogWindow(Gtk.Dialog):
         check_main_thread()
         log("ConfirmDialogWindow%s", (title, prompt, info, icon, buttons))
         super().__init__()
-        self.set_border_width(20)
+        style_dialog(self, "confirm-dialog")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.connect("delete-event", self.quit)
         self.set_default_size(400, 150)
@@ -41,27 +42,29 @@ class ConfirmDialogWindow(Gtk.Dialog):
         vbox = self.get_content_area()
         vbox.set_spacing(10)
 
-        def al(text: str, font="sans 14", xalign=0.0) -> Gtk.Alignment:
-            lbl = label(text, font=font)
+        def al(text: str, xalign=0.0, *style_classes: str) -> Gtk.Alignment:
+            lbl = label(text)
+            add_style_class(lbl, *style_classes)
             if text.startswith("WARNING"):
-                modify_fg(lbl, color_parse("red"))
+                add_style_class(lbl, "xpra-warning")
             align = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             align.add(lbl)
             align.show_all()
             return align
 
-        vbox.add(al(title, "sans 18", 0.5))
         info_box = Gtk.VBox()
+        add_style_class(info_box, "xpra-card")
         for i in info:
-            info_box.add(al(i))
+            info_box.add(al(i, 0.0, "xpra-subtitle"))
         info_box.show_all()
         vbox.add(info_box)
-        vbox.add(al(prompt))
+        vbox.add(al(prompt, 0.0, "xpra-dialog-title"))
 
         # Buttons:
         for txt, code in buttons:
             btn = self.add_button(txt, code)
             btn.set_size_request(100, 48)
+        style_dialog(self, "confirm-dialog")
 
     def quit(self, *args) -> bool:
         log("quit%s", args)

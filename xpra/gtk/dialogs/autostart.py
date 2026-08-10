@@ -15,6 +15,9 @@ from xpra.gtk.util import gtk_main
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import (
+    add_style_class, style_actions, style_body, style_button, style_window,
+)
 from xpra.log import Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
@@ -33,7 +36,7 @@ class AutostartWindow:
     def __init__(self):
         check_main_thread()
         self.window = Gtk.Window()
-        self.window.set_border_width(40)
+        style_window(self.window, "autostart-dialog")
         self.window.connect("delete-event", self.close)
         self.window.set_default_size(320, 160)
         self.window.set_title("Xpra Autostart")
@@ -44,27 +47,36 @@ class AutostartWindow:
             self.window.set_icon(icon)
 
         vbox = Gtk.VBox(homogeneous=False, spacing=16)
+        style_body(vbox)
 
         # status label
-        self.status_label = label("", font="sans 14")
+        self.status_label = label("")
+        add_style_class(self.status_label, "xpra-dialog-title")
         vbox.pack_start(self.status_label, False, False, 0)
 
         # switch + label in an hbox
         hbox_switch = Gtk.HBox(homogeneous=False, spacing=8)
-        hbox_switch.pack_start(label("Start Xpra at login", font="sans 12"), False, False, 0)
+        add_style_class(hbox_switch, "xpra-card")
+        switch_label = label("Start Xpra at login")
+        add_style_class(switch_label, "xpra-heading")
+        hbox_switch.pack_start(switch_label, True, True, 0)
         self.toggle = Gtk.Switch()
         self.toggle.connect("notify::active", self._on_toggled)
         hbox_switch.pack_start(self.toggle, False, False, 20)
         vbox.pack_start(hbox_switch, False, False, 0)
 
         # error label (hidden unless something goes wrong)
-        self.error_label = label("", font="sans 10")
+        self.error_label = label("")
+        add_style_class(self.error_label, "xpra-warning")
+        self.error_label.set_no_show_all(True)
         self.error_label.set_line_wrap(True)
         vbox.pack_start(self.error_label, False, False, 0)
 
         # close button
         hbox = Gtk.HBox(homogeneous=False, spacing=0)
+        style_actions(hbox)
         close_btn = Gtk.Button(label="Close")
+        style_button(close_btn)
         close_btn.connect("clicked", self.close)
         close_icon = get_icon_pixbuf("quit.png")
         if close_icon:
@@ -88,17 +100,21 @@ class AutostartWindow:
         self.toggle.handler_unblock_by_func(self._on_toggled)
         self.status_label.set_text(f"Autostart is currently: {status}")
         self.error_label.set_text("")
+        self.error_label.hide()
 
     def _on_toggled(self, *_args) -> None:
         enabled = self.toggle.get_active()
         log("_on_toggled() enabled=%s", enabled)
+        error = ""
         try:
             from xpra.platform.autostart import set_autostart  # pylint: disable=import-outside-toplevel
             set_autostart(enabled)
         except Exception as e:
             log("set_autostart(%s)", enabled, exc_info=True)
-            self.error_label.set_text(f"Error: {e}")
+            error = f"Error: {e}"
         self._refresh()
+        self.error_label.set_text(error)
+        self.error_label.set_visible(bool(error))
 
     def show(self) -> None:
         def _show() -> None:

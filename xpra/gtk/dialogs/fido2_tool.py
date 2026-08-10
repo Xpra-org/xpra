@@ -36,6 +36,7 @@ def main(argv: list[str]) -> int:
         if use_gui_prompt():
             from xpra.os_util import gi_import
             from xpra.gtk.util import gtk_main
+            from xpra.gtk.dialogs.common_style import style_dialog
             from xpra.util.thread import check_main_thread
             Gtk = gi_import("Gtk")
             GLib = gi_import("GLib")
@@ -46,6 +47,7 @@ def main(argv: list[str]) -> int:
                                            message_type=message_type, buttons=Gtk.ButtonsType.CLOSE,
                                            text="\n".join(msgs))
                 dialog.set_title("Xpra FIDO2 Registration Tool")
+                style_dialog(dialog, "fido2-dialog")
                 dialog.run()
                 dialog.destroy()
                 # run the main loop long enough to destroy the dialog:

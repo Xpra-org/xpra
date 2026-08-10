@@ -13,6 +13,7 @@ from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import style_actions, style_body, style_button, style_window
 from xpra.util.thread import check_main_thread, start_thread
 from xpra.log import Logger
 
@@ -50,7 +51,7 @@ class DesktopGreeter(Gtk.Window):
         check_main_thread()
         self.exit_code = None
         super().__init__()
-        self.set_border_width(20)
+        style_window(self, "desktop-greeter-dialog")
         self.set_title("Start Desktop Environment")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_size_request(640, 300)
@@ -62,22 +63,25 @@ class DesktopGreeter(Gtk.Window):
 
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(10)
+        style_body(vbox)
 
         self.desktop_combo = sf(Gtk.ComboBoxText())
         vbox.add(self.desktop_combo)
 
         # Action buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
+        style_actions(hbox)
         vbox.pack_start(hbox, False, True, 20)
 
         def btn(text, tooltip, callback, default=False):
             ib = imagebutton(text, tooltip=tooltip, clicked_callback=callback, icon_size=32,
-                             default=default, label_font="sans 16")
+                             default=default)
+            style_button(ib, primary=default)
             hbox.pack_start(ib)
             return ib
 
         self.cancel_btn = btn("Exit", "", self.quit)
-        self.run_btn = btn("Start", "Start the desktop environment", self.run_command)
+        self.run_btn = btn("Start", "Start the desktop environment", self.run_command, True)
 
         vbox.show_all()
         self.add(vbox)

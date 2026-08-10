@@ -12,6 +12,7 @@ from xpra.util.thread import check_main_thread
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import add_style_class, style_body, style_window
 from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.log import Logger
@@ -24,9 +25,10 @@ log = Logger("client", "util")
 inject_css_overrides()
 
 
-def lal(text: str, font="") -> Gtk.Alignment:
+def lal(text: str, font="", *style_classes: str) -> Gtk.Alignment:
     align = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
     lbl = label(text, font=font)
+    add_style_class(lbl, *style_classes)
     align.add(lbl)
     return align
 
@@ -36,6 +38,7 @@ class ShortcutInfo(Gtk.Window):
     def __init__(self, shortcut_modifiers: Sequence[str], shortcuts: dict[str, Sequence]):
         check_main_thread()
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        style_window(self, "shortcuts-dialog")
 
         def window_deleted(*_args):
             self.is_closed = True
@@ -49,30 +52,35 @@ class ShortcutInfo(Gtk.Window):
         self.is_closed = False
         vbox = Gtk.VBox()
         vbox.set_spacing(10)
+        style_body(vbox)
         icon = get_icon_pixbuf("keyboard.png")
         if icon:
             self.set_icon(icon)
 
-        def vlabel(text, font="", padding=0):
-            vbox.pack_start(lal(text, font), True, True, padding)
+        def vlabel(text, font="", padding=0, *style_classes):
+            vbox.pack_start(lal(text, font, *style_classes), True, True, padding)
 
-        vlabel("Help: shortcuts", "sans 18", 10)
-        vlabel("Prefix: %s" % ("+".join(shortcut_modifiers)), padding=0)
+        vlabel("Keyboard shortcuts", "", 10, "xpra-dialog-title")
+        vlabel("Prefix: %s" % ("+".join(shortcut_modifiers)), "", 0, "xpra-subtitle")
         # each key may have multiple shortcuts, count them all:
         total = 0
         for keyname in shortcuts:
             total += len(shortcuts[keyname])
-        vlabel("%i Shortcuts:" % (total,), "sans 16", 20)
+        vlabel("%i Shortcuts:" % (total,), "", 10, "xpra-heading")
 
         grid = Gtk.Grid()
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(True)
+        add_style_class(grid, "xpra-card", "xpra-table")
 
         row = 0
 
         def attach(s: str, x=0, font="") -> None:
             align = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
             lbl = label(s, font=font)
+            add_style_class(lbl, "xpra-cell")
+            if row == 0:
+                add_style_class(lbl, "xpra-heading")
             lbl.set_margin_start(5)
             lbl.set_margin_top(2)
             lbl.set_margin_end(5)
@@ -94,10 +102,6 @@ class ShortcutInfo(Gtk.Window):
                 attach(action, 1)
                 row += 1
         vbox.pack_start(grid, False, True, 0)
-        vbox.set_margin_top(20)
-        vbox.set_margin_bottom(20)
-        vbox.set_margin_start(20)
-        vbox.set_margin_end(20)
         self.add(vbox)
 
 

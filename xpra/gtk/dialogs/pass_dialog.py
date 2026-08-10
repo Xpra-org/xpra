@@ -13,6 +13,7 @@ from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import add_style_class, style_button, style_dialog
 from xpra.platform.gui import force_focus
 
 Gtk = gi_import("Gtk")
@@ -27,7 +28,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
     def __init__(self, title="Title", prompt="", icon=""):
         check_main_thread()
         super().__init__()
-        self.set_border_width(20)
+        style_dialog(self, "password-dialog")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.connect("delete-event", self.quit)
         self.set_default_size(400, 150)
@@ -42,8 +43,9 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         vbox = self.get_content_area()
         vbox.set_spacing(10)
 
-        def al(text: str, font="sans 14", xalign=0) -> None:
-            lbl = label(text, font=font)
+        def al(text: str, xalign=0) -> None:
+            lbl = label(text)
+            add_style_class(lbl, "xpra-dialog-title")
             align = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
             align.add(lbl)
             vbox.add(align)
@@ -51,7 +53,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
 
         # window title is visible so this would be redundant:
         # al(title, "sans 18", 0.5)
-        al(prompt, "sans 14")
+        al(prompt)
         self.password_input = Gtk.Entry()
         self.password_input.set_max_length(255)
         self.password_input.set_width_chars(32)
@@ -61,9 +63,12 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         vbox.add(self.password_input)
 
         self.confirm_btn = self.add_button("Confirm", 0)
+        style_button(self.confirm_btn, primary=True)
         self.set_default(self.confirm_btn)
         self.set_focus(self.confirm_btn)
         self.cancel_btn = self.add_button("Cancel", 1)
+        style_button(self.cancel_btn)
+        style_dialog(self, "password-dialog")
 
     def show(self) -> None:
         log("PasswordInputDialogWindow.show()")

@@ -21,6 +21,9 @@ from xpra.util.stats import std_unit, std_unit_dec
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import (
+    add_style_class, style_actions, style_body, style_button, style_window,
+)
 from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.platform.gui import set_window_progress
 from xpra.platform.paths import get_download_dir
@@ -60,7 +63,7 @@ class OpenRequestsWindow:
         self.expire_labels = {}
         self.progress_bars = {}
         self.window = Gtk.Window()
-        self.window.set_border_width(20)
+        style_window(self.window, "transfers-dialog")
         self.window.connect("delete-event", self.close)
         self.window.set_default_size(400, 150)
         self.window.set_title("Transfers")
@@ -72,13 +75,15 @@ class OpenRequestsWindow:
 
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(10)
+        style_body(vbox)
 
         self.alignment = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
         vbox.pack_start(self.alignment, expand=True, fill=True)
 
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
-        vbox.pack_start(hbox)
+        style_actions(hbox)
+        vbox.pack_end(hbox, False, False, 0)
 
         def btn(text, callback, icon_name=None) -> None:
             b = self.btn(text, callback, icon_name)
@@ -102,6 +107,7 @@ class OpenRequestsWindow:
 
     def btn(self, text, callback, icon_name=None) -> Gtk.Button:
         btn = Gtk.Button(label=text)
+        style_button(btn)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.connect("clicked", callback)
@@ -141,18 +147,26 @@ class OpenRequestsWindow:
         now = monotonic()
         self.requests = [x for x in self.requests if x[-1] > now]
         if not self.requests:
-            self.contents = label("No requests pending", font="sans 18")
+            self.contents = label("No requests pending")
+            add_style_class(self.contents, "xpra-empty")
             self.alignment.add(self.contents)
             self.contents.show()
             return
         self.expire_labels = {}
         grid = Gtk.Grid()
+        grid.set_column_spacing(8)
+        grid.set_row_spacing(4)
+        add_style_class(grid, "xpra-card", "xpra-table")
 
         def l(s=""):  # noqa: E743
-            return label(s)
+            widget = label(s)
+            add_style_class(widget, "xpra-cell")
+            return widget
 
         for i, text in enumerate(("URL / Filename", "", "Expires in", "Action")):
-            grid.attach(l(text), i, 0, 1, 1)
+            heading = l(text)
+            add_style_class(heading, "xpra-heading")
+            grid.attach(heading, i, 0, 1, 1)
         row = 1
         for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
             details = ""

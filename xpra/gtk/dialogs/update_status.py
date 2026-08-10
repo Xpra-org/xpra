@@ -14,6 +14,9 @@ from xpra.platform.gui import init as gui_init, force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import (
+    add_style_class, style_actions, style_body, style_button, style_window,
+)
 from xpra.gtk.util import gtk_main
 from xpra.log import Logger, consume_verbose_argv
 from xpra.util.thread import check_main_thread
@@ -31,7 +34,7 @@ class UpdateStatusWindow:
     def __init__(self):
         check_main_thread()
         self.window = Gtk.Window()
-        self.window.set_border_width(20)
+        style_window(self.window, "update-status-dialog")
         self.window.connect("delete-event", self.close)
         self.window.set_default_size(400, 200)
         self.window.set_title(_("Xpra Version Check"))
@@ -42,21 +45,25 @@ class UpdateStatusWindow:
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
-        vbox.set_spacing(0)
+        vbox.set_spacing(12)
+        style_body(vbox)
 
         # Label:
         self.progress = 0
-        self.label = label(_("Version Check"), font="sans 14")
+        self.label = label(_("Version Check"))
+        add_style_class(self.label, "xpra-card", "xpra-dialog-title")
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         al.add(self.label)
         vbox.add(al)
 
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
-        vbox.pack_start(hbox)
+        style_actions(hbox)
+        vbox.pack_end(hbox, False, False, 0)
 
         def btn(label: str, tooltip: str, callback: Callable, icon_name: str = "") -> Gtk.Button:
             btn = Gtk.Button(label=label)
+            style_button(btn, primary=label == _("Download"))
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
             icon = get_icon_pixbuf(icon_name)

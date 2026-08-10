@@ -8,6 +8,9 @@ import sys
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import (
+    add_style_class, style_actions, style_body, style_button, style_window,
+)
 from xpra.gtk.util import gtk_main
 from xpra.util.glib import register_os_signals
 from xpra.os_util import gi_import
@@ -31,7 +34,7 @@ class AuthDialog(Gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)
         # pylint: disable=no-member
-        self.set_border_width(20)
+        style_window(self, "auth-dialog")
         icon = get_icon_pixbuf("authentication.png")
         if icon:
             self.set_icon(icon)
@@ -39,16 +42,20 @@ class AuthDialog(Gtk.Window):
         self.connect("delete_event", self.quit)
 
         self.vbox = Gtk.VBox(homogeneous=False, spacing=20)
+        style_body(self.vbox)
         self.add(self.vbox)
 
-        title_label = label(title, font="sans 14")
+        title_label = label(title)
+        add_style_class(title_label, "xpra-dialog-title")
         self.vbox.add(title_label)
 
-        info_label = label(info, font="sans 12")
+        info_label = label(info)
+        add_style_class(info_label, "xpra-card", "xpra-subtitle")
         self.vbox.add(info_label)
 
         if self.timeout > 0:
             self.timeout_label = label()
+            add_style_class(self.timeout_label, "xpra-countdown")
             self.update_timeout()
             self.vbox.add(self.timeout_label)
             GLib.timeout_add(1000, self.update_timeout)
@@ -57,9 +64,14 @@ class AuthDialog(Gtk.Window):
         al.set_margin_start(10)
         al.set_margin_end(10)
         hbox = Gtk.HBox(homogeneous=False, spacing=10)
+        style_actions(hbox)
         al.add(hbox)
-        hbox.add(self.btn("Cancel", Gtk.STOCK_NO, self.cancel))
-        hbox.add(self.btn("Accept", Gtk.STOCK_OK, self.accept))
+        cancel_btn = self.btn("Cancel", Gtk.STOCK_NO, self.cancel)
+        accept_btn = self.btn("Accept", Gtk.STOCK_OK, self.accept)
+        style_button(cancel_btn)
+        style_button(accept_btn, primary=True)
+        hbox.add(cancel_btn)
+        hbox.add(accept_btn)
         self.vbox.add(al)
 
         register_os_signals(self.app_signal, "Authentication Dialog")

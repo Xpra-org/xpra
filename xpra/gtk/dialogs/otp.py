@@ -8,6 +8,9 @@ import sys
 
 from xpra.exit_codes import ExitCode
 from xpra.gtk.css_overrides import add_screen_css
+from xpra.gtk.dialogs.common_style import (
+    add_style_class, load_common_style, style_actions, style_body, style_button, style_window,
+)
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.util import quit_on_signals, gtk_main
 from xpra.os_util import gi_import
@@ -24,29 +27,30 @@ log = Logger("auth")
 SHOW = envbool("XPRA_OTP_SHOW", True)
 
 CSS = b"""
-.otp {
+.otp-window .otp-code {
     font-family: 'monospace';
     font-size: 36px;
     padding: 12px 18px;
     border-radius: 10px;
-    background: rgba(255,255,255,0.03);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    border: 1px solid alpha(@theme_fg_color, 0.12);
+    background-color: alpha(@theme_fg_color, 0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-.muted {
-    color: rgba(255,255,255,0.7);
-}
-
-window {
-    background-image: linear-gradient(120deg, #0f172a, #0b1220);
-    color: #e6eef8;
-}
-
-button {
-    border-radius: 8px;
-    padding: 6px 10px;
+.otp-window progressbar {
+    margin-top: 4px;
 }
 """
+
+_css_loaded = False
+
+
+def load_otp_css() -> None:
+    global _css_loaded
+    if not _css_loaded:
+        load_common_style()
+        add_screen_css(CSS)
+        _css_loaded = True
 
 
 class OTPDialog(Gtk.Window):
@@ -54,27 +58,29 @@ class OTPDialog(Gtk.Window):
         check_main_thread()
         super().__init__(title="One-Time Password")
         self.set_default_size(420, 200)
-        self.set_border_width(12)
+        load_otp_css()
+        style_window(self, "otp-window")
         self.lifetime = lifetime
         self.remaining = lifetime
         self.otp = otp
         self.revealed = SHOW
 
-        add_screen_css(CSS)
         add_close_accel(self, Gtk.main_quit)
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        style_body(main_box)
         self.add(main_box)
 
         # Top title and subtitle
         title = Gtk.Label()
-        title.set_markup("<span size='xx-large' weight='bold'>Authentication code</span>")
+        title.set_text("Authentication code")
+        add_style_class(title, "xpra-dialog-title")
         title.set_halign(Gtk.Align.START)
         main_box.pack_start(title, False, False, 0)
 
         subtitle = Gtk.Label(label="Use this code to complete your sign-in.")
         subtitle.set_halign(Gtk.Align.START)
-        subtitle.get_style_context().add_class("muted")
+        add_style_class(subtitle, "xpra-subtitle")
         main_box.pack_start(subtitle, False, False, 0)
 
         # OTP display area
@@ -84,7 +90,7 @@ class OTPDialog(Gtk.Window):
 
         self.otp_label = Gtk.Label()
         self.otp_label.set_markup(self._masked_otp(self.otp))
-        self.otp_label.get_style_context().add_class("otp")
+        add_style_class(self.otp_label, "otp-code")
         self.otp_label.set_selectable(True)
         otp_box.pack_start(self.otp_label, True, True, 20)
 
@@ -93,6 +99,7 @@ class OTPDialog(Gtk.Window):
 
         # Reveal/hide toggle
         self.reveal_button = Gtk.Button()
+        style_button(self.reveal_button)
         self._set_reveal_icon()
         self.reveal_button.set_tooltip_text("Show code")
         self.reveal_button.connect("clicked", self.on_reveal_clicked)
@@ -101,6 +108,7 @@ class OTPDialog(Gtk.Window):
 
         # Copy button
         copy_button = Gtk.Button.new_from_icon_name("edit-copy", Gtk.IconSize.BUTTON)
+        style_button(copy_button)
         copy_button.set_tooltip_text("Copy code to clipboard")
         copy_button.connect("clicked", self.on_copy_clicked)
         copy_button.set_size_request(48, 48)
@@ -113,10 +121,11 @@ class OTPDialog(Gtk.Window):
 
         # Footer actions
         footer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        footer.set_halign(Gtk.Align.END)
+        style_actions(footer)
         main_box.pack_start(footer, False, False, 0)
 
         close_btn = Gtk.Button(label="Close")
+        style_button(close_btn)
         close_btn.connect("clicked", lambda w: self.close())
         footer.pack_start(close_btn, False, False, 0)
 
@@ -173,7 +182,7 @@ class OTPDialog(Gtk.Window):
         # subtly update otp label color if close to expiry
         if self.remaining <= 5:
             ctx = self.otp_label.get_style_context()
-            ctx.add_class("muted")
+            ctx.add_class("xpra-muted")
         return True
 
 

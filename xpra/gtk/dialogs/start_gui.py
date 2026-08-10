@@ -13,6 +13,9 @@ from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.common_style import (
+    add_style_class, style_actions, style_body, style_button, style_window,
+)
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.i18n import _
 from xpra.common import noop
@@ -81,6 +84,7 @@ def link_btn(link: str, text="", icon_name="question.png"):
 
     icon = get_icon_pixbuf(icon_name)
     btn = imagebutton("" if icon else _(text), icon, _(text), help_clicked, 12, False)
+    add_style_class(btn, "flat")
     return btn
 
 
@@ -99,7 +103,7 @@ class StartSession(Gtk.Window):
         self.options_window = None
         self.default_config = get_defaults()
         super().__init__()
-        self.set_border_width(20)
+        style_window(self, "start-session-dialog")
         self.set_title(_("Start Xpra Session"))
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_size_request(640, 300)
@@ -111,9 +115,11 @@ class StartSession(Gtk.Window):
 
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(10)
+        style_body(vbox)
 
         # choose the session type:
         hbox = Gtk.HBox(homogeneous=True, spacing=40)
+        add_style_class(hbox, "xpra-card")
 
         def rb(sibling=None, text="", cb: Callable = noop, tooltip_text="") -> Gtk.RadioButton:
             btn = Gtk.RadioButton.new_with_label_from_widget(sibling, _(text))
@@ -136,6 +142,7 @@ class StartSession(Gtk.Window):
         vbox.pack_start(Gtk.HSeparator(), True, False)
 
         options_box = Gtk.VBox(homogeneous=False, spacing=10)
+        add_style_class(options_box, "xpra-card")
         vbox.pack_start(options_box, True, False, 20)
         # select host:
         host_box = Gtk.HBox(homogeneous=True, spacing=20)
@@ -247,17 +254,20 @@ class StartSession(Gtk.Window):
             icon = get_icon_pixbuf(icon_name)
             ib = imagebutton("", icon=icon, tooltip=_(text or tooltip_text),
                              clicked_callback=cb, icon_size=32,
-                             label_font="sans 14")
+                             label_font="")
+            style_button(ib)
             hbox.pack_start(ib, True, False)
         options_box.pack_start(hbox, True, False)
 
         # Action buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
-        vbox.pack_start(hbox, False, True, 20)
+        style_actions(hbox)
+        vbox.pack_end(hbox, False, False, 0)
 
         def btn(text, tooltip, callback, default=False) -> Gtk.Button:
             ib = imagebutton(_(text), tooltip=_(tooltip), clicked_callback=callback, icon_size=32,
-                             default=default, label_font="sans 16")
+                             default=default)
+            style_button(ib, primary=default)
             hbox.pack_start(ib)
             return ib
 
@@ -675,10 +685,10 @@ class SessionOptions(Gtk.Window):
     def __init__(self, title, icon_name, options, run_mode, parent):
         check_main_thread()
         super().__init__()
+        style_window(self, "session-options-dialog")
         self.options = options
         self.run_mode = run_mode
         self.set_title(_(title))
-        self.set_border_width(20)
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
@@ -692,6 +702,7 @@ class SessionOptions(Gtk.Window):
             self.set_icon(icon)
 
         self.vbox = Gtk.VBox(homogeneous=False, spacing=0)
+        style_body(self.vbox)
         self.vbox.show()
         self.add(self.vbox)
         self.add_grid()
@@ -702,6 +713,9 @@ class SessionOptions(Gtk.Window):
 
     def add_grid(self) -> None:
         self.grid = Gtk.Grid()
+        self.grid.set_column_spacing(12)
+        self.grid.set_row_spacing(4)
+        add_style_class(self.grid, "xpra-card", "xpra-table")
         self.grid.show()
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(self.grid)
@@ -894,6 +908,7 @@ class SessionOptions(Gtk.Window):
 
     def attach_label(self, text: str, tooltip_text="", link="") -> None:
         lbl = label(text, tooltip=tooltip_text)
+        add_style_class(lbl, "xpra-heading", "xpra-cell")
         lbl.set_margin_start(5)
         lbl.set_margin_top(5)
         lbl.set_margin_end(5)

@@ -17,6 +17,9 @@ from xpra.util.objects import typedict, AdHocStruct
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
+from xpra.gtk.dialogs.common_style import (
+    add_style_class, style_actions, style_body, style_button, style_window,
+)
 from xpra.gtk.util import gtk_main
 from xpra.log import Logger, enable_debug_for
 from xpra.util.thread import check_main_thread
@@ -29,8 +32,7 @@ Gtk = gi_import("Gtk")
 
 def l5(s="") -> Gtk.Label:  # noqa: E743
     widget = label(s)
-    widget.set_margin_start(5)
-    widget.set_margin_end(5)
+    add_style_class(widget, "xpra-cell")
     return widget
 
 
@@ -71,7 +73,7 @@ class ServerCommandsWindow:
         self.commands_info = {}
         self.contents = None
         self.window = Gtk.Window()
-        self.window.set_border_width(20)
+        style_window(self.window, "server-commands-dialog")
         self.window.connect("delete-event", self.close)
         self.window.set_default_size(400, 150)
         self.window.set_title("Server Commands")
@@ -83,13 +85,15 @@ class ServerCommandsWindow:
 
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(10)
+        style_body(vbox)
 
         self.alignment = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
         vbox.pack_start(self.alignment, expand=True, fill=True)
 
         # Buttons:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
-        vbox.pack_start(hbox)
+        style_actions(hbox)
+        vbox.pack_end(hbox, False, False, 0)
 
         def btn(label: str, tooltip: str, callback: Callable, icon_name="") -> None:
             b = self.btn(label, tooltip, callback, icon_name)
@@ -124,6 +128,7 @@ class ServerCommandsWindow:
 
     def btn(self, label: str, tooltip: str, callback: Callable, icon_name="") -> Gtk.Button:
         btn = Gtk.Button(label=label)
+        style_button(btn)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
         btn.set_tooltip_text(tooltip)
@@ -141,12 +146,17 @@ class ServerCommandsWindow:
             if self.contents:
                 self.alignment.remove(self.contents)
             grid = Gtk.Grid()
+            grid.set_column_spacing(8)
+            grid.set_row_spacing(4)
+            add_style_class(grid, "xpra-card", "xpra-table")
             headers = ["", "PID", "Command", "Exit Code"]
             server_commands_signals = self.get_server_commands_signals()
             if server_commands_signals:
                 headers.append("Send Signal")
             for i, text in enumerate(headers):
-                grid.attach(l5(text), i, 0, 1, 1)
+                heading = l5(text)
+                add_style_class(heading, "xpra-heading")
+                grid.attach(heading, i, 0, 1, 1)
             for row, procinfo in enumerate(self.commands_info.values()):
                 if not isinstance(procinfo, dict):
                     continue
