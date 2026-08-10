@@ -30,6 +30,7 @@ ARCH="${ARCH:=$(arch)}"
 if [ "${ARCH}" == "i386" ]; then
 	ARCH="x86_64"
 fi
+HOST_ARCH=$(uname -m)
 NPROC=$(sysctl -n hw.logicalcpu)
 
 DO_TESTS="${DO_TESTS:-0}"
@@ -386,7 +387,15 @@ if [ "${DO_X11}" == "1" ]; then
   echo "- X11 libraries and binaries"
   mkdir "${FRAMEWORKS_DIR}/X11"
   mkdir "${FRAMEWORKS_DIR}/X11/bin"
-	for cmd in "Xvfb" "glxgears" "glxinfo" "oclock" "setxkbmap" "uxterm" "xauth" "xcalc" "xclock" "xdpyinfo" "xev" "xeyes" "xhost" "xkill" "xload" "xlsclients" "xmodmap" "xprop" "xrandr" "xrdb" "xset" "xterm" "xwininfo"; do
+	X11_COMMANDS=("Xvfb" "oclock" "setxkbmap" "uxterm" "xauth" "xcalc" "xclock" "xdpyinfo" "xev" "xeyes" "xhost" "xkill" "xload" "xlsclients" "xmodmap" "xprop" "xrandr" "xrdb" "xset" "xterm" "xwininfo")
+	# XQuartz still ships glxgears and glxinfo as x86_64-only binaries.
+	# On Apple Silicon they can't load the arm64 libGL / libX11 we bundle next to
+	# them, so they fail at dyld time - Rosetta doesn't help. Ship them again once
+	# the upstream macOS X11 tools builds are universal.
+	if [ "${HOST_ARCH}" != "arm64" ]; then
+		X11_COMMANDS+=("glxgears" "glxinfo")
+	fi
+	for cmd in "${X11_COMMANDS[@]}"; do
 		cp "/opt/X11/bin/${cmd}" "${FRAMEWORKS_DIR}/X11/bin"
 	done
 	mkdir "${FRAMEWORKS_DIR}/X11/lib"
@@ -396,6 +405,9 @@ if [ "${DO_X11}" == "1" ]; then
 	# We don't ship Xaw6 (no consumer in our X11 binary list), so the
 	# libXaw.6.dylib SONAME shim that rsync just dragged in dangles. Drop it.
 	rm -f "${FRAMEWORKS_DIR}/X11/lib/libXaw.6.dylib"
+	# Same for libXt.7: it is an x86_64 / i386-only compat stub in XQuartz with no
+	# arm64 slice, and nothing we ship links it (they all use libXt.6).
+	rm -f "${FRAMEWORKS_DIR}/X11/lib/libXt.7.dylib"
 	mkdir "${FRAMEWORKS_DIR}/X11/lib/dri"
 	cp "/opt/X11/lib/dri/"* "${FRAMEWORKS_DIR}/X11/lib/dri/"
 	# Strip XQuartz's Apple Developer ID signatures upfront. install_name_tool
@@ -508,7 +520,6 @@ for dylib in *.dylib; do
 done
 
 if [ "${DO_X11}" == "1" ]; then
-  HOST_ARCH=$(uname -m)
   echo "  X11 (host arch: ${HOST_ARCH})"
   # /opt/X11 ships universal binaries; the rest of the bundle is host-arch only.
   # Strip the foreign slice so codesign doesn't have to manage two slices, and so
