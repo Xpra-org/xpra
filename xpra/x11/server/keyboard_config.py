@@ -441,7 +441,9 @@ class KeyboardConfig(KeyboardConfigBase):
                     # if the client does not provide a full native keymap with all the keycodes,
                     # try to preserve the initial server keycodes and translate the client keycodes instead:
                     # (used by non X11 clients like osx,win32 or HTML5)
-                    self.keycode_translation.update(set_keycode_translation(self.x11_keycodes, self.keycodes))
+                    # (do not merge with the previous translation table:
+                    # `do_set_keymap` has just replaced the keymap it was built from)
+                    self.keycode_translation = set_keycode_translation(self.x11_keycodes, self.keycodes)
                 else:
                     self.keycode_translation = {}
                 self.map_all_keynames()
