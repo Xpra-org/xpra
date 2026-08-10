@@ -196,18 +196,18 @@ DEF BU = 115999     #1.77     * 2**16
 DEF BV = 0
 
 
-cdef inline unsigned char clamp(const long v) nogil:
-    if v<=0:
+cdef inline unsigned char clamp(const long value) nogil:
+    if value<=0:
         return 0
-    #v += 2**15
+    cdef long v = value + 2**15
     if v>=MAX_CLAMP:
         return 0xff         #2**8-1
     return <unsigned char> (v>>16)
 
-cdef inline unsigned short clamp10(const long v) nogil:
-    if v<=0:
+cdef inline unsigned short clamp10(const long value) nogil:
+    if value<=0:
         return 0
-    #v += 2**15
+    cdef long v = value + 2**15
     if v>=MAX_CLAMP10:
         return 0x3ff        #2**10-1
     return <unsigned short> (v>>16)
