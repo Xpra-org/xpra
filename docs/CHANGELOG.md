@@ -49,6 +49,7 @@
   * [send multiple formats per message](https://github.com/Xpra-org/xpra/issues/4228)
   * [macOS support for more images, PDF, etc](https://github.com/Xpra-org/xpra/issues/2807)
 * ✨ Features:
+  * [audio available signal](https://github.com/Xpra-org/xpra/issues/2325)
   * [native `pipewire` frame capture](https://github.com/Xpra-org/xpra/issues/4937)
   * [remove GStreamer video codecs](https://github.com/Xpra-org/xpra/issues/4936)
   * [gsettings synchronization](https://github.com/Xpra-org/xpra/issues/3683)
@@ -61,6 +62,7 @@
   * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256) [including rate control](https://github.com/Xpra-org/xpra/issues/1949)
   * [basic bash shell completion](https://github.com/Xpra-org/xpra/issues/2375)
   * [Wayland scaled subsurfaces](https://github.com/Xpra-org/xpra/issues/4878)
+  * [monitor relative coordinates](https://github.com/Xpra-org/xpra/issues/4971)
   * [per-client readonly sessions](https://github.com/Xpra-org/xpra/issues/3468)
   * [client-server "loopback" tests](https://github.com/Xpra-org/xpra/issues/2357)
   * [improved test coverage](https://github.com/Xpra-org/xpra/issues/2873)
