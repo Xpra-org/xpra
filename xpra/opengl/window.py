@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.util.objects import AtomicInteger, typedict
 from xpra.util.env import envint, numpy_import_context
-from xpra.os_util import WIN32, POSIX, gi_import
+from xpra.os_util import POSIX, gi_import
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
@@ -141,9 +141,15 @@ def test_gl_client_window(gl_client_window_class: Callable,
         from xpra.client.gui.window_border import WindowBorder
         border = WindowBorder()
         noclient = FakeClient()
-        # test with alpha, but not on win32
-        # because we can't do alpha on win32 with opengl
-        metadata = typedict({"has-alpha": not WIN32})
+        metadata = typedict({
+            # test with alpha on every platform: win32 does support it after all,
+            # the native backend through DWM composition and gtk3 through an RGBA visual
+            "has-alpha": True,
+            # this window is positioned deliberately - offscreen unless `show` -
+            # so backends that would otherwise leave the placement to the window
+            # manager (ie: `CW_USEDEFAULT` on win32) must honour these coordinates:
+            "set-initial-position": True,
+        })
 
         class NoHeaderGLClientWindow(gl_client_window_class):
 
