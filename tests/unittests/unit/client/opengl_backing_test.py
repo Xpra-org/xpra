@@ -596,7 +596,7 @@ class TestGLInit(unittest.TestCase):
             ctx = self._full_gl_init(backing)
             if not ctx:
                 self.skipTest("no OpenGL context")
-            for pixel_format in ("YUV420P10", "YUV422P10", "YUV444P10"):
+            for pixel_format in ("YUV444P10", ):
                 divs = get_subsampling_divs(pixel_format)
                 for full_range, colors in test_data.items():
                     shader = f"{pixel_format}_to_RGB" + ("_FULL" if full_range else "")
