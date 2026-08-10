@@ -132,10 +132,12 @@ def test_gl_client_window(gl_client_window_class: Callable,
     draw_result: dict[str, int | bool | str] = {}
     window = None
     try:
-        x, y = -100, -100
+        ww, wh = 250, 250
+        # far enough offscreen that the whole window clears the screen,
+        # for any backend that ends up mapping it:
+        x, y = -500, -500
         if show:
             x, y = 100, 100
-        ww, wh = 250, 250
         from xpra.codecs.loader import load_codec
         load_codec("dec_pillow")
         from xpra.client.gui.window_border import WindowBorder
