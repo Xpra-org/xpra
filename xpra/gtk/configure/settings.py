@@ -3,8 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.configure.common import run_gui
+from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
+from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.config import update_config_attribute, with_config
 from xpra.gtk.widget import label as gtk_label
@@ -50,7 +50,7 @@ def plabel(text, tooltip="", sensitive=False, font="sans 12") -> Gtk.Label:
     return lbl
 
 
-class ConfigureGUI(BaseGUIWindow):
+class ConfigureGUI(ConfigureGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
         self.settings_combos: dict[str, Gtk.ComboBoxText] = {}
@@ -65,19 +65,20 @@ class ConfigureGUI(BaseGUIWindow):
 
     def populate(self) -> None:
         self.clear_vbox()
-        self.add_widget(label("Configure Xpra Settings", font="sans 20"))
-        self.add_text_lines((
-            "",
-        ))
         grid = Gtk.Grid()
-        grid.set_margin_start(20)
-        grid.set_margin_end(20)
+        add_style_class(grid, "xpra-card", "configure-grid")
+        grid.set_column_spacing(12)
+        grid.set_row_spacing(4)
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(False)
         self.add_widget(grid)
         for i, (name, description, setting, options) in enumerate(SETTINGS):
-            grid.attach(plabel(name, "", True), 0, i, 1, 1)
-            grid.attach(plabel(description, "", True, font="sans 10"), 1, i, 1, 1)
+            name_label = plabel(name, "", True)
+            add_style_class(name_label, "configure-label")
+            grid.attach(name_label, 0, i, 1, 1)
+            description_label = plabel(description, "", True, font="sans 10")
+            add_style_class(description_label, "configure-description")
+            grid.attach(description_label, 1, i, 1, 1)
             combo = Gtk.ComboBoxText()
             grid.attach(combo, 2, i, 1, 1)
             self.settings_combos[setting] = (combo, options)

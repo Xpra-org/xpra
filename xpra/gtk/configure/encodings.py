@@ -3,8 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.configure.common import run_gui
+from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
+from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.gtk.info import get_average_monitor_refresh_rate
 from xpra.util.config import update_config_attribute, with_config
 from xpra.gtk.widget import label as gtk_label
@@ -57,7 +57,7 @@ RANGE_OPTIONS: dict[int, str] = {
 }
 
 
-class ConfigureGUI(BaseGUIWindow):
+class ConfigureGUI(ConfigureGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
         super().__init__(
@@ -74,7 +74,6 @@ class ConfigureGUI(BaseGUIWindow):
 
     def do_populate(self, config) -> bool:
         self.clear_vbox()
-        self.add_widget(label("Configure Xpra's Picture Compression", font="sans 20"))
         url = "https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Encodings.md#tuning"
         self.add_text_lines((
             _("Please read <a href='%s'>the documentation</a>.") % url,
@@ -84,8 +83,12 @@ class ConfigureGUI(BaseGUIWindow):
         text = _("Framerate (Hz)")
         if rate > 0:
             text += _(" (default: %s)") % rate
-        self.add_widget(label(text, font="Sans 14"))
-        self.add_widget(label("Lowering the framerate saves bandwidth and CPU time"))
+        heading = label(text)
+        add_style_class(heading, "configure-section-title")
+        self.add_widget(heading)
+        description = label("Lowering the framerate saves bandwidth and CPU time")
+        add_style_class(description, "xpra-muted")
+        self.add_widget(description)
         framerate_combo = Gtk.ComboBoxText()
         index = 0
         for rate, setting in FRAMERATES.items():
@@ -96,20 +99,32 @@ class ConfigureGUI(BaseGUIWindow):
         framerate_combo.connect("changed", self.framerate_changed)
         self.add_widget(framerate_combo)
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
-        self.add_widget(label("Minimum Speed (percentage)", font="Sans 14"))
-        self.add_widget(label("Increasing the speed costs bandwidth and CPU time"))
+        heading = label("Minimum Speed (percentage)")
+        add_style_class(heading, "configure-section-title")
+        self.add_widget(heading)
+        description = label("Increasing the speed costs bandwidth and CPU time")
+        add_style_class(description, "xpra-muted")
+        self.add_widget(description)
         scale = make_scale(adj1_100(config.min_speed), RANGE_OPTIONS)
         scale.connect("value-changed", self.speed_changed)
         self.add_widget(scale)
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
-        self.add_widget(label("Minimum Quality (percentage)", font="Sans 14"))
-        self.add_widget(label("Increasing the quality costs bandwidth, CPU time and may also increase the latency"))
+        heading = label("Minimum Quality (percentage)")
+        add_style_class(heading, "configure-section-title")
+        self.add_widget(heading)
+        description = label("Increasing the quality costs bandwidth, CPU time and may also increase the latency")
+        add_style_class(description, "xpra-muted")
+        self.add_widget(description)
         scale = make_scale(adj1_100(config.min_quality), RANGE_OPTIONS)
         scale.connect("value-changed", self.quality_changed)
         self.add_widget(scale)
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
-        self.add_widget(label("Auto Refresh Delay (milliseconds)", font="Sans 14"))
-        self.add_widget(label("Longer delays may become noticeable but save bandwidth"))
+        heading = label("Auto Refresh Delay (milliseconds)")
+        add_style_class(heading, "configure-section-title")
+        self.add_widget(heading)
+        description = label("Longer delays may become noticeable but save bandwidth")
+        add_style_class(description, "xpra-muted")
+        self.add_widget(description)
         adjust = Gtk.Adjustment(value=round(config.auto_refresh_delay * 1000), lower=0, upper=1000,
                                 step_increment=50, page_increment=0, page_size=0)
         scale = make_scale(adjust, {
@@ -122,19 +137,21 @@ class ConfigureGUI(BaseGUIWindow):
         self.add_widget(scale)
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
         grid = Gtk.Grid()
-        grid.set_margin_start(40)
-        grid.set_margin_end(40)
+        add_style_class(grid, "xpra-card", "configure-grid")
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(False)
         self.add_widget(grid)
         switch = Gtk.Switch()
         switch.set_state(config.encoding == "grayscale")
         switch.connect("state-set", self.toggle_grayscale)
-        lbl = label("Grayscale Mode", font="Sans 14")
+        lbl = label("Grayscale Mode")
+        add_style_class(lbl, "configure-label")
         lbl.set_hexpand(True)
         grid.attach(lbl, 0, 0, 1, 1)
         grid.attach(switch, 1, 0, 1, 1)
-        self.add_widget(label("Grayscale mode may save a little bandwidth and CPU time"))
+        description = label("Grayscale mode may save a little bandwidth and CPU time")
+        add_style_class(description, "xpra-muted")
+        self.add_widget(description)
         self.show_all()
         return False
 

@@ -14,8 +14,7 @@ from xpra.codecs.loader import load_codec
 from xpra.util.objects import typedict
 from xpra.platform.paths import get_image, get_image_dir
 from xpra.util.io import load_binary_file
-from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.configure.common import sync, run_gui
+from xpra.gtk.configure.common import ConfigureGUIWindow, sync, run_gui
 from xpra.util.config import get_user_config_file, parse_user_config_file, save_user_config_file
 from xpra.log import Logger
 
@@ -162,7 +161,7 @@ def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[G
     return opengl_props, windows
 
 
-class ConfigureGUI(BaseGUIWindow):
+class ConfigureGUI(ConfigureGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
         self.opengl_props = {}

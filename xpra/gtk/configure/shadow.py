@@ -6,9 +6,9 @@
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.gtk.configure.common import run_gui
+from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
 from xpra.util.config import update_config_env, get_config_env
-from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
+from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.gtk.widget import label as gtk_label, setfont
 from xpra.util.i18n import _
 from xpra.log import Logger
@@ -73,7 +73,7 @@ def _set_labels_text(widgets, *messages):
             widget.set_text("")
 
 
-class ConfigureGUI(BaseGUIWindow):
+class ConfigureGUI(ConfigureGUIWindow):
 
     # so we can call check_xshm()
     from xpra.util.system import is_Wayland
@@ -100,7 +100,6 @@ class ConfigureGUI(BaseGUIWindow):
     def populate(self) -> None:
         self.clear_vbox()
         self.set_box_margin()
-        self.add_widget(label("Configure Xpra's Shadow Server", font="sans 20"))
         current_setting = get_config_env("XPRA_SHADOW_BACKEND")
         from xpra.platform.shadow_server import SHADOW_OPTIONS
         for backend, check in SHADOW_OPTIONS.items():
@@ -128,22 +127,28 @@ class ConfigureGUI(BaseGUIWindow):
             btn.set_active(available and backend == current_setting)
             btn.shadow_backend = backend
             setfont(btn, font="sans 14")
+            add_style_class(btn, "configure-option")
             self.vbox.add(btn)
             for detail in details[1:]:
                 lbl = label(detail)
                 lbl.set_halign(Gtk.Align.START)
                 lbl.set_margin_start(32)
                 lbl.set_sensitive(available)
+                add_style_class(lbl, "configure-detail")
                 self.vbox.add(lbl)
             self.buttons.append(btn)
         btn_box = Gtk.HBox(homogeneous=True, spacing=40)
         btn_box.set_vexpand(True)
         btn_box.set_valign(Gtk.Align.END)
+        btn_box.set_halign(Gtk.Align.END)
+        add_style_class(btn_box, "xpra-actions")
         self.vbox.add(btn_box)
         cancel_btn = Gtk.Button.new_with_label(_("Cancel"))
+        add_style_class(cancel_btn, "xpra-action")
         cancel_btn.connect("clicked", self.dismiss)
         btn_box.add(cancel_btn)
         confirm_btn = Gtk.Button.new_with_label(_("Confirm"))
+        add_style_class(confirm_btn, "xpra-action", "suggested-action")
         confirm_btn.connect("clicked", self.save_shadow)
         confirm_btn.set_sensitive(False)
         btn_box.add(confirm_btn)

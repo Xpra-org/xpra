@@ -5,11 +5,10 @@
 
 from typing import Sequence
 
-from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.configure.common import run_gui
+from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
+from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.util.config import parse_user_config_file, save_user_config_file, with_config
 from xpra.gtk.dialogs.debug import make_category_widgets
-from xpra.gtk.widget import label
 from xpra.os_util import gi_import
 from xpra.log import Logger, STRUCT_KNOWN_FILTERS, KNOWN_FILTERS
 
@@ -46,7 +45,7 @@ def category_toggled(btn, category: str) -> None:
     save_user_config_file(config)
 
 
-class ConfigureGUI(BaseGUIWindow):
+class ConfigureGUI(ConfigureGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
         self.category_widgets = {}
@@ -61,9 +60,9 @@ class ConfigureGUI(BaseGUIWindow):
 
     def populate(self) -> None:
         self.clear_vbox()
-        self.add_widget(label("Configure Xpra's Debug Logging", font="sans 20"))
         vbox = Gtk.VBox(homogeneous=False, spacing=0)
         vbox.set_spacing(15)
+        add_style_class(vbox, "xpra-card", "configure-grid")
         expanders, widgets = make_category_widgets(groups=STRUCT_KNOWN_FILTERS, enabled=set(), sensitive=False,
                                                    toggled=category_toggled)
         self.category_widgets = widgets

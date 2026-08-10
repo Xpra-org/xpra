@@ -11,7 +11,8 @@ from xpra.os_util import gi_import, getuid
 from xpra.util.system import is_distribution_variant
 from xpra.util.thread import start_thread
 from xpra.util.io import get_status_output, which
-from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
+from xpra.gtk.configure.common import ConfigureGUIWindow
+from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.gtk.widget import label as gtk_label
 from xpra.util.i18n import _
 from xpra.log import Logger
@@ -50,7 +51,7 @@ def get_terminal() -> str:
     return ""
 
 
-class ConfigureGUI(BaseGUIWindow):
+class ConfigureGUI(ConfigureGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
         self.terminal = get_terminal()
@@ -71,7 +72,6 @@ class ConfigureGUI(BaseGUIWindow):
 
     def populate(self) -> None:
         self.clear_vbox()
-        self.add_widget(label("Install or remove xpra packages", font="sans 20"))
 
         def fail(messages: Iterable[str]) -> None:
             self.populate_form(tuple(_(x) for x in messages), (_("Exit"), self.dismiss))
@@ -126,11 +126,13 @@ class ConfigureGUI(BaseGUIWindow):
         lbl = label(text, font="Sans 14")
         lbl.set_line_wrap(True)
         lbl.set_use_markup(True)
+        lbl.set_halign(Gtk.Align.START)
+        add_style_class(lbl, "xpra-card", "xpra-subtitle", "configure-intro")
         self.add_widget(lbl)
 
         grid = Gtk.Grid()
-        grid.set_margin_start(40)
-        grid.set_margin_end(40)
+        add_style_class(grid, "xpra-card", "configure-grid")
+        grid.set_row_spacing(3)
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(False)
         self.add_widget(grid)
@@ -151,6 +153,7 @@ class ConfigureGUI(BaseGUIWindow):
             pkg = package.lower().replace(" ", "-")
             lbl = label(_(package), tooltip=_(description))
             lbl.set_hexpand(True)
+            add_style_class(lbl, "configure-label")
             # this causes the Switch to be displayed wrong!
             # lbl.set_halign(Gtk.Align.START)
             grid.attach(lbl, 0, i, 1, 1)
@@ -163,6 +166,7 @@ class ConfigureGUI(BaseGUIWindow):
             (_("Exit"), self.dismiss),
             (_("Apply"), self.apply),
         )[1]
+        self.apply_button.get_style_context().add_class("suggested-action")
         self.apply_button.set_sensitive(False)
 
         self.show_all()

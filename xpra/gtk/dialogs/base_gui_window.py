@@ -13,6 +13,7 @@ from xpra.gtk.window import add_close_accel, add_window_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.dialogs.util import hb_button, nearest_icon_size
+from xpra.gtk.dialogs.common_style import add_style_class, load_common_style
 from xpra.os_util import gi_import, WIN32
 from xpra.util.env import IgnoreWarningsContext
 from xpra.exit_codes import exit_str
@@ -47,14 +48,19 @@ class BaseGUIWindow(Gtk.Window):
                  default_size=(640, 300),
                  header_bar=(True, True, False),
                  parent: Gtk.Window | None = None,
+                 style_class="",
                  ):
         check_main_thread()
         self.exit_code = 0
+        self.style_class = style_class
         super().__init__()
+        self.set_title(title)
+        if style_class:
+            load_common_style()
+            add_style_class(self, "xpra-styled-window", style_class)
         if header_bar:
             self.add_headerbar(*header_bar)
-        self.set_title(title)
-        self.set_border_width(10)
+        self.set_border_width(0 if style_class else 10)
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_position(Gtk.WindowPosition.CENTER)
@@ -74,6 +80,8 @@ class BaseGUIWindow(Gtk.Window):
         with IgnoreWarningsContext():
             self.set_wmclass(*wm_class)
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
+        if style_class:
+            add_style_class(self.vbox, "xpra-body")
         self.set_box_margin()
         self.vbox.set_vexpand(True)
         self.add(self.vbox)
@@ -84,6 +92,8 @@ class BaseGUIWindow(Gtk.Window):
         self.connect("focus-out-event", self.focus_out)
 
     def set_box_margin(self, start=40, end=40, top=0, bottom=20) -> None:
+        if self.style_class:
+            start = end = top = bottom = 0
         self.vbox.set_margin_start(start)
         self.vbox.set_margin_end(end)
         self.vbox.set_margin_top(top)
@@ -95,7 +105,8 @@ class BaseGUIWindow(Gtk.Window):
 
     def populate_form(self, lines: Iterable[str] = (), *buttons) -> None:
         self.clear_vbox()
-        self.add_widget(label(self.get_title(), font="sans 20"))
+        if not self.style_class:
+            self.add_widget(label(self.get_title(), font="sans 20"))
         self.add_text_lines(lines)
         self.add_buttons(*buttons)
 
@@ -104,18 +115,30 @@ class BaseGUIWindow(Gtk.Window):
         lbl = label(text, font=font)
         lbl.set_line_wrap(True)
         lbl.set_use_markup(True)
+        if self.style_class:
+            lbl.set_halign(Gtk.Align.START)
+            lbl.set_justify(Gtk.Justification.LEFT)
+            add_style_class(lbl, "xpra-card", "xpra-subtitle")
         self.add_widget(lbl)
 
     def add_buttons(self, *buttons) -> list[Gtk.Button]:
         hbox = Gtk.HBox()
         hbox.set_vexpand(False)
-        self.add_widget(hbox)
+        if self.style_class:
+            hbox.set_spacing(10)
+            hbox.set_halign(Gtk.Align.END)
+            add_style_class(hbox, "xpra-actions")
+            self.vbox.pack_end(hbox, False, False, 0)
+        else:
+            self.add_widget(hbox)
         btnlist: list[Gtk.Button] = []
         for button_label, callback in buttons:
             btn = Gtk.Button.new_with_label(button_label)
             btn.connect("clicked", callback)
+            if self.style_class:
+                add_style_class(btn, "xpra-action")
             btnlist.append(btn)
-            hbox.pack_start(btn, True, True)
+            hbox.pack_start(btn, not self.style_class, not self.style_class)
         self.show_all()
         return btnlist
 
@@ -127,7 +150,7 @@ class BaseGUIWindow(Gtk.Window):
         log("add_headerbar%s", (about, toolbox, configure))
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
-        hb.props.title = "Xpra"
+        hb.props.title = self.get_title() if self.style_class else "Xpra"
 
         # fixup the icon size when the window headerbar is bigger than expected:
         fixed_size = [0]
@@ -136,6 +159,8 @@ class BaseGUIWindow(Gtk.Window):
         def add_hb_button(*args) -> None:
             size = fixed_size[0] or 32
             btn = hb_button(*args, size=size)
+            if self.style_class:
+                add_style_class(btn, "flat")
             hb_buttons.append(btn)
             hb.add(btn)
 
@@ -205,14 +230,16 @@ class BaseGUIWindow(Gtk.Window):
         self.set_titlebar(hb)
 
     def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable = noop, sensitive=True) -> Gtk.Button:
-        label_font = "sans 16"
+        label_font = "" if self.style_class else "sans 16"
         icon = get_icon_pixbuf(icon_name)
         btn = imagebutton(
             title=title, icon=icon,
             tooltip=tooltip, clicked_callback=callback,
-            icon_size=48, label_font=label_font,
+            icon_size=36 if self.style_class else 48, label_font=label_font,
         )
         btn.set_sensitive(sensitive)
+        if self.style_class:
+            add_style_class(btn, "xpra-action", "xpra-nav-button")
         self.add_widget(btn)
         return btn
 

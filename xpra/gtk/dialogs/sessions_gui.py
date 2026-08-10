@@ -16,6 +16,7 @@ from xpra.exit_codes import exit_str
 from xpra.scripts.config import OPTION_TYPES
 from xpra.scripts.args import get_command_args
 from xpra.gtk.css_overrides import add_screen_css
+from xpra.gtk.dialogs.common_style import add_style_class, load_common_style
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -38,36 +39,6 @@ Gio = gi_import("Gio")
 log = Logger("client", "util")
 
 CSS = b"""
-window.sessions-window {
-    background-color: @theme_bg_color;
-}
-
-.sessions-window headerbar {
-    min-height: 38px;
-    padding: 4px 8px;
-    margin: 0;
-}
-
-.sessions-window headerbar button {
-    min-width: 28px;
-    min-height: 28px;
-    padding: 2px 6px;
-    border-radius: 7px;
-}
-
-.sessions-window .sessions-body {
-    padding: 20px;
-}
-
-.sessions-window .sessions-toolbar,
-.sessions-window .sessions-grid {
-    padding: 10px 14px;
-    border: 1px solid alpha(@theme_fg_color, 0.12);
-    border-radius: 10px;
-    background-color: alpha(@theme_fg_color, 0.04);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
 .sessions-window .sessions-toolbar entry {
     min-height: 30px;
     padding: 3px 8px;
@@ -76,8 +47,6 @@ window.sessions-window {
 
 .sessions-window .session-heading {
     padding: 4px 6px 8px 6px;
-    color: alpha(@theme_fg_color, 0.68);
-    font-weight: 600;
 }
 
 .sessions-window .session-cell,
@@ -90,24 +59,6 @@ window.sessions-window {
     font-family: monospace;
 }
 
-.sessions-window .session-action {
-    min-height: 30px;
-    padding: 5px 10px;
-    border-radius: 8px;
-}
-
-.sessions-window .sessions-warning {
-    padding: 8px 12px;
-    border-radius: 8px;
-    color: #ffffff;
-    background-color: #c01c28;
-}
-
-.sessions-window .sessions-empty {
-    padding: 36px 24px;
-    color: alpha(@theme_fg_color, 0.68);
-    font-size: 1.1em;
-}
 """
 
 _css_loaded = False
@@ -116,6 +67,7 @@ _css_loaded = False
 def load_sessions_css() -> None:
     global _css_loaded
     if not _css_loaded:
+        load_common_style()
         add_screen_css(CSS)
         _css_loaded = True
 
@@ -177,7 +129,7 @@ class SessionsGUI(Gtk.Window):
         check_main_thread()
         super().__init__()
         load_sessions_css()
-        self.get_style_context().add_class("sessions-window")
+        add_style_class(self, "xpra-styled-window", "sessions-window")
         title = _(title)
         self.options = options
         self.exit_code = ExitCode.OK
@@ -209,17 +161,17 @@ class SessionsGUI(Gtk.Window):
         self.clients_disconnecting = set()
 
         self.vbox = Gtk.VBox(homogeneous=False, spacing=14)
-        self.vbox.get_style_context().add_class("sessions-body")
+        add_style_class(self.vbox, "xpra-body", "sessions-body")
         self.add(self.vbox)
 
         self.warning = label("")
-        self.warning.get_style_context().add_class("sessions-warning")
+        add_style_class(self.warning, "xpra-warning", "sessions-warning")
         self.warning.set_no_show_all(True)
         self.vbox.add(self.warning)
 
         self.password_box = Gtk.HBox(homogeneous=False, spacing=10)
         self.password_box.set_halign(Gtk.Align.CENTER)
-        self.password_box.get_style_context().add_class("sessions-toolbar")
+        add_style_class(self.password_box, "xpra-card", "sessions-toolbar")
         self.password_label = label(_("Password:"))
         al = Gtk.Alignment(xalign=1, yalign=0.5)
         al.add(self.password_label)
@@ -374,7 +326,7 @@ class SessionsGUI(Gtk.Window):
             self.contents = None
         if not self.endpoints:
             self.contents = label(_("No sessions found"))
-            self.contents.get_style_context().add_class("sessions-empty")
+            add_style_class(self.contents, "xpra-empty", "sessions-empty")
             self.vbox.add(self.contents)
             self.contents.show()
             self.set_size_request(440, 200)
@@ -386,7 +338,7 @@ class SessionsGUI(Gtk.Window):
         grid.set_column_spacing(8)
         grid.set_row_spacing(4)
         grid.set_hexpand(True)
-        grid.get_style_context().add_class("sessions-grid")
+        add_style_class(grid, "xpra-card", "sessions-grid")
 
         def l(s="", style_class="session-cell") -> Gtk.Label:  # noqa: E743
             widget = label(s)
@@ -395,7 +347,9 @@ class SessionsGUI(Gtk.Window):
             return widget
 
         for i, text in enumerate(_(x) for x in ("Host", "Display", "Name", "Icon", "Type", "URI", "Connect", "Open in Browser")):
-            grid.attach(l(text, "session-heading"), i, 1, 1, 1)
+            heading = l(text, "session-heading")
+            heading.get_style_context().add_class("xpra-heading")
+            grid.attach(heading, i, 1, 1, 1)
         row = 2
         for key, session in group_session_endpoints(self.endpoints).items():
             if isinstance(key, tuple):
@@ -420,8 +374,8 @@ class SessionsGUI(Gtk.Window):
             w, c, b = self.make_connect_widgets(session)
             pwidget.get_style_context().add_class("session-icon")
             w.get_style_context().add_class("session-uri")
-            c.get_style_context().add_class("session-action")
-            b.get_style_context().add_class("session-action")
+            add_style_class(c, "xpra-action", "session-action")
+            add_style_class(b, "xpra-action", "session-action")
             widgets = (
                 host_label,
                 l(session.display),

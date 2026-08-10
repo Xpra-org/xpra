@@ -3,10 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.parsing import str_to_bool
-from xpra.gtk.configure.common import run_gui
+from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
+from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.util.config import update_config_attribute, with_config
 from xpra.gtk.widget import label as gtk_label
 from xpra.util.i18n import _
@@ -48,7 +48,7 @@ def plabel(text, tooltip="", sensitive=False, font="sans 12") -> Gtk.Label:
     return lbl
 
 
-class ConfigureGUI(BaseGUIWindow):
+class ConfigureGUI(ConfigureGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
         self.subsystem_switch: dict[str, Gtk.Switch] = {}
@@ -63,7 +63,6 @@ class ConfigureGUI(BaseGUIWindow):
 
     def populate(self) -> None:
         self.clear_vbox()
-        self.add_widget(label("Configure Xpra's Features", font="sans 20"))
         self.add_text_lines((
             "Turning off subsystems can save memory,",
             "improve security by reducing the attack surface,",
@@ -72,8 +71,9 @@ class ConfigureGUI(BaseGUIWindow):
         ))
 
         grid = Gtk.Grid()
-        grid.set_margin_start(20)
-        grid.set_margin_end(20)
+        add_style_class(grid, "xpra-card", "configure-grid")
+        grid.set_column_spacing(10)
+        grid.set_row_spacing(2)
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(False)
         self.add_widget(grid)
@@ -82,6 +82,7 @@ class ConfigureGUI(BaseGUIWindow):
             icon = get_icon_pixbuf(icon_name)
             if icon:
                 image = Gtk.Image.new_from_pixbuf(icon)
+                add_style_class(image, "configure-icon")
                 grid.attach(image, 0, i, 1, 1)
             import importlib
             try:
@@ -90,8 +91,12 @@ class ConfigureGUI(BaseGUIWindow):
             except ImportError as e:
                 found = False
                 tooltip = _("this feature is missing: %s") % e
-            grid.attach(plabel(subsystem, tooltip, found), 1, i, 1, 1)
-            grid.attach(plabel(description, tooltip, found, font="sans 10"), 2, i, 1, 1)
+            name_label = plabel(subsystem, tooltip, found)
+            add_style_class(name_label, "configure-label")
+            grid.attach(name_label, 1, i, 1, 1)
+            description_label = plabel(description, tooltip, found, font="sans 10")
+            add_style_class(description_label, "configure-description")
+            grid.attach(description_label, 2, i, 1, 1)
             switch = Gtk.Switch()
             switch.set_sensitive(False)
             grid.attach(switch, 3, i, 1, 1)

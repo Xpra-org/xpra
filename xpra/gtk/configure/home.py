@@ -6,41 +6,37 @@
 from importlib import import_module
 from importlib.util import find_spec
 
-from xpra.gtk.configure.common import run_gui
-from xpra.os_util import LINUX, POSIX, OSX
+from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
+from xpra.os_util import LINUX, POSIX, OSX, gi_import
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.css_overrides import add_screen_css
+from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.gtk.widget import label as gtk_label
 from xpra.util.i18n import _
 
-
-CSS = b"""
-button {
-    border-radius: 10px;
-}
-"""
+Gtk = gi_import("Gtk")
 
 
 def label(text, *args, **kwargs):
     return gtk_label(_(text), *args, **kwargs)
 
 
-class HomeGUI(BaseGUIWindow):
+class HomeGUI(ConfigureGUIWindow):
 
     def __init__(self):
-        add_screen_css(CSS)
         super().__init__(
             _("Configure Xpra"),
             "toolbox.png",
             wm_class=("xpra-configure-gui", "Xpra Configure GUI"),
-            default_size=(480, 300),
+            default_size=(520, 600),
             header_bar=(False, False),
         )
         self.dialogs: dict[str, BaseGUIWindow] = {}
 
     def populate(self) -> None:
-        self.vbox.add(label("Configure Xpra", font="sans 20"))
-        self.vbox.add(label("Tune your xpra configuration:", font="sans 14"))
+        subtitle = label("Tune your xpra configuration:")
+        subtitle.set_halign(Gtk.Align.START)
+        add_style_class(subtitle, "xpra-subtitle", "configure-intro")
+        self.vbox.add(subtitle)
         if LINUX:
             self.sub("Packages", "package.png", "Install or remove xpra packages", "packages")
         self.sub("Features", "features.png", "Enable or disable feature groups", "features")
