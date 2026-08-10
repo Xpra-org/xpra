@@ -7,6 +7,7 @@
 import math
 from time import monotonic
 
+from xpra.audio.common import SILENCE_FLOOR_DB
 from xpra.gstreamer.common import get_element_str, plugin_str
 from xpra.gstreamer.pipeline import Pipeline
 from xpra.util.gobject import one_arg_signal
@@ -14,7 +15,6 @@ from xpra.log import Logger
 
 log = Logger("audio", "gstreamer")
 
-SILENCE_FLOOR_DB = -120.0
 LEVEL_PRECISION = 1
 
 

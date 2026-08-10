@@ -9,13 +9,14 @@ from threading import Event
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.audio.common import AUDIO_KEEPALIVE_PACKET
+from xpra.audio.common import AUDIO_KEEPALIVE_PACKET, SILENCE_FLOOR_DB
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.util.env import first_time, envbool, envint
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import audio_option
+from xpra.server.source.audio import AudioConnection
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -25,6 +26,7 @@ QUERY_SLEEP = envint("XPRA_AUDIO_QUERY_SLEEP", 0)
 AUDIO_METER = envbool("XPRA_AUDIO_METER", True)
 AUDIO_LEVEL_DEVICE = "Xpra-Speaker.monitor"
 AUDIO_LEVEL_INTERVAL = 250
+AUDIO_SIGNAL_DELAY = max(0, envint("XPRA_AUDIO_SIGNAL_DELAY", 2000))
 PULSE_INIT_TIMEOUT = 5
 
 
@@ -36,7 +38,7 @@ class AudioServer(StubSubsystem):
         "audio_properties", "audio_source_plugin", "av_sync", "level", "meter",
         "meter_start_timer", "meter_state", "meter_stop", "microphone_allowed",
         "microphone_codecs", "speaker_allowed", "speaker_codecs", "supports_microphone",
-        "supports_speaker",
+        "supports_speaker", "signal_candidate", "signal_state", "signal_timer",
     )
     PREFIX = "audio"
     # `audio-initialized` is emitted on this subsystem (via `SignalEmitter`)
@@ -66,6 +68,9 @@ class AudioServer(StubSubsystem):
         # the pulseaudio wait below instead of leaving that thread parked.
         self.meter_state = "disabled"
         self.meter_stop = Event()
+        self.signal_candidate: bool | None = None
+        self.signal_state = False
+        self.signal_timer = 0
 
     def init(self, opts) -> None:
         self.audio_source_plugin = opts.audio_source
@@ -184,18 +189,62 @@ class AudioServer(StubSubsystem):
         level = dict(sample)
         level["time"] = int(monotonic() * 1000)
         self.level = level
+        self.send_audio_level(level)
+        self.update_signal(level)
+
+    def send_audio_level(self, level: dict) -> None:
+        for source in self.get_sources_by_type(AudioConnection):
+            source.send_audio_level(level)
+
+    def send_audio_signal(self, signal: bool) -> None:
+        for source in self.get_sources_by_type(AudioConnection):
+            source.send_audio_signal(signal)
+
+    def update_signal(self, level: dict) -> None:
+        values = level.get("peak") or level.get("rms") or ()
+        signal = any(float(value) > SILENCE_FLOOR_DB for value in values)
+        if signal == self.signal_state:
+            self.cancel_signal_timer()
+            self.signal_candidate = None
+            return
+        if signal == self.signal_candidate and self.signal_timer:
+            return
+        self.cancel_signal_timer()
+        self.signal_candidate = signal
+        self.signal_timer = self.timeout_add(AUDIO_SIGNAL_DELAY, self.confirm_signal, signal)
+
+    def confirm_signal(self, signal: bool) -> None:
+        self.signal_timer = 0
+        if self.signal_candidate != signal or self.meter_stopped():
+            return
+        self.signal_candidate = None
+        if self.signal_state == signal:
+            return
+        self.signal_state = signal
+        self.send_audio_signal(signal)
+
+    def cancel_signal_timer(self) -> None:
+        if timer := self.signal_timer:
+            self.signal_timer = 0
+            self.source_remove(timer)
 
     def meter_state_changed(self, meter, state: str) -> None:
         if meter == self.meter:
             self.meter_state = state
             if state in ("error", "stopped", "destroyed"):
                 self.level = {}
+                self.cancel_signal_timer()
+                self.signal_candidate = None
+                self.signal_state = False
 
     def meter_error(self, meter, message: str) -> None:
         if meter == self.meter:
             self.meter = None
             self.meter_state = "error"
             self.level = {}
+            self.cancel_signal_timer()
+            self.signal_candidate = None
+            self.signal_state = False
             log.warn("Warning: PulseAudio level meter error: %s", message)
             self.stop_meter_process(meter)
 
@@ -204,6 +253,9 @@ class AudioServer(StubSubsystem):
             return
         self.meter = None
         self.level = {}
+        self.cancel_signal_timer()
+        self.signal_candidate = None
+        self.signal_state = False
         if not self.meter_stopped() and self.meter_state != "error":
             self.meter_state = "failed"
 
@@ -217,6 +269,9 @@ class AudioServer(StubSubsystem):
         if meter:
             self.stop_meter_process(meter)
         self.level = {}
+        self.cancel_signal_timer()
+        self.signal_candidate = None
+        self.signal_state = False
         self.meter_state = "stopped"
 
     def get_server_features(self, source) -> dict[str, Any]:

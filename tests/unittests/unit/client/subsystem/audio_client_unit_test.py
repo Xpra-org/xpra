@@ -131,6 +131,8 @@ class TestGetAudioCapabilities(unittest.TestCase):
         assert "encoders" in caps
         assert "send" in caps
         assert "receive" in caps
+        assert caps["level"] is True
+        assert caps["signal"] is True
 
 
 class TestGetAvsyncCapabilities(unittest.TestCase):
@@ -528,6 +530,18 @@ class TestProcessAudioCapabilities(unittest.TestCase):
             pp.assert_called_once()
             pa.assert_called_once()
         x.emit.assert_called_with("audio-initialized")
+
+
+class TestProcessAudioTelemetry(unittest.TestCase):
+
+    def test_level_and_signal_are_logged(self):
+        x = _make_client()
+        level = {"unit": "dBFS", "peak": [-3.0], "rms": [-20.0]}
+        with patch("xpra.client.subsystem.audio.log") as log:
+            x._process_audio_level(Packet("audio-level", level))
+            x._process_audio_signal(Packet("audio-signal", True))
+        log.assert_any_call("audio level: %s", level)
+        log.assert_any_call("audio signal: %s", True)
 
 
 class TestProcessAudioData(unittest.TestCase):

@@ -10,7 +10,11 @@ from threading import Event, Thread
 from unittest.mock import patch
 
 from xpra.util.objects import typedict
-from xpra.server.subsystem.audio import AUDIO_LEVEL_DEVICE, AUDIO_LEVEL_INTERVAL, AudioServer
+from xpra.audio.common import SILENCE_FLOOR_DB
+from xpra.server.source.audio import AudioConnection
+from xpra.server.subsystem.audio import (
+    AUDIO_LEVEL_DEVICE, AUDIO_LEVEL_INTERVAL, AUDIO_SIGNAL_DELAY, AudioServer,
+)
 
 
 class FakePulse:
@@ -27,18 +31,42 @@ class FakeServer:
 
     def __init__(self):
         self.subsystems = {"pulseaudio": FakePulse()}
+        self.sources = []
+        self.timers = {}
+        self.next_timer = 1
 
     @staticmethod
     def idle_add(callback, *args):
         return callback(*args)
 
-    @staticmethod
-    def timeout_add(_delay, _callback, *_args):
-        return 1
+    def timeout_add(self, delay, callback, *args):
+        timer = self.next_timer
+        self.next_timer += 1
+        self.timers[timer] = (delay, callback, args)
+        return timer
 
-    @staticmethod
-    def source_remove(_timer):
-        return None
+    def source_remove(self, timer):
+        self.timers.pop(timer, None)
+
+    def get_sources_by_type(self, subsystem_type=object, exclude=None):
+        return tuple(source for source in self.sources
+                     if isinstance(source, subsystem_type) and source != exclude)
+
+    def fire_timer(self, timer):
+        _delay, callback, args = self.timers.pop(timer)
+        callback(*args)
+
+
+class FakeSource(AudioConnection):
+    def __init__(self):
+        self.levels = []
+        self.signals = []
+
+    def send_audio_level(self, level):
+        self.levels.append(level)
+
+    def send_audio_signal(self, signal):
+        self.signals.append(signal)
 
 
 class FakeMeter:
@@ -67,6 +95,8 @@ class TestAudioServerMeter(unittest.TestCase):
         self.server.supports_speaker = True
         self.server.audio_properties = typedict({"initialized": True})
         self.server.meter_state = "pending"
+        self.source = FakeSource()
+        self.owner.sources.append(self.source)
 
     def test_meter_requires_speaker_support(self):
         self.server.supports_speaker = False
@@ -132,6 +162,7 @@ class TestAudioServerMeter(unittest.TestCase):
         assert info["meter"]["interval"] == AUDIO_LEVEL_INTERVAL
         assert info["level"] | {"time": 1234} == sample
         assert info["level"]["time"] >= 0
+        assert self.source.levels == [info["level"]]
 
         self.server.meter_error(meter, "test error")
         info = self.server.get_info(None)["audio"]
@@ -153,6 +184,35 @@ class TestAudioServerMeter(unittest.TestCase):
         assert meter.cleaned
         assert self.server.meter is None
         assert self.server.meter_state == "error"
+
+    def test_signal_edge_detection(self):
+        meter = FakeMeter()
+        self.server.meter = meter
+
+        silence = {"peak": [SILENCE_FLOOR_DB], "rms": [SILENCE_FLOOR_DB]}
+        active = {"peak": [-30.0], "rms": [-50.0]}
+
+        self.server.meter_level(meter, silence)
+        assert self.server.signal_timer == 0
+        assert self.source.signals == []
+
+        # A short-lived edge is cancelled before the delay expires.
+        self.server.meter_level(meter, active)
+        timer = self.server.signal_timer
+        assert self.owner.timers[timer][0] == AUDIO_SIGNAL_DELAY == 2000
+        self.server.meter_level(meter, active)
+        assert self.server.signal_timer == timer
+        self.server.meter_level(meter, silence)
+        assert timer not in self.owner.timers
+        assert self.source.signals == []
+
+        self.server.meter_level(meter, active)
+        self.owner.fire_timer(self.server.signal_timer)
+        assert self.source.signals == [True]
+
+        self.server.meter_level(meter, silence)
+        self.owner.fire_timer(self.server.signal_timer)
+        assert self.source.signals == [True, False]
 
     def test_cleanup(self):
         meter = FakeMeter()

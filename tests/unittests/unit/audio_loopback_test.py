@@ -74,12 +74,16 @@ class AudioLoopbackTest(LoopbackTest):
             "decoders": ("opus",),
             "send": True,
             "receive": True,
+            "level": True,
+            "signal": True,
         })
 
         # the client's capabilities reached the server source:
         self.assertTrue(any(p[0] == "audio-capabilities" for p in self.c2s))
         self.assertTrue(source.audio_send)
         self.assertTrue(source.audio_receive)
+        self.assertTrue(source.audio_level)
+        self.assertTrue(source.audio_signal)
         self.assertIn("opus", source.audio_encoders)
 
         # the server echoed its own capabilities back:
@@ -88,6 +92,23 @@ class AudioLoopbackTest(LoopbackTest):
         # which the client parsed:
         self.assertTrue(client.server_send)
         self.assertIn("opus", client.server_encoders)
+
+    def test_audio_telemetry_server_to_client(self):
+        from xpra.audio.common import AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET
+        from xpra.server.source.audio import AudioConnection
+        self.assertTrue(AudioConnection.is_needed(typedict({"audio": {"level": True}})))
+        client, _server, source = self._connect()
+        level = {"unit": "dBFS", "peak": [-3.0], "rms": [-20.0]}
+        source.send_audio_level(level)
+        source.send_audio_signal(True)
+        self.assertNotIn((AUDIO_LEVEL_PACKET, level), self.s2c)
+        self.assertNotIn((AUDIO_SIGNAL_PACKET, True), self.s2c)
+
+        client.send("audio-capabilities", {"level": True, "signal": True})
+        source.send_audio_level(level)
+        source.send_audio_signal(True)
+        self.assertIn((AUDIO_LEVEL_PACKET, level), self.s2c)
+        self.assertIn((AUDIO_SIGNAL_PACKET, True), self.s2c)
 
     def test_audio_data_server_to_client(self):
         from xpra.audio.common import AUDIO_DATA_PACKET

@@ -8,7 +8,8 @@ import unittest
 from unittest.mock import patch
 
 from xpra.gstreamer.common import has_plugins
-from xpra.audio.meter import AudioLevelMeter, SILENCE_FLOOR_DB, normalize_levels
+from xpra.audio.common import SILENCE_FLOOR_DB
+from xpra.audio.meter import AudioLevelMeter, normalize_levels
 from xpra.audio import wrapper as audio_wrapper
 from xpra.audio.wrapper import MeterSubprocessWrapper
 

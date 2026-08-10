@@ -10,6 +10,7 @@ from collections.abc import Callable, Sequence, Iterable
 
 from xpra.audio.common import (
     AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET, AUDIO_KEEPALIVE_PACKET,
+    AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
@@ -279,6 +280,8 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             "encoders": self.microphone_codecs,
             "send": self.microphone_allowed,
             "receive": self.speaker_allowed,
+            "level": True,
+            "signal": True,
         }
         caps.update(self.get_audio_keepalive_caps())
         # make mypy happy about the type: convert typedict to dict with string keys
@@ -700,6 +703,14 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     def _process_audio_keepalive(self, packet: Packet) -> None:
         self.audio_keepalive(packet.get_u64(1))
 
+    @staticmethod
+    def _process_audio_level(packet: Packet) -> None:
+        log("audio level: %s", packet.get_dict(1))
+
+    @staticmethod
+    def _process_audio_signal(packet: Packet) -> None:
+        log("audio signal: %s", packet.get_bool(1))
+
     def send_audio_sync(self, v: int) -> None:
         if self.server_av_sync:
             self.send(AUDIO_CONTROL_PACKET, "sync", v)
@@ -792,4 +803,6 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.add_packets(f"{AudioClient.PREFIX}-data")
         self.add_packets(f"{AudioClient.PREFIX}-capabilities", main_thread=True)
         self.add_packets(AUDIO_KEEPALIVE_PACKET)
+        self.add_packets(AUDIO_LEVEL_PACKET)
+        self.add_packets(AUDIO_SIGNAL_PACKET)
         self.add_legacy_alias("sound-data", f"{AudioClient.PREFIX}-data")

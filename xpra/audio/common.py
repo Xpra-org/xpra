@@ -49,8 +49,11 @@ MP3_ID3V2 = MP3 + "+" + ID3V2
 AUDIO_DATA_PACKET = "sound-data" if BACKWARDS_COMPATIBLE else "audio-data"
 AUDIO_CONTROL_PACKET = "sound-control" if BACKWARDS_COMPATIBLE else "audio-control"
 AUDIO_KEEPALIVE_PACKET = "audio-keepalive"
+AUDIO_LEVEL_PACKET = "audio-level"
+AUDIO_SIGNAL_PACKET = "audio-signal"
 AUDIO_KEEPALIVE_INTERVAL = envint("XPRA_AUDIO_KEEPALIVE_INTERVAL", 5)
 AUDIO_KEEPALIVE_TIMEOUT = envint("XPRA_AUDIO_KEEPALIVE_TIMEOUT", 10)
+SILENCE_FLOOR_DB = -120.0
 
 
 # used for parsing codec names specified on the command line:

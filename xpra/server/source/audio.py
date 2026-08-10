@@ -11,7 +11,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.audio.common import (
-    AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET,
+    AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET, AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.net.compression import Compressed
@@ -62,7 +62,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
             return True
         if isinstance(audio, dict):
             audio = typedict(audio)
-            return audio.boolget("send") or audio.boolget("receive") or audio.boolget("async")
+            return any(audio.boolget(key) for key in ("send", "receive", "async", "level", "signal"))
         return False
 
     def __init__(self):
@@ -89,6 +89,8 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.audio_encoders: Sequence[str] = ()
         self.audio_receive = False
         self.audio_send = False
+        self.audio_level = False
+        self.audio_signal = False
         self.init_audio_keepalive_state()
         self.audio_fade_timer = 0
         self.new_stream_timers: dict[Popen, int] = {}
@@ -171,11 +173,14 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.audio_encoders = audio.strtupleget("encoders", ())
         self.audio_receive = audio.boolget("receive")
         self.audio_send = audio.boolget("send")
+        self.audio_level = audio.boolget("level")
+        self.audio_signal = audio.boolget("signal")
         self.parse_audio_keepalive_caps(audio)
         log("pulseaudio id=%s, cookie-hash=%s, server=%s",
             self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server)
-        log("audio decoders=%s, encoders=%s, receive=%s, send=%s",
-            self.audio_decoders, self.audio_encoders, self.audio_receive, self.audio_send)
+        log("audio decoders=%s, encoders=%s, receive=%s, send=%s, level=%s, signal=%s",
+            self.audio_decoders, self.audio_encoders, self.audio_receive, self.audio_send,
+            self.audio_level, self.audio_signal)
 
     def get_caps(self) -> dict[str, Any]:
         log("get_caps() audio-properties=%s", self.audio_properties)
@@ -201,6 +206,14 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         audio_caps.update(self.get_audio_keepalive_caps())
         log("get_audio_caps()=%s", audio_caps)
         return audio_caps
+
+    def send_audio_level(self, level: dict) -> None:
+        if self.audio_level:
+            self.send_async(AUDIO_LEVEL_PACKET, level)
+
+    def send_audio_signal(self, signal: bool) -> None:
+        if self.audio_signal:
+            self.send_async(AUDIO_SIGNAL_PACKET, signal)
 
     def audio_loop_check(self, mode: str = "speaker") -> bool:
         log("audio_loop_check(%s)", mode)
