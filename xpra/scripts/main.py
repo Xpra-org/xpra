@@ -22,7 +22,6 @@ from typing import Any, NoReturn
 from collections.abc import Callable, Iterable
 
 from xpra.common import noerr, noop, may_show_progress, may_notify_client, set_progress_process
-from xpra.util.objects import typedict
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import csv, print_nested_dict, sorted_nicely, bytestostr
 from xpra.util.env import envint, envbool, osexpand, filter_env, save_env, get_saved_env, OSEnvContext
@@ -32,7 +31,7 @@ from xpra.util.parsing import (
     get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data, FALSE_OPTIONS,
 )
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
-from xpra.os_util import getuid, getgid, is_admin, gi_import, WIN32, OSX, POSIX, LINUX
+from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX, POSIX, LINUX
 from xpra.util.io import load_binary_file, stderr_print, info, warn, error, clean_std_pipes
 from xpra.util.system import is_Wayland, set_proc_title, is_systemd_pid1, stop_proc
 from xpra.scripts.parsing import (
@@ -1861,6 +1860,10 @@ def make_client(opts):
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the tk client component is missing: {e}") from None
     if backend == "win32":
         no_gi_gtk_modules()
+        # probe before the client exists: `init_opengl` runs later, from `client.init(opts)`
+        if opts.opengl in ("probe", "nowarn"):
+            from xpra.scripts.glprobe import probe_opengl
+            probe_opengl(opts)
         try:
             from xpra.client.win32.client import make_client as make_win32_client
             return make_win32_client(opts)
@@ -1891,31 +1894,9 @@ def make_client(opts):
 
         if opts.opengl in ("probe", "nowarn"):
             may_show_progress(app, 20, "validating OpenGL configuration")
-            from xpra.scripts.glprobe import run_opengl_probe, save_opengl_probe
-            probe, probe_info = run_opengl_probe()
-            glinfo = typedict(probe_info)
-            safe = glinfo.boolget("safe", False)
-            SAVE_OPENGL_PROBE = envbool("XPRA_SAVE_OPENGL_PROBE", not is_admin())
-            if SAVE_OPENGL_PROBE:
-                save_opengl_probe(safe)
-            if opts.opengl == "nowarn":
-                # just on or off from here on:
-                opts.opengl = ["off", "on"][safe]
-            else:
-                opts.opengl = f"probe-{probe}"
-            r = probe  # ie: "success"
-            if glinfo:
-                renderer = glinfo.strget("renderer")
-                if renderer:
-                    # ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
-                    parts = renderer.split("(")
-                    if len(parts) > 1 and len(parts[0]) > 10:
-                        renderer = parts[0].strip()
-                    else:
-                        renderer = renderer.split(";", 1)[0]
-                    r += f" ({renderer})"
+            from xpra.scripts.glprobe import probe_opengl
+            r, message = probe_opengl(opts)
             may_show_progress(app, 20, "validating OpenGL", r)
-            message = glinfo.strget("message")
             if message:
                 may_show_progress(app, 21, f" {message}")
 

@@ -16,8 +16,9 @@ from importlib.util import find_spec
 from typing import Any, NoReturn
 
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import POSIX, OSX, force_quit
-from xpra.util.env import OSEnvContext, get_exec_env, envint
+from xpra.scripts.config import XpraConfig
+from xpra.os_util import POSIX, OSX, is_admin, force_quit
+from xpra.util.env import OSEnvContext, get_exec_env, envint, envbool
 from xpra.util.io import stderr_print, use_tty
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, pver
@@ -29,7 +30,7 @@ from xpra.log import Logger, is_debug_enabled
 OPENGL_PROBE_TIMEOUT: int = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
 
 
-def run_opengl_probe() -> tuple[str, dict]:
+def run_opengl_probe(backend: str = "") -> tuple[str, dict]:
     log = Logger("opengl")
     if not find_spec("OpenGL"):
         log("OpenGL module not found!")
@@ -41,6 +42,10 @@ def run_opengl_probe() -> tuple[str, dict]:
     from xpra.platform.paths import get_nodock_command
     from xpra.net.subprocess_wrapper import exec_kwargs
     cmd = get_nodock_command() + ["opengl"]
+    if backend and backend != "auto":
+        # the probe subprocess must test the same window backend the client will use,
+        # otherwise it validates a backend we're not going to render with:
+        cmd.append(f"--backend={backend}")
     env = get_exec_env()
     if is_debug_enabled("opengl"):
         cmd += ["-d", "opengl"]
@@ -123,7 +128,7 @@ def run_opengl_probe() -> tuple[str, dict]:
     return message, props
 
 
-def run_glprobe(opts, show=False) -> ExitValue:
+def run_glprobe(opts: XpraConfig, show=False) -> ExitValue:
     if show:
         from xpra.platform.gui import init, set_default_icon
         set_default_icon("opengl.png")
@@ -145,7 +150,23 @@ def run_glprobe(opts, show=False) -> ExitValue:
     return ExitCode.OK
 
 
-def do_run_glcheck(opts, show=False) -> dict[str, Any]:
+def get_gl_client_window_module(backend: str, opengl_str: str) -> tuple[dict[str, Any], Any]:
+    """
+    Resolve the OpenGL window backend for `backend`, the same way the client will.
+
+    Each Gtk-free backend supplies its own resolver (the client exposes it as
+    `get_gl_client_window_module`); `xpra.opengl.window` only knows the Gtk
+    `glarea` / `native` modules, so using it unconditionally would make the probe
+    test a backend the client never renders with.
+    """
+    if backend == "win32":
+        from xpra.client.win32.opengl import get_gl_client_window_module as get_win32_module
+        return get_win32_module(opengl_str)
+    from xpra.opengl.window import get_gl_client_window_module as get_gtk_module
+    return get_gtk_module(opengl_str)
+
+
+def do_run_glcheck(opts: XpraConfig, show=False) -> dict[str, Any]:
     # suspend all logging:
     saved_level = None
     log = Logger("opengl")
@@ -154,7 +175,7 @@ def do_run_glcheck(opts, show=False) -> dict[str, Any]:
         saved_level = logging.root.getEffectiveLevel()
         logging.root.setLevel(logging.WARN)
     try:
-        from xpra.opengl.window import get_gl_client_window_module, test_gl_client_window
+        from xpra.opengl.window import test_gl_client_window
         from xpra.util.parsing import FALSE_OPTIONS
         opengl_str = (opts.opengl or "").lower()
         # the probe must always probe, no matter how `opengl` is configured:
@@ -162,7 +183,8 @@ def do_run_glcheck(opts, show=False) -> dict[str, Any]:
         # short-circuit backend selection and return no data at all
         if opengl_str.split(":")[0] in FALSE_OPTIONS:
             opengl_str = "auto"
-        opengl_props, gl_client_window_module = get_gl_client_window_module(opengl_str)
+        backend = opts.backend or "gtk"
+        opengl_props, gl_client_window_module = get_gl_client_window_module(backend, opengl_str)
         log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
         if gl_client_window_module and (opengl_props.get("safe", False) or opengl_str.startswith("force")):
             gl_client_window_class = gl_client_window_module.GLClientWindow
@@ -191,7 +213,7 @@ def do_run_glcheck(opts, show=False) -> dict[str, Any]:
             logging.root.setLevel(saved_level)
 
 
-def run_glcheck(opts) -> ExitValue:
+def run_glcheck(opts: XpraConfig) -> ExitValue:
     # cheap easy check first:
     log = Logger("opengl")
     if not find_spec("OpenGL"):
@@ -201,18 +223,23 @@ def run_glcheck(opts) -> ExitValue:
             "success": False,
         }
     else:
-        from xpra.scripts.main import check_gtk_client
-        check_gtk_client()
-        if POSIX and not OSX and not is_Wayland():
-            log("forcing x11 Gdk backend")
-            with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
-                try:
-                    from xpra.x11.gtk.display_source import init_gdk_display_source
-                    init_gdk_display_source()
-                except ImportError as e:
-                    log(f"no bindings x11 bindings: {e}")
-                except Exception:
-                    log("error initializing gdk display source", exc_info=True)
+        if opts.backend == "win32":
+            # keep this subprocess as Gtk-free as the client it is probing for:
+            from xpra.scripts.main import no_gi_gtk_modules
+            no_gi_gtk_modules()
+        else:
+            from xpra.scripts.main import check_gtk_client
+            check_gtk_client()
+            if POSIX and not OSX and not is_Wayland():
+                log("forcing x11 Gdk backend")
+                with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
+                    try:
+                        from xpra.x11.gtk.display_source import init_gdk_display_source
+                        init_gdk_display_source()
+                    except ImportError as e:
+                        log(f"no bindings x11 bindings: {e}")
+                    except Exception:
+                        log("error initializing gdk display source", exc_info=True)
         try:
             props = do_run_glcheck(opts)
         except Exception as e:
@@ -236,6 +263,43 @@ def run_glcheck(opts) -> ExitValue:
             sys.stdout.write("%s=%s\n" % (k, vstr))
     sys.stdout.flush()
     return 0
+
+
+def probe_opengl(opts: XpraConfig) -> tuple[str, str]:
+    """
+    Run the out-of-process OpenGL probe and record its verdict in `opts.opengl`.
+
+    Running it out of process is what protects the client from a driver crash,
+    and the verdict is what stops the backend from being tested a second time
+    in-process: `OpenGLClient.init_opengl` skips its own test render for
+    "probe-success".
+
+    Returns `(result, message)`, for display purposes only.
+    ie: ("success (AMD Radeon RX 570 Series)", "")
+    """
+    log = Logger("opengl")
+    probe, probe_info = run_opengl_probe(opts.backend)
+    glinfo = typedict(probe_info)
+    safe = glinfo.boolget("safe", False)
+    if envbool("XPRA_SAVE_OPENGL_PROBE", not is_admin()):
+        save_opengl_probe(safe)
+    if opts.opengl == "nowarn":
+        # just on or off from here on:
+        opts.opengl = ["off", "on"][safe]
+    else:
+        opts.opengl = f"probe-{probe}"
+    log(f"probe_opengl(..) opengl={opts.opengl!r}")
+    r = probe  # ie: "success"
+    renderer = glinfo.strget("renderer")
+    if renderer:
+        # ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
+        parts = renderer.split("(")
+        if len(parts) > 1 and len(parts[0]) > 10:
+            renderer = parts[0].strip()
+        else:
+            renderer = renderer.split(";", 1)[0]
+        r += f" ({renderer})"
+    return r, glinfo.strget("message")
 
 
 def run_glsaveprobe() -> ExitValue:
