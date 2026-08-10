@@ -6,6 +6,7 @@
 import os
 from typing import Any
 
+from xpra.os_util import WIN32
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
@@ -102,6 +103,16 @@ class MmapClient(StubClientMixin):
         mopt = self.mmap_option.lower()
         log("mmap.init(..) mmap=%r", mopt)
         if mopt in FALSE_OPTIONS:
+            self.mmap_supported = False
+            return
+        if mopt == "auto" and WIN32:
+            # mmap can only be used with a server running on the same host,
+            # which is the exception rather than the rule for MS Windows clients,
+            # and the areas are not free: each one costs its full size
+            # in commit charge as soon as it is created - long before we find out
+            # whether the server can use it.
+            # (`mmap=yes` still enables it explicitly)
+            log("mmap is not enabled automatically on MS Windows")
             self.mmap_supported = False
             return
         self.mmap_supported = True
