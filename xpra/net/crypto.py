@@ -89,7 +89,7 @@ def do_crypto_backend_init():
         cryptography = pc
         MODES = tuple(x for x in os.environ.get(
             "XPRA_CRYPTO_MODES",
-            "CBC,CFB,CTR").split(",") if x in ("CBC", "CFB", "CTR"))
+            "CBC,CTR").split(",") if x in ("CBC", "CTR"))
         KEY_HASHES = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512")
         KEY_STRETCHING = ("PBKDF2",)
         CIPHERS = ("AES",)
