@@ -28,6 +28,11 @@ BUFFER_TIME = envint("XPRA_AUDIO_METER_BUFFER_TIME", 0)
 # the only consequence is that some levels are calculated from fewer samples:
 IGNORED_WARNINGS = ("Can't record audio fast enough", )
 
+# PulseAudio receives the server's terminal signal directly and may exit before
+# this subprocess processes its cleanup request.  The pipeline still follows
+# the normal error path; only this expected diagnostic is suppressed here.
+IGNORED_ERRORS = ("Disconnected: Connection terminated", )
+
 
 def get_source_channels(device: str) -> int:
     try:
@@ -91,6 +96,12 @@ class AudioLevelMeter(Pipeline):
             log("ignoring harmless audio meter warning: %s", warning[0].message)
             return
         super().handle_warning(warning)
+
+    def handle_error(self, error, details: str) -> None:
+        if error and error.message in IGNORED_ERRORS:
+            log("ignoring audio meter disconnect: %s", error.message)
+            return
+        super().handle_error(error, details)
 
     def do_parse_element_message(self, _message, name, props=None) -> None:
         if name != "level" or not props:

@@ -12,6 +12,7 @@ from xpra.audio.common import SILENCE_FLOOR_DB
 from xpra.audio.meter import AudioLevelMeter, normalize_levels
 from xpra.audio import wrapper as audio_wrapper
 from xpra.audio.wrapper import MeterSubprocessWrapper
+from xpra.gstreamer.pipeline import Pipeline
 
 
 class TestAudioLevelMeter(unittest.TestCase):
@@ -86,6 +87,25 @@ class TestAudioLevelMeter(unittest.TestCase):
             assert meter.info["overruns"] == 1
             meter.handle_warning((FakeError("some other problem"), ""))
             assert logged
+        finally:
+            meter.cleanup()
+
+    def test_pulseaudio_disconnect_error_is_ignored(self):
+        if not has_plugins("pulsesrc", "level", "fakesink"):
+            raise unittest.SkipTest("audio level meter plugins are missing")
+
+        class FakeError:
+            def __init__(self, message):
+                self.message = message
+
+        with patch("xpra.audio.meter.get_source_channels", return_value=2):
+            meter = AudioLevelMeter("Xpra-Speaker.monitor", 250)
+        try:
+            with patch.object(Pipeline, "handle_error") as handle_error:
+                meter.handle_error(FakeError("Disconnected: Connection terminated"), "details")
+                handle_error.assert_not_called()
+                meter.handle_error(FakeError("some other problem"), "details")
+                handle_error.assert_called_once()
         finally:
             meter.cleanup()
 

@@ -232,21 +232,7 @@ class Pipeline(GObject.GObject):
         elif t == Gst.MessageType.ERROR:
             p.set_state(Gst.State.NULL)
             err, details = message.parse_error()
-            log.error("Gstreamer pipeline error: %s", err.message)
-            for earg in err.args:
-                if earg != err.message:
-                    log(" %s", earg)
-            try:
-                # prettify (especially on win32):
-                p = details.find("\\Source\\")
-                if p > 0:
-                    details = details[p+len("\\Source\\"):]
-                for d in details.split(": "):
-                    for dl in d.splitlines():
-                        if dl.strip():
-                            log.error(" %s", dl.strip())
-            except Exception:
-                log.estr(details)
+            self.handle_error(err, details)
             self.update_state("error")
             self.idle_emit("error", str(err))
             # exit
@@ -299,6 +285,25 @@ class Pipeline(GObject.GObject):
         """ subclasses can override this to ignore harmless warnings """
         for msg in warning_messages(warning):
             self.gstlogwarn(msg)
+
+    @staticmethod
+    def handle_error(error, details: str) -> None:
+        """ subclasses can override this to ignore harmless error diagnostics """
+        log.error("Gstreamer pipeline error: %s", error.message)
+        for earg in error.args:
+            if earg != error.message:
+                log(" %s", earg)
+        try:
+            # prettify (especially on win32):
+            p = details.find("\\Source\\")
+            if p > 0:
+                details = details[p+len("\\Source\\"):]
+            for d in details.split(": "):
+                for dl in d.splitlines():
+                    if dl.strip():
+                        log.error(" %s", dl.strip())
+        except Exception:
+            log.estr(details)
 
     def parse_element_message(self, message) -> None:
         structure = message.get_structure()
