@@ -23,9 +23,11 @@ from xpra.common import noop
 from xpra.util.stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client.base import features
 from xpra.client.base.command import InfoTimerClient
+from xpra.gtk.css_overrides import add_screen_css
+from xpra.gtk.dialogs.common_style import add_style_class, style_body, style_button, style_window
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.graph import make_graph_imagesurface
-from xpra.gtk.widget import imagebutton, title_box, slabel, FILE_CHOOSER_NATIVE
+from xpra.gtk.widget import imagebutton, slabel, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.util import gtk_main
 from xpra.util.i18n import _
@@ -42,6 +44,67 @@ N_SAMPLES = 20  # how many sample points to show on the graphs
 SHOW_PIXEL_STATS = True
 SHOW_SOUND_STATS = True
 SHOW_RECV = True
+
+CSS = b"""
+.session-info-dialog .session-info-tabs {
+    padding: 5px;
+}
+
+.session-info-dialog button.session-info-tab {
+    min-height: 40px;
+    padding: 5px 9px;
+    border-radius: 8px;
+}
+
+.session-info-dialog button.session-info-tab-active {
+    border-color: alpha(@theme_selected_bg_color, 0.55);
+    background-color: alpha(@theme_selected_bg_color, 0.18);
+}
+
+.session-info-dialog .session-info-grid {
+    padding: 12px 16px;
+}
+
+.session-info-dialog .session-info-row-label,
+.session-info-dialog .session-info-value {
+    padding: 4px 6px;
+}
+
+.session-info-dialog .session-info-row-label {
+    padding-right: 14px;
+}
+
+.session-info-dialog .session-info-heading {
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: @theme_fg_color;
+    background-color: alpha(@theme_selected_bg_color, 0.14);
+}
+
+.session-info-dialog .session-info-graph {
+    padding: 8px;
+}
+
+.session-info-dialog .session-info-encoders {
+    margin-top: 4px;
+}
+"""
+
+_css_loaded = False
+
+
+def load_session_info_style() -> None:
+    global _css_loaded
+    if not _css_loaded:
+        add_screen_css(CSS)
+        _css_loaded = True
+
+
+def heading_label(text: str, tooltip="") -> Gtk.Label:
+    label = slabel(text, tooltip=tooltip)
+    label.set_xalign(0)
+    add_style_class(label, "xpra-heading", "session-info-heading")
+    return label
 
 
 def make_version_str(version) -> str:
@@ -65,8 +128,7 @@ def bool_icon(image, on_off: bool):
 
 
 def setall(labels: Sequence[Gtk.Label], values: Sequence) -> None:
-    assert len(labels) == len(values), "%s labels and %s values (%s vs %s)" % (
-        len(labels), len(values), labels, values)
+    assert len(labels) == len(values), "%s labels and %s values (%s vs %s)" % (len(labels), len(values), labels, values)
     for i, l in enumerate(labels):
         l.set_text(str(values[i]))
 
@@ -178,6 +240,7 @@ def image_label_hbox() -> tuple:
 
 def settimedeltastr(label_widget, from_time) -> None:
     import time
+
     delta = datetime.timedelta(seconds=(int(time.time()) - int(from_time)))
     label_widget.set_text(str(delta))
 
@@ -188,6 +251,7 @@ def make_os_str(sys_platform, platform_release, platform_platform, platform_linu
 
     def remstr(values: Sequence) -> Sequence[str]:
         return tuple(str(v) for v in values if v not in (None, "", "n/a"))
+
     if pld and len(pld) == 3 and pld[0]:
         s.append(" ".join(remstr(pld)))
     elif platform_platform:
@@ -255,6 +319,7 @@ def get_server_builddate(client) -> str:
 def get_local_builddate() -> str:
     try:
         from xpra.build_info import build
+
         date = build["date"]
         time = build["time"]
         return make_datetime(date, time)
@@ -322,8 +387,10 @@ def save_graph(_ebox, btn, graph) -> None:
     else:
         chooser = Gtk.FileChooserDialog(title=title, action=Gtk.FileChooserAction.SAVE)
         buttons = (
-            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-            Gtk.STOCK_SAVE, Gtk.ResponseType.OK,
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_SAVE,
+            Gtk.ResponseType.OK,
         )
         chooser.add_buttons(*buttons)
         chooser.set_default_response(Gtk.ResponseType.OK)
@@ -344,6 +411,7 @@ def save_graph(_ebox, btn, graph) -> None:
             surface = graph.surface
             log("saving surface %s to %s", surface, filename)
             from io import BytesIO
+
             b = BytesIO()
             surface.write_to_png(b)
 
@@ -352,6 +420,7 @@ def save_graph(_ebox, btn, graph) -> None:
                     f.write(b.getvalue())
 
             from xpra.util.thread import start_thread
+
             start_thread(save_file, "save-graph")
     elif response in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.CLOSE, Gtk.ResponseType.DELETE_EVENT):
         log("closed/cancelled")
@@ -375,7 +444,6 @@ def nopopulate() -> bool:
 
 
 class SessionInfo(Gtk.Window):
-
     def __init__(self, client, session_name, conn, show_client=True, show_server=True):
         check_main_thread()
         assert show_client or show_server
@@ -385,6 +453,8 @@ class SessionInfo(Gtk.Window):
         self.show_client = show_client
         self.show_server = show_server
         super().__init__()
+        style_window(self, "session-info-dialog")
+        load_session_info_style()
         self.last_populate_time = 0.0
         self.last_populate_statistics = 0
         self.is_closed = False
@@ -398,9 +468,11 @@ class SessionInfo(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
 
         # tab box to contain everything:
-        self.tab_box = Gtk.VBox(homogeneous=False, spacing=0)
+        self.tab_box = Gtk.VBox(homogeneous=False, spacing=12)
+        style_body(self.tab_box)
         self.add(self.tab_box)
-        self.tab_button_box = Gtk.HBox(homogeneous=True, spacing=0)
+        self.tab_button_box = Gtk.HBox(homogeneous=True, spacing=4)
+        add_style_class(self.tab_button_box, "xpra-card", "session-info-tabs")
         self.tabs: list[tuple[str, Any, Any, Callable]] = []
         self.row = AtomicInteger()
         self.grid = None
@@ -416,12 +488,12 @@ class SessionInfo(Gtk.Window):
         if show_client:
             self.add_graphs_tab()
 
-        self.set_border_width(15)
+        self.set_default_size(760, 520)
 
         def window_deleted(*_args) -> None:
             self.is_closed = True
 
-        self.connect('delete_event', window_deleted)
+        self.connect("delete_event", window_deleted)
         self.show_tab(self.tabs[0][2])
         self.set_size_request(-1, -1)
         self.init_counters()
@@ -496,6 +568,7 @@ class SessionInfo(Gtk.Window):
     def add_row(self, *widgets) -> None:
         r = int(self.row)
         for i, widget in enumerate(widgets):
+            add_style_class(widget, "xpra-cell", "session-info-row-label" if i == 0 else "session-info-value")
             self.grid.attach(widget, i, r, 1, 1)
         self.row.increase()
 
@@ -506,7 +579,7 @@ class SessionInfo(Gtk.Window):
         lbl = slabel(value)
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
         al.add(lbl)
-        self.add_row(title_box(text), al)
+        self.add_row(heading_label(text), al)
         return lbl
 
     def clrow(self, label_str: str, client_label, server_label) -> None:
@@ -515,7 +588,7 @@ class SessionInfo(Gtk.Window):
             labels.append(client_label)
         if self.show_server:
             labels.append(server_label)
-        self.add_row(title_box(label_str), *labels)
+        self.add_row(heading_label(label_str), *labels)
 
     def csrow(self, label_str, client_str, server_str) -> None:
         self.clrow(
@@ -526,15 +599,19 @@ class SessionInfo(Gtk.Window):
 
     def grid_tab(self, icon_filename: str, title: str, populate_cb: Callable) -> Gtk.VBox:
         self.grid = Gtk.Grid()
+        self.grid.set_column_spacing(8)
+        self.grid.set_row_spacing(4)
+        self.grid.set_hexpand(True)
+        add_style_class(self.grid, "xpra-card", "xpra-table", "session-info-grid")
         self.row.set(0)
         vbox = self.vbox_tab(icon_filename, title, populate_cb)
-        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
         al.add(self.grid)
-        vbox.pack_start(al, expand=True, fill=True, padding=20)
+        vbox.pack_start(al, expand=True, fill=True, padding=0)
         return vbox
 
     def vbox_tab(self, icon_filename: str, title: str, populate_cb: Callable) -> Gtk.VBox:
-        vbox = Gtk.VBox(homogeneous=False, spacing=0)
+        vbox = Gtk.VBox(homogeneous=False, spacing=12)
         self.add_tab(icon_filename, title, populate_cb, contents=vbox)
         return vbox
 
@@ -546,6 +623,8 @@ class SessionInfo(Gtk.Window):
 
         button = imagebutton(title, icon, clicked_callback=show_tab)
         button.connect("clicked", show_tab)
+        style_button(button)
+        add_style_class(button, "flat", "session-info-tab")
         button.set_relief(Gtk.ReliefStyle.NONE)
         self.tab_button_box.add(button)
         self.tabs.append((title, button, contents, populate_cb))
@@ -555,11 +634,11 @@ class SessionInfo(Gtk.Window):
         for __, b, t, p_cb in self.tabs:
             if t == grid:
                 button = b
-                b.set_relief(Gtk.ReliefStyle.NORMAL)
+                add_style_class(b, "session-info-tab-active")
                 b.grab_focus()
                 self.populate_cb = p_cb
             else:
-                b.set_relief(Gtk.ReliefStyle.NONE)
+                b.get_style_context().remove_class("session-info-tab-active")
         assert button
         for x in self.tab_box.get_children():
             if x != self.tab_button_box:
@@ -613,6 +692,7 @@ class SessionInfo(Gtk.Window):
         button.add(graph)
         if tooltip:
             graph.set_tooltip_text(tooltip)
+        add_style_class(button, "xpra-card", "session-info-graph")
         self.graph_box.add(button)
         return graph
 
@@ -696,8 +776,9 @@ class SessionInfo(Gtk.Window):
             # populate running averages for graphs:
 
             def getavg(*names):
-                return newdictlook(server_last_info, list(names) + ["avg"]) or \
-                    newdictlook(server_last_info, ["client"] + list(names) + ["avg"])
+                return newdictlook(server_last_info, list(names) + ["avg"]) or newdictlook(
+                    server_last_info, ["client"] + list(names) + ["avg"]
+                )
 
             def addavg(l, *names) -> None:
                 v = getavg(*names)
@@ -737,7 +818,7 @@ class SessionInfo(Gtk.Window):
         # Package Table:
         self.grid_tab("package.png", _("Software"), noop)
         if self.show_client and self.show_server:
-            self.add_row(title_box(""), title_box(_("Client")), title_box(_("Server")))
+            self.add_row(heading_label(""), heading_label(_("Client")), heading_label(_("Server")))
         self.csrow(_("Operating System"), get_local_platform_name(), get_server_platform_name(self.client))
         self.csrow("Xpra", XPRA_VERSION, get_server_version(self.client))
         self.csrow(_("Revision"), revision_str(), get_server_revision_str(self.client))
@@ -749,12 +830,15 @@ class SessionInfo(Gtk.Window):
 
         try:
             from xpra.audio.wrapper import query_audio
+
             props = query_audio()
         except ImportError:
             log("cannot load audio information: %s", exc_info=True)
             props = typedict()
         gst_version = props.strtupleget("gst.version")
-        self.csrow("GStreamer", make_version_str(gst_version), server_vinfo("sound.gst") or server_vinfo("gst") or "unknown")
+        self.csrow(
+            "GStreamer", make_version_str(gst_version), server_vinfo("sound.gst") or server_vinfo("gst") or "unknown"
+        )
 
         def clientgl(prop="opengl", default_value="n/a") -> str:
             if not self.show_client:
@@ -829,15 +913,15 @@ class SessionInfo(Gtk.Window):
             img.set_margin_start(5)
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
             al.add(img)
-            self.add_row(title_box(text), al)
+            self.add_row(heading_label(text), al)
             return img
 
         self.server_randr_icon, self.server_randr_label, randr_box = image_label_hbox()
-        self.add_row(title_box(_("RandR Support")), randr_box)
+        self.add_row(heading_label(_("RandR Support")), randr_box)
         if self.show_client:
             self.client_display = self.label_row(_("Client Display"))
             self.client_opengl_icon, self.client_opengl_label, opengl_box = image_label_hbox()
-            self.add_row(title_box(_("Client OpenGL")), opengl_box)
+            self.add_row(heading_label(_("Client OpenGL")), opengl_box)
             self.opengl_buffering = self.label_row(_("OpenGL Mode"))
             self.window_rendering = self.label_row(_("Window Rendering"))
         if features.mmap:
@@ -908,7 +992,7 @@ class SessionInfo(Gtk.Window):
         if self.show_client and self.show_server:
             # table headings:
             for i, text in enumerate(("", _("Client"), _("Server"))):
-                self.grid.attach(title_box(text), i, 0, 1, 1)
+                self.grid.attach(heading_label(text), i, 0, 1, 1)
             self.row.increase()
         # grid contents:
         self.client_encodings_label = slabel()
@@ -951,17 +1035,13 @@ class SessionInfo(Gtk.Window):
             c = self.get_client_subsystem("audio")
             if c:
                 if self.show_server:
-                    self.server_speaker_codecs_label.set_text(
-                        codec_info(c.server_send, c.server_encoders))
+                    self.server_speaker_codecs_label.set_text(codec_info(c.server_send, c.server_encoders))
                 if self.show_client:
-                    self.client_speaker_codecs_label.set_text(
-                        codec_info(c.speaker_allowed, c.speaker_codecs))
+                    self.client_speaker_codecs_label.set_text(codec_info(c.speaker_allowed, c.speaker_codecs))
                 if self.show_server:
-                    self.server_microphone_codecs_label.set_text(
-                        codec_info(c.server_receive, c.server_decoders))
+                    self.server_microphone_codecs_label.set_text(codec_info(c.server_receive, c.server_decoders))
                 if self.show_client:
-                    self.client_microphone_codecs_label.set_text(
-                        codec_info(c.microphone_allowed, c.microphone_codecs))
+                    self.client_microphone_codecs_label.set_text(codec_info(c.microphone_allowed, c.microphone_codecs))
 
         def encliststr(v) -> str:
             v = list(v)
@@ -981,6 +1061,7 @@ class SessionInfo(Gtk.Window):
             self.client_encodings_label.set_text("n/a")
 
         from xpra.net.packet_encoding import get_enabled_encoders
+
         if self.show_client:
             self.client_packet_encoders_label.set_text(csv(get_enabled_encoders()))
         if self.show_server:
@@ -989,6 +1070,7 @@ class SessionInfo(Gtk.Window):
             )
 
         from xpra.net.compression import get_enabled_compressors
+
         if self.show_client:
             self.client_packet_compressors_label.set_text(csv(get_enabled_compressors()))
         if self.show_server:
@@ -1028,7 +1110,7 @@ class SessionInfo(Gtk.Window):
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
             al.add(lbl)
             details = slabel(font="monospace 10")
-            self.add_row(title_box(text), al, details)
+            self.add_row(heading_label(text), al, details)
             return lbl, details
 
         self.speaker_label, self.speaker_details = add_audio_row(_("Speaker"))
@@ -1059,10 +1141,10 @@ class SessionInfo(Gtk.Window):
             self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
         else:
             for lbl in (
-                    self.input_packets_label,
-                    self.input_bytes_label,
-                    self.output_packets_label,
-                    self.output_bytes_label,
+                self.input_packets_label,
+                self.input_bytes_label,
+                self.output_packets_label,
+                self.output_bytes_label,
             ):
                 lbl.set_text("n/a")
 
@@ -1096,10 +1178,8 @@ class SessionInfo(Gtk.Window):
 
             audio = self.get_client_subsystem("audio")
             if audio:
-                set_audio_info(self.speaker_label, self.speaker_details,
-                               audio.speaker_enabled, audio.sink)
-                set_audio_info(self.microphone_label, None,
-                               audio.microphone_enabled, audio.source)
+                set_audio_info(self.speaker_label, self.speaker_details, audio.speaker_enabled, audio.sink)
+                set_audio_info(self.microphone_label, None, audio.microphone_enabled, audio.source)
 
         self.connection_type_label.set_text(c.socktype)
         protocol_info = p.get_info()
@@ -1112,6 +1192,7 @@ class SessionInfo(Gtk.Window):
         self.compression_label.set_text(compression_str)
 
         from xpra.net.crypto import get_crypto_caps
+
         ccaps = get_crypto_caps()
 
         def enclabel(label_widget, cipher) -> None:
@@ -1159,10 +1240,12 @@ class SessionInfo(Gtk.Window):
     def add_statistics_tab(self) -> None:
         # Details:
         vbox = self.grid_tab("browse.png", _("Statistics"), self.populate_statistics)
-        self.add_row(*(title_box(x) for x in ("", _("Latest"), _("Minimum"), _("Average"), _("90 percentile"), _("Maximum"))))
+        self.add_row(
+            *(heading_label(x) for x in ("", _("Latest"), _("Minimum"), _("Average"), _("90 percentile"), _("Maximum")))
+        )
 
         def maths_labels(metric="", tooltip=""):
-            labels = [title_box(metric, tooltip), slabel(), slabel(), slabel(), slabel(), slabel()]
+            labels = [heading_label(metric, tooltip), slabel(), slabel(), slabel(), slabel(), slabel()]
             self.add_row(*labels)
             return labels[1:]
 
@@ -1185,8 +1268,7 @@ class SessionInfo(Gtk.Window):
             _("The time it takes to compress a frame and pass it to the OS network layer"),
         )
         self.quality_labels = maths_labels(
-            _("Encoding Quality (pct)"),
-            _("Automatic picture quality, average for all the windows")
+            _("Encoding Quality (pct)"), _("Automatic picture quality, average for all the windows")
         )
         self.speed_labels = maths_labels(
             _("Encoding Speed (pct)"),
@@ -1211,19 +1293,27 @@ class SessionInfo(Gtk.Window):
 
         # grid 2:
         self.grid = Gtk.Grid()
+        self.grid.set_column_spacing(8)
+        self.grid.set_row_spacing(4)
+        add_style_class(self.grid, "xpra-card", "xpra-table", "session-info-grid")
         self.row.set(0)
         vbox.add(self.grid)
-        self.add_row(*(title_box(x) for x in ("", _("Regular"), _("Transient"), _("Trays"), "OpenGL")))
+        self.add_row(*(heading_label(x) for x in ("", _("Regular"), _("Transient"), _("Trays"), "OpenGL")))
         self.windows_managed_label = slabel()
         self.transient_managed_label = slabel()
         self.trays_managed_label = slabel()
         self.opengl_label = slabel()
-        self.add_row(title_box(_("Windows")),
-                     self.windows_managed_label, self.transient_managed_label,
-                     self.trays_managed_label, self.opengl_label)
+        self.add_row(
+            heading_label(_("Windows")),
+            self.windows_managed_label,
+            self.transient_managed_label,
+            self.trays_managed_label,
+            self.opengl_label,
+        )
 
         self.encoder_info_box = Gtk.VBox(spacing=4)
-        self.encoder_info_box.add(title_box(_("Window Encoders and Renderers")))
+        add_style_class(self.encoder_info_box, "xpra-card", "session-info-encoders")
+        self.encoder_info_box.add(heading_label(_("Window Encoders and Renderers")))
         self.encoder_labels = {}
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=0.0)
         al.set_margin_start(10)
@@ -1346,7 +1436,9 @@ class SessionInfo(Gtk.Window):
                     self.encoder_labels[wid] = lbl
                     self.encoder_info_box.add(lbl)
                 if props:
-                    info = " ".join("%s=%s" % (k, v) for k, v in props.items() if k not in ("", "title", "_video", "codec"))
+                    info = " ".join(
+                        "%s=%s" % (k, v) for k, v in props.items() if k not in ("", "title", "_video", "codec")
+                    )
                     lbl.set_tooltip_text(info)
         return True
 
@@ -1418,27 +1510,30 @@ class SessionInfo(Gtk.Window):
         # older servers have 'batch' at top level,
         # newer servers store it under client
         self.send_info_request("network", "damage", "state", "batch", "client")
-        box = self.tab_box
-        h = box.get_preferred_height()[0]
-        bh = self.tab_button_box.get_preferred_height()[0]
-        if h <= 0:
+        graph_rect = self.bandwidth_graph.get_allocation()
+        if graph_rect.width <= 1 or graph_rect.height <= 1:
             return True
         start_x_offset = min(1.0, (monotonic() - self.last_populate_time) * 0.95)
         from xpra.common import DEFAULT_DPI
+
         screen = Gdk.Screen.get_default()
         dpi = screen.get_resolution() if screen else -1
         scale = max(1, dpi / DEFAULT_DPI) if dpi > 0 else self.get_scale_factor()
-        rect = box.get_allocation()
         display = self.get_client_subsystem("display")
         maxw, maxh = display.get_root_size() if display else (0, 0)
         ngraphs = 2 + int(SHOW_SOUND_STATS)
-        # the preferred size (which does not cause the window to grow too big):
-        W = 360
-        H = 160 * 3 // ngraphs
-        w = min(maxw, max(W, rect.width - 20))
-        # need some padding to be able to shrink the window again:
+        # Base graph sizing on the space allocated inside the graph card.
+        # Using the window's preferred size here creates a feedback loop:
+        # the graph size changes that preferred size on every refresh.
+        # Leave some slack in the size request so that the window can be
+        # shrunk again after it has been enlarged.
         pad = 50
-        h = min(maxh - pad // ngraphs, max(H, (h - bh - pad) // ngraphs, (rect.height - bh - pad) // ngraphs))
+        w = max(360, graph_rect.width - 20)
+        h = max(160 * 3 // ngraphs, graph_rect.height - pad // ngraphs)
+        if maxw > 0:
+            w = min(maxw, w)
+        if maxh > 0:
+            h = min(maxh, h)
         # bandwidth graph:
         labels, datasets = [], []
 
@@ -1451,10 +1546,12 @@ class SessionInfo(Gtk.Window):
             return f"x{int(value)}{unit}"
 
         if self.net_in_bitcount and self.net_out_bitcount:
-            net_in_scale, net_in_data = values_to_diff_scaled_values(tuple(
-                self.net_in_bitcount)[1:N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50)
-            net_out_scale, net_out_data = values_to_diff_scaled_values(tuple(
-                self.net_out_bitcount)[1:N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50)
+            net_in_scale, net_in_data = values_to_diff_scaled_values(
+                tuple(self.net_in_bitcount)[1 : N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50
+            )
+            net_out_scale, net_out_data = values_to_diff_scaled_values(
+                tuple(self.net_out_bitcount)[1 : N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50
+            )
             if SHOW_RECV:
                 labels += [_("recv") + " %sb/s" % unit(net_in_scale), _("sent") + " %sb/s" % unit(net_out_scale)]
                 datasets += [net_in_data, net_out_data]
@@ -1462,27 +1559,36 @@ class SessionInfo(Gtk.Window):
                 labels += [_("recv") + " %sb/s" % unit(net_in_scale)]
                 datasets += [net_in_data]
         if features.window and SHOW_PIXEL_STATS and self.get_windows_enabled():
-            pixel_scale, in_pixels = values_to_scaled_values(tuple(
-                self.pixel_in_data)[3:N_SAMPLES + 4], min_scaled_value=100)
+            pixel_scale, in_pixels = values_to_scaled_values(
+                tuple(self.pixel_in_data)[3 : N_SAMPLES + 4], min_scaled_value=100
+            )
             datasets.append(in_pixels)
             labels.append("%s " % unit(pixel_scale) + _("pixels/s"))
         if features.audio and SHOW_SOUND_STATS and self.audio_in_bitcount:
-            audio_in_scale, audio_in_data = values_to_diff_scaled_values(tuple(
-                self.audio_in_bitcount)[1:N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50)
+            audio_in_scale, audio_in_data = values_to_diff_scaled_values(
+                tuple(self.audio_in_bitcount)[1 : N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50
+            )
             datasets.append(audio_in_data)
             labels.append(_("Speaker") + " %sb/s" % unit(audio_in_scale))
         if features.audio and SHOW_SOUND_STATS and self.audio_out_bitcount:
-            audio_out_scale, audio_out_data = values_to_diff_scaled_values(tuple(
-                self.audio_out_bitcount)[1:N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50)
+            audio_out_scale, audio_out_data = values_to_diff_scaled_values(
+                tuple(self.audio_out_bitcount)[1 : N_SAMPLES + 3], scale_unit=1000, min_scaled_value=50
+            )
             datasets.append(audio_out_data)
             labels.append(_("Mic") + " %sb/s" % unit(audio_out_scale))
 
         if labels and datasets:
-            surface = make_graph_imagesurface(datasets, labels=labels,
-                                              width=w, height=h,
-                                              title=_("Bandwidth"), min_y_scale=10, rounding=10,
-                                              start_x_offset=start_x_offset,
-                                              scale=scale)
+            surface = make_graph_imagesurface(
+                datasets,
+                labels=labels,
+                width=w,
+                height=h,
+                title=_("Bandwidth"),
+                min_y_scale=10,
+                rounding=10,
+                start_x_offset=start_x_offset,
+                scale=scale,
+            )
             set_graph_surface(self.bandwidth_graph, surface)
 
         def norm_lists(items, size=N_SAMPLES) -> tuple:
@@ -1515,11 +1621,17 @@ class SessionInfo(Gtk.Window):
         # debug:
         # for i, v in enumerate(latency_values):
         #    log.warn("%20s = %s", latency_labels[i], v)
-        surface = make_graph_imagesurface(latency_values, labels=latency_labels,
-                                          width=w, height=h,
-                                          title=_("Latency (ms)"), min_y_scale=10, rounding=25,
-                                          start_x_offset=start_x_offset,
-                                          scale=scale)
+        surface = make_graph_imagesurface(
+            latency_values,
+            labels=latency_labels,
+            width=w,
+            height=h,
+            title=_("Latency (ms)"),
+            min_y_scale=10,
+            rounding=25,
+            start_x_offset=start_x_offset,
+            scale=scale,
+        )
         set_graph_surface(self.latency_graph, surface)
 
         audio = self.get_client_subsystem("audio")
@@ -1531,13 +1643,19 @@ class SessionInfo(Gtk.Window):
                     (self.audio_out_queue_cur, _("Level")),
                     (self.audio_out_queue_min, _("Min")),
                 ),
-                N_SAMPLES * 10
+                N_SAMPLES * 10,
             )
-            surface = make_graph_imagesurface(queue_values, labels=queue_labels,
-                                              width=w, height=h,
-                                              title=_("Audio Buffer (ms)"), min_y_scale=10, rounding=25,
-                                              start_x_offset=start_x_offset,
-                                              scale=scale)
+            surface = make_graph_imagesurface(
+                queue_values,
+                labels=queue_labels,
+                width=w,
+                height=h,
+                title=_("Audio Buffer (ms)"),
+                min_y_scale=10,
+                rounding=25,
+                start_x_offset=start_x_offset,
+                scale=scale,
+            )
             set_graph_surface(self.audio_queue_graph, surface)
         return True
 
@@ -1589,6 +1707,7 @@ class SessionInfoClient(InfoTimerClient):
             return d
 
         from xpra.client.base.remoteinfo import get_remote_lib_versions
+
         feature_info = rtdict("features")
         clipboard = self.get_subsystem("clipboard")
         if clipboard:
