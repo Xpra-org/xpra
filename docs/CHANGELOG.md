@@ -1,32 +1,61 @@
 # Changelog
 
-## [5.1.7] 2026-07-23
+## [5.1.7] 2026-08-11
 * Platforms, build and packaging:
-    * [almalinux build failures](https://github.com/Xpra-org/xpra/commit/e371556e6710cb19b02f215af7f4754313d59f00) [and rockylinux](https://github.com/Xpra-org/xpra/commit/dc839d9bc7bdd46b7161b37f89d98263b2405a1f)
-    * [missing default build list](https://github.com/Xpra-org/xpra/commit/403e684f0cb731c01e2799ac4c335110268c0605) - [unused arm64 list](https://github.com/Xpra-org/xpra/commit/ebdcf11bb30609e541c5b47a7dded68affce2d12)
-    * [RHEL builds need our private openh264](https://github.com/Xpra-org/xpra/commit/c31381a14a88580626dbf1e61356af2e5f9dbd2d) [and CentOS](https://github.com/Xpra-org/xpra/commit/46941f44b363f2bf37a7bcddfc15ccf83102ccb4)
-    * [Python 3.6 syntax compatibility](https://github.com/Xpra-org/xpra/commit/0d8384964f8a1ae2e505eba6fd4839daf142d707)
-    * [no pyopengl to build here](https://github.com/Xpra-org/xpra/commit/bcd98f8557dff2609a448f7b357756dbaa870d0e)
+  * [almalinux build failures](https://github.com/Xpra-org/xpra/commit/e371556e6710cb19b02f215af7f4754313d59f00) [and rockylinux](https://github.com/Xpra-org/xpra/commit/dc839d9bc7bdd46b7161b37f89d98263b2405a1f)
+  * [missing default build list](https://github.com/Xpra-org/xpra/commit/403e684f0cb731c01e2799ac4c335110268c0605) - [unused arm64 list](https://github.com/Xpra-org/xpra/commit/ebdcf11bb30609e541c5b47a7dded68affce2d12)
+  * [RHEL builds need our private openh264](https://github.com/Xpra-org/xpra/commit/c31381a14a88580626dbf1e61356af2e5f9dbd2d) [and CentOS](https://github.com/Xpra-org/xpra/commit/46941f44b363f2bf37a7bcddfc15ccf83102ccb4)
+  * [Python 3.6 syntax compatibility](https://github.com/Xpra-org/xpra/commit/0d8384964f8a1ae2e505eba6fd4839daf142d707)
+  * [no pyopengl to build here](https://github.com/Xpra-org/xpra/commit/bcd98f8557dff2609a448f7b357756dbaa870d0e)
+  * [Ubuntu Stonking packaging](https://github.com/Xpra-org/xpra/commit/60cc38a77942eb7cfd7c141f25421228e4c14aaa)
+  * [googlesource downloads are not reliable](https://github.com/Xpra-org/xpra/commit/8eca03acb642b27e47d372b73e2393355fc947a5)
+* Encodings:
+  * [Cython CSC validation](https://github.com/Xpra-org/xpra/commit/a729bf03259bf37cd78d29d89b99cd92d2f1cf37), [conversion rounding](https://github.com/Xpra-org/xpra/commit/237b28358bdd8c42debee1d5e12be31b37d33344), [30-bit issues](https://github.com/Xpra-org/xpra/commit/d8cbf7fa27f417f40e8acc8b1d4e03f02e82f0ed)
+  * [invalid scroll rectangles emitted when the damage region moves](https://github.com/Xpra-org/xpra/commit/b3c9df9e052ff5bdb210341b047d7)
+  * [BGRX must use opaque alpha](https://github.com/Xpra-org/xpra/commit/e9fed0db4ab04c1a3bd3c5ded9c9e2a83d56ec16)
+  * [swapped colour channels](https://github.com/Xpra-org/xpra/commit/5147834e3102ca55eb0ce22c7442e2c001344fe4), [miscalculated rowstride](https://github.com/Xpra-org/xpra/commit/000c5781cbe4089e5cabf9d380e1a92cec3e44fb)
+  * [prefer BGRX / BGRA by default](https://github.com/Xpra-org/xpra/commit/ef94cda09a1fb27ba8f5340b22331a1958f98e9c)
+  * [cairo: discard alpha from 32-bit data when needed](https://github.com/Xpra-org/xpra/commit/dcd74737010a7adbc8d3b38d04956a52f6b8217c)
+* MS Windows:
+  * [object leak querying desktop name](https://github.com/Xpra-org/xpra/commit/893a8ca8b5974bf7938dae26530a8f03a1d42b43)
+  * [object leak querying cursors](https://github.com/Xpra-org/xpra/commit/af3000c0ac4bb3915cd0b40041aa4368b9f05b38)
+  * [avoid using comtypes](https://github.com/Xpra-org/xpra/commit/f8f139dbd141f603e51f313ad2435f0ea24e5048)
+  * [`mmap` uses unavailable API calls](https://github.com/Xpra-org/xpra/commit/88d977f6cc0a985f5f106e76926e6e717dced548)
+  * [clipboard memory handle bugs](https://github.com/Xpra-org/xpra/commit/ccb0ed1fca55d1440711c8440ed211e22bed9176)
+* Mmap:
+  * [limit is actually 4GB](https://github.com/Xpra-org/xpra/commit/0377ba073f3ead0b6d69505e74c9faee2504f8ba)
+  * [validate the token location and size](https://github.com/Xpra-org/xpra/commit/ddec4ce4fcef68ba4a3f395a916007838b53ff4e)
 * Major:
-    * [chunked file transfer early rejection errors out](https://github.com/Xpra-org/xpra/commit/075e60d24ca4e14b06321864afb32a51cf6b7514)
-    * [wheel events may land in the wrong location](https://github.com/Xpra-org/xpra/commit/dc79a541d7c9c933679ecdd5592103bfd75301ee)
-    * [misnamed X11 atoms](https://github.com/Xpra-org/xpra/commit/8415ce33966344590a169cf62ed2083cae93e79a)
-    * [macOS client crash with audio enabled](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8) [or speaker state changes](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8)
-    * [nvenc: choose a profile matching the chroma format](https://github.com/Xpra-org/xpra/commit/68767858b81bed6d3c6342048850ea57e50183ec)
+  * [handle duplicated mode attribute in session files](https://github.com/Xpra-org/xpra/commit/d8ac8e684c21689b7c43e2c230d06dc7c535f543)
+  * [allow upgrades on displays where no window manager is left](https://github.com/Xpra-org/xpra/commit/d564e1a846369563b10730d594cbbd7d3c232ee9)
+  * [chunked file transfer early rejection errors out](https://github.com/Xpra-org/xpra/commit/075e60d24ca4e14b06321864afb32a51cf6b7514)
+  * [wheel events may land in the wrong location](https://github.com/Xpra-org/xpra/commit/dc79a541d7c9c933679ecdd5592103bfd75301ee)
+  * [misnamed X11 atoms](https://github.com/Xpra-org/xpra/commit/8415ce33966344590a169cf62ed2083cae93e79a)
+  * [macOS client crash with audio enabled](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8) [or speaker state changes](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8)
+  * [nvenc: choose a profile matching the chroma format](https://github.com/Xpra-org/xpra/commit/68767858b81bed6d3c6342048850ea57e50183ec)
+  * [dbus notification retry loop](https://github.com/Xpra-org/xpra/commit/06447a5f67d9ba3a0dedad1f435b1f86cc90d4ed)
+* OpenGL:
+  * [verify the rgb buffer size](https://github.com/Xpra-org/xpra/commit/40e182d4381c8044bacf5178bd88aea8672a9d39)
+  * [Gtk X11 clients errors](https://github.com/Xpra-org/xpra/commit/4c7dab57dc77fea015e58f4ecfe27714d5720403)
+  * [don't request contexts with depth or stencil buffers](https://github.com/Xpra-org/xpra/commit/67511f70785c6bc2e5741d0a68b5e8c349db10d0)
+  * [OpenGL pixel upload format](https://github.com/Xpra-org/xpra/commit/079c72dd3673457e346c78feff79c5ff8b2c22b3)
+  * [discard alpha padding in RGBX uploads](https://github.com/Xpra-org/xpra/commit/8b18363e5b798464b53690aa6c0ff92f6f936494)
 * Minor:
-    * [Gtk X11 clients OpenGL errors](https://github.com/Xpra-org/xpra/commit/4c7dab57dc77fea015e58f4ecfe27714d5720403)
-    * [don't request OpenGL contexts with depth or stencil buffers](https://github.com/Xpra-org/xpra/commit/67511f70785c6bc2e5741d0a68b5e8c349db10d0)
-    * [clean dead ssh agent symlinks](https://github.com/Xpra-org/xpra/commit/00074c3f140b86995c49dc48b04bac0a1ff085c6)
-    * [always point the ssh agent symlink at a client](https://github.com/Xpra-org/xpra/commit/c587579aae44e34d4efbeaacf68a8462a6d02e9f)
-    * [clamp the shadow server refresh rate](https://github.com/Xpra-org/xpra/commit/c71a1022c4854ec051c1ff48d0e447c5bdbfc6bd)
-    * [Cython CSC validation](https://github.com/Xpra-org/xpra/commit/a729bf03259bf37cd78d29d89b99cd92d2f1cf37)
-    * [validate port numbers ourselves](https://github.com/Xpra-org/xpra/commit/c23aa1018334e940feaeb3b12ffa8a9064d59fe0)
-    * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/d329fc942cd9475f67bdce1c13280dac98d1d9a5)
-    * [IPv6 socket warnings](https://github.com/Xpra-org/xpra/commit/9ce8904e7a7a88263e62d76f68be4ecdcce0db86)
-* Stricter Types:
-    * [keyboard option parsing type mismatch](https://github.com/Xpra-org/xpra/commit/e1e7155d2f5b228a6d9195999c03655f0e6c1857)
+  * [clean dead ssh agent symlinks](https://github.com/Xpra-org/xpra/commit/00074c3f140b86995c49dc48b04bac0a1ff085c6)
+  * [always point the ssh agent symlink at a client](https://github.com/Xpra-org/xpra/commit/c587579aae44e34d4efbeaacf68a8462a6d02e9f)
+  * [clamp the shadow server refresh rate](https://github.com/Xpra-org/xpra/commit/c71a1022c4854ec051c1ff48d0e447c5bdbfc6bd)
+  * [validate port numbers ourselves](https://github.com/Xpra-org/xpra/commit/c23aa1018334e940feaeb3b12ffa8a9064d59fe0)
+  * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/d329fc942cd9475f67bdce1c13280dac98d1d9a5)
+  * [IPv6 socket warnings](https://github.com/Xpra-org/xpra/commit/9ce8904e7a7a88263e62d76f68be4ecdcce0db86)
+  * [potential UI watcher errors](https://github.com/Xpra-org/xpra/commit/668cc5c8678e77047e03953530b5e8e15c6b9ca5)
+  * [UI watcher resume never fires](https://github.com/Xpra-org/xpra/commit/62c7af0a050f02a511ec8e6852518d87968b6516)
+  * [drop audio `removesilence` since it never worked properly](https://github.com/Xpra-org/xpra/commit/1d42adab7d4c19808044a7d17c3bc2bf866ff1a1)
+  * [cursor logging errors](https://github.com/Xpra-org/xpra/commit/129c36fd113671f1d6c0bf0437a81a0e12e8f9a8)
 * Cosmetic:
-    * [silence macOS legacy SSL warnings](https://github.com/Xpra-org/xpra/commit/a1cfa47710b50ef57db447f7b9d08ce76c49ad89)
+  * [keyboard option parsing type mismatch](https://github.com/Xpra-org/xpra/commit/e1e7155d2f5b228a6d9195999c03655f0e6c1857)
+  * [silence macOS legacy SSL warnings](https://github.com/Xpra-org/xpra/commit/a1cfa47710b50ef57db447f7b9d08ce76c49ad89)
+  * [consistent attribute initialization](https://github.com/Xpra-org/xpra/commit/765f3d0414e80c674a7c5060f4991f6a9d060aa8)
+  * [remove unavailable test commands](https://github.com/Xpra-org/xpra/commit/d4e6364916d51ac5346f09c4f0716f00270e230e)
 
 ## [5.1.6] 2026-06-30
 * Platforms, build and packaging:

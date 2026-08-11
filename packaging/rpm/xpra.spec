@@ -827,26 +827,62 @@ fi
 
 
 %changelog
-* Thu Jul 23 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+* Tue Aug 11 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - Platforms, build and packaging:
    almalinux build failures and rockylinux
    missing default build list - unused arm64 list
    RHEL builds need our private openh264 and CentOS
    Python 3.6 syntax compatibility
    no pyopengl to build here
+   Ubuntu Stonking packaging
+   googlesource downloads are not reliable
+- Encodings:
+   Cython CSC validation, conversion rounding, 30-bit issues
+   invalid scroll rectangles emitted when the damage region moves
+   BGRX must use opaque alpha
+   swapped colour channels, miscalculated rowstride
+   prefer BGRX / BGRA by default
+   cairo: discard alpha from 32-bit data when needed
+- MS Windows:
+   object leak querying desktop name
+   object leak querying cursors
+   avoid using comtypes
+   `mmap` uses unavailable API calls
+   clipboard memory handle bugs
+- Mmap:
+   limit is actually 4GB
+   validate the token location and size
 - Major:
+   handle duplicated mode attribute in session files
+   allow upgrades on displays where no window manager is left
    chunked file transfer early rejection errors out
    wheel events may land in the wrong location
    misnamed X11 atoms
+   macOS client crash with audio enabled or speaker state changes
+   nvenc: choose a profile matching the chroma format
+   dbus notification retry loop
+- OpenGL:
+   verify the rgb buffer size
+   Gtk X11 clients errors
+   don't request contexts with depth or stencil buffers
+   OpenGL pixel upload format
+   discard alpha padding in RGBX uploads
 - Minor:
-   Gtk X11 clients OpenGL errors
-   don't request OpenGL contexts with depth or stencil buffers
    clean dead ssh agent symlinks
    always point the ssh agent symlink at a client
    clamp the shadow server refresh rate
-   Cython CSC validation
    validate port numbers ourselves
    skip notification warnings during cleanup
+   IPv6 socket warnings
+   potential UI watcher errors
+   UI watcher resume never fires
+   drop audio `removesilence` since it never worked properly
+   cursor logging errors
+- Cosmetic:
+   keyboard option parsing type mismatch
+   silence macOS legacy SSL warnings
+   consistent attribute initialization
+   remove unavailable test commands
 * Tue Jun 30 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
 - Platforms, build and packaging:
    honour pkgconfig file for Gtk build paths + fixup
