@@ -597,22 +597,27 @@ class SessionInfo(Gtk.Window):
             slabel(server_str) if self.show_server else None,
         )
 
-    def grid_tab(self, icon_filename: str, title: str, populate_cb: Callable) -> Gtk.VBox:
+    def grid_tab(self, icon_filename: str, title: str, populate_cb: Callable, scroll: bool = False) -> Gtk.VBox:
         self.grid = Gtk.Grid()
         self.grid.set_column_spacing(8)
         self.grid.set_row_spacing(4)
         self.grid.set_hexpand(True)
         add_style_class(self.grid, "xpra-card", "xpra-table", "session-info-grid")
         self.row.set(0)
-        vbox = self.vbox_tab(icon_filename, title, populate_cb)
+        vbox = self.vbox_tab(icon_filename, title, populate_cb, scroll)
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
         al.add(self.grid)
         vbox.pack_start(al, expand=True, fill=True, padding=0)
         return vbox
 
-    def vbox_tab(self, icon_filename: str, title: str, populate_cb: Callable) -> Gtk.VBox:
+    def vbox_tab(self, icon_filename: str, title: str, populate_cb: Callable, scroll: bool = False) -> Gtk.VBox:
         vbox = Gtk.VBox(homogeneous=False, spacing=12)
-        self.add_tab(icon_filename, title, populate_cb, contents=vbox)
+        contents = vbox
+        if scroll:
+            contents = Gtk.ScrolledWindow()
+            contents.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+            contents.add(vbox)
+        self.add_tab(icon_filename, title, populate_cb, contents)
         return vbox
 
     def add_tab(self, icon_filename: str, title: str, populate_cb: Callable, contents) -> None:
@@ -1080,7 +1085,7 @@ class SessionInfo(Gtk.Window):
         return False
 
     def add_connection_tab(self) -> None:
-        self.grid_tab("connect.png", _("Connection"), self.populate_connection)
+        self.grid_tab("connect.png", _("Connection"), self.populate_connection, scroll=True)
 
         if self.connection:
             self.connection.target = self.label_row(_("Server Endpoint"))
@@ -1239,7 +1244,7 @@ class SessionInfo(Gtk.Window):
 
     def add_statistics_tab(self) -> None:
         # Details:
-        vbox = self.grid_tab("browse.png", _("Statistics"), self.populate_statistics)
+        vbox = self.grid_tab("browse.png", _("Statistics"), self.populate_statistics, scroll=True)
         self.add_row(
             *(heading_label(x) for x in ("", _("Latest"), _("Minimum"), _("Average"), _("90 percentile"), _("Maximum")))
         )
@@ -1510,7 +1515,7 @@ class SessionInfo(Gtk.Window):
         # older servers have 'batch' at top level,
         # newer servers store it under client
         self.send_info_request("network", "damage", "state", "batch", "client")
-        graph_rect = self.bandwidth_graph.get_allocation()
+        graph_rect = self.graph_box.get_allocation()
         if graph_rect.width <= 1 or graph_rect.height <= 1:
             return True
         start_x_offset = min(1.0, (monotonic() - self.last_populate_time) * 0.95)
@@ -1522,14 +1527,14 @@ class SessionInfo(Gtk.Window):
         display = self.get_client_subsystem("display")
         maxw, maxh = display.get_root_size() if display else (0, 0)
         ngraphs = 2 + int(SHOW_SOUND_STATS)
-        # Base graph sizing on the space allocated inside the graph card.
+        # Base graph sizing on the space allocated to all the graph cards.
         # Using the window's preferred size here creates a feedback loop:
         # the graph size changes that preferred size on every refresh.
         # Leave some slack in the size request so that the window can be
         # shrunk again after it has been enlarged.
         pad = 50
         w = max(360, graph_rect.width - 20)
-        h = max(160 * 3 // ngraphs, graph_rect.height - pad // ngraphs)
+        h = max(90 * 3 // ngraphs, (graph_rect.height - pad) // ngraphs)
         if maxw > 0:
             w = min(maxw, w)
         if maxh > 0:
