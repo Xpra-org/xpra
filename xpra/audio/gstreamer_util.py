@@ -732,7 +732,10 @@ def get_pulse_device(device_name_match="", want_monitor_device=True,
                 log.info("   %s", bytestostr(k))
             if not env_device:  # used already!
                 log.info(" to select a specific one,")
-                log.info(" use the environment variable '%s'", env_device_name)
+                if env_device_name == XPRA_PULSE_SINK_DEVICE_NAME:
+                    log.info(" use '--audio-sink=pulsesink:device-name'")
+                else:
+                    log.info(" use the environment variable '%s'", env_device_name)
         # default to first one:
         if USE_DEFAULT_DEVICE:
             log.info("using default pulseaudio device")

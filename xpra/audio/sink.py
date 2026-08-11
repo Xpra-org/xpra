@@ -21,7 +21,7 @@ from xpra.gstreamer.common import (
 from xpra.audio.gstreamer_util import (
     get_decoder_elements, has_plugins,
     get_queue_time, get_decoders,
-    get_default_sink_plugin, get_sink_plugins,
+    get_default_sink_plugin, get_sink_devices, get_sink_plugins,
     AUDIO_SINK_LABELS,
     MP3, CODEC_ORDER, QUEUE_LEAK,
     GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS, RTP_SINK_CAPS,
@@ -159,12 +159,16 @@ class AudioSink(AudioPipeline):
         # because the attributes may not exist
         sink_attributes.update(SINK_DEFAULT_ATTRIBUTES.get(sink_type, {}))
         get_options_cb = DEFAULT_SINK_PLUGIN_OPTIONS.get(sink_type.replace("sink", ""))
-        if get_options_cb:
+        if get_options_cb and not sink_options.get("device"):
             v = get_options_cb()
             log("%s()=%s", get_options_cb, v)
             sink_attributes.update(v)
         if sink_options:
             sink_attributes.update(sink_options)
+        if self.codec_description_suffix and (device := sink_options.get("device")):
+            device_label = get_sink_devices(sink_type).get(str(device), str(device))
+            self.codec_description_suffix = self.codec_description_suffix.removesuffix(" sink")
+            self.codec_description_suffix += f" device '{device_label}'"
         sink_attributes["name"] = "sink"
         if sink_type != "autoaudiosink":
             sink_attributes.update(NON_AUTO_SINK_ATTRIBUTES)

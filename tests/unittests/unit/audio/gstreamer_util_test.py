@@ -4,16 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import unittest
+import os
 import sys
+import unittest
 from types import ModuleType
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from xpra.audio.common import OPUS_RTP
 from xpra.audio.gstreamer_util import (
     CODEC_ORDER, CODEC_OPTIONS, ENCODER_LATENCY,
     RTP_SINK_CAPS, parse_audio_sink,
-    get_sink_devices,
+    XPRA_PULSE_SINK_DEVICE_NAME, get_pulse_device, get_sink_devices,
 )
 
 
@@ -108,6 +109,24 @@ class TestGStreamerUtilStatic(unittest.TestCase):
 
     def test_other_sink_devices(self):
         assert get_sink_devices("alsasink") == {}
+
+    def test_pulse_sink_device_hint(self):
+        devices = {
+            "pulse-output-one": '"Built-in Audio Analog Stereo"',
+            "pulse-output-two": '"HDMI / DisplayPort"',
+        }
+        with patch("xpra.audio.pulseaudio.util.has_pa", return_value=True), \
+                patch("xpra.audio.pulseaudio.util.get_pa_device_options", return_value=devices), \
+                patch("xpra.audio.pulseaudio.util.get_pactl_server", return_value="pulse-server"), \
+                patch("xpra.audio.gstreamer_util.WARNED_MULTIPLE_DEVICES", False), \
+                patch("xpra.audio.gstreamer_util.log") as pulse_log, \
+                patch.dict(os.environ, {XPRA_PULSE_SINK_DEVICE_NAME: ""}):
+            assert get_pulse_device(
+                want_monitor_device=False,
+                input_or_output=False,
+                env_device_name=XPRA_PULSE_SINK_DEVICE_NAME,
+            ) == ""
+        assert call(" use '--audio-sink=pulsesink:device-name'") in pulse_log.info.call_args_list
 
 
 class TestGStreamerUtilPlugins(unittest.TestCase):
