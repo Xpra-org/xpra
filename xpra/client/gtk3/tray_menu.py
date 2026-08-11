@@ -121,6 +121,19 @@ GENERIC_ENCODINGS = ("", "auto", "stream", "grayscale")
 
 CONFIG = "91_tray.conf"
 
+AUDIO_SINK_LABELS = {
+    "autoaudiosink": "Auto",
+    "pulsesink": "Pulseaudio",
+    "alsasink": "ALSA",
+    "osssink": "OSS",
+    "oss4sink": "OSS v4",
+    "jackaudiosink": "JACK",
+    "osxaudiosink": "Core Audio",
+    "wasapi2sink": "WASAPI 2",
+    "directsoundsink": "DirectSound",
+    "wasapisink": "WASAPI",
+}
+
 
 def update_config(attributes: dict[str, str]) -> None:
     update_config_attributes(attributes, filename=CONFIG)
@@ -998,17 +1011,55 @@ class GTKTrayMenu(GTKMenuHelper):
         audio_menu_item.show_all()
         return audio_menu_item
 
-    def spk_on(self, *args) -> None:
-        log("spk_on(%s)", args)
-        self.get_subsystem("audio").start_receiving_audio()
-
-    def spk_off(self, *args) -> None:
-        log("spk_off(%s)", args)
-        self.get_subsystem("audio").stop_receiving_audio()
+    def spk_on_sink(self, audio_sink: str) -> None:
+        log("spk_on_sink(%s)", audio_sink)
+        audio = self.get_subsystem("audio")
+        from xpra.audio.gstreamer_util import parse_audio_sink
+        sink_type, _sink_options = parse_audio_sink(audio.audio_sink)
+        if sink_type != audio_sink:
+            if audio.speaker_enabled:
+                audio.stop_receiving_audio()
+            audio.audio_sink = audio_sink
+        audio.start_receiving_audio()
 
     def make_speakermenuitem(self) -> Gtk.ImageMenuItem:
         speaker = self.menuitem(_("Speaker"), "speaker.png", _("Forward audio output from the server"))
         set_sensitive(speaker, False)
+
+        from xpra.audio.gstreamer_util import get_default_sink_plugin, get_sink_plugins, parse_audio_sink
+
+        menu = Gtk.Menu()
+        menu.ignore_events = False
+        menuitems = {}
+
+        def sinkitem(label: str, sink_type="") -> Gtk.CheckMenuItem:
+            item = Gtk.CheckMenuItem(label=label)
+            item.set_draw_as_radio(True)
+            set_sensitive(item, True)
+            menuitems[sink_type] = item
+
+            def activate_cb(*_args) -> None:
+                log("speaker sink activate(%s) sink=%s, ignore_events=%s, active=%s",
+                    item, sink_type, menu.ignore_events, item.get_active())
+                if menu.ignore_events:
+                    return
+                ensure_item_selected(menu, item)
+                if not item.get_active():
+                    return
+                if sink_type:
+                    self.spk_on_sink(sink_type)
+                else:
+                    audio = self.get_subsystem("audio")
+                    audio.stop_receiving_audio()
+                update_speaker_submenu_state()
+
+            item.connect("activate", activate_cb)
+            return item
+
+        menu.append(sinkitem(_("Off")))
+        menu.append(Gtk.SeparatorMenuItem())
+        for sink_plugin in get_sink_plugins():
+            menu.append(sinkitem(AUDIO_SINK_LABELS.get(sink_plugin, sink_plugin), sink_plugin))
 
         def is_speaker_on(*_args) -> bool:
             return self.get_subsystem("audio").speaker_enabled
@@ -1020,7 +1071,32 @@ class GTKTrayMenu(GTKMenuHelper):
                 return _("Server does not support speaker forwarding")
             return ""
 
-        self.add_audiosubmenu(speaker, check_available, is_speaker_on, self.spk_on, self.spk_off, "speaker-changed")
+        def update_speaker_submenu_state(*args) -> None:
+            menu.ignore_events = True
+            try:
+                err = check_available()
+                set_sensitive(speaker, not bool(err))
+                speaker.set_tooltip_text(err)
+                speaker.set_submenu(None if err else menu)
+
+                sink_type = ""
+                if is_speaker_on():
+                    sink_type, _sink_options = parse_audio_sink(self.get_subsystem("audio").audio_sink)
+                    if sink_type == "auto":
+                        sink_type = get_default_sink_plugin()
+                log("update_speaker_submenu_state%s sink=%r, err=%r", args, sink_type, err)
+                selected = menuitems.get(sink_type, menuitems[""])
+                if not selected.get_active():
+                    selected.set_active(True)
+                ensure_item_selected(menu, selected)
+            finally:
+                menu.ignore_events = False
+
+        audio = self.get_subsystem("audio")
+        audio.connect("speaker-changed", update_speaker_submenu_state)
+        audio.connect("audio-initialized", update_speaker_submenu_state)
+        self.after_handshake(update_speaker_submenu_state)
+        menu.show_all()
         return speaker
 
     def mic_on(self, *args) -> None:
