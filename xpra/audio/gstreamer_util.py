@@ -60,6 +60,7 @@ IGNORED_OUTPUT_DEVICES = os.environ.get("XPRA_AUDIO_IGNORED_OUTPUT_DEVICES", "be
 
 AUDIO_SINK_LABELS = {
     "autoaudiosink": "Auto",
+    "pipewiresink": "PipeWire",
     "pulsesink": "Pulseaudio",
     "alsasink": "ALSA",
     "osssink": "OSS",
@@ -510,6 +511,7 @@ def get_sink_plugins() -> list[str]:
                 SINKS.append("pulsesink")
         except ImportError as e:
             log("get_sink_plugins() no pulsesink: %s", e)
+        SINKS.append("pipewiresink")
     if POSIX:
         SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
     return SINKS

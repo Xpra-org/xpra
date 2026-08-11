@@ -52,6 +52,7 @@ NON_AUTO_SINK_ATTRIBUTES: dict[str, Any] = {
 }
 
 SINK_DEFAULT_ATTRIBUTES: dict[str, dict[str, str]] = {
+    "pipewiresink": {"client-name": "Xpra"},
     "pulsesink": {"client-name": "Xpra"},
     "wasapisink": {"low-latency": "true", "buffer-time": "10000"},
     "wasapi2sink": {"low-latency": "true", "buffer-time": "10000"},

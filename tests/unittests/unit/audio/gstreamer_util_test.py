@@ -12,10 +12,10 @@ from unittest.mock import call, patch
 
 from xpra.audio.common import OPUS_RTP
 from xpra.audio.gstreamer_util import (
-    CODEC_ORDER, CODEC_OPTIONS, ENCODER_LATENCY,
+    AUDIO_SINK_LABELS, CODEC_ORDER, CODEC_OPTIONS, ENCODER_LATENCY,
     RTP_SINK_CAPS, parse_audio_sink,
     SINK_DEVICE_CACHE, XPRA_PULSE_SINK_DEVICE_NAME,
-    get_pulse_device, get_sink_device_name, get_sink_devices,
+    get_pulse_device, get_sink_device_name, get_sink_devices, get_sink_plugins,
 )
 
 
@@ -85,6 +85,19 @@ class TestGStreamerUtilStatic(unittest.TestCase):
         assert parse_audio_sink("pulsesink:device=device-name,sync=false") == (
             "pulsesink", {"device": "device-name", "sync": "false"},
         )
+
+    def test_parse_pipewire_sink_target(self):
+        assert parse_audio_sink("pipewiresink:target-object=alsa_output.pci-device") == (
+            "pipewiresink", {"target-object": "alsa_output.pci-device"},
+        )
+
+    def test_pipewire_sink(self):
+        assert AUDIO_SINK_LABELS["pipewiresink"] == "PipeWire"
+        with patch("xpra.audio.gstreamer_util.POSIX", True), \
+                patch("xpra.audio.gstreamer_util.OSX", False), \
+                patch("xpra.audio.gstreamer_util.WIN32", False), \
+                patch("xpra.audio.pulseaudio.util.has_pa", return_value=False):
+            assert "pipewiresink" in get_sink_plugins()
 
     def test_pulse_sink_devices(self):
         with patch("xpra.audio.pulseaudio.util.get_pa_device_options", return_value={
