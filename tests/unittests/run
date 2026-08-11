@@ -38,7 +38,8 @@ if [ -z "${XPRA_MODULE_DIR}" ]; then
 fi
 export PYTHONPATH=".:`dirname $XPRA_MODULE_DIR`"
 echo "PYTHONPATH=${PYTHONPATH}"
-export PATH=$INSTALL_ROOT/bin:$PATH
+#scripts are installed in the prefix ('/usr'), not directly in the install root:
+export PATH=$INSTALL_ROOT/usr/bin:$INSTALL_ROOT/bin:$PATH
 export XPRA_COMMAND=${XPRA_COMMAND:-$INSTALL_ROOT/usr/bin/xpra}
 export XPRA_CONF_DIR=${XPRA_CONF_DIR:-$INSTALL_ROOT/etc/xpra/}
 export XPRA_APP_DIR=${XPRA_APP_DIR:-$INSTALL_ROOT/usr/share/xpra/}
