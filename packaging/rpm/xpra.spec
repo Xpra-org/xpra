@@ -1111,12 +1111,22 @@ fi
 
 
 %changelog
-* Fri Aug 07 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
+* Tue Aug 11 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
    don't include wayland server components in client-only builds
    Ubuntu Stonking packaging
    libyuv: googlesource archives checksums change
+   macOS: don't ship tools or libraries that require Rosetta
+- MS Windows:
+   avoid comtypes
+   avoid WMI
+   desktop handle leak
+   clipboard memory handle bugs
+   leak querying cursors
+   scroll detection crash
+   servers created a new unused mmap area
+   don't enable mmap by default
 - Mmap issues:
    confine client-name files
    ensure the correct size is used
@@ -1126,15 +1136,28 @@ fi
    token DoS
    honour minimum size
    draw errors only free mmap area from legacy metadata
+   unavailable API calls
+   do verify the server mmap token
+- Encodings:
+   aom decoder closing / leaking
+   invalid aom image metadata
+   dav1d decoder image metadata (unused)
+   bundle aom in macOS builds
+   BGRX must use opaque alpha
+   channels swapped, miscalculated rowstride, 30-bit issues
+   prefer BGRX / BGRA
+   cairo: discard unused alpha
 - Major:
+   keymap not applied
    microphone forwarding selects the wrong device
    system suspend + resume never unblocks window updates
    missed main thread lockups
    dbus notification can retry forever - hogging the CPU
-   MS Windows desktop handle leak
-   MS Windows clipboard memory handle bugs
    `xpra upgrade` fails with duplicated `mode` in session files
    allow upgrades on displays where no window manager is left
+   record client tracks focus, server syncs it
+   segfault querying pulseaudio X11 properties
+   remove `AES-CFB`
 - Minor:
    cursor logging errors
    add keysym table + fix AltGr with native win32 client
@@ -1145,9 +1168,13 @@ fi
    scroll encoding visual corruption
    safer scroll paints with unaccelerated client windows
    always send window move / resize events to record clients
+   `BACKWARDS_COMPATIBLE` can be set via env switch
+   drop audio `removesilence` since it never worked properly
 - OpenGL:
    actually check the pixel upload format exists
    verify the rgb buffer size before uploading it
+   discard alpha padding in RGBX uploads
+   try harder to hide the test window
 - Cosmetic:
    `xpra info` tagged as binary due to abstract socket null byte
    ensure repeatSPSPPS can be enabled for datagram mode
@@ -1155,6 +1182,10 @@ fi
    ensure the UI watcher callbacks are released
    events test errors
    ensure attributes are initialized early
+   match argument order
+   use empty buffers instead of `None`
+   skip irrelevant tests, and more
+   remove unavailable commands
 * Sun Jul 26 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
 - 🔧 Platforms, build and packaging:
    Cython fails to compile on arm64

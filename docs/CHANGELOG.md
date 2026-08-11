@@ -1,11 +1,21 @@
 # Changelog
 
-## [6.5.3] 2026-08-07
+## [6.5.3] 2026-08-11
 * 🔧 Platforms, build and packaging:
   * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
   * [don't include wayland server components in client-only builds](https://github.com/Xpra-org/xpra/commit/7d24bc8396a273d2f557b961800c2f0730af8afd)
   * [Ubuntu Stonking packaging](https://github.com/Xpra-org/xpra/commit/5b218091bce8f2e784f6718fd19a8cf11987b439)
   * [libyuv: googlesource archives checksums change](https://github.com/Xpra-org/xpra/commit/5203bda71c6b996114bcbd97994fba31e9d73d94)
+  * [macOS: don't ship tools or libraries that require Rosetta](https://github.com/Xpra-org/xpra/commit/71d028afc3dc38908f7827bf6531576eae98e1de)
+* MS Windows:
+  * [avoid comtypes](https://github.com/Xpra-org/xpra/commit/7bbf25ab93146531a6f748dd1e7cbc75729a45ff)
+  * [avoid WMI](https://github.com/Xpra-org/xpra/commit/6b894a123ee3f38e77c77c1ff76095f092226dbc)
+  * [desktop handle leak](https://github.com/Xpra-org/xpra/commit/df548810431edb37df2841df974121904c8dbfa3)
+  * [clipboard memory handle bugs](https://github.com/Xpra-org/xpra/commit/f9b4cfadf4aeb8af532fad9834dc6479ea6c31fa)
+  * [leak querying cursors](https://github.com/Xpra-org/xpra/commit/913b76ce2d2f1d10848591fdac508734fab4a649)
+  * [scroll detection crash](https://github.com/Xpra-org/xpra/commit/671b11ed9ec28fc4984856a7793751970781df14)
+  * [servers created a new unused mmap area](https://github.com/Xpra-org/xpra/commit/ce97185c611d73b117388fb45691a7be3080b798)
+  * [don't enable mmap by default](https://github.com/Xpra-org/xpra/commit/717dd261c23b191f126ecd10e403e4505907c9d3)
 * [Mmap issues](https://github.com/Xpra-org/xpra/issues/4987):
   * [confine client-name files](https://github.com/Xpra-org/xpra/commit/eb1c885c2dd3abeca7c06aed050271f1a2dfb212)
   * [ensure the correct size is used](https://github.com/Xpra-org/xpra/commit/441a7d204d8d3e84db380ee35c18373fe19580d4)
@@ -15,15 +25,28 @@
   * [token DoS](https://github.com/Xpra-org/xpra/commit/8fbaa98217daf7a148aa7175af8956534ad2c720)
   * [honour minimum size](https://github.com/Xpra-org/xpra/commit/083f95ded7bed5628c2baf8c7df87def20b6d270)
   * [draw errors only free mmap area from legacy metadata](https://github.com/Xpra-org/xpra/commit/cec293aa62e964235acbf82cccf55a7f2f6688cb)
+  * [unavailable API calls](https://github.com/Xpra-org/xpra/commit/107911917dd4b26aab427ecf49f7ba07e07cd3ed)
+  * [do verify the server mmap token](https://github.com/Xpra-org/xpra/commit/fb87876d7a384dda5d7bcb0efb64c5a90a1153ed)
+* Encodings:
+  * [aom decoder closing / leaking](https://github.com/Xpra-org/xpra/commit/b97ca4d7294b853a26283c3add6578cef6cb7146)
+  * [invalid aom image metadata](https://github.com/Xpra-org/xpra/commit/c3a73c2f28c31a5aa478b7a517db9f8d30dc75bf)
+  * [dav1d decoder image metadata (unused)](https://github.com/Xpra-org/xpra/commit/c167de24ace2ad76dc0a7c260dbc9c38d0585dd9)
+  * [bundle aom in macOS builds](https://github.com/Xpra-org/xpra/commit/92de54bac64a95f2edd0f63608f6eca8f79070b2)
+  * [BGRX must use opaque alpha](https://github.com/Xpra-org/xpra/commit/7b8222dc5308061fc7342bd90e49938bcf6fbf3c)
+  * [channels swapped](https://github.com/Xpra-org/xpra/commit/61b57c5b975fc4495052c46132cbcc0df01dca88), [miscalculated rowstride](https://github.com/Xpra-org/xpra/commit/b42eabf9a891486a6ce88034d5149c37e25ea733), [30-bit issues](https://github.com/Xpra-org/xpra/commit/e041d3620edddd9e0a48d28c1a941f50d9ccd067)
+  * [prefer BGRX / BGRA](https://github.com/Xpra-org/xpra/commit/e3d9033b2c3609ebf1f8f882836933d98cf782a8)
+  * [cairo: discard unused alpha](https://github.com/Xpra-org/xpra/commit/dbaae5c274c6c2df9ae4937a06cad6e99d430a70)
 * Major:
+  * [keymap not applied](https://github.com/Xpra-org/xpra/commit/4f96ab05e11290261128f4b12c9c8dcd6a3ad44b)
   * [microphone forwarding selects the wrong device](https://github.com/Xpra-org/xpra/commit/58efffed30bcf9b54cc8c23f5ddaaf68b181e0ec)
   * [system suspend + resume never unblocks window updates](https://github.com/Xpra-org/xpra/commit/60e2933a8a9b362ecc5d839949e1c726b2c97893)
   * [missed main thread lockups](https://github.com/Xpra-org/xpra/commit/31b0e4cd652c0183d2dda7ab6a50ff10aba96097)
   * [dbus notification can retry forever - hogging the CPU](https://github.com/Xpra-org/xpra/commit/44ee267bf5776960ab2575ebcaa2f249ff45465e)
-  * [MS Windows desktop handle leak](https://github.com/Xpra-org/xpra/commit/df548810431edb37df2841df974121904c8dbfa3)
-  * [MS Windows clipboard memory handle bugs](https://github.com/Xpra-org/xpra/commit/f9b4cfadf4aeb8af532fad9834dc6479ea6c31fa)
   * [`xpra upgrade` fails with duplicated `mode` in session files](https://github.com/Xpra-org/xpra/commit/feed8f5ac683c84ad42e1c4147db841159d52a0f)
   * [allow upgrades on displays where no window manager is left](https://github.com/Xpra-org/xpra/commit/51682019c19082e17ba2995900d5b61291aec39c)
+  * [record client tracks focus](https://github.com/Xpra-org/xpra/commit/0f458b9dbead192f002096a8d3bb44a328b987c5), [server syncs it](https://github.com/Xpra-org/xpra/commit/9959429064c7cc4ee895eaa15c9ed0f7ed48db4e)
+  * [segfault querying pulseaudio X11 properties](https://github.com/Xpra-org/xpra/commit/f3788cd4d754727af4be890f85bb94aacc511fb2)
+  * [remove `AES-CFB`](https://github.com/Xpra-org/xpra/commit/ab742341e2071defa8773e841bcd85626221f21f)
 * Minor:
   * [cursor logging errors](https://github.com/Xpra-org/xpra/commit/c77e6317b3c234d086ab44cc6b71221b6e15b7e2)
   * [add keysym table](https://github.com/Xpra-org/xpra/commit/f56bdd64fc0e4b305e627f15ffea89b0543e1b51) + [fix AltGr with native win32 client](https://github.com/Xpra-org/xpra/commit/1a73577385740f9be84033472e100aa7c963d213)
@@ -34,9 +57,13 @@
   * [scroll encoding visual corruption](https://github.com/Xpra-org/xpra/commit/72cef15e5ed8fff6592268a9f25c23f74aa91fff)
   * [safer scroll paints with unaccelerated client windows](https://github.com/Xpra-org/xpra/commit/5f282ddd9654f80fb336fd27fb0139f26a0e8726)
   * [always send window move / resize events to record clients](https://github.com/Xpra-org/xpra/commit/8a30c84622cf9d9837871b3e1441e2431c6a9a36)
+  * [`BACKWARDS_COMPATIBLE` can be set via env switch](https://github.com/Xpra-org/xpra/commit/f8f607fb48ef151894e2bce467206f877315668b)
+  * [drop audio `removesilence` since it never worked properly](https://github.com/Xpra-org/xpra/commit/e42a902a4c99d9bc5036c4775237d0406a5f1d25)
 * OpenGL:
   * [actually check the pixel upload format exists](https://github.com/Xpra-org/xpra/commit/818d70044df4412bb9eea46cf3e5b4db12760c32)
   * [verify the rgb buffer size before uploading it](https://github.com/Xpra-org/xpra/commit/e60277ead8c511d4794bf0d5f0cb36558300e174)
+  * [discard alpha padding in RGBX uploads](https://github.com/Xpra-org/xpra/commit/b04b5df4f9b6cf7cf8baa996dc097cbb1f93dd9a)
+  * [try harder to hide the test window](https://github.com/Xpra-org/xpra/commit/3bb4902155a086b1de5c150c4dfa79d44f25f442)
 * Cosmetic:
   * [`xpra info` tagged as binary due to abstract socket null byte](https://github.com/Xpra-org/xpra/commit/520caad013c6ad3ff693af4f463ae527e4a9e924)
   * [ensure repeatSPSPPS can be enabled for datagram mode](https://github.com/Xpra-org/xpra/commit/8352effbe8a87c634873b6fd9c2ccd695a41e446)
@@ -44,6 +71,10 @@
   * [ensure the UI watcher callbacks are released](https://github.com/Xpra-org/xpra/commit/2be2ca274012cd291d1470c6fd9dccbb2fd33ef9)
   * [events test errors](https://github.com/Xpra-org/xpra/commit/8bda94a650d8f684dd699e4e8439d99c909ff12f)
   * [ensure attributes are initialized early](https://github.com/Xpra-org/xpra/commit/d3910f11e6f094bb02662de03769f476acbcc6ff)
+  * [match argument order](https://github.com/Xpra-org/xpra/commit/aec04e5e1614fd078181c4848beaf899dffd4c31)
+  * [use empty buffers instead of `None`](https://github.com/Xpra-org/xpra/commit/64f1dcf4b3431367627675504d30d313ef3e7b43)
+  * [skip irrelevant tests](https://github.com/Xpra-org/xpra/commit/bb7f86c3a1e7d8b4c467c26e37d659ac4ceb398d), [and more](https://github.com/Xpra-org/xpra/commit/0fa11a393a771215f476dd55b771a2c4e08b6a8d)
+  * [remove unavailable commands](https://github.com/Xpra-org/xpra/commit/ad6336fe38a6e7e90de0c01561543a70770f22e0)
 
 ## [6.5.2] 2026-07-26
 * 🔧 Platforms, build and packaging:
