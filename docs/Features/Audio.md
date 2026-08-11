@@ -46,7 +46,7 @@ elp_. It is also possible to specify plugin options using the form ` "--audio-so
 
 Other options are only available through environment variables for fine-tuning - which should rarely be needed:
 * `XPRA_PULSEAUDIO_DEVICE_NAME` to use a specific device if there is more than one device to choose from (can happen when using an existing pulseaudio server with more than one output device attached)
-* `XPRA_SOUND_QUEUE_TIME` can be used to control the default amount of buffering by the receiver
-* `XPRA_SOUND_GRACE_PERIOD` (defaults to `2000`, in milliseconds) errors will be ignored during this grace period after starting audio forwarding, to allow the audio forwarding buffer to settle down
-* `XPRA_SOUND_SINK`: the default sink to use (normally auto-detected)
+* `XPRA_AUDIO_QUEUE_TIME` can be used to control the default amount of buffering by the receiver
+* `XPRA_AUDIO_GRACE_PERIOD` (defaults to `2000`, in milliseconds) errors will be ignored during this grace period after starting audio forwarding, to allow the audio forwarding buffer to settle down
+* `XPRA_AUDIO_SINK`: the default sink to use (normally auto-detected)
 </details>

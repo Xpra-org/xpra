@@ -62,11 +62,11 @@ QUEUE_TIME = get_queue_time(450)
 UNMUTE_DELAY = envint("XPRA_UNMUTE_DELAY", 1000)
 # sinks that handle volume internally and don't pop on start:
 NO_UNMUTE_RAMP = {"wasapisink", "wasapi2sink"}
-GRACE_PERIOD = envint("XPRA_SOUND_GRACE_PERIOD", 2000)
+GRACE_PERIOD = envint("XPRA_AUDIO_GRACE_PERIOD", 2000)
 # percentage: from 0 for no margin, to 200% which triples the buffer target
-MARGIN = max(0, min(200, envint("XPRA_SOUND_MARGIN", 50)))
+MARGIN = max(0, min(200, envint("XPRA_AUDIO_MARGIN", 50)))
 # how high we push up the min-level to prevent underruns:
-UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_SOUND_UNDERRUN_MIN_LEVEL", 150))
+UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_AUDIO_UNDERRUN_MIN_LEVEL", 150))
 CLOCK_SYNC = envbool("XPRA_CLOCK_SYNC", False)
 
 

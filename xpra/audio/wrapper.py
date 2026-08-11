@@ -30,12 +30,12 @@ GLib = gi_import("GLib")
 
 log = Logger("audio")
 
-DEBUG_SOUND = envbool("XPRA_SOUND_DEBUG", False)
-SUBPROCESS_DEBUG = tuple(x.strip() for x in os.environ.get("XPRA_SOUND_SUBPROCESS_DEBUG", "").split(",") if x.strip())
-FAKE_START_FAILURE = envbool("XPRA_SOUND_FAKE_START_FAILURE", False)
-FAKE_EXIT = envbool("XPRA_SOUND_FAKE_EXIT", False)
-FAKE_CRASH = envbool("XPRA_SOUND_FAKE_CRASH", False)
-SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 5000 * (1 + int(WIN32)))
+DEBUG_SOUND = envbool("XPRA_AUDIO_DEBUG", False)
+SUBPROCESS_DEBUG = tuple(x.strip() for x in os.environ.get("XPRA_AUDIO_SUBPROCESS_DEBUG", "").split(",") if x.strip())
+FAKE_START_FAILURE = envbool("XPRA_AUDIO_FAKE_START_FAILURE", False)
+FAKE_EXIT = envbool("XPRA_AUDIO_FAKE_EXIT", False)
+FAKE_CRASH = envbool("XPRA_AUDIO_FAKE_CRASH", False)
+SOUND_START_TIMEOUT = envint("XPRA_AUDIO_START_TIMEOUT", 5000 * (1 + int(WIN32)))
 
 DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS", "--windows=no").split(",")
 

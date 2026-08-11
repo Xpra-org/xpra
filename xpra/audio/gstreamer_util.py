@@ -41,26 +41,26 @@ GST_QUEUE_LEAK_DOWNSTREAM = 2
 GST_QUEUE_LEAK_DEFAULT = GST_QUEUE_LEAK_DOWNSTREAM
 MS_TO_NS = 1000000
 
-QUEUE_LEAK = envint("XPRA_SOUND_QUEUE_LEAK", GST_QUEUE_LEAK_DEFAULT)
+QUEUE_LEAK = envint("XPRA_AUDIO_QUEUE_LEAK", GST_QUEUE_LEAK_DEFAULT)
 if QUEUE_LEAK not in (GST_QUEUE_NO_LEAK, GST_QUEUE_LEAK_UPSTREAM, GST_QUEUE_LEAK_DOWNSTREAM):
     log.error("invalid leak option %s", QUEUE_LEAK)
     QUEUE_LEAK = GST_QUEUE_LEAK_DEFAULT
 
 
 def get_queue_time(default_value=450, prefix="") -> int:
-    queue_time = int(os.environ.get(f"XPRA_SOUND_QUEUE_{prefix}TIME", default_value))*MS_TO_NS
+    queue_time = int(os.environ.get(f"XPRA_AUDIO_QUEUE_{prefix}TIME", default_value))*MS_TO_NS
     queue_time = max(0, queue_time)
     return queue_time
 
 
 ALLOW_SOUND_LOOP = envbool("XPRA_ALLOW_SOUND_LOOP", False)
 USE_DEFAULT_DEVICE = envbool("XPRA_USE_DEFAULT_DEVICE", True)
-IGNORED_INPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_INPUT_DEVICES", "bell.ogg,bell.wav").split(",")
-IGNORED_OUTPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_OUTPUT_DEVICES", "bell-window-system").split(",")
+IGNORED_INPUT_DEVICES = os.environ.get("XPRA_AUDIO_IGNORED_INPUT_DEVICES", "bell.ogg,bell.wav").split(",")
+IGNORED_OUTPUT_DEVICES = os.environ.get("XPRA_AUDIO_IGNORED_OUTPUT_DEVICES", "bell-window-system").split(",")
 
 
 def force_enabled(codec_name):
-    return envbool("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), False)
+    return envbool("XPRA_AUDIO_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), False)
 
 
 # noinspection PyPep8
@@ -456,7 +456,7 @@ def get_source_plugins() -> list[str]:
 
 
 def get_default_source() -> str:
-    source = os.environ.get("XPRA_SOUND_SRC", "")
+    source = os.environ.get("XPRA_AUDIO_SRC", "")
     sources = get_source_plugins()
     if source:
         if source not in sources:
@@ -502,7 +502,7 @@ def get_sink_plugins() -> list[str]:
 
 
 def get_default_sink_plugin() -> str:
-    sink = os.environ.get("XPRA_SOUND_SINK", "")
+    sink = os.environ.get("XPRA_AUDIO_SINK", "") or os.environ.get("XPRA_AUDIO_SINK", "")
     sinks = get_sink_plugins()
     if sink:
         if sink not in sinks:
