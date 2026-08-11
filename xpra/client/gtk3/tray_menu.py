@@ -1024,6 +1024,7 @@ class GTKTrayMenu(GTKMenuHelper):
         menu = Gtk.Menu()
         menu.ignore_events = False
         menuitems = {}
+        sink_menuitems = {}
 
         def sinkitem(selection_menu: Gtk.Menu, label: str, audio_sink="") -> Gtk.CheckMenuItem:
             item = Gtk.CheckMenuItem(label=label)
@@ -1065,7 +1066,15 @@ class GTKTrayMenu(GTKMenuHelper):
                 for device, device_label in devices.items():
                     audio_sink = f"{sink_plugin}:device={device}"
                     sink_menu.append(sinkitem(sink_menu, device_label, audio_sink))
-            sink_item = Gtk.MenuItem(label=sink_label)
+            sink_item = Gtk.CheckMenuItem(label=sink_label)
+            sink_item.set_draw_as_radio(True)
+            sink_menuitems[sink_plugin] = sink_item
+
+            def sink_menu_activate_cb(*_args) -> None:
+                if not menu.ignore_events:
+                    update_speaker_submenu_state()
+
+            sink_item.connect("activate", sink_menu_activate_cb)
             sink_item.set_submenu(sink_menu)
             menu.append(sink_item)
 
@@ -1101,6 +1110,10 @@ class GTKTrayMenu(GTKMenuHelper):
                 selected = menuitems.get(selected_sink) or menuitems.get(sink_type) or menuitems[""]
                 for item in menuitems.values():
                     active = item is selected
+                    if item.get_active() != active:
+                        item.set_active(active)
+                for plugin, item in sink_menuitems.items():
+                    active = bool(selected_sink) and sink_type == plugin
                     if item.get_active() != active:
                         item.set_active(active)
             finally:

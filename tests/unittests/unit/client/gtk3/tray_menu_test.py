@@ -107,6 +107,12 @@ def ensure_item_selected(menu, item) -> None:
 
 class TrayMenuTest(unittest.TestCase):
 
+    def setUp(self) -> None:
+        from xpra.client.gtk3 import tray_menu
+        update_config_patcher = patch.object(tray_menu, "update_config")
+        update_config_patcher.start()
+        self.addCleanup(update_config_patcher.stop)
+
     @staticmethod
     def make_speaker_menu(audio):
         from xpra.client.gtk3 import tray_menu
@@ -186,6 +192,16 @@ class TrayMenuTest(unittest.TestCase):
         pulse_items[3].activate()
         self.assertEqual(audio.audio_sink, "pulsesink:device=speakers")
         self.assertEqual(audio.calls, ["start"])
+
+    def test_speaker_menu_restores_selected_device(self):
+        audio = FakeAudio("pulsesink:device=speakers", speaker_enabled=True)
+        menu = self.make_speaker_menu(audio)
+        items = menu.get_children()
+
+        self.assertTrue(items[2].get_active())
+        pulse_items = items[2].get_submenu().get_children()
+        self.assertFalse(pulse_items[0].get_active())
+        self.assertTrue(pulse_items[3].get_active())
 
     def test_speaker_menu_device_selection(self):
         audio = FakeAudio(speaker_enabled=True)
