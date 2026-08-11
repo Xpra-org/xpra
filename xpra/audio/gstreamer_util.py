@@ -58,6 +58,19 @@ USE_DEFAULT_DEVICE = envbool("XPRA_USE_DEFAULT_DEVICE", True)
 IGNORED_INPUT_DEVICES = os.environ.get("XPRA_AUDIO_IGNORED_INPUT_DEVICES", "bell.ogg,bell.wav").split(",")
 IGNORED_OUTPUT_DEVICES = os.environ.get("XPRA_AUDIO_IGNORED_OUTPUT_DEVICES", "bell-window-system").split(",")
 
+AUDIO_SINK_LABELS = {
+    "autoaudiosink": "Auto",
+    "pulsesink": "Pulseaudio",
+    "alsasink": "ALSA",
+    "osssink": "OSS",
+    "oss4sink": "OSS v4",
+    "jackaudiosink": "JACK",
+    "osxaudiosink": "Core Audio",
+    "wasapi2sink": "WASAPI 2",
+    "directsoundsink": "DirectSound",
+    "wasapisink": "WASAPI",
+}
+
 
 def force_enabled(codec_name):
     return envbool("XPRA_AUDIO_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), False)

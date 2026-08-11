@@ -36,6 +36,7 @@ class AudioPipeline(Pipeline):
         self.stream_compressor = None
         self.codec = codec
         self.codec_description = ""
+        self.codec_description_suffix = ""
         self.codec_mode = ""
         self.container_format = ""
         self.container_description = ""
@@ -202,7 +203,7 @@ class AudioPipeline(Pipeline):
         # 'wav' is the generic fallback: never let it overwrite a real codec name:
         if dl == "wav" and self.codec_description:
             return
-        self._log_description_change(self.codec_description, dl, "audio codec")
+        self._log_description_change(self.codec_description, dl, f"audio codec{self.codec_description_suffix}")
         self.codec_description = dl
         self.info["codec_description"] = dl
 

@@ -22,6 +22,7 @@ from xpra.audio.gstreamer_util import (
     get_decoder_elements, has_plugins,
     get_queue_time, get_decoders,
     get_default_sink_plugin, get_sink_plugins,
+    AUDIO_SINK_LABELS,
     MP3, CODEC_ORDER, QUEUE_LEAK,
     GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS, RTP_SINK_CAPS,
 )
@@ -90,6 +91,7 @@ class AudioSink(AudioPipeline):
     }
 
     def __init__(self, sink_type: str, sink_options: dict, codecs: Sequence[str], codec_options: dict, volume=1.0):
+        requested_sink_type = sink_type
         if not sink_type or sink_type == "auto":
             sink_type = get_default_sink_plugin()
         if sink_type not in get_sink_plugins():
@@ -102,6 +104,9 @@ class AudioSink(AudioPipeline):
         codec = matching[0]
         decoder, parser, stream_compressor = get_decoder_elements(codec)
         super().__init__(codec)
+        if requested_sink_type not in ("", "auto", "autoaudiosink"):
+            sink_label = AUDIO_SINK_LABELS.get(requested_sink_type, requested_sink_type)
+            self.codec_description_suffix = f" with '{sink_label}' sink"
         self.container_format = (parser or "").replace("demux", "").replace("depay", "")
         self.sink_type = sink_type
         self.stream_compressor = stream_compressor

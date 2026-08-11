@@ -121,19 +121,6 @@ GENERIC_ENCODINGS = ("", "auto", "stream", "grayscale")
 
 CONFIG = "91_tray.conf"
 
-AUDIO_SINK_LABELS = {
-    "autoaudiosink": "Auto",
-    "pulsesink": "Pulseaudio",
-    "alsasink": "ALSA",
-    "osssink": "OSS",
-    "oss4sink": "OSS v4",
-    "jackaudiosink": "JACK",
-    "osxaudiosink": "Core Audio",
-    "wasapi2sink": "WASAPI 2",
-    "directsoundsink": "DirectSound",
-    "wasapisink": "WASAPI",
-}
-
 
 def update_config(attributes: dict[str, str]) -> None:
     update_config_attributes(attributes, filename=CONFIG)
@@ -1026,7 +1013,9 @@ class GTKTrayMenu(GTKMenuHelper):
         speaker = self.menuitem(_("Speaker"), "speaker.png", _("Forward audio output from the server"))
         set_sensitive(speaker, False)
 
-        from xpra.audio.gstreamer_util import get_default_sink_plugin, get_sink_plugins, parse_audio_sink
+        from xpra.audio.gstreamer_util import (
+            AUDIO_SINK_LABELS, get_default_sink_plugin, get_sink_plugins, parse_audio_sink,
+        )
 
         menu = Gtk.Menu()
         menu.ignore_events = False
