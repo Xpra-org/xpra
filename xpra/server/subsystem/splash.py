@@ -37,9 +37,6 @@ MODE_TO_NAME: dict[str, str] = {
 
 def is_splash_enabled(mode: str, daemon: bool, splash: bool | None, display: str) -> bool:
     log("is_splash_enabled%s", (mode, daemon, splash, display))
-    if daemon:
-        # daemon mode would have problems with the pipes
-        return False
     if splash in (True, False):
         return splash
     # auto mode, figure out if we should show it:

@@ -92,7 +92,6 @@ class TestMain(unittest.TestCase):
         self.assertEqual(events, ["dbus", "landlock"])
 
     def test_splash_enabled(self):
-        assert is_splash_enabled("foo", True, True, ":10") is False, "splash should not be enabled for daemons"
         assert is_splash_enabled("foo", False, False, ":10") is False, "splash should not be enabled for splash=False"
         assert is_splash_enabled("foo", False, True, ":10") is True, "splash should be enabled for splash=True"
 
