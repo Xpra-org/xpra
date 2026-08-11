@@ -47,6 +47,7 @@ def _make_client(*, speaker_enabled=False, microphone_enabled=False,
     x.server_receive = False
     x.server_encoders = ()
     x.server_decoders = ()
+    x.audio_sink = "pulsesink:device-name"
     x.on_sink_ready = lambda: None
     return x
 
@@ -370,6 +371,17 @@ class TestSuspendResumeAudio(unittest.TestCase):
         with patch.object(x, "start_receiving_audio") as m:
             x.resume_audio(None)
             m.assert_not_called()
+
+
+class TestStartSink(unittest.TestCase):
+
+    @patch("xpra.audio.wrapper.start_receiving_audio")
+    def test_uses_configured_audio_sink(self, start_receiving_audio):
+        x = _make_client()
+        sink = start_receiving_audio.return_value
+        assert x.start_sink("opus") is True
+        start_receiving_audio.assert_called_once_with("opus", "pulsesink:device-name")
+        sink.start.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

@@ -90,7 +90,7 @@ class AudioSink(AudioPipeline):
     }
 
     def __init__(self, sink_type: str, sink_options: dict, codecs: Sequence[str], codec_options: dict, volume=1.0):
-        if not sink_type:
+        if not sink_type or sink_type == "auto":
             sink_type = get_default_sink_plugin()
         if sink_type not in get_sink_plugins():
             raise InitExit(1, "invalid sink: %s" % sink_type)

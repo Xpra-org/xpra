@@ -22,6 +22,7 @@ def default_audio_options() -> AdHocStruct:
     opts.speaker = "no"
     opts.microphone = "no"
     opts.audio_source = ""
+    opts.audio_sink = "auto"
     opts.speaker_codec = []
     opts.microphone_codec = []
     opts.tray_icon = ""

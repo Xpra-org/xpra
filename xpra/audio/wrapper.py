@@ -13,7 +13,8 @@ from collections.abc import Iterable
 
 from xpra.gstreamer.common import import_gst, format_element_options
 from xpra.audio.gstreamer_util import (
-    parse_audio_source, get_source_plugins, get_sink_plugins, get_default_sink_plugin, get_default_source,
+    parse_audio_source, parse_audio_sink,
+    get_source_plugins, get_sink_plugins, get_default_sink_plugin, get_default_source,
     can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names,
 )
 from xpra.net.subprocess_wrapper import SubprocessCaller, SubprocessCallee, exec_kwargs, exec_env
@@ -441,10 +442,11 @@ def start_sending_audio(plugins, audio_source_plugin: str, device: str, codec: s
     return None
 
 
-def start_receiving_audio(codec: str) -> SinkSubprocessWrapper:
-    log("start_receiving_audio(%s)", codec)
+def start_receiving_audio(codec: str, audio_sink: str = "auto") -> SinkSubprocessWrapper:
+    log("start_receiving_audio(%s, %s)", codec, audio_sink)
     with log.trap_error("Error starting audio sink"):
-        return SinkSubprocessWrapper(None, codec, 1.0, {})
+        sink_type, sink_options = parse_audio_sink(audio_sink)
+        return SinkSubprocessWrapper(sink_type, codec, 1.0, sink_options)
 
 
 def start_audio_meter(device: str, interval: int) -> MeterSubprocessWrapper:

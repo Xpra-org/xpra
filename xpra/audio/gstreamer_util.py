@@ -526,6 +526,18 @@ def get_default_sink_plugin() -> str:
     return ""
 
 
+def parse_audio_sink(audio_sink: str) -> tuple[str, dict]:
+    """Parse ``SINK[:DEVICE|OPTIONS]`` into a sink plugin and its element options."""
+    sink_type, separator, options_str = (audio_sink or "auto").partition(":")
+    sink_type = sink_type.strip().lower() or "auto"
+    options_str = options_str.strip()
+    if not separator or not options_str:
+        return sink_type, {}
+    if "=" not in options_str:
+        return sink_type, {"device": options_str}
+    return sink_type, parse_simple_dict(options_str)
+
+
 def get_test_defaults(*_args) -> dict[str, Any]:
     return {
         "wave": 2,

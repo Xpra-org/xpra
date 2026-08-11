@@ -1575,6 +1575,10 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="audio_source", default=defaults.audio_source,
                      help="Specifies which audio system to use to capture the audio stream "
                           " (use 'help' for options)")
+    group.add_option("--audio-sink", action="store",
+                     dest="audio_sink", default=defaults.audio_sink,
+                     help="Specifies which audio system to use for speaker playback. "
+                          "Default: %default.")
     group.add_option("--av-sync", action="store",
                      dest="av_sync", default=defaults.av_sync,
                      help="Try to synchronize audio and video. Default: %s." % enabled_str(defaults.av_sync))

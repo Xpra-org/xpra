@@ -39,6 +39,7 @@ The main controls can be specified in the configuration file or on the command l
 ec order. Use the special value `help` to get a list of options. When unspecified, all the available codecs are allowed and the first one is used.
 * `audio-source=PLUGIN[:OPTIONS]`: Specifies the GStreamer audio plugin used for capturing the audio stream. This affects "speaker forwarding" on the server, and "microphone" forwarding on the client. To get a list of options use the special value _h
 elp_. It is also possible to specify plugin options using the form ` "--audio-source=SOURCE:name1=value1,name2=value2,etc"`, ie: `"--audio-source=pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo"`
+* `audio-sink=SINK[:DEVICE|OPTIONS]`: Specifies the client-side GStreamer audio sink used for speaker playback. The default `auto` selects the platform's default sink. A device can be selected with `--audio-sink=pulsesink:device-name`, or sink attributes can be specified with `--audio-sink=pulsesink:name1=value1,name2=value2`.
 </details>
 
 <details markdown="1">

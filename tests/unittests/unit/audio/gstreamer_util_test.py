@@ -9,7 +9,7 @@ import unittest
 from xpra.audio.common import OPUS_RTP
 from xpra.audio.gstreamer_util import (
     CODEC_ORDER, CODEC_OPTIONS, ENCODER_LATENCY,
-    RTP_SINK_CAPS,
+    RTP_SINK_CAPS, parse_audio_sink,
 )
 
 
@@ -61,6 +61,23 @@ class TestGStreamerUtilStatic(unittest.TestCase):
         assert f"payload={expected}" in caps, (
             f"payload in RTP_SINK_CAPS ({caps!r}) does not match "
             f"rtpopuspay pt={expected}"
+        )
+
+    def test_parse_audio_sink_auto(self):
+        assert parse_audio_sink("auto") == ("auto", {})
+        assert parse_audio_sink("") == ("auto", {})
+
+    def test_parse_audio_sink_plugin(self):
+        assert parse_audio_sink(" ALSASINK ") == ("alsasink", {})
+
+    def test_parse_audio_sink_device(self):
+        assert parse_audio_sink("pulsesink:device-name") == (
+            "pulsesink", {"device": "device-name"},
+        )
+
+    def test_parse_audio_sink_options(self):
+        assert parse_audio_sink("pulsesink:device=device-name,sync=false") == (
+            "pulsesink", {"device": "device-name", "sync": "false"},
         )
 
 

@@ -98,7 +98,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     Utility mixin for clients that handle audio
     """
     __slots__ = (
-        "_remote_machine_id", "audio_echo_timeout_start", "audio_keepalive_check_timer",
+        "_remote_machine_id", "audio_echo_timeout_start", "audio_keepalive_check_timer", "audio_sink",
         "audio_keepalive_stale_warning", "audio_keepalive_timer", "audio_remote_keepalive", "av_sync",
         "av_sync_delta", "in_bytecount", "latest_audio_timestamp", "latest_echoed_audio_timestamp",
         "latest_sent_audio_timestamp", "microphone_allowed", "microphone_codecs", "microphone_device",
@@ -128,6 +128,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.on_sink_ready: Callable[[], None] = noop
         self.sink = None
         self.sink_sequence: int = 0
+        self.audio_sink = "auto"
         self.source = None
         self.source_sequence: int = 0
         self.server_eos_sequence: bool = False
@@ -159,6 +160,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         if self.microphone_allowed and len(mic) == 2:
             self.microphone_device = mic[1]
         self.source_plugin = opts.audio_source
+        self.audio_sink = opts.audio_sink
         # these are not validated yet:
         self.speaker_codecs = opts.speaker_codec
         self.microphone_codecs = opts.microphone_codec
@@ -642,7 +644,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         try:
             log("starting %s audio sink", codec)
             from xpra.audio.wrapper import start_receiving_audio
-            ss = start_receiving_audio(codec)
+            ss = start_receiving_audio(codec, self.audio_sink)
             if not ss:
                 return False
             ss.sequence = self.sink_sequence

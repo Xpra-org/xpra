@@ -667,6 +667,7 @@ OPTION_TYPES: dict[str, Any] = {
     "microphone"        : str,
     "speaker"           : str,
     "audio-source"      : str,
+    "audio-sink"        : str,
     "html"              : str,
     "http-scripts"      : str,
     "http-origin"       : str,
@@ -858,6 +859,7 @@ OPTIONS_ADDED_SINCE_V5: list[str] = [
     "minimal", "dbus", "gstreamer",
     "keyboard-backend", "keyboard-model",
     "bind-rdp", "rdp-auth", "rdp-upgrade",
+    "audio-sink",
 ]
 OPTIONS_COMPAT_NAMES: dict[str, str] = {
     "--compression_level=": "-z"
@@ -880,7 +882,7 @@ CLIENT_OPTIONS: list[str] = [
     "remote-logging",
     "lpadmin", "lpinfo",
     "debug",
-    "microphone", "speaker", "audio-source",
+    "microphone", "speaker", "audio-source", "audio-sink",
     "microphone-codec", "speaker-codec",
     "mmap", "encodings", "encoding",
     "quality", "min-quality", "speed", "min-speed",
@@ -907,6 +909,7 @@ CLIENT_ONLY_OPTIONS: list[str] = [
     "attach",
     "attach-urls",
     "reconnect",
+    "audio-sink",
 ]
 
 # options that clients can pass to the proxy
@@ -1174,6 +1177,7 @@ def get_defaults() -> dict[str, Any]:
         "seccomp"           : "",
         "input-method"      : "auto",
         "audio-source"      : "",
+        "audio-sink"        : "auto",
         "html"              : "auto",
         "http-scripts"      : "all",
         "http-origin"       : "auto",

@@ -39,6 +39,7 @@ def _client_opts():
     opts.speaker = "off"
     opts.microphone = "off"
     opts.audio_source = ""
+    opts.audio_sink = "auto"
     opts.speaker_codec = ["opus"]
     opts.microphone_codec = ["opus"]
     opts.tray_icon = ""
