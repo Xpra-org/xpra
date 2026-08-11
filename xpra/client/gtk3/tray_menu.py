@@ -1211,7 +1211,7 @@ class GTKTrayMenu(GTKMenuHelper):
                     menu.append(item)
                 if not non_virtual:
                     off_label = _("No devices found")
-            off = deviceitem(off_label, stop_webcam)
+            off = deviceitem(off_label, stop_webcam, device_no=-1)
             set_sensitive(off, off_label == _("Off"))
             menu.append(off)
             menu.show_all()
