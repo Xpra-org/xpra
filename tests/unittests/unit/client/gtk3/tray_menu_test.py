@@ -116,13 +116,23 @@ class TrayMenuTest(unittest.TestCase):
         helper.after_handshake = lambda callback, *args: callback(*args)
         fake_gtk = SimpleNamespace(
             Menu=FakeMenu,
+            MenuItem=FakeMenuItem,
             CheckMenuItem=FakeMenuItem,
             SeparatorMenuItem=FakeMenuItem,
         )
         with patch("xpra.audio.gstreamer_util.get_sink_plugins",
-                   return_value=["pulsesink", "alsasink"]), \
+                   return_value=["pulsesink", "directsoundsink", "alsasink"]), \
                 patch("xpra.audio.gstreamer_util.get_default_sink_plugin",
                       return_value="pulsesink"), \
+                patch("xpra.audio.gstreamer_util.get_sink_devices", side_effect=lambda sink: {
+                    "pulsesink": {
+                        "pulse-hdmi": "HDMI / DisplayPort",
+                        "speakers": "Built-in Audio Analog Stereo",
+                    },
+                    "directsoundsink": {
+                        "{directsound-guid}": "Speakers (USB Audio)",
+                    },
+                }[sink]), \
                 patch.object(tray_menu, "Gtk", fake_gtk), \
                 patch.object(tray_menu, "ensure_item_selected", ensure_item_selected):
             speaker = helper.make_speakermenuitem()
@@ -151,10 +161,15 @@ class TrayMenuTest(unittest.TestCase):
         audio = FakeAudio(speaker_enabled=True)
         menu = self.make_speaker_menu(audio)
         items = menu.get_children()
-        self.assertEqual([x.get_label() for x in items], ["Off", "", "Pulseaudio", "ALSA"])
-        self.assertTrue(items[2].get_active())
+        self.assertEqual([x.get_label() for x in items], ["Off", "", "Pulseaudio", "DirectSound", "ALSA"])
+        pulse_items = items[2].get_submenu().get_children()
+        self.assertEqual(
+            [x.get_label() for x in pulse_items],
+            ["Default", "", "HDMI / DisplayPort", "Built-in Audio Analog Stereo"],
+        )
+        self.assertTrue(pulse_items[0].get_active())
 
-        items[3].activate()
+        items[4].activate()
         self.assertEqual(audio.audio_sink, "alsasink")
         self.assertEqual(audio.calls, ["stop", "start"])
 
@@ -167,9 +182,30 @@ class TrayMenuTest(unittest.TestCase):
         items = menu.get_children()
         self.assertTrue(items[0].get_active())
 
-        items[2].activate()
+        pulse_items = items[2].get_submenu().get_children()
+        pulse_items[3].activate()
         self.assertEqual(audio.audio_sink, "pulsesink:device=speakers")
         self.assertEqual(audio.calls, ["start"])
+
+    def test_speaker_menu_device_selection(self):
+        audio = FakeAudio(speaker_enabled=True)
+        menu = self.make_speaker_menu(audio)
+        items = menu.get_children()
+
+        pulse_items = items[2].get_submenu().get_children()
+        pulse_items[2].activate()
+        self.assertEqual(audio.audio_sink, "pulsesink:device=pulse-hdmi")
+        self.assertEqual(audio.calls, ["stop", "start"])
+        self.assertTrue(pulse_items[2].get_active())
+
+        directsound_items = items[3].get_submenu().get_children()
+        self.assertEqual(
+            [x.get_label() for x in directsound_items],
+            ["Default", "", "Speakers (USB Audio)"],
+        )
+        directsound_items[2].activate()
+        self.assertEqual(audio.audio_sink, "directsoundsink:device={directsound-guid}")
+        self.assertEqual(audio.calls, ["stop", "start", "stop", "start"])
 
     def test_speaker_menu_returns_to_off_when_sink_fails(self):
         audio = FakeAudio()
@@ -177,7 +213,7 @@ class TrayMenuTest(unittest.TestCase):
         menu = self.make_speaker_menu(audio)
         items = menu.get_children()
 
-        items[2].activate()
+        items[2].get_submenu().get_children()[0].activate()
         self.assertEqual(audio.calls, ["start"])
         self.assertTrue(items[0].get_active())
 

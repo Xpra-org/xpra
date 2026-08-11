@@ -514,6 +514,22 @@ def get_sink_plugins() -> list[str]:
     return SINKS
 
 
+def get_sink_devices(sink_plugin: str) -> dict[str, str]:
+    """Return device property values mapped to human-readable names."""
+    try:
+        if sink_plugin == "pulsesink":
+            from xpra.audio.pulseaudio.util import get_pa_device_options
+            devices = get_pa_device_options(False, False)
+            return {bytestostr(device): bytestostr(label).strip('"') for device, label in devices.items()}
+        if sink_plugin == "directsoundsink":
+            from xpra.platform.win32.directsound import get_devices
+            return {f"{{{guid}}}": str(name) for _index, guid, name in get_devices()}
+    except Exception as e:
+        log("get_sink_devices(%s)", sink_plugin, exc_info=True)
+        log.warn("Warning: failed to query %s devices: %s", sink_plugin, e)
+    return {}
+
+
 def get_default_sink_plugin() -> str:
     sink = os.environ.get("XPRA_AUDIO_SINK", "") or os.environ.get("XPRA_AUDIO_SINK", "")
     sinks = get_sink_plugins()

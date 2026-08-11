@@ -5,11 +5,15 @@
 # later version. See the file COPYING for details.
 
 import unittest
+import sys
+from types import ModuleType
+from unittest.mock import patch
 
 from xpra.audio.common import OPUS_RTP
 from xpra.audio.gstreamer_util import (
     CODEC_ORDER, CODEC_OPTIONS, ENCODER_LATENCY,
     RTP_SINK_CAPS, parse_audio_sink,
+    get_sink_devices,
 )
 
 
@@ -79,6 +83,31 @@ class TestGStreamerUtilStatic(unittest.TestCase):
         assert parse_audio_sink("pulsesink:device=device-name,sync=false") == (
             "pulsesink", {"device": "device-name", "sync": "false"},
         )
+
+    def test_pulse_sink_devices(self):
+        with patch("xpra.audio.pulseaudio.util.get_pa_device_options", return_value={
+            "pulse-hdmi": '"HDMI / DisplayPort"',
+            "pulse-speakers": '"Built-in Audio Analog Stereo"',
+        }):
+            assert get_sink_devices("pulsesink") == {
+                "pulse-hdmi": "HDMI / DisplayPort",
+                "pulse-speakers": "Built-in Audio Analog Stereo",
+            }
+
+    def test_directsound_sink_devices(self):
+        win32_module = ModuleType("xpra.platform.win32")
+        directsound_module = ModuleType("xpra.platform.win32.directsound")
+        directsound_module.get_devices = lambda: [(0, "device-guid", "USB Speakers")]
+        with patch.dict(sys.modules, {
+            "xpra.platform.win32": win32_module,
+            "xpra.platform.win32.directsound": directsound_module,
+        }):
+            assert get_sink_devices("directsoundsink") == {
+                "{device-guid}": "USB Speakers",
+            }
+
+    def test_other_sink_devices(self):
+        assert get_sink_devices("alsasink") == {}
 
 
 class TestGStreamerUtilPlugins(unittest.TestCase):
