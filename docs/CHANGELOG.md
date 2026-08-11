@@ -49,12 +49,14 @@
   * [support for URIs on MS Windows](https://github.com/Xpra-org/xpra/issues/4917)
   * [send multiple formats per message](https://github.com/Xpra-org/xpra/issues/4228)
   * [macOS support for more images, PDF, etc](https://github.com/Xpra-org/xpra/issues/2807)
+* 🔊 Audio:
+  * [available signal](https://github.com/Xpra-org/xpra/issues/2325)
+  * [keepalive](https://github.com/Xpra-org/xpra/issues/4913)
+  * [sink and device options in system tray, saved](https://github.com/Xpra-org/xpra/issues/2003)
 * ✨ Features:
-  * [audio available signal](https://github.com/Xpra-org/xpra/issues/2325)
   * [native `pipewire` frame capture](https://github.com/Xpra-org/xpra/issues/4937)
   * [remove GStreamer video codecs](https://github.com/Xpra-org/xpra/issues/4936)
   * [gsettings synchronization](https://github.com/Xpra-org/xpra/issues/3683)
-  * [audio keepalive](https://github.com/Xpra-org/xpra/issues/4913)
   * [virtual monitors for MS Windows shadow servers](https://github.com/Xpra-org/xpra/issues/4909)
   * [localized menus and dialogs](https://github.com/Xpra-org/xpra/issues/4934)
   * [`expand` server for MS Windows](https://github.com/Xpra-org/xpra/issues/4911)
