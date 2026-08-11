@@ -1039,6 +1039,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 ensure_item_selected(selection_menu, item)
                 if not item.get_active():
                     return
+                update_config({"audio-sink": audio_sink})
                 if audio_sink:
                     self.spk_on_sink(audio_sink)
                 else:
