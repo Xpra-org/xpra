@@ -14,7 +14,8 @@ from xpra.audio.common import OPUS_RTP
 from xpra.audio.gstreamer_util import (
     CODEC_ORDER, CODEC_OPTIONS, ENCODER_LATENCY,
     RTP_SINK_CAPS, parse_audio_sink,
-    XPRA_PULSE_SINK_DEVICE_NAME, get_pulse_device, get_sink_devices,
+    SINK_DEVICE_CACHE, XPRA_PULSE_SINK_DEVICE_NAME,
+    get_pulse_device, get_sink_device_name, get_sink_devices,
 )
 
 
@@ -109,6 +110,13 @@ class TestGStreamerUtilStatic(unittest.TestCase):
 
     def test_other_sink_devices(self):
         assert get_sink_devices("alsasink") == {}
+
+    def test_sink_device_name_uses_menu_cache(self):
+        with patch.dict(SINK_DEVICE_CACHE, {
+            "pulsesink": {"pulse-device": "Menu Device Label"},
+        }, clear=True), patch("xpra.audio.gstreamer_util.get_sink_devices") as query_devices:
+            assert get_sink_device_name("pulsesink", "pulse-device") == "Menu Device Label"
+        query_devices.assert_not_called()
 
     def test_pulse_sink_device_hint(self):
         devices = {

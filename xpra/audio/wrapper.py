@@ -235,6 +235,9 @@ def run_audio(mode: str, args: list[str]) -> int:
             except (ValueError, IndexError):
                 volume = 1.0
             pipeline_args = (plugin, options, codecs, codec_options, volume)
+            if info == "play":
+                sink_device_name = args[7] if len(args) > 7 else ""
+                pipeline_args += (sink_device_name, )
 
         ss = None
         try:
@@ -378,7 +381,7 @@ class SourceSubprocessWrapper(AudioSubprocessWrapper):
 class SinkSubprocessWrapper(AudioSubprocessWrapper):
     __signals__ = AudioSubprocessWrapper.__signals__
 
-    def __init__(self, plugin, codec, volume, element_options):
+    def __init__(self, plugin, codec, volume, element_options, sink_device_name=""):
         super().__init__("audio playback")
         self.large_packets = ["add_data"]
         self.codec = codec
@@ -387,6 +390,7 @@ class SinkSubprocessWrapper(AudioSubprocessWrapper):
             plugin or "", format_element_options(element_options),
             codec, "",
             str(volume),
+            sink_device_name,
         ]
         _add_debug_args(self.command)
 
@@ -446,7 +450,11 @@ def start_receiving_audio(codec: str, audio_sink: str = "auto") -> SinkSubproces
     log("start_receiving_audio(%s, %s)", codec, audio_sink)
     with log.trap_error("Error starting audio sink"):
         sink_type, sink_options = parse_audio_sink(audio_sink)
-        return SinkSubprocessWrapper(sink_type, codec, 1.0, sink_options)
+        sink_device_name = ""
+        if device := sink_options.get("device"):
+            from xpra.audio.gstreamer_util import get_sink_device_name
+            sink_device_name = get_sink_device_name(sink_type, str(device))
+        return SinkSubprocessWrapper(sink_type, codec, 1.0, sink_options, sink_device_name)
 
 
 def start_audio_meter(device: str, interval: int) -> MeterSubprocessWrapper:

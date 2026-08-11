@@ -21,7 +21,7 @@ from xpra.gstreamer.common import (
 from xpra.audio.gstreamer_util import (
     get_decoder_elements, has_plugins,
     get_queue_time, get_decoders,
-    get_default_sink_plugin, get_sink_devices, get_sink_plugins,
+    get_default_sink_plugin, get_sink_plugins,
     AUDIO_SINK_LABELS,
     MP3, CODEC_ORDER, QUEUE_LEAK,
     GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS, RTP_SINK_CAPS,
@@ -90,7 +90,8 @@ class AudioSink(AudioPipeline):
         "eos": one_arg_signal,
     }
 
-    def __init__(self, sink_type: str, sink_options: dict, codecs: Sequence[str], codec_options: dict, volume=1.0):
+    def __init__(self, sink_type: str, sink_options: dict, codecs: Sequence[str], codec_options: dict,
+                 volume=1.0, sink_device_name=""):
         requested_sink_type = sink_type
         if not sink_type or sink_type == "auto":
             sink_type = get_default_sink_plugin()
@@ -106,7 +107,7 @@ class AudioSink(AudioPipeline):
         super().__init__(codec)
         if requested_sink_type not in ("", "auto", "autoaudiosink"):
             sink_label = AUDIO_SINK_LABELS.get(requested_sink_type, requested_sink_type)
-            self.codec_description_suffix = f" with '{sink_label}' sink"
+            self.codec_description_suffix = f"\n with '{sink_label}' sink"
         self.container_format = (parser or "").replace("demux", "").replace("depay", "")
         self.sink_type = sink_type
         self.stream_compressor = stream_compressor
@@ -166,7 +167,7 @@ class AudioSink(AudioPipeline):
         if sink_options:
             sink_attributes.update(sink_options)
         if self.codec_description_suffix and (device := sink_options.get("device")):
-            device_label = get_sink_devices(sink_type).get(str(device), str(device))
+            device_label = sink_device_name or str(device)
             self.codec_description_suffix = self.codec_description_suffix.removesuffix(" sink")
             self.codec_description_suffix += f" device '{device_label}'"
         sink_attributes["name"] = "sink"

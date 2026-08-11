@@ -70,6 +70,7 @@ AUDIO_SINK_LABELS = {
     "directsoundsink": "DirectSound",
     "wasapisink": "WASAPI",
 }
+SINK_DEVICE_CACHE: dict[str, dict[str, str]] = {}
 
 
 def force_enabled(codec_name):
@@ -516,18 +517,31 @@ def get_sink_plugins() -> list[str]:
 
 def get_sink_devices(sink_plugin: str) -> dict[str, str]:
     """Return device property values mapped to human-readable names."""
+    devices: dict[str, str] = {}
     try:
         if sink_plugin == "pulsesink":
             from xpra.audio.pulseaudio.util import get_pa_device_options
-            devices = get_pa_device_options(False, False)
-            return {bytestostr(device): bytestostr(label).strip('"') for device, label in devices.items()}
-        if sink_plugin == "directsoundsink":
+            pulse_devices = get_pa_device_options(False, False)
+            devices = {
+                bytestostr(device): bytestostr(label).strip('"') for device, label in pulse_devices.items()
+            }
+        elif sink_plugin == "directsoundsink":
             from xpra.platform.win32.directsound import get_devices
-            return {f"{{{guid}}}": str(name) for _index, guid, name in get_devices()}
+            devices = {f"{{{guid}}}": str(name) for _index, guid, name in get_devices()}
     except Exception as e:
         log("get_sink_devices(%s)", sink_plugin, exc_info=True)
         log.warn("Warning: failed to query %s devices: %s", sink_plugin, e)
-    return {}
+    if devices:
+        SINK_DEVICE_CACHE[sink_plugin] = devices
+    return devices
+
+
+def get_sink_device_name(sink_plugin: str, device: str) -> str:
+    """Resolve a sink device ID, preferring an earlier menu enumeration."""
+    device_name = SINK_DEVICE_CACHE.get(sink_plugin, {}).get(device, "")
+    if device_name:
+        return device_name
+    return get_sink_devices(sink_plugin).get(device, "")
 
 
 def get_default_sink_plugin() -> str:
