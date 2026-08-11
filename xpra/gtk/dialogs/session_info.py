@@ -893,7 +893,7 @@ class SessionInfo(Gtk.Window):
             return getattr(self.client, name, "")
 
         if self.connection:
-            self.connection.target = self.label_row("Server Endpoint")
+            self.label_row("Server Endpoint", self.connection.target)
         if features.display and self.client.server_display:
             self.label_row("Server Display", prettify_plug_name(self.client.server_display))
         self.label_row("Server Hostname", cattr("_remote_hostname"))
