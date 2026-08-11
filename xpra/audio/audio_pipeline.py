@@ -192,7 +192,10 @@ class AudioPipeline(Pipeline):
         """
         cur = current.lower()
         if not cur or (value.find(cur) < 0 and cur.find(value) < 0):
-            self.gstloginfo("using '%s' %s", value, what)
+            lines = what.splitlines()
+            self.gstloginfo("using '%s' %s", value, lines[0])
+            for line in lines[1:]:
+                self.gstloginfo(line)
 
     def new_codec_description(self, desc: str) -> None:
         """Record the audio codec name reported by GStreamer (e.g. 'opus', 'vorbis')."""

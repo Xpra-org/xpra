@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 
 class TestAudioSinkOptions(unittest.TestCase):
@@ -53,9 +53,10 @@ class TestAudioSinkOptions(unittest.TestCase):
         sink = self.make_sink("pulsesink")
         with patch.object(sink, "gstloginfo") as gstloginfo:
             sink.new_codec_description("Opus")
-        gstloginfo.assert_called_once_with(
-            "using '%s' %s", "opus", "audio codec\n with 'Pulseaudio' sink",
-        )
+        assert gstloginfo.call_args_list == [
+            call("using '%s' %s", "opus", "audio codec"),
+            call(" with 'Pulseaudio' sink"),
+        ]
 
     def test_selected_device_in_codec_log(self):
         sink = self.make_sink(
@@ -63,10 +64,10 @@ class TestAudioSinkOptions(unittest.TestCase):
         )
         with patch.object(sink, "gstloginfo") as gstloginfo:
             sink.new_codec_description("Opus")
-        gstloginfo.assert_called_once_with(
-            "using '%s' %s", "opus",
-            "audio codec\n with 'Pulseaudio' device 'Built-in Audio Analog Stereo'",
-        )
+        assert gstloginfo.call_args_list == [
+            call("using '%s' %s", "opus", "audio codec"),
+            call(" with 'Pulseaudio' device 'Built-in Audio Analog Stereo'"),
+        ]
 
     def test_auto_sink_omitted_from_codec_log(self):
         for sink_type in ("auto", "autoaudiosink"):
