@@ -867,6 +867,7 @@ fi
    don't request contexts with depth or stencil buffers
    OpenGL pixel upload format
    discard alpha padding in RGBX uploads
+   include unit test
 - Minor:
    clean dead ssh agent symlinks
    always point the ssh agent symlink at a client
@@ -883,6 +884,7 @@ fi
    silence macOS legacy SSL warnings
    consistent attribute initialization
    remove unavailable test commands
+   fix ignored test
 * Tue Jun 30 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
 - Platforms, build and packaging:
    honour pkgconfig file for Gtk build paths + fixup

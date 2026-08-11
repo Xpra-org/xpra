@@ -40,6 +40,7 @@
   * [don't request contexts with depth or stencil buffers](https://github.com/Xpra-org/xpra/commit/67511f70785c6bc2e5741d0a68b5e8c349db10d0)
   * [OpenGL pixel upload format](https://github.com/Xpra-org/xpra/commit/079c72dd3673457e346c78feff79c5ff8b2c22b3)
   * [discard alpha padding in RGBX uploads](https://github.com/Xpra-org/xpra/commit/8b18363e5b798464b53690aa6c0ff92f6f936494)
+  * [include unit test](https://github.com/Xpra-org/xpra/commit/ded0b142584bd3af0ab2f2c737afc52d64cce106)
 * Minor:
   * [clean dead ssh agent symlinks](https://github.com/Xpra-org/xpra/commit/00074c3f140b86995c49dc48b04bac0a1ff085c6)
   * [always point the ssh agent symlink at a client](https://github.com/Xpra-org/xpra/commit/c587579aae44e34d4efbeaacf68a8462a6d02e9f)
@@ -56,6 +57,7 @@
   * [silence macOS legacy SSL warnings](https://github.com/Xpra-org/xpra/commit/a1cfa47710b50ef57db447f7b9d08ce76c49ad89)
   * [consistent attribute initialization](https://github.com/Xpra-org/xpra/commit/765f3d0414e80c674a7c5060f4991f6a9d060aa8)
   * [remove unavailable test commands](https://github.com/Xpra-org/xpra/commit/d4e6364916d51ac5346f09c4f0716f00270e230e)
+  * [fix ignored test](https://github.com/Xpra-org/xpra/commit/0d26fafe2a6818691925ed8ced4908c388143eea)
 
 ## [5.1.6] 2026-06-30
 * Platforms, build and packaging:
