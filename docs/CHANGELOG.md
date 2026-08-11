@@ -42,6 +42,7 @@
   * [`YUV422` support with `vp9`](https://github.com/Xpra-org/xpra/issues/4928)
   * [colorspace synchronization in video bitstream](https://github.com/Xpra-org/xpra/issues/4926)
   * [paint YUV420P10](https://github.com/Xpra-org/xpra/issues/4993)
+  * [convert SVG icons to PNG](https://github.com/Xpra-org/xpra/issues/3199)
 * 📋 Clipboard:
   * [macOS and MS Windows clients `PRIMARY` synchronization](https://github.com/Xpra-org/xpra/issues/2985)
   * [rate limiting](https://github.com/Xpra-org/xpra/issues/2404)
