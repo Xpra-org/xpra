@@ -1088,7 +1088,7 @@ class SessionInfo(Gtk.Window):
         self.grid_tab("connect.png", _("Connection"), self.populate_connection, scroll=True)
 
         if self.connection:
-            self.connection.target = self.label_row(_("Server Endpoint"))
+            self.label_row(_("Server Endpoint"), self.connection.target)
         server_display = self.get_subsystem_attr("display", "server_display", "")
         if features.display and server_display:
             self.label_row(_("Server Display"), prettify_plug_name(server_display))
