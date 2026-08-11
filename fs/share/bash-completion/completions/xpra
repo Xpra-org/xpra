@@ -24,7 +24,7 @@ _xpra() {
         encoder encode
         clean clean-sockets clean-displays autostart
         list list-sessions list-windows list-mdns list-clients
-        mdns-gui displays showconfig showsetting setup-ssl show-ssl
+        mdns-gui displays showconfig showsetting setup-ssl show-ssl menu-cache
         encoding path-info html5 docs help recover top proxy
         opengl opengl-probe opengl-test
         gtk-info gui-info network-info crypto-info monitor-info nvinfo

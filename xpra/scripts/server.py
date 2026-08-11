@@ -429,9 +429,17 @@ def enforce_server_landlock(app=None) -> None:
         dbus = app.get_subsystem("dbus")
         if dbus and dbus.enabled:
             dbus.init_dbus_env()
+    write_paths = [os.environ.get("XPRA_SESSION_DIR", "")]
+    if envbool("XPRA_LANDLOCK", False):
+        try:
+            from xpra.platform.posix.menu_helper import prepare_menu_icon_cache_dir
+            write_paths.append(prepare_menu_icon_cache_dir())
+        except (ImportError, OSError) as e:
+            warn("Warning: unable to prepare the menu icon cache for Landlock")
+            warn(f" {e}")
     from xpra.platform.posix.security import enforce_landlock
     try:
-        enforce_landlock((os.environ.get("XPRA_SESSION_DIR", ""), ), allow_socket_creation=False)
+        enforce_landlock(tuple(write_paths), allow_socket_creation=False)
     except (ImportError, OSError) as e:
         raise InitException(f"failed to restrict the server process with Landlock: {e}") from None
 

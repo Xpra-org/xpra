@@ -5,6 +5,7 @@
 
 import os
 import re
+import hashlib
 from typing import Any
 from collections.abc import Sequence, Callable, Iterable
 
@@ -64,11 +65,37 @@ START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 PREFER_IBUS_LAYOUTS = envbool("XPRA_PREFER_IBUS_LAYOUTS", True)
 KEYBOARD_CAD = envbool("XPRA_KEYBOARD_CAD", True)
-
 FULL_LAYOUT_LIST = envbool("XPRA_FULL_LAYOUT_LIST", True)
-
 NEW_MONITOR_RESOLUTIONS = os.environ.get("XPRA_NEW_MONITOR_RESOLUTIONS",
                                          "640x480,1024x768,1600x1200,FHD,4K").split(",")
+
+
+def start_menu_checksum(menu_data: dict) -> str:
+    h = hashlib.sha256()
+
+    def update(value) -> None:
+        if isinstance(value, bytes):
+            data = value
+        else:
+            data = str(value or "").encode("utf-8")
+        h.update(len(data).to_bytes(8, "big"))
+        h.update(data)
+
+    for category, category_props in sorted((menu_data or {}).items()):
+        if not isinstance(category_props, dict):
+            continue
+        update(category)
+        update(category_props.get("IconType"))
+        update(category_props.get("IconData"))
+        entries = category_props.get("Entries") or {}
+        for app_name, command_props in sorted(entries.items()):
+            command_props = command_props or {}
+            update(app_name)
+            update(command_props.get("command"))
+            update(command_props.get("IconType"))
+            update(command_props.get("IconData"))
+    return h.hexdigest()
+
 
 CLIPBOARD_LABELS = ["Clipboard", "Primary", "Secondary"]
 CLIPBOARD_LABEL_TO_NAME = {
@@ -1823,16 +1850,7 @@ class GTKTrayMenu(GTKMenuHelper):
         cmd = self.get_subsystem("command")
 
         def server_menu_checksum() -> str:
-            import hashlib
-            h = hashlib.sha256()
-            for category, category_props in sorted((cmd.server_menu or {}).items()):
-                if not isinstance(category_props, dict):
-                    continue
-                entries = category_props.get("Entries") or {}
-                for app_name, command_props in sorted(entries.items()):
-                    command = (command_props or {}).get("command", "")
-                    h.update(f"{app_name}\0{command}\0".encode("utf-8"))
-            return h.hexdigest()
+            return start_menu_checksum(cmd.server_menu)
 
         menu_checksum = [""]
 

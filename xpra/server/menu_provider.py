@@ -5,11 +5,12 @@
 
 import os.path
 import sys
+from subprocess import Popen, PIPE
 from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
-from xpra.os_util import gi_import
+from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.env import envint, envbool
 from xpra.util.thread import start_thread
 from xpra.util.background_worker import add_work_item
@@ -54,6 +55,7 @@ class MenuProvider:
     __slots__ = (
         "dir_watchers", "menu_reload_timer",
         "on_reload", "menu_data", "desktop_sessions", "load_lock",
+        "menu_cache_process", "menu_cache_pending", "stopped",
     )
 
     def __init__(self):
@@ -63,15 +65,22 @@ class MenuProvider:
         self.menu_data: dict[str, Any] | None = None
         self.desktop_sessions: dict[str, Any] | None = None
         self.load_lock = Lock()
+        self.menu_cache_process: Popen | None = None
+        self.menu_cache_pending = False
+        self.stopped = False
 
     def setup(self) -> None:
         if not EXPORT_MENU_DATA:
             return
+        self.stopped = False
         if MENU_WATCHER:
             self.setup_menu_watcher()
         self.load_menu_data()
 
     def cleanup(self) -> None:
+        self.stopped = True
+        self.menu_cache_pending = False
+        self.menu_cache_process = None
         self.on_reload = []
         self.cancel_menu_reload()
         self.cancel_dir_watchers()
@@ -142,10 +151,13 @@ class MenuProvider:
         for monitor in set(dw.values()):
             monitor.cancel()
 
-    def load_menu_data(self, force_reload: bool = False) -> None:
+    def load_menu_data(self, force_reload: bool = False, cache: bool = True) -> None:
+        if cache:
+            self.start_menu_cache()
         # start loading in a thread,
         # as this may take a while and
         # so server startup can complete:
+
         def load() -> None:
             if install_menu_thread_seccomp():
                 # Importing a module from newer source normally attempts a writable
@@ -154,7 +166,7 @@ class MenuProvider:
                 sys.dont_write_bytecode = True
             try:
                 self.get_menu_data(force_reload)
-                self.get_desktop_sessions()
+                self.get_desktop_sessions(force_reload)
             except ImportError as e:
                 log.warn("Warning: cannot load menu data")
                 log.warn(f" {e}")
@@ -165,6 +177,47 @@ class MenuProvider:
 
         start_thread(load, "load-menu-data", True)
 
+    def start_menu_cache(self) -> None:
+        if self.stopped or not POSIX or OSX:
+            return
+        proc = self.menu_cache_process
+        if proc:
+            self.menu_cache_pending = True
+            return
+        from xpra.platform.paths import get_xpra_command
+        cmd = get_xpra_command() + ["menu-cache"]
+        try:
+            proc = Popen(cmd, stdout=PIPE, text=True)
+        except OSError as e:
+            log.warn("Warning: failed to start menu icon cache subprocess")
+            log.warn(" %s", e)
+            return
+        self.menu_cache_process = proc
+        log("started menu icon cache subprocess %s", proc)
+
+        def cache_ended(ended_proc: Popen) -> None:
+            self.menu_cache_process = None
+            output = ended_proc.stdout.read() if ended_proc.stdout else ""
+            modified = 0
+            for line in output.splitlines():
+                if line.startswith("modified="):
+                    try:
+                        modified = int(line.split("=", 1)[1])
+                    except ValueError:
+                        log.warn("Warning: invalid menu-cache output %r", line)
+            log("menu-cache ended with status %s, modified=%i", ended_proc.returncode, modified)
+            if self.stopped:
+                return
+            pending = self.menu_cache_pending
+            self.menu_cache_pending = False
+            if pending:
+                self.start_menu_cache()
+            if modified > 0:
+                self.load_menu_data(True, cache=False)
+
+        from xpra.util.child_reaper import get_child_reaper
+        get_child_reaper().add_process(proc, "menu-cache", cmd, ignore=True, forget=True, callback=cache_ended)
+
     def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> dict[str, Any] | None:
         log("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_MENU_DATA:
@@ -174,7 +227,7 @@ class MenuProvider:
             try:
                 if self.menu_data is None or force_reload:
                     from xpra.platform.menu_helper import load_menu  # pylint: disable=import-outside-toplevel
-                    self.menu_data = load_menu()
+                    self.menu_data = load_menu(force_reload)
                     add_work_item(self.got_menu_data)
             finally:
                 lock.release()

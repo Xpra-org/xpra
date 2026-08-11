@@ -12,6 +12,8 @@ using python-xdg
 import os
 import sys
 import glob
+import hashlib
+import tempfile
 from time import monotonic, sleep
 from contextlib import nullcontext
 from threading import RLock
@@ -19,7 +21,9 @@ from typing import Any
 from collections.abc import Generator, Sequence
 
 from xpra.util.env import envbool, envint, OSEnvContext, first_time, IgnoreWarningsContext, get_saved_env
+from xpra.util.io import load_binary_file
 from xpra.codecs import icon_util
+from xpra.codecs.image_type import get_image_type
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
 
@@ -156,6 +160,38 @@ if LOAD_FROM_THEME:
         init_themes()
 
 EXTENSIONS: Sequence[str] = ("png", "svg", "xpm")
+GLOBAL_MENU_ICON_CACHE_DIR = "/var/cache/xpra/menu-icons"
+MENU_ICON_CACHE_VERSION = 1
+
+
+def get_menu_icon_cache_dir() -> str:
+    if os.geteuid() == 0:
+        return GLOBAL_MENU_ICON_CACHE_DIR
+    cache_home = os.environ.get("XDG_CACHE_HOME", "")
+    if not cache_home or not os.path.isabs(cache_home):
+        cache_home = os.path.expanduser("~/.cache")
+    return os.path.join(cache_home, "xpra", "menu-icons")
+
+
+def get_menu_icon_cache_dirs() -> tuple[str, ...]:
+    cache_dir = get_menu_icon_cache_dir()
+    if os.geteuid() == 0 or cache_dir == GLOBAL_MENU_ICON_CACHE_DIR:
+        return (cache_dir,)
+    return cache_dir, GLOBAL_MENU_ICON_CACHE_DIR
+
+
+def cached_svg_filename(svg_data: bytes, cache_dir: str) -> str:
+    digest = hashlib.sha256(f"xpra-menu-icon-v{MENU_ICON_CACHE_VERSION}\0".encode() + svg_data).hexdigest()
+    return os.path.join(cache_dir, f"{digest}.png")
+
+
+def load_cached_svg(svg_data: bytes) -> tuple[bytes, str] | tuple:
+    for cache_dir in get_menu_icon_cache_dirs():
+        filename = cached_svg_filename(svg_data, cache_dir)
+        png_data = load_binary_file(filename)
+        if png_data and get_image_type(png_data) == "png":
+            return png_data, "png"
+    return ()
 
 
 def check_xdg() -> bool:
@@ -201,12 +237,18 @@ def load_entry_icon(props: dict):
     filename = do_find_icon(*names)
     icondata = None
     if filename:
+        props["IconFile"] = filename
         icondata = icon_util.load_icon_from_file(filename)
         if icondata:
             bdata, ext = icondata
+            if ext == "svg":
+                icondata = load_cached_svg(bdata)
+                if not icondata:
+                    log(f"no cached PNG icon found for SVG {filename!r}")
+                    return props
+                bdata, ext = icondata
             props["IconData"] = bdata
             props["IconType"] = ext
-            props["IconFile"] = filename
     if not icondata:
         log(f"no icon found for {names} from {props}")
     return props
@@ -298,7 +340,16 @@ def add_entry_icon(entry_props: dict[str, Any], category: str):
     eicon = find_glob_icon(*names, category)
     if not eicon:
         return
-    bdata, ext = eicon
+    entry_props["IconFile"] = eicon
+    icondata = icon_util.load_icon_from_file(eicon)
+    if not icondata:
+        return
+    bdata, ext = icondata
+    if ext == "svg":
+        icondata = load_cached_svg(bdata)
+        if not icondata:
+            return
+        bdata, ext = icondata
     entry_props["IconData"] = bdata
     entry_props["IconType"] = ext
 
@@ -655,17 +706,95 @@ def load_desktop_sessions() -> dict[str, Any]:
                     names = get_icon_names_for_session(name.lower())
                     icon_filename = do_find_icon(*names)
                     if icon_filename:
+                        entry["IconFile"] = icon_filename
                         icondata = icon_util.load_icon_from_file(icon_filename)
                         if icondata:
-                            entry["IconData"] = icondata[0]
-                            entry["IconType"] = icondata[1]
-                            entry["IconFile"] = icon_filename
+                            if icondata[1] == "svg":
+                                icondata = load_cached_svg(icondata[0])
+                            if icondata:
+                                entry["IconData"] = icondata[0]
+                                entry["IconType"] = icondata[1]
                 xsessions[name] = entry
             except Exception as e:
                 log("load_desktop_sessions(%s)", remove_icons, exc_info=True)
                 log.error(f"Error loading desktop session entry {filename!r}:")
                 log.error(f" {type(e)}: {e}")
     return xsessions
+
+
+def _menu_icon_files(data: Any) -> set[str]:
+    filenames: set[str] = set()
+    if not isinstance(data, dict):
+        return filenames
+    filename = data.get("IconFile")
+    if isinstance(filename, str) and filename.lower().endswith(".svg"):
+        filenames.add(filename)
+    for value in data.values():
+        if isinstance(value, dict):
+            filenames.update(_menu_icon_files(value))
+    return filenames
+
+
+def prepare_menu_icon_cache_dir() -> str:
+    cache_dir = get_menu_icon_cache_dir()
+    mode = 0o755 if os.geteuid() == 0 else 0o700
+    existed = os.path.isdir(cache_dir)
+    os.makedirs(cache_dir, mode=mode, exist_ok=True)
+    if not existed:
+        os.chmod(cache_dir, mode)
+    return cache_dir
+
+
+def _write_cached_png(filename: str, png_data: bytes) -> None:
+    cache_dir = os.path.dirname(filename)
+    file_mode = 0o644 if os.geteuid() == 0 else 0o600
+    fd, tmp_filename = tempfile.mkstemp(prefix=".menu-icon-", suffix=".png", dir=cache_dir)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(png_data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp_filename, file_mode)
+        os.replace(tmp_filename, filename)
+    finally:
+        try:
+            os.unlink(tmp_filename)
+        except FileNotFoundError:
+            pass
+
+
+def cache_menu_icons() -> int:
+    """Load XDG application and desktop-session menus and cache their SVG icons as PNG."""
+    cache_dir = prepare_menu_icon_cache_dir()
+    menu_data = load_menu(True)
+    session_data = load_desktop_sessions()
+    filenames = _menu_icon_files(menu_data)
+    filenames.update(_menu_icon_files(session_data))
+    if filenames and not icon_util.load_rsvg():
+        raise RuntimeError("the Rsvg bindings are required to cache SVG menu icons")
+    modified = 0
+    for filename in sorted(filenames):
+        svg_data = load_binary_file(filename)
+        if not svg_data or get_image_type(svg_data) != "svg":
+            log.warn("Warning: cannot cache invalid SVG menu icon %r", filename)
+            continue
+        cached_filename = cached_svg_filename(svg_data, cache_dir)
+        cached_data = load_binary_file(cached_filename)
+        if cached_data and get_image_type(cached_data) == "png":
+            continue
+        png_data = icon_util.svg_to_png(filename, svg_data)
+        if not png_data or get_image_type(png_data) != "png":
+            log.warn("Warning: failed to cache SVG menu icon %r", filename)
+            continue
+        try:
+            _write_cached_png(cached_filename, png_data)
+        except OSError as e:
+            log.warn("Warning: failed to write cached menu icon %r", cached_filename)
+            log.warn(" %s", e)
+            continue
+        modified += 1
+    log.info("cached %i of %i SVG menu icons in %r", modified, len(filenames), cache_dir)
+    return modified
 
 
 def get_icon_names_for_session(name: str) -> list[str]:

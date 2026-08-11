@@ -118,7 +118,7 @@ NO_NETWORK_SUBCOMMANDS = (
     "auth",
     "notify",
     "dbus-system-list", "dbus-session-list",
-    "applications-menu", "sessions-menu",
+    "applications-menu", "sessions-menu", "menu-cache",
     "_proxy",
     "configure", "showconfig", "showsetting", "setting", "set", "unset",
     "otp",
@@ -575,7 +575,7 @@ def run_mode(script_file: str, cmdline: list[str], options, args: list[str], ful
 
     # configure default logging handler:
     if POSIX and getuid() == options.uid == 0 and mode not in (
-            "proxy", "autostart", "showconfig", "setup-ssl", "show-ssl", "sbom",
+            "proxy", "autostart", "showconfig", "setup-ssl", "show-ssl", "menu-cache", "sbom",
     ) and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
 
@@ -908,6 +908,11 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             print("no menu data available")
             return ExitCode.FAILURE
         print_nested_dict(data)
+        return ExitCode.OK
+    if mode == "menu-cache":
+        from xpra.platform.menu_helper import cache_menu_icons
+        modified = cache_menu_icons()
+        print(f"modified={modified}")
         return ExitCode.OK
     if mode == "video":
         from xpra.codecs import video

@@ -883,6 +883,8 @@ def get_usage() -> list[str]:
         "path-info",
         "rdp HOST[:PORT]",
     ]
+    if POSIX and not OSX:
+        command_options.append("menu-cache")
     if find_html5_path():
         command_options += ["html5"]
     if find_docs_path():

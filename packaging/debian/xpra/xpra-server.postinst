@@ -11,5 +11,6 @@ case "${1}" in
 esac
 
 xpra setup-ssl > /dev/null
+xpra menu-cache > /dev/null || true
 
 #DEBHELPER#

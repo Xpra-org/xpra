@@ -1002,6 +1002,7 @@ restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 
 %post -n %{package_prefix}-server
 %{python3} /usr/bin/xpra setup-ssl > /dev/null
+%{python3} /usr/bin/xpra menu-cache > /dev/null || :
 # if the firewall config does not exist,
 # don't bother trying to update the firewall
 # this happens in container setups

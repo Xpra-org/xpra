@@ -22,10 +22,15 @@ def clear_cache() -> None:
     """ the Posix override has a cache to clear """
 
 
+def cache_menu_icons() -> int:
+    return 0
+
+
 platform_import(globals(), "menu_helper", False,
                 "load_menu",
                 "load_desktop_sessions",
                 "clear_cache",
+                "cache_menu_icons",
                 )
 
 

@@ -62,6 +62,8 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBhtml5\fP
 .HP
+\fBxpra\fP \fBmenu-cache\fP
+.HP
 \fBxpra\fP \fBupgrade\fP \fI[:DISPLAY]\fP [...any options accepted by
 \fBxpra seamless\fP...]
 .HP
@@ -357,6 +359,11 @@ You can also specify as extra arguments the specific options that
 should be displayed, or use the special value \fIall\fP to
 display all the options including the ones which are normally not
 displayed because they are not relevant on the given system.
+.SS xpra menu-cache
+Loads the XDG application and desktop-session menus and caches their SVG
+icons as PNG files. User caches are stored below \fB$XDG_CACHE_HOME\fP,
+or \fB~/.cache\fP by default. When run as root, the shared cache is stored
+below \fB/var/cache/xpra\fP.
 .SS xpra list
 This command finds all xpra servers that have been started by the
 current user on the current machine, and lists them.

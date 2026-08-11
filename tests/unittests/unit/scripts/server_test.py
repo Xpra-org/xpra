@@ -73,7 +73,7 @@ class TestMain(unittest.TestCase):
         security_module = ModuleType("xpra.platform.posix.security")
         security_module.enforce_landlock = enforce_landlock
         with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
-             patch.dict(os.environ, {"XPRA_SESSION_DIR": "/session"}, clear=False), \
+             patch.dict(os.environ, {"XPRA_LANDLOCK": "0", "XPRA_SESSION_DIR": "/session"}, clear=False), \
              patch("xpra.scripts.server.LINUX", True):
             enforce_server_landlock()
         enforce_landlock.assert_called_once_with(("/session", ), allow_socket_creation=False)
@@ -83,13 +83,20 @@ class TestMain(unittest.TestCase):
         enforce_landlock = Mock(side_effect=lambda *args, **kwargs: events.append("landlock"))
         security_module = ModuleType("xpra.platform.posix.security")
         security_module.enforce_landlock = enforce_landlock
+        menu_helper_module = ModuleType("xpra.platform.posix.menu_helper")
+        menu_helper_module.prepare_menu_icon_cache_dir = lambda: events.append("cache") or "/cache"
         dbus = SimpleNamespace(enabled=True, init_dbus_env=lambda: events.append("dbus"))
         app = SimpleNamespace(get_subsystem=lambda name: dbus if name == "dbus" else None)
-        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
+        modules = {
+            "xpra.platform.posix.security": security_module,
+            "xpra.platform.posix.menu_helper": menu_helper_module,
+        }
+        with patch.dict(sys.modules, modules), \
              patch.dict(os.environ, {"XPRA_LANDLOCK": "1", "XPRA_SESSION_DIR": "/session"}, clear=False), \
              patch("xpra.scripts.server.LINUX", True):
             enforce_server_landlock(app)
-        self.assertEqual(events, ["dbus", "landlock"])
+        self.assertEqual(events, ["dbus", "cache", "landlock"])
+        enforce_landlock.assert_called_once_with(("/session", "/cache"), allow_socket_creation=False)
 
     def test_splash_enabled(self):
         assert is_splash_enabled("foo", False, False, ":10") is False, "splash should not be enabled for splash=False"

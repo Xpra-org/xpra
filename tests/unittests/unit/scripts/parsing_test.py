@@ -16,7 +16,7 @@ from xpra.util.env import nomodule_context
 from xpra.scripts.parsing import (
     parse_ssh_option, get_ssh_args, get_ssh_proxy_args,
     audio_option, parse_env, parse_URL, _sep_pos, normalize_display_name,
-    parse_display_name, parse_cmdline,
+    parse_display_name, parse_cmdline, get_usage,
 )
 from xpra.scripts.args import get_start_server_args
 from xpra.scripts.config import fixup_clipboard, get_defaults, InitException
@@ -24,6 +24,11 @@ from xpra.util.objects import AdHocStruct
 
 
 class TestParsing(unittest.TestCase):
+
+    def test_menu_cache_usage(self):
+        commands = {usage.split(" ", 1)[0] for usage in get_usage()}
+        if POSIX and not OSX:
+            self.assertIn("menu-cache", commands)
 
     def test_clipboard_auto(self):
         self.assertEqual(get_defaults()["clipboard"], "auto")
