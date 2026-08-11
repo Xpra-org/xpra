@@ -11,7 +11,7 @@ from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.util.thread import start_thread
-from xpra.util.env import envint
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -22,6 +22,7 @@ FAKE_UI_LOCKUPS = envint("XPRA_FAKE_UI_LOCKUPS")
 POLLING = envint("XPRA_UI_THREAD_POLLING", 500)
 MAX_DELTA = envint("XPRA_UI_THREAD_MAX_DELTA", 2000 + POLLING * 2)
 ANNOUNCE_TIMEOUT = envint("XPRA_ANNOUNCE_BLOCKED", POLLING)
+DUMP_FRAMES = envbool("XPRA_UI_THREAD_DUMP_FRAMES", True)
 
 
 def run_callbacks(callbacks: list[Callable[[], None]]) -> None:
@@ -58,6 +59,10 @@ class UIThreadWatcher:
         self.fail_callbacks: list[Callable[[], None]] = []
         self.resume_callbacks: list[Callable[[], None]] = []
         self.show_message: Callable[[str], None] = log_message
+        if DUMP_FRAMES:
+            # registered first, so the stacks are captured before any other
+            # fail callback gets a chance to run (and to move the UI thread on):
+            self.add_fail_callback(self.dump_ui_thread_frames)
         # this event is created once and re-used: `start` clears it and `stop` sets it,
         # so that the watcher can be started again (ie: when the client re-connects)
         self.exit: Event = Event()
@@ -119,6 +124,19 @@ class UIThreadWatcher:
 
     def remove_alive_callback(self, cb: Callable[[], None]) -> None:
         self.alive_callbacks.remove(cb)
+
+    def dump_ui_thread_frames(self) -> None:
+        """
+        Runs from the polling thread as soon as the UI thread is declared blocked,
+        so that `sys._current_frames()` shows us what it is stuck in.
+        Beware: this can only ever fire if the polling thread is still running,
+        so it will not catch a stall of the whole process
+        (ie: the GIL being held by a native callback) - use an external
+        sampling profiler for those.
+        """
+        from xpra.util.pysystem import dump_all_frames
+        log("UI thread blocked for more than %ims, dumping all frames:", self.max_delta)
+        dump_all_frames(log)
 
     def tick(self) -> None:
         self.last_ui_thread_time = monotonic()
