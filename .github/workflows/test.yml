@@ -19,6 +19,7 @@ jobs:
                 xauth x11-xkb-utils \
                 xvfb python3-cairo python3-gi-cairo \
                 libturbojpeg-dev libwebp-dev python3-pil \
+                python3-opengl \
                 libx264-dev libvpx-dev \
                 libavformat-dev libavcodec-dev libswscale-dev \
                 python3-dbus python3-cryptography \
