@@ -69,8 +69,11 @@ def do_get_window_title(client, wid: int, metadata: dict) -> str:
     if title.find("@") < 0:
         return title
     # perform metadata variable substitutions:
-    remote_hostname = getattr(client, "_remote_hostname", None)
-    remote_display = getattr(client, "_remote_display", None)
+    remote_info = client.get_subsystem("remote-info")
+    display_info = client.get_subsystem("display")
+    mmap_info = client.get_subsystem("mmap")
+    remote_hostname = remote_info._remote_hostname if remote_info else None
+    remote_display = remote_info._remote_display if remote_info else None
     if remote_display:
         # ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
         remote_display = remote_display.replace("\\", "-")
@@ -87,8 +90,10 @@ def do_get_window_title(client, wid: int, metadata: dict) -> str:
         # "hostname" is magic:
         # we try harder to find a useful value to show:
         if var in ("hostname", "hostinfo"):
-            server_display = getattr(client, "server_display", None)
-            if var == "hostinfo" and getattr(client, "mmap_enabled", False) and server_display:
+            server_display = display_info.server_display if display_info else None
+            mmap_read_area = mmap_info.mmap_read_area if mmap_info else None
+            mmap_enabled = bool(mmap_read_area and mmap_read_area.enabled)
+            if var == "hostinfo" and mmap_enabled and server_display:
                 # this is a local connection for sure and we can specify the display directly:
                 return server_display
             import socket

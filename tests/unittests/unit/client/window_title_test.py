@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from types import SimpleNamespace
 
 from xpra.client.gui.window_base import do_get_window_title
 
@@ -13,10 +14,16 @@ class FakeClient:
 
     def __init__(self, **kwargs):
         self.title = kwargs.pop("title", "@title@")
-        self._remote_hostname = kwargs.pop("_remote_hostname", "")
-        self._remote_display = kwargs.pop("_remote_display", "")
+        self.subsystems = kwargs.pop("subsystems", {})
+        remote_hostname = kwargs.pop("_remote_hostname", "")
+        remote_display = kwargs.pop("_remote_display", "")
+        if remote_hostname or remote_display:
+            self.subsystems["remote-info"] = SimpleNamespace(_remote_hostname=remote_hostname, _remote_display=remote_display)
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+    def get_subsystem(self, name):
+        return self.subsystems.get(name)
 
 
 class WindowTitleTest(unittest.TestCase):
@@ -68,6 +75,26 @@ class WindowTitleTest(unittest.TestCase):
     def test_server_display_backslash_replaced(self):
         out = self._title("@server-display@", _remote_display="1\\WinSta0\\Default")
         self.assertEqual(out, "1-WinSta0-Default")
+
+    def test_composed_remote_info(self):
+        remote_info = SimpleNamespace(
+            _remote_hostname="major.example.org",
+            _remote_display="1\\WinSta0\\Default",
+        )
+        out = self._title(
+            "@server-machine@@server-display@",
+            subsystems={"remote-info": remote_info},
+        )
+        self.assertEqual(out, "major.example.org1-WinSta0-Default")
+
+    def test_composed_display_and_mmap_hostinfo(self):
+        display = SimpleNamespace(server_display=":7")
+        mmap = SimpleNamespace(mmap_read_area=SimpleNamespace(enabled=True))
+        out = self._title(
+            "@hostinfo@",
+            subsystems={"display": display, "mmap": mmap},
+        )
+        self.assertEqual(out, ":7")
 
     def test_unknown_var(self):
         out = self._title("@bogus@")
