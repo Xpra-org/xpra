@@ -107,11 +107,18 @@ class AudioKeepaliveMixin:
         if not self.audio_keepalive_enabled() or not self.latest_sent_audio_timestamp:
             return False
         if self.latest_echoed_audio_timestamp >= self.latest_sent_audio_timestamp:
+            # everything we have sent has been echoed back
             return False
-        echoed = self.latest_echoed_audio_timestamp or self.audio_echo_timeout_start
-        if not echoed:
+        # `audio_echo_timeout_start` is the time at which we started waiting for this echo,
+        # it must not be confused with the audio timestamps exchanged with the peer:
+        # those come from the capture pipeline and stop advancing whenever the stream is silent,
+        # so measuring their age would make any gap longer than the timeout
+        # (ie: the `cutter` element removing silence) look like a dead connection
+        # as soon as the audio resumes
+        start = self.audio_echo_timeout_start
+        if not start:
             return False
-        return monotonic() * 1000 - echoed > AUDIO_KEEPALIVE_TIMEOUT * 1000
+        return monotonic() * 1000 - start > AUDIO_KEEPALIVE_TIMEOUT * 1000
 
     def can_drop_audio_data(self, codec: str) -> bool:
         if not AUDIO_KEEPALIVE_DROP_CODECS:
@@ -147,8 +154,11 @@ class AudioKeepaliveMixin:
     def audio_keepalive(self, timestamp: int) -> None:
         if timestamp > self.latest_echoed_audio_timestamp:
             self.latest_echoed_audio_timestamp = timestamp
-            self.audio_echo_timeout_start = 0
             self.audio_keepalive_stale_warning = False
+            # if some of the data we sent has still not been echoed back,
+            # restart the timeout from now instead of clearing it:
+            unacknowledged = self.latest_echoed_audio_timestamp < self.latest_sent_audio_timestamp
+            self.audio_echo_timeout_start = monotonic() * 1000 if unacknowledged else 0
 
     def audio_keepalive_active(self) -> bool:
         return bool(getattr(self, "audio_source", None) or getattr(self, "audio_sink", None))
