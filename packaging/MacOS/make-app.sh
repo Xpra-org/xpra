@@ -652,6 +652,7 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
   GST_PLUGIN_DIR="${RSCDIR}/lib/gstreamer-1.0"
 	KEEP="${RSCDIR}/lib/gstreamer-1.0.keep"
 	mkdir "${KEEP}" || exit 1
+	# note: faac is not built at the moment because gstreamer has not update the API to faac >= 2.0
 	PLUGINS="app applemedia audioconvert audiolatency audioparsers audiorate audioresample audiotestsrc coreelements cutter faac flac gdp isomp4 matroska ogg opus opusparse oss4 osxaudio rtp speex volume vorbis wavenc wavparse"
 	for x in $PLUGINS; do
 		KMP="${KMP} $x"
