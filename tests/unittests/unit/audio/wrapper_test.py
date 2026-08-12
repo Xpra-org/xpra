@@ -36,6 +36,41 @@ class TestStartReceivingAudio(unittest.TestCase):
         sink_wrapper.assert_called_once_with("auto", "opus", 1.0, {}, "")
 
 
+class TestSubprocessWrapperInfo(unittest.TestCase):
+
+    def test_capture_info(self):
+        from xpra.audio.wrapper import SourceSubprocessWrapper
+        src = SourceSubprocessWrapper("pulsesrc", {}, ["opus"], 1.0, {"device": "monitor"})
+        info = src.get_info()
+        assert info["description"] == "audio capture"
+        assert info["state"] == "stopped"
+        assert "_audio_record" in info["command"]
+        assert "device=monitor" in info["command"]
+
+    def test_playback_info(self):
+        from xpra.audio.wrapper import SinkSubprocessWrapper
+        sink = SinkSubprocessWrapper("pulsesink", "opus", 1.0, {}, "Some Device")
+        info = sink.get_info()
+        assert info["description"] == "audio playback"
+        assert "_audio_play" in info["command"]
+
+    def test_state_and_description_from_info_packets(self):
+        from xpra.audio.wrapper import SourceSubprocessWrapper
+        src = SourceSubprocessWrapper("pulsesrc", {}, ["opus"], 1.0, {})
+        # the pipeline does not emit `state-changed` when it becomes active,
+        # the state can only be picked up from the info packets:
+        src.info_update(None, {"state": "active", "codec_description": "opus", "pipeline": "pulsesrc ! opusenc"})
+        assert src.get_state() == "active"
+        info = src.get_info()
+        assert info["state"] == "active"
+        assert info["pipeline"] == "pulsesrc ! opusenc"
+        # info packets only carry the values which have changed,
+        # so the codec description must not be cleared by the next one:
+        src.info_update(None, {"bitrate": 24000})
+        assert src.codec_description == "opus"
+        assert src.get_info()["codec_description"] == "opus"
+
+
 def main():
     unittest.main()
 

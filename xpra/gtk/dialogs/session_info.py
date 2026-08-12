@@ -274,6 +274,50 @@ def get_client_subsystem(client, name: str):
     return get_subsystem(name) if get_subsystem else None
 
 
+def get_server_source_info(client) -> dict:
+    """ the `client.<n>` section of the server info which describes *this* connection """
+    client_info = get_client_server_last_info(client).get("client", {})
+    if not isinstance(client_info, dict):
+        return {}
+    sources = [v for v in client_info.values() if isinstance(v, dict)]
+    if not sources:
+        # some servers flatten the info when there is a single client:
+        return client_info
+    clientid = get_client_subsystem(client, "clientid")
+    session_id = getattr(clientid, "session_id", "")
+    for source in sources:
+        if session_id and source.get("session-id") == session_id:
+            return source
+    # without a match we can only be certain when there is a single client:
+    return sources[0] if len(sources) == 1 else {}
+
+
+def audio_pipeline_tooltip(title: str, info: typedict) -> list[str]:
+    """
+    Describe one end of an audio stream: what it does, which GStreamer pipeline
+    it runs and the command line the subprocess was started with.
+    """
+    if not info:
+        return []
+    lines = [f"{title}:"]
+    for key, label in (
+        ("description", _("Role")),
+        ("state", _("State")),
+        ("codec_description", _("Codec")),
+        ("pid", _("Process ID")),
+    ):
+        if v := info.get(key):
+            lines.append(f"  {label}: {bytestostr(v)}")
+    if pipeline := info.strget("pipeline"):
+        lines.append("  " + _("GStreamer pipeline") + ":")
+        # one element per line: these strings are far too long for a tooltip
+        lines += [f"    {element.strip()}" for element in pipeline.split("!")]
+    if command := info.strtupleget("command"):
+        lines.append("  " + _("Command") + ":")
+        lines.append("    " + " ".join(command))
+    return lines
+
+
 def subsystem_attr(client, subsystem: str, attr: str, default=None):
     sub = get_client_subsystem(client, subsystem)
     if sub is not None and hasattr(sub, attr):
@@ -1162,7 +1206,7 @@ class SessionInfo(Gtk.Window):
                     return {"state": "inactive"}
                 return prop.get_info()
 
-            def set_audio_info(label, details, supported, prop) -> None:
+            def set_audio_info(label, details, supported, prop, mode: str) -> None:
                 d = typedict(get_audio_info(supported, prop))
                 state = d.strget("state")
                 codec_descr = d.strget("codec") or d.strget("codec_description")
@@ -1180,11 +1224,20 @@ class SessionInfo(Gtk.Window):
                     if bitrate > 0:
                         s = "%sbit/s" % std_unit(bitrate)
                     details.set_text(s)
+                # the remote end of this stream, as reported by the server:
+                remote = typedict(server_audio.dictget(mode) or {})
+                tooltip = audio_pipeline_tooltip(_("Client"), d) + audio_pipeline_tooltip(_("Server"), remote)
+                for widget in (label, details):
+                    if widget:
+                        widget.set_tooltip_text("\n".join(tooltip) or None)
 
             audio = self.get_client_subsystem("audio")
             if audio:
-                set_audio_info(self.speaker_label, self.speaker_details, audio.speaker_enabled, audio.sink)
-                set_audio_info(self.microphone_label, None, audio.microphone_enabled, audio.source)
+                server_audio = typedict(get_server_source_info(self.client).get("audio") or {})
+                set_audio_info(self.speaker_label, self.speaker_details,
+                               audio.speaker_enabled, audio.sink, "speaker")
+                set_audio_info(self.microphone_label, self.microphone_details,
+                               audio.microphone_enabled, audio.source, "microphone")
 
         self.connection_type_label.set_text(c.socktype)
         protocol_info = p.get_info()

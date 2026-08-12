@@ -24,6 +24,51 @@ If you want to turn off speaker forwarding, use the option `speaker=off` in your
 
 <div class="docs-section-heading" markdown="1">
 
+## Checking the state of the audio forwarding
+
+</div>
+
+Both ends run the capture and playback pipelines in a
+[separate process](../Subsystems/Audio.md), and both report what they are doing.
+
+The `Connection` tab of the client's session info dialog has a `Speaker` and a
+`Microphone` row: the label shows the state (`disabled`, `inactive`, `active: opus`, ...)
+and the tooltip shows, for the client _and_ the server, the role of the process
+(`audio capture` or `audio playback`), its pid, the GStreamer pipeline
+and the command line the subprocess was started with.
+
+The same information is available from the command line with `xpra info`:
+
+```
+xpra info tcp://localhost:10000 | grep audio
+```
+
+The server-wide `audio.*` keys describe what the session supports:
+
+| Key                        | Meaning                                                          |
+|----------------------------|------------------------------------------------------------------|
+| `audio.initialized`        | whether the GStreamer query has completed                        |
+| `audio.speaker.supported`  | whether speaker forwarding can be started at all                 |
+| `audio.speaker.codecs`     | the codecs the server is willing to encode to                    |
+| `audio.source-plugin`      | the capture plugin (`--audio-source`), `auto` when unspecified   |
+| `audio.meter.*`            | the state of the session-wide PulseAudio level meter             |
+
+The per-connection `client.<n>.audio.speaker.*` and `client.<n>.audio.microphone.*` keys
+describe the streams that are actually running:
+
+| Key            | Meaning                                                                              |
+|----------------|--------------------------------------------------------------------------------------|
+| `active`       | `True` only while the stream is being forwarded                                      |
+| `state`        | `disabled`, `inactive`, `starting`, `active`, `error`, or `blocked` (audio loop)     |
+| `description`  | `audio capture` on the sending side, `audio playback` on the receiving side          |
+| `command`      | the command line used to start the capture / playback subprocess                     |
+| `pipeline`     | the GStreamer pipeline that subprocess is running                                    |
+| `pid`, `codec`, `codec_description`, `bitrate`, `bytes` | stream details                           |
+
+For more verbose output, add `-d audio` to the server (or client) command line.
+
+<div class="docs-section-heading" markdown="1">
+
 ## Options
 
 </div>

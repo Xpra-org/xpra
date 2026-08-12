@@ -38,8 +38,17 @@ assert 0 < VOLUME < 2
 
 
 class FakeSink:
+    """ stand-in used when the audio loop check has rejected the stream """
+
     def __init__(self, codec: str):
         self.codec = codec
+
+    def get_info(self) -> dict[str, Any]:
+        return {
+            "codec": self.codec,
+            "state": "blocked",
+            "description": "audio loop detected",
+        }
 
     @staticmethod
     def add_data(*args) -> None:
@@ -642,14 +651,15 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
 
     def get_audio_info(self) -> dict[str, Any]:
         def audio_info(supported, subprocess_wrapper, codecs) -> dict[str, Any]:
-            i = {"codecs": codecs}
+            i: dict[str, Any] = {"codecs": codecs}
             if not supported:
                 i["state"] = "disabled"
-                return i
-            if subprocess_wrapper is None:
+            elif subprocess_wrapper is None:
                 i["state"] = "inactive"
-                return i
-            i.update(subprocess_wrapper.get_info())
+            else:
+                i.update(subprocess_wrapper.get_info())
+            # so that a single key answers "is this being forwarded right now?":
+            i["active"] = i.get("state") == "active"
             return i
 
         info = {

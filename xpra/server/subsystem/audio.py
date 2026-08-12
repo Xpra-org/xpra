@@ -102,10 +102,25 @@ class AudioServer(StubSubsystem):
         self.args_control("audio-output", "control audio forwarding", min_args=1, max_args=2)
 
     def get_info(self, _proto) -> dict[str, Any]:
+        # always expose the configuration, even when the gstreamer query failed:
+        # "initialized=False" tells the difference between "still querying" and "no audio"
+        info: dict[str, Any] = dict(self.properties)
+        info |= {
+            "initialized": self.properties.boolget("initialized"),
+            "source-plugin": self.source_plugin or "auto",
+            "av-sync": self.av_sync,
+            "speaker": {
+                "supported": self.supports_speaker,
+                "codecs": tuple(self.speaker_codecs),
+            },
+            "microphone": {
+                "supported": self.supports_microphone,
+                "codecs": tuple(self.microphone_codecs),
+            },
+        }
         if not self.properties:
             # audio is unsupported or not initialized yet, so the meter cannot run either
-            return {}
-        info = dict(self.properties)
+            return {AudioServer.PREFIX: info}
         meter_info: dict[str, Any] = {
             "state": self.meter_state,
             "interval": AUDIO_LEVEL_INTERVAL,
@@ -114,6 +129,8 @@ class AudioServer(StubSubsystem):
             proc = meter.process
             if proc and proc.poll() is None:
                 meter_info["pid"] = proc.pid
+            if command := meter.command:
+                meter_info["command"] = command
         info["meter"] = meter_info
         if self.level:
             info["level"] = dict(self.level)

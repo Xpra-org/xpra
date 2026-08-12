@@ -337,7 +337,14 @@ class AudioSubprocessWrapper(SubprocessCaller):
         return self.state
 
     def get_info(self) -> dict:
-        return self.info
+        info = dict(self.info)
+        # `self.state` is authoritative: it is set before the subprocess has had
+        # a chance to send us anything, so it is the only value we have early on
+        info["state"] = self.state
+        info["description"] = self.description
+        if self.command:
+            info["command"] = self.command
+        return info
 
     def info_update(self, _wrapper, info: dict) -> None:
         log("info_update: %s", info)
@@ -346,7 +353,15 @@ class AudioSubprocessWrapper(SubprocessCaller):
         p = self.process
         if p and not p.poll():
             self.info["pid"] = p.pid
-        self.codec_description = info.get("codec_description")
+        # the pipeline only emits `state-changed` for some transitions (ie: EOS),
+        # so we also have to pick the state up from the info packets,
+        # otherwise `self.state` would remain stuck at "starting":
+        if state := info.get("state"):
+            self.state = state
+        # info packets only contain the values that have changed,
+        # so don't clear the description we already have:
+        if codec_description := info.get("codec_description"):
+            self.codec_description = codec_description
 
     def set_volume(self, v: float) -> None:
         self.send("set_volume", int(v * 100))

@@ -138,11 +138,22 @@ class SourceMixinsTest(unittest.TestCase):
     #############################################################################
     # The following tests are incomplete:
     def test_audio(self):
-        from xpra.server.source.audio import AudioConnection
+        from xpra.server.source.audio import AudioConnection, FakeSink
 
         def loop_check(_c, m):
             m.audio_loop_check()
-        self._test_mixin_class(AudioConnection, SourceMixinsTest.AUDIO_SERVER_PROPS, test_fn=loop_check)
+        source = self._test_mixin_class(AudioConnection, SourceMixinsTest.AUDIO_SERVER_PROPS, test_fn=loop_check)
+        info = source.get_audio_info()
+        # `active` answers "is audio being forwarded right now?" without parsing state strings:
+        for mode in ("speaker", "microphone"):
+            assert info[mode]["active"] is False
+            assert info[mode]["state"] in ("disabled", "inactive")
+        # a sink rejected by the audio loop check must still show up in the info:
+        source.supports_microphone = True
+        source.audio_sink = FakeSink("opus")
+        microphone = source.get_audio_info()["microphone"]
+        assert microphone["state"] == "blocked"
+        assert microphone["active"] is False
 
     def test_clientconnection(self):
         from xpra.server.source.client_connection import ClientConnection
