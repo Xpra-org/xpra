@@ -435,8 +435,8 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
 
     def new_audio_buffer(self, audio_source, data: bytes,
                          metadata: dict, packet_metadata: Sequence[SizedBuffer]) -> None:
-        log("new_audio_buffer(%s, %s, %s, %s) info=%s",
-            audio_source, len(data or []), metadata, [len(x) for x in packet_metadata], audio_source.info)
+        log("new_audio_buffer(%s, %s, %s, %s)",
+            audio_source, len(data or []), metadata, [len(x) for x in packet_metadata])
         if self.audio_source != audio_source or self.is_closed():
             log("audio buffer dropped: from old source or closed")
             return
