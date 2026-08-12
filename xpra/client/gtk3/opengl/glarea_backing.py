@@ -63,7 +63,7 @@ class GLAreaBacking(GLWindowBackingBase):
         self._backing = glarea
 
     def on_realize(self, *args) -> None:
-        gl_context = self.gl_context()
+        gl_context = self._inject_scale_factor(self.gl_context())
         gl_context.make_current()
         self.gl_init(gl_context)
         # fire the delayed realized callbacks:
@@ -75,10 +75,20 @@ class GLAreaBacking(GLWindowBackingBase):
             with log.trap_error("Error calling realize callback %s", Ellipsizer(callback)):
                 callback(gl_context, *xargs)
 
+    def _inject_scale_factor(self, glcontext):
+        if not hasattr(glcontext, "get_scale_factor"):
+            backing = self._backing
+
+            def get_glarea_scale_factor() -> int:
+                return backing.get_scale_factor() if backing else 1
+
+            glcontext.get_scale_factor = get_glarea_scale_factor
+        return glcontext
+
     def with_gl_context(self, cb: Callable, *args) -> None:
         da = self._backing
         if da and da.get_mapped():
-            gl_context = self.gl_context()
+            gl_context = self._inject_scale_factor(self.gl_context())
             gl_context.make_current()
             cb(gl_context, *args)
         else:
@@ -109,14 +119,5 @@ class GLAreaBacking(GLWindowBackingBase):
             log(" not rendering: no offscreen fbo!")
             return True
         glcontext.make_current()
-
-        def get_glarea_scale_factor() -> int:
-            backing = self._backing
-            scale_factor = 1
-            if backing:
-                scale_factor = backing.get_scale_factor()
-            return scale_factor
-
-        glcontext.get_scale_factor = get_glarea_scale_factor
-        self.do_present_fbo(glcontext)
+        self.do_present_fbo(self._inject_scale_factor(glcontext))
         return True
