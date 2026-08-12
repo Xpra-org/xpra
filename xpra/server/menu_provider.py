@@ -10,7 +10,7 @@ from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
-from xpra.os_util import POSIX, OSX, gi_import
+from xpra.os_util import POSIX, OSX, LINUX, gi_import
 from xpra.util.env import envint, envbool
 from xpra.util.thread import start_thread
 from xpra.util.background_worker import add_work_item
@@ -27,6 +27,10 @@ EXPORT_MENU_DATA = envbool("XPRA_EXPORT_MENU_DATA", True)
 
 
 def install_menu_thread_seccomp() -> bool:
+    if not LINUX:
+        # seccomp is Linux specific,
+        # `xpra.seccomp.menu` uses `os` flags which don't exist elsewhere:
+        return False
     sclog = Logger("seccomp")
     try:
         from xpra.seccomp import menu as seccomp_menu
