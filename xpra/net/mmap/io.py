@@ -369,11 +369,11 @@ def init_server_mmap_section(name: str, mmap_size: int) -> tuple[Any | None, int
     handle = open_mmap_section(name)
     if not handle:
         # not an error: the client may simply not be running on this system
-        log.info("the mmap area %r was not found", name)
+        log("the mmap area %r was not found", name)
         if name != os.path.basename(name):
             # ie: the path of a posix client's mmap file
-            log.info(" this is a filesystem path, not the name of a shared memory section")
-        log.info(" mmap can only be used with clients running on this system")
+            log(" this is a filesystem path, not the name of a shared memory section")
+        log(" mmap can only be used with clients running on this system")
         return None, 0
     # hold on to the handle until the area is mapped,
     # so that it cannot go away and be re-created behind our back:
