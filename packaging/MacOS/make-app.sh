@@ -249,7 +249,7 @@ if [ "${LIGHT}" == "1" ]; then
 	done
 fi
 
-for module in "AVFoundation" "pkg_resources" "gi" "cffi" "OpenGL" "OpenGL_accelerate" "zeroconf"; do
+for module in "AVFoundation" "gi" "cffi" "OpenGL" "OpenGL_accelerate" "zeroconf"; do
   echo "- ${module}"
   # py2app's modulegraph only follows imports it can see in Python source, so it
   # mishandles packages whose structure lives in compiled extensions:
