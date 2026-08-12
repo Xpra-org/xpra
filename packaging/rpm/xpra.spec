@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Tue Aug 11 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
+* Wed Aug 12 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
    don't include wayland server components in client-only builds
@@ -1127,6 +1127,7 @@ fi
    scroll detection crash
    servers created a new unused mmap area
    don't enable mmap by default
+   shadow server audio capture
 - Mmap issues:
    confine client-name files
    ensure the correct size is used
@@ -1148,6 +1149,8 @@ fi
    prefer BGRX / BGRA
    cairo: discard unused alpha
 - Major:
+   clipboard events cause connection to drop
+   errors during client disconnection
    keymap not applied
    microphone forwarding selects the wrong device
    system suspend + resume never unblocks window updates
@@ -1175,7 +1178,9 @@ fi
    verify the rgb buffer size before uploading it
    discard alpha padding in RGBX uploads
    try harder to hide the test window
+   missing scale factor with some backends
 - Cosmetic:
+   missing server endpoint in session-info dialog
    `xpra info` tagged as binary due to abstract socket null byte
    ensure repeatSPSPPS can be enabled for datagram mode
    prevent potential callback errors

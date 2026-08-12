@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.3] 2026-08-11
+## [6.5.3] 2026-08-12
 * 🔧 Platforms, build and packaging:
   * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
   * [don't include wayland server components in client-only builds](https://github.com/Xpra-org/xpra/commit/7d24bc8396a273d2f557b961800c2f0730af8afd)
@@ -16,6 +16,7 @@
   * [scroll detection crash](https://github.com/Xpra-org/xpra/commit/671b11ed9ec28fc4984856a7793751970781df14)
   * [servers created a new unused mmap area](https://github.com/Xpra-org/xpra/commit/ce97185c611d73b117388fb45691a7be3080b798)
   * [don't enable mmap by default](https://github.com/Xpra-org/xpra/commit/717dd261c23b191f126ecd10e403e4505907c9d3)
+  * [shadow server audio capture](https://github.com/Xpra-org/xpra/commit/cfc4deb3b7aee38f4516457f6f89f41a8297c6b8)
 * [Mmap issues](https://github.com/Xpra-org/xpra/issues/4987):
   * [confine client-name files](https://github.com/Xpra-org/xpra/commit/eb1c885c2dd3abeca7c06aed050271f1a2dfb212)
   * [ensure the correct size is used](https://github.com/Xpra-org/xpra/commit/441a7d204d8d3e84db380ee35c18373fe19580d4)
@@ -37,6 +38,8 @@
   * [prefer BGRX / BGRA](https://github.com/Xpra-org/xpra/commit/e3d9033b2c3609ebf1f8f882836933d98cf782a8)
   * [cairo: discard unused alpha](https://github.com/Xpra-org/xpra/commit/dbaae5c274c6c2df9ae4937a06cad6e99d430a70)
 * Major:
+  * [clipboard events cause connection to drop](https://github.com/Xpra-org/xpra/commit/7199f33fa594f7dcf7f772b693fe3f507e04187c)
+  * [errors during client disconnection](https://github.com/Xpra-org/xpra/commit/416629496eb709bde729f2eb7090f846eb829972)
   * [keymap not applied](https://github.com/Xpra-org/xpra/commit/4f96ab05e11290261128f4b12c9c8dcd6a3ad44b)
   * [microphone forwarding selects the wrong device](https://github.com/Xpra-org/xpra/commit/58efffed30bcf9b54cc8c23f5ddaaf68b181e0ec)
   * [system suspend + resume never unblocks window updates](https://github.com/Xpra-org/xpra/commit/60e2933a8a9b362ecc5d839949e1c726b2c97893)
@@ -64,7 +67,9 @@
   * [verify the rgb buffer size before uploading it](https://github.com/Xpra-org/xpra/commit/e60277ead8c511d4794bf0d5f0cb36558300e174)
   * [discard alpha padding in RGBX uploads](https://github.com/Xpra-org/xpra/commit/b04b5df4f9b6cf7cf8baa996dc097cbb1f93dd9a)
   * [try harder to hide the test window](https://github.com/Xpra-org/xpra/commit/3bb4902155a086b1de5c150c4dfa79d44f25f442)
+  * [missing scale factor with some backends](https://github.com/Xpra-org/xpra/commit/32ed8c71c04f00206e4ebc98ad8e452be843825f)
 * Cosmetic:
+  * [missing server endpoint in session-info dialog](https://github.com/Xpra-org/xpra/commit/6c46896e3b5ecd317504797bf4a932c83479dbe9)
   * [`xpra info` tagged as binary due to abstract socket null byte](https://github.com/Xpra-org/xpra/commit/520caad013c6ad3ff693af4f463ae527e4a9e924)
   * [ensure repeatSPSPPS can be enabled for datagram mode](https://github.com/Xpra-org/xpra/commit/8352effbe8a87c634873b6fd9c2ccd695a41e446)
   * [prevent potential callback errors](https://github.com/Xpra-org/xpra/commit/3adfdad1f319e22dce97826c4074bbea99720504)

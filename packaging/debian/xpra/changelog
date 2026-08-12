@@ -14,6 +14,7 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     scroll detection crash
     servers created a new unused mmap area
     don't enable mmap by default
+    shadow server audio capture
   * Mmap issues:
     confine client-name files
     ensure the correct size is used
@@ -35,6 +36,8 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     prefer BGRX / BGRA
     cairo: discard unused alpha
   * Major:
+    clipboard events cause connection to drop
+    errors during client disconnection
     keymap not applied
     microphone forwarding selects the wrong device
     system suspend + resume never unblocks window updates
@@ -62,7 +65,9 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     verify the rgb buffer size before uploading it
     discard alpha padding in RGBX uploads
     try harder to hide the test window
+    missing scale factor with some backends
   * Cosmetic:
+    missing server endpoint in session-info dialog
     `xpra info` tagged as binary due to abstract socket null byte
     ensure repeatSPSPPS can be enabled for datagram mode
     prevent potential callback errors
@@ -74,7 +79,7 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     skip irrelevant tests, and more
     remove unavailable commands
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 11 Aug 2026 12:45:51 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 12 Aug 2026 22:46:07 +0700
 
 xpra (6.5.2-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
