@@ -55,6 +55,9 @@ def get_queue_time(default_value=450, prefix="") -> int:
 
 ALLOW_SOUND_LOOP = envbool("XPRA_ALLOW_SOUND_LOOP", False)
 USE_DEFAULT_DEVICE = envbool("XPRA_USE_DEFAULT_DEVICE", True)
+# capture the playback stream with the WASAPI source plugins (see `get_wasapi_defaults`),
+# can be turned off for GStreamer versions which don't have the `loopback` property:
+WASAPI_LOOPBACK = envbool("XPRA_WASAPI_LOOPBACK", True)
 IGNORED_INPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_INPUT_DEVICES", "bell.ogg,bell.wav").split(",")
 IGNORED_OUTPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_OUTPUT_DEVICES", "bell-window-system").split(",")
 
@@ -443,9 +446,12 @@ def get_source_plugins() -> list[str]:
     if OSX:
         sources.append("osxaudiosrc")
     elif WIN32:
+        # the WASAPI plugins come first because they are the only ones
+        # which can capture the playback stream (see `get_wasapi_defaults`),
+        # `directsoundsrc` can only ever record from a capture device
         sources.append("wasapi2src")
-        sources.append("directsoundsrc")
         sources.append("wasapisrc")
+        sources.append("directsoundsrc")
     sources.append("autoaudiosrc")
     if POSIX:
         sources += ["alsasrc",
@@ -757,11 +763,18 @@ def get_win32_device(device_name_match=None, want_monitor_device=True, remote=No
     return {}
 
 
-def get_wasapi_defaults(*_args):
+def get_wasapi_defaults(_device_name_match=None, want_monitor_device=True, _remote=None) -> dict[str, Any]:
     # defaults = get_win32_device(*args)
-    return {
+    options: dict[str, Any] = {
         "low-latency": True,
     }
+    if want_monitor_device and WASAPI_LOOPBACK:
+        # `wasapisrc` and `wasapi2src` record from a capture device by default (ie: a microphone),
+        # but speaker forwarding needs the equivalent of a pulseaudio "monitor" device:
+        # `loopback` opens the render device instead and records what is being played through it.
+        # (`wasapisrc` supports it since GStreamer 1.18, `wasapi2src` since 1.20)
+        options["loopback"] = True
+    return options
 
 
 # a list of functions to call to get the plugin options

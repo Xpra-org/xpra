@@ -41,4 +41,5 @@ Other options are only available through environment variables for fine-tuning -
 * `XPRA_SOUND_QUEUE_TIME` can be used to control the default amount of buffering by the receiver
 * `XPRA_SOUND_GRACE_PERIOD` (defaults to `2000`, in milliseconds) errors will be ignored during this grace period after starting audio forwarding, to allow the audio forwarding buffer to settle down
 * `XPRA_SOUND_SINK`: the default sink to use (normally auto-detected)
+* `XPRA_WASAPI_LOOPBACK` (defaults to `1`): on MS Windows servers, speaker forwarding captures the output device in loopback mode - which is the equivalent of a pulseaudio "monitor" device. Set it to `0` for GStreamer versions older than 1.20, which do not have the `loopback` property on `wasapi2src`
 </details>
