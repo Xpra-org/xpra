@@ -1847,6 +1847,8 @@ def allow_gi_gtk_modules(mods=NOGI) -> None:
 def make_client(opts):
     backend = opts.backend or "gtk"
     BACKENDS = ("qt", "gtk", "pyglet", "tk", "win32", "auto") + ("native", ) * int(WIN32)
+    if backend == "help":
+        raise InitInfo("xpra clients support the following gui backends:\n * %s" % "\n * ".join(BACKENDS))
     if backend == "qt":
         no_gi_gtk_modules()
         try:

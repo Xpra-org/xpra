@@ -12,6 +12,7 @@ import os.path
 import datetime
 from dataclasses import dataclass
 from typing import Final
+from collections.abc import Callable
 from subprocess import Popen
 
 from xpra.util.io import warn, wait_for_socket, which
@@ -38,6 +39,14 @@ from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 SYSTEM_DBUS_SOCKET = "/run/dbus/system_bus_socket"
+
+# the display backends that the non-shadow servers can use:
+SERVER_BACKENDS: dict[str, str] = {
+    "auto": "automatic runtime detection",
+    "gtk": "use the GTK bindings, with a virtual X11 display",
+    "x11": "use the X11 bindings directly, with a virtual X11 display",
+    "wayland": "run a wayland compositor",
+}
 
 
 def display_name_check(display_name: str) -> None:
@@ -82,6 +91,35 @@ def guess_xpra_display(socket_dirs) -> str:
     if len(live) > 1:
         raise InitExit(ExitCode.SERVER_NOT_FOUND, "too many existing xpra servers found, cannot guess which one to use")
     return live[0]
+
+
+def backend_status(check: Callable[[], bool]) -> str:
+    try:
+        return "available" if check() else "not available"
+    except ImportError as e:
+        return f"not installed: {e}"
+    except Exception as e:
+        return f"not available: {e}"
+
+
+def show_backend_help(mode: str) -> int:
+    # the `expand` server only uses a capture backend on MS Windows,
+    # the posix one uses an EVDI virtual display:
+    if mode.startswith("shadow") or (mode == "expand" and WIN32):
+        from xpra.platform.shadow_server import SHADOW_OPTIONS
+        from xpra.server.shadow.common import backend_description
+        print(f"{mode!r} mode supports the following capture backends:")
+        for backend, check in SHADOW_OPTIONS.items():
+            print(" * %s : %s (%s)" % (backend.ljust(10), backend_description(backend), backend_status(check)))
+        return 0
+    if POSIX and not OSX and mode not in ("proxy", "encoder", "runner"):
+        # ie: "seamless", "desktop", "monitor" and the "upgrade" variants
+        print(f"{mode!r} mode supports the following display backends:")
+        for backend, description in SERVER_BACKENDS.items():
+            print(" * %s : %s" % (backend.ljust(10), description))
+        return 0
+    print(f"the 'backend' option is not used in {mode!r} mode")
+    return 0
 
 
 def show_encoding_help(opts) -> int:
@@ -465,6 +503,8 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     mode_attrs: dict[str, str] = {}
     if len(mode_parts) > 1:
         mode_attrs = parse_str_dict(mode_parts[1])
+    if mode_attrs.get("backend", opts.backend).lower() == "help":
+        return show_backend_help(mode)
     starting = mode if mode in ("seamless", "desktop", "monitor") else ""
     expanding = mode == "expand"
     upgrading = mode.startswith("upgrade")
@@ -504,9 +544,9 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         opts.forward_xdg_open = mode == "seamless"
 
     if not proxying and not shadowing and POSIX and not OSX:
-        SERVER_BACKENDS = ("auto", "gtk", "x11", "wayland")
         if opts.backend.lower() not in SERVER_BACKENDS:
-            raise InitExit(ExitCode.UNSUPPORTED, f"{mode!r} does not support the {opts.backend!r} backend, only %s" % csv(SERVER_BACKENDS))
+            raise InitExit(ExitCode.UNSUPPORTED,
+                           f"{mode!r} does not support the {opts.backend!r} backend, only %s" % csv(SERVER_BACKENDS))
         if opts.backend.lower() in ("auto", "gtk"):
             os.environ["GDK_BACKEND"] = "x11"
 

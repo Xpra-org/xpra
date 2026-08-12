@@ -3,9 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Sequence
-
 from xpra.os_util import gi_import
+from xpra.server.shadow.common import SHADOW_BACKENDS
 from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
 from xpra.util.config import update_config_env, get_config_env
 from xpra.gtk.dialogs.common_style import add_style_class
@@ -21,48 +20,6 @@ log = Logger("util")
 
 def label(text, *args, **kwargs):
     return gtk_label(_(text), *args, **kwargs)
-
-
-SHADOW_BACKENDS: dict[str, Sequence[str]] = {
-    "auto": (
-        "Automatic runtime detection",
-        "this is the default behaviour,",
-        "this option should always find a suitable capture strategy",
-        "and it may choose not to use a video stream",
-    ),
-    "x11": (
-        "X11 screen capture",
-        "copies the X11 server's pixel data,",
-        "this option only requires the X11 bindings",
-        "incompatible with Wayland sessions, the displays with XWayland will look blank",
-    ),
-    "xshm": (
-        "X11 screen capture via shared memory",
-        "identical to `x11` but faster thanks to the XShm extension",
-    ),
-    "gtk": (
-        "GTK screen capture",
-        "performance may vary,",
-        "this option is not compatible with Wayland displays",
-    ),
-    "nvfbc": (
-        "NVIDIA® Frame Buffer Capture",
-        "this requires the proprietary module and libraries",
-        "if available, this provides the fastest capture possible",
-        "and also supports hardware video compression",
-        "this option is only available for shadowing existing X11 sessions",
-    ),
-    "gdi": (
-        "GDI screen capture",
-        "Legacy screen capture for MS Windows,",
-        "the xpra server can use mixed encodings with this capture option",
-    ),
-    "pipewire": (
-        "Native PipeWire capture",
-        "PipeWire capture from the RemoteDesktop interface",
-        "your desktop sessions must support the 'RemoteDesktop' dbus interface",
-    ),
-}
 
 
 def _set_labels_text(widgets, *messages):

@@ -10,9 +10,11 @@ from ctypes import create_unicode_buffer, byref, c_ulong
 from ctypes.wintypes import RECT
 
 from xpra.util.env import envbool
+from xpra.util.str_fn import csv
 from xpra.constants import XPRA_APP_ID
+from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
-from xpra.scripts.config import InitException
+from xpra.scripts.config import InitException, InitExit
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
@@ -66,9 +68,9 @@ def _check_gdi() -> bool:
 
 
 def _check_gtk() -> bool:
-    from xpra.gtk import signals
-    if not signals:
-        raise ImportError("xpra.gtk.signals")
+    from xpra.gtk.capture import GTKImageCapture
+    if not GTKImageCapture:
+        raise ImportError("xpra.gtk.capture")
     return True
 
 
@@ -79,6 +81,18 @@ SHADOW_OPTIONS: dict = {
     "nvfbc": _check_nvfbc,
     "gtk": _check_gtk,
 }
+
+
+def parse_capture_backend(backend: str) -> str:
+    backend = backend.lower()
+    # the `backend` option is shared with the client gui backend option,
+    # which defaults to the native `win32` value on this platform:
+    if backend in ("", "native", "win32"):
+        backend = "auto"
+    if backend not in SHADOW_OPTIONS:
+        raise InitExit(ExitCode.UNSUPPORTED,
+                       f"invalid capture backend {backend!r}, use: " + csv(SHADOW_OPTIONS))
+    return backend
 
 
 def _setup_nvfbc_capture(w: int, h: int, pixel_depth: int = 32):
@@ -106,7 +120,7 @@ class ShadowServer(ShadowServerBase):
         super().__init__(attrs)
         self.session_type = "win32 shadow"
         self.pixel_depth = 32
-        self.backend = attrs.get("backend", "auto")
+        self.backend = parse_capture_backend(attrs.get("backend", "auto"))
         # Parsec VDD slot index (-1 = not a shadow-device session).
         # This is the stable identity used to re-resolve the \\.\DISPLAYn
         # name after a WM_DISPLAYCHANGE event.
@@ -527,7 +541,7 @@ class ShadowServer(ShadowServerBase):
         with a per-monitor GDI fallback.  Full-desktop backends (nvfbc)
         are routed through the base-class shared-capture path.
         """
-        backend = self.backend.lower()
+        backend = self.backend
 
         # Full-desktop backends: delegate to shared-capture path (global coords).
         if backend not in ("auto", "dxgi", "gdi"):
@@ -557,7 +571,7 @@ class ShadowServer(ShadowServerBase):
     def setup_capture(self):
         """Full-desktop capture used by the nvfbc explicit-backend mode."""
         w, h = self.get_monitor_geometry()[2:4]
-        backend = self.backend.lower()
+        backend = self.backend
         if backend in ("nvfbc", "auto") and NVFBC:
             capture = _setup_nvfbc_capture(w, h, self.pixel_depth)
             if capture:
