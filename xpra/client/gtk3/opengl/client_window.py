@@ -88,7 +88,7 @@ class GLClientWindowBase(ClientWindow):
         widget = super().new_backing(bw, bh)
         if self.drawing_area:
             self.remove(self.drawing_area)
-        visual_id = getattr(self._backing.context, "visual_id", 0)
+        visual_id = getattr(getattr(self._backing, "context", None), "visual_id", 0)
         set_visual(widget, self._has_alpha, visual_id)
         widget.show()
         self.init_widget_events(widget)
