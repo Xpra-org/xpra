@@ -101,6 +101,12 @@ class GLAreaBacking(GLWindowBackingBase):
     def gl_context(self):
         return self._backing.get_context()
 
+    def managed_present_fbo(self, _context) -> None:
+        # On Wayland, presentation is driven by GTK's render signal.
+        # We cannot directly bind FB 0 (the EGL surface's default framebuffer is
+        # incomplete for offscreen windows) — schedule a render via GTK instead.
+        self.do_gl_show(0)
+
     def do_gl_show(self, rect_count) -> None:
         log(f"do_gl_show({rect_count})")
         self._backing.queue_render()
