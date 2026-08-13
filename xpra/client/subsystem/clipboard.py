@@ -23,7 +23,7 @@ from xpra.log import Logger
 log = Logger("clipboard")
 
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS", "")
-CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
+CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", False)
 
 # `--clipboard=all` enables the clipboard using the default backend,
 # but with all the selections supported by the platform:
