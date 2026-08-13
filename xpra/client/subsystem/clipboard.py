@@ -14,6 +14,7 @@ from xpra.client.base.stub import StubClientMixin
 from xpra.platform.clipboard import get_backend_module
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.net import compression
+from xpra.util.env import envbool
 from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -21,6 +22,7 @@ from xpra.log import Logger
 log = Logger("clipboard")
 
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS", "")
+CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", False)
 
 
 def get_clipboard_helper_classes(clipboard_type: str) -> list[type]:
@@ -140,7 +142,7 @@ class ClipboardClient(StubClientMixin):
         if not self.client_supports_clipboard or not ch:
             return {}
         caps: dict[str, Any] = {
-            "notifications": True,
+            "notifications": CLIPBOARD_NOTIFY,
         }
         caps.update(ch.get_caps())
         log("clipboard.get_caps()=%s", caps)
