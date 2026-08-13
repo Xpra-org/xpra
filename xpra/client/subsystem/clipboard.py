@@ -161,7 +161,7 @@ class ClipboardClient(StubClientSubsystem):
         if not self.client_supports_clipboard or not ch:
             return {}
         caps: dict[str, Any] = {
-            "notifications": True,
+            "notifications": CLIPBOARD_NOTIFY,
         }
         caps.update(ch.get_caps())
         log("clipboard.get_caps()=%s", caps)
