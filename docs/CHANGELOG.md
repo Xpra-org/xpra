@@ -5,6 +5,7 @@
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
   * [new macOS screen capture backend](https://github.com/Xpra-org/xpra/issues/1872)
+  * [MS Windows DXGI screen capture](https://github.com/Xpra-org/xpra/issues/4910)
   * [setup scripts for pycuda](https://github.com/Xpra-org/xpra/issues/2400)
   * [automatic RPM package scripts](https://github.com/Xpra-org/xpra/issues/4920)
   * [MS Windows session lock prevented OpenGL acceleration](https://github.com/Xpra-org/xpra/issues/1138)
