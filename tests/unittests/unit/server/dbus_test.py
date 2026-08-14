@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import signal
 import unittest
 
 from xpra.os_util import OSX, POSIX
@@ -14,13 +15,20 @@ from xpra.util.env import OSEnvContext
 def noop(*_args, **_kwargs):
     pass
 
+
 class FakeLogger:
     error = noop
     warn = noop
     info = noop
     debug = noop
+
+    @staticmethod
+    def is_debug_enabled() -> bool:
+        return False
+
     def __call__(self, *args, **kwargs):
         noop(*args, **kwargs)
+
 
 class DBUSTest(unittest.TestCase):
 
@@ -28,12 +36,16 @@ class DBUSTest(unittest.TestCase):
         from xpra.server.dbus import common
         if not common.log.is_debug_enabled():
             common.log = FakeLogger()
+
         def rimporterror():
             raise ImportError()
+
         def rfail():
             raise Exception("test")
+
         def ok():
             return True
+
         def t(fn, r):
             v = common.dbus_exception_wrap(fn)
             assert v==r, f"expected dbus_exception_wrap({fn})={r} but got {v}"
@@ -41,15 +53,17 @@ class DBUSTest(unittest.TestCase):
         t(rfail, None)
         t(ok, True)
 
-
     def test_start_dbus(self):
         from xpra.server.dbus.start import start_dbus
+
         def f(v):
             r, d = start_dbus(v)
             assert r==0 and not d, f"dbus should not have started for {v!r}"
+
         def w(v):
             r, d = start_dbus(v)
             assert r>0 or d, f"dbus should have started for {v!r}, r={r} d={d}"
+
         def rm():
             os.environ.pop("DBUS_SESSION_BUS_ADDRESS", None)
         with OSEnvContext():
@@ -68,6 +82,46 @@ class DBUSTest(unittest.TestCase):
             w("echo setenv DBUS_SESSION_BUS_PID 200")
             w("printf \"export DBUS_SESSION_BUS_PID\nset DBUS_SESSION_BUS_PID=250\n\"")
 
+    def test_session_bus_follows_address(self):
+        try:
+            import dbus
+            assert dbus
+        except ImportError:
+            return
+        from xpra.dbus import common as dbus_common
+        from xpra.server.dbus import start
+        from xpra.server.dbus.start import start_dbus
+        if not start.log.is_debug_enabled():
+            start.log = FakeLogger()
+
+        def bus_id(bus) -> str:
+            return str(bus.call_blocking("org.freedesktop.DBus", "/org/freedesktop/DBus",
+                                         "org.freedesktop.DBus", "GetId", "", ()))
+
+        saved = (dbus_common._session_bus, dbus_common._session_bus_address)
+        pids = []
+        ids = []
+        try:
+            with OSEnvContext():
+                for _ in (1, 2):
+                    dbus_pid, dbus_env = start_dbus("dbus-launch --sh-syntax --close-stderr")
+                    address = dbus_env.get("DBUS_SESSION_BUS_ADDRESS", "")
+                    if not address:
+                        # no dbus-launch available?
+                        return
+                    pids.append(dbus_pid)
+                    os.environ.update(dbus_env)
+                    # we must connect to the bus from the environment,
+                    # even if we were already connected to another one:
+                    bus = dbus_common.init_session_bus()
+                    assert dbus_common.get_session_bus_address() == address
+                    ids.append(bus_id(bus))
+            assert ids[0] != ids[1], f"both connections ended up on the same bus {ids[0]!r}"
+        finally:
+            dbus_common._session_bus, dbus_common._session_bus_address = saved
+            for pid in pids:
+                if pid:
+                    os.kill(pid, signal.SIGINT)
 
     def test_save_dbus_env(self):
         from xpra.server.dbus import start
