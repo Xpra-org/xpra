@@ -143,7 +143,19 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             self.NotificationClosed(nid, 3)     #3="The notification was closed by a call to CloseNotification"
 
     def is_notification_active(self, nid):
-        return nid in self.active_notifications
+        return int(nid) in self.active_notifications
+
+    def notification_closed(self, nid, reason):
+        """
+        called when a notification we had forwarded was closed remotely,
+        the notification is no longer active: forget it so that repeated close requests
+        (ie: from more than one client) don't emit the signal again and again
+        """
+        if int(nid) not in self.active_notifications:
+            return False
+        self.active_notifications.discard(int(nid))
+        self.NotificationClosed(nid, reason)
+        return True
 
     @dbus.service.signal(BUS_NAME, signature='uu')
     def NotificationClosed(self, nid, reason):
