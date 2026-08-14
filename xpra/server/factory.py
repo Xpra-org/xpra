@@ -12,6 +12,14 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server import features
     from xpra.server.core import ServerCore
     classes: list[type] = [ServerCore]
+    if features.dbus:
+        # the dbus subsystem must come first:
+        # it starts the dbus instance for this session and updates the environment,
+        # any subsystem connecting to the session bus before that point
+        # would be connected to the bus we inherited from the environment
+        # (ie: the user's desktop session bus) - see `init_dbus_env`
+        from xpra.server.subsystem.dbus import DbusServer
+        classes.append(DbusServer)
     from xpra.server.subsystem.sharing import SharingServer
     classes.append(SharingServer)
     # `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
@@ -63,10 +71,6 @@ def get_server_base_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.tray import TrayMenu
         classes.append(TrayMenu)
 
-    # `Dbus` must be placed before `Power`, `DisplayServer` and `NotificationForwarder`
-    if features.dbus:
-        from xpra.server.subsystem.dbus import DbusServer
-        classes.append(DbusServer)
     if features.power:
         # this one is for server-side system power events:
         from xpra.server.subsystem.power import PowerEventServer
