@@ -9,6 +9,7 @@ from typing import Dict, Tuple, Any
 from xpra.util import ellipsizer, csv
 from xpra.os_util import bytestostr
 from xpra.dbus.helper import native_to_dbus
+from xpra.dbus.notifications_forwarder import PROXY_NAME
 from xpra.notifications.notifier_base import NotifierBase, log
 try:
     #new recommended way of using the glib main loop:
@@ -58,10 +59,25 @@ class DBUS_Notifier(NotifierBase):
         #connect_to_signal("HelloSignal", hello_signal_handler, dbus_interface="com.example.TestService", arg0="Hello")
         self.dbusnotify = dbus.Interface(self.org_fd_notifications, FD_NOTIFICATIONS)
         log("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
+        self.loop_check(self.get_server_information())
         caps = tuple(str(x) for x in self.dbusnotify.GetCapabilities())
         log("capabilities=%s", csv(caps))
         self.handles_actions = "actions" in caps
         log("dbus.get_default_main_loop()=%s", dbus.get_default_main_loop())
+
+    def get_server_information(self) -> Tuple[str, ...]:
+        server_info = tuple(str(x) for x in self.dbusnotify.GetServerInformation())
+        log("server info=%s", server_info)
+        return server_info
+
+    def loop_check(self, server_info: Tuple[str, ...]) -> None:
+        # if the notification service we would be forwarding to is an xpra forwarder,
+        # (ie: we share the session bus with an xpra server which claimed the name)
+        # then everything we send it comes straight back to us: refuse to use this backend.
+        # (the caller falls back to another notifier factory)
+        if server_info and server_info[0] == PROXY_NAME:
+            raise RuntimeError("the 'org.freedesktop.Notifications' service on this bus is an xpra notification "
+                               "forwarder, using it would create a loop")
 
     def cleanup(self) -> None:
         # closing notifications from here races with the client shutting down
