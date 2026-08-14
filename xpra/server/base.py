@@ -61,6 +61,14 @@ class ServerBase(ServerCore):
         elif features.x11:
             from xpra.x11.subsystem.x11init import X11Init
             classes.append(X11Init)
+        if features.dbus:
+            # the dbus subsystem must come first:
+            # it starts the dbus instance for this session and updates the environment,
+            # any subsystem connecting to the session bus before that point
+            # would be connected to the bus we inherited from the environment
+            # (ie: the user's desktop session bus) - see `init_session_bus`
+            from xpra.server.subsystem.dbus import DbusManager
+            classes.append(DbusManager)
         if features.ping:
             from xpra.server.subsystem.ping import PingServer
             classes.append(PingServer)
@@ -100,9 +108,6 @@ class ServerBase(ServerCore):
         if features.ssh:
             from xpra.server.subsystem.ssh_agent import SshAgent
             classes.append(SshAgent)
-        if features.dbus:
-            from xpra.server.subsystem.dbus import DbusManager
-            classes.append(DbusManager)
         # EncryptionServer is unconditional - it gracefully no-ops when no
         # encryption is configured on a given socket.
         from xpra.server.subsystem.encryption import EncryptionServer
