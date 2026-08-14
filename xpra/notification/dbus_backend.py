@@ -7,8 +7,8 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.dbus.notifications import validated_hints, PROXY_NAME
-from xpra.notification.common import IconData, decompress_image_data
+from xpra.dbus.notifications import validated_hints
+from xpra.notification.common import IconData, decompress_image_data, PROXY_NAME
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.dbus.helper import native_to_dbus, dbus_to_native

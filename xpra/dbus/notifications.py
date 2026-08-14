@@ -8,7 +8,10 @@ from typing import Any
 from collections.abc import Callable, Sequence
 import dbus.service
 
-from xpra.notification.common import parse_image_path, validated_hints, image_data_hint, ICON_EXTENSIONS
+from xpra.notification.common import (
+    parse_image_path, validated_hints, image_data_hint,
+    ICON_EXTENSIONS, PROXY_NAME, BUS_NAME, BUS_PATH,
+)
 from xpra.dbus.helper import dbus_to_native
 from xpra.common import noop
 from xpra.util.str_fn import csv
@@ -16,13 +19,6 @@ from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("dbus", "notify")
-
-BUS_NAME = "org.freedesktop.Notifications"
-BUS_PATH = "/org/freedesktop/Notifications"
-# the name we return from `GetServerInformation`,
-# used by our own notifiers to detect that they would be talking to a forwarder
-# (see `xpra.notification.dbus_backend`):
-PROXY_NAME = "xpra-notification-proxy"
 
 ACTIONS = envbool("XPRA_NOTIFICATIONS_ACTIONS", True)
 
