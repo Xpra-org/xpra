@@ -202,9 +202,12 @@ class ShadowServerBase(ServerBase):
         notifylog("make_notifier() notifier classes: %s", nc)
         for nclass in nc:
             try:
-                self.notifier = nclass()
-                notifylog("notifier=%s", self.notifier)
-                break
+                notifier = nclass()
+                notifylog("%s()=%s", nclass, notifier)
+                # some of them are factories which return `None` when unusable:
+                if notifier:
+                    self.notifier = notifier
+                    break
             except Exception:
                 notifylog("failed to instantiate %s", nclass, exc_info=True)
 
