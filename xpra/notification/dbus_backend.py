@@ -213,7 +213,8 @@ class DBUSNotifier(NotifierBase):
             return
 
         def CloseNotificationReply() -> None:
-            self.actual_notification_id.pop(actual_id, None)
+            # `actual_notification_id` is keyed by our own notification id, not the actual one:
+            self.actual_notification_id.pop(int(nid), None)
             self.clean_notification(nid)
 
         def CloseNotificationError(dbus_error, *_args) -> None:
