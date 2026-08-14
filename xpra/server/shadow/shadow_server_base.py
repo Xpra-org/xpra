@@ -192,13 +192,16 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def make_notifier(self) -> None:
         nc = self.get_notifier_classes()
         notifylog("make_notifier() notifier classes: %s", nc)
-        for x in nc:
+        for nclass in nc:
             try:
-                self.notifier = x()
-                notifylog("notifier=%s", self.notifier)
-                break
+                notifier = nclass()
+                notifylog("%s()=%s", nclass, notifier)
+                # some of them are factories which return `None` when unusable:
+                if notifier:
+                    self.notifier = notifier
+                    break
             except Exception:
-                notifylog("failed to instantiate %s", x, exc_info=True)
+                notifylog("failed to instantiate %s", nclass, exc_info=True)
 
     def get_notifier_classes(self) -> Tuple[Type,...]:
         #subclasses will generally add their toolkit specific variants
