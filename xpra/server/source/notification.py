@@ -71,10 +71,13 @@ class NotificationConnection(StubClientConnection):
                         summary, body, actions, hints or {},
                         expire_timeout, icon, user_callback)
 
-    def notify(self, dbus_id: str, nid: int, app_name: str, replaces_nid: int, app_icon: str,
+    def notify(self, dbus_id: str, nid: int | NotificationID, app_name: str, replaces_nid: int, app_icon: str,
                summary: str, body: str,
                actions: Sequence[str], hints: dict, expire_timeout: int,
                icon: IconData | None, user_callback: Callable | None = None) -> bool:
+        # `nid` can be a `NotificationID` enum, which we cannot send as-is:
+        nid = int(nid)
+        replaces_nid = int(replaces_nid)
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         log("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:
@@ -92,7 +95,7 @@ class NotificationConnection(StubClientConnection):
                             summary, body, expire_timeout, icon or (), tuple(actions), hints)
         return True
 
-    def notify_close(self, nid: int) -> None:
+    def notify_close(self, nid: int | NotificationID) -> None:
         if not self.send_notifications or self.suspended or not self.hello_sent:
             return
-        self.send_more(NOTIFICATION_CLOSE, nid)
+        self.send_more(NOTIFICATION_CLOSE, int(nid))
