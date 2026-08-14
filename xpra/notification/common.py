@@ -20,6 +20,12 @@ SVG_SIZE = 96
 
 ICON_EXTENSIONS = ("png", "xpm", )
 
+BUS_NAME = "org.freedesktop.Notifications"
+BUS_PATH = "/org/freedesktop/Notifications"
+# the name our notification forwarder returns from `GetServerInformation`,
+# used to detect that we would be talking to a forwarder - see `get_notification_service_name`:
+PROXY_NAME = "xpra-notification-proxy"
+
 
 def PIL_Image():
     try:
@@ -192,6 +198,29 @@ def get_gtk_theme_icon(icon_string: str):
         mode = "RGBA"
     from PIL import Image
     return Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
+
+
+def get_notification_service_name(timeout=1000) -> str:
+    """
+    the name of the notification service currently running on the session bus,
+    as returned by `GetServerInformation` (name, vendor, version, spec-version),
+    or an empty string if we cannot find out.
+    This is used to detect notification loops: see `PROXY_NAME`.
+    """
+    try:
+        Gio = gi_import("Gio")
+        GLib = gi_import("GLib")
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        # `NO_AUTO_START`: if there is no notification service, we don't want to start one
+        r = bus.call_sync(BUS_NAME, BUS_PATH, BUS_NAME, "GetServerInformation", None,
+                          GLib.VariantType.new("(ssss)"), Gio.DBusCallFlags.NO_AUTO_START, timeout, None)
+        name = str(r.unpack()[0])
+    except Exception as e:
+        log("get_notification_service_name()", exc_info=True)
+        log("cannot query the notification service: %s", e)
+        return ""
+    log("get_notification_service_name()=%r", name)
+    return name
 
 
 # Ensure that the hints are of the correct type:
