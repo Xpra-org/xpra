@@ -7,6 +7,7 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     no pyopengl to build here
     Ubuntu Stonking packaging
     googlesource downloads are not reliable
+    macOS: always enable logging to file when spawned from the GUI
   * Encodings:
     Cython CSC validation, conversion rounding, 30-bit issues
     invalid scroll rectangles emitted when the damage region moves
@@ -31,7 +32,17 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     misnamed X11 atoms
     macOS client crash with audio enabled or speaker state changes
     nvenc: choose a profile matching the chroma format
-    dbus notification retry loop
+    remove `AES-CFB`
+  * Notifications:
+    dbus retry loop
+    forget notifications closed by the client
+    detect loops via the service name
+    try the next notifier backend when one fails
+    skip notification warnings during cleanup
+  * Clipboard:
+    raw atoms cause connection to drop
+    blinking for every pending transfer is excessive
+    don't ask the server for progress updates
   * OpenGL:
     verify the rgb buffer size
     Gtk X11 clients errors
@@ -44,7 +55,6 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     always point the ssh agent symlink at a client
     clamp the shadow server refresh rate
     validate port numbers ourselves
-    skip notification warnings during cleanup
     IPv6 socket warnings
     potential UI watcher errors
     UI watcher resume never fires
@@ -57,7 +67,7 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     remove unavailable test commands
     fix ignored test
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 11 Aug 2026 14:05:28 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 14 Aug 2026 19:10:30 +0700
 
 xpra (5.1.6-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

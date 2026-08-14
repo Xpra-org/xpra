@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.7] 2026-08-11
+## [5.1.7] 2026-08-14
 * Platforms, build and packaging:
   * [almalinux build failures](https://github.com/Xpra-org/xpra/commit/e371556e6710cb19b02f215af7f4754313d59f00) [and rockylinux](https://github.com/Xpra-org/xpra/commit/dc839d9bc7bdd46b7161b37f89d98263b2405a1f)
   * [missing default build list](https://github.com/Xpra-org/xpra/commit/403e684f0cb731c01e2799ac4c335110268c0605) - [unused arm64 list](https://github.com/Xpra-org/xpra/commit/ebdcf11bb30609e541c5b47a7dded68affce2d12)
@@ -9,6 +9,7 @@
   * [no pyopengl to build here](https://github.com/Xpra-org/xpra/commit/bcd98f8557dff2609a448f7b357756dbaa870d0e)
   * [Ubuntu Stonking packaging](https://github.com/Xpra-org/xpra/commit/60cc38a77942eb7cfd7c141f25421228e4c14aaa)
   * [googlesource downloads are not reliable](https://github.com/Xpra-org/xpra/commit/8eca03acb642b27e47d372b73e2393355fc947a5)
+  * [macOS: always enable logging to file when spawned from the GUI](https://github.com/Xpra-org/xpra/commit/f78b14b5e9bedd9a214600fb906e3d6efec57a00)
 * Encodings:
   * [Cython CSC validation](https://github.com/Xpra-org/xpra/commit/a729bf03259bf37cd78d29d89b99cd92d2f1cf37), [conversion rounding](https://github.com/Xpra-org/xpra/commit/237b28358bdd8c42debee1d5e12be31b37d33344), [30-bit issues](https://github.com/Xpra-org/xpra/commit/d8cbf7fa27f417f40e8acc8b1d4e03f02e82f0ed)
   * [invalid scroll rectangles emitted when the damage region moves](https://github.com/Xpra-org/xpra/commit/b3c9df9e052ff5bdb210341b047d7)
@@ -33,7 +34,17 @@
   * [misnamed X11 atoms](https://github.com/Xpra-org/xpra/commit/8415ce33966344590a169cf62ed2083cae93e79a)
   * [macOS client crash with audio enabled](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8) [or speaker state changes](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8)
   * [nvenc: choose a profile matching the chroma format](https://github.com/Xpra-org/xpra/commit/68767858b81bed6d3c6342048850ea57e50183ec)
-  * [dbus notification retry loop](https://github.com/Xpra-org/xpra/commit/06447a5f67d9ba3a0dedad1f435b1f86cc90d4ed)
+  * [remove `AES-CFB`](https://github.com/Xpra-org/xpra/commit/9ffaa01629804cdbc27133f225fa6b14b2e7d950)
+* Notifications:
+  * [dbus retry loop](https://github.com/Xpra-org/xpra/commit/06447a5f67d9ba3a0dedad1f435b1f86cc90d4ed)
+  * [forget notifications closed by the client](https://github.com/Xpra-org/xpra/commit/307c20b7d8b8321b5aa33f1c146a95538f43a2ae)
+  * [detect loops via the service name](https://github.com/Xpra-org/xpra/commit/7cf0a60c3eb639f14db1dbaf5567c275815ce4ed)
+  * [try the next notifier backend when one fails](https://github.com/Xpra-org/xpra/commit/cc1dde1226dcab2fc64c4021370a09977e5be36f)
+  * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/d329fc942cd9475f67bdce1c13280dac98d1d9a5)
+* Clipboard:
+  * [raw atoms cause connection to drop](https://github.com/Xpra-org/xpra/commit/87b6b68166283fd583b2edea29a9900dfe27e23f)
+  * [blinking for every pending transfer is excessive](https://github.com/Xpra-org/xpra/commit/fc3fa9099ba82168bee3afa5275a746ee1285fe8)
+  * [don't ask the server for progress updates](https://github.com/Xpra-org/xpra/commit/8a6a81a91f44cd73c8b926c1be5d58c1277465d6)
 * OpenGL:
   * [verify the rgb buffer size](https://github.com/Xpra-org/xpra/commit/40e182d4381c8044bacf5178bd88aea8672a9d39)
   * [Gtk X11 clients errors](https://github.com/Xpra-org/xpra/commit/4c7dab57dc77fea015e58f4ecfe27714d5720403)
@@ -46,7 +57,6 @@
   * [always point the ssh agent symlink at a client](https://github.com/Xpra-org/xpra/commit/c587579aae44e34d4efbeaacf68a8462a6d02e9f)
   * [clamp the shadow server refresh rate](https://github.com/Xpra-org/xpra/commit/c71a1022c4854ec051c1ff48d0e447c5bdbfc6bd)
   * [validate port numbers ourselves](https://github.com/Xpra-org/xpra/commit/c23aa1018334e940feaeb3b12ffa8a9064d59fe0)
-  * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/d329fc942cd9475f67bdce1c13280dac98d1d9a5)
   * [IPv6 socket warnings](https://github.com/Xpra-org/xpra/commit/9ce8904e7a7a88263e62d76f68be4ecdcce0db86)
   * [potential UI watcher errors](https://github.com/Xpra-org/xpra/commit/668cc5c8678e77047e03953530b5e8e15c6b9ca5)
   * [UI watcher resume never fires](https://github.com/Xpra-org/xpra/commit/62c7af0a050f02a511ec8e6852518d87968b6516)

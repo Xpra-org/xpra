@@ -827,7 +827,7 @@ fi
 
 
 %changelog
-* Tue Aug 11 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+* Fri Aug 14 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - Platforms, build and packaging:
    almalinux build failures and rockylinux
    missing default build list - unused arm64 list
@@ -836,6 +836,7 @@ fi
    no pyopengl to build here
    Ubuntu Stonking packaging
    googlesource downloads are not reliable
+   macOS: always enable logging to file when spawned from the GUI
 - Encodings:
    Cython CSC validation, conversion rounding, 30-bit issues
    invalid scroll rectangles emitted when the damage region moves
@@ -860,7 +861,17 @@ fi
    misnamed X11 atoms
    macOS client crash with audio enabled or speaker state changes
    nvenc: choose a profile matching the chroma format
-   dbus notification retry loop
+   remove `AES-CFB`
+- Notifications:
+   dbus retry loop
+   forget notifications closed by the client
+   detect loops via the service name
+   try the next notifier backend when one fails
+   skip notification warnings during cleanup
+- Clipboard:
+   raw atoms cause connection to drop
+   blinking for every pending transfer is excessive
+   don't ask the server for progress updates
 - OpenGL:
    verify the rgb buffer size
    Gtk X11 clients errors
@@ -873,7 +884,6 @@ fi
    always point the ssh agent symlink at a client
    clamp the shadow server refresh rate
    validate port numbers ourselves
-   skip notification warnings during cleanup
    IPv6 socket warnings
    potential UI watcher errors
    UI watcher resume never fires
