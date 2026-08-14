@@ -97,7 +97,8 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             send_token()
             return
         # we need the targets:
-        targets = self.clipboard.wait_for_targets()
+        r = self.clipboard.wait_for_targets()
+        targets = tuple(a.name() for a in (r[1] if r and len(r) == 2 and r[0] else []))
         if not targets:
             send_token()
             return
