@@ -172,7 +172,6 @@ class TestGStreamerUtilStatic(unittest.TestCase):
         with patch("xpra.audio.pulseaudio.util.has_pa", return_value=True), \
                 patch("xpra.audio.pulseaudio.util.get_pa_device_options", return_value=devices), \
                 patch("xpra.audio.pulseaudio.util.get_pactl_server", return_value="pulse-server"), \
-                patch("xpra.audio.gstreamer_util.WARNED_MULTIPLE_DEVICES", False), \
                 patch("xpra.audio.gstreamer_util.log") as pulse_log, \
                 patch.dict(os.environ, {XPRA_PULSE_SINK_DEVICE_NAME: ""}):
             assert get_pulse_device(
