@@ -1,12 +1,16 @@
 # Changelog
 
-## [6.5.3] 2026-08-12
+## [6.5.3] 2026-08-14
 * 🔧 Platforms, build and packaging:
   * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
   * [don't include wayland server components in client-only builds](https://github.com/Xpra-org/xpra/commit/7d24bc8396a273d2f557b961800c2f0730af8afd)
   * [Ubuntu Stonking packaging](https://github.com/Xpra-org/xpra/commit/5b218091bce8f2e784f6718fd19a8cf11987b439)
   * [libyuv: googlesource archives checksums change](https://github.com/Xpra-org/xpra/commit/5203bda71c6b996114bcbd97994fba31e9d73d94)
-  * [macOS: don't ship tools or libraries that require Rosetta](https://github.com/Xpra-org/xpra/commit/71d028afc3dc38908f7827bf6531576eae98e1de)
+* macOS:
+  * [don't ship tools or libraries that require Rosetta](https://github.com/Xpra-org/xpra/commit/71d028afc3dc38908f7827bf6531576eae98e1de)
+  * [security entitlement for `libffi`](https://github.com/Xpra-org/xpra/commit/ae4abb8f1a1cbc4b78cae18ebc425025987004f5)
+  * [always enable logging to file when spawned from the GUI](https://github.com/Xpra-org/xpra/commit/404959e912e7ea9552896b72c3cc6586184e8909)
+  * [bundle aom in macOS builds](https://github.com/Xpra-org/xpra/commit/92de54bac64a95f2edd0f63608f6eca8f79070b2)
 * MS Windows:
   * [avoid comtypes](https://github.com/Xpra-org/xpra/commit/7bbf25ab93146531a6f748dd1e7cbc75729a45ff)
   * [avoid WMI](https://github.com/Xpra-org/xpra/commit/6b894a123ee3f38e77c77c1ff76095f092226dbc)
@@ -32,19 +36,18 @@
   * [aom decoder closing / leaking](https://github.com/Xpra-org/xpra/commit/b97ca4d7294b853a26283c3add6578cef6cb7146)
   * [invalid aom image metadata](https://github.com/Xpra-org/xpra/commit/c3a73c2f28c31a5aa478b7a517db9f8d30dc75bf)
   * [dav1d decoder image metadata (unused)](https://github.com/Xpra-org/xpra/commit/c167de24ace2ad76dc0a7c260dbc9c38d0585dd9)
-  * [bundle aom in macOS builds](https://github.com/Xpra-org/xpra/commit/92de54bac64a95f2edd0f63608f6eca8f79070b2)
   * [BGRX must use opaque alpha](https://github.com/Xpra-org/xpra/commit/7b8222dc5308061fc7342bd90e49938bcf6fbf3c)
   * [channels swapped](https://github.com/Xpra-org/xpra/commit/61b57c5b975fc4495052c46132cbcc0df01dca88), [miscalculated rowstride](https://github.com/Xpra-org/xpra/commit/b42eabf9a891486a6ce88034d5149c37e25ea733), [30-bit issues](https://github.com/Xpra-org/xpra/commit/e041d3620edddd9e0a48d28c1a941f50d9ccd067)
   * [prefer BGRX / BGRA](https://github.com/Xpra-org/xpra/commit/e3d9033b2c3609ebf1f8f882836933d98cf782a8)
   * [cairo: discard unused alpha](https://github.com/Xpra-org/xpra/commit/dbaae5c274c6c2df9ae4937a06cad6e99d430a70)
 * Major:
-  * [clipboard events cause connection to drop](https://github.com/Xpra-org/xpra/commit/7199f33fa594f7dcf7f772b693fe3f507e04187c)
   * [errors during client disconnection](https://github.com/Xpra-org/xpra/commit/416629496eb709bde729f2eb7090f846eb829972)
   * [keymap not applied](https://github.com/Xpra-org/xpra/commit/4f96ab05e11290261128f4b12c9c8dcd6a3ad44b)
   * [microphone forwarding selects the wrong device](https://github.com/Xpra-org/xpra/commit/58efffed30bcf9b54cc8c23f5ddaaf68b181e0ec)
   * [system suspend + resume never unblocks window updates](https://github.com/Xpra-org/xpra/commit/60e2933a8a9b362ecc5d839949e1c726b2c97893)
   * [missed main thread lockups](https://github.com/Xpra-org/xpra/commit/31b0e4cd652c0183d2dda7ab6a50ff10aba96097)
-  * [dbus notification can retry forever - hogging the CPU](https://github.com/Xpra-org/xpra/commit/44ee267bf5776960ab2575ebcaa2f249ff45465e)
+  * [clipboard events cause connection to drop](https://github.com/Xpra-org/xpra/commit/7199f33fa594f7dcf7f772b693fe3f507e04187c)
+  * [only request clipboard image if we don't have it yet](https://github.com/Xpra-org/xpra/commit/9c01c00434a308d3db3603d7ecae7877bebb5421)
   * [`xpra upgrade` fails with duplicated `mode` in session files](https://github.com/Xpra-org/xpra/commit/feed8f5ac683c84ad42e1c4147db841159d52a0f)
   * [allow upgrades on displays where no window manager is left](https://github.com/Xpra-org/xpra/commit/51682019c19082e17ba2995900d5b61291aec39c)
   * [record client tracks focus](https://github.com/Xpra-org/xpra/commit/0f458b9dbead192f002096a8d3bb44a328b987c5), [server syncs it](https://github.com/Xpra-org/xpra/commit/9959429064c7cc4ee895eaa15c9ed0f7ed48db4e)
@@ -56,7 +59,6 @@
   * [zero is a valid uid / gid](https://github.com/Xpra-org/xpra/commit/a177334d04d50350307680c61c3cadc1dd085159)
   * [allow lookup of session names starting with a digit](https://github.com/Xpra-org/xpra/commit/38e7111b6a79aee075c47efb71d892b8530a58be)
   * [CI build of Wayland client bindings](https://github.com/Xpra-org/xpra/commit/0ef1f44dfc6435a3e3ff85b2ff79d538ca9ff287)
-  * [only request clipboard image if we don't have it yet](https://github.com/Xpra-org/xpra/commit/9c01c00434a308d3db3603d7ecae7877bebb5421)
   * [scroll encoding visual corruption](https://github.com/Xpra-org/xpra/commit/72cef15e5ed8fff6592268a9f25c23f74aa91fff)
   * [safer scroll paints with unaccelerated client windows](https://github.com/Xpra-org/xpra/commit/5f282ddd9654f80fb336fd27fb0139f26a0e8726)
   * [always send window move / resize events to record clients](https://github.com/Xpra-org/xpra/commit/8a30c84622cf9d9837871b3e1441e2431c6a9a36)
@@ -68,6 +70,24 @@
   * [discard alpha padding in RGBX uploads](https://github.com/Xpra-org/xpra/commit/b04b5df4f9b6cf7cf8baa996dc097cbb1f93dd9a)
   * [try harder to hide the test window](https://github.com/Xpra-org/xpra/commit/3bb4902155a086b1de5c150c4dfa79d44f25f442)
   * [missing scale factor with some backends](https://github.com/Xpra-org/xpra/commit/32ed8c71c04f00206e4ebc98ad8e452be843825f)
+* Clipboard:
+  * [clipboard events cause connection to drop](https://github.com/Xpra-org/xpra/commit/7199f33fa594f7dcf7f772b693fe3f507e04187c)
+  * [only request clipboard image if we don't have it yet](https://github.com/Xpra-org/xpra/commit/9c01c00434a308d3db3603d7ecae7877bebb5421)
+  * [blinking for every pending transfer is excessive](https://github.com/Xpra-org/xpra/commit/5093b85c635c066096ea392de8b7cc1bf7f8b2c6)
+  * [don't ask the server for progress updates](https://github.com/Xpra-org/xpra/commit/585f022eed8b4c3f03c974fec729962c464c5dbd)
+* Notifications:
+  * [dbus notification can retry forever - hogging the CPU](https://github.com/Xpra-org/xpra/commit/44ee267bf5776960ab2575ebcaa2f249ff45465e)
+  * [forget notifications closed by the client](https://github.com/Xpra-org/xpra/commit/410dd7771b8a7f93e393c384fa978296156684c4)
+  * [loop closing using wrong id](https://github.com/Xpra-org/xpra/commit/00a81eaefac7200ed38f726d720b3d2227c3a83e)
+  * [detect loops via the service name](https://github.com/Xpra-org/xpra/commit/80e8f31da0a45b65ea500a0356a93a83efd78fe3)
+  * [ask the notification service who it is to detect loops](https://github.com/Xpra-org/xpra/commit/d3db0121198de48e4c3f842d06ac48bd325f6618)
+  * [identify the bus the notification forwarder is connected to](https://github.com/Xpra-org/xpra/commit/d696d8585f961a28051629deed40a1d2c47ef266)
+  * [loops: tell the client where our notification comes from](https://github.com/Xpra-org/xpra/commit/e21848095cf506ff2ff906ad86b0083298268ec4)
+  * [try the next notifier backend when one fails](https://github.com/Xpra-org/xpra/commit/027d15e6cf24804d0b9f6ef336fefad82b0f555b)
+  * [type error: notification ids can be enums](https://github.com/Xpra-org/xpra/commit/dc336e7e164dead61fcda57bfe6778835cd08c3f)
+* dbus:
+  * [start the dbus subsystem before all the others](https://github.com/Xpra-org/xpra/commit/70cf9cfabb9ee413e60dc230f1b3a840c1c2c0bd)
+  * [connect to the session bus address explicitly](https://github.com/Xpra-org/xpra/commit/204e0dd6d1f888b0aadf378f94b416dff9f50f78)
 * Cosmetic:
   * [missing server endpoint in session-info dialog](https://github.com/Xpra-org/xpra/commit/6c46896e3b5ecd317504797bf4a932c83479dbe9)
   * [`xpra info` tagged as binary due to abstract socket null byte](https://github.com/Xpra-org/xpra/commit/520caad013c6ad3ff693af4f463ae527e4a9e924)
@@ -79,6 +99,7 @@
   * [match argument order](https://github.com/Xpra-org/xpra/commit/aec04e5e1614fd078181c4848beaf899dffd4c31)
   * [use empty buffers instead of `None`](https://github.com/Xpra-org/xpra/commit/64f1dcf4b3431367627675504d30d313ef3e7b43)
   * [skip irrelevant tests](https://github.com/Xpra-org/xpra/commit/bb7f86c3a1e7d8b4c467c26e37d659ac4ceb398d), [and more](https://github.com/Xpra-org/xpra/commit/0fa11a393a771215f476dd55b771a2c4e08b6a8d)
+  * [fix shadow unit test](https://github.com/Xpra-org/xpra/commit/8ff1cc5171abe262c5bfbb17c79d7c107a3ab29f)
   * [remove unavailable commands](https://github.com/Xpra-org/xpra/commit/ad6336fe38a6e7e90de0c01561543a70770f22e0)
 
 ## [6.5.2] 2026-07-26

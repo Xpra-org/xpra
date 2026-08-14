@@ -1111,13 +1111,17 @@ fi
 
 
 %changelog
-* Wed Aug 12 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
+* Fri Aug 14 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
    don't include wayland server components in client-only builds
    Ubuntu Stonking packaging
    libyuv: googlesource archives checksums change
-   macOS: don't ship tools or libraries that require Rosetta
+- macOS:
+   don't ship tools or libraries that require Rosetta
+   security entitlement for `libffi`
+   always enable logging to file when spawned from the GUI
+   bundle aom in macOS builds
 - MS Windows:
    avoid comtypes
    avoid WMI
@@ -1143,19 +1147,18 @@ fi
    aom decoder closing / leaking
    invalid aom image metadata
    dav1d decoder image metadata (unused)
-   bundle aom in macOS builds
    BGRX must use opaque alpha
    channels swapped, miscalculated rowstride, 30-bit issues
    prefer BGRX / BGRA
    cairo: discard unused alpha
 - Major:
-   clipboard events cause connection to drop
    errors during client disconnection
    keymap not applied
    microphone forwarding selects the wrong device
    system suspend + resume never unblocks window updates
    missed main thread lockups
-   dbus notification can retry forever - hogging the CPU
+   clipboard events cause connection to drop
+   only request clipboard image if we don't have it yet
    `xpra upgrade` fails with duplicated `mode` in session files
    allow upgrades on displays where no window manager is left
    record client tracks focus, server syncs it
@@ -1167,7 +1170,6 @@ fi
    zero is a valid uid / gid
    allow lookup of session names starting with a digit
    CI build of Wayland client bindings
-   only request clipboard image if we don't have it yet
    scroll encoding visual corruption
    safer scroll paints with unaccelerated client windows
    always send window move / resize events to record clients
@@ -1179,6 +1181,24 @@ fi
    discard alpha padding in RGBX uploads
    try harder to hide the test window
    missing scale factor with some backends
+- Clipboard:
+   clipboard events cause connection to drop
+   only request clipboard image if we don't have it yet
+   blinking for every pending transfer is excessive
+   don't ask the server for progress updates
+- Notifications:
+   dbus notification can retry forever - hogging the CPU
+   forget notifications closed by the client
+   loop closing using wrong id
+   detect loops via the service name
+   ask the notification service who it is to detect loops
+   identify the bus the notification forwarder is connected to
+   loops: tell the client where our notification comes from
+   try the next notifier backend when one fails
+   type error: notification ids can be enums
+- dbus:
+   start the dbus subsystem before all the others
+   connect to the session bus address explicitly
 - Cosmetic:
    missing server endpoint in session-info dialog
    `xpra info` tagged as binary due to abstract socket null byte
@@ -1190,6 +1210,7 @@ fi
    match argument order
    use empty buffers instead of `None`
    skip irrelevant tests, and more
+   fix shadow unit test
    remove unavailable commands
 * Sun Jul 26 2026 Antoine Martin <antoine@xpra.org> 6.5.2-10
 - 🔧 Platforms, build and packaging:
