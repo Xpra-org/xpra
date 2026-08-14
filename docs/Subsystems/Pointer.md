@@ -80,7 +80,7 @@ When a client enables the `sync` capability, the server echoes back to it the po
 it receives from **all the other** clients connected to the same session,
 using the exact same packet types.\
 This is used by the recording client to capture the input events,
-and by regular clients started with `sharing=sync`,
+and by regular clients started with `sharing=sync` (or `sharing=sync-pointer`),
 so that each user can see what the other users are doing:
 the position received is shown as a pointer overlay,
 in the same way as the pointer position updates sent by shadow servers.

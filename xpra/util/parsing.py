@@ -6,11 +6,13 @@
 import os
 import re
 import binascii
+from functools import cache
 from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.constants import RESOLUTION_ALIASES
 from xpra.util.env import envfloat, envint
+from xpra.util.str_fn import csv
 from xpra.log import Logger
 
 
@@ -18,6 +20,10 @@ TRUE_OPTIONS: Sequence[str | bool] = ("yes", "true", "1", "on", True)
 FALSE_OPTIONS: Sequence[str | bool] = ("no", "false", "0", "off", False)
 ALL_BOOLEAN_OPTIONS: Sequence[str | bool] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
 OFF_OPTIONS: Sequence[str] = ("off", )
+
+# the subsystems that can be synchronized with the other clients
+# using the `sharing` option, ie: `sharing=sync-focus,sync-position`:
+SYNC_SUBSYSTEMS: tuple[str, ...] = ("focus", "position", "pointer")
 
 MIN_SCALING = envfloat("XPRA_MIN_SCALING", 0.1)
 MAX_SCALING = envfloat("XPRA_MAX_SCALING", 8)
@@ -331,13 +337,47 @@ def parse_bool_or(k: str, v: Any, auto: bool | None = None) -> bool | None:
         return auto
 
 
-def is_sharing_sync(v: Any) -> bool:
-    """ is the `sharing` option set to `sync`? (sharing with window geometry and focus synchronization) """
-    return isinstance(v, str) and v.lower().strip() == "sync"
+@cache
+def parse_sharing_sync(value: str) -> tuple[str, ...]:
+    """
+    which subsystems should be synchronized with the other clients?
+    `sync` enables them all, individual subsystems can be selected
+    using a comma separated list of `sync-$subsystem` values,
+    ie: `sync-position,sync-pointer`
+    """
+    subsystems: list[str] = []
+    for part in value.lower().replace("_", "-").split(","):
+        part = part.strip()
+        if part == "sync":
+            return SYNC_SUBSYSTEMS
+        if not part.startswith("sync-"):
+            continue
+        subsystem = part[len("sync-"):]
+        if subsystem not in SYNC_SUBSYSTEMS:
+            log = Logger("util")
+            log.warn(f"Warning: unknown synchronization subsystem {subsystem!r}")
+            log.warn(" valid options are: %s", csv(SYNC_SUBSYSTEMS))
+            continue
+        if subsystem not in subsystems:
+            subsystems.append(subsystem)
+    return tuple(subsystems)
+
+
+def is_sharing_sync(v: Any, subsystem: str = "") -> bool:
+    """
+    does the `sharing` option enable synchronization with the other clients?
+    if a `subsystem` is specified, only that subsystem is checked
+    """
+    if not isinstance(v, str):
+        return False
+    subsystems = parse_sharing_sync(v)
+    if not subsystem:
+        return bool(subsystems)
+    return subsystem in subsystems
 
 
 def parse_sharing(v: Any) -> bool | None:
-    """ the `sharing` option is a boolean which also accepts the `sync` value """
+    """ the `sharing` option is a boolean which also accepts the `sync` values """
     if is_sharing_sync(v):
         return True
     return parse_bool_or("sharing", v)

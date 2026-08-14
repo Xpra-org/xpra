@@ -41,6 +41,8 @@ relative to that monitor.
 
 `sync-position` and `sync-focus` are enabled by the `sharing=sync` client option,
 and default to enabled for recording clients.
+They can also be enabled individually, using `sharing=sync-position`, `sharing=sync-focus`,
+or a comma separated list of these values.
 They only take effect when more than one client is connected: the packets are sent
 to every other client that requested the synchronization, never back to the client
 that caused the change.

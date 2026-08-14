@@ -114,7 +114,8 @@ class WindowManagerClient(StubClientSubsystem):
             self.pixel_depth = 0
         self.windows_enabled = opts.windows
         self.modal_windows = self.windows_enabled and opts.modal_windows
-        self.sync_position = self.sync_focus = is_sharing_sync(opts.sharing)
+        self.sync_position = is_sharing_sync(opts.sharing, "position")
+        self.sync_focus = is_sharing_sync(opts.sharing, "focus")
 
     def init_ui(self, opts) -> None:
         # opengl setup is owned by the `opengl` subsystem:

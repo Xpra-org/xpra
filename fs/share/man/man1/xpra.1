@@ -1843,12 +1843,23 @@ When used server-side, the default value \fIauto\fP allows the clients
 to decide if they are willing to share the session.
 When used client-side, the default value \fIauto\fP evaluates to \fIno\fP.
 The \fIsync\fP value enables sharing and also asks the server to keep
-the window geometry and focus synchronized: whenever another client moves or
-resizes a window, this client's window follows, and whenever another client
-focuses a window, this client raises it.
-It also shows the pointer position of the other clients as an overlay,
-so that each user can see what the other users are doing.
-(servers treat this value as \fIyes\fP)
+this client synchronized with the other clients:
+.br
+\(bu \fIsync\-position\fP: whenever another client moves or resizes a window,
+this client's window follows.
+.br
+\(bu \fIsync\-focus\fP: whenever another client focuses a window,
+this client raises it.
+.br
+\(bu \fIsync\-pointer\fP: the pointer position of the other clients is shown
+as an overlay, so that each user can see what the other users are doing.
+.br
+Individual subsystems can be selected instead of enabling them all,
+using a comma separated list of the values above,
+ie: \fB\-\-sharing\fP=\fIsync\-position,sync\-pointer\fP.
+The server may refuse to synchronize some of these subsystems,
+see the \fIsync\fP socket option.
+(servers treat all these values as \fIyes\fP)
 To allow sharing to work with unix domain sockets (either using local
 connections or via ssh), you should create at least one socket in a group
 accessible directory. On Posix with a default configuration, being a

@@ -22,7 +22,10 @@ from importlib.util import find_spec
 
 from xpra.util.str_fn import csv
 from xpra.util.version import full_version_str
-from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool, parse_bool_or, parse_number, print_number
+from xpra.util.parsing import (
+    parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS, SYNC_SUBSYSTEMS,
+    str_to_bool, parse_bool_or, parse_number, print_number,
+)
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, SOCKET_TYPES, IP_SOCKTYPES, URL_MODES
@@ -1517,8 +1520,10 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--sharing", action="store", metavar="yes|no|sync",
                      dest="sharing", default=defaults.sharing,
                      help="Allow more than one client to connect to the same session,"
-                          " 'sync' also synchronizes the window geometry and focus between clients."
-                          " Default: %s." % enabled_or_auto(defaults.sharing))
+                          " 'sync' also synchronizes the window geometry, focus and pointer between clients."
+                          " Individual subsystems can be selected using a comma separated list: %s."
+                          " Default: %s." % (csv(f"'sync-{subsystem}'" for subsystem in SYNC_SUBSYSTEMS),
+                                             enabled_or_auto(defaults.sharing)))
     legacy_bool_parse("lock")
     group.add_option("--lock", action="store", metavar="yes|no",
                      dest="lock", default=defaults.lock,

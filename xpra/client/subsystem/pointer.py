@@ -54,9 +54,10 @@ class PointerClient(StubClientSubsystem):
         self.middle_click = True
 
     def init(self, opts) -> None:
-        # with `sharing=sync`, ask the server to forward the pointer events of the other clients,
+        # with `sharing=sync` or `sharing=sync-pointer`,
+        # ask the server to forward the pointer events of the other clients,
         # so that we can show what the other users are doing:
-        self.sync = is_sharing_sync(getattr(opts, "sharing", False))
+        self.sync = is_sharing_sync(getattr(opts, "sharing", False), "pointer")
 
     def init_ui(self, opts) -> None:
         self.middle_click = getattr(opts, "middle_click", True)
