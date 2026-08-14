@@ -23,7 +23,7 @@ from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.objects import reverse_dict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.parsing import parse_simple_dict
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint, envbool, first_time
 from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("audio", "gstreamer")
@@ -597,9 +597,6 @@ def get_test_defaults(*_args) -> dict[str, Any]:
     }
 
 
-WARNED_MULTIPLE_DEVICES = False
-
-
 def get_pulse_defaults(device_name_match="", want_monitor_device=True,
                        input_or_output=None, remote=None, env_device_name=None) -> dict[str, Any]:
     try:
@@ -745,9 +742,7 @@ def get_pulse_device(device_name_match="", want_monitor_device=True,
                 log.info("using monitor of default sink: %s", device_name)
                 return default_monitor
 
-        global WARNED_MULTIPLE_DEVICES
-        if not WARNED_MULTIPLE_DEVICES:
-            WARNED_MULTIPLE_DEVICES = True
+        if first_time("audio-multi-devices"):
             log.info("found %i audio %s devices:", len(devices), device_type_str)
             for k, v in devices.items():
                 log.info(" * %s", bytestostr(v))
