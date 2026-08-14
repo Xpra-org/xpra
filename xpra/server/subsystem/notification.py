@@ -159,13 +159,11 @@ class NotificationForwarder(StubSubsystem):
         except KeyError:
             if self.forwarder:
                 # regular notification forwarding:
-                active = self.forwarder.is_notification_active(nid)
-                log("notification-close nid=%s, reason=%s, text=%s, active=%s", nid, reason, text, active)
-                if active:
-                    # an invalid type of the arguments can crash dbus!
-                    assert int(nid) >= 0
-                    assert int(reason) >= 0
-                    self.forwarder.NotificationClosed(nid, reason)
+                # an invalid type of the arguments can crash dbus!
+                assert int(nid) >= 0
+                assert int(reason) >= 0
+                closed = self.forwarder.notification_closed(nid, reason)
+                log("notification-close nid=%s, reason=%s, text=%s, closed=%s", nid, reason, text, closed)
 
     def _process_notification_action(self, proto, packet: Packet) -> None:
         assert self.enabled
