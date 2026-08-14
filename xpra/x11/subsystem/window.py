@@ -43,6 +43,8 @@ NotifyDetailNone = constants["NotifyDetailNone"]
 
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
+# how long a client configure event is still considered to be the cause of a geometry change:
+CLIENT_CONFIGURE_TIMEOUT = envint("XPRA_CLIENT_CONFIGURE_TIMEOUT", 1000) / 1000
 CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", False)
 ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
 PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
@@ -295,14 +297,23 @@ class SeamlessWindowServer(WindowServer):
             return
         x, y, nw, nh = window.get_property("client-geometry")
         resize_counter = window.get_property("resize-counter")
+        # if this geometry change was caused by a client configure event,
+        # the position must only be sent to the client that caused it,
+        # and to the clients that have asked to follow the window positions (`sharing=sync`).
+        # (if the application moved its own window, all the clients should follow)
+        client_driven = last_lcce > 0 and (monotonic() - last_lcce) < CLIENT_CONFIGURE_TIMEOUT
         for ss in self.window_sources():
             lcce = getattr(ss, "window_configure_time", 0.0)
             if 0 < last_lcce < lcce:
                 geomlog("size_notify_clients: we have received a new client resize since")
                 geomlog(" last-configure-events: system=%s, %s=%s", last_lcce, ss, lcce)
                 return
-            geomlog("size_notify_clients: sending to %s", ss)
-            ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
+            sync_position = not client_driven or lcce == last_lcce or ss.window_sync_position
+            geomlog("size_notify_clients: sending to %s, sync-position=%s", ss, sync_position)
+            if sync_position:
+                ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
+            else:
+                ss.resize_window(wid, window, nw, nh, resize_counter)
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, xid: int) -> None:
