@@ -12,6 +12,7 @@ from xpra.notification.common import (
     parse_image_path, validated_hints, image_data_hint,
     ICON_EXTENSIONS, PROXY_NAME, BUS_NAME, BUS_PATH,
 )
+from xpra.dbus.common import get_session_bus_address
 from xpra.dbus.helper import dbus_to_native
 from xpra.common import noop
 from xpra.util.str_fn import csv
@@ -58,7 +59,10 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         self.close_callback = close_callback
         self.active_notifications = set()
         self.counter = 0
-        self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
+        # identify the bus we are actually connected to,
+        # (not just `DBUS_SESSION_BUS_ADDRESS`) so that clients sharing this bus
+        # can tell that showing our notifications would create a loop:
+        self.dbus_id = get_session_bus_address() or os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
         super().__init__(bus_name, BUS_PATH)
 
@@ -186,6 +190,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 def register(notify_callback: Callable = noop, close_callback: Callable = noop, replace=False):
     from xpra.dbus.common import init_session_bus
     bus = init_session_bus()
+    log(f"notifications: session bus {get_session_bus_address()!r}: {bus}")
     flags = dbus.bus.NAME_FLAG_DO_NOT_QUEUE
     if replace:
         flags |= dbus.bus.NAME_FLAG_REPLACE_EXISTING
