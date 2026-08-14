@@ -89,8 +89,11 @@ class NotificationForwarder(StubSubsystem):
             name = ss.name or ss.username or ss.uuid
             title = f"User {name!r} connected to the session"
             body = "\n".join(ss.get_connect_info())
+            # tell the clients which bus this notification comes from,
+            # so that a client sharing this bus can tell that showing it would create a loop:
+            dbus_id = self.forwarder.dbus_id if self.forwarder else ""
             for s in notification_sources:
-                s.notify("", NotificationID.NEW_USER, "Xpra", 0, "", title, body, [], {}, 10 * 1000, icon)
+                s.notify(dbus_id, NotificationID.NEW_USER, "Xpra", 0, "", title, body, [], {}, 10 * 1000, icon)
         except Exception as e:
             log("%s(%s)", self.notify_new_user, ss, exc_info=True)
             log.error("Error: failed to show notification of user login:")
