@@ -72,8 +72,8 @@ def crypto_backend_init():
             patch_crypto_be_discovery()
         import cryptography as pc
         cryptography = pc
-        MODES = tuple(x for x in os.environ.get("XPRA_CRYPTO_MODES", "CBC,GCM,CFB,CTR").split(",")
-              if x in ("CBC", "GCM", "CFB", "CTR"))
+        MODES = tuple(x for x in os.environ.get("XPRA_CRYPTO_MODES", "CBC,GCM,CTR").split(",")
+              if x in ("CBC", "GCM", "CTR"))
         KEY_HASHES = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512")
         KEY_STRETCHING = ("PBKDF2", )
         CIPHERS = ("AES", )
