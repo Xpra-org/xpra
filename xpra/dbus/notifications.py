@@ -19,6 +19,10 @@ log = Logger("dbus", "notify")
 
 BUS_NAME = "org.freedesktop.Notifications"
 BUS_PATH = "/org/freedesktop/Notifications"
+# the name we return from `GetServerInformation`,
+# used by our own notifiers to detect that they would be talking to a forwarder
+# (see `xpra.notification.dbus_backend`):
+PROXY_NAME = "xpra-notification-proxy"
 
 ACTIONS = envbool("XPRA_NOTIFICATIONS_ACTIONS", True)
 
@@ -125,7 +129,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def GetServerInformation(self) -> tuple[str, str, str, str]:
         # name, vendor, version, spec-version
         from xpra import __version__
-        v = ("xpra-notification-proxy", "xpra", __version__, "1.2")
+        v = (PROXY_NAME, "xpra", __version__, "1.2")
         log("GetServerInformation()=%s", v)
         return v
 

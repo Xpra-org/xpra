@@ -7,7 +7,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.dbus.notifications import validated_hints
+from xpra.dbus.notifications import validated_hints, PROXY_NAME
 from xpra.notification.common import IconData, decompress_image_data
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer
@@ -34,9 +34,11 @@ class DBUSNotifier(NotifierBase):
         self.actual_notification_id: dict[int, int] = {}
         self.dbus_session = dbus.SessionBus()
         self.dbusnotify = self.setup_dbusnotify()
+        server_info = self.get_server_information()
+        self.loop_check(server_info)
         self.handles_actions = "actions" in self.get_capabilities()
         self.may_retry = True
-        self.spec_version = self.get_spec_version()
+        self.spec_version = self.get_spec_version(server_info)
         log("dbus.get_default_main_loop()=%s", dbus.get_default_main_loop())
 
     def setup_dbusnotify(self) -> dbus.Interface:
@@ -48,12 +50,26 @@ class DBUSNotifier(NotifierBase):
         log("using dbusnotify: %s(%s)", type(dbusnotify), FD_NOTIFICATIONS)
         return dbusnotify
 
-    def get_spec_version(self) -> tuple[int, ...]:
-        server_info = tuple(dbus_to_native(x) for x in self.dbusnotify.GetServerInformation())
+    def get_server_information(self) -> tuple[str, ...]:
+        server_info = tuple(str(dbus_to_native(x)) for x in self.dbusnotify.GetServerInformation())
         log("server info=%s", server_info)
+        return server_info
+
+    def loop_check(self, server_info: Sequence[str]) -> None:
+        # if the notification service we would be forwarding to is an xpra forwarder,
+        # (ie: we share the session bus with an xpra server which claimed the name)
+        # then everything we send it comes straight back to us: refuse to use this backend.
+        # (the caller falls back to another notifier - see `make_instance`)
+        if server_info and server_info[0] == PROXY_NAME:
+            raise RuntimeError(f"the {FD_NOTIFICATIONS!r} service on this bus is an xpra notification forwarder,"
+                               " using it would create a loop")
+
+    def get_spec_version(self, server_info: Sequence[str] = ()) -> tuple[int, ...]:
+        if not server_info:
+            server_info = self.get_server_information()
         try:
             self.spec_version = tuple(int(x) for x in server_info[3].split("."))[:2]  # "1.2" -> (1, 2)
-        except (TypeError, ValueError):
+        except (IndexError, TypeError, ValueError):
             self.spec_version = (0, 9)
         return self.spec_version
 
