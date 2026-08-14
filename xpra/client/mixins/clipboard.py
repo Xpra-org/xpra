@@ -13,13 +13,14 @@ from xpra.platform.gui import get_clipboard_native_class
 from xpra.net.common import PacketType
 from xpra.net import compression
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.util import flatten_dict, typedict
+from xpra.util import envbool, flatten_dict, typedict
 from xpra.os_util import bytestostr, is_Wayland
 from xpra.log import Logger
 
 log = Logger("clipboard")
 
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS", "")
+CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", False)
 
 
 class ClipboardClient(StubClientMixin):
@@ -93,7 +94,7 @@ class ClipboardClient(StubClientMixin):
         ccaps : Dict[str, Any] = {
             ""                          : True,
             "enabled"                   : True,
-            "notifications"             : True,
+            "notifications"             : CLIPBOARD_NOTIFY,
             "selections"                : CLIPBOARDS,
             #buggy osx clipboards:
             "want_targets"              : CLIPBOARD_WANT_TARGETS,
