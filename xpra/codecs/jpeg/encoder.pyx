@@ -168,11 +168,13 @@ cdef class Encoder:
     cdef object src_format
     cdef int quality
     cdef int grayscale
+    cdef object content_types
     cdef long frames
     cdef object __weakref__
 
     def __init__(self):
         self.width = self.height = self.quality = self.frames = 0
+        self.content_types = ()
         self.compressor = tjInitCompress()
         if self.compressor == NULL:
             raise RuntimeError("Error: failed to instantiate a JPEG compressor")
@@ -194,6 +196,7 @@ cdef class Encoder:
         self.src_format = src_format
         self.grayscale = options.boolget("grayscale")
         self.quality = options.intget("quality", 50)
+        self.content_types = options.strtupleget("content-types", ())
 
     def is_ready(self) -> bool:
         return self.compressor!=NULL
@@ -203,6 +206,7 @@ cdef class Encoder:
 
     def clean(self) -> None:
         self.width = self.height = self.quality = 0
+        self.content_types = ()
         if self.compressor:
             r = tjDestroy(self.compressor)
             self.compressor = NULL
@@ -234,8 +238,15 @@ cdef class Encoder:
             "height"        : self.height,
             "quality"       : self.quality,
             "grayscale"     : bool(self.grayscale),
+            "content-types" : self.content_types,
+            "subsampling"   : TJSAMP_STR.get(self.get_subsampling(), ""),
         }
         return info
+
+    def get_subsampling(self) -> int:
+        if self.grayscale:
+            return TJSAMP_GRAY
+        return get_subsamp(self.quality, is_screen_content(self.content_types))
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple:
         quality = options.get("quality", -1)
@@ -243,14 +254,20 @@ cdef class Encoder:
             self.quality = quality
         else:
             quality = self.quality
+        content_types = options.strtupleget("content-types", ())
+        if content_types:
+            self.content_types = content_types
         client_options = {}
         pfstr = image.get_pixel_format()
         if pfstr in ("YUV420P", "YUV422P", "YUV444P"):
+            #the subsampling is dictated by the input pixel format here,
+            #the csc module chosen by the video pipeline decides it for us
             cdata = encode_yuv(self.compressor, image, quality, self.grayscale)
             if not image.get_full_range():
                 client_options["full-range"] = False
         else:
-            cdata = encode_rgb(self.compressor, image, quality, self.grayscale)
+            cdata = encode_rgb(self.compressor, image, quality, self.grayscale,
+                               is_screen_content(self.content_types))
         if not cdata:
             return None
         now = monotonic()
@@ -290,6 +307,7 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
         coding = "jpeg"
     cdef int quality = options.intget("quality", 50)
     cdef int grayscale = options.boolget("grayscale", False)
+    cdef int screen_content = is_screen_content(options.strtupleget("content-types", ()))
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     cdef int scaled_width = options.intget("scaled-width", width)
@@ -318,7 +336,7 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
         return ()
     cdef int r
     try:
-        cdata = encode_rgb(compressor, image, quality, grayscale)
+        cdata = encode_rgb(compressor, image, quality, grayscale, screen_content)
         if not cdata:
             return ()
         now = monotonic()
@@ -344,7 +362,25 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
             log.error(" %s", get_error_str())
 
 
-cdef inline TJSAMP get_subsamp(int quality) noexcept nogil:
+#content-types for which the chroma planes carry sharp edges we must not blur:
+#coloured text, window borders, icons, syntax highlighting..
+SCREEN_CONTENT_TYPES = ("text", "browser", "desktop", "lossless")
+
+
+def is_screen_content(content_types: Sequence[str]) -> bool:
+    if "video" in content_types:
+        #real video content has no sharp chroma edges to preserve,
+        #and needs the bandwidth more than the fidelity:
+        return False
+    return any(x in content_types for x in SCREEN_CONTENT_TYPES)
+
+
+cdef inline TJSAMP get_subsamp(int quality, int screen_content=0) noexcept nogil:
+    if screen_content:
+        #chroma subsampling is a bad deal for screen content:
+        #it roughly doubles the error on glyph edges, and spending the same number
+        #of bits on `quality` instead buys back much less fidelity than `444` does
+        return TJSAMP_444
     if quality<60:
         return TJSAMP_420
     elif quality<80:
@@ -352,7 +388,7 @@ cdef inline TJSAMP get_subsamp(int quality) noexcept nogil:
     return TJSAMP_444
 
 
-cdef MemBuf encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
+cdef MemBuf encode_rgb(tjhandle compressor, image, int quality, int grayscale=0, int screen_content=0):
     pfstr = image.get_pixel_format()
     pf = TJPF_VAL.get(pfstr)
     if pf is None:
@@ -362,7 +398,7 @@ cdef MemBuf encode_rgb(tjhandle compressor, image, int quality, int grayscale=0)
     if grayscale:
         subsamp = TJSAMP_GRAY
     else:
-        subsamp = get_subsamp(quality)
+        subsamp = get_subsamp(quality, screen_content)
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     cdef int stride = image.get_rowstride()
