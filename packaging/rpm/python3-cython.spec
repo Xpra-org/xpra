@@ -43,13 +43,13 @@ autoprov: no
 %global git_commit 5771cc75dfdb64af4bd2c987b397187d9837a4d5
 
 Name:		%{py3rpmname}-cython
-Version:	3.3.0~a2
+Version:	3.3.0~b1
 Release:	3%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://github.com/cython/cython/archive/%{git_commit}.tar.gz#/cython-%{git_commit}.tar.gz
+Source0:    https://files.pythonhosted.org/packages/78/1d/39023ecbfd09ba481398886e0e879226918b3e5a4b7ac1a19a0852285a47/cython-3.3.0b1.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   %{py3rpmname}
 Provides:   %{py3rpmname}-Cython = %{version}-%{release}
@@ -67,11 +67,11 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "50bbc5020eb5e3674baa82d385a67c96db38332114962248ec144b6ec350bd4c" ]; then
+if [ "${sha256}" != "ba9c9b8ad3ddb6fb3592297b9bce2219e22c24710924b4f64fad9e32a436b20e" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -n cython-%{git_commit}
+%setup -q -n cython-3.3.0b1
 
 %build
 NPROCS=${NPROCS:-`nproc`}
