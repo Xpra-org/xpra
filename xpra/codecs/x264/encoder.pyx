@@ -627,15 +627,34 @@ cdef class Encoder:
         log("x264: get_tune() TUNE=%s, fast_decode=%s, content_types=%s", TUNE, self.fast_decode, self.content_types)
         if TUNE:
             return TUNE.encode()
+        content_types = self.content_types
+        # x264 only honours a single "psy" tune (film, animation, grain, stillimage, psnr, ssim),
+        # any extra one is ignored with a warning - so pick just one.
+        # `fastdecode` and `zerolatency` are not psy tunes and can be combined with it.
         tunes = []
-        if "video" in self.content_types:
+        if "video" in content_types:
+            # real video content: keep x264's defaults for natural content,
+            # and don't add `zerolatency` so we can still use b-frames and lookahead:
             tunes.append(b"film")
-        elif "text" in self.content_types:
-            tunes.append(b"grain")
-            tunes.append(b"zerolatency")
         else:
+            if "lossless" in content_types:
+                # this window was flagged as needing fidelity,
+                # `psy` optimizations deliberately trade fidelity for a sharper look,
+                # which would only make the delta with the lossless refresh more visible.
+                # `ssim` turns `psy` off but keeps adaptive quantization:
+                tunes.append(b"ssim")
+            elif set(content_types) & {"desktop", "browser", "text", "picture"}:
+                # screen content: sharp edges matter more than smooth gradients,
+                # `stillimage` uses the strongest negative deblocking offsets (-3)
+                # so the loop filter doesn't smear text and window borders.
+                # (`grain` also lowers deblocking, but its dct-decimate and deadzone
+                # changes are meant to preserve film noise and just waste bandwidth here)
+                tunes.append(b"stillimage")
+            # everything that isn't video is interactive, so latency wins over compression:
             tunes.append(b"zerolatency")
         if self.fast_decode:
+            # must come last: it turns the deblocking filter off completely,
+            # overriding the offsets set by the psy tune above
             tunes.append(b"fastdecode")
         return b",".join(tunes)
 
