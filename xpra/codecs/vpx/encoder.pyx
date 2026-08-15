@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
-from xpra.codecs.constants import VideoSpec, get_subsampling_divs
+from xpra.codecs.constants import VideoSpec, get_subsampling_divs, is_screen_content
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import WIN32, OSX, POSIX
@@ -79,6 +79,13 @@ cdef extern from "vpx/vp8cx.h":
     const vpx_codec_iface_t *vpx_codec_vp9_cx()
     int VP8E_SET_ACTIVEMAP
     vpx_codec_err_t vpx_codec_control_active_map "vpx_codec_control_"(vpx_codec_ctx_t *ctx, int ctrl_id, vpx_active_map_t *map)
+    #screen content coding tools (vp8 only): 0=off, 1=on, 2=on with more aggressive rate control
+    int VP8E_SET_SCREEN_CONTENT_MODE
+    #content type hint (vp9 only):
+    int VP9E_SET_TUNE_CONTENT
+    #vp9e_tune_content:
+    int VP9E_CONTENT_DEFAULT
+    int VP9E_CONTENT_SCREEN
 
 cdef extern from "vpx/vpx_encoder.h":
     int VPX_ENCODER_ABI_VERSION
@@ -340,6 +347,8 @@ cdef class Encoder:
     cdef int speed
     cdef int quality
     cdef int lossless
+    cdef int screen_content
+    cdef object content_types
     cdef int full_range
     cdef int last_keyframe
     cdef object last_frame_times
@@ -369,6 +378,8 @@ cdef class Encoder:
         self.speed = options.intget("speed", 50)
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         self.lossless = 0
+        self.content_types = options.strtupleget("content-types", ())
+        self.screen_content = -1
         self.last_keyframe = 0
         # the initial colour range (may be updated per-image):
         self.full_range = options.boolget("full-range", True)
@@ -450,6 +461,7 @@ cdef class Encoder:
             self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
         self.do_set_encoding_speed(self.speed)
         self.do_set_encoding_quality(self.quality)
+        self.do_set_content_types()
         self.generation = generation.increase()
         if SAVE_TO_FILE:
             filename = SAVE_TO_FILE+f"vpx-{self.generation}.{encoding}"
@@ -505,6 +517,8 @@ cdef class Encoder:
             "speed"     : self.speed,
             "quality"   : self.quality,
             "lossless"  : bool(self.lossless),
+            "content-types" : self.content_types,
+            "screen-content" : bool(self.screen_content>0),
             "generation" : self.generation,
             "encoding"  : self.encoding,
             "src_format": self.src_format,
@@ -567,6 +581,8 @@ cdef class Encoder:
         self.max_threads = 0
         self.encoding = ""
         self.src_format = ""
+        self.content_types = ()
+        self.screen_content = -1
         f = self.file
         if f:
             self.file = None
@@ -614,6 +630,9 @@ cdef class Encoder:
         cdef int quality = options.intget("quality", 50)
         if quality>=0:
             self.set_encoding_quality(quality)
+        content_types = options.strtupleget("content-types", ())
+        if content_types:
+            self.set_content_types(content_types)
 
         cdef Py_buffer py_buf[3]
         for i in range(3):
@@ -763,6 +782,27 @@ cdef class Encoder:
             self.file.write(img)
             self.file.flush()
         return img
+
+    def set_content_types(self, content_types) -> None:
+        if self.content_types==content_types:
+            return
+        self.content_types = content_types
+        self.do_set_content_types()
+
+    def do_set_content_types(self) -> None:
+        #tell the encoder to use its screen content coding tools for the content-types
+        #made of sharp synthetic edges (text, window borders, icons..)
+        #rather than treating them as if they were natural imagery:
+        cdef int screen_content = int(is_screen_content(self.content_types))
+        if screen_content==self.screen_content:
+            return
+        self.screen_content = screen_content
+        if self.encoding=="vp9":
+            self.codec_control("tune content", VP9E_SET_TUNE_CONTENT,
+                               VP9E_CONTENT_SCREEN if screen_content else VP9E_CONTENT_DEFAULT)
+        else:
+            #(2 would also make the rate control more aggressive)
+            self.codec_control("screen content mode", VP8E_SET_SCREEN_CONTENT_MODE, screen_content)
 
     def set_encoding_speed(self, int pct) -> None:
         if self.speed==pct:

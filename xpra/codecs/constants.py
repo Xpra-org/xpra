@@ -182,6 +182,20 @@ def get_x264_preset(speed: int = 50, fast_decode: bool = False) -> int:
     return 5 - max(0, min(4, speed // 20))
 
 
+# the content-types made of sharp synthetic edges
+# (coloured text, window borders, icons, syntax highlighting..)
+# rather than natural continuous-tone imagery:
+SCREEN_CONTENT_TYPES: Sequence[str] = ("text", "browser", "desktop", "lossless")
+
+
+def is_screen_content(content_types: Iterable[str]) -> bool:
+    if "video" in content_types:
+        # real video content has no synthetic edges to preserve,
+        # and needs the bandwidth more than the fidelity:
+        return False
+    return any(x in content_types for x in SCREEN_CONTENT_TYPES)
+
+
 RGB_FORMATS: Sequence[str] = (
     "XRGB",
     "BGRX",

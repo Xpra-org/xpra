@@ -12,7 +12,7 @@ from time import monotonic
 from libc.stdint cimport uintptr_t
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context     # pylint: disable=syntax-error
-from xpra.codecs.constants import get_subsampling_divs
+from xpra.codecs.constants import get_subsampling_divs, is_screen_content
 from xpra.codecs.constants import VideoSpec
 from xpra.codecs.debug import may_save_image
 from xpra.net.compression import Compressed
@@ -360,19 +360,6 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
         if r:
             log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
             log.error(" %s", get_error_str())
-
-
-#content-types for which the chroma planes carry sharp edges we must not blur:
-#coloured text, window borders, icons, syntax highlighting..
-SCREEN_CONTENT_TYPES = ("text", "browser", "desktop", "lossless")
-
-
-def is_screen_content(content_types: Sequence[str]) -> bool:
-    if "video" in content_types:
-        #real video content has no sharp chroma edges to preserve,
-        #and needs the bandwidth more than the fidelity:
-        return False
-    return any(x in content_types for x in SCREEN_CONTENT_TYPES)
 
 
 cdef inline TJSAMP get_subsamp(int quality, int screen_content=0) noexcept nogil:
