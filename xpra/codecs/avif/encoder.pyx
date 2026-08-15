@@ -128,6 +128,26 @@ cdef void configure_content(avifEncoder *encoder, content_types: Sequence[str]):
     set_option(encoder, "enable-intrabc", "0")
 
 
+cdef inline int get_encoder_speed(int speed) noexcept nogil:
+    #libavif speed: 0 is the slowest, 10 the fastest.
+    #9 and 10 are the same operating point - they produce identical bitstreams at
+    #every quality - so 10 is as fast as this encoder goes, and the interesting
+    #steps are all below it. Measured at equal quality against speed 10,
+    #on screen content and on a photograph:
+    # speed 8: -24% / -10% bytes for x1.2 / x1.6 the time
+    # speed 7: -28% / -19% bytes for x1.7 / x2.4
+    # speed 6: -35% / -42% bytes for x3.2 / x3.1
+    # speed 5: -37% / -52% bytes for x9.5 / x8.8   <- the cliff, never worth it
+    #so we stop at 6, and we only go there when latency has stopped being the priority:
+    if speed >= 70:
+        return 10
+    if speed >= 50:
+        return 8
+    if speed >= 30:
+        return 7
+    return 6
+
+
 def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     assert coding == "avif"
     options = typedict(options or {})
@@ -222,7 +242,7 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
             if encoder==NULL:
                 raise RuntimeError("failed to create avif encoder")
             # Configure your encoder here (see avif/avif.h):
-            encoder.speed = 9+int(speed>=50)
+            encoder.speed = get_encoder_speed(speed)
             encoder.maxThreads = THREADS
             encoder.minQuantizer = minq
             encoder.maxQuantizer = maxq
