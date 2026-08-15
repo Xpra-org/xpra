@@ -181,6 +181,9 @@ def decompress_to_rgb(data: SizedBuffer, options: typedict) -> ImageWrapper:
     rgb_format = options.strget("rgb_format", "BGRA" if has_alpha else "BGRX")
     if rgb_format not in ("RGBX", "RGBA", "BGRA", "BGRX", "RGB", "BGR"):
         raise ValueError(f"unsupported rgb format {rgb_format!r}")
+    #we always decode to 4 bytes per pixel,
+    #"RGB" and "BGR" just end up with an extra padding byte:
+    cdef WEBP_CSP_MODE colorspace = MODE_RGBA if rgb_format.startswith("RGB") else MODE_BGRA
     cdef int stride = 0
     cdef size_t size = 0
     cdef VP8StatusCode ret = 0
@@ -204,7 +207,7 @@ def decompress_to_rgb(data: SizedBuffer, options: typedict) -> ImageWrapper:
         check_image_size(config.input.width, config.input.height, "webp image")
 
         with nogil:
-            config.output.colorspace = MODE_BGRA
+            config.output.colorspace = colorspace
             stride = 4 * config.input.width
             size = <size_t> stride * config.input.height
             #allocate the buffer:
