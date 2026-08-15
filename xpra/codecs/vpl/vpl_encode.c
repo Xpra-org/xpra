@@ -84,6 +84,8 @@ struct VPLEncoder {
     mfxLoader       loader;
     mfxSession      session;
     mfxVideoParam   param;
+    mfxExtCodingOption3 co3;
+    mfxExtBuffer   *ext_param[1];
     mfxFrameSurface1 surface;
     uint8_t        *surface_data;
     size_t          surface_size;
@@ -97,6 +99,8 @@ struct VPLEncoder {
     int             speed;
     VPLEncodeProfile profile;
     int             low_power;
+    int             content_hint;   /* VPLEncodeContent */
+    int             use_ext;        /* 1 if the mfxExtCodingOption3 hints were accepted */
     int             use_icq;        /* 1 if ICQ rate-control is in use; 0 = CQP */
     int             next_qp;        /* per-frame mfxEncodeCtrl.QP override (CQP only); 0 = use configured */
     int             is_hw;
@@ -218,6 +222,44 @@ void vpl_encode_shutdown(void) {
     vpl_log("vpl encode shutdown");
 }
 
+/* Tell the encoder what it is looking at.
+   oneVPL has hints for exactly our two cases - `MFX_SCENARIO_DISPLAY_REMOTING`
+   with `MFX_CONTENT_NON_VIDEO_SCREEN` is xpra pointed at a desktop, and
+   `MFX_SCENARIO_LIVE_STREAMING` with `MFX_CONTENT_FULL_SCREEN_VIDEO` is a video
+   playing in a window - so pass them on rather than second-guessing the driver
+   with individual knobs.
+   Note: they really are only hints. The Intel iHD 26.1 AVC encoder accepts them
+   (`GetVideoParam` echoes them back) and then produces byte for byte identical
+   output whichever way they are set, so do not expect this to show up in a
+   benchmark on that driver - but this is the documented way to say it, and it
+   costs nothing. This buffer is init-only, which is also why a window that
+   changes content-type keeps the hint it started with: re-opening a hardware
+   encoder (and forcing an IDR) is far too expensive for an advisory hint. */
+static void fill_ext_params(VPLEncoder *enc, mfxVideoParam *param) {
+    memset(&enc->co3, 0, sizeof(enc->co3));
+    enc->co3.Header.BufferId = MFX_EXTBUFF_CODING_OPTION3;
+    enc->co3.Header.BufferSz = sizeof(enc->co3);
+    switch (enc->content_hint) {
+    case VPL_ENC_CONTENT_SCREEN:
+        enc->co3.ScenarioInfo = MFX_SCENARIO_DISPLAY_REMOTING;
+        enc->co3.ContentInfo = MFX_CONTENT_NON_VIDEO_SCREEN;
+        break;
+    case VPL_ENC_CONTENT_VIDEO:
+        enc->co3.ScenarioInfo = MFX_SCENARIO_LIVE_STREAMING;
+        enc->co3.ContentInfo = MFX_CONTENT_FULL_SCREEN_VIDEO;
+        break;
+    default:
+        /* we have not identified this window: say so rather than claim it is
+           one or the other - `UNKNOWN` is what the enumerators are there for */
+        enc->co3.ScenarioInfo = MFX_SCENARIO_UNKNOWN;
+        enc->co3.ContentInfo = MFX_CONTENT_UNKNOWN;
+        break;
+    }
+    enc->ext_param[0] = (mfxExtBuffer *)&enc->co3;
+    param->ExtParam = enc->ext_param;
+    param->NumExtParam = 1;
+}
+
 static void fill_params(VPLEncoder *enc, mfxVideoParam *param, int use_icq) {
     int q = 51 - (clamp_int(enc->quality, 0, 100) * 50 + 50) / 100;
     q = clamp_int(q, 1, 51);
@@ -257,6 +299,8 @@ static void fill_params(VPLEncoder *enc, mfxVideoParam *param, int use_icq) {
         param->mfx.QPP = q;
         param->mfx.QPB = q;
     }
+    if (enc->use_ext)
+        fill_ext_params(enc, param);
 }
 
 static VPLEncodeStatus allocate_buffers(VPLEncoder *enc) {
@@ -282,7 +326,7 @@ static VPLEncodeStatus allocate_buffers(VPLEncoder *enc) {
 
 VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
                                    int quality, int speed, VPLEncodeProfile profile,
-                                   int low_power) {
+                                   int low_power, int content_hint) {
     VPLEncoder *enc;
     mfxStatus sts;
     int use_icq;
@@ -307,6 +351,7 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
     enc->speed = speed;
     enc->profile = profile;
     enc->low_power = !!low_power;
+    enc->content_hint = content_hint;
     enc->is_hw = 1;
     enc->last_sts = MFX_ERR_NONE;
 
@@ -320,22 +365,26 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
     /* Do not probe ICQ with MFXVideoENCODE_Query here: some libmfxhw
        versions crash inside the driver on a fresh VPL encode session.
        Try ICQ directly first, then fall back to broadly supported CQP. */
+    /* ICQ before CQP, and with the content hints before without: not every
+       implementation takes an `mfxExtCodingOption3` buffer, and one that does
+       not must not cost us the encoder. */
     sts = MFX_ERR_UNSUPPORTED;
-    for (attempt = 0; attempt < 2; attempt++) {
-        use_icq = (attempt == 0);
+    for (attempt = 0; attempt < 4; attempt++) {
+        use_icq = !(attempt & 1);
+        enc->use_ext = attempt < 2;
         enc->use_icq = use_icq;
         fill_params(enc, &enc->param, use_icq);
-        vpl_log("vpl encoder create: %dx%d quality=%d speed=%d profile=%d low-power=%d rc=%s",
+        vpl_log("vpl encoder create: %dx%d quality=%d speed=%d profile=%d low-power=%d rc=%s hints=%d",
                 width, height, quality, speed, (int)profile, enc->low_power,
-                use_icq ? "ICQ" : "CQP");
+                use_icq ? "ICQ" : "CQP", enc->use_ext);
 
         sts = MFXVideoENCODE_Init(enc->session, &enc->param);
         if (sts == MFX_ERR_NONE || sts == MFX_WRN_PARTIAL_ACCELERATION ||
             sts == MFX_WRN_INCOMPATIBLE_VIDEO_PARAM) {
             break;
         }
-        if (use_icq)
-            vpl_log("vpl encoder ICQ init failed: mfxStatus %d, trying CQP", (int)sts);
+        vpl_log("vpl encoder %s init failed (hints=%d): mfxStatus %d",
+                use_icq ? "ICQ" : "CQP", enc->use_ext, (int)sts);
     }
     if (sts != MFX_ERR_NONE && sts != MFX_WRN_PARTIAL_ACCELERATION &&
         sts != MFX_WRN_INCOMPATIBLE_VIDEO_PARAM) {
@@ -346,7 +395,12 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
     if (sts == MFX_WRN_PARTIAL_ACCELERATION)
         enc->is_hw = 0;
 
+    /* `GetVideoParam` fills the ext buffer back in with what is actually in
+       effect, so this logs the hints the driver kept, not the ones we asked for: */
     MFXVideoENCODE_GetVideoParam(enc->session, &enc->param);
+    vpl_log("vpl encoder initialized: content-hint=%d scenario=%d content=%d target-usage=%d",
+            enc->content_hint, vpl_encoder_get_scenario(enc),
+            vpl_encoder_get_content_info(enc), (int)enc->param.mfx.TargetUsage);
     if (allocate_buffers(enc) != VPL_ENC_OK) {
         vpl_encoder_destroy(enc);
         return VPL_ENC_ERROR;
@@ -539,6 +593,14 @@ VPLEncodeStatus vpl_encoder_set_quality(VPLEncoder *enc, int quality) {
 
 int vpl_encoder_is_hardware(VPLEncoder *enc) {
     return enc ? enc->is_hw : 0;
+}
+
+int vpl_encoder_get_scenario(VPLEncoder *enc) {
+    return (enc && enc->use_ext) ? (int)enc->co3.ScenarioInfo : 0;
+}
+
+int vpl_encoder_get_content_info(VPLEncoder *enc) {
+    return (enc && enc->use_ext) ? (int)enc->co3.ContentInfo : 0;
 }
 
 int vpl_encoder_get_width(VPLEncoder *enc) {

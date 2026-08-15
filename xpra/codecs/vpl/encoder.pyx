@@ -14,7 +14,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, get_profile
+from xpra.codecs.constants import VideoSpec, get_profile, is_screen_content, is_video_content
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AtomicInteger
@@ -49,6 +49,11 @@ cdef extern from "vpl_encode.h":
         VPL_ENC_FRAME_I
         VPL_ENC_FRAME_P
 
+    ctypedef enum VPLEncodeContent:
+        VPL_ENC_CONTENT_UNKNOWN
+        VPL_ENC_CONTENT_SCREEN
+        VPL_ENC_CONTENT_VIDEO
+
     ctypedef enum VPLEncodeProfile:
         VPL_ENC_PROFILE_CONSTRAINED_BASELINE
         VPL_ENC_PROFILE_MAIN
@@ -66,7 +71,7 @@ cdef extern from "vpl_encode.h":
     void            vpl_encode_shutdown()
     VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
                                         int quality, int speed, VPLEncodeProfile profile,
-                                        int low_power) nogil
+                                        int low_power, int content_hint) nogil
     void            vpl_encoder_destroy(VPLEncoder *enc) nogil
     VPLEncodeStatus vpl_encoder_encode(VPLEncoder *enc,
                                         const uint8_t *y, int y_stride,
@@ -75,6 +80,8 @@ cdef extern from "vpl_encode.h":
     VPLEncodeStatus vpl_encoder_flush(VPLEncoder *enc, VPLEncodedFrame *frame) nogil
     VPLEncodeStatus vpl_encoder_set_quality(VPLEncoder *enc, int quality)
     int             vpl_encoder_is_hardware(VPLEncoder *enc)
+    int             vpl_encoder_get_scenario(VPLEncoder *enc)
+    int             vpl_encoder_get_content_info(VPLEncoder *enc)
     int             vpl_encoder_get_width(VPLEncoder *enc)
     int             vpl_encoder_get_height(VPLEncoder *enc)
     int             vpl_encoder_get_last_status(VPLEncoder *enc)
@@ -95,6 +102,26 @@ cdef str frame_type_name(VPLEncodeFrameType frame_type):
 
 
 generation = AtomicInteger()
+
+SCENARIO_NAMES: Dict[int, str] = {
+    0: "unknown",
+    1: "display-remoting",
+    4: "live-streaming",
+}
+CONTENT_NAMES: Dict[int, str] = {
+    0: "unknown",
+    1: "full-screen-video",
+    2: "non-video-screen",
+}
+
+def content_hint(content_types: Sequence[str]) -> int:
+    if is_screen_content(content_types):
+        return VPL_ENC_CONTENT_SCREEN
+    if is_video_content(content_types):
+        return VPL_ENC_CONTENT_VIDEO
+    return VPL_ENC_CONTENT_UNKNOWN
+
+
 PROFILE_IDS = {
     "baseline": VPL_ENC_PROFILE_CONSTRAINED_BASELINE,
     "constrained-baseline": VPL_ENC_PROFILE_CONSTRAINED_BASELINE,
@@ -182,6 +209,8 @@ cdef class Encoder:
     cdef int quality
     cdef int speed
     cdef int low_power
+    cdef int content_hint
+    cdef object content_types
     cdef object profile
     cdef object src_format
     cdef object encoding
@@ -214,6 +243,8 @@ cdef class Encoder:
         self.speed = options.intget("speed", 50)
         self.profile = get_vpl_profile(options)
         self.low_power = options.boolget("h264.low-power", False)
+        self.content_types = options.strtupleget("content-types", ())
+        self.content_hint = content_hint(self.content_types)
         self.frames = 0
         self.delayed = 0
         self.full_range = options.boolget("full-range", True)
@@ -222,7 +253,8 @@ cdef class Encoder:
         cdef VPLEncodeProfile profile_id = PROFILE_IDS[self.profile]
         with nogil:
             status = vpl_encoder_create(&self.context, width, height, self.quality,
-                                        self.speed, profile_id, self.low_power)
+                                        self.speed, profile_id, self.low_power,
+                                        self.content_hint)
         if status != VPL_ENC_OK:
             raise RuntimeError("failed to create VPL encoder (%dx%d): %s" % (
                 width, height, vpl_encode_status_str(status).decode("latin-1")))
@@ -235,8 +267,9 @@ cdef class Encoder:
             log.info("saving h264 stream to %r", filename)
 
         self.ready = 1
-        log("vpl h264 %s profile encoder initialized: hardware=%s, low-power=%s",
-            self.profile, bool(vpl_encoder_is_hardware(self.context)), bool(self.low_power))
+        log("vpl h264 %s profile encoder initialized: hardware=%s, low-power=%s, content-types=%s, scenario=%s",
+            self.profile, bool(vpl_encoder_is_hardware(self.context)), bool(self.low_power),
+            self.content_types, SCENARIO_NAMES.get(vpl_encoder_get_scenario(self.context), ""))
 
     def is_ready(self) -> bool:
         return bool(self.ready)
@@ -330,6 +363,8 @@ cdef class Encoder:
             self.height = 0
             self.src_format = ""
             self.encoding = ""
+            self.content_types = ()
+            self.content_hint = VPL_ENC_CONTENT_UNKNOWN
             self.delayed = 0
             f = self.file
             if f:
@@ -349,9 +384,12 @@ cdef class Encoder:
             "profile"   : self.profile,
             "low-power" : bool(self.low_power),
             "delayed"   : self.delayed,
+            "content-types": self.content_types,
         }
         if self.context:
             info["hardware"] = bool(vpl_encoder_is_hardware(self.context))
+            info["scenario"] = SCENARIO_NAMES.get(vpl_encoder_get_scenario(self.context), "")
+            info["content-info"] = CONTENT_NAMES.get(vpl_encoder_get_content_info(self.context), "")
         return info
 
     cdef tuple _make_result(self, VPLEncodedFrame *frame, full_range=False):

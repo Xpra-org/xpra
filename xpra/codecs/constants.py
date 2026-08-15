@@ -196,6 +196,19 @@ def is_screen_content(content_types: Iterable[str]) -> bool:
     return any(x in content_types for x in SCREEN_CONTENT_TYPES)
 
 
+# the content-types that are continuous tone rather than synthetic:
+VIDEO_CONTENT_TYPES: Sequence[str] = ("video", "picture")
+
+
+def is_video_content(content_types: Iterable[str]) -> bool:
+    # this is not simply `not is_screen_content(..)`:
+    # both are false for a window we have not identified,
+    # which some encoders have to treat differently from either:
+    if is_screen_content(content_types):
+        return False
+    return any(x in content_types for x in VIDEO_CONTENT_TYPES)
+
+
 RGB_FORMATS: Sequence[str] = (
     "XRGB",
     "BGRX",

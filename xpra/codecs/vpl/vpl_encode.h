@@ -38,6 +38,13 @@ typedef enum {
     VPL_ENC_PROFILE_HIGH                 = 2,
 } VPLEncodeProfile;
 
+/* what the window is showing, as far as xpra could tell */
+typedef enum {
+    VPL_ENC_CONTENT_UNKNOWN = 0,
+    VPL_ENC_CONTENT_SCREEN  = 1,
+    VPL_ENC_CONTENT_VIDEO   = 2,
+} VPLEncodeContent;
+
 typedef struct {
     uint8_t *data;
     int      size;
@@ -52,7 +59,7 @@ void            vpl_encode_shutdown(void);
 
 VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
                                    int quality, int speed, VPLEncodeProfile profile,
-                                   int low_power);
+                                   int low_power, int content_hint);
 void            vpl_encoder_destroy(VPLEncoder *enc);
 
 VPLEncodeStatus vpl_encoder_encode(VPLEncoder *enc,
@@ -67,6 +74,10 @@ VPLEncodeStatus vpl_encoder_flush(VPLEncoder *enc, VPLEncodedFrame *frame);
 VPLEncodeStatus vpl_encoder_set_quality(VPLEncoder *enc, int quality);
 
 int             vpl_encoder_is_hardware(VPLEncoder *enc);
+/* the `ScenarioInfo` / `ContentInfo` hints the driver ended up with (0 if it
+   refused the `mfxExtCodingOption3` buffer entirely) */
+int             vpl_encoder_get_scenario(VPLEncoder *enc);
+int             vpl_encoder_get_content_info(VPLEncoder *enc);
 int             vpl_encoder_get_width(VPLEncoder *enc);
 int             vpl_encoder_get_height(VPLEncoder *enc);
 int             vpl_encoder_get_last_status(VPLEncoder *enc);

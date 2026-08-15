@@ -18,7 +18,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
-from xpra.codecs.constants import VideoSpec, is_screen_content
+from xpra.codecs.constants import VideoSpec, is_video_content
 
 from libcpp cimport bool as bool_t
 from libc.string cimport memset
@@ -476,10 +476,6 @@ USAGE_TYPE_NAMES: Dict[int, str] = {
     SCREEN_CONTENT_REAL_TIME    : "screen",
 }
 
-#the content-types that are continuous tone rather than synthetic:
-VIDEO_CONTENT_TYPES: Sequence[str] = ("video", "picture")
-
-
 def use_video_usage_type(content_types: Sequence[str]) -> bool:
     #`SCREEN_CONTENT_REAL_TIME` is the safe default here (unlike the other encoders,
     #where the screen-content setting is the one we have to opt into): it is what
@@ -487,9 +483,7 @@ def use_video_usage_type(content_types: Sequence[str]) -> bool:
     #a lot on the windows we actually point this encoder at - a scrolling browser
     #costs 29% more bytes with the other usage type, a window being dragged 14% more.
     #So only switch for the windows we have positively identified as continuous tone:
-    if is_screen_content(content_types):
-        return False
-    return any(x in content_types for x in VIDEO_CONTENT_TYPES)
+    return is_video_content(content_types)
 
 
 #cdef void log_cb(void* context, int level, const char* message) nogil:
