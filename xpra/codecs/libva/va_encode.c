@@ -29,10 +29,18 @@
 #include <string.h>
 #include <time.h>
 
-#define LIBVA_IDR_INTERVAL 60
+/* we choose when to use keyframes (never): xpra runs over a lossless transport and
+   never seeks, so the only keyframe we need is the one that opens the stream - the
+   GOP is restarted explicitly when the stream has to change (ie: the colour range).
+   This matches what the x264, vpx and openh264 encoders already do.
+   A periodic IDR is expensive: measured over 300 frames at equal quality, one every
+   60 frames costs 13% on a scrolling browser window and 6% on video, and it adds a
+   frame-size spike (an intra coded 720p browser window is ~13x a P frame) every time: */
+#define LIBVA_INTRA_PERIOD 999999
 #define LIBVA_LOG2_MAX_FRAME_NUM_MINUS4 4
 #define LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 4
 #define LIBVA_FRAME_NUM_BITS (LIBVA_LOG2_MAX_FRAME_NUM_MINUS4 + 4)
+#define LIBVA_MAX_FRAME_NUM (1 << LIBVA_FRAME_NUM_BITS)
 #define LIBVA_POC_LSB_BITS (LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 + 4)
 #define LIBVA_H264_POC_TYPE 2
 
@@ -1156,7 +1164,7 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     uint8_t seq_header[256], sh[64];
     int seq_header_size, sh_size;
     int sh_bits = 0;
-    int gop_frame, is_idr, frame_num, poc_lsb, recon_index;
+    int is_idr, frame_num, poc_lsb, recon_index;
     VASurfaceID recon_surface;
     VAStatus status;
     LibVAEncodeStatus estatus;
@@ -1171,9 +1179,9 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     estatus = upload_nv12(enc, y, y_stride, uv, uv_stride, &frame->us_copy);
     if (estatus != LIBVA_ENC_OK)
         return estatus;
-    gop_frame = enc->frames % LIBVA_IDR_INTERVAL;
-    is_idr = !enc->have_reference || gop_frame == 0;
-    frame_num = is_idr ? 0 : gop_frame;
+    is_idr = !enc->have_reference;
+    /* every frame is a reference frame, so frame_num just increments (and wraps): */
+    frame_num = is_idr ? 0 : (enc->ref_frame_num + 1) % LIBVA_MAX_FRAME_NUM;
     poc_lsb = (frame_num * 2) & ((1 << LIBVA_POC_LSB_BITS) - 1);
     recon_index = enc->frames & 1;
     recon_surface = enc->recon_surfaces[recon_index];
@@ -1187,8 +1195,8 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     memset(&seq, 0, sizeof(seq));
     seq.seq_parameter_set_id = 0;
     seq.level_idc = (uint8_t)h264_level_idc(enc);
-    seq.intra_period = LIBVA_IDR_INTERVAL;
-    seq.intra_idr_period = LIBVA_IDR_INTERVAL;
+    seq.intra_period = LIBVA_INTRA_PERIOD;
+    seq.intra_idr_period = LIBVA_INTRA_PERIOD;
     seq.ip_period = 1;
     seq.bits_per_second = 0;
     seq.max_num_ref_frames = 1;
@@ -1372,7 +1380,7 @@ static LibVAEncodeStatus vp8_encoder_encode(LibVAEncoder *enc,
     VAEncSequenceParameterBufferVP8 seq;
     VAEncPictureParameterBufferVP8 pic;
     VAQMatrixBufferVP8 qmatrix;
-    int gop_frame, is_key, recon_index;
+    int is_key, recon_index;
     VASurfaceID recon_surface;
     VAStatus status;
     LibVAEncodeStatus estatus;
@@ -1387,8 +1395,7 @@ static LibVAEncodeStatus vp8_encoder_encode(LibVAEncoder *enc,
     estatus = upload_nv12(enc, y, y_stride, uv, uv_stride, &frame->us_copy);
     if (estatus != LIBVA_ENC_OK)
         return estatus;
-    gop_frame = enc->frames % LIBVA_IDR_INTERVAL;
-    is_key = !enc->have_reference || gop_frame == 0;
+    is_key = !enc->have_reference;
     recon_index = enc->frames & 1;
     recon_surface = enc->recon_surfaces[recon_index];
 
@@ -1405,10 +1412,10 @@ static LibVAEncodeStatus vp8_encoder_encode(LibVAEncoder *enc,
     seq.frame_height_scale = 0;
     seq.error_resilient = 0;
     seq.kf_auto = 0;
-    seq.kf_min_dist = LIBVA_IDR_INTERVAL;
-    seq.kf_max_dist = LIBVA_IDR_INTERVAL;
+    seq.kf_min_dist = LIBVA_INTRA_PERIOD;
+    seq.kf_max_dist = LIBVA_INTRA_PERIOD;
     seq.bits_per_second = 0;
-    seq.intra_period = LIBVA_IDR_INTERVAL;
+    seq.intra_period = LIBVA_INTRA_PERIOD;
     for (int i = 0; i < 4; i++)
         seq.reference_frames[i] = VA_INVALID_SURFACE;
     status = vaCreateBuffer(enc->display, enc->context, VAEncSequenceParameterBufferType,
@@ -1513,7 +1520,7 @@ static LibVAEncodeStatus vp9_encoder_encode(LibVAEncoder *enc,
     VAEncSequenceParameterBufferVP9 seq;
     VAEncPictureParameterBufferVP9 pic;
     VAEncMiscParameterTypeVP9PerSegmantParam seg;
-    int gop_frame, is_key, recon_index;
+    int is_key, recon_index;
     VASurfaceID recon_surface;
     VAStatus status;
     LibVAEncodeStatus estatus;
@@ -1528,8 +1535,7 @@ static LibVAEncodeStatus vp9_encoder_encode(LibVAEncoder *enc,
     estatus = upload_nv12(enc, y, y_stride, uv, uv_stride, &frame->us_copy);
     if (estatus != LIBVA_ENC_OK)
         return estatus;
-    gop_frame = enc->frames % LIBVA_IDR_INTERVAL;
-    is_key = !enc->have_reference || gop_frame == 0;
+    is_key = !enc->have_reference;
     recon_index = enc->frames & 1;
     recon_surface = enc->recon_surfaces[recon_index];
 
@@ -1543,10 +1549,10 @@ static LibVAEncodeStatus vp9_encoder_encode(LibVAEncoder *enc,
     seq.max_frame_width = (uint32_t)enc->surface_width;
     seq.max_frame_height = (uint32_t)enc->surface_height;
     seq.kf_auto = 0;
-    seq.kf_min_dist = LIBVA_IDR_INTERVAL;
-    seq.kf_max_dist = LIBVA_IDR_INTERVAL;
+    seq.kf_min_dist = LIBVA_INTRA_PERIOD;
+    seq.kf_max_dist = LIBVA_INTRA_PERIOD;
     seq.bits_per_second = 0;
-    seq.intra_period = LIBVA_IDR_INTERVAL;
+    seq.intra_period = LIBVA_INTRA_PERIOD;
     status = vaCreateBuffer(enc->display, enc->context, VAEncSequenceParameterBufferType,
                             sizeof(seq), 1, &seq, &buffers[nbuf++]);
     if (status != VA_STATUS_SUCCESS) {
