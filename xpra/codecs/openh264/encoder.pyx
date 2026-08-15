@@ -18,7 +18,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, is_screen_content
 
 from libcpp cimport bool as bool_t
 from libc.string cimport memset
@@ -469,6 +469,29 @@ cdef int speed_to_complexity(int speed):
     return HIGH_COMPLEXITY
 
 
+USAGE_TYPE_NAMES: Dict[int, str] = {
+    #(openh264 calls this one `camera` because that is what it was written for,
+    # but it is simply its natural / continuous tone mode)
+    CAMERA_VIDEO_REAL_TIME      : "video",
+    SCREEN_CONTENT_REAL_TIME    : "screen",
+}
+
+#the content-types that are continuous tone rather than synthetic:
+VIDEO_CONTENT_TYPES: Sequence[str] = ("video", "picture")
+
+
+def use_video_usage_type(content_types: Sequence[str]) -> bool:
+    #`SCREEN_CONTENT_REAL_TIME` is the safe default here (unlike the other encoders,
+    #where the screen-content setting is the one we have to opt into): it is what
+    #every window has used until now, and its feature based motion search is worth
+    #a lot on the windows we actually point this encoder at - a scrolling browser
+    #costs 29% more bytes with the other usage type, a window being dragged 14% more.
+    #So only switch for the windows we have positively identified as continuous tone:
+    if is_screen_content(content_types):
+        return False
+    return any(x in content_types for x in VIDEO_CONTENT_TYPES)
+
+
 #cdef void log_cb(void* context, int level, const char* message) nogil:
 #    pass #nothing yet
 
@@ -483,6 +506,8 @@ cdef class Encoder:
     cdef uint8_t ready
     cdef int quality
     cdef int speed
+    cdef int screen_content
+    cdef object content_types
     cdef SEncParamExt param
     cdef object file
 
@@ -503,6 +528,8 @@ cdef class Encoder:
         self.full_range = options.boolget("full-range", True)
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
+        self.content_types = options.strtupleget("content-types", ())
+        self.screen_content = int(not use_video_usage_type(self.content_types))
         self.frames = 0
         self.init_encoder()
         gen = generation.increase()
@@ -536,8 +563,20 @@ cdef class Encoder:
             r = self.context.GetDefaultParams(&self.param)
         if r:
             raise RuntimeError("failed to get default openh264 encoder parameters")
-        self.param.iUsageType    = SCREEN_CONTENT_REAL_TIME
+        # the usage type switches the whole encoder between two very different modes:
+        # motion estimation (feature / hash based search for repeated blocks and long
+        # displacements instead of a local diamond search), the preprocessing class
+        # (`CWelsPreProcessScreen` vs `CWelsPreProcessVideo`) and the reference picture
+        # selection. It cannot be changed on an open context (`WelsEncoderParamAdjust`
+        # rejects it), so a content-type change re-opens the encoder - see `compress_image`:
+        self.param.iUsageType    = SCREEN_CONTENT_REAL_TIME if self.screen_content else CAMERA_VIDEO_REAL_TIME
         self.param.fMaxFrameRate = 30
+        # background detection replaces macroblocks it believes are static with P-skips.
+        # that is a rate-control heuristic, and we run with rate control off: it makes
+        # the requested quality unreachable (the quantizer is fixed, but the skipped
+        # blocks simply keep whatever the reference held). openh264 already forces it
+        # off for screen content, so this only matters for the video usage type:
+        self.param.bEnableBackgroundDetection = False
         self.param.iPicWidth     = self.width
         self.param.iPicHeight    = self.height
         self.param.iRCMode       = RC_OFF_MODE
@@ -577,8 +616,9 @@ cdef class Encoder:
         #a void (*)(void* context, int level, const char* message) function which receives log messages
         trace_level = WELS_LOG_WARNING
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
-        log("openh264 init_encoder: quality=%i qp=%i speed=%i complexity=%s threads=%i full-range=%s",
-            self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), threads, bool(self.full_range))
+        log("openh264 init_encoder: quality=%i qp=%i speed=%i complexity=%s threads=%i full-range=%s usage=%s",
+            self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), threads,
+            bool(self.full_range), USAGE_TYPE_NAMES.get(self.param.iUsageType))
         for i in range(nlayers):
             log("spatial layer %i bFullRange=%s iDLayerQp=%i", i, self.param.sSpatialLayers[i].bFullRange, self.param.sSpatialLayers[i].iDLayerQp)
 
@@ -635,6 +675,8 @@ cdef class Encoder:
         self.frames = 0
         self.width = 0
         self.height = 0
+        self.content_types = ()
+        self.screen_content = 1
         f = self.file
         if f:
             self.file = None
@@ -651,6 +693,8 @@ cdef class Encoder:
             "speed"         : self.speed,
             "complexity"    : COMPLEXITY_NAMES.get(speed_to_complexity(self.speed), ""),
             "threads"       : int(self.param.iMultipleThreadIdc),
+            "content-types" : self.content_types,
+            "usage-type"    : USAGE_TYPE_NAMES.get(self.param.iUsageType, ""),
         }
         return info
 
@@ -693,7 +737,15 @@ cdef class Encoder:
         cdef int image_range = image.get_full_range()
         cdef int range_changed = image_range != self.full_range
         self.full_range = image_range
-        if range_changed:
+        # the usage type is baked into the encoder context, so a window that changes
+        # content-type (ie: a browser tab that starts playing a video) needs a new one:
+        content_types = options.strtupleget("content-types", ()) or self.content_types
+        cdef int screen_content = int(not use_video_usage_type(content_types))
+        self.content_types = content_types
+        if screen_content != self.screen_content:
+            self.screen_content = screen_content
+            self.reinit_encoder()
+        elif range_changed:
             self.reinit_encoder()
         if image.get_pixel_format()!="YUV420P":
             raise ValueError("expected YUV420P but got %s" % image.get_pixel_format())
