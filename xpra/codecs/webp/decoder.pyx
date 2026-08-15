@@ -219,11 +219,14 @@ def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
             out_format = "RGB"
         if out_format in rgb_formats:
             #we can use 3 bytes per pixel output:
-            config.output.colorspace = MODE_RGB
+            config.output.colorspace = MODE_RGB if out_format == "RGB" else MODE_BGR
         elif rgb_format in ("RGBX", "RGBA"):
             out_format = "RGBX"
+            config.output.colorspace = MODE_RGBA
         else:
             out_format = "BGRX"
+    if has_alpha and out_format in ("RGBX", "RGBA"):
+        config.output.colorspace = MODE_RGBA
     cdef size_t size = stride * config.input.height
     #allocate the buffer:
     cdef uint8_t *buf = <uint8_t*> memalign(size + stride)      #add one line of padding
