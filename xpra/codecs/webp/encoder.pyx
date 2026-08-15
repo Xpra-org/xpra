@@ -14,7 +14,7 @@ from libc.string cimport memset  # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, is_screen_content
 from xpra.net.compression import Compressed
 from xpra.codecs.debug import may_save_image
 from xpra.util.env import envbool, envint
@@ -26,6 +26,18 @@ log = Logger("encoder", "webp")
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
 cdef int WEBP_THREADING = envbool("XPRA_WEBP_THREADING", True)
 cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_SUBSAMPLING_THRESHOLD", 80)
+#lossy webp is always 4:2:0, so the sharp (and slow) RGB->YUV conversion
+#is the only lever we have for preserving coloured glyph edges.
+#it costs around 5 times more cpu:
+cdef int SHARP_YUV = envbool("XPRA_WEBP_SHARP_YUV", True)
+#`browser` and `desktop` windows have sharp edges worth preserving,
+#but they are also the largest ones: give up on the sharp conversion
+#when we are already scraping the bottom of both budgets
+cdef int SHARP_YUV_LOW_QUALITY = envint("XPRA_WEBP_SHARP_YUV_LOW_QUALITY", 30)
+cdef int SHARP_YUV_LOW_SPEED = envint("XPRA_WEBP_SHARP_YUV_LOW_SPEED", 30)
+#continuous tone content has no glyph edges to save,
+#so it only gets the sharp conversion when we have cpu to spare:
+cdef int SHARP_YUV_SPEED = envint("XPRA_WEBP_SHARP_YUV_SPEED", 30)
 
 
 cdef inline int MIN(int a, int b) noexcept nogil:
@@ -133,7 +145,11 @@ cdef extern from "webp/encode.h":
                                         #transparent area. Otherwise, discard this invisible
                                         #RGB information for better compression. The default
                                         #value is 0.
-        uint32_t pad[3]                 #padding for later use
+
+        int use_delta_palette           #reserved
+        int use_sharp_yuv               #if needed, use sharp (and slow) RGB->YUV conversion
+        int qmin                        #minimum permissible quality factor
+        int qmax                        #maximum permissible quality factor
 
     ctypedef struct WebPMemoryWriter:
         uint8_t* mem                    #final buffer (of size 'max_size', larger than 'size').
@@ -308,10 +324,14 @@ PRESET_NAME_TO_CONSTANT: Dict[str, int] = {}
 for k,v in PRESETS.items():
     PRESET_NAME_TO_CONSTANT[v] = k
 
+#these windows are made of glyph edges,
+#preserving them always outweighs the cost of the sharp conversion:
+SHARP_YUV_TYPES: Sequence[str] = ("text", "lossless")
+
+#screen content is handled separately, see `get_preset` below:
 CONTENT_TYPE_PRESET: Dict[str, int] = {
+    "video"     : WEBP_PRESET_PHOTO,
     "picture"   : WEBP_PRESET_PICTURE,
-    "text"      : WEBP_PRESET_TEXT,
-    "browser"   : WEBP_PRESET_TEXT,
 }
 
 CSP_NAMES: Dict[int, str] = {
@@ -389,6 +409,18 @@ cdef inline webp_check(int ret):
     raise RuntimeError("error: %s" % err)
 
 
+cdef inline unsigned char use_sharp_yuv(int quality, int speed, content_types: Sequence[str]):
+    #(the lossless encoder does not do any chroma subsampling)
+    if not SHARP_YUV or quality>=100:
+        return False
+    if not is_screen_content(content_types):
+        return speed<SHARP_YUV_SPEED
+    if any(x in content_types for x in SHARP_YUV_TYPES):
+        #whatever the speed setting
+        return True
+    return quality>=SHARP_YUV_LOW_QUALITY or speed>=SHARP_YUV_LOW_SPEED
+
+
 cdef inline float fclamp(int v) noexcept nogil:
     if v<0:
         v = 0
@@ -433,6 +465,7 @@ cdef class Encoder:
     cdef int quality
     cdef int speed
     cdef unsigned char alpha
+    cdef unsigned char sharp_yuv
     cdef object content_types
     cdef long frames
     cdef WebPConfig config
@@ -452,17 +485,15 @@ cdef class Encoder:
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
         self.alpha = src_format.find("A")>=0
-        self.content_types = options.strtupleget("content-types", "")
+        self.content_types = options.strtupleget("content-types", ())
         self.configure_encoder()
 
     cdef void configure_encoder(self):
-        cdef int ret = WebPConfigInit(&self.config)
-        if not ret:
-            raise RuntimeError("failed to initialize webp config")
         config_init(&self.config)
         self.preset = get_preset(self.width, self.height, self.content_types)
+        self.sharp_yuv = use_sharp_yuv(self.quality, self.speed, self.content_types)
         configure_preset(&self.config, self.preset, self.quality)
-        configure_encoder(&self.config, self.quality, self.speed, self.alpha)
+        configure_encoder(&self.config, self.quality, self.speed, self.alpha, self.sharp_yuv)
         configure_image_hint(&self.config, self.content_types)
         validate_config(&self.config)
 
@@ -499,6 +530,8 @@ cdef class Encoder:
             "alpha"         : bool(self.alpha),
             "pixel-format"  : self.src_format,
             "content-type"  : self.content_types,
+            "preset"        : PRESETS.get(self.preset, self.preset),
+            "sharp-yuv"     : bool(self.sharp_yuv),
         }
         return info
 
@@ -522,8 +555,9 @@ cdef class Encoder:
             self.Bpp = len(pixel_format)
             self.alpha = pixel_format.find("A")>=0
             reconfigure = True
-        if options.get("content-types", ()) != self.content_types:
-            self.content_types = options.strtupleget("content-types", ())
+        content_types = options.strtupleget("content-types", ())
+        if content_types != self.content_types:
+            self.content_types = content_types
             reconfigure = True
         if reconfigure:
             log("webp reconfigure")
@@ -549,10 +583,12 @@ cdef class Encoder:
         self.frames += 1
         cdef int subsample = self.quality < SUBSAMPLING_THRESHOLD
         if subsample:
-            if self.alpha:
-                to_yuv(&pic, WEBP_YUV420A)
-            else:
-                to_yuv(&pic, WEBP_YUV420)
+            #(when using sharp yuv, `WebPEncode` does the conversion for us)
+            if not self.sharp_yuv:
+                if self.alpha:
+                    to_yuv(&pic, WEBP_YUV420A)
+                else:
+                    to_yuv(&pic, WEBP_YUV420)
             client_options["subsampling"] = "YUV420P"
 
         cdata = webp_encode(&self.config, &pic)
@@ -572,14 +608,17 @@ cdef class Encoder:
 
 
 cdef inline WebPPreset get_preset(unsigned int width, unsigned int height, content_types: Sequence[str]):
-    cdef WebPPreset default_preset = DEFAULT_PRESET
-    #only use icon for small squarish rectangles
-    if width*height<=2304 and abs(width-height)<=16:
-        default_preset = PRESET_SMALL
+    if is_screen_content(content_types):
+        #sharp synthetic edges: no noise shaping and no deblocking,
+        #which is exactly what `WEBP_PRESET_TEXT` gives us
+        return WEBP_PRESET_TEXT
     for content_type, preset in CONTENT_TYPE_PRESET.items():
         if content_type in content_types:
             return preset
-    return default_preset
+    #only use icon for small squarish rectangles
+    if width*height<=2304 and abs(width-height)<=16:
+        return PRESET_SMALL
+    return DEFAULT_PRESET
 
 
 cdef inline void config_init(WebPConfig *config):
@@ -590,7 +629,7 @@ cdef inline void config_init(WebPConfig *config):
 
 cdef void configure_encoder(WebPConfig *config,
                       unsigned int quality, unsigned int speed,
-                      unsigned char alpha):
+                      unsigned char alpha, unsigned char sharp_yuv):
     config.lossless = quality>=100
     if config.lossless:
         #'quality' actually controls the speed
@@ -599,12 +638,9 @@ cdef void configure_encoder(WebPConfig *config,
         config.autofilter = 1
     else:
         config.quality = fclamp(quality)
-        config.segments = 1
-        config.sns_strength = 0
-        config.filter_strength = 0
-        config.filter_sharpness = 7-quality//15
-        config.filter_type = 0
         config.autofilter = 0
+    #`segments`, `sns_strength` and the `filter_*` settings are deliberately left alone:
+    #they belong to the preset chosen for this content-type
     #"method" takes values from 0 to 6,
     #but anything higher than 1 is dreadfully slow,
     #so only use method=1 when speed is already very low
@@ -614,13 +650,15 @@ cdef void configure_encoder(WebPConfig *config,
     config.alpha_quality = quality * alpha
     config.emulate_jpeg_size = 1
     config._pass = MAX(1, MIN(10, (40-speed)//10))
-    config.preprocessing = int(speed<30)
+    #bit 1 is the segment smoothing, the dithering bit belongs to the preset:
+    config.preprocessing |= int(speed<30)
+    config.use_sharp_yuv = sharp_yuv
     config.thread_level = WEBP_THREADING
     config.partitions = 3
     config.partition_limit = MAX(0, MIN(100, 100-quality))
-    log("webp.configure_encoder config: lossless=%-5s, quality=%3i, method=%i, alpha=%3i,%3i,%3i",
+    log("webp.configure_encoder config: lossless=%-5s, quality=%3i, method=%i, alpha=%3i,%3i,%3i, sharp-yuv=%s",
         config.lossless, config.quality, config.method,
-        config.alpha_compression, config.alpha_filtering, config.alpha_quality)
+        config.alpha_compression, config.alpha_filtering, config.alpha_quality, bool(sharp_yuv))
 
 
 cdef void configure_preset(WebPConfig *config, WebPPreset preset, int quality):
@@ -631,7 +669,13 @@ cdef void configure_preset(WebPConfig *config, WebPPreset preset, int quality):
 
 
 cdef void configure_image_hint(WebPConfig *config, content_types: Sequence[str]):
-    cdef WebPImageHint image_hint = WEBP_HINT_PICTURE if "picture" in content_types else DEFAULT_IMAGE_HINT
+    cdef WebPImageHint image_hint = DEFAULT_IMAGE_HINT
+    if is_screen_content(content_types):
+        #discrete tone image: this also halves
+        #the initial bitstream allocation of the lossless encoder
+        image_hint = WEBP_HINT_GRAPH
+    elif "picture" in content_types:
+        image_hint = WEBP_HINT_PICTURE
     config.image_hint = image_hint
     log("webp config: image hint=%s", IMAGE_HINT.get(image_hint, image_hint))
 
@@ -669,8 +713,9 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> Tuple:
 
     content_types = options.strtupleget("content-types", ())
     cdef WebPPreset preset = get_preset(width, height, content_types)
+    cdef unsigned char sharp_yuv = use_sharp_yuv(quality, speed, content_types)
     configure_preset(&config, preset, quality)
-    configure_encoder(&config, quality, speed, alpha)
+    configure_encoder(&config, quality, speed, alpha, sharp_yuv)
     configure_image_hint(&config, content_types)
     validate_config(&config)
 
@@ -689,10 +734,12 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> Tuple:
     }
     cdef int subsample = quality < SUBSAMPLING_THRESHOLD
     if subsample:
-        if alpha:
-            to_yuv(&pic, WEBP_YUV420A)
-        else:
-            to_yuv(&pic, WEBP_YUV420)
+        #(when using sharp yuv, `WebPEncode` does the conversion for us)
+        if not sharp_yuv:
+            if alpha:
+                to_yuv(&pic, WEBP_YUV420A)
+            else:
+                to_yuv(&pic, WEBP_YUV420)
         client_options["subsampling"] = "YUV420P"
 
     cdata = webp_encode(&config, &pic)
