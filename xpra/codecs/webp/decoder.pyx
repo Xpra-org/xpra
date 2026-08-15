@@ -179,6 +179,9 @@ def decompress_to_rgb(data: bytes, options: typedict) -> ImageWrapper:
     rgb_format = options.strget("rgb_format", "BGRA" if has_alpha else "BGRX")
     if rgb_format not in ("RGBX", "RGBA", "BGRA", "BGRX", "RGB", "BGR"):
         raise ValueError(f"unsupported rgb format {rgb_format!r}")
+    #we always decode to 4 bytes per pixel,
+    #"RGB" and "BGR" just end up with an extra padding byte:
+    cdef WEBP_CSP_MODE colorspace = MODE_RGBA if rgb_format.startswith("RGB") else MODE_BGRA
     cdef WebPDecoderConfig config
     config.options.use_threads = 1
     WebPInitDecoderConfig(&config)
@@ -186,7 +189,7 @@ def decompress_to_rgb(data: bytes, options: typedict) -> ImageWrapper:
     log("webp decompress_to_rgb found features: width=%4i, height=%4i, has_alpha=%-5s, input rgb_format=%s",
         config.input.width, config.input.height, bool(config.input.has_alpha), rgb_format)
 
-    config.output.colorspace = MODE_BGRA
+    config.output.colorspace = colorspace
     cdef int stride = 4 * config.input.width
     cdef size_t size = stride * config.input.height
     #allocate the buffer:
