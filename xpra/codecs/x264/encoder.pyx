@@ -723,9 +723,14 @@ cdef class Encoder:
             if param.i_bframe_adaptive==X264_B_ADAPT_TRELLIS:
                 param.i_bframe_adaptive = X264_B_ADAPT_FAST
         if self.content_types and "video" not in self.content_types:
-            #specifically told this is not video,
-            #so use a simple motion search:
-            param.analyse.i_me_method = X264_ME_DIA
+            #specifically told this is not video:
+            if set(self.content_types) & {"desktop", "browser"}:
+                #but this content scrolls, which produces large motion vectors
+                #that the diamond search converges on too slowly:
+                param.analyse.i_me_method = X264_ME_HEX
+            else:
+                #use a simple motion search:
+                param.analyse.i_me_method = X264_ME_DIA
         set_f_rf(param, get_x264_quality(self.quality, self.profile))
         #client can tune these options:
         param.b_open_gop = options.boolget("h264.open-gop", param.b_open_gop)
