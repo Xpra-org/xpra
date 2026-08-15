@@ -285,6 +285,8 @@ cdef extern from "avif/avif.h":
         AVIF_CODEC_FLAG_CAN_DECODE
         AVIF_CODEC_FLAG_CAN_ENCODE
 
+    const char * avifCodecName(avifCodecChoice choice, avifCodecFlags requiredFlags)
+
     ctypedef struct avifEncoderData:
         pass
     ctypedef struct avifCodecSpecificOptions:
@@ -313,6 +315,7 @@ cdef extern from "avif/avif.h":
     avifEncoder * avifEncoderCreate()
     avifResult avifEncoderWrite(avifEncoder * encoder, const avifImage * image, avifRWData * output)
     void avifEncoderDestroy(avifEncoder * encoder)
+    avifResult avifEncoderSetCodecSpecificOption(avifEncoder * encoder, const char * key, const char * value)
 
     ctypedef enum avifAddImageFlags:
         AVIF_ADD_IMAGE_FLAG_NONE

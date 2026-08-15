@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, Set
 from collections.abc import Sequence
 
 from libc.stdint cimport uint8_t, uintptr_t    # pylint: disable=syntax-error
@@ -26,13 +26,17 @@ from xpra.codecs.avif.avif cimport (
     AVIF_RGB_FORMAT_ARGB, AVIF_RGB_FORMAT_ABGR,
     AVIF_CHROMA_UPSAMPLING_FASTEST,
     AVIF_ADD_IMAGE_FLAG_SINGLE,
+    AVIF_CODEC_CHOICE_AUTO, AVIF_CODEC_FLAG_CAN_ENCODE,
     avifEncoder, avifEncoderCreate, avifEncoderAddImage, avifEncoderFinish, avifEncoderDestroy,
+    avifEncoderSetCodecSpecificOption,
+    avifCodecName,
     avifRWDataFree,
     avifImageRGBToYUV,
     avifRGBImageSetDefaults,
     avifResultToString,
 )
 
+from xpra.codecs.constants import is_screen_content
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.net.compression import Compressed
@@ -43,6 +47,11 @@ log = Logger("encoder", "avif")
 
 THREADS = envint("XPRA_AVIF_THREADS", min(4, max(1, os.cpu_count()//2)))
 DEF AVIF_PLANE_COUNT_YUV = 3
+
+# libavif can be built against more than one AV1 encoder (aom, rav1e, svt..)
+# and the codec specific options we use below are spelled the `libaom` way:
+cdef const char *encoder_name = avifCodecName(AVIF_CODEC_CHOICE_AUTO, AVIF_CODEC_FLAG_CAN_ENCODE)
+AV1_ENCODER: str = encoder_name.decode("latin1") if encoder_name!=NULL else ""
 
 
 def get_type() -> str:
@@ -61,6 +70,7 @@ def get_info() -> Dict[str, Any]:
     return {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
+        "av1-encoder"   : AV1_ENCODER,
     }
 
 
@@ -88,6 +98,34 @@ cdef inline void check(avifResult r, message: str):
     if r != AVIF_RESULT_OK:
         err = avifResultToString(r).decode("latin1") or AVIF_RESULT.get(r, r)
         raise RuntimeError("%s : %s" % (message, err))
+
+
+REFUSED: Set[str] = set()
+
+
+cdef void set_option(avifEncoder *encoder, key: str, value: str):
+    #these are advisory: an encoder that does not know the option must not cost us the image
+    cdef avifResult r = avifEncoderSetCodecSpecificOption(encoder, key.encode("latin1"), value.encode("latin1"))
+    log("avifEncoderSetCodecSpecificOption(%s, %s)=%i", key, value, r)
+    if r != AVIF_RESULT_OK and key not in REFUSED:
+        #once is enough: this is a property of the encoder we are linked against
+        REFUSED.add(key)
+        log.warn("Warning: %r encoder refused %r=%r", AV1_ENCODER, key, value)
+
+
+cdef void configure_content(avifEncoder *encoder, content_types: Sequence[str]):
+    if not is_screen_content(content_types) or AV1_ENCODER != "aom":
+        return
+    #`tune-content=screen` is what enables the screen content tools in the sequence header,
+    #and without it `enable-palette` does nothing at all.
+    #Palette mode is worth 29% (syntax highlighted code), 29% (a terminal), 23% (a desktop)
+    #and 33% (a browser window) at equal quality, and 4 to 8% on the lossless path,
+    #but it costs 5% on a photograph - so this is strictly a screen content setting:
+    set_option(encoder, "tune-content", "screen")
+    #the same switch also turns on intra block copy, which we do not want:
+    #it did not win a single block on any of the test images (the byte counts are identical
+    #with and without it) and it doubles the time spent searching:
+    set_option(encoder, "enable-intrabc", "0")
 
 
 def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
@@ -122,6 +160,8 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     cdef int speed = options.intget("speed", 50)
     cdef int quality = options.intget("quality", 50)
     cdef uint8_t lossless = quality >= 100
+    content_types = options.strtupleget("content-types", ())
+    cdef uint8_t screen_content = is_screen_content(content_types)
     qrange = 20
     # map quality (0..100) to a base quantizer (0=best .. 63=worst), then allow the
     # rate controller a band of `qrange` worse to save bits on easy frames:
@@ -160,7 +200,11 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
                 if grayscale:
                     avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV400
                     client_options["subsampling"] = "YUV400"
-                elif quality>80:
+                elif screen_content or quality>80:
+                    #chroma subsampling is a bad deal for screen content (as with jpeg):
+                    #measured on the sharp edges of the source, `444` is worth 13 to 18%
+                    #at equal quality, and spending those bits on `quality` instead
+                    #buys back much less - coloured text is what suffers most
                     avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV444
                     client_options["subsampling"] = "YUV444"
                 elif quality>50:
@@ -182,6 +226,7 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
             encoder.maxThreads = THREADS
             encoder.minQuantizer = minq
             encoder.maxQuantizer = maxq
+            configure_content(encoder, content_types)
             if alpha>0:
                 #we need this client side to know if we can use planar gl paint:
                 client_options["alpha"] = alpha
