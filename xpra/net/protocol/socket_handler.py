@@ -1180,6 +1180,9 @@ class SocketProtocol:
                 if index >= len(packet):
                     self.invalid(f"invalid raw packet index {index} for packet of length {len(packet)}", data)
                     return False
+                if packet[index]:
+                    self.invalid(f"raw packet index {index} does not reference an empty packet value", data)
+                    return False
                 # replace placeholder with the raw_data packet data:
                 packet[index] = raw_packet_data
                 payload_size += len(raw_packet_data)

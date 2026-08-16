@@ -214,6 +214,24 @@ class ProtocolTest(unittest.TestCase):
             self.assertFalse(proto.process_payload(state, info, data))
         invalid.assert_called_once()
 
+    def test_raw_packet_requires_empty_value(self) -> None:
+        from xpra.net.packet_encoding import get_encoder
+
+        proto = self.make_memory_protocol()
+        raw_data = b"raw-data"
+        raw_info = socket_handler.PacketReadInfo(0, 0, 1, len(raw_data), 0, len(raw_data))
+        for value in (b"already-set", "already-set", 1, True, [1]):
+            state = socket_handler.ReceiveState()
+            self.assertTrue(proto.process_payload(state, raw_info, raw_data))
+
+            data, flags = get_encoder("rencodeplus")(("test", value))
+            info = socket_handler.PacketReadInfo(flags, 0, 0, len(data), 0, len(data))
+            with patch.object(proto, "invalid") as invalid:
+                self.assertFalse(proto.process_payload(state, info, data))
+            invalid.assert_called_once_with(
+                "raw packet index 1 does not reference an empty packet value", data,
+            )
+
     def test_receive_pending_flush_semantics(self) -> None:
         from xpra.net.packet_encoding import get_encoder
         from xpra.net.protocol.header import FLAGS_FLUSH
