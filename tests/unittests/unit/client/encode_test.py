@@ -4,8 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import tempfile
 import unittest
-from unittest.mock import mock_open, patch
 
 from xpra.client.base.encode import EncodeClient
 from xpra.exit_codes import ExitCode
@@ -24,12 +25,15 @@ class EncodeClientTest(unittest.TestCase):
             1920, 1080, 7680, 32, {"filename": "source.raw"},
         )
 
-        output = mock_open()
-        with patch("builtins.open", output):
-            client._process_encode_response(packet)
-
-        output.assert_called_once_with("source.png", "wb")
-        output().write.assert_called_once_with(b"encoded")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                client._process_encode_response(packet)
+            finally:
+                os.chdir(old_cwd)
+            with open(os.path.join(tmpdir, "source.png"), "rb") as output:
+                self.assertEqual(output.read(), b"encoded")
         self.assertEqual(quit_codes, [ExitCode.OK])
 
 
