@@ -61,6 +61,7 @@ READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 PACKET_JOIN_SIZE = envint("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE)
 LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 16384)
 LOG_RAW_PACKET_SIZE = envbool("XPRA_LOG_RAW_PACKET_SIZE", False)
+MODERN_INITIAL_PACKET_SIZE = 4 * 1024 * 1024
 # inline compressed data in packet if smaller than:
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
 FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
@@ -175,7 +176,8 @@ class SocketProtocol:
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
         # initial value which may get increased by client/server after handshake:
-        self.max_packet_size = MAX_PACKET_SIZE
+        self.max_packet_size = (MAX_PACKET_SIZE if BACKWARDS_COMPATIBLE else
+                                min(MAX_PACKET_SIZE, MODERN_INITIAL_PACKET_SIZE))
         self.abs_max_packet_size = 256 * 1024 * 1024
         self.large_packets = [
             "hello", "window-metadata", "audio-data", "notification-show", "setting-change",
@@ -416,6 +418,8 @@ class SocketProtocol:
         ) if x is not None)
 
     def parse_remote_caps(self, _caps: typedict) -> None:
+        if not BACKWARDS_COMPATIBLE:
+            self.max_packet_size = max(self.max_packet_size, MAX_PACKET_SIZE)
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
 
     def get_info(self) -> dict[str, Any]:
@@ -1076,8 +1080,13 @@ class SocketProtocol:
             raise ValueError(f"invalid payload size {payload_size} for header {header!r}")
 
         if payload_size > self.max_packet_size:
+            if not BACKWARDS_COMPATIBLE:
+                msg = f"packet size requested is {payload_size} but maximum allowed is {self.max_packet_size}"
+                self.invalid_header(self, header, msg)
+                return None
             # this packet is seemingly too big, but check again from the main UI thread
             # this gives 'set_max_packet_size' a chance to run from "hello"
+
             def check_packet_size(size_to_check: int, packet_header) -> bool:
                 if self._closed:
                     return False
