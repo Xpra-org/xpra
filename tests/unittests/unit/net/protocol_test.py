@@ -212,6 +212,21 @@ class ProtocolTest(unittest.TestCase):
             self.assertFalse(proto.process_payload(state, info, data))
         invalid.assert_called_once()
 
+    def test_receive_pending_flush_semantics(self) -> None:
+        from xpra.net.packet_encoding import get_encoder
+        from xpra.net.protocol.header import FLAGS_FLUSH
+
+        proto = self.make_memory_protocol()
+        data, flags = get_encoder("rencodeplus")(("test", 1))
+        state = socket_handler.ReceiveState()
+        flushed = socket_handler.PacketReadInfo(flags | FLAGS_FLUSH, 0, 0, len(data), 0, len(data))
+        self.assertTrue(proto.process_payload(state, flushed, data))
+        self.assertFalse(proto.receive_pending)
+
+        pending = socket_handler.PacketReadInfo(flags, 0, 0, len(data), 0, len(data))
+        self.assertTrue(proto.process_payload(state, pending, data))
+        self.assertTrue(proto.receive_pending)
+
     def test_read_speed(self) -> None:
         if not SHOW_PERF:
             return
