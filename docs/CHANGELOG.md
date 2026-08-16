@@ -22,6 +22,7 @@
   * [`ProxyJump` support with paramiko ssh backend](https://github.com/Xpra-org/xpra/commit/2167c90e98555d4d62d62924fdb868eba5f96888)
   * [support remote UNC named-pipe URLs](https://github.com/Xpra-org/xpra/issues/1454)
   * [much improved RFB support](https://github.com/Xpra-org/xpra/issues/4933)
+  * [document current protocol](https://github.com/Xpra-org/xpra/issues/4999)
 * 🛡️ Security:
   * [`seccomp` hardening of image parsing](https://github.com/Xpra-org/xpra/issues/622)
   * [honour encodings restrictions in all subsystems](https://github.com/Xpra-org/xpra/issues/4943)
@@ -41,6 +42,7 @@
   * [native MS Windows DirectShow webcam backend](https://github.com/Xpra-org/xpra/issues/3336)
   * [native macOS CoreMedia webcam backend](https://github.com/Xpra-org/xpra/issues/1231)
   * [`YUV422` support with `vp9`](https://github.com/Xpra-org/xpra/issues/4928)
+  * [tune encoders using window content-type](https://github.com/Xpra-org/xpra/issues/4998)
   * [colorspace synchronization in video bitstream](https://github.com/Xpra-org/xpra/issues/4926)
   * [paint YUV420P10](https://github.com/Xpra-org/xpra/issues/4993)
   * [convert SVG icons to PNG](https://github.com/Xpra-org/xpra/issues/3199)
