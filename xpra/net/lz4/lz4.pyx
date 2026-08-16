@@ -68,7 +68,7 @@ cdef class compressor:
         cdef MemBuf out_buf = getbuf(size_header + max_size, False)
         mem = memoryview(out_buf)
         if store_size:
-            struct.pack_into(b"@I", mem, 0, in_buf.len)
+            struct.pack_into(b"<I", mem, 0, in_buf.len)
         cdef const char *in_ptr = <const char *> in_buf.buf
         cdef char *out_ptr = <char *> ((<uintptr_t> out_buf.get_mem())+size_header)
         cdef int r
@@ -90,7 +90,7 @@ def compress(data: SizedBuffer, acceleration=1) -> memoryview:
 def decompress(data: SizedBuffer, int max_size=0, int size=0) -> memoryview:
     cdef int size_header = 0
     if size == 0:
-        size = struct.unpack_from(b"@I", data[:4])[0]
+        size = struct.unpack_from(b"<I", data[:4])[0]
         size_header = 4
     if max_size > 0 and size > max_size:
         raise ValueError("data would overflow max-size %i" % max_size)
