@@ -22,7 +22,7 @@ int jph_version_patch(void);
 int jph_encode(const uint8_t *pixels,
                uint32_t width, uint32_t height, uint32_t stride,
                int bytes_per_pixel, int r_offset, int g_offset, int b_offset,
-               int quality,
+               int quality, int continuous_tone,
                uint8_t **out, size_t *out_size,
                char *error, size_t error_size);
 

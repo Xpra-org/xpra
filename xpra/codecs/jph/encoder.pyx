@@ -13,7 +13,7 @@ from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from libc.stddef cimport size_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context
 
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, is_video_content
 from xpra.codecs.debug import may_save_image
 from xpra.codecs.image import ImageWrapper
 from xpra.net.compression import Compressed
@@ -29,7 +29,7 @@ cdef extern from "jph.h":
     int jph_encode(const uint8_t *pixels,
                    uint32_t width, uint32_t height, uint32_t stride,
                    int bytes_per_pixel, int r_offset, int g_offset, int b_offset,
-                   int quality,
+                   int quality, int continuous_tone,
                    uint8_t **out, size_t *out_size,
                    char *error, size_t error_size) nogil
 
@@ -114,13 +114,17 @@ cdef tuple do_encode(object image, object options):
     cdef const uint8_t *src
     cdef uint32_t stride = image.get_rowstride()
     cdef int quality = options.intget("quality", 100)
+    #photographs and video frames need a finer quantiser than screen content
+    #to reach the same quality - a window we have not identified is treated
+    #as screen content, which is what it usually is:
+    cdef int continuous_tone = is_video_content(options.strtupleget("content-types", ()))
     pixels = image.get_pixels()
     with buffer_context(pixels) as bc:
         if len(bc) < stride * height:
             raise ValueError(f"{pixel_format} buffer is too small: {len(bc)} bytes, need {stride * height}")
         src = <const uint8_t*> (<uintptr_t> int(bc))
         with nogil:
-            r = jph_encode(src, width, height, stride, bpp, ro, go, bo, quality,
+            r = jph_encode(src, width, height, stride, bpp, ro, go, bo, quality, continuous_tone,
                            &out, &out_size, error, sizeof(error))
     if r != 0:
         raise RuntimeError("jph encode failed: %s" % error.decode("utf-8", "replace"))

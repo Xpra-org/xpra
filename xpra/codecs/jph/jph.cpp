@@ -8,6 +8,7 @@
 #include "jph.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -45,13 +46,56 @@ static void set_error(char *error, size_t error_size, const char *msg)
     error[error_size - 1] = 0;
 }
 
+/* one more decomposition level costs no measurable time and is worth
+ * ~1% of the encoded size at 1024x576 and ~3.5% at 3840x2160.
+ * Past 7 levels the gains stop (7 and 8 are within 0.1% of each other at 4K): */
+#define JPH_MAX_DECOMPOSITIONS 7
+
 static ojph::ui32 choose_decompositions(ojph::ui32 width, ojph::ui32 height)
 {
     ojph::ui32 dim = std::min(width, height);
     ojph::ui32 decomps = 0;
-    while (decomps < 5 && dim >= (1u << (decomps + 2)))
+    while (decomps < JPH_MAX_DECOMPOSITIONS && dim >= (1u << (decomps + 2)))
         ++decomps;
     return decomps;
+}
+
+/* xpra's `quality` is a jpeg-like scale: the same value is supposed to look the same
+ * whichever picture encoder ends up being used, so that the server's heuristics can
+ * choose one over another without changing what the user sees.
+ * These are the measured quantiser steps at which OpenJPH lands on the psnr that
+ * jpeg 4:4:4 produces at the same `quality`, as a geometric mean over a corpus of
+ * screen content (source code, a terminal, a desktop, a page of rendered text).
+ * The steps are much coarser than the 0.5/quality this used to use, which never
+ * left the top of the quality range: at quality 30 it was spending 1.8 bits per
+ * pixel to deliver 47dB, when 30 is the server asking for a small image. */
+static const struct { int quality; float delta; } QUALITY_DELTA[] = {
+    {  1, 0.6300f }, { 10, 0.3050f }, { 20, 0.2234f }, { 30, 0.1789f },
+    { 40, 0.1516f }, { 50, 0.1316f }, { 60, 0.1148f }, { 70, 0.0943f },
+    { 80, 0.0702f }, { 90, 0.0401f }, { 95, 0.0211f }, { 99, 0.0057f },
+};
+
+/* continuous tone content needs a finer step than screen content to reach the same
+ * psnr, and the ratio barely moves over the whole range (0.42 to 0.49 from quality
+ * 20 to 90, measured on three photographs): */
+#define JPH_CONTINUOUS_TONE_SCALE 0.45f
+
+static float quantizer_delta(int quality, int continuous_tone)
+{
+    const size_t n = sizeof(QUALITY_DELTA) / sizeof(QUALITY_DELTA[0]);
+    float delta = QUALITY_DELTA[n - 1].delta;
+    for (size_t i = 1; i < n; ++i) {
+        const int q = QUALITY_DELTA[i].quality;
+        if (quality <= q) {
+            /* the calibration was done in log space, so interpolate there too: */
+            const int p = QUALITY_DELTA[i - 1].quality;
+            const float f = (float) (quality - p) / (float) (q - p);
+            delta = QUALITY_DELTA[i - 1].delta *
+                    std::pow(QUALITY_DELTA[i].delta / QUALITY_DELTA[i - 1].delta, f);
+            break;
+        }
+    }
+    return continuous_tone ? delta * JPH_CONTINUOUS_TONE_SCALE : delta;
 }
 
 static ojph::ui8 clamp8(ojph::si32 v)
@@ -81,7 +125,7 @@ int jph_version_patch(void)
 int jph_encode(const uint8_t *pixels,
                uint32_t width, uint32_t height, uint32_t stride,
                int bytes_per_pixel, int r_offset, int g_offset, int b_offset,
-               int quality,
+               int quality, int continuous_tone,
                uint8_t **out, size_t *out_size,
                char *error, size_t error_size)
 {
@@ -121,8 +165,8 @@ int jph_encode(const uint8_t *pixels,
         bool reversible = quality >= 100;
         cod.set_reversible(reversible);
         if (!reversible) {
-            quality = std::max(1, std::min(100, quality));
-            codestream.access_qcd().set_irrev_quant(0.5f / static_cast<float>(quality));
+            quality = std::max(1, std::min(99, quality));
+            codestream.access_qcd().set_irrev_quant(quantizer_delta(quality, continuous_tone));
         }
         codestream.set_planar(false);
 
