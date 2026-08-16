@@ -116,7 +116,7 @@ def get_info() -> Dict[str, Any]:
         "encodings"     : get_encodings(),
         "colorspaces"   : tuple(COLORSPACES.keys()),
         "h264-profiles" : H264_PROFILES,
-        "h264-default-profile": "constrained-baseline",
+        "h264-default-profile": "main",
     }
 
 
@@ -134,7 +134,7 @@ def get_h264_profile(options: typedict) -> str:
     if profile not in H264_PROFILES:
         log.warn("Warning: %r is not a valid VideoToolbox H.264 profile", profile)
         log.warn(" valid profiles are: %s", csv(H264_PROFILES))
-        return "constrained-baseline"
+        return "main"
     return profile
 
 

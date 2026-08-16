@@ -42,7 +42,8 @@ class H264ProfileTest(unittest.TestCase):
             if not encoder_module:
                 continue
             for requested, expected_profile, expected_idc in (
-                    ("", "constrained-baseline", 66),
+                    ("", "main", 77),
+                    ("baseline", "constrained-baseline", 66),
                     ("constrained-baseline", "constrained-baseline", 66),
                     ("main", "main", 77),
                     ("high", "high", 100),

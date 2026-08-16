@@ -577,7 +577,7 @@ cdef class Encoder:
         if get_chroma_format(self.pixel_format) == 3:
             default_profile = YUV444_PROFILE.get(self.encoding, "")
         elif self.encoding == "h264":
-            default_profile = "constrained-baseline"
+            default_profile = "main"
         profile = get_profile(options, encoding=self.encoding, csc_mode=csc_mode,
                               default_profile=default_profile)
         if self.encoding == "h264":
@@ -862,7 +862,7 @@ cdef class Encoder:
         if self.profile_name and profiles and self.profile_name not in profiles:
             log.warn("Warning: %r is not a supported %s profile", self.profile_name, self.codec_name)
             log.warn(" valid profiles are: %s", csv(profiles))
-            fallback = "baseline" if self.encoding == "h264" else "auto"
+            fallback = "main" if self.encoding == "h264" else "auto"
             self.profile_name = fallback if fallback in profiles else tuple(profiles.keys())[0]
         profile_guidstr = profiles.get(self.profile_name)
         cdef GUID profile

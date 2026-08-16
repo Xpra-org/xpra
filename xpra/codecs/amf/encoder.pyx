@@ -110,7 +110,7 @@ def get_h264_profile(options: typedict) -> str:
     if profile not in H264_PROFILE_IDS:
         log.warn("Warning: %r is not a valid AMF H.264 profile", profile)
         log.warn(" valid profiles are: %s", ", ".join(H264_PROFILE_IDS))
-        return "constrained-baseline"
+        return "main"
     return profile
 
 
@@ -286,7 +286,7 @@ def get_info() -> Dict[str, Any]:
         "version"       : get_version(),
         "encodings"     : get_encodings(),
         "h264-profiles" : tuple(H264_PROFILE_IDS),
-        "h264-default-profile": "constrained-baseline",
+        "h264-default-profile": "main",
     }
     return info
 

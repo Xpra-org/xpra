@@ -399,7 +399,7 @@ def get_info() -> Dict[str, Any]:
     return {
         "version"         : get_version(),
         "profiles"        : ("constrained-baseline", "main", "high"),
-        "default-profile" : "constrained-baseline",
+        "default-profile" : "main",
     }
 
 
@@ -446,7 +446,7 @@ def get_h264_profile(options: typedict) -> str:
     if profile not in H264_PROFILE_IDS:
         log.warn("Warning: %r is not a valid OpenH264 profile", profile)
         log.warn(" valid profiles are: %s", csv(H264_PROFILE_IDS))
-        return "constrained-baseline"
+        return "main"
     if profile == "baseline":
         return "constrained-baseline"
     return profile

@@ -133,7 +133,7 @@ def get_info() -> Dict[str, Any]:
         "version": get_version(),
         "type": "MediaFoundation",
         "h264-profiles": ("constrained-baseline", "main", "high"),
-        "h264-default-profile": "constrained-baseline",
+        "h264-default-profile": "main",
     }
 
 
@@ -155,7 +155,7 @@ def get_h264_profile(options: typedict) -> str:
     if profile not in H264_PROFILE_IDS:
         log.warn("Warning: %r is not a valid Media Foundation H.264 profile", profile)
         log.warn(" valid profiles are: %s", ", ".join(H264_PROFILE_IDS))
-        return "constrained-baseline"
+        return "main"
     if profile == "baseline":
         return "constrained-baseline"
     return profile

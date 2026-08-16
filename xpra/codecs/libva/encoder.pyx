@@ -119,7 +119,7 @@ def get_h264_profile(options: typedict) -> str:
     if profile not in H264_PROFILES:
         log.warn("Warning: %r is not a valid libva H.264 profile", profile)
         log.warn(" valid profiles are: %s", ", ".join(H264_PROFILES))
-        return "constrained-baseline"
+        return "main"
     return profile
 
 
@@ -157,7 +157,7 @@ def get_info() -> Dict[str, Any]:
         "vendor": libva_encode_get_vendor().decode("utf-8", "replace"),
         "libva": (libva_encode_get_major(), libva_encode_get_minor()),
         "h264-profiles": H264_PROFILES,
-        "h264-default-profile": "constrained-baseline",
+        "h264-default-profile": "main",
     }
 
 

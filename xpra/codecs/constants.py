@@ -154,7 +154,7 @@ def preforder(encodings: Iterable[str]) -> Sequence[str]:
 
 
 def get_profile(options: typedict, encoding: str = "h264", csc_mode: str = "YUV420P",
-                default_profile: str = "constrained-baseline") -> str:
+                default_profile: str = "main") -> str:
     for x in (
         options.strget(f"{encoding}.{csc_mode}.profile"),
         options.strget(f"{encoding}.profile"),

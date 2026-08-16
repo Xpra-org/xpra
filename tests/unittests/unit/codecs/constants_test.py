@@ -36,7 +36,7 @@ class CodecConstantsTest(unittest.TestCase):
 
     def test_profile_precedence(self):
         with patch.dict(os.environ, {}, clear=True):
-            self.assertEqual(get_profile(typedict()), "constrained-baseline")
+            self.assertEqual(get_profile(typedict()), "main")
             self.assertEqual(get_profile(typedict({"h264.profile": "general"})), "general")
             options = typedict({"h264.YUV420P.profile": "specific", "h264.profile": "general"})
             self.assertEqual(get_profile(options), "specific")
