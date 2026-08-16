@@ -315,7 +315,6 @@ cdef extern from "avif/avif.h":
     avifEncoder * avifEncoderCreate()
     avifResult avifEncoderWrite(avifEncoder * encoder, const avifImage * image, avifRWData * output)
     void avifEncoderDestroy(avifEncoder * encoder)
-    avifResult avifEncoderSetCodecSpecificOption(avifEncoder * encoder, const char * key, const char * value)
 
     ctypedef enum avifAddImageFlags:
         AVIF_ADD_IMAGE_FLAG_NONE
@@ -432,6 +431,27 @@ cdef extern from "avif/avif.h":
         AVIF_RESULT_WAITING_ON_IO
         AVIF_RESULT_INVALID_ARGUMENT
         AVIF_RESULT_NOT_IMPLEMENTED
+
+
+cdef extern from *:
+    """
+    #include <avif/avif.h>
+
+    static inline avifResult xpra_avif_encoder_set_codec_specific_option(
+        avifEncoder *encoder, const char *key, const char *value)
+    {
+    #if AVIF_VERSION_MAJOR >= 1
+        return avifEncoderSetCodecSpecificOption(encoder, key, value);
+    #else
+        // This setter returned void before libavif 1.0.0.
+        avifEncoderSetCodecSpecificOption(encoder, key, value);
+        return AVIF_RESULT_OK;
+    #endif
+    }
+    """
+    avifResult xpra_avif_encoder_set_codec_specific_option(
+        avifEncoder *encoder, const char *key, const char *value)
+
 
 AVIF_RESULT: Dict[int, str] = {
     AVIF_RESULT_OK                              : "OK",

@@ -28,7 +28,7 @@ from xpra.codecs.avif.avif cimport (
     AVIF_ADD_IMAGE_FLAG_SINGLE,
     AVIF_CODEC_CHOICE_AUTO, AVIF_CODEC_FLAG_CAN_ENCODE,
     avifEncoder, avifEncoderCreate, avifEncoderAddImage, avifEncoderFinish, avifEncoderDestroy,
-    avifEncoderSetCodecSpecificOption,
+    xpra_avif_encoder_set_codec_specific_option,
     avifCodecName,
     avifRWDataFree,
     avifImageRGBToYUV,
@@ -105,7 +105,8 @@ REFUSED: Set[str] = set()
 
 cdef void set_option(avifEncoder *encoder, key: str, value: str):
     #these are advisory: an encoder that does not know the option must not cost us the image
-    cdef avifResult r = avifEncoderSetCodecSpecificOption(encoder, key.encode("latin1"), value.encode("latin1"))
+    cdef avifResult r = xpra_avif_encoder_set_codec_specific_option(
+        encoder, key.encode("latin1"), value.encode("latin1"))
     log("avifEncoderSetCodecSpecificOption(%s, %s)=%i", key, value, r)
     if r != AVIF_RESULT_OK and key not in REFUSED:
         #once is enough: this is a property of the encoder we are linked against
