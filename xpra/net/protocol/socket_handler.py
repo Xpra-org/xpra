@@ -31,7 +31,7 @@ from xpra.common import noop, SizedBuffer
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
-    unpack_header, pack_header, find_xpra_header,
+    unpack_header, pack_header, find_xpra_header, validate_packet_header,
     FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE,
 )
 from xpra.net.common import (
@@ -1040,6 +1040,11 @@ class SocketProtocol:
     def parse_packet_header(self, header: bytes) -> PacketReadInfo | None:
         # format: struct.pack(b'cBBBL', ...) - HEADER_SIZE bytes
         _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
+
+        if error := validate_packet_header(protocol_flags, compression_level, packet_index,
+                                           modern=not BACKWARDS_COMPATIBLE):
+            self.invalid_header(self, header, f"invalid packet header: {error}")
+            return None
 
         # sanity check size (will often fail if not an xpra client):
         if data_size > self.abs_max_packet_size:
