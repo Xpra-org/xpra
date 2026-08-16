@@ -112,7 +112,7 @@ cdef inline AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM get_h264_preset(int quality, i
 cdef inline AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_ENUM get_av1_preset(int quality, int speed):
     if quality >= 90:
         return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_HIGH_QUALITY
-    if quality >= 90:
+    if quality >= 80:
         return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY
     if speed >= 80:
         return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED
