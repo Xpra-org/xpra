@@ -29,8 +29,9 @@ typedef struct {
     uint8_t *data;       /* encoded bitstream (owned by encoder; valid until next encode call) */
     int      data_len;
     int      is_keyframe;
-    int      us_input;   /* ProcessInput latency in microseconds */
-    int      us_output;  /* ProcessOutput latency in microseconds */
+    int      delayed;    /* frames the encoder is still holding on to */
+    int      us_input;   /* microseconds spent staging the frame for the MFT */
+    int      us_output;  /* microseconds spent in the MFT, waiting for this frame */
 } MFEncodedFrame;
 
 /* What the window is showing, mapped from xpra's content-type.
@@ -101,7 +102,8 @@ const char*    mf_rate_control_str(int rate_control);
 /* Encode one YUV420P frame (3 separate planes with independent strides).
    On MF_ENC_OK, frame->data / frame->data_len are populated; caller must
    copy before the next encode call (the buffer is reused).
-   On MF_ENC_NEED_MORE_INPUT, the encoder is buffering; frame is zeroed. */
+   On MF_ENC_NEED_MORE_INPUT, the encoder is buffering; frame->delayed says how
+   many frames it is holding, which `mf_encoder_flush` can ask it for. */
 MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
                                   const uint8_t *y_data, int y_stride,
                                   const uint8_t *u_data, int u_stride,
@@ -109,10 +111,21 @@ MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
                                   int width, int height,
                                   MFEncodedFrame *frame);
 
+/* Ask for one frame the encoder is still holding, draining the MFT if it has
+   to. Draining ends the stream segment, so the next encoded frame will be an
+   IDR - only worth doing when no more frames are coming for a while.
+   Returns MF_ENC_NEED_MORE_INPUT if there was nothing left to hand over. */
+MFEncodeStatus mf_encoder_flush(MFEncoder *enc, MFEncodedFrame *frame);
+
 /* Diagnostics */
 const char*    mf_encode_status_str(MFEncodeStatus status);
 long           mf_encoder_get_last_hr(MFEncoder *enc);
 const char*    mf_encoder_get_last_error(MFEncoder *enc);
+const char*    mf_encoder_get_name(MFEncoder *enc);      /* MFT friendly name */
+int            mf_encoder_is_hardware(MFEncoder *enc);   /* 1 for a hardware MFT */
+/* 1 once a hardware MFT has stopped answering: they are not used again after
+   that, and the one that wedged is deliberately never released */
+int            mf_hardware_wedged(void);
 
 /* Set before calling any other encoder functions */
 void           mf_encode_set_log(mf_log_fn fn);

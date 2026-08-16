@@ -636,6 +636,10 @@ def test_encoder_spec(spec: CodecSpec, encoding: str, cs_in: str, cs_out: str, W
                       full: bool, options: typedict,
                       limit_w: int = TEST_LIMIT_W, limit_h: int = TEST_LIMIT_H) -> None:
     log(f"testing {encoding} using {spec.codec_type}: {cs_in} to {cs_out}, {options=}")
+    # a codec is not expected to work below the size it says it can handle,
+    # and hardware encoders do have such limits:
+    W = max(W, spec.min_w)
+    H = max(H, spec.min_h)
     e = spec.make_instance()
     try:
         coptions = typedict(options)

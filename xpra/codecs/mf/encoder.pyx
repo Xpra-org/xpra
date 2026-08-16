@@ -42,6 +42,7 @@ cdef extern from "mf_encode.h":
         uint8_t *data
         int      data_len
         int      is_keyframe
+        int      delayed
         int      us_input
         int      us_output
 
@@ -94,9 +95,13 @@ cdef extern from "mf_encode.h":
                                       const uint8_t *v_data, int v_stride,
                                       int width, int height,
                                       MFEncodedFrame *frame) nogil
+    MFEncodeStatus mf_encoder_flush(MFEncoder *enc, MFEncodedFrame *frame) nogil
     const char*    mf_encode_status_str(MFEncodeStatus status)
     long           mf_encoder_get_last_hr(MFEncoder *enc)
     const char*    mf_encoder_get_last_error(MFEncoder *enc)
+    const char*    mf_encoder_get_name(MFEncoder *enc)
+    int            mf_encoder_is_hardware(MFEncoder *enc)
+    int            mf_hardware_wedged()
 
     ctypedef void (*mf_log_fn)(const char *msg)
     void           mf_encode_set_log(mf_log_fn fn)
@@ -142,6 +147,7 @@ CODECS: Dict[str, int] = {
     "h265": MF_CODEC_HEVC,
 }
 
+
 H264_PROFILE_IDS = {
     "baseline": MF_ENC_PROFILE_CONSTRAINED_BASELINE,
     "constrained-baseline": MF_ENC_PROFILE_CONSTRAINED_BASELINE,
@@ -165,8 +171,21 @@ def get_encodings() -> Sequence[str]:
     return tuple(CODECS.keys())
 
 
+# AMD's HEVC MFT has a hole at a width of exactly 128 pixels (at any height):
+# it accepts the format, encodes the first frame and then stops asking for
+# input - and a hardware MFT that has stopped answering cannot even be released
+# safely afterwards (see `mf_encoder_destroy`). Narrower than that it refuses
+# the format outright, which costs nothing at all: `mf_encoder_create` just
+# moves on to the software encoder. So h265 is only offered from a width well
+# clear of the hole; h264 has no such trouble at any size we have tried.
+MIN_SIZES: Dict[str, Tuple[int, int]] = {
+    "h264": (64, 64),
+    "h265": (192, 128),
+}
+
+
 def get_min_size(encoding: str) -> Tuple[int, int]:
-    return 64, 64
+    return MIN_SIZES.get(encoding, (64, 64))
 
 
 MAX_WIDTH, MAX_HEIGHT = 4096, 4096
@@ -184,6 +203,9 @@ RETUNE_DELAY = envint("XPRA_MF_RETUNE_DELAY", 5)
 # the content-types that are continuous tone rather than synthetic
 # (the same split as the openh264 encoder makes):
 VIDEO_CONTENT_TYPES: Sequence[str] = ("video", "picture")
+
+# a hardware MFT giving up is worth saying out loud, but only once:
+HARDWARE_WARNED = False
 
 
 def get_content_type(content_types: Sequence[str]) -> int:
@@ -207,6 +229,7 @@ CONTENT_TYPE_NAMES: Dict[int, str] = {
 def get_specs() -> Sequence[VideoSpec]:
     specs = []
     for encoding in CODECS:
+        min_w, min_h = get_min_size(encoding)
         specs.append(VideoSpec(
             encoding=encoding,
             input_colorspace="YUV420P",
@@ -217,7 +240,7 @@ def get_specs() -> Sequence[VideoSpec]:
             quality=40, speed=60,
             size_efficiency=40,
             setup_cost=50,
-            min_w=64, min_h=64,
+            min_w=min_w, min_h=min_h,
             width_mask=0xFFFE, height_mask=0xFFFE,
             max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
             cpu_cost=100, gpu_cost=0,
@@ -371,6 +394,9 @@ cdef class Encoder:
         if self.bandwidth_limit > 0:
             info["bandwidth-limit"] = self.bandwidth_limit
         if self.context:
+            # which of the MFTs `MFTEnumEx` offered we ended up with:
+            info["mft"] = mf_encoder_get_name(self.context).decode("utf-8", "replace")
+            info["hardware"] = bool(mf_encoder_is_hardware(self.context))
             info["tuning"] = self.get_tuning_info()
         return info
 
@@ -442,11 +468,19 @@ cdef class Encoder:
         status = self._compress_yuv420p(image, width, height, &frame)
 
         if status == MF_ENC_NEED_MORE_INPUT:
-            return b"", {"delayed": 1}
+            # a hardware MFT that has not finished with this frame yet:
+            # the server will come back for it via `flush`
+            return b"", {"delayed": max(1, frame.delayed)}
 
         if status != MF_ENC_OK:
             detail  = mf_encoder_get_last_error(self.context).decode("utf-8", "replace")
             last_hr = mf_encoder_get_last_hr(self.context) & 0xFFFFFFFF
+            global HARDWARE_WARNED
+            if mf_hardware_wedged() and not HARDWARE_WARNED:
+                HARDWARE_WARNED = True
+                log.warn("Warning: the '%s' hardware encoder stopped responding",
+                         mf_encoder_get_name(self.context).decode("utf-8", "replace"))
+                log.warn(" MediaFoundation will use a software encoder from now on")
             raise RuntimeError("mf encode error: %s (detail: %s, hr=0x%08X)" % (
                 mf_encode_status_str(status).decode("latin-1"), detail, last_hr))
 
@@ -466,9 +500,35 @@ cdef class Encoder:
             client_options["full-range"] = bool(full_range)
         if frame.is_keyframe:
             client_options["type"] = "IDR"
+        if frame.delayed > 0:
+            client_options["delayed"] = frame.delayed
         if self.frames == 0:
             client_options["profile"] = self.profile
         self.frames += 1
+        return data, client_options
+
+    def flush(self, unsigned long frame_no) -> Tuple[bytes, Dict]:
+        """ ask the encoder for a frame it is still holding (see `mf_encoder_flush`) """
+        cdef MFEncodedFrame frame
+        cdef MFEncodeStatus status
+        if self.context == NULL:
+            return b"", {}
+        with nogil:
+            status = mf_encoder_flush(self.context, &frame)
+        log("mf flush(%i)=%s", frame_no, mf_encode_status_str(status).decode("latin-1"))
+        if status != MF_ENC_OK:
+            return b"", {}
+        data = bytes(frame.data[:frame.data_len])
+        client_options: Dict[str, Any] = {
+            "frame"     : int(self.frames),
+        }
+        if frame.is_keyframe:
+            client_options["type"] = "IDR"
+        if frame.delayed > 0:
+            client_options["delayed"] = frame.delayed
+        self.frames += 1
+        log("mf flushed %8d bytes keyframe=%s delayed=%d",
+            frame.data_len, bool(frame.is_keyframe), frame.delayed)
         return data, client_options
 
     cdef MFEncodeStatus _compress_yuv420p(self, image, int width, int height,
