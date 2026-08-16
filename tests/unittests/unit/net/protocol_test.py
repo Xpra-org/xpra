@@ -179,6 +179,19 @@ class ProtocolTest(unittest.TestCase):
                 items = p.encode(packet)
                 assert items
 
+    def test_input_packet_statistics(self) -> None:
+        from xpra.net.packet_encoding import get_encoder
+        from xpra.net.protocol.header import pack_header
+
+        proto = self.make_memory_protocol()
+        proto.output_stats["test"] = 10
+        data, flags = get_encoder(proto.encoder)(("test", 1))
+        packet = pack_header(flags, 0, 0, len(data)) + data
+        proto._read_queue.put(packet + packet)
+        proto._read_queue.put(b"")
+        proto.do_read_parse_thread_loop()
+        self.assertEqual(proto.input_stats["test"], 2)
+
     def test_read_speed(self) -> None:
         if not SHOW_PERF:
             return

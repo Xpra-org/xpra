@@ -1211,7 +1211,7 @@ class SocketProtocol:
                     raw_packets = {}
 
                 packet_type = str(packet[0])
-                self.input_stats[packet_type] = self.output_stats.get(packet_type, 0) + 1
+                self.input_stats[packet_type] = self.input_stats.get(packet_type, 0) + 1
                 if LOG_RAW_PACKET_SIZE and packet_type != "logging":
                     log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
                 payload_size = -1
