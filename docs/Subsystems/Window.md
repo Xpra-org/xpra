@@ -61,7 +61,7 @@ see [pointer synchronization](./Pointer.md#pointer-synchronization).
 
 | Packet Type                    | Arguments                                           | Information                                            |
 |-------------------------------|------------------------------------------------------|--------------------------------------------------------|
-| `window-create`               | `wid`, metadata, client properties                  | A new window has been created                          |
+| `window-create`               | `wid`, `x`, `y`, `w`, `h`, metadata, client properties | A new window has been created                       |
 | `window-metadata`             | `wid`, metadata dictionary                          | One or more window properties have changed             |
 | `window-move-resize`          | `wid`, `x`, `y`, `w`, `h`, `resize_counter`        | The window geometry has changed                        |
 | `window-resized`              | `wid`, `w`, `h`, `resize_counter`                  | The window has been resized (position unchanged)       |
@@ -69,7 +69,8 @@ see [pointer synchronization](./Pointer.md#pointer-synchronization).
 | `window-restack`              | `wid`, `detail`, `sibling`                          | The window's stacking order has changed                |
 | `window-initiate-moveresize`  | `wid`, `x_root`, `y_root`, `direction`, `button`, `source_indication` | The WM requests the client to start an interactive move/resize |
 | `window-destroy`              | `wid`                                               | The window has been destroyed                          |
-| `window-draw`                 | `wid`, `x`, `y`, `w`, `h`, `encoding`, `data`, ... | Pixel data for the window                              |
+| `window-draw`                 | `wid`, `x`, `y`, `w`, `h`, `encoding`, `data`, `sequence`, `rowstride`, options | Pixel data for the window |
+| `window-eos`                  | `wid`                                               | End all codec streams for the window                   |
 | `window-icon`                 | `wid`, `w`, `h`, `encoding`, `data`                | Updated window icon                                    |
 | `window-bell`                 | `wid`, `device`, `percent`, `pitch`, `duration`, `bell_class`, `bell_id`, `name` | A bell event |
 
@@ -78,11 +79,11 @@ see [pointer synchronization](./Pointer.md#pointer-synchronization).
 | Packet Type    | Arguments                                           | Information                                                              |
 |----------------|-----------------------------------------------------|--------------------------------------------------------------------------|
 | `window-map`   | `wid`, `x`, `y`, `w`, `h`, client properties, state, monitor | The client is ready to display a window                           |
-| `window-unmap` | `wid`                                               | The client has hidden a window                                           |
+| `window-unmap` | `wid`, optional iconified flag and state             | The client has hidden a window                                           |
 | `window-configure` | `wid`, configuration dictionary                | The client has moved or resized a window                                 |
 | `window-close` | `wid`                                               | The user has requested to close the window                               |
-| `window-focus` | `wid`                                               | The window has received keyboard focus                                   |
-| `window-action`| `wid`, `action`                                     | Request a window manager action (eg: maximize, minimize)                 |
+| `window-focus` | `wid`, optional modifiers                           | The window has received keyboard focus                                   |
+| `window-action`| `wid`, `action`, optional arguments                 | Request a window manager action (eg: maximize, minimize)                 |
 | `window-refresh`| `wid`, options                                     | Request a full refresh of the window contents                            |
 | `window-ack`   | `wid`, `width`, `height`, `packet_sequence`, `decode_time`, `message` | Acknowledge receipt and decoding of a `window-draw` packet |
 

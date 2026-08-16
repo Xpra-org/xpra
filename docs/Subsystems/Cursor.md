@@ -83,4 +83,6 @@ The supported encodings are:
 
 ### Cursor Packet Data
 
-TBD
+`cursor-data` contains, in order: encoding, width, height, hotspot X, hotspot Y,
+serial number, encoded bytes and cursor name. `raw` bytes are BGRA pixels;
+`png` bytes contain a PNG image. The hotspot must lie within the cursor image.

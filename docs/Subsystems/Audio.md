@@ -72,4 +72,8 @@ uses the same packets as audio coming from the client to the server (aka "_micro
 | Packet Type     | Arguments                                                                                    | Purpose                    | Information                                                                                                                      |
 |-----------------|----------------------------------------------------------------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | `audio-data`    | `codec` : string <br/>`data` : bytes<br/>`attributes` : dictionary                           | Audio stream data          | The initial and final packets may omit the `data` argument and should set the `start-of-stream` / `end-of-stream` attributes     |
-| `audio-control` | `subcommand` : string<br/>(ie: `start`, `stop`, `sync`, `new-sequence`)<br/>`argument` : Any | Send a request to the peer |
+| `audio-control` | `subcommand` : string<br/>(ie: `start`, `stop`, `sync`, `new-sequence`)<br/>`argument` : Any | Send a request to the peer | |
+| `audio-capabilities` | capabilities dictionary | Update audio formats and directions | Sent when asynchronous audio capability discovery completes |
+| `audio-keepalive` | monotonic timestamp | Keep an active stream alive | Either direction |
+| `audio-level` | sample dictionary | Publish meter values | Server to client when requested |
+| `audio-signal` | boolean | Publish whether a non-silent signal is present | Server to client when requested |

@@ -27,7 +27,12 @@
 
 </div>
 
-| Packet Type           | Arguments |
-|-----------------------|-----------|
-| `ping`                | TBD       |
-| `ping-echo`           | TBD       |
+Both packet types may flow in either direction.
+
+| Packet Type | Arguments |
+|-------------|-----------|
+| `ping` | monotonic timestamp in milliseconds, optional source ID |
+| `ping-echo` | echoed timestamp, 1/5/15-minute loads scaled by 1000, latency in milliseconds, optional source ID |
+
+The timestamp correlates the response with the request; it is not wall-clock
+time. A negative latency means that no latency measurement is available.

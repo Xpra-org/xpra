@@ -46,19 +46,20 @@ It contains common features such as basic configuration, scheduling, filtering, 
 The client and server should expose the following capabilities in their `hello` packet
 using the `clipboard` prefix:
 
-| Capability          | Value                     | Information                                                                          |
-|---------------------|---------------------------|--------------------------------------------------------------------------------------|
-| `enabled`           | `enabled` : boolean       | Whether clipboard support is enabled                                                 |
-| `notification`      | `enabled` : boolean       | Request the peer to send `clipboard-pending-requests` packets                        |
-| `want_targets`      | `enabled` : boolean       | Request the peer to send `target`s with `clipboard-token` packets                    |
-| `greedy`            | `enabled` : boolean       | Request the peer to send clipboard data with `clipboard-token` packets               |
-| `preferred-targets` | `targets` : list of strings | The `target`s that the peer should try to use                                        |
-| `direction`         | `direction`: string       | Optional, which direction is supported, ie: `none`, `to-client`, `to-server`, `both` |
+| Capability          | Value                       | Information                                                                          |
+|---------------------|-----------------------------|--------------------------------------------------------------------------------------|
+| `notifications`     | boolean                     | Request `clipboard-pending-requests` packets                                          |
+| `want_targets`      | boolean or list of strings  | Include targets for all or the named selections in `clipboard-data`                  |
+| `greedy`            | boolean or list of strings  | Include contents for all or the named selections in `clipboard-data`                 |
+| `preferred-targets` | list of strings             | The targets that the peer should prefer                                              |
+| `selections`        | list of strings             | Clipboard selections supported by this endpoint                                      |
+| `direction`         | string                      | One of `disabled`, `to-client`, `to-server` or `both`                                |
 
 Notes:
-* any unspecified boolean value defaults to `false`
-* `MacOS` clients set the `want_targets` flag
-* both `MacOS` and `MS Windows` clients set the `greedy` flag
+
+* an absent `clipboard` map means that the subsystem is unavailable;
+* `MacOS` clients normally request targets;
+* both `MacOS` and `MS Windows` clients normally use greedy synchronization.
 
 ### Example capabilities
 
@@ -95,15 +96,19 @@ Notes:
 This protocol is identical in both directions,
 as either end can send and receive clipboard events.
 
-| Packet Type                   | Arguments                                                      | Optional Arguments                                                 | Information                                                                                                                                                                      |
-|-------------------------------|----------------------------------------------------------------|--------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `set-clipboard-enabled`       | `enabled` : boolean                                            | `reason` : string                                                  | Either end is free to enable or disable the clipboard at any time and should notify the peer.                                                                                    |
-| `clipboard-enable-selections` | list of `selection`s                                           |                                                                    | The selections that the peer wants to synchronize with                                                                                                                           |
-| `clipboard-token`             | `selection`                                                    | list of `target`s, `target`, `data-type`, `data-format` and `data` | Notify the peer of a clipboard state change event for the given `selection`, this may include the new clipboard contents if known and / or if the client is known to be _greedy_ |
-| `clipboard-request`           | `request-id`, `target`                                         |                                                                    | Request clipboard contents from the peer                                                                                                                                         |
-| `clipboard-contents`          | `request_id`, `selection`, `data-type`, `data-format`, `data`  |                                                                    | Response to a `clipboard-request`                                                                                                                                                |
-| `clipboard-contents-none`     |                                                                |                                                                    | Empty response to a `clipboard-request`                                                                                                                                          |
-| `clipboard-pending-requests`  | `pending-requests` : integers                                  |                                                                    | The number of clipboard requests waiting                                                                                                                                         |
+| Packet Type                   | Arguments                                                                                              | Information                                                       |
+|-------------------------------|--------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `clipboard-status`            | `enabled`: boolean, `reason`: string optional                                                          | Enable or disable synchronization                                 |
+| `clipboard-enable-selections` | list of `selection`s                                                                                   | Select the clipboards to synchronize                              |
+| `clipboard-data`              | `selection`, options dictionary                                                                        | Announce ownership and optionally include targets and contents    |
+| `clipboard-request`           | `request-id`, `selection`, `target`                                                                    | Request clipboard contents                                       |
+| `clipboard-contents`          | `request-id`, `selection`, `data-type`, `data-format`, `wire-encoding`, `data`                          | Respond to `clipboard-request`                                    |
+| `clipboard-contents-none`     | `request-id`, `selection` optional                                                                     | Empty response to `clipboard-request`                             |
+| `clipboard-pending-requests`  | `pending-requests`: integer                                                                            | Number of requests waiting                                       |
+
+The `clipboard-data` options are `claim`, `greedy`, `token`, `synchronous`,
+`targets` and `data`. `data` maps each target to a four-item value containing
+`data-type`, `data-format`, `wire-encoding` and the wire data.
 
 
 Clipboard data format details:
@@ -115,14 +120,15 @@ Clipboard data format details:
 | `target`       | `string`  | A clipboard format, ie: `STRING`, `UTF8_STRING`, `text/plain` |
 | `data-type`    | `string`  | The type of the contents, ie: `bytes` or `ATOM`               |
 | `data-format`  | `integer` | The number of bits used by each item                          |
-| `data`         | variable  | Typically, `bytes` that need to be decoded                    |
+| `wire-encoding` | `string`  | Encoding used to convert the platform value to the wire form |
+| `data`         | variable  | Typically bytes, atoms or encoded text                        |
 
 
 ### Flow
 
-Whenever a clipboard change is detected, a `clipboard-token` packet must be sent to the peer.
-If the peer advertises the `want_targets` flag then the list of `targets` must be included in the packet.
-If the peer advertises the `greedy` flag then the actual contents of the selection must be included in the packet.
+Whenever a clipboard change is detected, a `clipboard-data` packet must be sent to the peer.
+If the peer advertises `want_targets`, the `targets` option must be included.
+If the peer advertises `greedy`, matching contents must be included in the `data` option.
 The contents may also be included if it is desirable to avoid a roundtrip later.
 
 If the `targets` or the contents of the clipboard selection are needed,

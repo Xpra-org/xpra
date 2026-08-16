@@ -64,10 +64,12 @@ Alternatively, the client can just supply the value `True` instead of the dictio
 | `pointer-motion` | client to server | `device_id`, `sequence`, `wid`, pointer, properties                            |
 | `pointer-button` | client to server | `device_id`, `sequence`, `wid`, `button`, `pressed`, pointer, properties       |
 | `pointer-wheel`  | client to server | `wid`, `button`, `distance`, pointer, modifiers, buttons, properties           |
-| `input-devices`  | client to server |                                                                                 |
 | `pointer-motion` | server to client | `device_id`, `sequence`, `wid`, pointer, properties                            |
 | `pointer-button` | server to client | `device_id`, `sequence`, `wid`, `button`, `pressed`, pointer, properties       |
 | `pointer-wheel`  | server to client | `wid`, `button`, `distance`, pointer, modifiers                                |
+| `pointer-position` | server to client | `wid`, `x`, `y`, `relative-x`, `relative-y`                                  |
+| `pointer-grab`   | server to client | `wid`                                                                           |
+| `pointer-ungrab` | server to client | `wid`                                                                           |
 
 
 <div class="docs-section-heading" markdown="1">

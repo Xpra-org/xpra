@@ -1,6 +1,6 @@
 # Notifications
 
-For usage related information, see [notitications feature](../Features/Notifications.md).
+For usage related information, see [notifications feature](../Features/Notifications.md).
 
 
 <div class="docs-section-heading" markdown="1">
@@ -36,8 +36,8 @@ The server exposes a single `enabled` flag using the `notifications` capability 
 | Packet Type           | Arguments                                                                                | Direction        |
 |-----------------------|------------------------------------------------------------------------------------------|------------------|
 | `notification-show`   | notification data (see below)                                                            | server to client |
-| `notification-close`  | `notification id` : integer<br/>`reason` : integer optional<br/>`text` : string optional | client to server |
-| `notification-action` | `notification id` : integer<br/>`action_key` : integer                                   | client to server |
+| `notification-close`  | `notification id` : integer<br/>`reason` : string optional<br/>`text` : string optional  | either direction |
+| `notification-action` | `notification id` : integer<br/>`action_key` : string                                    | client to server |
 | `notification-status` | `enabled` : boolean                                                                      | client to server |
 
 
@@ -45,14 +45,14 @@ The server exposes a single `enabled` flag using the `notifications` capability 
 
 | Argument                    | Type                    | Notes                            |
 |-----------------------------|-------------------------|----------------------------------|
-| `dbus_id`                   | `integer`               | 0 if unused                      |
+| `dbus_id`                   | `string`                | Empty if unused                  |
 | `notification id`           | `integer`               | should be unique                 |
-| `applciation name`          | `string`                |                                  |
+| `application name`          | `string`                |                                  |
 | `replaced notification id`  | `integer`               | 0 if unused                      |
 | `application icon`          | `string`                | the name of the icon to show     |
 | `summary`                   | `string`                | the title of the notification    |
 | `body`                      | `string`                | the contents of the notification |
-| `timeout`                   | `integer`               | in seconds, zero if unused       |
+| `timeout`                   | `integer`               | in milliseconds, zero if unused  |
 | `icon data`                 | `list` (optional)       | the icon data to use, see below  |
 | `actions`                   | `list`  (optional)      | see below                        |
 | `hints`                     | `dictionary` (optional) | see below                        |
