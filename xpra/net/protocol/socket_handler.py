@@ -764,7 +764,7 @@ class SocketProtocol:
         packets.append((proto_flags, 0, level, main_packet))
         may_log_packet(True, packet_type, packet)
         if LOG_RAW_PACKET_SIZE and packet_type != "logging":
-            raw_payloads_sizes = tuple((HEADER_SIZE + netpacket[3]) for netpacket in packets)
+            raw_payloads_sizes = tuple(HEADER_SIZE + len(netpacket[3]) for netpacket in packets)
             payload_size = HEADER_SIZE + len(main_packet)
             log.info(f"sending  {packet_type!r:<32}: %i bytes, raw: %s", payload_size, raw_payloads_sizes)
         return packets

@@ -7,6 +7,7 @@
 import os
 import time
 import unittest
+from unittest.mock import patch
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
@@ -191,6 +192,11 @@ class ProtocolTest(unittest.TestCase):
         proto._read_queue.put(b"")
         proto.do_read_parse_thread_loop()
         self.assertEqual(proto.input_stats["test"], 2)
+
+    def test_raw_packet_size_logging(self) -> None:
+        proto = self.make_memory_protocol()
+        with patch.object(socket_handler, "LOG_RAW_PACKET_SIZE", True):
+            self.assertTrue(proto.encode(Packet("test", 1)))
 
     def test_read_speed(self) -> None:
         if not SHOW_PERF:
