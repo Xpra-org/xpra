@@ -43,6 +43,12 @@
 #define LIBVA_MAX_FRAME_NUM (1 << LIBVA_FRAME_NUM_BITS)
 #define LIBVA_POC_LSB_BITS (LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 + 4)
 #define LIBVA_H264_POC_TYPE 2
+/* the initialisation table CABAC starts each P slice from - 0, 1 or 2. x264 picks one per
+   slice by trying all three, which we cannot do here since the driver codes the slice.
+   Measured over 60 frames of a browser window, a window being dragged and video, at
+   quality 30 / 50 / 70: table 0 is the smallest of the three at every single point (the
+   other two cost 0.07% to 0.69%, 0.2% overall), so there is nothing to choose here: */
+#define LIBVA_H264_CABAC_INIT_IDC 0
 
 static libva_log_fn g_log_fn = NULL;
 static char g_device[256] = "";
@@ -123,6 +129,7 @@ struct LibVAEncoder {
     int             ref_poc_lsb;
     int             full_range;     /* colour range to signal in the headers (video_full_range_flag) */
     int             screen_content; /* sharp synthetic edges rather than continuous tone */
+    int             cabac;          /* h264 entropy coder: CABAC rather than CAVLC */
     int             last_status;
     char            last_error[256];
     char            device[256];
@@ -416,13 +423,12 @@ static int make_pps(LibVAEncoder *enc, uint8_t *dst, int dst_size) {
     struct BitWriter bw;
     int bytes;
 
-    (void)enc;
     if (dst_size < 32)
         return 0;
     bw_init(&bw);
     bw_ue(&bw, 0);                    /* pic_parameter_set_id */
     bw_ue(&bw, 0);                    /* seq_parameter_set_id */
-    bw_bit(&bw, 0);                   /* entropy_coding_mode_flag */
+    bw_bit(&bw, enc->cabac);          /* entropy_coding_mode_flag */
     bw_bit(&bw, 0);                   /* pic_order_present_flag */
     bw_ue(&bw, 0);                    /* num_slice_groups_minus1 */
     bw_ue(&bw, 0);                    /* num_ref_idx_l0_active_minus1 */
@@ -481,6 +487,8 @@ static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size,
     } else {
         bw_bit(&bw, 0);               /* adaptive_ref_pic_marking_mode_flag */
     }
+    if (enc->cabac && !is_idr)
+        bw_ue(&bw, LIBVA_H264_CABAC_INIT_IDC);   /* cabac_init_idc: P slices only */
     bw_se(&bw, enc->qp - 26);         /* slice_qp_delta */
     bw_ue(&bw, 0);                    /* disable_deblocking_filter_idc */
     /* these must match the slice parameters handed to the driver, or the decoder will
@@ -843,7 +851,7 @@ static LibVAEncodeStatus create_quality_level_buffer(LibVAEncoder *enc, VABuffer
 LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
                                        const char *profile_name,
                                        int width, int height,
-                                       int quality, int speed) {
+                                       int quality, int speed, int cabac) {
     LibVAEncoder *enc;
     VAStatus status;
     VAConfigAttrib attrs[3];
@@ -896,6 +904,8 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
             return LIBVA_ENC_ERROR;
         }
         enc->entrypoint = g_h264_entrypoint;
+        /* CABAC is a Main / High profile tool: Constrained Baseline forbids it */
+        enc->cabac = cabac && enc->profile != VAProfileH264ConstrainedBaseline;
     } else if (codec == LIBVA_CODEC_VP8) {
         enc->profile = VAProfileVP8Version0_3;
         enc->entrypoint = g_vp8_entrypoint;
@@ -993,12 +1003,13 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         return LIBVA_ENC_ERROR;
     }
 
-    libva_log("libva %s encoder create: %dx%d surface=%dx%d profile=%s level=%d poc=%d aud=%d quality=%d speed=%d qp=%d qindex=%d quality-level=%d/%d device=%s vendor=%s",
+    libva_log("libva %s encoder create: %dx%d surface=%dx%d profile=%s level=%d poc=%d aud=%d entropy=%s quality=%d speed=%d qp=%d qindex=%d quality-level=%d/%d device=%s vendor=%s",
               codec_name(enc->codec), width, height, enc->surface_width, enc->surface_height,
               enc->codec == LIBVA_CODEC_H264 ? h264_profile_name(enc->profile) : "",
               enc->codec == LIBVA_CODEC_H264 ? h264_level_idc(enc) : 0,
               enc->codec == LIBVA_CODEC_H264 ? LIBVA_H264_POC_TYPE : 0,
               enc->codec == LIBVA_CODEC_H264,
+              enc->codec != LIBVA_CODEC_H264 ? "" : (enc->cabac ? "cabac" : "cavlc"),
               enc->quality, enc->speed, enc->qp, enc->vp_qindex,
               enc->quality_level, enc->quality_levels, enc->device, enc->vendor);
     *out = enc;
@@ -1343,7 +1354,7 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     pic.second_chroma_qp_index_offset = 0;
     pic.pic_fields.bits.idr_pic_flag = is_idr;
     pic.pic_fields.bits.reference_pic_flag = 1;
-    pic.pic_fields.bits.entropy_coding_mode_flag = 0;
+    pic.pic_fields.bits.entropy_coding_mode_flag = enc->cabac;
     pic.pic_fields.bits.deblocking_filter_control_present_flag = 1;
     status = vaCreateBuffer(enc->display, enc->context, VAEncPictureParameterBufferType,
                             sizeof(pic), 1, &pic, &buffers[nbuf++]);
@@ -1372,6 +1383,7 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
         slice.RefPicList0[0].TopFieldOrderCnt = enc->ref_poc_lsb;
         slice.RefPicList0[0].BottomFieldOrderCnt = enc->ref_poc_lsb;
     }
+    slice.cabac_init_idc = LIBVA_H264_CABAC_INIT_IDC;
     slice.slice_qp_delta = (int8_t)(enc->qp - 26);
     slice.disable_deblocking_filter_idc = 0;
     slice.slice_alpha_c0_offset_div2 = (int8_t)h264_deblock_offset(enc);

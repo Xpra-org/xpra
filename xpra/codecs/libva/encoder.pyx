@@ -77,7 +77,7 @@ cdef extern from "va_encode.h":
     LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
                                            const char *profile,
                                            int width, int height,
-                                           int quality, int speed) nogil
+                                           int quality, int speed, int cabac) nogil
     void              libva_encoder_destroy(LibVAEncoder *enc) nogil
     LibVAEncodeStatus libva_encoder_set_quality(LibVAEncoder *enc, int quality) nogil
     LibVAEncodeStatus libva_encoder_set_speed(LibVAEncoder *enc, int speed) nogil
@@ -121,6 +121,16 @@ def get_h264_profile(options: typedict) -> str:
         log.warn(" valid profiles are: %s", ", ".join(H264_PROFILES))
         return "main"
     return profile
+
+
+def use_cabac(profile: str, options: typedict) -> bool:
+    #CABAC costs the decoder more than CAVLC does, so a client asking for
+    #`fast-decode` gives it up - the same trade the x264 encoder makes:
+    if not profile or profile == "constrained-baseline":
+        return False
+    if options.boolget("h264.fast-decode", False):
+        return False
+    return options.boolget("h264.cabac", True)
 
 
 def init_module(options: dict = None) -> None:
@@ -198,6 +208,7 @@ cdef class Encoder:
     cdef int speed
     cdef int full_range
     cdef int screen_content
+    cdef int cabac
     cdef object src_format
     cdef object encoding
     cdef object profile
@@ -230,6 +241,7 @@ cdef class Encoder:
         self.frames = 0
         self.full_range = options.boolget("full-range", True)
         self.screen_content = is_screen_content(options.strtupleget("content-types", ()))
+        self.cabac = use_cabac(self.profile, options)
 
         cdef bytes encoding_bytes = encoding.encode("latin-1")
         cdef const char *encoding_name = encoding_bytes
@@ -238,7 +250,7 @@ cdef class Encoder:
         cdef LibVAEncodeStatus status
         with nogil:
             status = libva_encoder_create(&self.context, encoding_name, profile_name,
-                                          width, height, self.quality, self.speed)
+                                          width, height, self.quality, self.speed, self.cabac)
         if status != LIBVA_ENC_OK:
             status_str = libva_encode_status_str(status).decode("latin-1")
             detail = libva_encode_get_last_error().decode("utf-8", "replace")
@@ -342,6 +354,7 @@ cdef class Encoder:
         self.src_format = ""
         self.encoding = ""
         self.profile = ""
+        self.cabac = 0
         f = self.file
         if f:
             self.file = None
@@ -359,6 +372,7 @@ cdef class Encoder:
             "quality": self.quality,
             "speed": self.speed,
             "screen-content": bool(self.screen_content),
+            "cabac": bool(self.cabac),
             "quality-level": libva_encoder_get_quality_level(self.context),
             "quality-levels": libva_encoder_get_quality_levels(self.context),
         }
