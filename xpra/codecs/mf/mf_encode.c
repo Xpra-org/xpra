@@ -451,6 +451,11 @@ static UINT32 get_profile(int codec, int speed) {
 
 /* ── YUV420P → NV12 conversion ───────────────────────────────────── */
 
+/* The row pitch we stage frames at. Hardware encoders want their input aligned, and
+   16 bytes suits every MFT we have seen - but whatever we pick has to be declared on
+   the input media type, see `input_stride`. */
+#define MF_NV12_STRIDE(width) (((width) + 15) & ~15)
+
 /* NV12 layout: Y plane (stride * height rows) immediately followed by
    interleaved UV plane (stride * height/2 rows, U byte then V byte). */
 static void yuv420p_to_nv12(uint8_t *dst, int dst_stride,
@@ -479,6 +484,27 @@ static void yuv420p_to_nv12(uint8_t *dst, int dst_stride,
 }
 
 /* ── encoder creation ────────────────────────────────────────────── */
+
+/* The pitch the MFT will read our input buffer at. It should be the one we asked for
+   on the media type, but an MFT is free to hand back a type of its own, so ask what
+   it ended up with instead of assuming. Falls back to the width, which is what
+   MediaFoundation assumes for NV12 when the type carries no stride at all. */
+static int input_stride(MFEncoder *enc, int width) {
+    IMFMediaType *current = NULL;
+    UINT32 stride = 0;
+    HRESULT hr = E_FAIL;
+
+    if (SUCCEEDED(IMFTransform_GetInputCurrentType(enc->transform, 0, &current)) && current) {
+        hr = IMFMediaType_GetUINT32(current, &MF_MT_DEFAULT_STRIDE, &stride);
+        IMFMediaType_Release(current);
+    }
+    if (FAILED(hr) && enc->input_type)
+        hr = IMFMediaType_GetUINT32(enc->input_type, &MF_MT_DEFAULT_STRIDE, &stride);
+    if (SUCCEEDED(hr) && (INT32)stride >= width)
+        return (int)stride;
+    enc_log("mf_encoder_create: MFT kept no input stride, staging rows %d bytes apart", width);
+    return width;
+}
 
 MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int height,
                                  const MFEncoderTuning *tuning) {
@@ -622,6 +648,12 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
                 IMFMediaType_SetUINT64(candidate, &MF_MT_FRAME_SIZE,        ((UINT64)width << 32) | (UINT64)height);
                 IMFMediaType_SetUINT32(candidate, &MF_MT_INTERLACE_MODE,    MFVideoInterlace_Progressive);
                 IMFMediaType_SetUINT64(candidate, &MF_MT_FRAME_RATE,        ((UINT64)MF_FPS << 32) | 1ULL);
+                /* Tell the MFT the pitch we are going to hand it. Left to itself it
+                   assumes the rows of an NV12 buffer are exactly `width` bytes apart,
+                   so it would read our aligned staging buffer at a steadily growing
+                   offset and skew the picture diagonally - for every width that is not
+                   already a multiple of 16. */
+                IMFMediaType_SetUINT32(candidate, &MF_MT_DEFAULT_STRIDE,    (UINT32)MF_NV12_STRIDE(width));
 
                 hr = IMFTransform_SetInputType(enc->transform, 0, candidate, 0);
                 enc->input_type = candidate; /* take ownership */
@@ -674,8 +706,8 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
     IMFTransform_ProcessMessage(enc->transform, MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0);
     IMFTransform_ProcessMessage(enc->transform, MFT_MESSAGE_NOTIFY_START_OF_STREAM, 0);
 
-    /* allocate NV12 scratch buffer (stride aligned to 16 bytes) */
-    enc->nv12_stride   = (width + 15) & ~15;
+    /* allocate the NV12 scratch buffer at the pitch the MFT reads it back at */
+    enc->nv12_stride   = input_stride(enc, width);
     enc->nv12_buf_size = enc->nv12_stride * height * 3 / 2;
     enc->nv12_buf      = (uint8_t *)malloc((size_t)enc->nv12_buf_size);
     if (!enc->nv12_buf) {
