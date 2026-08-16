@@ -171,6 +171,7 @@ cdef class Decoder:
 
     def decompress_image(self, data, options=None):
         cdef SBufferInfo buf_info
+        memset(&buf_info, 0, sizeof(SBufferInfo))
         cdef long r = 0
         cdef unsigned char* src
         cdef int src_len = 0
@@ -186,6 +187,10 @@ cdef class Decoder:
         if r:
             raise RuntimeError(f"openh264 frame decoding error {r}")
         end = monotonic()
+        if buf_info.iBufferStatus != 1:
+            log("openh264 decoded %8i bytes without producing a frame in %3ims",
+                src_len, int((end-start)*1000))
+            return None
         cdef int ystride = buf_info.UsrData.sSystemBuffer.iStride[0]
         cdef int uvstride = buf_info.UsrData.sSystemBuffer.iStride[1]
         strides = [ystride, uvstride, uvstride]
