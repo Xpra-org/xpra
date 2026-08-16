@@ -55,7 +55,7 @@ xpra seamless --backend=x11 --start=xterm
 The newer Wayland backend can be selected explicitly:
 
 ```shell
-xpra seamless --backend=wayland --start=xterm
+xpra seamless --backend=wayland --start=weston-terminal
 ```
 
 The Wayland backend is experimental and may require the separate
