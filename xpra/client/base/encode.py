@@ -87,8 +87,8 @@ class EncodeClient(HelloRequestClient):
         options = packet.get_dict(3)
         width = packet.get_u16(4)
         height = packet.get_u16(5)
-        bpp = packet.get_u8(6)
-        stride = packet.get_u32(7)
+        stride = packet.get_u32(6)
+        bpp = packet.get_u8(7)
         metadata = packet.get_dict(8)
         log("encode-response: %8s %6i bytes, %5ix%-5i %ibits, stride=%i, options=%s, metadata=%s",
             encoding, len(data), width, height, bpp, stride, options, metadata)
