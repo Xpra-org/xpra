@@ -9,7 +9,9 @@ from time import monotonic, sleep
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, get_subsampling_divs, EncodingNotSupported, is_screen_content
+from xpra.codecs.constants import (
+    VideoSpec, get_profile, get_subsampling_divs, EncodingNotSupported, is_screen_content,
+)
 from xpra.codecs.image import ImageWrapper
 from xpra.os_util import WIN32
 from xpra.util.env import envbool, envint, first_time
@@ -36,6 +38,11 @@ from xpra.codecs.amf.amf cimport (
     AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED,
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CONSTANT_QP,
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
+    AMF_VIDEO_ENCODER_PROFILE_BASELINE,
+    AMF_VIDEO_ENCODER_PROFILE_MAIN,
+    AMF_VIDEO_ENCODER_PROFILE_HIGH,
+    AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_BASELINE,
+    AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_HIGH,
     AMF_VIDEO_ENCODER_AV1_LEVEL_5_1,
     AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN,
     AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY,
@@ -89,12 +96,31 @@ AMF_ENCODINGS : Dict[str, str] = {
 START_TIME_PROPERTY = "StartTimeProperty"
 
 
+H264_PROFILE_IDS: Dict[str, int] = {
+    "baseline": AMF_VIDEO_ENCODER_PROFILE_BASELINE,
+    "constrained-baseline": AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_BASELINE,
+    "main": AMF_VIDEO_ENCODER_PROFILE_MAIN,
+    "high": AMF_VIDEO_ENCODER_PROFILE_HIGH,
+    "constrained-high": AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_HIGH,
+}
+
+
+def get_h264_profile(options: typedict) -> str:
+    profile = get_profile(options)
+    if profile not in H264_PROFILE_IDS:
+        log.warn("Warning: %r is not a valid AMF H.264 profile", profile)
+        log.warn(" valid profiles are: %s", ", ".join(H264_PROFILE_IDS))
+        return "constrained-baseline"
+    return profile
+
+
 # The three encoders expose the same knobs under three different names, so keep the
 # mapping in one place rather than repeating each `SetProperty` call per codec.
 # A knob that is missing from a table simply is not applied for that codec.
 PROPERTIES: Dict[str, Dict[str, str]] = {
     "h264": {
         "usage": "Usage",
+        "profile": "Profile",
         "quality-preset": "QualityPreset",
         "frame-size": "FrameSize",
         "frame-rate": "FrameRate",
@@ -259,6 +285,8 @@ def get_info() -> Dict[str, Any]:
     info = {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
+        "h264-profiles" : tuple(H264_PROFILE_IDS),
+        "h264-default-profile": "constrained-baseline",
     }
     return info
 
@@ -354,6 +382,7 @@ cdef class Encoder:
     cdef unsigned int width
     cdef unsigned int height
     cdef object encoding
+    cdef object profile
     cdef object src_format
     cdef int speed
     cdef int quality
@@ -387,6 +416,7 @@ cdef class Encoder:
             raise ValueError("invalid pixel format {src_format!r}")
 
         self.encoding = encoding
+        self.profile = get_h264_profile(options) if encoding == "h264" else "main"
         self.width = width
         self.height = height
         self.quality = options.intget("quality", 50)
@@ -562,6 +592,8 @@ cdef class Encoder:
         setint64(props["usage"], usage)
         setsize(props["frame-size"])
         setframerate(props["frame-rate"])
+        if self.encoding == "h264":
+            setint64(props["profile"], H264_PROFILE_IDS[self.profile])
 
         preset = {
             "h264": get_h264_preset,
@@ -651,7 +683,7 @@ cdef class Encoder:
         """ what the encoder ended up with, which is not always what we asked for """
         props = PROPERTIES.get(self.encoding, {})
         info = {}
-        for name in ("rate-control", "target-bitrate", "peak-bitrate", "qp-intra", "qp-inter",
+        for name in ("profile", "rate-control", "target-bitrate", "peak-bitrate", "qp-intra", "qp-inter",
                      "gop-size", "quality-preset", "b-frames", "deblocking"):
             prop = props.get(name, "")
             if not prop:
@@ -679,6 +711,7 @@ cdef class Encoder:
             "speed"     : self.speed,
             "quality"   : self.quality,
             "encoding"  : self.encoding,
+            "profile"   : self.profile,
             "src_format": self.src_format,
             "content-types": self.content_types,
             "caps": self.caps,
@@ -726,6 +759,7 @@ cdef class Encoder:
         self.width = 0
         self.height = 0
         self.encoding = ""
+        self.profile = ""
         self.src_format = ""
         self.content_types = ()
         self.rate_control = -1
@@ -771,13 +805,16 @@ cdef class Encoder:
                     py_buf[i].len, "YUV"[i], istrides[i]*(self.height//ydiv))
                 pic_in[i] = <uint8_t *> py_buf[i].buf
                 strides[i] = istrides[i]
-            return self.do_compress_image(pic_in, strides), {
+            client_options = {
                 "csc"       : {"NV12": "YUV420P"}.get(self.src_format, self.src_format),
                 "frame"     : int(self.frames),
                 "full-range" : False,
                 #"quality"  : min(99+self.lossless, self.quality),
                 #"speed"    : self.speed,
             }
+            if self.frames == 0:
+                client_options["profile"] = self.profile
+            return self.do_compress_image(pic_in, strides), client_options
         finally:
             self.frames += 1
             for i in range(2):

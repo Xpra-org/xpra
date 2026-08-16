@@ -50,6 +50,7 @@ int               libva_encode_get_major(void);
 int               libva_encode_get_minor(void);
 
 LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
+                                       const char *profile,
                                        int width, int height,
                                        int quality, int speed);
 void              libva_encoder_destroy(LibVAEncoder *enc);

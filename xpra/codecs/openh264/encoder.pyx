@@ -18,7 +18,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
-from xpra.codecs.constants import VideoSpec, is_video_content
+from xpra.codecs.constants import VideoSpec, get_profile, is_video_content
 
 from libcpp cimport bool as bool_t
 from libc.string cimport memset
@@ -397,7 +397,9 @@ def get_type() -> str:
 
 def get_info() -> Dict[str, Any]:
     return {
-        "version"   : get_version(),
+        "version"         : get_version(),
+        "profiles"        : ("constrained-baseline", "main", "high"),
+        "default-profile" : "constrained-baseline",
     }
 
 
@@ -430,6 +432,24 @@ def get_specs() -> Sequence[VideoSpec]:
     return specs
 
 generation = AtomicInteger()
+
+H264_PROFILE_IDS = {
+    "baseline": PRO_BASELINE,
+    "constrained-baseline": PRO_BASELINE,
+    "main": PRO_MAIN,
+    "high": PRO_HIGH,
+}
+
+
+def get_h264_profile(options: typedict) -> str:
+    profile = get_profile(options)
+    if profile not in H264_PROFILE_IDS:
+        log.warn("Warning: %r is not a valid OpenH264 profile", profile)
+        log.warn(" valid profiles are: %s", csv(H264_PROFILE_IDS))
+        return "constrained-baseline"
+    if profile == "baseline":
+        return "constrained-baseline"
+    return profile
 
 
 # with rate-control off, the quantizer is fixed and taken from `iDLayerQp`;
@@ -496,6 +516,7 @@ cdef class Encoder:
     cdef unsigned int width
     cdef unsigned int height
     cdef object src_format
+    cdef object profile
     cdef uint8_t full_range
     cdef uint8_t ready
     cdef int quality
@@ -519,6 +540,7 @@ cdef class Encoder:
         self.width = width
         self.height = height
         self.src_format = src_format
+        self.profile = get_h264_profile(options)
         self.full_range = options.boolget("full-range", True)
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
@@ -588,7 +610,10 @@ cdef class Encoder:
         cdef int qp = quality_to_qp(self.quality)
         cdef int i
         cdef int nlayers = max(1, self.param.iSpatialLayerNum)
+        cdef EProfileIdc profile_id = H264_PROFILE_IDS[self.profile]
+        self.param.iEntropyCodingModeFlag = self.profile != "constrained-baseline"
         for i in range(nlayers):
+            self.param.sSpatialLayers[i].uiProfileIdc = profile_id
             self.param.sSpatialLayers[i].iDLayerQp = qp
             if threads > 1:
                 self.param.sSpatialLayers[i].sSliceArgument.uiSliceMode = SM_FIXEDSLCNUM_SLICE
@@ -605,13 +630,11 @@ cdef class Encoder:
             r = self.context.InitializeExt(&self.param)
         if r:
             raise RuntimeError("failed to initialize openh264 encoder context")
-        #cdef int profile = PRO_MAIN
-        #self.context.SetOption(ENCODER_OPTION_PROFILE, &profile)
         #a void (*)(void* context, int level, const char* message) function which receives log messages
         trace_level = WELS_LOG_WARNING
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
-        log("openh264 init_encoder: quality=%i qp=%i speed=%i complexity=%s threads=%i full-range=%s usage=%s",
-            self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), threads,
+        log("openh264 init_encoder: profile=%s quality=%i qp=%i speed=%i complexity=%s threads=%i full-range=%s usage=%s",
+            self.profile, self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), threads,
             bool(self.full_range), USAGE_TYPE_NAMES.get(self.param.iUsageType))
         for i in range(nlayers):
             log("spatial layer %i bFullRange=%s iDLayerQp=%i", i, self.param.sSpatialLayers[i].bFullRange, self.param.sSpatialLayers[i].iDLayerQp)
@@ -670,6 +693,7 @@ cdef class Encoder:
         self.width = 0
         self.height = 0
         self.content_types = ()
+        self.profile = ""
         self.screen_content = 1
         f = self.file
         if f:
@@ -683,6 +707,7 @@ cdef class Encoder:
             "width"         : self.width,
             "height"        : self.height,
             "quality"       : self.quality,
+            "profile"       : self.profile,
             "qp"            : quality_to_qp(self.quality),
             "speed"         : self.speed,
             "complexity"    : COMPLEXITY_NAMES.get(speed_to_complexity(self.speed), ""),
@@ -811,6 +836,8 @@ cdef class Encoder:
             raise ValueError("invalid frame type")
         elif is_idr:
             client_options["type"] = "IDR"
+        if self.frames == 0:
+            client_options["profile"] = self.profile
         # elif frame_info.eFrameType == videoFrameTypeI:
         #    client_options["type"] = "I"
         # elif frame_info.eFrameType == videoFrameTypeP:

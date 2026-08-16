@@ -596,14 +596,20 @@ cdef class Encoder:
         self.need_reconfig = 0
         self.first_frame_timestamp = 0
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
-        default_profile = os.environ.get("XPRA_X264_PROFILE", "")
+        default_profile = os.environ.get("XPRA_X264_PROFILE", "") or (
+            "constrained-baseline" if src_format == "YUV420P" else cs_info[1]
+        )
         self.profile = get_profile(options, csc_mode=self.src_format, default_profile=default_profile)
+        if self.profile == "constrained-baseline":
+            # libx264 calls this profile "baseline"; its bitstream is the
+            # constrained-baseline variant requested by Xpra.
+            self.profile = PROFILE_BASELINE
         self.export_nals = options.intget("h264.export-nals", 0)
         profile_options = cs_info[2]
         if self.profile and self.profile not in profile_options:
             log.warn("Warning: '%s' is not a valid profile for %s", self.profile, src_format)
             log.warn(" must be one of: %s", csv(profile_options))
-            self.profile = ""
+            self.profile = PROFILE_BASELINE if src_format == "YUV420P" else cs_info[1]
         if not self.profile:
             self.profile = cs_info[1]
             log("using default profile=%s", self.profile)

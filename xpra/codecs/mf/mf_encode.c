@@ -429,24 +429,29 @@ static void apply_static_tuning(MFEncoder *enc) {
             info->adaptive_mode = (int)mode;
     }
 
-    /* CABAC buys around 10% fewer bits for a slower encode and a slower decode,
-       which is a bad trade exactly when the pipeline is asking for speed: */
+    /* Baseline cannot use CABAC. For the profiles which can, CABAC buys around
+       10% fewer bits for a slower encode and decode, which is a bad trade exactly
+       when the pipeline is asking for speed: */
     if (enc->codec == MF_CODEC_H264 && info->cabac < 0) {
-        int cabac = speed < 80;
+        int cabac = enc->tuning.profile != MF_ENC_PROFILE_CONSTRAINED_BASELINE && speed < 80;
         if (codecapi_set_bool(enc, &MF_API_AVEncH264CABACEnable, cabac, "cabac"))
             info->cabac = cabac;
     }
 }
 
 /* the profile is part of the output media type rather than an ICodecAPI knob */
-static UINT32 get_profile(int codec, int speed) {
+static UINT32 get_profile(int codec, MFEncodeProfile profile) {
     if (codec == MF_CODEC_HEVC)
         return eAVEncH265VProfile_Main_420_8;
-    /* `High` is worth about 10% over `Main` (8x8 transform, better intra
-       prediction) for a little more work, so give it up only when the pipeline
-       is asking for speed. xpra's other h264 encoders default to `high` for
-       YUV420P, so every decoder we talk to can already handle it: */
-    return (speed >= 80) ? eAVEncH264VProfile_Main : eAVEncH264VProfile_High;
+    switch (profile) {
+        case MF_ENC_PROFILE_MAIN:
+            return eAVEncH264VProfile_Main;
+        case MF_ENC_PROFILE_HIGH:
+            return eAVEncH264VProfile_High;
+        case MF_ENC_PROFILE_CONSTRAINED_BASELINE:
+        default:
+            return eAVEncH264VProfile_ConstrainedBase;
+    }
 }
 
 /* ── YUV420P → NV12 conversion ───────────────────────────────────── */
@@ -537,6 +542,7 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
         enc->tuning.quality         = 50;
         enc->tuning.speed           = 50;
         enc->tuning.bandwidth_limit = 0;
+        enc->tuning.profile         = MF_ENC_PROFILE_CONSTRAINED_BASELINE;
     }
     reset_tuning_info(&enc->applied);
 
@@ -599,7 +605,7 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
     hr = MFCreateMediaType(&enc->output_type);
     if (FAILED(hr)) { set_enc_error(enc, hr, "MFCreateMediaType(output)"); goto fail; }
 
-    profile = get_profile(codec, clamp_pct(enc->tuning.speed, 50));
+    profile = get_profile(codec, enc->tuning.profile);
     IMFMediaType_SetGUID(enc->output_type,   &MF_MT_MAJOR_TYPE,        &MFMediaType_Video);
     IMFMediaType_SetGUID(enc->output_type,   &MF_MT_SUBTYPE,           out_subtype);
     IMFMediaType_SetUINT64(enc->output_type, &MF_MT_FRAME_SIZE,        ((UINT64)width << 32) | (UINT64)height);

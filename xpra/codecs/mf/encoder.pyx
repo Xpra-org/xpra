@@ -12,7 +12,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, EncodingNotSupported, is_screen_content
+from xpra.codecs.constants import VideoSpec, EncodingNotSupported, get_profile, is_screen_content
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
@@ -50,11 +50,17 @@ cdef extern from "mf_encode.h":
         MF_CONTENT_SCREEN
         MF_CONTENT_VIDEO
 
+    ctypedef enum MFEncodeProfile:
+        MF_ENC_PROFILE_CONSTRAINED_BASELINE
+        MF_ENC_PROFILE_MAIN
+        MF_ENC_PROFILE_HIGH
+
     ctypedef struct MFEncoderTuning:
         int content_type
         int quality
         int speed
         int bandwidth_limit
+        MFEncodeProfile profile
 
     ctypedef struct MFTuningInfo:
         int codec_api
@@ -126,6 +132,8 @@ def get_info() -> Dict[str, Any]:
     return {
         "version": get_version(),
         "type": "MediaFoundation",
+        "h264-profiles": ("constrained-baseline", "main", "high"),
+        "h264-default-profile": "constrained-baseline",
     }
 
 
@@ -133,6 +141,24 @@ CODECS: Dict[str, int] = {
     "h264": MF_CODEC_H264,
     "h265": MF_CODEC_HEVC,
 }
+
+H264_PROFILE_IDS = {
+    "baseline": MF_ENC_PROFILE_CONSTRAINED_BASELINE,
+    "constrained-baseline": MF_ENC_PROFILE_CONSTRAINED_BASELINE,
+    "main": MF_ENC_PROFILE_MAIN,
+    "high": MF_ENC_PROFILE_HIGH,
+}
+
+
+def get_h264_profile(options: typedict) -> str:
+    profile = get_profile(options)
+    if profile not in H264_PROFILE_IDS:
+        log.warn("Warning: %r is not a valid Media Foundation H.264 profile", profile)
+        log.warn(" valid profiles are: %s", ", ".join(H264_PROFILE_IDS))
+        return "constrained-baseline"
+    if profile == "baseline":
+        return "constrained-baseline"
+    return profile
 
 
 def get_encodings() -> Sequence[str]:
@@ -205,6 +231,7 @@ cdef class Encoder:
     cdef int width
     cdef int height
     cdef object encoding
+    cdef object profile
     cdef object src_format
     cdef bint full_range
     cdef int quality
@@ -222,6 +249,7 @@ cdef class Encoder:
         assert encoding in CODECS, "unsupported encoding: %s" % encoding
         assert src_format == "YUV420P", "invalid source format: %s" % src_format
         self.encoding   = encoding
+        self.profile    = get_h264_profile(options) if encoding == "h264" else "main"
         self.src_format = src_format
         self.width      = width
         self.height     = height
@@ -241,6 +269,7 @@ cdef class Encoder:
         tuning.quality         = quality
         tuning.speed           = speed
         tuning.bandwidth_limit = bandwidth_limit
+        tuning.profile         = H264_PROFILE_IDS.get(self.profile, MF_ENC_PROFILE_MAIN)
 
     cdef void create_context(self) except *:
         cdef MFEncoderTuning tuning
@@ -323,6 +352,7 @@ cdef class Encoder:
         self.height = 0
         self.content_types = ()
         self.content_type = MF_CONTENT_UNKNOWN
+        self.profile = ""
 
     def get_info(self) -> Dict[str, Any]:
         info = get_info()
@@ -331,6 +361,7 @@ cdef class Encoder:
             "width"         : self.width,
             "height"        : self.height,
             "encoding"      : self.encoding,
+            "profile"       : self.profile,
             "src_format"    : self.src_format,
             "quality"       : self.quality,
             "speed"         : self.speed,
@@ -435,6 +466,8 @@ cdef class Encoder:
             client_options["full-range"] = bool(full_range)
         if frame.is_keyframe:
             client_options["type"] = "IDR"
+        if self.frames == 0:
+            client_options["profile"] = self.profile
         self.frames += 1
         return data, client_options
 

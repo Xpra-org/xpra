@@ -24,7 +24,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
-from xpra.codecs.constants import VideoSpec, is_screen_content
+from xpra.codecs.constants import VideoSpec, get_profile, is_screen_content
 
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, int32_t, int64_t, uintptr_t
@@ -70,6 +70,8 @@ cdef extern from "VideoToolbox/VideoToolbox.h":
     CFStringRef kVTCompressionPropertyKey_MaxKeyFrameInterval
     CFStringRef kVTCompressionPropertyKey_AverageBitRate
     CFStringRef kVTCompressionPropertyKey_ProfileLevel
+    CFStringRef kVTProfileLevel_H264_ConstrainedBaseline_AutoLevel
+    CFStringRef kVTProfileLevel_H264_Main_AutoLevel
     CFStringRef kVTProfileLevel_H264_High_AutoLevel
     CFStringRef kVTProfileLevel_HEVC_Main_AutoLevel
     # the quality floor / ceiling (macos 12 and macos 13 - see `set_qp_range`):
@@ -113,11 +115,27 @@ def get_info() -> Dict[str, Any]:
         "version"       : get_version(),
         "encodings"     : get_encodings(),
         "colorspaces"   : tuple(COLORSPACES.keys()),
+        "h264-profiles" : H264_PROFILES,
+        "h264-default-profile": "constrained-baseline",
     }
 
 
 def get_encodings() -> Sequence[str]:
     return "h264", "h265"
+
+
+H264_PROFILES: Sequence[str] = ("constrained-baseline", "main", "high")
+
+
+def get_h264_profile(options: typedict) -> str:
+    profile = get_profile(options)
+    if profile == "baseline":
+        return "constrained-baseline"
+    if profile not in H264_PROFILES:
+        log.warn("Warning: %r is not a valid VideoToolbox H.264 profile", profile)
+        log.warn(" valid profiles are: %s", csv(H264_PROFILES))
+        return "constrained-baseline"
+    return profile
 
 
 MAX_WIDTH, MAX_HEIGHT = (4096, 4096)
@@ -207,6 +225,7 @@ cdef class Encoder:
     cdef unsigned int height
     cdef OSType pixel_format
     cdef object encoding
+    cdef object profile
     cdef object src_format
     cdef unsigned long frames
     cdef int full_range
@@ -237,6 +256,7 @@ cdef class Encoder:
         if width % 2 != 0 or height % 2 != 0:
             raise ValueError(f"invalid odd width {width} or height {height} for {src_format}")
         self.encoding = encoding
+        self.profile = get_h264_profile(options) if encoding == "h264" else "main"
         self.width = width
         self.height = height
         self.src_format = src_format
@@ -259,6 +279,7 @@ cdef class Encoder:
     cdef void init_encoder(self, options: typedict):
         cdef CMVideoCodecType codec = CODEC_TYPES[self.encoding]
         cdef OSStatus r = 0
+        cdef CFStringRef profile_level = NULL
         with nogil:
             r = VTCompressionSessionCreate(NULL, self.width, self.height, codec,
                                            NULL, NULL, NULL,
@@ -272,11 +293,17 @@ cdef class Encoder:
         # no B-frames: keep latency low and the bitstream in decode order:
         VTSessionSetProperty(self.session, kVTCompressionPropertyKey_AllowFrameReordering, kCFBooleanFalse)
         if self.encoding == "h264":
-            VTSessionSetProperty(self.session, kVTCompressionPropertyKey_ProfileLevel,
-                                 kVTProfileLevel_H264_High_AutoLevel)
+            if self.profile == "constrained-baseline":
+                profile_level = kVTProfileLevel_H264_ConstrainedBaseline_AutoLevel
+            elif self.profile == "main":
+                profile_level = kVTProfileLevel_H264_Main_AutoLevel
+            else:
+                profile_level = kVTProfileLevel_H264_High_AutoLevel
         else:
-            VTSessionSetProperty(self.session, kVTCompressionPropertyKey_ProfileLevel,
-                                 kVTProfileLevel_HEVC_Main_AutoLevel)
+            profile_level = kVTProfileLevel_HEVC_Main_AutoLevel
+        r = VTSessionSetProperty(self.session, kVTCompressionPropertyKey_ProfileLevel, profile_level)
+        if r != 0:
+            raise RuntimeError(f"failed to set VideoToolbox {self.profile} profile, error {r}")
 
         # like the other xpra video encoders, we only ever need the first frame to be a keyframe
         # (frames are never lost within a stream), so push the keyframe interval far into the future:
@@ -383,6 +410,7 @@ cdef class Encoder:
         self.height = 0
         self.min_qp = self.max_qp = -1
         self.content_types = ()
+        self.profile = ""
         self.frame_data = None
         f = self.file
         if f:
@@ -399,6 +427,7 @@ cdef class Encoder:
             "width"         : self.width,
             "height"        : self.height,
             "encoding"      : self.encoding,
+            "profile"       : self.profile,
             "src_format"    : self.src_format,
             "full-range"    : self.full_range,
             "quality"       : self.quality,
@@ -565,7 +594,7 @@ cdef class Encoder:
         if self.frame_keyframe:
             client_options["type"] = "IDR"
         if self.frames == 0:
-            client_options["profile"] = "high" if self.encoding == "h264" else "main"
+            client_options["profile"] = self.profile
         self.frames += 1
         if self.file:
             self.file.write(data)

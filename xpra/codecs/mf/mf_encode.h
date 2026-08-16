@@ -42,6 +42,12 @@ typedef enum {
     MF_CONTENT_VIDEO   = 2,  /* continuous tone: real video, photos */
 } MFContentType;
 
+typedef enum {
+    MF_ENC_PROFILE_CONSTRAINED_BASELINE = 0,
+    MF_ENC_PROFILE_MAIN                 = 1,
+    MF_ENC_PROFILE_HIGH                 = 2,
+} MFEncodeProfile;
+
 /* What the encoder should aim for. Every value is a request: which of them the
    MFT honours depends on the (hardware) encoder behind it, and what was really
    applied is reported by `mf_encoder_get_tuning_info`. */
@@ -50,6 +56,7 @@ typedef struct {
     int quality;           /* 0 (worst) .. 100 (best) */
     int speed;             /* 0 (slowest) .. 100 (fastest) */
     int bandwidth_limit;   /* bits per second, 0 if unlimited */
+    MFEncodeProfile profile; /* requested H.264 profile; ignored for HEVC */
 } MFEncoderTuning;
 
 /* The tuning that was actually applied: -1 means the MFT does not expose that

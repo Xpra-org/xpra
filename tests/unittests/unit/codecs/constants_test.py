@@ -35,10 +35,18 @@ class CodecConstantsTest(unittest.TestCase):
         self.assertGreater(get_x264_preset(0), get_x264_preset(99))
 
     def test_profile_precedence(self):
-        options = typedict({"h264.YUV420P.profile": "specific", "h264.profile": "general"})
-        self.assertEqual(get_profile(options), "specific")
-        with patch.dict(os.environ, {"XPRA_H264_YUV420P_PROFILE": "environment"}, clear=False):
-            self.assertEqual(get_profile(typedict()), "environment")
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(get_profile(typedict()), "constrained-baseline")
+            self.assertEqual(get_profile(typedict({"h264.profile": "general"})), "general")
+            options = typedict({"h264.YUV420P.profile": "specific", "h264.profile": "general"})
+            self.assertEqual(get_profile(options), "specific")
+        environment = {
+            "XPRA_H264_PROFILE": "environment-general",
+            "XPRA_H264_YUV420P_PROFILE": "environment-specific",
+        }
+        with patch.dict(os.environ, environment, clear=True):
+            self.assertEqual(get_profile(typedict()), "environment-specific")
+            self.assertEqual(get_profile(typedict({"h264.profile": "option"})), "option")
 
     def test_codec_spec_lifecycle_and_serialization(self):
         spec = CodecSpec(codec_class=Codec, codec_type="test", max_instances=2)

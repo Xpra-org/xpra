@@ -131,11 +131,11 @@ PROFILE_IDS = {
 
 
 def get_vpl_profile(options: typedict) -> str:
-    profile = get_profile(options, default_profile="main")
+    profile = get_profile(options)
     if profile not in PROFILE_IDS:
         log.warn("Warning: %r is not a valid VPL H.264 profile", profile)
         log.warn(" valid profiles are: %s", ", ".join(PROFILE_IDS))
-        return "main"
+        return "constrained-baseline"
     if profile == "baseline":
         return "constrained-baseline"
     return profile
@@ -168,7 +168,7 @@ def get_info() -> Dict[str, Any]:
         "type": "vpl",
         "formats": ("NV12", ),
         "profiles": ("constrained-baseline", "main", "high"),
-        "default-profile": "main",
+        "default-profile": "constrained-baseline",
         "default-low-power": False,
     }
 
@@ -363,6 +363,7 @@ cdef class Encoder:
             self.height = 0
             self.src_format = ""
             self.encoding = ""
+            self.profile = ""
             self.content_types = ()
             self.content_hint = VPL_ENC_CONTENT_UNKNOWN
             self.delayed = 0

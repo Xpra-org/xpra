@@ -189,6 +189,23 @@ static int h264_constraint_flags(VAProfile profile) {
     }
 }
 
+static int h264_profile_from_name(const char *name, VAProfile *profile) {
+    if (!name || !name[0] || strcmp(name, "baseline") == 0 ||
+        strcmp(name, "constrained-baseline") == 0) {
+        *profile = VAProfileH264ConstrainedBaseline;
+        return 1;
+    }
+    if (strcmp(name, "main") == 0) {
+        *profile = VAProfileH264Main;
+        return 1;
+    }
+    if (strcmp(name, "high") == 0) {
+        *profile = VAProfileH264High;
+        return 1;
+    }
+    return 0;
+}
+
 static int h264_level_idc(const LibVAEncoder *enc) {
     int mbs = enc->width_mbs * enc->height_mbs;
 
@@ -478,12 +495,8 @@ static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size,
     return off + bytes;
 }
 
-static int h264_encode_supported(VADisplay display) {
-    static const VAProfile candidate_profiles[] = {
-        VAProfileH264ConstrainedBaseline,
-        VAProfileH264Main,
-        VAProfileH264High,
-    };
+static int h264_profile_supported(VADisplay display, VAProfile profile,
+                                  VAEntrypoint *selected_entrypoint) {
     static const VAEntrypoint candidate_entrypoints[] = {
         VAEntrypointEncSlice,
         VAEntrypointEncSliceLP,
@@ -501,57 +514,74 @@ static int h264_encode_supported(VADisplay display) {
                  vaErrorStr(status), (int)status);
         return 0;
     }
-    for (unsigned int p = 0; p < sizeof(candidate_profiles) / sizeof(candidate_profiles[0]); p++) {
-        VAProfile profile = candidate_profiles[p];
-        if (!profile_supported(profiles, nprofiles, profile))
+    if (!profile_supported(profiles, nprofiles, profile)) {
+        snprintf(g_error, sizeof(g_error), "H.264 %s profile is not supported",
+                 h264_profile_name(profile));
+        return 0;
+    }
+    status = vaQueryConfigEntrypoints(display, profile, entrypoints, &nentrypoints);
+    if (status != VA_STATUS_SUCCESS) {
+        snprintf(g_error, sizeof(g_error), "vaQueryConfigEntrypoints(%s) failed: %s (%d)",
+                 h264_profile_name(profile), vaErrorStr(status), (int)status);
+        return 0;
+    }
+    for (unsigned int e = 0; e < sizeof(candidate_entrypoints) / sizeof(candidate_entrypoints[0]); e++) {
+        VAEntrypoint entrypoint = candidate_entrypoints[e];
+        int entrypoint_found = 0;
+        for (int i = 0; i < nentrypoints; i++) {
+            if (entrypoints[i] == entrypoint) {
+                entrypoint_found = 1;
+                break;
+            }
+        }
+        if (!entrypoint_found)
             continue;
-        status = vaQueryConfigEntrypoints(display, profile, entrypoints, &nentrypoints);
+        attrs[0].type = VAConfigAttribRTFormat;
+        attrs[1].type = VAConfigAttribRateControl;
+        attrs[2].type = VAConfigAttribEncPackedHeaders;
+        status = vaGetConfigAttributes(display, profile, entrypoint, attrs, 3);
         if (status != VA_STATUS_SUCCESS) {
-            snprintf(g_error, sizeof(g_error), "vaQueryConfigEntrypoints(%s) failed: %s (%d)",
-                     h264_profile_name(profile), vaErrorStr(status), (int)status);
+            snprintf(g_error, sizeof(g_error), "vaGetConfigAttributes(%s, %s) failed: %s (%d)",
+                     h264_profile_name(profile), entrypoint_name(entrypoint), vaErrorStr(status), (int)status);
             continue;
         }
-        for (unsigned int e = 0; e < sizeof(candidate_entrypoints) / sizeof(candidate_entrypoints[0]); e++) {
-            VAEntrypoint entrypoint = candidate_entrypoints[e];
-            int entrypoint_found = 0;
-            for (int i = 0; i < nentrypoints; i++) {
-                if (entrypoints[i] == entrypoint) {
-                    entrypoint_found = 1;
-                    break;
-                }
-            }
-            if (!entrypoint_found)
-                continue;
-            attrs[0].type = VAConfigAttribRTFormat;
-            attrs[1].type = VAConfigAttribRateControl;
-            attrs[2].type = VAConfigAttribEncPackedHeaders;
-            status = vaGetConfigAttributes(display, profile, entrypoint, attrs, 3);
-            if (status != VA_STATUS_SUCCESS) {
-                snprintf(g_error, sizeof(g_error), "vaGetConfigAttributes(%s, %s) failed: %s (%d)",
-                         h264_profile_name(profile), entrypoint_name(entrypoint), vaErrorStr(status), (int)status);
-                continue;
-            }
-            if (!(attrs[0].value & VA_RT_FORMAT_YUV420)) {
-                snprintf(g_error, sizeof(g_error), "%s/%s does not support VA_RT_FORMAT_YUV420 encode surfaces",
-                         h264_profile_name(profile), entrypoint_name(entrypoint));
-                continue;
-            }
-            if (!(attrs[1].value & VA_RC_CQP)) {
-                snprintf(g_error, sizeof(g_error), "%s/%s does not support VA_RC_CQP rate control",
-                         h264_profile_name(profile), entrypoint_name(entrypoint));
-                continue;
-            }
-            if ((attrs[2].value & (VA_ENC_PACKED_HEADER_SEQUENCE |
-                                   VA_ENC_PACKED_HEADER_SLICE)) !=
-                (VA_ENC_PACKED_HEADER_SEQUENCE |
-                 VA_ENC_PACKED_HEADER_SLICE)) {
-                snprintf(g_error, sizeof(g_error),
-                         "%s/%s does not support required packed H.264 headers: %#x",
-                         h264_profile_name(profile), entrypoint_name(entrypoint), attrs[2].value);
-                continue;
-            }
+        if (!(attrs[0].value & VA_RT_FORMAT_YUV420)) {
+            snprintf(g_error, sizeof(g_error), "%s/%s does not support VA_RT_FORMAT_YUV420 encode surfaces",
+                     h264_profile_name(profile), entrypoint_name(entrypoint));
+            continue;
+        }
+        if (!(attrs[1].value & VA_RC_CQP)) {
+            snprintf(g_error, sizeof(g_error), "%s/%s does not support VA_RC_CQP rate control",
+                     h264_profile_name(profile), entrypoint_name(entrypoint));
+            continue;
+        }
+        if ((attrs[2].value & (VA_ENC_PACKED_HEADER_SEQUENCE |
+                               VA_ENC_PACKED_HEADER_SLICE)) !=
+            (VA_ENC_PACKED_HEADER_SEQUENCE |
+             VA_ENC_PACKED_HEADER_SLICE)) {
+            snprintf(g_error, sizeof(g_error),
+                     "%s/%s does not support required packed H.264 headers: %#x",
+                     h264_profile_name(profile), entrypoint_name(entrypoint), attrs[2].value);
+            continue;
+        }
+        *selected_entrypoint = entrypoint;
+        return 1;
+    }
+    snprintf(g_error, sizeof(g_error), "no usable H.264 %s profile entrypoint",
+             h264_profile_name(profile));
+    return 0;
+}
+
+static int h264_encode_supported(VADisplay display) {
+    static const VAProfile candidate_profiles[] = {
+        VAProfileH264ConstrainedBaseline,
+        VAProfileH264Main,
+        VAProfileH264High,
+    };
+    for (unsigned int p = 0; p < sizeof(candidate_profiles) / sizeof(candidate_profiles[0]); p++) {
+        VAProfile profile = candidate_profiles[p];
+        if (h264_profile_supported(display, profile, &g_h264_entrypoint)) {
             g_h264_profile = profile;
-            g_h264_entrypoint = entrypoint;
             return 1;
         }
     }
@@ -811,6 +841,7 @@ static LibVAEncodeStatus create_quality_level_buffer(LibVAEncoder *enc, VABuffer
 }
 
 LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
+                                       const char *profile_name,
                                        int width, int height,
                                        int quality, int speed) {
     LibVAEncoder *enc;
@@ -858,7 +889,12 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
     enc->vp_qindex = quality_to_vp_qindex(enc->quality);
     enc->codec = codec;
     if (codec == LIBVA_CODEC_H264) {
-        enc->profile = g_h264_profile;
+        if (!h264_profile_from_name(profile_name, &enc->profile)) {
+            snprintf(g_error, sizeof(g_error), "invalid H.264 profile: %.100s",
+                     profile_name ? profile_name : "");
+            libva_encoder_destroy(enc);
+            return LIBVA_ENC_ERROR;
+        }
         enc->entrypoint = g_h264_entrypoint;
     } else if (codec == LIBVA_CODEC_VP8) {
         enc->profile = VAProfileVP8Version0_3;
@@ -879,6 +915,11 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
                             enc->vendor, sizeof(enc->vendor),
                             g_error, sizeof(g_error))) {
         snprintf(enc->last_error, sizeof(enc->last_error), "failed to open VA display for %.200s", enc->device);
+        libva_encoder_destroy(enc);
+        return LIBVA_ENC_NOT_AVAILABLE;
+    }
+    if (codec == LIBVA_CODEC_H264 &&
+        !h264_profile_supported(enc->display, enc->profile, &enc->entrypoint)) {
         libva_encoder_destroy(enc);
         return LIBVA_ENC_NOT_AVAILABLE;
     }
@@ -952,8 +993,9 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         return LIBVA_ENC_ERROR;
     }
 
-    libva_log("libva %s encoder create: %dx%d surface=%dx%d level=%d poc=%d aud=%d quality=%d speed=%d qp=%d qindex=%d quality-level=%d/%d device=%s vendor=%s",
+    libva_log("libva %s encoder create: %dx%d surface=%dx%d profile=%s level=%d poc=%d aud=%d quality=%d speed=%d qp=%d qindex=%d quality-level=%d/%d device=%s vendor=%s",
               codec_name(enc->codec), width, height, enc->surface_width, enc->surface_height,
+              enc->codec == LIBVA_CODEC_H264 ? h264_profile_name(enc->profile) : "",
               enc->codec == LIBVA_CODEC_H264 ? h264_level_idc(enc) : 0,
               enc->codec == LIBVA_CODEC_H264 ? LIBVA_H264_POC_TYPE : 0,
               enc->codec == LIBVA_CODEC_H264,

@@ -24,7 +24,7 @@ from xpra.codecs.nvidia.cuda.context import (
     get_CUDA_function, record_device_failure, record_device_success,
     cuda_device_context, load_device,
 )
-from xpra.codecs.constants import VideoSpec, TransientCodecException, CSC_ALIAS
+from xpra.codecs.constants import VideoSpec, TransientCodecException, CSC_ALIAS, get_profile
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.nvidia.util import get_nvidia_module_version, get_license_keys, get_cards
 from xpra.log import Logger
@@ -571,15 +571,22 @@ cdef class Encoder:
             csc_mode = "YUV444P"
         elif self.pixel_format=="r210":
             csc_mode = "YUV444P10"
-        #use the environment as default if present:
-        profile = os.environ.get("XPRA_NVENC_PROFILE", "")
-        profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, profile)
-        #now see if the client has requested a different value:
-        profile = options.strget("h264.%s.profile" % csc_mode, profile)
         #for 4:4:4 (chromaFormatIDC=3) don't fall back to the "auto" profile,
         #which may resolve to a 4:2:0-only profile and get rejected at init time:
-        if not profile and get_chroma_format(self.pixel_format)==3:
-            profile = YUV444_PROFILE.get(self.encoding, "")
+        default_profile = os.environ.get("XPRA_NVENC_PROFILE", "")
+        default_profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, default_profile)
+        if not default_profile:
+            if get_chroma_format(self.pixel_format) == 3:
+                default_profile = YUV444_PROFILE.get(self.encoding, "")
+            elif self.encoding == "h264":
+                default_profile = "constrained-baseline"
+        profile = get_profile(options, encoding=self.encoding, csc_mode=csc_mode,
+                              default_profile=default_profile)
+        if self.encoding == "h264":
+            profile = {
+                "constrained-baseline": "baseline",
+                "high444": "high-444",
+            }.get(profile, profile)
         return profile
 
     def threaded_init_device(self, options: typedict) -> None:
@@ -855,7 +862,10 @@ cdef class Encoder:
         log("init_params(%s) using preset=%s", codecstr(codec), presetstr(preset))
         profiles = self.query_profiles(codec)
         if self.profile_name and profiles and self.profile_name not in profiles:
-            self.profile_name = tuple(profiles.keys())[0]
+            log.warn("Warning: %r is not a supported %s profile", self.profile_name, self.codec_name)
+            log.warn(" valid profiles are: %s", csv(profiles))
+            fallback = "baseline" if self.encoding == "h264" else "auto"
+            self.profile_name = fallback if fallback in profiles else tuple(profiles.keys())[0]
         profile_guidstr = profiles.get(self.profile_name)
         cdef GUID profile
         if profile_guidstr:
@@ -1746,6 +1756,8 @@ cdef class Encoder:
             client_options["csc-type"] = f"cuda:{self.kernel_name}"
         if pic.pictureType==NV_ENC_PIC_TYPE_IDR:
             client_options["type"] = "IDR"
+        if self.frames == 0 and self.profile_name:
+            client_options["profile"] = self.profile_name
         if self.lossless and not self.scaling:
             client_options["quality"] = 100
         else:

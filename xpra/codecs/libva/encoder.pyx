@@ -17,7 +17,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, EncodingNotSupported, is_screen_content
+from xpra.codecs.constants import VideoSpec, EncodingNotSupported, get_profile, is_screen_content
 from xpra.codecs.vacommon import config_libva_logging
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict, AtomicInteger
@@ -75,6 +75,7 @@ cdef extern from "va_encode.h":
     int               libva_encode_get_minor()
 
     LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
+                                           const char *profile,
                                            int width, int height,
                                            int quality, int speed) nogil
     void              libva_encoder_destroy(LibVAEncoder *enc) nogil
@@ -108,6 +109,18 @@ cdef str frame_type_name(LibVAEncodeFrameType frame_type):
 generation = AtomicInteger()
 
 ENCODINGS: list[str] = ["h264", "vp8", "vp9"]
+H264_PROFILES: Sequence[str] = ("constrained-baseline", "main", "high")
+
+
+def get_h264_profile(options: typedict) -> str:
+    profile = get_profile(options)
+    if profile == "baseline":
+        return "constrained-baseline"
+    if profile not in H264_PROFILES:
+        log.warn("Warning: %r is not a valid libva H.264 profile", profile)
+        log.warn(" valid profiles are: %s", ", ".join(H264_PROFILES))
+        return "constrained-baseline"
+    return profile
 
 
 def init_module(options: dict = None) -> None:
@@ -143,6 +156,8 @@ def get_info() -> Dict[str, Any]:
         "device": libva_encode_get_device().decode("utf-8", "replace"),
         "vendor": libva_encode_get_vendor().decode("utf-8", "replace"),
         "libva": (libva_encode_get_major(), libva_encode_get_minor()),
+        "h264-profiles": H264_PROFILES,
+        "h264-default-profile": "constrained-baseline",
     }
 
 
@@ -185,6 +200,7 @@ cdef class Encoder:
     cdef int screen_content
     cdef object src_format
     cdef object encoding
+    cdef object profile
     cdef object file
     cdef uint8_t ready
 
@@ -201,6 +217,7 @@ cdef class Encoder:
             raise ValueError("invalid odd width %i or height %i for NV12" % (width, height))
 
         self.encoding = encoding
+        self.profile = get_h264_profile(options) if encoding == "h264" else ""
         self.src_format = src_format
         self.width = width
         self.height = height
@@ -216,9 +233,11 @@ cdef class Encoder:
 
         cdef bytes encoding_bytes = encoding.encode("latin-1")
         cdef const char *encoding_name = encoding_bytes
+        cdef bytes profile_bytes = self.profile.encode("latin-1")
+        cdef const char *profile_name = profile_bytes
         cdef LibVAEncodeStatus status
         with nogil:
-            status = libva_encoder_create(&self.context, encoding_name,
+            status = libva_encoder_create(&self.context, encoding_name, profile_name,
                                           width, height, self.quality, self.speed)
         if status != LIBVA_ENC_OK:
             status_str = libva_encode_status_str(status).decode("latin-1")
@@ -322,6 +341,7 @@ cdef class Encoder:
         self.height = 0
         self.src_format = ""
         self.encoding = ""
+        self.profile = ""
         f = self.file
         if f:
             self.file = None
@@ -335,6 +355,7 @@ cdef class Encoder:
             "height": self.height,
             "src_format": self.src_format,
             "encoding": self.encoding,
+            "profile": self.profile,
             "quality": self.quality,
             "speed": self.speed,
             "screen-content": bool(self.screen_content),
@@ -411,6 +432,8 @@ cdef class Encoder:
         frame_type = frame_type_name(frame.frame_type)
         if frame_type:
             client_options["type"] = frame_type
+        if self.frames == 0 and self.profile:
+            client_options["profile"] = self.profile
         self.frames += 1
         elapsed = int((monotonic() - start) * 1000000)
         log("libva encoded %dx%d frame %i as %s: %i bytes in %dms copy=%dus submit=%dus sync=%dus",
