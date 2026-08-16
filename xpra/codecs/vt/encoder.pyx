@@ -24,7 +24,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, is_screen_content
 
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, int32_t, int64_t, uintptr_t
@@ -72,6 +72,10 @@ cdef extern from "VideoToolbox/VideoToolbox.h":
     CFStringRef kVTCompressionPropertyKey_ProfileLevel
     CFStringRef kVTProfileLevel_H264_High_AutoLevel
     CFStringRef kVTProfileLevel_HEVC_Main_AutoLevel
+    # the quality floor / ceiling (macos 12 and macos 13 - see `set_qp_range`):
+    CFStringRef kVTCompressionPropertyKey_MaxAllowedFrameQP
+    CFStringRef kVTCompressionPropertyKey_MinAllowedFrameQP
+    CFStringRef kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality
 
 
 # input colorspaces we accept, mapped to the number of (source) planes:
@@ -119,6 +123,53 @@ def get_encodings() -> Sequence[str]:
 MAX_WIDTH, MAX_HEIGHT = (4096, 4096)
 
 
+# the quantizer range of h264 and h265: 0 is the finest, 51 the coarsest
+MAX_QP = 51
+
+# how many quantizer steps we move the window by for the content-types we recognize.
+# a dB is far cheaper on synthetic content than on continuous tone imagery: measured at
+# quality=50, this 3 step shift buys a browser window +3.0dB for 16% more bytes and a
+# text window +2.8dB for 14% more, whereas handing the same 3 steps back on video
+# content saves 28% of the bytes and costs only 1.3dB - and the sharpness we give up
+# there matters less, since video detail is masked whereas screen content is all edges:
+CONTENT_QP_SHIFT = 3
+
+
+def get_qp_shift(content_types: Sequence[str]) -> int:
+    if is_screen_content(content_types):
+        return -CONTENT_QP_SHIFT
+    if any(x in content_types for x in ("video", "picture")):
+        return CONTENT_QP_SHIFT
+    # unclassified windows keep the neutral mapping
+    return 0
+
+
+# the speed setting from which we ask the encoder to favour encoding time over quality:
+SPEED_PRIORITY = 80
+
+# the quantizer window is only read when the compression session is created: VideoToolbox
+# accepts the property on an open session and returns no error, but the stream comes out
+# unchanged (measured: a session started at quality=20 and switched to quality=80 keeps
+# emitting 3.8KB frames, where a session created at quality=80 emits 17.9KB frames).
+# Honouring a quality change therefore costs a new session, and the IDR frame that comes
+# with it: 7 to 40ms of setup, and a keyframe worth 10 to 90 inter frames.
+# So we ignore the jitter and only pay for changes worth a keyframe - the same rule the
+# x264 encoder applies, with a wider band since a reconfiguration is free there:
+MIN_QP_DELTA = 4
+
+
+def get_qp_range(quality: int, content_types: Sequence[str] = ()) -> Tuple[int, int]:
+    """the quantizer window to allow for this quality setting and content-type"""
+    cdef int shift = get_qp_shift(content_types)
+    cdef int pct = min(100, max(0, quality))
+    # the coarsest quantizer we are willing to accept - this is the quality knob:
+    cdef int max_qp = min(MAX_QP, max(0, (100 - pct) * MAX_QP // 100 + shift))
+    # and the finest one worth using, which stops the encoder from spending
+    # bits on a quality we did not ask for (as the vpx encoder does):
+    cdef int min_qp = min(max_qp, max(0, (80 - pct) * MAX_QP // 100 + shift))
+    return min_qp, max_qp
+
+
 def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
     for encoding in get_encodings():
@@ -161,6 +212,11 @@ cdef class Encoder:
     cdef int full_range
     cdef object init_options
     cdef uint8_t ready
+    cdef int quality
+    cdef int speed
+    cdef int min_qp
+    cdef int max_qp
+    cdef object content_types
     cdef object file
     # set by the output callback for each encoded frame:
     cdef object frame_data
@@ -186,6 +242,10 @@ cdef class Encoder:
         self.src_format = src_format
         self.frames = 0
         self.full_range = options.boolget("full-range", True)
+        self.quality = options.intget("quality", 50)
+        self.speed = options.intget("speed", 50)
+        self.content_types = options.strtupleget("content-types", ())
+        self.min_qp = self.max_qp = -1
         self.init_options = options
         self.set_pixel_format()
         self.init_encoder(options)
@@ -222,18 +282,53 @@ cdef class Encoder:
         # (frames are never lost within a stream), so push the keyframe interval far into the future:
         self.set_int_property(kVTCompressionPropertyKey_MaxKeyFrameInterval, 1 << 30)
 
-        cdef int quality = options.intget("quality", 50)
         cdef int fps = max(1, options.intget("framerate", 30))
-        # rough target bitrate derived from the resolution, framerate and quality:
+        # rough target bitrate derived from the resolution, framerate and quality,
+        # bounded by the bandwidth the server is willing to give this connection:
         cdef int64_t pixels = <int64_t> self.width * self.height
-        cdef int bitrate = <int> (pixels * fps * (0.04 + quality / 100.0 * 0.16))
-        self.set_int_property(kVTCompressionPropertyKey_AverageBitRate, bitrate)
-        log("vt bitrate=%i bps for %ix%i@%ifps quality=%i", bitrate, self.width, self.height, fps, quality)
+        cdef int64_t bitrate = <int64_t> (pixels * fps * (0.04 + self.quality / 100.0 * 0.16))
+        cdef int64_t bandwidth_limit = options.intget("bandwidth-limit", 0)
+        if bandwidth_limit > 0:
+            bitrate = min(bitrate, bandwidth_limit)
+        # note: the media engine all but ignores this target once a quantizer window is set
+        # (measured: a 500Kbps and a 2Mbps target give byte for byte the same stream), so the
+        # quality setting below is what governs the bitrate here. This still matters for the
+        # encoders that refuse the quantizer window and keep doing their own rate control:
+        self.set_int_property(kVTCompressionPropertyKey_AverageBitRate, <int> bitrate)
+        log("vt bitrate=%i bps for %ix%i@%ifps quality=%i", bitrate, self.width, self.height, fps, self.quality)
+        self.set_qp_range()
+        self.set_speed_priority()
 
         with nogil:
             r = VTCompressionSessionPrepareToEncodeFrames(self.session)
         if r != 0:
             raise RuntimeError(f"failed to prepare VideoToolbox encoder, error {r}")
+
+    cdef void set_qp_range(self):
+        # `AverageBitRate` on its own leaves the quality knob doing almost nothing:
+        # the rate controller picks its own quantizers and never even spends the budget
+        # it was given (measured: 1.4Mbps out of a 20Mbps target). Asking for a quantizer
+        # window instead is what makes `quality` mean something.
+        # This can only be done here, when the session is created - see `MIN_QP_DELTA`:
+        min_qp, max_qp = get_qp_range(self.quality, self.content_types)
+        self.min_qp = min_qp
+        self.max_qp = max_qp
+        # the quality floor (macos 12 and later):
+        self.set_int_property(kVTCompressionPropertyKey_MaxAllowedFrameQP, max_qp)
+        # and the ceiling, which is only available from macos 13
+        # (the symbol is weakly linked, so it is NULL on anything older):
+        if kVTCompressionPropertyKey_MinAllowedFrameQP != NULL:
+            self.set_int_property(kVTCompressionPropertyKey_MinAllowedFrameQP, min_qp)
+        log("vt qp range=%i-%i for quality=%i, content-types=%s",
+            min_qp, max_qp, self.quality, self.content_types)
+
+    cdef void set_speed_priority(self):
+        # the only speed knob VideoToolbox exposes. The Apple Silicon media engine is a fixed
+        # function pipeline and ignores it (measured: byte for byte the same stream, at the same
+        # cost), but the Intel and software encoders do trade quality for encoding time here:
+        cdef Boolean prioritize = self.speed >= SPEED_PRIORITY
+        VTSessionSetProperty(self.session, kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality,
+                             kCFBooleanTrue if prioritize else kCFBooleanFalse)
 
     cdef void set_pixel_format(self):
         # the bitstream colour range (video_full_range_flag) is carried by the input pixel
@@ -258,13 +353,16 @@ cdef class Encoder:
                 CFRelease(session)
         self.init_encoder(self.init_options)
 
-    cdef void set_int_property(self, CFStringRef key, int value):
+    cdef OSStatus set_int_property(self, CFStringRef key, int value):
         cdef int32_t v = value
         cdef CFNumberRef num = CFNumberCreate(NULL, kCFNumberSInt32Type, &v)
         if num == NULL:
-            return
-        VTSessionSetProperty(self.session, key, num)
+            return -1
+        cdef OSStatus r = VTSessionSetProperty(self.session, key, num)
         CFRelease(num)
+        if r != 0:
+            log("failed to set VideoToolbox property to %i: error %i", value, r)
+        return r
 
     def is_ready(self) -> bool:
         return bool(self.ready)
@@ -283,6 +381,8 @@ cdef class Encoder:
         self.frames = 0
         self.width = 0
         self.height = 0
+        self.min_qp = self.max_qp = -1
+        self.content_types = ()
         self.frame_data = None
         f = self.file
         if f:
@@ -301,6 +401,10 @@ cdef class Encoder:
             "encoding"      : self.encoding,
             "src_format"    : self.src_format,
             "full-range"    : self.full_range,
+            "quality"       : self.quality,
+            "speed"         : self.speed,
+            "qp-range"      : (self.min_qp, self.max_qp),
+            "content-types" : self.content_types,
         }
         return info
 
@@ -405,6 +509,22 @@ cdef class Encoder:
             self.full_range = image_range
             if self.src_format == "NV12":
                 self.set_pixel_format()
+                self.reinit_encoder()
+        # the server re-evaluates quality, speed and content-type for every frame:
+        cdef int speed = options.intget("speed", self.speed)
+        if speed != self.speed:
+            self.speed = speed
+            self.set_speed_priority()
+        cdef int quality = options.intget("quality", self.quality)
+        content_types = options.strtupleget("content-types", ()) or self.content_types
+        if quality != self.quality or content_types != self.content_types:
+            self.quality = quality
+            self.content_types = content_types
+            min_qp, max_qp = get_qp_range(quality, content_types)
+            if max(abs(min_qp - self.min_qp), abs(max_qp - self.max_qp)) >= MIN_QP_DELTA:
+                log("compress_image: quality=%i, content-types=%s: restarting the session"
+                    " for qp range %i-%i (was %i-%i)",
+                    quality, content_types, min_qp, max_qp, self.min_qp, self.max_qp)
                 self.reinit_encoder()
         cdef CVPixelBufferRef pixbuf = self.make_pixel_buffer(image)
 
