@@ -13,6 +13,7 @@ from xpra.util.env import envint, envbool
 from xpra.util.system import getloadavg
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
+from xpra.net.packet_type import PING_ECHO
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
@@ -100,7 +101,7 @@ class PingConnection(StubClientConnection):
             if stats and stats.client_ping_latency:
                 _, cl = stats.client_ping_latency[-1]
                 cl = int(1000.0 * cl)
-        self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, sid, will_have_more=False)
+        self.send_async(PING_ECHO, time_to_echo, l1, l2, l3, cl, sid, will_have_more=False)
         log(f"ping: sending echo for time={time_to_echo} and {sid=}")
 
     def process_ping_echo(self, packet) -> None:

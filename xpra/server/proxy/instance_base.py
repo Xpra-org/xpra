@@ -15,7 +15,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.packet_type import (
     INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
-    CONNECTION_LOST, CONNECTION_CLOSE,
+    CONNECTION_LOST, CONNECTION_CLOSE, PING_ECHO,
 )
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.constants import MAX_PACKET_SIZE, ConnectionMessage
@@ -319,7 +319,7 @@ class ProxyInstance:
             hello = self.filter_client_caps(CLIENT_REMOVE_CAPS_CHALLENGE)
             self.queue_server_packet(Packet("hello", hello))
             return
-        if packet_type == "ping_echo" and self.client_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
+        if packet_type == PING_ECHO and self.client_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
             self.client_last_ping_echo = float(packet[1])
             self.client_last_ping_latency = 1000 * monotonic() - self.client_last_ping_echo
@@ -456,7 +456,7 @@ class ProxyInstance:
             # may need to bump packet size:
             proto.max_packet_size = max(MAX_PACKET_SIZE, maxw * maxh * 4 * 4)
             packet = ("hello", caps)
-        elif packet_type == "ping_echo" and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
+        elif packet_type == PING_ECHO and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
             self.server_last_ping_echo = float(packet.get_u64(1))
             self.server_last_ping_latency = 1000 * monotonic() - self.server_last_ping_echo

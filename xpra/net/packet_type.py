@@ -89,5 +89,7 @@ CONNECTION_LOST: Final[str] = "connection-lost"
 GIBBERISH: Final[str] = "gibberish"
 INVALID: Final[str] = "invalid"
 
+PING_ECHO: Final[str] = "ping_echo" if BACKWARDS_COMPATIBLE else "ping-echo"
+
 SHUTDOWN_SERVER: Final[str] = "shutdown-server"
 EXIT_SERVER: Final[str] = "exit-server"

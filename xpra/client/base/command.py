@@ -10,7 +10,9 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.net.packet_type import PRINT_FILE, INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, EXIT_SERVER, SHUTDOWN_SERVER
+from xpra.net.packet_type import (
+    PRINT_FILE, INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, EXIT_SERVER, SHUTDOWN_SERVER, PING_ECHO,
+)
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
@@ -397,7 +399,7 @@ class MonitorXpraClient(SendCommandConnectClient):
 
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
-        self.send("ping_echo", echotime, 0, 0, 0, -1)
+        self.send(PING_ECHO, echotime, 0, 0, 0, -1)
 
 
 class InfoTimerClient(MonitorXpraClient):
@@ -559,7 +561,7 @@ class ShellXpraClient(SendCommandConnectClient):
 
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
-        self.send("ping_echo", echotime, 0, 0, 0, -1)
+        self.send(PING_ECHO, echotime, 0, 0, 0, -1)
 
     @staticmethod
     def _process_shell_reply(packet: Packet) -> None:

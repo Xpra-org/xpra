@@ -14,6 +14,7 @@ import unittest
 from time import monotonic
 
 from xpra.util.objects import AdHocStruct
+from xpra.net.packet_type import PING_ECHO
 
 from unit.loopback_util import LoopbackTest
 
@@ -41,8 +42,8 @@ class PingLoopbackTest(LoopbackTest):
         self.assertTrue(self.c2s, "client did not send anything")
         self.assertEqual(self.c2s[0][0], "ping")
         ping_time = self.c2s[0][1]
-        # the server echoed it back as "ping_echo":
-        self.assertTrue(any(p[0] == "ping_echo" for p in self.s2c),
+        # the server echoed it back using the mode's packet name:
+        self.assertTrue(any(p[0] == PING_ECHO for p in self.s2c),
                         "server did not echo the ping: %s" % (self.s2c,))
         # and the client recorded the echo:
         self.assertEqual(client.last_echoed_time, ping_time)
@@ -58,8 +59,8 @@ class PingLoopbackTest(LoopbackTest):
         self.assertTrue(any(p[0] == "ping" for p in self.s2c),
                         "server did not send a ping: %s" % (self.s2c,))
         ping_time = next(p[1] for p in self.s2c if p[0] == "ping")
-        # the client echoed it back as "ping_echo":
-        self.assertTrue(any(p[0] == "ping_echo" for p in self.c2s),
+        # the client echoed it back using the mode's packet name:
+        self.assertTrue(any(p[0] == PING_ECHO for p in self.c2s),
                         "client did not echo the ping: %s" % (self.c2s,))
         # and the server processed the echo:
         self.assertEqual(source.last_ping_echoed_time, ping_time)

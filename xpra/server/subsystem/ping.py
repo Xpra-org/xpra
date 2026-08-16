@@ -69,5 +69,6 @@ class PingServer(StubSubsystem):
 
     def init_packet_handlers(self) -> None:
         self.add_packets(
-            "ping", "ping_echo",
+            "ping", "ping-echo",
         )
+        self.add_legacy_alias("ping_echo", "ping-echo")

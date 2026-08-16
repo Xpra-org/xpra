@@ -12,6 +12,7 @@ from collections.abc import Sequence, Iterable
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import PING_ECHO
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 from xpra.util.objects import typedict
@@ -38,7 +39,7 @@ class PingClient(StubClientSubsystem):
     PREFIX = "ping"
     __signals__: list[str] = ["timeout"]
 
-    PACKET_TYPES = ("ping", "ping_echo")
+    PACKET_TYPES = ("ping", "ping-echo")
 
     def __init__(self, client=None):
         StubClientSubsystem.__init__(self, client)
@@ -204,7 +205,8 @@ class PingClient(StubClientSubsystem):
             log("swallowed ping!")
             return
         log(f"got ping, sending echo time={echotime} for {sid=}")
-        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0 * sl), sid)
+        self.send(PING_ECHO, echotime, l1, l2, l3, int(1000.0 * sl), sid)
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(*PingClient.PACKET_TYPES)
+        self.add_legacy_alias("ping_echo", "ping-echo")
