@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Fri Aug 14 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
+* Sun Aug 16 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
    don't include wayland server components in client-only builds
@@ -1151,6 +1151,11 @@ fi
    channels swapped, miscalculated rowstride, 30-bit issues
    prefer BGRX / BGRA
    cairo: discard unused alpha
+   webp currently unused rgb format swapped channels
+   scroll encoding visual corruption
+   safer scroll paints with unaccelerated client windows
+   encode client misinterprets response
+   `amf` encoder abrubt quality scale
 - Major:
    errors during client disconnection
    keymap not applied
@@ -1163,18 +1168,20 @@ fi
    allow upgrades on displays where no window manager is left
    record client tracks focus, server syncs it
    segfault querying pulseaudio X11 properties
-   remove `AES-CFB`
 - Minor:
    cursor logging errors
    add keysym table + fix AltGr with native win32 client
    zero is a valid uid / gid
    allow lookup of session names starting with a digit
    CI build of Wayland client bindings
-   scroll encoding visual corruption
-   safer scroll paints with unaccelerated client windows
    always send window move / resize events to record clients
    `BACKWARDS_COMPATIBLE` can be set via env switch
    drop audio `removesilence` since it never worked properly
+- Network:
+   big endian compatibility
+   network input packet statistics counting output
+   raw packet size logging
+   remove `AES-CFB`
 - OpenGL:
    actually check the pixel upload format exists
    verify the rgb buffer size before uploading it

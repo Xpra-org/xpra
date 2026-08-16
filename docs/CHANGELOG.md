@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.3] 2026-08-14
+## [6.5.3] 2026-08-16
 * 🔧 Platforms, build and packaging:
   * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
   * [don't include wayland server components in client-only builds](https://github.com/Xpra-org/xpra/commit/7d24bc8396a273d2f557b961800c2f0730af8afd)
@@ -40,6 +40,11 @@
   * [channels swapped](https://github.com/Xpra-org/xpra/commit/61b57c5b975fc4495052c46132cbcc0df01dca88), [miscalculated rowstride](https://github.com/Xpra-org/xpra/commit/b42eabf9a891486a6ce88034d5149c37e25ea733), [30-bit issues](https://github.com/Xpra-org/xpra/commit/e041d3620edddd9e0a48d28c1a941f50d9ccd067)
   * [prefer BGRX / BGRA](https://github.com/Xpra-org/xpra/commit/e3d9033b2c3609ebf1f8f882836933d98cf782a8)
   * [cairo: discard unused alpha](https://github.com/Xpra-org/xpra/commit/dbaae5c274c6c2df9ae4937a06cad6e99d430a70)
+  * [webp currently unused rgb format swapped channels](https://github.com/Xpra-org/xpra/commit/a6759b4293f2d784492a1a93aeb53ea82c82ff74)
+  * [scroll encoding visual corruption](https://github.com/Xpra-org/xpra/commit/72cef15e5ed8fff6592268a9f25c23f74aa91fff)
+  * [safer scroll paints with unaccelerated client windows](https://github.com/Xpra-org/xpra/commit/5f282ddd9654f80fb336fd27fb0139f26a0e8726)
+  * [encode client misinterprets response](https://github.com/Xpra-org/xpra/commit/4263ae275c29c21fec16d2a6e38db10b2c444362)
+  * [`amf` encoder abrubt quality scale](https://github.com/Xpra-org/xpra/commit/366701909e95cb8c2a3c8921be67d1f658fbb240)
 * Major:
   * [errors during client disconnection](https://github.com/Xpra-org/xpra/commit/416629496eb709bde729f2eb7090f846eb829972)
   * [keymap not applied](https://github.com/Xpra-org/xpra/commit/4f96ab05e11290261128f4b12c9c8dcd6a3ad44b)
@@ -52,18 +57,20 @@
   * [allow upgrades on displays where no window manager is left](https://github.com/Xpra-org/xpra/commit/51682019c19082e17ba2995900d5b61291aec39c)
   * [record client tracks focus](https://github.com/Xpra-org/xpra/commit/0f458b9dbead192f002096a8d3bb44a328b987c5), [server syncs it](https://github.com/Xpra-org/xpra/commit/9959429064c7cc4ee895eaa15c9ed0f7ed48db4e)
   * [segfault querying pulseaudio X11 properties](https://github.com/Xpra-org/xpra/commit/f3788cd4d754727af4be890f85bb94aacc511fb2)
-  * [remove `AES-CFB`](https://github.com/Xpra-org/xpra/commit/ab742341e2071defa8773e841bcd85626221f21f)
 * Minor:
   * [cursor logging errors](https://github.com/Xpra-org/xpra/commit/c77e6317b3c234d086ab44cc6b71221b6e15b7e2)
   * [add keysym table](https://github.com/Xpra-org/xpra/commit/f56bdd64fc0e4b305e627f15ffea89b0543e1b51) + [fix AltGr with native win32 client](https://github.com/Xpra-org/xpra/commit/1a73577385740f9be84033472e100aa7c963d213)
   * [zero is a valid uid / gid](https://github.com/Xpra-org/xpra/commit/a177334d04d50350307680c61c3cadc1dd085159)
   * [allow lookup of session names starting with a digit](https://github.com/Xpra-org/xpra/commit/38e7111b6a79aee075c47efb71d892b8530a58be)
   * [CI build of Wayland client bindings](https://github.com/Xpra-org/xpra/commit/0ef1f44dfc6435a3e3ff85b2ff79d538ca9ff287)
-  * [scroll encoding visual corruption](https://github.com/Xpra-org/xpra/commit/72cef15e5ed8fff6592268a9f25c23f74aa91fff)
-  * [safer scroll paints with unaccelerated client windows](https://github.com/Xpra-org/xpra/commit/5f282ddd9654f80fb336fd27fb0139f26a0e8726)
   * [always send window move / resize events to record clients](https://github.com/Xpra-org/xpra/commit/8a30c84622cf9d9837871b3e1441e2431c6a9a36)
   * [`BACKWARDS_COMPATIBLE` can be set via env switch](https://github.com/Xpra-org/xpra/commit/f8f607fb48ef151894e2bce467206f877315668b)
   * [drop audio `removesilence` since it never worked properly](https://github.com/Xpra-org/xpra/commit/e42a902a4c99d9bc5036c4775237d0406a5f1d25)
+* Network:
+  * [big endian compatibility](https://github.com/Xpra-org/xpra/commit/18cd048902a6be1e932b63d254e6451f6afcef7f)
+  * [network input packet statistics counting output](https://github.com/Xpra-org/xpra/commit/18705b322f789cb55cc49e8d654d1c2de0c1f082)
+  * [raw packet size logging](https://github.com/Xpra-org/xpra/commit/fa2c4cf5fd58aec0667d6f8de575984607a70839)
+  * [remove `AES-CFB`](https://github.com/Xpra-org/xpra/commit/ab742341e2071defa8773e841bcd85626221f21f)
 * OpenGL:
   * [actually check the pixel upload format exists](https://github.com/Xpra-org/xpra/commit/818d70044df4412bb9eea46cf3e5b4db12760c32)
   * [verify the rgb buffer size before uploading it](https://github.com/Xpra-org/xpra/commit/e60277ead8c511d4794bf0d5f0cb36558300e174)
