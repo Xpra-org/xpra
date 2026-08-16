@@ -1163,6 +1163,9 @@ class SocketProtocol:
         # add any raw packets back into it:
         if state.raw_packets:
             for index, raw_packet_data in state.raw_packets.items():
+                if index >= len(packet):
+                    self.invalid(f"invalid raw packet index {index} for packet of length {len(packet)}", data)
+                    return False
                 # replace placeholder with the raw_data packet data:
                 packet[index] = raw_packet_data
                 payload_size += len(raw_packet_data)

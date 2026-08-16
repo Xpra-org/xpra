@@ -197,6 +197,21 @@ class ProtocolTest(unittest.TestCase):
         with patch.object(socket_handler, "LOG_RAW_PACKET_SIZE", True):
             self.assertTrue(proto.encode(Packet("test", 1)))
 
+    def test_invalid_raw_packet_index(self) -> None:
+        from xpra.net.packet_encoding import get_encoder
+
+        proto = self.make_memory_protocol()
+        state = socket_handler.ReceiveState()
+        raw_data = b"raw-data"
+        raw_info = socket_handler.PacketReadInfo(0, 0, 3, len(raw_data), 0, len(raw_data))
+        self.assertTrue(proto.process_payload(state, raw_info, raw_data))
+
+        data, flags = get_encoder("rencodeplus")(("test", b""))
+        info = socket_handler.PacketReadInfo(flags, 0, 0, len(data), 0, len(data))
+        with patch.object(proto, "invalid") as invalid:
+            self.assertFalse(proto.process_payload(state, info, data))
+        invalid.assert_called_once()
+
     def test_read_speed(self) -> None:
         if not SHOW_PERF:
             return
