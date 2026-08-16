@@ -17,7 +17,7 @@ from xpra.scripts.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, ABSTRACT_SOCKET_PREFIX, AUTO_ABSTRACT_SOCKET, SocketState
 from xpra.net.bytestreams import set_socket_timeout, SocketConnection, SOCKET_TIMEOUT
-from xpra.net.common import pretty_socket
+from xpra.net.common import pretty_socket, BACKWARDS_COMPATIBLE
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id, gi_import, get_xpra_group,
     WIN32, OSX, POSIX,
@@ -371,9 +371,7 @@ def looks_like_xpra_packet(data: bytes) -> bool:
     if data[0] != ord("P"):
         return False
     from xpra.net.protocol.header import (
-        unpack_header, HEADER_SIZE,
-        FLAGS_RENCODE, FLAGS_YAML,
-        LZ4_FLAG, BROTLI_FLAG,
+        unpack_header, HEADER_SIZE, validate_packet_header,
     )
     header = bytes(data).ljust(HEADER_SIZE, b"\0")
     _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
@@ -384,19 +382,8 @@ def looks_like_xpra_packet(data: bytes) -> bool:
         return False
     if data_size < 8 or data_size >= 256 * 1024 * 1024:
         return False
-    rencode = bool(protocol_flags & FLAGS_RENCODE)
-    yaml = bool(protocol_flags & FLAGS_YAML)
-    lz4 = bool(protocol_flags & LZ4_FLAG)
-    brotli = bool(protocol_flags & BROTLI_FLAG)
-    compressors = sum((lz4, brotli))
-    # only one compressor can be enabled:
-    if compressors > 1:
-        return False
-    if compressors == 1 and compression_level <= 0:
-        # if compression is enabled, the compression level must be set:
-        return False
-    if rencode and yaml:
-        # rencode and yaml are mutually exclusive:
+    if validate_packet_header(protocol_flags, compression_level, packet_index,
+                              modern=not BACKWARDS_COMPATIBLE):
         return False
     # we passed all the checks
     return True

@@ -31,6 +31,8 @@ from xpra.net.socket_util import (
     setup_udp_socket,
 )
 from xpra.scripts.config import InitException
+from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.net.protocol.header import FLAGS_RENCODEPLUS
 
 
 class TestValidateAbstractSocketpath(unittest.TestCase):
@@ -64,9 +66,7 @@ class TestLooksLikeXpraPacket(unittest.TestCase):
         assert looks_like_xpra_packet(b"X" + b"\x00" * 15) is False
 
     def test_valid_looking_packet(self):
-        # Build a minimal packet header: 'P' + flags=0 + level=0 + index=0 + size (4 bytes big-endian)
-        # size must be >= 8
-        header = b"P" + b"\x00" * 3 + (32).to_bytes(4, "big")
+        header = make_xpra_header(flags=FLAGS_RENCODEPLUS)
         assert looks_like_xpra_packet(header) is True
 
     def test_nonzero_packet_index(self):
@@ -85,22 +85,24 @@ class TestLooksLikeXpraPacket(unittest.TestCase):
         assert looks_like_xpra_packet(header) is False
 
     def test_both_compressors_rejected(self):
-        # LZ4_FLAG=0x10, BROTLI_FLAG=0x40 — both set means compressors > 1
         from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
-        flags = LZ4_FLAG | BROTLI_FLAG
-        # compression_level > 0 to pass the level check if we got that far
-        header = make_xpra_header(flags=flags, level=1)
+        header = make_xpra_header(flags=FLAGS_RENCODEPLUS, level=LZ4_FLAG | BROTLI_FLAG | 1)
         assert looks_like_xpra_packet(header) is False
 
     def test_compressor_set_but_level_zero(self):
         # One compressor enabled but compression_level == 0: rejected
         from xpra.net.protocol.header import LZ4_FLAG
-        header = make_xpra_header(flags=LZ4_FLAG, level=0)
+        header = make_xpra_header(flags=FLAGS_RENCODEPLUS, level=LZ4_FLAG)
         assert looks_like_xpra_packet(header) is False
 
     def test_compressor_with_nonzero_level_accepted(self):
         from xpra.net.protocol.header import LZ4_FLAG
-        header = make_xpra_header(flags=LZ4_FLAG, level=1)
+        header = make_xpra_header(flags=FLAGS_RENCODEPLUS, level=LZ4_FLAG | 1)
+        assert looks_like_xpra_packet(header) is True
+
+    def test_zstd_packet_accepted(self):
+        from xpra.net.protocol.header import ZSTD_FLAG
+        header = make_xpra_header(flags=FLAGS_RENCODEPLUS, level=ZSTD_FLAG | 1)
         assert looks_like_xpra_packet(header) is True
 
     def test_rencode_and_yaml_rejected(self):
@@ -113,7 +115,7 @@ class TestLooksLikeXpraPacket(unittest.TestCase):
     def test_rencode_alone_accepted(self):
         from xpra.net.protocol.header import FLAGS_RENCODE
         header = make_xpra_header(flags=FLAGS_RENCODE, level=0)
-        assert looks_like_xpra_packet(header) is True
+        assert looks_like_xpra_packet(header) is BACKWARDS_COMPATIBLE
 
     def test_yaml_alone_accepted(self):
         from xpra.net.protocol.header import FLAGS_YAML
@@ -165,7 +167,7 @@ class TestGuessPacketType(unittest.TestCase):
 
     def test_xpra(self):
         # a minimal valid-looking xpra header
-        data = b"P" + b"\x00" * 3 + (32).to_bytes(4, "big") + b"\x00" * 24
+        data = make_xpra_header(flags=FLAGS_RENCODEPLUS) + b"\x00" * 24
         assert guess_packet_type(data) == "xpra"
 
 
