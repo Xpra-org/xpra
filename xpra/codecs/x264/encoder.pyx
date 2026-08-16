@@ -596,9 +596,7 @@ cdef class Encoder:
         self.need_reconfig = 0
         self.first_frame_timestamp = 0
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
-        default_profile = os.environ.get("XPRA_X264_PROFILE", "") or (
-            "constrained-baseline" if src_format == "YUV420P" else cs_info[1]
-        )
+        default_profile = "constrained-baseline" if src_format == "YUV420P" else cs_info[1]
         self.profile = get_profile(options, csc_mode=self.src_format, default_profile=default_profile)
         if self.profile == "constrained-baseline":
             # libx264 calls this profile "baseline"; its bitstream is the

@@ -573,13 +573,11 @@ cdef class Encoder:
             csc_mode = "YUV444P10"
         #for 4:4:4 (chromaFormatIDC=3) don't fall back to the "auto" profile,
         #which may resolve to a 4:2:0-only profile and get rejected at init time:
-        default_profile = os.environ.get("XPRA_NVENC_PROFILE", "")
-        default_profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, default_profile)
-        if not default_profile:
-            if get_chroma_format(self.pixel_format) == 3:
-                default_profile = YUV444_PROFILE.get(self.encoding, "")
-            elif self.encoding == "h264":
-                default_profile = "constrained-baseline"
+        default_profile = ""
+        if get_chroma_format(self.pixel_format) == 3:
+            default_profile = YUV444_PROFILE.get(self.encoding, "")
+        elif self.encoding == "h264":
+            default_profile = "constrained-baseline"
         profile = get_profile(options, encoding=self.encoding, csc_mode=csc_mode,
                               default_profile=default_profile)
         if self.encoding == "h264":
