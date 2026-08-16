@@ -439,32 +439,39 @@ class Encodings(StubClientSubsystem):
                 log.error(" " + csv(self.server_encodings))
                 return
         self.encoding = encoding
-        self.send("encoding", self.encoding)
+        packet_type = "encoding" if BACKWARDS_COMPATIBLE else f"{Encodings.PREFIX}-set"
+        self.send(packet_type, self.encoding)
+
+    def send_encoding_option(self, option: str, value: int) -> None:
+        if BACKWARDS_COMPATIBLE:
+            self.send(option, value)
+        else:
+            self.send(f"{Encodings.PREFIX}-options", {option: value})
 
     def send_quality(self) -> None:
         q = self.quality
         log("send_quality() quality=%s", q)
         if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid quality: {q}")
-        self.send("quality", q)
+        self.send_encoding_option("quality", q)
 
     def send_min_quality(self) -> None:
         q = self.min_quality
         log("send_min_quality() min-quality=%s", q)
         if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid min-quality: {q}")
-        self.send("min-quality", q)
+        self.send_encoding_option("min-quality", q)
 
     def send_speed(self) -> None:
         s = self.speed
         log("send_speed() min-speed=%s", s)
         if s != -1 and (s < 0 or s > 100):
             raise ValueError(f"invalid speed: {s}")
-        self.send("speed", s)
+        self.send_encoding_option("speed", s)
 
     def send_min_speed(self) -> None:
         s = self.min_speed
         log("send_min_speed() min-speed=%s", s)
         if s != -1 and (s < 0 or s > 100):
             raise ValueError(f"invalid min-speed: {s}")
-        self.send("min-speed", s)
+        self.send_encoding_option("min-speed", s)
