@@ -4,388 +4,690 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+"""Measure picture encoder size, latency and end-to-end decoded quality.
+
+The committed corpus deliberately separates sharp synthetic screen content
+from continuous-tone imagery.  Every lossy result is decoded through Xpra's
+own decoder before its SNR and PSNR are calculated.
+"""
+
 import argparse
-import os
+import csv
+import hashlib
+import json
+import math
+import platform
+import statistics
 import sys
-from dataclasses import dataclass
-from glob import glob
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from time import monotonic
-from typing import Any
+from typing import Any, TextIO
 
-# Ensure the source tree's xpra package is importable when running as a script
-# (not needed in frozen cx_Freeze builds where modules are bundled)
+# Ensure the source tree's xpra package is importable when running as a script.
 if not getattr(sys, "frozen", False):
-    _repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-    if _repo_root not in sys.path:
-        sys.path.insert(0, _repo_root)
+    REPO_ROOT = Path(__file__).resolve().parents[3]
+    repo_str = str(REPO_ROOT)
+    if repo_str not in sys.path:
+        sys.path.insert(0, repo_str)
+else:  # pragma: no cover - used by frozen test bundles
+    REPO_ROOT = Path.cwd()
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.loader import load_codec
 from xpra.net import compression
 from xpra.util.objects import typedict
 
-N = 10
-QUALITYS_LOSSY = (1, 50, 99, 100)
-QUALITYS_LOSSLESS = (100,)
-SPEED = 100
 
-try:
-    RESAMPLE_LANCZOS = Image.Resampling.LANCZOS
-except AttributeError:  # pragma: no cover
-    RESAMPLE_LANCZOS = Image.LANCZOS
+FIXTURE_DIR = REPO_ROOT / "tests" / "test-images" / "codec-benchmark"
+DEFAULT_QUALITIES = (30, 50, 80, 100)
+# These values exercise all four rungs of the AVIF speed curve introduced by #4998.
+DEFAULT_SPEEDS = (20, 40, 60, 80)
+DEFAULT_REPETITIONS = 5
+DEFAULT_WARMUP = 1
 
 
 @dataclass(frozen=True)
-class CorpusImage:
-    label: str
+class Fixture:
+    name: str
+    filename: str
     width: int
     height: int
     pixel_format: str
     pixels: bytes
+    rgba: bytes
+    content_types: tuple[str, ...]
+    quality_metric: str
     has_alpha: bool
+    pixel_sha256: str
+    edge_mask: bytes
 
     @property
-    def stride(self) -> int:
-        return self.width * len(self.pixel_format)
+    def rowstride(self) -> int:
+        return self.width * 4
 
 
 @dataclass(frozen=True)
-class BenchmarkResult:
-    scenario: str
-    label: str
-    codec: str
+class CodecCase:
+    name: str
+    encoder: str
     encoding: str
-    quality: int | None
+    decoder: str
+    alpha: str = "any"
+    uses_quality: bool = True
+    uses_speed: bool = True
+    rgb_compressor: str = ""
+
+
+@dataclass(frozen=True)
+class Result:
+    scenario: str
+    fixture: str
+    content_types: tuple[str, ...]
+    quality_metric: str
+    has_alpha: bool
     width: int
     height: int
-    mps: float
-    ratio: float
-    compressed_size: int
-    raw_size: int
-    extra: str = ""
+    encoder: str
+    decoder: str
+    requested_encoding: str
+    encoding: str
+    quality: int | None
+    speed: int | None
+    frames: int
+    raw_bytes: int
+    encoded_bytes: int
+    compression_ratio: float
+    bits_per_pixel: float
+    encode_ms: float
+    encode_p95_ms: float
+    decode_ms: float
+    decode_p95_ms: float
+    rgb_snr_db: float
+    rgb_psnr_db: float
+    edge_psnr_db: float
+    max_rgb_error: int
+    edge_max_rgb_error: int
+    alpha_psnr_db: float | None
+    max_alpha_error: int | None
+    alpha_exact: bool | None
+    lossless: bool
 
 
-def load_monospace_font(size: int):
-    candidates = (
-        "/usr/share/fonts/gnu-free/FreeMono.ttf",
-        "/usr/share/fonts/liberation-mono-fonts/LiberationMono-Regular.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
-    )
-    for font_file in candidates:
-        if os.path.exists(font_file):
-            try:
-                return ImageFont.truetype(font_file, size)
-            except OSError:
-                pass
-    return ImageFont.load_default()
+CODEC_CASES = (
+    CodecCase("rgb-raw", "enc_rgb", "rgb32", "", uses_quality=False, uses_speed=False),
+    CodecCase("rgb-lz4", "enc_rgb", "rgb32", "", uses_quality=False, rgb_compressor="lz4"),
+    CodecCase("rgb-zstd", "enc_rgb", "rgb32", "", uses_quality=False, rgb_compressor="zstd"),
+    CodecCase("png", "enc_pillow", "png", "dec_pillow", uses_quality=False),
+    CodecCase("png-palette", "enc_pillow", "png/P", "dec_pillow", uses_quality=False),
+    CodecCase("png-grayscale", "enc_pillow", "png/L", "dec_pillow", uses_quality=False),
+    CodecCase("jpeg", "enc_jpeg", "jpeg", "dec_jpeg", alpha="opaque", uses_speed=False),
+    CodecCase("jpega", "enc_jpeg", "jpega", "dec_jpeg", alpha="alpha", uses_speed=False),
+    CodecCase("webp", "enc_webp", "webp", "dec_webp"),
+    CodecCase("avif", "enc_avif", "avif", "dec_avif"),
+    CodecCase("jph", "enc_jph", "jph", "dec_jph", alpha="opaque", uses_speed=False),
+)
 
 
-def draw_terminal_scene(base_size=(1024, 768)) -> Image.Image:
-    w, h = base_size
-    img = Image.new("RGBA", (w, h), (10, 12, 14, 255))
-    draw = ImageDraw.Draw(img)
-    font = load_monospace_font(max(12, min(w, h) // 32))
-    line_h = draw.textbbox((0, 0), "Ag", font=font)[3] + 4
-
-    # Simple terminal-like layout with a status bar and mixed-color text.
-    draw.rectangle((0, 0, w - 1, 28), fill=(22, 24, 28, 255))
-    draw.text((14, 6), "xpra", font=font, fill=(112, 214, 120, 255))
-    draw.text((72, 6), "benchmark corpus", font=font, fill=(210, 210, 210, 255))
-    draw.rectangle((0, h - 24, w - 1, h - 1), fill=(22, 24, 28, 255))
-
-    lines = [
-        ("antoine@host", "/home/antoine/projects/xpra", "$ python3 -m unittest", (130, 210, 255, 255)),
-        ("antoine@host", "/home/antoine/projects/xpra", "$ git status --short", (130, 210, 255, 255)),
-        ("", "", "M xpra/codecs/checks.py", (120, 220, 140, 255)),
-        ("", "", "M tests/xpra/codecs/benchmark_single_picture_encoders.py", (120, 220, 140, 255)),
-        ("", "", "?? docs/images/screenshots/*.png", (255, 210, 120, 255)),
-        ("", "", "?? fs/share/xpra/icons/authentication.png", (255, 210, 120, 255)),
-        ("", "", "error: transparency preserved", (255, 110, 110, 255)),
-        ("", "", "warning: skip only incompatible pairs", (255, 190, 90, 255)),
-    ]
-    y = 40
-    while y + line_h < h - 28:
-        for left, middle, right, color in lines:
-            if left:
-                draw.text((14, y), left, font=font, fill=(90, 180, 255, 255))
-                x = 14 + draw.textlength(left, font=font) + 10
-                draw.text((x, y), middle, font=font, fill=(220, 220, 220, 255))
-                x += draw.textlength(middle, font=font) + 10
-                draw.text((x, y), right, font=font, fill=color)
-            else:
-                draw.text((14, y), right, font=font, fill=color)
-            y += line_h
-            if y + line_h >= h - 28:
-                break
-        if y + line_h >= h - 28:
-            break
-    # Add a few bright blocks so tiny resizes still have text-like structure.
-    for x in range(0, w, max(24, w // 24)):
-        draw.line((x, 32, x, h - 28), fill=(30, 34, 40, 255), width=1)
-    return img
+def int_list(value: str) -> tuple[int, ...]:
+    values = tuple(dict.fromkeys(int(item.strip()) for item in value.split(",") if item.strip()))
+    if not values or any(item < 0 or item > 100 for item in values):
+        raise argparse.ArgumentTypeError("expected comma-separated values between 0 and 100")
+    return values
 
 
-def rgba_to_pixel_bytes(rgba: Image.Image, pixel_format: str) -> bytes:
-    raw = rgba.tobytes()
-    if pixel_format == "RGB":
-        out = bytearray((len(raw) // 4) * 3)
-        dst = 0
-        for src in range(0, len(raw), 4):
-            out[dst:dst + 3] = raw[src:src + 3]
-            dst += 3
-        return bytes(out)
-    if pixel_format == "RGBX":
-        out = bytearray(len(raw))
-        dst = 0
-        for src in range(0, len(raw), 4):
-            out[dst:dst + 4] = raw[src:src + 3] + b"\xff"
-            dst += 4
-        return bytes(out)
-    if pixel_format == "BGRA":
-        out = bytearray(len(raw))
-        dst = 0
-        for src in range(0, len(raw), 4):
-            out[dst:dst + 4] = bytes((raw[src + 2], raw[src + 1], raw[src], raw[src + 3]))
-            dst += 4
-        return bytes(out)
-    raise ValueError(f"unsupported pixel format {pixel_format!r}")
+def percentile95(values: list[float]) -> float:
+    if not values:
+        raise ValueError("cannot calculate a percentile without values")
+    ordered = sorted(values)
+    return ordered[max(0, math.ceil(len(ordered) * 0.95) - 1)]
 
 
-def make_text_image(width: int, height: int) -> Image.Image:
-    base = draw_terminal_scene()
-    return base.resize((width, height), RESAMPLE_LANCZOS)
+def snr_db(signal: int, noise: int) -> float:
+    if noise == 0:
+        return math.inf
+    if signal == 0:
+        return -math.inf
+    return 10 * math.log10(signal / noise)
 
 
-def load_corpus() -> list[CorpusImage]:
-    repo_root = Path(__file__).resolve().parents[3]
+def psnr_db(noise: int, samples: int) -> float:
+    if noise == 0:
+        return math.inf
+    if samples <= 0:
+        raise ValueError("PSNR requires at least one sample")
+    return 10 * math.log10(255 * 255 / (noise / samples))
 
-    for size in ((499, 316), (13, 6), (250, 12)):
-        label = f"xterm:{size[0]}x{size[1]}"
-        img = make_text_image(*size)
-        rgba = img.convert("RGBA")
-        alpha = rgba.getchannel("A").getextrema()
-        has_alpha = alpha != (255, 255)
-        pixel_format = "BGRA" if has_alpha else "RGB"
-        pixels = rgba_to_pixel_bytes(rgba, pixel_format)
-        yield CorpusImage(label, size[0], size[1], pixel_format, pixels, has_alpha)
 
-    corpus_paths = [
-        repo_root / "fs/share/icons/xpra.png",
-        repo_root / "fs/share/xpra/icons/authentication.png",
-    ]
-    corpus_paths.extend(Path(p) for p in glob(str(repo_root / "docs/images/screenshots/*.png")))
-    corpus_paths.extend(Path(p) for p in glob(str(repo_root / "docs/images/*.png")))
-    for path in sorted({p.resolve() for p in corpus_paths}):
-        if not path.exists():
+def rgb_energy(reference: bytes, candidate: bytes, mask: bytes | None = None) -> tuple[int, int, int, int]:
+    if len(reference) != len(candidate) or len(reference) % 4:
+        raise ValueError("RGBA buffers must have the same whole-pixel length")
+    pixels = len(reference) // 4
+    if mask is not None and len(mask) != pixels:
+        raise ValueError("edge mask dimensions do not match the RGBA buffers")
+    signal = noise = samples = maximum = 0
+    for pixel in range(pixels):
+        if mask is not None and not mask[pixel]:
             continue
-        with Image.open(path) as src:
-            rgba = src.convert("RGBA")
-        alpha = rgba.getchannel("A").getextrema()
-        has_alpha = alpha != (255, 255)
-        pixel_format = "BGRA" if has_alpha else "RGB"
-        pixels = rgba_to_pixel_bytes(rgba, pixel_format)
-        rel = path.relative_to(repo_root)
-        yield CorpusImage(str(rel), rgba.width, rgba.height, pixel_format, pixels, has_alpha)
+        offset = pixel * 4
+        for channel in range(3):
+            value = reference[offset + channel]
+            error = abs(value - candidate[offset + channel])
+            signal += value * value
+            noise += error * error
+            maximum = max(maximum, error)
+            samples += 1
+    return signal, noise, samples, maximum
 
 
-def scenario_for(spec: CorpusImage) -> str:
-    if spec.label.startswith("xterm:"):
-        return "text"
-    if spec.label.startswith("fs/share/"):
-        return "icons-alpha" if spec.has_alpha else "icons"
-    if spec.label.startswith("docs/images/screenshots/"):
-        return "screenshots"
-    if spec.label.startswith("docs/images/"):
-        return "docs-images"
-    return "other"
+def alpha_energy(reference: bytes, candidate: bytes) -> tuple[int, int, int]:
+    if len(reference) != len(candidate) or len(reference) % 4:
+        raise ValueError("RGBA buffers must have the same whole-pixel length")
+    noise = maximum = 0
+    samples = len(reference) // 4
+    for offset in range(3, len(reference), 4):
+        error = abs(reference[offset] - candidate[offset])
+        noise += error * error
+        maximum = max(maximum, error)
+    return noise, samples, maximum
 
 
-def make_image(spec: CorpusImage) -> ImageWrapper:
+def make_edge_mask(rgba: bytes, width: int, height: int) -> bytes:
+    if len(rgba) != width * height * 4:
+        raise ValueError("RGBA buffer dimensions do not match")
+    luma = bytearray(width * height)
+    for pixel in range(width * height):
+        offset = pixel * 4
+        red, green, blue = rgba[offset:offset + 3]
+        luma[pixel] = (77 * red + 150 * green + 29 * blue) >> 8
+    gradients: list[tuple[int, int]] = []
+    for y in range(height):
+        for x in range(width):
+            pixel = y * width + x
+            right = luma[pixel + 1] if x + 1 < width else luma[pixel]
+            below = luma[pixel + width] if y + 1 < height else luma[pixel]
+            gradient = abs(luma[pixel] - right) + abs(luma[pixel] - below)
+            gradients.append((gradient, pixel))
+    edge_count = max(1, len(gradients) // 10)
+    gradients.sort(reverse=True)
+    mask = bytearray(width * height)
+    for _gradient, pixel in gradients[:edge_count]:
+        mask[pixel] = 1
+    return bytes(mask)
+
+
+def pack_bgrx(rgba: bytes, has_alpha: bool) -> tuple[str, bytes]:
+    packed = bytearray(len(rgba))
+    for offset in range(0, len(rgba), 4):
+        packed[offset] = rgba[offset + 2]
+        packed[offset + 1] = rgba[offset + 1]
+        packed[offset + 2] = rgba[offset]
+        packed[offset + 3] = rgba[offset + 3] if has_alpha else 0xFF
+    return ("BGRA" if has_alpha else "BGRX"), bytes(packed)
+
+
+def load_fixtures(directory: Path = FIXTURE_DIR) -> list[Fixture]:
+    manifest_path = directory / "manifest.json"
+    with manifest_path.open(encoding="utf-8") as manifest_file:
+        manifest = json.load(manifest_file)
+    if manifest.get("schema_version") != 1 or not isinstance(manifest.get("scenarios"), list):
+        raise ValueError(f"invalid picture benchmark manifest: {manifest_path}")
+    fixtures = []
+    for entry in manifest["scenarios"]:
+        path = directory / entry["file"]
+        with Image.open(path) as source:
+            image = source.convert("RGBA")
+        rgba = image.tobytes()
+        alpha_min, alpha_max = image.getchannel("A").getextrema()
+        has_alpha = (alpha_min, alpha_max) != (255, 255)
+        pixel_format, pixels = pack_bgrx(rgba, has_alpha)
+        quality_metric = entry["quality_metric"]
+        if quality_metric not in ("rgb_psnr_db", "edge_psnr_db"):
+            raise ValueError(f"invalid quality metric {quality_metric!r} for {entry['name']}")
+        fixtures.append(Fixture(
+            entry["name"], entry["file"], image.width, image.height,
+            pixel_format, pixels, rgba, tuple(entry.get("content_types", ())),
+            quality_metric, has_alpha, hashlib.sha256(rgba).hexdigest(),
+            make_edge_mask(rgba, image.width, image.height),
+        ))
+    return fixtures
+
+
+def make_image(fixture: Fixture) -> ImageWrapper:
     return ImageWrapper(
-        0, 0, spec.width, spec.height,
-        spec.pixels, spec.pixel_format, len(spec.pixel_format) * 8, spec.stride,
+        0, 0, fixture.width, fixture.height, fixture.pixels,
+        fixture.pixel_format, 32, fixture.rowstride,
         planes=ImageWrapper.PACKED, thread_safe=True,
     )
 
 
 def packet_bytes(data: Any) -> bytes:
-    if data is None:
-        return b""
     payload = getattr(data, "data", data)
-    if isinstance(payload, bytes):
-        return payload
-    if isinstance(payload, memoryview):
-        return payload.tobytes()
-    return bytes(payload)
+    return payload if isinstance(payload, bytes) else bytes(payload)
 
 
-def benchmark_rgb_lz4(spec: CorpusImage) -> tuple[int, float, int]:
+def image_to_rgba(pixel_format: str, pixels: Any, width: int, height: int, rowstride: int) -> bytes:
+    if pixel_format in ("L", "LA"):
+        mode = pixel_format
+    elif "A" in pixel_format:
+        mode = "RGBA"
+    else:
+        mode = "RGB"
+    image = Image.frombuffer(mode, (width, height), bytes(pixels), "raw", pixel_format, rowstride, 1)
+    return image.convert("RGBA").tobytes()
+
+
+def decode_rgb(case: CodecCase, decoder: Any, coding: str, cdata: bytes,
+               client_options: dict[str, Any], fixture: Fixture, rowstride: int) -> bytes:
+    options = typedict(client_options | {
+        "rgb_format": fixture.pixel_format,
+        "has_alpha": fixture.has_alpha,
+        "alpha": fixture.has_alpha,
+    })
+    if not case.decoder:
+        raw: Any = cdata
+        for compressor in ("lz4", "zstd"):
+            if options.intget(compressor, 0):
+                raw = compression.COMPRESSION[compressor].decompress(cdata)
+                break
+        pixel_format = options.strget("rgb_format", fixture.pixel_format)
+        return image_to_rgba(pixel_format, raw, fixture.width, fixture.height, rowstride)
+    if case.decoder == "dec_pillow":
+        pixel_format, raw, width, height, decoded_stride = decoder.decompress(coding, cdata, options)
+        return image_to_rgba(pixel_format, raw, width, height, decoded_stride)
+    decoded = None
     try:
-        compressor = compression.get_compressor("lz4")
-    except Exception as e:
-        raise RuntimeError(f"lz4 compressor is unavailable: {e}") from e
-    raw = spec.pixels
-    size = len(raw)
+        if hasattr(decoder, "decompress_to_rgb"):
+            decoded = decoder.decompress_to_rgb(cdata, options)
+        else:
+            decoded = decoder.decompress(cdata, options)
+        return image_to_rgba(
+            decoded.get_pixel_format(), decoded.get_pixels(),
+            decoded.get_width(), decoded.get_height(), decoded.get_rowstride(),
+        )
+    finally:
+        if decoded:
+            decoded.free()
+
+
+def settings(case: CodecCase, qualities: tuple[int, ...], speeds: tuple[int, ...]):
+    quality_values: tuple[int | None, ...] = qualities if case.uses_quality else (None,)
+    speed_values: tuple[int | None, ...] = speeds if case.uses_speed else (None,)
+    for quality in quality_values:
+        for speed in speed_values:
+            yield quality, speed
+
+
+def compatible(case: CodecCase, fixture: Fixture) -> bool:
+    if case.alpha == "opaque" and fixture.has_alpha:
+        return False
+    if case.alpha == "alpha" and not fixture.has_alpha:
+        return False
+    return True
+
+
+def encode_once(case: CodecCase, encoder: Any, fixture: Fixture,
+                quality: int | None, speed: int | None) -> tuple[str, bytes, dict[str, Any], int, float]:
+    image = make_image(fixture)
+    options = typedict({
+        "quality": 100 if quality is None else quality,
+        "speed": 50 if speed is None else speed,
+        "alpha": fixture.has_alpha,
+        "content-types": fixture.content_types,
+        "rgb_formats": (fixture.pixel_format,),
+        "lz4": case.rgb_compressor == "lz4",
+        "zstd": case.rgb_compressor == "zstd",
+    })
     start = monotonic()
-    compressed_size = 0
-    for _ in range(N):
-        _level, cdata = compressor(raw, 1)
-        compressed_size = len(cdata)
-    end = monotonic()
-    return compressed_size, end - start, size
+    try:
+        result = encoder.encode(case.encoding, image, options)
+    finally:
+        elapsed = monotonic() - start
+        image.free()
+    if not result:
+        raise RuntimeError(f"{case.encoder}:{case.encoding} returned no data")
+    coding, data, client_options, width, height, rowstride, _bpp = result
+    if (width, height) != (fixture.width, fixture.height):
+        raise ValueError(f"encoder returned {width}x{height}, expected {fixture.width}x{fixture.height}")
+    return coding, packet_bytes(data), dict(client_options), rowstride, elapsed
 
 
-def benchmark_encoder(module, encoding: str, spec: CorpusImage, options: dict[str, Any]) -> tuple[int, float, int, dict[str, Any]]:
-    image = make_image(spec)
-    size = len(spec.pixels)
-    client_options: dict[str, Any] = {}
-    compressed_size = 0
-    start = monotonic()
-    for _ in range(N):
-        result = module.encode(encoding, image, typedict(options))
-        if not result:
-            raise RuntimeError(f"{module}.{encoding} returned no data for {spec.label}")
-        cdata = result[1]
-        client_options = result[2]
-        compressed_size = len(packet_bytes(cdata))
-    end = monotonic()
-    return compressed_size, end - start, size, client_options
+def benchmark_case(case: CodecCase, encoder: Any, decoder: Any, fixture: Fixture,
+                   quality: int | None, speed: int | None,
+                   repetitions: int, warmup: int) -> Result:
+    for _ in range(warmup):
+        coding, cdata, client_options, rowstride, _elapsed = encode_once(
+            case, encoder, fixture, quality, speed,
+        )
+        decode_rgb(case, decoder, coding, cdata, client_options, fixture, rowstride)
+
+    encoded = []
+    encode_times = []
+    for _ in range(repetitions):
+        item = encode_once(case, encoder, fixture, quality, speed)
+        encoded.append(item[:4])
+        encode_times.append(item[4] * 1000)
+    median_size = statistics.median(len(item[1]) for item in encoded)
+    coding, cdata, client_options, rowstride = min(encoded, key=lambda item: abs(len(item[1]) - median_size))
+
+    decode_times = []
+    decoded_rgba = b""
+    for _ in range(repetitions):
+        start = monotonic()
+        decoded_rgba = decode_rgb(case, decoder, coding, cdata, client_options, fixture, rowstride)
+        decode_times.append((monotonic() - start) * 1000)
+    if len(decoded_rgba) != len(fixture.rgba):
+        raise ValueError(f"decoder produced {len(decoded_rgba)} RGBA bytes, expected {len(fixture.rgba)}")
+
+    signal, noise, samples, maximum = rgb_energy(fixture.rgba, decoded_rgba)
+    _edge_signal, edge_noise, edge_samples, edge_maximum = rgb_energy(
+        fixture.rgba, decoded_rgba, fixture.edge_mask,
+    )
+    alpha_psnr = None
+    alpha_maximum = None
+    alpha_exact = None
+    if fixture.has_alpha:
+        alpha_noise, alpha_samples, alpha_maximum = alpha_energy(fixture.rgba, decoded_rgba)
+        alpha_psnr = psnr_db(alpha_noise, alpha_samples)
+        alpha_exact = alpha_noise == 0
+    encoded_size = len(cdata)
+    raw_size = len(fixture.pixels)
+    return Result(
+        fixture.name, fixture.filename, fixture.content_types, fixture.quality_metric,
+        fixture.has_alpha, fixture.width, fixture.height,
+        case.name, case.decoder or "raw", case.encoding, coding,
+        quality, speed, repetitions, raw_size, encoded_size,
+        encoded_size / raw_size, encoded_size * 8 / (fixture.width * fixture.height),
+        statistics.median(encode_times), percentile95(encode_times),
+        statistics.median(decode_times), percentile95(decode_times),
+        snr_db(signal, noise), psnr_db(noise, samples), psnr_db(edge_noise, edge_samples),
+        maximum, edge_maximum, alpha_psnr, alpha_maximum, alpha_exact,
+        noise == 0 and (alpha_exact is not False),
+    )
 
 
-def print_result(label: str, codec: str, encoding: str, spec: CorpusImage, compressed_size: int, duration: float, raw_size: int,
-                 quality: int | None = None, extra: str = "") -> None:
-    mps = (spec.width * spec.height * N) / duration / 1024 / 1024 if duration > 0 else 0.0
-    ratio = 100.0 * compressed_size / raw_size if raw_size else 0.0
-    qstr = "-" if quality is None else str(quality)
-    suffix = f"  {extra}" if extra else ""
-    print(f"{label:28} {codec:10} {encoding:10} q={qstr:>3} {spec.width:5}x{spec.height:<5} {mps:9.1f} MPixels/s  {compressed_size:8} B  {ratio:6.2f}%{suffix}")
+def finite_quality(value: float | None) -> float:
+    if value is None:
+        return -math.inf
+    if math.isinf(value):
+        return 1.0e9 if value > 0 else -1.0e9
+    return value
 
 
-def family_key(result: BenchmarkResult) -> tuple[str, str]:
-    return result.codec, result.encoding
+def dominates(left: Result, right: Result) -> bool:
+    left_quality = finite_quality(getattr(left, left.quality_metric))
+    right_quality = finite_quality(getattr(right, right.quality_metric))
+    left_alpha = finite_quality(left.alpha_psnr_db) if left.has_alpha else 0
+    right_alpha = finite_quality(right.alpha_psnr_db) if right.has_alpha else 0
+    left_time = left.encode_ms + left.decode_ms
+    right_time = right.encode_ms + right.decode_ms
+    no_worse = all((
+        left_quality >= right_quality,
+        left_alpha >= right_alpha,
+        left.encoded_bytes <= right.encoded_bytes,
+        left_time <= right_time,
+    ))
+    strictly_better = any((
+        left_quality > right_quality,
+        left_alpha > right_alpha,
+        left.encoded_bytes < right.encoded_bytes,
+        left_time < right_time,
+    ))
+    return no_worse and strictly_better
 
 
-def best_rows_by_family(rows: list[BenchmarkResult], metric) -> list[BenchmarkResult]:
-    best: dict[tuple[str, str], BenchmarkResult] = {}
-    for row in rows:
-        key = family_key(row)
-        current = best.get(key)
-        if current is None or metric(row) < metric(current):
-            best[key] = row
-    return list(best.values())
+def pareto_indices(results: list[Result]) -> set[int]:
+    frontier = set()
+    by_scenario: dict[str, list[int]] = {}
+    for index, result in enumerate(results):
+        by_scenario.setdefault(result.scenario, []).append(index)
+    for indices in by_scenario.values():
+        for candidate in indices:
+            if not any(other != candidate and dominates(results[other], results[candidate]) for other in indices):
+                frontier.add(candidate)
+    return frontier
 
 
-def print_summary(results: list[BenchmarkResult], title: str, predicate) -> None:
-    if not results:
+def json_value(value: Any) -> Any:
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, tuple):
+        return [json_value(item) for item in value]
+    if isinstance(value, list):
+        return [json_value(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): json_value(item) for key, item in value.items()}
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
+def result_dict(result: Result, pareto: bool = False) -> dict[str, Any]:
+    return json_value(asdict(result) | {"pareto": pareto})
+
+
+def write_json(results: list[Result], metadata: dict[str, Any], output: TextIO) -> None:
+    frontier = pareto_indices(results)
+    document = {
+        "schema_version": 1,
+        "benchmark": json_value(metadata),
+        "results": [result_dict(result, index in frontier) for index, result in enumerate(results)],
+    }
+    json.dump(document, output, indent=2, allow_nan=False)
+    output.write("\n")
+
+
+def write_csv(results: list[Result], output: TextIO) -> None:
+    frontier = pareto_indices(results)
+    rows = [result_dict(result, index in frontier) for index, result in enumerate(results)]
+    if not rows:
         return
-    print(f"\n{title}")
-    scenarios = sorted({r.scenario for r in results})
-    for scenario in scenarios:
-        rows = [r for r in results if r.scenario == scenario and predicate(r)]
-        if not rows:
-            continue
+    for row in rows:
+        row["content_types"] = ",".join(row["content_types"])
+    writer = csv.DictWriter(output, fieldnames=tuple(rows[0]))
+    writer.writeheader()
+    writer.writerows(rows)
+
+
+def display_float(value: float | None, decimals: int = 2) -> str:
+    if value is None:
+        return "-"
+    if math.isinf(value):
+        return "lossless" if value > 0 else "-inf"
+    return f"{value:.{decimals}f}"
+
+
+def write_markdown(results: list[Result], output: TextIO) -> None:
+    columns = (
+        "Scenario", "Encoder", "Encoding", "Quality", "Speed", "Bytes", "bpp",
+        "Encode ms", "Decode ms", "RGB PSNR", "Edge PSNR", "Max error", "Alpha PSNR", "Pareto",
+    )
+    output.write("| " + " | ".join(columns) + " |\n")
+    output.write("| " + " | ".join("---" for _column in columns) + " |\n")
+    frontier = pareto_indices(results)
+    for index, result in enumerate(results):
+        values = (
+            result.scenario, result.encoder, result.encoding,
+            "-" if result.quality is None else str(result.quality),
+            "-" if result.speed is None else str(result.speed),
+            str(result.encoded_bytes), display_float(result.bits_per_pixel, 3),
+            display_float(result.encode_ms), display_float(result.decode_ms),
+            display_float(result.rgb_psnr_db), display_float(result.edge_psnr_db),
+            str(result.max_rgb_error), display_float(result.alpha_psnr_db),
+            "yes" if index in frontier else "",
+        )
+        output.write("| " + " | ".join(value.replace("|", "\\|") for value in values) + " |\n")
+
+
+def print_result(result: Result) -> None:
+    quality = "-" if result.quality is None else str(result.quality)
+    speed = "-" if result.speed is None else str(result.speed)
+    print(
+        f"{result.scenario:22} {result.encoder:13} {result.encoding:6} "
+        f"q={quality:>3} s={speed:>3} {result.encoded_bytes:8} B "
+        f"RGB={display_float(result.rgb_psnr_db):>8} dB "
+        f"edge={display_float(result.edge_psnr_db):>8} dB "
+        f"enc={result.encode_ms:7.2f} ms dec={result.decode_ms:7.2f} ms"
+    )
+
+
+def print_pareto_summary(results: list[Result]) -> None:
+    frontier = pareto_indices(results)
+    print("\nPareto frontier (quality up, payload/round-trip cost down)")
+    for scenario in sorted({result.scenario for result in results}):
         print(f"\n{scenario}")
-        print("  best size")
-        size_rows = best_rows_by_family(rows, lambda x: (x.ratio, -x.mps, x.quality or -1))
-        for r in sorted(size_rows, key=lambda x: (x.ratio, -x.mps, x.codec, x.encoding, x.quality or -1))[:5]:
-            q = "-" if r.quality is None else str(r.quality)
-            print(f"    {r.codec:10} {r.encoding:10} q={q:>3}  {r.ratio:6.2f}%  {r.mps:9.1f} MPixels/s")
-        print("  best speed")
-        speed_rows = best_rows_by_family(rows, lambda x: (-x.mps, x.ratio, x.quality or -1))
-        for r in sorted(speed_rows, key=lambda x: (-x.mps, x.ratio, x.codec, x.encoding, x.quality or -1))[:5]:
-            q = "-" if r.quality is None else str(r.quality)
-            print(f"    {r.codec:10} {r.encoding:10} q={q:>3}  {r.mps:9.1f} MPixels/s  {r.ratio:6.2f}%")
-
-    print()
+        rows = ((index, result) for index, result in enumerate(results)
+                if result.scenario == scenario and index in frontier)
+        for _index, result in sorted(rows, key=lambda item: (item[1].encoded_bytes, item[1].encode_ms)):
+            metric = getattr(result, result.quality_metric)
+            print(f"  {result.encoder:13} q={str(result.quality):>4} s={str(result.speed):>4} "
+                  f"{result.encoded_bytes:8} B  {result.quality_metric}={display_float(metric)} dB  "
+                  f"enc={result.encode_ms:.2f} ms dec={result.decode_ms:.2f} ms")
 
 
-def is_practical_high_quality(result: BenchmarkResult) -> bool:
-    return result.quality is None or result.quality >= 99
-
-
-def is_low_quality(result: BenchmarkResult) -> bool:
-    return result.scenario != "text" and result.quality is not None and result.quality <= 50
-
-
-def qualities_for(scenario: str, codec_name: str, encoding: str) -> tuple[int, ...]:
-    if scenario == "text":
-        return QUALITYS_LOSSLESS
-    if codec_name == "pillow" and encoding in ("png", "png/L", "png/P"):
-        return QUALITYS_LOSSLESS
-    return QUALITYS_LOSSY
+def codec_metadata(modules: dict[str, Any]) -> dict[str, Any]:
+    info = {}
+    for name, module in modules.items():
+        if not module:
+            continue
+        try:
+            info[name] = module.get_info()
+        except Exception as error:
+            info[name] = {"error": str(error)}
+    return info
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description="Benchmark single picture encoders on a mixed image corpus.")
-    parser.add_argument("--limit", type=int, default=0, help="limit the number of corpus images processed")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--quality", type=int_list, default=DEFAULT_QUALITIES)
+    parser.add_argument("--speed", type=int_list, default=DEFAULT_SPEEDS)
+    parser.add_argument("--repetitions", type=int, default=DEFAULT_REPETITIONS)
+    parser.add_argument("--warmup", type=int, default=DEFAULT_WARMUP)
+    parser.add_argument("--fixtures", default="", help="comma-separated scenario filter")
+    parser.add_argument("--encodings", default="", help="comma-separated encoding filter")
+    parser.add_argument("--encoders", default="", help="comma-separated encoder/case filter")
+    parser.add_argument("--limit", type=int, default=0, help="limit the number of corpus scenarios")
+    parser.add_argument("--quick", action="store_true", help="run q=50/s=80 once without warm-up")
+    parser.add_argument("--json", type=Path, help="write raw results and metadata as JSON")
+    parser.add_argument("--csv", type=Path, help="write raw results as CSV")
+    parser.add_argument("--markdown", type=Path, help="write results as a Markdown table")
     args = parser.parse_args(argv)
+    if args.repetitions <= 0 or args.warmup < 0 or args.limit < 0:
+        parser.error("repetitions must be positive; warmup and limit must not be negative")
+    qualities = (50,) if args.quick else args.quality
+    speeds = (80,) if args.quick else args.speed
+    repetitions = 1 if args.quick else args.repetitions
+    warmup = 0 if args.quick else args.warmup
 
     compression.init_all()
+    fixtures = load_fixtures()
+    fixture_filter = {item for item in args.fixtures.split(",") if item}
+    if fixture_filter:
+        fixtures = [fixture for fixture in fixtures if fixture.name in fixture_filter]
+    if args.limit:
+        fixtures = fixtures[:args.limit]
+    if not fixtures:
+        parser.error("no matching picture benchmark fixtures")
 
-    codec_specs = [
-        ("rgb+lz4", None),
-        ("pillow", load_codec("enc_pillow")),
-        ("webp", load_codec("enc_webp")),
-        ("jpeg", load_codec("enc_jpeg")),
-        ("avif", load_codec("enc_avif")),
-        ("jph", load_codec("enc_jph")),
-    ]
+    encoding_filter = {item for item in args.encodings.split(",") if item}
+    encoder_filter = {item for item in args.encoders.split(",") if item}
+    cases = []
+    for case in CODEC_CASES:
+        encoding_selected = not encoding_filter or case.encoding in encoding_filter
+        encoder_selected = not encoder_filter or case.name in encoder_filter
+        encoder_selected = encoder_selected or case.encoder.removeprefix("enc_") in encoder_filter
+        if encoding_selected and encoder_selected:
+            cases.append(case)
+    if not cases:
+        parser.error("no matching picture codec cases")
 
-    corpus = list(load_corpus())
-    if args.limit > 0:
-        corpus = corpus[:args.limit]
+    module_names = {case.encoder for case in cases} | {case.decoder for case in cases if case.decoder}
+    modules: dict[str, Any] = {}
+    unavailable: dict[str, str] = {}
+    for name in sorted(module_names):
+        module = load_codec(name)
+        modules[name] = module
+        if not module:
+            unavailable[name] = "codec unavailable"
 
-    if not corpus:
-        raise RuntimeError("no benchmark images were discovered")
-
-    results: list[BenchmarkResult] = []
-    for spec in corpus:
-        scenario = scenario_for(spec)
-        alpha = "alpha" if spec.has_alpha else "opaque"
-        print(f"\n{spec.label}  {spec.width}x{spec.height}  {alpha}  {spec.pixel_format}")
-        for codec_name, module in codec_specs:
-            if codec_name == "rgb+lz4":
+    results = []
+    for fixture in fixtures:
+        print(f"\n{fixture.name}: {fixture.width}x{fixture.height} "
+              f"content-types={fixture.content_types or ('unknown',)} alpha={fixture.has_alpha}")
+        for case in cases:
+            if not compatible(case, fixture):
+                continue
+            encoder = modules.get(case.encoder)
+            decoder = modules.get(case.decoder) if case.decoder else None
+            if not encoder or case.decoder and not decoder:
+                continue
+            if case.rgb_compressor and not compression.use(case.rgb_compressor):
+                unavailable[case.name] = f"{case.rgb_compressor} compression unavailable"
+                continue
+            if case.encoding not in tuple(encoder.get_encodings()):
+                unavailable[case.name] = f"{case.encoding} not exposed by {case.encoder}"
+                continue
+            if decoder and case.encoding not in tuple(decoder.get_encodings()):
+                unavailable[case.name] = f"{case.encoding} not exposed by {case.decoder}"
+                continue
+            for quality, speed in settings(case, qualities, speeds):
                 try:
-                    compressed_size, duration, raw_size = benchmark_rgb_lz4(spec)
-                except Exception as e:
-                    print(f"{codec_name:10} skipped: {e}")
+                    result = benchmark_case(
+                        case, encoder, decoder, fixture, quality, speed,
+                        repetitions, warmup,
+                    )
+                except Exception as error:
+                    unavailable[f"{fixture.name}/{case.name}/q{quality}/s{speed}"] = str(error)
+                    print(f"skip {case.name} q={quality} s={speed}: {error}", file=sys.stderr)
                     continue
-                mps = (spec.width * spec.height * N) / duration / 1024 / 1024 if duration > 0 else 0.0
-                ratio = 100.0 * compressed_size / raw_size if raw_size else 0.0
-                print_result(spec.label, codec_name, "lz4", spec, compressed_size, duration, raw_size, quality=None)
-                results.append(BenchmarkResult(scenario, spec.label, codec_name, "lz4", None, spec.width, spec.height, mps, ratio, compressed_size, raw_size))
-                continue
+                results.append(result)
+                print_result(result)
 
-            if not module:
-                print(f"{codec_name:10} skipped: codec unavailable")
-                continue
+    if not results:
+        print("no picture encoder benchmark results", file=sys.stderr)
+        return 1
+    print_pareto_summary(results)
 
-            encodings = tuple(module.get_encodings())
-            for encoding in encodings:
-                for quality in qualities_for(scenario, codec_name, encoding):
-                    try:
-                        compressed_size, duration, raw_size, client_options = benchmark_encoder(
-                            module, encoding, spec, {
-                                "quality": quality,
-                                "speed": SPEED,
-                                "alpha": True,
-                            },
-                        )
-                    except Exception as e:
-                        print(f"{codec_name:10} {encoding:10} q={quality:<3} skipped: {e}")
-                        continue
-                    extra = ""
-                    if client_options:
-                        extra = str(client_options)
-                    print_result(spec.label, codec_name, encoding, spec, compressed_size, duration, raw_size, quality=quality, extra=extra)
-                    mps = (spec.width * spec.height * N) / duration / 1024 / 1024 if duration > 0 else 0.0
-                    ratio = 100.0 * compressed_size / raw_size if raw_size else 0.0
-                    results.append(BenchmarkResult(scenario, spec.label, codec_name, encoding, quality, spec.width, spec.height, mps, ratio, compressed_size, raw_size, extra=extra))
-    print_summary(results, "Summary: practical quality (q>=99)", is_practical_high_quality)
-    print_summary(results, "Summary: low quality (q<=50)", is_low_quality)
+    metadata = {
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "platform": platform.platform(),
+        "python": platform.python_version(),
+        "qualities": qualities,
+        "speeds": speeds,
+        "repetitions": repetitions,
+        "warmup": warmup,
+        "fixture_filter": sorted(fixture_filter),
+        "encoding_filter": sorted(encoding_filter),
+        "encoder_filter": sorted(encoder_filter),
+        "fixtures": [
+            {
+                "scenario": fixture.name,
+                "file": fixture.filename,
+                "width": fixture.width,
+                "height": fixture.height,
+                "content_types": fixture.content_types,
+                "quality_metric": fixture.quality_metric,
+                "has_alpha": fixture.has_alpha,
+                "pixel_sha256": fixture.pixel_sha256,
+            }
+            for fixture in fixtures
+        ],
+        "codecs": codec_metadata(modules),
+        "compression": compression.get_compression_caps(2),
+        "unavailable": unavailable,
+    }
+    if args.json:
+        with args.json.open("w", encoding="utf-8") as json_file:
+            write_json(results, metadata, json_file)
+    if args.csv:
+        with args.csv.open("w", newline="", encoding="utf-8") as csv_file:
+            write_csv(results, csv_file)
+    if args.markdown:
+        with args.markdown.open("w", encoding="utf-8") as markdown_file:
+            write_markdown(results, markdown_file)
     return 0
 
 

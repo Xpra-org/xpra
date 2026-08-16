@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "scenarios": [
+    {
+      "name": "code",
+      "file": "screen-code.png",
+      "content_types": ["text"],
+      "quality_metric": "edge_psnr_db"
+    },
+    {
+      "name": "terminal",
+      "file": "screen-terminal.png",
+      "content_types": ["text"],
+      "quality_metric": "edge_psnr_db"
+    },
+    {
+      "name": "browser",
+      "file": "screen-browser.png",
+      "content_types": ["browser"],
+      "quality_metric": "edge_psnr_db"
+    },
+    {
+      "name": "desktop",
+      "file": "screen-desktop.png",
+      "content_types": ["desktop"],
+      "quality_metric": "edge_psnr_db"
+    },
+    {
+      "name": "unclassified-desktop",
+      "file": "screen-desktop.png",
+      "content_types": [],
+      "quality_metric": "edge_psnr_db"
+    },
+    {
+      "name": "continuous-tone",
+      "file": "continuous-tone.png",
+      "content_types": ["picture"],
+      "quality_metric": "rgb_psnr_db"
+    },
+    {
+      "name": "alpha-ui",
+      "file": "alpha-ui.png",
+      "content_types": ["text"],
+      "quality_metric": "edge_psnr_db"
+    }
+  ]
+}
