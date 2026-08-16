@@ -46,8 +46,8 @@ class Authenticator(SQLAuthenticator):
     CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
+        self.uri = kwargs.pop("uri", "")
         super().__init__(**kwargs)
-        self.uri = kwargs.get("uri", "")
         assert self.uri, "missing database uri"
 
     def db_cursor(self, sql: str, *sqlargs):

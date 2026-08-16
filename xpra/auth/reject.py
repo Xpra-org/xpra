@@ -6,6 +6,7 @@
 from collections.abc import Sequence
 
 from xpra.auth.common import SessionData
+from xpra.auth.option import warn_unused_auth_options
 from xpra.net.digest import get_salt, choose_digest
 from xpra.util.objects import typedict
 
@@ -17,6 +18,7 @@ class Authenticator:
         self.challenge_sent = False
         self.prompt: str = kwargs.pop("prompt", "password")
         self.passed: bool = False
+        warn_unused_auth_options(self, kwargs)
 
     def cleanup(self):
         """ no need to do anything """

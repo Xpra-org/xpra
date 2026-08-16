@@ -16,8 +16,8 @@ class Authenticator(SQLAuthenticator):
     __slots__ = ("uri",)
 
     def __init__(self, **kwargs):
+        self.uri = kwargs.pop("uri", None)
         super().__init__(**kwargs)
-        self.uri = kwargs.get("uri")
         assert self.uri, "missing database uri"
 
     def db_cursor(self, sql: str, *sqlargs):

@@ -16,6 +16,7 @@ from xpra.util.str_fn import std, obsc, hexstr
 from xpra.util.env import envint
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
+from xpra.auth.option import warn_unused_auth_options
 from xpra.os_util import POSIX, is_admin
 from xpra.log import Logger
 
@@ -43,15 +44,16 @@ class SysAuthenticatorBase:
     CLIENT_USERNAME = False
 
     def __init__(self, **kwargs):
-        self.username = kwargs.get("username", get_username())
-        remote_props = typedict(kwargs.get("remote", {}))
+        self.username = kwargs.pop("username", get_username())
+        remote = kwargs.pop("remote", {})
+        remote_props = typedict(remote)
         remote_username = remote_props.strget("username", "")
-        verify_username = str(kwargs.get("verify-username", is_admin())).lower() in TRUE_OPTIONS
-        client_username = str(kwargs.get("client-username", self.CLIENT_USERNAME)).lower() in TRUE_OPTIONS
+        verify_username = str(kwargs.pop("verify-username", is_admin())).lower() in TRUE_OPTIONS
+        client_username = str(kwargs.pop("client-username", self.CLIENT_USERNAME)).lower() in TRUE_OPTIONS
         log(f"{self!r}: {verify_username=}, {client_username=}")
         if client_username:
             # allow the client to specify the username to authenticate with:
-            self.username = kwargs.get("remote", {}).get("username", self.username)
+            self.username = remote.get("username", self.username)
             log(f"username={self.username!r}")
         elif verify_username:
             self.verify_username(remote_username)
@@ -65,12 +67,7 @@ class SysAuthenticatorBase:
         self.passed = False
         self.password_used = None
         self.authenticate_check: Callable[[typedict], bool] = self.default_authenticate_check
-        # we can't warn about unused options
-        # because the options are shared with other socket options (nodelay, cork, etc)
-        # unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd", "username"))
-        # if unused:
-        #    log.warn("Warning: unused keyword arguments for %s authentication:", self)
-        #    log.warn(" %s", unused)
+        warn_unused_auth_options(self, kwargs)
         log("auth prompt=%s, socket_dirs=%s", self.prompt, self.socket_dirs)
 
     def verify_username(self, remote_username: str) -> None:

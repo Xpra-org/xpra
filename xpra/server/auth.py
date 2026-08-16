@@ -13,6 +13,7 @@ from xpra.net.digest import get_salt, choose_digest
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.auth.auth_helper import get_auth_module, AuthDef
+from xpra.auth.option import AUTH_OPTION_KEYS
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.util.str_fn import csv, nicestr, hexstr
@@ -90,10 +91,14 @@ class AuthenticationManager(StubSubsystem):
         if auth_classes:
             log(f"creating authenticators {csv(auth_classes)} for {socktype}")
             for auth_name, _, aclass, options in auth_classes:
+                # Keep module options separate from socket options so the
+                # authenticator can warn about module options it did not use.
+                auth_option_keys = tuple(k for k in options if k != "exec_cwd")
                 opts = dict(options)
                 opts["remote"] = remote
                 opts.update(sock_options)
                 opts["connection"] = conn
+                opts[AUTH_OPTION_KEYS] = auth_option_keys
 
                 def parse_socket_dirs(v) -> Sequence[str]:
                     if isinstance(v, (tuple, list)):

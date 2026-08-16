@@ -6,6 +6,7 @@
 
 import unittest
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from xpra.server.auth import get_auth_modules
 from unit.server.subsystem.servermixintest_util import FakeServerBase
@@ -128,6 +129,23 @@ class TestMakeAuthenticators(unittest.TestCase):
         s.auth_classes["tcp"] = get_auth_modules("tcp", ["none"])
         with self.assertRaises((ValueError, Exception)):
             s.make_authenticators("tcp", {}, conn)
+
+    def test_unused_module_option_warns(self):
+        s = make_server()
+        conn = self._make_conn("tcp", auth="file(filename=password.txt,foo=bar)")
+        with patch("xpra.auth.option.log") as log:
+            s.make_authenticators("tcp", {}, conn)
+        messages = " ".join(str(call) for call in log.warn.call_args_list)
+        assert "unused" in messages
+        assert "foo" in messages
+
+    def test_valid_and_socket_options_do_not_warn(self):
+        s = make_server()
+        conn = self._make_conn("tcp", auth="file(filename=password.txt)")
+        conn.options["nodelay"] = "yes"
+        with patch("xpra.auth.option.log") as log:
+            s.make_authenticators("tcp", {}, conn)
+        log.warn.assert_not_called()
 
 
 class Recorder:
