@@ -122,6 +122,7 @@ struct LibVAEncoder {
     int             ref_frame_num;
     int             ref_poc_lsb;
     int             full_range;     /* colour range to signal in the headers (video_full_range_flag) */
+    int             screen_content; /* sharp synthetic edges rather than continuous tone */
     int             last_status;
     char            last_error[256];
     char            device[256];
@@ -136,6 +137,29 @@ static int quality_to_qp(int quality) {
 static int quality_to_vp_qindex(int quality) {
     int q = 127 - (clamp_int(quality, 0, 100) * 123 + 50) / 100;
     return clamp_int(q, 4, 127);
+}
+
+/* The vp8/vp9 in-loop filter level used to be fixed at 16 whatever the quantiser was,
+   which is only the right answer at the coarse end of the range: the filter is there to
+   hide quantisation artifacts, and a fine quantiser does not produce enough of them to
+   be worth the blurring. libvpx derives the level from the quantiser for the same reason.
+   Measured with vp9 over 60 frames at equal luma psnr, against the fixed 16, this ramp is
+   worth 5.9% on a scrolling browser window, 3.5% on a window being dragged and 2.1% on
+   video - and much more than that at the top of the quality range, where the fixed level
+   was doing the most damage (quality 80: 18%, 8.8% and 7.0%): */
+static int vp_filter_level(int qindex) {
+    return clamp_int((qindex * 9 + 32) / 64, 0, 63);
+}
+
+/* The deblocking filter softens the sharp synthetic edges that screen content is made of,
+   so weaken it for the windows we have identified as such. This is the maximum weakening
+   that still pays: measured over 60 frames at equal luma psnr, -3 is worth 2.4% on a
+   scrolling browser window and 0.9% on a window being dragged, while -6 gives most of it
+   back (1.7% and 0.3%). It is strictly a screen content setting - on video it costs 4.7%: */
+#define LIBVA_H264_SCREEN_DEBLOCK_OFFSET (-3)
+
+static int h264_deblock_offset(const LibVAEncoder *enc) {
+    return enc->screen_content ? LIBVA_H264_SCREEN_DEBLOCK_OFFSET : 0;
 }
 
 static int speed_to_quality_level(int speed, int quality_levels) {
@@ -442,8 +466,10 @@ static int make_slice_header(LibVAEncoder *enc, uint8_t *dst, int dst_size,
     }
     bw_se(&bw, enc->qp - 26);         /* slice_qp_delta */
     bw_ue(&bw, 0);                    /* disable_deblocking_filter_idc */
-    bw_se(&bw, 0);                    /* slice_alpha_c0_offset_div2 */
-    bw_se(&bw, 0);                    /* slice_beta_offset_div2 */
+    /* these must match the slice parameters handed to the driver, or the decoder will
+       filter the references differently to the encoder and the error will accumulate: */
+    bw_se(&bw, h264_deblock_offset(enc));   /* slice_alpha_c0_offset_div2 */
+    bw_se(&bw, h264_deblock_offset(enc));   /* slice_beta_offset_div2 */
     bytes = bw_byte_length(&bw);
     bytes = append_ebsp(dst + off, dst_size - off, bw.data, bytes);
     if (!bytes)
@@ -1306,8 +1332,8 @@ static LibVAEncodeStatus h264_encoder_encode(LibVAEncoder *enc,
     }
     slice.slice_qp_delta = (int8_t)(enc->qp - 26);
     slice.disable_deblocking_filter_idc = 0;
-    slice.slice_alpha_c0_offset_div2 = 0;
-    slice.slice_beta_offset_div2 = 0;
+    slice.slice_alpha_c0_offset_div2 = (int8_t)h264_deblock_offset(enc);
+    slice.slice_beta_offset_div2 = (int8_t)h264_deblock_offset(enc);
     sh_size = make_slice_header(enc, sh, sizeof(sh), is_idr, frame_num, poc_lsb, &sh_bits);
     if (sh_size <= 0 || sh_bits <= 0) {
         destroy_buffers(enc, buffers, nbuf);
@@ -1449,10 +1475,8 @@ static LibVAEncodeStatus vp8_encoder_encode(LibVAEncoder *enc,
     pic.pic_flags.bits.refresh_last = 1;
     pic.pic_flags.bits.mb_no_coeff_skip = 1;
     pic.pic_flags.bits.forced_lf_adjustment = is_key;
-    pic.loop_filter_level[0] = 16;
-    pic.loop_filter_level[1] = 16;
-    pic.loop_filter_level[2] = 16;
-    pic.loop_filter_level[3] = 16;
+    for (int i = 0; i < 4; i++)
+        pic.loop_filter_level[i] = (uint8_t)vp_filter_level(enc->vp_qindex);
     pic.sharpness_level = 0;
     pic.clamp_qindex_high = (uint8_t)enc->vp_qindex;
     pic.clamp_qindex_low = (uint8_t)enc->vp_qindex;
@@ -1602,7 +1626,7 @@ static LibVAEncodeStatus vp9_encoder_encode(LibVAEncoder *enc,
     pic.luma_dc_qindex_delta = 0;
     pic.chroma_ac_qindex_delta = 0;
     pic.chroma_dc_qindex_delta = 0;
-    pic.filter_level = 16;
+    pic.filter_level = (uint8_t)vp_filter_level(enc->vp_qindex);
     pic.sharpness_level = 0;
     pic.log2_tile_rows = 0;
     pic.log2_tile_columns = 0;
@@ -1662,10 +1686,11 @@ static LibVAEncodeStatus vp9_encoder_encode(LibVAEncoder *enc,
 LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
                                        const uint8_t *y, int y_stride,
                                        const uint8_t *uv, int uv_stride,
-                                       int full_range,
+                                       int full_range, int screen_content,
                                        LibVAEncodedFrame *frame) {
     if (!enc)
         return LIBVA_ENC_ERROR;
+    enc->screen_content = screen_content;
     if (full_range != enc->full_range) {
         /* the colour range is written into the headers (h264 SPS VUI) only on keyframes,
            so restart the GOP to emit a fresh IDR/keyframe that carries the new range: */

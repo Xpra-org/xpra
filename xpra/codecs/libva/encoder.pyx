@@ -17,7 +17,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, EncodingNotSupported
+from xpra.codecs.constants import VideoSpec, EncodingNotSupported, is_screen_content
 from xpra.codecs.vacommon import config_libva_logging
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict, AtomicInteger
@@ -83,7 +83,7 @@ cdef extern from "va_encode.h":
     LibVAEncodeStatus libva_encoder_encode(LibVAEncoder *enc,
                                            const uint8_t *y, int y_stride,
                                            const uint8_t *uv, int uv_stride,
-                                           int full_range,
+                                           int full_range, int screen_content,
                                            LibVAEncodedFrame *frame) nogil
 
     int               libva_encoder_get_width(LibVAEncoder *enc)
@@ -182,6 +182,7 @@ cdef class Encoder:
     cdef int quality
     cdef int speed
     cdef int full_range
+    cdef int screen_content
     cdef object src_format
     cdef object encoding
     cdef object file
@@ -211,6 +212,7 @@ cdef class Encoder:
             raise ValueError("invalid speed percentage: %s" % self.speed)
         self.frames = 0
         self.full_range = options.boolget("full-range", True)
+        self.screen_content = is_screen_content(options.strtupleget("content-types", ()))
 
         cdef bytes encoding_bytes = encoding.encode("latin-1")
         cdef const char *encoding_name = encoding_bytes
@@ -335,6 +337,7 @@ cdef class Encoder:
             "encoding": self.encoding,
             "quality": self.quality,
             "speed": self.speed,
+            "screen-content": bool(self.screen_content),
             "quality-level": libva_encoder_get_quality_level(self.context),
             "quality-levels": libva_encoder_get_quality_levels(self.context),
         }
@@ -361,6 +364,11 @@ cdef class Encoder:
         assert len(strides) == 2, "NV12 image rowstride does not have 2 values"
         cdef int y_stride = strides[0]
         cdef int uv_stride = strides[1]
+        #the h264 deblocking filter is weakened for the windows made of sharp
+        #synthetic edges - this is a per-slice setting, so unlike the colour range
+        #it can change from one frame to the next without restarting the GOP:
+        cdef int screen_content = is_screen_content(options.strtupleget("content-types", ()))
+        self.screen_content = screen_content
         cdef int image_range = image.get_full_range()
         cdef int range_changed = image_range != self.full_range
         self.full_range = image_range
@@ -377,7 +385,7 @@ cdef class Encoder:
                 status = libva_encoder_encode(self.context,
                                               <const uint8_t *> y_buf.buf, y_stride,
                                               <const uint8_t *> uv_buf.buf, uv_stride,
-                                              image_range,
+                                              image_range, screen_content,
                                               &frame)
         finally:
             if uv_buf.buf:
