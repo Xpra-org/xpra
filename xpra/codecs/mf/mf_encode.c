@@ -13,6 +13,8 @@
 #include <mftransform.h>
 #include <mfidl.h>
 #include <mferror.h>
+#include <codecapi.h>
+#include <icodecapi.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -23,16 +25,63 @@ DEFINE_GUID(MF_LOW_LATENCY, 0x9c27891a, 0xed7a, 0x40e1,
             0x88, 0xe8, 0xb2, 0x27, 0x27, 0xa0, 0x24, 0xee);
 #endif
 
+/* ICodecAPI is how an MFT exposes its tuning knobs, and each knob is named by a
+   GUID. We take the values straight from the `STATIC_CODECAPI_*` macros in
+   <codecapi.h> rather than linking the DirectShow GUID library just for these;
+   the extra macro level is what lets the flat list of 11 numbers in those macros
+   land in the braced initializer that `GUID` needs. */
+#define MF_CODECAPI_GUID_(name, d1, d2, d3, b0, b1, b2, b3, b4, b5, b6, b7) \
+    static const GUID MF_API_##name = {d1, d2, d3, {b0, b1, b2, b3, b4, b5, b6, b7}}
+#define MF_CODECAPI_GUID(name, ...) MF_CODECAPI_GUID_(name, __VA_ARGS__)
+
+MF_CODECAPI_GUID(AVEncCommonRateControlMode, STATIC_CODECAPI_AVEncCommonRateControlMode);
+MF_CODECAPI_GUID(AVEncCommonQuality,         STATIC_CODECAPI_AVEncCommonQuality);
+MF_CODECAPI_GUID(AVEncCommonQualityVsSpeed,  STATIC_CODECAPI_AVEncCommonQualityVsSpeed);
+MF_CODECAPI_GUID(AVEncCommonMeanBitRate,     STATIC_CODECAPI_AVEncCommonMeanBitRate);
+MF_CODECAPI_GUID(AVEncCommonMaxBitRate,      STATIC_CODECAPI_AVEncCommonMaxBitRate);
+MF_CODECAPI_GUID(AVEncCommonLowLatency,      STATIC_CODECAPI_AVEncCommonLowLatency);
+MF_CODECAPI_GUID(AVEncCommonRealTime,        STATIC_CODECAPI_AVEncCommonRealTime);
+MF_CODECAPI_GUID(AVLowLatencyMode,           STATIC_CODECAPI_AVLowLatencyMode);
+MF_CODECAPI_GUID(AVEncMPVGOPSize,            STATIC_CODECAPI_AVEncMPVGOPSize);
+MF_CODECAPI_GUID(AVEncMPVDefaultBPictureCount, STATIC_CODECAPI_AVEncMPVDefaultBPictureCount);
+MF_CODECAPI_GUID(AVEncVideoContentType,      STATIC_CODECAPI_AVEncVideoContentType);
+MF_CODECAPI_GUID(AVEncAdaptiveMode,          STATIC_CODECAPI_AVEncAdaptiveMode);
+MF_CODECAPI_GUID(AVEncH264CABACEnable,       STATIC_CODECAPI_AVEncH264CABACEnable);
+
+/* IID_ICodecAPI, so we don't have to link `strmiids` for a single GUID */
+static const GUID MF_IID_ICodecAPI =
+    {0x901db4c7, 0x31ce, 0x41a2, {0x85, 0xdc, 0x8f, 0xa0, 0xbf, 0x41, 0xb8, 0xda}};
+
+/* xpra sends frames when something changes rather than on a clock, so this is
+   not a real frame rate - it is just the time base the encoder's rate control
+   and GOP length are expressed in. The input samples are timestamped to match. */
+#define MF_FPS 30
+#define MF_FRAME_DURATION (10000000LL / MF_FPS)   /* one frame in 100-ns units */
+
+/* Bitrate baseline at quality=50, in milli-bits per pixel per frame */
+#define MF_MBPP_VIDEO   100   /* continuous tone: every bit goes somewhere useful */
+#define MF_MBPP_SCREEN   60   /* mostly static, and what does change is flat colour */
+
+#define MF_MIN_BITRATE      500000
+#define MF_MAX_BITRATE    20000000
+#define MF_MAX_PEAK_BITRATE 40000000
+
 struct MFEncoder {
     IMFTransform   *transform;
     IMFMediaType   *input_type;
     IMFMediaType   *output_type;
+    ICodecAPI      *codec_api;
     /* pre-allocated output sample for MFTs that don't provide their own */
     IMFSample      *out_sample;
     IMFMediaBuffer *out_mbuf;
     int             provides_samples;
+    int             codec;
     int             width;
     int             height;
+    MFEncoderTuning tuning;
+    MFTuningInfo    applied;
+    DWORD           mean_bitrate;
+    DWORD           max_bitrate;
     /* NV12 scratch buffer for YUV420P → NV12 conversion */
     int             nv12_stride;
     uint8_t        *nv12_buf;
@@ -143,6 +192,263 @@ static const char* enc_codec_to_name(int codec) {
     }
 }
 
+/* ── tuning ──────────────────────────────────────────────────────── */
+
+const char* mf_rate_control_str(int rate_control) {
+    switch (rate_control) {
+        case eAVEncCommonRateControlMode_CBR:                  return "CBR";
+        case eAVEncCommonRateControlMode_PeakConstrainedVBR:   return "peak constrained VBR";
+        case eAVEncCommonRateControlMode_UnconstrainedVBR:     return "unconstrained VBR";
+        case eAVEncCommonRateControlMode_Quality:              return "quality";
+        case eAVEncCommonRateControlMode_LowDelayVBR:          return "low delay VBR";
+        case eAVEncCommonRateControlMode_GlobalVBR:            return "global VBR";
+        case eAVEncCommonRateControlMode_GlobalLowDelayVBR:    return "global low delay VBR";
+        default:                                               return "";
+    }
+}
+
+static const char* content_type_str(int content_type) {
+    switch (content_type) {
+        case MF_CONTENT_SCREEN: return "screen";
+        case MF_CONTENT_VIDEO:  return "video";
+        default:                return "unknown";
+    }
+}
+
+static int clamp_pct(int value, int fallback) {
+    if (value < 0)   return fallback;
+    if (value > 100) return 100;
+    return value;
+}
+
+/* everything that isn't positively identified as continuous tone is screen content */
+static int is_video_content(const MFEncoderTuning *t) {
+    return t->content_type == MF_CONTENT_VIDEO;
+}
+
+static void reset_tuning_info(MFTuningInfo *info) {
+    info->codec_api        = 0;
+    info->rate_control     = -1;
+    info->mean_bitrate     = -1;
+    info->max_bitrate      = -1;
+    info->quality          = -1;
+    info->quality_vs_speed = -1;
+    info->gop_size         = -1;
+    info->bframes          = -1;
+    info->low_latency      = -1;
+    info->content_type     = -1;
+    info->adaptive_mode    = -1;
+    info->cabac            = -1;
+    info->profile          = -1;
+}
+
+/* `IsSupported` and `IsModifiable` both answer "no" with S_FALSE, which is a
+   *success* code - so these have to test for S_OK rather than use SUCCEEDED() */
+static int codecapi_supported(MFEncoder *enc, const GUID *api) {
+    return enc->codec_api && ICodecAPI_IsSupported(enc->codec_api, api) == S_OK;
+}
+
+static int codecapi_modifiable(MFEncoder *enc, const GUID *api) {
+    return enc->codec_api && ICodecAPI_IsModifiable(enc->codec_api, api) == S_OK;
+}
+
+static int codecapi_set(MFEncoder *enc, const GUID *api, VARIANT *value,
+                        const char *name, long lvalue) {
+    HRESULT hr;
+    if (!codecapi_supported(enc, api)) {
+        enc_log("mf tuning: %s is not supported", name);
+        return 0;
+    }
+    hr = ICodecAPI_SetValue(enc->codec_api, api, value);
+    if (FAILED(hr)) {
+        enc_log("mf tuning: %s=%ld rejected: 0x%08lX", name, lvalue, (unsigned long)hr);
+        return 0;
+    }
+    enc_log("mf tuning: %s=%ld", name, lvalue);
+    return 1;
+}
+
+static int codecapi_set_u32(MFEncoder *enc, const GUID *api, UINT32 value, const char *name) {
+    VARIANT v;
+    memset(&v, 0, sizeof(v));
+    V_VT(&v)  = VT_UI4;
+    V_UI4(&v) = value;
+    return codecapi_set(enc, api, &v, name, (long)value);
+}
+
+static int codecapi_set_bool(MFEncoder *enc, const GUID *api, int value, const char *name) {
+    VARIANT v;
+    memset(&v, 0, sizeof(v));
+    V_VT(&v)   = VT_BOOL;
+    V_BOOL(&v) = value ? VARIANT_TRUE : VARIANT_FALSE;
+    return codecapi_set(enc, api, &v, name, (long)value);
+}
+
+/* how many bits per second this window is worth */
+static void compute_bitrates(MFEncoder *enc) {
+    const MFEncoderTuning *t = &enc->tuning;
+    int quality = clamp_pct(t->quality, 50);
+    unsigned long long pixel_rate = (unsigned long long)enc->width * enc->height * MF_FPS;
+    unsigned long long mean = pixel_rate * (is_video_content(t) ? MF_MBPP_VIDEO : MF_MBPP_SCREEN) / 1000;
+    unsigned long long peak;
+
+    /* quality moves the baseline between half and one and a half times: */
+    mean = mean * (50 + quality) / 100;
+    if (mean < MF_MIN_BITRATE) mean = MF_MIN_BITRATE;
+    if (mean > MF_MAX_BITRATE) mean = MF_MAX_BITRATE;
+
+    /* screen content is bursty - near zero while nothing moves, then a full
+       redraw - so it needs far more headroom above its mean than video does: */
+    peak = is_video_content(t) ? mean * 3 / 2 : mean * 3;
+    if (peak > MF_MAX_PEAK_BITRATE) peak = MF_MAX_PEAK_BITRATE;
+
+    /* a bandwidth limit is a hard ceiling: it applies to the peak, not the average */
+    if (t->bandwidth_limit > 0) {
+        if (peak > (unsigned long long)t->bandwidth_limit) peak = (unsigned long long)t->bandwidth_limit;
+        if (mean > peak) mean = peak;
+    }
+
+    enc->mean_bitrate = (DWORD)mean;
+    enc->max_bitrate  = (DWORD)peak;
+}
+
+/* pick the rate control mode - the first one this MFT accepts wins */
+static void apply_rate_control(MFEncoder *enc) {
+    /* screen content is what we would like to encode at a constant *quality*:
+       a still desktop should cost nothing at all, and the text that does get
+       redrawn should stay sharp instead of being smeared to hit an average. */
+    static const UINT32 by_quality[] = {
+        eAVEncCommonRateControlMode_Quality,
+        eAVEncCommonRateControlMode_UnconstrainedVBR,
+        eAVEncCommonRateControlMode_PeakConstrainedVBR,
+        eAVEncCommonRateControlMode_CBR,
+    };
+    /* video is a continuous stream that will happily eat everything it is given,
+       and a bandwidth limit is a promise we have to keep, so both are capped: */
+    static const UINT32 by_bitrate[] = {
+        eAVEncCommonRateControlMode_PeakConstrainedVBR,
+        eAVEncCommonRateControlMode_UnconstrainedVBR,
+        eAVEncCommonRateControlMode_CBR,
+    };
+    const UINT32 *modes;
+    size_t count, i;
+
+    if (is_video_content(&enc->tuning) || enc->tuning.bandwidth_limit > 0) {
+        modes = by_bitrate;
+        count = sizeof(by_bitrate) / sizeof(by_bitrate[0]);
+    } else {
+        modes = by_quality;
+        count = sizeof(by_quality) / sizeof(by_quality[0]);
+    }
+    for (i = 0; i < count; i++) {
+        if (codecapi_set_u32(enc, &MF_API_AVEncCommonRateControlMode, modes[i], "rate-control")) {
+            enc->applied.rate_control = (int)modes[i];
+            return;
+        }
+    }
+}
+
+/* Ask for everything the tuning implies. Knobs that were already applied are
+   skipped, so this can safely be called twice: some MFTs refuse ICodecAPI values
+   until they know the format, others stop accepting them once they do. */
+static void apply_static_tuning(MFEncoder *enc) {
+    const MFEncoderTuning *t = &enc->tuning;
+    MFTuningInfo *info = &enc->applied;
+    const int video = is_video_content(t);
+    int quality = clamp_pct(t->quality, 50);
+    int speed   = clamp_pct(t->speed, 50);
+    int gop;
+
+    if (!enc->codec_api)
+        return;
+
+    /* first, because it decides whether the quality or the bitrate knobs
+       are the ones that mean anything: */
+    if (info->rate_control < 0)
+        apply_rate_control(enc);
+
+    if (info->rate_control == eAVEncCommonRateControlMode_Quality) {
+        /* MF's quality scale is unusable at the bottom, so keep it off the floor: */
+        UINT32 mf_quality = (UINT32)(15 + quality * 85 / 100);
+        if (info->quality < 0 && codecapi_set_u32(enc, &MF_API_AVEncCommonQuality, mf_quality, "quality"))
+            info->quality = (int)mf_quality;
+    } else {
+        if (info->mean_bitrate < 0 &&
+            codecapi_set_u32(enc, &MF_API_AVEncCommonMeanBitRate, enc->mean_bitrate, "mean-bitrate"))
+            info->mean_bitrate = (int)enc->mean_bitrate;
+        if (info->max_bitrate < 0 &&
+            codecapi_set_u32(enc, &MF_API_AVEncCommonMaxBitRate, enc->max_bitrate, "max-bitrate"))
+            info->max_bitrate = (int)enc->max_bitrate;
+    }
+
+    /* the one knob that is exactly what xpra's `speed` means, just the other way
+       round: 0 asks the encoder for speed, 100 asks it for compression */
+    if (info->quality_vs_speed < 0 &&
+        codecapi_set_u32(enc, &MF_API_AVEncCommonQualityVsSpeed, (UINT32)(100 - speed), "quality-vs-speed"))
+        info->quality_vs_speed = 100 - speed;
+
+    /* a remote display is interactive even when it is showing a film: never let
+       the encoder buffer frames to compress them better */
+    if (info->low_latency < 0) {
+        int ll = 0;
+        ll |= codecapi_set_bool(enc, &MF_API_AVLowLatencyMode, 1, "low-latency-mode");
+        ll |= codecapi_set_bool(enc, &MF_API_AVEncCommonLowLatency, 1, "low-latency");
+        ll |= codecapi_set_bool(enc, &MF_API_AVEncCommonRealTime, 1, "real-time");
+        if (ll)
+            info->low_latency = 1;
+    }
+
+    /* xpra never seeks, and asks for a refresh when it needs one, so keyframes
+       are pure overhead - but a periodic one still bounds the damage a lost or
+       corrupt frame can do. An intra frame costs most on screen content (a full
+       screen of text, usually while nothing is even moving), so that is where
+       the GOP gets stretched furthest: */
+    gop = video ? MF_FPS * 10 : MF_FPS * 60;
+    if (info->gop_size < 0 && codecapi_set_u32(enc, &MF_API_AVEncMPVGOPSize, (UINT32)gop, "gop-size"))
+        info->gop_size = gop;
+
+    /* every B picture is another frame of latency before anything can be sent */
+    if (info->bframes < 0 && codecapi_set_u32(enc, &MF_API_AVEncMPVDefaultBPictureCount, 0, "b-frames"))
+        info->bframes = 0;
+
+    /* `FixedCameraAngle` tells the encoder the background does not move, which is
+       what makes a desktop cheap to encode: it is the extreme case of a static
+       camera. Real video pans and cuts, so it gets no such promise: */
+    if (info->content_type < 0) {
+        UINT32 mf_content = video ? eAVEncVideoContentType_Unknown : eAVEncVideoContentType_FixedCameraAngle;
+        if (codecapi_set_u32(enc, &MF_API_AVEncVideoContentType, mf_content, "content-type"))
+            info->content_type = (int)mf_content;
+    }
+
+    /* frames arrive when the window changes, not on a clock, so let the rate
+       control cope with a variable frame rate - except for video, which really
+       does arrive at a steady rate and whose rate control is better off assuming it: */
+    if (info->adaptive_mode < 0) {
+        UINT32 mode = video ? eAVEncAdaptiveMode_None : eAVEncAdaptiveMode_FrameRate;
+        if (codecapi_set_u32(enc, &MF_API_AVEncAdaptiveMode, mode, "adaptive-mode"))
+            info->adaptive_mode = (int)mode;
+    }
+
+    /* CABAC buys around 10% fewer bits for a slower encode and a slower decode,
+       which is a bad trade exactly when the pipeline is asking for speed: */
+    if (enc->codec == MF_CODEC_H264 && info->cabac < 0) {
+        int cabac = speed < 80;
+        if (codecapi_set_bool(enc, &MF_API_AVEncH264CABACEnable, cabac, "cabac"))
+            info->cabac = cabac;
+    }
+}
+
+/* the profile is part of the output media type rather than an ICodecAPI knob */
+static UINT32 get_profile(int codec, int speed) {
+    if (codec == MF_CODEC_HEVC)
+        return eAVEncH265VProfile_Main_420_8;
+    /* `High` is worth about 10% over `Main` (8x8 transform, better intra
+       prediction) for a little more work, so give it up only when the pipeline
+       is asking for speed. xpra's other h264 encoders default to `high` for
+       YUV420P, so every decoder we talk to can already handle it: */
+    return (speed >= 80) ? eAVEncH264VProfile_Main : eAVEncH264VProfile_High;
+}
+
 /* ── YUV420P → NV12 conversion ───────────────────────────────────── */
 
 /* NV12 layout: Y plane (stride * height rows) immediately followed by
@@ -174,7 +480,8 @@ static void yuv420p_to_nv12(uint8_t *dst, int dst_stride,
 
 /* ── encoder creation ────────────────────────────────────────────── */
 
-MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int height) {
+MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int height,
+                                 const MFEncoderTuning *tuning) {
     HRESULT hr;
     MFEncoder *enc;
     IMFActivate **activates = NULL;
@@ -182,7 +489,7 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
     MFT_REGISTER_TYPE_INFO output_info;
     DWORD i;
     const GUID *out_subtype;
-    DWORD bitrate;
+    UINT32 profile;
 
     *out = NULL;
 
@@ -194,8 +501,18 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
     if (!enc)
         return MF_ENC_ERROR;
 
+    enc->codec  = codec;
     enc->width  = width;
     enc->height = height;
+    if (tuning) {
+        enc->tuning = *tuning;
+    } else {
+        enc->tuning.content_type    = MF_CONTENT_UNKNOWN;
+        enc->tuning.quality         = 50;
+        enc->tuning.speed           = 50;
+        enc->tuning.bandwidth_limit = 0;
+    }
+    reset_tuning_info(&enc->applied);
 
     /* enumerate encoders that produce the requested compressed format */
     output_info.guidMajorType = MFMediaType_Video;
@@ -236,32 +553,55 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
         }
     }
 
-    /* compute a resolution-appropriate bitrate, clamped to [500k, 20M] bps */
-    bitrate = (DWORD)((unsigned long long)width * height * 30 / 10);
-    if (bitrate < 500000)   bitrate = 500000;
-    if (bitrate > 20000000) bitrate = 20000000;
-    enc_log("mf_encoder_create: bitrate=%lu bps", (unsigned long)bitrate);
+    /* the tuning knobs live behind ICodecAPI, which not every MFT exposes */
+    hr = IMFTransform_QueryInterface(enc->transform, &MF_IID_ICodecAPI, (void **)&enc->codec_api);
+    if (FAILED(hr) || !enc->codec_api) {
+        enc->codec_api = NULL;
+        enc_log("mf_encoder_create: no ICodecAPI (0x%08lX), using the MFT defaults", (unsigned long)hr);
+    }
+    enc->applied.codec_api = enc->codec_api != NULL;
+
+    compute_bitrates(enc);
+    enc_log("mf_encoder_create: %s content, quality=%d speed=%d, bitrate=%lu/%lu bps",
+            content_type_str(enc->tuning.content_type), enc->tuning.quality, enc->tuning.speed,
+            (unsigned long)enc->mean_bitrate, (unsigned long)enc->max_bitrate);
+
+    /* most MFTs want their ICodecAPI parameters before the media types */
+    apply_static_tuning(enc);
 
     /* set output type (compressed format) — must precede input type for encoders */
     hr = MFCreateMediaType(&enc->output_type);
     if (FAILED(hr)) { set_enc_error(enc, hr, "MFCreateMediaType(output)"); goto fail; }
 
+    profile = get_profile(codec, clamp_pct(enc->tuning.speed, 50));
     IMFMediaType_SetGUID(enc->output_type,   &MF_MT_MAJOR_TYPE,        &MFMediaType_Video);
     IMFMediaType_SetGUID(enc->output_type,   &MF_MT_SUBTYPE,           out_subtype);
     IMFMediaType_SetUINT64(enc->output_type, &MF_MT_FRAME_SIZE,        ((UINT64)width << 32) | (UINT64)height);
     IMFMediaType_SetUINT32(enc->output_type, &MF_MT_INTERLACE_MODE,    MFVideoInterlace_Progressive);
-    IMFMediaType_SetUINT64(enc->output_type, &MF_MT_FRAME_RATE,        ((UINT64)30 << 32) | 1ULL);
+    IMFMediaType_SetUINT64(enc->output_type, &MF_MT_FRAME_RATE,        ((UINT64)MF_FPS << 32) | 1ULL);
     IMFMediaType_SetUINT64(enc->output_type, &MF_MT_PIXEL_ASPECT_RATIO,((UINT64)1  << 32) | 1ULL);
-    IMFMediaType_SetUINT32(enc->output_type, &MF_MT_AVG_BITRATE,       bitrate);
+    IMFMediaType_SetUINT32(enc->output_type, &MF_MT_AVG_BITRATE,       enc->mean_bitrate);
+    IMFMediaType_SetUINT32(enc->output_type, &MF_MT_MPEG2_PROFILE,     profile);
+    enc->applied.profile = (int)profile;
 
     hr = IMFTransform_SetOutputType(enc->transform, 0, enc->output_type, 0);
+    if (FAILED(hr)) {
+        /* an MFT that doesn't support the profile we asked for rejects the whole
+           output type, so drop it and let the encoder pick its own: */
+        enc_log("mf_encoder_create: SetOutputType(%s, profile=%lu) failed: 0x%08lX, retrying without a profile",
+                enc_codec_to_name(codec), (unsigned long)profile, (unsigned long)hr);
+        IMFMediaType_DeleteItem(enc->output_type, &MF_MT_MPEG2_PROFILE);
+        enc->applied.profile = -1;
+        hr = IMFTransform_SetOutputType(enc->transform, 0, enc->output_type, 0);
+    }
     if (FAILED(hr)) {
         enc_log("mf_encoder_create: SetOutputType(%s) failed: 0x%08lX",
                 enc_codec_to_name(codec), (unsigned long)hr);
         goto fail;
     }
-    enc_log("mf_encoder_create: output type set (%s, %dx%d, %lubps)",
-            enc_codec_to_name(codec), width, height, (unsigned long)bitrate);
+    enc_log("mf_encoder_create: output type set (%s, %dx%d, %lubps, profile=%d)",
+            enc_codec_to_name(codec), width, height,
+            (unsigned long)enc->mean_bitrate, enc->applied.profile);
 
     /* enumerate input types offered by the MFT, select NV12 */
     {
@@ -281,7 +621,7 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
                 IMFMediaType_SetGUID(candidate,   &MF_MT_SUBTYPE,           &MFVideoFormat_NV12);
                 IMFMediaType_SetUINT64(candidate, &MF_MT_FRAME_SIZE,        ((UINT64)width << 32) | (UINT64)height);
                 IMFMediaType_SetUINT32(candidate, &MF_MT_INTERLACE_MODE,    MFVideoInterlace_Progressive);
-                IMFMediaType_SetUINT64(candidate, &MF_MT_FRAME_RATE,        ((UINT64)30 << 32) | 1ULL);
+                IMFMediaType_SetUINT64(candidate, &MF_MT_FRAME_RATE,        ((UINT64)MF_FPS << 32) | 1ULL);
 
                 hr = IMFTransform_SetInputType(enc->transform, 0, candidate, 0);
                 enc->input_type = candidate; /* take ownership */
@@ -300,6 +640,10 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
             goto fail;
         }
     }
+
+    /* retry whatever was refused before the formats were known: some MFTs only
+       accept their ICodecAPI parameters once both media types are set */
+    apply_static_tuning(enc);
 
     /* check whether the MFT allocates its own output samples */
     {
@@ -341,6 +685,9 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
 
     enc_log("mf_encoder_create: encoder ready (%dx%d nv12_stride=%d provides_samples=%d)",
             width, height, enc->nv12_stride, enc->provides_samples);
+    enc_log("mf_encoder_create: rate-control=%s quality=%d quality-vs-speed=%d gop=%d",
+            mf_rate_control_str(enc->applied.rate_control), enc->applied.quality,
+            enc->applied.quality_vs_speed, enc->applied.gop_size);
     *out = enc;
     return MF_ENC_OK;
 
@@ -452,9 +799,9 @@ static MFEncodeStatus do_encode_nv12(MFEncoder *enc, MFEncodedFrame *frame) {
     IMFSample_AddBuffer(in_sample, in_mbuf);
     IMFMediaBuffer_Release(in_mbuf);
 
-    /* timestamps at 30 fps in 100-ns units */
-    IMFSample_SetSampleTime(in_sample,     enc->frame_count * 333333LL);
-    IMFSample_SetSampleDuration(in_sample, 333333LL);
+    /* timestamps on the same time base as the media types, in 100-ns units */
+    IMFSample_SetSampleTime(in_sample,     enc->frame_count * MF_FRAME_DURATION);
+    IMFSample_SetSampleDuration(in_sample, MF_FRAME_DURATION);
 
     hr = IMFTransform_ProcessInput(enc->transform, 0, in_sample, 0);
     t1 = enc_usec_now();
@@ -471,6 +818,81 @@ static MFEncodeStatus do_encode_nv12(MFEncoder *enc, MFEncodedFrame *frame) {
     frame->us_output = (int)(t2 - t1);
     return st;
 }
+
+/* ── runtime tuning ──────────────────────────────────────────────── */
+
+/* only worth attempting on a knob the MFT said it would accept while running */
+static int codecapi_update_u32(MFEncoder *enc, const GUID *api, UINT32 value, const char *name) {
+    if (!codecapi_modifiable(enc, api)) {
+        enc_log("mf tuning: %s cannot be changed on a running encoder", name);
+        return 0;
+    }
+    return codecapi_set_u32(enc, api, value, name);
+}
+
+MFEncodeStatus mf_encoder_set_tuning(MFEncoder *enc, const MFEncoderTuning *tuning) {
+    MFTuningInfo *info;
+    int quality, speed;
+    int changed = 0;
+
+    if (!enc || !tuning)
+        return MF_ENC_ERROR;
+
+    /* the content type is not updated here: it picks the rate control mode, the
+       GOP length and the encoder's content hint, none of which an open MFT will
+       take back - the caller creates a new encoder when it changes */
+    enc->tuning.quality         = tuning->quality;
+    enc->tuning.speed           = tuning->speed;
+    enc->tuning.bandwidth_limit = tuning->bandwidth_limit;
+    compute_bitrates(enc);
+
+    if (!enc->codec_api)
+        return MF_ENC_NOT_AVAILABLE;
+
+    info    = &enc->applied;
+    quality = clamp_pct(enc->tuning.quality, 50);
+    speed   = clamp_pct(enc->tuning.speed, 50);
+
+    if (info->rate_control == eAVEncCommonRateControlMode_Quality) {
+        UINT32 mf_quality = (UINT32)(15 + quality * 85 / 100);
+        if (info->quality != (int)mf_quality &&
+            codecapi_update_u32(enc, &MF_API_AVEncCommonQuality, mf_quality, "quality")) {
+            info->quality = (int)mf_quality;
+            changed = 1;
+        }
+    } else {
+        if (info->mean_bitrate != (int)enc->mean_bitrate &&
+            codecapi_update_u32(enc, &MF_API_AVEncCommonMeanBitRate, enc->mean_bitrate, "mean-bitrate")) {
+            info->mean_bitrate = (int)enc->mean_bitrate;
+            changed = 1;
+        }
+        if (info->max_bitrate != (int)enc->max_bitrate &&
+            codecapi_update_u32(enc, &MF_API_AVEncCommonMaxBitRate, enc->max_bitrate, "max-bitrate")) {
+            info->max_bitrate = (int)enc->max_bitrate;
+            changed = 1;
+        }
+    }
+
+    if (info->quality_vs_speed != 100 - speed &&
+        codecapi_update_u32(enc, &MF_API_AVEncCommonQualityVsSpeed, (UINT32)(100 - speed), "quality-vs-speed")) {
+        info->quality_vs_speed = 100 - speed;
+        changed = 1;
+    }
+
+    return changed ? MF_ENC_OK : MF_ENC_NOT_AVAILABLE;
+}
+
+void mf_encoder_get_tuning_info(MFEncoder *enc, MFTuningInfo *info) {
+    if (!info)
+        return;
+    if (!enc) {
+        reset_tuning_info(info);
+        return;
+    }
+    *info = enc->applied;
+}
+
+/* ── encoding ────────────────────────────────────────────────────── */
 
 MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
                                   const uint8_t *y_data, int y_stride,
@@ -490,6 +912,7 @@ MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
 void mf_encoder_destroy(MFEncoder *enc) {
     if (!enc) return;
 
+    if (enc->codec_api)   ICodecAPI_Release(enc->codec_api);
     if (enc->transform) {
         IMFTransform_ProcessMessage(enc->transform, MFT_MESSAGE_NOTIFY_END_OF_STREAM, 0);
         IMFTransform_ProcessMessage(enc->transform, MFT_MESSAGE_NOTIFY_END_STREAMING, 0);

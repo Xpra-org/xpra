@@ -8,10 +8,12 @@
 
 #cython: wraparound=False
 
+from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, EncodingNotSupported
+from xpra.codecs.constants import VideoSpec, EncodingNotSupported, is_screen_content
+from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
@@ -43,13 +45,43 @@ cdef extern from "mf_encode.h":
         int      us_input
         int      us_output
 
+    ctypedef enum MFContentType:
+        MF_CONTENT_UNKNOWN
+        MF_CONTENT_SCREEN
+        MF_CONTENT_VIDEO
+
+    ctypedef struct MFEncoderTuning:
+        int content_type
+        int quality
+        int speed
+        int bandwidth_limit
+
+    ctypedef struct MFTuningInfo:
+        int codec_api
+        int rate_control
+        int mean_bitrate
+        int max_bitrate
+        int quality
+        int quality_vs_speed
+        int gop_size
+        int bframes
+        int low_latency
+        int content_type
+        int adaptive_mode
+        int cabac
+        int profile
+
     int MF_CODEC_H264
     int MF_CODEC_HEVC
 
     MFEncodeStatus mf_encode_startup()
     void           mf_encode_shutdown()
-    MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int height)
+    MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int height,
+                                     const MFEncoderTuning *tuning)
     void           mf_encoder_destroy(MFEncoder *enc)
+    MFEncodeStatus mf_encoder_set_tuning(MFEncoder *enc, const MFEncoderTuning *tuning)
+    void           mf_encoder_get_tuning_info(MFEncoder *enc, MFTuningInfo *info)
+    const char*    mf_rate_control_str(int rate_control)
     MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
                                       const uint8_t *y_data, int y_stride,
                                       const uint8_t *u_data, int u_stride,
@@ -114,6 +146,38 @@ def get_min_size(encoding: str) -> Tuple[int, int]:
 MAX_WIDTH, MAX_HEIGHT = 4096, 4096
 
 
+# Most MFTs (the Microsoft software encoder included) only accept their tuning
+# when the encoder is created, so the only way to honour a quality or speed
+# change is to build a new encoder - which costs a keyframe, and on a hardware
+# MFT a whole new encoding session. So we only do it for a change big enough to
+# be worth that, and never more often than `XPRA_MF_RETUNE_DELAY` seconds:
+RETUNE_THRESHOLD = envint("XPRA_MF_RETUNE_THRESHOLD", 30)
+RETUNE_DELAY = envint("XPRA_MF_RETUNE_DELAY", 5)
+
+
+# the content-types that are continuous tone rather than synthetic
+# (the same split as the openh264 encoder makes):
+VIDEO_CONTENT_TYPES: Sequence[str] = ("video", "picture")
+
+
+def get_content_type(content_types: Sequence[str]) -> int:
+    """ map xpra's window content-types onto the hints the MFT understands """
+    if is_screen_content(content_types):
+        return MF_CONTENT_SCREEN
+    if any(x in content_types for x in VIDEO_CONTENT_TYPES):
+        return MF_CONTENT_VIDEO
+    # an unlabelled window is encoded as screen content, which is what it is
+    # until something tells us otherwise - see `is_video_content` in `mf_encode.c`
+    return MF_CONTENT_UNKNOWN
+
+
+CONTENT_TYPE_NAMES: Dict[int, str] = {
+    MF_CONTENT_UNKNOWN  : "unknown",
+    MF_CONTENT_SCREEN   : "screen",
+    MF_CONTENT_VIDEO    : "video",
+}
+
+
 def get_specs() -> Sequence[VideoSpec]:
     specs = []
     for encoding in CODECS:
@@ -143,12 +207,18 @@ cdef class Encoder:
     cdef object encoding
     cdef object src_format
     cdef bint full_range
+    cdef int quality
+    cdef int speed
+    cdef int bandwidth_limit
+    cdef int content_type
+    cdef object content_types
+    cdef double last_reinit
 
     cdef object __weakref__
 
     def init_context(self, encoding: str, int width, int height,
                      src_format: str, options: typedict) -> None:
-        log("mf.encoder.init_context%s", (encoding, width, height, src_format))
+        log("mf.encoder.init_context%s", (encoding, width, height, src_format, options))
         assert encoding in CODECS, "unsupported encoding: %s" % encoding
         assert src_format == "YUV420P", "invalid source format: %s" % src_format
         self.encoding   = encoding
@@ -157,17 +227,69 @@ cdef class Encoder:
         self.height     = height
         self.frames     = 0
         self.full_range = options.boolget("full-range", True)
-        cdef int codec = CODECS[encoding]
-        cdef MFEncodeStatus status = mf_encoder_create(&self.context, codec, width, height)
+        self.quality    = options.intget("quality", 50)
+        self.speed      = options.intget("speed", 50)
+        self.bandwidth_limit = options.intget("bandwidth-limit", 0)
+        self.content_types   = options.strtupleget("content-types", ())
+        self.content_type    = get_content_type(self.content_types)
+        self.create_context()
+
+    cdef void fill_tuning(self, MFEncoderTuning *tuning,
+                          int quality, int speed, int bandwidth_limit) noexcept:
+        memset(tuning, 0, sizeof(MFEncoderTuning))
+        tuning.content_type    = self.content_type
+        tuning.quality         = quality
+        tuning.speed           = speed
+        tuning.bandwidth_limit = bandwidth_limit
+
+    cdef void create_context(self) except *:
+        cdef MFEncoderTuning tuning
+        self.fill_tuning(&tuning, self.quality, self.speed, self.bandwidth_limit)
+        cdef int codec = CODECS[self.encoding]
+        cdef MFEncodeStatus status = mf_encoder_create(&self.context, codec,
+                                                       self.width, self.height, &tuning)
         if status != MF_ENC_OK:
             if status == MF_ENC_NOT_AVAILABLE:
                 raise EncodingNotSupported("failed to create MF %s encoder (%dx%d): %s" % (
-                    encoding, width, height,
+                    self.encoding, self.width, self.height,
                     mf_encode_status_str(status).decode("latin-1")))
             raise RuntimeError("failed to create MF %s encoder (%dx%d): %s" % (
-                encoding, width, height,
+                self.encoding, self.width, self.height,
                 mf_encode_status_str(status).decode("latin-1")))
-        log("mf %s encoder created (%dx%d)", encoding, width, height)
+        self.last_reinit = monotonic()
+        log("mf %s encoder created (%dx%d) content-type=%s quality=%i speed=%i",
+            self.encoding, self.width, self.height,
+            CONTENT_TYPE_NAMES.get(self.content_type, ""), self.quality, self.speed)
+
+    cdef void reinit_encoder(self) except *:
+        # close and reopen the MFT with the current tuning:
+        # the next encoded frame will be a fresh keyframe carrying a new SPS
+        cdef MFEncoder *context = self.context
+        if context:
+            self.context = NULL
+            mf_encoder_destroy(context)
+        self.create_context()
+
+    cdef bint set_tuning(self, int quality, int speed, int bandwidth_limit) except -1:
+        """ retune the running encoder, returns True if it took """
+        cdef MFEncoderTuning tuning
+        self.fill_tuning(&tuning, quality, speed, bandwidth_limit)
+        cdef MFEncodeStatus status = mf_encoder_set_tuning(self.context, &tuning)
+        log("mf set_tuning(%i, %i, %i)=%s", quality, speed, bandwidth_limit,
+            mf_encode_status_str(status).decode("latin-1"))
+        if status != MF_ENC_OK:
+            # this MFT will not be retuned while it is running: leave our own
+            # values alone so that `should_reinit` can measure the drift
+            return False
+        self.quality = quality
+        self.speed = speed
+        self.bandwidth_limit = bandwidth_limit
+        return True
+
+    cdef bint should_reinit(self, int quality, int speed) noexcept:
+        if abs(quality - self.quality) < RETUNE_THRESHOLD and abs(speed - self.speed) < RETUNE_THRESHOLD:
+            return False
+        return monotonic() - self.last_reinit >= RETUNE_DELAY
 
     def get_encoding(self) -> str:
         return self.encoding
@@ -199,16 +321,53 @@ cdef class Encoder:
         self.frames = 0
         self.width  = 0
         self.height = 0
+        self.content_types = ()
+        self.content_type = MF_CONTENT_UNKNOWN
 
     def get_info(self) -> Dict[str, Any]:
         info = get_info()
         info |= {
-            "frames"    : int(self.frames),
-            "width"     : self.width,
-            "height"    : self.height,
-            "encoding"  : self.encoding,
-            "src_format": self.src_format,
+            "frames"        : int(self.frames),
+            "width"         : self.width,
+            "height"        : self.height,
+            "encoding"      : self.encoding,
+            "src_format"    : self.src_format,
+            "quality"       : self.quality,
+            "speed"         : self.speed,
+            "content-types" : self.content_types,
+            "content-type"  : CONTENT_TYPE_NAMES.get(self.content_type, ""),
         }
+        if self.bandwidth_limit > 0:
+            info["bandwidth-limit"] = self.bandwidth_limit
+        if self.context:
+            info["tuning"] = self.get_tuning_info()
+        return info
+
+    def get_tuning_info(self) -> Dict[str, Any]:
+        """ what the MFT actually accepted - anything it refused is left out """
+        cdef MFTuningInfo tuning
+        mf_encoder_get_tuning_info(self.context, &tuning)
+        info: Dict[str, Any] = {
+            "codec-api" : bool(tuning.codec_api),
+        }
+        rate_control = mf_rate_control_str(tuning.rate_control).decode("latin-1")
+        if rate_control:
+            info["rate-control"] = rate_control
+        for name, value in {
+            "mean-bitrate"      : tuning.mean_bitrate,
+            "max-bitrate"       : tuning.max_bitrate,
+            "quality"           : tuning.quality,
+            "quality-vs-speed"  : tuning.quality_vs_speed,
+            "gop-size"          : tuning.gop_size,
+            "b-frames"          : tuning.bframes,
+            "low-latency"       : tuning.low_latency,
+            "video-content-type": tuning.content_type,
+            "adaptive-mode"     : tuning.adaptive_mode,
+            "cabac"             : tuning.cabac,
+            "profile"           : tuning.profile,
+        }.items():
+            if value >= 0:
+                info[name] = value
         return info
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
@@ -225,6 +384,29 @@ cdef class Encoder:
         pf = image.get_pixel_format()
         if pf != "YUV420P":
             raise ValueError("expected YUV420P but got %s" % pf)
+
+        content_types = options.strtupleget("content-types", ()) or self.content_types
+        cdef int content_type = get_content_type(content_types)
+        self.content_types = content_types
+        cdef int quality = options.intget("quality", self.quality)
+        cdef int speed = options.intget("speed", self.speed)
+        cdef int bandwidth_limit = options.intget("bandwidth-limit", self.bandwidth_limit)
+        if content_type != self.content_type:
+            # the rate control mode, the GOP length and the encoder's own content
+            # hint are all chosen when the MFT is created and no open MFT will take
+            # them back, so a window that changes content-type (ie: a browser tab
+            # that starts playing a video) gets a new encoder - and a new IDR:
+            self.content_type = content_type
+            self.quality = quality
+            self.speed = speed
+            self.bandwidth_limit = bandwidth_limit
+            self.reinit_encoder()
+        elif quality != self.quality or speed != self.speed or bandwidth_limit != self.bandwidth_limit:
+            if not self.set_tuning(quality, speed, bandwidth_limit) and self.should_reinit(quality, speed):
+                self.quality = quality
+                self.speed = speed
+                self.bandwidth_limit = bandwidth_limit
+                self.reinit_encoder()
 
         status = self._compress_yuv420p(image, width, height, &frame)
 
