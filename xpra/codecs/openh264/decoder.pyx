@@ -97,6 +97,7 @@ cdef extern from "wels/codec_api.h":
         long Uninitialize()
         long DecodeFrameNoDelay(const unsigned char* pSrc, const int iSrcLen,
                                 unsigned char** ppDst, SBufferInfo* pDstInfo) nogil
+        long FlushFrame(unsigned char** ppDst, SBufferInfo* pDstInfo) nogil
 
 ERROR_STR: Dict[int, str] = {
     dsErrorFree: "no error",
@@ -163,6 +164,7 @@ cdef class Decoder:
     cdef int width
     cdef int height
     cdef object colorspace
+    cdef bint delayed
 
     cdef object __weakref__
 
@@ -173,6 +175,7 @@ cdef class Decoder:
         self.width = width
         self.height = height
         self.colorspace = colorspace
+        self.delayed = False
         self.frames = 0
         cdef long r = WelsCreateDecoder(&self.context)
         if r:
@@ -216,6 +219,7 @@ cdef class Decoder:
         self.width = 0
         self.height = 0
         self.colorspace = ""
+        self.delayed = False
 
     def get_info(self) -> Dict[str, Any]:
         info = get_info()
@@ -234,13 +238,23 @@ cdef class Decoder:
         cdef unsigned char* src
         cdef int src_len = 0
         cdef uint8_t *yuv[3]
+        if options.intget("delayed", 0) > 0:
+            self.delayed = True
+        cdef bint delayed = self.delayed
         assert self.context!=NULL, "decoder is closed"
         start = monotonic()
         with buffer_context(data) as bc:
             src = <unsigned char*> (<uintptr_t> int(bc))
             src_len = len(bc)
             with nogil:
-                r = self.context.DecodeFrameNoDelay(<const unsigned char*> src, <const int> src_len, yuv, &buf_info)
+                r = self.context.DecodeFrameNoDelay(<const unsigned char*> src, <const int> src_len,
+                                                    yuv, &buf_info)
+                if not delayed and r == 0 and buf_info.iBufferStatus != 1:
+                    # Despite its name, DecodeFrameNoDelay still uses a display-order
+                    # buffer for Main and High streams. With no encoder-side delay there
+                    # can be no B-frames to reorder, so drain the current frame now.
+                    memset(&buf_info, 0, sizeof(SBufferInfo))
+                    r = self.context.FlushFrame(yuv, &buf_info)
         if r:
             msg = ERROR_STR.get(r, "unknown")
             raise RuntimeError(f"openh264 frame decoding error {msg!r}")
