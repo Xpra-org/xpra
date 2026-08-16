@@ -9,10 +9,10 @@ from time import monotonic, sleep
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, get_subsampling_divs, EncodingNotSupported
+from xpra.codecs.constants import VideoSpec, get_subsampling_divs, EncodingNotSupported, is_screen_content
 from xpra.codecs.image import ImageWrapper
 from xpra.os_util import WIN32
-from xpra.util.env import envbool, first_time
+from xpra.util.env import envbool, envint, first_time
 from xpra.util.objects import AtomicInteger, typedict
 from xpra.log import Logger
 
@@ -34,6 +34,8 @@ from xpra.codecs.amf.amf cimport (
     AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY,
     AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED,
     AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED,
+    AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CONSTANT_QP,
+    AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
     AMF_VIDEO_ENCODER_AV1_LEVEL_5_1,
     AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN,
     AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY,
@@ -42,11 +44,15 @@ from xpra.codecs.amf.amf cimport (
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY,
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED,
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_BALANCED,
+    AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_CONSTANT_QP,
+    AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
     AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED,
+    AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_CONSTANT_QP,
+    AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
     amf_int32,
     AMFSize, AMFRate,
     AMFCaps,
@@ -62,7 +68,8 @@ from xpra.codecs.amf.amf cimport (
     AMFFactory,
 )
 from xpra.codecs.amf.common cimport (
-    set_guid, get_factory, get_version, check, get_caps, get_plane_info, get_data_info, get_surface_info,
+    set_guid, get_factory, get_version, check, error_str,
+    get_caps, get_plane_info, get_data_info, get_surface_info,
 )
 
 
@@ -80,6 +87,101 @@ AMF_ENCODINGS : Dict[str, str] = {
 }
 
 START_TIME_PROPERTY = "StartTimeProperty"
+
+
+# The three encoders expose the same knobs under three different names, so keep the
+# mapping in one place rather than repeating each `SetProperty` call per codec.
+# A knob that is missing from a table simply is not applied for that codec.
+PROPERTIES: Dict[str, Dict[str, str]] = {
+    "h264": {
+        "usage": "Usage",
+        "quality-preset": "QualityPreset",
+        "frame-size": "FrameSize",
+        "frame-rate": "FrameRate",
+        "rate-control": "RateControlMethod",
+        "target-bitrate": "TargetBitrate",
+        "peak-bitrate": "PeakBitrate",
+        "qp-intra": "QPI",
+        "qp-inter": "QPP",
+        "gop-size": "IDRPeriod",
+        "b-frames": "BPicturesPattern",
+        "query-timeout": "QueryTimeout",
+        "deblocking": "DeBlockingFilter",
+    },
+    "hevc": {
+        # two knobs are deliberately missing here, both because there is no HEVC capable
+        # hardware to verify them against:
+        # * "deblocking": the HEVC property of the same name has the opposite polarity
+        #   (`AMF_VIDEO_ENCODER_HEVC_DE_BLOCKING_FILTER_DISABLE`)
+        # * "gop-size": AMF documents `Av1GOPSize` = 0 as "key frame at the first frame
+        #   only" and `IDRPeriod` = 0 behaves the same way, but `HevcGOPSize` says
+        #   nothing about 0, and guessing wrong would make every frame an intra frame.
+        #   HEVC therefore keeps its default GOP of 60 frames for now.
+        "usage": "HevcUsage",
+        "quality-preset": "HevcQualityPreset",
+        "frame-size": "HevcFrameSize",
+        "frame-rate": "HevcFrameRate",
+        "rate-control": "HevcRateControlMethod",
+        "target-bitrate": "HevcTargetBitrate",
+        "peak-bitrate": "HevcPeakBitrate",
+        "qp-intra": "HevcQP_I",
+        "qp-inter": "HevcQP_P",
+        "query-timeout": "HevcQueryTimeout",
+    },
+    "av1": {
+        "usage": "Av1Usage",
+        "quality-preset": "Av1QualityPreset",
+        "frame-size": "Av1FrameSize",
+        "frame-rate": "Av1FrameRate",
+        "rate-control": "Av1RateControlMethod",
+        "target-bitrate": "Av1TargetBitrate",
+        "peak-bitrate": "Av1PeakBitrate",
+        # AV1 quantizes on a 1..255 `QIndex` scale rather than 0..51:
+        "qp-intra": "Av1QIndex_Intra",
+        "qp-inter": "Av1QIndex_Inter",
+        "gop-size": "Av1GOPSize",
+        "query-timeout": "Av1QueryTimeout",
+        "screen-content": "Av1ScreenContentTools",
+        "palette-mode": "Av1PaletteMode",
+    },
+}
+
+# `Usage` is a preset: it configures the whole rate control parameter set in one go.
+# It must be the *first* property we set, since it overwrites anything set before it:
+USAGE: Dict[str, int] = {
+    "h264": AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY,
+    "hevc": AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY,
+    "av1": AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY,
+}
+
+CONSTANT_QP: Dict[str, int] = {
+    "h264": AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CONSTANT_QP,
+    "hevc": AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_CONSTANT_QP,
+    "av1": AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_CONSTANT_QP,
+}
+
+PEAK_CONSTRAINED_VBR: Dict[str, int] = {
+    "h264": AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
+    "hevc": AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
+    "av1": AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
+}
+
+# the enum values are not in the same order for all three codecs
+# (h264 has CBR at 1, hevc and av1 have it at 3):
+RATE_CONTROL_STR: Dict[str, Dict[int, str]] = {
+    "h264": {
+        0: "constant-qp", 1: "cbr", 2: "peak-constrained-vbr", 3: "latency-constrained-vbr",
+        4: "quality-vbr", 5: "high-quality-vbr", 6: "high-quality-cbr",
+    },
+}
+RATE_CONTROL_STR["hevc"] = RATE_CONTROL_STR["av1"] = {
+    0: "constant-qp", 1: "latency-constrained-vbr", 2: "peak-constrained-vbr", 3: "cbr",
+    4: "quality-vbr", 5: "high-quality-vbr", 6: "high-quality-cbr",
+}
+
+# how long `QueryOutput` may block in the driver waiting for an encoded frame.
+# without it, AMF returns `AMF_REPEAT` straight away and we poll from python:
+QUERY_TIMEOUT = envint("XPRA_AMF_QUERY_TIMEOUT", 200)
 
 
 cdef extern from "Python.h":
@@ -103,7 +205,7 @@ cdef inline AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM get_h264_preset(int quality, i
 cdef inline AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_ENUM get_av1_preset(int quality, int speed):
     if quality >= 90:
         return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_HIGH_QUALITY
-    if quality >= 90:
+    if quality >= 80:
         return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY
     if speed >= 80:
         return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED
@@ -116,6 +218,30 @@ cdef inline AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM get_hevc_preset(int quali
     if speed >= 80:
         return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED
     return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED
+
+
+# The AVC and HEVC quantizers both run from 0 to 51, and AV1 uses a `QIndex` on a
+# 1..255 scale instead, which is roughly four steps per QP step.
+# The top of the QP range is not worth having: past QP 42 the reference picture is
+# degraded enough that inter prediction starts to fail, and the frames get *bigger*
+# again. Measured over 40 frames of 1280x720 at a fixed QP:
+#   QP     40      42      44      46      48      51
+#   text   1184B   1106B   1134B   1233B   1424B   1511B   (33.1 .. 24.4 dB)
+#   video  3258B   3407B   4584B   6176B   6144B   5604B   (35.1 .. 26.6 dB)
+# ie: QP 51 costs 37% more bytes than QP 42 on text and is 7dB worse, so there is
+# nothing to gain by ever asking for it.
+MIN_QP = envint("XPRA_AMF_MIN_QP", 0)
+MAX_QP = envint("XPRA_AMF_MAX_QP", 42)
+
+
+def get_qp(int quality) -> int:
+    # higher quality -> lower QP:
+    quality = max(0, min(100, quality))
+    return MAX_QP - (quality * (MAX_QP - MIN_QP)) // 100
+
+
+def get_qindex(int quality) -> int:
+    return max(1, min(255, get_qp(quality) * 4))
 
 
 def get_type() -> str:
@@ -231,6 +357,9 @@ cdef class Encoder:
     cdef object src_format
     cdef int speed
     cdef int quality
+    cdef int rate_control
+    cdef int query_timeout
+    cdef object content_types
     cdef unsigned int generation
     cdef object file
     cdef object caps
@@ -262,6 +391,9 @@ cdef class Encoder:
         self.height = height
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
+        self.content_types = options.strtupleget("content-types", ())
+        self.rate_control = -1
+        self.query_timeout = 0
         self.frames = 0
 
         self.context = NULL
@@ -320,6 +452,43 @@ cdef class Encoder:
         self.check(ret, f"AMF encoder setting property {name} to {var!r}")
         PyMem_Free(prop)
 
+    cdef int try_encoder_property(self, name: str, AMFVariantStruct var):
+        # for the tuning knobs: every one of them is a request, and which of them this
+        # driver / GPU generation actually honours varies. Do not tear the encoder down
+        # over one that is missing, just say so and carry on:
+        cdef wchar_t *prop = PyUnicode_AsWideCharString(name, NULL)
+        cdef AMF_RESULT ret = self.encoder.pVtbl.SetProperty(self.encoder, prop, var)
+        PyMem_Free(prop)
+        if ret:
+            log("AMF encoder rejected property %r: %s", name, error_str(ret) or ret)
+        return ret == 0
+
+    cdef int set_int64_property(self, name: str, int64_t value):
+        cdef AMFVariantStruct var
+        if AMFVariantInit(&var):
+            return 0
+        AMFVariantAssignInt64(&var, value)
+        return self.try_encoder_property(name, var)
+
+    cdef int try_property(self, name: str, int64_t value):
+        """ set one of the knobs from `PROPERTIES`, if this codec exposes it """
+        prop = PROPERTIES.get(self.encoding, {}).get(name, "")
+        if not prop:
+            return 0
+        return self.set_int64_property(prop, value)
+
+    def get_encoder_property(self, name: str) -> int:
+        """ read an amf_int64 property back, -1 if this encoder does not have it """
+        cdef AMFVariantStruct var
+        if AMFVariantInit(&var):
+            return -1
+        cdef wchar_t *prop = PyUnicode_AsWideCharString(name, NULL)
+        cdef AMF_RESULT ret = self.encoder.pVtbl.GetProperty(self.encoder, prop, &var)
+        PyMem_Free(prop)
+        if ret:
+            return -1
+        return int(var.int64Value)
+
     def get_caps(self) -> Dict:
         assert self.encoder
         cdef AMFCaps *caps
@@ -374,54 +543,126 @@ cdef class Encoder:
             var.rateValue.den = 1
             self.set_encoder_property(prop, var)
             # AMFVariantClear(&var)
-        def setbitrate(prop: str) -> None:
-            if bwlimit:
-                setint64(prop, value=bwlimit)
 
-        # tune encoder:
+        props = PROPERTIES.get(self.encoding)
+        if not props:
+            raise RuntimeError(f"unexpected encoding {self.encoding!r}")
+
+        # `Usage` first: it is a preset which reconfigures the whole rate control
+        # parameter set, so anything set before it is silently thrown away
+        # (which is how the bandwidth limit used to get lost):
+        usage = USAGE[self.encoding]
         if self.encoding == "h264":
-            setsize("FrameSize")
-            setframerate("FrameRate")
-            setbitrate("TargetBitrate")
             # very unreliable way of detecting older cards
             # assume that newer ones have 4GB or more
             # (older cards may report 3.9GB)
             video_memory = self.device_info.get("memory", {}).get("video", 0)
-            if video_memory >= 4*1024*1024*1024:
-                setint64("Usage", value=AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY)
-            else:
-                setint64("Usage", value=AMF_VIDEO_ENCODER_USAGE_LOW_LATENCY)
-            setint64("QualityPreset", get_h264_preset(quality, speed))
-            if False:
-                setint64("Profile", value=AMF_VIDEO_ENCODER_PROFILE_HIGH)
-                setint64("ProfileLevel", value=AMF_H264_LEVEL__5_1)
-            if not options.boolget("b-frames", False):
-                setint64("BPicturesPattern", value=0)
-                # can be not supported - check Capability Manager sample
+            if video_memory < 4*1024*1024*1024:
+                usage = AMF_VIDEO_ENCODER_USAGE_LOW_LATENCY
+        setint64(props["usage"], usage)
+        setsize(props["frame-size"])
+        setframerate(props["frame-rate"])
+
+        preset = {
+            "h264": get_h264_preset,
+            "hevc": get_hevc_preset,
+            "av1": get_av1_preset,
+        }[self.encoding](quality, speed)
+        setint64(props["quality-preset"], preset)
+
+        self.set_rate_control(quality, bwlimit)
+
+        # xpra never seeks and runs over a lossless transport, so the only keyframe we
+        # need is the one that opens the stream - the same choice the x264, vpx, openh264
+        # and libva encoders all make explicitly. The `Usage` preset above happens to
+        # leave periodic keyframes off on current drivers, but say so rather than rely
+        # on it: a 720p intra frame is more than 15x the size of an inter frame here,
+        # which is a latency spike as much as it is wasted bandwidth.
+        self.try_property("gop-size", 0)
+
+        # B frames cost latency (the encoder has to hold a frame back to code the ones
+        # that reference it) and are not supported by every card:
+        if not options.boolget("b-frames", False):
+            self.try_property("b-frames", 0)
+
+        # let `QueryOutput` block in the driver instead of polling for it from python:
+        if QUERY_TIMEOUT > 0:
+            self.query_timeout = self.try_property("query-timeout", QUERY_TIMEOUT)
+
+        # Content type. AMF only reads these at `Init` - setting them on an open encoder
+        # is accepted and then ignored - but that costs us nothing: the server already
+        # drops the whole video pipeline when a window changes content-type
+        # (`content_type_changed` -> `reconfigure(True)` -> `cleanup_codecs`).
+        screen_content = is_screen_content(self.content_types)
+        if self.encoding == "h264":
+            # The deblocking filter smooths away the block edges the quantizer leaves
+            # behind, which is what continuous tone imagery wants; on the sharp synthetic
+            # edges a desktop is made of it removes detail the encoder then has to code
+            # again. Measured over 40 frames of 1280x720 with the filter turned off:
+            #                            quality 35      quality 50      quality 60
+            #   a window being dragged  -16.3% +0.20dB  -24.9% +1.22dB  -19.8% +1.31dB
+            #   a scrolling listing      -3.7% -0.17dB   -4.1% -0.03dB   -4.3% +0.25dB
+            #   video in a window       +18.8% -1.45dB   +7.3% -1.07dB   +1.9% -0.30dB
+            # so it only comes off for the content-types we have positively identified
+            # as screen content, and stays on for video and unclassified windows.
+            # (below QP 16 the filter is a no-op anyway: the standard's alpha/beta
+            # thresholds are zero there, so this changes nothing at high quality.)
+            self.try_property("deblocking", not screen_content)
         elif self.encoding == "av1":
-            setsize("Av1FrameSize")
-            setframerate("Av1FrameRate")
-            setbitrate("Av1TargetBitrate")
-            setint64("Av1Usage", value=AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY)
-            setint64("Av1QualityPreset", get_av1_preset(quality, speed))
+            # AV1 is the only one of the three with real screen content coding tools:
+            # palette mode for the handful of colours that make up text and window
+            # decorations. They cost analysis time on continuous tone imagery, where
+            # there is nothing for them to find:
+            self.try_property("screen-content", int(screen_content))
+            self.try_property("palette-mode", int(screen_content))
             setint64("Av1Profile", AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN)
             setint64("Av1Level", AMF_VIDEO_ENCODER_AV1_LEVEL_5_1)
-            if False:
-                setint64("Av1AlignmentMode", AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS)
-        elif self.encoding == "hevc":
-            setint64("HevcUsage", AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY)
-            setint64("HevcQualityPreset", get_hevc_preset(quality, speed))
-            setsize("HevcFrameSize")
-            setframerate("HevcFrameRate")
-            setbitrate("HevcTargetBitrate")
-            # setint64(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH)
-            # setint64(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1)
-        else:
-            raise RuntimeError(f"unexpected encoding {self.encoding!r}")
+
         # init:
         res = self.encoder.pVtbl.Init(self.encoder, self.surface_format, self.width, self.height)
         self.check(res, f"AMF {self.encoding!r} encoder initialization for {self.width}x{self.height} {self.src_format}")
-        log(f"amf_encoder_init() {self.encoding} encoder initialized at %#x", <uintptr_t> self.encoder)
+        log("amf_encoder_init() %s encoder initialized at %#x: %s",
+            self.encoding, <uintptr_t> self.encoder, self.get_tuning_info())
+
+    def set_rate_control(self, int quality, int bwlimit) -> None:
+        # xpra drives its encoders with a quality percentage, and the video pipeline's
+        # quality controller expects the encoder to follow it. Ask for a fixed quantizer
+        # derived from that quality - as the x264, vpx and openh264 encoders all do -
+        # rather than leaving the encoder in the bitrate driven mode `Usage` selected,
+        # where the quality we were given has no effect whatsoever.
+        cdef int qp
+        if bwlimit > 0:
+            # there is a bandwidth limit to respect, so hand the rate control back to the
+            # encoder and use the quality as the ceiling it may not exceed:
+            if self.try_property("rate-control", PEAK_CONSTRAINED_VBR[self.encoding]):
+                self.try_property("target-bitrate", bwlimit)
+                self.try_property("peak-bitrate", bwlimit)
+                self.rate_control = PEAK_CONSTRAINED_VBR[self.encoding]
+                return
+            log("this encoder does not expose its rate control method, using constant QP")
+        if not self.try_property("rate-control", CONSTANT_QP[self.encoding]):
+            return
+        self.rate_control = CONSTANT_QP[self.encoding]
+        qp = get_qindex(quality) if self.encoding == "av1" else get_qp(quality)
+        self.try_property("qp-intra", qp)
+        self.try_property("qp-inter", qp)
+
+    def get_tuning_info(self) -> Dict[str, Any]:
+        """ what the encoder ended up with, which is not always what we asked for """
+        props = PROPERTIES.get(self.encoding, {})
+        info = {}
+        for name in ("rate-control", "target-bitrate", "peak-bitrate", "qp-intra", "qp-inter",
+                     "gop-size", "quality-preset", "b-frames", "deblocking"):
+            prop = props.get(name, "")
+            if not prop:
+                continue
+            value = self.get_encoder_property(prop)
+            if value >= 0:
+                info[name] = value
+        if "rate-control" in info:
+            names = RATE_CONTROL_STR.get(self.encoding, {})
+            info["rate-control-name"] = names.get(info["rate-control"], "unknown")
+        return info
 
     def is_ready(self) -> bool:
         return self.encoder != NULL
@@ -439,8 +680,11 @@ cdef class Encoder:
             "quality"   : self.quality,
             "encoding"  : self.encoding,
             "src_format": self.src_format,
+            "content-types": self.content_types,
             "caps": self.caps,
         }
+        if self.encoder:
+            info["tuning"] = self.get_tuning_info()
         return info
 
     def get_encoding(self) -> str:
@@ -483,6 +727,9 @@ cdef class Encoder:
         self.height = 0
         self.encoding = ""
         self.src_format = ""
+        self.content_types = ()
+        self.rate_control = -1
+        self.query_timeout = 0
         f = self.file
         if f:
             self.file = None
@@ -637,7 +884,11 @@ cdef class Encoder:
             raise RuntimeError("AMF encoder input is full!")
         self.check(res, "AMF submitting input to the encoder")
         cdef AMFData* data = NULL
-        for i in range(200):
+        # with a driver side timeout in place, `QueryOutput` waits for the frame itself,
+        # so a couple of attempts is plenty. Without it, AMF returns `AMF_REPEAT`
+        # immediately and the wait has to happen here:
+        cdef int attempts = 3 if self.query_timeout else 200
+        for i in range(attempts):
             res = self.encoder.pVtbl.QueryOutput(self.encoder, &data)
             log(f"QueryOutput()={res}, data=%#x", <uintptr_t> data)
             if res == 0:
@@ -645,7 +896,8 @@ cdef class Encoder:
             if res == AMF_EOF:
                 return b""
             if res == AMF_REPEAT:
-                sleep(0.001)
+                if not self.query_timeout:
+                    sleep(0.001)
                 continue
             self.check(res, "AMF query output")
         assert data
@@ -690,6 +942,8 @@ cdef class Encoder:
         self.do_set_encoding_speed(pct)
 
     cdef void do_set_encoding_speed(self, int speed):
+        # nothing to do: speed selects the quality preset, which is a static property -
+        # AMF only accepts it before `Init` (see `amf_encoder_init`)
         pass
 
     def set_encoding_quality(self, int pct) -> None:
@@ -699,7 +953,17 @@ cdef class Encoder:
         self.do_set_encoding_quality(pct)
 
     cdef void do_set_encoding_quality(self, int pct):
-        pass
+        # the quantizer is a dynamic property, so a quality change applies from the
+        # next frame - no need to re-open the encoder (which would cost a keyframe):
+        if self.encoder == NULL or self.rate_control != CONSTANT_QP.get(self.encoding, -1):
+            return
+        props = PROPERTIES.get(self.encoding, {})
+        cdef int qp = get_qindex(pct) if self.encoding == "av1" else get_qp(pct)
+        for name in ("qp-intra", "qp-inter"):
+            prop = props.get(name, "")
+            if prop:
+                self.set_int64_property(prop, qp)
+        log("amf quality set to %i (qp=%i)", pct, qp)
 
 
 def selftest(full=False) -> None:
