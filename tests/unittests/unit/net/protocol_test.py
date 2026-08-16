@@ -198,6 +198,24 @@ class ProtocolTest(unittest.TestCase):
         with patch.object(socket_handler, "LOG_RAW_PACKET_SIZE", True):
             self.assertTrue(proto.encode(Packet("test", 1)))
 
+    def test_receive_pending_flush_semantics(self) -> None:
+        from xpra.net.packet_encoding import get_encoder
+        from xpra.net.protocol.header import FLAGS_FLUSH, pack_header
+
+        states = []
+
+        def process_packet_cb(proto, _packet: Packet) -> None:
+            states.append(proto.receive_pending)
+
+        proto = self.make_memory_protocol(process_packet_cb=process_packet_cb)
+        data, flags = get_encoder(proto.encoder)(("test", 1))
+        flushed = pack_header(flags | FLAGS_FLUSH, 0, 0, len(data)) + data
+        pending = pack_header(flags, 0, 0, len(data)) + data
+        proto._read_queue.put(flushed + pending)
+        proto._read_queue.put(b"")
+        proto.do_read_parse_thread_loop()
+        self.assertEqual(states, [False, True])
+
     def test_read_speed(self) -> None:
         if not SHOW_PERF:
             return
