@@ -7,6 +7,7 @@
 import os
 import signal
 import unittest
+from unittest.mock import patch
 
 from xpra.os_util import OSX, POSIX
 from xpra.util.env import OSEnvContext
@@ -31,6 +32,17 @@ class FakeLogger:
 
 
 class DBUSTest(unittest.TestCase):
+
+    def test_schedule_dbus_x11_properties(self):
+        from xpra.server.subsystem.dbus import (
+            save_dbus_x11_properties,
+            schedule_dbus_x11_properties,
+        )
+        dbus_env = {"DBUS_SESSION_BUS_PID": "123"}
+        with patch("xpra.os_util.gi_import") as gi_import:
+            schedule_dbus_x11_properties(dbus_env)
+        gi_import.assert_called_once_with("GLib")
+        gi_import.return_value.idle_add.assert_called_once_with(save_dbus_x11_properties, dbus_env)
 
     def test_exception_wrap(self):
         from xpra.server.dbus import common

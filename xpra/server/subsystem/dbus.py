@@ -92,6 +92,16 @@ def save_dbus_x11_properties(dbus_env: dict):
             log.estr(e)
 
 
+def schedule_dbus_x11_properties(dbus_env: dict) -> None:
+    # DbusServer must be set up before all the other subsystems so they connect
+    # to the session bus started above.  The X11 display source, however, is
+    # initialized by GtkX11Server or X11Init later in the setup sequence.
+    # The main loop only starts after all subsystems have completed setup.
+    from xpra.os_util import gi_import
+    GLib = gi_import("GLib")
+    GLib.idle_add(save_dbus_x11_properties, dbus_env)
+
+
 class DbusServer(StubServerMixin):
     """
     Mixin for servers that have a dbus server associated with them
@@ -140,7 +150,7 @@ class DbusServer(StubServerMixin):
         self.session_files += ["dbus.pid", "dbus.env"]
         os.environ.update(self.dbus_env)
         if features.x11:
-            save_dbus_x11_properties(self.dbus_env)
+            schedule_dbus_x11_properties(self.dbus_env)
 
     def init_dbus_server(self) -> None:
         log("init_dbus_server() env: %s", {k: v for k, v in os.environ.items() if k.startswith("DBUS_")})
