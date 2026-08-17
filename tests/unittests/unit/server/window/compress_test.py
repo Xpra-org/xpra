@@ -113,6 +113,14 @@ class CompressTest(unittest.TestCase):
                 encoding = source.do_get_auto_encoding(width, height, options, "", encodings)
                 self.assertEqual(encoding, expected)
 
+    @patch.object(compress, "TRUE_LOSSLESS", False)
+    def test_transparent_lossless_webp_ignores_size_cutoff(self) -> None:
+        source = self.make_source(("browser",))
+        source.common_encodings = ("webp", "jpega")
+        size = (1024, 1024)
+        self.assertEqual(source.get_transparent_encoding(*size, {"quality": 100}, "auto"), "webp")
+        self.assertEqual(source.get_transparent_encoding(*size, {"quality": 80}, "auto"), "jpega")
+
 
 if __name__ == "__main__":
     unittest.main()

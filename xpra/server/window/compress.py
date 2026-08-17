@@ -1160,7 +1160,7 @@ class WindowSource(WindowIconSource):
                 return "rgb32"
         grayscale = self.encoding == "grayscale"
         webp = "webp" in co and 16383 >= w >= 2 and 16383 >= h >= 2 and not grayscale
-        if webp and depth in (24, 32) and w*h <= WEBP_EFFICIENCY_CUTOFF:
+        if webp and depth in (24, 32) and (not lossy or pixel_count <= WEBP_EFFICIENCY_CUTOFF):
             return "webp"
         if "jpega" in co and w >= 2 and h >= 2 and (lossy or not TRUE_LOSSLESS):
             return "jpega"
