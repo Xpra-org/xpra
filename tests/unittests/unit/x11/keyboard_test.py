@@ -53,6 +53,41 @@ class TestX11Keyboard(ServerTestUtil):
         grok_modifier_map({"foo": 8})
         grok_modifier_map({})
 
+    def test_parse(self):
+        # the keyboard attributes are nested in a `keymap` dictionary in the hello packet,
+        # but the `keyboard-config` packet contains them at the top level
+        from xpra.util.objects import typedict
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        attributes = {
+            "layout": "de",
+            "keycodes": ((113, "q", 81, 0, 0), (64, "at", 81, 1, 0)),
+            "mod_meanings": {"Alt_L": "mod1"},
+            "mod_pointermissing": ("lock", ),
+            "sync": False,
+            "backend": "ibus",
+            "backend_name": "xkb:de::ger",
+        }
+        # the `keyboard-config` packet is parsed with `parse`:
+        config = KeyboardConfig()
+        config.parse(typedict(dict(attributes, force=True)))
+        for attr, value in attributes.items():
+            parsed = getattr(config, "backend_engine" if attr == "backend_name" else attr)
+            assert parsed == value, f"{attr!r} parsed as {parsed!r} from the `keyboard-config` packet"
+        # the hello packet nests them, and is parsed with `parse_options` and `parse_layout`:
+        config = KeyboardConfig()
+        props = typedict({"keymap": dict(attributes)})
+        config.parse_options(props)
+        config.parse_layout(props)
+        for attr in ("layout", "keycodes", "mod_meanings", "mod_pointermissing", "sync"):
+            parsed = getattr(config, attr)
+            assert parsed == attributes[attr], f"{attr!r} parsed as {parsed!r} from the hello packet"
+        # clients older than v4.4 sent them at the top level with a `xkbmap_` prefix:
+        config = KeyboardConfig()
+        config.parse_options(typedict({f"xkbmap_{k}": v for k, v in attributes.items()}))
+        for attr in ("keycodes", "mod_meanings", "mod_pointermissing"):
+            parsed = getattr(config, attr)
+            assert parsed == attributes[attr], f"{attr!r} parsed as {parsed!r} from a legacy hello packet"
+
     def test_altgr_keysyms(self):
         # see #4963: the keys only reachable via `AltGr` on a German keyboard
         # used to be resolved using the keymap the server had before the client connected

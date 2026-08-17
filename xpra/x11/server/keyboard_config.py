@@ -9,7 +9,6 @@ import hashlib
 from collections.abc import Sequence
 from typing import Any
 
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
@@ -190,14 +189,15 @@ class KeyboardConfig(KeyboardConfigBase):
                 ibuslog(f"ibus layout: {layout} {variant=}, {options=}")
 
     def parse(self, props: typedict) -> int:
+        # only used for the `keyboard-config` packet, which sends the attributes at the top level,
+        # whereas the hello packet nests them all in a `keymap` dictionary:
+        if "keymap" not in props:
+            props = typedict({"keymap": dict(props)})
         return self.parse_layout(props) + self.parse_options(props) + self.parse_backend(props)
 
     def parse_layout(self, props: typedict) -> int:
         """ used by both process_hello and process_keymap """
-        if BACKWARDS_COMPATIBLE:
-            keymap_dict = typedict(props.dictget("keymap")) or props
-        else:
-            keymap_dict = props
+        keymap_dict = typedict(props.dictget("keymap")) or props
         layout = keymap_dict.strget("layout", "us")
         variant = keymap_dict.strget("variant")
         options = keymap_dict.strget("options")
@@ -241,8 +241,10 @@ class KeyboardConfig(KeyboardConfigBase):
         return len(modded)
 
     def parse_backend(self, props: typedict) -> int:
-        backend = props.strget("backend")
-        backend_engine = props.strget("backend-engine")
+        keymap_dict = typedict(props.dictget("keymap")) or props
+        backend = keymap_dict.strget("backend")
+        # the client calls it `backend_name`:
+        backend_engine = keymap_dict.strget("backend_name")
         mods = int(backend != self.backend) + int(backend_engine != self.backend_engine)
         self.backend = backend
         self.backend_engine = backend_engine
