@@ -26,7 +26,7 @@ from xpra.codecs.nvidia.cuda.context import (
 )
 from xpra.codecs.constants import (
     VideoSpec, TransientCodecException, CSC_ALIAS,
-    get_profile, get_level, get_level_value, get_level_tuple, unsupported_level,
+    get_profile, get_level, get_level_value, get_level_tuple,
 )
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.nvidia.util import get_nvidia_module_version, get_license_keys, get_cards
@@ -578,13 +578,9 @@ cdef class Encoder:
         return "YUV420P"
 
     cdef double _get_level(self, options):
-        cdef double level = get_level(options, encoding=self.encoding, csc_mode=self._get_csc_mode())
-        #nvenc's `NV_ENC_LEVEL` enum stops short of the highest levels the codecs define:
-        cdef double maxlevel = 6.3 if self.encoding == "av1" else 6.2
-        if level > maxlevel:
-            unsupported_level(level, self.encoding, "nvenc")
-            return 0
-        return level
+        # no validation needed here: nvenc's `NV_ENC_LEVEL` has a constant for every level
+        # in `VIDEO_LEVELS`, for all three of the codecs we drive it with
+        return get_level(options, encoding=self.encoding, csc_mode=self._get_csc_mode())
 
     cdef str _get_profile(self, options):
         csc_mode = self._get_csc_mode()
@@ -1022,10 +1018,11 @@ cdef class Encoder:
 
     cdef void tune_hevc(self, NV_ENC_CONFIG_HEVC *hevc, int gopLength):
         hevc.chromaFormatIDC = self.get_chroma_format()
-        # `NV_ENC_LEVEL_HEVC_*` is 30 x the level, which is what `general_level_idc` uses:
-        cdef int level_idc = get_level_value(self.level, "h265") if self.level else 0
-        if level_idc:
-            hevc.level = <NV_ENC_LEVEL> level_idc
+        # `NV_ENC_LEVEL_HEVC_*` is 30 x the level, which is what `general_level_idc` uses.
+        # assign unconditionally so that a preset cannot leave a level behind:
+        # 0 is `NV_ENC_LEVEL_AUTOSELECT`, as in `tune_h264` and `tune_av1`
+        cdef int level_idc = get_level_value(self.level, "h265") if self.level else NV_ENC_LEVEL_AUTOSELECT
+        hevc.level = <NV_ENC_LEVEL> level_idc
         hevc.idrPeriod = gopLength
         hevc.enableIntraRefresh = INTRA_REFRESH
         #hevc.pixelBitDepthMinus8 = 2*int(self.bufferFmt==NV_ENC_BUFFER_FORMAT_ARGB10)

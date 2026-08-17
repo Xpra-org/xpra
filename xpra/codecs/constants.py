@@ -12,6 +12,7 @@ from collections.abc import Callable, Iterable, Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.env import envint, first_time
+from xpra.util.str_fn import csv
 
 # noinspection PyPep8
 COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
@@ -167,43 +168,45 @@ def get_profile(options: typedict, encoding: str = "h264", csc_mode: str = "YUV4
     return ""
 
 
-# the range of levels each video encoding defines.
+# the levels each video encoding defines, as 10 x the level so that they can be
+# compared exactly (a level is written "4.1" but 4.1 is not a round float).
+# these are the levels the specifications list, not the ones any given encoder can reach:
+# a codec which cannot manage all of them says so itself - see `unsupported_level`.
 # clients express the level the same way for every codec (ie: "4.1"),
 # the value that actually ends up in the bitstream is codec specific - see `get_level_value`.
 # encodings which have no notion of a level (ie: vp8) are simply absent from this table:
-VIDEO_LEVELS: dict[str, tuple[float, float]] = {
-    "h264": (1.0, 6.2),
-    "h265": (1.0, 6.2),
-    "hevc": (1.0, 6.2),
-    "av1": (2.0, 7.3),
-    "vp9": (1.0, 6.2),
+VIDEO_LEVELS: dict[str, tuple[int, ...]] = {
+    # h264 also defines "1b", which cannot be written as a number:
+    "h264": (10, 11, 12, 13, 20, 21, 22, 30, 31, 32, 40, 41, 42, 50, 51, 52, 60, 61, 62),
+    "h265": (10, 20, 21, 30, 31, 40, 41, 50, 51, 52, 60, 61, 62),
+    "hevc": (10, 20, 21, 30, 31, 40, 41, 50, 51, 52, 60, 61, 62),
+    # av1 has 4 minor levels for every major one, all the way up:
+    "av1": tuple(major * 10 + minor for major in range(2, 8) for minor in range(4)),
+    "vp9": (10, 11, 20, 21, 30, 31, 40, 41, 50, 51, 52, 60, 61, 62),
 }
 
 
 def parse_level(value: str, encoding: str = "h264") -> float:
     """
-    parse a level (ie: "4.1") and validate it against the range this encoding defines.
+    parse a level (ie: "4.1") and validate it against the levels this encoding defines.
     anything we don't like returns 0, which every encoder treats as
     "no level requested, pick one yourself".
     since the value comes from the client, we only ever complain about it once.
     """
-    lmin, lmax = VIDEO_LEVELS.get(encoding, (0, 0))
+    levels = VIDEO_LEVELS.get(encoding, ())
     try:
         level = float(value)
     except (TypeError, ValueError):
         level = 0
-    # av1 only has 4 minor levels per major one, and `get_level_value` packs them:
-    # a 5th would silently come out as the next major level, so refuse it here
-    minor = round(level * 10) % 10
-    if lmin <= level <= lmax and (encoding != "av1" or minor <= 3):
+    if round(level * 10) in levels:
         return level
     if first_time(f"invalid-{encoding}-level-{value}"):
         # pylint: disable=import-outside-toplevel
         from xpra.log import Logger
         log = Logger("encoding")
         log.warn(f"Warning: ignoring invalid {encoding} level {value!r}")
-        if lmax:
-            log.warn(f" the level must be a number between {lmin} and {lmax}")
+        if levels:
+            log.warn(" valid levels are: %s", csv(f"{v // 10}.{v % 10}" for v in levels))
         else:
             log.warn(f" the {encoding!r} encoding has no configurable level")
     return 0

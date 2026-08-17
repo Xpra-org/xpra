@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.constants import (
-    VideoSpec, get_level, get_level_value, get_level_tuple, unsupported_level,
+    VideoSpec, get_level, get_level_value, get_level_tuple,
     get_subsampling_divs, is_screen_content,
 )
 from xpra.codecs.image import ImageWrapper
@@ -246,11 +246,6 @@ def get_encodings() -> Sequence[str]:
 generation = AtomicInteger()
 
 
-# the levels vp9 defines: unlike h264 it does not use every minor number,
-# and libvpx rejects anything that is not one of these:
-VP9_LEVELS: Sequence[int] = (10, 11, 20, 21, 30, 31, 40, 41, 50, 51, 52, 60, 61, 62)
-
-
 def get_info() -> Dict[str,Any]:
     global CODECS, MAX_SIZE
     b = vpx_codec_build_config()
@@ -471,14 +466,12 @@ cdef class Encoder:
             #disable periodic Q boost which causes latency spikes:
             self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
             #vp9 only: libvpx leaves the stream unconstrained unless we ask for a level,
-            #and the value it takes is 10 x the level, just like h264's `level_idc`:
+            #and the value it takes is 10 x the level, just like h264's `level_idc`.
+            #it accepts exactly the levels vp9 defines, which is all `get_level` can return:
             level = get_level(options, encoding=encoding, csc_mode=src_format)
             if level:
-                if get_level_value(level, "vp9") not in VP9_LEVELS:
-                    unsupported_level(level, encoding, "vpx")
-                else:
-                    self.level = level
-                    self.codec_control("target level", VP9E_SET_TARGET_LEVEL, get_level_value(level, "vp9"))
+                self.level = level
+                self.codec_control("target level", VP9E_SET_TARGET_LEVEL, get_level_value(level, "vp9"))
         self.do_set_encoding_speed(self.speed)
         self.do_set_encoding_quality(self.quality)
         self.do_set_content_types()
