@@ -87,7 +87,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NV_ENCODE_API_FUNCTION_LIST_VER,
     NVENC_INFINITE_GOPLENGTH,
     NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME,
-    NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL_H264_5,
+    NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL_H264_5, NV_ENC_LEVEL_AUTOSELECT,
     NV_ENC_LEVEL_AV1_AUTOSELECT, NV_ENC_TIER_AV1_1, NV_ENC_AV1_PART_SIZE_AUTOSELECT,
     NV_ENC_VUI_COLOR_PRIMARIES_BT709, NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709, NV_ENC_VUI_MATRIX_COEFFS_BT709,
     NV_ENC_BIT_DEPTH_8,
@@ -968,7 +968,9 @@ cdef class Encoder:
 
     cdef void tune_hevc(self, NV_ENC_CONFIG_HEVC *hevc, int gopLength):
         hevc.chromaFormatIDC = self.get_chroma_format()
-        #hevc.level = NV_ENC_LEVEL_HEVC_5
+        # assign the level so that a preset cannot leave one behind,
+        # as `tune_av1` already does - the encoder works out what it needs:
+        hevc.level = NV_ENC_LEVEL_AUTOSELECT
         hevc.idrPeriod = gopLength
         hevc.enableIntraRefresh = INTRA_REFRESH
         #hevc.pixelBitDepthMinus8 = 2*int(self.bufferFmt==NV_ENC_BUFFER_FORMAT_ARGB10)
