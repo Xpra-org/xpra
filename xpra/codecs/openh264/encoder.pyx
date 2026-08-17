@@ -475,15 +475,15 @@ OPENH264_LEVELS: Dict[int, int] = {
     52: LEVEL_5_2,
 }
 
-# the level we use when the client has not asked for one:
-DEFAULT_LEVEL = 4.1
-
 
 def get_h264_level(options: typedict) -> float:
-    level = get_level(options, default_level=DEFAULT_LEVEL)
-    if get_level_value(level, "h264") not in OPENH264_LEVELS:
+    # as everywhere else, 0 means `LEVEL_UNKNOWN`: openh264 works the level out
+    # from the resolution and framerate, which is what we want unless the client
+    # has told us that its decoder cannot go that high
+    level = get_level(options)
+    if level and get_level_value(level, "h264") not in OPENH264_LEVELS:
         unsupported_level(level, "h264", "openh264")
-        return DEFAULT_LEVEL
+        return 0
     return level
 
 
@@ -649,7 +649,9 @@ cdef class Encoder:
         # the level is per spatial layer, just like the profile.
         # openh264 raises it again if the resolution or framerate demands more,
         # so this is only ever an upper bound the client has asked us to honour:
-        cdef ELevelIdc level_id = <ELevelIdc> OPENH264_LEVELS[get_level_value(self.level, "h264")]
+        cdef ELevelIdc level_id = LEVEL_UNKNOWN
+        if self.level:
+            level_id = <ELevelIdc> OPENH264_LEVELS[get_level_value(self.level, "h264")]
         self.param.iEntropyCodingModeFlag = self.profile != "constrained-baseline"
         for i in range(nlayers):
             self.param.sSpatialLayers[i].uiProfileIdc = profile_id

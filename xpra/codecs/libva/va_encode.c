@@ -221,6 +221,10 @@ static int h264_level_idc(const LibVAEncoder *enc) {
        we do not second guess it, the level only ever ends up in the SPS */
     if (enc->level > 0)
         return enc->level;
+    /* every other encoder derives the level from the macroblock *rate*, but we write
+       this SPS by hand and have no framerate to go on, so the buckets below only look
+       at the frame size and round up: one level higher than strictly necessary is
+       always safe, one level lower would be a promise we cannot keep */
     if (mbs <= 3600)
         return 31;
     if (mbs <= 5120)

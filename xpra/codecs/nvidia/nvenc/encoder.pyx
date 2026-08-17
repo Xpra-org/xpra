@@ -91,7 +91,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NV_ENCODE_API_FUNCTION_LIST_VER,
     NVENC_INFINITE_GOPLENGTH,
     NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME,
-    NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL, NV_ENC_LEVEL_H264_5,
+    NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL, NV_ENC_LEVEL_AUTOSELECT,
     NV_ENC_LEVEL_AV1_AUTOSELECT, NV_ENC_TIER_AV1_1, NV_ENC_AV1_PART_SIZE_AUTOSELECT,
     NV_ENC_VUI_COLOR_PRIMARIES_BT709, NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709, NV_ENC_VUI_MATRIX_COEFFS_BT709,
     NV_ENC_BIT_DEPTH_8,
@@ -989,8 +989,9 @@ cdef class Encoder:
 
     cdef tune_h264(self, NV_ENC_CONFIG_H264 *h264, int gopLength):
         # `NV_ENC_LEVEL_H264_*` is just 10 x the level, so the value from
-        # `get_level_value` can be used as is - and 0 is `NV_ENC_LEVEL_AUTOSELECT`:
-        cdef int level_idc = get_level_value(self.level, "h264") if self.level else NV_ENC_LEVEL_H264_5
+        # `get_level_value` can be used as is - and 0 is `NV_ENC_LEVEL_AUTOSELECT`,
+        # which is what the nvenc header tells us to use when we have no level to honour:
+        cdef int level_idc = get_level_value(self.level, "h264") if self.level else NV_ENC_LEVEL_AUTOSELECT
         h264.level = <NV_ENC_LEVEL> level_idc
         h264.chromaFormatIDC = self.get_chroma_format()
         h264.disableSPSPPS = 0

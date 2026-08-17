@@ -209,11 +209,18 @@ def parse_level(value: str, encoding: str = "h264") -> float:
     return 0
 
 
-def get_level(options: typedict, encoding: str = "h264", csc_mode: str = "YUV420P",
-              default_level: float = 0) -> float:
+def get_level(options: typedict, encoding: str = "h264", csc_mode: str = "YUV420P") -> float:
     """
     the level requested by the client for this encoding (ie: 4.1),
-    0 means that the encoder is free to choose one
+    0 means that the encoder is free to choose one.
+
+    there is deliberately no default level here, and encoders must not invent one:
+    a level is an upper bound on the resolution, framerate and bitrate that a decoder
+    is promised it will not have to exceed, so the only correct value is the lowest one
+    the stream actually needs - which only the encoder can know, since it is the one
+    choosing the resolution and bitrate. every encoder we drive can work it out for
+    itself, and picking a level here instead would just make small streams claim to
+    need more than they do, locking out decoders that could have kept up.
     """
     for x in (
         options.strget(f"{encoding}.{csc_mode}.level"),
@@ -223,7 +230,7 @@ def get_level(options: typedict, encoding: str = "h264", csc_mode: str = "YUV420
     ):
         if x:
             return parse_level(x, encoding)
-    return default_level
+    return 0
 
 
 def get_level_value(level: float, encoding: str = "h264") -> int:

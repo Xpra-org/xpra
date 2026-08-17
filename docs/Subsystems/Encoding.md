@@ -50,6 +50,8 @@ A `<colourspace>.level` key applies to that colourspace only.
 The level is written the same way for every codec, and the server converts it to
 whatever its encoder expects. It is a request: a server whose encoder cannot honour
 it logs a warning and encodes at the level it would have chosen anyway.
+Without this capability, no level is imposed and every encoder signals the lowest
+level the stream it is producing actually requires.
 
 <div class="docs-section-heading" markdown="1">
 
