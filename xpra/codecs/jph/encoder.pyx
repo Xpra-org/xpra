@@ -13,7 +13,7 @@ from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from libc.stddef cimport size_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context
 
-from xpra.codecs.constants import VideoSpec, is_video_content
+from xpra.codecs.constants import is_video_content
 from xpra.codecs.debug import may_save_image
 from xpra.codecs.image import ImageWrapper
 from xpra.net.compression import Compressed
@@ -46,7 +46,6 @@ INPUT_FORMATS: Dict[str, Tuple[int, int, int, int]] = {
     "XBGR": (4, 3, 2, 1),
     "ABGR": (4, 3, 2, 1),
 }
-SPEC_INPUT_FORMATS: Sequence[str] = ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "XBGR")
 
 
 def get_version() -> Tuple[int, int, int]:
@@ -66,21 +65,6 @@ def get_info() -> Dict[str, Any]:
         "version": get_version(),
         "encodings": get_encodings(),
     }
-
-
-def get_specs() -> Sequence[VideoSpec]:
-    return tuple(
-        VideoSpec(
-            encoding="jph", input_colorspace=colorspace, output_colorspaces=(colorspace, ),
-            has_lossless_mode=True,
-            codec_class=Encoder, codec_type="jph",
-            setup_cost=0, cpu_cost=120, gpu_cost=0,
-            min_w=2, min_h=2, max_w=16*1024, max_h=16*1024,
-            can_scale=False,
-            score_boost=-80,
-        )
-        for colorspace in SPEC_INPUT_FORMATS
-    )
 
 
 cdef tuple do_encode(object image, object options):
@@ -141,64 +125,6 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     assert coding == "jph"
     cdata, client_options, width, height = do_encode(image, typedict(options or {}))
     return "jph", Compressed("jph", memoryview(cdata), False), client_options, width, height, 0, 24
-
-
-cdef class Encoder:
-    cdef int width
-    cdef int height
-    cdef object src_format
-    cdef long frames
-    cdef object __weakref__
-
-    def init_context(self, encoding: str, width: int, height: int, src_format: str, options: typedict) -> None:
-        assert encoding == "jph", f"invalid encoding: {encoding}"
-        if src_format not in SPEC_INPUT_FORMATS:
-            raise ValueError(f"invalid jph input colorspace: {src_format!r}")
-        self.width = width
-        self.height = height
-        self.src_format = src_format
-        self.frames = 0
-
-    def is_ready(self) -> bool:
-        return True
-
-    def is_closed(self) -> bool:
-        return False
-
-    def clean(self) -> None:
-        self.width = 0
-        self.height = 0
-        self.frames = 0
-
-    def get_encoding(self) -> str:
-        return "jph"
-
-    def get_width(self) -> int:
-        return self.width
-
-    def get_height(self) -> int:
-        return self.height
-
-    def get_type(self) -> str:
-        return "jph"
-
-    def get_src_format(self) -> str:
-        return self.src_format
-
-    def get_info(self) -> Dict[str, Any]:
-        info = get_info()
-        info |= {
-            "frames": int(self.frames),
-            "width": self.width,
-            "height": self.height,
-            "src_format": self.src_format,
-        }
-        return info
-
-    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple:
-        cdata, client_options, _width, _height = do_encode(image, options)
-        self.frames += 1
-        return memoryview(cdata), client_options
 
 
 def selftest(full=False) -> None:
