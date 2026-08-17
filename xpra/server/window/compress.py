@@ -1185,6 +1185,7 @@ class WindowSource(WindowIconSource):
         alpha = self._want_alpha or self.is_tray
         quality = options.get("quality", 0)
         speed = options.get("speed", 50)
+        natural_content = is_video_content(self.content_types)
         if w*h < self._rgb_auto_threshold and not grayscale and not self.has_shape:
             if depth > 24 and self.client_bit_depth > 24 and "rgb32" in co:
                 return "rgb32"
@@ -1197,11 +1198,11 @@ class WindowSource(WindowIconSource):
         avif = "avif" in co
         lossy = quality < 100
         if depth in (24, 32) and (jpeg or jpega or webp or avif or jph):
+            if natural_content and quality <= 50 and jph and not alpha and speed < 50:
+                return "jph"
             if webp and (not lossy or w*h <= WEBP_EFFICIENCY_CUTOFF):
                 return "webp"
             if lossy or not TRUE_LOSSLESS:
-                if quality < 50 and jph and not alpha and speed < 50:
-                    return "jph"
                 if jpeg and not alpha:
                     return "jpeg"
                 if jpega and alpha:

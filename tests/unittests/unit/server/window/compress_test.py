@@ -88,6 +88,31 @@ class CompressTest(unittest.TestCase):
         self.assertEqual(options["quality"], 80)
         self.assertEqual(source.do_get_auto_encoding(1024, 1024, options, "", encodings), "jpeg")
 
+    def test_continuous_tone_encoding(self) -> None:
+        encodings = ("jpeg", "webp", "jph")
+        cases = (
+            (("picture",), 30, 20, False, 640, 360, "jph"),
+            (("picture",), 50, 20, False, 640, 360, "jph"),
+            (("picture",), 51, 20, False, 640, 360, "webp"),
+            (("picture",), 50, 50, False, 640, 360, "webp"),
+            (("video",), 30, 20, False, 640, 360, "jph"),
+            (("browser",), 30, 20, False, 640, 360, "webp"),
+            ((), 30, 20, False, 640, 360, "webp"),
+            (("picture",), 30, 20, True, 640, 360, "webp"),
+            (("browser",), 30, 20, False, 1024, 1024, "jpeg"),
+            (("picture",), 100, 20, False, 640, 360, "webp"),
+        )
+        for content_types, quality, speed, alpha, width, height, expected in cases:
+            with self.subTest(
+                content_types=content_types, quality=quality, speed=speed,
+                alpha=alpha, size=(width, height),
+            ):
+                source = self.make_source(content_types)
+                source._want_alpha = alpha
+                options = {"quality": quality, "speed": speed}
+                encoding = source.do_get_auto_encoding(width, height, options, "", encodings)
+                self.assertEqual(encoding, expected)
+
 
 if __name__ == "__main__":
     unittest.main()
