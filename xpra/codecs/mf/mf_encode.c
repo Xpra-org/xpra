@@ -349,6 +349,7 @@ static void reset_tuning_info(MFTuningInfo *info) {
     info->adaptive_mode    = -1;
     info->cabac            = -1;
     info->profile          = -1;
+    info->level            = -1;
 }
 
 /* `IsSupported` and `IsModifiable` both answer "no" with S_FALSE, which is a
@@ -895,15 +896,23 @@ static MFEncodeStatus activate_mft(MFEncoder *enc, IMFActivate *activate, const 
     IMFMediaType_SetUINT32(enc->output_type, &MF_MT_AVG_BITRATE,       enc->mean_bitrate);
     IMFMediaType_SetUINT32(enc->output_type, &MF_MT_MPEG2_PROFILE,     profile);
     enc->applied.profile = (int)profile;
+    /* the level is only ever a client request: an MFT is free to ignore it, and one
+       that cannot do it at all rejects the whole output type - handled just below */
+    if (enc->tuning.level > 0) {
+        IMFMediaType_SetUINT32(enc->output_type, &MF_MT_MPEG2_LEVEL, (UINT32)enc->tuning.level);
+        enc->applied.level = enc->tuning.level;
+    }
 
     hr = IMFTransform_SetOutputType(enc->transform, 0, enc->output_type, 0);
     if (FAILED(hr)) {
-        /* an MFT that doesn't support the profile we asked for rejects the whole
-           output type, so drop it and let the encoder pick its own: */
-        enc_log("mf_encoder_create: SetOutputType(%s, profile=%lu) failed: 0x%08lX, retrying without a profile",
-                enc_codec_to_name(enc->codec), (unsigned long)profile, (unsigned long)hr);
+        /* an MFT that doesn't support the profile or level we asked for rejects the
+           whole output type, so drop them and let the encoder pick its own: */
+        enc_log("mf_encoder_create: SetOutputType(%s, profile=%lu, level=%d) failed: 0x%08lX, retrying without them",
+                enc_codec_to_name(enc->codec), (unsigned long)profile, enc->tuning.level, (unsigned long)hr);
         IMFMediaType_DeleteItem(enc->output_type, &MF_MT_MPEG2_PROFILE);
+        IMFMediaType_DeleteItem(enc->output_type, &MF_MT_MPEG2_LEVEL);
         enc->applied.profile = -1;
+        enc->applied.level = -1;
         hr = IMFTransform_SetOutputType(enc->transform, 0, enc->output_type, 0);
     }
     if (FAILED(hr)) {

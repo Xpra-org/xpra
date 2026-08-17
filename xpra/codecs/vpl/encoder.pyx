@@ -14,7 +14,9 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, get_profile, is_screen_content, is_video_content
+from xpra.codecs.constants import (
+    VideoSpec, get_profile, get_level, get_level_value, get_level_tuple, is_screen_content, is_video_content,
+)
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AtomicInteger
@@ -70,7 +72,7 @@ cdef extern from "vpl_encode.h":
     VPLEncodeStatus vpl_encode_startup()
     void            vpl_encode_shutdown()
     VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
-                                        int quality, int speed, VPLEncodeProfile profile,
+                                        int quality, int speed, VPLEncodeProfile profile, int level,
                                         int low_power, int content_hint) nogil
     void            vpl_encoder_destroy(VPLEncoder *enc) nogil
     VPLEncodeStatus vpl_encoder_encode(VPLEncoder *enc,
@@ -212,6 +214,7 @@ cdef class Encoder:
     cdef int content_hint
     cdef object content_types
     cdef object profile
+    cdef double level
     cdef object src_format
     cdef object encoding
     cdef object file
@@ -242,6 +245,7 @@ cdef class Encoder:
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
         self.profile = get_vpl_profile(options)
+        self.level = get_level(options, encoding=encoding, csc_mode=src_format)
         self.low_power = options.boolget("h264.low-power", False)
         self.content_types = options.strtupleget("content-types", ())
         self.content_hint = content_hint(self.content_types)
@@ -251,9 +255,10 @@ cdef class Encoder:
 
         cdef VPLEncodeStatus status
         cdef VPLEncodeProfile profile_id = PROFILE_IDS[self.profile]
+        cdef int level_idc = get_level_value(self.level, "h264") if self.level else 0
         with nogil:
             status = vpl_encoder_create(&self.context, width, height, self.quality,
-                                        self.speed, profile_id, self.low_power,
+                                        self.speed, profile_id, level_idc, self.low_power,
                                         self.content_hint)
         if status != VPL_ENC_OK:
             raise RuntimeError("failed to create VPL encoder (%dx%d): %s" % (
@@ -364,6 +369,7 @@ cdef class Encoder:
             self.src_format = ""
             self.encoding = ""
             self.profile = ""
+            self.level = 0
             self.content_types = ()
             self.content_hint = VPL_ENC_CONTENT_UNKNOWN
             self.delayed = 0
@@ -383,6 +389,7 @@ cdef class Encoder:
             "quality"   : self.quality,
             "speed"     : self.speed,
             "profile"   : self.profile,
+            "level"     : get_level_tuple(self.level),
             "low-power" : bool(self.low_power),
             "delayed"   : self.delayed,
             "content-types": self.content_types,

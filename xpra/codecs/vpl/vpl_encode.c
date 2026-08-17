@@ -98,6 +98,7 @@ struct VPLEncoder {
     int             quality;
     int             speed;
     VPLEncodeProfile profile;
+    int             level;          /* client requested level_idc (10 x the level), 0 = unset */
     int             low_power;
     int             content_hint;   /* VPLEncodeContent */
     int             use_ext;        /* 1 if the mfxExtCodingOption3 hints were accepted */
@@ -270,6 +271,10 @@ static void fill_params(VPLEncoder *enc, mfxVideoParam *param, int use_icq) {
 
     param->mfx.CodecId = MFX_CODEC_AVC;
     param->mfx.CodecProfile = vpl_profile_id(enc->profile);
+    /* 0 means "work it out from the resolution and bitrate", which is what we want
+       unless the client told us what its decoder can actually keep up with.
+       `mfx.CodecLevel` uses the same numbering as the h264 `level_idc`. */
+    param->mfx.CodecLevel = (mfxU16)enc->level;
     param->mfx.LowPower = enc->low_power ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
     param->mfx.TargetUsage = 1 + (clamp_int(enc->speed, 0, 100) * 6 + 50) / 100;
     param->mfx.GopPicSize = 0;
@@ -325,7 +330,7 @@ static VPLEncodeStatus allocate_buffers(VPLEncoder *enc) {
 }
 
 VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
-                                   int quality, int speed, VPLEncodeProfile profile,
+                                   int quality, int speed, VPLEncodeProfile profile, int level,
                                    int low_power, int content_hint) {
     VPLEncoder *enc;
     mfxStatus sts;
@@ -350,6 +355,7 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
     enc->quality = quality;
     enc->speed = speed;
     enc->profile = profile;
+    enc->level = level;
     enc->low_power = !!low_power;
     enc->content_hint = content_hint;
     enc->is_hw = 1;
@@ -374,8 +380,8 @@ VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
         enc->use_ext = attempt < 2;
         enc->use_icq = use_icq;
         fill_params(enc, &enc->param, use_icq);
-        vpl_log("vpl encoder create: %dx%d quality=%d speed=%d profile=%d low-power=%d rc=%s hints=%d",
-                width, height, quality, speed, (int)profile, enc->low_power,
+        vpl_log("vpl encoder create: %dx%d quality=%d speed=%d profile=%d level=%d low-power=%d rc=%s hints=%d",
+                width, height, quality, speed, (int)profile, enc->level, enc->low_power,
                 use_icq ? "ICQ" : "CQP", enc->use_ext);
 
         sts = MFXVideoENCODE_Init(enc->session, &enc->param);

@@ -18,7 +18,9 @@ from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
-from xpra.codecs.constants import VideoSpec, get_profile, is_video_content
+from xpra.codecs.constants import (
+    VideoSpec, get_profile, get_level, get_level_value, get_level_tuple, unsupported_level, is_video_content,
+)
 
 from libcpp cimport bool as bool_t
 from libc.string cimport memset
@@ -452,6 +454,39 @@ def get_h264_profile(options: typedict) -> str:
     return profile
 
 
+# openh264 stops at level 5.2, and its `ELevelIdc` is a fixed set of constants
+# rather than a plain `level_idc`, so map the levels it does have:
+OPENH264_LEVELS: Dict[int, int] = {
+    10: LEVEL_1_0,
+    11: LEVEL_1_1,
+    12: LEVEL_1_2,
+    13: LEVEL_1_3,
+    20: LEVEL_2_0,
+    21: LEVEL_2_1,
+    22: LEVEL_2_2,
+    30: LEVEL_3_0,
+    31: LEVEL_3_1,
+    32: LEVEL_3_2,
+    40: LEVEL_4_0,
+    41: LEVEL_4_1,
+    42: LEVEL_4_2,
+    50: LEVEL_5_0,
+    51: LEVEL_5_1,
+    52: LEVEL_5_2,
+}
+
+# the level we use when the client has not asked for one:
+DEFAULT_LEVEL = 4.1
+
+
+def get_h264_level(options: typedict) -> float:
+    level = get_level(options, default_level=DEFAULT_LEVEL)
+    if get_level_value(level, "h264") not in OPENH264_LEVELS:
+        unsupported_level(level, "h264", "openh264")
+        return DEFAULT_LEVEL
+    return level
+
+
 # with rate-control off, the quantizer is fixed and taken from `iDLayerQp`;
 # H.264 QP ranges from 0 (best quality) to 51 (worst). We map our 0..100 quality
 # percentage onto [MIN_QP, MAX_QP]. QP 0 is the encoder's maximum quality - still
@@ -517,6 +552,7 @@ cdef class Encoder:
     cdef unsigned int height
     cdef object src_format
     cdef object profile
+    cdef double level
     cdef uint8_t full_range
     cdef uint8_t ready
     cdef int quality
@@ -541,6 +577,7 @@ cdef class Encoder:
         self.height = height
         self.src_format = src_format
         self.profile = get_h264_profile(options)
+        self.level = get_h264_level(options)
         self.full_range = options.boolget("full-range", True)
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
@@ -571,8 +608,6 @@ cdef class Encoder:
         #self.context.SetOption(ENCODER_OPTION_TRACE_CALLBACK_CONTEXT, NULL)
         cdef int videoFormat = videoFormatI420
         self.context.SetOption(ENCODER_OPTION_DATAFORMAT, &videoFormat)
-        cdef int level = LEVEL_4_1
-        self.context.SetOption(ENCODER_OPTION_LEVEL, &level)
 
         memset(&self.param, 0, sizeof(SEncParamExt))
         with nogil:
@@ -611,9 +646,14 @@ cdef class Encoder:
         cdef int i
         cdef int nlayers = max(1, self.param.iSpatialLayerNum)
         cdef EProfileIdc profile_id = H264_PROFILE_IDS[self.profile]
+        # the level is per spatial layer, just like the profile.
+        # openh264 raises it again if the resolution or framerate demands more,
+        # so this is only ever an upper bound the client has asked us to honour:
+        cdef ELevelIdc level_id = <ELevelIdc> OPENH264_LEVELS[get_level_value(self.level, "h264")]
         self.param.iEntropyCodingModeFlag = self.profile != "constrained-baseline"
         for i in range(nlayers):
             self.param.sSpatialLayers[i].uiProfileIdc = profile_id
+            self.param.sSpatialLayers[i].uiLevelIdc = level_id
             self.param.sSpatialLayers[i].iDLayerQp = qp
             if threads > 1:
                 self.param.sSpatialLayers[i].sSliceArgument.uiSliceMode = SM_FIXEDSLCNUM_SLICE
@@ -633,8 +673,8 @@ cdef class Encoder:
         #a void (*)(void* context, int level, const char* message) function which receives log messages
         trace_level = WELS_LOG_WARNING
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
-        log("openh264 init_encoder: profile=%s quality=%i qp=%i speed=%i complexity=%s threads=%i full-range=%s usage=%s",
-            self.profile, self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), threads,
+        log("openh264 init_encoder: profile=%s level=%s quality=%i qp=%i speed=%i complexity=%s threads=%i full-range=%s usage=%s",
+            self.profile, self.level, self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), threads,
             bool(self.full_range), USAGE_TYPE_NAMES.get(self.param.iUsageType))
         for i in range(nlayers):
             log("spatial layer %i bFullRange=%s iDLayerQp=%i", i, self.param.sSpatialLayers[i].bFullRange, self.param.sSpatialLayers[i].iDLayerQp)
@@ -694,6 +734,7 @@ cdef class Encoder:
         self.height = 0
         self.content_types = ()
         self.profile = ""
+        self.level = 0
         self.screen_content = 1
         f = self.file
         if f:
@@ -708,6 +749,7 @@ cdef class Encoder:
             "height"        : self.height,
             "quality"       : self.quality,
             "profile"       : self.profile,
+            "level"         : get_level_tuple(self.level),
             "qp"            : quality_to_qp(self.quality),
             "speed"         : self.speed,
             "complexity"    : COMPLEXITY_NAMES.get(speed_to_complexity(self.speed), ""),

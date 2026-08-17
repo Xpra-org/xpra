@@ -18,7 +18,10 @@ from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
-from xpra.codecs.constants import VideoSpec, get_profile, get_x264_quality, get_x264_preset, get_subsampling_divs
+from xpra.codecs.constants import (
+    VideoSpec, get_profile, get_level, get_level_value, get_level_tuple,
+    get_x264_quality, get_x264_preset, get_subsampling_divs,
+)
 from collections import deque
 
 from libc.string cimport memset
@@ -537,6 +540,7 @@ cdef class Encoder:
     cdef object csc_format
     cdef object content_types
     cdef object profile
+    cdef double level
     cdef object tune
     cdef double time
     cdef int colorspace
@@ -602,6 +606,7 @@ cdef class Encoder:
             # libx264 calls this profile "baseline"; its bitstream is the
             # constrained-baseline variant requested by Xpra.
             self.profile = PROFILE_BASELINE
+        self.level = get_level(options, encoding=encoding, csc_mode=self.src_format)
         self.export_nals = options.intget("h264.export-nals", 0)
         profile_options = cs_info[2]
         if self.profile and self.profile not in profile_options:
@@ -704,6 +709,9 @@ cdef class Encoder:
         # 'intra-refresh is not compatible with open-gop'
         # if param.i_frame_reference<2:
         #    param.b_intra_refresh = 1   #intra refresh uses more bandwidth, but avoids IDR spikes
+        # -1 lets libx264 derive the level from the resolution and bitrate,
+        # a client only overrides it when its decoder cannot go that high:
+        param.i_level_idc = get_level_value(self.level, "h264") if self.level else -1
         param.b_open_gop = 1        #allow open gop
         #param.b_opencl = self.opencl
         param.i_bframe = self.b_frames
@@ -783,6 +791,7 @@ cdef class Encoder:
         self.src_format = ""
         self.content_types = ()
         self.profile = None
+        self.level = 0
         self.time = 0
         self.colorspace = 0
         self.preset = 0
@@ -804,6 +813,7 @@ cdef class Encoder:
         info = get_info()
         info |= {
             "profile"       : self.profile,
+            "level"         : get_level_tuple(self.level),
             "preset"        : s(get_preset_names()[self.preset]),
             "fast-decode"   : bool(self.fast_decode),
             "max-delayed"   : self.max_delayed,

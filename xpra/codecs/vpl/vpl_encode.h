@@ -58,7 +58,7 @@ VPLEncodeStatus vpl_encode_startup(void);
 void            vpl_encode_shutdown(void);
 
 VPLEncodeStatus vpl_encoder_create(VPLEncoder **out, int width, int height,
-                                   int quality, int speed, VPLEncodeProfile profile,
+                                   int quality, int speed, VPLEncodeProfile profile, int level,
                                    int low_power, int content_hint);
 void            vpl_encoder_destroy(VPLEncoder *enc);
 

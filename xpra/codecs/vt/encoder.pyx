@@ -24,7 +24,9 @@ from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
-from xpra.codecs.constants import VideoSpec, get_profile, is_screen_content
+from xpra.codecs.constants import (
+    VideoSpec, get_profile, get_level, get_level_value, get_level_tuple, unsupported_level, is_screen_content,
+)
 
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, int32_t, int64_t, uintptr_t
@@ -74,6 +76,26 @@ cdef extern from "VideoToolbox/VideoToolbox.h":
     CFStringRef kVTProfileLevel_H264_Main_AutoLevel
     CFStringRef kVTProfileLevel_H264_High_AutoLevel
     CFStringRef kVTProfileLevel_HEVC_Main_AutoLevel
+    # VideoToolbox takes the profile and the level as a single constant,
+    # and only publishes the pairs below - everything else is `AutoLevel`:
+    CFStringRef kVTProfileLevel_H264_Main_3_0
+    CFStringRef kVTProfileLevel_H264_Main_3_1
+    CFStringRef kVTProfileLevel_H264_Main_3_2
+    CFStringRef kVTProfileLevel_H264_Main_4_0
+    CFStringRef kVTProfileLevel_H264_Main_4_1
+    CFStringRef kVTProfileLevel_H264_Main_4_2
+    CFStringRef kVTProfileLevel_H264_Main_5_0
+    CFStringRef kVTProfileLevel_H264_Main_5_1
+    CFStringRef kVTProfileLevel_H264_Main_5_2
+    CFStringRef kVTProfileLevel_H264_High_3_0
+    CFStringRef kVTProfileLevel_H264_High_3_1
+    CFStringRef kVTProfileLevel_H264_High_3_2
+    CFStringRef kVTProfileLevel_H264_High_4_0
+    CFStringRef kVTProfileLevel_H264_High_4_1
+    CFStringRef kVTProfileLevel_H264_High_4_2
+    CFStringRef kVTProfileLevel_H264_High_5_0
+    CFStringRef kVTProfileLevel_H264_High_5_1
+    CFStringRef kVTProfileLevel_H264_High_5_2
     # the quality floor / ceiling (macos 12 and macos 13 - see `set_qp_range`):
     CFStringRef kVTCompressionPropertyKey_MaxAllowedFrameQP
     CFStringRef kVTCompressionPropertyKey_MinAllowedFrameQP
@@ -219,6 +241,49 @@ cdef void encoder_output_callback(void* outputCallbackRefCon, void* sourceFrameR
     encoder.process_output(status, sampleBuffer)
 
 
+cdef CFStringRef h264_profile_level(profile: str, int level_idc) noexcept:
+    """ the VideoToolbox constant for this profile and level, NULL if there isn't one """
+    if profile == "main":
+        if level_idc == 30:
+            return kVTProfileLevel_H264_Main_3_0
+        if level_idc == 31:
+            return kVTProfileLevel_H264_Main_3_1
+        if level_idc == 32:
+            return kVTProfileLevel_H264_Main_3_2
+        if level_idc == 40:
+            return kVTProfileLevel_H264_Main_4_0
+        if level_idc == 41:
+            return kVTProfileLevel_H264_Main_4_1
+        if level_idc == 42:
+            return kVTProfileLevel_H264_Main_4_2
+        if level_idc == 50:
+            return kVTProfileLevel_H264_Main_5_0
+        if level_idc == 51:
+            return kVTProfileLevel_H264_Main_5_1
+        if level_idc == 52:
+            return kVTProfileLevel_H264_Main_5_2
+    elif profile == "high":
+        if level_idc == 30:
+            return kVTProfileLevel_H264_High_3_0
+        if level_idc == 31:
+            return kVTProfileLevel_H264_High_3_1
+        if level_idc == 32:
+            return kVTProfileLevel_H264_High_3_2
+        if level_idc == 40:
+            return kVTProfileLevel_H264_High_4_0
+        if level_idc == 41:
+            return kVTProfileLevel_H264_High_4_1
+        if level_idc == 42:
+            return kVTProfileLevel_H264_High_4_2
+        if level_idc == 50:
+            return kVTProfileLevel_H264_High_5_0
+        if level_idc == 51:
+            return kVTProfileLevel_H264_High_5_1
+        if level_idc == 52:
+            return kVTProfileLevel_H264_High_5_2
+    return NULL
+
+
 cdef class Encoder:
     cdef VTCompressionSessionRef session
     cdef unsigned int width
@@ -226,6 +291,7 @@ cdef class Encoder:
     cdef OSType pixel_format
     cdef object encoding
     cdef object profile
+    cdef double level
     cdef object src_format
     cdef unsigned long frames
     cdef int full_range
@@ -257,6 +323,7 @@ cdef class Encoder:
             raise ValueError(f"invalid odd width {width} or height {height} for {src_format}")
         self.encoding = encoding
         self.profile = get_h264_profile(options) if encoding == "h264" else "main"
+        self.level = get_level(options, encoding=encoding, csc_mode=src_format)
         self.width = width
         self.height = height
         self.src_format = src_format
@@ -292,15 +359,7 @@ cdef class Encoder:
         VTSessionSetProperty(self.session, kVTCompressionPropertyKey_RealTime, kCFBooleanTrue)
         # no B-frames: keep latency low and the bitstream in decode order:
         VTSessionSetProperty(self.session, kVTCompressionPropertyKey_AllowFrameReordering, kCFBooleanFalse)
-        if self.encoding == "h264":
-            if self.profile == "constrained-baseline":
-                profile_level = kVTProfileLevel_H264_ConstrainedBaseline_AutoLevel
-            elif self.profile == "main":
-                profile_level = kVTProfileLevel_H264_Main_AutoLevel
-            else:
-                profile_level = kVTProfileLevel_H264_High_AutoLevel
-        else:
-            profile_level = kVTProfileLevel_HEVC_Main_AutoLevel
+        profile_level = self.get_profile_level()
         r = VTSessionSetProperty(self.session, kVTCompressionPropertyKey_ProfileLevel, profile_level)
         if r != 0:
             raise RuntimeError(f"failed to set VideoToolbox {self.profile} profile, error {r}")
@@ -380,6 +439,25 @@ cdef class Encoder:
                 CFRelease(session)
         self.init_encoder(self.init_options)
 
+    cdef CFStringRef get_profile_level(self):
+        # VideoToolbox has no separate level knob: the profile and the level come as a
+        # single constant, and it only publishes the pairs `h264_profile_level` knows about.
+        # anything else - constrained-baseline, hevc, or a level outside 3.0 to 5.2 -
+        # keeps `AutoLevel` and lets the media engine work the level out for itself:
+        cdef CFStringRef profile_level = NULL
+        if self.level and self.encoding == "h264":
+            profile_level = h264_profile_level(self.profile, get_level_value(self.level, "h264"))
+            if profile_level != NULL:
+                return profile_level
+            unsupported_level(self.level, self.encoding, "vt")
+        if self.encoding != "h264":
+            return kVTProfileLevel_HEVC_Main_AutoLevel
+        if self.profile == "constrained-baseline":
+            return kVTProfileLevel_H264_ConstrainedBaseline_AutoLevel
+        if self.profile == "main":
+            return kVTProfileLevel_H264_Main_AutoLevel
+        return kVTProfileLevel_H264_High_AutoLevel
+
     cdef OSStatus set_int_property(self, CFStringRef key, int value):
         cdef int32_t v = value
         cdef CFNumberRef num = CFNumberCreate(NULL, kCFNumberSInt32Type, &v)
@@ -411,6 +489,7 @@ cdef class Encoder:
         self.min_qp = self.max_qp = -1
         self.content_types = ()
         self.profile = ""
+        self.level = 0
         self.frame_data = None
         f = self.file
         if f:
@@ -428,6 +507,7 @@ cdef class Encoder:
             "height"        : self.height,
             "encoding"      : self.encoding,
             "profile"       : self.profile,
+            "level"         : get_level_tuple(self.level),
             "src_format"    : self.src_format,
             "full-range"    : self.full_range,
             "quality"       : self.quality,

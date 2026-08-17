@@ -9,7 +9,7 @@ from typing import Any
 from threading import Event, Lock
 from collections.abc import Sequence
 
-from xpra.codecs.constants import preforder, STREAM_ENCODINGS
+from xpra.codecs.constants import preforder, STREAM_ENCODINGS, VIDEO_LEVELS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
 from xpra.util.parsing import parse_bool_or_int
@@ -390,6 +390,18 @@ class Encodings(StubClientSubsystem):
             h264_caps["fast-decode"] = envbool("XPRA_X264_FAST_DECODE", False)
             log("x264 encoding options: %s", h264_caps)
             caps["h264"] = h264_caps
+        # the level caps a stream's resolution, framerate and bitrate,
+        # so a client with a constrained decoder (hardware or otherwise)
+        # can ask every video encoder for one it is able to keep up with.
+        # we have no way of knowing what our decoders can do, so this is opt-in:
+        for encoding in VIDEO_LEVELS:
+            if encoding not in self.get_core_encodings():
+                continue
+            level = os.environ.get(f"XPRA_{encoding.upper()}_LEVEL", "")
+            if level:
+                enc_caps = caps.setdefault(encoding, {})
+                enc_caps["level"] = level
+                log("%s encoding level: %s", encoding, level)
         caps["batch"] = get_batch_caps()
         log("encoding capabilities: %s", caps)
         return caps

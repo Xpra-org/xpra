@@ -11,7 +11,7 @@ from dataclasses import dataclass, fields
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.util.objects import typedict
-from xpra.util.env import envint
+from xpra.util.env import envint, first_time
 
 # noinspection PyPep8
 COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
@@ -165,6 +165,103 @@ def get_profile(options: typedict, encoding: str = "h264", csc_mode: str = "YUV4
         if x:
             return x
     return ""
+
+
+# the range of levels each video encoding defines.
+# clients express the level the same way for every codec (ie: "4.1"),
+# the value that actually ends up in the bitstream is codec specific - see `get_level_value`.
+# encodings which have no notion of a level (ie: vp8) are simply absent from this table:
+VIDEO_LEVELS: dict[str, tuple[float, float]] = {
+    "h264": (1.0, 6.2),
+    "h265": (1.0, 6.2),
+    "hevc": (1.0, 6.2),
+    "av1": (2.0, 7.3),
+    "vp9": (1.0, 6.2),
+}
+
+
+def parse_level(value: str, encoding: str = "h264") -> float:
+    """
+    parse a level (ie: "4.1") and validate it against the range this encoding defines.
+    anything we don't like returns 0, which every encoder treats as
+    "no level requested, pick one yourself".
+    since the value comes from the client, we only ever complain about it once.
+    """
+    lmin, lmax = VIDEO_LEVELS.get(encoding, (0, 0))
+    try:
+        level = float(value)
+    except (TypeError, ValueError):
+        level = 0
+    # av1 only has 4 minor levels per major one, and `get_level_value` packs them:
+    # a 5th would silently come out as the next major level, so refuse it here
+    minor = round(level * 10) % 10
+    if lmin <= level <= lmax and (encoding != "av1" or minor <= 3):
+        return level
+    if first_time(f"invalid-{encoding}-level-{value}"):
+        # pylint: disable=import-outside-toplevel
+        from xpra.log import Logger
+        log = Logger("encoding")
+        log.warn(f"Warning: ignoring invalid {encoding} level {value!r}")
+        if lmax:
+            log.warn(f" the level must be a number between {lmin} and {lmax}")
+        else:
+            log.warn(f" the {encoding!r} encoding has no configurable level")
+    return 0
+
+
+def get_level(options: typedict, encoding: str = "h264", csc_mode: str = "YUV420P",
+              default_level: float = 0) -> float:
+    """
+    the level requested by the client for this encoding (ie: 4.1),
+    0 means that the encoder is free to choose one
+    """
+    for x in (
+        options.strget(f"{encoding}.{csc_mode}.level"),
+        options.strget(f"{encoding}.level"),
+        os.environ.get(f"XPRA_{encoding.upper()}_{csc_mode}_LEVEL", ""),
+        os.environ.get(f"XPRA_{encoding.upper()}_LEVEL", ""),
+    ):
+        if x:
+            return parse_level(x, encoding)
+    return default_level
+
+
+def get_level_value(level: float, encoding: str = "h264") -> int:
+    """
+    the codec specific integer a level (ie: 4.1) is encoded as:
+    * h264 `level_idc` (and vp9's target level) use 10 x the level: 41
+    * hevc `general_level_idc` uses 30 x the level: 123
+    * av1 uses a `seq_level_idx` counting 4 minor levels per major level, starting at 2.0: 9
+    """
+    major, minor = divmod(round(level * 10), 10)
+    if encoding == "av1":
+        return (major - 2) * 4 + minor
+    if encoding in ("h265", "hevc"):
+        return major * 30 + minor * 3
+    return major * 10 + minor
+
+
+def get_level_tuple(level: float) -> tuple[int, ...]:
+    """
+    a level (ie: 4.1) as a `(major, minor)` pair, for info dictionaries.
+    empty if no level was requested.
+    """
+    if not level:
+        return ()
+    return divmod(round(level * 10), 10)
+
+
+def unsupported_level(level: float, encoding: str = "h264", codec: str = "") -> None:
+    """
+    the level is a valid one for this encoding, but this particular codec cannot use it.
+    as with `parse_level`, this comes from the client so we only say so once.
+    """
+    if first_time(f"{codec}-{encoding}-level-{level}"):
+        # pylint: disable=import-outside-toplevel
+        from xpra.log import Logger
+        log = Logger("encoding")
+        log.warn(f"Warning: {codec!r} cannot encode {encoding} at level {level}")
+        log.warn(" using the encoder's default level instead")
 
 
 def get_x264_quality(pct: int, profile: str = "") -> int:

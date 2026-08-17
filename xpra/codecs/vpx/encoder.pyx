@@ -13,7 +13,10 @@ from collections.abc import Sequence
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
-from xpra.codecs.constants import VideoSpec, get_subsampling_divs, is_screen_content
+from xpra.codecs.constants import (
+    VideoSpec, get_level, get_level_value, get_level_tuple, unsupported_level,
+    get_subsampling_divs, is_screen_content,
+)
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import WIN32, OSX, POSIX
@@ -102,6 +105,8 @@ cdef extern from "vpx/vpx_encoder.h":
     int VP9E_SET_LOSSLESS
     #function to set the colour range (0=studio, 1=full):
     int VP9E_SET_COLOR_RANGE
+    #function to constrain the stream to a level (10 x the level, 255=off):
+    int VP9E_SET_TARGET_LEVEL
     #vpx_enc_pass:
     int VPX_RC_ONE_PASS
     int VPX_RC_FIRST_PASS
@@ -241,6 +246,11 @@ def get_encodings() -> Sequence[str]:
 generation = AtomicInteger()
 
 
+# the levels vp9 defines: unlike h264 it does not use every minor number,
+# and libvpx rejects anything that is not one of these:
+VP9_LEVELS: Sequence[int] = (10, 11, 20, 21, 30, 31, 40, 41, 50, 51, 52, 60, 61, 62)
+
+
 def get_info() -> Dict[str,Any]:
     global CODECS, MAX_SIZE
     b = vpx_codec_build_config()
@@ -343,6 +353,7 @@ cdef class Encoder:
     cdef unsigned long bandwidth_limit
     cdef double initial_bitrate_per_pixel
     cdef object encoding
+    cdef double level
     cdef object src_format
     cdef int speed
     cdef int quality
@@ -459,6 +470,15 @@ cdef class Encoder:
         if encoding=="vp9":
             #disable periodic Q boost which causes latency spikes:
             self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
+            #vp9 only: libvpx leaves the stream unconstrained unless we ask for a level,
+            #and the value it takes is 10 x the level, just like h264's `level_idc`:
+            level = get_level(options, encoding=encoding, csc_mode=src_format)
+            if level:
+                if get_level_value(level, "vp9") not in VP9_LEVELS:
+                    unsupported_level(level, encoding, "vpx")
+                else:
+                    self.level = level
+                    self.codec_control("target level", VP9E_SET_TARGET_LEVEL, get_level_value(level, "vp9"))
         self.do_set_encoding_speed(self.speed)
         self.do_set_encoding_quality(self.quality)
         self.do_set_content_types()
@@ -517,6 +537,7 @@ cdef class Encoder:
             "speed"     : self.speed,
             "quality"   : self.quality,
             "lossless"  : bool(self.lossless),
+            "level"     : get_level_tuple(self.level),
             "content-types" : self.content_types,
             "screen-content" : bool(self.screen_content>0),
             "generation" : self.generation,
@@ -580,6 +601,7 @@ cdef class Encoder:
         self.height = 0
         self.max_threads = 0
         self.encoding = ""
+        self.level = 0
         self.src_format = ""
         self.content_types = ()
         self.screen_content = -1

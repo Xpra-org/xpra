@@ -24,7 +24,10 @@ from xpra.codecs.nvidia.cuda.context import (
     get_CUDA_function, record_device_failure, record_device_success,
     cuda_device_context, load_device,
 )
-from xpra.codecs.constants import VideoSpec, TransientCodecException, CSC_ALIAS, get_profile
+from xpra.codecs.constants import (
+    VideoSpec, TransientCodecException, CSC_ALIAS,
+    get_profile, get_level, get_level_value, get_level_tuple, unsupported_level,
+)
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.nvidia.util import get_nvidia_module_version, get_license_keys, get_cards
 from xpra.log import Logger
@@ -88,7 +91,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NV_ENCODE_API_FUNCTION_LIST_VER,
     NVENC_INFINITE_GOPLENGTH,
     NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME,
-    NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL_H264_5,
+    NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL, NV_ENC_LEVEL_H264_5,
     NV_ENC_LEVEL_AV1_AUTOSELECT, NV_ENC_TIER_AV1_1, NV_ENC_AV1_PART_SIZE_AUTOSELECT,
     NV_ENC_VUI_COLOR_PRIMARIES_BT709, NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709, NV_ENC_VUI_MATRIX_COEFFS_BT709,
     NV_ENC_BIT_DEPTH_8,
@@ -405,6 +408,7 @@ cdef class Encoder:
     cdef object codec_name
     cdef object preset_name
     cdef object profile_name
+    cdef double level
     cdef object pixel_format
     cdef uint8_t lossless
     cdef uint8_t full_range
@@ -541,6 +545,7 @@ cdef class Encoder:
         #the pixel format we feed into the encoder
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.profile_name = self._get_profile(options)
+        self.level = self._get_level(options)
         self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
         log("using %s %s compression at %s%% quality with pixel format %s",
             ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format)
@@ -564,13 +569,25 @@ cdef class Encoder:
             self.file = open(filename, "wb")
             log.info(f"saving {encoding} stream to {filename!r}")
 
-    cdef str _get_profile(self, options):
+    cdef str _get_csc_mode(self):
         #convert the pixel format into a "colourspace" string:
-        csc_mode = "YUV420P"
         if self.pixel_format in ("BGRX", "YUV444P"):
-            csc_mode = "YUV444P"
-        elif self.pixel_format=="r210":
-            csc_mode = "YUV444P10"
+            return "YUV444P"
+        if self.pixel_format=="r210":
+            return "YUV444P10"
+        return "YUV420P"
+
+    cdef double _get_level(self, options):
+        cdef double level = get_level(options, encoding=self.encoding, csc_mode=self._get_csc_mode())
+        #nvenc's `NV_ENC_LEVEL` enum stops short of the highest levels the codecs define:
+        cdef double maxlevel = 6.3 if self.encoding == "av1" else 6.2
+        if level > maxlevel:
+            unsupported_level(level, self.encoding, "nvenc")
+            return 0
+        return level
+
+    cdef str _get_profile(self, options):
+        csc_mode = self._get_csc_mode()
         #for 4:4:4 (chromaFormatIDC=3) don't fall back to the "auto" profile,
         #which may resolve to a 4:2:0-only profile and get rejected at init time:
         default_profile = ""
@@ -971,7 +988,10 @@ cdef class Encoder:
             rc.qpMapMode = NV_ENC_QP_MAP_DELTA
 
     cdef tune_h264(self, NV_ENC_CONFIG_H264 *h264, int gopLength):
-        h264.level = NV_ENC_LEVEL_H264_5 #NV_ENC_LEVEL_AUTOSELECT
+        # `NV_ENC_LEVEL_H264_*` is just 10 x the level, so the value from
+        # `get_level_value` can be used as is - and 0 is `NV_ENC_LEVEL_AUTOSELECT`:
+        cdef int level_idc = get_level_value(self.level, "h264") if self.level else NV_ENC_LEVEL_H264_5
+        h264.level = <NV_ENC_LEVEL> level_idc
         h264.chromaFormatIDC = self.get_chroma_format()
         h264.disableSPSPPS = 0
         if self.datagram:
@@ -1001,7 +1021,10 @@ cdef class Encoder:
 
     cdef void tune_hevc(self, NV_ENC_CONFIG_HEVC *hevc, int gopLength):
         hevc.chromaFormatIDC = self.get_chroma_format()
-        #hevc.level = NV_ENC_LEVEL_HEVC_5
+        # `NV_ENC_LEVEL_HEVC_*` is 30 x the level, which is what `general_level_idc` uses:
+        cdef int level_idc = get_level_value(self.level, "h265") if self.level else 0
+        if level_idc:
+            hevc.level = <NV_ENC_LEVEL> level_idc
         hevc.idrPeriod = gopLength
         hevc.enableIntraRefresh = INTRA_REFRESH
         #hevc.pixelBitDepthMinus8 = 2*int(self.bufferFmt==NV_ENC_BUFFER_FORMAT_ARGB10)
@@ -1018,7 +1041,9 @@ cdef class Encoder:
 
     cdef void tune_av1(self, NV_ENC_CONFIG_AV1 *av1, int gopLength):
         memset(av1, 0, sizeof(NV_ENC_CONFIG_AV1))
-        av1.level = NV_ENC_LEVEL_AV1_AUTOSELECT
+        # `NV_ENC_LEVEL_AV1_*` counts up from 2.0 in the same order as av1's `seq_level_idx`:
+        cdef int level_idx = get_level_value(self.level, "av1") if self.level else NV_ENC_LEVEL_AV1_AUTOSELECT
+        av1.level = <NV_ENC_LEVEL> level_idx
         av1.chromaFormatIDC = self.get_chroma_format()
         av1.tier = NV_ENC_TIER_AV1_1
         av1.minPartSize = NV_ENC_AV1_PART_SIZE_AUTOSELECT
@@ -1141,6 +1166,8 @@ cdef class Encoder:
             info["preset"] = self.preset_name
         if self.profile_name:
             info["profile"] = self.profile_name
+        if self.level:
+            info["level"] = get_level_tuple(self.level)
         cdef double t = self.time
         info["total_time_ms"] = int(self.time * 1000)
         if self.frames>0 and t>0:

@@ -17,7 +17,9 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, EncodingNotSupported, get_profile, is_screen_content
+from xpra.codecs.constants import (
+    VideoSpec, EncodingNotSupported, get_profile, get_level, get_level_value, get_level_tuple, is_screen_content,
+)
 from xpra.codecs.vacommon import config_libva_logging
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict, AtomicInteger
@@ -75,7 +77,7 @@ cdef extern from "va_encode.h":
     int               libva_encode_get_minor()
 
     LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
-                                           const char *profile,
+                                           const char *profile, int level,
                                            int width, int height,
                                            int quality, int speed, int cabac) nogil
     void              libva_encoder_destroy(LibVAEncoder *enc) nogil
@@ -212,6 +214,7 @@ cdef class Encoder:
     cdef object src_format
     cdef object encoding
     cdef object profile
+    cdef double level
     cdef object file
     cdef uint8_t ready
 
@@ -229,6 +232,9 @@ cdef class Encoder:
 
         self.encoding = encoding
         self.profile = get_h264_profile(options) if encoding == "h264" else ""
+        # only h264 carries a level in the bitstream here (it goes into the SPS),
+        # vp8 and vp9 signal theirs out of band, so libva has nothing to do with it:
+        self.level = get_level(options, encoding=encoding, csc_mode=src_format) if encoding == "h264" else 0
         self.src_format = src_format
         self.width = width
         self.height = height
@@ -247,9 +253,10 @@ cdef class Encoder:
         cdef const char *encoding_name = encoding_bytes
         cdef bytes profile_bytes = self.profile.encode("latin-1")
         cdef const char *profile_name = profile_bytes
+        cdef int level_idc = get_level_value(self.level, "h264") if self.level else 0
         cdef LibVAEncodeStatus status
         with nogil:
-            status = libva_encoder_create(&self.context, encoding_name, profile_name,
+            status = libva_encoder_create(&self.context, encoding_name, profile_name, level_idc,
                                           width, height, self.quality, self.speed, self.cabac)
         if status != LIBVA_ENC_OK:
             status_str = libva_encode_status_str(status).decode("latin-1")
@@ -354,6 +361,7 @@ cdef class Encoder:
         self.src_format = ""
         self.encoding = ""
         self.profile = ""
+        self.level = 0
         self.cabac = 0
         f = self.file
         if f:
@@ -369,6 +377,7 @@ cdef class Encoder:
             "src_format": self.src_format,
             "encoding": self.encoding,
             "profile": self.profile,
+            "level": get_level_tuple(self.level),
             "quality": self.quality,
             "speed": self.speed,
             "screen-content": bool(self.screen_content),

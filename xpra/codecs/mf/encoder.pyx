@@ -12,7 +12,9 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from xpra.codecs.constants import VideoSpec, EncodingNotSupported, get_profile, is_screen_content
+from xpra.codecs.constants import (
+    VideoSpec, EncodingNotSupported, get_profile, get_level, get_level_value, get_level_tuple, is_screen_content,
+)
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
@@ -62,6 +64,7 @@ cdef extern from "mf_encode.h":
         int speed
         int bandwidth_limit
         MFEncodeProfile profile
+        int level
 
     ctypedef struct MFTuningInfo:
         int codec_api
@@ -77,6 +80,7 @@ cdef extern from "mf_encode.h":
         int adaptive_mode
         int cabac
         int profile
+        int level
 
     int MF_CODEC_H264
     int MF_CODEC_HEVC
@@ -255,6 +259,7 @@ cdef class Encoder:
     cdef int height
     cdef object encoding
     cdef object profile
+    cdef double level
     cdef object src_format
     cdef bint full_range
     cdef int quality
@@ -273,6 +278,7 @@ cdef class Encoder:
         assert src_format == "YUV420P", "invalid source format: %s" % src_format
         self.encoding   = encoding
         self.profile    = get_h264_profile(options) if encoding == "h264" else "main"
+        self.level      = get_level(options, encoding=encoding, csc_mode=src_format)
         self.src_format = src_format
         self.width      = width
         self.height     = height
@@ -293,6 +299,9 @@ cdef class Encoder:
         tuning.speed           = speed
         tuning.bandwidth_limit = bandwidth_limit
         tuning.profile         = H264_PROFILE_IDS.get(self.profile, MF_ENC_PROFILE_MAIN)
+        # `MF_MT_MPEG2_LEVEL` takes `eAVEncH264VLevel` / `eAVEncH265VLevel`,
+        # both of which are numbered exactly like the level in the bitstream:
+        tuning.level           = get_level_value(self.level, self.encoding) if self.level else 0
 
     cdef void create_context(self) except *:
         cdef MFEncoderTuning tuning
@@ -376,6 +385,7 @@ cdef class Encoder:
         self.content_types = ()
         self.content_type = MF_CONTENT_UNKNOWN
         self.profile = ""
+        self.level = 0
 
     def get_info(self) -> Dict[str, Any]:
         info = get_info()
@@ -385,6 +395,7 @@ cdef class Encoder:
             "height"        : self.height,
             "encoding"      : self.encoding,
             "profile"       : self.profile,
+            "level"         : get_level_tuple(self.level),
             "src_format"    : self.src_format,
             "quality"       : self.quality,
             "speed"         : self.speed,
@@ -422,6 +433,7 @@ cdef class Encoder:
             "adaptive-mode"     : tuning.adaptive_mode,
             "cabac"             : tuning.cabac,
             "profile"           : tuning.profile,
+            "level"             : tuning.level,
         }.items():
             if value >= 0:
                 info[name] = value

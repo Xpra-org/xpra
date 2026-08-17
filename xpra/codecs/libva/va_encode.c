@@ -122,6 +122,7 @@ struct LibVAEncoder {
     int             quality_level;
     LibVACodec      codec;
     VAProfile       profile;
+    int             level;          /* client requested h264 level_idc, 0 = derive from the resolution */
     VAEntrypoint    entrypoint;
     int             have_reference;
     int             ref_surface_index;
@@ -216,6 +217,10 @@ static int h264_profile_from_name(const char *name, VAProfile *profile) {
 static int h264_level_idc(const LibVAEncoder *enc) {
     int mbs = enc->width_mbs * enc->height_mbs;
 
+    /* a client that knows what its decoder can take asks for a level explicitly;
+       we do not second guess it, the level only ever ends up in the SPS */
+    if (enc->level > 0)
+        return enc->level;
     if (mbs <= 3600)
         return 31;
     if (mbs <= 5120)
@@ -849,7 +854,7 @@ static LibVAEncodeStatus create_quality_level_buffer(LibVAEncoder *enc, VABuffer
 }
 
 LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
-                                       const char *profile_name,
+                                       const char *profile_name, int level,
                                        int width, int height,
                                        int quality, int speed, int cabac) {
     LibVAEncoder *enc;
@@ -903,6 +908,7 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
             libva_encoder_destroy(enc);
             return LIBVA_ENC_ERROR;
         }
+        enc->level = level;
         enc->entrypoint = g_h264_entrypoint;
         /* CABAC is a Main / High profile tool: Constrained Baseline forbids it */
         enc->cabac = cabac && enc->profile != VAProfileH264ConstrainedBaseline;

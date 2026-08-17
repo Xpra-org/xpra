@@ -58,6 +58,8 @@ typedef struct {
     int speed;             /* 0 (slowest) .. 100 (fastest) */
     int bandwidth_limit;   /* bits per second, 0 if unlimited */
     MFEncodeProfile profile; /* requested H.264 profile; ignored for HEVC */
+    int level;             /* requested level: `level_idc` for H.264 (41 = 4.1),
+                              30 x the level for HEVC (123 = 4.1); 0 = let the MFT choose */
 } MFEncoderTuning;
 
 /* The tuning that was actually applied: -1 means the MFT does not expose that
@@ -76,6 +78,7 @@ typedef struct {
     int adaptive_mode;     /* AVEncAdaptiveMode */
     int cabac;             /* H.264 only */
     int profile;           /* MF_MT_MPEG2_PROFILE value used for the output type */
+    int level;             /* MF_MT_MPEG2_LEVEL value used for the output type */
 } MFTuningInfo;
 
 /* Global init / shutdown (call once per process) */

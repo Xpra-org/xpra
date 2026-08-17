@@ -10,7 +10,8 @@ from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
 from xpra.codecs.constants import (
-    VideoSpec, get_profile, get_subsampling_divs, EncodingNotSupported, is_screen_content,
+    VideoSpec, get_profile, get_level, get_level_value, get_level_tuple, get_subsampling_divs,
+    EncodingNotSupported, is_screen_content,
 )
 from xpra.codecs.image import ImageWrapper
 from xpra.os_util import WIN32
@@ -121,6 +122,7 @@ PROPERTIES: Dict[str, Dict[str, str]] = {
     "h264": {
         "usage": "Usage",
         "profile": "Profile",
+        "level": "ProfileLevel",
         "quality-preset": "QualityPreset",
         "frame-size": "FrameSize",
         "frame-rate": "FrameRate",
@@ -144,6 +146,7 @@ PROPERTIES: Dict[str, Dict[str, str]] = {
         #   nothing about 0, and guessing wrong would make every frame an intra frame.
         #   HEVC therefore keeps its default GOP of 60 frames for now.
         "usage": "HevcUsage",
+        "level": "HevcProfileLevel",
         "quality-preset": "HevcQualityPreset",
         "frame-size": "HevcFrameSize",
         "frame-rate": "HevcFrameRate",
@@ -156,6 +159,7 @@ PROPERTIES: Dict[str, Dict[str, str]] = {
     },
     "av1": {
         "usage": "Av1Usage",
+        "level": "Av1Level",
         "quality-preset": "Av1QualityPreset",
         "frame-size": "Av1FrameSize",
         "frame-rate": "Av1FrameRate",
@@ -383,6 +387,7 @@ cdef class Encoder:
     cdef unsigned int height
     cdef object encoding
     cdef object profile
+    cdef double level
     cdef object src_format
     cdef int speed
     cdef int quality
@@ -417,6 +422,7 @@ cdef class Encoder:
 
         self.encoding = encoding
         self.profile = get_h264_profile(options) if encoding == "h264" else "main"
+        self.level = get_level(options, encoding=encoding, csc_mode=src_format)
         self.width = width
         self.height = height
         self.quality = options.intget("quality", 50)
@@ -594,6 +600,10 @@ cdef class Encoder:
         setframerate(props["frame-rate"])
         if self.encoding == "h264":
             setint64(props["profile"], H264_PROFILE_IDS[self.profile])
+        if self.level:
+            # each codec numbers its levels differently, but all three AMF enums
+            # use exactly the value that goes into the bitstream:
+            self.try_property("level", get_level_value(self.level, self.encoding))
 
         preset = {
             "h264": get_h264_preset,
@@ -712,6 +722,7 @@ cdef class Encoder:
             "quality"   : self.quality,
             "encoding"  : self.encoding,
             "profile"   : self.profile,
+            "level"     : get_level_tuple(self.level),
             "src_format": self.src_format,
             "content-types": self.content_types,
             "caps": self.caps,
@@ -760,6 +771,7 @@ cdef class Encoder:
         self.height = 0
         self.encoding = ""
         self.profile = ""
+        self.level = 0
         self.src_format = ""
         self.content_types = ()
         self.rate_control = -1

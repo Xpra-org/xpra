@@ -43,6 +43,14 @@ The client advertises an `encoding` dictionary. The interoperability fields are:
 Codec profile maps such as `h264` extend these fields. Unknown codec diagnostic
 and version fields are advisory.
 
+Any video codec map may also carry a `level` (ie: `h264` → `level` = `4.1`),
+which caps the resolution, framerate and bitrate the server's encoder may use,
+so that a client with a constrained decoder can ask for a stream it can keep up with.
+A `<colourspace>.level` key applies to that colourspace only.
+The level is written the same way for every codec, and the server converts it to
+whatever its encoder expects. It is a request: a server whose encoder cannot honour
+it logs a warning and encodes at the level it would have chosen anyway.
+
 <div class="docs-section-heading" markdown="1">
 
 ## Network Packets
