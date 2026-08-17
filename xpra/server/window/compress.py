@@ -36,6 +36,7 @@ from xpra.codecs.loader import get_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import (
     preforder,
+    is_video_content,
     LOSSY_PIXEL_FORMATS, PREFERRED_REFRESH_ENCODING_ORDER,
     PSEUDO_LOSSLESS_ENCODINGS, TRUE_LOSSLESS_ENCODINGS, COMPRESS_FMT, COMPRESS_FMT_DIRECT,
 )
@@ -396,7 +397,6 @@ class WindowSource(WindowIconSource):
             self._current_speed = capr(encoding_options.intget("initial_speed", INITIAL_SPEED*(1+int(nobwl))))
         self._want_alpha: bool = False
         self._lossless_threshold_base: int = 85
-        self._lossless_threshold_pixel_boost: int = 20
         self._rgb_auto_threshold: int = MAX_PIXELS_PREFER_RGB
 
         log("initial encoding for %s: %s", self.wid, self.encoding)
@@ -564,7 +564,6 @@ class WindowSource(WindowIconSource):
             ""                    : self.encoding,
             "lossless_threshold"  : {
                 "base"           : self._lossless_threshold_base,
-                "pixel_boost"    : self._lossless_threshold_pixel_boost
             },
         })
         try:
@@ -984,7 +983,6 @@ class WindowSource(WindowIconSource):
         if self._want_alpha and is_covered_by_opaque_region(self._opaque_region, ww, wh):
             self._want_alpha = False
         self._lossless_threshold_base = max(0, min(90, 60+self._current_speed//5 + int(cv*100) - int(self.is_shadow)*20))
-        self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
         # calculate the threshold for using rgb
         # if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
@@ -1023,8 +1021,8 @@ class WindowSource(WindowIconSource):
         self.assign_encoding_getter()
         log("update_encoding_options(%s) wid=%#x, want_alpha=%s, speed=%i, quality=%i",
             force_reload, self.wid, self._want_alpha, self._current_speed, self._current_quality)
-        log("lossless threshold: %s / %s, rgb auto threshold=%i (min=%i, max=%i)",
-            self._lossless_threshold_base, self._lossless_threshold_pixel_boost,
+        log("lossless threshold: %s, rgb auto threshold=%i (min=%i, max=%i)",
+            self._lossless_threshold_base,
             self._rgb_auto_threshold, min_rgb_threshold, max_rgb_threshold)
         log("bandwidth-limit=%i, get_best_encoding=%s", bwl, self.get_best_encoding)
 
@@ -1187,8 +1185,6 @@ class WindowSource(WindowIconSource):
         alpha = self._want_alpha or self.is_tray
         quality = options.get("quality", 0)
         speed = options.get("speed", 50)
-        if self._lossless_threshold_base < quality < 100 and self._fixed_quality <= 0:
-            quality = self._fixed_max_quality
         if w*h < self._rgb_auto_threshold and not grayscale and not self.has_shape:
             if depth > 24 and self.client_bit_depth > 24 and "rgb32" in co:
                 return "rgb32"
@@ -2092,6 +2088,7 @@ class WindowSource(WindowIconSource):
                 speed = (speed - packets_backlog*20) * speed_pct // 100
                 speed = min(self._fixed_max_speed, max(1, self._fixed_min_speed, speed))
         quality = options.get("quality", 0)
+        automatic_quality = quality == 0 and self._fixed_quality <= 0 and self._quality_hint < 0
         if quality == 0:
             if self._fixed_quality > 0:
                 quality = self._fixed_quality
@@ -2112,6 +2109,12 @@ class WindowSource(WindowIconSource):
                     scaling_discount = 20
                 quality = (quality - packets_backlog*20 - scaling_discount) * quality_pct // 100
                 quality = min(self._fixed_max_quality, max(1, self._fixed_min_quality, quality))
+        if all((
+            automatic_quality,
+            not is_video_content(self.content_types),
+            self._lossless_threshold_base < quality < 100,
+        )):
+            quality = self._fixed_max_quality
         eoptions = dict(options)
         eoptions.update({
             "quality"   : quality,
