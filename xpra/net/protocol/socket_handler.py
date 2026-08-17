@@ -61,7 +61,7 @@ READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 PACKET_JOIN_SIZE = envint("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE)
 LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 16384)
 LOG_RAW_PACKET_SIZE = envbool("XPRA_LOG_RAW_PACKET_SIZE", False)
-MODERN_INITIAL_PACKET_SIZE = 4 * 1024 * 1024
+MODERN_INITIAL_PACKET_SIZE = 16 * 1024
 # inline compressed data in packet if smaller than:
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
 FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
@@ -176,8 +176,7 @@ class SocketProtocol:
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
         # initial value which may get increased by client/server after handshake:
-        self.max_packet_size = (MAX_PACKET_SIZE if BACKWARDS_COMPATIBLE else
-                                min(MAX_PACKET_SIZE, MODERN_INITIAL_PACKET_SIZE))
+        self.max_packet_size = MAX_PACKET_SIZE if BACKWARDS_COMPATIBLE else min(MAX_PACKET_SIZE, MODERN_INITIAL_PACKET_SIZE)
         self.abs_max_packet_size = 256 * 1024 * 1024
         self.large_packets = [
             "hello", "window-metadata", "audio-data", "notification-show", "setting-change",
