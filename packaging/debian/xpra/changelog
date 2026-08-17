@@ -33,6 +33,8 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
   * Encodings:
     aom decoder closing / leaking
     invalid aom image metadata
+    openh264 decoder returning outdated frames
+    openh264 decoder: handle main profile
     dav1d decoder image metadata (unused)
     BGRX must use opaque alpha
     channels swapped, miscalculated rowstride, 30-bit issues
@@ -45,7 +47,7 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     `amf` encoder abrubt quality scale
   * Major:
     errors during client disconnection
-    keymap not applied
+    keymap not applied + forwards compatibility
     microphone forwarding selects the wrong device
     system suspend + resume never unblocks window updates
     missed main thread lockups
@@ -92,6 +94,7 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     type error: notification ids can be enums
   * dbus:
     start the dbus subsystem before all the others
+    save dbus X11 properties until after the display is initialized
     connect to the session bus address explicitly
   * Cosmetic:
     missing server endpoint in session-info dialog
@@ -107,7 +110,7 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     fix shadow unit test
     remove unavailable commands
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 16 Aug 2026 18:10:22 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 17 Aug 2026 21:42:02 +0700
 
 xpra (6.5.2-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:

@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.3] 2026-08-16
+## [6.5.3] 2026-08-17
 * 🔧 Platforms, build and packaging:
   * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
   * [don't include wayland server components in client-only builds](https://github.com/Xpra-org/xpra/commit/7d24bc8396a273d2f557b961800c2f0730af8afd)
@@ -35,6 +35,8 @@
 * Encodings:
   * [aom decoder closing / leaking](https://github.com/Xpra-org/xpra/commit/b97ca4d7294b853a26283c3add6578cef6cb7146)
   * [invalid aom image metadata](https://github.com/Xpra-org/xpra/commit/c3a73c2f28c31a5aa478b7a517db9f8d30dc75bf)
+  * [openh264 decoder returning outdated frames](https://github.com/Xpra-org/xpra/commit/1e7e8a3381f6bc7e5444dc0947fd5918b9a8552f)
+  * [openh264 decoder: handle main profile](https://github.com/Xpra-org/xpra/commit/4649e579ee25e1c8e133b3dfaf7f424ce2c98dfd)
   * [dav1d decoder image metadata (unused)](https://github.com/Xpra-org/xpra/commit/c167de24ace2ad76dc0a7c260dbc9c38d0585dd9)
   * [BGRX must use opaque alpha](https://github.com/Xpra-org/xpra/commit/7b8222dc5308061fc7342bd90e49938bcf6fbf3c)
   * [channels swapped](https://github.com/Xpra-org/xpra/commit/61b57c5b975fc4495052c46132cbcc0df01dca88), [miscalculated rowstride](https://github.com/Xpra-org/xpra/commit/b42eabf9a891486a6ce88034d5149c37e25ea733), [30-bit issues](https://github.com/Xpra-org/xpra/commit/e041d3620edddd9e0a48d28c1a941f50d9ccd067)
@@ -47,7 +49,7 @@
   * [`amf` encoder abrubt quality scale](https://github.com/Xpra-org/xpra/commit/366701909e95cb8c2a3c8921be67d1f658fbb240)
 * Major:
   * [errors during client disconnection](https://github.com/Xpra-org/xpra/commit/416629496eb709bde729f2eb7090f846eb829972)
-  * [keymap not applied](https://github.com/Xpra-org/xpra/commit/4f96ab05e11290261128f4b12c9c8dcd6a3ad44b)
+  * [keymap not applied](https://github.com/Xpra-org/xpra/commit/4f96ab05e11290261128f4b12c9c8dcd6a3ad44b) + [forwards compatibility](https://github.com/Xpra-org/xpra/commit/6e6d09b06cec86b182a2d216722f9ae3bfb0c11e)
   * [microphone forwarding selects the wrong device](https://github.com/Xpra-org/xpra/commit/58efffed30bcf9b54cc8c23f5ddaaf68b181e0ec)
   * [system suspend + resume never unblocks window updates](https://github.com/Xpra-org/xpra/commit/60e2933a8a9b362ecc5d839949e1c726b2c97893)
   * [missed main thread lockups](https://github.com/Xpra-org/xpra/commit/31b0e4cd652c0183d2dda7ab6a50ff10aba96097)
@@ -94,6 +96,7 @@
   * [type error: notification ids can be enums](https://github.com/Xpra-org/xpra/commit/dc336e7e164dead61fcda57bfe6778835cd08c3f)
 * dbus:
   * [start the dbus subsystem before all the others](https://github.com/Xpra-org/xpra/commit/70cf9cfabb9ee413e60dc230f1b3a840c1c2c0bd)
+  * [save dbus X11 properties until after the display is initialized](https://github.com/Xpra-org/xpra/commit/cdabea0d648270820738856930b44635f3d1e420)
   * [connect to the session bus address explicitly](https://github.com/Xpra-org/xpra/commit/204e0dd6d1f888b0aadf378f94b416dff9f50f78)
 * Cosmetic:
   * [missing server endpoint in session-info dialog](https://github.com/Xpra-org/xpra/commit/6c46896e3b5ecd317504797bf4a932c83479dbe9)

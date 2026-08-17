@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Sun Aug 16 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
+* Mon Aug 17 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
    don't include wayland server components in client-only builds
@@ -1146,6 +1146,8 @@ fi
 - Encodings:
    aom decoder closing / leaking
    invalid aom image metadata
+   openh264 decoder returning outdated frames
+   openh264 decoder: handle main profile
    dav1d decoder image metadata (unused)
    BGRX must use opaque alpha
    channels swapped, miscalculated rowstride, 30-bit issues
@@ -1158,7 +1160,7 @@ fi
    `amf` encoder abrubt quality scale
 - Major:
    errors during client disconnection
-   keymap not applied
+   keymap not applied + forwards compatibility
    microphone forwarding selects the wrong device
    system suspend + resume never unblocks window updates
    missed main thread lockups
@@ -1205,6 +1207,7 @@ fi
    type error: notification ids can be enums
 - dbus:
    start the dbus subsystem before all the others
+   save dbus X11 properties until after the display is initialized
    connect to the session bus address explicitly
 - Cosmetic:
    missing server endpoint in session-info dialog
