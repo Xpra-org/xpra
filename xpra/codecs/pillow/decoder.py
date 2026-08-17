@@ -111,37 +111,25 @@ def decompress(coding: str, img_data: SizedBuffer, options: typedict) -> tuple[s
     elif img.mode == "LA":
         img = img.convert("RGBA")
 
-    width, height = img.size
-    if img.mode == "RGB":
-        # PIL flattens the data to a continuous straightforward RGB format:
-        rowstride = width * 3
-        rgb_format = options.strget("rgb_format")
-        rgb_format = rgb_format.replace("A", "").replace("X", "")
-        # the webp encoder only takes BGRX input,
-        # so we have to swap things around if it was fed "RGB":
-        if rgb_format == "RGB":
-            rgb_format = "BGR"
-        else:
-            rgb_format = "RGB"
-    elif img.mode in ("RGBA", "RGBX"):
-        rowstride = width * 4
-        rgb_format = options.strget("rgb_format", img.mode)
-        if coding == "webp":
-            # the webp encoder only takes BGRX input,
-            # so we have to swap things around if it was fed "RGBA":
-            if rgb_format == "RGBA":
-                rgb_format = "BGRA"
-            elif rgb_format == "RGBX":
-                rgb_format = "BGRX"
-            elif rgb_format == "BGRA":
-                rgb_format = "RGBA"
-            elif rgb_format == "BGRX":
-                rgb_format = "RGBX"
-            else:
-                log.warn("Warning: unexpected RGB format '%s'", rgb_format)
-    else:
+    if img.mode not in ("RGB", "RGBA", "RGBX"):
         raise ValueError(f"invalid image mode: {img.mode}")
-    raw_data = img.tobytes("raw", img.mode)
+    width, height = img.size
+    requested_format = options.strget("rgb_format")
+    rgb_format = requested_format or img.mode
+    pack_image = img
+    if requested_format:
+        pack_mode = "RGBA" if "A" in rgb_format else "RGB"
+        if img.mode != pack_mode:
+            pack_image = img.convert(pack_mode)
+    try:
+        raw_data = pack_image.tobytes("raw", rgb_format)
+    except ValueError:
+        if not requested_format:
+            raise
+        log.warn("Warning: Pillow cannot convert decoded %s pixels to requested RGB format %r, using %s instead", img.mode, requested_format, img.mode)
+        rgb_format = img.mode
+        raw_data = img.tobytes("raw", rgb_format)
+    rowstride = width * len(rgb_format)
     log("pillow decoded %7i bytes of %5s data to %8i bytes of %s", len(img_data), coding, len(raw_data), rgb_format)
     may_save_image(coding, img_data)
     return rgb_format, raw_data, width, height, rowstride
