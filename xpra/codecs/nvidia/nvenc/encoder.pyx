@@ -92,7 +92,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NVENC_INFINITE_GOPLENGTH,
     NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME,
     NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL, NV_ENC_LEVEL_AUTOSELECT,
-    NV_ENC_LEVEL_AV1_AUTOSELECT, NV_ENC_TIER_AV1_1, NV_ENC_AV1_PART_SIZE_AUTOSELECT,
+    NV_ENC_LEVEL_AV1_AUTOSELECT, NV_ENC_TIER_AV1_0, NV_ENC_TIER_AV1_1, NV_ENC_AV1_PART_SIZE_AUTOSELECT,
     NV_ENC_VUI_COLOR_PRIMARIES_BT709, NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709, NV_ENC_VUI_MATRIX_COEFFS_BT709,
     NV_ENC_BIT_DEPTH_8,
 )
@@ -1043,7 +1043,14 @@ cdef class Encoder:
         cdef int level_idx = get_level_value(self.level, "av1") if self.level else NV_ENC_LEVEL_AV1_AUTOSELECT
         av1.level = <NV_ENC_LEVEL> level_idx
         av1.chromaFormatIDC = self.get_chroma_format()
-        av1.tier = NV_ENC_TIER_AV1_1
+        # av1 only defines the high tier from level 4.0 upwards: below that,
+        # `seq_tier` is not even present in the sequence header, so asking for it
+        # would be meaningless. with `AUTOSELECT` we do not know which level nvenc
+        # will settle on, so we leave the high tier alone there - see #4612
+        if self.level and self.level < 4.0:
+            av1.tier = NV_ENC_TIER_AV1_0
+        else:
+            av1.tier = NV_ENC_TIER_AV1_1
         av1.minPartSize = NV_ENC_AV1_PART_SIZE_AUTOSELECT
         av1.maxPartSize = NV_ENC_AV1_PART_SIZE_AUTOSELECT
         # av1.outputAnnexBFormat = 0	# do not use this flag! (the decoders won' be able to parse the bitstream)
