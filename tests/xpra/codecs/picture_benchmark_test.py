@@ -14,34 +14,42 @@ from PIL import Image
 
 if __package__:
     from .benchmark_single_picture_encoders import (
+        CODEC_CASES,
         Result,
         alpha_energy,
         image_to_rgba,
         load_fixtures,
         make_edge_mask,
+        normalize_decoded_rgba,
         pack_bgrx,
         pareto_indices,
+        premultiply_rgba,
         percentile95,
         psnr_db,
         rgb_energy,
         snr_db,
+        visible_rgba,
         write_json,
         write_markdown,
     )
     from .generate_picture_benchmark_fixtures import GENERATORS
 else:
     from benchmark_single_picture_encoders import (
+        CODEC_CASES,
         Result,
         alpha_energy,
         image_to_rgba,
         load_fixtures,
         make_edge_mask,
+        normalize_decoded_rgba,
         pack_bgrx,
         pareto_indices,
+        premultiply_rgba,
         percentile95,
         psnr_db,
         rgb_energy,
         snr_db,
+        visible_rgba,
         write_json,
         write_markdown,
     )
@@ -97,7 +105,24 @@ class PictureBenchmarkTest(unittest.TestCase):
         self.assertEqual(image_to_rgba(opaque_format, opaque, 2, 1, 8),
                          bytes((10, 20, 30, 255, 40, 50, 60, 255)))
         alpha_format, alpha = pack_bgrx(rgba, True)
-        self.assertEqual(image_to_rgba(alpha_format, alpha, 2, 1, 8), rgba)
+        self.assertEqual(image_to_rgba(alpha_format, alpha, 2, 1, 8), premultiply_rgba(rgba))
+
+    def test_alpha_pixels_are_compared_as_visible_composites(self):
+        rgba = bytes((200, 100, 50, 128, 90, 80, 70, 0))
+        premultiplied = premultiply_rgba(rgba)
+        self.assertEqual(premultiplied, bytes((100, 50, 25, 128, 0, 0, 0, 0)))
+        self.assertEqual(
+            visible_rgba(premultiplied),
+            bytes((100, 50, 25, 255, 0, 0, 0, 255,
+                   227, 177, 152, 255, 255, 255, 255, 255)),
+        )
+
+        fixture = next(fixture for fixture in load_fixtures() if fixture.has_alpha)
+        pillow_case = next(case for case in CODEC_CASES if case.name == "png")
+        self.assertEqual(
+            normalize_decoded_rgba(pillow_case, fixture, fixture.straight_rgba),
+            fixture.premultiplied_rgba,
+        )
 
     def test_percentile_and_pareto_frontier(self):
         self.assertEqual(percentile95([5, 1, 2, 4, 3]), 5)

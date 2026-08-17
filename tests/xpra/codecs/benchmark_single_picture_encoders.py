@@ -8,7 +8,9 @@
 
 The committed corpus deliberately separates sharp synthetic screen content
 from continuous-tone imagery.  Every lossy result is decoded through Xpra's
-own decoder before its SNR and PSNR are calculated.
+own decoder before its SNR and PSNR are calculated.  Transparent fixtures are
+fed to encoders as premultiplied BGRA, matching captured window pixels, and
+their visible RGB quality is measured after compositing over black and white.
 """
 
 import argparse
@@ -48,6 +50,7 @@ DEFAULT_QUALITIES = (30, 50, 80, 100)
 DEFAULT_SPEEDS = (20, 40, 60, 80)
 DEFAULT_REPETITIONS = 5
 DEFAULT_WARMUP = 1
+VISIBLE_BACKGROUNDS = ((0, 0, 0), (255, 255, 255))
 
 
 @dataclass(frozen=True)
@@ -58,7 +61,8 @@ class Fixture:
     height: int
     pixel_format: str
     pixels: bytes
-    rgba: bytes
+    straight_rgba: bytes
+    premultiplied_rgba: bytes
     content_types: tuple[str, ...]
     quality_metric: str
     has_alpha: bool
@@ -80,6 +84,7 @@ class CodecCase:
     uses_quality: bool = True
     uses_speed: bool = True
     rgb_compressor: str = ""
+    decoder_straight_alpha: bool = False
 
 
 @dataclass(frozen=True)
@@ -121,9 +126,11 @@ CODEC_CASES = (
     CodecCase("rgb-raw", "enc_rgb", "rgb32", "", uses_quality=False, uses_speed=False),
     CodecCase("rgb-lz4", "enc_rgb", "rgb32", "", uses_quality=False, rgb_compressor="lz4"),
     CodecCase("rgb-zstd", "enc_rgb", "rgb32", "", uses_quality=False, rgb_compressor="zstd"),
-    CodecCase("png", "enc_pillow", "png", "dec_pillow", uses_quality=False),
-    CodecCase("png-palette", "enc_pillow", "png/P", "dec_pillow", uses_quality=False),
-    CodecCase("png-grayscale", "enc_pillow", "png/L", "dec_pillow", uses_quality=False),
+    CodecCase("png", "enc_pillow", "png", "dec_pillow", uses_quality=False, decoder_straight_alpha=True),
+    CodecCase("png-palette", "enc_pillow", "png/P", "dec_pillow", uses_quality=False,
+              decoder_straight_alpha=True),
+    CodecCase("png-grayscale", "enc_pillow", "png/L", "dec_pillow", uses_quality=False,
+              decoder_straight_alpha=True),
     CodecCase("jpeg", "enc_jpeg", "jpeg", "dec_jpeg", alpha="opaque", uses_speed=False),
     CodecCase("jpega", "enc_jpeg", "jpega", "dec_jpeg", alpha="alpha", uses_speed=False),
     CodecCase("webp", "enc_webp", "webp", "dec_webp"),
@@ -219,7 +226,38 @@ def make_edge_mask(rgba: bytes, width: int, height: int) -> bytes:
     return bytes(mask)
 
 
+def premultiply_rgba(rgba: bytes) -> bytes:
+    if len(rgba) % 4:
+        raise ValueError("RGBA buffer must have a whole-pixel length")
+    premultiplied = bytearray(rgba)
+    for offset in range(0, len(rgba), 4):
+        alpha = rgba[offset + 3]
+        for channel in range(3):
+            premultiplied[offset + channel] = rgba[offset + channel] * alpha // 255
+    return bytes(premultiplied)
+
+
+def composite_rgba(premultiplied_rgba: bytes, background: tuple[int, int, int]) -> bytes:
+    if len(premultiplied_rgba) % 4:
+        raise ValueError("RGBA buffer must have a whole-pixel length")
+    composite = bytearray(len(premultiplied_rgba))
+    for offset in range(0, len(premultiplied_rgba), 4):
+        alpha = premultiplied_rgba[offset + 3]
+        inverse_alpha = 255 - alpha
+        for channel in range(3):
+            composite[offset + channel] = min(
+                255, premultiplied_rgba[offset + channel] + background[channel] * inverse_alpha // 255,
+            )
+        composite[offset + 3] = 255
+    return bytes(composite)
+
+
+def visible_rgba(premultiplied_rgba: bytes) -> bytes:
+    return b"".join(composite_rgba(premultiplied_rgba, background) for background in VISIBLE_BACKGROUNDS)
+
+
 def pack_bgrx(rgba: bytes, has_alpha: bool) -> tuple[str, bytes]:
+    rgba = premultiply_rgba(rgba) if has_alpha else rgba
     packed = bytearray(len(rgba))
     for offset in range(0, len(rgba), 4):
         packed[offset] = rgba[offset + 2]
@@ -244,14 +282,15 @@ def load_fixtures(directory: Path = FIXTURE_DIR) -> list[Fixture]:
         alpha_min, alpha_max = image.getchannel("A").getextrema()
         has_alpha = (alpha_min, alpha_max) != (255, 255)
         pixel_format, pixels = pack_bgrx(rgba, has_alpha)
+        premultiplied_rgba = premultiply_rgba(rgba) if has_alpha else rgba
         quality_metric = entry["quality_metric"]
         if quality_metric not in ("rgb_psnr_db", "edge_psnr_db"):
             raise ValueError(f"invalid quality metric {quality_metric!r} for {entry['name']}")
         fixtures.append(Fixture(
             entry["name"], entry["file"], image.width, image.height,
-            pixel_format, pixels, rgba, tuple(entry.get("content_types", ())),
+            pixel_format, pixels, rgba, premultiplied_rgba, tuple(entry.get("content_types", ())),
             quality_metric, has_alpha, hashlib.sha256(rgba).hexdigest(),
-            make_edge_mask(rgba, image.width, image.height),
+            make_edge_mask(composite_rgba(premultiplied_rgba, (127, 127, 127)), image.width, image.height),
         ))
     return fixtures
 
@@ -280,6 +319,12 @@ def image_to_rgba(pixel_format: str, pixels: Any, width: int, height: int, rowst
     return image.convert("RGBA").tobytes()
 
 
+def normalize_decoded_rgba(case: CodecCase, fixture: Fixture, rgba: bytes) -> bytes:
+    if fixture.has_alpha and case.decoder_straight_alpha:
+        return premultiply_rgba(rgba)
+    return rgba
+
+
 def decode_rgb(case: CodecCase, decoder: Any, coding: str, cdata: bytes,
                client_options: dict[str, Any], fixture: Fixture, rowstride: int) -> bytes:
     options = typedict(client_options | {
@@ -294,20 +339,23 @@ def decode_rgb(case: CodecCase, decoder: Any, coding: str, cdata: bytes,
                 raw = compression.COMPRESSION[compressor].decompress(cdata)
                 break
         pixel_format = options.strget("rgb_format", fixture.pixel_format)
-        return image_to_rgba(pixel_format, raw, fixture.width, fixture.height, rowstride)
+        rgba = image_to_rgba(pixel_format, raw, fixture.width, fixture.height, rowstride)
+        return normalize_decoded_rgba(case, fixture, rgba)
     if case.decoder == "dec_pillow":
         pixel_format, raw, width, height, decoded_stride = decoder.decompress(coding, cdata, options)
-        return image_to_rgba(pixel_format, raw, width, height, decoded_stride)
+        rgba = image_to_rgba(pixel_format, raw, width, height, decoded_stride)
+        return normalize_decoded_rgba(case, fixture, rgba)
     decoded = None
     try:
         if hasattr(decoder, "decompress_to_rgb"):
             decoded = decoder.decompress_to_rgb(cdata, options)
         else:
             decoded = decoder.decompress(cdata, options)
-        return image_to_rgba(
+        rgba = image_to_rgba(
             decoded.get_pixel_format(), decoded.get_pixels(),
             decoded.get_width(), decoded.get_height(), decoded.get_rowstride(),
         )
+        return normalize_decoded_rgba(case, fixture, rgba)
     finally:
         if decoded:
             decoded.free()
@@ -379,18 +427,22 @@ def benchmark_case(case: CodecCase, encoder: Any, decoder: Any, fixture: Fixture
         start = monotonic()
         decoded_rgba = decode_rgb(case, decoder, coding, cdata, client_options, fixture, rowstride)
         decode_times.append((monotonic() - start) * 1000)
-    if len(decoded_rgba) != len(fixture.rgba):
-        raise ValueError(f"decoder produced {len(decoded_rgba)} RGBA bytes, expected {len(fixture.rgba)}")
+    if len(decoded_rgba) != len(fixture.premultiplied_rgba):
+        raise ValueError(
+            f"decoder produced {len(decoded_rgba)} RGBA bytes, expected {len(fixture.premultiplied_rgba)}",
+        )
 
-    signal, noise, samples, maximum = rgb_energy(fixture.rgba, decoded_rgba)
+    reference_visible = visible_rgba(fixture.premultiplied_rgba)
+    decoded_visible = visible_rgba(decoded_rgba)
+    signal, noise, samples, maximum = rgb_energy(reference_visible, decoded_visible)
     _edge_signal, edge_noise, edge_samples, edge_maximum = rgb_energy(
-        fixture.rgba, decoded_rgba, fixture.edge_mask,
+        reference_visible, decoded_visible, fixture.edge_mask * len(VISIBLE_BACKGROUNDS),
     )
     alpha_psnr = None
     alpha_maximum = None
     alpha_exact = None
     if fixture.has_alpha:
-        alpha_noise, alpha_samples, alpha_maximum = alpha_energy(fixture.rgba, decoded_rgba)
+        alpha_noise, alpha_samples, alpha_maximum = alpha_energy(fixture.premultiplied_rgba, decoded_rgba)
         alpha_psnr = psnr_db(alpha_noise, alpha_samples)
         alpha_exact = alpha_noise == 0
     encoded_size = len(cdata)
@@ -405,7 +457,7 @@ def benchmark_case(case: CodecCase, encoder: Any, decoder: Any, fixture: Fixture
         statistics.median(decode_times), percentile95(decode_times),
         snr_db(signal, noise), psnr_db(noise, samples), psnr_db(edge_noise, edge_samples),
         maximum, edge_maximum, alpha_psnr, alpha_maximum, alpha_exact,
-        noise == 0 and (alpha_exact is not False),
+        decoded_rgba == fixture.premultiplied_rgba,
     )
 
 
@@ -503,7 +555,8 @@ def display_float(value: float | None, decimals: int = 2) -> str:
 def write_markdown(results: list[Result], output: TextIO) -> None:
     columns = (
         "Scenario", "Encoder", "Encoding", "Quality", "Speed", "Bytes", "bpp",
-        "Encode ms", "Decode ms", "RGB PSNR", "Edge PSNR", "Max error", "Alpha PSNR", "Pareto",
+        "Encode ms", "Decode ms", "Visible RGB PSNR", "Visible edge PSNR", "Max visible error", "Alpha PSNR",
+        "Pareto",
     )
     output.write("| " + " | ".join(columns) + " |\n")
     output.write("| " + " | ".join("---" for _column in columns) + " |\n")
@@ -677,6 +730,11 @@ def main(argv: list[str]) -> int:
         ],
         "codecs": codec_metadata(modules),
         "compression": compression.get_compression_caps(2),
+        "alpha_quality": {
+            "encoder_input": "premultiplied BGRA",
+            "decoded_comparison": "premultiplied RGBA composited over black and white",
+            "edge_detection_background": "50% gray",
+        },
         "unavailable": unavailable,
     }
     if args.json:
