@@ -103,8 +103,10 @@ cdef extern from "VideoToolbox/VideoToolbox.h":
 
 
 # input colorspaces we accept, mapped to the number of (source) planes:
+# (YUV420P is deliberately not supported: CoreVideo only has a video-range
+# planar 4:2:0 fourcc, so a full-range planar source cannot be signalled to
+# VideoToolbox correctly - use NV12 instead, which has both range variants)
 COLORSPACES: Dict[str, int] = {
-    "YUV420P"   : 3,
     "NV12"      : 2,
     "BGRX"      : 1,
     "BGRA"      : 1,
@@ -112,7 +114,6 @@ COLORSPACES: Dict[str, int] = {
 
 # the colorspace the decoder will get for a given input colorspace:
 OUTPUT_COLORSPACE: Dict[str, str] = {
-    "YUV420P"   : "YUV420P",
     "NV12"      : "NV12",
     "BGRX"      : "YUV420P",
     "BGRA"      : "YUV420P",
@@ -419,9 +420,7 @@ cdef class Encoder:
     cdef void set_pixel_format(self):
         # the bitstream colour range (video_full_range_flag) is carried by the input pixel
         # buffer format - only NV12 has distinct full / video range fourccs here:
-        if self.src_format == "YUV420P":
-            self.pixel_format = kCVPixelFormatType_420YpCbCr8Planar
-        elif self.src_format == "NV12":
+        if self.src_format == "NV12":
             self.pixel_format = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange if self.full_range \
                 else kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
         else:
