@@ -718,6 +718,11 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CONFIG_HEVC_MEONLY hevcMeOnlyConfig
         uint32_t            reserved[320]               #[in]: Reserved and must be set to 0
 
+    ctypedef enum NV_ENC_MULTI_PASS:
+        NV_ENC_MULTI_PASS_DISABLED              #Single Pass
+        NV_ENC_TWO_PASS_QUARTER_RESOLUTION      #Two Pass encoding, the first pass is quarter resolution
+        NV_ENC_TWO_PASS_FULL_RESOLUTION         #Two Pass encoding, the first pass is full resolution
+
     ctypedef struct NV_ENC_RC_PARAMS:
         uint32_t    version
         NV_ENC_PARAMS_RC_MODE rateControlMode   #[in]: Specifies the rate control mode. Check support for various rate control modes using ::NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps.
@@ -731,6 +736,14 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    enableInitialRCQP   #[in]: Set this to 1 if user supplied initial QP is used for rate control.
         uint32_t    enableAQ            #[in]: Set this to 1 to enable adaptive quantization.
         uint32_t    reservedBitField1   #[in]: Reserved bitfields and must be set to 0
+        uint32_t    enableLookahead     #[in]: Set this to 1 to enable lookahead with depth `lookaheadDepth` (if lookahead is enabled, input frames must be queued)
+        uint32_t    disableIadapt       #[in]: Set this to 1 to disable adaptive I-frame insertion at scene cuts (only has an effect when `enableLookahead` is 1)
+        uint32_t    disableBadapt       #[in]: Set this to 1 to disable adaptive B-frame decision (only has an effect when `enableLookahead` is 1)
+        uint32_t    enableTemporalAQ    #[in]: Set this to 1 to enable temporal AQ
+        uint32_t    zeroReorderDelay    #[in]: Set this to 1 to indicate zero latency operation (no reordering delay, `lookaheadDepth` must be 0)
+        uint32_t    enableNonRefP       #[in]: Set this to 1 to enable automatic insertion of non-reference P-frames
+        uint32_t    strictGOPTarget     #[in]: Set this to 1 to minimize GOP-to-GOP rate fluctuations
+        uint32_t    aqStrength          #[in]: When AQ (Spatial) is enabled (i.e. `enableAQ` is 1), this field is used to specify AQ strength (range 1-15, 0=autoselect)
         uint32_t    reservedBitFields[27] #[in]: Reserved bitfields and must be set to 0
         NV_ENC_QP   minQP               #[in]: Specifies the minimum QP used for rate control. Client must set NV_ENC_CONFIG::enableMinQP to 1.
         NV_ENC_QP   maxQP               #[in]: Specifies the maximum QP used for rate control. Client must set NV_ENC_CONFIG::enableMaxQP to 1.
@@ -745,6 +758,7 @@ cdef extern from "nvEncodeAPI.h":
         float       cbDCQPDelta         #[in]: Specifies the DC QP delta for Cb chroma (SDK 9.0+)
         float       crDCQPDelta         #[in]: Specifies the DC QP delta for Cr chroma (SDK 9.0+)
         uint32_t    qpMapMode           #[in]: NV_ENC_QP_MAP_MODE: specifies QP delta map mode (SDK 9.0+)
+        NV_ENC_MULTI_PASS multiPass     #[in]: enable multi-pass encoding for the current `rateControlMode` (SDK 10.0+)
         uint32_t    reserved[4]         #[in]: Reserved and must be set to 0
 
     ctypedef struct NV_ENC_CONFIG:
@@ -806,7 +820,9 @@ cdef extern from "nvEncodeAPI.h":
         NVENC_EXTERNAL_ME_HINT_COUNTS_PER_BLOCKTYPE maxMEHintCountsPerBlock[2]  #[in]: If Client wants to pass external motion vectors in NV_ENC_PIC_PARAMS::meExternalHints buffer it must specify the maximum number of hint candidates per block per direction for the encode session.
                                         #The NV_ENC_INITIALIZE_PARAMS::maxMEHintCountsPerBlock[0] is for L0 predictors and NV_ENC_INITIALIZE_PARAMS::maxMEHintCountsPerBlock[1] is for L1 predictors.
                                         #This client must also set NV_ENC_INITIALIZE_PARAMS::enableExternalMEHints to 1.
-        uint32_t    reserved[289]       #[in]: Reserved and must be set to 0
+        NV_ENC_TUNING_INFO tuningInfo   #[in]: Tuning Info of NVENC encoding (not applicable to H264 and HEVC meonly mode).
+                                        #This must be set when using the `P1` to `P7` presets.
+        uint32_t    reserved[288]       #[in]: Reserved and must be set to 0
         void        *reserved2[64]      #[in]: Reserved and must be set to NULL
 
     ctypedef struct NV_ENC_RECONFIGURE_PARAMS:

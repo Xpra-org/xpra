@@ -77,6 +77,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS, NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
     NVENCAPI_VERSION, NVENCAPI_MAJOR_VERSION, NVENCAPI_MINOR_VERSION,
     NV_ENC_TUNING_INFO,
+    NV_ENC_MULTI_PASS_DISABLED,
     NV_ENC_TUNING_INFO_LOSSLESS, NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY, NV_ENC_TUNING_INFO_LOW_LATENCY,
     NV_ENC_TUNING_INFO_HIGH_QUALITY,
     NV_ENC_DEVICE_TYPE_CUDA,
@@ -180,7 +181,6 @@ cdef str codecstr(GUID guid):
     return CODEC_GUIDS.get(s, s)
 
 
-YUV444_PRESETS: Sequence[str] = ("high-444", "lossless", "lossless-hp",)
 LOSSLESS_PRESETS: Sequence[str] = ("lossless", "lossless-hp",)
 
 
@@ -454,24 +454,22 @@ cdef class Encoder:
             log(f"preset override {DESIRED_PRESET!r}={guid}")
             if guid:
                 return parseguid(guid)
+        log("presets for %s: %s (pixel format=%s)", guidstr(codec), csv(presets.keys()), self.pixel_format)
         #new style presets (P1 - P7),
         #we only care about the quality here,
-        #the speed is set using the "tuning"
+        #the speed and the lossless mode are set using the "tuning"
         for i in range(1, 8):
             name = "P%i" % i
             guid = presets.get(name)
             if not guid:
                 continue
             preset_quality = get_preset_quality(name, 50)
-            distance = abs(self.quality-preset_quality)
-            options.setdefault(distance, []).append((name, guid))
-        #TODO: figure out why the new-style presets fail
-        options = {}
+            log("preset %16s: quality=%5i", name, preset_quality)
+            options.setdefault(abs(self.quality-preset_quality), []).append((name, guid))
         #no new-style presets found,
         #fallback to older lookup code:
         if not options:
             #add all presets ranked by how far they are from the target speed and quality:
-            log("presets for %s: %s (pixel format=%s)", guidstr(codec), csv(presets.keys()), self.pixel_format)
             for name, x in presets.items():
                 preset_speed = get_preset_speed(name, 50)
                 preset_quality = get_preset_quality(name, 50)
@@ -890,10 +888,15 @@ cdef class Encoder:
         if input_format not in input_formats:
             raise ValueError(f"{self.codec_name} does not support {input_format}, only: {input_formats}")
 
+        cdef NV_ENC_TUNING_INFO tuning = self.get_tuning()
+        log("tuning=%s (%i)", get_tuning_name(tuning), tuning)
+
         assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
         params.version = NV_ENC_INITIALIZE_PARAMS_VER
         params.encodeGUID = codec
         params.presetGUID = preset
+        # the `P1` to `P7` presets are only valid when combined with a tuning:
+        params.tuningInfo = tuning
         params.encodeWidth = self.encoder_width
         params.encodeHeight = self.encoder_height
         params.maxEncodeWidth = self.encoder_width
@@ -906,7 +909,7 @@ cdef class Encoder:
         params.frameRateDen = 1
 
         #apply preset:
-        cdef NV_ENC_PRESET_CONFIG *presetConfig = self.get_preset_config(self.preset_name, codec, preset)
+        cdef NV_ENC_PRESET_CONFIG *presetConfig = self.get_preset_config(self.preset_name, codec, preset, tuning)
         if presetConfig==NULL:
             raise RuntimeError(f"could not find preset {self.preset_name}")
         cdef NV_ENC_CONFIG *config = <NV_ENC_CONFIG*> cmalloc(sizeof(NV_ENC_CONFIG), "encoder config")
@@ -941,16 +944,31 @@ cdef class Encoder:
         else:
             raise ValueError(f"invalid codec name {self.codec_name}")
 
+    cdef void tune_latency(self, NV_ENC_RC_PARAMS *rc):
+        # we encode synchronously, one frame in - one frame out,
+        # so anything that makes nvenc buffer input frames
+        # would make it return `NV_ENC_ERR_NEED_MORE_INPUT`.
+        # the `P3` and higher presets turn lookahead (and with it B-frames) on
+        # for the `high-quality` and `lossless` tunings, so we must turn it back off:
+        rc.enableLookahead = 0
+        rc.lookaheadDepth = 0
+        rc.disableIadapt = 1
+        rc.disableBadapt = 1
+        rc.enableTemporalAQ = 0
+        rc.zeroReorderDelay = 1
+
     cdef void tune_qp(self, NV_ENC_RC_PARAMS *rc):
+        self.tune_latency(rc)
         if self.lossless:
             rc.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
             rc.constQP.qpInterB = 0
             rc.constQP.qpInterP = 0
             rc.constQP.qpIntra  = 0
             return
-        #rc.multiPass = 0
+        # multi-pass encoding costs us a second pass for very little gain
+        # at the low latencies we care about:
+        rc.multiPass = NV_ENC_MULTI_PASS_DISABLED
         rc.rateControlMode = NV_ENC_PARAMS_RC_VBR
-        #rc.zeroReorderDelay = 1       #zero-latency
         QP_MAX_VALUE = 51       #255 for AV1!
 
         def qp(pct: float) -> int:
@@ -969,6 +987,7 @@ cdef class Encoder:
         rc.enableInitialRCQP = 1
         rc.initialRCQP.qpInterP = qp
         rc.initialRCQP.qpIntra = qp
+        rc.initialRCQP.qpInterB = qp
         #cbr:
         #rc.targetQuality = qp
         #rc.targetQualityLSB = 0
@@ -1809,7 +1828,8 @@ cdef class Encoder:
             self.file.flush()
         return data, client_options
 
-    cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID) except *:
+    cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID,
+                                                 NV_ENC_TUNING_INFO tuning) except *:
         """ you must free it after use! """
         cdef NV_ENC_PRESET_CONFIG *presetConfig
         cdef NVENCSTATUS r
@@ -1819,11 +1839,9 @@ cdef class Encoder:
         presetConfig.version = NV_ENC_PRESET_CONFIG_VER
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
         if DEBUG_API:
-            log("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
-        cdef NV_ENC_TUNING_INFO tuning = self.get_tuning()
-        log("tuning=%s (%i)", get_tuning_name(tuning), tuning)
+            log("nvEncGetEncodePresetConfigEx(%s, %s, %s)", codecstr(encode_GUID), presetstr(preset_GUID), get_tuning_name(tuning))
         r = self.functionList.nvEncGetEncodePresetConfigEx(self.context, encode_GUID,
-                                                           preset_GUID, <NV_ENC_TUNING_INFO> tuning, presetConfig)
+                                                           preset_GUID, tuning, presetConfig)
         if r!=0:
             log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), nvencStatusInfo(r))
             return NULL
@@ -1852,6 +1870,7 @@ cdef class Encoder:
         cdef NV_ENC_PRESET_CONFIG *presetConfig
         cdef NV_ENC_CONFIG *encConfig
         cdef NVENCSTATUS r
+        cdef NV_ENC_TUNING_INFO tuning = self.get_tuning()
         assert self.context, "context is not initialized"
         presets = {}
         if DEBUG_API:
@@ -1876,20 +1895,20 @@ cdef class Encoder:
                 preset_name = get_preset_name(preset_str)
                 if DEBUG_API:
                     log("* %s : %s", guidstr(preset_GUID), preset_name or "unknown!")
-                if preset_name is None:
+                if not preset_name:
                     global UNKNOWN_PRESETS
                     if preset_str not in UNKNOWN_PRESETS:
                         UNKNOWN_PRESETS.append(preset_str)
                         unknowns.append(preset_str)
                 else:
-                    presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID)
+                    presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID, tuning)
                     if presetConfig!=NULL:
                         try:
                             encConfig = &presetConfig.presetCfg
                             if DEBUG_API:
                                 log("presetConfig.presetCfg=%s", <uintptr_t> encConfig)
                             gop = {NVENC_INFINITE_GOPLENGTH : "infinite"}.get(encConfig.gopLength, encConfig.gopLength)
-                            log("* %-20s P frame interval=%i, gop length=%-10s", preset_name or "unknown!", encConfig.frameIntervalP, gop)
+                            log("* %-20s P frame interval=%i, gop length=%-10s", preset_name, encConfig.frameIntervalP, gop)
                         finally:
                             free(presetConfig)
                     presets[preset_name] = preset_str
