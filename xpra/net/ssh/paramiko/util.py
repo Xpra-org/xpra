@@ -12,15 +12,20 @@ from paramiko import PasswordRequiredException, SSHException
 from xpra.net.bytestreams import SocketConnection
 from xpra.net.ssh.util import LOG_EOF
 from xpra.scripts.pinentry import input_pass
+from xpra.util.env import envint
 from xpra.util.io import load_binary_file
 from xpra.util.str_fn import csv
 from xpra.log import Logger
 from xpra.util.thread import start_thread
 
 log = Logger("network", "ssh")
+
 if log.is_debug_enabled():
     import logging
     logging.getLogger("paramiko").setLevel(logging.DEBUG)
+
+# how many times we prompt the user for a key passphrase:
+PASSPHRASE_RETRY = max(1, min(5, envint("XPRA_SSH_PASSPHRASE_RETRY", 3)))
 
 
 def keymd5(k) -> str:
@@ -68,6 +73,35 @@ def get_key_fingerprints(keyfiles: Sequence[str]) -> list[str]:
     return allowed_key_fingerprints
 
 
+def load_encrypted_private_key(pkey_class, keyfile_path: str):
+    """
+    prompt the user for the passphrase, up to `PASSPHRASE_RETRY` times,
+    unless the user cancels the prompt
+    """
+    for attempt in range(1, PASSPHRASE_RETRY + 1):
+        prompt = f"please enter the passphrase for:\n{keyfile_path}"
+        if PASSPHRASE_RETRY > 1:
+            prompt += f"\n(attempt {attempt} of {PASSPHRASE_RETRY})"
+        passphrase = input_pass(prompt)
+        if not passphrase:
+            # the user cancelled the prompt: don't try again
+            log("no passphrase given, not retrying")
+            return None
+        try:
+            return pkey_class.from_private_key_file(keyfile_path, passphrase)
+        except SSHException as ke:
+            log("from_private_key_file", exc_info=True)
+            log.info(f"cannot load key from file {keyfile_path}:")
+            for emsg in str(ke).split(". "):
+                if emsg.startswith("('"):
+                    emsg = emsg[2:]
+                if emsg.endswith(")."):
+                    emsg = emsg[:-2]
+                if emsg:
+                    log.info(" %s.", emsg)
+    return None
+
+
 def load_private_key(keyfile_path: str):
     if not os.path.exists(keyfile_path):
         log(f"no keyfile at {keyfile_path!r}")
@@ -94,23 +128,11 @@ def load_private_key(keyfile_path: str):
             return key
         except PasswordRequiredException as e:
             log(f"{keyfile_path!r} keyfile requires a passphrase: {e}")
-            passphrase = input_pass(f"please enter the passphrase for {keyfile_path!r}")
-            if not passphrase:
-                continue
-            try:
-                key = pkey_class.from_private_key_file(keyfile_path, passphrase)
+            key = load_encrypted_private_key(pkey_class, keyfile_path)
+            if key:
+                log(f"{keyfile_path!r} as {pkey_classname}: {keymd5(key)}")
                 log.info(f"loaded {pkey_classname} private key from {keyfile_path!r}")
                 return key
-            except SSHException as ke:
-                log("from_private_key_file", exc_info=True)
-                log.info(f"cannot load key from file {keyfile_path}:")
-                for emsg in str(ke).split(". "):
-                    if emsg.startswith("('"):
-                        emsg = emsg[2:]
-                    if emsg.endswith(")."):
-                        emsg = emsg[:-2]
-                    if emsg:
-                        log.info(" %s.", emsg)
         except Exception:
             log(f"auth_publickey() loading as {pkey_classname}", exc_info=True)
             key_data = load_binary_file(keyfile_path)
