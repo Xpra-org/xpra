@@ -33,22 +33,45 @@ def keymd5(k) -> str:
     return s
 
 
-def get_sha256_fingerprint_for_keyfile(keyfile: str) -> str:
+def get_sha256_fingerprint(blob: bytes) -> str:
+    """
+    the `SHA256:..` fingerprint for a public key blob,
+    in the same format as the one shown by `ssh-keygen -l` and `ssh-add -l`
+    """
     import base64
-    import binascii
     import hashlib
+    digest = hashlib.sha256(blob).digest()
+    # the fingerprint skips the padding at the end of the base64 encoded value:
+    encoded = base64.b64encode(digest).rstrip(b'=')
+    return "SHA256:" + encoded.decode("ascii")
+
+
+def get_sha256_fingerprint_for_key(key) -> str:
+    """
+    the `SHA256:..` fingerprint for a `paramiko` key object
+    """
+    try:
+        return get_sha256_fingerprint(key.asbytes())
+    except (AttributeError, SSHException) as e:
+        log(f"failed to get the fingerprint for {key}: {e}")
+        return ""
+
+
+def get_sha256_fingerprint_for_keyfile(keyfile: str) -> str:
+    import binascii
     if os.path.exists(f"{keyfile}.pub"):
         keyfile = f"{keyfile}.pub"
     with open(keyfile) as f:
         data = f.read()
-    if not data:
+    parts = data.split()
+    if not parts or parts[0].startswith("-----"):
+        # this is not a public key file:
+        # we would have to load (and perhaps decrypt) the private key to get its fingerprint
         return ""
-    if data.startswith("ssh-"):
-        data = data.split(" ")[1]
-    digest = hashlib.sha256(binascii.a2b_base64(data)).digest()
-    # the fingerprint skips the padding at the end of the base64 encoded value:
-    encoded = base64.b64encode(digest).rstrip(b'=')
-    return "SHA256:" + encoded.decode("ascii")
+    # public key files look like this: `<keytype> <base64 blob> [comment]`
+    # (the keytype prefix varies: `ssh-rsa`, `ecdsa-sha2-nistp256`, `sk-ssh-ed25519@openssh.com`, etc)
+    blob = parts[1] if len(parts) > 1 else parts[0]
+    return get_sha256_fingerprint(binascii.a2b_base64(blob))
 
 
 def get_key_fingerprints(keyfiles: Sequence[str]) -> list[str]:
