@@ -173,6 +173,15 @@ def safe_lookup(config_obj, host:str) -> Dict[Any,Any]:
     return {}
 
 
+def lookup_host_keys(host_keys, host: str) -> Dict[Any,Any]:
+    # `HostKeys.lookup` returns `None` if the host is not found:
+    try:
+        return host_keys.lookup(host) or {}
+    except Exception:
+        log("%s.lookup(%s)", host_keys, host, exc_info=True)
+        return {}
+
+
 def connect_to(display_desc):
     log(f"connect_to({display_desc})")
     #plain socket attributes:
@@ -473,7 +482,7 @@ def do_connect_to(transport, host:str, username:str, password:str,
                 log("HostKeys.load(%s)", known_hosts, exc_info=True)
 
         log("host keys=%s", host_keys)
-        keys = safe_lookup(host_keys, host)
+        keys = lookup_host_keys(host_keys, host)
         known_host_key = keys.get(host_key.get_name())
         def keyname():
             return host_key.get_name().replace("ssh-", "")
