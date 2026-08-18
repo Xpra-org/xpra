@@ -27,7 +27,7 @@ from xpra.scripts.config import InitException, InitInfo, InitExit
 # pylint: disable=import-outside-toplevel
 
 WAIT_SERVER_TIMEOUT: int = envint("WAIT_SERVER_TIMEOUT", 90)
-LIST_REPROBE_TIMEOUT: int = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
+LIST_REPROBE_TIMEOUT: int = envint("XPRA_LIST_REPROBE_TIMEOUT", 30)
 
 
 def identify_new_socket(proc: Popen | None, dotxpra,
@@ -208,9 +208,10 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
         for v in probe_list:
             socket_dir, display, sockpath = v
             state = dotxpra.get_server_state(sockpath, 1)
-            if state is SocketState.DEAD:
-                may_cleanup_socket(state, display, sockpath)
-            elif state is SocketState.UNKNOWN:
+            if state in (SocketState.DEAD, SocketState.UNKNOWN):
+                # A socket can briefly look dead while its server is still
+                # starting.  Keep probing until the timeout before removing
+                # it: deleting it here races with server startup.
                 unknown.append(v)
             else:
                 sys.stdout.write(f"\t{state} session at {display} ({socket_dir})\n")
@@ -218,15 +219,14 @@ def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT) -> None:
     clean_states = [SocketState.DEAD, SocketState.UNKNOWN]
     for state, display, sockpath in unknown:
         state = dotxpra.get_server_state(sockpath)
-        if state == SocketState.UNKNOWN:
-            try:
-                mtime = os.stat(sockpath).st_mtime
-                elapsed = ceil(time.time() - mtime)
-                if elapsed <= 120:
-                    sys.stdout.write(f"\t{state} session at {sockpath} ignored, modified {elapsed} seconds ago\n")
-                    continue
-            except OSError:
-                pass
+        try:
+            mtime = os.stat(sockpath).st_mtime
+            elapsed = ceil(time.time() - mtime)
+            if elapsed <= 120:
+                sys.stdout.write(f"\t{state} session at {sockpath} ignored, modified {elapsed} seconds ago\n")
+                continue
+        except OSError:
+            pass
         may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
 
 

@@ -402,6 +402,21 @@ class TestCleanSockets(unittest.TestCase):
             if os.path.exists(path):
                 os.unlink(path)
 
+    def test_transient_dead_state_is_reprobed(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            path = f.name
+        try:
+            dotxpra = _mock_dotxpra()
+            dotxpra.get_server_state.side_effect = [SocketState.DEAD, SocketState.LIVE]
+            sockets = [("/tmp", ":3", path)]
+            with patch("xpra.scripts.sessions.time.sleep"):
+                _, out = _capture(clean_sockets, dotxpra, sockets, timeout=2)
+            assert "LIVE" in out
+            assert os.path.exists(path), "a socket that became live must not be deleted"
+        finally:
+            if os.path.exists(path):
+                os.unlink(path)
+
 
 # ---------------------------------------------------------------------------
 # run_list_sessions
