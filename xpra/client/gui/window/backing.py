@@ -499,7 +499,6 @@ class WindowBackingBase:
             cc.free()
 
     def close(self) -> None:
-        self.free_cuda_context()
         self.cancel_fps_refresh()
         self._backing = None
         log("%s.close() video_decoder=%s", self, self._video_decoder)
@@ -508,6 +507,9 @@ class WindowBackingBase:
         # and it will run the cleanup after releasing the lock
         # (it checks for self._backing None)
         self.close_decoder(False)
+        # the decoders may hold resources which belong to the cuda context
+        # (ie: nvdec keeps a cuvid decoder), so it can only be freed once they are gone:
+        self.free_cuda_context()
 
     def close_decoder(self, blocking=False) -> bool:
         videolog("close_decoder(%s)", blocking)
@@ -809,6 +811,35 @@ class WindowBackingBase:
             return f"target height {dst_height} is out of range: maximum is {spec.max_h}"
         return ""
 
+    @staticmethod
+    def get_decoder_spec(coding: str, input_colorspace: str, codec_type: str) -> CodecSpec | None:
+        """ the spec for a specific decoder, if it can handle this encoding and colorspace """
+        for spec in VIDEO_DECODERS.get(coding, {}).get(input_colorspace, ()):
+            if spec.codec_type == codec_type:
+                return spec
+        return None
+
+    @staticmethod
+    def video_decoder_restart_reason(vd, coding: str, enc_width: int, enc_height: int,
+                                     input_colorspace: str, options: typedict) -> str:
+        """ why the video decoder cannot be re-used for this frame, empty string if it can """
+        frame = options.intget("frame", -1)
+        # first frame should always be no 0
+        # (but some encoders start at 1..)
+        if frame == 0:
+            return "first frame of new stream"
+        if vd.get_encoding() != coding:
+            return f"encoding changed from {vd.get_encoding()} to {coding}"
+        if vd.get_width() != enc_width or vd.get_height() != enc_height:
+            return f"video dimensions have changed from {vd.get_width()}x{vd.get_height()} to {enc_width}x{enc_height}"
+        if vd.get_colorspace() != input_colorspace:
+            # this should only happen on encoder restart, which means this should be the first frame:
+            videolog.warn("Warning: colorspace unexpectedly changed from %s to %s",
+                          vd.get_colorspace(), input_colorspace)
+            videolog.warn(f" decoding {coding} frame {frame} using {vd.get_type()}")
+            return "colorspace mismatch"
+        return ""
+
     def paint_with_video_decoder(self, coding: str, img_data, x: int, y: int, width: int, height: int,
                                  options: typedict, callbacks: PaintCallbacks) -> None:
         dl = self._decoder_lock
@@ -834,22 +865,10 @@ class WindowBackingBase:
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             input_colorspace = options.strget("csc", "YUV420P")
             if vd:
-                frame = options.intget("frame", -1)
-                # first frame should always be no 0
-                # (but some encoders start at 1..)
-                if frame == 0:
-                    restart("first frame of new stream")
-                elif vd.get_encoding() != coding:
-                    restart("encoding changed from %s to %s", vd.get_encoding(), coding)
-                elif vd.get_width() != enc_width or vd.get_height() != enc_height:
-                    restart("video dimensions have changed from %s to %s",
-                            (vd.get_width(), vd.get_height()), (enc_width, enc_height))
-                elif vd.get_colorspace() != input_colorspace:
-                    # this should only happen on encoder restart, which means this should be the first frame:
-                    videolog.warn("Warning: colorspace unexpectedly changed from %s to %s",
-                                  vd.get_colorspace(), input_colorspace)
-                    videolog.warn(f" decoding {coding} frame {frame} using {vd.get_type()}")
-                    restart("colorspace mismatch")
+                reason = self.video_decoder_restart_reason(vd, coding, enc_width, enc_height,
+                                                           input_colorspace, options)
+                if reason:
+                    restart(reason)
             if self._video_decoder is None:
                 # find the best decoder type and instantiate it:
                 decoder_options: VdictEntry = VIDEO_DECODERS.get(coding, {})

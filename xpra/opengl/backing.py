@@ -59,7 +59,10 @@ from xpra.util.env import envint, envbool, first_time
 from xpra.util.objects import typedict
 from xpra.util.system import is_X11
 from xpra.common import roundup
-from xpra.codecs.constants import get_subsampling_divs, get_plane_name
+from xpra.codecs.constants import (
+    get_subsampling_divs, get_plane_name,
+    CodecSpec, TransientCodecException,
+)
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window.backing import fire_paint_callbacks, WindowBackingBase, WEBP_PILLOW, ALERT_MODE, \
@@ -667,6 +670,9 @@ class GLWindowBackingBase(WindowBackingBase):
         """
 
     def close(self) -> None:
+        # `close_gl` frees the cuda context, and the video decoder may be holding
+        # resources which belong to it (ie: nvdec), so it has to be closed first:
+        self.close_decoder(False)
         self.with_gl_context(self.close_gl)
         super().close()
 
@@ -1428,42 +1434,166 @@ class GLWindowBackingBase(WindowBackingBase):
         cuda_pbo.unregister()
         return pbo
 
+    def nvdec_image_to_pbos(self, context, img, stream) -> None:
+        """
+        replace the cuda buffer of a decoded NV12 image with two pbos (Y and UV),
+        must be called with an active cuda context, and from the UI thread
+        """
+        pixel_format = img.get_pixel_format()
+        if pixel_format not in ("NV12",):
+            raise ValueError(f"unexpected pixel format {pixel_format}")
+        # we can import pycuda safely here,
+        # because `self.assign_cuda_context` will have imported it with the lock:
+        from pycuda.driver import LogicError  # @UnresolvedImport pylint: disable=import-outside-toplevel
+        # `pixels` is a cuda buffer with 2 planes: Y then UV
+        cuda_buffer = img.get_pixels()
+        strides = img.get_rowstride()
+        height = img.get_height()
+        uvheight = height // 2
+        try:
+            y_pbo = self.cuda_buffer_to_pbo(context, cuda_buffer, strides[0], 0, height, stream)
+            uv_pbo = self.cuda_buffer_to_pbo(context, cuda_buffer, strides[1], roundup(height, 2), uvheight, stream)
+        except LogicError as e:
+            # disable nvdec from now on:
+            self.nvdec_decoder = None
+            log("nvdec_image_to_pbos%s", (context, img, stream), exc_info=True)
+            raise RuntimeError(f"failed to download nvdec cuda buffer to pbo: {e}")
+        finally:
+            cuda_buffer.free()
+        img.set_pixels((y_pbo, uv_pbo))
+
+    def paint_nvdec_image(self, context, encoding: str, img,
+                          x: int, y: int, width: int, height: int,
+                          options: typedict, callbacks: PaintCallbacks) -> None:
+        """ paint an NV12 image whose planes are now pbos (see `nvdec_image_to_pbos`) """
+        options["pbo"] = True
+        # the shader must match the colour range the image was decoded with:
+        shader = "NV12_to_RGB" + ("_FULL" if img.get_full_range() else "")
+        self.paint_planar(context, shader, encoding, img,
+                          x, y, img.get_width(), img.get_height(), width, height,
+                          options, callbacks)
+
     def paint_nvdec(self, context, encoding, img_data, x: int, y: int, width: int, height: int,
                     options: typedict, callbacks: PaintCallbacks) -> None:
         with self.assign_cuda_context(True):
             # we can import pycuda safely here,
             # because `self.assign_cuda_context` will have imported it with the lock:
-            from pycuda.driver import Stream, LogicError  # @UnresolvedImport pylint: disable=import-outside-toplevel
+            from pycuda.driver import Stream  # @UnresolvedImport pylint: disable=import-outside-toplevel
             stream = Stream()
             options["stream"] = stream
             img = self.nvdec_decoder.decompress_with_device(encoding, img_data, width, height, options)
             log("paint_nvdec: gl_context=%s, img=%s, downloading buffer to pbo", context, img)
-            pixel_format = img.get_pixel_format()
-            if pixel_format not in ("NV12",):
-                raise ValueError(f"unexpected pixel format {pixel_format}")
-            # `pixels` is a cuda buffer with 2 planes: Y then UV
-            cuda_buffer = img.get_pixels()
-            strides = img.get_rowstride()
-            height = img.get_height()
-            uvheight = height // 2
-            try:
-                y_pbo = self.cuda_buffer_to_pbo(context, cuda_buffer, strides[0], 0, height, stream)
-                uv_pbo = self.cuda_buffer_to_pbo(context, cuda_buffer, strides[1], roundup(height, 2), uvheight, stream)
-            except LogicError as e:
-                # disable nvdec from now on:
-                self.nvdec_decoder = None
-                log("paint_nvdec%s", (context, encoding, img_data, x, y, width, height, options, callbacks))
-                raise RuntimeError(f"failed to download nvdec cuda buffer to pbo: {e}")
-            finally:
-                cuda_buffer.free()
-            img.set_pixels((y_pbo, uv_pbo))
+            self.nvdec_image_to_pbos(context, img, stream)
+        self.paint_nvdec_image(context, encoding, img, x, y, width, height, options, callbacks)
 
-        w = img.get_width()
-        h = img.get_height()
-        options["pbo"] = True
-        self.paint_planar(context, "NV12_to_RGB", encoding, img,
-                          x, y, w, h, width, height,
-                          options, callbacks)
+    def get_nvdec_spec(self, coding: str, enc_width: int, enc_height: int,
+                       input_colorspace: str, options: typedict) -> CodecSpec | None:
+        """ the nvdec spec to use for this frame, `None` if nvdec cannot handle it """
+        nvdec = self.nvdec_decoder
+        if not nvdec or not NVDEC or coding not in nvdec.get_encodings():
+            return None
+        if options.intget("delayed", 0) > 0:
+            # nvdec feeds the parser one frame at a time and expects one picture back,
+            # so it cannot handle streams which need re-ordering (ie: h264 b-frames)
+            return None
+        spec = self.get_decoder_spec(coding, input_colorspace, "nvdec")
+        if not spec:
+            return None
+        if not spec.min_w <= enc_width <= spec.max_w or not spec.min_h <= enc_height <= spec.max_h:
+            # ie: nvdec has a per-encoding minimum size
+            return None
+        return spec
+
+    def paint_with_video_decoder(self, coding: str, img_data, x: int, y: int, width: int, height: int,
+                                 options: typedict, callbacks: PaintCallbacks) -> None:
+        # nvdec decodes straight into a cuda buffer which we can copy into a pbo without
+        # ever touching the cpu, but that has to run in the UI thread with a cuda context
+        # assigned - which the generic path in the superclass cannot do, so it gets a path
+        # of its own here. anything nvdec cannot handle is left to the superclass:
+        enc_width, enc_height = options.intpair("scaled_size", (width, height))
+        input_colorspace = options.strget("csc", "YUV420P")
+        if self.get_nvdec_spec(coding, enc_width, enc_height, input_colorspace, options):
+            self.with_gfx_context(self.paint_nvdec_video, coding, img_data, x, y, width, height, options, callbacks)
+            return
+        super().paint_with_video_decoder(coding, img_data, x, y, width, height, options, callbacks)
+
+    def paint_nvdec_video(self, context, coding: str, img_data, x: int, y: int, width: int, height: int,
+                          options: typedict, callbacks: PaintCallbacks) -> None:
+        # runs in the UI thread, via `with_gfx_context`
+        dl = self._decoder_lock
+        if dl is None:
+            fire_paint_callbacks(callbacks, False, "no lock - retry")
+            return
+        with dl:
+            fallback = not self.do_paint_nvdec_video(context, coding, img_data,
+                                                     x, y, width, height, options, callbacks)
+        # `_decoder_lock` is a plain `Lock`, so the superclass call - which acquires it again -
+        # MUST be made from outside the `with dl:` block above, or it would deadlock on itself.
+        # the cuda context has been released by then too, which is what makes the superclass
+        # pick a cpu decoder: `nvdec.get_runtime_factor()` returns zero without a context.
+        if fallback:
+            super().paint_with_video_decoder(coding, img_data, x, y, width, height, options, callbacks)
+
+    def do_paint_nvdec_video(self, context, coding: str, img_data, x: int, y: int, width: int, height: int,
+                             options: typedict, callbacks: PaintCallbacks) -> bool:
+        """ returns False if this frame should be painted by the generic video decoder path instead """
+        if self._backing is None:
+            message = f"window {self.wid:#x} is already gone!"
+            log(message)
+            fire_paint_callbacks(callbacks, -1, message)
+            return True
+        enc_width, enc_height = options.intpair("scaled_size", (width, height))
+        input_colorspace = options.strget("csc", "YUV420P")
+        vd = self._video_decoder
+        if vd:
+            reason = self.video_decoder_restart_reason(vd, coding, enc_width, enc_height, input_colorspace, options)
+            if reason:
+                log("do_paint_nvdec_video: %s", reason)
+                self.do_clean_video_decoder()
+                self.do_clean_csc_decoder()
+                vd = None
+        spec = self.get_nvdec_spec(coding, enc_width, enc_height, input_colorspace, options)
+        if not spec:
+            # ie: this frame is one of a b-frame sequence:
+            # give up on nvdec for this stream, a cpu decoder will have to take over
+            self.do_clean_video_decoder()
+            return False
+        if vd and vd.get_type() != "nvdec":
+            # a cpu decoder is already decoding this stream (see above), leave it alone:
+            # its state cannot be transferred to nvdec mid-stream
+            return False
+        try:
+            with self.assign_cuda_context(True):
+                # we can import pycuda safely here,
+                # because `self.assign_cuda_context` will have imported it with the lock:
+                from pycuda.driver import Stream  # @UnresolvedImport pylint: disable=import-outside-toplevel
+                if not vd:
+                    vd = spec.make_instance()
+                    vd.init_context(coding, enc_width, enc_height, input_colorspace, options)
+                    self._video_decoder = vd
+                    log("do_paint_nvdec_video: new %s decoder %s", coding, vd)
+                stream = Stream()
+                options["stream"] = stream
+                img = vd.decompress_image(img_data, options)
+                if not img:
+                    raise RuntimeError(f"failed to decode {len(img_data)} bytes of {coding} data")
+                self.nvdec_image_to_pbos(context, img, stream)
+        except TransientCodecException as e:
+            # ie: another thread is using the cuda context
+            log("do_paint_nvdec_video", exc_info=True)
+            log.warn(f"Warning: transient error decoding {coding!r} frame with nvdec: {e}")
+            self.do_clean_video_decoder()
+            return False
+        except (ValueError, AssertionError, RuntimeError, MemoryError) as e:
+            # the decoder has consumed part of the frame and its state is now
+            # out of sync with the encoder, so it cannot be re-used:
+            log("do_paint_nvdec_video", exc_info=True)
+            log.error("Error: nvdec failed to decode %i bytes of %s data", len(img_data), coding)
+            log.estr(e)
+            self.do_clean_video_decoder()
+            return False
+        self.paint_nvdec_image(context, coding, img, x, y, width, height, options, callbacks)
+        return True
 
     def paint_nvjpeg(self, gl_context, encoding: str, img_data, x: int, y: int, width: int, height: int,
                      options: typedict, callbacks: PaintCallbacks) -> None:
