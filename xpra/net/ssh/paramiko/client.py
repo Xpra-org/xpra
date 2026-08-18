@@ -689,8 +689,9 @@ def verify_hostkey(host: str, host_key, verifyhostkeydns: bool, stricthostkeyche
 
 
 def save_host_key(host_keys, host_keys_filename: str) -> None:
-    filenames = [host_keys_filename]
-    for filename in get_ssh_known_hosts_files():
+    filenames = [host_keys_filename] if host_keys_filename else []
+    for known_hosts in get_ssh_known_hosts_files():
+        filename = os.path.expanduser(known_hosts)
         if filename not in filenames:
             filenames.append(filename)
     for filename in filenames:
@@ -705,16 +706,15 @@ def save_host_key(host_keys, host_keys_filename: str) -> None:
                     log.warn(f"Warning: {keys_dir!r} is not a directory")
                     log.warn(f" key not saved to {filename!r}")
                     continue
-                if os.path.exists(keys_dir) and os.path.isdir(keys_dir):
-                    log(f"creating known host file {host_keys_filename!r}")
-                    with umask_context(0o133):
-                        with open(host_keys_filename, "ab+"):
-                            "file has been created"
-            host_keys.save(host_keys_filename)
+                log(f"creating known host file {filename!r}")
+                with umask_context(0o133):
+                    with open(filename, "ab+"):
+                        log(f"{filename!r} has been created")
+            host_keys.save(filename)
             return
         except OSError as e:
-            log(f"failed to add key to {host_keys_filename!r}")
-            log.error(f"Error adding key to {host_keys_filename!r}")
+            log(f"failed to add key to {filename!r}", exc_info=True)
+            log.error(f"Error adding key to {filename!r}")
             log.error(f" {e}")
 
 
