@@ -406,7 +406,6 @@ class KeyboardHelper:
                 "backend", "backend_name",
                 "layout", "layouts", "variant", "variants", "options",
                 "raw", "layout_groups",
-                "sync",
                 "query_struct", "mod_meanings",
                 "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes",
         ):
@@ -420,6 +419,10 @@ class KeyboardHelper:
                 v = getattr(self, x)
             if v:
                 props[x] = v
+        if "sync" not in skip:
+            # the server defaults `sync` to `True` (`boolget`),
+            # so a `False` value must always be sent explicitly:
+            props["sync"] = bool(self.sync)
         return props
 
     def log_keyboard_info(self) -> None:
