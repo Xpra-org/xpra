@@ -8,8 +8,10 @@ import os
 import hashlib
 import tempfile
 import unittest
+from contextlib import contextmanager
 
 from xpra.os_util import POSIX
+from xpra.util.env import OSEnvContext
 from xpra.util.objects import AdHocStruct, typedict
 from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, MIN_SIZE
 from xpra.net.mmap.io import init_client_mmap, write_mmap_token
@@ -17,6 +19,24 @@ from xpra.server.source import mmap as source_mmap
 from xpra.server.source.mmap import MMAP_Connection
 
 from unit.test_util import silence_warn, silence_error, silence_info
+
+
+@contextmanager
+def temp_runtime_dir():
+    """
+        A throw-away `XDG_RUNTIME_DIR` so that the default mmap directories
+        can be exercised even on hosts which have no runtime directory of their own
+        (containers, CI images, and any session started without one).
+        The directory is named after our uid - the standard `/run/user/$UID` layout -
+        so that `get_runtime_dir` still returns a `$UID` template
+        which can also be expanded for another user.
+        Yields the parent directory: `{parent}/{uid}/xpra` is then our own mmap directory.
+    """
+    with tempfile.TemporaryDirectory() as parent:
+        runtime_dir = os.path.join(parent, str(os.geteuid()))
+        os.mkdir(runtime_dir, 0o700)
+        with OSEnvContext(XDG_RUNTIME_DIR=runtime_dir):
+            yield parent
 
 
 def make_source(dirs=(), files=(), peer_uid=-1) -> MMAP_Connection:
@@ -65,22 +85,24 @@ class MmapPathTest(unittest.TestCase):
     def test_default_dirs_only(self):
         if not POSIX:
             return
-        source = make_source()
-        allowed = source.allowed_dirs
-        assert allowed, "no default mmap directory found"
-        # a file in an allowed directory is accepted:
-        filename = os.path.join(allowed[0], "xpra.1234.mmap")
-        self.assertEqual(self.path(source, filename), filename)
-        # anything else is refused:
-        for filename in (
-            "/etc/passwd",
-            "/tmp/xpra.1234.mmap",
-            os.path.expanduser("~/.ssh/id_rsa"),
-            # the directory is only matched after normalization,
-            # so traversal cannot be used to escape it:
-            os.path.join(allowed[0], "..", "..", "etc", "passwd"),
-        ):
-            self.assertEqual(self.path(source, filename), "", f"{filename!r} should have been refused")
+        with temp_runtime_dir() as parent:
+            source = make_source()
+            allowed = source.allowed_dirs
+            assert allowed, "no default mmap directory found"
+            self.assertEqual(allowed[0], os.path.join(parent, str(os.getuid()), "xpra"))
+            # a file in an allowed directory is accepted:
+            filename = os.path.join(allowed[0], "xpra.1234.mmap")
+            self.assertEqual(self.path(source, filename), filename)
+            # anything else is refused:
+            for filename in (
+                "/etc/passwd",
+                "/tmp/xpra.1234.mmap",
+                os.path.expanduser("~/.ssh/id_rsa"),
+                # the directory is only matched after normalization,
+                # so traversal cannot be used to escape it:
+                os.path.join(allowed[0], "..", "..", "etc", "passwd"),
+            ):
+                self.assertEqual(self.path(source, filename), "", f"{filename!r} should have been refused")
 
     def test_no_filename(self):
         source = make_source()
@@ -88,28 +110,31 @@ class MmapPathTest(unittest.TestCase):
         self.assertEqual(self.path(source, "/some/dir/"), "")
 
     def test_peer_uid_directory(self):
-        if not POSIX or not os.path.isdir("/run/user"):
+        if not POSIX:
             return
         # a peer belonging to another user is allowed to use that user's mmap directory:
         uid = os.getuid() + 1
-        source = make_source(peer_uid=uid)
-        peer_dir = f"/run/user/{uid}/xpra"
-        self.assertIn(peer_dir, source.allowed_dirs)
-        filename = f"{peer_dir}/xpra.1234.mmap"
-        self.assertEqual(self.path(source, filename), filename)
-        # our own directory is still allowed:
-        assert len(source.allowed_dirs) >= 2
-        # but not another user's:
-        other = f"/run/user/{uid + 1}/xpra/xpra.1234.mmap"
-        self.assertEqual(self.path(source, other), "")
+        with temp_runtime_dir() as parent:
+            source = make_source(peer_uid=uid)
+            peer_dir = os.path.join(parent, str(uid), "xpra")
+            self.assertIn(peer_dir, source.allowed_dirs)
+            filename = f"{peer_dir}/xpra.1234.mmap"
+            self.assertEqual(self.path(source, filename), filename)
+            # our own directory is still allowed:
+            assert len(source.allowed_dirs) >= 2
+            # but not another user's:
+            other = os.path.join(parent, str(uid + 1), "xpra", "xpra.1234.mmap")
+            self.assertEqual(self.path(source, other), "")
 
     def test_unknown_peer_uid(self):
         if not POSIX:
             return
         # without a peer uid, only our own directory is allowed:
-        source = make_source(peer_uid=-1)
-        for mmap_dir in source.allowed_dirs:
-            assert not mmap_dir.startswith("/run/user/") or str(os.getuid()) in mmap_dir
+        with temp_runtime_dir() as parent:
+            source = make_source(peer_uid=-1)
+            self.assertEqual(tuple(source.allowed_dirs), (os.path.join(parent, str(os.getuid()), "xpra"), ))
+            other = os.path.join(parent, str(os.getuid() + 1), "xpra", "xpra.1234.mmap")
+            self.assertEqual(self.path(source, other), "")
 
 
 class ParseAreaCapsTest(unittest.TestCase):

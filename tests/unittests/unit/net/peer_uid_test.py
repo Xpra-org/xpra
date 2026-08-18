@@ -13,7 +13,35 @@ from xpra.os_util import LINUX, POSIX
 from xpra.net.common import get_peer_uid, proc_net_addr, proc_net_addr_keys
 
 
+def has_ipv6(host="::1") -> bool:
+    """
+        `socket.has_ipv6` only tells us that Python was built with IPv6 support,
+        it does not tell us that this host can bind `host`:
+        kernels booted with `ipv6.disable=1` cannot even create an IPv6 socket,
+        and hosts with `net.ipv6.conf.all.disable_ipv6=1` can create one
+        but have no address left to bind it to.
+    """
+    if not socket.has_ipv6:
+        return False
+    try:
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    except OSError:
+        return False
+    try:
+        sock.bind((host, 0))
+    except OSError:
+        return False
+    finally:
+        sock.close()
+    return True
+
+
 class TestPeerUID(unittest.TestCase):
+
+    def test_has_ipv6_unassigned_address(self):
+        # the probe must bind and not just create a socket:
+        # this RFC 3849 documentation address is never assigned to a local interface
+        assert not has_ipv6("2001:db8::1")
 
     def test_proc_net_addr(self):
         # the 32 bit words are in host byte order, the port is not:
@@ -58,14 +86,21 @@ class TestPeerUID(unittest.TestCase):
             (socket.AF_INET, ("127.0.0.1", 0)),
             (socket.AF_INET6, ("::1", 0)),
         ):
-            conn, client = self.connect_pair(family, address)
-            # both ends of a local connection can identify each other:
-            assert get_peer_uid(conn) == uid, f"expected uid {uid} for {family}"
-            assert get_peer_uid(client) == uid, f"expected uid {uid} for {family}"
+            with self.subTest(family=family):
+                if family == socket.AF_INET6 and not has_ipv6():
+                    self.skipTest("no IPv6 support on this host")
+                conn, client = self.connect_pair(family, address)
+                # both ends of a local connection can identify each other:
+                assert get_peer_uid(conn) == uid, f"expected uid {uid} for {family}"
+                assert get_peer_uid(client) == uid, f"expected uid {uid} for {family}"
 
     def test_local_tcp_v4mapped(self):
         if not LINUX:
             return
+        # this test only needs the wildcard address, which is still bindable
+        # on hosts where `::1` has been removed from the loopback interface:
+        if not has_ipv6("::"):
+            self.skipTest("no IPv6 support on this host")
         # an IPv4 client connecting to an IPv6 socket:
         conn, client = self.connect_pair(socket.AF_INET6, ("::", 0), socket.AF_INET, "127.0.0.1")
         uid = os.getuid()
