@@ -9,7 +9,8 @@ from xpra.util.env import osexpand, envbool
 
 
 LOG_EOF = envbool("XPRA_SSH_LOG_EOF", True)
-KEY_FORMATS = os.environ.get("XPRA_SSH_KEY_FORMATS", "ed25519,ecdsa,rsa,dsa").split(",")
+# the default order matches the one used by openssh in `fill_default_options`:
+KEY_FORMATS = os.environ.get("XPRA_SSH_KEY_FORMATS", "rsa,ecdsa,ecdsa_sk,ed25519,ed25519_sk,dsa").split(",")
 
 
 def get_default_keyfiles() -> list[str]:
