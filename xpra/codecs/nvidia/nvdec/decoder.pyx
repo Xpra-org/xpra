@@ -25,7 +25,7 @@ log = Logger("encoder", "nvdec")
 
 #we can import pycuda safely here,
 #because importing cuda/context will have imported it with the lock
-from pycuda.driver import Memcpy2D, mem_alloc_pitch, memcpy_dtoh, Stream
+from pycuda.driver import Context, Memcpy2D, mem_alloc_pitch, memcpy_dtoh, Stream
 
 
 cdef inline int roundup(int n, int m) noexcept nogil:
@@ -106,9 +106,9 @@ cdef extern from "nvcuvid.h":
                                     #-1=unpaired field)                                                                        */
         CUvideotimestamp timestamp  #OUT: Presentation time stamp
 
-    ctypedef int (*PFNVIDSEQUENCECALLBACK)(void *, CUVIDEOFORMAT *) except 0
-    ctypedef int (*PFNVIDDECODECALLBACK)(void *, CUVIDPICPARAMS *) except 0
-    ctypedef int (*PFNVIDDISPLAYCALLBACK)(void *, CUVIDPARSERDISPINFO *) except 0
+    ctypedef int (*PFNVIDSEQUENCECALLBACK)(void *, CUVIDEOFORMAT *) noexcept
+    ctypedef int (*PFNVIDDECODECALLBACK)(void *, CUVIDPICPARAMS *) noexcept
+    ctypedef int (*PFNVIDDISPLAYCALLBACK)(void *, CUVIDPARSERDISPINFO *) noexcept
     ctypedef int (*PFNVIDOPPOINTCALLBACK)(void *, CUVIDOPERATINGPOINTINFO*) noexcept
     ctypedef int (*PFNVIDSEIMSGCALLBACK)(void *, CUVIDSEIMESSAGEINFO *) noexcept
 
@@ -476,32 +476,62 @@ def get_specs() -> Sequence[VideoSpec]:
 
 # These parser callbacks are invoked synchronously by `cuvidParseVideoData`,
 # which we call with the GIL held - so they can (and do) run Python code.
-# `seq_cb`, `decode_cb` and `display_cb` use `except 0` *on purpose*: it lets an
-# exception raised inside `sequence_callback` / `decode_callback` /
-# `display_callback` propagate back to the `decompress_image` caller (which is
-# blocked on `self.event`). Do NOT "simplify" these to `noexcept`: that would
-# print and swallow the exception, turning a real decode error into a misleading
-# "parsing timed out". (Making them noexcept properly would require catching the
-# exception, stashing it on the Decoder and re-raising it after the wait.)
+# An exception raised in here has nowhere to go: `cuvidParseVideoData` is a C
+# function which knows nothing about Python, so the exception simply stays pending
+# until some unrelated Python call trips over it - usually far from the real error,
+# as an unhelpful "SystemError: .. returned a result with an exception set".
+# So each callback catches everything, stashes it on the decoder and returns 0 to
+# tell nvcuvid to stop parsing; `decompress_image` then re-raises it to its caller.
 # `getop_cb` / `getseimsg_cb` never dispatch to anything that raises meaningfully,
-# so they are plain `noexcept`.
+# so they have nothing to stash.
 
-cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf) except 0:
-    """`except 0` is intentional: propagates callback exceptions to `decompress_image` (see note above)."""
-    cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
-    return decoder.sequence_callback(vf)
+cdef Decoder get_callback_decoder(void *user_data):
+    return <Decoder> decoders.get(int(<uintptr_t> user_data))
 
 
-cdef int decode_cb(void *user_data, CUVIDPICPARAMS *pp) except 0:
-    """`except 0` is intentional: propagates callback exceptions to `decompress_image` (see note above)."""
-    cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
-    return decoder.decode_callback(pp)
+cdef int callback_error(Decoder decoder, object e) noexcept:
+    """ stash the exception for `decompress_image` to re-raise, and abort parsing """
+    log("nvdec parser callback failed: %s", e, exc_info=True)
+    if decoder is not None:
+        decoder.error = e
+        # `decompress_image` is waiting for a frame which is never going to come:
+        event = decoder.event
+        if event:
+            event.set()
+    return 0
 
 
-cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi) except 0:
-    """`except 0` is intentional: propagates callback exceptions to `decompress_image` (see note above)."""
-    cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
-    return decoder.display_callback(pdi.picture_index, pdi.timestamp)
+cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf) noexcept:
+    cdef Decoder decoder = None
+    try:
+        decoder = get_callback_decoder(user_data)
+        if decoder is None:
+            return 0
+        return decoder.sequence_callback(vf)
+    except BaseException as e:
+        return callback_error(decoder, e)
+
+
+cdef int decode_cb(void *user_data, CUVIDPICPARAMS *pp) noexcept:
+    cdef Decoder decoder = None
+    try:
+        decoder = get_callback_decoder(user_data)
+        if decoder is None:
+            return 0
+        return decoder.decode_callback(pp)
+    except BaseException as e:
+        return callback_error(decoder, e)
+
+
+cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi) noexcept:
+    cdef Decoder decoder = None
+    try:
+        decoder = get_callback_decoder(user_data)
+        if decoder is None:
+            return 0
+        return decoder.display_callback(pdi.picture_index, pdi.timestamp)
+    except BaseException as e:
+        return callback_error(decoder, e)
 
 
 cdef int getop_cb(void *user_data, CUVIDOPERATINGPOINTINFO *op) noexcept:
@@ -540,6 +570,8 @@ cdef class Decoder:
     cdef object image
     cdef bint full_range
     cdef bint closing
+    cdef bint decoded
+    cdef object error
 
     cdef object __weakref__
 
@@ -549,6 +581,12 @@ cdef class Decoder:
             raise ValueError(f"invalid encoding {encoding} for nvdec")
         if colorspace not in CS_CHROMA:
             raise ValueError(f"invalid colorspace {colorspace} for nvdec")
+        # every nvcuvid call needs a cuda context to be current in this thread,
+        # pushing one is the caller's job (ie: `decompress` does it):
+        # without this check, the failure would only show up on the first frame,
+        # from deep inside a parser callback, as a bare 'INVALID_CONTEXT'
+        if Context.get_current() is None:
+            raise RuntimeError("no CUDA context is current in this thread")
         #we feed the parser one frame at a time and expect exactly one picture back,
         #so we cannot honour streams which need re-ordering (ie: h264 b-frames):
         #the parser would hand us the previous picture instead of the one we just fed it.
@@ -562,6 +600,8 @@ cdef class Decoder:
         self.height = height
         self.full_range = True
         self.closing = False
+        self.decoded = False
+        self.error = None
         self.event = Event()        #set each time the data has been parsed / processed
         self.stream = <CUstream> 0
         self.buffer = None
@@ -612,6 +652,7 @@ cdef class Decoder:
 
     cdef int decode_callback(self, CUVIDPICPARAMS *pp):
         log("decode_callback(..)")
+        self.decoded = True
         self.decode_data(pp)
         return 1
 
@@ -723,6 +764,8 @@ cdef class Decoder:
         cdef CUVIDPICPARAMS pic
         try:
             self.image = None
+            self.error = None
+            self.decoded = False
             # honoured by get_output_image (called from the parser callback); when modern mode
             # omits steady-state full-range=True, we fall back to the value signalled by the
             # bitstream itself - which only carries it on keyframes (in the SPS VUI),
@@ -747,9 +790,15 @@ cdef class Decoder:
                     packet.payload = <const unsigned char*> (<uintptr_t> int(bc))
                     r = cuvidParseVideoData(self.parser, &packet)
                     log(f"cuvidParseVideoData(..)={r}")
+                    self.check_error()
                     cudacheck(r, "parsing error")
                     if not self.event.wait(1):
-                        raise RuntimeError("parsing timed out")
+                        if not self.decoded:
+                            # the parser consumed the data without finding a picture in it
+                            # (ie: junk data, or a frame which is missing its sequence header)
+                            raise ValueError(f"no {self.encoding} picture found in {len(bc)} bytes")
+                        raise RuntimeError(f"timeout waiting for the {self.encoding} picture to be decoded")
+                    self.check_error()
                     return self.image
                 else:
                     #no need: just use a blank pic params:
@@ -759,6 +808,14 @@ cdef class Decoder:
         finally:
             self.buffer = None
             self.stream = <CUstream> 0
+
+    def check_error(self) -> None:
+        # exceptions raised in the parser callbacks cannot travel through the
+        # nvcuvid C stack, so `callback_error` stashes them here instead:
+        e = self.error
+        if e:
+            self.error = None
+            raise e
 
     cdef void decode_data(self, CUVIDPICPARAMS *pic):
         log(f"decode_data({len(self.buffer)} bytes)")
