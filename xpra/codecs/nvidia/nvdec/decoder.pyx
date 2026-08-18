@@ -449,6 +449,17 @@ def get_encodings() -> Sequence[str]:
     return CODECS
 
 
+def get_runtime_factor() -> float:
+    # every nvcuvid call needs a cuda context to be current in the calling thread,
+    # and we cannot push one here: it must stay current for as long as the decoder
+    # is used, which only the caller can arrange (ie: the opengl backend does,
+    # so that the decoded frame can be copied straight into a pbo).
+    # without one, this decoder cannot be used at all:
+    if Context.get_current() is None:
+        return 0
+    return 1
+
+
 def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
     for encoding in CODECS:
@@ -471,6 +482,8 @@ def get_specs() -> Sequence[VideoSpec]:
                 max_h=4096,
             )
         )
+    for spec in specs:
+        spec.get_runtime_factor = get_runtime_factor
     return specs
 
 

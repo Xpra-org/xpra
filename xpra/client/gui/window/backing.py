@@ -128,13 +128,20 @@ def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int 
 
 
 def choose_decoder(decoders_for_cs: list[CodecSpec], max_setup_cost=100) -> CodecSpec:
-    # for now, just rank by setup-cost, so slow-to-initialize decoders come last:
-    scores: dict[int, list[int]] = {}
+    # rank by setup-cost, so slow-to-initialize decoders come last,
+    # divided by the runtime factor so that decoders which are currently
+    # a poor choice are pushed back - and those which cannot be used at all
+    # right now (factor zero, ie: nvdec without a cuda context) are skipped:
+    scores: dict[float, list[int]] = {}
     for index, decoder_spec in enumerate(decoders_for_cs):
         cost = decoder_spec.setup_cost
         if cost > max_setup_cost:
             continue
-        scores.setdefault(cost, []).append(index)
+        factor = decoder_spec.get_runtime_factor()
+        if factor <= 0:
+            videolog("choose_decoder: skipping %s, not usable at the moment", decoder_spec.codec_type)
+            continue
+        scores.setdefault(cost / factor, []).append(index)
     if not scores:
         raise RuntimeError("no decoders available!")
     best_score = sorted(scores)[0]
