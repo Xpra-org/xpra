@@ -45,9 +45,13 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     safer scroll paints with unaccelerated client windows
     encode client misinterprets response
     `amf` encoder abrubt quality scale
+    nvenc set hevc level
+    nvenc: stop using deprecated presets
+    nvenc: ensure YUV444 is only advertized when available, same for ARGB and r210
+    nvenc: detect actual encoder size restrictions
   * Major:
     errors during client disconnection
-    keymap not applied + forwards compatibility
+    keymap not applied + forwards compatibility and test
     microphone forwarding selects the wrong device
     system suspend + resume never unblocks window updates
     missed main thread lockups
@@ -67,6 +71,7 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     `BACKWARDS_COMPATIBLE` can be set via env switch
     drop audio `removesilence` since it never worked properly
   * Network:
+    paramiko fails to save new, and load existing host keys
     big endian compatibility
     network input packet statistics counting output
     raw packet size logging
@@ -110,7 +115,7 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     fix shadow unit test
     remove unavailable commands
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 17 Aug 2026 21:42:02 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Aug 2026 18:23:33 +0700
 
 xpra (6.5.2-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:

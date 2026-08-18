@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Mon Aug 17 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
+* Tue Aug 18 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
    don't include wayland server components in client-only builds
@@ -1158,9 +1158,13 @@ fi
    safer scroll paints with unaccelerated client windows
    encode client misinterprets response
    `amf` encoder abrubt quality scale
+   nvenc set hevc level
+   nvenc: stop using deprecated presets
+   nvenc: ensure YUV444 is only advertized when available, same for ARGB and r210
+   nvenc: detect actual encoder size restrictions
 - Major:
    errors during client disconnection
-   keymap not applied + forwards compatibility
+   keymap not applied + forwards compatibility and test
    microphone forwarding selects the wrong device
    system suspend + resume never unblocks window updates
    missed main thread lockups
@@ -1180,6 +1184,7 @@ fi
    `BACKWARDS_COMPATIBLE` can be set via env switch
    drop audio `removesilence` since it never worked properly
 - Network:
+   paramiko fails to save new, and load existing host keys
    big endian compatibility
    network input packet statistics counting output
    raw packet size logging

@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.3] 2026-08-17
+## [6.5.3] 2026-08-18
 * 🔧 Platforms, build and packaging:
   * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
   * [don't include wayland server components in client-only builds](https://github.com/Xpra-org/xpra/commit/7d24bc8396a273d2f557b961800c2f0730af8afd)
@@ -47,9 +47,13 @@
   * [safer scroll paints with unaccelerated client windows](https://github.com/Xpra-org/xpra/commit/5f282ddd9654f80fb336fd27fb0139f26a0e8726)
   * [encode client misinterprets response](https://github.com/Xpra-org/xpra/commit/4263ae275c29c21fec16d2a6e38db10b2c444362)
   * [`amf` encoder abrubt quality scale](https://github.com/Xpra-org/xpra/commit/366701909e95cb8c2a3c8921be67d1f658fbb240)
+  * [nvenc set hevc level](https://github.com/Xpra-org/xpra/commit/474daef1adc4b7984e5d55b1ecbcdd9813ec4420)
+  * [nvenc: stop using deprecated presets](https://github.com/Xpra-org/xpra/commit/2cefc2eb643cc3386eda21ceec218c3e61dd8583)
+  * [nvenc: ensure YUV444 is only advertized when available](https://github.com/Xpra-org/xpra/commit/2c0e3704565525fd86a0637c1a3d69d254f7701f), [same for ARGB and r210](https://github.com/Xpra-org/xpra/commit/c79e660500be3ad2d7b8180b6173e42d3fa3780e)
+  * [nvenc: detect actual encoder size restrictions](https://github.com/Xpra-org/xpra/commit/1c6495fe3b8e1960cff3c3e945aa380b97f88ea8)
 * Major:
   * [errors during client disconnection](https://github.com/Xpra-org/xpra/commit/416629496eb709bde729f2eb7090f846eb829972)
-  * [keymap not applied](https://github.com/Xpra-org/xpra/commit/4f96ab05e11290261128f4b12c9c8dcd6a3ad44b) + [forwards compatibility](https://github.com/Xpra-org/xpra/commit/6e6d09b06cec86b182a2d216722f9ae3bfb0c11e)
+  * [keymap not applied](https://github.com/Xpra-org/xpra/commit/4f96ab05e11290261128f4b12c9c8dcd6a3ad44b) + [forwards compatibility](https://github.com/Xpra-org/xpra/commit/6e6d09b06cec86b182a2d216722f9ae3bfb0c11e) [and test](https://github.com/Xpra-org/xpra/commit/b9d6bbcd1ff4eafe8e5a27eba9ec36657890dce9)
   * [microphone forwarding selects the wrong device](https://github.com/Xpra-org/xpra/commit/58efffed30bcf9b54cc8c23f5ddaaf68b181e0ec)
   * [system suspend + resume never unblocks window updates](https://github.com/Xpra-org/xpra/commit/60e2933a8a9b362ecc5d839949e1c726b2c97893)
   * [missed main thread lockups](https://github.com/Xpra-org/xpra/commit/31b0e4cd652c0183d2dda7ab6a50ff10aba96097)
@@ -69,6 +73,7 @@
   * [`BACKWARDS_COMPATIBLE` can be set via env switch](https://github.com/Xpra-org/xpra/commit/f8f607fb48ef151894e2bce467206f877315668b)
   * [drop audio `removesilence` since it never worked properly](https://github.com/Xpra-org/xpra/commit/e42a902a4c99d9bc5036c4775237d0406a5f1d25)
 * Network:
+  * [paramiko fails to save new](https://github.com/Xpra-org/xpra/commit/71339145eba680939bb84996b8f0cb2216f77c30), [and load existing host keys](https://github.com/Xpra-org/xpra/commit/d321c96f0069e2f74ba27b91981964bffd026729)
   * [big endian compatibility](https://github.com/Xpra-org/xpra/commit/18cd048902a6be1e932b63d254e6451f6afcef7f)
   * [network input packet statistics counting output](https://github.com/Xpra-org/xpra/commit/18705b322f789cb55cc49e8d654d1c2de0c1f082)
   * [raw packet size logging](https://github.com/Xpra-org/xpra/commit/fa2c4cf5fd58aec0667d6f8de575984607a70839)
