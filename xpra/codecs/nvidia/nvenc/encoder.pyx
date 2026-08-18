@@ -110,7 +110,6 @@ DESIRED_TUNING = os.environ.get("XPRA_NVENC_TUNING", "")
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "") or os.environ.get("XPRA_NVENC_SAVE_TO_FILE", "")
 
 cdef int SUPPORT_30BPP = envbool("XPRA_NVENC_SUPPORT_30BPP", True)
-cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
 cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", int(not WIN32))
 cdef int LOSSLESS_ENABLED = envbool("XPRA_NVENC_LOSSLESS", True)
@@ -258,13 +257,17 @@ def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
     for encoding in get_encodings():
         for in_cs, out_css in get_COLORSPACES(encoding).items():
-            specs.append(
-                _get_spec(encoding, in_cs, out_css)
-            )
+            # one spec per output colorspace, so that the pipeline can choose
+            # between 4:2:0 and 4:4:4 using the quality and speed targets
+            # (`init_context` then finds the chosen one in the `dst-formats` option)
+            for out_cs in out_css:
+                specs.append(
+                    _get_spec(encoding, in_cs, out_cs)
+                )
     return specs
 
 
-def _get_spec(encoding: str, in_cs: str, out_css: Sequence[str]) -> VideoSpec:
+def _get_spec(encoding: str, in_cs: str, out_cs: str) -> VideoSpec:
     # the minimum and maximum sizes are queried from the device in `init_module`,
     # the values below are only used as a fallback, see:
     # https://github.com/Xpra-org/xpra/issues/1046#issuecomment-765450102
@@ -272,25 +275,29 @@ def _get_spec(encoding: str, in_cs: str, out_css: Sequence[str]) -> VideoSpec:
     # (the fallback is the highest minimum seen so far: `av1`)
     min_w, min_h = MIN_SIZE.get(encoding, (192, 128))
     max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
-    has_lossless_mode = LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
+    # `GBRP10` is the 10-bit RGB output of the `r210` source format,
+    # everything else is either 4:2:0 (`YUV420P`) or 4:4:4 (`YUV444P`):
+    cdef bint yuv444 = out_cs in ("YUV444P", "GBRP10")
+    # only 4:4:4 can be encoded losslessly, see `get_target_lossless`:
+    has_lossless_mode = yuv444 and LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
     width_mask = get_width_mask(in_cs)
     height_mask = get_height_mask(in_cs)
-    has_lossless_mode = in_cs in ("XRGB", "BGRX", "r210") and LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
-
-    #the output will actually be in one of those two formats once decoded
-    #because internally that's what we convert to before encoding
-    #(well, NV12... which is equivallent to YUV420P here...)
 
     spec = VideoSpec(
-        encoding=encoding, input_colorspace=in_cs, output_colorspaces=out_css,
+        encoding=encoding, input_colorspace=in_cs, output_colorspaces=(out_cs, ),
         has_lossless_mode=has_lossless_mode,
         codec_class=Encoder, codec_type=get_type(),
-        quality=60+has_lossless_mode*40, speed=100, size_efficiency=100,
+        # 4:4:4 costs more bandwidth and more time in the csc kernel,
+        # so it should only be chosen when the quality target is high:
+        quality=60 + 20 * yuv444 + 20 * int(has_lossless_mode),
+        speed=100 - 20 * yuv444,
+        size_efficiency=100,
         setup_cost=80, cpu_cost=10, gpu_cost=100,
         #using a hardware encoder for something this small is silly:
         min_w=min_w, min_h=min_h,
+        # downscaling and 4:4:4 don't belong together:
+        can_scale=not yuv444,
         max_w=max_w, max_h=max_h,
-        can_scale=in_cs != "r210",
         width_mask=width_mask, height_mask=height_mask,
     )
     def _get_runtime_factor() -> float:
@@ -566,7 +573,7 @@ cdef class Encoder:
         # the colour range we will consume and signal in the bitstream (VUI):
         self.full_range = options.boolget("full-range", True)
         #the pixel format we feed into the encoder
-        self.pixel_format = self.get_target_pixel_format(self.quality)
+        self.pixel_format = self.get_target_pixel_format()
         self.profile_name = self._get_profile(options)
         self.level = self._get_level(options)
         self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
@@ -687,32 +694,29 @@ cdef class Encoder:
     def is_ready(self) -> bool:
         return bool(self.ready)
 
-    def get_target_pixel_format(self, int quality) -> str:
-        global NATIVE_RGB, YUV420_ENABLED, YUV444_ENABLED, LOSSLESS_ENABLED, YUV444_THRESHOLD, YUV444_CODEC_SUPPORT
-        v = ""
-        hasyuv444 = YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED) and "YUV444P" in self.dst_formats
-        nativergb = NATIVE_RGB and hasyuv444
-        if nativergb and self.src_format in ("BGRX", ):
-            v = "BGRX"
-        elif self.src_format=="r210":
-            v = "r210"
-        else:
-            hasyuv420 = YUV420_ENABLED and "YUV420P" in self.dst_formats
-            if hasyuv444:
-                #NVENC and the client can handle it,
-                #now check quality and scaling:
-                #(don't use YUV444 is we're going to downscale or use low quality anyway)
-                if (quality>=YUV444_THRESHOLD and not self.scaling) or not hasyuv420:
-                    v = "YUV444P"
-            if not v:
-                if hasyuv420:
-                    v = "NV12"
-                else:
-                    raise ValueError("no compatible formats found for quality=%i, scaling=%s, YUV420 support=%s, YUV444 support=%s, codec=%s, dst-formats=%s" % (
-                        quality, self.scaling, hasyuv420, hasyuv444, self.codec_name, self.dst_formats))
-        log("get_target_pixel_format(%i)=%s for encoding=%s, scaling=%s, NATIVE_RGB=%s, YUV444_CODEC_SUPPORT=%s, YUV420_ENABLED=%s, YUV444_ENABLED=%s, YUV444_THRESHOLD=%s, LOSSLESS_ENABLED=%s, src_format=%s, dst_formats=%s",
-            quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, csv(self.dst_formats))
+    def get_target_pixel_format(self) -> str:
+        global NATIVE_RGB, YUV420_ENABLED, YUV444_ENABLED, YUV444_CODEC_SUPPORT
+        # each spec only exposes a single output colorspace (see `get_specs`),
+        # so the `dst-formats` we were given tells us what to encode:
+        v = self.do_get_target_pixel_format()
+        log("get_target_pixel_format()=%s for encoding=%s, NATIVE_RGB=%s, YUV444_CODEC_SUPPORT=%s, YUV420_ENABLED=%s, YUV444_ENABLED=%s, src_format=%s, dst_formats=%s",
+            v, self.encoding, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), self.src_format, csv(self.dst_formats))
         return v
+
+    cdef str do_get_target_pixel_format(self):
+        if self.src_format == "r210":
+            # uploaded as-is and encoded as 10-bit 4:4:4
+            return "r210"
+        if YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED) and "YUV444P" in self.dst_formats:
+            if NATIVE_RGB and self.src_format == "BGRX":
+                # nvenc can consume `BGRX` directly and encode it as 4:4:4:
+                return "BGRX"
+            return "YUV444P"
+        if YUV420_ENABLED and "YUV420P" in self.dst_formats:
+            return "NV12"
+        raise ValueError("no compatible formats found for codec=%s, dst-formats=%s, YUV420 support=%s, YUV444 support=%s" % (
+            self.codec_name, csv(self.dst_formats),
+            bool(YUV420_ENABLED), YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED)))
 
     def get_target_lossless(self, pixel_format: str, quality : int) -> bool:
         global LOSSLESS_ENABLED, LOSSLESS_CODEC_SUPPORT
@@ -1183,7 +1187,6 @@ cdef class Encoder:
                 },
             "yuv444" : {
                         "supported" : YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED),
-                        "threshold" : YUV444_THRESHOLD,
                         },
             "cuda-device"   : self.cuda_device_info or {},
             "cuda"          : self.cuda_info or {},
@@ -1448,12 +1451,11 @@ cdef class Encoder:
             target_quality = 100
         self.quality = quality
         log("set_encoding_quality(%s) target quality=%s", quality, target_quality)
-        #code removed:
-        #new_pixel_format = self.get_target_pixel_format(target_quality)
-        #etc...
-        #we can't switch pixel format,
-        #because we would need to free the buffers and re-allocate new ones
-        #best to just tear down the encoder context and create a new one
+        # the pixel format is chosen once and for all in `init_context`
+        # (from the output colorspace of the spec the pipeline selected),
+        # we can't switch it here anyway: that would require freeing the buffers
+        # and re-allocating new ones - better to just tear down the encoder context
+        # and create a new one
         return
 
     cdef void update_bitrate(self):
