@@ -694,7 +694,12 @@ def save_host_key(host_keys, host_keys_filename: str) -> None:
         filename = os.path.expanduser(known_hosts)
         if filename not in filenames:
             filenames.append(filename)
-    for filename in filenames:
+    # prefer the files that already exist,
+    # only create a new one if we have to:
+    existing = [filename for filename in filenames if os.path.exists(filename)]
+    missing = [filename for filename in filenames if filename not in existing]
+    log(f"save_host_key: {existing=}, {missing=}")
+    for filename in existing + missing:
         try:
             log(f"adding key to {filename!r}")
             if not os.path.exists(filename):
