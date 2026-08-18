@@ -38,6 +38,7 @@
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
   * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)
   * [`libva` encoder](https://github.com/Xpra-org/xpra/issues/4628) [and decoder](https://github.com/Xpra-org/xpra/issues/4907)
+  * [`nvdec` `h264` video decoding](https://github.com/Xpra-org/xpra/issues/3703)
   * [macOS `VideoToolbox` encoder](https://github.com/Xpra-org/xpra/issues/4908) [and decoder](https://github.com/Xpra-org/xpra/issues/4930)
   * [native MS Windows DirectShow webcam backend](https://github.com/Xpra-org/xpra/issues/3336)
   * [native macOS CoreMedia webcam backend](https://github.com/Xpra-org/xpra/issues/1231)
