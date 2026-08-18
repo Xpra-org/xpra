@@ -126,7 +126,7 @@ def pinentry_getpin(pinentry_proc, title: str, description: str, pin_cb: Callabl
     from urllib.parse import quote
     messages = [
         f"SETPROMPT {quote(title)}",
-        f"SETDESC {quote(description)}:",
+        f"SETDESC {quote(description)}",
         "GETPIN",
     ]
 

@@ -920,7 +920,7 @@ class AuthenticationManager:
                 tries = self.configint("numberofpasswordprompts", PASSWORD_RETRY)
                 log("auth_password() numberofpasswordprompts=%i", tries)
                 for _ in range(tries):
-                    password = input_pass(f"please enter the SSH password for {self.username}@{self.host}")
+                    password = input_pass(f"please enter the SSH password for {self.username}@{self.host}:")
                     if not password:
                         break
                     self.do_auth_password(password)

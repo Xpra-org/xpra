@@ -98,6 +98,7 @@ class GTKDialogClient(StubClientSubsystem):
                 cinfo = conn.get_info()
                 endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
                 q += f"\n at {endpoint}"
+        q += ":"
         title = self.get_server_authentication_string()
         values: list[str] = []
         errs: list[str] = []
