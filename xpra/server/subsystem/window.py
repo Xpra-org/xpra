@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.server.source.window import WindowsConnection
+from xpra.platform.events import add_handler, remove_handler
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import WINDOW_CREATE
@@ -92,6 +93,8 @@ class WindowServer(StubSubsystem):
         self.idle_add(self.load_existing_windows)
         self.server.connect("last-client-exited", self.reset_focus)
         self.add_window_control_commands()
+        add_handler("suspend", self.suspend_event)
+        add_handler("resume", self.resume_event)
 
     def add_window_control_commands(self) -> None:
         from xpra.util.parsing import parse_scaling_value, from0to100
@@ -139,11 +142,23 @@ class WindowServer(StubSubsystem):
             ac(name, "set encoding %s (from 0 to 100)" % name, min_args=1, validation=[from0to100])
 
     def cleanup(self) -> None:
+        remove_handler("suspend", self.suspend_event)
+        remove_handler("resume", self.resume_event)
         for window in tuple(self._window_to_id.keys()):
             window.unmanage()
         # this can cause errors if we receive packets during shutdown:
         # self._window_to_id = {}
         # self._id_to_window = {}
+
+    def suspend_event(self, *_args) -> None:
+        self.cleanup_video_encoders()
+
+    def resume_event(self, *_args) -> None:
+        self.cleanup_video_encoders()
+
+    def cleanup_video_encoders(self) -> None:
+        for source in self.window_sources():
+            source.cleanup_video_encoders()
 
     def load_existing_windows(self) -> None:
         """ this method is overriden by most types of servers """

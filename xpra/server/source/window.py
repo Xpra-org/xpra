@@ -114,6 +114,12 @@ class WindowsConnection(StubClientConnection):
     def all_window_sources(self) -> tuple:
         return tuple(self.window_sources.values())
 
+    def cleanup_video_encoders(self) -> None:
+        for ws in self.all_window_sources():
+            ws.cleanup_codecs()
+        for ws in tuple(self.subsurface_sources.values()):
+            ws.cleanup_codecs()
+
     def suspend_window_sources(self) -> None:
         for ws in self.window_sources.values():
             ws.suspend()

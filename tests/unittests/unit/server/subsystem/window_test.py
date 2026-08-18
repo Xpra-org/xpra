@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import Mock, patch
 
 from xpra.util.objects import AdHocStruct, typedict
 from unit.test_util import stubbable
@@ -82,6 +83,29 @@ class WebcamMixinTest(ServerMixinTest):
             ws.load_existing_windows = load_existing_windows
             return ws
         self._test_mixin_class(_WindowServer, opts)
+
+    def test_power_events_cleanup_video_encoders(self):
+        from xpra.server.subsystem.window import WindowServer
+
+        window_server = stubbable(WindowServer)(self)
+        window_server.update_size_constraints = lambda *_args: None
+        window_server.load_existing_windows = lambda: None
+        window_server.add_window_control_commands = lambda: None
+
+        source = AdHocStruct()
+        source.cleanup_video_encoders = Mock()
+        window_server.window_sources = lambda: (source,)
+        with patch("xpra.server.subsystem.window.add_handler") as add_handler, \
+                patch("xpra.server.subsystem.window.remove_handler") as remove_handler:
+            window_server.setup()
+            add_handler.assert_any_call("suspend", window_server.suspend_event)
+            add_handler.assert_any_call("resume", window_server.resume_event)
+            window_server.suspend_event()
+            window_server.resume_event()
+            self.assertEqual(source.cleanup_video_encoders.call_count, 2)
+            window_server.cleanup()
+            remove_handler.assert_any_call("suspend", window_server.suspend_event)
+            remove_handler.assert_any_call("resume", window_server.resume_event)
 
 
 def main():
