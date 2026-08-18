@@ -362,7 +362,7 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values: Sequence[in
             planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
         return makeimage(planes, rowstride=strides, planes=nplanes)
         # l = len(y)+len(u)+len(v)
-    if pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48", "YUYV"):
+    if pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "ARGB", "BGRA", "RGBA", "r210", "BGR48", "YUYV"):
         Bpp = len(pixel_format)
         if pixel_format == "BGR48":
             Bpp = 6
