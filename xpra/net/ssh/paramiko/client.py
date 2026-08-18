@@ -502,9 +502,18 @@ def load_host_keys() -> tuple[str, Any]:   # returns a HostKeys object
     return host_keys_filename, host_keys
 
 
+def lookup_host_keys(host_keys, host: str) -> dict:
+    # `HostKeys.lookup` returns `None` if the host is not found:
+    try:
+        return host_keys.lookup(host) or {}
+    except Exception:
+        log("%s.lookup(%s)", host_keys, host, exc_info=True)
+        return {}
+
+
 def verify_hostkey(host: str, host_key, verifyhostkeydns: bool, stricthostkeychecking: bool, addkey: bool) -> str:
     host_keys_filename, host_keys = load_host_keys()
-    keys = safe_lookup(host_keys, host)
+    keys = lookup_host_keys(host_keys, host)
     known_host_key = keys.get(host_key.get_name())
 
     def keyname() -> str:
