@@ -3605,6 +3605,8 @@ tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.nvencode", "nvenc")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.api", "nvenc")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
 
+tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", f"{cuda},nvdec")
+
 toggle_packages(dmabuf_ENABLED, "xpra.codecs.dmabuf")
 toggle_packages(pipewire_ENABLED, "xpra.codecs.pipewire")
 tace(pipewire_ENABLED, "xpra.codecs.pipewire._native", "libpipewire-0.3")

@@ -10,6 +10,8 @@ Minimal H.264 Annex-B parser, just enough to recover the colour range
 Some decoder libraries (ie: openh264) do not expose this flag through their API,
 but the SPS is present in the bitstream we feed them, so we can parse it ourselves.
 """
+import re
+
 from xpra.codecs.constants import ColorRange
 from xpra.common import SizedBuffer
 from xpra.log import Logger
@@ -22,6 +24,10 @@ VCL_NAL_TYPES = (1, 2, 3, 4, 5)
 
 # profiles which carry the chroma_format_idc block in the SPS:
 HIGH_PROFILES = (100, 110, 122, 244, 44, 83, 86, 118, 128, 138, 144)
+
+# Annex-B NAL start code prefix, the leading zero byte(s) of a 4-byte prefix
+# are simply left at the tail of the preceding NAL and trimmed there:
+START_CODE = re.compile(b"\x00\x00\x01")
 
 
 class BitReader:
@@ -145,20 +151,17 @@ def iter_annexb_nals(data: SizedBuffer):
     """ yield (nal_unit_type, payload memoryview) for each NAL in an Annex-B stream """
     mv = memoryview(data)
     n = len(mv)
-    i = 0
     nal_start = -1
-    while i + 2 < n:
-        if mv[i] == 0 and mv[i + 1] == 0 and mv[i + 2] == 1:
-            if nal_start >= 0:
-                end = i
-                while end > nal_start and mv[end - 1] == 0:  # trim trailing zero byte(s)
-                    end -= 1
-                yield mv[nal_start] & 0x1f, mv[nal_start + 1:end]
-            nal_start = i + 3
-            i = nal_start
-        else:
-            i += 1
-    if nal_start >= 0:
+    # `finditer` is lazy and runs at C speed: callers which stop at the first SPS
+    # (ie: `get_video_full_range`) never scan more than the first NAL payload:
+    for match in START_CODE.finditer(mv):
+        if nal_start >= 0:
+            end = match.start()
+            while end > nal_start and mv[end - 1] == 0:  # trim trailing zero byte(s)
+                end -= 1
+            yield mv[nal_start] & 0x1f, mv[nal_start + 1:end]
+        nal_start = match.end()
+    if 0 <= nal_start < n:      # (a start code at the very end has no NAL header byte)
         yield mv[nal_start] & 0x1f, mv[nal_start + 1:n]
 
 

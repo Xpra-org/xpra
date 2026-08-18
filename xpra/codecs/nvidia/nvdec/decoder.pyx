@@ -16,7 +16,8 @@ from threading import Event
 from xpra.util.str_fn import csv
 from xpra.util.objects import AtomicInteger, typedict
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import ColorRange, EncodingNotSupported, VideoSpec
+from xpra.codecs.h264_util import get_video_full_range
 from xpra.codecs.nvidia.cuda.errors import cudacheck, get_error_name
 from xpra.codecs.nvidia.cuda.context import get_default_device_context
 from xpra.log import Logger
@@ -441,7 +442,7 @@ def get_min_size(encoding: str) -> Tuple[int, int]:
 
 
 #CODECS = ("jpeg", "h264", "vp8", "vp9")
-CODECS = ("jpeg", )
+CODECS = ("jpeg", "h264")
 
 
 def get_encodings() -> Sequence[str]:
@@ -452,6 +453,9 @@ def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
     for encoding in CODECS:
         # has_lossless_mode = encoding == "vp9" and colorspace=="YUV444P"
+        # the hardware minimum dimensions are found by `selftest` (which runs before this),
+        # streams smaller than that must be left to another decoder:
+        min_w, min_h = get_min_size(encoding)
         specs.append(VideoSpec(
                 encoding=encoding, input_colorspace="YUV420P", output_colorspaces=("NV12", ),
                 has_lossless_mode = False,
@@ -461,6 +465,8 @@ def get_specs() -> Sequence[VideoSpec]:
                 setup_cost=50,
                 cpu_cost=0,
                 gpu_cost=100,
+                min_w=min_w,
+                min_h=min_h,
                 max_w=8192,
                 max_h=4096,
             )
@@ -533,6 +539,7 @@ cdef class Decoder:
     cdef object buffer
     cdef object image
     cdef bint full_range
+    cdef bint closing
 
     cdef object __weakref__
 
@@ -542,12 +549,19 @@ cdef class Decoder:
             raise ValueError(f"invalid encoding {encoding} for nvdec")
         if colorspace not in CS_CHROMA:
             raise ValueError(f"invalid colorspace {colorspace} for nvdec")
+        #we feed the parser one frame at a time and expect exactly one picture back,
+        #so we cannot honour streams which need re-ordering (ie: h264 b-frames):
+        #the parser would hand us the previous picture instead of the one we just fed it.
+        #(the encoders only ever buffer frames when b-frames are enabled)
+        if options.intget("delayed", 0) > 0:
+            raise EncodingNotSupported("nvdec cannot decode out of order frames")
         self.sequence = sequence.increase()
         self.encoding = encoding
         self.colorspace = colorspace
         self.width = width
         self.height = height
         self.full_range = True
+        self.closing = False
         self.event = Event()        #set each time the data has been parsed / processed
         self.stream = <CUstream> 0
         self.buffer = None
@@ -603,6 +617,10 @@ cdef class Decoder:
 
     cdef int display_callback(self, int picture_index, CUvideotimestamp timestamp):
         log("display_callback(%s, %s)", picture_index, timestamp)
+        if self.closing:
+            #the pictures flushed out by `clean()` are of no use to anyone,
+            #and we no longer have an event to signal (or, potentially, a cuda context to use)
+            return 1
         self.image = self.get_output_image(picture_index)
         return int(self.image is not None)
 
@@ -677,6 +695,7 @@ cdef class Decoder:
 
     def clean(self) -> None:
         cdef CUresult r = 0
+        self.closing = True
         e = self.event
         if e:
             e.set()
@@ -705,11 +724,15 @@ cdef class Decoder:
         try:
             self.image = None
             # honoured by get_output_image (called from the parser callback); when modern mode
-            # omits steady-state full-range=True we keep the prior/default value unless an
-            # explicit option overrides it.
-            # TODO: read it from the bitstream via CUVIDEOFORMAT.video_signal_description.video_full_range_flag
+            # omits steady-state full-range=True, we fall back to the value signalled by the
+            # bitstream itself - which only carries it on keyframes (in the SPS VUI),
+            # so we keep it in `self.full_range` for the frames that follow:
             if "full-range" in options:
                 self.full_range = options.boolget("full-range")
+            elif self.encoding == "h264":
+                bitstream = get_video_full_range(data)
+                if bitstream != ColorRange.UNKNOWN:
+                    self.full_range = bitstream == ColorRange.FULL
             stream = options.get("stream", None)
             if stream:
                 self.stream = <CUstream> (<uintptr_t> stream.handle)
@@ -811,12 +834,11 @@ cdef class Decoder:
         cdef CUresult r
         if self.parser:
             memset(&packet, 0, sizeof(CUVIDSOURCEDATAPACKET))
-            r = cuvidParseVideoData(self.parser, &packet)
             packet.payload_size = 0
             packet.payload = NULL
             packet.flags = CUVID_PKT_ENDOFSTREAM
             r = cuvidParseVideoData(self.parser, &packet)
-            log(f"cuvidParseVideoData(..)={r}")
+            log(f"cuvidParseVideoData(ENDOFSTREAM)={r}")
 
 
 def download_from_gpu(buf, size_t size) -> MemBuf:
