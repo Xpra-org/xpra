@@ -145,6 +145,8 @@ def gen_NV12_to_RGB(cs="bt601", full_range=True) -> str:
     g = - a * e / b
     ymult = "" if full_range else " * 1.1643835616438356"
     umult = vmult = "" if full_range else " * 1.1383928571428572"
+    # studio range starts at 16/255, which has to be subtracted before scaling:
+    yoffset = "" if full_range else " - 0.062745098"
     return f"""
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
@@ -157,7 +159,7 @@ layout(location = 0) out vec4 frag_color;
 void main()
 {{
     vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
-    highp float y = texture(Y, pos).r {ymult};
+    highp float y = (texture(Y, pos).r{yoffset}) {ymult};
     vec2 uv_pos = pos * 0.5;
     highp float u = (texture(UV, uv_pos).r - 0.5) {umult};
     highp float v = (texture(UV, uv_pos).g - 0.5) {vmult};
