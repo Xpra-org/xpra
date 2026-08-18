@@ -191,14 +191,17 @@ def get_COLORSPACES(encoding: str) -> Dict[str, Sequence[str]]:
         out_cs.append("YUV420P")
     # `NATIVE_RGB` feeds `BGRX` straight to nvenc, which encodes it as 4:4:4,
     # so it requires 4:4:4 support rather than replacing it - see `get_target_pixel_format`:
-    if YUV444_CODEC_SUPPORT.get(encoding.lower(), YUV444_ENABLED):
+    cdef bint yuv444 = YUV444_CODEC_SUPPORT.get(encoding.lower(), YUV444_ENABLED)
+    if yuv444:
         out_cs.append("YUV444P")
     COLORSPACES = {
         "BGRX" : out_cs,
         "XRGB" : out_cs,
         "ARGB" : out_cs,
         }
-    if SUPPORT_30BPP:
+    # `r210` is uploaded as-is using the `ARGB10` buffer format,
+    # which is also encoded as 4:4:4 (see `CHROMA_FORMATS`):
+    if SUPPORT_30BPP and yuv444:
         COLORSPACES["r210"] = ("GBRP10", )
     return COLORSPACES
 
@@ -509,11 +512,18 @@ cdef class Encoder:
         if not cuda_device_context:
             raise RuntimeError("no cuda device context")
         self.cuda_device_context = cuda_device_context
-        if src_format not in ("XRGB", "BGRX", "r210"):
+        # `ARGB` is handled using the `XRGB` kernels, see `init_cuda`:
+        if src_format not in ("ARGB", "XRGB", "BGRX", "r210"):
             raise ValueError(f"invalid source format {src_format}")
         dst_formats = options.strtupleget("dst-formats")
-        if not ("YUV420P" in dst_formats or "YUV444P" in dst_formats):
-            raise ValueError(f"unsupported output formats {dst_formats}")
+        # `r210` is uploaded to nvenc unmodified and decoded as 10-bit RGB,
+        # all the other input formats are converted to 4:2:0 or 4:4:4 - see `get_target_pixel_format`:
+        if src_format == "r210":
+            valid_formats = ("GBRP10", )
+        else:
+            valid_formats = ("YUV420P", "YUV444P")
+        if not any(dst_format in dst_formats for dst_format in valid_formats):
+            raise ValueError(f"unsupported output formats {dst_formats}, expected one of {valid_formats}")
         self.width = width
         self.height = height
         self.quality = options.intget("quality", 50)
