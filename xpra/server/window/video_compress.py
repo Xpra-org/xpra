@@ -1896,6 +1896,13 @@ class WindowVideoSource(WindowSource):
                               enc_in_format: str, encoder_scaling,
                               enc_width: int, enc_height: int, encoder_spec) -> bool:
         encoding = encoder_spec.encoding
+        # the encoder should only be given the output colorspace(s)
+        # that this particular spec can produce and the client can decode:
+        client_formats = self.full_csc_modes.strtupleget(encoding)
+        dst_formats = tuple(x for x in encoder_spec.output_colorspaces if x in client_formats)
+        if not dst_formats:
+            videolog("no output colorspaces matching %s in %s", client_formats, encoder_spec.output_colorspaces)
+            return False
         options = self.assign_sq_options(dict(self.encoding_options))
         min_w = 8
         min_h = 8
@@ -1947,8 +1954,6 @@ class WindowVideoSource(WindowSource):
                 return False
         self._csc_encoder = csce
         enc_start = monotonic()
-        # FIXME: filter dst_formats to only contain formats the encoder knows about?
-        dst_formats = self.full_csc_modes.strtupleget(encoding)
         ve = encoder_spec.make_instance()
         options.update(self.get_video_encoder_options(encoding, width, height))
         if self.encoding == "grayscale":
