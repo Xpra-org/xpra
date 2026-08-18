@@ -189,7 +189,9 @@ def get_COLORSPACES(encoding: str) -> Dict[str, Sequence[str]]:
     out_cs = []
     if YUV420_ENABLED:
         out_cs.append("YUV420P")
-    if YUV444_CODEC_SUPPORT.get(encoding.lower(), YUV444_ENABLED) or NATIVE_RGB:
+    # `NATIVE_RGB` feeds `BGRX` straight to nvenc, which encodes it as 4:4:4,
+    # so it requires 4:4:4 support rather than replacing it - see `get_target_pixel_format`:
+    if YUV444_CODEC_SUPPORT.get(encoding.lower(), YUV444_ENABLED):
         out_cs.append("YUV444P")
     COLORSPACES = {
         "BGRX" : out_cs,
