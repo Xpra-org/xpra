@@ -182,6 +182,36 @@ def lookup_host_keys(host_keys, host: str) -> Dict[Any,Any]:
         return {}
 
 
+def save_host_key(host_keys, host_keys_filename: str) -> None:
+    filenames = [host_keys_filename] if host_keys_filename else []
+    for known_hosts in get_ssh_known_hosts_files():
+        filename = os.path.expanduser(known_hosts)
+        if filename not in filenames:
+            filenames.append(filename)
+    for filename in filenames:
+        try:
+            log(f"adding key to {filename!r}")
+            if not os.path.exists(filename):
+                keys_dir = os.path.dirname(filename)
+                if not os.path.exists(keys_dir):
+                    log(f"creating keys directory {keys_dir!r}")
+                    os.mkdir(keys_dir, 0o700)
+                elif not os.path.isdir(keys_dir):
+                    log.warn(f"{keys_dir!r} is not a directory")
+                    log.warn(f" key not saved to {filename!r}")
+                    continue
+                log(f"creating known host file {filename!r}")
+                with umask_context(0o133):
+                    with open(filename, "ab+"):
+                        log(f"{filename!r} has been created")
+            host_keys.save(filename)
+            return
+        except OSError as e:
+            log(f"failed to add key to {filename!r}", exc_info=True)
+            log.error(f"Error adding key to {filename!r}")
+            log.error(f" {e}")
+
+
 def connect_to(display_desc):
     log(f"connect_to({display_desc})")
     #plain socket attributes:
@@ -555,30 +585,9 @@ def do_connect_to(transport, host:str, username:str, password:str,
                 log.info("host key confirmed")
             if configbool("addkey", ADD_KEY):
                 try:
-                    if not host_keys_filename:
-                        #the first one is the default,
-                        #ie: ~/.ssh/known_hosts on posix
-                        host_keys_filename = os.path.expanduser(KNOWN_HOSTS[0])
                     log(f"adding {keyname()} key for host {host!r} to {host_keys_filename!r}")
-                    if not os.path.exists(host_keys_filename):
-                        keys_dir = os.path.dirname(host_keys_filename)
-                        if not os.path.exists(keys_dir):
-                            log(f"creating keys directory {keys_dir!r}")
-                            os.mkdir(keys_dir, 0o700)
-                        elif not os.path.isdir(keys_dir):
-                            log.warn(f"Warning: {keys_dir!r} is not a directory")
-                            log.warn(" key not saved")
-                        if os.path.exists(keys_dir) and os.path.isdir(keys_dir):
-                            log(f"creating known host file {host_keys_filename!r}")
-                            with umask_context(0o133):
-                                with open(host_keys_filename, "ab+"):
-                                    "file has been created"
                     host_keys.add(host, host_key.get_name(), host_key)
-                    host_keys.save(host_keys_filename)
-                except OSError as e:
-                    log(f"failed to add key to {host_keys_filename!r}")
-                    log.error(f"Error adding key to {host_keys_filename!r}")
-                    log.error(f" {e}")
+                    save_host_key(host_keys, host_keys_filename)
                 except Exception:
                     log.error("cannot add key", exc_info=True)
     else:
