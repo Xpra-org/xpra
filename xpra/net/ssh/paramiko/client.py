@@ -505,9 +505,11 @@ def load_host_keys() -> tuple[str, Any]:   # returns a HostKeys object
 
 
 def lookup_host_keys(host_keys, host: str) -> dict:
-    # `HostKeys.lookup` returns `None` if the host is not found:
+    # `HostKeys.lookup` returns `None` if the host is not found,
+    # and a `SubDict` - which is a `Mapping` but not a `dict` - if it is found,
+    # so convert it to a real `dict`:
     try:
-        return host_keys.lookup(host) or {}
+        return dict(host_keys.lookup(host) or {})
     except Exception:
         log("%s.lookup(%s)", host_keys, host, exc_info=True)
         return {}
