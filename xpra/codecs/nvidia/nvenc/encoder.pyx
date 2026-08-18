@@ -20,7 +20,7 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.codecs.nvidia.cuda.context import (
     init_all_devices, free_default_device_context,
     get_devices, get_device_name,
-    get_cuda_info, get_pycuda_info, reset_state,
+    get_cuda_info, get_pycuda_info, reset_state, get_default_device_context,
     get_CUDA_function, record_device_failure, record_device_success,
     cuda_device_context, load_device,
 )
@@ -84,7 +84,8 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NV_ENC_ERR_INVALID_PARAM, NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY, NV_ENC_ERR_INVALID_VERSION,
     NV_ENC_BUFFER_FORMAT_ARGB, NV_ENC_BUFFER_FORMAT_ARGB10, NV_ENC_BUFFER_FORMAT_YUV444, NV_ENC_BUFFER_FORMAT_NV12,
     NV_ENC_CAPS, NV_ENC_CAPS_PARAM, NV_ENC_CAPS_PARAM_VER,
-    NV_ENC_CAPS_EXPOSED_COUNT, NV_ENC_CAPS_WIDTH_MAX, NV_ENC_CAPS_HEIGHT_MAX, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT,
+    NV_ENC_CAPS_EXPOSED_COUNT, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT,
+    NV_ENC_CAPS_WIDTH_MIN, NV_ENC_CAPS_HEIGHT_MIN, NV_ENC_CAPS_WIDTH_MAX, NV_ENC_CAPS_HEIGHT_MAX,
     NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES, NV_ENC_CAPS_SUPPORT_YUV444_ENCODE, NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE,
     NV_ENC_CAPS_SUPPORT_INTRA_REFRESH,
     NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP,
@@ -213,8 +214,9 @@ context_counter = AtomicInteger()
 context_gen_counter = AtomicInteger()
 cdef double last_context_failure = 0
 
-# per-device preset denylist - should be mutated with device_lock held
-bad_presets: dict[int, list[str]] = {}
+# preset denylist, per device and codec - should be mutated with device_lock held
+# (a preset that fails with one codec may well be usable with another)
+bad_presets: dict[tuple[int, str], list[str]] = {}
 no_preset: dict[str, float] = {}
 
 
@@ -237,7 +239,8 @@ def get_runtime_factor(encoding: str, in_cs: str) -> float:
     return f
 
 
-MAX_SIZE = {}
+MIN_SIZE: dict[str, tuple[int, int]] = {}
+MAX_SIZE: dict[str, tuple[int, int]] = {}
 
 def get_width_mask(colorspace: str) -> int:
     if colorspace.startswith("YUV42"):
@@ -262,11 +265,12 @@ def get_specs() -> Sequence[VideoSpec]:
 
 
 def _get_spec(encoding: str, in_cs: str, out_css: Sequence[str]) -> VideoSpec:
-    # undocumented and found the hard way, see:
+    # the minimum and maximum sizes are queried from the device in `init_module`,
+    # the values below are only used as a fallback, see:
     # https://github.com/Xpra-org/xpra/issues/1046#issuecomment-765450102
     # https://github.com/Xpra-org/xpra/issues/1550
-    min_w, min_h = (128, 128)
-    # FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
+    # (the fallback is the highest minimum seen so far: `av1`)
+    min_w, min_h = MIN_SIZE.get(encoding, (192, 128))
     max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
     has_lossless_mode = LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
     width_mask = get_width_mask(in_cs)
@@ -494,7 +498,7 @@ cdef class Encoder:
         device_id = self.cuda_device_context.device_id
         for score in sorted(options.keys()):
             for preset, preset_guid in options.get(score):
-                if preset in bad_presets.get(device_id, []):
+                if preset in bad_presets.get((device_id, self.codec_name), []):
                     log("skipping bad preset '%s' (speed=%s, quality=%s, lossless=%s, pixel_format=%s)", preset, self.speed, self.quality, self.lossless, self.pixel_format)
                     continue
 
@@ -535,6 +539,15 @@ cdef class Encoder:
         self.input_height = roundup(height, 32)
         self.encoder_width = roundup(self.scaled_width, 32)
         self.encoder_height = roundup(self.scaled_height, 32)
+        # validate the size against the limits queried from the device,
+        # so that nvenc doesn't just fail with `NV_ENC_ERR_INVALID_PARAM`
+        # (which we would then blame on the preset - see `init_device`):
+        min_w, min_h = MIN_SIZE.get(encoding, (0, 0))
+        if self.encoder_width < min_w or self.encoder_height < min_h:
+            raise ValueError(f"{encoding} requires at least {min_w}x{min_h}, not {self.encoder_width}x{self.encoder_height}")
+        max_w, max_h = MAX_SIZE.get(encoding, (0, 0))
+        if max_w and (self.encoder_width > max_w or self.encoder_height > max_h):
+            raise ValueError(f"{encoding} is limited to {max_w}x{max_h}, cannot use {self.encoder_width}x{self.encoder_height}")
         self.src_format = src_format
         self.dst_formats = dst_formats
         self.encoding = encoding
@@ -662,8 +675,8 @@ cdef class Encoder:
         except Exception as e:
             log("init_cuda failed", exc_info=True)
             if self.preset_name and isinstance(e, NVENCException) and e.code==NV_ENC_ERR_INVALID_PARAM:
-                log("adding preset '%s' to bad presets", self.preset_name)
-                bad_presets.setdefault(device_id, []).append(self.preset_name)
+                log("adding preset '%s' to bad presets for %s", self.preset_name, self.codec_name)
+                bad_presets.setdefault((device_id, self.codec_name), []).append(self.preset_name)
             else:
                 record_device_failure(device_id)
             raise
@@ -2046,6 +2059,8 @@ cdef class Encoder:
                 else:
                     log("[%s] %s", x, codec_name)
 
+                minw = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_WIDTH_MIN)
+                minh = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_HEIGHT_MIN)
                 maxw = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_WIDTH_MAX)
                 maxh = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_HEIGHT_MAX)
                 async = self.query_encoder_caps(encode_GUID, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT)
@@ -2053,6 +2068,7 @@ cdef class Encoder:
                 codec = {
                          "guid"         : guidstr(encode_GUID),
                          "name"         : codec_name,
+                         "min-size"     : (minw, minh),
                          "max-size"     : (maxw, maxh),
                          "async"        : async,
                          "rate-control" : rate_control
@@ -2158,7 +2174,7 @@ def init_module(options: dict) -> None:
     failed_keys = []
     try_keys = CLIENT_KEYS_STR or [None]
     FAILED_ENCODINGS = set()
-    global YUV444_ENABLED, YUV444_CODEC_SUPPORT, LOSSLESS_ENABLED, ENCODINGS, MAX_SIZE
+    global YUV444_ENABLED, YUV444_CODEC_SUPPORT, LOSSLESS_ENABLED, ENCODINGS, MIN_SIZE, MAX_SIZE
     # check NVENC availability by creating a context:
     device_warnings = {}
     log("init_module(%s) will try keys: %s", options, try_keys)
@@ -2215,13 +2231,20 @@ def init_module(options: dict) -> None:
                             log.warn(" does not support %s", nvenc_encoding_name)
                         FAILED_ENCODINGS.add(e)
                         continue
-                    #ensure MAX_SIZE is set:
-                    cmax = MAX_SIZE.get(e)
+                    #ensure MIN_SIZE and MAX_SIZE are set:
+                    qmin = codec_query.get("min-size")
+                    if qmin:
+                        #maximum of current value and value for this device:
+                        qmx, qmy = qmin
+                        cmx, cmy = MIN_SIZE.get(e) or qmin
+                        v = max(qmx, cmx), max(qmy, cmy)
+                        log("min-size(%s)=%s", e, v)
+                        MIN_SIZE[e] = v
                     qmax = codec_query.get("max-size")
                     if qmax:
                         #minimum of current value and value for this device:
                         qmx, qmy = qmax
-                        cmx, cmy = cmax or qmax
+                        cmx, cmy = MAX_SIZE.get(e) or qmax
                         v = min(qmx, cmx), min(qmy, cmy)
                         log("max-size(%s)=%s", e, v)
                         MAX_SIZE[e] = v
@@ -2348,5 +2371,9 @@ def selftest(full=False) -> None:
         from xpra.codecs.checks import get_encoder_max_sizes
         from xpra.codecs.nvidia.nvenc import encoder
         init_module({"full": full})
-        # assert testencoder(encoder, False, typedict())
-        log.info("%s max dimensions: %s", encoder, get_encoder_max_sizes(encoder))
+        # nvenc cannot do anything without a cuda device context:
+        cdc = get_default_device_context()
+        if not cdc:
+            raise RuntimeError("no cuda device context")
+        options = typedict({"cuda-device-context": cdc, "threaded-init": False})
+        log.info("%s max dimensions: %s", encoder, get_encoder_max_sizes(encoder, options))
