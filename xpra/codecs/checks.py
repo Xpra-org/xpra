@@ -22,6 +22,10 @@ log = Logger("encoding")
 # encoders can allocate many times more memory to hold the frames..
 TEST_LIMIT_W, TEST_LIMIT_H = 8192, 8192
 
+# some encoders (ie: nvenc) need options (a cuda device context) to run at all,
+# this is the default for the test functions which don't require any:
+EMPTY_OPTIONS = typedict()
+
 
 def unhexlify(s: str) -> bytes:
     return binascii.unhexlify(s.replace(" ", "").replace("\n", ""))
@@ -486,16 +490,16 @@ def testencoding(encoder_module, encoding: str, full: bool, options: typedict) -
     do_testencoding(encoder_module, encoding, W, H, full, options=options)
 
 
-def get_encoder_max_sizes(encoder_module) -> tuple[int, int]:
+def get_encoder_max_sizes(encoder_module, options: typedict = EMPTY_OPTIONS) -> tuple[int, int]:
     w, h = TEST_LIMIT_W, TEST_LIMIT_H
     for encoding in encoder_module.get_encodings():
-        ew, eh = get_encoder_max_size(encoder_module, encoding)
+        ew, eh = get_encoder_max_size(encoder_module, encoding, options)
         w = min(w, ew)
         h = min(h, eh)
     return w, h
 
 
-def get_encoder_max_size(encoder_module, encoding: str,
+def get_encoder_max_size(encoder_module, encoding: str, options: typedict = EMPTY_OPTIONS,
                          limit_w: int = TEST_LIMIT_W, limit_h: int = TEST_LIMIT_H) -> tuple[int, int]:
     # probe to find the max dimensions:
     # (it may go higher, but we don't care as windows can't)
@@ -506,23 +510,25 @@ def get_encoder_max_size(encoder_module, encoding: str,
 
     def elog(s, *args):
         log(f"{einfo()} "+s, *args)
-    log("get_encoder_max_size%s", (encoder_module, encoding, limit_w, limit_h))
-    maxw = w = 512
+    log("get_encoder_max_size%s", (encoder_module, encoding, options, limit_w, limit_h))
+    maxw = 0
+    w = 512
     while w<=limit_w:
         try:
-            do_testencoding(encoder_module, encoding, w, 128, full=False, options=typedict())
+            do_testencoding(encoder_module, encoding, w, 128, full=False, options=options)
             maxw = w
             w *= 2
         except Exception as e:
-            elog(f"is limited to max width={max} for {encoding}")
+            elog(f"is limited to max width={maxw} for {encoding}")
             log(f" {e}")
             del e
             break
     elog(f"max width={maxw}")
-    maxh = h = 512
+    maxh = 0
+    h = 512
     while h <= limit_h:
         try:
-            do_testencoding(encoder_module, encoding, 128, h, full=False, options=typedict())
+            do_testencoding(encoder_module, encoding, 128, h, full=False, options=options)
             maxh = h
             h *= 2
         except Exception as e:
@@ -531,6 +537,10 @@ def get_encoder_max_size(encoder_module, encoding: str,
             del e
             break
     elog(f"max height={maxh}")
+    if not maxw or not maxh:
+        # not even the smallest test size could be encoded
+        elog(f"unable to encode {encoding} at all")
+        return 0, 0
     # now try combining width and height
     # as there might be a lower limit based on the total number of pixels:
     MAX_WIDTH, MAX_HEIGHT = maxw, maxh
@@ -543,7 +553,7 @@ def get_encoder_max_size(encoder_module, encoding: str,
             try:
                 w = min(maxw, tw)
                 h = min(maxh, th)
-                do_testencoding(encoder_module, encoding, w, h, full=False, options=typedict())
+                do_testencoding(encoder_module, encoding, w, h, full=False, options=options)
                 elog(f"can handle {w}x{h} for {encoding}")
                 MAX_WIDTH, MAX_HEIGHT = w, h
             except Exception as e:
