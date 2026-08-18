@@ -242,8 +242,9 @@ CAPS_NAMES: Dict[int, str] = {
 
 
 # these presets have been deprecated for a while,
-# and are finally removed in SDK v12.2
-# but unfortunately they're the only ones that still work!
+# and are finally removed in SDK v12.2:
+# recent drivers only expose the `P1` to `P7` presets,
+# we keep the GUIDs here so that we can still use older drivers
 # see https://github.com/Xpra-org/xpra/issues/3873
 PRESET_STREAMING        = "7ADD423D-D035-4F6F-AEA5-50885658643C"
 PRESET_DEFAULT          = "B2DFB705-4EBD-4C49-9B5F-24A777D3E587"
