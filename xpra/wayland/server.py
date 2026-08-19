@@ -463,6 +463,9 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
                 sub_ws = ss.subsurface_sources.get(sub_wid)
                 if sub_ws:
                     sub_ws.update_geometry(wid, sx, sy)
+        if mapped and not rects:
+            window.acknowledge_changes()
+            return
         options = {
             "damage": True,
         }
