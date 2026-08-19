@@ -3118,8 +3118,8 @@ if wayland_server_ENABLED:
                         "/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml",
                         XDG_SHELL_PROTOCOL_HEADER])
     wlr_args = ["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/"]
-    ace("xpra.wayland.events", "wlroots-0.19", extra_compile_args=wlr_args)
-    ace("xpra.wayland.display", "wlroots-0.19", extra_compile_args=wlr_args)
+    ace("xpra.wayland.events", "wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.display", "wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.output", "wlroots-0.19,libdrm,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.pointer","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.keyboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
