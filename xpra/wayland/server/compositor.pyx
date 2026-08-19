@@ -71,6 +71,7 @@ from xpra.wayland.server.wlroots cimport (
     wlr_data_control_manager_v1, wlr_data_control_manager_v1_create,
     wlr_xdg_activation_v1, wlr_xdg_activation_token_v1, wlr_xdg_activation_v1_request_activate_event,
     wlr_xdg_activation_v1_create, wlr_xdg_activation_token_v1_get_name,
+    wlr_xdg_system_bell_v1, wlr_xdg_system_bell_v1_ring_event, wlr_xdg_system_bell_v1_create,
     wlr_color_manager_v1, wlr_color_manager_v1_create, wlr_color_manager_v1_options,
     wp_color_manager_v1_render_intent, wp_color_manager_v1_transfer_function, wp_color_manager_v1_primaries,
     WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
@@ -123,6 +124,7 @@ cdef enum:
     L_SET_PRIMARY_SELECTION
     L_REQUEST_ACTIVATE
     L_NEW_ACTIVATION_TOKEN
+    L_RING_BELL
     N_LISTENERS
 
 
@@ -150,6 +152,7 @@ cdef class WaylandCompositor(ListenerObject):
     cdef wlr_relative_pointer_manager_v1 *relative_pointer_manager
     cdef wlr_pointer_constraints_v1 *pointer_constraints
     cdef wlr_xdg_activation_v1 *activation_manager
+    cdef wlr_xdg_system_bell_v1 *system_bell
     cdef char *seat_name
     cdef Display display
     cdef str socket_name
@@ -192,6 +195,8 @@ cdef class WaylandCompositor(ListenerObject):
             self.request_activate(<wlr_xdg_activation_v1_request_activate_event*> data)
         elif slot == L_NEW_ACTIVATION_TOKEN:
             self.new_activation_token(<wlr_xdg_activation_token_v1*> data)
+        elif slot == L_RING_BELL:
+            self.ring_bell(<wlr_xdg_system_bell_v1_ring_event*> data)
         else:
             log.error("Error: unexpected compositor event slot %i", slot)
 
@@ -270,6 +275,8 @@ cdef class WaylandCompositor(ListenerObject):
             self.add_listener(L_REQUEST_ACTIVATE, &self.activation_manager.events.request_activate)
             self.add_listener(L_NEW_ACTIVATION_TOKEN, &self.activation_manager.events.new_token)
 
+        self.create_system_bell()
+
         self.create_color_manager()
 
         self.relative_pointer_manager = wlr_relative_pointer_manager_v1_create(self.display_ptr)
@@ -311,6 +318,19 @@ cdef class WaylandCompositor(ListenerObject):
         self.socket_name = bname.decode("utf8")
         log("wayland display socket added: %s", self.socket_name)
         return self.socket_name
+
+    cdef void create_system_bell(self):
+        # `xdg_system_bell_v1`: lets clients ask the compositor to ring the bell.
+        # we don't make any noise ourselves, we just forward the event to the
+        # xpra clients - so this global is only worth advertising when bell
+        # forwarding is enabled:
+        if not features.bell:
+            return
+        self.system_bell = wlr_xdg_system_bell_v1_create(self.display_ptr, 1)
+        if not self.system_bell:
+            log.warn("Warning: unable to create the xdg-system-bell manager")
+            return
+        self.add_listener(L_RING_BELL, &self.system_bell.events.ring)
 
     cdef void create_color_manager(self):
         # `wp_color_manager_v1`: lets clients tag their surfaces with a colourspace.
@@ -463,6 +483,15 @@ cdef class WaylandCompositor(ListenerObject):
             name = wlr_xdg_activation_token_v1_get_name(event.token)
         token = name.decode("utf8") if name != NULL else ""
         self.emit("activate-request", surface_ptr, token)
+
+    cdef void ring_bell(self, wlr_xdg_system_bell_v1_ring_event *event) noexcept:
+        # `event.surface` may be NULL: the client rang the bell without
+        # pointing at one of its surfaces, we forward that as surface 0.
+        cdef uintptr_t surface_ptr = 0
+        if event != NULL and event.surface != NULL:
+            surface_ptr = <uintptr_t> event.surface
+        log("ring_bell(%#x)", surface_ptr)
+        self.emit("bell", surface_ptr)
 
     cdef void new_activation_token(self, wlr_xdg_activation_token_v1 *token) noexcept:
         cdef const char *name = NULL

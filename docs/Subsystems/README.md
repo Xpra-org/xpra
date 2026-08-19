@@ -74,6 +74,7 @@ graph LR
         Cursor[cursor]
         OpenGL[opengl]
         Bell[bell]
+        BellSrv[bell server]
     end
     Window --> Display
     Keyboard --> Display
@@ -81,6 +82,7 @@ graph LR
     Display --> Cursor
     Display --> OpenGL
     Display --> Bell
+    Bell --> BellSrv
 
     subgraph Media["Media pipeline"]
         GStreamer[gstreamer]
@@ -98,14 +100,13 @@ graph LR
 
     subgraph X11Ext["X11-only extensions"]
         ICC[icc]
-        BellSrv[bell server]
         SysTray[systray]
     end
     X11 --> ICC
     Display --> ICC
-    X11 --> BellSrv
-    Bell --> BellSrv
     X11 --> SysTray
+    X11 --> BellSrv
+    Wayland --> BellSrv
 
     subgraph UI["UI / lifecycle"]
         GTK[gtk]

@@ -171,9 +171,9 @@ class ServerBase(ServerCore):
         if features.x11 and features.display:
             from xpra.x11.subsystem.icc import ICCServer
             classes.append(ICCServer)
-        if features.x11 and features.bell:
-            from xpra.x11.subsystem.bell import BellServer
-            classes.append(BellServer)
+        if features.bell:
+            if bell_class := self.get_bell_subsystem_class():
+                classes.append(bell_class)
         if features.x11 and features.systray:
             from xpra.x11.subsystem.systray import SystemTrayServer
             classes.append(SystemTrayServer)
@@ -238,6 +238,15 @@ class ServerBase(ServerCore):
     def get_clipboard_subsystem_class(self) -> type:
         from xpra.server.subsystem.clipboard import ClipboardManager
         return ClipboardManager
+
+    def get_bell_subsystem_class(self) -> type | None:
+        # only the backends that have a bell event source to hook into
+        # provide a subsystem - there is nothing generic to fall back on:
+        from xpra.server import features
+        if features.x11:
+            from xpra.x11.subsystem.bell import X11BellServer
+            return X11BellServer
+        return None
 
     def suspend_event(self, *_args) -> None:
         # if we get a `suspend_event`, we can assume that `PowerEventServer` is a superclass:
