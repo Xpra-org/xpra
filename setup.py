@@ -427,7 +427,9 @@ x11_ENABLED = DEFAULT and not WIN32 and not OSX
 wayland_client_ENABLED = not WIN32 and not OSX and pkg_config_exists("wayland-client")
 wayland_server_ENABLED = not WIN32 and not OSX and pkg_config_exists("wlroots-0.19") and pkg_config_exists("wayland-server")
 xinput_ENABLED = x11_ENABLED
-uinput_ENABLED = x11_ENABLED
+# uinput is Linux specific, but it is not X11 specific:
+# it is used for the virtual pointer (X11 only) and the virtual joystick (any backend)
+uinput_ENABLED = (server_ENABLED or shadow_ENABLED) and LINUX
 dbus_ENABLED = DEFAULT and (x11_ENABLED or WIN32) and not OSX
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
@@ -3389,7 +3391,8 @@ toggle_packages(shadow_ENABLED and x11_ENABLED, "xpra.x11.shadow")
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED, "xpra.x11.selection")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
-toggle_packages(uinput_ENABLED, "xpra.x11.uinput")
+toggle_packages(uinput_ENABLED, "xpra.uinput")
+toggle_packages(uinput_ENABLED and x11_ENABLED, "xpra.x11.uinput")
 toggle_packages(notifications_ENABLED, "xpra.notification")
 
 # cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
@@ -3912,6 +3915,8 @@ if cythonize_more_ENABLED:
             ax("xpra.x11.server")
         if uinput_ENABLED:
             ax("xpra.x11.uinput")
+    if uinput_ENABLED:
+        ax("xpra.uinput")
     if wayland_client_ENABLED:
         ax("xpra.wayland.client")
     if wayland_server_ENABLED:

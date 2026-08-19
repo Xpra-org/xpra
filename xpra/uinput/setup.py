@@ -53,6 +53,17 @@ def get_uinput_device_path(device) -> str:
 
 
 def has_uinput() -> bool:
+    global _has_uinput
+    if _has_uinput is None:
+        _has_uinput = do_has_uinput()
+    return _has_uinput
+
+
+# cached result of `do_has_uinput`, `None` until it has been probed:
+_has_uinput: bool | None = None
+
+
+def do_has_uinput() -> bool:
     from xpra.os_util import OSX, WIN32
     if OSX or WIN32:
         return False
@@ -65,20 +76,22 @@ def has_uinput() -> bool:
             raise ImportError("uinput")
     except ImportError:
         log = get_logger()
-        log("has_uinput()", exc_info=True)
+        log("do_has_uinput()", exc_info=True)
         log("no uinput module (not usually needed)")
         return False
     except Exception as e:
         log = get_logger()
-        log("has_uinput()", exc_info=True)
+        log("do_has_uinput()", exc_info=True)
         log.warn("Warning: the system python uinput module looks broken:")
         log.warn(" %s", e)
         return False
     try:
-        uinput.fdopen()  # @UndefinedVariable
+        # this is just a probe: close the file descriptor it hands back,
+        # otherwise every call leaks one
+        os.close(uinput.fdopen())  # @UndefinedVariable
     except Exception as e:
         log = get_logger()
-        log("has_uinput()", exc_info=True)
+        log("do_has_uinput()", exc_info=True)
         if isinstance(e, OSError) and e.errno == 19:
             log("no uinput: is the kernel module installed?")
         else:

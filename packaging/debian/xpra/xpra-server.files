@@ -1,4 +1,5 @@
 usr/lib/python3*/*/xpra/server/
+usr/lib/python3*/*/xpra/uinput/
 usr/lib/cups/backend/xpraforwarder
 usr/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 usr/share/xpra/css/

@@ -186,7 +186,7 @@ class XvfbManager(StubSubsystem):
         use_uinput = False
         if self.backend != "wayland":
             try:
-                from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
+                from xpra.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
                 uinput_uuid_len = UINPUT_UUID_LEN
                 use_uinput = not (shadowing or proxying or encoder or runner) and self.input_devices.lower() in (
                     "uinput", "auto",
