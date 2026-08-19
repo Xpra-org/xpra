@@ -255,6 +255,9 @@ class WaylandWindowServer(WindowServer):
                 sub_ws = ss.subsurface_sources.get(sub_wid)
                 if sub_ws:
                     sub_ws.update_geometry(wid, sx, sy, logical_w, logical_h, native_w, native_h)
+        if mapped and not rects:
+            window.acknowledge_changes()
+            return
         options = {"damage": True}
         last = len(rects) - 1
         for i, (x, y, w, h) in enumerate(rects):
