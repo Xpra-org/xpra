@@ -21,6 +21,16 @@ class VideoHelperTest(unittest.TestCase):
         with patch.object(video, "find_spec", side_effect=ImportError):
             self.assertFalse(video.has_codec_module("broken"))
 
+    def test_libva_decoder_registration(self):
+        self.assertEqual(video.CODEC_TO_MODULE["dec_libva"], "libva.decoder")
+        self.assertIn("libva", video.ALL_VIDEO_DECODER_OPTIONS)
+        with patch.object(video, "has_codec_module", return_value=True) as has_codec_module:
+            self.assertEqual(video.get_video_decoders(("libva",)), ["dec_libva"])
+        has_codec_module.assert_called_once_with("libva.decoder")
+        helper = video.VideoHelper()
+        helper.set_modules(video_decoders=("libva",))
+        self.assertEqual(helper.decoders, {"dec_libva": {}})
+
     def test_filter_and_option_parsing(self):
         result = video.filt("enc", "encoders", ("x264:quality=80", "no-vpx", "unknown"),
                             lambda: ["enc_x264", "enc_vpx"], ("x264", "vpx"))
