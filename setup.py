@@ -3774,8 +3774,8 @@ if wayland_server_ENABLED:
         print("generating %r" % header_path)
         subprocess.run(["wayland-scanner", "server-header", xml_path, header_path])
     wlr_args = ["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/server/"]
-    ace("xpra.wayland.server.events", "wlroots-0.19", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.display", "wlroots-0.19", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.events", "wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.display", "wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.server.output", "wlroots-0.19,libdrm,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.server.pointer","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.server.keyboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
