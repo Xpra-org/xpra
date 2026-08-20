@@ -43,6 +43,7 @@ KEYBOARD_RECORD: Final[str] = "keyboard-record"
 POINTER_MOTION: Final[str] = "pointer" if BACKWARDS_COMPATIBLE else "pointer-motion"
 POINTER_BUTTON: Final[str] = "pointer-button"
 POINTER_WHEEL: Final[str] = "wheel-motion" if BACKWARDS_COMPATIBLE else "pointer-wheel"
+POINTER_DEVICES: Final[str] = "input-devices" if BACKWARDS_COMPATIBLE else "pointer-devices"
 
 LOGGING_EVENT: Final[str] = "logging" if BACKWARDS_COMPATIBLE else "logging-event"
 LOGGING_CONTROL: Final[str] = "logging-control"

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.server.subsystem.pointer import PointerManager
 from xpra.log import Logger
 
@@ -40,7 +40,7 @@ class X11PointerManager(PointerManager):
             return X11CoreBindings().query_pointer()
         return 0, 0
 
-    def _process_input_devices(self, _proto, packet: Packet) -> None:
+    def _process_pointer_devices(self, _proto, packet: Packet) -> None:
         self.input_devices_format = packet.get_str(1)
         self.input_devices_data = packet.get_dict(2)
         from xpra.util.str_fn import print_nested_dict
@@ -90,6 +90,8 @@ class X11PointerManager(PointerManager):
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_packets(
-            "input-devices",
+            "pointer-devices",
             main_thread=True
         )
+        if BACKWARDS_COMPATIBLE:
+            self.add_legacy_alias("input-devices", "pointer-devices")

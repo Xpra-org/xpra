@@ -23,7 +23,7 @@ from xpra.net.common import (
 )
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
-from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER
+from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER, POINTER_DEVICES
 from xpra.util.thread import is_main_thread
 from xpra.util.version import get_version_info
 from xpra.net.digest import get_salt
@@ -308,7 +308,7 @@ class XpraClientBase(PacketDispatcher):
         protocol = protocol_class(conn, self.process_packet, self.next_packet)
         self._protocol = protocol
         if protocol.TYPE != "rfb":
-            for x in ("keymap-changed", "server-settings", "logging", "input-devices"):
+            for x in ("keymap-changed", "server-settings", "logging", POINTER_DEVICES):
                 protocol.large_packets.append(x)
             protocol.set_compression_level(1)
             protocol.enable_default_encoder()

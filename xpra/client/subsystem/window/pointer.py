@@ -8,7 +8,7 @@ from time import monotonic
 from typing import Any
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import POINTER_BUTTON
+from xpra.net.packet_type import POINTER_BUTTON, POINTER_DEVICES
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
@@ -168,7 +168,7 @@ class WindowPointer(StubClientSubsystem):
 
     def send_input_devices(self, fmt: str, input_devices: dict[int, dict[str, Any]]) -> None:
         assert self.server_input_devices
-        self.send("input-devices", fmt, input_devices)
+        self.send(POINTER_DEVICES, fmt, input_devices)
 
     def poll_pointer(self) -> bool:
         pos = self.get_mouse_position()
