@@ -39,13 +39,18 @@ def load_window_server_class():
             setattr(module, name, value)
         modules[module_name] = module
     with patch.dict(sys.modules, modules):
-        from xpra.wayland.server import WaylandSeamlessServer
+        try:
+            from xpra.wayland.server import WaylandSeamlessServer
+        except ImportError:
+            # the wayland server is not built / installed
+            return None
     return WaylandSeamlessServer
 
 
 WaylandWindowServer = load_window_server_class()
 
 
+@unittest.skipUnless(WaylandWindowServer, "wayland server is not available")
 class WaylandWindowServerCommitTest(unittest.TestCase):
 
     @staticmethod
