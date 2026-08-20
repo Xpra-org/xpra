@@ -538,7 +538,9 @@ nvdec_ENABLED           = False
 nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_exists("nvfbc")
 cuda_kernels_ENABLED    = nvidia_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED)
 cuda_rebuild_ENABLED    = None if (nvidia_ENABLED and not WIN32) else False
-csc_libyuv_ENABLED      = DEFAULT and pkg_config_exists("libyuv")
+libyuv_pkgconfig        = pkg_config_exists("libyuv")
+libyuv_fallback         = not libyuv_pkgconfig and POSIX and not OSX and has_header_file("libyuv.h")
+csc_libyuv_ENABLED      = DEFAULT and (libyuv_pkgconfig or libyuv_fallback)
 gstreamer_ENABLED       = DEFAULT
 example_ENABLED         = DEFAULT
 win32_tools_ENABLED     = WIN32 and DEFAULT
@@ -3433,7 +3435,7 @@ if x11_ENABLED:
         ace("xpra.x11.bindings.keyboard", "xkbfile")
         ace("xpra.x11.bindings.res", "xres")
         ace("xpra.x11.bindings.composite", "xcomposite")
-        ace("xpra.x11.bindings.xkb", "xkbfile")
+        ace("xpra.x11.bindings.xkb", "xkbfile,x11")
         ace("xpra.x11.bindings.saveset", "x11")
         ace("xpra.x11.bindings.classhint", "x11")
         ace("xpra.x11.bindings.shm", "xext")
@@ -3653,7 +3655,12 @@ toggle_packages(jph_ENABLED, "xpra.codecs.jph")
 tace(jph_encoder_ENABLED, "xpra.codecs.jph.encoder,xpra/codecs/jph/jph.cpp", OPENJPH_PKG_CONFIG, language="c++")
 tace(jph_decoder_ENABLED, "xpra.codecs.jph.decoder,xpra/codecs/jph/jph.cpp", OPENJPH_PKG_CONFIG, language="c++")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
-tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.converter", "libyuv", language="c++")
+if csc_libyuv_ENABLED:
+    if libyuv_fallback:
+        libyuv_kwargs = {"libraries": ("yuv", )}
+    else:
+        libyuv_kwargs = pkgconfig("libyuv")
+    ace("xpra.codecs.libyuv.converter", language="c++", **libyuv_kwargs)
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.converter", optimize=3)
 toggle_packages(pytorch_ENABLED, "xpra.codecs.pytorch")
