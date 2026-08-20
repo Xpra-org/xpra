@@ -7,7 +7,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.net.packet_type import DISPLAY_CONFIGURE
+from xpra.net.packet_type import DISPLAY_CONFIGURE, DISPLAY_RESIZED
 from xpra.exit_codes import ExitCode
 from xpra.platform.gui import (
     get_vrefresh,
@@ -454,7 +454,7 @@ class DisplayClient(StubClientSubsystem):
         log("calling %s(%s)", show_desktop, show)
         show_desktop(show)
 
-    def _process_desktop_size(self, packet: Packet) -> None:
+    def _process_display_resized(self, packet: Packet) -> None:
         root_w = packet.get_u16(1)
         root_h = packet.get_u16(2)
         max_w = packet.get_u16(3)
@@ -464,6 +464,9 @@ class DisplayClient(StubClientSubsystem):
         self.server_actual_desktop_size = root_w, root_h
         if self.can_scale:
             self.may_adjust_scaling()
+
+    def _process_desktop_size(self, packet: Packet) -> None:
+        self._process_display_resized(packet)
 
     def may_adjust_scaling(self) -> None:
         scalinglog("may_adjust_scaling() server_is_desktop=%s, desktop_fullscreen=%s",
@@ -806,4 +809,4 @@ class DisplayClient(StubClientSubsystem):
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_legacy_alias("show-desktop", "display-show-desktop")
-        self.add_packets("display-show-desktop", "desktop_size", main_thread=True)
+        self.add_packets("display-show-desktop", DISPLAY_RESIZED, main_thread=True)

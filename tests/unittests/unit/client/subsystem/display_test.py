@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import AdHocStruct
 from unit.test_util import silence_info, stubbable
 from unit.process_test_util import DisplayContext
@@ -38,7 +38,18 @@ class DisplayClientTest(ClientMixinTest):
         receiver = Receiver()
         DisplayClient.init_authenticated_packet_handlers(receiver)
         self.assertIn("display-show-desktop", receiver.packet_handlers)
-        self.assertIn("desktop_size", receiver.packet_handlers)
+        resize_packet_type = "desktop_size" if BACKWARDS_COMPATIBLE else "display-resized"
+        self.assertIn(resize_packet_type, receiver.packet_handlers)
+        self.assertNotIn("display-resized" if BACKWARDS_COMPATIBLE else "desktop_size", receiver.packet_handlers)
+
+        class Client:
+            can_scale = False
+            _process_display_resized = DisplayClient._process_display_resized
+
+        client = Client()
+        receiver.packet_handlers[resize_packet_type](client, Packet(resize_packet_type, 1024, 768, 3840, 2160))
+        self.assertEqual(client.server_actual_desktop_size, (1024, 768))
+        self.assertEqual(client.server_max_desktop_size, (3840, 2160))
         if BACKWARDS_COMPATIBLE:
             self.assertEqual(receiver.aliases, {"show-desktop": "display-show-desktop"})
         else:

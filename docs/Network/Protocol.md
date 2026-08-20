@@ -397,7 +397,7 @@ holds a single entry, `readonly:bool`.
 | S -> C | `display-screenshot` | `width:u16`, `height:u16`, `encoding:str`, `rowstride:u32`, `data:bytes` |
 | S -> C | `display-icon` | `width:u16`, `height:u16`, `encoding:str`, `rowstride:u32`, `data:bytes` |
 | S -> C | `display-show-desktop` | `show:bool` |
-| S -> C | `desktop_size` | `width:u16`, `height:u16`, `max_width:u16`, `max_height:u16` |
+| S -> C | `display-resized` | `width:u16`, `height:u16`, `max_width:u16`, `max_height:u16` |
 
 `display-configure` carries the same monitor, desktop, DPI and scaling
 structures advertised in the display capabilities.

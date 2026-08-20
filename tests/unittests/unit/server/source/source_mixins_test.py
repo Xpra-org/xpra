@@ -324,10 +324,12 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_display(self):
         from xpra.server.source.display import DisplayConnection
-        from xpra.net.packet_type import DISPLAY_SHOW_DESKTOP
+        from xpra.net.packet_type import DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
 
         expected_packet_type = "show-desktop" if BACKWARDS_COMPATIBLE else "display-show-desktop"
         self.assertEqual(DISPLAY_SHOW_DESKTOP, expected_packet_type)
+        expected_resize_packet_type = "desktop_size" if BACKWARDS_COMPATIBLE else "display-resized"
+        self.assertEqual(DISPLAY_RESIZED, expected_resize_packet_type)
 
         def check_monitor_layout(_cls, source):
             source.set_monitors({
@@ -341,10 +343,13 @@ class SourceMixinsTest(unittest.TestCase):
             self.assertEqual(normalized[1]["geometry"], (1920, 0, 2560, 1440))
             packets = []
             source.send_async = lambda *packet: packets.append(packet)
+            source.send = source.send_async
             source.show_desktop_allowed = True
             source.hello_sent = True
             source.show_desktop(True)
             self.assertEqual(packets, [(DISPLAY_SHOW_DESKTOP, True)])
+            self.assertTrue(source.updated_desktop_size(1024, 768, 3840, 2160))
+            self.assertEqual(packets[-1], (DISPLAY_RESIZED, 1024, 768, 3840, 2160))
 
         caps = None if BACKWARDS_COMPATIBLE else {"display": {"monitors": {}}}
         self._test_mixin_class(DisplayConnection, client_caps=caps, test_fn=check_monitor_layout)
