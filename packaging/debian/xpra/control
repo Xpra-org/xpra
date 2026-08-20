@@ -235,6 +235,8 @@ Description: tool to detach/reattach running X programs,
 
 Package: xpra-wayland
 Architecture: any
+Breaks: xpra-common (<< ${binary:Version})
+Replaces: xpra-common (<< ${binary:Version})
 Depends: xpra-common (= ${binary:Version})
         ,${misc:Depends}
         ,${python3:Depends}
