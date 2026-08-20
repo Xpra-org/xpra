@@ -16,7 +16,7 @@ from xpra.x11.bindings.xlib cimport (
     Expose,
     XEvent,
     XWMHints, XSizeHints,
-    XCreateWindow, XDestroyWindow, XIfEvent, PropertyNotify,
+    XCreateWindow, XDestroyWindow, XIfEvent, PropertyNotify, PropertyNewValue,
     XSetWindowAttributes,
     XWindowAttributes, XWindowChanges,
     XDefaultRootWindow,
@@ -977,8 +977,14 @@ ctypedef struct xifevent_timestamp:
 
 cdef Bool timestamp_predicate(Display *display, XEvent  *xevent, XPointer arg)  noexcept nogil:
     cdef xifevent_timestamp *et = <xifevent_timestamp*> arg
-    cdef Window xwindow = <Window> arg
     if xevent.type!=PropertyNotify:
+        return False
+    # only match the `NewValue` notification of the property we just changed:
+    # the `XDeleteProperty` which follows in `get_server_time` generates a
+    # `Deleted` notification for the same window and atom, and matching that
+    # one on the next call would return a stale timestamp - which makes the
+    # X server silently ignore `XSetInputFocus`
+    if xevent.xproperty.state!=PropertyNewValue:
         return False
     return xevent.xproperty.window==et.window and xevent.xproperty.atom==et.atom
 

@@ -33,6 +33,7 @@ cdef extern from "X11/X.h":
     unsigned long AnyPropertyType
     unsigned int PropModeReplace
     unsigned int PropertyNotify
+    unsigned int PropertyNewValue
     unsigned int Expose
 
 
@@ -512,6 +513,7 @@ cdef extern from "X11/Xlib.h":
         Window window
         Atom atom
         Time time
+        int state
     ctypedef struct XKeyEvent:
         unsigned int state
         unsigned int keycode
