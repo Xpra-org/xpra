@@ -343,7 +343,9 @@ nvdec_ENABLED           = False
 nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_exists("nvfbc")
 cuda_kernels_ENABLED    = nvidia_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED)
 cuda_rebuild_ENABLED    = None if (nvidia_ENABLED and not WIN32) else False
-csc_libyuv_ENABLED      = DEFAULT and pkg_config_exists("libyuv")
+libyuv_pkgconfig        = pkg_config_exists("libyuv")
+libyuv_fallback         = not libyuv_pkgconfig and POSIX and not OSX and has_header_file("libyuv.h")
+csc_libyuv_ENABLED      = DEFAULT and (libyuv_pkgconfig or libyuv_fallback)
 gstreamer_ENABLED       = DEFAULT
 gstreamer_audio_ENABLED = gstreamer_ENABLED
 gstreamer_video_ENABLED = gstreamer_ENABLED and not OSX
@@ -3043,7 +3045,12 @@ toggle_packages(avif_ENABLED, "xpra.codecs.avif")
 tace(avif_encoder_ENABLED, "xpra.codecs.avif.encoder", "libavif")
 tace(avif_decoder_ENABLED, "xpra.codecs.avif.decoder", "libavif")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
-tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.converter", "libyuv", language="c++")
+if csc_libyuv_ENABLED:
+    if libyuv_fallback:
+        libyuv_kwargs = {"libraries": ("yuv", )}
+    else:
+        libyuv_kwargs = pkgconfig("libyuv")
+    ace("xpra.codecs.libyuv.converter", language="c++", **libyuv_kwargs)
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.converter", optimize=3)
 toggle_packages(pytorch_ENABLED, "xpra.codecs.pytorch")
