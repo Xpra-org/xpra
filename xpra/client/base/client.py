@@ -96,6 +96,11 @@ class XpraClientBase(PacketDispatcher):
         """
         return self.subsystems.get(name)
 
+    def get_server_packet_types(self) -> Sequence[str]:
+        """ the packet types the server is willing to receive (see `network` subsystem) """
+        network = self.get_subsystem("network")
+        return getattr(network, "server_packet_types", ())
+
     def add_control_command(self, name: str, control) -> None:
         # delegate to the `control` subsystem (mirror of `ServerCore.add_control_command`),
         # so other subsystems can register a command without depending on the MRO:

@@ -346,20 +346,24 @@ validation limits, not a separate on-wire integer representation.
 | either | `ping` | `monotonic_ms:u64`, `sid:str?` |
 | either | `ping-echo` | `monotonic_ms:u64`, `load1:u64`, `load5:u64`, `load15:u64`, `latency_ms:i64`, `sid:str?` |
 | S -> C | `startup-complete` | none |
-| S -> C | `setting-change` | `name:str`, `value:any` |
+| either | `setting-change` | `name:str`, `value:any` |
 | S -> C | `server-event` | `name:str`, `values:any...` |
 | S -> C | `control` | `command:str`, `arguments:any...` |
 | C -> S | `control-request` | `request_id:u64`, `command:str`, `arguments:any...` |
 | S -> C | `info-response` | `information:map` |
 | C -> S | `info-request` | `window_ids:list<u64>`, `categories:list<str>`, `subsystems:list<str>?` |
 | C -> S | `shutdown-server` | `exit:bool`, `reason:str?` |
-| C -> S | `readonly-toggled` | `readonly:bool` |
 | C -> S | `suspend` | `suspended:bool` |
 | C -> S | `bell-set` | `enabled:bool` |
 
 Ping timestamps use the sender's monotonic clock and are correlation values,
 not wall-clock time. Load values are scaled by 1000. A negative latency means
 unknown.
+
+`setting-change` is bidirectional, but asymmetric. A server MAY send any
+setting. A server MUST apply an allow-list to the settings a client is permitted
+to change, and MUST ignore any setting outside it. That allow-list currently
+holds a single entry, `readonly:bool`.
 
 ### 7.2 Logging, Shell and Commands
 

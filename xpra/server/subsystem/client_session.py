@@ -7,7 +7,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.net.common import FULL_INFO
+from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE, Packet
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import valid_uuid
 from xpra.server.subsystem.stub import StubSubsystem
@@ -17,6 +17,12 @@ from xpra.log import Logger
 
 log = Logger("server")
 netlog = Logger("network")
+
+# the settings that clients are allowed to change,
+# and the `Packet` accessor used to validate the value:
+CLIENT_SETTINGS: dict[str, str] = {
+    "readonly": "get_bool",
+}
 
 
 class ClientSessionServer(StubSubsystem):
@@ -177,19 +183,37 @@ class ClientSessionServer(StubSubsystem):
 
     def setting_changed(self, setting: str, value: Any) -> None:
         for ss in tuple(self.sources.values()):
-            if setting == "readonly" and hasattr(ss, "server_enforced_readonly"):
+            if setting == "readonly":
                 value = ss.server_enforced_readonly()
             ss.send_setting_change(setting, value)
 
-    def _process_readonly_toggled(self, proto, packet) -> None:
+    def _process_setting_change(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
-        if not ss or not hasattr(ss, "set_client_readonly"):
+        if not ss:
             return
-        ss.set_client_readonly(packet.get_bool(1))
-        log("client %s toggled readonly=%s", ss, ss.client_readonly)
+        setting = packet.get_str(1)
+        getter = CLIENT_SETTINGS.get(setting, "")
+        if not getter:
+            log.warn("Warning: client %s tried to change setting %r", ss, setting)
+            log.warn(" this setting cannot be modified by clients")
+            return
+        self.set_client_setting(ss, setting, getattr(packet, getter)(2))
+
+    def set_client_setting(self, ss, setting: str, value) -> None:
+        if setting == "readonly":
+            ss.set_client_readonly(value)
+            log("client %s toggled readonly=%s", ss, ss.client_readonly)
+
+    def _process_readonly_toggled(self, proto, packet: Packet) -> None:
+        # legacy packet, superseded by "setting-change":
+        ss = self.get_server_source(proto)
+        if ss:
+            self.set_client_setting(ss, "readonly", packet.get_bool(1))
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("readonly-toggled")
+        self.add_packets("setting-change")
+        if BACKWARDS_COMPATIBLE:
+            self.add_packets("readonly-toggled")
 
     def disconnect_all(self) -> None:
         protocols = self.server.get_all_protocols()

@@ -151,9 +151,17 @@ class ClientSessionTest(unittest.TestCase):
         self.assertEqual(source1.settings, [("readonly", True)])
         self.assertEqual(source2.settings, [("readonly", False)])
 
-        self.session._process_readonly_toggled(proto1, Packet("readonly-toggled", True))
+        self.session._process_setting_change(proto1, Packet("setting-change", "readonly", True))
         self.assertTrue(source1.client_readonly)
         self.assertFalse(source2.client_readonly)
+        # settings not in the allow-list are ignored:
+        self.session._process_setting_change(proto2, Packet("setting-change", "session_name", "hacked"))
+        self.assertFalse(source2.client_readonly)
+        # unknown protocols are ignored:
+        self.session._process_setting_change(object(), Packet("setting-change", "readonly", True))
+        # legacy packet:
+        self.session._process_readonly_toggled(proto2, Packet("readonly-toggled", True))
+        self.assertTrue(source2.client_readonly)
 
         self.assertIs(self.session.cleanup_client_protocol(proto1), source1)
         self.assertNotIn(proto1, self.session.sources)
