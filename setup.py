@@ -3657,10 +3657,10 @@ tace(jph_decoder_ENABLED, "xpra.codecs.jph.decoder,xpra/codecs/jph/jph.cpp", OPE
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
 if csc_libyuv_ENABLED:
     if libyuv_fallback:
-        libyuv_kwargs = {"libraries": ("yuv", )}
+        # no `libyuv.pc`: link with `-lyuv` directly
+        ace("xpra.codecs.libyuv.converter", language="c++", libraries=["yuv"])
     else:
-        libyuv_kwargs = pkgconfig("libyuv")
-    ace("xpra.codecs.libyuv.converter", language="c++", **libyuv_kwargs)
+        ace("xpra.codecs.libyuv.converter", "libyuv", language="c++")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.converter", optimize=3)
 toggle_packages(pytorch_ENABLED, "xpra.codecs.pytorch")
