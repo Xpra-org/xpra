@@ -6,6 +6,7 @@
 
 import unittest
 
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import AdHocStruct
 from unit.test_util import silence_info, stubbable
 from unit.process_test_util import DisplayContext
@@ -13,6 +14,35 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class DisplayClientTest(ClientMixinTest):
+
+    def test_show_desktop_packet_handlers(self):
+        from xpra.client.subsystem.display import DisplayClient
+
+        class Receiver:
+            screen_sizes = ()
+
+            def __init__(self):
+                self.aliases = {}
+                self.packet_handlers = {}
+
+            def add_legacy_alias(self, legacy_name, new_name):
+                if BACKWARDS_COMPATIBLE:
+                    self.aliases[legacy_name] = new_name
+
+            def add_packets(self, *packet_types, **_kwargs):
+                for packet_type in packet_types:
+                    self.packet_handlers[packet_type] = getattr(
+                        DisplayClient, "_process_" + packet_type.replace("-", "_"),
+                    )
+
+        receiver = Receiver()
+        DisplayClient.init_authenticated_packet_handlers(receiver)
+        self.assertIn("display-show-desktop", receiver.packet_handlers)
+        self.assertIn("desktop_size", receiver.packet_handlers)
+        if BACKWARDS_COMPATIBLE:
+            self.assertEqual(receiver.aliases, {"show-desktop": "display-show-desktop"})
+        else:
+            self.assertEqual(receiver.aliases, {})
 
     def test_display(self):
         with DisplayContext():

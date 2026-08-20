@@ -392,7 +392,7 @@ unknown.
 | C -> S | `display-request-icon` | none |
 | S -> C | `display-screenshot` | `width:u16`, `height:u16`, `encoding:str`, `rowstride:u32`, `data:bytes` |
 | S -> C | `display-icon` | `width:u16`, `height:u16`, `encoding:str`, `rowstride:u32`, `data:bytes` |
-| S -> C | `show-desktop` | `show:bool` |
+| S -> C | `display-show-desktop` | `show:bool` |
 | S -> C | `desktop_size` | `width:u16`, `height:u16`, `max_width:u16`, `max_height:u16` |
 
 `display-configure` carries the same monitor, desktop, DPI and scaling

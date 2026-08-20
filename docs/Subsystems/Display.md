@@ -44,7 +44,7 @@ This can be used to reduce the amount of pixels needed to cover a monitor.
 
 | Packet Type                  | Direction        | Arguments                                               | Information                                                                              |
 |------------------------------|------------------|---------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `show-desktop`               | server to client | `show` : boolean                                        | The server is requesting the client to show or hide the desktop                          |
+| `display-show-desktop`       | server to client | `show` : boolean                                        | The server is requesting the client to show or hide the desktop                          |
 | `desktop_size`               | server to client | `width`: int, `height`: int, `max_w`: int, `max_h`: int | The server has updated its display, the client may need to adjust its scaling properties |
 | `display-configure`          | client to server | monitor configuration dictionary                        | The client sends its updated monitor layout to the server                                |
 | `display-request-screenshot` | client to server |                                                         | The client requests a screenshot from the server                                         |

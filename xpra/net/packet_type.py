@@ -69,6 +69,7 @@ DISPLAY_REQUEST_SCREENSHOT: Final[str] = "screenshot" if BACKWARDS_COMPATIBLE el
 DISPLAY_REQUEST_ICON: Final[str] = "display-request-icon"
 DISPLAY_SCREENSHOT: Final[str] = "screenshot" if BACKWARDS_COMPATIBLE else "display-screenshot"
 DISPLAY_ICON: Final[str] = "display-icon"
+DISPLAY_SHOW_DESKTOP: Final[str] = "show-desktop" if BACKWARDS_COMPATIBLE else "display-show-desktop"
 
 NOTIFICATION_SHOW: Final[str] = "notify_show" if BACKWARDS_COMPATIBLE else "notification-show"
 NOTIFICATION_CLOSE: Final[str] = "notify_close" if BACKWARDS_COMPATIBLE else "notification-close"

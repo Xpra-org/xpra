@@ -11,6 +11,7 @@ from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
 from xpra.util.screen import get_screen_info, MonitorLayout
 from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import DISPLAY_SHOW_DESKTOP
 from xpra.util.parsing import validated_monitor_data
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.log import Logger
@@ -180,7 +181,7 @@ class DisplayConnection(StubClientConnection):
 
     def show_desktop(self, show) -> None:
         if self.show_desktop_allowed and self.hello_sent:
-            self.send_async("show-desktop", show)
+            self.send_async(DISPLAY_SHOW_DESKTOP, show)
 
     def get_monitor_definitions(self) -> dict[int, Any] | None:
         if self.monitors or not BACKWARDS_COMPATIBLE:

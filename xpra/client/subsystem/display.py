@@ -449,7 +449,7 @@ class DisplayClient(StubClientSubsystem):
             return None
         return self._monitor_layout.relative_position(int(position[0]), int(position[1]))
 
-    def _process_show_desktop(self, packet: Packet) -> None:
+    def _process_display_show_desktop(self, packet: Packet) -> None:
         show = packet.get_bool(1)
         log("calling %s(%s)", show_desktop, show)
         show_desktop(show)
@@ -805,4 +805,5 @@ class DisplayClient(StubClientSubsystem):
         self.emit("scaling-changed")
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("show-desktop", "desktop_size", main_thread=True)
+        self.add_legacy_alias("show-desktop", "display-show-desktop")
+        self.add_packets("display-show-desktop", "desktop_size", main_thread=True)
