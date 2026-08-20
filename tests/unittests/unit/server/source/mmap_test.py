@@ -9,8 +9,10 @@ import hashlib
 import logging
 import tempfile
 import unittest
+from contextlib import contextmanager
 
 from xpra.os_util import POSIX
+from xpra.util.env import OSEnvContext
 from xpra.util.objects import AdHocStruct, typedict
 from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES, get_mmap_dir
 from xpra.net.mmap import io as mmap_io
@@ -22,6 +24,16 @@ from unit.test_util import silence_info, silence_error, silence_warn, LoggerSile
 
 
 MIN_SIZE = 64 * 1024 * 1024
+
+
+@contextmanager
+def temp_runtime_dir():
+    """Use a private uid-named runtime directory for host-independent mmap tests."""
+    with tempfile.TemporaryDirectory() as parent:
+        runtime_dir = os.path.join(parent, str(os.geteuid()))
+        os.mkdir(runtime_dir, 0o700)
+        with OSEnvContext(XDG_RUNTIME_DIR=runtime_dir):
+            yield parent
 
 
 def make_source(mmap_filename: str = "", min_size: int = MIN_SIZE) -> MMAP_Connection:
@@ -100,7 +112,7 @@ class ConfusedDeputyTest(unittest.TestCase):
     def test_file_outside_mmap_dir_is_untouched(self):
         if not POSIX:
             return
-        with tempfile.TemporaryDirectory() as elsewhere:
+        with temp_runtime_dir(), tempfile.TemporaryDirectory() as elsewhere:
             # a unique basename that cannot exist in the server's mmap directory:
             name = f"victim.{os.getpid()}.dat"
             victim = self.victim_file(elsewhere, name)
@@ -116,45 +128,47 @@ class ConfusedDeputyTest(unittest.TestCase):
             return
         # a symlink sitting in the server's mmap directory, pointing at a victim
         # elsewhere: O_NOFOLLOW must refuse it and leave the victim untouched.
-        mmap_dir = get_mmap_dir()
-        if not os.path.isdir(mmap_dir):
-            return
-        with tempfile.TemporaryDirectory() as hidden:
-            victim = self.victim_file(hidden)
-            before = self.digest(victim)
-            link = os.path.join(mmap_dir, f"xpra.link.{os.getpid()}.mmap")
-            os.symlink(victim, link)
-            self.addCleanup(lambda: os.path.islink(link) and os.unlink(link))
-            source = make_source()
-            # the client names the symlink by basename (resolved into the mmap dir):
-            self.run_attack(source, link)
-            self.assertEqual(before, self.digest(victim), "the victim file was corrupted through a symlink")
+        with temp_runtime_dir():
+            mmap_dir = get_mmap_dir()
+            if not os.path.isdir(mmap_dir):
+                return
+            with tempfile.TemporaryDirectory() as hidden:
+                victim = self.victim_file(hidden)
+                before = self.digest(victim)
+                link = os.path.join(mmap_dir, f"xpra.link.{os.getpid()}.mmap")
+                os.symlink(victim, link)
+                self.addCleanup(lambda: os.path.islink(link) and os.unlink(link))
+                source = make_source()
+                # the client names the symlink by basename (resolved into the mmap dir):
+                self.run_attack(source, link)
+                self.assertEqual(before, self.digest(victim), "the victim file was corrupted through a symlink")
 
     def test_legit_file_in_mmap_dir_is_accepted(self):
         # positive control: the default same-host client creates its area in the
         # server's mmap directory, so it must still be accepted after the fix.
         if not POSIX:
             return
-        enabled, _delete, area, size, tempfile_obj, filename = init_client_mmap(size=MIN_SIZE, filename="")
-        if not enabled:
-            self.skipTest("could not create a client mmap area")
-        self.addCleanup(area.close)
-        if tempfile_obj:
-            self.addCleanup(tempfile_obj.close)
-        token, token_index = 0x123456789, 512
-        write_mmap_token(area, token, token_index, DEFAULT_TOKEN_BYTES)
-        caps = {
-            "file": filename,
-            "size": size,
-            "token": token,
-            "token_index": token_index,
-            "token_bytes": DEFAULT_TOKEN_BYTES,
-        }
-        source = make_source()
-        with silence_info(source_mmap):
-            server_area = source.parse_area_caps("read", caps, 0)
-        assert server_area and server_area.enabled, "a legit same-host mmap area should have been accepted"
-        server_area.close()
+        with temp_runtime_dir():
+            enabled, _delete, area, size, tempfile_obj, filename = init_client_mmap(size=MIN_SIZE, filename="")
+            if not enabled:
+                self.skipTest("could not create a client mmap area")
+            self.addCleanup(area.close)
+            if tempfile_obj:
+                self.addCleanup(tempfile_obj.close)
+            token, token_index = 0x123456789, 512
+            write_mmap_token(area, token, token_index, DEFAULT_TOKEN_BYTES)
+            caps = {
+                "file": filename,
+                "size": size,
+                "token": token,
+                "token_index": token_index,
+                "token_bytes": DEFAULT_TOKEN_BYTES,
+            }
+            source = make_source()
+            with silence_info(source_mmap):
+                server_area = source.parse_area_caps("read", caps, 0)
+            assert server_area and server_area.enabled, "a legit same-host mmap area should have been accepted"
+            server_area.close()
 
 
 def main():
