@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.5.4] 2026-08-20
+* TODO
+
 ## [6.5.3] 2026-08-18
 * 🔧 Platforms, build and packaging:
   * [fix the DEB wayland package split](https://github.com/Xpra-org/xpra/commit/dee252ef1d9b1533c7871b3da8b8391f9ff0268f)
