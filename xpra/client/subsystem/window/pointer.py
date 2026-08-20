@@ -181,7 +181,7 @@ class WindowPointer(StubClientSubsystem):
         return True
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("pointer-position", "pointer-grab", "pointer-ungrab", main_thread=True)
+        self.add_packets("pointer-position", main_thread=True)
         # the server sends us the pointer events of the other clients
         # when the `sync` pointer capability is enabled:
         self.add_packets("pointer-motion", "pointer-button", "pointer-wheel", main_thread=True)
