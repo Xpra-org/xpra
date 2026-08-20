@@ -599,7 +599,7 @@ class TestFileTransferHandler(unittest.TestCase):
                 fth.open_url = enabled
                 fth.open_url_ask = ask
                 with patch.object(fth, "_open_url") as open_url:
-                    fth._process_open_url(Packet("open-url", "https://example.com", "sid"))
+                    fth._process_file_open_url(Packet("open-url", "https://example.com", "sid"))
                 self.assertEqual(open_url.called, expected_open)
                 fth.cleanup()
 
@@ -622,7 +622,8 @@ class TestFileTransferHandler(unittest.TestCase):
         fth.remote_open_url_ask = False
         result = fth.send_open_url("https://example.com")
         self.assertTrue(result)
-        self.assertTrue(any(p[0] == "open-url" for p in fth.sent))
+        from xpra.net.packet_type import FILE_OPEN_URL
+        self.assertTrue(any(p[0] == FILE_OPEN_URL for p in fth.sent))
         fth.cleanup()
 
     # ------------------------------------------------------------------
@@ -1907,7 +1908,7 @@ class TestMalformedFileTransferPackets(unittest.TestCase):
              Packet("file-data-response", "sid", 128), ValueError),
             ("truncated request", "_process_file_data_request",
              Packet("file-data-request", "file"), IndexError),
-            ("truncated URL", "_process_open_url", Packet("open-url"), IndexError),
+            ("truncated URL", "_process_file_open_url", Packet("file-open-url"), IndexError),
             ("invalid options", "_process_file_send",
              Packet("file-send", "file", "", False, False, 4, b"data", b"options"), TypeError),
             ("invalid UTF-8 filename", "_process_file_send",

@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from collections.abc import Callable
 
 from xpra.net.packet_type import (
-    FILE_SEND, FILE_ACK_CHUNK, FILE_SEND_CHUNK, FILE_DATA_REQUEST, FILE_DATA_RESPONSE, FILE_REQUEST,
+    FILE_SEND, FILE_ACK_CHUNK, FILE_SEND_CHUNK, FILE_DATA_REQUEST, FILE_DATA_RESPONSE, FILE_REQUEST, FILE_OPEN_URL,
 )
 from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import POSIX, WIN32, gi_import
@@ -1008,7 +1008,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.send(FILE_REQUEST, filename, openit, send_id)
         return send_id
 
-    def _process_open_url(self, packet: Packet) -> None:
+    def _process_file_open_url(self, packet: Packet) -> None:
         url = packet.get_str(1)
         send_id = packet.get_str(2)
         if not self.open_url:
@@ -1038,7 +1038,7 @@ class FileTransferHandler(FileTransferAttributes):
         return True
 
     def do_send_open_url(self, url: str, send_id: str = "") -> None:
-        self.send("open-url", url, send_id)
+        self.send(FILE_OPEN_URL, url, send_id)
 
     def send_file(self, filename: str, mimetype: str, data: SizedBuffer, filesize=0,
                   printit=False, openit=False, options=None, send_id="") -> bool:

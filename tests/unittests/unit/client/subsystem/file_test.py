@@ -49,11 +49,12 @@ class FileClientTest(ClientMixinTest):
         self.assertTrue(client.remote_request_file)
 
         expected_packets = {
-            "open-url", "file-send", "file-data-request", "file-data-response",
+            "file-open-url", "file-send", "file-data-request", "file-data-response",
             "file-ack-chunk", "file-send-chunk",
         }
         self.assertEqual(set(self.packet_handlers), expected_packets)
         if BACKWARDS_COMPATIBLE:
+            self.assertEqual(self.legacy_alias["open-url"], "file-open-url")
             self.assertEqual(self.legacy_alias["send-file"], "file-send")
             self.assertEqual(self.legacy_alias["send-data-request"], "file-data-request")
             self.assertEqual(self.legacy_alias["send-data-response"], "file-data-response")
