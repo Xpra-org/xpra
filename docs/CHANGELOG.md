@@ -1,7 +1,20 @@
 # Changelog
 
 ## [6.5.4] 2026-08-20
-* TODO
+* 🔧 Platforms, build and packaging:
+  * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
+  * [wayland: link to wayland-server](https://github.com/Xpra-org/xpra/commit/36bae2f550e15500d4691795126bccb222bfae83)
+  * [`xkb`: link to `libX11`](https://github.com/Xpra-org/xpra/commit/c9ae701f22a7b019b6fa34116fd946a47474470e)
+* ⚠️ Major:
+  * [wayland screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
+  * [stale X11 timestamps cause focus issues](https://github.com/Xpra-org/xpra/commit/2896248d67d6c01ba3f5afaa9f947ac82393efaf)
+* 🖧 Network:
+  * [paramiko: try ssh keys in the same order as openssh](https://github.com/Xpra-org/xpra/commit/93afc72cac9cac340cc906b9e1c6f7d0eafd9c03)
+  * [paramiko: try agent keys in the order the identity files are configured](https://github.com/Xpra-org/xpra/commit/8eb981fbdb4192a02220d9a1e15c86625e7ed144)
+* 💄 Cosmetic:
+  * [paramiko strict type check](https://github.com/Xpra-org/xpra/commit/19380229b392c7df946635d42ae652722b43556b)
+  * [don't sync `XPRA_*` X11 properties](https://github.com/Xpra-org/xpra/commit/24fc1a929614a790840b8b81f8ba86ec632420f2)
+  * [unit test failures in constrained environments](https://github.com/Xpra-org/xpra/commit/988c7e9f0ab5d9cb4414447f5af672af018464bf)
 
 ## [6.5.3] 2026-08-18
 * 🔧 Platforms, build and packaging:
