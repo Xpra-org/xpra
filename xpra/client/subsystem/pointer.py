@@ -108,7 +108,7 @@ class PointerClient(StubClientSubsystem):
         log("wheel_map(%s)=%s, wheel_smooth=%s", opts.mousewheel, self.wheel_map, self.wheel_smooth)
 
     def init_ui(self, opts) -> None:
-        self.middle_click = getattr(opts, "middle_click", True)
+        self.middle_click = opts.middle_click
         pointer_opt = opts.pointer.replace("-", "").lower()
         pointer = pointer_opt.split(":", 1)[0]
         modifier = "shift" if pointer_opt.find(":") < 0 else pointer_opt.split(":", 1)[1]

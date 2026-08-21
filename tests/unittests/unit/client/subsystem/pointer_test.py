@@ -19,7 +19,11 @@ class PointerClientTest(ClientMixinTest):
         opts = AdHocStruct()
         opts.mousewheel = "invert-y"
         opts.sharing = "no"
+        opts.middle_click = True
+        opts.pointer = "auto"
         self._test_mixin_class(PointerClient, opts, {})
+        self.mixin.init_ui(opts)
+        self.assertTrue(self.mixin.middle_click)
         # the wheel map translates the vertical axis buttons:
         self.assertEqual(self.mixin.wheel_map[4], 5)
         self.assertEqual(self.mixin.wheel_map[5], 4)

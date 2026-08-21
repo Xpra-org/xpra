@@ -403,7 +403,7 @@ def make_client(opts) -> XpraWin32Client:
     # before the client is constructed: `get_subsystem_classes` composes the
     # `dialogs` subsystem based on it.
     # "native" and "no" never load Gtk, so they keep this backend Gtk-free:
-    mode = str(getattr(opts, "tray", "auto")).lower()
+    mode = str(opts.tray).lower()
     if mode in TRUE_OPTIONS or mode in ("auto", "gtk"):
         if not load_gtk() and mode == "gtk":
             log.warn("Warning: falling back to the native tray menu")
