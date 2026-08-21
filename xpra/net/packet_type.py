@@ -66,6 +66,10 @@ FILE_OPEN_URL: Final[str] = "open-url" if BACKWARDS_COMPATIBLE else "file-open-u
 
 EVENTS: Final[str] = "server-event" if BACKWARDS_COMPATIBLE else "events"
 
+# the server's encoding capabilities, sent once the codecs have been initialized
+# (see `EncodingsConnection.threaded_init_complete`)
+ENCODING_SET: Final[str] = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
+
 CURSOR_SET: Final[str] = "set-cursors" if BACKWARDS_COMPATIBLE else "cursor-set"
 CURSOR_DATA: Final[str] = "cursor-data"
 CURSOR_DEFAULT: Final[str] = "cursor-default"

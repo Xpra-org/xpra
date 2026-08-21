@@ -250,7 +250,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         self.refresh_needed = set()
         return True
 
-    def _process_encodings(self, packet: Packet) -> None:
+    def _process_encoding_set(self, packet: Packet) -> None:
         encodings = typedict(packet.get_dict(1)).dictget("encodings").get("core", ())
         common = tuple(set(self.encodings) & set(encodings))
         log("server encodings=%s, common=%s", encodings, common)
@@ -549,7 +549,8 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         window.record("pointer-wheel", position=pointer, button=button, distance=distance, modifiers=tuple(modifiers))
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("startup-complete", "encodings", main_thread=True)
+        self.add_packets("startup-complete", "encoding-set", main_thread=True)
+        self.add_legacy_alias("encodings", "encoding-set")
         if BACKWARDS_COMPATIBLE:
             self.add_packets("new-override-redirect")
             self.add_legacy_alias("raise-window", "window-raise")
