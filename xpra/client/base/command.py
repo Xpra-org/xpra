@@ -390,12 +390,13 @@ class MonitorXpraClient(SendCommandConnectClient):
     def do_command(self, caps: typedict) -> None:
         log.info("waiting for server events")
 
-    def _process_server_event(self, packet: Packet) -> None:
+    def _process_events(self, packet: Packet) -> None:
         log.info(": ".join(str(x) for x in packet[1:]))
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("server-event", "ping")
+        self.add_legacy_alias("server-event", "events")
+        self.add_packets("events", "ping")
 
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
@@ -459,7 +460,7 @@ class InfoTimerClient(MonitorXpraClient):
         MonitorXpraClient.init_packet_handlers(self)
         self.add_packets(INFO_RESPONSE)
 
-    def _process_server_event(self, packet: Packet) -> None:
+    def _process_events(self, packet: Packet) -> None:
         self.log("server event: %s" % (packet,))
         self.last_server_event = packet[1:]
         self.update_screen()

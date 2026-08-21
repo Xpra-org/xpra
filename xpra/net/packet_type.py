@@ -59,6 +59,8 @@ FILE_DATA_RESPONSE: Final[str] = "file-data-response"
 FILE_REQUEST: Final[str] = "file-request"
 FILE_OPEN_URL: Final[str] = "open-url" if BACKWARDS_COMPATIBLE else "file-open-url"
 
+EVENTS: Final[str] = "server-event" if BACKWARDS_COMPATIBLE else "events"
+
 CURSOR_SET: Final[str] = "set-cursors" if BACKWARDS_COMPATIBLE else "cursor-set"
 CURSOR_DATA: Final[str] = "cursor-data"
 CURSOR_DEFAULT: Final[str] = "cursor-default"
