@@ -258,7 +258,7 @@ class WindowManagerClient(StubClientSubsystem):
         # trays are overloaded onto `window-create` and identified by the `tray` metadata flag,
         # just like override-redirect windows are identified by `override-redirect`:
         if metadata.boolget("tray"):
-            if not getattr(self, "client_supports_system_tray", False):
+            if not getattr(self, "systemtray_enabled", False):
                 log.warn("Warning: ignoring tray window %#x, system tray forwarding is not available", wid)
                 return None
             return self.make_new_tray(wid, w, h, metadata)

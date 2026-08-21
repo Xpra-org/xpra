@@ -22,10 +22,10 @@ ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
 
 class WindowTray(StubClientSubsystem):
     __slots__ = ()
-    SLOT_NAMES = ("client_supports_system_tray",)
+    SLOT_NAMES = ("systemtray_enabled",)
 
     def __init__(self):
-        self.client_supports_system_tray: bool = False
+        self.systemtray_enabled: bool = False
 
     def init(self, opts) -> None:
         if opts.system_tray:
@@ -35,13 +35,13 @@ class WindowTray(StubClientSubsystem):
             except ImportError:
                 log.warn("Warning: the tray forwarding module is missing")
             else:
-                self.client_supports_system_tray = True
+                self.systemtray_enabled = True
 
     ######################################################################
     # hello:
     def get_caps(self) -> dict[str, Any]:
         return {
-            "system_tray": self.client_supports_system_tray,
+            "system_tray": self.systemtray_enabled,
         }
 
     def parse_server_capabilities(self, c: typedict) -> bool:
@@ -50,7 +50,7 @@ class WindowTray(StubClientSubsystem):
     ######################################################################
     # system tray
     def make_new_tray(self, wid: int, w: int, h: int, metadata: typedict):
-        assert self.client_supports_system_tray
+        assert self.systemtray_enabled
         # scaling helpers are owned by the `display` subsystem:
         display = self.get_subsystem("display")
         w = max(1, display.sx(w))
