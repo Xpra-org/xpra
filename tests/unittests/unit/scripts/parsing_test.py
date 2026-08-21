@@ -150,8 +150,7 @@ class TestAudioOption(unittest.TestCase):
         self.assertEqual(options.audio_sink, "pulsesink:device-name")
 
     def test_audio_sink_default(self):
-        options, _args = parse_cmdline(["xpra", "attach"])
-        self.assertEqual(options.audio_sink, "auto")
+        self.assertEqual(get_defaults()["audio-sink"], "auto")
 
     def test_no_returns_disabled(self):
         self.assertEqual(audio_option("no"), "disabled")
