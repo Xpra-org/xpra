@@ -50,6 +50,7 @@ class FakeSink:
 class AudioConnection(StubClientConnection):
 
     PREFIX = "audio"
+    __signals__ = ("suspend", "resume")
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
