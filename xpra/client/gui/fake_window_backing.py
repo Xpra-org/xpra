@@ -25,7 +25,7 @@ class FakeBacking:
         self.offsets = 0, 0, 0, 0
         self._backing = None
         self.border = None
-        self.content_type = ""
+        self.content_types: tuple[str, ...] = ()
         self.default_cursor_data = ()
         self.pointer_overlay = ()
         self.cursor_data = ()

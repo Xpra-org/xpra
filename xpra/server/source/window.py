@@ -162,7 +162,10 @@ class WindowsConnection(StubClientConnection):
             self.window_grabs = c.boolget("pointer.grabs")
         self.window_bell = c.boolget("bell")
         self.system_tray = c.boolget("system_tray")
-        self.window_metadata_supported = c.strtupleget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
+        default_metadata_supported = DEFAULT_METADATA_SUPPORTED
+        if BACKWARDS_COMPATIBLE:
+            default_metadata_supported += ("content-type", )
+        self.window_metadata_supported = c.strtupleget("metadata.supported", default_metadata_supported)
         log("metadata supported=%s", self.window_metadata_supported)
         self.window_frame_sizes = wcaps.dictget("frame_sizes")
         self.window_min_size = wcaps.inttupleget("min-size", (0, 0))

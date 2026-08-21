@@ -99,7 +99,7 @@ class WindowMenuHelper(GTKMenuHelper):
     def make_resizemenuitem(self) -> Gtk.ImageMenuItem | None:
         metadata = typedict(self.window._metadata)
         log("make_resizemenuitem() metadata=%s", metadata)
-        if metadata.strget("content-type", "") != "desktop" or metadata.dictget("size-constraints", {}):
+        if metadata.strtupleget("content-types") != ("desktop",) or metadata.dictget("size-constraints", {}):
             return None
 
         from threading import Event

@@ -70,7 +70,7 @@ class TestGetScalingFilter(unittest.TestCase):
         from xpra.util.env import OSEnvContext
         from cairo import FILTER_NEAREST
         with OSEnvContext(XPRA_SCALING_FILTER="nearest"):
-            f = get_scaling_filter("text", 2.0, 2.0)
+            f = get_scaling_filter(("text",), 2.0, 2.0)
             assert f == FILTER_NEAREST
 
     def test_bilinear_env_override(self):
@@ -78,7 +78,7 @@ class TestGetScalingFilter(unittest.TestCase):
         from xpra.util.env import OSEnvContext
         from cairo import FILTER_GOOD
         with OSEnvContext(XPRA_SCALING_FILTER="bilinear"):
-            f = get_scaling_filter("text", 2.0, 2.0)
+            f = get_scaling_filter(("text",), 2.0, 2.0)
             assert f == FILTER_GOOD
 
     def test_text_integer_upscale_uses_nearest(self):
@@ -86,7 +86,7 @@ class TestGetScalingFilter(unittest.TestCase):
         from xpra.util.env import OSEnvContext
         from cairo import FILTER_NEAREST
         with OSEnvContext(XPRA_SCALING_FILTER=""):
-            f = get_scaling_filter("text", 2.0, 2.0)
+            f = get_scaling_filter(("text",), 2.0, 2.0)
             assert f == FILTER_NEAREST
 
     def test_text_non_integer_scale_uses_best(self):
@@ -94,7 +94,7 @@ class TestGetScalingFilter(unittest.TestCase):
         from xpra.util.env import OSEnvContext
         from cairo import FILTER_BEST
         with OSEnvContext(XPRA_SCALING_FILTER=""):
-            f = get_scaling_filter("text", 1.5, 1.5)
+            f = get_scaling_filter(("text",), 1.5, 1.5)
             assert f == FILTER_BEST
 
     def test_non_text_uses_good(self):
@@ -102,9 +102,9 @@ class TestGetScalingFilter(unittest.TestCase):
         from xpra.util.env import OSEnvContext
         from cairo import FILTER_GOOD
         with OSEnvContext(XPRA_SCALING_FILTER=""):
-            f = get_scaling_filter("video", 1.5, 1.5)
+            f = get_scaling_filter(("video",), 1.5, 1.5)
             assert f == FILTER_GOOD
-            f = get_scaling_filter("", 2.0, 2.0)
+            f = get_scaling_filter((), 2.0, 2.0)
             assert f == FILTER_GOOD
 
 
@@ -229,7 +229,7 @@ class TestCairoBackingBaseInit(unittest.TestCase):
         assert b.size == (100, 100)
         assert b.render_size == (100, 100)
         assert b.fps_image is None
-        assert b.content_type == ""
+        assert b.content_types == ()
 
     def test_init_creates_surface(self):
         b = _make_backing()

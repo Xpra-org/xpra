@@ -18,42 +18,42 @@ from xpra.cairo.backing_base import get_scaling_filter
 class ScalingFilterTest(unittest.TestCase):
 
     def test_text_integer_2x_uses_nearest(self):
-        self.assertEqual(get_scaling_filter("text", 2.0, 2.0), cairo.FILTER_NEAREST)
+        self.assertEqual(get_scaling_filter(("text",), 2.0, 2.0), cairo.FILTER_NEAREST)
 
     def test_text_integer_3x_uses_nearest(self):
-        self.assertEqual(get_scaling_filter("text", 3.0, 3.0), cairo.FILTER_NEAREST)
+        self.assertEqual(get_scaling_filter(("text",), 3.0, 3.0), cairo.FILTER_NEAREST)
 
     def test_text_non_integer_uses_best(self):
-        self.assertEqual(get_scaling_filter("text", 1.5, 1.5), cairo.FILTER_BEST)
+        self.assertEqual(get_scaling_filter(("text",), 1.5, 1.5), cairo.FILTER_BEST)
 
     def test_non_text_integer_2x_uses_good(self):
-        self.assertEqual(get_scaling_filter("browser", 2.0, 2.0), cairo.FILTER_GOOD)
+        self.assertEqual(get_scaling_filter(("browser",), 2.0, 2.0), cairo.FILTER_GOOD)
 
     def test_no_scaling_uses_best(self):
-        self.assertEqual(get_scaling_filter("text", 1.0, 1.0), cairo.FILTER_BEST)
+        self.assertEqual(get_scaling_filter(("text",), 1.0, 1.0), cairo.FILTER_BEST)
 
-    def test_empty_content_type_uses_good(self):
-        self.assertEqual(get_scaling_filter("", 2.0, 2.0), cairo.FILTER_GOOD)
+    def test_empty_content_types_use_good(self):
+        self.assertEqual(get_scaling_filter((), 2.0, 2.0), cairo.FILTER_GOOD)
 
     def test_asymmetric_integer_scale_uses_nearest(self):
-        self.assertEqual(get_scaling_filter("text", 2.0, 3.0), cairo.FILTER_NEAREST)
+        self.assertEqual(get_scaling_filter(("text",), 2.0, 3.0), cairo.FILTER_NEAREST)
 
     def test_asymmetric_mixed_scale_uses_best(self):
-        self.assertEqual(get_scaling_filter("text", 2.0, 1.5), cairo.FILTER_BEST)
+        self.assertEqual(get_scaling_filter(("text",), 2.0, 1.5), cairo.FILTER_BEST)
 
     def test_text_near_integer_2x_uses_nearest(self):
         """Pixel rounding can produce scale factors like 1.95 or 2.05."""
-        self.assertEqual(get_scaling_filter("text", 1.95, 2.05), cairo.FILTER_NEAREST)
+        self.assertEqual(get_scaling_filter(("text",), 1.95, 2.05), cairo.FILTER_NEAREST)
 
     def test_text_outside_tolerance_uses_best(self):
         """Text at non-integer scale uses Catmull-Rom (bicubic)."""
-        self.assertEqual(get_scaling_filter("text", 2.2, 2.2), cairo.FILTER_BEST)
+        self.assertEqual(get_scaling_filter(("text",), 2.2, 2.2), cairo.FILTER_BEST)
 
     def test_env_override_nearest(self):
         old = os.environ.get("XPRA_SCALING_FILTER")
         try:
             os.environ["XPRA_SCALING_FILTER"] = "nearest"
-            self.assertEqual(get_scaling_filter("browser", 2.0, 2.0), cairo.FILTER_NEAREST)
+            self.assertEqual(get_scaling_filter(("browser",), 2.0, 2.0), cairo.FILTER_NEAREST)
         finally:
             if old is None:
                 os.environ.pop("XPRA_SCALING_FILTER", None)
@@ -64,7 +64,7 @@ class ScalingFilterTest(unittest.TestCase):
         old = os.environ.get("XPRA_SCALING_FILTER")
         try:
             os.environ["XPRA_SCALING_FILTER"] = "bilinear"
-            self.assertEqual(get_scaling_filter("text", 2.0, 2.0), cairo.FILTER_GOOD)
+            self.assertEqual(get_scaling_filter(("text",), 2.0, 2.0), cairo.FILTER_GOOD)
         finally:
             if old is None:
                 os.environ.pop("XPRA_SCALING_FILTER", None)

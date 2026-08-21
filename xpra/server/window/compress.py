@@ -298,12 +298,9 @@ class WindowSource(WindowIconSource):
         self.maximized: bool = False          # set by the client!
         self.iconic: bool = False
         self.window_signal_handlers = []
-        # Watch for changes before reading the value: content-type guessing is
+        # Watch for changes before reading the value: content-types guessing is
         # asynchronous and may otherwise complete in between.
         self.content_types: tuple[str, ...] = ()
-        if "content-type" in window.get_dynamic_property_names():
-            sid = window.connect("notify::content-type", self.content_type_changed)
-            self.window_signal_handlers.append(sid)
         if "content-types" in window.get_dynamic_property_names():
             sid = window.connect("notify::content-types", self.content_type_changed)
             self.window_signal_handlers.append(sid)

@@ -14,7 +14,7 @@ from xpra.os_util import OSX, WIN32
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window_border import WindowBorder
-from xpra.net.common import PacketElement
+from xpra.net.common import PacketElement, BACKWARDS_COMPATIBLE
 from xpra.common import gravity_str, force_size_constraint
 from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.parsing import scaleup_value, scaledown_value
@@ -170,7 +170,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._requested_position = metadata.intpair("requested-position", NOT_REQUESTED)
         self.size_constraints = typedict()
         self.geometry_hints = typedict()
-        self.content_type = ""
+        self.content_types: tuple[str, ...] = ()
         # the colourspace the server tagged this window with, if any:
         # `None` means it did not, and we fall back to the session colourspace
         self.colourspace: Colourspace | None = None
@@ -243,7 +243,7 @@ class ClientWindowBase(ClientWidgetBase):
             "set-initial-position": self._set_initial_position,
             "size-constraints": dict(self.size_constraints),
             "geometry-hints": dict(self.geometry_hints),
-            "content-type": self.content_type,
+            "content-types": self.content_types,
             "colourspace": self.get_colourspace().to_dict(),
             "attributes": attributes,
             "gravity": gravity_str(self.window_gravity),
@@ -302,7 +302,7 @@ class ClientWindowBase(ClientWidgetBase):
         w, h = self._size
         self._backing = self.make_new_backing(backing_class, w, h, bw, bh)
         self._backing.border = self.border
-        self._backing.content_type = self.content_type
+        self._backing.content_types = self.content_types
         # soft dependency on `PointerWindow`:
         self._backing.default_cursor_data = getattr(self, "default_cursor_data", ())
         self._backing.gravity = self.window_gravity
@@ -366,6 +366,9 @@ class ClientWindowBase(ClientWidgetBase):
 
     def update_metadata(self, metadata: typedict) -> None:
         metalog("update_metadata(%s)", metadata)
+        if not BACKWARDS_COMPATIBLE and "content-type" in metadata:
+            metadata = typedict(metadata)
+            metadata.pop("content-type")
         if self._client.readonly:
             metadata.update(force_size_constraint(*self._size))
         self._metadata.update(metadata)
@@ -415,10 +418,17 @@ class ClientWindowBase(ClientWidgetBase):
             opacity = 1 if opacity < 0 else min(1, opacity // 0xffffffff)
             ignorewarnings(self.set_opacity, opacity)
 
-        if "content-type" in metadata:
-            self.content_type = metadata.strget("content-type")
+        if "content-types" in metadata:
+            self.content_types = metadata.strtupleget("content-types")
             if b := self._backing:
-                b.content_type = self.content_type
+                b.content_types = self.content_types
+        elif BACKWARDS_COMPATIBLE and "content-type" in metadata:
+            content_type = metadata.strget("content-type")
+            self.content_types = tuple(x for x in content_type.replace("+", ",").split(",") if x)
+            self._metadata["content-types"] = self.content_types
+            self._metadata.pop("content-type", None)
+            if b := self._backing:
+                b.content_types = self.content_types
 
         if "colourspace" in metadata:
             # fall back to the session colourspace for anything the server left out:

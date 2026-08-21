@@ -15,6 +15,7 @@ from xpra.server.window.metadata import (
     make_window_metadata, _make_window_metadata,
     DEFAULT_VALUES,
 )
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.constants import WORKSPACE_UNSET
 
 
@@ -79,6 +80,21 @@ class TestMakeWindowMetadata(unittest.TestCase):
         w = _Window(**{"class-instance": ("xterm", "XTerm")})
         result = make_window_metadata(w, "class-instance")
         self.assertEqual(result, {"class-instance": ("xterm", "XTerm")})
+
+    def test_content_types(self):
+        w = _Window(**{"content-types": ("browser", "video")})
+        result = make_window_metadata(w, "content-types")
+        self.assertEqual(result, {"content-types": ("browser", "video")})
+
+    def test_legacy_content_type_is_compatibility_only(self):
+        self.assertEqual("content-type" in DEFAULT_VALUES, BACKWARDS_COMPATIBLE)
+        w = _Window(**{"content-type": "browser+video"})
+        if BACKWARDS_COMPATIBLE:
+            result = make_window_metadata(w, "content-type")
+            self.assertEqual(result, {"content-type": "browser+video"})
+        else:
+            with self.assertRaises(ValueError):
+                _make_window_metadata(w, "content-type")
 
     def test_dict_prop_shape(self):
         shape = {"x": 0, "y": 0}

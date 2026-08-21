@@ -33,7 +33,6 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "icon-title": "",
     "locale": "",
     "command": "",
-    "content-type": "",
     "content-types": (),
     "pid": 0,
     "ppid": 0,
@@ -88,6 +87,9 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "strut": {},
     "actions": (),
 }
+
+if BACKWARDS_COMPATIBLE:
+    DEFAULT_VALUES["content-type"] = ""
 
 
 def _make_window_metadata(window, propname: str, skip_defaults=False) -> dict[str, Any]:
