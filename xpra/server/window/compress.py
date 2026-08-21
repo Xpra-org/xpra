@@ -298,14 +298,16 @@ class WindowSource(WindowIconSource):
         self.maximized: bool = False          # set by the client!
         self.iconic: bool = False
         self.window_signal_handlers = []
-        # watch for changes to properties that are used to derive the content-type:
-        self.content_types: str = window.get("content-types", ()) or window.get("content-type", "").split(",")
+        # Watch for changes before reading the value: content-type guessing is
+        # asynchronous and may otherwise complete in between.
+        self.content_types: tuple[str, ...] = ()
         if "content-type" in window.get_dynamic_property_names():
             sid = window.connect("notify::content-type", self.content_type_changed)
             self.window_signal_handlers.append(sid)
         if "content-types" in window.get_dynamic_property_names():
             sid = window.connect("notify::content-types", self.content_type_changed)
             self.window_signal_handlers.append(sid)
+        self.content_types = self.get_content_types(window)
         if "iconic" in window.get_dynamic_property_names():
             self.iconic = window.get_property("iconic")
             sid = window.connect("notify::iconic", self._iconic_changed)
@@ -775,10 +777,14 @@ class WindowSource(WindowIconSource):
         return True
 
     def content_type_changed(self, window, *args) -> bool:
-        self.content_types = window.get("content-types", ()) or window.get("content-type", "").split(",")
+        self.content_types = self.get_content_types(window)
         log("content_type_changed(%s, %s) content-types=%s", window, args, self.content_types)
         self.reconfigure(True)
         return True
+
+    @staticmethod
+    def get_content_types(window) -> tuple[str, ...]:
+        return tuple(window.get("content-types", ()))
 
     def quality_changed(self, window, *args) -> bool:
         self._quality_hint = window.get("quality", -1)
