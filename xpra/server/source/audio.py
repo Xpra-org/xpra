@@ -62,6 +62,7 @@ class FakeSink:
 class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
 
     PREFIX = "audio"
+    __signals__ = ("suspend", "resume")
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
