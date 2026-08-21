@@ -155,7 +155,7 @@ class WindowTray(StubClientSubsystem):
         mmap = mmap_sub.mmap_read_area if mmap_sub else None
         return ClientTray(client, wid, w, h, metadata, tray_widget, mmap)
 
-    def get_tray_window(self, app_name: str, hints):
+    def get_tray_window(self, app_name: str, hints: dict):
         # try to identify the application tray that generated this notification,
         # so we can show it as coming from the correct systray icon
         # on platforms that support it (ie: win32)
@@ -168,7 +168,7 @@ class WindowTray(StubClientSubsystem):
             else:
                 if pid:
                     for tray in trays:
-                        metadata: typedict = typedict(getattr(tray, "_metadata", {}))
+                        metadata: typedict = typedict(tray._metadata)
                         if metadata.intget("pid") == pid:
                             log("tray window: matched pid=%i", pid)
                             return tray.tray_widget

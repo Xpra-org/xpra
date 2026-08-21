@@ -98,8 +98,9 @@ class XpraClientBase(PacketDispatcher):
 
     def get_server_packet_types(self) -> Sequence[str]:
         """ the packet types the server is willing to receive (see `network` subsystem) """
-        network = self.get_subsystem("network")
-        return getattr(network, "server_packet_types", ())
+        if network := self.get_subsystem("network"):
+            return network.server_packet_types
+        return ()
 
     def add_control_command(self, name: str, control) -> None:
         # delegate to the `control` subsystem (mirror of `ServerCore.add_control_command`),
