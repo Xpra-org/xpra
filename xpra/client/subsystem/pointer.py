@@ -4,21 +4,29 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import math
 from typing import Any
 from time import monotonic
+from collections.abc import Sequence
 
+from xpra.os_util import OSX
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import POINTER_MOTION
+from xpra.net.packet_type import POINTER_MOTION, POINTER_BUTTON, POINTER_WHEEL
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
-from xpra.util.parsing import is_sharing_sync
+from xpra.util.parsing import is_sharing_sync, FALSE_OPTIONS
 from xpra.log import Logger
 
 log = Logger("pointer")
 
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
+SKIP_DUPLICATE_BUTTON_EVENTS: bool = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
+
+SMOOTH_SCROLL: bool = envbool("XPRA_SMOOTH_SCROLL", True)
+MOUSE_SCROLL_SQRT_SCALE: bool = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
+MOUSE_SCROLL_MULTIPLIER: int = envint("XPRA_MOUSE_SCROLL_MULTIPLIER", 100)
 
 
 def get_double_click_caps() -> dict[str, Any]:
@@ -29,13 +37,44 @@ def get_double_click_caps() -> dict[str, Any]:
     }
 
 
+def parse_mousewheel(mousewheel: str) -> tuple[bool, dict]:
+    mw = (mousewheel or "").lower().replace("-", "").split(",")
+    wheel_smooth = True
+    if "coarse" in mw:
+        mw.remove("coarse")
+        wheel_smooth = False
+    if any(x in FALSE_OPTIONS for x in mw):
+        return wheel_smooth, {}
+    UP = 4
+    LEFT = 6
+    Z1 = 8
+    invertall = len(mw) == 1 and mw[0] in ("invert", "invertall")
+    wheel_map = {}
+    for i in range(20):
+        btn = 4 + i * 2
+        invert = any((
+            invertall,
+            btn == UP and "inverty" in mw,
+            btn == LEFT and "invertx" in mw,
+            btn == Z1 and "invertz" in mw,
+        ))
+        if not invert:
+            wheel_map[btn] = btn
+            wheel_map[btn + 1] = btn + 1
+        else:
+            wheel_map[btn + 1] = btn
+            wheel_map[btn] = btn + 1
+    return wheel_smooth, wheel_map
+
+
 class PointerClient(StubClientSubsystem):
     """
     Utility mixin for clients that handle pointer input
     """
     __slots__ = (
-        "button_transform", "middle_click", "position", "position_delay", "position_pending",
-        "position_send_time", "position_timer", "sequence", "server_pointer", "sync",
+        "button_state", "button_transform", "middle_click", "position", "position_delay", "position_pending",
+        "position_send_time", "position_timer", "sequence", "server_pointer", "server_precise_wheel", "sync",
+        "wheel_deltax", "wheel_deltay", "wheel_map", "wheel_smooth",
     )
     PREFIX = "pointer"
 
@@ -52,12 +91,20 @@ class PointerClient(StubClientSubsystem):
         self.button_transform: dict[tuple[str, int], int] = {}
         self.server_pointer = True
         self.middle_click = True
+        self.button_state: dict[int, bool] = {}
+        self.server_precise_wheel = False
+        self.wheel_smooth: bool = SMOOTH_SCROLL
+        self.wheel_map: dict[int, int] = {}
+        self.wheel_deltax: float = 0
+        self.wheel_deltay: float = 0
 
     def init(self, opts) -> None:
         # with `sharing=sync` or `sharing=sync-pointer`,
         # ask the server to forward the pointer events of the other clients,
         # so that we can show what the other users are doing:
         self.sync = is_sharing_sync(getattr(opts, "sharing", False), "pointer")
+        self.wheel_smooth, self.wheel_map = parse_mousewheel(getattr(opts, "mousewheel", ""))
+        log("wheel_map(%s)=%s, wheel_smooth=%s", opts.mousewheel, self.wheel_map, self.wheel_smooth)
 
     def init_ui(self, opts) -> None:
         self.middle_click = getattr(opts, "middle_click", True)
@@ -82,7 +129,16 @@ class PointerClient(StubClientSubsystem):
         self.cancel_send_mouse_position_timer()
 
     def get_info(self) -> dict[str, dict[str, Any]]:
-        return {PointerClient.PREFIX: {"button-transform": self.button_transform}}
+        return {
+            PointerClient.PREFIX: {
+                "button-transform": self.button_transform,
+                "buttons": self.button_state,
+                "wheel": {
+                    "delta-x": int(self.wheel_deltax * 1000),
+                    "delta-y": int(self.wheel_deltay * 1000),
+                },
+            },
+        }
 
     def get_mouse_position(self) -> tuple[int, int]:
         # delegate to the client for now, since querying the pointer position
@@ -177,8 +233,107 @@ class PointerClient(StubClientSubsystem):
             self.position_timer = 0
             self.source_remove(mpt)
 
+    def send_button(self, device_id: int, wid: int, button: int, pressed: bool,
+                    pointer, modifiers, buttons, props) -> None:
+        pressed_state = self.button_state.get(button, False)
+        if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state == pressed:
+            log("button action: unchanged state, ignoring event")
+            return
+        # map wheel buttons via translation table to support inverted axes:
+        server_button = button
+        if button > 3:
+            server_button = self.wheel_map.get(button, -1)
+        server_buttons = []
+        for b in buttons:
+            if b > 3:
+                sb = self.wheel_map.get(button)
+                if not sb:
+                    continue
+                b = sb
+            server_buttons.append(b)
+        self.button_state[button] = pressed
+        pointer, position_props = self.split_pointer_position(pointer)
+        if "pointer-button" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
+            props = dict(props or {})
+            props.update(position_props)
+            if modifiers is not None:
+                props["modifiers"] = modifiers
+            props["buttons"] = server_buttons
+            if server_button != button:
+                props["raw-button"] = button
+            if server_buttons != buttons:
+                props["raw-buttons"] = buttons
+            seq = self.next_pointer_sequence(device_id)
+            packet = [POINTER_BUTTON, device_id, seq, wid, server_button, pressed, pointer, props]
+        else:
+            if server_button == -1:
+                return
+            packet = ["button-action", wid, server_button, pressed, pointer, modifiers, server_buttons]
+            if props:
+                packet += list(props.values())
+        log("button packet: %s", packet)
+        self.send_positional(*packet)
+
+    def send_wheel_delta(self, device_id: int, wid: int, button: int, distance, pointer=None, props=None) -> float:
+        keyboard = self.get_subsystem("keyboard")
+        modifiers = keyboard.get_current_modifiers() if keyboard else ()
+        buttons: Sequence[int] = ()
+        log("send_wheel_delta%s precise wheel=%s, modifiers=%s, pointer=%s",
+            (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
+        if self.server_precise_wheel:
+            # send the exact value multiplied by 1000 (as an int)
+            idist = round(distance * 1000)
+            if abs(idist) > 0:
+                pointer, position_props = self.split_pointer_position(pointer)
+                props = dict(props or {})
+                props.update(position_props)
+                packet = [POINTER_WHEEL, wid,
+                          button, idist,
+                          pointer, modifiers, buttons, props]
+                log("send_wheel_delta(..) %s", packet)
+                self.send_positional(*packet)
+            return 0
+        # server cannot handle precise wheel,
+        # so we have to use discrete events,
+        # and send a click for each step:
+        scaled_distance = abs(distance * MOUSE_SCROLL_MULTIPLIER / 100)
+        if MOUSE_SCROLL_SQRT_SCALE:
+            scaled_distance = math.sqrt(scaled_distance)
+        steps = round(scaled_distance)
+        for _ in range(steps):
+            for state in True, False:
+                self.send_button(device_id, wid, button, state, pointer, modifiers, buttons, props)
+        # return remainder:
+        scaled_remainder: float = steps
+        if MOUSE_SCROLL_SQRT_SCALE:
+            scaled_remainder = steps ** 2
+        scaled_remainder = scaled_remainder * (100 / float(MOUSE_SCROLL_MULTIPLIER))
+        remain_distance = float(scaled_remainder)
+        signed_remain_distance = remain_distance * (-1 if distance < 0 else 1)
+        return float(distance) - signed_remain_distance
+
+    def wheel_event(self, device_id=-1, wid=0, deltax=0, deltay=0, pointer=(), props=None) -> None:
+        # this is a different entry point for mouse wheel events,
+        # which provides finer grained deltas (if supported by the server)
+        # accumulate deltas:
+        if deltax:
+            self.wheel_deltax += deltax
+            button = self.wheel_map.get(6 + int(self.wheel_deltax > 0), 0)  # RIGHT=7, LEFT=6
+            if button > 0:
+                self.wheel_deltax = self.send_wheel_delta(device_id, wid, button, self.wheel_deltax, pointer, props)
+        if deltay:
+            self.wheel_deltay += deltay
+            button = self.wheel_map.get(5 - int(self.wheel_deltay > 0), 0)  # UP=4, DOWN=5
+            if button > 0:
+                self.wheel_deltay = self.send_wheel_delta(device_id, wid, button, self.wheel_deltay, pointer, props)
+        log("wheel_event%s new deltas=%s,%s",
+            (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
+
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_pointer = c.boolget("pointer", True)
+        # servers using a `uinput` device can handle fine grained wheel motion,
+        # the others need the discrete button emulation, see `send_wheel_delta`:
+        self.server_precise_wheel = c.boolget("wheel.precise", False)
         return True
 
     def split_pointer_position(self, position) -> tuple[tuple[int, ...], dict]:

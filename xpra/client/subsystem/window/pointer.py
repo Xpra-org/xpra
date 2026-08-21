@@ -7,29 +7,27 @@
 from time import monotonic
 from typing import Any
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import POINTER_BUTTON, POINTER_DEVICES
+from xpra.net.common import Packet
+from xpra.net.packet_type import POINTER_DEVICES
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("window", "pointer")
 
-SKIP_DUPLICATE_BUTTON_EVENTS: bool = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
 POLL_POINTER = envint("XPRA_POLL_POINTER", 0)
 
 
 class WindowPointer(StubClientSubsystem):
     __slots__ = ()
     SLOT_NAMES = (
-        "_button_state", "input_devices", "poll_pointer_position", "poll_pointer_timer", "server_input_devices",
+        "input_devices", "poll_pointer_position", "poll_pointer_timer", "server_input_devices",
     )
 
     def __init__(self):
         self.server_input_devices = None
-        self._button_state = {}
         self.poll_pointer_timer = 0
         self.poll_pointer_position = -1, -1
         # XI2 device enumeration (X11-specific): read/written by the `xi2`
@@ -45,11 +43,6 @@ class WindowPointer(StubClientSubsystem):
         # (cleaner and needed when we run embedded in the client launcher)
         self.cancel_poll_pointer_timer()
         log("WindowClient.cleanup() done")
-
-    def get_info(self) -> dict[str, Any]:
-        return {
-            "buttons": self._button_state,
-        }
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_input_devices = c.strget("input-devices")
@@ -118,47 +111,6 @@ class WindowPointer(StubClientSubsystem):
                     value = ()
                 # noinspection calling-non-callable
                 show_pointer_overlay(value)
-
-    def send_button(self, device_id: int, wid: int, button: int, pressed: bool,
-                    pointer, modifiers, buttons, props) -> None:
-        pressed_state = self._button_state.get(button, False)
-        if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state == pressed:
-            log("button action: unchanged state, ignoring event")
-            return
-        # map wheel buttons via translation table to support inverted axes:
-        server_button = button
-        if button > 3:
-            server_button = self.wheel_map.get(button, -1)
-        server_buttons = []
-        for b in buttons:
-            if b > 3:
-                sb = self.wheel_map.get(button)
-                if not sb:
-                    continue
-                b = sb
-            server_buttons.append(b)
-        self._button_state[button] = pressed
-        pointer, position_props = self.get_subsystem("pointer").split_pointer_position(pointer)
-        if "pointer-button" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
-            props = dict(props or {})
-            props.update(position_props)
-            if modifiers is not None:
-                props["modifiers"] = modifiers
-            props["buttons"] = server_buttons
-            if server_button != button:
-                props["raw-button"] = button
-            if server_buttons != buttons:
-                props["raw-buttons"] = buttons
-            seq = self.get_subsystem("pointer").next_pointer_sequence(device_id)
-            packet = [POINTER_BUTTON, device_id, seq, wid, server_button, pressed, pointer, props]
-        else:
-            if server_button == -1:
-                return
-            packet = ["button-action", wid, server_button, pressed, pointer, modifiers, server_buttons]
-            if props:
-                packet += list(props.values())
-        log("button packet: %s", packet)
-        self.get_subsystem("pointer").send_positional(*packet)
 
     @staticmethod
     def scale_pointer(pointer) -> tuple[int, int]:

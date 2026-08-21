@@ -194,8 +194,8 @@ def add_window_hooks(window) -> None:
                         deltay = 0
                     pointer = window.get_mouse_position()
                     device_id = -1
-                    if wp := client.get_subsystem("window"):
-                        wp.wheel_event(device_id, wid, deltax, deltay, pointer)
+                    if pointer_sub := client.get_subsystem("pointer"):
+                        pointer_sub.wheel_event(device_id, wid, deltax, deltay, pointer)
 
             def mousewheel(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
                 handle_wheel(VERTICAL, wParam, lParam)

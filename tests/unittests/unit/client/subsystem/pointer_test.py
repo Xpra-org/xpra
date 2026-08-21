@@ -17,7 +17,12 @@ class PointerClientTest(ClientMixinTest):
         from xpra.client.subsystem import pointer
         PointerClient = pointer.PointerClient
         opts = AdHocStruct()
+        opts.mousewheel = "invert-y"
         self._test_mixin_class(PointerClient, opts, {})
+        # the wheel map translates the vertical axis buttons:
+        self.assertEqual(self.mixin.wheel_map[4], 5)
+        self.assertEqual(self.mixin.wheel_map[5], 4)
+        self.assertTrue(self.mixin.wheel_smooth)
         display = AdHocStruct()
         display.get_monitor_relative_position = lambda _position: (2, 10, 20)
         display.get_server_position = lambda position: (position[0] + 1920, position[1] + 1200)

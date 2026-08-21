@@ -13,9 +13,22 @@ from xpra.log import Logger
 log = Logger("client")
 
 
-class FakeWindowSubsystem:
+class FakePointerSubsystem:
     def __init__(self):
         self.wheel_smooth = False
+        self.server_pointer = True
+        self.middle_click = True
+        self.button_transform: dict[tuple[str, int], int] = {}
+
+    def send_button(self, *_args) -> None:
+        log("send_button ignored")
+
+    def wheel_event(self, *_args) -> None:
+        log("wheel_event ignored")
+
+
+class FakeWindowSubsystem:
+    def __init__(self):
         self.modal_windows = False
         self.server_window_states: Sequence[str] = ()
         self.server_window_frame_extents = False
@@ -36,12 +49,6 @@ class FakeWindowSubsystem:
     def send_refresh(self, *_args) -> None:
         log("send_refresh ignored")
 
-    def send_button(self, *_args) -> None:
-        log("send_button ignored")
-
-    def wheel_event(self, *_args) -> None:
-        log("wheel_event ignored")
-
     def window_close_event(self, *_args) -> None:
         log("window_close_event ignored")
 
@@ -58,6 +65,7 @@ class FakeClient(GLibScheduler):
         self.window_ungrab = noop
         self.subsystems = {
             "window": FakeWindowSubsystem(),
+            "pointer": FakePointerSubsystem(),
         }
 
     def get_subsystem(self, name: str):

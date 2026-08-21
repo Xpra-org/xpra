@@ -350,7 +350,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         modifiers = vk
         props = {}
         pos = self._pointer_data(window, x, y)
-        self.get_subsystem("window").send_button(device_id, window.wid, button, pressed, pos, modifiers=modifiers, buttons=buttons, props=props)
+        self.get_subsystem("pointer").send_button(device_id, window.wid, button, pressed, pos, modifiers=modifiers, buttons=buttons, props=props)
 
     def window_wheel_event(self, window, x: int, y: int, vertical: bool, vk: Sequence[str], delta: int) -> None:
         log("window_wheel_event(%s, %i, %i, %s, %s, %s)", window, x, y, vertical, vk, delta)
@@ -361,7 +361,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         button = 4 if wheel_delta > 0 else 5
         if not vertical:
             button += 4
-        self.wheel_delta = self.get_subsystem("window").send_wheel_delta(device_id, window.wid, button, abs(wheel_delta), pointer=pos, props=props)
+        self.wheel_delta = self.get_subsystem("pointer").send_wheel_delta(device_id, window.wid, button, abs(wheel_delta), pointer=pos, props=props)
 
     def window_key_event(self, window, keyname: str, pressed: bool, vk_code: int, string: str, scancode: int, extended: bool) -> None:
         keylog("window_key_event(%s, %r, %s, %i, %r, %i, %s)", window, keyname, pressed, vk_code, string, scancode, extended)

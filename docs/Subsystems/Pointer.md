@@ -27,6 +27,10 @@ The prefix for all packets and capabilities should be `pointer`.\
 There is some platform specific code to handle mouse wheel.\
 Links pending.
 
+The client side wheel handling lives in the same
+[pointer subsystem](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/pointer.py):
+see [mouse wheel](#mouse-wheel) below.
+
 <div class="docs-section-heading" markdown="1">
 
 ## Capabilities
@@ -52,6 +56,15 @@ They carry alternative coordinate spaces in the properties dictionary:
 - `monitor`: `{"index": monitor_index, "position": (monitor_x, monitor_y)}`
 
 Alternatively, the client can just supply the value `True` instead of the dictionary and the server will use default values.
+
+The server exposes these `hello` capabilities:
+
+| Capability       | Value   | Information                                                                     |
+|------------------|---------|----------------------------------------------------------------------------------|
+| `input-devices`  | string  | the pointer device in use: `xtest`, `uinput`, `xi`, ..                          |
+| `wheel.precise`  | boolean | whether the pointer device can inject fractional wheel motion, see [mouse wheel](#mouse-wheel) |
+| `pointer.relative` | boolean | assumed available since v5.0.3                                                 |
+| `pointer.optional` | boolean | the client may omit the pointer data from its packets                          |
 
 
 <div class="docs-section-heading" markdown="1">
@@ -98,3 +111,34 @@ The value can be a boolean, `all`, or a comma separated list of subsystems:
 xpra start --bind-tcp=0.0.0.0:10000,sync=no
 xpra start --bind-tcp=0.0.0.0:10000,sync=pointer,focus
 ```
+
+
+<div class="docs-section-heading" markdown="1">
+
+## Mouse wheel
+
+</div>
+
+Wheel events reach the pointer subsystem as fractional deltas
+(`wheel_event`, which accumulates them per axis).\
+How they are sent depends on the server's `wheel.precise` capability,
+**not** on the protocol version:
+
+* if the server sets `wheel.precise`, the accumulated delta is sent as a single
+  `pointer-wheel` packet carrying the exact distance multiplied by 1000.\
+  Only the `uinput` and wayland pointer devices can do this.
+* otherwise the delta is quantized into discrete steps and each step is emulated
+  with a `pointer-button` press and release pair on the wheel button
+  (4 / 5 for the vertical axis, 6 / 7 for the horizontal one), leaving the
+  remainder to be accumulated for the next event.\
+  This is what `xtest` (the default X11 pointer device), macos and win32 servers get.
+
+So `pointer-wheel` is preferred whenever the server can make use of it,
+and the button emulation is the fallback rather than a legacy path -
+both are current, and which one is used is decided per session.
+
+The `mousewheel` client option is parsed into a `wheel_map` translating the wheel
+buttons, which is how the axes can be inverted (`invert-x`, `invert-y`,
+`invert-z`, `invert-all`), and into a `wheel_smooth` flag - `coarse` disables
+the smooth scrolling events at the toolkit level, so only the discrete
+button events are generated.

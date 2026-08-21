@@ -33,7 +33,6 @@ class WindowManagerTest(ClientMixinTest):
             opts.window_close = "forward"
             opts.modal_windows = True
             opts.border = "red"
-            opts.mousewheel = "yes"
             opts.tray_icon = "yes"
             self._test_mixin_class(WindowClient, opts)
 
