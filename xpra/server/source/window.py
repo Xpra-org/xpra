@@ -14,7 +14,7 @@ from xpra.net.packet_type import (
     WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL, WINDOW_GRAB, WINDOW_UNGRAB,
 )
 from xpra.os_util import gi_import
-from xpra.server.common import may_update_bandwidth_limits
+from xpra.server.common import may_update_bandwidth_limits, wants_windows
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed, is_sync_allowed
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
@@ -58,7 +58,7 @@ class WindowsConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("windows")
+        return wants_windows(caps)
 
     def __init__(self):
         super().__init__()
@@ -148,14 +148,14 @@ class WindowsConnection(StubClientConnection):
         return not self.window_record
 
     def parse_client_caps(self, c: typedict) -> None:
-        windows = c.get("windows")
         ui_client = c.boolget("ui_client", True) or not BACKWARDS_COMPATIBLE
-        if isinstance(windows, dict):
-            wcaps = typedict(windows)
-            self.window_enabled = ui_client and bool(windows)
-        else:
-            wcaps = c
-            self.window_enabled = ui_client and c.boolget("windows", True)
+        wcaps = typedict(c.dictget("window") or {})
+        if BACKWARDS_COMPATIBLE and not wcaps:
+            legacy = c.get("windows")
+            if isinstance(legacy, dict):
+                # the offscreen recorder used to send its options in the plural namespace:
+                wcaps = typedict(legacy)
+        self.window_enabled = ui_client and wants_windows(c)
         self.window_grabs = c.boolget("window.grabs")
         if BACKWARDS_COMPATIBLE and not self.window_grabs:
             # older clients advertise grabs in the `pointer` namespace:

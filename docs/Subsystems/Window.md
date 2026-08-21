@@ -33,8 +33,11 @@ Modern clients attach a monitor descriptor to map and configure packets. The
 descriptor contains the client's monitor `index` and the window `position`
 relative to that monitor.
 
+The client exposes these in the `window` dictionary of its `hello` packet:
+
 | Capability      | Information                                                                      |
 |-----------------|----------------------------------------------------------------------------------|
+| `enabled`       | The client wants window forwarding; an absent or empty dictionary disables it    |
 | `restack`       | The client can handle `window-restack` packets, not just `window-raise`          |
 | `grabs`         | The client can handle `window-grab` and `window-ungrab` packets                  |
 | `sync-position` | Send `window-move-resize` when another client moves or resizes a window          |

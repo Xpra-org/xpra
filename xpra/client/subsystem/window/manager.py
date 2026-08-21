@@ -190,18 +190,20 @@ class WindowManagerClient(StubClientSubsystem):
     # hello:
     def get_caps(self) -> dict[str, Any]:
         # FIXME: the messy bits without proper namespace:
-        caps = {
-            # features:
-            "windows": self.windows_enabled,
+        caps: dict[str, Any] = {
             "window": self.get_window_caps(),
             "auto_refresh_delay": int(self.auto_refresh_delay * 1000),
         }
+        if BACKWARDS_COMPATIBLE:
+            # older servers look for this flag outside the `window` namespace:
+            caps["windows"] = self.windows_enabled
         return caps
 
     def get_window_caps(self) -> dict[str, Any]:
         if not self.windows_enabled:
             return {}
         return {
+            "enabled": True,
             # implemented in the gtk client:
             "min-size": self.min_window_size,
             "max-size": self.max_window_size,
