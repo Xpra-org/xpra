@@ -39,7 +39,10 @@ CODENAME=`lsb_release -c | awk '{print $2}'`
 perl -i.bak -pe "s/#${CODENAME}:/#${CODENAME}:\\n/g" debian/control
 
 #install build dependencies:
-mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
+if ! mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control; then
+	echo "failed to install Xpra build dependencies" >&2
+	exit 1
+fi
 #mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
 rm -f xpra-build-deps*
 

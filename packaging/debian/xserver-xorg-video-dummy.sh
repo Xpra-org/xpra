@@ -22,7 +22,10 @@ pushd "./${dirname}"
 ln -sf ../xserver-xorg-video-dummy ./debian
 
 #install build dependencies:
-mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
+if ! mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control; then
+	echo "failed to install xserver-xorg-video-dummy build dependencies" >&2
+	exit 1
+fi
 rm -f xserver-xorg-video-dummy-build-deps*
 
 if [ `arch` == "aarch64" ]; then
