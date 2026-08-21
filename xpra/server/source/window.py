@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.net.packet_type import (
     WINDOW_RESTACK, WINDOW_RAISE, WINDOW_INITIATE_MOVERESIZE, WINDOW_DESTROY, WINDOW_RESIZED,
-    WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL,
+    WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL, WINDOW_GRAB, WINDOW_UNGRAB,
 )
 from xpra.os_util import gi_import
 from xpra.server.common import may_update_bandwidth_limits
@@ -259,11 +259,11 @@ class WindowsConnection(StubClientConnection):
     # grabs:
     def pointer_grab(self, wid) -> None:
         if self.pointer_grabs and self.hello_sent:
-            self.send("pointer-grab", wid)
+            self.send(WINDOW_GRAB, wid)
 
     def pointer_ungrab(self, wid) -> None:
         if self.pointer_grabs and self.hello_sent:
-            self.send("pointer-ungrab", wid)
+            self.send(WINDOW_UNGRAB, wid)
 
     def bell(self, wid: int, device: int, percent: int, pitch: int, duration: int,
              bell_class, bell_id: int, bell_name: str) -> None:

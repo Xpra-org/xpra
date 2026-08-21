@@ -73,6 +73,8 @@ see [pointer synchronization](./Pointer.md#pointer-synchronization).
 | `window-eos`                  | `wid`                                               | End all codec streams for the window                   |
 | `window-icon`                 | `wid`, `w`, `h`, `encoding`, `data`                | Updated window icon                                    |
 | `window-bell`                 | `wid`, `device`, `percent`, `pitch`, `duration`, `bell_class`, `bell_id`, `name` | A bell event |
+| `window-grab`                 | `wid`                                               | The window has grabbed the pointer and keyboard         |
+| `window-ungrab`               | `wid`                                               | The grab has been released                             |
 
 ### Client-to-Server
 

@@ -20,6 +20,11 @@ WINDOW_DESTROY: Final[str] = "lost-window" if BACKWARDS_COMPATIBLE else "window-
 WINDOW_ICON: Final[str] = "window-icon"
 WINDOW_DRAW: Final[str] = "draw" if BACKWARDS_COMPATIBLE else "window-draw"
 WINDOW_EOS: Final[str] = "eos" if BACKWARDS_COMPATIBLE else "window-eos"
+# a grab belongs to the window holding it: the packets carry a `wid`,
+# the server sends them from its `window` source and the client tracks
+# the grab as window state (cleared on focus change and on destroy)
+WINDOW_GRAB: Final[str] = "pointer-grab" if BACKWARDS_COMPATIBLE else "window-grab"
+WINDOW_UNGRAB: Final[str] = "pointer-ungrab" if BACKWARDS_COMPATIBLE else "window-ungrab"
 
 # client to server:
 WINDOW_MAP: Final[str] = "map-window" if BACKWARDS_COMPATIBLE else "window-map"

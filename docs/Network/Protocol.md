@@ -420,6 +420,8 @@ structures advertised in the display capabilities.
 | S -> C | `window-draw` | `wid:u64`, `x:i16`, `y:i16`, `w:u16`, `h:u16`, `encoding:str`, `data:bytes`, `sequence:u64`, `rowstride:u32`, `options:map` |
 | S -> C | `window-eos` | `wid:u64` |
 | S -> C | `window-bell` | `wid:u64`, `device:u16`, `percent:i8`, `pitch:i32`, `duration:i32`, `class:u32`, `id:u32`, `name:str` |
+| S -> C | `window-grab` | `wid:u64` |
+| S -> C | `window-ungrab` | `wid:u64` |
 | C -> S | `window-map` | `wid:u64`, `x:i32`, `y:i32`, `w:u16`, `h:u16`, `client_properties:map`, `state:map?`, `monitor:i32?` |
 | C -> S | `window-unmap` | `wid:u64`, `iconified:bool?`, `state:map?` |
 | C -> S | `window-configure` | `wid:u64`, `configuration:map` |
@@ -459,8 +461,6 @@ parameters. Values outside advertised ranges MUST be rejected or clamped.
 | C -> S | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<u16>`, `modifiers:list<str>`, `buttons:list<u8>`, `properties:map` |
 | S -> C | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<u16>`, `modifiers:list<str>` |
 | S -> C | `pointer-position` | `wid:u64`, `x:i32`, `y:i32`, `relative_x:i32`, `relative_y:i32` |
-| S -> C | `pointer-grab` | `wid:u64` |
-| S -> C | `pointer-ungrab` | `wid:u64` |
 
 Keyboard event properties include modifier names, key value, text, hardware
 keycode and layout group. Pointer coordinates are `[x, y]`; extra device axes
