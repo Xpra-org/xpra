@@ -63,6 +63,7 @@ The server exposes these `hello` capabilities:
 |------------------|---------|----------------------------------------------------------------------------------|
 | `input-devices`  | string  | the pointer device in use: `xtest`, `uinput`, `xi`, ..                          |
 | `wheel.precise`  | boolean | whether the pointer device can inject fractional wheel motion, see [mouse wheel](#mouse-wheel) |
+| `wheel.emulation` | boolean | the server emulates the wheel with button events when its device cannot do it, so `pointer-wheel` packets are always accepted |
 | `pointer.relative` | boolean | assumed available since v5.0.3                                                 |
 | `pointer.optional` | boolean | the client may omit the pointer data from its packets                          |
 
@@ -77,7 +78,7 @@ The server exposes these `hello` capabilities:
 |------------------|------------------|---------------------------------------------------------------------------------|
 | `pointer-motion` | client to server | `device_id`, `sequence`, `wid`, pointer, properties                            |
 | `pointer-button` | client to server | `device_id`, `sequence`, `wid`, `button`, `pressed`, pointer, properties       |
-| `pointer-wheel`  | client to server | `wid`, `button`, `distance`, pointer, modifiers, buttons, properties           |
+| `pointer-wheel`  | client to server | `wid`, `button`, `distance`, pointer, modifiers, buttons, properties (`scaled-distance`) |
 | `pointer-motion` | server to client | `device_id`, `sequence`, `wid`, pointer, properties                            |
 | `pointer-button` | server to client | `device_id`, `sequence`, `wid`, `button`, `pressed`, pointer, properties       |
 | `pointer-wheel`  | server to client | `wid`, `button`, `distance`, pointer, modifiers                                |
@@ -120,22 +121,36 @@ xpra start --bind-tcp=0.0.0.0:10000,sync=pointer,focus
 </div>
 
 Wheel events reach the pointer subsystem as fractional deltas
-(`wheel_event`, which accumulates them per axis).\
-How they are sent depends on the server's `wheel.precise` capability,
-**not** on the protocol version:
+(`wheel_event`, which accumulates them per axis), and are sent as
+`pointer-wheel` packets carrying the exact distance multiplied by 1000.
 
-* if the server sets `wheel.precise`, the accumulated delta is sent as a single
-  `pointer-wheel` packet carrying the exact distance multiplied by 1000.\
-  Only the `uinput` and wayland pointer devices can do this.
-* otherwise the delta is quantized into discrete steps and each step is emulated
-  with a `pointer-button` press and release pair on the wheel button
-  (4 / 5 for the vertical axis, 6 / 7 for the horizontal one), leaving the
-  remainder to be accumulated for the next event.\
-  This is what `xtest` (the default X11 pointer device), macos and win32 servers get.
+What the server does with them depends on its pointer device:
 
-So `pointer-wheel` is preferred whenever the server can make use of it,
-and the button emulation is the fallback rather than a legacy path -
-both are current, and which one is used is decided per session.
+* devices which can inject fractional wheel motion (`uinput` and wayland)
+  apply the distance directly - these advertise `wheel.precise`
+* the others (`xtest`, which is the X11 default, macos and win32) quantize the
+  distance into discrete steps and emulate each step with a button press and
+  release pair on the wheel button (4 / 5 for the vertical axis, 6 / 7 for the
+  horizontal one), keeping the remainder for the next event
+
+So `pointer-wheel` is the packet used in both cases, and the button emulation is
+a server side implementation detail rather than a legacy path.
+
+The emulation used to be done by the clients, which is why the scroll speed
+settings (`XPRA_MOUSE_SCROLL_MULTIPLIER` and `XPRA_MOUSE_SCROLL_SQRT_SCALE`)
+are still applied client side: the client sends the distance those settings
+turn into, as the `scaled-distance` property of the packet, and that is what
+the server quantizes.\
+Servers with a precise device ignore it and use the exact `distance`,
+and servers too old to know about it just ignore the extra property.
+
+What is left over after quantizing is always less than half a click, so it is
+carried over to the next event: this is how a slow scroll eventually adds up
+to a click.  It can only ever shorten the next scroll, never reverse it.
+
+Clients too old to know about `wheel.emulation` still emulate the wheel
+themselves when the server does not advertise `wheel.precise`,
+sending `pointer-button` packets instead.
 
 The `mousewheel` client option is parsed into a `wheel_map` translating the wheel
 buttons, which is how the axes can be inverted (`invert-x`, `invert-y`,

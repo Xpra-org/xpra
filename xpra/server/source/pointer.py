@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from math import copysign
 from typing import Any
 
 from xpra.net.common import BACKWARDS_COMPATIBLE
@@ -34,6 +35,9 @@ class PointerConnection(StubClientConnection, PointerSource):
         # send the pointer events of the other clients to this client?
         # (used by the recording client, and by clients using `sharing=sync`)
         self.pointer_sync = False
+        # wheel emulation: the fraction of a click left over
+        # from the events already emulated, per wheel axis - see `wheel_steps`:
+        self.wheel_remainder: dict[int, float] = {}
 
     def requires_sharing(self) -> bool:
         return not self.pointer_sync
@@ -72,6 +76,25 @@ class PointerConnection(StubClientConnection, PointerSource):
         if dc_info:
             info["double-click"] = dc_info
         return info
+
+    def wheel_steps(self, button: int, distance: float) -> int:
+        """
+        How many discrete wheel clicks this fractional `distance` is worth,
+        carrying whatever is left over to the next event.
+        `distance` is the value the client has already scaled to wheel clicks
+        using its own scroll speed settings (the `scaled-distance` property).
+        What is carried over is always less than half a click, so a fraction
+        owed in the other direction can only ever shorten the next scroll,
+        never reverse it - which is why the button never needs flipping.
+        """
+        # buttons 4 and 5 are the two directions of the same axis, as are 6 and 7, etc:
+        axis = max(0, button - 4) // 2
+        total = distance + self.wheel_remainder.get(axis, 0)
+        steps = round(abs(total))
+        self.wheel_remainder[axis] = total - copysign(steps, total)
+        log("wheel_steps(%i, %.3f)=%i clicks, remainder=%.3f",
+            button, distance, steps, self.wheel_remainder[axis])
+        return steps
 
     def update_mouse(self, wid: int, x: int, y: int, rx: int, ry: int) -> None:
         log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i",

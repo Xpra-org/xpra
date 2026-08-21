@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import math
+from math import copysign, sqrt
 from typing import Any
 from time import monotonic
 from collections.abc import Sequence
@@ -73,8 +73,8 @@ class PointerClient(StubClientSubsystem):
     """
     __slots__ = (
         "button_state", "button_transform", "middle_click", "position", "position_delay", "position_pending",
-        "position_send_time", "position_timer", "sequence", "server_pointer", "server_precise_wheel", "sync",
-        "wheel_deltax", "wheel_deltay", "wheel_map", "wheel_smooth",
+        "position_send_time", "position_timer", "sequence", "server_pointer", "server_precise_wheel",
+        "server_wheel_motion", "sync", "wheel_deltax", "wheel_deltay", "wheel_map", "wheel_smooth",
     )
     PREFIX = "pointer"
 
@@ -93,6 +93,7 @@ class PointerClient(StubClientSubsystem):
         self.middle_click = True
         self.button_state: dict[int, bool] = {}
         self.server_precise_wheel = False
+        self.server_wheel_motion = not BACKWARDS_COMPATIBLE
         self.wheel_smooth: bool = SMOOTH_SCROLL
         self.wheel_map: dict[int, int] = {}
         self.wheel_deltax: float = 0
@@ -274,32 +275,48 @@ class PointerClient(StubClientSubsystem):
         log("button packet: %s", packet)
         self.send_positional(*packet)
 
+    @staticmethod
+    def scale_wheel_distance(distance: float) -> float:
+        """
+        The wheel `distance` with the scroll speed settings applied,
+        which is what it is worth in actual wheel clicks.
+        Servers which have to emulate the wheel with button events use this value
+        rather than the exact distance, so that the wheel scrolls at the speed
+        the user asked for - see the `scaled-distance` property below.
+        """
+        scaled = abs(distance * MOUSE_SCROLL_MULTIPLIER / 100)
+        if MOUSE_SCROLL_SQRT_SCALE:
+            scaled = sqrt(scaled)
+        return copysign(scaled, distance)
+
     def send_wheel_delta(self, device_id: int, wid: int, button: int, distance, pointer=None, props=None) -> float:
         keyboard = self.get_subsystem("keyboard")
         modifiers = keyboard.get_current_modifiers() if keyboard else ()
         buttons: Sequence[int] = ()
-        log("send_wheel_delta%s precise wheel=%s, modifiers=%s, pointer=%s",
-            (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
-        if self.server_precise_wheel:
+        log("send_wheel_delta%s wheel motion=%s, precise=%s, modifiers=%s, pointer=%s",
+            (device_id, wid, button, distance, pointer, props),
+            self.server_wheel_motion, self.server_precise_wheel, modifiers, pointer)
+        if self.server_wheel_motion:
             # send the exact value multiplied by 1000 (as an int)
             idist = round(distance * 1000)
             if abs(idist) > 0:
                 pointer, position_props = self.split_pointer_position(pointer)
                 props = dict(props or {})
                 props.update(position_props)
+                # the same distance with our scroll speed settings applied,
+                # for servers which have to emulate the wheel with button events
+                # (also multiplied by 1000, older servers just ignore it):
+                props["scaled-distance"] = round(self.scale_wheel_distance(distance) * 1000)
                 packet = [POINTER_WHEEL, wid,
                           button, idist,
                           pointer, modifiers, buttons, props]
                 log("send_wheel_delta(..) %s", packet)
                 self.send_positional(*packet)
             return 0
-        # server cannot handle precise wheel,
-        # so we have to use discrete events,
-        # and send a click for each step:
-        scaled_distance = abs(distance * MOUSE_SCROLL_MULTIPLIER / 100)
-        if MOUSE_SCROLL_SQRT_SCALE:
-            scaled_distance = math.sqrt(scaled_distance)
-        steps = round(scaled_distance)
+        # BACKWARDS_COMPATIBLE: this server is too old to emulate the wheel itself
+        # and its pointer device cannot handle precise wheel motion,
+        # so we have to use discrete events and send a click for each step:
+        steps = round(abs(self.scale_wheel_distance(distance)))
         for _ in range(steps):
             for state in True, False:
                 self.send_button(device_id, wid, button, state, pointer, modifiers, buttons, props)
@@ -331,9 +348,12 @@ class PointerClient(StubClientSubsystem):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_pointer = c.boolget("pointer", True)
-        # servers using a `uinput` device can handle fine grained wheel motion,
-        # the others need the discrete button emulation, see `send_wheel_delta`:
+        # servers using a `uinput` device can inject fine grained wheel motion,
+        # the others emulate it with button events - on their side if they can
+        # (`wheel.emulation`), on ours if they are too old to, see `send_wheel_delta`:
         self.server_precise_wheel = c.boolget("wheel.precise", False)
+        self.server_wheel_motion = self.server_precise_wheel or c.boolget("wheel.emulation",
+                                                                          not BACKWARDS_COMPATIBLE)
         return True
 
     def split_pointer_position(self, position) -> tuple[tuple[int, ...], dict]:

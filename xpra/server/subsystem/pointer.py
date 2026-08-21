@@ -228,7 +228,11 @@ class PointerManager(StubSubsystem):
             "input-devices": self.input_devices,
             "pointer.relative": True,  # assumed available in 5.0.3
             "pointer.optional": True,
+            # the pointer device can inject fractional wheel motion:
             "wheel.precise": self.pointer_device.has_precise_wheel(),
+            # ..and if it cannot, we emulate it with discrete button events,
+            # so clients can always send us `pointer-wheel` packets:
+            "wheel.emulation": True,
             "touchpad-device": bool(self.touchpad_device),
         }
 
@@ -640,7 +644,6 @@ class PointerManager(StubSubsystem):
         self._maybe_record_drag_scroll(wid, pdata)
 
     def _process_pointer_wheel(self, proto, packet: Packet) -> None:
-        assert self.pointer_device.has_precise_wheel()
         if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
@@ -660,7 +663,28 @@ class PointerManager(StubSubsystem):
             self._update_modifiers(proto, wid, modifiers)
             self.may_record_pointer_event("pointer-wheel", wid, button, distance, tuple(pointer), tuple(modifiers),
                                           exclude=ss)
-            self.pointer_device.wheel_motion(button, distance / 1000.0)  # pylint: disable=no-member
+            self.wheel_motion(ss, device_id, wid, button, distance / 1000.0, props)
+
+    def wheel_motion(self, ss, device_id: int, wid: int, button: int, distance: float, props: dict) -> None:
+        """
+        Apply a fractional wheel `distance` (in wheel clicks) to the pointer device.
+        Devices which cannot do this natively get discrete button events instead,
+        which is what the clients used to emulate on their side.
+        """
+        device = self.get_pointer_device(device_id)
+        if device.has_precise_wheel():
+            device.wheel_motion(button, distance)
+            return
+        # clients scale the distance to wheel clicks using their own scroll speed
+        # settings and send us the result, older ones leave us to use the distance:
+        scaled = props.get("scaled-distance")
+        clicks = scaled / 1000.0 if isinstance(scaled, int) else distance
+        steps = ss.wheel_steps(button, clicks)
+        log("wheel_motion%s emulated with %i clicks of button %i",
+            (ss, device_id, wid, button, distance, props), steps, button)
+        for _ in range(steps):
+            for pressed in (True, False):
+                self.button_action(device_id, wid, button, pressed, props)
 
     def record_wheel_event(self, wid: int, button: int) -> None:
         """ this may be used as a compression hint """
