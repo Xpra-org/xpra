@@ -148,6 +148,7 @@ graph LR
         Encryption[encryption]
         Sharing[sharing]
         ClientSession[client_session]
+        Settings[settings]
     end
     Printer --> FileT
     DBus --> Notification
@@ -255,6 +256,7 @@ These subsystems handle server-side infrastructure and have no corresponding cli
 | PulseAudio     | [pulseaudio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/pulseaudio.py)     | [audio feature](../Features/Audio.md)            |
 | RFB            | [rfb](https://github.com/Xpra-org/xpra/blob/master/xpra/server/rfb/server.py)                      | n/a                                              |
 | SessionFiles   | [sessionfiles](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/sessionfiles.py) | n/a                                              |
+| Settings       | [settings](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/settings.py)         | n/a                                              |
 | Shutdown       | [shutdown](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/shutdown.py)         | n/a                                              |
 | Splash         | [splash](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/splash.py)             | n/a                                              |
 | Suspend        | [suspend](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/suspend.py)           | n/a                                              |

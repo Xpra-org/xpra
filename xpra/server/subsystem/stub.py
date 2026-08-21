@@ -97,12 +97,11 @@ class StubSubsystem(SignalEmitter):
     def add_client_setting(self, setting: str, getter: str, apply: Callable[[Any, Any], None]) -> None:
         """
         Register a setting that clients are allowed to change using the
-        `setting-change` packet, on the `client-session` subsystem.
-        (see `ClientSessionServer.add_client_setting`)
+        `setting-change` packet, on the `setting` subsystem.
+        (see `SettingsServer.add_client_setting`)
         """
-        client_session = self.get_subsystem("client-session")
-        if client_session:
-            client_session.add_client_setting(setting, getter, apply)
+        if settings := self.get_subsystem("setting"):
+            settings.add_client_setting(setting, getter, apply)
 
     def init(self, opts) -> None:
         """

@@ -181,6 +181,8 @@ class ServerBase(ServerCore):
         classes.append(SharingServer)
         from xpra.server.subsystem.client_session import ClientSessionServer
         classes.append(ClientSessionServer)
+        from xpra.server.subsystem.settings import SettingsServer
+        classes.append(SettingsServer)
         from xpra.server.subsystem.shutdown import ShutdownServer
         classes.append(ShutdownServer)
         if features.cursor:

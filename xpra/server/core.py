@@ -395,8 +395,8 @@ class ServerCore(GLibServer):
             client_session.set_ui_driver(source)
 
     def setting_changed(self, setting: str, value: Any) -> None:
-        if client_session := self.get_subsystem("client-session"):
-            client_session.setting_changed(setting, value)
+        if settings := self.get_subsystem("setting"):
+            settings.setting_changed(setting, value)
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
         if client_session := self.get_subsystem("client-session"):
