@@ -360,7 +360,7 @@ class XpraMonitorServer(DesktopServerBase):
         for ss in window_sources:
             self.send_new_desktop_model(model, ss)
 
-    def _process_configure_monitor(self, _proto, packet: Packet) -> None:
+    def _process_display_monitor_configure(self, _proto, packet: Packet) -> None:
         action = packet.get_str(1)
         if action == "remove":
             identifier = packet.get_str(2)
@@ -384,12 +384,13 @@ class XpraMonitorServer(DesktopServerBase):
             width, height = resolution[:2]
             self.add_monitor(width, height)
         else:
-            raise ValueError(f"unsupported 'configure-monitor' action {action!r}")
+            raise ValueError(f"unsupported monitor configuration action {action!r}")
         self.refresh_all_windows()
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("configure-monitor", main_thread=True)
+        self.add_packets("display-monitor-configure", main_thread=True)
+        self.add_legacy_alias("configure-monitor", "display-monitor-configure")
 
 
 GObject.type_register(XpraMonitorServer)

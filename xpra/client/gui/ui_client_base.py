@@ -19,7 +19,7 @@ from xpra.constants import NotificationID
 from xpra.net.common import Packet, PacketElement, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import (
     CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK,
-    DISPLAY_UNGRAB,
+    DISPLAY_MONITOR_CONFIGURE, DISPLAY_UNGRAB,
 )
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
@@ -219,11 +219,11 @@ class UIXpraClient(XpraClientBase):
     # monitors
     def send_remove_monitor(self, index) -> None:
         assert self.get_subsystem("display").server_monitors
-        self.send("configure-monitor", "remove", "index", index)
+        self.send(DISPLAY_MONITOR_CONFIGURE, "remove", "index", index)
 
     def send_add_monitor(self, resolution="1024x768") -> None:
         assert self.get_subsystem("display").server_monitors
-        self.send("configure-monitor", "add", resolution)
+        self.send(DISPLAY_MONITOR_CONFIGURE, "add", resolution)
 
     def _ui_event(self) -> None:
         if self._ui_events == 0:
