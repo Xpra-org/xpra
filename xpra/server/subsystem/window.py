@@ -764,7 +764,7 @@ class WindowServer(StubSubsystem):
     def control_command_ungrab(self) -> str:
         wss = self.window_sources()
         for csource in wss:
-            csource.pointer_ungrab(-1)
+            csource.window_ungrab(-1)
         return f"ungrabbed {len(wss)} clients"
 
     def control_command_workspace(self, wid: int, workspace: int) -> str:

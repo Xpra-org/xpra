@@ -207,6 +207,10 @@ class WindowManagerClient(StubClientSubsystem):
             "max-size": self.max_window_size,
             "restack": True,
             "pre-map": True,
+            # we handle `window-grab` / `window-ungrab` (see `window/grab.py`).
+            # this namespace owns the `window` capabilities dictionary,
+            # which is why the flag is declared here rather than in `grab.py`:
+            "grabs": True,
             # ask the server to move and resize our windows
             # when another client changes their geometry:
             "sync-position": self.sync_position,

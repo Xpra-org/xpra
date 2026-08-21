@@ -495,7 +495,7 @@ class SeamlessWindowServer(WindowServer):
             return
         self._has_grab = grab_id
         for ss in self.window_sources():
-            ss.pointer_grab(self._has_grab)
+            ss.window_grab(self._has_grab)
 
     def _window_ungrab(self, window, event) -> None:
         grab_id = self.get_wid(window)
@@ -505,7 +505,7 @@ class SeamlessWindowServer(WindowServer):
             return
         self._has_grab = 0
         for ss in self.window_sources():
-            ss.pointer_ungrab(grab_id)
+            ss.window_ungrab(grab_id)
 
     def _initiate_moveresize(self, window, event) -> None:
         geomlog("initiate_moveresize(%s, %s)", window, event)

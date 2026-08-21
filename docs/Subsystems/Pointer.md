@@ -41,6 +41,7 @@ The client should expose the following `pointer` dictionary in its `hello` packe
 | `double_click`     | dictionary                      | contains just two integer attributes: `time` (in milliseconds) and `distance` |
 | `sync`             | boolean                         | Optional, see [pointer synchronization](#pointer-synchronization)             |
 | `record`           | boolean                         | Optional, legacy alias for `sync`                                             |
+| `grabs`            | boolean                         | Legacy only, superseded by the `window` capability of the same name          |
 
 Modern packets keep the `pointer` field as a non-negative
 `(absolute_x, absolute_y)` pair normalized against the client monitor layout.

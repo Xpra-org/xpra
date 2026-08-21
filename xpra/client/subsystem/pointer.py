@@ -106,6 +106,9 @@ class PointerClient(StubClientSubsystem):
             PointerClient.PREFIX: pointer_caps,
         }
         if BACKWARDS_COMPATIBLE:
+            # grabs are advertised as `window.grabs` now (see `window/manager.py`),
+            # older servers look for the flag in this namespace:
+            pointer_caps["grabs"] = True
             caps["mouse"] = {
                 "show": True,  # assumed available in v6
                 "initial-position": initial_position,

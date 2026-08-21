@@ -36,6 +36,7 @@ relative to that monitor.
 | Capability      | Information                                                                      |
 |-----------------|----------------------------------------------------------------------------------|
 | `restack`       | The client can handle `window-restack` packets, not just `window-raise`          |
+| `grabs`         | The client can handle `window-grab` and `window-ungrab` packets                  |
 | `sync-position` | Send `window-move-resize` when another client moves or resizes a window          |
 | `sync-focus`    | Send `window-raise` when another client focuses a window                         |
 
