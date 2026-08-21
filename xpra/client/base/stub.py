@@ -9,11 +9,17 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.compression import Compressed
-from xpra.net.common import ClientPacketHandlerType, PacketElement
+from xpra.net.common import PacketElement
+from xpra.net.dispatch import SubsystemPacketHandlers
 from xpra.util.signal_emitter import SignalEmitter
 
 
-class StubClientSubsystem(SignalEmitter):
+class StubClientSubsystem(SubsystemPacketHandlers, SignalEmitter):
+    """
+    Base class for client subsystems.
+    Packet handler registration is shared with the server's `StubSubsystem`
+    through `SubsystemPacketHandlers`.
+    """
     # `_signal_callbacks` and `main_loop` belong to `SignalEmitter`, but it cannot
     # declare them itself (see the note there), so they are declared here, where
     # the slots actually take effect:
@@ -35,6 +41,7 @@ class StubClientSubsystem(SignalEmitter):
         self.idle_add: Callable = source.idle_add
         self.timeout_add: Callable = source.timeout_add
         self.source_remove: Callable = source.source_remove
+        self._packet_handlers = {}
 
     def get_main_loop(self):
         client = self.client
@@ -183,30 +190,6 @@ class StubClientSubsystem(SignalEmitter):
         Register the packet types that this subsystem can handle after authentication.
         """
 
-    def add_packets(self, *packet_types: str, main_thread: bool = False) -> None:
-        """
-        Register packet handlers for this subsystem. Handlers
-        (`_process_<packet_type>`) are looked up on this instance and
-        registered against the client's packet dispatcher.
-        (mirror of the server's `StubSubsystem.add_packets`)
-        """
-        for packet_type in packet_types:
-            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
-            self.client.add_packet_handler(packet_type, handler, main_thread)
-
-    def add_packet_handler(self, packet_type: str, handler: ClientPacketHandlerType,
-                           main_thread: bool = False) -> None:
-        """ register a single packet handler on the owning client """
-        self.client.add_packet_handler(packet_type, handler, main_thread)
-
-    def add_packet_handlers(self, defs: dict[str, ClientPacketHandlerType], main_thread: bool = False) -> None:
-        """ register multiple packet handlers on the owning client """
-        self.client.add_packet_handlers(defs, main_thread)
-
-    def add_legacy_alias(self, legacy_name: str, new_name: str) -> None:
-        """ register a backwards-compat packet name alias on the owning client """
-        self.client.add_legacy_alias(legacy_name, new_name)
-
-    def remove_packet_handlers(self, *keys: str) -> None:
-        """ remove packet handlers from the owning client's dispatcher """
-        self.client.remove_packet_handlers(*keys)
+    def get_packet_owner(self):
+        """ packet registration goes through the owning client (see `SubsystemPacketHandlers`) """
+        return self.client

@@ -9,6 +9,7 @@ import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.dispatch import find_packet_handler
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.util.glib_scheduler import GLibScheduler
@@ -52,6 +53,7 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
         self.protocol = None
         self.packet_handlers = {}
         self.legacy_alias = {}
+        self.subsystems: dict = {}
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
@@ -87,9 +89,23 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
             packet = Packet(*packet)
         packet_type = packet.get_type()
         packet_type = self.legacy_alias.get(packet_type, packet_type)
-        ph = self.packet_handlers.get(packet_type)
+        ph = self.lookup_packet_handler(packet_type)
         assert ph is not None, "no packet handler for %s" % packet_type
         ph(self.protocol, packet)
+
+    def lookup_packet_handler(self, packet_type: str):
+        # the flat registry holds the legacy / unprefixed names, everything else
+        # belongs to the subsystem that owns the prefix (the subsystem under test,
+        # or a peer registered in `self.subsystems`):
+        if ph := self.packet_handlers.get(packet_type):
+            return ph
+        mixin = self.mixin
+        if mixin is not None and mixin.owns_packet(packet_type):
+            if handler_def := mixin.get_packet_handler(mixin.packet_subtype(packet_type)):
+                return handler_def[0]
+        if found := find_packet_handler(self.subsystems, packet_type):
+            return found[2]
+        return None
 
     def verify_packet_error(self, packet):
         try:

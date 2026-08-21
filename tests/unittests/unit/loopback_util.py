@@ -26,12 +26,12 @@ import os
 # helpers, so this must be set before any client subsystem is imported:
 os.environ.setdefault("XPRA_UNIT_TEST", "1")
 
-import unittest
+import unittest  # noqa: E402
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet  # noqa: E402
 
-from unit.client.subsystem.clientmixintest_util import ClientMixinTest
-from unit.server.subsystem.servermixintest_util import ServerMixinTest
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest  # noqa: E402
+from unit.server.subsystem.servermixintest_util import ServerMixinTest  # noqa: E402
 
 
 class _ServerHarness(ServerMixinTest):
@@ -101,7 +101,7 @@ class LoopbackTest(unittest.TestCase):
         def to_server(packet_type, *args):
             self.c2s.append((packet_type, ) + args)
             pt = srv.legacy_alias.get(packet_type, packet_type)
-            handler = srv.packet_handlers.get(pt)
+            handler = srv.lookup_packet_handler(pt)
             assert handler, "no server packet handler for %r" % packet_type
             handler(srv.protocol, Packet(packet_type, *args))
 
@@ -136,7 +136,7 @@ class LoopbackTest(unittest.TestCase):
         def to_client(packet_type, *args, **_kwargs):
             self.s2c.append((packet_type, ) + args)
             pt = cli.legacy_alias.get(packet_type, packet_type)
-            handler = cli.packet_handlers.get(pt)
+            handler = cli.lookup_packet_handler(pt)
             assert handler, "no client packet handler for %r" % packet_type
             handler(Packet(packet_type, *args))
 

@@ -171,10 +171,10 @@ class ServerCore(GLibServer):
 
     def __init__(self):
         log("ServerCore.__init__()")
-        # subsystems dict (keyed by PREFIX) is populated by subclass __init__
+        # `self.subsystems` (keyed by PREFIX) is declared by `PacketDispatcher.__init__`,
+        # which also routes packets to it; it is populated by subclass __init__
         # methods (ServerBase, ProxyServer, ...) as they instantiate their
         # subsystem classes.
-        self.subsystems: dict[str, Any] = {}
         self.hello_request_handlers: dict[str, Callable[[Any, typedict], bool]] = {
             "connect_test": self._handle_hello_request_connect_test,
         }
@@ -1752,8 +1752,7 @@ class ServerCore(GLibServer):
             if BACKWARDS_COMPATIBLE:
                 packet_types += list(self.packet_alias.keys())
                 packet_types += list(self.packet_alias.values())
-            packet_types += list(self._authenticated_ui_packet_handlers)
-            packet_types += list(self._authenticated_packet_handlers)
+            packet_types += self.get_packet_types()
             packet_types += list(self._default_packet_handlers)
             capabilities["packet-types"] = packet_types
         if self.session_name:

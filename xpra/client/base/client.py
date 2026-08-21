@@ -77,9 +77,9 @@ class XpraClientBase(PacketDispatcher):
     def __init__(self):
         self.defaults_init()
         PacketDispatcher.__init__(self)
-        # registry of composed subsystem instances, keyed by `PREFIX`
-        # (see `StubClientSubsystem.get_subsystem`):
-        self.subsystems: dict[str, Any] = {}
+        # `self.subsystems` is the registry of composed subsystem instances, keyed by `PREFIX`
+        # (see `StubClientSubsystem.get_subsystem`); it is declared by
+        # `PacketDispatcher.__init__`, which also routes packets to it:
         for prefix, cls in self.get_subsystem_classes().items():
             subsystem = cls(client=self)
             sublog("%s=%s", prefix, subsystem)

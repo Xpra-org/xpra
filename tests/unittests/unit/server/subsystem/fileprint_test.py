@@ -124,7 +124,8 @@ class FileServerBehaviorTest(unittest.TestCase):
 
     def test_packet_registration_and_legacy_aliases(self):
         self.server.init_packet_handlers()
-        self.assertIn("file-request", self.owner.packet_handlers)
+        # `file-*` packets live on the subsystem, which the server's dispatcher routes to:
+        self.assertIn("file-request", self.server.get_packet_types())
         self.assertEqual(self.owner.legacy_aliases["send-data-request"], "file-data-request")
         self.assertEqual(self.owner.legacy_aliases["send-data-response"], "file-data-response")
 

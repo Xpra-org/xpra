@@ -9,6 +9,7 @@ from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.dispatch import find_packet_handler
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.log import Logger
 from xpra.os_util import gi_import
@@ -37,6 +38,7 @@ class ClientMixinTest(unittest.TestCase):
         self.packet_handlers = {}
         self.exit_codes = []
         self.legacy_alias = {}
+        self.subsystems: dict = {}
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
@@ -110,11 +112,25 @@ class ClientMixinTest(unittest.TestCase):
             handler = getattr(self.mixin, "_process_" + packet_type.replace("-", "_"))
             self.add_packet_handler(packet_type, handler, main_thread)
 
+    def lookup_packet_handler(self, packet_type: str) -> Callable | None:
+        # the flat registry holds the legacy / unprefixed names,
+        # everything else belongs to the subsystem that owns the prefix
+        # (the subsystem under test, or a peer registered in `self.subsystems`):
+        if ph := self.packet_handlers.get(packet_type):
+            return ph
+        mixin = self.mixin
+        if mixin is not None and mixin.owns_packet(packet_type):
+            if handler_def := mixin.get_packet_handler(mixin.packet_subtype(packet_type)):
+                return handler_def[0]
+        if found := find_packet_handler(self.subsystems, packet_type):
+            return found[2]
+        return None
+
     def handle_packet(self, packet: Packet | tuple) -> None:
         if isinstance(packet, tuple):
             packet = Packet(*packet)
         packet_type = packet.get_type()
-        ph = self.packet_handlers.get(packet_type)
+        ph = self.lookup_packet_handler(packet_type)
         assert ph is not None, "no packet handler for %s" % packet_type
         ph(packet)
 
