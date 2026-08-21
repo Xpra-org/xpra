@@ -79,12 +79,16 @@ class DisplayClientTest(ClientMixinTest):
             opts.refresh_rate = "20"
             opts.xsettings = False
             with silence_info(display):
+                # the server sends its display attributes in the `display` namespace,
+                # which the client requires with BC=0 (and honours with BC=1):
                 self._test_mixin_class(_DisplayClient, opts, {
-                    "display" : ":999",
-                    "desktop_size" : (1024, 768),
-                    "max_desktop_size" : (3840, 2160),
-                    "actual_desktop_size" : (1024, 768),
-                    "resize_screen" : True,
+                    "display": {
+                        "name": ":999",
+                        "desktop_size": (1024, 768),
+                        "max_desktop_size": (3840, 2160),
+                        "actual_desktop_size": (1024, 768),
+                        "resize_screen": True,
+                    },
                 })
             # `get_monitors_info` now calls through to `xpra.platform.gui.get_monitors_info`
             # rather than returning `{}` unconditionally (see the toolkit-split plan):

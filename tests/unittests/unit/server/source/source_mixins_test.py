@@ -213,7 +213,12 @@ class SourceMixinsTest(unittest.TestCase):
             "default_speed": 50,
             "default_min_speed": 10,
         }, {
-            "encodings.core": ("rgb32", "rgb24"),
+            # modern clients send their encodings in the `encoding` namespace;
+            # the flat `encodings.core` cap is ignored with BC=0
+            "encoding": {
+                "core": ("rgb32", "rgb24"),
+                "options": ("rgb32", "rgb24"),
+            },
         })
 
     def test_file(self):

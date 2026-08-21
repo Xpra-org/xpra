@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server import runner_script
 
 
@@ -34,6 +35,7 @@ class RunnerScriptTest(unittest.TestCase):
         self.assertIn("_XPRA_SCRIPT='/opt/xpra script'", script)
         self.assertIn("exec xpra", script)
 
+    @unittest.skipUnless(BACKWARDS_COMPATIBLE, "the `run-xpra` script is only written for legacy clients")
     def test_write_runner_scripts(self):
         with tempfile.TemporaryDirectory() as directory, \
                 patch("xpra.platform.paths.get_script_bin_dirs", return_value=(directory,)):
