@@ -25,7 +25,7 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
     # `_signal_callbacks` and `main_loop` belong to `SignalEmitter`, but it cannot
     # declare them itself (see the note there), so they are declared here, where
     # the slots actually take effect:
-    __slots__ = ("__weakref__", "_signal_callbacks", "idle_add", "main_loop",
+    __slots__ = ("__weakref__", "_packet_handlers", "_signal_callbacks", "idle_add", "main_loop",
                  "server", "source_remove", "timeout_add")
     # every concrete subsystem should declare a non-empty PREFIX,
     # used as the key in `Server.subsystems`:

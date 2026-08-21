@@ -74,7 +74,7 @@ class ClipboardCoreTest(unittest.TestCase):
             [("clipboard-token", "CLIPBOARD", ("UTF8_STRING",),
               "UTF8_STRING", "STRING", 8, "bytes", b"hello", True, True)],
         )
-        self.assertIn("clipboard-token", helper._packet_handlers)
+        self.assertIn("clipboard-token", helper.get_packet_types())
 
     def test_legacy_packet_uses_first_data_item(self):
         helper, proxy, packets = self.make_helper(True)
@@ -112,7 +112,7 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertEqual(options["claim"], True)
         self.assertEqual(options["greedy"], True)
         self.assertNotIn("token", options)
-        self.assertNotIn("clipboard-token", helper._packet_handlers)
+        self.assertNotIn("clipboard-token", helper.get_packet_types())
 
     def test_modern_packet_defaults(self):
         helper, proxy, _packets = self.make_helper(False)

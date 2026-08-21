@@ -50,8 +50,16 @@ class SubsystemPacketHandlers:
     owning server / client, hence `get_packet_owner`. The handler signature differs
     too (`(proto, packet)` server-side, `(packet)` client-side), but nothing here
     calls the handlers, so `Callable` is as specific as this class can be.
+
+    `ClipboardProtocolHelperCore` also uses it, without being a subsystem: it owns
+    the whole `clipboard` namespace and dispatches to itself, so it never needs an
+    owner to fall back to (see the note on `get_packet_owner` there).
     """
-    __slots__ = ("_packet_handlers",)
+    # this class must stay layout-neutral: `ClipboardProtocolHelperCore` mixes it into
+    # classes which also derive from `GObject.GObject`, and a non-empty `__slots__` here
+    # would be an instance lay-out conflict. `_packet_handlers` is therefore declared by
+    # whichever subclass wants it slotted (both stubs do), like `SignalEmitter` does.
+    __slots__ = ()
     # declared (with its default and the note on what it keys) by the stubs:
     PREFIX: str
 
