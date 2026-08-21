@@ -24,7 +24,10 @@ from unit.loopback_util import LoopbackTest
 
 
 def _client_opts():
-    return AdHocStruct()
+    opts = AdHocStruct()
+    opts.mousewheel = "on"
+    opts.sharing = "no"
+    return opts
 
 
 def _server_opts():

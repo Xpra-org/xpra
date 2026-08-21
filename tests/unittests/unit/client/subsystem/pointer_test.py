@@ -18,6 +18,7 @@ class PointerClientTest(ClientMixinTest):
         PointerClient = pointer.PointerClient
         opts = AdHocStruct()
         opts.mousewheel = "invert-y"
+        opts.sharing = "no"
         self._test_mixin_class(PointerClient, opts, {})
         # the wheel map translates the vertical axis buttons:
         self.assertEqual(self.mixin.wheel_map[4], 5)
@@ -75,6 +76,7 @@ class PointerClientTest(ClientMixinTest):
         from xpra.client.subsystem.pointer import PointerClient
         opts = AdHocStruct()
         opts.mousewheel = "on"
+        opts.sharing = "no"
         self._test_mixin_class(PointerClient, opts, {})
         shown = []
         window = AdHocStruct()

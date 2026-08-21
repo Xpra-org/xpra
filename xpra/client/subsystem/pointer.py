@@ -103,8 +103,8 @@ class PointerClient(StubClientSubsystem):
         # with `sharing=sync` or `sharing=sync-pointer`,
         # ask the server to forward the pointer events of the other clients,
         # so that we can show what the other users are doing:
-        self.sync = is_sharing_sync(getattr(opts, "sharing", False), "pointer")
-        self.wheel_smooth, self.wheel_map = parse_mousewheel(getattr(opts, "mousewheel", ""))
+        self.sync = is_sharing_sync(opts.sharing, "pointer")
+        self.wheel_smooth, self.wheel_map = parse_mousewheel(opts.mousewheel)
         log("wheel_map(%s)=%s, wheel_smooth=%s", opts.mousewheel, self.wheel_map, self.wheel_smooth)
 
     def init_ui(self, opts) -> None:
