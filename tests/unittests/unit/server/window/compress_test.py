@@ -88,6 +88,16 @@ class CompressTest(unittest.TestCase):
         self.assertEqual(options["quality"], 80)
         self.assertEqual(source.do_get_auto_encoding(1024, 1024, options, "", encodings), "jpeg")
 
+    @patch.object(compress, "TRUE_LOSSLESS", False)
+    def test_lossless_quality_never_uses_jpeg(self) -> None:
+        source = self.make_source()
+        options = {"quality": 100, "speed": 50}
+        self.assertEqual(source.do_get_auto_encoding(1024, 1024, options, "", ("jpeg", "png")), "png")
+
+        source.supports_transparency = True
+        source.common_encodings = ("jpega", "png")
+        self.assertEqual(source.get_transparent_encoding(1024, 1024, options, "auto"), "png")
+
     def test_continuous_tone_encoding(self) -> None:
         encodings = ("jpeg", "webp", "jph")
         cases = (
