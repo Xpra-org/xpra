@@ -139,4 +139,4 @@ class WindowPointer(StubClientMixin):
         return True
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("pointer-position", "pointer-grab", "pointer-ungrab", main_thread=True)
+        self.add_packets("pointer-position", main_thread=True)
