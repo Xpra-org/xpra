@@ -64,6 +64,8 @@ jobs:
       env:
         # honoured by tests/unittests/run -> setup.py install --${CYTHONIZE_MORE}-cythonize_more
         CYTHONIZE_MORE: ${{ matrix.cythonize }}
+        # build the optional terminal client so its tests run:
+        EXTRA_ARGS: --with-terminal_client
       run: >
         python3 setup.py unittests
         --skip-fail unit.client.splash_test
