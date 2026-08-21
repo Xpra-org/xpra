@@ -76,7 +76,7 @@ class AudioMixinTest(ServerMixinTest):
         audio_source = FakeAudioSource("opus")
         with silence_info(audio), \
                 patch.object(audio, "start_thread", side_effect=lambda fn, *_args: fn()), \
-                patch.object(self, "idle_add", side_effect=lambda fn, *args: fn(*args)), \
+                patch.object(audio.GLib, "idle_add", side_effect=lambda fn, *args: fn(*args)), \
                 patch.object(wrapper, "query_audio", return_value=audio_properties), \
                 patch.object(wrapper, "start_sending_audio", return_value=audio_source) as start_audio:
             self._test_mixin_class(audio.AudioServer, opts, {
