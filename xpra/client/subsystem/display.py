@@ -449,12 +449,12 @@ class DisplayClient(StubClientSubsystem):
             return None
         return self._monitor_layout.relative_position(int(position[0]), int(position[1]))
 
-    def _process_display_show_desktop(self, packet: Packet) -> None:
+    def _process_show_desktop(self, packet: Packet) -> None:
         show = packet.get_bool(1)
         log("calling %s(%s)", show_desktop, show)
         show_desktop(show)
 
-    def _process_display_resized(self, packet: Packet) -> None:
+    def _process_resized(self, packet: Packet) -> None:
         root_w = packet.get_u16(1)
         root_h = packet.get_u16(2)
         max_w = packet.get_u16(3)
@@ -466,7 +466,7 @@ class DisplayClient(StubClientSubsystem):
             self.may_adjust_scaling()
 
     def _process_desktop_size(self, packet: Packet) -> None:
-        self._process_display_resized(packet)
+        self._process_resized(packet)
 
     def may_adjust_scaling(self) -> None:
         scalinglog("may_adjust_scaling() server_is_desktop=%s, desktop_fullscreen=%s",

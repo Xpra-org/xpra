@@ -68,6 +68,10 @@ def log_windows_info(windows: tuple) -> None:
 
 class WindowManagerClient(StubClientSubsystem):
     __slots__ = ()
+    # these mixins are all composed into a single `WindowClient` instance,
+    # which is the subsystem registered as `window`: declaring the prefix here
+    # too keeps each mixin usable (and testable) on its own
+    PREFIX = "window"
     SLOT_NAMES = (
         "_id_to_window", "_locked_windows", "_win32_events", "_window_to_id",
         "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
@@ -545,14 +549,14 @@ class WindowManagerClient(StubClientSubsystem):
     def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
         raise NotImplementedError()
 
-    def _process_window_create(self, packet: Packet) -> None:
+    def _process_create(self, packet: Packet) -> None:
         return self._process_new_common(packet, False)
 
     def _process_new_override_redirect(self, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
         return self._process_new_common(packet, True)
 
-    def _process_window_initiate_moveresize(self, packet: Packet) -> None:
+    def _process_initiate_moveresize(self, packet: Packet) -> None:
         geomlog("%s", packet)
         wid = packet.get_wid()
         if window := self.get_window(wid):
@@ -564,7 +568,7 @@ class WindowManagerClient(StubClientSubsystem):
             display = self.get_subsystem("display")
             window.initiate_moveresize(display.sx(x_root), display.sy(y_root), direction, button, source_indication)
 
-    def _process_window_metadata(self, packet: Packet) -> None:
+    def _process_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
         metadata = packet.get_dict(2)
         metalog("metadata update for window %i: %s", wid, metadata)
@@ -572,7 +576,7 @@ class WindowManagerClient(StubClientSubsystem):
             metadata = self.client.cook_metadata(False, metadata)
             window.update_metadata(metadata)
 
-    def _process_window_move_resize(self, packet: Packet) -> None:
+    def _process_move_resize(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -587,12 +591,12 @@ class WindowManagerClient(StubClientSubsystem):
         if len(packet) > 6:
             resize_counter = packet.get_u64(6)
         window = self.get_window(wid)
-        geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s",
+        geomlog("_process_move_resize%s moving / resizing window %s (id=%s) to %s",
                 packet[1:], window, wid, (ax, ay, aw, ah))
         if window:
             window.move_resize(ax, ay, aw, ah, resize_counter)
 
-    def _process_window_resized(self, packet: Packet) -> None:
+    def _process_resized(self, packet: Packet) -> None:
         wid = packet.get_wid()
         w = packet.get_u32(2)
         h = packet.get_u32(3)
@@ -603,11 +607,11 @@ class WindowManagerClient(StubClientSubsystem):
         if len(packet) > 4:
             resize_counter = packet.get_u64(4)
         window = self.get_window(wid)
-        geomlog("_process_window_resized%s resizing window %s (wid=%#x) to %s", packet[1:], window, wid, (aw, ah))
+        geomlog("_process_resized%s resizing window %s (wid=%#x) to %s", packet[1:], window, wid, (aw, ah))
         if window:
             window.resize(aw, ah, resize_counter)
 
-    def _process_window_raise(self, packet: Packet) -> None:
+    def _process_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log(f"going to raise window {wid:#x} - {window}")
@@ -617,7 +621,7 @@ class WindowManagerClient(StubClientSubsystem):
                 return
             window.present()
 
-    def _process_window_restack(self, packet: Packet) -> None:
+    def _process_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
         detail = packet.get_i8(2)
         other_wid = packet.get_wid(3)
@@ -629,7 +633,7 @@ class WindowManagerClient(StubClientSubsystem):
         if window:
             window.restack(other_window, above)
 
-    def _process_window_destroy(self, packet: Packet) -> None:
+    def _process_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.get_window(wid):
             assert window is not None

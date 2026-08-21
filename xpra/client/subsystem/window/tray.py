@@ -22,6 +22,10 @@ ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
 
 class WindowTray(StubClientSubsystem):
     __slots__ = ()
+    # these mixins are all composed into a single `WindowClient` instance,
+    # which is the subsystem registered as `window`: declaring the prefix here
+    # too keeps each mixin usable (and testable) on its own
+    PREFIX = "window"
     SLOT_NAMES = ("systemtray_enabled",)
 
     def __init__(self):

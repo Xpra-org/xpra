@@ -129,9 +129,9 @@ class CursorManager(StubSubsystem):
 
     def _process_set_cursors(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        self._process_cursor_set(proto, packet)
+        self._process_set(proto, packet)
 
-    def _process_cursor_set(self, proto, packet: Packet) -> None:
+    def _process_set(self, proto, packet: Packet) -> None:
         assert self.enabled, "cannot toggle send_cursors: the feature is disabled"
         if ss := self.get_server_source(proto):
             ss.send_cursors = packet.get_bool(1)

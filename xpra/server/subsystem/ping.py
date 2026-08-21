@@ -55,7 +55,7 @@ class PingServer(StubSubsystem):
             ss.ping()
         return True
 
-    def _process_ping_echo(self, proto, packet: Packet) -> None:
+    def _process_echo(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.process_ping_echo(packet)
 

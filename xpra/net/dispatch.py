@@ -71,13 +71,25 @@ class SubsystemPacketHandlers:
         """ strip our own `PREFIX`: `bell-set` -> `set`, `suspend` -> `` """
         return "" if packet_type == self.PREFIX else packet_type[len(self.PREFIX) + 1:]
 
+    def packet_handler_name(self, packet_type: str) -> str:
+        """
+        The name of the method handling this packet type.
+        Packets in this subsystem's namespace drop the redundant `PREFIX`:
+        the `bell` subsystem handles `bell-set` with `_process_set`.
+        Packets we do not own - legacy `BACKWARDS_COMPATIBLE` names and unprefixed
+        packet types - keep their full name, and so does a subsystem's bare `PREFIX`
+        (`ping` -> `_process_ping`), which has nothing left to strip.
+        """
+        subtype = self.packet_subtype(packet_type) if self.owns_packet(packet_type) else ""
+        return "_process_" + (subtype or packet_type).replace("-", "_")
+
     def add_packets(self, *packet_types: str, main_thread: bool = False) -> None:
         """
         Register packet handlers for this subsystem.
-        Handlers (`_process_<packet_type>`) are looked up on this instance.
+        Handlers are looked up on this instance, see `packet_handler_name`.
         """
         for packet_type in packet_types:
-            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
+            handler = getattr(self, self.packet_handler_name(packet_type))
             self.add_packet_handler(packet_type, handler, main_thread)
 
     def add_packet_handler(self, packet_type: str, handler: Callable, main_thread: bool = False) -> None:

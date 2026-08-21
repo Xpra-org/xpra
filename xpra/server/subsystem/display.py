@@ -385,7 +385,7 @@ class DisplayManager(StubSubsystem):
         if rrate:
             attrs["vrefresh"] = rrate
         packet = Packet(DISPLAY_CONFIGURE, attrs)
-        self._process_display_configure(proto, packet)
+        self._process_configure(proto, packet)
 
     def set_screen_size(self, width: int, height: int):
         """ subclasses should override this method if they support resizing """
@@ -401,7 +401,7 @@ class DisplayManager(StubSubsystem):
         self.calculate_workarea(width, height)
         self.set_desktop_geometry_attributes(width, height)
 
-    def _process_display_configure(self, proto, packet: Packet) -> None:
+    def _process_configure(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if ss is None:
             return
@@ -518,13 +518,13 @@ class DisplayManager(StubSubsystem):
         proto.send_now(packet)
         return True
 
-    def _process_display_request_screenshot(self, proto, _packet: Packet) -> None:
+    def _process_request_screenshot(self, proto, _packet: Packet) -> None:
         packet = self.make_screenshot_packet()
         ss = self.get_server_source(proto)
         if packet and ss:
             ss.send(*packet)
 
-    def _process_display_request_icon(self, proto, _packet: Packet) -> None:
+    def _process_request_icon(self, proto, _packet: Packet) -> None:
         packet = self.make_icon_packet()
         ss = self.get_server_source(proto)
         if packet and ss:

@@ -241,7 +241,7 @@ class Encodings(StubClientSubsystem):
         self.add_packets(f"{Encodings.PREFIX}-set")
         self.add_legacy_alias("encodings", f"{Encodings.PREFIX}-set")
 
-    def _process_encoding_set(self, packet: Packet) -> None:
+    def _process_set(self, packet: Packet) -> None:
         caps = typedict(packet.get_dict(1))
         Encodings._parse_server_capabilities(self, caps)
         # fire setting change event for the system-tray:

@@ -91,11 +91,11 @@ class FileServerBehaviorTest(unittest.TestCase):
             send_file=MagicMock(),
             send_open_url=MagicMock(return_value=True),
             notify_client=MagicMock(),
-            _process_file_send=MagicMock(),
-            _process_file_ack_chunk=MagicMock(),
-            _process_file_send_chunk=MagicMock(),
-            _process_file_data_request=MagicMock(),
-            _process_file_data_response=MagicMock(),
+            _process_send=MagicMock(),
+            _process_ack_chunk=MagicMock(),
+            _process_send_chunk=MagicMock(),
+            _process_data_request=MagicMock(),
+            _process_data_response=MagicMock(),
         )
         for key, value in attributes.items():
             setattr(source, key, value)
@@ -106,11 +106,11 @@ class FileServerBehaviorTest(unittest.TestCase):
         self.owner.source = source
         packet = Packet("test")
         routes = (
-            ("_process_file_send", "_process_file_send"),
-            ("_process_file_ack_chunk", "_process_file_ack_chunk"),
-            ("_process_file_send_chunk", "_process_file_send_chunk"),
-            ("_process_file_data_request", "_process_file_data_request"),
-            ("_process_file_data_response", "_process_file_data_response"),
+            ("_process_send", "_process_send"),
+            ("_process_ack_chunk", "_process_ack_chunk"),
+            ("_process_send_chunk", "_process_send_chunk"),
+            ("_process_data_request", "_process_data_request"),
+            ("_process_data_response", "_process_data_response"),
         )
         for server_handler, source_handler in routes:
             with self.subTest(server_handler):
@@ -140,7 +140,7 @@ class FileServerBehaviorTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as f:
             f.write(b"requested data")
             f.flush()
-            self.server._process_file_request(None, Packet("file-request", f.name, True))
+            self.server._process_request(None, Packet("file-request", f.name, True))
         source.send_file.assert_called_once_with(
             f.name, "", b"requested data", 14, openit=True, send_id="",
             options={"request-file": (f.name, True)},
@@ -152,7 +152,7 @@ class FileServerBehaviorTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as f:
             f.write(b"requested data")
             f.flush()
-            self.server._process_file_request(None, Packet("file-request", f.name, False, "send-123"))
+            self.server._process_request(None, Packet("file-request", f.name, False, "send-123"))
         source.send_file.assert_called_once_with(
             f.name, "", b"requested data", 14, openit=False, send_id="send-123",
             options={"request-file": (f.name, False)},
@@ -169,7 +169,7 @@ class FileServerBehaviorTest(unittest.TestCase):
             with open(path, "wb") as f:
                 f.write(data)
 
-            self.server._process_file_request(None, Packet("file-request", path, False))
+            self.server._process_request(None, Packet("file-request", path, False))
             source.send_file.assert_called_once_with(
                 path, "", data, len(data), openit=False, send_id="",
                 options={"request-file": (path, False)},
@@ -183,12 +183,12 @@ class FileServerBehaviorTest(unittest.TestCase):
         source = self.make_source()
         self.owner.source = source
         with patch("xpra.server.subsystem.file.may_notify_client") as notify:
-            self.server._process_file_request(None, Packet("file-request", "/missing/file", False))
+            self.server._process_request(None, Packet("file-request", "/missing/file", False))
             notify.assert_called_once()
             self.assertEqual(notify.call_args.args[2], "File not found")
             notify.reset_mock()
             with patch.dict(os.environ, {}, clear=True):
-                self.server._process_file_request(
+                self.server._process_request(
                     None, Packet("file-request", "${XPRA_SERVER_LOG}", False, "log-request"),
                 )
             notify.assert_not_called()
@@ -206,7 +206,7 @@ class FileServerBehaviorTest(unittest.TestCase):
                      patch("xpra.server.subsystem.file.may_notify_client") as notify:
                     self.server.file_transfer.file_size_limit = local_limit
                     source.file_size_limit = remote_limit
-                    self.server._process_file_request(None, Packet("file-request", f.name, False))
+                    self.server._process_request(None, Packet("file-request", f.name, False))
                     self.assertEqual(notify.call_args.args[2], "File too large")
         source.send_file.assert_not_called()
 
@@ -216,7 +216,7 @@ class FileServerBehaviorTest(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as f, \
              patch("xpra.server.subsystem.file.load_binary_file", return_value=b""), \
              patch("xpra.server.subsystem.file.may_notify_client") as notify:
-            self.server._process_file_request(None, Packet("file-request", f.name, False))
+            self.server._process_request(None, Packet("file-request", f.name, False))
         source.send_file.assert_not_called()
         self.assertEqual(notify.call_args.args[2], "File cannot be read")
 

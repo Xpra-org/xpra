@@ -108,7 +108,7 @@ class NotificationIconsTest(unittest.TestCase):
 
     def show(self, icon=None, hints=None) -> None:
         # no `decode` subsystem: `add_decode_work` runs the decode inline
-        self.notifications._process_notification_show(
+        self.notifications._process_show(
             Packet("notification-show", "", 1, "app", 0, "", "summary", "body", 10 * 1000,
                    icon or (), ("0", "Hello"), hints or {})
         )
@@ -178,7 +178,7 @@ class NotificationIconsTest(unittest.TestCase):
         decode.run()
         try:
             self.show(icon=("png", 32, 32, png(32, 32)))
-            self.notifications._process_notification_close(Packet("notification-close", 1))
+            self.notifications._process_close(Packet("notification-close", 1))
             decode.cleanup()
             decode._thread.join(5) if decode._thread else None
         finally:

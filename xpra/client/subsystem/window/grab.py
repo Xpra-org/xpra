@@ -51,6 +51,10 @@ def should_force_grab(metadata: typedict) -> bool:
 
 class WindowGrab(StubClientSubsystem):
     __slots__ = ()
+    # these mixins are all composed into a single `WindowClient` instance,
+    # which is the subsystem registered as `window`: declaring the prefix here
+    # too keeps each mixin usable (and testable) on its own
+    PREFIX = "window"
     SLOT_NAMES = ("_window_with_grab", "pointer_grabbed")
 
     def __init__(self):
@@ -76,14 +80,14 @@ class WindowGrab(StubClientSubsystem):
         # ungrab via dedicated server packet:
         self.client.send_force_ungrab(wid)
 
-    def _process_window_grab(self, packet: Packet) -> None:
+    def _process_grab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log("grabbing %#x: %s", wid, window)
         if window:
             self.client.window_grab(wid, window)
 
-    def _process_window_ungrab(self, packet: Packet) -> None:
+    def _process_ungrab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log("ungrabbing %#x: %s", wid, window)

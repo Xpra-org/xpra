@@ -186,7 +186,7 @@ class NotificationClient(StubClientSubsystem):
     # these handlers hand the packet to the decode thread, which parses the icons the
     # server sent us; they must stay on the UI thread (`main_thread=True`) so that they
     # reach the decode queue in the order the server sent them - do not "optimize" it away.
-    def _process_notification_show(self, packet: Packet) -> None:
+    def _process_show(self, packet: Packet) -> None:
         if not self.enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
@@ -210,7 +210,7 @@ class NotificationClient(StubClientSubsystem):
             hints = packet.get_dict(11)
         # note: if the server doesn't support notification forwarding,
         # it can still send us the messages (via xpra control or the dbus interface)
-        log("_process_notification_show(%s) notifier=%s, server=%s",
+        log("_process_show(%s) notifier=%s, server=%s",
             repr_ellipsized(packet), self.notifier, self.server)
         log("notification actions=%s, hints=%s", actions, hints)
         assert self.notifier
@@ -254,12 +254,12 @@ class NotificationClient(StubClientSubsystem):
                                   app_name, replaces_nid, app_icon,
                                   summary, body, actions, hints, expire_timeout, icon)
 
-    def _process_notification_close(self, packet: Packet) -> None:
+    def _process_close(self, packet: Packet) -> None:
         if not self.enabled:
             return
         assert self.notifier
         nid = packet.get_u64(1)
-        log("_process_notification_close(%s)", nid)
+        log("_process_close(%s)", nid)
         # this goes through the decode queue (which is FIFO) even though it has nothing to
         # decode: otherwise a close could overtake the show it refers to (which now waits
         # for its icons to be decoded), leaving the notification stuck on screen

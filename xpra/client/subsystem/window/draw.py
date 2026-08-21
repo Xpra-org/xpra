@@ -33,6 +33,10 @@ DRAW_TYPES: dict[type, str] = {bytes: "bytes", str: "bytes", tuple: "arrays", li
 
 class WindowDraw(StubClientSubsystem):
     __slots__ = ()
+    # these mixins are all composed into a single `WindowClient` instance,
+    # which is the subsystem registered as `window`: declaring the prefix here
+    # too keeps each mixin usable (and testable) on its own
+    PREFIX = "window"
     SLOT_NAMES = ("_draw_counter", "pixel_counter")
 
     def __init__(self):
@@ -49,13 +53,13 @@ class WindowDraw(StubClientSubsystem):
     # these handlers only queue the work, but they must stay on the UI thread
     # (`main_thread=True`): that hop is what orders them after the `new-window`
     # that creates the window they refer to - do not "optimize" it away.
-    def _process_window_draw(self, packet: Packet) -> None:
+    def _process_draw(self, packet: Packet) -> None:
         if PAINT_DELAY >= 0:
             self.timeout_add(PAINT_DELAY, self.add_decode_work, self._do_draw, packet)
         else:
             self.add_decode_work(self._do_draw, packet)
 
-    def _process_window_eos(self, packet: Packet) -> None:
+    def _process_eos(self, packet: Packet) -> None:
         self.add_decode_work(self._do_draw, packet)
 
     def send_draw_ack(self, wid: int, width: int, height: int, packet_sequence: int,
@@ -165,5 +169,5 @@ class WindowDraw(StubClientSubsystem):
             self.add_legacy_alias("draw", "window-draw")
             self.add_legacy_alias("eos", "window-eos")
         # `main_thread=True` is required for ordering, not for the (trivial) handlers:
-        # see `_process_window_draw` above
+        # see `_process_draw` above
         self.add_packets("window-draw", "window-eos", main_thread=True)

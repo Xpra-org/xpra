@@ -368,9 +368,9 @@ class AudioServer(StubSubsystem):
 
     def _process_sound_control(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        self._process_audio_control(proto, packet)
+        self._process_control(proto, packet)
 
-    def _process_audio_control(self, proto, packet: Packet) -> None:
+    def _process_control(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return
@@ -385,17 +385,17 @@ class AudioServer(StubSubsystem):
 
     def _process_sound_data(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        self._process_audio_data(proto, packet)
+        self._process_data(proto, packet)
 
-    def _process_audio_data(self, proto, packet: Packet) -> None:
+    def _process_data(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.audio_data(*packet[1:])
 
-    def _process_audio_capabilities(self, proto, packet: Packet) -> None:
+    def _process_capabilities(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.client_audio_capabilities(packet.get_dict(1))
 
-    def _process_audio_keepalive(self, proto, packet: Packet) -> None:
+    def _process_keepalive(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.audio_keepalive(packet.get_u64(1))
 

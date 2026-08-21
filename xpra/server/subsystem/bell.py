@@ -43,7 +43,7 @@ class BellServer(StubSubsystem):
             "bell": self.bell,
         }
 
-    def _process_bell_set(self, proto, packet: Packet) -> None:
+    def _process_set(self, proto, packet: Packet) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
         if ss := self.get_server_source(proto):
             ss.window_bell = packet.get_bool(1)

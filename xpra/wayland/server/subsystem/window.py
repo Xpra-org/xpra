@@ -430,7 +430,7 @@ class WaylandWindowServer(WindowServer):
         source.initiate_moveresize(wid, window, x_root, y_root, int(moveresize), 1,
                                    SOURCE_INDICATION_NORMAL)
 
-    def _process_window_map(self, proto, packet: Packet) -> None:
+    def _process_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         surface = self.get_surface(wid)

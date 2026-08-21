@@ -40,7 +40,7 @@ class X11PointerManager(PointerManager):
             return X11CoreBindings().query_pointer()
         return 0, 0
 
-    def _process_pointer_devices(self, _proto, packet: Packet) -> None:
+    def _process_devices(self, _proto, packet: Packet) -> None:
         self.input_devices_format = packet.get_str(1)
         self.input_devices_data = packet.get_dict(2)
         from xpra.util.str_fn import print_nested_dict

@@ -97,7 +97,7 @@ class InfoServer(StubSubsystem):
         self.send_hello_info(proto, subsystems=subsystems)
         return True
 
-    def _process_info_request(self, proto, packet: Packet) -> None:
+    def _process_request(self, proto, packet: Packet) -> None:
         log("process_info_request(%s, %s)", proto, packet)
         # ignoring the list of client uuids supplied in packet[1]
         ss = self.get_server_source(proto)

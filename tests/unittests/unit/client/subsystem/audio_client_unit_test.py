@@ -525,7 +525,7 @@ class TestAudioProcessStopped(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# _process_audio_capabilities / _process_audio_data
+# _process_capabilities / _process_data
 # ---------------------------------------------------------------------------
 
 class TestProcessAudioCapabilities(unittest.TestCase):
@@ -538,7 +538,7 @@ class TestProcessAudioCapabilities(unittest.TestCase):
         })
         with patch.object(x, "parse_audio_capabilities") as pp, \
              patch.object(x, "auto_start") as pa:
-            x._process_audio_capabilities(packet)
+            x._process_capabilities(packet)
             pp.assert_called_once()
             pa.assert_called_once()
         x.emit.assert_called_with("audio-initialized")
@@ -550,8 +550,8 @@ class TestProcessAudioTelemetry(unittest.TestCase):
         x = _make_client()
         level = {"unit": "dBFS", "peak": [-3.0], "rms": [-20.0]}
         with patch("xpra.client.subsystem.audio.log") as log:
-            x._process_audio_level(Packet("audio-level", level))
-            x._process_audio_signal(Packet("audio-signal", True))
+            x._process_level(Packet("audio-level", level))
+            x._process_signal(Packet("audio-signal", True))
         log.assert_any_call("audio level: %s", level)
         log.assert_any_call("audio signal: %s", True)
 
@@ -568,13 +568,13 @@ class TestProcessAudioData(unittest.TestCase):
         x = _make_client()
         x.sink_sequence = 5
         pkt = self._make_packet(metadata={"sequence": 3})
-        x._process_audio_data(pkt)
+        x._process_data(pkt)
         assert x.sink is None  # nothing started
 
     def test_drops_without_speaker_enabled(self):
         x = _make_client(speaker_enabled=False)
         pkt = self._make_packet(data=b"audio")
-        x._process_audio_data(pkt)
+        x._process_data(pkt)
         # just ensure no crash
 
     def test_start_of_stream_starts_sink(self):
@@ -582,7 +582,7 @@ class TestProcessAudioData(unittest.TestCase):
         x.speaker_allowed = True
         pkt = self._make_packet(metadata={"start-of-stream": True, "codec": "opus"})
         with patch.object(x, "start_sink") as m:
-            x._process_audio_data(pkt)
+            x._process_data(pkt)
             m.assert_called_once_with("opus")
 
     def test_end_of_stream_stops_receiving(self):
@@ -590,7 +590,7 @@ class TestProcessAudioData(unittest.TestCase):
         _make_sink(x)
         pkt = self._make_packet(metadata={"end-of-stream": True, "sequence": -1})
         with patch.object(x, "stop_receiving_audio") as m:
-            x._process_audio_data(pkt)
+            x._process_data(pkt)
             m.assert_called_once_with(False)
 
     def test_codec_mismatch_stops_receiving(self):
@@ -598,14 +598,14 @@ class TestProcessAudioData(unittest.TestCase):
         _make_sink(x, codec="opus")
         pkt = self._make_packet(codec="vorbis", data=b"data", metadata={"sequence": -1})
         with patch.object(x, "stop_receiving_audio") as m:
-            x._process_audio_data(pkt)
+            x._process_data(pkt)
             m.assert_called_once()
 
     def test_data_forwarded_to_sink(self):
         x = _make_client(speaker_enabled=True)
         sink = _make_sink(x)
         pkt = self._make_packet(codec="opus", data=b"audio-data", metadata={"sequence": -1})
-        x._process_audio_data(pkt)
+        x._process_data(pkt)
         sink.add_data.assert_called()
 
     def test_sink_stopped_state_triggers_stop(self):
@@ -614,7 +614,7 @@ class TestProcessAudioData(unittest.TestCase):
         sink.get_state.return_value = "stopped"
         pkt = self._make_packet(codec="opus", data=b"d", metadata={"sequence": -1})
         with patch.object(x, "stop_receiving_audio") as m:
-            x._process_audio_data(pkt)
+            x._process_data(pkt)
             m.assert_called_once()
 
 

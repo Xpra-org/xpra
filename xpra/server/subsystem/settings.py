@@ -48,7 +48,7 @@ class SettingsServer(StubSubsystem):
         """
         self.client_settings[setting] = (getter, apply)
 
-    def _process_setting_change(self, proto, packet: Packet) -> None:
+    def _process_change(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return

@@ -186,7 +186,7 @@ class CursorClient(StubClientSubsystem):
             raise ValueError(f"cursor encoding {encoding!r} is not supported")
         return decompress_cursor_data(encoding, cpixels, serial)
 
-    def _process_cursor_data(self, packet: Packet) -> None:
+    def _process_data(self, packet: Packet) -> None:
         if not self.enabled:
             return
         encoding = packet.get_str(1)
@@ -208,7 +208,7 @@ class CursorClient(StubClientSubsystem):
         cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, pixels, name)
         self.idle_add(self.apply_cursor, cursor_data, False)
 
-    def _process_cursor_default(self, packet: Packet) -> None:
+    def _process_default(self, packet: Packet) -> None:
         log("setting default cursor: %s", packet)
         if not self.enabled:
             return

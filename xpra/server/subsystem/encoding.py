@@ -271,7 +271,7 @@ class EncodingServer(StubSubsystem):
             log.warn("ignored invalid default encoding option: %s", self.encoding)
             self.default_encoding = self.encoding
 
-    def _process_encoding_config(self, proto, packet) -> None:
+    def _process_config(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return
@@ -282,7 +282,7 @@ class EncodingServer(StubSubsystem):
             ss.reinit_encodings(self)
             ss.reinit_encoders()
 
-    def _process_encoding_set(self, proto, packet: Packet) -> None:
+    def _process_set(self, proto, packet: Packet) -> None:
         encoding = packet.get_str(1)
         ss = self.get_server_source(proto)
         if ss is None:
@@ -347,7 +347,7 @@ class EncodingServer(StubSubsystem):
         if window := self.get_subsystem("window"):
             window._idle_refresh_all_windows(proto)
 
-    def _process_encoding_options(self, proto, packet) -> None:
+    def _process_options(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return

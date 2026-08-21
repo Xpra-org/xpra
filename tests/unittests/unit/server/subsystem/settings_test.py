@@ -63,7 +63,7 @@ class SettingsTest(unittest.TestCase):
         subsystem = StubSubsystem(self.server)
         subsystem.add_client_setting("xsettings", "get_dict", lambda ss, value: applied.append((ss, value)))
         settings = {"resource-manager": "Xft.dpi:\t96\n"}
-        self.settings._process_setting_change(proto, Packet("setting-change", "xsettings", settings))
+        self.settings._process_change(proto, Packet("setting-change", "xsettings", settings))
         self.assertEqual(applied, [(source, settings)])
 
     def test_setting_change(self) -> None:
@@ -84,14 +84,14 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(source1.settings[-1], ("session_name", "test"))
         self.assertEqual(source2.settings[-1], ("session_name", "test"))
 
-        self.settings._process_setting_change(proto1, Packet("setting-change", "readonly", True))
+        self.settings._process_change(proto1, Packet("setting-change", "readonly", True))
         self.assertTrue(source1.client_readonly)
         self.assertFalse(source2.client_readonly)
         # settings not in the allow-list are ignored:
-        self.settings._process_setting_change(proto2, Packet("setting-change", "session_name", "hacked"))
+        self.settings._process_change(proto2, Packet("setting-change", "session_name", "hacked"))
         self.assertFalse(source2.client_readonly)
         # unknown protocols are ignored:
-        self.settings._process_setting_change(object(), Packet("setting-change", "readonly", True))
+        self.settings._process_change(object(), Packet("setting-change", "readonly", True))
         # legacy packet:
         self.settings._process_readonly_toggled(proto2, Packet("readonly-toggled", True))
         self.assertTrue(source2.client_readonly)

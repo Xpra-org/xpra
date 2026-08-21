@@ -550,7 +550,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         log("stop_receiving_audio(%s) audio sink=%s", tell_server, ss)
         if self.speaker_enabled:
             self.speaker_enabled = False
-            # `stop_receiving_audio` can be called from the network thread (via `_process_audio_data`),
+            # `stop_receiving_audio` can be called from the network thread (via `_process_data`),
             # so emit the signal from the UI thread (crashes on macOS otherwise):
             self.idle_add(self.emit, "speaker-changed")
         if not ss:
@@ -702,15 +702,15 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     def audio_keepalive_timer_remove(self, timer: int) -> None:
         self.source_remove(timer)
 
-    def _process_audio_keepalive(self, packet: Packet) -> None:
+    def _process_keepalive(self, packet: Packet) -> None:
         self.audio_keepalive(packet.get_u64(1))
 
     @staticmethod
-    def _process_audio_level(packet: Packet) -> None:
+    def _process_level(packet: Packet) -> None:
         log("audio level: %s", packet.get_dict(1))
 
     @staticmethod
-    def _process_audio_signal(packet: Packet) -> None:
+    def _process_signal(packet: Packet) -> None:
         log("audio signal: %s", packet.get_bool(1))
 
     def send_audio_sync(self, v: int) -> None:
@@ -719,13 +719,13 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
 
     ######################################################################
     # packet handlers
-    def _process_audio_capabilities(self, packet: Packet) -> None:
+    def _process_capabilities(self, packet: Packet) -> None:
         audio = typedict(packet.get_dict(1))
         self.parse_audio_capabilities(audio)
         self.auto_start()
         self.emit("audio-initialized")
 
-    def _process_audio_data(self, packet: Packet) -> None:
+    def _process_data(self, packet: Packet) -> None:
         codec = packet.get_str(1)
         data = packet.get_buffer(2)
         metadata = typedict(packet.get_dict(3))

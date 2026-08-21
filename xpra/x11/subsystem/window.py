@@ -626,7 +626,7 @@ class SeamlessWindowServer(WindowServer):
     # packet handlers
     # --------------------------------------------------------------------
 
-    def _process_window_map(self, proto, packet: Packet) -> None:
+    def _process_map(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         if not (ss := self.get_server_source(proto)):
@@ -663,7 +663,7 @@ class SeamlessWindowServer(WindowServer):
             self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_window_unmap(self, proto, packet: Packet) -> None:
+    def _process_unmap(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         wid = packet.get_wid()
@@ -837,7 +837,7 @@ class SeamlessWindowServer(WindowServer):
         with xswallow:
             window.raise_window()
 
-    def _process_window_close(self, proto, packet: Packet) -> None:
+    def _process_close(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         windowlog("client closed window %s - %s", wid, window)
@@ -847,7 +847,7 @@ class SeamlessWindowServer(WindowServer):
             windowlog("cannot close window %s: it is already gone!", wid)
         self.repaint_root_overlay()
 
-    def _process_window_signal(self, proto, packet: Packet) -> None:
+    def _process_signal(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         sig = packet.get_str(2)
         if sig not in WINDOW_SIGNALS:
@@ -867,7 +867,7 @@ class SeamlessWindowServer(WindowServer):
             os.kill(pid, sigval)
             log.info(f"sent signal {sig!r} to pid {pid} for window {wid:#x}")
         except Exception as e:
-            log("_process_window_signal(%s, %s)", proto, packet, exc_info=True)
+            log("_process_signal(%s, %s)", proto, packet, exc_info=True)
             log.error(f"Error: failed to send signal {sig!r} to pid {pid} for window {wid:#x}")
             log.estr(e)
 

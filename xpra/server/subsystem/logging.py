@@ -204,7 +204,7 @@ class LoggingManager(StubSubsystem):
         finally:
             self.in_handler = False
 
-    def _process_logging_control(self, proto, packet: Packet) -> None:
+    def _process_control(self, proto, packet: Packet) -> None:
         action = packet.get_str(1)
         if action == "start":
             self.add_logging_client(proto)
@@ -215,9 +215,9 @@ class LoggingManager(StubSubsystem):
 
     def _process_logging(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        self._process_logging_event(proto, packet)
+        self._process_event(proto, packet)
 
-    def _process_logging_event(self, proto, packet: Packet) -> None:
+    def _process_event(self, proto, packet: Packet) -> None:
         assert self.receive
         ss = self.get_server_source(proto)
         if ss is None:

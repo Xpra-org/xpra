@@ -47,7 +47,7 @@ class InputMixinTest(ServerMixinTest):
         assert message[1].endswith("hello")
         if BACKWARDS_COMPATIBLE:
             # multi-part messages are a legacy shape:
-            # modern clients send a single buffer (see `_process_logging_event`)
+            # modern clients send a single buffer (see `_process_event`)
             self.handle_packet(Packet(LOGGING_EVENT, 20, ["multi", "messages"], int(monotonic())))
         # invalid:
         try:
@@ -67,7 +67,7 @@ class InputMixinTest(ServerMixinTest):
         opts = AdHocStruct()
         opts.remote_logging = "on"
         l.init(opts)
-        l._process_logging_event(None, ())  # pylint: disable=protected-access
+        l._process_event(None, ())  # pylint: disable=protected-access
 
 
 def main():

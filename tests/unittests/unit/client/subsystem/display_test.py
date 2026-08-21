@@ -7,6 +7,7 @@
 import unittest
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.dispatch import SubsystemPacketHandlers
 from xpra.util.objects import AdHocStruct
 from unit.test_util import silence_info, stubbable
 from unit.process_test_util import DisplayContext
@@ -18,7 +19,10 @@ class DisplayClientTest(ClientMixinTest):
     def test_show_desktop_packet_handlers(self):
         from xpra.client.subsystem.display import DisplayClient
 
-        class Receiver:
+        class Receiver(SubsystemPacketHandlers):
+            # derive from the real mixin so that `packet_handler_name` (and the
+            # `PREFIX` stripping it does) is exercised, not re-implemented here:
+            PREFIX = DisplayClient.PREFIX
             screen_sizes = ()
 
             def __init__(self):
@@ -31,9 +35,8 @@ class DisplayClientTest(ClientMixinTest):
 
             def add_packets(self, *packet_types, **_kwargs):
                 for packet_type in packet_types:
-                    self.packet_handlers[packet_type] = getattr(
-                        DisplayClient, "_process_" + packet_type.replace("-", "_"),
-                    )
+                    name = self.packet_handler_name(packet_type)
+                    self.packet_handlers[packet_type] = getattr(DisplayClient, name)
 
         receiver = Receiver()
         DisplayClient.init_authenticated_packet_handlers(receiver)
@@ -44,7 +47,7 @@ class DisplayClientTest(ClientMixinTest):
 
         class Client:
             can_scale = False
-            _process_display_resized = DisplayClient._process_display_resized
+            _process_resized = DisplayClient._process_resized
 
         client = Client()
         receiver.packet_handlers[resize_packet_type](client, Packet(resize_packet_type, 1024, 768, 3840, 2160))

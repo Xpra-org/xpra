@@ -346,7 +346,7 @@ class PointerClient(StubClientSubsystem):
         log("wheel_event%s new deltas=%s,%s",
             (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
 
-    def _process_pointer_position(self, packet: Packet) -> None:
+    def _process_position(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -358,7 +358,7 @@ class PointerClient(StubClientSubsystem):
         log("process_pointer_position: %i,%i (%i,%i relative to wid %i)", x, y, rx, ry, wid)
         self.show_remote_pointer(wid, rx, ry)
 
-    def _process_pointer_motion(self, packet: Packet) -> None:
+    def _process_motion(self, packet: Packet) -> None:
         # another client moved the pointer, and the server is synchronizing it with us
         # (see the `sync` pointer capability)
         wid = packet.get_wid(3)
@@ -371,12 +371,12 @@ class PointerClient(StubClientSubsystem):
         if len(rel) == 2:
             self.show_remote_pointer(wid, *rel)
 
-    def _process_pointer_button(self, packet: Packet) -> None:
+    def _process_button(self, packet: Packet) -> None:
         # another client clicked: the position was already synchronized
         # by the `pointer-motion` packet which always precedes it
         log("process_pointer_button: %s", packet[1:])
 
-    def _process_pointer_wheel(self, packet: Packet) -> None:
+    def _process_wheel(self, packet: Packet) -> None:
         # another client used the wheel, there is nothing to show for it
         log("process_pointer_wheel: %s", packet[1:])
 

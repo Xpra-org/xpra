@@ -83,7 +83,7 @@ class GSettingsServer(StubSubsystem):
     def init_packet_handlers(self) -> None:
         self.add_packets("gsettings-update", main_thread=True)
 
-    def _process_gsettings_update(self, proto, packet: Packet) -> None:
+    def _process_update(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return

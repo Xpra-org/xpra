@@ -209,7 +209,7 @@ class ClipboardManager(StubSubsystem):
         else:
             ch.enable_selections()
 
-    def _process_clipboard_packet(self, proto, packet: Packet) -> None:
+    def _process_packet(self, proto, packet: Packet) -> None:
         assert self.enabled
         if self.is_readonly(proto):
             return
@@ -220,7 +220,7 @@ class ClipboardManager(StubSubsystem):
         self.may_record("server", *packet)
         packet_type = packet.get_type()
         if packet_type == "clipboard-status" or (BACKWARDS_COMPATIBLE and packet_type == "set-clipboard-enabled"):
-            self._process_clipboard_status(proto, packet)
+            self._process_status(proto, packet)
             return
         if self.client != ss:
             log("the clipboard packet %r does not come from the clipboard owner!", packet_type)
@@ -236,7 +236,7 @@ class ClipboardManager(StubSubsystem):
         assert ch, "received a clipboard packet but clipboard sharing is disabled"
         self.idle_add(ch.process_clipboard_packet, packet)
 
-    def _process_clipboard_status(self, proto, packet: Packet) -> None:
+    def _process_status(self, proto, packet: Packet) -> None:
         assert self.enabled
         if self.is_readonly(proto):
             return
@@ -290,9 +290,9 @@ class ClipboardManager(StubSubsystem):
                     "pending-requests", "enable-selections", "loop-uuids",
                     "status",
             ):
-                self.add_packet_handler(f"{ClipboardManager.PREFIX}-%s" % x, self._process_clipboard_packet)
+                self.add_packet_handler(f"{ClipboardManager.PREFIX}-%s" % x, self._process_packet)
             if BACKWARDS_COMPATIBLE:
-                self.add_packet_handler(f"{ClipboardManager.PREFIX}-token", self._process_clipboard_packet)
+                self.add_packet_handler(f"{ClipboardManager.PREFIX}-token", self._process_packet)
             self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardManager.PREFIX}-status")
 
     #########################################

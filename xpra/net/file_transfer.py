@@ -537,7 +537,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.error(f" {filename!r} : {e}")
         self.send(FILE_ACK_CHUNK, chunk_id, False, message, chunk)
 
-    def _process_file_send_chunk(self, packet: Packet) -> None:
+    def _process_send_chunk(self, packet: Packet) -> None:
         # write the chunk to disk from the file I/O thread, off the parse thread:
         self.schedule_file_io(self.do_process_file_send_chunk, packet)
 
@@ -551,7 +551,7 @@ class FileTransferHandler(FileTransferAttributes):
         #    filelog.warn("file_data=%s", hexstr(file_data))
         # filelog(f"file_data={len(file_data)} {type(file_data)}")
         filelog(f"file_data={len(file_data)} {type(file_data)}")
-        filelog("_process_file_send_chunk%s", (chunk_id, chunk, f"{len(file_data)} bytes", has_more))
+        filelog("_process_send_chunk%s", (chunk_id, chunk, f"{len(file_data)} bytes", has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
 
         def progress(position: int, error: str = "") -> None:
@@ -689,7 +689,7 @@ class FileTransferHandler(FileTransferAttributes):
             openit = False
         return True, printit, openit
 
-    def _process_file_send(self, packet: Packet) -> None:
+    def _process_send(self, packet: Packet) -> None:
         # save the file from the file I/O thread, off the parse thread:
         self.schedule_file_io(self.do_process_file_send, packet)
 
@@ -1008,7 +1008,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.send(FILE_REQUEST, filename, openit, send_id)
         return send_id
 
-    def _process_file_open_url(self, packet: Packet) -> None:
+    def _process_open_url(self, packet: Packet) -> None:
         url = packet.get_str(1)
         send_id = packet.get_str(2)
         if not self.open_url:
@@ -1101,7 +1101,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.send(FILE_DATA_REQUEST, dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
-    def _process_file_data_request(self, packet: Packet) -> None:
+    def _process_data_request(self, packet: Packet) -> None:
         dtype = packet.get_str(1)
         send_id = packet.get_str(2)
         url = packet.get_str(3)
@@ -1181,7 +1181,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit, mimetype, options))
         cb_answer(False)
 
-    def _process_file_data_response(self, packet: Packet) -> None:
+    def _process_data_response(self, packet: Packet) -> None:
         send_id = packet.get_str(1)
         accept = packet.get_i8(2)
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
@@ -1309,7 +1309,7 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state.timer = 0
             GLib.source_remove(timer)
 
-    def _process_file_ack_chunk(self, packet: Packet) -> None:
+    def _process_ack_chunk(self, packet: Packet) -> None:
         # compress and send the next chunk from the file worker thread, off the parse thread:
         self.schedule_file_io(self.do_process_file_ack_chunk, packet)
 

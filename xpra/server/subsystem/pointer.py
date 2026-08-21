@@ -298,7 +298,7 @@ class PointerManager(StubSubsystem):
             if ss.pointer_sync and ss is not exclude:
                 ss.send_async(packet_type, *data)
 
-    def _process_pointer_button(self, proto, packet: Packet) -> None:
+    def _process_button(self, proto, packet: Packet) -> None:
         log("process_pointer_button(%s, %s)", proto, packet)
         if self.is_readonly(proto):
             return
@@ -582,9 +582,9 @@ class PointerManager(StubSubsystem):
                 with log.trap_error("Error releasing pointer button %i on device %i", button, device_id):
                     self.button_action(device_id, 0, button, False, {})
 
-    def _process_pointer_motion(self, proto, packet: Packet) -> None:
+    def _process_motion(self, proto, packet: Packet) -> None:
         # v5 packet format
-        log("_process_pointer_motion(%s, %s) readonly=%s, ui_driver=%s",
+        log("_process_motion(%s, %s) readonly=%s, ui_driver=%s",
             proto, packet, self.is_readonly(proto), self.server.ui_driver)
         if self.is_readonly(proto):
             return
@@ -615,9 +615,9 @@ class PointerManager(StubSubsystem):
                 self._update_modifiers(proto, wid, modifiers)
         self._maybe_record_drag_scroll(wid, pdata)
 
-    def _process_pointer_position(self, proto, packet: Packet) -> None:
+    def _process_position(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        log("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
+        log("_process_position(%s, %s) readonly=%s, ui_driver=%s",
             proto, packet, self.is_readonly(proto), self.server.ui_driver)
         if self.is_readonly(proto):
             return
@@ -643,7 +643,7 @@ class PointerManager(StubSubsystem):
             self._update_modifiers(proto, wid, modifiers)
         self._maybe_record_drag_scroll(wid, pdata)
 
-    def _process_pointer_wheel(self, proto, packet: Packet) -> None:
+    def _process_wheel(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
