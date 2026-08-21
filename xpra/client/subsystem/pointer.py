@@ -346,6 +346,54 @@ class PointerClient(StubClientSubsystem):
         log("wheel_event%s new deltas=%s,%s",
             (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
 
+    def _process_pointer_position(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        if len(packet) >= 6:
+            rx = packet.get_i16(4)
+            ry = packet.get_i16(5)
+        else:
+            rx, ry = -1, -1
+        log("process_pointer_position: %i,%i (%i,%i relative to wid %i)", x, y, rx, ry, wid)
+        self.show_remote_pointer(wid, rx, ry)
+
+    def _process_pointer_motion(self, packet: Packet) -> None:
+        # another client moved the pointer, and the server is synchronizing it with us
+        # (see the `sync` pointer capability)
+        wid = packet.get_wid(3)
+        pdata = packet.get_ints(4)
+        props = typedict(packet.get_dict(5))
+        # modern clients send the window relative position as a property,
+        # older ones packed it into the pointer data:
+        rel = props.inttupleget("window-position", max_items=2) or tuple(pdata[2:4])
+        log("process_pointer_motion: %s (%s relative to wid %i)", pdata[:2], rel, wid)
+        if len(rel) == 2:
+            self.show_remote_pointer(wid, *rel)
+
+    def _process_pointer_button(self, packet: Packet) -> None:
+        # another client clicked: the position was already synchronized
+        # by the `pointer-motion` packet which always precedes it
+        log("process_pointer_button: %s", packet[1:])
+
+    def _process_pointer_wheel(self, packet: Packet) -> None:
+        # another client used the wheel, there is nothing to show for it
+        log("process_pointer_wheel: %s", packet[1:])
+
+    def show_remote_pointer(self, wid: int, rx: int, ry: int) -> None:
+        """
+        Show where another client's pointer is, relative to window `wid`.
+        The overlay is drawn on the window itself, so the drawing belongs to the
+        `window` subsystem - we just hand it our own pointer position, which
+        saves it from having to query the toolkit for it.
+        """
+        window = self.get_subsystem("window")
+        if not window:
+            # a pointer-only client has no window to draw the overlay on
+            return
+        cx, cy = self.get_mouse_position()
+        window.show_remote_pointer(wid, rx, ry, cx, cy)
+
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_pointer = c.boolget("pointer", True)
         # servers using a `uinput` device can inject fine grained wheel motion,
@@ -388,3 +436,9 @@ class PointerClient(StubClientSubsystem):
         if BACKWARDS_COMPATIBLE:
             return server_position + values[2:], props
         return server_position, props
+
+    def init_authenticated_packet_handlers(self) -> None:
+        self.add_packets("pointer-position", main_thread=True)
+        # the server sends us the pointer events of the other clients
+        # when the `sync` pointer capability is enabled:
+        self.add_packets("pointer-motion", "pointer-button", "pointer-wheel", main_thread=True)

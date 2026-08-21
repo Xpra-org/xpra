@@ -71,6 +71,41 @@ class PointerClientTest(ClientMixinTest):
         self.glib.timeout_add(5000, self.stop)
         self.main_loop.run()
 
+    def test_remote_pointer(self):
+        from xpra.client.subsystem.pointer import PointerClient
+        opts = AdHocStruct()
+        opts.mousewheel = "on"
+        self._test_mixin_class(PointerClient, opts, {})
+        shown = []
+        window = AdHocStruct()
+        window.show_remote_pointer = lambda *args: shown.append(args)
+        self.subsystems = {"window": window}
+        # the server tells us where the pointer of another client is;
+        # the overlay is drawn by the `window` subsystem, which we hand
+        # our own pointer position (0, 0 in this harness):
+        self.handle_packet(("pointer-position", 1, 100, 200, 5, 6))
+        self.assertEqual(shown, [(1, 5, 6, 0, 0)])
+        # the legacy packet carries no window relative position:
+        self.handle_packet(("pointer-position", 1, 100, 200))
+        self.assertEqual(shown[-1], (1, -1, -1, 0, 0))
+        # `pointer-motion` has it as a property:
+        self.handle_packet(("pointer-motion", -1, 1, 2, (100, 200), {"window-position": (7, 8)}))
+        self.assertEqual(shown[-1], (2, 7, 8, 0, 0))
+        # ..older servers packed it into the pointer data:
+        self.handle_packet(("pointer-motion", -1, 1, 2, (100, 200, 9, 10), {}))
+        self.assertEqual(shown[-1], (2, 9, 10, 0, 0))
+        # ..and if it is missing there is nothing to show:
+        self.handle_packet(("pointer-motion", -1, 1, 2, (100, 200), {}))
+        self.assertEqual(len(shown), 4)
+        # buttons and wheel events of the other clients are only logged:
+        self.handle_packet(("pointer-button", -1, 1, 2, 1, True, (100, 200), {}))
+        self.handle_packet(("pointer-wheel", 2, 4, 1000, (100, 200), (), (), {}))
+        self.assertEqual(len(shown), 4)
+        # a client without windows has nothing to draw the overlay on:
+        self.subsystems = {}
+        self.handle_packet(("pointer-position", 1, 100, 200, 5, 6))
+        self.assertEqual(len(shown), 4)
+
 
 def main() -> None:
     with DisplayContext():
