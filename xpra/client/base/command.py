@@ -16,7 +16,7 @@ from xpra.net.packet_type import (
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
-from xpra.net.constants import ConnectionMessage
+from xpra.net.constants import ConnectionMessage, MAX_PACKET_SIZE
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
 from xpra.net.common import Packet, PacketElement, disconnect_is_an_error, BACKWARDS_COMPATIBLE
@@ -183,6 +183,13 @@ class AbstractImageXpraClient(HelloRequestClient):
         self.image_request = request
         super().__init__(opts)
 
+    def make_protocol(self, conn):
+        protocol = super().make_protocol(conn)
+        # Screenshot and icon requests receive their (potentially large) image
+        # response before this one-shot client gets a chance to parse caps.
+        protocol.max_packet_size = MAX_PACKET_SIZE
+        return protocol
+
     def hello_request(self) -> dict[str, Any]:
         return {
             "request": self.image_request,
@@ -255,6 +262,13 @@ class InfoXpraClient(CommandConnectClient):
         if subsystems:
             self.hello_extra["subsystems"] = subsystems
         log("info request for subsystems %s", subsystems or "'all'")
+
+    def make_protocol(self, conn):
+        protocol = super().make_protocol(conn)
+        # This command receives its complete response in the first hello
+        # packet, so it deliberately skips normal capability parsing.
+        protocol.max_packet_size = MAX_PACKET_SIZE
+        return protocol
 
     def timeout(self, *_args):
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the info")
