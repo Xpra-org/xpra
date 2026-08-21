@@ -362,8 +362,10 @@ unknown.
 
 `setting-change` is bidirectional, but asymmetric. A server MAY send any
 setting. A server MUST apply an allow-list to the settings a client is permitted
-to change, and MUST ignore any setting outside it. That allow-list currently
-holds a single entry, `readonly:bool`.
+to change, and MUST ignore any setting outside it. That allow-list holds
+`readonly:bool`, and - on servers managing an X11 display - `xsettings:map`,
+which carries the client's `xsettings-blob` and `resource-manager` values
+for the server to apply to its own display.
 
 ### 7.2 Logging, Shell and Commands
 

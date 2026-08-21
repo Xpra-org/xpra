@@ -98,18 +98,24 @@ class X11DisplayPropsWatcher:
                 return xw.get_settings()
         return None
 
+    def send_xsettings(self, settings: dict) -> None:
+        # sent as the `xsettings` setting of a `setting-change` packet,
+        # older servers get a legacy `server-settings` packet instead
+        # (see `LEGACY_SETTING_PACKETS`)
+        self.display.client.send_setting_change("xsettings", settings)
+
     def _handle_xsettings_changed(self, *_args) -> None:
         settings = self._get_xsettings()
         log("xsettings_changed new value=%s", settings)
         if settings is not None:
-            self.display.send("server-settings", {"xsettings-blob": settings})
+            self.send_xsettings({"xsettings-blob": settings})
 
     def _handle_root_prop_changed(self, obj, prop) -> None:
         log("root_prop_changed(%s, %s)", obj, prop)
         if prop == "RESOURCE_MANAGER":
             rm = get_resource_manager()
             if rm is not None:
-                self.display.send("server-settings", {"resource-manager": rm})
+                self.send_xsettings({"resource-manager": rm})
             return
         from xpra.x11.xroot_props import GTK_WORKAREAS_PREFIX
         if prop.startswith(GTK_WORKAREAS_PREFIX):

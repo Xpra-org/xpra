@@ -44,6 +44,7 @@ FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
 # expect a dedicated packet type for each setting:
 LEGACY_SETTING_PACKETS: dict[str, str] = {
     "readonly": "readonly-toggled",
+    "xsettings": "server-settings",
 }
 
 

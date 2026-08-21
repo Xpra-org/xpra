@@ -13,7 +13,7 @@ from xpra.server.common import get_sources_by_type
 from xpra.server.core import ServerCore, SIGNALS as CORE_SIGNALS
 from xpra.server.source.events import EventConnection
 from xpra.common import noop
-from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.objects import merge_dicts
 from xpra.util.str_fn import Ellipsizer
 from xpra.os_util import POSIX
@@ -418,10 +418,6 @@ class ServerBase(ServerCore):
         log("ServerBase.get_info took %.1fms", 1000.0 * (monotonic() - start))
         return info
 
-    def _process_server_settings(self, proto, packet: Packet) -> None:
-        # only used by x11 servers
-        pass
-
     def _disconnect_proto_info(self, proto) -> str:
         # only log protocol info if there is more than one client:
         if len(self._server_sources) > 1:
@@ -435,5 +431,7 @@ class ServerBase(ServerCore):
         if BACKWARDS_COMPATIBLE:
             # no need for main thread:
             self.add_packet_handler("set_deflate", noop)  # removed in v6
-            # now moved to XSettingsServer
-            self.add_packets("server-settings", main_thread=True)
+            if "xsettings" not in self.subsystems:
+                # `server-settings` is handled by the `xsettings` subsystem when it is present,
+                # servers without it can safely ignore this legacy packet:
+                self.add_packet_handler("server-settings", noop)

@@ -6,7 +6,7 @@
 import os
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import BACKWARDS_COMPATIBLE, Packet
 from xpra.common import noop
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr, strtobytes
@@ -83,9 +83,19 @@ class XSettingsServer(StubSubsystem):
         return {}
 
     def init_packet_handlers(self) -> None:
-        self.add_packets("server-settings", main_thread=True)
+        # clients send us their settings using the `xsettings` key of a `setting-change` packet:
+        self.add_client_setting("xsettings", "get_dict", self.set_client_xsettings)
+        if BACKWARDS_COMPATIBLE:
+            # older clients use a dedicated top-level packet:
+            self.add_packets("server-settings", main_thread=True)
+
+    def set_client_xsettings(self, _ss, settings: dict) -> None:
+        log("set_client_xsettings(%s)", settings)
+        # applying the settings updates X11 root window properties:
+        self.idle_add(self.update_server_settings, settings)
 
     def _process_server_settings(self, _proto, packet: Packet) -> None:
+        # legacy packet, superseded by the `xsettings` setting of `setting-change`:
         settings = packet.get_dict(1)
         log("process_server_settings: %s", settings)
         self.update_server_settings(settings)

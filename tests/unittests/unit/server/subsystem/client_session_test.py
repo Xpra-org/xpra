@@ -10,6 +10,7 @@ from unittest.mock import patch
 from xpra.net.common import Packet
 from xpra.os_util import get_hex_uuid
 from xpra.server.subsystem.client_session import ClientSessionServer
+from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.objects import typedict
 from unit.server.subsystem.servermixintest_util import FakeServerBase
 
@@ -99,6 +100,18 @@ class ClientSessionTest(unittest.TestCase):
         self.server = FakeServer()
         self.session = ClientSessionServer(self.server)
         self.server.subsystems[self.session.PREFIX] = self.session
+
+    def test_add_client_setting(self) -> None:
+        proto = object()
+        source = FakeSource("one")
+        self.session.sources[proto] = source
+        applied = []
+        # subsystems add their own settings to the allow-list via the stub helper:
+        subsystem = StubSubsystem(self.server)
+        subsystem.add_client_setting("xsettings", "get_dict", lambda ss, value: applied.append((ss, value)))
+        settings = {"resource-manager": "Xft.dpi:\t96\n"}
+        self.session._process_setting_change(proto, Packet("setting-change", "xsettings", settings))
+        self.assertEqual(applied, [(source, settings)])
 
     def test_dispatch_hooks(self) -> None:
         source = FakeSource("source")
