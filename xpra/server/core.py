@@ -1016,12 +1016,18 @@ class ServerCore(GLibServer):
             # try to read from this socket,
             # so short-lived probes don't go through the whole protocol instantiation
             pre = socket_fast_read(conn)
-            if not pre:
+            if pre is None:
+                # still connected, just nothing to read yet:
+                # clients can take a while to send their `hello` packet
+                # (see `socket_fast_read`), so carry on without a pre-read
+                netlog("%s connection has not sent anything yet", socktype)
+            elif not pre:
                 netlog("closing %s connection: no data", socktype)
                 force_close_connection(conn)
                 return
-            pre_read.append(pre)
-            packet_type = guess_packet_type(pre)
+            else:
+                pre_read.append(pre)
+                packet_type = guess_packet_type(pre)
 
         if packet_type not in ("xpra", ""):
             conn_err("packet type is not xpra")
