@@ -95,12 +95,10 @@ class X11DisplayContext:
         # which is not necessarily the display we are running against by then
         self.display_name = display_name or os.environ.get("DISPLAY", "")
         self.display = 0
-        self.saved_display = 0
 
     def __enter__(self):
         if get_display() == NULL:
             self.close = True
-            self.saved_display = get_display_ptr()
             self.display = do_init_display_source(self.display_name)
         return self
 
@@ -110,9 +108,6 @@ class X11DisplayContext:
             self.display = 0
             self.close = False
             close_display_source(d)
-        if self.saved_display:
-            set_display(<Display *> self.saved_display)
-            self.saved_display = 0
 
     def __repr__(self):
         return "X11DisplayContext(%s @ %#x)" % (self.display_name, self.display)
