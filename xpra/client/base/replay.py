@@ -220,7 +220,7 @@ class WindowReplay:
             self.client.set_grabbed(self.wid if grab else 0, event.intget("timestamp", 0))
             self.event_info(etype, "pointer grabbed" if grab else "pointer released")
             return
-        if not self.window and etype != "new":
+        if not self.window and etype not in ("new", "sync"):
             log.warn("Warning: event %r received, but window %#x is gone!", etype, self.wid)
             return
 
@@ -288,6 +288,13 @@ class WindowReplay:
             log("sync point")
             geometry = event.inttupleget("geometry", (0, 0, 1, 1))
             metadata = typedict(event.dictget("metadata"))
+            if not self.window:
+                # a seek can land on a sync point without ever replaying the `new` event
+                # which created the window - but a sync point is a complete snapshot,
+                # so we can create the window from it:
+                log("creating window %#x from a sync point", self.wid)
+                self.window = self.client.make_client_window(self.wid, geometry, metadata)
+                self.window.show()
             cursor = event.dictget("cursor-data")
             if cursor:
                 self.window.set_cursor_data(to_cursor_data(typedict(cursor)))
