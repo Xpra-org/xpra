@@ -18,6 +18,7 @@ from xpra.util.version import (
     get_build_info, get_host_info, parse_version,
 )
 from xpra.net.common import is_request_allowed, Packet, FULL_INFO
+from xpra.net.dispatch import PacketDispatcher
 from xpra.net.net_util import get_info as get_net_info
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.server.subsystem.stub import StubSubsystem
@@ -210,7 +211,7 @@ class InfoServer(StubSubsystem):
         ni = get_net_info()
         ni |= {
             "sockets": self.server.get_socket_info(),
-            # "packet-handlers": GLibPacketHandler.get_info(self),
+            **PacketDispatcher.get_info(self.server),
             "www": {
                 "": self.server._html,
                 "websocket-upgrade": self.server.websocket_upgrade,
@@ -243,11 +244,6 @@ class InfoServer(StubSubsystem):
         if FULL_INFO >= 1:
             info.update(get_build_info())
         return info
-
-    def get_packet_handlers_info(self) -> dict[str, Any]:
-        return {
-            "default": sorted(self.server._default_packet_handlers.keys()),
-        }
 
     def get_socket_info(self) -> dict[str, Any]:
         return {}
