@@ -88,9 +88,12 @@ class X11DisplayContext:
         a temporary display source will be used.
     """
 
-    def __init__(self, display_name=os.environ.get("DISPLAY", "")):
+    def __init__(self, display_name: str = ""):
         self.close = False
-        self.display_name = display_name
+        # `DISPLAY` must be looked up here and not in the signature:
+        # a default argument value is evaluated once, when this module is imported,
+        # which is not necessarily the display we are running against by then
+        self.display_name = display_name or os.environ.get("DISPLAY", "")
         self.display = 0
         self.saved_display = 0
 
