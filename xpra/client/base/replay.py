@@ -213,6 +213,13 @@ class WindowReplay:
     def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
         log("%-8i wid=%6x - %4i : %s", event.get("timestamp", 0), self.wid, event.get("index", 0), etype)
+        if etype in ("grab", "ungrab"):
+            # handled before the `window is gone` check below,
+            # so that a grab release can never be lost:
+            grab = etype == "grab"
+            self.client.set_grabbed(self.wid if grab else 0, event.intget("timestamp", 0))
+            self.event_info(etype, "pointer grabbed" if grab else "pointer released")
+            return
         if not self.window and etype != "new":
             log.warn("Warning: event %r received, but window %#x is gone!", etype, self.wid)
             return
@@ -230,6 +237,7 @@ class WindowReplay:
             log("new-window: %s", self.window)
             self.window.show()
             self.may_focus(event)
+            self.may_grab(event)
         elif etype == "destroy":
             self.window.destroy()
             self.window = None
@@ -286,6 +294,7 @@ class WindowReplay:
             self.window.update_metadata(metadata)
             self.window.move_resize(*geometry)
             self.may_focus(event)
+            self.may_grab(event)
         elif etype == "metadata":
             metadata = typedict(event.dictget("metadata"))
             log("metadata: %s", metadata)
@@ -311,6 +320,19 @@ class WindowReplay:
         """
         if event.boolget("focused"):
             self.client.set_focused(self.wid, event.intget("timestamp", 0))
+
+    def may_grab(self, event: typedict) -> None:
+        """
+        `new` and `sync` events carry the grab state of the window.
+        Unlike the focus, the usual case is that no window holds the grab,
+        so a window must be able to release it - but only the window
+        which actually held it can do so.
+        """
+        timestamp = event.intget("timestamp", 0)
+        if event.boolget("grabbed"):
+            self.client.set_grabbed(self.wid, timestamp)
+        elif self.client.grabbed == self.wid:
+            self.client.set_grabbed(0, timestamp)
 
     def find_sync_index(self, target_ts: int):
         sync_idx: int = 0
@@ -376,6 +398,9 @@ class Replay(GObjectClientAdapter):
         # the window which had the focus, and the timestamp it was claimed at:
         self.focused = 0
         self.focus_timestamp = 0
+        # the window which held the pointer grab, and the timestamp it was claimed at:
+        self.grabbed = 0
+        self.grab_timestamp = 0
 
     def __repr__(self):
         return "Replay"
@@ -400,6 +425,31 @@ class Replay(GObjectClientAdapter):
         wr = self.window_replay.get(wid)
         window = wr.window if wr else None
         log("set_focused(%#x, %i) window=%s", wid, timestamp, window)
+        if window:
+            window.present()
+
+    def set_grabbed(self, wid: int, timestamp: int = 0) -> None:
+        """
+        The pointer grab is never replayed for real: taking a grab here would
+        confiscate the pointer and keyboard of whoever is watching the replay,
+        and nothing guarantees that we would ever get to release it.
+        We just show which window was holding it.
+        Sync points are replayed in window order rather than in chronological
+        order, so the most recent claim wins.
+        """
+        if timestamp < self.grab_timestamp:
+            return
+        self.grab_timestamp = timestamp
+        wr = self.window_replay.get(wid)
+        window = wr.window if wr else None
+        if wid and not window:
+            # the window is gone, and so is its grab:
+            # the X11 server releases it when the window is destroyed
+            wid = 0
+        if self.grabbed == wid:
+            return
+        self.grabbed = wid
+        log("set_grabbed(%#x, %i) window=%s", wid, timestamp, window)
         if window:
             window.present()
 
@@ -471,9 +521,11 @@ class Replay(GObjectClientAdapter):
         self.cancel_event_timer()
 
         self.time_index = target_ms
-        # the focus is re-claimed from the sync points we are about to replay,
+        # the focus and grab are re-claimed from the sync points we are about to replay,
         # which may be older than the ones we had already seen:
         self.focus_timestamp = 0
+        self.grabbed = 0
+        self.grab_timestamp = 0
         for wr in self.window_replay.values():
             wr.seek(target_ms)
 
