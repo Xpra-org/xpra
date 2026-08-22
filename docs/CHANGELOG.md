@@ -54,6 +54,7 @@
   * [support for URIs on MS Windows](https://github.com/Xpra-org/xpra/issues/4917)
   * [send multiple formats per message](https://github.com/Xpra-org/xpra/issues/4228)
   * [macOS support for more images, PDF, etc](https://github.com/Xpra-org/xpra/issues/2807)
+  * [loop detection](https://github.com/Xpra-org/xpra/issues/5014)
 * 🔊 Audio:
   * [available signal](https://github.com/Xpra-org/xpra/issues/2325)
   * [keepalive](https://github.com/Xpra-org/xpra/issues/4913)
