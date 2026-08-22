@@ -287,7 +287,7 @@ class ClipboardManager(StubSubsystem):
         if self.enabled:
             for x in (
                     "data", "request", "contents", "contents-none",
-                    "pending-requests", "enable-selections", "loop-uuids",
+                    "pending-requests", "enable-selections",
                     "status",
             ):
                 self.add_packet_handler(f"{ClipboardManager.PREFIX}-%s" % x, self._process_packet)
