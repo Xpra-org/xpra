@@ -20,10 +20,9 @@ class ScreenCast(PortalShadow):
         # skip select_devices() and go straight to sources then start:
         self.select_sources()
 
-    def set_keymap(self, server_source, force=False) -> None:
-        """
-        no input devices
-        """
+    def get_keyboard_subsystem_class(self) -> type:
+        from xpra.platform.posix.portal_keyboard import ScreenCastKeyboardManager
+        return ScreenCastKeyboardManager
 
     def get_pointer_subsystem_class(self) -> type:
         from xpra.platform.posix.portal_pointer import ScreenCastPointerManager
