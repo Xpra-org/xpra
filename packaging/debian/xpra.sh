@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 eval `dpkg-architecture -s`
 
 if [ -z "${REPO_ARCH_PATH}" ]; then
@@ -29,6 +31,11 @@ ${TAR} -Jxf ${XPRA_TAR_XZ}
 pushd "./${dirname}"
 ln -sf packaging/debian/xpra ./debian
 
+# Use the local tar wrapper for dpkg and apt while building under old qemu.
+if command -v bsdtar > /dev/null; then
+	export PATH="${SCRIPT_DIR}:${PATH}"
+fi
+
 #the control file has a few distribution specific entries
 #ie:
 # '#buster:         ,libturbojpeg0'
@@ -39,12 +46,20 @@ CODENAME=`lsb_release -c | awk '{print $2}'`
 perl -i.bak -pe "s/#${CODENAME}:/#${CODENAME}:\\n/g" debian/control
 
 #install build dependencies:
-if ! mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control; then
+#Do not use mk-build-deps here: it creates a temporary .deb via dpkg-deb,
+#which needs GNU tar and cannot run under the older arm64 qemu emulation.
+#The build image does not include dpkg-parsecontrol, so extract this field
+#directly.  The distro-specific comments have already been expanded above.
+BUILD_DEPS=$(awk '
+  /^Build-Depends:[[:space:]]*/ { in_deps=1; sub(/^Build-Depends:[[:space:]]*/, ""); print; next }
+  in_deps && /^[[:space:]]*#/ { next }
+  in_deps && /^[[:space:]]/ { sub(/^[[:space:]]*/, ""); print; next }
+  in_deps { exit }
+' debian/control | tr '\n' ' ')
+if ! apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes satisfy "$BUILD_DEPS"; then
 	echo "failed to install Xpra build dependencies" >&2
 	exit 1
 fi
-#mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
-rm -f xpra-build-deps*
 
 #install latest cython since the one Debian / Ubuntu tends to be out of date:
 DEBIAN_FRONTEND=noninteractive apt-get -y install python3-pip
