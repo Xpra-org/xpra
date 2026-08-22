@@ -158,13 +158,13 @@ def parse_shortcuts(strs: Sequence[str],
                     continue
                 # find the real modifier for this name:
                 # ie: "alt_l" -> "mod1"
-                imod = modifier_names.get(mod)
-                if not imod:
-                    log.warn("Warning: invalid modifier '%s' in keyboard shortcut '%s'", mod, s)
+                modname = modifier_names.get(mod, "")
+                if not modname:
+                    log.warn("Warning: invalid modifier %r in keyboard shortcut %r", mod, s)
                     log.warn(" the modifiers must be one of: %s", csv(modifier_names.keys()))
                     valid = False
                     break
-                modifiers.append(imod)
+                modifiers.append(modname)
             if not valid:
                 continue
         # should we be validating the keyname?
