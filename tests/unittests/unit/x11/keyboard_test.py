@@ -9,28 +9,45 @@ import unittest
 
 from unit.server_test_util import ServerTestUtil, log
 from xpra.os_util import OSX, POSIX
+from xpra.util.env import OSEnvContext
 
 
 class TestX11Keyboard(ServerTestUtil):
 
+    env_context = None
+    gdk_display = None
+
     @classmethod
     def setUpClass(cls):
         ServerTestUtil.setUpClass()
+        # the environment is restored in `tearDownClass`, so that the tests
+        # running after this class are not left with a `DISPLAY`
+        # pointing at the Xvfb we will have killed:
+        cls.env_context = OSEnvContext(GDK_BACKEND="x11")
+        cls.env_context.__enter__()
         display = cls.find_free_display()
         cls.xvfb = cls.start_Xvfb(display)
         os.environ["DISPLAY"] = display
-        os.environ["GDK_BACKEND"] = "x11"
         from xpra.x11.bindings.display_source import init_display_source  #@UnresolvedImport
         cls.display_ptr = init_display_source()
         from xpra.gtk.util import verify_gdk_display
-        verify_gdk_display(display)
+        cls.gdk_display = verify_gdk_display(display)
 
     @classmethod
     def tearDownClass(cls):
+        # both connections must be closed before the Xvfb is killed below,
+        # or the stale connection will terminate this process
+        # with an X11 IO error the next time a display is used:
+        if cls.gdk_display:
+            cls.gdk_display.close()
+            cls.gdk_display = None
         from xpra.x11.bindings.display_source import close_display_source  #@UnresolvedImport
         close_display_source(cls.display_ptr)
         ServerTestUtil.tearDownClass()
         cls.xvfb.terminate()
+        if cls.env_context:
+            cls.env_context.__exit__()
+            cls.env_context = None
 
     def test_unicode(self):
         from xpra.x11.bindings.keyboard import X11KeyboardBindings  #@UnresolvedImport

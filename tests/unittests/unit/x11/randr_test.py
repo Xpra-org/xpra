@@ -34,11 +34,14 @@ class RandrTest(ServerTestUtil):
 
             display, xvfb = self.start_test_xvfb()
             log.warn("test resize on display: %s", display)
+            from xpra.x11.bindings.display_source import (
+                set_display_name, init_display_source, close_display_source,
+            )
+            display_ptr = 0
             try:
                 os.environ["DISPLAY"] = display
-                from xpra.x11.bindings.display_source import set_display_name, init_display_source
                 set_display_name(display)
-                init_display_source()
+                display_ptr = init_display_source()
 
                 from xpra.x11.bindings.randr import RandRBindings
                 randr = RandRBindings()
@@ -104,6 +107,11 @@ class RandrTest(ServerTestUtil):
                 })
 
             finally:
+                if display_ptr:
+                    # close the connection before killing the Xvfb,
+                    # or the dangling display pointer will terminate this process
+                    # with an X11 IO error the next time the bindings are used:
+                    close_display_source(display_ptr)
                 xvfb.terminate()
 
 
