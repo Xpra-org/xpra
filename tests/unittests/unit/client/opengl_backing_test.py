@@ -481,7 +481,7 @@ class TestGLInit(unittest.TestCase):
     def setUpClass(cls):
         import time
         if os.name == "posix" and sys.platform != "darwin":
-            from unit.process_test_util import ProcessTestUtil
+            from unit.process_test_util import DisplayContext, ProcessTestUtil
             ProcessTestUtil.setUpClass()
             cls.ptu = ProcessTestUtil()
             cls.ptu.setUp()
@@ -494,15 +494,14 @@ class TestGLInit(unittest.TestCase):
                 wait_for_x_server(cls.xvfb.display or "", 10)
             except ImportError:
                 time.sleep(3)
-            from xpra.os_util import gi_import
-            Gdk = gi_import("Gdk")
-            Gdk.Display.open(cls.xvfb.display or "")
-            from xpra.x11.gtk.display_source import init_gdk_display_source
-            init_gdk_display_source()
+            DisplayContext.open_display_source(cls.xvfb.display or "")
 
     @classmethod
     def tearDownClass(cls):
         if cls.xvfb:
+            # close the display connection before killing the Xvfb, see `DisplayContext`:
+            from unit.process_test_util import DisplayContext
+            DisplayContext.close_display_source()
             cls.xvfb.terminate()
             cls.xvfb = None
             from unit.process_test_util import ProcessTestUtil
