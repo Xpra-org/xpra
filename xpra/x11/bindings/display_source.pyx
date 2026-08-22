@@ -72,7 +72,10 @@ def close_display_source(uintptr_t ptr) -> int:
     assert ptr!=0, "invalid NULL display pointer"
     cdef Display * display = <Display *> ptr
     set_display(NULL)
-    set_display_name("CLOSED")
+    # clear the name rather than leave a placeholder behind:
+    # `init_display_source` would then try to open a display by that name,
+    # and callers use `get_display_name() or ...` to fall back to `DISPLAY`
+    set_display_name("")
     cdef int v = XCloseDisplay(display)
     return v
 
