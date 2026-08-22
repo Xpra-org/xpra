@@ -341,8 +341,12 @@ class WindowReplay:
         elif self.client.grabbed == self.wid:
             self.client.set_grabbed(0, timestamp)
 
-    def find_sync_index(self, target_ts: int):
-        sync_idx: int = 0
+    def find_sync_index(self, target_ts: int) -> int:
+        """
+        The index of the last sync point at or before `target_ts`,
+        or -1 if the window did not exist yet.
+        """
+        sync_idx: int = -1
         for ts, idx in self.sync_index:
             if ts <= target_ts:
                 sync_idx = idx
@@ -352,12 +356,14 @@ class WindowReplay:
 
     def seek(self, target_ms: int) -> None:
         sync_idx = self.find_sync_index(target_ms)
+        if sync_idx < 0:
+            # no sync point at or before the target: the window did not exist yet
+            if self.wid > 0 and self.window:
+                self.window.destroy()
+                self.window = None
+            sync_idx = 0
         # start at previous sync point:
         self.event_index = sync_idx
-        if self.wid > 0 and sync_idx == 0 and self.window:
-            # window did not exist yet!
-            self.window.destroy()
-            self.window = None
         # fast-replay any events between the sync point and target_ms
         while self.event_index < len(self.events):
             ev = self.events.get(self.event_index)
