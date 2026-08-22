@@ -5,6 +5,8 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from collections import deque
+from unittest.mock import patch
 
 from xpra.net.common import Packet
 from xpra.clipboard import core
@@ -19,6 +21,7 @@ class ClipboardProxy:
         self._can_send = True
         self._can_receive = True
         self._greedy_client = False
+        self._clipboard_origin = ""
         self.tokens = []
 
     @staticmethod
@@ -50,6 +53,7 @@ class ClipboardCoreTest(unittest.TestCase):
         helper._remote_to_local = {}
         helper._greedy = ()
         helper._clipboard_proxies = {"CLIPBOARD": proxy}
+        helper._clipboard_origins = {}
         helper.local_selections = ("CLIPBOARD",)
         helper.local_greedy = ()
         helper.filter_res = ()
@@ -94,13 +98,14 @@ class ClipboardCoreTest(unittest.TestCase):
         helper, proxy, packets = self.make_helper(False)
         helper.local_greedy = ("CLIPBOARD",)
         payload = b"hello" * 200
-        helper._send_clipboard_token_handler(
-            proxy,
-            {
-                "targets": ("UTF8_STRING",),
-                "data": {"UTF8_STRING": ("STRING", 8, payload)},
-            },
-        )
+        with patch.object(core, "get_hex_uuid", return_value="origin-1"):
+            helper._send_clipboard_token_handler(
+                proxy,
+                {
+                    "targets": ("UTF8_STRING",),
+                    "data": {"UTF8_STRING": ("STRING", 8, payload)},
+                },
+            )
         self.assertEqual(len(packets), 1)
         packet_type, selection, options = packets[0]
         self.assertEqual(packet_type, "clipboard-data")
@@ -111,6 +116,7 @@ class ClipboardCoreTest(unittest.TestCase):
         })
         self.assertEqual(options["claim"], True)
         self.assertEqual(options["greedy"], True)
+        self.assertEqual(options["origin"], "origin-1")
         self.assertNotIn("token", options)
         self.assertNotIn("clipboard-token", helper.get_packet_types())
 
@@ -119,13 +125,51 @@ class ClipboardCoreTest(unittest.TestCase):
         helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {}))
         self.assertEqual(proxy.tokens, [(None, None, True, False)])
 
+    def test_modern_packet_preserves_origin(self):
+        helper, proxy, packets = self.make_helper(False)
+        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {"origin": "remote-origin"}))
+        self.assertEqual(proxy._clipboard_origin, "remote-origin")
+        helper._send_clipboard_token_handler(proxy, {"targets": (), "data": {}})
+        self.assertEqual(packets[0][2]["origin"], "remote-origin")
+
+    def test_modern_packet_drops_returned_origin(self):
+        helper, proxy, _packets = self.make_helper(False)
+        helper._clipboard_origins["CLIPBOARD"] = deque(("local-origin",), maxlen=16)
+        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {"origin": "local-origin"}))
+        self.assertEqual(proxy.tokens, [])
+
+    def test_modern_packet_origin_stops_a_clipboard_cycle(self):
+        sender, sender_proxy, sender_packets = self.make_helper(False)
+        receiver, receiver_proxy, receiver_packets = self.make_helper(False)
+        with patch.object(core, "get_hex_uuid", return_value="cycle-origin"):
+            sender._send_clipboard_token_handler(sender_proxy, {"targets": (), "data": {}})
+        receiver.process_clipboard_packet(Packet(*sender_packets[0]))
+        receiver._send_clipboard_token_handler(receiver_proxy, {"targets": (), "data": {}})
+        sender.process_clipboard_packet(Packet(*receiver_packets[0]))
+        self.assertEqual(sender_proxy.tokens, [])
+
+    def test_clipboard_origins_are_bounded(self):
+        helper, _proxy, _packets = self.make_helper(False)
+        for i in range(17):
+            helper.remember_clipboard_origin("CLIPBOARD", str(i))
+        self.assertEqual(tuple(helper._clipboard_origins["CLIPBOARD"]), tuple(str(i) for i in range(1, 17)))
+
+    def test_client_reset_clears_clipboard_origins(self):
+        helper, proxy, _packets = self.make_helper(False)
+        helper.remember_clipboard_origin("CLIPBOARD", "origin")
+        proxy._clipboard_origin = "origin"
+        helper.client_reset()
+        self.assertEqual(helper._clipboard_origins, {})
+        self.assertEqual(proxy._clipboard_origin, "")
+
     def test_modern_packet_omits_empty_targets(self):
         helper, proxy, packets = self.make_helper(False)
-        helper._send_clipboard_token_handler(proxy, {"targets": (), "data": {}})
+        with patch.object(core, "get_hex_uuid", return_value="origin-2"):
+            helper._send_clipboard_token_handler(proxy, {"targets": (), "data": {}})
         self.assertEqual(packets, [(
             "clipboard-data",
             "CLIPBOARD",
-            {"claim": True, "greedy": False},
+            {"claim": True, "greedy": False, "origin": "origin-2"},
         )])
 
     def test_modern_packet_sends_multiple_data_items(self):

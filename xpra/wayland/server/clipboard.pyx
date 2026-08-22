@@ -369,6 +369,7 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.targets = ()
             self.target_data = {}
             return
+        self._clipboard_origin = ""
         self.targets = self.selection_api.source_targets(source_ptr)
         self.target_data = {}
         self.do_owner_changed()
@@ -527,6 +528,7 @@ class WaylandClipboardProxy(WaylandPrimaryClipboardProxy):
             self.targets = ()
             self.target_data = {}
             return
+        self._clipboard_origin = ""
         self.targets = self.selection_api.source_targets(source_ptr)
         self.target_data = {}
         self.do_owner_changed()

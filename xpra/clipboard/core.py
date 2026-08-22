@@ -7,13 +7,14 @@
 import os
 import struct
 from typing import Any, Final
+from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
 from xpra.net.compression import Compressible
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
 from xpra.net.dispatch import SubsystemPacketHandlers
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, get_hex_uuid
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
 from xpra.util.env import envint, envbool
@@ -39,6 +40,8 @@ MIN_CLIPBOARD_COMPRESS_SIZE: Final[int] = envint("XPRA_MIN_CLIPBOARD_COMPRESS_SI
 MAX_CLIPBOARD_PACKET_SIZE: Final[int] = 16 * 1024 * 1024
 MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
+MAX_CLIPBOARD_ORIGINS: Final[int] = 16
+MAX_CLIPBOARD_ORIGIN_SIZE: Final[int] = 64
 
 DEFAULT_PREFERRED_TARGETS = ",".join(
     PLAIN_TEXT_TARGETS + HTML_TARGETS + URI_TARGETS + RTF_TARGETS
@@ -85,6 +88,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         self.filter_res = compile_filters(d.strtupleget("filters"))
         self._clipboard_request_counter: int = 0
         self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
+        self._clipboard_origins: dict[str, deque[str]] = {}
         self._local_to_remote: dict[str, str] = {}
         self._remote_to_local: dict[str, str] = {}
         self.init_translation(kwargs)
@@ -212,9 +216,13 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         for x in self._clipboard_proxies.values():
             x.cleanup()
         self._clipboard_proxies = {}
+        self._clipboard_origins = {}
 
     def client_reset(self) -> None:
-        """ overriden in subclasses to try to reset the state """
+        """Reset state associated with the disconnected clipboard peer."""
+        self._clipboard_origins.clear()
+        for proxy in self._clipboard_proxies.values():
+            proxy._clipboard_origin = ""
 
     def set_direction(self, can_send: bool, can_receive: bool,
                       max_send_size: int | None = None, max_receive_size: int | None = None) -> None:
@@ -272,6 +280,17 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         for proxy in self._clipboard_proxies.values():
             proxy.claim()
 
+    def remember_clipboard_origin(self, selection: str, origin: str) -> None:
+        origins = self._clipboard_origins.setdefault(selection, deque(maxlen=MAX_CLIPBOARD_ORIGINS))
+        try:
+            origins.remove(origin)
+        except ValueError:
+            pass
+        origins.append(origin)
+
+    def is_clipboard_loop(self, selection: str, origin: str) -> bool:
+        return origin in self._clipboard_origins.get(selection, ())
+
     # Used by the client during startup:
     def send_tokens(self, selections: Iterable[str] = ()) -> None:
         log("send_tokens(%s)", selections)
@@ -309,6 +328,12 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
                 "claim": proxy._can_send,
                 "greedy": self.local_greedy_selection(proxy._selection),
             }
+            origin = getattr(proxy, "_clipboard_origin", "")
+            if not origin:
+                origin = get_hex_uuid()
+                proxy._clipboard_origin = origin
+            self.remember_clipboard_origin(proxy._selection, origin)
+            options["origin"] = origin
             if targets:
                 options["targets"] = targets
             wire_items = {}
@@ -386,6 +411,17 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         if proxy is None:
             return
         options = typedict(packet.get_dict(2))
+        origin = options.strget("origin")
+        if len(origin) > MAX_CLIPBOARD_ORIGIN_SIZE:
+            log.warn("Warning: ignoring oversized clipboard origin for %r", selection)
+            origin = ""
+        if origin:
+            if self.is_clipboard_loop(proxy._selection, origin):
+                log.warn("Warning: clipboard loop detected for %r", proxy._selection)
+                return
+            proxy._clipboard_origin = origin
+        else:
+            proxy._clipboard_origin = ""
         targets = None
         target_data = None
         if proxy._can_receive:
