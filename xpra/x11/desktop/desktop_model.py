@@ -120,12 +120,39 @@ class ScreenDesktopModel(DesktopModelBase):
             if ow == rw and oh == rh:
                 return
             with xsync:
-                if RandR.is_dummy16() and (rw, rh) not in RandR.get_xrr_screen_sizes():
-                    RandR.add_screen_size(rw, rh)
-            with xsync:
-                if not RandR.set_screen_size(rw, rh):
-                    geomlog.warn("Warning: failed to resize vfb")
-                    return
+                # `is_dummy16` verifies the RandR version,
+                # which `get_monitor_properties` does not check:
+                dummy16 = RandR.is_dummy16()
+                monitors = RandR.get_monitor_properties() if dummy16 else {}
+            if dummy16 and len(monitors) == 1:
+                # the dummy driver's vfb setup creates a RandR 1.6 monitor:
+                # a window manager lays the desktop out using the monitor
+                # geometry, so resizing only the screen would leave the monitor -
+                # and the window manager's layout - at the old size.
+                # `set_crtc_config` resizes the screen, the crtc and the
+                # monitor together (and adds the mode if needed):
+                with xsync:
+                    if not RandR.set_crtc_config({0: {
+                        "primary": True,
+                        "geometry": (0, 0, rw, rh),
+                        "automatic": True,
+                    }}):
+                        geomlog.warn("Warning: failed to resize the virtual display")
+                        return
+            else:
+                with xsync:
+                    if (rw, rh) not in RandR.get_xrr_screen_sizes():
+                        # the mode must exist before it can be set: this is not
+                        # specific to the dummy driver, Xvfb needs it too
+                        # (the seamless server adds missing modes whenever
+                        # `randr_exact_size` is set, which covers both the dummy
+                        # driver and Xvfb - see `do_get_best_screen_size`
+                        # in `xpra.x11.subsystem.display`):
+                        RandR.add_screen_size(rw, rh)
+                with xsync:
+                    if not RandR.set_screen_size(rw, rh):
+                        geomlog.warn("Warning: failed to resize vfb")
+                        return
             with xsync:
                 w, h = RandR.get_screen_size()
                 geomlog(f"wanted {rw}x{rh} - got {w}x{h}")
