@@ -289,7 +289,7 @@ class ClipboardServer(StubServerMixin):
         if self.clipboard:
             for x in (
                     "token", "request", "contents", "contents-none",
-                    "pending-requests", "enable-selections", "loop-uuids",
+                    "pending-requests", "enable-selections",
                     "status",
             ):
                 self.add_packet_handler(f"{ClipboardServer.PREFIX}-%s" % x, self._process_clipboard_packet)
