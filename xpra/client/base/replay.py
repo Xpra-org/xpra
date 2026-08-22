@@ -371,6 +371,7 @@ class WindowModel:
         self.wid = wid
         self.show = self.draw_region = self.set_cursor_data = self.show_pointer_overlay = noop
         self.resize = self.move_resize = self.update_metadata = self.present = noop
+        self.destroy = noop
 
 
 def log_notable_event(etype: str, msg: str) -> None:
