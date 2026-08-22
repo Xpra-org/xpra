@@ -81,6 +81,8 @@ class WindowModel:
         self.sync_timer = 0
         # does this window have the keyboard focus? (see `RecordClient.set_focused`)
         self.focused = False
+        # does this window hold the pointer grab? (see `RecordClient.set_grabbed`)
+        self.grabbed = False
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
 
@@ -129,6 +131,7 @@ class WindowModel:
             "metadata": self.metadata,
             "cursor-data": self.cursor_data,
             "focused": self.focused,
+            "grabbed": self.grabbed,
         }
         if self.geometry != NO_GEOMETRY:
             kwargs["geometry"] = self.geometry
@@ -167,6 +170,8 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         self.start = monotonic()
         # the window which currently has the keyboard focus, 0 for none:
         self.focused = 0
+        # the window which currently holds the pointer grab, 0 for none:
+        self.grabbed = 0
 
     def init(self, opts) -> None:
         super().init(opts)
@@ -209,6 +214,8 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if self.windows:
             window_caps = {
                 "enabled": True, "record": True, "restack": True, "sync-position": True, "sync-focus": True,
+                # we want to know when a window grabs the pointer, see `_process_window_grab`:
+                "grabs": True,
             }
             caps = {
                 "window": window_caps,
@@ -275,6 +282,24 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             window.focused = True
             window.schedule_sync()
 
+    def set_grabbed(self, wid: int) -> None:
+        """
+        Update the window which holds the pointer grab.
+        The grab is global to the session: at most one window can hold it,
+        and the state is saved at sync points, so both the window losing
+        the grab and the one taking it must record a new one.
+        """
+        if self.grabbed == wid:
+            return
+        log("set_grabbed(%#x) previous grab: %#x", wid, self.grabbed)
+        if self.grabbed > 0 and (window := self.get_window(self.grabbed)):
+            window.grabbed = False
+            window.schedule_sync()
+        self.grabbed = wid
+        if wid > 0 and (window := self.get_window(wid)):
+            window.grabbed = True
+            window.schedule_sync()
+
     def _process_window_create(self, packet: Packet) -> None:
         self._process_new_common(packet, False)
 
@@ -316,8 +341,9 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         # new windows usually steal the focus:
         if can_focus(metadata):
             self.set_focused(wid)
-        # `new` events are sync points, so they must carry the focus state too:
-        window.record("new", geometry=(x, y, w, h), metadata=metadata, focused=window.focused)
+        # `new` events are sync points, so they must carry the focus and grab state too:
+        window.record("new", geometry=(x, y, w, h), metadata=metadata,
+                      focused=window.focused, grabbed=window.grabbed)
 
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         # should not be received!
@@ -381,7 +407,29 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             if self.focused == wid:
                 # we don't know which window gets the focus next:
                 self.set_focused(0)
+            if self.grabbed == wid:
+                # the X11 server releases the grab when the window goes away:
+                self.set_grabbed(0)
             window.record("destroy")
+
+    def _process_window_grab(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        if not window:
+            log.warn("Warning: window %#x not found!", wid)
+            return
+        self.set_grabbed(wid)
+        window.record("grab")
+
+    def _process_window_ungrab(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        if wid <= 0:
+            # the `ungrab` control command sends -1 to ungrab all the clients:
+            wid = self.grabbed
+        window = self.get_window(wid)
+        self.set_grabbed(0)
+        if window:
+            window.record("ungrab")
 
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -562,6 +610,8 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             self.add_legacy_alias("draw", "window-draw")
             self.add_legacy_alias("bell", "window-bell")
             self.add_legacy_alias("eos", "window-eos")
+            self.add_legacy_alias("pointer-grab", "window-grab")
+            self.add_legacy_alias("pointer-ungrab", "window-ungrab")
         self.add_packets(
             "startup-complete",
             "window-create",
@@ -572,6 +622,8 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             "window-resized",
             "window-metadata",
             "window-destroy",
+            "window-grab",
+            "window-ungrab",
             "window-draw",
             "window-bell",
             "window-eos",
