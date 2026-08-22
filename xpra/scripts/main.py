@@ -1777,8 +1777,8 @@ def run_monitor_info(options, args: list[str]) -> int:
         from xpra.platform.win32.monitors import get_monitors_info
     else:
         if display:
-            from xpra.gtk.util import verify_gdk_display
-            verify_gdk_display(display)
+            from xpra.gtk.util import open_gdk_display
+            open_gdk_display(display)
         from xpra.gtk.info import get_monitors_info
     import json
     monitors = get_monitors_info()

@@ -30,8 +30,8 @@ class TestX11Keyboard(ServerTestUtil):
         os.environ["DISPLAY"] = display
         from xpra.x11.bindings.display_source import init_display_source  #@UnresolvedImport
         cls.display_ptr = init_display_source()
-        from xpra.gtk.util import verify_gdk_display
-        cls.gdk_display = verify_gdk_display(display)
+        from xpra.gtk.util import open_gdk_display
+        cls.gdk_display = open_gdk_display(display)
 
     @classmethod
     def tearDownClass(cls):
