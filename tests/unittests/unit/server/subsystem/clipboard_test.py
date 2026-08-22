@@ -14,6 +14,9 @@ from unit.process_test_util import DisplayContext
 
 class ClipboardMixinTest(ServerMixinTest):
 
+    # ClipboardManager subscribes to these ServerBase lifecycle signals.
+    __signals__ = ("last-client-exited", "new-ui-driver")
+
     def test_clipboard(self):
         with DisplayContext():
             if POSIX and not OSX:
