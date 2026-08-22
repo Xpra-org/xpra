@@ -16,6 +16,7 @@ import sys
 import struct
 from enum import IntEnum
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.log import Logger, consume_verbose_argv
 from xpra.util.env import envbool
@@ -124,7 +125,7 @@ def bytes_to_xsettings(d: bytes) -> tuple[int, list[tuple[int, str, Any, int]]]:
     return serial, settings
 
 
-def xsettings_to_bytes(d: tuple[int, list[tuple[int, str, Any, int]]]) -> bytes:
+def xsettings_to_bytes(d: tuple[int, Sequence[tuple[int, str, Any, int]]]) -> bytes:
     if len(d) != 2:
         raise ValueError(f"invalid format for XSETTINGS: {d!r}")
     serial, settings = d

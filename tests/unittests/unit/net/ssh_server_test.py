@@ -76,6 +76,13 @@ class TestDetectSshStanza(unittest.TestCase):
         assert result, f"expected non-empty result, got {result!r}"
         assert "_proxy" in result
 
+    def test_tuple_sh_c_with_proxy(self):
+        cmd = (
+            "sh", "-c",
+            'if type "xpra" > /dev/null 2>&1; then xpra _proxy; fi',
+        )
+        assert detect_ssh_stanza(cmd) == ["xpra", "_proxy"]
+
     def test_sh_c_which(self):
         cmd = [
             "sh", "-c",

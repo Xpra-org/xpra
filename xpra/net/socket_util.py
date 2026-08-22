@@ -461,7 +461,7 @@ def parse_bind_options(opts) -> dict[str, Any]:
     return bind_options
 
 
-def create_sockets(bind_options: dict[str, str], retry: int = 0, sd_listen=False) -> list[SocketListener]:
+def create_sockets(bind_options: dict[str, Any], retry: int = 0, sd_listen=False) -> list[SocketListener]:
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)

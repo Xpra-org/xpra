@@ -53,7 +53,7 @@ def get_keyclass(keytype: str):
     return getattr(paramiko, keytype[:1].upper() + keytype[1:] + "Key", None)
 
 
-def detect_ssh_stanza(cmd: list[str]) -> Sequence[str]:
+def detect_ssh_stanza(cmd: Sequence[str]) -> Sequence[str]:
     # plain 'ssh' clients execute a long command with if+else statements,
     # try to detect it and extract the actual command the client is trying to run.
     # ie:
@@ -65,7 +65,7 @@ def detect_ssh_stanza(cmd: list[str]) -> Sequence[str]:
     log(f"parse cmd={cmd} (len={len(cmd)})")
     if len(cmd) == 1:  # ie: 'thelongcommand'
         parse_cmd = cmd[0]
-    elif len(cmd) == 3 and cmd[:2] == ["sh", "-c"]:  # ie: 'sh' '-c' 'thelongcommand'
+    elif len(cmd) == 3 and cmd[0] == "sh" and cmd[1] == "-c":  # ie: 'sh' '-c' 'thelongcommand'
         parse_cmd = cmd[2]
     else:
         return ()
