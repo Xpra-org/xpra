@@ -48,7 +48,14 @@ perl -i.bak -pe "s/#${CODENAME}:/#${CODENAME}:\\n/g" debian/control
 #install build dependencies:
 #Do not use mk-build-deps here: it creates a temporary .deb via dpkg-deb,
 #which needs GNU tar and cannot run under the older arm64 qemu emulation.
-BUILD_DEPS=$(dpkg-parsecontrol -sBuild-Depends debian/control)
+#The build image does not include dpkg-parsecontrol, so extract this field
+#directly.  The distro-specific comments have already been expanded above.
+BUILD_DEPS=$(awk '
+  /^Build-Depends:[[:space:]]*/ { in_deps=1; sub(/^Build-Depends:[[:space:]]*/, ""); print; next }
+  in_deps && /^[[:space:]]*#/ { next }
+  in_deps && /^[[:space:]]/ { sub(/^[[:space:]]*/, ""); print; next }
+  in_deps { exit }
+' debian/control | tr '\n' ' ')
 if ! apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes satisfy "$BUILD_DEPS"; then
 	echo "failed to install Xpra build dependencies" >&2
 	exit 1

@@ -31,7 +31,12 @@ fi
 #install build dependencies:
 #Avoid mk-build-deps: its temporary .deb invokes GNU tar, which fails with
 #the older arm64 qemu emulation used by the builder.
-BUILD_DEPS=$(dpkg-parsecontrol -sBuild-Depends debian/control)
+BUILD_DEPS=$(awk '
+  /^Build-Depends:[[:space:]]*/ { in_deps=1; sub(/^Build-Depends:[[:space:]]*/, ""); print; next }
+  in_deps && /^[[:space:]]*#/ { next }
+  in_deps && /^[[:space:]]/ { sub(/^[[:space:]]*/, ""); print; next }
+  in_deps { exit }
+' debian/control | tr '\n' ' ')
 if ! apt-get -o Debug::pkgProblemResolver=yes --yes satisfy "$BUILD_DEPS"; then
 	echo "failed to install xserver-xorg-video-dummy build dependencies" >&2
 	exit 1
