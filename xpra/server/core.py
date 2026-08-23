@@ -1593,7 +1593,7 @@ class ServerCore(GLibServer):
         # the client may require a more recent server version,
         # this capability is optional:
         perr = protocol_compat_check(c.inttupleget("protocol"))
-        if perr is not None:
+        if perr:
             self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
             proto.close()
             return
