@@ -24,6 +24,7 @@
   * [much improved RFB support](https://github.com/Xpra-org/xpra/issues/4933)
   * [prefixed packets](https://github.com/Xpra-org/xpra/issues/4972)
   * [document current protocol](https://github.com/Xpra-org/xpra/issues/4999)
+  * [protocol versioning](https://github.com/Xpra-org/xpra/issues/5015)
 * 🛡️ Security:
   * [`seccomp` hardening of image parsing](https://github.com/Xpra-org/xpra/issues/622)
   * [honour encodings restrictions in all subsystems](https://github.com/Xpra-org/xpra/issues/4943)

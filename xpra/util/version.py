@@ -108,18 +108,28 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
 def protocol_compat_check(remote_protocol_version) -> str:
     """
     The peer exposes the minimum version it is willing to talk to
-    as its "protocol" capability,
+    as its "protocol-version" capability,
     verify that this version is recent enough to satisfy it.
+    This capability is only optional in `BACKWARDS_COMPATIBLE` mode.
     Returns an error message, or an empty string if we are compatible.
     """
+    from xpra.net.common import BACKWARDS_COMPATIBLE
     if not remote_protocol_version:
-        # not specified: nothing to check
-        log("no minimum protocol version specified by the remote end")
-        return ""
+        if BACKWARDS_COMPATIBLE:
+            # not specified: nothing to check
+            log("no minimum protocol version specified by the remote end")
+            return ""
+        msg = "the remote end does not expose its minimum protocol version"
+        log(msg)
+        return msg
     try:
         rv = parse_version(remote_protocol_version)
     except ValueError:
-        warn(f"Warning: failed to parse remote protocol version {remote_protocol_version!r}")
+        msg = f"failed to parse remote protocol version {remote_protocol_version!r}"
+        if not BACKWARDS_COMPATIBLE:
+            log(msg)
+            return msg
+        warn(f"Warning: {msg}")
         return ""
     rvstr = ".".join(str(part) for part in rv)
     try:

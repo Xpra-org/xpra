@@ -140,7 +140,7 @@ class RemoteInfo(StubClientSubsystem):
             self.client.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION, f"incompatible remote version {vstr!r}: {verr}")
             return False
         # the server may require a more recent client version,
-        # this capability is optional:
+        # this capability is only optional in `BACKWARDS_COMPATIBLE` mode:
         perr = protocol_compat_check(c.inttupleget("protocol-version"))
         if perr:
             self.client.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION, f"incompatible client version: {perr}")
