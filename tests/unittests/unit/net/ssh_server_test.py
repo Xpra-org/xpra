@@ -102,7 +102,7 @@ class TestDetectSshStanza(unittest.TestCase):
 
     def test_not_sh_c(self):
         # 2 arguments but not 'sh -c' → ()
-        assert detect_ssh_stanza(["bash", "script.sh"]) == ()
+        assert not detect_ssh_stanza(["bash", "script.sh"])
 
     def test_no_proxy_subcommand(self):
         # there is no _proxy in the 'then' branch
@@ -110,7 +110,7 @@ class TestDetectSshStanza(unittest.TestCase):
             "sh", "-c",
             'if type "xpra" > /dev/null 2>&1; then xpra version; fi',
         ]
-        assert detect_ssh_stanza(cmd) == ()
+        assert not detect_ssh_stanza(cmd)
 
 
 class TestGetKeyclass(unittest.TestCase):
