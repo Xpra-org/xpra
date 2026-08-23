@@ -25,6 +25,9 @@ from xpra.util.env import envint, envbool
 
 LOG_HELLO: bool = envbool("XPRA_LOG_HELLO", False)
 BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
+# the minimum protocol version we are willing to accept from the peer,
+# exposed as the "protocol" capability so that the peer can bail out early:
+MIN_PROTOCOL_VERSION: tuple[int, ...] = (5, 1) if BACKWARDS_COMPATIBLE else (6, 6)
 FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO >= 0
 

@@ -105,6 +105,36 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
     return rstr
 
 
+def protocol_compat_check(remote_protocol_version) -> str | None:
+    """
+    The peer exposes the minimum version it is willing to talk to
+    as its "protocol" capability,
+    verify that this version is recent enough to satisfy it.
+    Returns an error message, or `None` if we are compatible.
+    """
+    if not remote_protocol_version:
+        # not specified: nothing to check
+        log("no minimum protocol version specified by the remote end")
+        return None
+    try:
+        rv = parse_version(remote_protocol_version)
+    except ValueError:
+        warn(f"Warning: failed to parse remote protocol version {remote_protocol_version!r}")
+        return None
+    rvstr = ".".join(str(part) for part in rv)
+    try:
+        if XPRA_NUMERIC_VERSION < rv:
+            msg = f"remote end requires version {rvstr!r} or later"
+            log(msg)
+            return msg
+    except TypeError as e:
+        msg = f"invalid remote protocol version {rvstr!r}: {e}"
+        log(msg)
+        return msg
+    log(f"local version {XPRA_VERSION!r} satisfies the remote protocol version {rvstr!r}")
+    return None
+
+
 def version_compat_check(remote_version) -> str | None:
     if not remote_version:
         msg = "remote version is not available"

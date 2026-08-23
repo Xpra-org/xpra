@@ -8,7 +8,7 @@ import time
 from collections.abc import Sequence
 from typing import Any
 
-from xpra.util.version import version_compat_check, parse_version, get_platform_info
+from xpra.util.version import version_compat_check, protocol_compat_check, parse_version, get_platform_info
 from xpra.util.str_fn import bytestostr, std
 from xpra.util.objects import typedict
 from xpra.util.system import platform_name
@@ -138,6 +138,12 @@ class RemoteInfo(StubClientSubsystem):
         if verr is not None:
             vstr = ".".join(str(x) for x in (self._remote_version or ()))
             self.client.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION, f"incompatible remote version {vstr!r}: {verr}")
+            return False
+        # the server may require a more recent client version,
+        # this capability is optional:
+        perr = protocol_compat_check(c.inttupleget("protocol"))
+        if perr is not None:
+            self.client.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION, f"incompatible client version: {perr}")
             return False
 
         self.print_server_info(c)

@@ -18,14 +18,14 @@ from typing import Any, NoReturn, TYPE_CHECKING
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_CLOSE, CONNECTION_LOST, GIBBERISH, INVALID
-from xpra.util.version import XPRA_VERSION, version_str, version_compat_check
+from xpra.util.version import XPRA_VERSION, version_str, version_compat_check, protocol_compat_check
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.server import ServerExitMode
 from xpra.server.glib_server import GLibServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     is_request_allowed, pretty_socket, has_websocket_handler, HttpResponse, Packet,
-    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
+    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION,
 )
 from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, IP_SOCKTYPES, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
@@ -1590,6 +1590,13 @@ class ServerCore(GLibServer):
             self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {verr!r}")
             proto.close()
             return
+        # the client may require a more recent server version,
+        # this capability is optional:
+        perr = protocol_compat_check(c.inttupleget("protocol"))
+        if perr is not None:
+            self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
+            proto.close()
+            return
 
         # try to auto upgrade to ssl:
         packet_types = c.strtupleget("packet-types", ())
@@ -1751,6 +1758,8 @@ class ServerCore(GLibServer):
             "current_time": int(now),
             "elapsed_time": int(now - self.start_time),
             "server.mode": self.session_type,
+            # the minimum version we are willing to talk to:
+            "protocol": MIN_PROTOCOL_VERSION,
         }
         if FULL_INFO > 0:
             capabilities["hostname"] = socket.gethostname()
