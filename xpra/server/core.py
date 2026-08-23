@@ -822,10 +822,11 @@ class ServerCore(GLibServer):
             return False
         socktype = listener.socktype
         if socktype == "named-pipe":
-            from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
+            from xpra.platform.win32.namedpipes.connection import NamedPipeConnection, log_new_pipe_connection
             handle = listener.socket.pending_handle
-            conn: Connection = NamedPipeConnection(listener.socket.pipe_name, handle, listener.options)
-            netlog.info("New %s connection received on %s", socktype, conn.target)
+            conn: Connection = NamedPipeConnection(listener.socket.pipe_name, handle, listener.options,
+                                                   server_side=True)
+            log_new_pipe_connection(conn, conn.target)
             self.make_protocol(socktype, conn, listener.options)
             return True
 
