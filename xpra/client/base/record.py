@@ -603,7 +603,6 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             "pointer-wheel",
             "clipboard-record",
             # nothing to record, but we must not close the connection on them:
-            "server-event",
             "setting-change",
             "desktop_size",
         )
