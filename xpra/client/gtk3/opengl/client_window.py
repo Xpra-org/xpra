@@ -111,4 +111,5 @@ class GLClientWindowBase(ClientWindow):
             return False
         if not backing:
             return False
+        backing.paint_screen = True
         return backing.draw_fbo(context)
