@@ -298,9 +298,11 @@ class WindowReplay:
                 log("creating window %#x from a sync point", self.wid)
                 self.window = self.client.make_client_window(self.wid, geometry, metadata)
                 self.window.show()
-            cursor = event.dictget("cursor-data")
-            if cursor:
+            cursor = event.get("cursor-data")
+            if isinstance(cursor, dict):
                 self.window.set_cursor_data(to_cursor_data(typedict(cursor)))
+            else:
+                self.window.set_cursor_data(())
             self.window.update_metadata(metadata)
             self.window.move_resize(*geometry)
             self.may_focus(event)

@@ -6,7 +6,9 @@
 
 import unittest
 
-from xpra.client.base.replay import Replay
+from unittest.mock import Mock, patch
+
+from xpra.client.base.replay import Replay, WindowModel, WindowReplay
 from xpra.scripts.config import make_defaults_struct
 from xpra.util.objects import typedict
 
@@ -82,6 +84,19 @@ class ReplayInputStateTest(unittest.TestCase):
             self.key_event(2, True, "Caps_Lock", 66, True),
         ]
         self.assertEqual(self.replay.get_modifier_keys(), ("Control_L", "Caps_Lock"))
+
+
+class WindowReplayTest(unittest.TestCase):
+
+    def test_sync_with_empty_cursor_data(self) -> None:
+        replay = Replay(make_defaults_struct())
+        window_replay = WindowReplay(replay, 1, "")
+        window_replay.window = Mock(spec=WindowModel(1))
+        event = typedict({"event": "sync", "metadata": {}, "cursor-data": [], "geometry": (0, 0, 1, 1)})
+        with patch.object(typedict, "_warn") as warn:
+            window_replay.do_process_event(event)
+        warn.assert_not_called()
+        window_replay.window.set_cursor_data.assert_called_once_with(())
 
 
 def main() -> None:
