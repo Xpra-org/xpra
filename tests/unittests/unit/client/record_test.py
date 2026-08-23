@@ -111,13 +111,19 @@ class RecordClientTest(unittest.TestCase):
         self.assertEqual(self.event_types(0), ["new"])
 
     def test_hello_advertises_the_recording_capabilities(self):
-        window_caps = typedict(typedict(self.client.make_hello()).dictget("window"))
+        hello = typedict(self.client.make_hello())
+        for capability in ("encoders", "compressors"):
+            self.assertIn(capability, hello)
+        window_caps = typedict(hello.dictget("window"))
         for capability in ("enabled", "record", "restack", "sync-position", "sync-focus", "grabs"):
             self.assertTrue(window_caps.boolget(capability), f"{capability!r} should be advertised")
 
     def test_hello_without_windows(self):
         self.client.windows = False
-        self.assertEqual(self.client.make_hello(), {})
+        hello = self.client.make_hello()
+        self.assertNotIn("window", hello)
+        self.assertIn("encoders", hello)
+        self.assertIn("compressors", hello)
 
     def test_window_lifecycle(self):
         self.process("window-create", 1, 10, 20, 30, 40, {"title": "test"})

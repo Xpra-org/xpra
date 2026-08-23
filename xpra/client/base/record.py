@@ -210,14 +210,16 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         return "offscreen-recorder"
 
     def make_hello(self) -> dict[str, Any]:
-        caps: dict[str, Any] = {}
+        # Include the base subsystem capabilities, in particular the packet
+        # encoders and compressors needed to complete protocol negotiation.
+        caps = super().make_hello()
         if self.windows:
             window_caps = {
                 "enabled": True, "record": True, "restack": True, "sync-position": True, "sync-focus": True,
                 # we want to know when a window grabs the pointer, see `_process_window_grab`:
                 "grabs": True,
             }
-            caps = {
+            caps.update({
                 "window": window_caps,
                 "encoding": self.encoding_options,
                 "share": True,
@@ -226,7 +228,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
                 "pointer": {"record": True},
                 "clipboard": {"record": True},
                 "display": {"record": True},
-            }
+            })
             if BACKWARDS_COMPATIBLE:
                 # older servers read these from the plural namespace:
                 caps["windows"] = window_caps
