@@ -43,7 +43,7 @@ class Network(StubClientSubsystem):
         caps = get_network_caps(FULL_INFO)
         caps["network-state"] = True
         # the minimum version we are willing to talk to:
-        caps["protocol"] = MIN_PROTOCOL_VERSION
+        caps["protocol-version"] = MIN_PROTOCOL_VERSION
         return caps
 
     def parse_server_capabilities(self, caps: typedict) -> bool:

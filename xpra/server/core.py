@@ -1592,7 +1592,7 @@ class ServerCore(GLibServer):
             return
         # the client may require a more recent server version,
         # this capability is optional:
-        perr = protocol_compat_check(c.inttupleget("protocol"))
+        perr = protocol_compat_check(c.inttupleget("protocol-version"))
         if perr:
             self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
             proto.close()
@@ -1759,7 +1759,7 @@ class ServerCore(GLibServer):
             "elapsed_time": int(now - self.start_time),
             "server.mode": self.session_type,
             # the minimum version we are willing to talk to:
-            "protocol": MIN_PROTOCOL_VERSION,
+            "protocol-version": MIN_PROTOCOL_VERSION,
         }
         if FULL_INFO > 0:
             capabilities["hostname"] = socket.gethostname()

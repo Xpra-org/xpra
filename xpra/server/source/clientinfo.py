@@ -87,7 +87,7 @@ class ClientInfoConnection(StubClientConnection):
         self.client_release = c.strget("platform.sysrelease")
         self.client_linux_distribution = c.strtupleget("platform.linux_distribution")
         self.client_version = c.strget("version")
-        self.client_protocol_version = c.inttupleget("protocol")
+        self.client_protocol_version = c.inttupleget("protocol-version")
         self.client_revision = c.strget("build.revision")
         self.client_bits = c.intget("python.bits")
         self.client_proxy = c.boolget("proxy")
@@ -164,7 +164,6 @@ class ClientInfoConnection(StubClientConnection):
         if self.client_version:
             info["version"] = vparts(self.client_version, FULL_INFO + 1)
         if self.client_protocol_version:
-            # note: `protocol` is already used for the protocol type - ie: "xpra"
             info["protocol-version"] = self.client_protocol_version
 
         def addattr(key, name=None):

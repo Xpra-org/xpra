@@ -447,8 +447,7 @@ def get_bcrypt_info() -> dict[str, str]:
 
 def get_info() -> dict[str, Any]:
     i = get_network_caps()
-    # the minimum version we are willing to talk to
-    # (`protocol` is already used for the protocol type - ie: "xpra"):
+    # the minimum version we are willing to talk to:
     i["protocol-version"] = MIN_PROTOCOL_VERSION
     netifaces = import_netifaces()
     if netifaces:
