@@ -19,6 +19,7 @@ from xpra.util.system import get_linux_distribution, platform_release, platform_
 XPRA_VERSION: Final[str] = xpra.__version__
 XPRA_NUMERIC_VERSION: tuple[int] = xpra.__version_info__
 
+CHECK_PROTOCOL_VERSION = envbool("XPRA_CHECK_PROTOCOL_VERSION", True)
 CHECK_SSL: bool = envbool("XPRA_VERSION_CHECK_SSL", True)
 SSL_CAFILE: str = ""
 if WIN32 or OSX:
@@ -113,6 +114,9 @@ def protocol_compat_check(remote_protocol_version) -> str:
     This capability is only optional in `BACKWARDS_COMPATIBLE` mode.
     Returns an error message, or an empty string if we are compatible.
     """
+    if not CHECK_PROTOCOL_VERSION:
+        log("protocol_compat_check(%s) skipped", remote_protocol_version)
+        return ""
     from xpra.net.common import BACKWARDS_COMPATIBLE
     if not remote_protocol_version:
         if BACKWARDS_COMPATIBLE:
