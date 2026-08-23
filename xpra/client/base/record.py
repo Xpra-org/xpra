@@ -263,6 +263,14 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
         common = tuple(set(self.encodings) & set(encodings))
         log("server encodings=%s, common=%s", encodings, common)
 
+    def _process_setting_change(self, packet: Packet) -> None:
+        """ we don't have any settings to update, just log it """
+        log("setting-change: %s=%s", packet.get_str(1), packet[2])
+
+    def _process_desktop_size(self, packet: Packet) -> None:
+        """ the recorder has no screen to resize, just log it """
+        log("desktop-size: %s", packet[1:])
+
     def get_window(self, wid: int) -> WindowModel | None:
         return self._id_to_window.get(wid)
 
@@ -590,4 +598,8 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             "pointer-motion",
             "pointer-wheel",
             "clipboard-record",
+            # nothing to record, but we must not close the connection on them:
+            "server-event",
+            "setting-change",
+            "desktop_size",
         )
