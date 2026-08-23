@@ -213,7 +213,7 @@ class WindowReplay:
     def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
         log("%-8i wid=%6x - %4i : %s", event.get("timestamp", 0), self.wid, event.get("index", 0), etype)
-        if not self.window and etype != "new":
+        if not self.window and etype not in ("new", "sync"):
             log.warn("Warning: event %r received, but window %#x is gone!", etype, self.wid)
             return
 
@@ -280,6 +280,13 @@ class WindowReplay:
             log("sync point")
             geometry = event.inttupleget("geometry", (0, 0, 1, 1))
             metadata = typedict(event.dictget("metadata", {}))
+            if not self.window:
+                # a seek can land on a sync point without ever replaying the `new` event
+                # which created the window - but a sync point is a complete snapshot,
+                # so we can create the window from it:
+                log("creating window %#x from a sync point", self.wid)
+                self.window = self.client.make_client_window(self.wid, geometry, metadata)
+                self.window.show()
             cursor = event.dictget("cursor-data", {})
             if cursor:
                 self.window.set_cursor_data(to_cursor_data(typedict(cursor)))
@@ -312,8 +319,12 @@ class WindowReplay:
         if event.boolget("focused"):
             self.client.set_focused(self.wid, event.intget("timestamp", 0))
 
-    def find_sync_index(self, target_ts: int):
-        sync_idx: int = 0
+    def find_sync_index(self, target_ts: int) -> int:
+        """
+        The index of the last sync point at or before `target_ts`,
+        or -1 if the window did not exist yet.
+        """
+        sync_idx: int = -1
         for ts, idx in self.sync_index:
             if ts <= target_ts:
                 sync_idx = idx
@@ -323,12 +334,14 @@ class WindowReplay:
 
     def seek(self, target_ms: int) -> None:
         sync_idx = self.find_sync_index(target_ms)
+        if sync_idx < 0:
+            # no sync point at or before the target: the window did not exist yet
+            if self.wid > 0 and self.window:
+                self.window.destroy()
+                self.window = None
+            sync_idx = 0
         # start at previous sync point:
         self.event_index = sync_idx
-        if self.wid > 0 and sync_idx == 0 and self.window:
-            # window did not exist yet!
-            self.window.destroy()
-            self.window = None
         # fast-replay any events between the sync point and target_ms
         while self.event_index < len(self.events):
             ev = self.events.get(self.event_index)
@@ -345,10 +358,11 @@ class WindowModel:
     This fake window class doesn't do anything with the requests.
     """
 
-    def __init__(self, wid: int, *args):
+    def __init__(self, wid: int, *_args):
         self.wid = wid
         self.show = self.draw_region = self.set_cursor_data = self.show_pointer_overlay = noop
         self.resize = self.move_resize = self.update_metadata = self.present = noop
+        self.destroy = noop
 
 
 def log_notable_event(etype: str, msg: str) -> None:
