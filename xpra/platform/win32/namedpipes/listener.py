@@ -50,7 +50,6 @@ DEFAULT_REMOTE = envbool("XPRA_NAMED_PIPE_REMOTE", False)
 
 ERROR_INSUFFICIENT_BUFFER = 122
 
-FILE_ALL_ACCESS = 0x1f01ff
 PIPE_ACCEPT_REMOTE_CLIENTS = 0
 ERROR_PIPE_CONNECTED = 535
 
@@ -75,10 +74,36 @@ WinWorldSid = 1
 WinLocalSid = 2
 WinAnonymousSid = 13
 WinAuthenticatedUserSid = 17
+WinLocalSystemSid = 22
+WinBuiltinAdministratorsSid = 26
 
-STANDARD_RIGHTS_ALL = 0x001F0000
-SPECIFIC_RIGHTS_ALL = 0x0000FFFF
-GENERIC_ALL = 0x10000000
+# access rights (winnt.h):
+FILE_READ_DATA = 0x0001
+FILE_WRITE_DATA = 0x0002
+FILE_CREATE_PIPE_INSTANCE = 0x0004
+FILE_READ_EA = 0x0008
+FILE_WRITE_EA = 0x0010
+FILE_READ_ATTRIBUTES = 0x0080
+FILE_WRITE_ATTRIBUTES = 0x0100
+READ_CONTROL = 0x00020000
+SYNCHRONIZE = 0x00100000
+FILE_ALL_ACCESS = 0x1f01ff
+
+# the creator needs full access, in particular `FILE_CREATE_PIPE_INSTANCE`:
+# `do_run` creates a new instance of the pipe for each connection,
+# and those calls are access checked against the DACL of the first instance
+CREATOR_ACCESS = FILE_ALL_ACCESS
+# clients only need to read from and write to the pipe.
+# `FILE_CREATE_PIPE_INSTANCE` is deliberately excluded: with it, any principal
+# allowed here could create its own instance of the pipe
+# and have real clients connect to it instead of to us.
+# `DELETE`, `WRITE_DAC` and `WRITE_OWNER` are excluded for the same reason
+CLIENT_ACCESS = (
+    READ_CONTROL | SYNCHRONIZE |
+    FILE_READ_DATA | FILE_WRITE_DATA |
+    FILE_READ_EA | FILE_WRITE_EA |
+    FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES
+)
 
 
 class NamedPipeListener(Thread):
@@ -234,13 +259,33 @@ class NamedPipeListener(Thread):
         return token
 
     def CreatePipeSecurityAttributes(self) -> SECURITY_ATTRIBUTES:
-        user = self.GetToken(TokenUser, TOKEN_USER)
-        user_SID = user.SID.contents
-        log("user SID=%s, attributes=%#x", user_SID, user.ATTRIBUTES)
+        # never pass a NULL `lpSecurityDescriptor`: the default DACL that `CreateNamedPipe`
+        # would then apply also grants `FILE_GENERIC_READ` to 'Everyone' and to anonymous
+        # logons, which lets any local user connect and read whatever we send.
+        # so always build the DACL explicitly: full access for the accounts that can take
+        # it anyway, and read / write access for whoever we want to let connect
+        allow: list[tuple[int, int]] = [
+            (WinLocalSystemSid, CREATOR_ACCESS),
+            (WinBuiltinAdministratorsSid, CREATOR_ACCESS),
+        ]
+        if UNRESTRICTED:
+            # grant 'Everyone' (World): every local user, and every remote user the SMB
+            # server lets through - including anonymous logons if the
+            # 'let Everyone permissions apply to anonymous users' policy is enabled
+            allow.append((WinWorldSid, CLIENT_ACCESS))
+        elif self.remote:
+            # grant 'Authenticated Users' so SMB / IPC$ clients can connect remotely.
+            # remote callers are authenticated by the SMB server (Kerberos/NTLM) before
+            # they reach the pipe, and then again by xpra's own authentication modules.
+            allow.append((WinAuthenticatedUserSid, CLIENT_ACCESS))
+        # (otherwise, only the creator, LocalSystem and the administrators can connect.
+        # beware: this restricts *who* can connect, not *from where* -
+        # a client connecting via SMB as the same user still matches this DACL)
 
+        user = self.GetToken(TokenUser, TOKEN_USER)
+        log("user SID=%s, attributes=%#x", user.SID.contents, user.ATTRIBUTES)
         group = self.GetToken(TokenPrimaryGroup, TOKEN_PRIMARY_GROUP)
-        group_SID = group.PrimaryGroup.contents
-        log("group SID=%s", group_SID)
+        log("group SID=%s", group.PrimaryGroup.contents)
 
         SD = SECURITY_DESCRIPTOR()
         self.security_descriptor = SD
@@ -254,38 +299,26 @@ class NamedPipeListener(Thread):
         if not SetSecurityDescriptorGroup(byref(SD), group.PrimaryGroup, False):
             raise OSError()
         log("SetSecurityDescriptorGroup: %s", SD)
+        self._apply_allow_dacl(SD, user, allow)
         SA = SECURITY_ATTRIBUTES()
-        log("CreatePipeSecurityObject() SECURITY_ATTRIBUTES=%s", SA)
-        # decide which extra principals (beyond the creator) are granted access:
-        if UNRESTRICTED:
-            # grant 'Everyone' (World) - wide open, including anonymous logons
-            allow_sid_types: list[int] = [WinWorldSid]
-        elif self.remote:
-            # grant 'Authenticated Users' so SMB / IPC$ clients can connect remotely.
-            # remote callers are authenticated by the SMB server (Kerberos/NTLM) before
-            # they reach the pipe, and then again by xpra's own authentication modules.
-            allow_sid_types = [WinAuthenticatedUserSid]
-        else:
-            # local only: leave lpSecurityDescriptor NULL so the pipe gets the token's
-            # default DACL (creator + LocalSystem).  This denies remote (SMB) clients.
-            SA.bInheritHandle = False
-            return SA
-        self._apply_allow_dacl(SD, user, allow_sid_types)
         SA.nLength = sizeof(SECURITY_ATTRIBUTES)
         SA.lpSecurityDescriptor = cast(pointer(SD), c_void_p)
-        SA.bInheritHandle = True
+        SA.bInheritHandle = False
+        log("CreatePipeSecurityAttributes()=%s", SA)
         self.security_attributes = SA
         return SA
 
-    def _apply_allow_dacl(self, SD: SECURITY_DESCRIPTOR, user, sid_types: list) -> None:
-        """build a DACL granting full access to the creator plus each well-known SID type,
+    def _apply_allow_dacl(self, SD: SECURITY_DESCRIPTOR, user, allow: list) -> None:
+        """build a DACL granting `CREATOR_ACCESS` to the creator,
+        plus the given access mask to each `(well-known SID type, access mask)` pair,
         and attach it to the security descriptor *SD*."""
         SECURITY_MAX_SID_SIZE = 68
         assert sizeof(SID) >= SECURITY_MAX_SID_SIZE
+        aces: list[tuple] = [(user.SID, CREATOR_ACCESS)]
+        total_sid_len = GetLengthSid(user.SID)
         # build the well-known SIDs we want to allow:
         allow_sids = []
-        total_sid_len = GetLengthSid(user.SID)
-        for sid_type in sid_types:
+        for sid_type, access in allow:
             sid = SID()
             sid_size = DWORD(sizeof(SID))
             if not CreateWellKnownSid(sid_type, None, byref(sid), byref(sid_size)):
@@ -294,12 +327,11 @@ class NamedPipeListener(Thread):
             assert sid_size.value <= SECURITY_MAX_SID_SIZE
             log("CreateWellKnownSid(%s)=%s, size=%s", sid_type, sid, sid_size.value)
             allow_sids.append(sid)
+            aces.append((byref(sid), access))
             total_sid_len += GetLengthSid(byref(sid))
 
-        # one ACE for the creator, plus one for each well-known SID:
-        n_aces = 1 + len(allow_sids)
         acl_size = sizeof(ACL)
-        acl_size += n_aces * (sizeof(ACCESS_ALLOWED_ACE) - sizeof(DWORD))
+        acl_size += len(aces) * (sizeof(ACCESS_ALLOWED_ACE) - sizeof(DWORD))
         acl_size += total_sid_len
         acl_data = create_string_buffer(acl_size)
         acl = cast(acl_data, POINTER(ACL)).contents
@@ -308,11 +340,10 @@ class NamedPipeListener(Thread):
             raise OSError()
         log("InitializeAcl(..) acl=%s", acl)
 
-        rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
-        for add_sid in [user.SID] + [byref(s) for s in allow_sids]:
+        for add_sid, rights in aces:
             if AddAccessAllowedAce(byref(acl), ACL_REVISION, rights, add_sid) == 0:
                 err = GetLastError()
-                log("AddAccessAllowedAce(%s)=%s", add_sid, ACL_ERRORS.get(err, err))
+                log("AddAccessAllowedAce(%s, %#x)=%s", add_sid, rights, ACL_ERRORS.get(err, err))
                 raise OSError()
         if not SetSecurityDescriptorDacl(byref(SD), True, byref(acl), False):
             raise OSError()
