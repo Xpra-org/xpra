@@ -60,11 +60,11 @@ def _gen_rsa_key(tmpdir: str, name="ssh_host_rsa_key") -> tuple[str, paramiko.RS
 class TestDetectSshStanza(unittest.TestCase):
 
     def test_empty(self):
-        assert detect_ssh_stanza([]) == ()
+        assert not detect_ssh_stanza([])
 
     def test_single_word(self):
         # a simple command that has no if/then structure gives ()
-        assert detect_ssh_stanza(["ls"]) == ()
+        assert not detect_ssh_stanza(["ls"])
 
     def test_sh_c_with_proxy(self):
         cmd = [
@@ -81,7 +81,7 @@ class TestDetectSshStanza(unittest.TestCase):
             "sh", "-c",
             'if type "xpra" > /dev/null 2>&1; then xpra _proxy; fi',
         )
-        assert detect_ssh_stanza(cmd) == ["xpra", "_proxy"]
+        assert tuple(detect_ssh_stanza(cmd)) == ("xpra", "_proxy")
 
     def test_sh_c_which(self):
         cmd = [

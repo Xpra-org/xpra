@@ -89,7 +89,9 @@ def detect_ssh_stanza(cmd: Sequence[str]) -> Sequence[str]:
                 if subcommand not in subcommands:
                     subcommands[subcommand] = parts
     log(f"subcommands={subcommands}")
-    return subcommands.get("_proxy", ())
+    # we must return a list as default value here,
+    # for cythonized-more to match the type defined for `subcommands` values:
+    return subcommands.get("_proxy", [])
 
 
 def find_fingerprint(filename: str, fingerprint) -> bool:
