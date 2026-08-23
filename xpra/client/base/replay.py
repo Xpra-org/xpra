@@ -8,8 +8,8 @@ import glob
 import json
 import os.path
 from time import monotonic
-from collections.abc import Sequence
-from typing import NoReturn
+from collections.abc import Callable, Sequence
+from typing import Any, NoReturn
 
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.common import noop
@@ -213,6 +213,9 @@ class WindowReplay:
     def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
         log("%-8i wid=%6x - %4i : %s", event.get("timestamp", 0), self.wid, event.get("index", 0), etype)
+        if etype in ("pointer-button", "key-event", "key"):
+            # Input state must still be updated when its source window has gone.
+            self.client.process_input_event(event)
         if etype in ("grab", "ungrab"):
             # handled before the `window is gone` check below,
             # so that a grab release can never be lost:
@@ -415,6 +418,13 @@ class Replay(GObjectClientAdapter):
         # the window which held the pointer grab, and the timestamp it was claimed at:
         self.grabbed = 0
         self.grab_timestamp = 0
+        # Input state is global rather than tied to a window.  Keep it here so
+        # the replay controls can visualize it without synthesizing real input.
+        self.pressed_pointer_buttons: set[int] = set()
+        self.pressed_keys: dict[int | str, tuple[str, bool]] = {}
+        self.input_events: list[dict] = []
+        self.input_state_cb: Callable[[tuple[int, ...], tuple[tuple[str, bool], ...]], Any] = noop
+        self._seeking = False
 
     def __repr__(self):
         return "Replay"
@@ -467,6 +477,64 @@ class Replay(GObjectClientAdapter):
         if window:
             window.present()
 
+    def set_input_state_callback(
+            self, callback: Callable[[tuple[int, ...], tuple[tuple[str, bool], ...]], Any]) -> None:
+        self.input_state_cb = callback
+        self.notify_input_state()
+
+    def notify_input_state(self) -> None:
+        buttons = tuple(sorted(self.pressed_pointer_buttons))
+        keys = tuple(self.pressed_keys.values())
+        self.input_state_cb(buttons, keys)
+
+    @staticmethod
+    def _key_id(key: typedict) -> int | str:
+        keycode = key.intget("keycode", -1)
+        if keycode >= 0:
+            return keycode
+        return key.strget("name", "")
+
+    def process_input_event(self, event: typedict, notify: bool = True) -> None:
+        etype = event.strget("event", "")
+        if etype == "pointer-button":
+            button = event.intget("button", 0)
+            if button:
+                if event.boolget("pressed"):
+                    self.pressed_pointer_buttons.add(button)
+                else:
+                    self.pressed_pointer_buttons.discard(button)
+        elif etype in ("key-event", "key"):
+            key = typedict(event.dictget("key"))
+            name = key.strget("name", "")
+            key_id = self._key_id(key)
+            if name and key.boolget("press"):
+                self.pressed_keys[key_id] = (name, key.boolget("is-modifier"))
+            else:
+                self.pressed_keys.pop(key_id, None)
+        else:
+            return
+        if notify and not self._seeking:
+            self.notify_input_state()
+
+    def rebuild_input_state(self, target_ms: int) -> None:
+        """Reconstruct global input state after a timeline seek."""
+        self.pressed_pointer_buttons.clear()
+        self.pressed_keys.clear()
+        for event in self.input_events:
+            if event.get("timestamp", 0) > target_ms:
+                break
+            self.process_input_event(typedict(event), notify=False)
+        self.notify_input_state()
+
+    def get_modifier_keys(self) -> tuple[str, ...]:
+        modifiers: list[str] = []
+        for event in self.input_events:
+            key = typedict(typedict(event).dictget("key"))
+            name = key.strget("name", "")
+            if key.boolget("is-modifier") and name and name not in modifiers:
+                modifiers.append(name)
+        return tuple(modifiers)
+
     def load(self) -> None:
         windows = os.listdir(self.record_directory)
         for wid_str in windows:
@@ -476,6 +544,12 @@ class Replay(GObjectClientAdapter):
             wr.load()
             self.window_replay[wid] = wr
             self.last_timestamp = max(self.last_timestamp, wr.last_event().get("timestamp", 0))
+            for event in wr.events.values():
+                may_load(event)
+                if event.get("event") in ("pointer-button", "key-event", "key"):
+                    self.input_events.append(dict(event))
+        self.input_events.sort(key=lambda event: (event.get("timestamp", 0),
+                                                  event.get("index", 0), event.get("wid", 0)))
 
     def run(self) -> ExitValue:
         if not os.path.exists(self.record_directory):
@@ -540,8 +614,16 @@ class Replay(GObjectClientAdapter):
         self.focus_timestamp = 0
         self.grabbed = 0
         self.grab_timestamp = 0
-        for wr in self.window_replay.values():
-            wr.seek(target_ms)
+        self._seeking = True
+        try:
+            for wr in self.window_replay.values():
+                wr.seek(target_ms)
+            # Window streams are replayed one at a time above.  Input is global,
+            # so rebuild it in timestamp order to handle a press and release
+            # which happened over different windows.
+            self.rebuild_input_state(target_ms)
+        finally:
+            self._seeking = False
 
         self.is_playing = was_playing
         if self.is_playing:
