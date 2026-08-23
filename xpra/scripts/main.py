@@ -1282,6 +1282,11 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         app = ConnectTestXpraClient(opts)
     elif mode == "record":
         from xpra.client.base.features import set_client_features
+        # the recorder has nowhere to save a file, and cannot print or open a URL:
+        # turning these off before the features are evaluated keeps the `file` and
+        # `printer` subsystems out of the client, and out of its `hello` packet,
+        # so that the server never sends it packets it has no handlers for
+        opts.file_transfer = opts.printing = opts.open_files = opts.open_url = "no"
         set_client_features(opts)
         basic()
         from xpra.client.base.record import RecordClient
