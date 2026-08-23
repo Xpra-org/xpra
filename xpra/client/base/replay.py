@@ -359,17 +359,20 @@ class WindowReplay:
                 break
         return sync_idx
 
-    def seek(self, target_ms: int) -> None:
+    def seek(self, target_ms: int, current_ms: int = -1) -> None:
         sync_idx = self.find_sync_index(target_ms)
-        if sync_idx < 0:
-            # no sync point at or before the target: the window did not exist yet
-            if self.wid > 0 and self.window:
-                self.window.destroy()
-                self.window = None
-            sync_idx = 0
-        # start at previous sync point:
-        self.event_index = sync_idx
-        # fast-replay any events between the sync point and target_ms
+        incremental = 0 <= current_ms <= target_ms and self.find_sync_index(current_ms) == sync_idx
+        if not incremental:
+            if sync_idx < 0:
+                # no sync point at or before the target: the window did not exist yet
+                if self.wid > 0 and self.window:
+                    self.window.destroy()
+                    self.window = None
+                sync_idx = 0
+            # Rewinds and forward seeks across sync points jump directly to
+            # the latest snapshot at or before the target.
+            self.event_index = sync_idx
+        # Fast-replay from the current position or selected sync point.
         while self.event_index < len(self.events):
             ev = self.events.get(self.event_index)
             if not ev:
@@ -603,23 +606,25 @@ class Replay(GObjectClientAdapter):
     def seek(self, target_ms: int) -> None:
         """
         Seek every window to *target_ms*.
-        Each WindowReplay finds its own last sync point, so windows that have
-        no sync before *target_ms* are simply skipped with a warning.
+        Forward seeks within the current sync interval replay incrementally.
+        Rewinds and forward seeks across sync points jump to the latest sync
+        point at or before the target.
         """
         was_playing = self.is_playing
         self.is_playing = False
         self.cancel_event_timer()
 
+        current_ms = self.time_index
         self.time_index = target_ms
-        # the focus and grab are re-claimed from the sync points we are about to replay,
-        # which may be older than the ones we had already seen:
-        self.focus_timestamp = 0
-        self.grabbed = 0
-        self.grab_timestamp = 0
+        if target_ms < current_ms:
+            # Older sync points must be allowed to reclaim focus and grab.
+            self.focus_timestamp = 0
+            self.grabbed = 0
+            self.grab_timestamp = 0
         self._seeking = True
         try:
             for wr in self.window_replay.values():
-                wr.seek(target_ms)
+                wr.seek(target_ms, current_ms)
             # Window streams are replayed one at a time above.  Input is global,
             # so rebuild it in timestamp order to handle a press and release
             # which happened over different windows.
