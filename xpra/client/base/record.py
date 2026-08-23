@@ -214,8 +214,9 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
     def make_hello(self) -> dict[str, Any]:
         caps: dict[str, Any] = {}
         if self.windows:
+            window_caps = {"enabled": True, "record": True, "restack": True}
             caps = {
-                "windows": {"record": True, "restack": True},
+                "window": window_caps,
                 "encoding": self.encoding_options,
                 "share": True,
                 "keyboard": {"record": True},
@@ -224,6 +225,9 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
                 "clipboard": {"record": True},
                 "display": {"record": True},
             }
+            if BACKWARDS_COMPATIBLE:
+                # older servers read these from the plural namespace:
+                caps["windows"] = window_caps
         return caps
 
     def server_connection_established(self, caps: typedict) -> bool:

@@ -9,11 +9,25 @@ from collections.abc import Sequence
 from xpra.net.compression import Compressed
 
 from xpra.common import noop
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.env import envbool
+from xpra.util.objects import typedict
 
 GET_SOURCES_BY_TYPE: Final[str] = "get_sources_by_type"
 
 SSH_AGENT_DISPATCH: bool = envbool("XPRA_SSH_AGENT_DISPATCH", os.name == "posix")
+
+
+def wants_windows(caps: typedict) -> bool:
+    """
+    Whether the client wants window forwarding.
+    Modern clients declare it in their `window` capabilities,
+    older ones use a plural `windows` flag outside it
+    (which the offscreen recorder used to send as a dictionary).
+    """
+    if window := caps.dictget("window"):
+        return typedict(window).boolget("enabled", True)
+    return BACKWARDS_COMPATIBLE and caps.boolget("windows")
 
 
 def get_sources_by_type(server, subsystem_type=object, exclude=None) -> Sequence:

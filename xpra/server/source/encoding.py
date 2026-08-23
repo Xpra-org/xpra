@@ -12,7 +12,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.server.common import may_update_bandwidth_limits
+from xpra.server.common import may_update_bandwidth_limits, wants_windows
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.window import batch_config
 from xpra.server.core import ClientException
@@ -53,7 +53,7 @@ class EncodingsConnection(StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         if BACKWARDS_COMPATIBLE and "encoding" in caps:
             return True
-        return bool(caps.dictget("encoding") or caps.strtupleget("encodings")) or caps.boolget("windows")
+        return bool(caps.dictget("encoding") or caps.strtupleget("encodings")) or wants_windows(caps)
 
     def init_state(self) -> None:
         # contains default values, some of which may be supplied by the client:

@@ -14,6 +14,7 @@ from xpra.common import may_notify_client
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
+from xpra.server.common import wants_windows
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
@@ -28,7 +29,7 @@ class IdleConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        if caps.boolget("keyboard") or caps.boolget("pointer") or caps.boolget("windows"):
+        if caps.boolget("keyboard") or caps.boolget("pointer") or wants_windows(caps):
             return True
         return BACKWARDS_COMPATIBLE and caps.boolget("mouse")
 

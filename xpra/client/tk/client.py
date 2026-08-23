@@ -89,7 +89,7 @@ class XpraTkClient:
             "client_type": "pyglet",
             "rencodeplus": True,
             "session-id": uuid.uuid4().hex,
-            "windows": True,
+            "window": {"enabled": True},
             "keyboard": True,
             "bell": True,
             "pointer": {"double_click": {}},
@@ -97,6 +97,8 @@ class XpraTkClient:
             "display": {"refresh-rate": 50},
         }
         if BACKWARDS_COMPATIBLE:
+            # older servers look for this flag outside the `window` namespace:
+            hello["windows"] = True
             hello["mouse"] = True
         self.send("hello", hello)
 

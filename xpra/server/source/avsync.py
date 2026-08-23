@@ -7,6 +7,7 @@ from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.util.env import envint
+from xpra.server.common import wants_windows
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
@@ -29,7 +30,7 @@ class AVSyncConnection(StubClientConnection):
             # not using async init, so we should be able to tell if audio is disabled:
             if not (audio.boolget("send") or audio.boolget("receive")):
                 return False
-        return caps.boolget("av-sync") and caps.boolget("windows")
+        return caps.boolget("av-sync") and wants_windows(caps)
 
     def __init__(self):
         super().__init__()
