@@ -51,6 +51,7 @@ DEFAULT_REMOTE = envbool("XPRA_NAMED_PIPE_REMOTE", False)
 ERROR_INSUFFICIENT_BUFFER = 122
 
 PIPE_ACCEPT_REMOTE_CLIENTS = 0
+PIPE_REJECT_REMOTE_CLIENTS = 8
 ERROR_PIPE_CONNECTED = 535
 
 TIMEOUT = 6000
@@ -236,9 +237,13 @@ class NamedPipeListener(Thread):
 
     def CreatePipeHandle(self) -> HANDLE:
         sa = self.CreatePipeSecurityAttributes()
-        log("CreateNamedPipeA using %s (UNRESTRICTED=%s)", sa, UNRESTRICTED)
+        # the DACL controls *who* may connect, this controls *from where*:
+        # without `PIPE_REJECT_REMOTE_CLIENTS`, a client reaching us over SMB / IPC$
+        # as the same user would match the creator ACE and be let in
+        remote_clients = PIPE_ACCEPT_REMOTE_CLIENTS if self.remote else PIPE_REJECT_REMOTE_CLIENTS
+        log("CreateNamedPipeA using %s (UNRESTRICTED=%s, remote=%s)", sa, UNRESTRICTED, self.remote)
         return CreateNamedPipeA(strtobytes(self.pipe_name), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
-                                PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_ACCEPT_REMOTE_CLIENTS,
+                                PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | remote_clients,
                                 PIPE_UNLIMITED_INSTANCES, BUFSIZE, BUFSIZE, NMPWAIT_USE_DEFAULT_WAIT,
                                 byref(sa))
 
@@ -278,9 +283,8 @@ class NamedPipeListener(Thread):
             # remote callers are authenticated by the SMB server (Kerberos/NTLM) before
             # they reach the pipe, and then again by xpra's own authentication modules.
             allow.append((WinAuthenticatedUserSid, CLIENT_ACCESS))
-        # (otherwise, only the creator, LocalSystem and the administrators can connect.
-        # beware: this restricts *who* can connect, not *from where* -
-        # a client connecting via SMB as the same user still matches this DACL)
+        # (otherwise, only the creator, LocalSystem and the administrators can connect,
+        # and `CreatePipeHandle` also rejects clients coming in over the network)
 
         user = self.GetToken(TokenUser, TOKEN_USER)
         log("user SID=%s, attributes=%#x", user.SID.contents, user.ATTRIBUTES)
