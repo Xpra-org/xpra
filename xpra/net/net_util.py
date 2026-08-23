@@ -18,7 +18,7 @@ from xpra.os_util import POSIX
 from xpra.util.str_fn import print_nested_dict, csv, bytestostr
 from xpra.util.version import parse_version
 from xpra.net.bytestreams import get_socket_config
-from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION
 from xpra.log import Logger, enable_color, consume_verbose_argv
 
 log = Logger("network", "util")
@@ -447,6 +447,9 @@ def get_bcrypt_info() -> dict[str, str]:
 
 def get_info() -> dict[str, Any]:
     i = get_network_caps()
+    # the minimum version we are willing to talk to
+    # (`protocol` is already used for the protocol type - ie: "xpra"):
+    i["protocol-version"] = MIN_PROTOCOL_VERSION
     netifaces = import_netifaces()
     if netifaces:
         i["interfaces"] = get_interfaces()
