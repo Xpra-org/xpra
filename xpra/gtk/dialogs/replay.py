@@ -331,6 +331,43 @@ class InputStateView(Gtk.DrawingArea):
             self._draw_key(cr, f"B{button}", extra_x, y + 28, True, 36)
             extra_x += 42
 
+    @staticmethod
+    def _draw_timeline_legend(cr: cairo.Context, width: int, color) -> None:
+        """Draw the timeline key in the free space beside the virtual pointer."""
+        mouse_w = 76
+        mouse_x = (width - mouse_w) / 2
+        legend_w, gap = 140, 20
+        if mouse_x < legend_w + gap:
+            return
+        x = mouse_x - legend_w - gap
+
+        cr.set_source_rgba(color.red, color.green, color.blue, 0.8)
+        cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+        cr.set_font_size(10)
+        cr.move_to(x, 18)
+        cr.show_text("TIMELINE")
+
+        # Match the tall green sync-point ticks drawn across the timeline track.
+        cr.set_source_rgba(0.18, 0.88, 0.42, 0.85)
+        cr.rectangle(x + 7, 27, 2, 22)
+        cr.fill()
+        cr.set_source_rgba(color.red, color.green, color.blue, 0.9)
+        cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        cr.set_font_size(11)
+        cr.move_to(x + 22, 42)
+        cr.show_text("Sync point")
+
+        # Match the low-density amber to high-density red heatmap ramp.
+        gradient = cairo.LinearGradient(x, 59, x + 30, 59)
+        gradient.add_color_stop_rgba(0, 1.0, 0.72, 0.0, 0.3)
+        gradient.add_color_stop_rgba(1, 1.0, 0.10, 0.0, 1.0)
+        cr.set_source(gradient)
+        cr.rectangle(x, 54, 30, 10)
+        cr.fill()
+        cr.set_source_rgba(color.red, color.green, color.blue, 0.9)
+        cr.move_to(x + 38, 63)
+        cr.show_text("Event density")
+
     def _draw_key(self, cr: cairo.Context, label: str, x: float, y: float,
                   pressed: bool, width: float = 0) -> float:
         if not width:
@@ -376,6 +413,7 @@ class InputStateView(Gtk.DrawingArea):
         self._draw_pointer(cr, allocation.width)
 
         style_color = widget.get_style_context().get_color(Gtk.StateFlags.NORMAL)
+        self._draw_timeline_legend(cr, allocation.width, style_color)
         cr.set_source_rgba(style_color.red, style_color.green, style_color.blue, 0.4)
         cr.set_line_width(1)
         cr.move_to(4, 96.5)
