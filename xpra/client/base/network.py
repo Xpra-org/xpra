@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from xpra.net.common import FULL_INFO, pretty_socket, BACKWARDS_COMPATIBLE
+from xpra.net.common import FULL_INFO, pretty_socket, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION
 from xpra.net.net_util import get_network_caps, get_info
 from xpra.client.base.stub import StubClientMixin
 from xpra.util.objects import typedict
@@ -33,6 +33,8 @@ class NetworkClient(StubClientMixin):
     def get_caps(self) -> dict[str, Any]:
         caps = get_network_caps(FULL_INFO)
         caps["network-state"] = True
+        # the minimum version we are willing to talk to:
+        caps["protocol"] = MIN_PROTOCOL_VERSION
         return caps
 
     def parse_server_capabilities(self, caps: typedict) -> bool:

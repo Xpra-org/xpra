@@ -25,7 +25,7 @@ from xpra.server import ServerExitMode
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     is_request_allowed, pretty_socket, has_websocket_handler, HttpResponse, Packet,
-    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
+    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION,
 )
 from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
@@ -1512,6 +1512,8 @@ class ServerCore(ServerBaseClass):
             "elapsed_time": int(now - self.start_time),
             "server_type": "core",
             "server.mode": self.session_type,
+            # the minimum version we are willing to talk to:
+            "protocol": MIN_PROTOCOL_VERSION,
         }
         if FULL_INFO > 0:
             capabilities["hostname"] = socket.gethostname()
