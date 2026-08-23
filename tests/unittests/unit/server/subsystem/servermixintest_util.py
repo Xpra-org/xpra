@@ -57,6 +57,9 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
+        self.cleanup_test_objects()
+
+    def cleanup_test_objects(self) -> None:
         if source := self.source:
             self.source = None
             source.cleanup()

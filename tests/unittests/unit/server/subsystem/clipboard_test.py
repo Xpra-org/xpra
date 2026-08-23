@@ -29,6 +29,9 @@ class ClipboardMixinTest(ServerMixinTest):
             opts.clipboard_direction = "both"
             opts.clipboard_filter_file = None
             self._test_mixin_class(ClipboardManager, opts, {}, ClipboardConnection)
+            # Clipboard helpers own GTK objects tied to this display, so they
+            # must be released before DisplayContext closes the connection.
+            self.cleanup_test_objects()
 
 
 def main():
