@@ -53,7 +53,8 @@ class EncodeClient(ClientBaseClass):
             cc.__init__(self, *args)
         self.client_type = "encoder"
         self.filenames = list(filenames)
-        self.add_packets("encode-response", "encodings")
+        self.add_packets("encode-response", "encoding-set")
+        self.add_legacy_alias("encodings", "encoding-set")
         self.decompress = decompress
         self.encoding_options = {}
         self.encodings = get_encodings()
@@ -92,7 +93,7 @@ class EncodeClient(ClientBaseClass):
         # this will call do_command()
         return super().server_connection_established(c)
 
-    def _process_encodings(self, packet: Packet) -> None:
+    def _process_encoding_set(self, packet: Packet) -> None:
         encodings = typedict(packet.get_dict(1)).dictget("encodings", {}).get("core", ())
         common = tuple(set(self.encodings) & set(encodings))
         log("server encodings=%s, common=%s", encodings, common)
