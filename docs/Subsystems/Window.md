@@ -55,6 +55,10 @@ that caused the change.
 (as the `position` and `focus` subsystems),
 see [pointer synchronization](./Pointer.md#pointer-synchronization).
 
+An X11 seamless server advertises `window.stacking = true`. Clients may then send
+their current bottom-to-top window order using `window-stacking`; the topmost window
+is the final ID in the list.
+
 <div class="docs-section-heading" markdown="1">
 
 ## Network Packets
@@ -90,6 +94,7 @@ see [pointer synchronization](./Pointer.md#pointer-synchronization).
 | `window-close` | `wid`                                               | The user has requested to close the window                               |
 | `window-focus` | `wid`, optional modifiers                           | The window has received keyboard focus                                   |
 | `window-action`| `wid`, `action`, optional arguments                 | Request a window manager action (eg: maximize, minimize)                 |
+| `window-stacking` | list of window IDs, bottom-to-top               | Report the client's current stacking order                               |
 | `window-refresh`| `wid`, options                                     | Request a full refresh of the window contents                            |
 | `window-ack`   | `wid`, `width`, `height`, `packet_sequence`, `decode_time`, `message` | Acknowledge receipt and decoding of a `window-draw` packet |
 

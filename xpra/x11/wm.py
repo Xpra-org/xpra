@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any, Final
+from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
@@ -103,6 +104,7 @@ class Wm(GObject.GObject):
         # EWMH says we have to know the order of our windows oldest to
         # youngest...
         self._windows_in_order = []
+        self._windows_stacking = []
         self._wm_selection = None
 
     def init_atoms(self) -> None:
@@ -253,11 +255,26 @@ class Wm(GObject.GObject):
         # in a moment we'll get a signal telling us about the window that
         # doesn't exist anymore, will remove it from the list, and then call
         # _update_window_list again.
-        dtype, dformat, window_xids = prop_encode_list("u32", tuple(self._windows_in_order))
-        log("prop_encode_list('u32', %s)=%s", self._windows_in_order, (dtype, dformat, window_xids))
+        self._set_window_list("_NET_CLIENT_LIST", self._windows_in_order)
+        self._update_window_stacking()
+
+    @staticmethod
+    def _set_window_list(prop: str, window_xids: Sequence[int]) -> None:
+        dtype, dformat, encoded = prop_encode_list("u32", tuple(window_xids))
+        log("prop_encode_list('u32', %s)=%s", window_xids, (dtype, dformat, encoded))
         with xlog:
-            for prop in ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING"):
-                raw_prop_set(rxid, prop, "WINDOW", dformat, window_xids)
+            raw_prop_set(rxid, prop, "WINDOW", dformat, encoded)
+
+    def update_window_stacking(self, window_xids: Sequence[int]) -> None:
+        self._windows_stacking = list(dict.fromkeys(window_xids))
+        self._update_window_stacking()
+
+    def _update_window_stacking(self) -> None:
+        stacking = [xid for xid in self._windows_stacking if xid in self._windows]
+        stacked = set(stacking)
+        stacking.extend(xid for xid in self._windows_in_order if xid not in stacked)
+        self._windows_stacking = stacking
+        self._set_window_list("_NET_CLIENT_LIST_STACKING", stacking)
 
     def do_x11_client_message_event(self, event: X11Event) -> None:
         # FIXME

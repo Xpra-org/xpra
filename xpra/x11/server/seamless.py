@@ -231,6 +231,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             capabilities.setdefault("window", {}).update({
                 "frame-extents": True,
                 "configure.delta": True,
+                "stacking": True,
                 "signals": WINDOW_SIGNALS,
                 "dragndrop": True,
                 "states": [

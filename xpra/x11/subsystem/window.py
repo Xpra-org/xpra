@@ -586,6 +586,22 @@ class SeamlessWindowServer(WindowServer):
         geomlog("resolved client monitor %i position %s to %s", index, position, resolved)
         return x, y, geometry[2], geometry[3]
 
+    def update_window_stacking(self, wids: Sequence[int]) -> None:
+        if not self._wm:
+            return
+        stacking = []
+        seen = set()
+        for wid in wids:
+            window = self.get_window(wid)
+            if not window or window.is_OR() or window.is_tray():
+                continue
+            xid = window.get_property("xid")
+            if xid not in seen:
+                seen.add(xid)
+                stacking.append(xid)
+        windowlog("client window stacking order: %s", stacking)
+        self._wm.update_window_stacking(stacking)
+
     @staticmethod
     def client_configure_window(win, geometry, resize_counter: int = 0) -> None:
         log("client_configure_window(%s, %s, %s)", win, geometry, resize_counter)

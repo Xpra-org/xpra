@@ -33,6 +33,7 @@ WINDOW_CONFIGURE: Final[str] = "window-configure"
 WINDOW_CLOSE: Final[str] = "close-window" if BACKWARDS_COMPATIBLE else "window-close"
 WINDOW_FOCUS: Final[str] = "focus" if BACKWARDS_COMPATIBLE else "window-focus"
 WINDOW_ACTION: Final[str] = "window-action"
+WINDOW_STACKING: Final[str] = "window-stacking"
 WINDOW_REFRESH: Final[str] = "buffer-refresh" if BACKWARDS_COMPATIBLE else "window-refresh"
 # the legacy ack packet: `packet_sequence` first and an optional `message`,
 # the modern equivalent is `window-ack`, which starts with the `wid`:
