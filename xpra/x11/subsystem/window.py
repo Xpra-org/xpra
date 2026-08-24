@@ -103,7 +103,7 @@ class SeamlessWindowServer(WindowServer):
         self._focus_history: deque[int] = deque(maxlen=100)
         self._has_grab = 0
         self._has_focus = 0
-        self.last_raised = None
+        self.last_raised = 0
         self._exit_with_windows = False
         self.configure_damage_timers: dict[int, int] = {}
         self.snc_timer = 0
@@ -202,7 +202,7 @@ class SeamlessWindowServer(WindowServer):
     # --------------------------------------------------------------------
 
     def _new_window_signaled(self, _wm, window) -> None:
-        self.last_raised = None
+        self.last_raised = 0
         self._add_new_window(window)
 
     def do_x11_child_map_event(self, event: X11Event) -> None:
@@ -400,7 +400,7 @@ class SeamlessWindowServer(WindowServer):
     def _focus(self, server_source, wid: int, modifiers) -> None:
         focuslog("focus wid=%#x has_focus=%#x", wid, self._has_focus)
         if self.last_raised != wid:
-            self.last_raised = None
+            self.last_raised = 0
         if self._has_focus == wid:
             return
         self._focus_history.append(wid)
@@ -522,7 +522,7 @@ class SeamlessWindowServer(WindowServer):
         wid = self.get_wid(window)
         focuslog("restack window(%s) wid=%#x, current focus=%s", (window, detail, sibling), wid, self._has_focus)
         if self.last_raised != wid:
-            self.last_raised = None
+            self.last_raised = 0
         if detail == 0 and self._has_focus == wid:
             return
         for ss in self.window_sources():
