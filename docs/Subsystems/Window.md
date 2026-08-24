@@ -64,6 +64,14 @@ is the final ID in the list. X11 clients obtain this order from their local wind
 manager's `_NET_CLIENT_LIST_STACKING` root property, MS Windows clients from the
 desktop z-order (`EnumWindows`), watching the `EVENT_OBJECT_REORDER` window event.
 
+macOS clients use `+[NSWindow windowNumbersWithOptions:]`, which is already restricted
+to the application's own windows and leaves out the ones which have been ordered out.
+There is no macOS equivalent of the two mechanisms above: AppKit posts no public
+notification for the z-order, only for the events which usually accompany a change of
+it (a window becoming key or main, the application being activated, a window being
+miniaturized or occluded), so the client also refreshes the order whenever it
+re-stacks a window itself.
+
 <div class="docs-section-heading" markdown="1">
 
 ## Network Packets

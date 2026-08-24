@@ -7,7 +7,7 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, OSX
 from xpra.net.packet_type import WINDOW_STACKING
 from xpra.util.objects import AdHocStruct
 from unit.process_test_util import DisplayContext
@@ -81,6 +81,75 @@ class WindowManagerTest(ClientMixinTest):
         # the ctypes callback must outlive the hook: events queued before
         # `UnhookWinEvent` can still be delivered
         self.assertIsNotNone(watcher.callback)
+
+    @unittest.skipUnless(OSX, "macOS only")
+    def test_darwin_window_stacking(self):
+        from xpra.platform.darwin.window_stacking import DarwinWindowStackingWatcher, get_notification_names
+
+        def window(number: int, tray=False):
+            model = Mock()
+            model.is_tray.return_value = tray
+            model.window_number = number
+            return model
+
+        # a tray is an `NSStatusItem`: `get_window_handle` must not be called on it
+        tray = Mock()
+        tray.is_tray.return_value = True
+        del tray.get_window_handle
+
+        window_client = AdHocStruct()
+        window_client._id_to_window = {
+            1: window(101),
+            2: window(102),
+            3: window(0),
+            4: tray,
+        }
+        window_client.server_window_stacking = True
+        window_client.send_window_stacking = Mock()
+        window_client.client = AdHocStruct()
+        window_client.client.after_handshake = Mock()
+
+        watcher = DarwinWindowStackingWatcher(window_client)
+        watcher.setup()
+        window_client.client.after_handshake.assert_called_once_with(watcher.do_setup)
+
+        def get_nswindow(win):
+            number = win.window_number
+            if not number:
+                # not realized yet: no `NSWindow`
+                return None
+            nswindow = Mock()
+            nswindow.windowNumber.return_value = number
+            return nswindow
+
+        prefix = "xpra.platform.darwin.window_stacking."
+        # 999 is a window of ours which is not a client window (ie: the splash screen):
+        with patch(prefix + "get_nswindow", side_effect=get_nswindow):
+            with patch(prefix + "get_window_numbers", return_value=(999, 102, 101)):
+                with patch(prefix + "NSNotificationCenter") as center:
+                    watcher.do_setup()
+        # a single observer for every notification, matched on the name only:
+        add_observer = center.defaultCenter.return_value.addObserver_selector_name_object_
+        self.assertEqual(add_observer.call_count, len(get_notification_names()))
+        for call in add_observer.call_args_list:
+            self.assertEqual(call[0][0], watcher.observer)
+            self.assertEqual(call[0][1], b"orderMayHaveChanged:")
+        # the window server returns the topmost window first, the packet is bottom-to-top:
+        window_client.send_window_stacking.assert_called_once_with((1, 2))
+
+        # the notifications are coalesced:
+        self.assertFalse(watcher.stacking_timer)
+        watcher.schedule_update()
+        timer = watcher.stacking_timer
+        self.assertTrue(timer)
+        watcher.schedule_update()
+        self.assertEqual(watcher.stacking_timer, timer)
+
+        with patch(prefix + "NSNotificationCenter") as center:
+            watcher.cleanup()
+        center.defaultCenter.return_value.removeObserver_.assert_called_once()
+        self.assertFalse(watcher.stacking_timer)
+        self.assertIsNone(watcher.observer)
 
     def test_windowmanager(self):
         with DisplayContext():

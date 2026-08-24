@@ -74,7 +74,7 @@ class WindowManagerClient(StubClientSubsystem):
     # too keeps each mixin usable (and testable) on its own
     PREFIX = "window"
     SLOT_NAMES = (
-        "_id_to_window", "_locked_windows", "_win32_events", "_win32_stacking", "_window_stacking", "_window_to_id",
+        "_id_to_window", "_locked_windows", "_stacking_watcher", "_win32_events", "_window_stacking", "_window_to_id",
         "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
         "pixel_depth", "server_window_frame_extents", "server_window_stacking", "server_window_states",
         "sync_focus", "sync_position", "windows_enabled",
@@ -110,8 +110,8 @@ class WindowManagerClient(StubClientSubsystem):
         self._locked_windows: dict[int, tuple] = {}
         # win32 WM/session event listener:
         self._win32_events = None
-        # win32 desktop z-order watcher:
-        self._win32_stacking = None
+        # platform z-order watcher (win32 and macOS):
+        self._stacking_watcher = None
 
     def init(self, opts) -> None:
         self.auto_refresh_delay = opts.auto_refresh_delay
@@ -144,10 +144,13 @@ class WindowManagerClient(StubClientSubsystem):
             self._win32_events = Win32ClientEventsWatcher(self)
             self._win32_events.setup()
             from xpra.platform.win32.window_stacking import Win32WindowStackingWatcher
-            self._win32_stacking = Win32WindowStackingWatcher(self)
-            self._win32_stacking.setup()
+            self._stacking_watcher = Win32WindowStackingWatcher(self)
+            self._stacking_watcher.setup()
         elif OSX:
             self._setup_osx_events()
+            from xpra.platform.darwin.window_stacking import DarwinWindowStackingWatcher
+            self._stacking_watcher = DarwinWindowStackingWatcher(self)
+            self._stacking_watcher.setup()
         return ExitCode.OK
 
     def _setup_osx_events(self) -> None:
@@ -169,9 +172,9 @@ class WindowManagerClient(StubClientSubsystem):
 
     def cleanup(self) -> None:
         log("WindowClient.cleanup()")
-        if ws := self._win32_stacking:
-            self._win32_stacking = None
-            ws.cleanup()
+        if sw := self._stacking_watcher:
+            self._stacking_watcher = None
+            sw.cleanup()
         if we := self._win32_events:
             self._win32_events = None
             we.cleanup()
@@ -247,6 +250,15 @@ class WindowManagerClient(StubClientSubsystem):
         # `server_is_desktop` is owned by the `display` subsystem (it parses the fuller set of caps)
         self.client.connect("startup-complete", self.log_windows_info)
         return True
+
+    def window_stacking_changed(self) -> None:
+        """
+        The client has just re-ordered its own windows.
+        macOS posts no notification for the ordering calls we make ourselves,
+        so the platform watcher has to be told to look again.
+        """
+        if self.server_window_stacking and (sw := self._stacking_watcher):
+            sw.schedule_update()
 
     def send_window_stacking(self, wids: Sequence[int]) -> None:
         """Send a backend-provided bottom-to-top order when the server supports it."""
@@ -452,6 +464,8 @@ class WindowManagerClient(StubClientSubsystem):
         if override_redirect and should_force_grab(metadata):
             log.warn("forcing grab for OR window %#x", wid)
             self.client.window_grab(wid, window)
+        # mapping a window places it at the top of the stack:
+        self.window_stacking_changed()
 
     def freeze(self) -> None:
         log("freeze()")
@@ -642,6 +656,7 @@ class WindowManagerClient(StubClientSubsystem):
                 log("window already has top level focus")
                 return
             window.present()
+            self.window_stacking_changed()
 
     def _process_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -654,6 +669,7 @@ class WindowManagerClient(StubClientSubsystem):
             wid, window, ["above", "below"][above], other_window)
         if window:
             window.restack(other_window, above)
+            self.window_stacking_changed()
 
     def _process_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -664,6 +680,7 @@ class WindowManagerClient(StubClientSubsystem):
             del self._id_to_window[wid]
             del self._window_to_id[window]
             self.client.destroy_window(wid, window)
+            self.window_stacking_changed()
         # weak dependency on Tray mixin:
         set_tray_icon = getattr(self, "set_tray_icon", noop)
         set_tray_icon()

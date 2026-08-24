@@ -104,6 +104,9 @@ class Win32WindowStackingWatcher:
         log("win_event%s", (hook, event, hwnd, obj_id, child_id, thread_id, timestamp))
         # this fires for every window shown, hidden or restacked on the desktop, ours or not:
         # `update_stacking` works out whether anything of ours has actually moved
+        self.schedule_update()
+
+    def schedule_update(self) -> None:
         if not self.stacking_timer:
             self.stacking_timer = GLib.timeout_add(STACKING_DELAY, self.stacking_timeout)
 
