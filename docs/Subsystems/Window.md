@@ -42,6 +42,7 @@ The client exposes these in the `window` dictionary of its `hello` packet:
 | `grabs`         | The client can handle `window-grab` and `window-ungrab` packets                  |
 | `sync-position` | Send `window-move-resize` when another client moves or resizes a window          |
 | `sync-focus`    | Send `window-raise` when another client focuses a window                         |
+| `sync-stacking` | Send `window-stacking` when another client reports its complete stacking order   |
 
 `sync-position` and `sync-focus` are enabled by the `sharing=sync` client option,
 and default to enabled for recording clients.
@@ -54,6 +55,8 @@ that caused the change.
 `sync-position` and `sync-focus` can be refused by the server using the `sync` socket option
 (as the `position` and `focus` subsystems),
 see [pointer synchronization](./Pointer.md#pointer-synchronization).
+`sync-stacking` does not require a `sync` or `record` socket option. Recording
+clients request it by default; regular GUI clients do not.
 
 An X11 seamless server advertises `window.stacking = true`. Clients may then send
 their current bottom-to-top window order using `window-stacking`; the topmost window
@@ -85,6 +88,7 @@ desktop z-order (`EnumWindows`), watching the `EVENT_OBJECT_REORDER` window even
 | `window-bell`                 | `wid`, `device`, `percent`, `pitch`, `duration`, `bell_class`, `bell_id`, `name` | A bell event |
 | `window-grab`                 | `wid`                                               | The window has grabbed the pointer and keyboard         |
 | `window-ungrab`               | `wid`                                               | The grab has been released                             |
+| `window-stacking`             | list of window IDs, bottom-to-top                    | Complete stacking order reported by another client    |
 
 ### Client-to-Server
 

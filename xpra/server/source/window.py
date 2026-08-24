@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.net.packet_type import (
     WINDOW_RESTACK, WINDOW_RAISE, WINDOW_INITIATE_MOVERESIZE, WINDOW_DESTROY, WINDOW_RESIZED,
-    WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL, WINDOW_GRAB, WINDOW_UNGRAB,
+    WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL, WINDOW_GRAB, WINDOW_UNGRAB, WINDOW_STACKING,
 )
 from xpra.os_util import gi_import
 from xpra.server.common import may_update_bandwidth_limits, wants_windows
@@ -96,6 +96,8 @@ class WindowsConnection(StubClientConnection):
         self.window_sync_position = False
         # `sharing=sync`: raise the windows focused by another client
         self.window_sync_focus = False
+        # receive the complete stacking order reported by another client
+        self.window_sync_stacking = False
         self.window_metadata_supported: Sequence[str] = ()
         self.window_grabs = False
         self.system_tray = False
@@ -177,9 +179,13 @@ class WindowsConnection(StubClientConnection):
                 self.add_window_filter(object_name, property_name, operator, value)
         except Exception as e:
             filterslog.error("Error parsing window-filters: %s", e)
-        self.window_record = wcaps.boolget("record") and is_recording_allowed(self, "windows")
+        window_record_requested = wcaps.boolget("record")
+        self.window_record = window_record_requested and is_recording_allowed(self, "windows")
         self.window_sync_position = wcaps.boolget("sync-position", self.window_record) and is_sync_allowed(self, "position")
         self.window_sync_focus = wcaps.boolget("sync-focus", self.window_record) and is_sync_allowed(self, "focus")
+        # Stacking updates are harmless window-manager state. Unlike the other
+        # recording and synchronization streams, they do not need a socket option.
+        self.window_sync_stacking = window_record_requested or wcaps.boolget("sync-stacking")
 
     def get_caps(self) -> dict[str, Any]:
         return {}
@@ -195,6 +201,7 @@ class WindowsConnection(StubClientConnection):
             "grabs": self.window_grabs,
             "sync-position": self.window_sync_position,
             "sync-focus": self.window_sync_focus,
+            "sync-stacking": self.window_sync_stacking,
         }
         wsize: dict[str, Any] = {
             "min": self.window_min_size,
@@ -271,6 +278,10 @@ class WindowsConnection(StubClientConnection):
     def window_ungrab(self, wid) -> None:
         if self.window_grabs and self.hello_sent:
             self.send(WINDOW_UNGRAB, wid)
+
+    def send_window_stacking(self, stacking: Sequence[int]) -> None:
+        focuslog("send_window_stacking(%s)", stacking)
+        self.send(WINDOW_STACKING, list(stacking))
 
     def bell(self, wid: int, device: int, percent: int, pitch: int, duration: int,
              bell_class, bell_id: int, bell_name: str) -> None:

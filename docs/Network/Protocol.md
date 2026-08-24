@@ -422,12 +422,14 @@ structures advertised in the display capabilities.
 | S -> C | `window-bell` | `wid:u64`, `device:u16`, `percent:i8`, `pitch:i32`, `duration:i32`, `class:u32`, `id:u32`, `name:str` |
 | S -> C | `window-grab` | `wid:u64` |
 | S -> C | `window-ungrab` | `wid:u64` |
+| S -> C | `window-stacking` | `wids:list<u64>` |
 | C -> S | `window-map` | `wid:u64`, `x:i32`, `y:i32`, `w:u16`, `h:u16`, `client_properties:map`, `state:map?`, `monitor:i32?` |
 | C -> S | `window-unmap` | `wid:u64`, `iconified:bool?`, `state:map?` |
 | C -> S | `window-configure` | `wid:u64`, `configuration:map` |
 | C -> S | `window-close` | `wid:u64` |
 | C -> S | `window-focus` | `wid:u64`, `modifiers:list<str>?` |
 | C -> S | `window-action` | `wid:u64`, `action:str`, `arguments:any...` |
+| C -> S | `window-stacking` | `wids:list<u64>` |
 | C -> S | `window-refresh` | `wid:u64`, `options:map` |
 | C -> S | `window-ack` | `wid:u64`, `width:u16`, `height:u16`, `sequence:u64`, `decode_time_us:i32`, `message:str` |
 | C -> S | `window-draw-ack` | `sequence:u64`, `wid:u64`, `width:u16`, `height:u16`, `decode_time_us:i32`, `message:str?` |
@@ -435,6 +437,9 @@ structures advertised in the display capabilities.
 Window IDs are allocated by the server and remain valid until `window-destroy`.
 The encoding and options of `window-draw` MUST have been advertised by the
 client. A sequence acknowledgement MUST refer to the matching draw and window.
+`window-stacking` lists windows from bottom to top. Servers forward it to
+recording clients and clients advertising `window.sync-stacking`; this stream
+does not require a connection `record` or `sync` permission.
 
 ### 8.3 Encoding Control
 

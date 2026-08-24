@@ -315,6 +315,22 @@ class SourceMixinsTest(unittest.TestCase):
         from xpra.server.source.window import WindowsConnection
         self._test_mixin_class(WindowsConnection, self._get_window_mixin_server_attributes())
 
+    def test_window_stacking_sync_is_ungated(self):
+        from xpra.server.source.window import WindowsConnection
+
+        protocol = AdHocStruct()
+        protocol._conn = AdHocStruct()
+        protocol._conn.options = {"record": "no", "sync": "no"}
+        for window_caps in ({"record": True}, {"sync-stacking": True}):
+            source = WindowsConnection()
+            source.protocol = protocol
+            source.init_state()
+            source.parse_client_caps(typedict({"window": window_caps}))
+            self.assertTrue(source.window_sync_stacking)
+            self.assertFalse(source.window_record)
+            self.assertFalse(source.window_sync_position)
+            self.assertFalse(source.window_sync_focus)
+
     def test_clientinfo(self):
         from xpra.server.source.clientinfo import ClientInfoConnection
 

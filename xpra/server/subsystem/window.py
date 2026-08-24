@@ -577,10 +577,14 @@ class WindowServer(StubSubsystem):
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         log.info("do_process_window_configure(%s, %i, %s)", proto, wid, config)
 
-    def _process_stacking(self, _proto, packet: Packet) -> None:
+    def _process_stacking(self, proto, packet: Packet) -> None:
         stacking = packet.get_ints(1)
         focuslog("process_window_stacking: %s", stacking)
         self.update_window_stacking(stacking)
+        source = self.get_server_source(proto)
+        for ss in self.window_sources(exclude=source):
+            if ss.window_sync_stacking:
+                ss.send_window_stacking(stacking)
 
     def update_window_stacking(self, wids: Sequence[int]) -> None:
         """Variants may use a client's bottom-to-top window stacking order."""

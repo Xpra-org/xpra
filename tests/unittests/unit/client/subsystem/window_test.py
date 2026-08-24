@@ -104,6 +104,7 @@ class WindowManagerTest(ClientMixinTest):
             opts.border = "red"
             opts.tray_icon = "yes"
             self._test_mixin_class(WindowClient, opts, {"window": {"stacking": True}})
+            self.assertNotIn("sync-stacking", self.mixin.get_window_caps())
             self.mixin.send_window_stacking((3, 1, 3, 2))
             self.verify_packet(-1, (WINDOW_STACKING, [3, 1, 2]))
             packet_count = len(self.packets)

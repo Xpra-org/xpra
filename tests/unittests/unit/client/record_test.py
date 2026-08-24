@@ -115,7 +115,9 @@ class RecordClientTest(unittest.TestCase):
         for capability in ("encoders", "compressors"):
             self.assertIn(capability, hello)
         window_caps = typedict(hello.dictget("window"))
-        for capability in ("enabled", "record", "restack", "sync-position", "sync-focus", "grabs"):
+        for capability in (
+                "enabled", "record", "restack", "sync-position", "sync-focus", "sync-stacking", "grabs",
+        ):
             self.assertTrue(window_caps.boolget(capability), f"{capability!r} should be advertised")
 
     def test_hello_without_windows(self):
@@ -241,6 +243,15 @@ class RecordClientTest(unittest.TestCase):
         # the server only sends this for the windows focused by another client:
         self.process("window-raise", 1)
         self.assertEqual(self.client.focused, 1)
+
+    def test_stacking_is_recorded_and_saved_in_sync_points(self):
+        self.new_window(1)
+        self.new_window(2)
+        self.process("window-stacking", [2, 1])
+        self.assertEqual(self.client.stacking, (2, 1))
+        self.assertEqual(self.last_event(0, "stacking")["stacking"], [2, 1])
+        self.assertEqual(self.sync(1)["stacking"], [2, 1])
+        self.assertIsNotNone(self.find_handler("window-stacking"))
 
     def test_bell(self):
         self.new_window(1)

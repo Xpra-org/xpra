@@ -20,8 +20,16 @@ class WebcamMixinTest(ServerMixinTest):
 
         window_server = stubbable(WindowServer)(self)
         window_server.update_window_stacking = Mock()
+        origin = Mock()
+        recorder = Mock(window_sync_stacking=True)
+        regular = Mock(window_sync_stacking=False)
+        window_server.get_server_source = Mock(return_value=origin)
+        window_server.window_sources = Mock(return_value=(recorder, regular))
         window_server._process_stacking(object(), Packet("window-stacking", [3, 1, 2]))
         window_server.update_window_stacking.assert_called_once_with((3, 1, 2))
+        window_server.window_sources.assert_called_once_with(exclude=origin)
+        recorder.send_window_stacking.assert_called_once_with((3, 1, 2))
+        regular.send_window_stacking.assert_not_called()
 
     def test_x11_window_stacking_filter(self):
         from xpra.x11.subsystem.window import SeamlessWindowServer

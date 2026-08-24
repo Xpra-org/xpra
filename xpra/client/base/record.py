@@ -13,7 +13,7 @@ from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.command import XpraClientBase
 from xpra.exit_codes import ExitValue
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import WINDOW_REFRESH, WINDOW_DRAW_ACK
+from xpra.net.packet_type import WINDOW_REFRESH, WINDOW_DRAW_ACK, WINDOW_STACKING
 from xpra.platform.paths import initial_cwd
 from xpra.util.env import envint
 from xpra.util.objects import typedict
@@ -21,6 +21,7 @@ from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("client", "encoding")
+focuslog = Logger("client", "focus")
 
 GLib = gi_import("GLib")
 
@@ -83,6 +84,8 @@ class WindowModel:
         self.focused = False
         # does this window hold the pointer grab? (see `RecordClient.set_grabbed`)
         self.grabbed = False
+        # session-wide bottom-to-top window order, copied into every sync point
+        self.stacking: tuple[int, ...] = ()
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
 
@@ -109,7 +112,7 @@ class WindowModel:
         data.update(kwargs)
         path = os.path.join(self.directory, f"{self.event_no}.json")
         save_json(path, data)
-        log("recorded: %s : %r", event, data)
+        (focuslog if event == "stacking" else log)("recorded: %s : %r", event, data)
         self.event_no += 1
         if event == "destroy":
             self.cancel_sync_timer()
@@ -132,6 +135,7 @@ class WindowModel:
             "cursor-data": self.cursor_data,
             "focused": self.focused,
             "grabbed": self.grabbed,
+            "stacking": self.stacking,
         }
         if self.geometry != NO_GEOMETRY:
             kwargs["geometry"] = self.geometry
@@ -172,6 +176,8 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         self.focused = 0
         # the window which currently holds the pointer grab, 0 for none:
         self.grabbed = 0
+        # session-wide bottom-to-top window order:
+        self.stacking: tuple[int, ...] = ()
 
     def init(self, opts) -> None:
         super().init(opts)
@@ -215,7 +221,8 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         caps = super().make_hello()
         if self.windows:
             window_caps = {
-                "enabled": True, "record": True, "restack": True, "sync-position": True, "sync-focus": True,
+                "enabled": True, "record": True, "restack": True,
+                "sync-position": True, "sync-focus": True, "sync-stacking": True,
                 # we want to know when a window grabs the pointer, see `_process_window_grab`:
                 "grabs": True,
             }
@@ -243,7 +250,8 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
         window = WindowModel(wid, geom, False, directory, self.start)
-        window.record("new")
+        window.stacking = self.stacking
+        window.record("new", stacking=self.stacking)
         self._id_to_window[wid] = window
 
     def print_server_info(self, c: typedict) -> None:
@@ -338,6 +346,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
         window = WindowModel(wid, geom, override_redirect, directory, self.start)
+        window.stacking = self.stacking
         window.update_metadata(metadata)
         self._id_to_window[wid] = window
         # new windows usually steal the focus:
@@ -345,7 +354,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             self.set_focused(wid)
         # `new` events are sync points, so they must carry the focus and grab state too:
         window.record("new", geometry=(x, y, w, h), metadata=metadata,
-                      focused=window.focused, grabbed=window.grabbed)
+                      focused=window.focused, grabbed=window.grabbed, stacking=self.stacking)
 
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         # should not be received!
@@ -400,6 +409,15 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
                 # lowered: it cannot have the focus any more
                 self.set_focused(0)
             window.record("restack", detail=detail, other=other_wid)
+
+    def _process_window_stacking(self, packet: Packet) -> None:
+        stacking = packet.get_ints(1)
+        focuslog("process_window_stacking(%s)", stacking)
+        self.stacking = stacking
+        for window in self._id_to_window.values():
+            window.stacking = stacking
+        if desktop := self.get_window(0):
+            desktop.record("stacking", stacking=stacking)
 
     def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -619,6 +637,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             "window-create",
             "window-raise",
             "window-restack",
+            WINDOW_STACKING,
             "window-initiate-moveresize",
             "window-move-resize",
             "window-resized",
