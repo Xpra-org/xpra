@@ -854,7 +854,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         log("restack(%s, %s)", other_window, above)
 
         def do_restack() -> None:
-            self.get_window().restack(other_window, above)
+            other_gdk_window = other_window.get_window() if other_window else None
+            self.get_window().restack(other_gdk_window, above)
 
         self.when_realized("restack", do_restack)
 
