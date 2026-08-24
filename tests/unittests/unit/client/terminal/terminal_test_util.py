@@ -133,8 +133,6 @@ class FakeWindowSubsystem:
         self.windows: dict[int, FakeWindow] = {}
         self._id_to_window = self.windows
         self.focus_events: list[tuple] = []
-        self.buttons: list[tuple] = []
-        self.wheels: list[tuple] = []
         self.refreshes: list[int] = []
         self._window_with_grab = 0
 
@@ -150,22 +148,24 @@ class FakeWindowSubsystem:
     def send_refresh(self, wid: int) -> None:
         self.refreshes.append(wid)
 
-    def send_button(self, device_id, wid, button, pressed, pointer, modifiers, buttons, props) -> None:
-        self.buttons.append((device_id, wid, button, pressed, pointer, tuple(modifiers), tuple(buttons)))
-
-    def wheel_event(self, device_id, wid, deltax, deltay, pointer) -> None:
-        self.wheels.append((device_id, wid, deltax, deltay, pointer))
-
 
 class FakePointerSubsystem:
     def __init__(self):
         self.positions: list[tuple] = []
+        self.buttons: list[tuple] = []
+        self.wheels: list[tuple] = []
 
     def cleanup(self) -> None:
         """ the client cleans up every subsystem """
 
     def send_mouse_position(self, device_id, wid, pos, modifiers=None, buttons=None, props=None) -> None:
         self.positions.append((device_id, wid, pos, tuple(modifiers or ()), tuple(buttons or ())))
+
+    def send_button(self, device_id, wid, button, pressed, pointer, modifiers, buttons, props) -> None:
+        self.buttons.append((device_id, wid, button, pressed, pointer, tuple(modifiers), tuple(buttons)))
+
+    def wheel_event(self, device_id, wid, deltax, deltay, pointer) -> None:
+        self.wheels.append((device_id, wid, deltax, deltay, pointer))
 
 
 class FakeDisplaySubsystem:

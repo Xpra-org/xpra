@@ -38,12 +38,12 @@ class TerminalDisplayClient(DisplayClient):
     """
     __slots__ = ()
 
-    def init(self, opts) -> None:
-        # `DisplayClient.init` starts `X11DisplayPropsWatcher` when xsettings are enabled:
-        # that watcher belongs to the X11 session this terminal happens to run in,
-        # its workarea and DPI have nothing to do with the session we are attaching to.
+    def init_display_watcher(self, opts) -> None:
+        # `DisplayClient.init` would otherwise start an `X11DisplayPropsWatcher` (or its
+        # darwin equivalent): that watcher belongs to the window system this terminal
+        # happens to run under, its workarea and DPI have nothing to do with the session
+        # we are attaching to - and the terminal may not even have a display at all.
         opts.xsettings = "no"
-        super().init(opts)
 
     def get_root_size(self) -> tuple[int, int]:
         # this is called from `init` (via `parse_scaling`), long before the client

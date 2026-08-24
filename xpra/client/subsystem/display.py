@@ -111,6 +111,10 @@ class DisplayClient(StubClientSubsystem):
         scalinglog("can_scale(%s)=%s", opts.desktop_scaling, self.can_scale)
         if self.can_scale:
             self.parse_scaling(opts.desktop_scaling)
+        self.init_display_watcher(opts)
+
+    def init_display_watcher(self, opts) -> None:
+        # subclasses without a window system to watch (ie: the terminal client) override this as a no-op
         if POSIX and not OSX and not is_Wayland():
             from xpra.platform.posix.display import X11DisplayPropsWatcher
             self._x11_props = X11DisplayPropsWatcher(self, str_to_bool(opts.xsettings))

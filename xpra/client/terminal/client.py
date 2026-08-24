@@ -818,16 +818,16 @@ class XpraTerminalClient(GObjectClientAdapter, UIXpraClient):
             # it was pressed on (`wid` is then 0, ie the root window):
             # a press which is never released leaves the button held down on the server
             self._buttons.remove(button)
-        if w := self.get_subsystem("window"):
-            w.send_button(-1, wid, button, pressed, pointer,
+        if p := self.get_subsystem("pointer"):
+            p.send_button(-1, wid, button, pressed, pointer,
                           self._modifiers, tuple(self._buttons), {})
 
     def send_wheel(self, wid: int, window, button: int, pointer) -> None:
         deltax, deltay = WHEEL_DELTAS.get(button, (0, 0))
         if window is None or (not deltax and not deltay):
             return
-        if w := self.get_subsystem("window"):
-            w.wheel_event(-1, wid, deltax, deltay, pointer)
+        if p := self.get_subsystem("pointer"):
+            p.wheel_event(-1, wid, deltax, deltay, pointer)
 
     ######################################################################
     # window manager state: stacking order, z indexes and focus

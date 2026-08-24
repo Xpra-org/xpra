@@ -298,7 +298,7 @@ class TerminalClientTest(unittest.TestCase):
         from xpra.client.subsystem.window import manager as window_manager
         metadata = {"tray": True, "title": "nm-applet"}
         with silence_warn(window_manager):
-            self.assertIsNone(window_sub._process_window_create(
+            self.assertIsNone(window_sub._process_create(
                 Packet("window-create", 10, 0, 0, 24, 24, metadata)))
 
     def test_make_client_never_looks_at_the_x11_display(self):
@@ -811,7 +811,8 @@ class TerminalClientTest(unittest.TestCase):
         # the top left pixel of the window must hit that window, not the background:
         client.process_input_events([MouseEvent(100, 100, 1, "press", 0)])
         self.assertEqual(client.get_raw_mouse_position(), (100, 100))
-        self.assertEqual([(b[1], b[2], b[3]) for b in window_sub.buttons], [(1, 1, True)])
+        pointer = client.subsystems["pointer"]
+        self.assertEqual([(b[1], b[2], b[3]) for b in pointer.buttons], [(1, 1, True)])
 
     def test_focus_parks_the_pointer_until_real_mouse_input(self):
         # without this, a fresh session has a dead keyboard until the first click:
@@ -852,56 +853,60 @@ class TerminalClientTest(unittest.TestCase):
 
     def test_mouse_buttons_are_paired_and_focus(self):
         client, window_sub = self.make_input_client()
+        pointer = client.subsystems["pointer"]
         self.add_window(client, window_sub, 1, (0, 0), (100, 100))
         client.process_input_events([MouseEvent(11, 21, 1, "press", 0)])
         self.assertEqual(client._buttons, [1])
         self.assertEqual(window_sub.focus_events, [(1, True)])
         client.process_input_events([MouseEvent(11, 21, 1, "release", 0)])
         self.assertEqual(client._buttons, [])
-        self.assertEqual([(b[2], b[3]) for b in window_sub.buttons], [(1, True), (1, False)])
+        self.assertEqual([(b[2], b[3]) for b in pointer.buttons], [(1, True), (1, False)])
         # the held buttons are reported with the press:
-        self.assertEqual(window_sub.buttons[0][6], (1, ))
-        self.assertEqual(window_sub.buttons[1][6], ())
+        self.assertEqual(pointer.buttons[0][6], (1, ))
+        self.assertEqual(pointer.buttons[1][6], ())
 
     def test_mouse_press_outside_any_window_is_dropped(self):
         client, window_sub = self.make_input_client()
+        pointer = client.subsystems["pointer"]
         self.add_window(client, window_sub, 1, (0, 0), (10, 10))
         client.process_input_events([MouseEvent(500, 500, 1, "press", 0)])
-        self.assertEqual(window_sub.buttons, [])
+        self.assertEqual(pointer.buttons, [])
         self.assertEqual(client._buttons, [])
 
     def test_mouse_release_outside_any_window_is_still_sent(self):
         # dragging out of a window and releasing there must not leave the button held down
         client, window_sub = self.make_input_client()
+        pointer = client.subsystems["pointer"]
         self.add_window(client, window_sub, 1, (0, 0), (100, 100))
         client.process_input_events([MouseEvent(11, 21, 1, "press", 0),
                                      MouseEvent(501, 501, 1, "release", 0)])
         self.assertEqual(client._buttons, [])
-        self.assertEqual([(b[1], b[2], b[3]) for b in window_sub.buttons],
+        self.assertEqual([(b[1], b[2], b[3]) for b in pointer.buttons],
                          [(1, 1, True), (0, 1, False)])
         # the release is reported at the root window position:
-        self.assertEqual(window_sub.buttons[1][4], (500, 500, 500, 500))
+        self.assertEqual(pointer.buttons[1][4], (500, 500, 500, 500))
         # and the next press is delivered normally:
         client.process_input_events([MouseEvent(11, 21, 1, "press", 0)])
         self.assertEqual(client._buttons, [1])
-        self.assertEqual([(b[1], b[2], b[3]) for b in window_sub.buttons][-1:], [(1, 1, True)])
+        self.assertEqual([(b[1], b[2], b[3]) for b in pointer.buttons][-1:], [(1, 1, True)])
 
     def test_wheel(self):
         client, window_sub = self.make_input_client()
+        pointer = client.subsystems["pointer"]
         self.add_window(client, window_sub, 1, (0, 0), (100, 100))
         client.process_input_events([MouseEvent(11, 21, 4, "wheel", 0),
                                      MouseEvent(11, 21, 5, "wheel", 0),
                                      MouseEvent(11, 21, 6, "wheel", 0),
                                      MouseEvent(11, 21, 7, "wheel", 0)])
-        self.assertEqual([(w[2], w[3]) for w in window_sub.wheels],
+        self.assertEqual([(w[2], w[3]) for w in pointer.wheels],
                          [(0, 1), (0, -1), (-1, 0), (1, 0)])
         # an unknown wheel button is dropped rather than sent as a delta of 0:
-        window_sub.wheels = []
+        pointer.wheels = []
         client.process_input_events([MouseEvent(11, 21, 9, "wheel", 0)])
-        self.assertEqual(window_sub.wheels, [])
+        self.assertEqual(pointer.wheels, [])
         # and so is a wheel event which is not over any window:
         client.process_input_events([MouseEvent(500, 500, 4, "wheel", 0)])
-        self.assertEqual(window_sub.wheels, [])
+        self.assertEqual(pointer.wheels, [])
 
     def test_unknown_events_are_ignored(self):
         client = self.make_client()
