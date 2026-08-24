@@ -181,7 +181,7 @@ class SocketProtocol:
         self.large_packets = [
             "hello", "window-metadata", "audio-data", "notification-show", "setting-change",
             "shell-reply", "display-configure",
-            "encodings",
+            "encodings", "info-response",
         ]
         if BACKWARDS_COMPATIBLE:
             self.large_packets += ["sound-data", "notify_show", "configure-display"]

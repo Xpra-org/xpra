@@ -22,7 +22,9 @@
   * [`ProxyJump` support with paramiko ssh backend](https://github.com/Xpra-org/xpra/commit/2167c90e98555d4d62d62924fdb868eba5f96888)
   * [support remote UNC named-pipe URLs](https://github.com/Xpra-org/xpra/issues/1454)
   * [much improved RFB support](https://github.com/Xpra-org/xpra/issues/4933)
+  * [prefixed packets](https://github.com/Xpra-org/xpra/issues/4972)
   * [document current protocol](https://github.com/Xpra-org/xpra/issues/4999)
+  * [protocol versioning](https://github.com/Xpra-org/xpra/issues/5015)
 * 🛡️ Security:
   * [`seccomp` hardening of image parsing](https://github.com/Xpra-org/xpra/issues/622)
   * [honour encodings restrictions in all subsystems](https://github.com/Xpra-org/xpra/issues/4943)
@@ -53,6 +55,7 @@
   * [support for URIs on MS Windows](https://github.com/Xpra-org/xpra/issues/4917)
   * [send multiple formats per message](https://github.com/Xpra-org/xpra/issues/4228)
   * [macOS support for more images, PDF, etc](https://github.com/Xpra-org/xpra/issues/2807)
+  * [loop detection](https://github.com/Xpra-org/xpra/issues/5014)
 * 🔊 Audio:
   * [available signal](https://github.com/Xpra-org/xpra/issues/2325)
   * [keepalive](https://github.com/Xpra-org/xpra/issues/4913)
@@ -65,6 +68,7 @@
   * [localized menus and dialogs](https://github.com/Xpra-org/xpra/issues/4934)
   * [`expand` server for MS Windows](https://github.com/Xpra-org/xpra/issues/4911)
   * [fully modular subsystems](https://github.com/Xpra-org/xpra/issues/4885), [also for client](https://github.com/Xpra-org/xpra/issues/4948)
+  * [synchronize window stacking order](https://github.com/Xpra-org/xpra/issues/4992)
   * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)
   * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256) [including rate control](https://github.com/Xpra-org/xpra/issues/1949)
   * [basic bash shell completion](https://github.com/Xpra-org/xpra/issues/2375)

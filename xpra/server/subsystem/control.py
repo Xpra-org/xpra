@@ -82,7 +82,7 @@ class ControlHandler(StubSubsystem):
         self.handle_command_request(proto, *command_req)
         return True
 
-    def _process_control_request(self, protocol, packet: Packet) -> None:
+    def _process_request(self, protocol, packet: Packet) -> None:
         """ client sent a command request through its normal channel """
         assert len(packet) >= 2, "invalid command request packet (too small!)"
         # this may end up calling do_handle_command_request via the adapter

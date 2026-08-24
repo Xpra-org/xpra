@@ -171,7 +171,7 @@ class PingClient(StubClientSubsystem):
         self.echo_timers[now_ms] = t
         return True
 
-    def _process_ping_echo(self, packet: Packet) -> None:
+    def _process_echo(self, packet: Packet) -> None:
         echoedtime = packet.get_u64(1)
         l1 = packet.get_u64(2)
         l2 = packet.get_u64(3)

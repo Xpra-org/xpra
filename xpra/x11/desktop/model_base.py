@@ -84,9 +84,11 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         "client-machine", "window-type",
         "desktop", "size-constraints", "class-instance",
         "focused", "title", "depth", "icons",
-        "content-type", "content-types",
+        "content-types",
         "set-initial-position",
     ]
+    if BACKWARDS_COMPATIBLE:
+        _property_names.append("content-type")
     if BACKWARDS_COMPATIBLE:
         _property_names.append("shadow")
     _dynamic_property_names = ["size-constraints", "title", "icons"]
@@ -193,7 +195,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             return True
         if prop == "class-instance":
             return "xpra-desktop", "Xpra-Desktop"
-        if prop == "content-type":
+        if BACKWARDS_COMPATIBLE and prop == "content-type":
             return "desktop"
         if prop == "content-types":
             return ("desktop", )

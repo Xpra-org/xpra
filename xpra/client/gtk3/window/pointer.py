@@ -92,7 +92,8 @@ class PointerWindow(GtkStubWindow):
         mask: Gdk.EventMask = Gdk.EventMask.POINTER_MOTION_MASK
         mask |= Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
         mask |= Gdk.EventMask.SCROLL_MASK
-        if self.get_subsystem("window").wheel_smooth:
+        pointer = self.get_subsystem("pointer")
+        if pointer and pointer.wheel_smooth:
             mask |= Gdk.EventMask.SMOOTH_SCROLL_MASK
         return mask
 
@@ -274,7 +275,8 @@ class PointerWindow(GtkStubWindow):
             device_id = -1
             norm_x = norm_scroll(event.delta_x)
             norm_y = norm_scroll(event.delta_y)
-            self.get_subsystem("window").wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
+            if pointer_sub := self.get_subsystem("pointer"):
+                pointer_sub.wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
             return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         log("do_scroll_event device=%s, direction=%s, button_mapping=%s",
@@ -300,11 +302,11 @@ class PointerWindow(GtkStubWindow):
         return button
 
     def _button_action(self, button: int, event, depressed: bool, props=None) -> None:
-        # `server_pointer` is owned by the `pointer` subsystem (which may be disabled):
+        # button events are sent by the `pointer` subsystem, which may be disabled:
         pointer = self.get_subsystem("pointer")
-        if self._client.readonly or self._client.server_readonly or (pointer and not pointer.server_pointer):
+        if not pointer or self._client.readonly or self._client.server_readonly or not pointer.server_pointer:
             return
-        if pointer and not pointer.middle_click and button == 2:
+        if not pointer.middle_click and button == 2:
             log("_button_action: middle click suppressed (middle-click=no)")
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
@@ -318,7 +320,7 @@ class PointerWindow(GtkStubWindow):
         def send_button(server_button, pressed, **kwargs) -> None:
             sprops = props or {}
             sprops.update(kwargs)
-            self.get_subsystem("window").send_button(device_id, wid, server_button, pressed, pointer_data, modifiers, buttons, sprops)
+            pointer.send_button(device_id, wid, server_button, pressed, pointer_data, modifiers, buttons, sprops)
 
         server_button = -1
         if not depressed:
@@ -366,17 +368,18 @@ class PointerWindow(GtkStubWindow):
         return True
 
     def do_poll_buttons(self, pointer_data: Sequence[int], modifiers: list[str], buttons: Sequence[int]) -> None:
+        pointer = self.get_subsystem("pointer")
         pressed = tuple(self.button_pressed.keys())
         log("do_poll_buttons(%s, %s) pressed=%s", pointer_data, buttons, pressed)
         for button in pressed:
             if button not in buttons:
                 log(f"button {button=} unpressed")
-                if SIMULATE_MOUSE_UP:
+                if SIMULATE_MOUSE_UP and pointer:
                     device_id = 0
                     wid = self.get_mouse_event_wid()
                     server_button = self.translate_button(button, modifiers)
                     sprops = {}
-                    self.get_subsystem("window").send_button(device_id, wid, server_button, False, pointer_data, modifiers, buttons, sprops)
+                    pointer.send_button(device_id, wid, server_button, False, pointer_data, modifiers, buttons, sprops)
                     self.button_pressed.pop(button, None)
 
     def do_button_press_event(self, event) -> None:

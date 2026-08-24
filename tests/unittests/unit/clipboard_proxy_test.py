@@ -57,6 +57,12 @@ class ClipboardProxyTest(unittest.TestCase):
             ("UTF8_STRING", "text/html"),
         )
 
+    def test_local_owner_change_discards_remote_origin(self):
+        proxy = SynchronousProxy({})
+        proxy._clipboard_origin = "remote-origin"
+        proxy.do_owner_changed()
+        self.assertEqual(proxy._clipboard_origin, "")
+
     def test_collect_contents(self):
         proxy = SynchronousProxy({
             "UTF8_STRING": ("UTF8_STRING", 8, b"hello"),

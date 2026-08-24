@@ -298,14 +298,13 @@ class WindowSource(WindowIconSource):
         self.maximized: bool = False          # set by the client!
         self.iconic: bool = False
         self.window_signal_handlers = []
-        # watch for changes to properties that are used to derive the content-type:
-        self.content_types: str = window.get("content-types", ()) or window.get("content-type", "").split(",")
-        if "content-type" in window.get_dynamic_property_names():
-            sid = window.connect("notify::content-type", self.content_type_changed)
-            self.window_signal_handlers.append(sid)
+        # Watch for changes before reading the value: content-types guessing is
+        # asynchronous and may otherwise complete in between.
+        self.content_types: tuple[str, ...] = ()
         if "content-types" in window.get_dynamic_property_names():
             sid = window.connect("notify::content-types", self.content_type_changed)
             self.window_signal_handlers.append(sid)
+        self.content_types = self.get_content_types(window)
         if "iconic" in window.get_dynamic_property_names():
             self.iconic = window.get_property("iconic")
             sid = window.connect("notify::iconic", self._iconic_changed)
@@ -775,10 +774,14 @@ class WindowSource(WindowIconSource):
         return True
 
     def content_type_changed(self, window, *args) -> bool:
-        self.content_types = window.get("content-types", ()) or window.get("content-type", "").split(",")
+        self.content_types = self.get_content_types(window)
         log("content_type_changed(%s, %s) content-types=%s", window, args, self.content_types)
         self.reconfigure(True)
         return True
+
+    @staticmethod
+    def get_content_types(window) -> tuple[str, ...]:
+        return tuple(window.get("content-types", ()))
 
     def quality_changed(self, window, *args) -> bool:
         self._quality_hint = window.get("quality", -1)
@@ -1162,7 +1165,7 @@ class WindowSource(WindowIconSource):
         webp = "webp" in co and 16383 >= w >= 2 and 16383 >= h >= 2 and not grayscale
         if webp and depth in (24, 32) and (not lossy or pixel_count <= WEBP_EFFICIENCY_CUTOFF):
             return "webp"
-        if "jpega" in co and w >= 2 and h >= 2 and (lossy or not TRUE_LOSSLESS):
+        if "jpega" in co and w >= 2 and h >= 2 and lossy:
             return "jpega"
         if webp:
             return "webp"
@@ -1202,7 +1205,7 @@ class WindowSource(WindowIconSource):
                 return "jph"
             if webp and (not lossy or w*h <= WEBP_EFFICIENCY_CUTOFF):
                 return "webp"
-            if lossy or not TRUE_LOSSLESS:
+            if lossy:
                 if jpeg and not alpha:
                     return "jpeg"
                 if jpega and alpha:
@@ -1219,7 +1222,7 @@ class WindowSource(WindowIconSource):
             return "rgb32"
         if "png" in co and (not lossy or depth <= 16):
             return "png"
-        if jpeg:
+        if jpeg and lossy:
             return "jpeg"
         if avif:
             return "avif"

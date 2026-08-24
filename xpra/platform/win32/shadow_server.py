@@ -476,7 +476,7 @@ class ShadowServer(ShadowServerBase):
                 capture = self._make_monitor_capture(len(existing), plug, x, y, width, height)
                 window_sub._add_new_window(model_class(capture, plug, geometry))
 
-    def _process_configure_monitor(self, _proto, packet: Packet) -> None:
+    def _process_display_monitor_configure(self, _proto, packet: Packet) -> None:
         if not self._vdd_multimonitor:
             raise RuntimeError("this shadow server does not support monitor configuration")
         action = packet.get_str(1)
@@ -501,11 +501,12 @@ class ShadowServer(ShadowServerBase):
                 raise ValueError(f"unsupported monitor identifier {identifier!r}")
             self.remove_monitor(index)
         else:
-            raise ValueError(f"unsupported 'configure-monitor' action {action!r}")
+            raise ValueError(f"unsupported monitor configuration action {action!r}")
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("configure-monitor", main_thread=True)
+        self.add_packets("display-monitor-configure", main_thread=True)
+        self.add_legacy_alias("configure-monitor", "display-monitor-configure")
 
     def guess_session_name(self, _procs=()) -> None:
         desktop_name = get_desktop_name()

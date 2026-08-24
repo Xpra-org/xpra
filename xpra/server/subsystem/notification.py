@@ -24,7 +24,11 @@ class NotificationForwarder(StubSubsystem):
     Mixin for servers that forward notifications.
     """
     __slots__ = ("enabled", "forwarder")
-    PREFIX = "notifications" if BACKWARDS_COMPATIBLE else "notification"
+    # the packets are named `notification-*` in both modes, so the prefix has to be
+    # `notification` for them to be routed to this subsystem (see `add_packet_handler`).
+    # Legacy clients still expect the capability and info key to be `notifications`:
+    PREFIX = "notification"
+    CAPS_KEY = "notifications" if BACKWARDS_COMPATIBLE else PREFIX
     toggle_features = ("notifications",)
 
     def __init__(self, server=None):
@@ -52,11 +56,11 @@ class NotificationForwarder(StubSubsystem):
     def get_info(self, _source=None) -> dict[str, Any]:
         if not self.forwarder:
             return {}
-        return {NotificationForwarder.PREFIX: self.forwarder.get_info()}
+        return {NotificationForwarder.CAPS_KEY: self.forwarder.get_info()}
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {
-            NotificationForwarder.PREFIX: {
+            NotificationForwarder.CAPS_KEY: {
                 "enabled": self.enabled,
             },
         }
@@ -143,12 +147,12 @@ class NotificationForwarder(StubSubsystem):
         for ss in notification_sources:
             ss.notify_close(int(nid))
 
-    def _process_notification_status(self, proto, packet: Packet) -> None:
+    def _process_status(self, proto, packet: Packet) -> None:
         assert self.enabled, "cannot toggle notifications: the feature is disabled"
         if ss := self.get_server_source(proto):
             ss.send_notifications = packet.get_bool(1)
 
-    def _process_notification_close(self, proto, packet: Packet) -> None:
+    def _process_close(self, proto, packet: Packet) -> None:
         assert self.enabled
         nid = packet.get_u64(1)
         reason = packet.get_str(2)
@@ -168,7 +172,7 @@ class NotificationForwarder(StubSubsystem):
                 closed = self.forwarder.notification_closed(nid, reason)
                 log("notification-close nid=%s, reason=%s, text=%s, closed=%s", nid, reason, text, closed)
 
-    def _process_notification_action(self, proto, packet: Packet) -> None:
+    def _process_action(self, proto, packet: Packet) -> None:
         assert self.enabled
         nid = packet.get_u64(1)
         action_key = packet.get_str(2)

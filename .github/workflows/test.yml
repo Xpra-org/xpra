@@ -8,15 +8,30 @@ jobs:
     # get scheduled and some of its tooling may be unstable:
     # https://github.com/actions/runner-images/issues/14226
     runs-on: ubuntu-26.04
-    # Run the suite twice: once interpreted (the required baseline), and once
-    # against a `--with-cythonize_more` build so the concrete-type argument
-    # annotations become live runtime TypeError guards (Cython annotation_typing).
-    # The cythonized leg is non-blocking for now: it may surface latent type
-    # mismatches to fix before it can be made required.
+    # Explicit list of legs (rather than a full matrix product) so that each
+    # variation is only tested once, against the interpreted baseline build:
+    # * `baseline`: interpreted, backwards compatible - the required baseline
+    # * `cythonize_more`: built with `--with-cythonize_more` so the concrete-type
+    #   argument annotations become live runtime TypeError guards
+    #   (Cython annotation_typing).
+    #   Non-blocking for now: it may surface latent type mismatches to fix
+    #   before it can be made required.
+    # * `no-backwards-compatibility`: `XPRA_BACKWARDS_COMPATIBLE=0`, exercising
+    #   the code paths that will remain once the legacy ones are removed
     strategy:
       fail-fast: false
       matrix:
-        cythonize: ["without", "with"]
+        include:
+          - name: "baseline"
+            cythonize: "without"
+            compat: "1"
+          - name: "cythonize_more"
+            cythonize: "with"
+            compat: "1"
+          - name: "no-backwards-compatibility"
+            cythonize: "without"
+            compat: "0"
+    name: "unittest (${{ matrix.name }})"
     continue-on-error: ${{ matrix.cythonize == 'with' }}
     steps:
     - uses: actions/checkout@v7
@@ -66,6 +81,7 @@ jobs:
         CYTHONIZE_MORE: ${{ matrix.cythonize }}
         # build the optional terminal client so its tests run:
         EXTRA_ARGS: --with-terminal_client
+        XPRA_BACKWARDS_COMPATIBLE: ${{ matrix.compat }}
       run: >
         python3 setup.py unittests
         --skip-fail unit.client.splash_test

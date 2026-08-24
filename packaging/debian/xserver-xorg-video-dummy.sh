@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 if [ -z "${REPO_ARCH_PATH}" ]; then
 	REPO_ARCH_PATH="`pwd`/../repo"
 fi
@@ -7,13 +9,38 @@ fi
 DUMMY_TAR_XZ=`ls ../pkgs/xf86-video-dummy-*.tar.xz`
 dirname=`echo ${DUMMY_TAR_XZ} | sed 's+../pkgs/++g' | sed 's/.tar.xz//' | sort -V | tail -n 1`
 rm -fr "./${dirname}"
-tar -Jxf ${DUMMY_TAR_XZ}
+#GNU tar 1.35 and later use the `openat2` syscall for extraction, which some
+#versions of qemu don't implement - extraction then fails with
+#"Cannot open: Function not implemented", see:
+#https://github.com/Xpra-org/repo-build-scripts/issues/15
+#bsdtar doesn't use `openat2`, so prefer it when it is installed
+#(unlike GNU tar, it restores xattrs, ACLs and file flags unless told not to):
+TAR="tar"
+if command -v bsdtar > /dev/null; then
+	TAR="bsdtar --no-xattrs --no-acls --no-fflags"
+fi
+${TAR} -Jxf ${DUMMY_TAR_XZ}
 pushd "./${dirname}"
 ln -sf ../xserver-xorg-video-dummy ./debian
 
+# Use the local tar wrapper for dpkg and apt while building under old qemu.
+if command -v bsdtar > /dev/null; then
+	export PATH="${SCRIPT_DIR}:${PATH}"
+fi
+
 #install build dependencies:
-mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
-rm -f xserver-xorg-video-dummy-build-deps*
+#Avoid mk-build-deps: its temporary .deb invokes GNU tar, which fails with
+#the older arm64 qemu emulation used by the builder.
+BUILD_DEPS=$(awk '
+  /^Build-Depends:[[:space:]]*/ { in_deps=1; sub(/^Build-Depends:[[:space:]]*/, ""); print; next }
+  in_deps && /^[[:space:]]*#/ { next }
+  in_deps && /^[[:space:]]/ { sub(/^[[:space:]]*/, ""); print; next }
+  in_deps { exit }
+' debian/control | tr '\n' ' ')
+if ! apt-get -o Debug::pkgProblemResolver=yes --yes satisfy "$BUILD_DEPS"; then
+	echo "failed to install xserver-xorg-video-dummy build dependencies" >&2
+	exit 1
+fi
 
 if [ `arch` == "aarch64" ]; then
   debuild -us -uc -b --no-lintian

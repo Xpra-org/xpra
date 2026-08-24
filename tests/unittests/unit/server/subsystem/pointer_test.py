@@ -6,8 +6,9 @@
 
 import unittest
 
-from xpra.util.objects import AdHocStruct
+from xpra.util.objects import AdHocStruct, typedict
 from xpra.server.subsystem.pointer import PointerManager
+from xpra.server.source.pointer import PointerConnection
 
 
 def make_server():
@@ -32,6 +33,8 @@ class RecordingPointerManager(PointerManager):
         self.pointer_device = AdHocStruct()
         self.pointer_device.get_position = lambda: (0, 0)
         self.pointer_device.click = lambda *args: self.calls.append(("click",) + args)
+        self.pointer_device.has_precise_wheel = lambda: False
+        self.pointer_device.wheel_motion = lambda *args: self.calls.append(("wheel_motion",) + args)
 
     def make_pointer_device(self):
         return self.pointer_device
@@ -150,6 +153,58 @@ class PointerPipelineTest(unittest.TestCase):
         m.calls.clear()
         m.unpress_all_buttons()
         self.assertEqual(m.calls, [])
+
+    @staticmethod
+    def make_source(caps=None) -> PointerConnection:
+        ss = PointerConnection.__new__(PointerConnection)
+        ss.init_state()
+        ss.parse_client_caps(typedict(caps or {}))
+        return ss
+
+    def test_precise_wheel_reaches_the_device(self):
+        m = self.make_manager()
+        m.pointer_device.has_precise_wheel = lambda: True
+        m.wheel_motion(self.make_source(), -1, 1, 5, -0.4, {})
+        self.assertEqual(m.calls, [("wheel_motion", 5, -0.4)])
+
+    def test_wheel_is_emulated_with_button_clicks(self):
+        m = self.make_manager()
+        ss = self.make_source()
+        # a fifth of a click at a time: nothing until they add up to a whole one
+        for _ in range(2):
+            m.wheel_motion(ss, -1, 1, 5, -0.2, {})
+        self.assertEqual(m.calls, [])
+        m.wheel_motion(ss, -1, 1, 5, -0.2, {})
+        self.assertEqual(m.calls, [("click", 5, True, {}), ("click", 5, False, {})])
+        # and the emulated clicks leave no button pressed:
+        self.assertEqual(m.buttons_pressed, {})
+
+    def test_wheel_emulation_uses_the_client_scaled_distance(self):
+        m = self.make_manager()
+        ss = self.make_source()
+        # the client scaled this one click of wheel into two:
+        m.wheel_motion(ss, -1, 1, 5, -1.0, {"scaled-distance": -2000})
+        self.assertEqual(len([c for c in m.calls if c[:2] == ("click", 5)]), 4)
+
+    def test_wheel_emulation_ignores_an_invalid_scaled_distance(self):
+        m = self.make_manager()
+        ss = self.make_source()
+        m.wheel_motion(ss, -1, 1, 5, -1.0, {"scaled-distance": "two thousand"})
+        self.assertEqual(len([c for c in m.calls if c[:2] == ("click", 5)]), 2)
+
+    def test_wheel_emulation_carries_the_remainder_over(self):
+        m = self.make_manager()
+        ss = self.make_source()
+        # one click down, which overshoots and leaves 0.4 of a click owed back:
+        m.wheel_motion(ss, -1, 1, 5, -0.6, {})
+        self.assertEqual(len([c for c in m.calls if c[:2] == ("click", 5)]), 2)
+        m.calls.clear()
+        # so the next nudge downwards is swallowed by what is owed:
+        m.wheel_motion(ss, -1, 1, 5, -0.3, {})
+        self.assertEqual(m.calls, [])
+        # but the wheel never scrolls back up on its own:
+        m.wheel_motion(ss, -1, 1, 5, -0.9, {})
+        self.assertEqual(len([c for c in m.calls if c[:2] == ("click", 5)]), 2)
 
     def test_client_exit_signal_unpresses_buttons(self):
         m = self.make_manager()

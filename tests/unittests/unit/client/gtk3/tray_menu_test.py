@@ -163,6 +163,38 @@ class TrayMenuTest(unittest.TestCase):
         menu["Utilities"]["Entries"]["Editor"]["IconData"] = b"icon-two"
         assert start_menu_checksum(menu) != checksum
 
+    def test_top_level_menu_is_built_incrementally(self):
+        from xpra.client.gtk3 import tray_menu
+
+        callbacks = []
+
+        class BuildMenu(FakeMenu):
+            def connect(self, _signal, _callback) -> None:
+                pass
+
+            def show(self) -> None:
+                pass
+
+        class BuildItem(FakeMenuItem):
+            def show_all(self) -> None:
+                pass
+
+        helper = object.__new__(tray_menu.GTKTrayMenu)
+        helper.menu_deactivated = lambda *_args: None
+        items = [BuildItem("one"), BuildItem("two")]
+        helper.get_menu_item_factories = lambda: tuple(lambda item=item: item for item in items)
+        fake_gtk = SimpleNamespace(Menu=BuildMenu)
+        fake_glib = SimpleNamespace(idle_add=lambda callback: callbacks.append(callback) or len(callbacks))
+        with patch.object(tray_menu, "Gtk", fake_gtk), patch.object(tray_menu, "GLib", fake_glib):
+            menu = helper.setup_menu()
+        self.assertEqual(menu.get_children(), [])
+        self.assertEqual(len(callbacks), 1)
+        self.assertTrue(callbacks[0]())
+        self.assertEqual([x.get_label() for x in menu.get_children()], ["one"])
+        self.assertTrue(callbacks[0]())
+        self.assertEqual([x.get_label() for x in menu.get_children()], ["one", "two"])
+        self.assertFalse(callbacks[0]())
+
     def test_speaker_menu_sink_selection(self):
         audio = FakeAudio(speaker_enabled=True)
         menu = self.make_speaker_menu(audio)

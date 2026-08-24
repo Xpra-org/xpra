@@ -43,6 +43,7 @@ class File(StubClientSubsystem, FileTransferHandler):
         FileTransferHandler.init_opts(self, opts)
 
     def init_authenticated_packet_handlers(self) -> None:
+        self.add_legacy_alias("open-url", "file-open-url")
         self.add_legacy_alias("send-file", "file-send")
         self.add_legacy_alias("send-data-request", "file-data-request")
         self.add_legacy_alias("send-data-response", "file-data-response")
@@ -53,11 +54,11 @@ class File(StubClientSubsystem, FileTransferHandler):
             "file-data-response",
             "file-ack-chunk", "file-send-chunk",
         )
-        # `open-url` spawns a subprocess / web browser (ie: `execve`) and may prompt
+        # `file-open-url` spawns a subprocess / web browser (ie: `execve`) and may prompt
         # the user via a dialog, so it must run on the main thread rather than inline
         # on the network parse thread - which the seccomp filter forbids from
         # spawning processes (see `docs/Usage/Seccomp.md`):
-        self.add_packets("file-data-request", "open-url", main_thread=True)
+        self.add_packets("file-data-request", "file-open-url", main_thread=True)
 
     def get_caps(self) -> dict[str, Any]:
         return {"file": self.get_file_transfer_features()}

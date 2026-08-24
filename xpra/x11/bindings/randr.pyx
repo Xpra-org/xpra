@@ -1363,6 +1363,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             self.XSync()
         finally:
             XRRFreeScreenResources(rsc)
+        return True
 
 
 cdef dict parse_ScreenChangeNotify(Display *d, XEvent *e):

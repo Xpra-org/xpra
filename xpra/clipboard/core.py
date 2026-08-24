@@ -7,12 +7,14 @@
 import os
 import struct
 from typing import Any, Final
+from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
 from xpra.net.compression import Compressible
 from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
-from xpra.os_util import POSIX
+from xpra.net.dispatch import SubsystemPacketHandlers
+from xpra.os_util import POSIX, get_hex_uuid
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
 from xpra.util.env import envint, envbool
@@ -38,6 +40,8 @@ MIN_CLIPBOARD_COMPRESS_SIZE: Final[int] = envint("XPRA_MIN_CLIPBOARD_COMPRESS_SI
 MAX_CLIPBOARD_PACKET_SIZE: Final[int] = 16 * 1024 * 1024
 MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
+MAX_CLIPBOARD_ORIGINS: Final[int] = 16
+MAX_CLIPBOARD_ORIGIN_SIZE: Final[int] = 64
 
 DEFAULT_PREFERRED_TARGETS = ",".join(
     PLAIN_TEXT_TARGETS + HTML_TARGETS + URI_TARGETS + RTF_TARGETS
@@ -57,7 +61,21 @@ log("DISCARD_TARGETS=%s", csv(DISCARD_TARGETS))
 log("DISCARD_EXTRA_TARGETS=%s", csv(DISCARD_EXTRA_TARGETS))
 
 
-class ClipboardProtocolHelperCore:
+class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
+    """
+    The clipboard helper owns the whole `clipboard` packet namespace, but it is not a
+    subsystem: it has no `PacketDispatcher` to be routed from, and it can be driven
+    standalone (see `unit/clipboard_core_test.py`).
+    The `clipboard` subsystem on either side registers every `clipboard-*` packet type
+    against a single handler which validates the packet - readonly mode, which client
+    owns the clipboard, whether clipboard sharing is still enabled - and then hands it
+    to `process_clipboard_packet` below, which is the second dispatch stage.
+    Deriving from `SubsystemPacketHandlers` means that stage uses the same registry,
+    naming convention and `PREFIX` stripping as every subsystem: `clipboard-data` is
+    handled by `_process_data`.
+    """
+    PREFIX = "clipboard"
+
     def __init__(self, send_packet_cb: Callable, progress_cb: Callable = noop, **kwargs):
         d = typedict(kwargs)
         self.send: Callable = send_packet_cb
@@ -70,6 +88,7 @@ class ClipboardProtocolHelperCore:
         self.filter_res = compile_filters(d.strtupleget("filters"))
         self._clipboard_request_counter: int = 0
         self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
+        self._clipboard_origins: dict[str, deque[str]] = {}
         self._local_to_remote: dict[str, str] = {}
         self._remote_to_local: dict[str, str] = {}
         self.init_translation(kwargs)
@@ -197,9 +216,13 @@ class ClipboardProtocolHelperCore:
         for x in self._clipboard_proxies.values():
             x.cleanup()
         self._clipboard_proxies = {}
+        self._clipboard_origins = {}
 
     def client_reset(self) -> None:
-        """ overriden in subclasses to try to reset the state """
+        """Reset state associated with the disconnected clipboard peer."""
+        self._clipboard_origins.clear()
+        for proxy in self._clipboard_proxies.values():
+            proxy._clipboard_origin = ""
 
     def set_direction(self, can_send: bool, can_receive: bool,
                       max_send_size: int | None = None, max_receive_size: int | None = None) -> None:
@@ -233,17 +256,22 @@ class ClipboardProtocolHelperCore:
         for proxy in self._clipboard_proxies.values():
             proxy.set_preferred_targets(preferred_targets)
 
+    def get_packet_owner(self):
+        # `SubsystemPacketHandlers` only needs an owner to fall back to for packet types
+        # outside our own namespace, and every packet we register is a `clipboard-` one.
+        raise NotImplementedError("the clipboard helper only handles its own packet types")
+
     def init_packet_handlers(self) -> None:
-        self._packet_handlers: dict[str, Callable] = {
-            "clipboard-data": self._process_clipboard_data,
-            "clipboard-request": self._process_clipboard_request,
-            "clipboard-contents": self._process_clipboard_contents,
-            "clipboard-contents-none": self._process_clipboard_contents_none,
-            "clipboard-pending-requests": self._process_clipboard_pending_requests,
-            "clipboard-enable-selections": self._process_clipboard_enable_selections,
-        }
+        # this is also the only place the registry is created: the helper can be driven
+        # standalone, without `__init__` having run (see `unit/clipboard_core_test.py`)
+        self._packet_handlers = {}
+        self.add_packets(
+            "clipboard-data", "clipboard-request",
+            "clipboard-contents", "clipboard-contents-none",
+            "clipboard-pending-requests", "clipboard-enable-selections",
+        )
         if BACKWARDS_COMPATIBLE:
-            self._packet_handlers["clipboard-token"] = self._process_clipboard_token
+            self.add_packets("clipboard-token")
 
     def make_proxy(self, selection: str):
         raise NotImplementedError()
@@ -251,6 +279,17 @@ class ClipboardProtocolHelperCore:
     def init_proxies_claim(self) -> None:
         for proxy in self._clipboard_proxies.values():
             proxy.claim()
+
+    def remember_clipboard_origin(self, selection: str, origin: str) -> None:
+        origins = self._clipboard_origins.setdefault(selection, deque(maxlen=MAX_CLIPBOARD_ORIGINS))
+        try:
+            origins.remove(origin)
+        except ValueError:
+            pass
+        origins.append(origin)
+
+    def is_clipboard_loop(self, selection: str, origin: str) -> bool:
+        return origin in self._clipboard_origins.get(selection, ())
 
     # Used by the client during startup:
     def send_tokens(self, selections: Iterable[str] = ()) -> None:
@@ -289,6 +328,12 @@ class ClipboardProtocolHelperCore:
                 "claim": proxy._can_send,
                 "greedy": self.local_greedy_selection(proxy._selection),
             }
+            origin = getattr(proxy, "_clipboard_origin", "")
+            if not origin:
+                origin = get_hex_uuid()
+                proxy._clipboard_origin = origin
+            self.remember_clipboard_origin(proxy._selection, origin)
+            options["origin"] = origin
             if targets:
                 options["targets"] = targets
             wire_items = {}
@@ -327,7 +372,7 @@ class ClipboardProtocolHelperCore:
         log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         return proxy
 
-    def _process_clipboard_token(self, packet: Packet) -> None:
+    def _process_token(self, packet: Packet) -> None:
         selection = packet.get_str(1)
         proxy = self._get_clipboard_token_proxy(selection)
         if proxy is None:
@@ -360,12 +405,23 @@ class ClipboardProtocolHelperCore:
         synchronous_client = len(packet) >= 11 and packet.get_bool(10)
         proxy.got_token(targets, target_data, claim, synchronous_client)
 
-    def _process_clipboard_data(self, packet: Packet) -> None:
+    def _process_data(self, packet: Packet) -> None:
         selection = packet.get_str(1)
         proxy = self._get_clipboard_token_proxy(selection)
         if proxy is None:
             return
         options = typedict(packet.get_dict(2))
+        origin = options.strget("origin")
+        if len(origin) > MAX_CLIPBOARD_ORIGIN_SIZE:
+            log.warn("Warning: ignoring oversized clipboard origin for %r", selection)
+            origin = ""
+        if origin:
+            if self.is_clipboard_loop(proxy._selection, origin):
+                log.warn("Warning: clipboard loop detected for %r", proxy._selection)
+                return
+            proxy._clipboard_origin = origin
+        else:
+            proxy._clipboard_origin = ""
         targets = None
         target_data = None
         if proxy._can_receive:
@@ -491,7 +547,7 @@ class ClipboardProtocolHelperCore:
             return struct.pack(fstr, *data)
         raise ValueError("unhanled encoding: %s" % ((encoding, dtype, dformat),))
 
-    def _process_clipboard_request(self, packet: Packet) -> None:
+    def _process_request(self, packet: Packet) -> None:
         request_id = packet.get_u64(1)
         selection = packet.get_str(2)
         target = packet.get_str(3)
@@ -577,7 +633,7 @@ class ClipboardProtocolHelperCore:
             return Compressible(f"clipboard: {dtype} / {dformat}", wire_data)
         return wire_data
 
-    def _process_clipboard_contents(self, packet: Packet) -> None:
+    def _process_contents(self, packet: Packet) -> None:
         request_id = packet.get_u64(1)
         selection = packet.get_str(2)
         dtype = packet.get_str(3)
@@ -592,7 +648,7 @@ class ClipboardProtocolHelperCore:
         assert isinstance(request_id, int) and isinstance(dformat, int)
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 
-    def _process_clipboard_contents_none(self, packet: Packet) -> None:
+    def _process_contents_none(self, packet: Packet) -> None:
         log("process clipboard contents none")
         request_id = packet.get_u64(1)
         self._clipboard_got_contents(request_id, "", 8, b"")
@@ -603,17 +659,23 @@ class ClipboardProtocolHelperCore:
     def progress(self) -> None:
         self.progress_cb(len(self._clipboard_outstanding_requests), -1)
 
-    def _process_clipboard_pending_requests(self, packet: Packet) -> None:
+    def _process_pending_requests(self, packet: Packet) -> None:
         pending = packet.get_u8(1)
         self.progress_cb(-1, pending)
 
-    def _process_clipboard_enable_selections(self, packet: Packet) -> None:
+    def _process_enable_selections(self, packet: Packet) -> None:
         selections = packet.get_strs(1)
         self.enable_selections(selections)
 
     def process_clipboard_packet(self, packet: Packet) -> None:
+        # second dispatch stage: the `clipboard` subsystem has already validated this packet
         packet_type = packet.get_type()
-        if handler := self._packet_handlers.get(packet_type):
-            handler(packet)
-        else:
+        handler_def = None
+        if self.owns_packet(packet_type):
+            handler_def = self.get_packet_handler(self.packet_subtype(packet_type))
+        if not handler_def:
             log.warn(f"Warning: no clipboard packet handler for {packet_type!r}")
+            return
+        # our handlers take just the packet, and the caller has already scheduled us
+        # on the main thread where needed, so the `main_thread` flag is unused here:
+        handler_def[0](packet)

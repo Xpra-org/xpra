@@ -15,7 +15,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.common import noop, SizedBuffer
 from xpra.net.protocol import socket_handler, check
-from xpra.net.packet_type import CONNECTION_LOST
+from xpra.net.packet_type import CONNECTION_LOST, INFO_RESPONSE
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
 from xpra.net.common import Packet
@@ -265,6 +265,9 @@ class ProtocolTest(unittest.TestCase):
 
         proto.parse_remote_caps(typedict())
         self.assertEqual(proto.max_packet_size, MAX_PACKET_SIZE)
+
+    def test_info_response_is_a_large_packet(self) -> None:
+        self.assertIn(INFO_RESPONSE, self.make_memory_protocol().large_packets)
 
     def test_read_speed(self) -> None:
         if not SHOW_PERF:

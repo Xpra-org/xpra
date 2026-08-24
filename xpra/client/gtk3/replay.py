@@ -10,6 +10,7 @@ from xpra.exit_codes import ExitValue
 from xpra.util.glib import install_signal_handlers
 from xpra.util.objects import typedict
 from xpra.client.base.replay import Replay, WindowModel
+from xpra.client.gui.fake_client import FakePointerSubsystem, FakeWindowSubsystem
 from xpra.net import common as net_common
 from xpra.common import noop
 from xpra.log import Logger
@@ -28,13 +29,19 @@ class GtkReplay(Replay):
         # fake client methods:
         self.xscale = self.yscale = 1
         self.default_cursor_data = self._load_default_cursor()
-        self.server_window_frame_extents = False
-        self.wheel_smooth = False
+        self.server_readonly = True
         self.encoding_defaults = {}
         self.readonly = True
         self.title = "replay: @title@"
         self.find_window = noop
-        self.update_focus = noop
+        self.request_frame_extents = noop
+        self._current_screen_sizes = ()
+        self.subsystems = {
+            "display": self,
+            "encoding": self,
+            "pointer": FakePointerSubsystem(),
+            "window": FakeWindowSubsystem(),
+        }
         self.sp = self.sx = self.sy = self.srect = self.no_scaling
         self.cx = self.cy = self.no_scaling
         self.fsx = self.fsy = self.no_scaling
@@ -51,6 +58,9 @@ class GtkReplay(Replay):
 
     def send(self, packet_type:str, *args, **kwargs) -> None:
         log("ignoring request to send %r", packet_type)
+
+    def get_subsystem(self, name: str):
+        return self.subsystems.get(name)
 
     @staticmethod
     def no_scaling(*args):
@@ -104,6 +114,7 @@ class GtkReplay(Replay):
                               backing_size,
                               metadata, override_redirect, client_props,
                               border, max_window_size, pixel_depth, headerbar="no")
+        self.subsystems["window"]._id_to_window[wid] = window
         # new_backing() was already called during __init__ and read default_cursor_data
         # from the window, which didn't have it yet — patch both window and backing now:
         window.default_cursor_data = self.default_cursor_data
@@ -115,6 +126,10 @@ class GtkReplay(Replay):
     def get_root_size() -> tuple[int, int]:
         from xpra.gtk.util import get_root_size
         return get_root_size()
+
+    @staticmethod
+    def get_frame_extents(*_args) -> dict[str, Any]:
+        return {}
 
     def client_toolkit(self) -> str:
         return "gtk replay"

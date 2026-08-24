@@ -60,11 +60,11 @@ def _gen_rsa_key(tmpdir: str, name="ssh_host_rsa_key") -> tuple[str, paramiko.RS
 class TestDetectSshStanza(unittest.TestCase):
 
     def test_empty(self):
-        assert detect_ssh_stanza([]) == ()
+        assert not detect_ssh_stanza([])
 
     def test_single_word(self):
         # a simple command that has no if/then structure gives ()
-        assert detect_ssh_stanza(["ls"]) == ()
+        assert not detect_ssh_stanza(["ls"])
 
     def test_sh_c_with_proxy(self):
         cmd = [
@@ -75,6 +75,13 @@ class TestDetectSshStanza(unittest.TestCase):
         result = detect_ssh_stanza(cmd)
         assert result, f"expected non-empty result, got {result!r}"
         assert "_proxy" in result
+
+    def test_tuple_sh_c_with_proxy(self):
+        cmd = (
+            "sh", "-c",
+            'if type "xpra" > /dev/null 2>&1; then xpra _proxy; fi',
+        )
+        assert tuple(detect_ssh_stanza(cmd)) == ("xpra", "_proxy")
 
     def test_sh_c_which(self):
         cmd = [
@@ -95,7 +102,7 @@ class TestDetectSshStanza(unittest.TestCase):
 
     def test_not_sh_c(self):
         # 2 arguments but not 'sh -c' → ()
-        assert detect_ssh_stanza(["bash", "script.sh"]) == ()
+        assert not detect_ssh_stanza(["bash", "script.sh"])
 
     def test_no_proxy_subcommand(self):
         # there is no _proxy in the 'then' branch
@@ -103,7 +110,7 @@ class TestDetectSshStanza(unittest.TestCase):
             "sh", "-c",
             'if type "xpra" > /dev/null 2>&1; then xpra version; fi',
         ]
-        assert detect_ssh_stanza(cmd) == ()
+        assert not detect_ssh_stanza(cmd)
 
 
 class TestGetKeyclass(unittest.TestCase):

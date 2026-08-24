@@ -82,6 +82,9 @@ class ClipboardProxyCore:
         self._selection: str = selection
         self._enabled: bool = False
         self._have_token: bool = False
+        # The origin is carried by modern clipboard-data packets.  It is reset
+        # when a new local owner takes over the selection.
+        self._clipboard_origin: str = ""
         # enabled later during setup
         self._can_send: bool = False
         self._can_receive: bool = False
@@ -156,6 +159,7 @@ class ClipboardProxyCore:
     def do_owner_changed(self) -> None:
         # an application on our side owns the clipboard selection
         # (they are ready to provide something via the clipboard)
+        self._clipboard_origin = ""
         log("clipboard: %s owner_changed, enabled=%s, "
             "can-send=%s, can-receive=%s, have_token=%s, greedy_client=%s, block_owner_change=%s",
             bytestostr(self._selection), self._enabled, self._can_send, self._can_receive,

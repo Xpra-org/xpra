@@ -16,8 +16,11 @@ from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
 from xpra.common import noerr, may_notify_client
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
-from xpra.net.common import Packet, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK
+from xpra.net.common import Packet, PacketElement, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import (
+    CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK,
+    DISPLAY_MONITOR_CONFIGURE, DISPLAY_UNGRAB,
+)
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
 from xpra.util.parsing import parse_sharing
@@ -36,6 +39,13 @@ log = Logger("client")
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
+
+# servers that don't accept the `setting-change` packet from clients
+# expect a dedicated packet type for each setting:
+LEGACY_SETTING_PACKETS: dict[str, str] = {
+    "readonly": "readonly-toggled",
+    "xsettings": "server-settings",
+}
 
 
 class UIXpraClient(XpraClientBase):
@@ -209,11 +219,11 @@ class UIXpraClient(XpraClientBase):
     # monitors
     def send_remove_monitor(self, index) -> None:
         assert self.get_subsystem("display").server_monitors
-        self.send("configure-monitor", "remove", "index", index)
+        self.send(DISPLAY_MONITOR_CONFIGURE, "remove", "index", index)
 
     def send_add_monitor(self, resolution="1024x768") -> None:
         assert self.get_subsystem("display").server_monitors
-        self.send("configure-monitor", "add", resolution)
+        self.send(DISPLAY_MONITOR_CONFIGURE, "add", resolution)
 
     def _ui_event(self) -> None:
         if self._ui_events == 0:
@@ -446,6 +456,17 @@ class UIXpraClient(XpraClientBase):
 
     ######################################################################
     # features:
+    def send_setting_change(self, setting: str, value: PacketElement) -> None:
+        """ ask the server to change a setting (mirror of `ClientConnection.send_setting_change`) """
+        if "setting-change" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
+            self.send("setting-change", setting, value)
+            return
+        legacy = LEGACY_SETTING_PACKETS.get(setting, "")
+        if not legacy:
+            log.warn("Warning: this server does not support changing %r", setting)
+            return
+        self.send(legacy, value)
+
     def send_sharing_enabled(self) -> None:
         assert self.server_sharing and self.server_sharing_toggle
         self.send(SHARING_TOGGLE, self.client_supports_sharing)
@@ -466,7 +487,7 @@ class UIXpraClient(XpraClientBase):
         self.send(CURSOR_SET, cursor.enabled)
 
     def send_force_ungrab(self, wid: int) -> None:
-        self.send("force-ungrab", wid)
+        self.send(DISPLAY_UNGRAB, wid)
 
     def send_keyboard_sync_enabled_status(self, *_args) -> None:
         if kb := self.get_subsystem("keyboard"):

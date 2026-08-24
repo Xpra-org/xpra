@@ -55,7 +55,7 @@ class ShadowWindowServer(WindowServer):
         # whole-screen capture is exposed as a single (0, 0) window
         return 0, 0
 
-    def _process_window_map(self, proto, packet: Packet) -> None:
+    def _process_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -72,7 +72,7 @@ class ShadowWindowServer(WindowServer):
         # the refresh state machine lives on the variant:
         self.server.start_refresh(wid)
 
-    def _process_window_unmap(self, proto, packet: Packet) -> None:
+    def _process_unmap(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         if not window:
@@ -97,7 +97,7 @@ class ShadowWindowServer(WindowServer):
         if properties:
             self._set_client_properties(proto, wid, window, properties)
 
-    def _process_window_close(self, proto, packet: Packet) -> None:
+    def _process_close(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         if not window:

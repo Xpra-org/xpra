@@ -39,17 +39,14 @@ autoprov: no
 %global cython_compile_all --cython-compile-all
 %endif
 
-%global upstream_version 3.3.0a2.dev0
-%global git_commit 5771cc75dfdb64af4bd2c987b397187d9837a4d5
-
 Name:		%{py3rpmname}-cython
-Version:	3.3.0~b1
-Release:	3%{?dist}
+Version:	3.3.0
+Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://files.pythonhosted.org/packages/78/1d/39023ecbfd09ba481398886e0e879226918b3e5a4b7ac1a19a0852285a47/cython-3.3.0b1.tar.gz
+Source0:    https://files.pythonhosted.org/packages/source/c/cython/cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   %{py3rpmname}
 Provides:   %{py3rpmname}-Cython = %{version}-%{release}
@@ -67,11 +64,11 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ba9c9b8ad3ddb6fb3592297b9bce2219e22c24710924b4f64fad9e32a436b20e" ]; then
+if [ "${sha256}" != "eed0d93fbca7087f143b42c34b05a825849bdf17f101572c2105acfa49aa88b8" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -n cython-3.3.0b1
+%setup -q -n cython-%{version}
 
 %build
 NPROCS=${NPROCS:-`nproc`}

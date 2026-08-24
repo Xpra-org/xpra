@@ -12,22 +12,23 @@ from unittest.mock import patch
 
 from xpra.server.subsystem.id import IDServer
 from xpra.server.subsystem.info import InfoServer
+from xpra.net.dispatch import PacketDispatcher
 from unit.server.subsystem.servermixintest_util import FakeServerBase
 
 
-class FakeServer(FakeServerBase):
+class FakeServer(FakeServerBase, PacketDispatcher):
     session_type = "seamless"
     session_name = "test-session"
 
     def __init__(self):
         super().__init__()
+        PacketDispatcher.__init__(self)
         self.hello_request_handlers = {}
         self.start_time = time()
         self._html = False
         self.websocket_upgrade = False
         self._www_dir = ""
         self._http_headers_dirs = []
-        self._default_packet_handlers = {}
 
     def get_socket_info(self) -> dict:
         return {}
@@ -107,6 +108,22 @@ class TestIDInfo(unittest.TestCase):
 
         self.assertEqual(info["uuid"], "test-uuid")
         self.assertEqual(info["session-type"], "seamless")
+
+    def test_full_info_includes_packet_handlers(self):
+        server = self.make_server()
+        server.add_packet_handler("flat", lambda *_args: None)
+        info_subsystem = InfoServer(server)
+        server.subsystems["info"] = info_subsystem
+        info_subsystem.init_packet_handlers()
+
+        with patch("xpra.server.subsystem.info.get_net_info", return_value={}):
+            info = info_subsystem.get_full_server_info()
+
+        self.assertEqual(info["network"]["packet-handlers"], {
+            "authenticated": ["flat"],
+            "ui": [],
+            "subsystems": {"info": ["info-request"]},
+        })
 
     def test_server_session_id_info_delegates_to_id_subsystem(self):
         from xpra.server.core import ServerCore

@@ -13,7 +13,6 @@ from threading import Lock
 from collections.abc import Iterable, Sequence
 
 from xpra.exit_codes import ExitCode
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv, print_nested_dict, strtobytes, hexstr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import parse_version
@@ -263,8 +262,10 @@ def get_cipher(key: bytes, iv: bytes, mode: str = DEFAULT_MODE):
 
 
 def get_block_size(mode: str) -> int:
-    if BACKWARDS_COMPATIBLE and mode == "CBC":
-        # older versions require 32
+    if mode == "CBC":
+        # CBC is a block cipher mode: the payload must be padded to the AES
+        # block size (128 bits), whatever the protocol compatibility level.
+        # (`CTR` is a stream mode and needs no padding, hence 0)
         return 16
     return 0
 

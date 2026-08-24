@@ -33,9 +33,13 @@ Modern clients attach a monitor descriptor to map and configure packets. The
 descriptor contains the client's monitor `index` and the window `position`
 relative to that monitor.
 
+The client exposes these in the `window` dictionary of its `hello` packet:
+
 | Capability      | Information                                                                      |
 |-----------------|----------------------------------------------------------------------------------|
+| `enabled`       | The client wants window forwarding; an absent or empty dictionary disables it    |
 | `restack`       | The client can handle `window-restack` packets, not just `window-raise`          |
+| `grabs`         | The client can handle `window-grab` and `window-ungrab` packets                  |
 | `sync-position` | Send `window-move-resize` when another client moves or resizes a window          |
 | `sync-focus`    | Send `window-raise` when another client focuses a window                         |
 
@@ -50,6 +54,11 @@ that caused the change.
 `sync-position` and `sync-focus` can be refused by the server using the `sync` socket option
 (as the `position` and `focus` subsystems),
 see [pointer synchronization](./Pointer.md#pointer-synchronization).
+
+An X11 seamless server advertises `window.stacking = true`. Clients may then send
+their current bottom-to-top window order using `window-stacking`; the topmost window
+is the final ID in the list. X11 clients obtain this order from their local window
+manager's `_NET_CLIENT_LIST_STACKING` root property.
 
 <div class="docs-section-heading" markdown="1">
 
@@ -73,6 +82,8 @@ see [pointer synchronization](./Pointer.md#pointer-synchronization).
 | `window-eos`                  | `wid`                                               | End all codec streams for the window                   |
 | `window-icon`                 | `wid`, `w`, `h`, `encoding`, `data`                | Updated window icon                                    |
 | `window-bell`                 | `wid`, `device`, `percent`, `pitch`, `duration`, `bell_class`, `bell_id`, `name` | A bell event |
+| `window-grab`                 | `wid`                                               | The window has grabbed the pointer and keyboard         |
+| `window-ungrab`               | `wid`                                               | The grab has been released                             |
 
 ### Client-to-Server
 
@@ -84,6 +95,7 @@ see [pointer synchronization](./Pointer.md#pointer-synchronization).
 | `window-close` | `wid`                                               | The user has requested to close the window                               |
 | `window-focus` | `wid`, optional modifiers                           | The window has received keyboard focus                                   |
 | `window-action`| `wid`, `action`, optional arguments                 | Request a window manager action (eg: maximize, minimize)                 |
+| `window-stacking` | list of window IDs, bottom-to-top               | Report the client's current stacking order                               |
 | `window-refresh`| `wid`, options                                     | Request a full refresh of the window contents                            |
 | `window-ack`   | `wid`, `width`, `height`, `packet_sequence`, `decode_time`, `message` | Acknowledge receipt and decoding of a `window-draw` packet |
 

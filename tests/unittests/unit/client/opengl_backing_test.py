@@ -476,17 +476,22 @@ class TestPaintBoxEarlyReturn(unittest.TestCase):
 class TestGLInit(unittest.TestCase):
 
     xvfb = None
+    env_context = None
 
     @classmethod
     def setUpClass(cls):
         import time
         if os.name == "posix" and sys.platform != "darwin":
-            from unit.process_test_util import ProcessTestUtil
+            from xpra.util.env import OSEnvContext
+            from unit.process_test_util import DisplayContext, ProcessTestUtil
+            # the environment is restored in `tearDownClass`,
+            # so that the tests running after this class
+            # are not left with a `DISPLAY` pointing at the Xvfb we will have killed:
+            cls.env_context = OSEnvContext(LIBGL_ALWAYS_SOFTWARE="1", GDK_BACKEND="x11")
+            cls.env_context.__enter__()
             ProcessTestUtil.setUpClass()
             cls.ptu = ProcessTestUtil()
             cls.ptu.setUp()
-            os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
-            os.environ["GDK_BACKEND"] = "x11"
             cls.xvfb = cls.ptu.start_Xvfb()
             os.environ["DISPLAY"] = cls.xvfb.display or ""
             try:
@@ -494,20 +499,21 @@ class TestGLInit(unittest.TestCase):
                 wait_for_x_server(cls.xvfb.display or "", 10)
             except ImportError:
                 time.sleep(3)
-            from xpra.os_util import gi_import
-            Gdk = gi_import("Gdk")
-            Gdk.Display.open(cls.xvfb.display or "")
-            from xpra.x11.gtk.display_source import init_gdk_display_source
-            init_gdk_display_source()
+            DisplayContext.open_display_source(cls.xvfb.display or "")
 
     @classmethod
     def tearDownClass(cls):
         if cls.xvfb:
+            # close the display connection before killing the Xvfb, see `DisplayContext`:
+            from unit.process_test_util import DisplayContext, ProcessTestUtil
+            DisplayContext.close_display_source()
             cls.xvfb.terminate()
             cls.xvfb = None
-            from unit.process_test_util import ProcessTestUtil
             cls.ptu.tearDown()
             ProcessTestUtil.tearDownClass()
+        if cls.env_context:
+            cls.env_context.__exit__()
+            cls.env_context = None
 
     def _make_gl_backing(self, window_alpha=False, pixel_depth=0):
         from xpra.os_util import gi_import

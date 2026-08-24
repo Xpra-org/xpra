@@ -36,7 +36,7 @@ class InfoRequest(StubClientSubsystem):
             self.send_info_request()
         self.client.connect("startup-complete", request_initial_info)
 
-    def _process_info_response(self, packet: Packet) -> None:
+    def _process_response(self, packet: Packet) -> None:
         self.request_pending = False
         self.last_info = typedict(packet.get_dict(1))
         log("info-response: %s", Ellipsizer(self.last_info))

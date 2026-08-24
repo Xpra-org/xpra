@@ -13,7 +13,8 @@ from collections.abc import Sequence
 from xpra.os_util import gi_import
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.constants import TCP_SOCKTYPES
-from xpra.server.common import may_update_bandwidth_limits
+from xpra.net.packet_type import ENCODING_SET
+from xpra.server.common import may_update_bandwidth_limits, wants_windows
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.window import batch_config
 from xpra.server.core import ClientException
@@ -54,7 +55,7 @@ class EncodingsConnection(StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         if BACKWARDS_COMPATIBLE and "encoding" in caps:
             return True
-        return bool(caps.dictget("encoding") or caps.strtupleget("encodings")) or caps.boolget("windows")
+        return bool(caps.dictget("encoding") or caps.strtupleget("encodings")) or wants_windows(caps)
 
     def init_state(self) -> None:
         # contains default values, some of which may be supplied by the client:
@@ -153,8 +154,7 @@ class EncodingsConnection(StubClientConnection):
             if ecaps:
                 video[encoding] = ecaps
         log(f"video specs={video}")
-        packet_type = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
-        self.send_async(packet_type, {"encodings": d, "video": video})
+        self.send_async(ENCODING_SET, {"encodings": d, "video": video})
         # only print encoding info when not using mmap:
         if getattr(self, "mmap_size", 0) == 0:
             self.print_encoding_info()

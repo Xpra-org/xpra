@@ -92,12 +92,14 @@ class XI2_Window:
         client = window._client
         if client.readonly:
             return
-        # input-device / wheel state is owned by the `window` subsystem:
+        # the input device list is owned by the `window` subsystem,
+        # the wheel capabilities by the `pointer` subsystem:
         wp = client.get_subsystem("window")
+        pointer = client.get_subsystem("pointer")
         server_input_devices = wp.server_input_devices if wp else ""
         xinputlog("do_xi_button(%s, %s) server_input_devices=%s", event, device, server_input_devices)
         if server_input_devices == "xi" or (
-                server_input_devices == "uinput" and wp and wp.server_precise_wheel):
+                server_input_devices == "uinput" and pointer and pointer.server_precise_wheel):
             # skip synthetic scroll events,
             # as the server should synthesize them from the motion events
             # those have the same serial:
@@ -120,8 +122,10 @@ class XI2_Window:
         client = window._client
         if client.readonly:
             return
-        # input-device / wheel state is owned by the `window` subsystem:
+        # the input device list is owned by the `window` subsystem,
+        # the wheel state by the `pointer` subsystem:
         wp = client.get_subsystem("window")
+        pointer_sub = client.get_subsystem("pointer")
         pointer_data, modifiers, buttons = window._pointer_modifiers(event)
         wid = self.window.get_mouse_event_wid(*pointer_data)
         valuators = event.valuators
@@ -130,7 +134,7 @@ class XI2_Window:
         if (
                 valuators and device and device.get("enabled")
                 and wp and wp.server_input_devices == "uinput"  # noqa W503
-                and wp.server_precise_wheel  # noqa W503
+                and pointer_sub and pointer_sub.server_precise_wheel  # noqa W503
         ):
             XIModeRelative = 0
             classes = device.get("classes")
@@ -181,8 +185,9 @@ class XI2_Window:
         if dx != 0 or dy != 0:
             xinputlog("do_xi_motion(%s, %s) wheel deltas: dx=%i, dy=%i", event, device, dx, dy)
             # normalize (xinput is always using 15 degrees?)
-            if wp:
-                wp.wheel_event(event.device, wid, dx / XINPUT_WHEEL_DIV, dy / XINPUT_WHEEL_DIV, pointer_data, props)
+            if pointer_sub:
+                pointer_sub.wheel_event(event.device, wid, dx / XINPUT_WHEEL_DIV, dy / XINPUT_WHEEL_DIV,
+                                        pointer_data, props)
 
     def get_pointer_extra_args(self, event) -> dict[str, Any]:
         props = {

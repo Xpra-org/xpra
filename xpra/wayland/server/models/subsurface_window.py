@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.codecs.image import ImageWrapper
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.server.window.model import WindowModelStub
 
@@ -70,7 +71,7 @@ class SubsurfaceWindow(WindowModelStub):
         return image.get_sub_image(x, y, iw, ih)
 
     def get(self, name: str, default_value: Any = None) -> Any:
-        if name == "content-type":
+        if BACKWARDS_COMPATIBLE and name == "content-type":
             return ""
         if name == "content-types":
             return ()

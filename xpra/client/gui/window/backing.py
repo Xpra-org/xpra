@@ -889,7 +889,7 @@ class WindowBackingBase:
                         break
                     except TransientCodecException as e:
                         log("%s.init_context(..)", vd, exc_info=True)
-                        log.warn(f"Warning: failed to initialize decoder {decoder_spec.codec_type}: {e}")
+                        log.warn(f"Warning: transient failure initializing decoder {decoder_spec.codec_type}: {e}")
                         vd.clean()
                         decoder_spec.setup_cost += 10
                     except EncodingNotSupported as e:

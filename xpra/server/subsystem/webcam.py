@@ -194,7 +194,7 @@ class WebcamServer(StubSubsystem):
     # ------------------------------------------------------------------
     # Packet handlers
 
-    def _process_webcam_start(self, proto, packet: Packet) -> None:
+    def _process_start(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         assert self.enabled
@@ -246,7 +246,7 @@ class WebcamServer(StubSubsystem):
             log.error("Error: failed to spawn webcam-client process: %s", e)
             ss.send_webcam_stop(device_id, f"spawn failed: {e}")
 
-    def _process_webcam_stop(self, proto, packet: Packet) -> None:
+    def _process_stop(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
@@ -269,7 +269,7 @@ class WebcamServer(StubSubsystem):
             except OSError:
                 pass
 
-    def _process_webcam_frame(self, proto, packet: Packet) -> None:
+    def _process_frame(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)

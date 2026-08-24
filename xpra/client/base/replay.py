@@ -8,8 +8,8 @@ import glob
 import json
 import os.path
 from time import monotonic
-from collections.abc import Sequence
-from typing import NoReturn
+from collections.abc import Callable, Sequence
+from typing import Any, NoReturn
 
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.common import noop
@@ -213,7 +213,17 @@ class WindowReplay:
     def do_process_event(self, event: typedict) -> None:
         etype = event.strget("event", "")
         log("%-8i wid=%6x - %4i : %s", event.get("timestamp", 0), self.wid, event.get("index", 0), etype)
-        if not self.window and etype != "new":
+        if etype in ("pointer-button", "key-event", "key"):
+            # Input state must still be updated when its source window has gone.
+            self.client.process_input_event(event)
+        if etype in ("grab", "ungrab"):
+            # handled before the `window is gone` check below,
+            # so that a grab release can never be lost:
+            grab = etype == "grab"
+            self.client.set_grabbed(self.wid if grab else 0, event.intget("timestamp", 0))
+            self.event_info(etype, "pointer grabbed" if grab else "pointer released")
+            return
+        if not self.window and etype not in ("new", "sync"):
             log.warn("Warning: event %r received, but window %#x is gone!", etype, self.wid)
             return
 
@@ -230,6 +240,7 @@ class WindowReplay:
             log("new-window: %s", self.window)
             self.window.show()
             self.may_focus(event)
+            self.may_grab(event)
         elif etype == "destroy":
             self.window.destroy()
             self.window = None
@@ -280,12 +291,22 @@ class WindowReplay:
             log("sync point")
             geometry = event.inttupleget("geometry", (0, 0, 1, 1))
             metadata = typedict(event.dictget("metadata"))
-            cursor = event.dictget("cursor-data")
-            if cursor:
+            if not self.window:
+                # a seek can land on a sync point without ever replaying the `new` event
+                # which created the window - but a sync point is a complete snapshot,
+                # so we can create the window from it:
+                log("creating window %#x from a sync point", self.wid)
+                self.window = self.client.make_client_window(self.wid, geometry, metadata)
+                self.window.show()
+            cursor = event.get("cursor-data")
+            if isinstance(cursor, dict):
                 self.window.set_cursor_data(to_cursor_data(typedict(cursor)))
+            else:
+                self.window.set_cursor_data(())
             self.window.update_metadata(metadata)
             self.window.move_resize(*geometry)
             self.may_focus(event)
+            self.may_grab(event)
         elif etype == "metadata":
             metadata = typedict(event.dictget("metadata"))
             log("metadata: %s", metadata)
@@ -312,8 +333,25 @@ class WindowReplay:
         if event.boolget("focused"):
             self.client.set_focused(self.wid, event.intget("timestamp", 0))
 
-    def find_sync_index(self, target_ts: int):
-        sync_idx: int = 0
+    def may_grab(self, event: typedict) -> None:
+        """
+        `new` and `sync` events carry the grab state of the window.
+        Unlike the focus, the usual case is that no window holds the grab,
+        so a window must be able to release it - but only the window
+        which actually held it can do so.
+        """
+        timestamp = event.intget("timestamp", 0)
+        if event.boolget("grabbed"):
+            self.client.set_grabbed(self.wid, timestamp)
+        elif self.client.grabbed == self.wid:
+            self.client.set_grabbed(0, timestamp)
+
+    def find_sync_index(self, target_ts: int) -> int:
+        """
+        The index of the last sync point at or before `target_ts`,
+        or -1 if the window did not exist yet.
+        """
+        sync_idx: int = -1
         for ts, idx in self.sync_index:
             if ts <= target_ts:
                 sync_idx = idx
@@ -321,15 +359,20 @@ class WindowReplay:
                 break
         return sync_idx
 
-    def seek(self, target_ms: int) -> None:
+    def seek(self, target_ms: int, current_ms: int = -1) -> None:
         sync_idx = self.find_sync_index(target_ms)
-        # start at previous sync point:
-        self.event_index = sync_idx
-        if self.wid > 0 and sync_idx == 0 and self.window:
-            # window did not exist yet!
-            self.window.destroy()
-            self.window = None
-        # fast-replay any events between the sync point and target_ms
+        incremental = 0 <= current_ms <= target_ms and self.find_sync_index(current_ms) == sync_idx
+        if not incremental:
+            if sync_idx < 0:
+                # no sync point at or before the target: the window did not exist yet
+                if self.wid > 0 and self.window:
+                    self.window.destroy()
+                    self.window = None
+                sync_idx = 0
+            # Rewinds and forward seeks across sync points jump directly to
+            # the latest snapshot at or before the target.
+            self.event_index = sync_idx
+        # Fast-replay from the current position or selected sync point.
         while self.event_index < len(self.events):
             ev = self.events.get(self.event_index)
             if not ev:
@@ -349,6 +392,7 @@ class WindowModel:
         self.wid = wid
         self.show = self.draw_region = self.set_cursor_data = self.show_pointer_overlay = noop
         self.resize = self.move_resize = self.update_metadata = self.present = noop
+        self.destroy = noop
 
 
 def log_notable_event(etype: str, msg: str) -> None:
@@ -376,6 +420,16 @@ class Replay(GObjectClientAdapter):
         # the window which had the focus, and the timestamp it was claimed at:
         self.focused = 0
         self.focus_timestamp = 0
+        # the window which held the pointer grab, and the timestamp it was claimed at:
+        self.grabbed = 0
+        self.grab_timestamp = 0
+        # Input state is global rather than tied to a window.  Keep it here so
+        # the replay controls can visualize it without synthesizing real input.
+        self.pressed_pointer_buttons: set[int] = set()
+        self.pressed_keys: dict[int | str, tuple[str, bool]] = {}
+        self.input_events: list[dict] = []
+        self.input_state_cb: Callable[[tuple[int, ...], tuple[tuple[str, bool], ...]], Any] = noop
+        self._seeking = False
 
     def __repr__(self):
         return "Replay"
@@ -403,6 +457,89 @@ class Replay(GObjectClientAdapter):
         if window:
             window.present()
 
+    def set_grabbed(self, wid: int, timestamp: int = 0) -> None:
+        """
+        The pointer grab is never replayed for real: taking a grab here would
+        confiscate the pointer and keyboard of whoever is watching the replay,
+        and nothing guarantees that we would ever get to release it.
+        We just show which window was holding it.
+        Sync points are replayed in window order rather than in chronological
+        order, so the most recent claim wins.
+        """
+        if timestamp < self.grab_timestamp:
+            return
+        self.grab_timestamp = timestamp
+        wr = self.window_replay.get(wid)
+        window = wr.window if wr else None
+        if wid and not window:
+            # the window is gone, and so is its grab:
+            # the X11 server releases it when the window is destroyed
+            wid = 0
+        if self.grabbed == wid:
+            return
+        self.grabbed = wid
+        log("set_grabbed(%#x, %i) window=%s", wid, timestamp, window)
+        if window:
+            window.present()
+
+    def set_input_state_callback(
+            self, callback: Callable[[tuple[int, ...], tuple[tuple[str, bool], ...]], Any]) -> None:
+        self.input_state_cb = callback
+        self.notify_input_state()
+
+    def notify_input_state(self) -> None:
+        buttons = tuple(sorted(self.pressed_pointer_buttons))
+        keys = tuple(self.pressed_keys.values())
+        self.input_state_cb(buttons, keys)
+
+    @staticmethod
+    def _key_id(key: typedict) -> int | str:
+        keycode = key.intget("keycode", -1)
+        if keycode >= 0:
+            return keycode
+        return key.strget("name", "")
+
+    def process_input_event(self, event: typedict, notify: bool = True) -> None:
+        etype = event.strget("event", "")
+        if etype == "pointer-button":
+            button = event.intget("button", 0)
+            if button:
+                if event.boolget("pressed"):
+                    self.pressed_pointer_buttons.add(button)
+                else:
+                    self.pressed_pointer_buttons.discard(button)
+        elif etype in ("key-event", "key"):
+            key = typedict(event.dictget("key"))
+            name = key.strget("name", "")
+            key_id = self._key_id(key)
+            if name and key.boolget("press"):
+                self.pressed_keys[key_id] = (name, key.boolget("is-modifier"))
+            else:
+                self.pressed_keys.pop(key_id, None)
+        else:
+            return
+        if notify and not self._seeking:
+            self.notify_input_state()
+
+    def rebuild_input_state(self, target_ms: int) -> None:
+        """Reconstruct global input state after a timeline seek."""
+        self.pressed_pointer_buttons.clear()
+        self.pressed_keys.clear()
+        for event in self.input_events:
+            if event.get("timestamp", 0) > target_ms:
+                break
+            self.process_input_event(typedict(event), notify=False)
+        self.notify_input_state()
+
+    def get_modifier_keys(self) -> tuple[str, ...]:
+        modifiers: list[str] = []
+        for event in self.input_events:
+            key = typedict(typedict(event).dictget("key"))
+            name = key.strget("name", "")
+            if key.boolget("is-modifier") and name and name not in modifiers:
+                modifiers.append(name)
+        return tuple(modifiers)
+
     def load(self) -> None:
         windows = os.listdir(self.record_directory)
         for wid_str in windows:
@@ -412,6 +549,12 @@ class Replay(GObjectClientAdapter):
             wr.load()
             self.window_replay[wid] = wr
             self.last_timestamp = max(self.last_timestamp, wr.last_event().get("timestamp", 0))
+            for event in wr.events.values():
+                may_load(event)
+                if event.get("event") in ("pointer-button", "key-event", "key"):
+                    self.input_events.append(dict(event))
+        self.input_events.sort(key=lambda event: (event.get("timestamp", 0),
+                                                  event.get("index", 0), event.get("wid", 0)))
 
     def run(self) -> ExitValue:
         if not os.path.exists(self.record_directory):
@@ -463,19 +606,31 @@ class Replay(GObjectClientAdapter):
     def seek(self, target_ms: int) -> None:
         """
         Seek every window to *target_ms*.
-        Each WindowReplay finds its own last sync point, so windows that have
-        no sync before *target_ms* are simply skipped with a warning.
+        Forward seeks within the current sync interval replay incrementally.
+        Rewinds and forward seeks across sync points jump to the latest sync
+        point at or before the target.
         """
         was_playing = self.is_playing
         self.is_playing = False
         self.cancel_event_timer()
 
+        current_ms = self.time_index
         self.time_index = target_ms
-        # the focus is re-claimed from the sync points we are about to replay,
-        # which may be older than the ones we had already seen:
-        self.focus_timestamp = 0
-        for wr in self.window_replay.values():
-            wr.seek(target_ms)
+        if target_ms < current_ms:
+            # Older sync points must be allowed to reclaim focus and grab.
+            self.focus_timestamp = 0
+            self.grabbed = 0
+            self.grab_timestamp = 0
+        self._seeking = True
+        try:
+            for wr in self.window_replay.values():
+                wr.seek(target_ms, current_ms)
+            # Window streams are replayed one at a time above.  Input is global,
+            # so rebuild it in timestamp order to handle a press and release
+            # which happened over different windows.
+            self.rebuild_input_state(target_ms)
+        finally:
+            self._seeking = False
 
         self.is_playing = was_playing
         if self.is_playing:

@@ -741,7 +741,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
             fr = self.change_mask(current.difference(wanted), False, "remove", ignored_modifier_keycode)
             fa = self.change_mask(wanted.difference(current), True, "add", ignored_modifier_keycode)
-            if not fr or fa:
+            if not (fr or fa):
                 return
             if fr:
                 log.warn("Warning: failed to remove the following modifiers:")

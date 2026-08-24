@@ -6,6 +6,7 @@
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
+from xpra.util.objects import typedict
 from xpra.client.gtk3.menu_helper import GTKMenuHelper, gen_non_none_menu_items
 from xpra.gtk.widget import checkitem
 from xpra.constants import RESOLUTION_ALIASES
@@ -96,9 +97,9 @@ class WindowMenuHelper(GTKMenuHelper):
         return self.maximize_menuitem
 
     def make_resizemenuitem(self) -> Gtk.ImageMenuItem | None:
-        metadata = getattr(self.window, "_metadata", {})
+        metadata = typedict(self.window._metadata)
         log("make_resizemenuitem() metadata=%s", metadata)
-        if metadata.get("content-type", "") != "desktop" or metadata.get("size-constraints", {}):
+        if metadata.strtupleget("content-types") != ("desktop",) or metadata.dictget("size-constraints", {}):
             return None
 
         from threading import Event
@@ -200,9 +201,7 @@ class WindowMenuHelper(GTKMenuHelper):
         def force_refresh(*args) -> None:
             log("force refresh%s", args)
             self.client.send_refresh(self.window.wid)
-            if reset_icon := getattr(self.window, "reset_icon", None):
-                # noinspection calling-non-callable
-                reset_icon()
+            self.window.reset_icon()
 
         return self.menuitem("Refresh", "retry.png", cb=force_refresh)
 

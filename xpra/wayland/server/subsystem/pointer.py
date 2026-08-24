@@ -77,8 +77,8 @@ class WaylandPointerManager(PointerManager):
         finally:
             self.server.compositor.flush()
 
-    def _process_pointer_wheel(self, proto, packet: Packet) -> None:
+    def _process_wheel(self, proto, packet: Packet) -> None:
         try:
-            super()._process_pointer_wheel(proto, packet)
+            super()._process_wheel(proto, packet)
         finally:
             self.server.compositor.flush()

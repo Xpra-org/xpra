@@ -44,6 +44,8 @@ GObject = gi_import("GObject")
 log = Logger("wayland", "clipboard")
 
 WAYLAND_CLIPBOARDS = ("CLIPBOARD", "PRIMARY")
+ORIGIN_MIME_TYPE = "application/x-xpra-clipboard-origin"
+MAX_ORIGIN_SIZE = 64
 
 
 cdef wlr_data_source_impl DATA_SOURCE_IMPL
@@ -369,9 +371,28 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.targets = ()
             self.target_data = {}
             return
-        self.targets = self.selection_api.source_targets(source_ptr)
+        self.local_source_changed(source_ptr)
+
+    def local_source_changed(self, source_ptr: int) -> None:
+        targets = self.selection_api.source_targets(source_ptr)
+        self.targets = tuple(x for x in targets if x != ORIGIN_MIME_TYPE)
         self.target_data = {}
-        self.do_owner_changed()
+
+        def got_origin(_dtype: str, dformat: int, data) -> None:
+            if source_ptr != self.local_source_ptr:
+                return
+            origin = bytestostr(data) if dformat == 8 and data else ""
+            if len(origin) > MAX_ORIGIN_SIZE:
+                log.warn("Warning: ignoring oversized Wayland clipboard origin")
+                origin = ""
+            self._clipboard_origin = origin
+            self.do_owner_changed()
+
+        if ORIGIN_MIME_TYPE in targets:
+            self.get_contents(ORIGIN_MIME_TYPE, got_origin)
+        else:
+            self._clipboard_origin = ""
+            self.do_owner_changed()
 
     def primary_source_destroyed(self, source) -> None:
         if source is self.remote_source:
@@ -450,18 +471,26 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         self._got_token_events += 1
         log("got_token(%s, %s, claim=%s)", targets, Ellipsizer(target_data), claim)
-        self.targets = tuple(bytestostr(x) for x in (targets or ()))
-        self.target_data = target_data or {}
+        self.targets = tuple(
+            x for x in (bytestostr(y) for y in (targets or ()))
+            if x != ORIGIN_MIME_TYPE
+        )
+        self.target_data = dict(target_data or {})
+        self.target_data.pop(ORIGIN_MIME_TYPE, None)
+        has_contents = bool(self.targets or self.target_data)
+        if self._clipboard_origin:
+            self.target_data[ORIGIN_MIME_TYPE] = (ORIGIN_MIME_TYPE, 8, self._clipboard_origin.encode())
         if not claim or not self._can_receive:
             return
-        if not self.targets and not self.target_data:
+        if not has_contents:
             if self.remote_source:
                 self.remote_source.destroy()
                 self.remote_source = None
                 self.remote_source_ptr = 0
             self._have_token = False
             return
-        source = WaylandPrimarySource(self, self.targets or self.target_data.keys(), self.target_data)
+        source_targets = tuple(dict.fromkeys(self.targets + tuple(self.target_data)))
+        source = WaylandPrimarySource(self, source_targets, self.target_data)
         self.remote_source = source
         self.remote_source_ptr = source.ptr()
         self.selection_api.set_source(source)
@@ -527,9 +556,7 @@ class WaylandClipboardProxy(WaylandPrimaryClipboardProxy):
             self.targets = ()
             self.target_data = {}
             return
-        self.targets = self.selection_api.source_targets(source_ptr)
-        self.target_data = {}
-        self.do_owner_changed()
+        self.local_source_changed(source_ptr)
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         self.cancel_emit_token()
@@ -537,18 +564,26 @@ class WaylandClipboardProxy(WaylandPrimaryClipboardProxy):
             return
         self._got_token_events += 1
         log("got_token(%s, %s, claim=%s)", targets, Ellipsizer(target_data), claim)
-        self.targets = tuple(bytestostr(x) for x in (targets or ()))
-        self.target_data = target_data or {}
+        self.targets = tuple(
+            x for x in (bytestostr(y) for y in (targets or ()))
+            if x != ORIGIN_MIME_TYPE
+        )
+        self.target_data = dict(target_data or {})
+        self.target_data.pop(ORIGIN_MIME_TYPE, None)
+        has_contents = bool(self.targets or self.target_data)
+        if self._clipboard_origin:
+            self.target_data[ORIGIN_MIME_TYPE] = (ORIGIN_MIME_TYPE, 8, self._clipboard_origin.encode())
         if not claim or not self._can_receive:
             return
-        if not self.targets and not self.target_data:
+        if not has_contents:
             if self.remote_source:
                 self.remote_source.destroy()
                 self.remote_source = None
                 self.remote_source_ptr = 0
             self._have_token = False
             return
-        source = WaylandSelectionSource(self, self.targets or self.target_data.keys(), self.target_data)
+        source_targets = tuple(dict.fromkeys(self.targets + tuple(self.target_data)))
+        source = WaylandSelectionSource(self, source_targets, self.target_data)
         self.remote_source = source
         self.remote_source_ptr = source.ptr()
         self.selection_api.set_source(source)

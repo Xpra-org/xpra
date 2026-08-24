@@ -18,14 +18,14 @@ from typing import Any, NoReturn, TYPE_CHECKING
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_CLOSE, CONNECTION_LOST, GIBBERISH, INVALID
-from xpra.util.version import XPRA_VERSION, version_str, version_compat_check
+from xpra.util.version import XPRA_VERSION, version_str, version_compat_check, protocol_compat_check
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.server import ServerExitMode
 from xpra.server.glib_server import GLibServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     is_request_allowed, pretty_socket, has_websocket_handler, HttpResponse, Packet,
-    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
+    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION,
 )
 from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, IP_SOCKTYPES, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
@@ -171,10 +171,10 @@ class ServerCore(GLibServer):
 
     def __init__(self):
         log("ServerCore.__init__()")
-        # subsystems dict (keyed by PREFIX) is populated by subclass __init__
+        # `self.subsystems` (keyed by PREFIX) is declared by `PacketDispatcher.__init__`,
+        # which also routes packets to it; it is populated by subclass __init__
         # methods (ServerBase, ProxyServer, ...) as they instantiate their
         # subsystem classes.
-        self.subsystems: dict[str, Any] = {}
         self.hello_request_handlers: dict[str, Callable[[Any, typedict], bool]] = {
             "connect_test": self._handle_hello_request_connect_test,
         }
@@ -395,8 +395,8 @@ class ServerCore(GLibServer):
             client_session.set_ui_driver(source)
 
     def setting_changed(self, setting: str, value: Any) -> None:
-        if client_session := self.get_subsystem("client-session"):
-            client_session.setting_changed(setting, value)
+        if settings := self.get_subsystem("setting"):
+            settings.setting_changed(setting, value)
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
         if client_session := self.get_subsystem("client-session"):
@@ -822,10 +822,11 @@ class ServerCore(GLibServer):
             return False
         socktype = listener.socktype
         if socktype == "named-pipe":
-            from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
+            from xpra.platform.win32.namedpipes.connection import NamedPipeConnection, log_new_pipe_connection
             handle = listener.socket.pending_handle
-            conn: Connection = NamedPipeConnection(listener.socket.pipe_name, handle, listener.options)
-            netlog.info("New %s connection received on %s", socktype, conn.target)
+            conn: Connection = NamedPipeConnection(listener.socket.pipe_name, handle, listener.options,
+                                                   server_side=True)
+            log_new_pipe_connection(conn, conn.target)
             self.make_protocol(socktype, conn, listener.options)
             return True
 
@@ -1016,12 +1017,18 @@ class ServerCore(GLibServer):
             # try to read from this socket,
             # so short-lived probes don't go through the whole protocol instantiation
             pre = socket_fast_read(conn)
-            if not pre:
+            if pre is None:
+                # still connected, just nothing to read yet:
+                # clients can take a while to send their `hello` packet
+                # (see `socket_fast_read`), so carry on without a pre-read
+                netlog("%s connection has not sent anything yet", socktype)
+            elif not pre:
                 netlog("closing %s connection: no data", socktype)
                 force_close_connection(conn)
                 return
-            pre_read.append(pre)
-            packet_type = guess_packet_type(pre)
+            else:
+                pre_read.append(pre)
+                packet_type = guess_packet_type(pre)
 
         if packet_type not in ("xpra", ""):
             conn_err("packet type is not xpra")
@@ -1583,6 +1590,13 @@ class ServerCore(GLibServer):
             self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {verr!r}")
             proto.close()
             return
+        # the client may require a more recent server version,
+        # this capability is only optional in `BACKWARDS_COMPATIBLE` mode:
+        perr = protocol_compat_check(c.inttupleget("protocol-version"))
+        if perr:
+            self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
+            proto.close()
+            return
 
         # try to auto upgrade to ssl:
         packet_types = c.strtupleget("packet-types", ())
@@ -1744,6 +1758,8 @@ class ServerCore(GLibServer):
             "current_time": int(now),
             "elapsed_time": int(now - self.start_time),
             "server.mode": self.session_type,
+            # the minimum version we are willing to talk to:
+            "protocol-version": MIN_PROTOCOL_VERSION,
         }
         if FULL_INFO > 0:
             capabilities["hostname"] = socket.gethostname()
@@ -1752,8 +1768,7 @@ class ServerCore(GLibServer):
             if BACKWARDS_COMPATIBLE:
                 packet_types += list(self.packet_alias.keys())
                 packet_types += list(self.packet_alias.values())
-            packet_types += list(self._authenticated_ui_packet_handlers)
-            packet_types += list(self._authenticated_packet_handlers)
+            packet_types += self.get_packet_types()
             packet_types += list(self._default_packet_handlers)
             capabilities["packet-types"] = packet_types
         if self.session_name:

@@ -292,7 +292,15 @@ def peek_connection(conn, timeout: int = PEEK_TIMEOUT_MS, size: int = PEEK_SIZE)
     return peek_data
 
 
-def socket_fast_read(conn, timeout=1) -> bytes:
+def socket_fast_read(conn, timeout=1) -> bytes | None:
+    """
+    Try to read a single byte from this connection without instantiating a protocol,
+    so that short-lived probes can be identified and dropped cheaply.
+    Returns the data read, `b""` if the peer closed the connection (or the read failed),
+    and `None` if nothing arrived before the timeout expired:
+    in that case the connection is still open, the peer just hasn't sent anything yet
+    (it may simply be slow to start up), so it must not be mistaken for a dead probe.
+    """
     def noretry(_err) -> bool:
         return False
     can_retry = conn.can_retry
@@ -314,7 +322,7 @@ def socket_fast_read(conn, timeout=1) -> bytes:
         return b""
     finally:
         conn.can_retry = can_retry
-    return b""
+    return None
 
 
 POSIX_TCP_INFO = (
@@ -453,7 +461,7 @@ def parse_bind_options(opts) -> dict[str, Any]:
     return bind_options
 
 
-def create_sockets(bind_options: dict[str, str], retry: int = 0, sd_listen=False) -> list[SocketListener]:
+def create_sockets(bind_options: dict[str, Any], retry: int = 0, sd_listen=False) -> list[SocketListener]:
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)

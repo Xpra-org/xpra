@@ -128,8 +128,9 @@ class ClientWindow(Window):
         pointer = (x, y)
         modifiers = ()
         buttons = ()
-        for state in True, False:
-            self.send_button(-1, self.wid, button, state, pointer, modifiers, buttons, {})
+        if pointer_sub := self.client.get_subsystem("pointer"):
+            for state in True, False:
+                pointer_sub.send_button(-1, self.wid, button, state, pointer, modifiers, buttons, {})
 
     def on_move(self, x: int, y: int) -> None:
         w, h = self.get_size()

@@ -8,6 +8,7 @@ import unittest
 
 from xpra.util.objects import AdHocStruct
 from xpra.client.subsystem import logging
+from xpra.net.packet_type import LOGGING_EVENT
 from unit.test_util import silence_info
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
@@ -37,7 +38,7 @@ class MixinsTest(ClientMixinTest):
         logger.info(message)
         assert len(self.packets)==1
         packet = self.packets[0]
-        assert packet[0] == "logging", "expected logging packet but got '%s'" % (packet[0],)
+        assert packet[0] == LOGGING_EVENT, "expected %r packet but got %r" % (LOGGING_EVENT, packet[0])
         assert packet[1] == 20, "expected INFO level (20) but got %s" % (packet[1],)
         # data might be using a compressed wrapper:
         data = getattr(packet[2], "data", packet[2]).decode("utf8")

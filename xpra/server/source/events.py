@@ -5,6 +5,7 @@
 
 from xpra.util.objects import typedict
 from xpra.net.common import PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import EVENTS
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
@@ -21,4 +22,4 @@ class EventConnection(StubClientConnection):
 
     def send_server_event(self, event_type: str, *args: PacketElement) -> None:
         if self.hello_sent:
-            self.send_more("server-event", event_type, *args)
+            self.send_more(EVENTS, event_type, *args)

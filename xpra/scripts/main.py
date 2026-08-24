@@ -1396,6 +1396,11 @@ def create_client_app(opts, extra_args: list[str], mode: str):
         app = ConnectTestXpraClient(opts)
     elif mode == "record":
         from xpra.client.base.features import set_client_features
+        # the recorder has nowhere to save a file, and cannot print or open a URL:
+        # turning these off before the features are evaluated keeps the `file` and
+        # `printer` subsystems out of the client, and out of its `hello` packet,
+        # so that the server never sends it packets it has no handlers for
+        opts.file_transfer = opts.printing = opts.open_files = opts.open_url = "no"
         set_client_features(opts)
         basic()
         from xpra.client.base.record import RecordClient
@@ -1777,8 +1782,8 @@ def run_monitor_info(options, args: list[str]) -> int:
         from xpra.platform.win32.monitors import get_monitors_info
     else:
         if display:
-            from xpra.gtk.util import verify_gdk_display
-            verify_gdk_display(display)
+            from xpra.gtk.util import open_gdk_display
+            open_gdk_display(display)
         from xpra.gtk.info import get_monitors_info
     import json
     monitors = get_monitors_info()

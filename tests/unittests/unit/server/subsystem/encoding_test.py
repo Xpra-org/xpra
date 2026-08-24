@@ -7,6 +7,7 @@
 import unittest
 from time import monotonic
 
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import AdHocStruct, typedict
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
@@ -33,16 +34,26 @@ class EncodingMixinTest(ServerMixinTest):
         from xpra.server.source.encoding import EncodingsConnection
         opts = _make_opts()
         self._test_mixin_class(EncodingServer, opts, {
-            "encodings.core": opts.encodings,
+            "encoding": {
+                "core": opts.encodings,
+                "options": opts.encodings,
+            },
         }, EncodingsConnection)
-        self.handle_packet(("quality", 10))
+        # the modern way to change an encoding option:
+        self.handle_packet(("encoding-options", {"quality": 10}))
+        if BACKWARDS_COMPATIBLE:
+            # the legacy scalar packet, superseded by `encoding-options`:
+            self.handle_packet(("quality", 10))
 
     def _setup_encoding(self):
         from xpra.server.subsystem.encoding import EncodingServer
         from xpra.server.source.encoding import EncodingsConnection
         opts = _make_opts()
         self._test_mixin_class(EncodingServer, opts, {
-            "encodings.core": opts.encodings,
+            "encoding": {
+                "core": opts.encodings,
+                "options": opts.encodings,
+            },
         }, EncodingsConnection)
         # register the source on the mock server so reinit_encodings can find it
         self._server_sources[self.protocol] = self.source
@@ -58,7 +69,6 @@ class EncodingMixinTest(ServerMixinTest):
     def test_reinit_encodings_sends_caps(self):
         """reinit_encodings() should push full encoding capabilities to connected clients."""
         import xpra.server.subsystem.encoding as enc_mod
-        from xpra.net.common import BACKWARDS_COMPATIBLE
         packets = self._setup_encoding()
         self.source.reinit_encoders = lambda: None
         orig = enc_mod.is_windows_source
@@ -73,7 +83,6 @@ class EncodingMixinTest(ServerMixinTest):
 
     def test_add_new_client_sends_caps_when_init_done(self):
         """add_new_client() should send encoding caps immediately when threaded setup is complete."""
-        from xpra.net.common import BACKWARDS_COMPATIBLE
         packets = self._setup_encoding()
         self.source.hello_sent = monotonic()
         self.mixin.threaded_encoding_done = True
@@ -84,7 +93,6 @@ class EncodingMixinTest(ServerMixinTest):
 
     def test_add_new_client_defers_caps_when_init_pending(self):
         """add_new_client() should not send encoding caps while threaded setup is still running."""
-        from xpra.net.common import BACKWARDS_COMPATIBLE
         packets = self._setup_encoding()
         self.mixin.threaded_encoding_done = False
         self.mixin.add_new_client(self.source, typedict())

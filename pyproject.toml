@@ -103,7 +103,7 @@ ignore = ["E741"]
 
 
 [tool.flake8]
-max-line-length = 120
+max-line-length = 150
 exclude = ["xpra/gtk/examples/*.py", "xpra/platform/win32/*", "xpra/platform/darwin/*"]
 ignore = ["E203", "E231", "E225", "E226", "E252", "E221", "E741", "E262", "E265"]
 per-file-ignores = """

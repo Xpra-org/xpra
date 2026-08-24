@@ -70,6 +70,10 @@ def load_overlay_image(icon_filename: str):
 
 class WindowIcon(StubClientSubsystem):
     __slots__ = ()
+    # these mixins are all composed into a single `WindowClient` instance,
+    # which is the subsystem registered as `window`: declaring the prefix here
+    # too keeps each mixin usable (and testable) on its own
+    PREFIX = "window"
     SLOT_NAMES = ("overlay_image",)
 
     def __init__(self):
@@ -176,7 +180,7 @@ class WindowIcon(StubClientSubsystem):
     # this handler only queues the work, but it must stay on the UI thread
     # (`main_thread=True`): that hop is what orders it after the `new-window`
     # that creates the window it refers to - do not "optimize" it away.
-    def _process_window_icon(self, packet: Packet) -> None:
+    def _process_icon(self, packet: Packet) -> None:
         wid = packet.get_wid()
         w = packet.get_u16(2)
         h = packet.get_u16(3)
@@ -202,5 +206,5 @@ class WindowIcon(StubClientSubsystem):
 
     def init_authenticated_packet_handlers(self) -> None:
         # `main_thread=True` is required for ordering, not for the (trivial) handler:
-        # see `_process_window_icon` above
+        # see `_process_icon` above
         self.add_packets("window-icon", main_thread=True)

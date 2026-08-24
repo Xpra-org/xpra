@@ -22,10 +22,14 @@ ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
 
 class WindowTray(StubClientSubsystem):
     __slots__ = ()
-    SLOT_NAMES = ("client_supports_system_tray",)
+    # these mixins are all composed into a single `WindowClient` instance,
+    # which is the subsystem registered as `window`: declaring the prefix here
+    # too keeps each mixin usable (and testable) on its own
+    PREFIX = "window"
+    SLOT_NAMES = ("systemtray_enabled",)
 
     def __init__(self):
-        self.client_supports_system_tray: bool = False
+        self.systemtray_enabled: bool = False
 
     def init(self, opts) -> None:
         if opts.system_tray:
@@ -35,13 +39,13 @@ class WindowTray(StubClientSubsystem):
             except ImportError:
                 log.warn("Warning: the tray forwarding module is missing")
             else:
-                self.client_supports_system_tray = True
+                self.systemtray_enabled = True
 
     ######################################################################
     # hello:
     def get_caps(self) -> dict[str, Any]:
         return {
-            "system_tray": self.client_supports_system_tray,
+            "system_tray": self.systemtray_enabled,
         }
 
     def parse_server_capabilities(self, c: typedict) -> bool:
@@ -50,7 +54,7 @@ class WindowTray(StubClientSubsystem):
     ######################################################################
     # system tray
     def make_new_tray(self, wid: int, w: int, h: int, metadata: typedict):
-        assert self.client_supports_system_tray
+        assert self.systemtray_enabled
         # scaling helpers are owned by the `display` subsystem:
         display = self.get_subsystem("display")
         w = max(1, display.sx(w))
@@ -155,7 +159,7 @@ class WindowTray(StubClientSubsystem):
         mmap = mmap_sub.mmap_read_area if mmap_sub else None
         return ClientTray(client, wid, w, h, metadata, tray_widget, mmap)
 
-    def get_tray_window(self, app_name: str, hints):
+    def get_tray_window(self, app_name: str, hints: dict):
         # try to identify the application tray that generated this notification,
         # so we can show it as coming from the correct systray icon
         # on platforms that support it (ie: win32)
@@ -168,7 +172,7 @@ class WindowTray(StubClientSubsystem):
             else:
                 if pid:
                     for tray in trays:
-                        metadata: typedict = typedict(getattr(tray, "_metadata", {}))
+                        metadata: typedict = typedict(tray._metadata)
                         if metadata.intget("pid") == pid:
                             log("tray window: matched pid=%i", pid)
                             return tray.tray_widget

@@ -21,6 +21,10 @@ class WindowBell(StubClientSubsystem):
     `get_subsystem("window").connect("bell-toggled", handler)`.
     """
     __slots__ = ()
+    # these mixins are all composed into a single `WindowClient` instance,
+    # which is the subsystem registered as `window`: declaring the prefix here
+    # too keeps each mixin usable (and testable) on its own
+    PREFIX = "window"
     SLOT_NAMES = ("bell_enabled", "client_supports_bell", "server_bell")
 
     def __init__(self):
@@ -54,7 +58,7 @@ class WindowBell(StubClientSubsystem):
         self.bell_enabled = self.server_bell and self.client_supports_bell
         return True
 
-    def _process_window_bell(self, packet: Packet) -> None:
+    def _process_bell(self, packet: Packet) -> None:
         if not self.bell_enabled:
             return
         wid = packet.get_wid()
