@@ -460,9 +460,9 @@ class ChildCommandServer(StubSubsystem):
 
     def _process_start_command(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        self._process_command_start(proto, packet)
+        self._process_start(proto, packet)
 
-    def _process_command_start(self, proto, packet: Packet) -> None:
+    def _process_start(self, proto, packet: Packet) -> None:
         log(f"start new command: {packet}")
         if not self.start_new_commands:
             log.warn("Warning: received start-command request,")
@@ -487,7 +487,7 @@ class ChildCommandServer(StubSubsystem):
                 ss.add_window_filter("window", "pid", "=", proc.pid)
         log(f"process_start_command: proc={proc}")
 
-    def _process_command_signal(self, _proto, packet: Packet) -> None:
+    def _process_signal(self, _proto, packet: Packet) -> None:
         pid = packet.get_u32(1)
         if pid <= 1:
             log.error(f"Error: invalid pid {pid}")

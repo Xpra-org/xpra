@@ -14,6 +14,9 @@ from unit.process_test_util import DisplayContext
 
 class ClipboardMixinTest(ServerMixinTest):
 
+    # ClipboardManager subscribes to these ServerBase lifecycle signals.
+    __signals__ = ("last-client-exited", "new-ui-driver")
+
     def test_clipboard(self):
         with DisplayContext():
             if POSIX and not OSX:
@@ -26,6 +29,9 @@ class ClipboardMixinTest(ServerMixinTest):
             opts.clipboard_direction = "both"
             opts.clipboard_filter_file = None
             self._test_mixin_class(ClipboardManager, opts, {}, ClipboardConnection)
+            # Clipboard helpers own GTK objects tied to this display, so they
+            # must be released before DisplayContext closes the connection.
+            self.cleanup_test_objects()
 
 
 def main():

@@ -232,7 +232,7 @@ class WindowServer(StubSubsystem):
                     continue
                 k = str(k)
                 if k == "event":
-                    # event is used as a workaround in _process_window_map,
+                    # event is used as a workaround in _process_map,
                     # it isn't a real client property and should not be stored:
                     continue
                 if not k.startswith("encoding"):
@@ -388,7 +388,7 @@ class WindowServer(StubSubsystem):
                                     y += dy
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
-    def _process_window_draw_ack(self, proto, packet: Packet) -> None:
+    def _process_draw_ack(self, proto, packet: Packet) -> None:
         # the legacy ack packet, also known as `damage-sequence`:
         # it starts with the `packet_sequence` and the `message` is optional
         packet_sequence = packet.get_u64(1)
@@ -399,7 +399,7 @@ class WindowServer(StubSubsystem):
         message = packet.get_str(6) if len(packet) >= 7 else ""
         self.do_process_window_ack(proto, wid, width, height, packet_sequence, decode_time, message)
 
-    def _process_window_ack(self, proto, packet: Packet) -> None:
+    def _process_ack(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         width = packet.get_u16(2)
         height = packet.get_u16(3)
@@ -424,9 +424,9 @@ class WindowServer(StubSubsystem):
 
     def _process_buffer_refresh(self, proto, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
-        self._process_window_refresh(proto, packet)
+        self._process_refresh(proto, packet)
 
-    def _process_window_refresh(self, proto, packet: Packet) -> None:
+    def _process_refresh(self, proto, packet: Packet) -> None:
         """ can be used for requesting a refresh, or tuning batch config, or both """
         wid = packet.get_wid()
         qual = packet.get_u8(3)
@@ -503,17 +503,17 @@ class WindowServer(StubSubsystem):
         else:
             ss.unmap_window(wid, window)
 
-    def _process_window_close(self, proto, packet: Packet) -> None:
+    def _process_close(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
-        log.info("_process_window_close(%s, %s)", proto, packet)
+        log.info("_process_close(%s, %s)", proto, packet)
 
-    def _process_window_map(self, proto, packet: Packet) -> None:
+    def _process_map(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
-        log.info("_process_window_map(%s, %s)", proto, packet)
+        log.info("_process_map(%s, %s)", proto, packet)
 
-    def _process_window_unmap(self, proto, packet: Packet) -> None:
+    def _process_unmap(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         log.info("_process_window_unmaps, %s)", proto, packet)
@@ -559,7 +559,7 @@ class WindowServer(StubSubsystem):
             }
         self.do_process_window_configure(proto, wid, typedict(config))
 
-    def _process_window_configure(self, proto, packet: Packet) -> None:
+    def _process_configure(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         wid = packet.get_wid()
@@ -577,7 +577,13 @@ class WindowServer(StubSubsystem):
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         log.info("do_process_window_configure(%s, %i, %s)", proto, wid, config)
 
-    def _process_window_action(self, proto, packet: Packet) -> None:
+    def _process_stacking(self, _proto, packet: Packet) -> None:
+        self.update_window_stacking(packet.get_ints(1))
+
+    def update_window_stacking(self, wids: Sequence[int]) -> None:
+        """Variants may use a client's bottom-to-top window stacking order."""
+
+    def _process_action(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         wid = packet.get_wid()
@@ -636,7 +642,7 @@ class WindowServer(StubSubsystem):
         log("reset_focus%s", args)
         self._focus(None, 0, [])
 
-    def _process_window_focus(self, proto, packet: Packet) -> None:
+    def _process_focus(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
@@ -687,6 +693,7 @@ class WindowServer(StubSubsystem):
             "window-configure",
             "window-close",
             "window-focus",
+            "window-stacking",
             "window-refresh",
             "window-action",
             "window-ack",
@@ -764,7 +771,7 @@ class WindowServer(StubSubsystem):
     def control_command_ungrab(self) -> str:
         wss = self.window_sources()
         for csource in wss:
-            csource.pointer_ungrab(-1)
+            csource.window_ungrab(-1)
         return f"ungrabbed {len(wss)} clients"
 
     def control_command_workspace(self, wid: int, workspace: int) -> str:

@@ -57,7 +57,7 @@ class ShutdownServer(StubSubsystem):
         self.server.cleanup_all_protocols(reason=reason)
         self.timeout_add(500, self.server.clean_quit, ServerExitMode.EXIT)
 
-    def _process_shutdown_server(self, _proto, packet: Packet = Packet(SHUTDOWN_SERVER)) -> None:
+    def _process_server(self, _proto, packet: Packet = Packet(SHUTDOWN_SERVER)) -> None:
         # an optional boolean argument requests a full server exit rather than a shutdown,
         # (older clients send a separate `exit-server` packet, see `_process_exit_server`)
         # the exit mode defaults to `False` (shutdown) and the reason to the empty string:

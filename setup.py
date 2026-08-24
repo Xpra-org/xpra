@@ -427,7 +427,9 @@ x11_ENABLED = DEFAULT and not WIN32 and not OSX
 wayland_client_ENABLED = not WIN32 and not OSX and pkg_config_exists("wayland-client")
 wayland_server_ENABLED = not WIN32 and not OSX and pkg_config_exists("wlroots-0.19") and pkg_config_exists("wayland-server")
 xinput_ENABLED = x11_ENABLED
-uinput_ENABLED = x11_ENABLED
+# uinput is Linux specific, but it is not X11 specific:
+# it is used for the virtual pointer (X11 only) and the virtual joystick (any backend)
+uinput_ENABLED = (server_ENABLED or shadow_ENABLED) and LINUX
 dbus_ENABLED = DEFAULT and (x11_ENABLED or WIN32) and not OSX
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
@@ -536,7 +538,9 @@ nvdec_ENABLED           = False
 nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_exists("nvfbc")
 cuda_kernels_ENABLED    = nvidia_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED)
 cuda_rebuild_ENABLED    = None if (nvidia_ENABLED and not WIN32) else False
-csc_libyuv_ENABLED      = DEFAULT and pkg_config_exists("libyuv")
+libyuv_pkgconfig        = pkg_config_exists("libyuv")
+libyuv_fallback         = not libyuv_pkgconfig and POSIX and not OSX and has_header_file("libyuv.h")
+csc_libyuv_ENABLED      = DEFAULT and (libyuv_pkgconfig or libyuv_fallback)
 gstreamer_ENABLED       = DEFAULT
 example_ENABLED         = DEFAULT
 win32_tools_ENABLED     = WIN32 and DEFAULT
@@ -3389,7 +3393,8 @@ toggle_packages(shadow_ENABLED and x11_ENABLED, "xpra.x11.shadow")
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED, "xpra.x11.selection")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
-toggle_packages(uinput_ENABLED, "xpra.x11.uinput")
+toggle_packages(uinput_ENABLED, "xpra.uinput")
+toggle_packages(uinput_ENABLED and x11_ENABLED, "xpra.x11.uinput")
 toggle_packages(notifications_ENABLED, "xpra.notification")
 
 # cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
@@ -3430,7 +3435,7 @@ if x11_ENABLED:
         ace("xpra.x11.bindings.keyboard", "xkbfile")
         ace("xpra.x11.bindings.res", "xres")
         ace("xpra.x11.bindings.composite", "xcomposite")
-        ace("xpra.x11.bindings.xkb", "xkbfile")
+        ace("xpra.x11.bindings.xkb", "xkbfile,x11")
         ace("xpra.x11.bindings.saveset", "x11")
         ace("xpra.x11.bindings.classhint", "x11")
         ace("xpra.x11.bindings.shm", "xext")
@@ -3650,7 +3655,12 @@ toggle_packages(jph_ENABLED, "xpra.codecs.jph")
 tace(jph_encoder_ENABLED, "xpra.codecs.jph.encoder,xpra/codecs/jph/jph.cpp", OPENJPH_PKG_CONFIG, language="c++")
 tace(jph_decoder_ENABLED, "xpra.codecs.jph.decoder,xpra/codecs/jph/jph.cpp", OPENJPH_PKG_CONFIG, language="c++")
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
-tace(csc_libyuv_ENABLED, "xpra.codecs.libyuv.converter", "libyuv", language="c++")
+if csc_libyuv_ENABLED:
+    if libyuv_fallback:
+        # no `libyuv.pc`: link with `-lyuv` directly
+        ace("xpra.codecs.libyuv.converter", language="c++", libraries=["yuv"])
+    else:
+        ace("xpra.codecs.libyuv.converter", "libyuv", language="c++")
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.converter", optimize=3)
 toggle_packages(pytorch_ENABLED, "xpra.codecs.pytorch")
@@ -3771,8 +3781,8 @@ if wayland_server_ENABLED:
         print("generating %r" % header_path)
         subprocess.run(["wayland-scanner", "server-header", xml_path, header_path])
     wlr_args = ["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/server/"]
-    ace("xpra.wayland.server.events", "wlroots-0.19", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.display", "wlroots-0.19", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.events", "wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.display", "wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.server.output", "wlroots-0.19,libdrm,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.server.pointer","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
     ace("xpra.wayland.server.keyboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
@@ -3912,6 +3922,8 @@ if cythonize_more_ENABLED:
             ax("xpra.x11.server")
         if uinput_ENABLED:
             ax("xpra.x11.uinput")
+    if uinput_ENABLED:
+        ax("xpra.uinput")
     if wayland_client_ENABLED:
         ax("xpra.wayland.client")
     if wayland_server_ENABLED:

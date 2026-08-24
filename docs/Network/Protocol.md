@@ -346,20 +346,26 @@ validation limits, not a separate on-wire integer representation.
 | either | `ping` | `monotonic_ms:u64`, `sid:str?` |
 | either | `ping-echo` | `monotonic_ms:u64`, `load1:u64`, `load5:u64`, `load15:u64`, `latency_ms:i64`, `sid:str?` |
 | S -> C | `startup-complete` | none |
-| S -> C | `setting-change` | `name:str`, `value:any` |
+| either | `setting-change` | `name:str`, `value:any` |
 | S -> C | `server-event` | `name:str`, `values:any...` |
 | S -> C | `control` | `command:str`, `arguments:any...` |
 | C -> S | `control-request` | `request_id:u64`, `command:str`, `arguments:any...` |
 | S -> C | `info-response` | `information:map` |
 | C -> S | `info-request` | `window_ids:list<u64>`, `categories:list<str>`, `subsystems:list<str>?` |
 | C -> S | `shutdown-server` | `exit:bool`, `reason:str?` |
-| C -> S | `readonly-toggled` | `readonly:bool` |
 | C -> S | `suspend` | `suspended:bool` |
 | C -> S | `bell-set` | `enabled:bool` |
 
 Ping timestamps use the sender's monotonic clock and are correlation values,
 not wall-clock time. Load values are scaled by 1000. A negative latency means
 unknown.
+
+`setting-change` is bidirectional, but asymmetric. A server MAY send any
+setting. A server MUST apply an allow-list to the settings a client is permitted
+to change, and MUST ignore any setting outside it. That allow-list holds
+`readonly:bool`, and - on servers managing an X11 display - `xsettings:map`,
+which carries the client's `xsettings-blob` and `resource-manager` values
+for the server to apply to its own display.
 
 ### 7.2 Logging, Shell and Commands
 
@@ -392,8 +398,8 @@ unknown.
 | C -> S | `display-request-icon` | none |
 | S -> C | `display-screenshot` | `width:u16`, `height:u16`, `encoding:str`, `rowstride:u32`, `data:bytes` |
 | S -> C | `display-icon` | `width:u16`, `height:u16`, `encoding:str`, `rowstride:u32`, `data:bytes` |
-| S -> C | `show-desktop` | `show:bool` |
-| S -> C | `desktop_size` | `width:u16`, `height:u16`, `max_width:u16`, `max_height:u16` |
+| S -> C | `display-show-desktop` | `show:bool` |
+| S -> C | `display-resized` | `width:u16`, `height:u16`, `max_width:u16`, `max_height:u16` |
 
 `display-configure` carries the same monitor, desktop, DPI and scaling
 structures advertised in the display capabilities.
@@ -414,6 +420,8 @@ structures advertised in the display capabilities.
 | S -> C | `window-draw` | `wid:u64`, `x:i16`, `y:i16`, `w:u16`, `h:u16`, `encoding:str`, `data:bytes`, `sequence:u64`, `rowstride:u32`, `options:map` |
 | S -> C | `window-eos` | `wid:u64` |
 | S -> C | `window-bell` | `wid:u64`, `device:u16`, `percent:i8`, `pitch:i32`, `duration:i32`, `class:u32`, `id:u32`, `name:str` |
+| S -> C | `window-grab` | `wid:u64` |
+| S -> C | `window-ungrab` | `wid:u64` |
 | C -> S | `window-map` | `wid:u64`, `x:i32`, `y:i32`, `w:u16`, `h:u16`, `client_properties:map`, `state:map?`, `monitor:i32?` |
 | C -> S | `window-unmap` | `wid:u64`, `iconified:bool?`, `state:map?` |
 | C -> S | `window-configure` | `wid:u64`, `configuration:map` |
@@ -453,8 +461,6 @@ parameters. Values outside advertised ranges MUST be rejected or clamped.
 | C -> S | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<u16>`, `modifiers:list<str>`, `buttons:list<u8>`, `properties:map` |
 | S -> C | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<u16>`, `modifiers:list<str>` |
 | S -> C | `pointer-position` | `wid:u64`, `x:i32`, `y:i32`, `relative_x:i32`, `relative_y:i32` |
-| S -> C | `pointer-grab` | `wid:u64` |
-| S -> C | `pointer-ungrab` | `wid:u64` |
 
 Keyboard event properties include modifier names, key value, text, hardware
 keycode and layout group. Pointer coordinates are `[x, y]`; extra device axes

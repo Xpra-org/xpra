@@ -86,7 +86,7 @@ class DesktopWindowServer(WindowServer):
         # the desktop window is exported as a whole-screen window
         return 0, 0
 
-    def _process_window_map(self, proto, packet: Packet) -> None:
+    def _process_map(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         wid = packet.get_wid()
@@ -108,7 +108,7 @@ class DesktopWindowServer(WindowServer):
             self._set_client_properties(proto, wid, window, props)
         self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_window_unmap(self, proto, packet: Packet) -> None:
+    def _process_unmap(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         wid = packet.get_wid()
@@ -168,7 +168,7 @@ class DesktopWindowServer(WindowServer):
             w, h = window.get_geometry()[2:4]
             self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_window_close(self, proto, packet: Packet) -> None:
+    def _process_close(self, proto, packet: Packet) -> None:
         # disconnect?
         pass
 

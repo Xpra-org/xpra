@@ -8,21 +8,24 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.net.constants import ConnectionMessage
+from xpra.net.dispatch import SubsystemPacketHandlers
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.util.objects import typedict
 from xpra.common import noop
 from xpra.os_util import WIN32
 
 
-class StubSubsystem(SignalEmitter):
+class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
     """
     Base class for server subsystems.
     Defines the default interface methods that each subsystem may override.
+    Packet handler registration is shared with the client's `StubClientSubsystem`
+    through `SubsystemPacketHandlers`.
     """
     # `_signal_callbacks` and `main_loop` belong to `SignalEmitter`, but it cannot
     # declare them itself (see the note there), so they are declared here, where
     # the slots actually take effect:
-    __slots__ = ("__weakref__", "_signal_callbacks", "idle_add", "main_loop",
+    __slots__ = ("__weakref__", "_packet_handlers", "_signal_callbacks", "idle_add", "main_loop",
                  "server", "source_remove", "timeout_add")
     # every concrete subsystem should declare a non-empty PREFIX,
     # used as the key in `Server.subsystems`:
@@ -44,6 +47,7 @@ class StubSubsystem(SignalEmitter):
         self.idle_add: Callable = source.idle_add
         self.timeout_add: Callable = source.timeout_add
         self.source_remove: Callable = source.source_remove
+        self._packet_handlers = {}
         SignalEmitter.__init__(self)
 
     def get_main_loop(self):
@@ -72,27 +76,22 @@ class StubSubsystem(SignalEmitter):
             return ss.effective_readonly()
         return False
 
-    def add_packets(self, *packet_types: str, main_thread: bool = False) -> None:
-        """
-        Register packet handlers for this subsystem. Handlers
-        (`_process_<packet_type>`) are looked up on the subsystem
-        instance and registered against the server's packet dispatcher.
-        """
-        for packet_type in packet_types:
-            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
-            self.server.add_packet_handler(packet_type, handler, main_thread)
-
-    def add_packet_handler(self, packet_type: str, handler: Callable, main_thread: bool = False) -> None:
-        """ register a single packet handler on the owning server """
-        self.server.add_packet_handler(packet_type, handler, main_thread)
-
-    def add_legacy_alias(self, legacy_name: str, new_name: str) -> None:
-        """ register a backwards-compat packet name alias on the owning server """
-        self.server.add_legacy_alias(legacy_name, new_name)
+    def get_packet_owner(self):
+        """ packet registration goes through the owning server (see `SubsystemPacketHandlers`) """
+        return self.server
 
     def setting_changed(self, setting: str, value: Any) -> None:
         """ broadcast a server setting change to all connected clients """
         self.server.setting_changed(setting, value)
+
+    def add_client_setting(self, setting: str, getter: str, apply: Callable[[Any, Any], None]) -> None:
+        """
+        Register a setting that clients are allowed to change using the
+        `setting-change` packet, on the `setting` subsystem.
+        (see `SettingsServer.add_client_setting`)
+        """
+        if settings := self.get_subsystem("setting"):
+            settings.add_client_setting(setting, getter, apply)
 
     def init(self, opts) -> None:
         """

@@ -19,6 +19,7 @@ from xpra.util.system import get_linux_distribution, platform_release, platform_
 XPRA_VERSION: Final[str] = xpra.__version__
 XPRA_NUMERIC_VERSION: tuple[int] = xpra.__version_info__
 
+CHECK_PROTOCOL_VERSION = envbool("XPRA_CHECK_PROTOCOL_VERSION", True)
 CHECK_SSL: bool = envbool("XPRA_VERSION_CHECK_SSL", True)
 SSL_CAFILE: str = ""
 if WIN32 or OSX:
@@ -103,6 +104,49 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
     except TypeError:
         get_util_logger().debug("make_revision_str%s", (revision, local_modifications, branch, commit), exc_info=True)
     return rstr
+
+
+def protocol_compat_check(remote_protocol_version) -> str:
+    """
+    The peer exposes the minimum version it is willing to talk to
+    as its "protocol-version" capability,
+    verify that this version is recent enough to satisfy it.
+    This capability is only optional in `BACKWARDS_COMPATIBLE` mode.
+    Returns an error message, or an empty string if we are compatible.
+    """
+    if not CHECK_PROTOCOL_VERSION:
+        log("protocol_compat_check(%s) skipped", remote_protocol_version)
+        return ""
+    from xpra.net.common import BACKWARDS_COMPATIBLE
+    if not remote_protocol_version:
+        if BACKWARDS_COMPATIBLE:
+            # not specified: nothing to check
+            log("no minimum protocol version specified by the remote end")
+            return ""
+        msg = "the remote end does not expose its minimum protocol version"
+        log(msg)
+        return msg
+    try:
+        rv = parse_version(remote_protocol_version)
+    except ValueError:
+        msg = f"failed to parse remote protocol version {remote_protocol_version!r}"
+        if not BACKWARDS_COMPATIBLE:
+            log(msg)
+            return msg
+        warn(f"Warning: {msg}")
+        return ""
+    rvstr = ".".join(str(part) for part in rv)
+    try:
+        if XPRA_NUMERIC_VERSION < rv:
+            msg = f"remote end requires version {rvstr!r} or later"
+            log(msg)
+            return msg
+    except TypeError as e:
+        msg = f"invalid remote protocol version {rvstr!r}: {e}"
+        log(msg)
+        return msg
+    log(f"local version {XPRA_VERSION!r} satisfies the remote protocol version {rvstr!r}")
+    return ""
 
 
 def version_compat_check(remote_version) -> str | None:

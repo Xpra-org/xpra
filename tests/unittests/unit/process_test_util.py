@@ -77,16 +77,46 @@ class DisplayContext(OSEnvContext):
             self.xvfb_process = self.stu.start_Xvfb()
             os.environ["GDK_BACKEND"] = "x11"
             os.environ["DISPLAY"] = self.xvfb_process.display or ""
-            from xpra.x11.gtk.display_source import init_gdk_display_source
-            init_gdk_display_source()
+            self.open_display_source(os.environ["DISPLAY"])
 
     def __exit__(self, *_args):
         if self.xvfb_process:
+            # the GDK display connection must be closed *before* the Xvfb it is connected to:
+            # a connection left pointing at a dead Xvfb causes an X11 IO error
+            # the next time any code iterates a GTK main loop,
+            # and GDK's IO error handler terminates the whole process
+            # (killing every test that would have run after this one)
+            self.close_display_source()
             self.xvfb_process.terminate()
             self.xvfb_process = None
             self.stu.tearDown()
             ProcessTestUtil.tearDownClass()
         OSEnvContext.__exit__(self)
+
+    @staticmethod
+    def open_display_source(display_name: str) -> None:
+        from xpra.os_util import gi_import
+        Gdk = gi_import("Gdk")
+        manager = Gdk.DisplayManager.get()
+        if manager.get_default_display() is None:
+            # a previous `DisplayContext` closed the default display,
+            # and GDK does not open a new one by itself:
+            gdk_display = Gdk.Display.open(display_name)
+            if gdk_display is None:
+                raise RuntimeError(f"failed to open display {display_name!r}")
+            manager.set_default_display(gdk_display)
+        from xpra.x11.gtk.display_source import init_gdk_display_source
+        init_gdk_display_source()
+
+    @staticmethod
+    def close_display_source() -> None:
+        from xpra.x11.gtk import display_source
+        gdk_display = display_source.display
+        display_source.close_gdk_display_source()
+        if gdk_display:
+            gdk_display.close()
+        from xpra.x11.bindings.display_source import clear_display
+        clear_display()
 
     def __repr__(self):
         return "DisplayContext"
@@ -343,6 +373,11 @@ class ProcessTestUtil(unittest.TestCase):
             stderr = cls._temp_file(prefix="Xorg-stderr-")
             log("stderr=%s for %s", stderr.name, cmd)
         xvfb = cls.class_run_command(cmd_expanded, env=env, stdout=stdout, stderr=stderr)
+        if not SHOW_XORG_OUTPUT:
+            # class_run_command only records capture files that it creates;
+            # keep these explicitly supplied wrappers alive until teardown.
+            xvfb.stdout_file = stdout
+            xvfb.stderr_file = stderr
         xvfb.display = display
         time.sleep(1)
         log("xvfb(%s)=%s" % (cmdstr, xvfb))

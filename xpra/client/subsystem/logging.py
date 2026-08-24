@@ -97,7 +97,7 @@ class LoggingClient(StubClientSubsystem):
         self.add_legacy_alias("logging", "logging-event")
         self.send(LOGGING_CONTROL, "start")
 
-    def _process_logging_event(self, packet: Packet) -> None:
+    def _process_event(self, packet: Packet) -> None:
         assert self.local_logging == noop, "cannot receive logging packets when forwarding logging!"
         level = packet.get_u8(1)
         msg = packet.get_str(2)

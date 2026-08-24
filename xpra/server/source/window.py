@@ -11,10 +11,10 @@ from collections.abc import Callable, Sequence
 
 from xpra.net.packet_type import (
     WINDOW_RESTACK, WINDOW_RAISE, WINDOW_INITIATE_MOVERESIZE, WINDOW_DESTROY, WINDOW_RESIZED,
-    WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL,
+    WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL, WINDOW_GRAB, WINDOW_UNGRAB,
 )
 from xpra.os_util import gi_import
-from xpra.server.common import may_update_bandwidth_limits
+from xpra.server.common import may_update_bandwidth_limits, wants_windows
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed, is_sync_allowed
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
@@ -58,7 +58,7 @@ class WindowsConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("windows")
+        return wants_windows(caps)
 
     def __init__(self):
         super().__init__()
@@ -97,7 +97,7 @@ class WindowsConnection(StubClientConnection):
         # `sharing=sync`: raise the windows focused by another client
         self.window_sync_focus = False
         self.window_metadata_supported: Sequence[str] = ()
-        self.pointer_grabs = False
+        self.window_grabs = False
         self.system_tray = False
         # for handling resize synchronization between client and server (this is not xsync!):
         self.window_configure_time = 0.0
@@ -148,18 +148,24 @@ class WindowsConnection(StubClientConnection):
         return not self.window_record
 
     def parse_client_caps(self, c: typedict) -> None:
-        windows = c.get("windows")
         ui_client = c.boolget("ui_client", True) or not BACKWARDS_COMPATIBLE
-        if isinstance(windows, dict):
-            wcaps = typedict(windows)
-            self.window_enabled = ui_client and bool(windows)
-        else:
-            wcaps = c
-            self.window_enabled = ui_client and c.boolget("windows", True)
-        self.pointer_grabs = c.boolget("pointer.grabs")
+        wcaps = typedict(c.dictget("window") or {})
+        if BACKWARDS_COMPATIBLE and not wcaps:
+            legacy = c.get("windows")
+            if isinstance(legacy, dict):
+                # the offscreen recorder used to send its options in the plural namespace:
+                wcaps = typedict(legacy)
+        self.window_enabled = ui_client and wants_windows(c)
+        self.window_grabs = c.boolget("window.grabs")
+        if BACKWARDS_COMPATIBLE and not self.window_grabs:
+            # older clients advertise grabs in the `pointer` namespace:
+            self.window_grabs = c.boolget("pointer.grabs")
         self.window_bell = c.boolget("bell")
         self.system_tray = c.boolget("system_tray")
-        self.window_metadata_supported = c.strtupleget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
+        default_metadata_supported = DEFAULT_METADATA_SUPPORTED
+        if BACKWARDS_COMPATIBLE:
+            default_metadata_supported += ("content-type", )
+        self.window_metadata_supported = c.strtupleget("metadata.supported", default_metadata_supported)
         log("metadata supported=%s", self.window_metadata_supported)
         self.window_frame_sizes = wcaps.dictget("frame_sizes")
         self.window_min_size = wcaps.inttupleget("min-size", (0, 0))
@@ -186,6 +192,7 @@ class WindowsConnection(StubClientConnection):
             "bell": self.window_bell,
             "system-tray": self.system_tray,
             "restack": self.window_restack,
+            "grabs": self.window_grabs,
             "sync-position": self.window_sync_position,
             "sync-focus": self.window_sync_focus,
         }
@@ -257,13 +264,13 @@ class WindowsConnection(StubClientConnection):
 
     ######################################################################
     # grabs:
-    def pointer_grab(self, wid) -> None:
-        if self.pointer_grabs and self.hello_sent:
-            self.send("pointer-grab", wid)
+    def window_grab(self, wid) -> None:
+        if self.window_grabs and self.hello_sent:
+            self.send(WINDOW_GRAB, wid)
 
-    def pointer_ungrab(self, wid) -> None:
-        if self.pointer_grabs and self.hello_sent:
-            self.send("pointer-ungrab", wid)
+    def window_ungrab(self, wid) -> None:
+        if self.window_grabs and self.hello_sent:
+            self.send(WINDOW_UNGRAB, wid)
 
     def bell(self, wid: int, device: int, percent: int, pitch: int, duration: int,
              bell_class, bell_id: int, bell_name: str) -> None:

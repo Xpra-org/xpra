@@ -643,11 +643,11 @@ class X11DisplayManager(DisplayManager):
         """ overridden in the seamless server """
 
     ################################################################
-    # force-ungrab:
+    # display-ungrab:
 
-    def _process_force_ungrab(self, proto, _packet: Packet) -> None:
+    def _process_ungrab(self, proto, _packet: Packet) -> None:
         # ignore the window id: wid = packet.get_wid()
-        grablog("force ungrab from %s", proto)
+        grablog("display ungrab from %s", proto)
         x11_ungrab()
 
     @staticmethod
@@ -657,4 +657,6 @@ class X11DisplayManager(DisplayManager):
     # noinspection PyMethodMayBeStatic
     def init_packet_handlers(self) -> None:
         DisplayManager.init_packet_handlers(self)
-        self.add_packets("force-ungrab", main_thread=True)
+        self.add_packets("display-ungrab", main_thread=True)
+        if BACKWARDS_COMPATIBLE:
+            self.add_legacy_alias("force-ungrab", "display-ungrab")

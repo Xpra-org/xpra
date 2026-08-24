@@ -13,7 +13,7 @@ from xpra.server.common import get_sources_by_type
 from xpra.server.core import ServerCore, SIGNALS as CORE_SIGNALS
 from xpra.server.source.events import EventConnection
 from xpra.common import noop
-from xpra.net.common import Packet, PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.objects import merge_dicts
 from xpra.util.str_fn import Ellipsizer
 from xpra.os_util import POSIX
@@ -171,9 +171,9 @@ class ServerBase(ServerCore):
         if features.x11 and features.display:
             from xpra.x11.subsystem.icc import ICCServer
             classes.append(ICCServer)
-        if features.x11 and features.bell:
-            from xpra.x11.subsystem.bell import BellServer
-            classes.append(BellServer)
+        if features.bell:
+            if bell_class := self.get_bell_subsystem_class():
+                classes.append(bell_class)
         if features.x11 and features.systray:
             from xpra.x11.subsystem.systray import SystemTrayServer
             classes.append(SystemTrayServer)
@@ -181,6 +181,8 @@ class ServerBase(ServerCore):
         classes.append(SharingServer)
         from xpra.server.subsystem.client_session import ClientSessionServer
         classes.append(ClientSessionServer)
+        from xpra.server.subsystem.settings import SettingsServer
+        classes.append(SettingsServer)
         from xpra.server.subsystem.shutdown import ShutdownServer
         classes.append(ShutdownServer)
         if features.cursor:
@@ -238,6 +240,15 @@ class ServerBase(ServerCore):
     def get_clipboard_subsystem_class(self) -> type:
         from xpra.server.subsystem.clipboard import ClipboardManager
         return ClipboardManager
+
+    def get_bell_subsystem_class(self) -> type | None:
+        # only the backends that have a bell event source to hook into
+        # provide a subsystem - there is nothing generic to fall back on:
+        from xpra.server import features
+        if features.x11:
+            from xpra.x11.subsystem.bell import X11BellServer
+            return X11BellServer
+        return None
 
     def suspend_event(self, *_args) -> None:
         # if we get a `suspend_event`, we can assume that `PowerEventServer` is a superclass:
@@ -409,10 +420,6 @@ class ServerBase(ServerCore):
         log("ServerBase.get_info took %.1fms", 1000.0 * (monotonic() - start))
         return info
 
-    def _process_server_settings(self, proto, packet: Packet) -> None:
-        # only used by x11 servers
-        pass
-
     def _disconnect_proto_info(self, proto) -> str:
         # only log protocol info if there is more than one client:
         if len(self._server_sources) > 1:
@@ -426,5 +433,7 @@ class ServerBase(ServerCore):
         if BACKWARDS_COMPATIBLE:
             # no need for main thread:
             self.add_packet_handler("set_deflate", noop)  # removed in v6
-            # now moved to XSettingsServer
-            self.add_packets("server-settings", main_thread=True)
+            if "xsettings" not in self.subsystems:
+                # `server-settings` is handled by the `xsettings` subsystem when it is present,
+                # servers without it can safely ignore this legacy packet:
+                self.add_packet_handler("server-settings", noop)

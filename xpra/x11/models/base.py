@@ -20,6 +20,7 @@ from xpra.server.window.content_guesser import (
     is_menu_data_loaded, GUESS_CONTENT,
 )
 from xpra.util.background_worker import add_work_item
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -119,11 +120,13 @@ class BaseWindowModel(CoreX11WindowModel):
             GObject.ParamFlags.READABLE,
         ),
         # for our own use:
-        "content-type": (
-            GObject.TYPE_PYOBJECT,
-            "What type of content is shown in this window", "",
-            GObject.ParamFlags.READABLE,
-        ),
+        **({
+            "content-type": (
+                GObject.TYPE_PYOBJECT,
+                "What type of content is shown in this window", "",
+                GObject.ParamFlags.READABLE,
+            ),
+        } if BACKWARDS_COMPATIBLE else {}),
         "content-types": (
             GObject.TYPE_PYOBJECT,
             "What type of content is shown in this window as a list of strings", "",
@@ -240,18 +243,22 @@ class BaseWindowModel(CoreX11WindowModel):
     _property_names = CoreX11WindowModel._property_names + [
         "transient-for", "fullscreen-monitors", "bypass-compositor",
         "group-leader", "window-type", "workspace", "strut", "opacity",
-        "content-type", "content-types",
+        "content-types",
         # virtual attributes:
         "fullscreen", "focused", "maximized", "above", "below", "shaded",
         "skip-taskbar", "skip-pager", "sticky",
     ]
+    if BACKWARDS_COMPATIBLE:
+        _property_names.append("content-type")
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
-        "attention-requested", "content-type", "content-types",
+        "attention-requested", "content-types",
         "window-type", "workspace", "opacity",
         "fullscreen", "focused", "maximized", "above", "below", "shaded",
         "skip-taskbar", "skip-pager", "sticky",
         "quality", "speed", "encoding",
     ]
+    if BACKWARDS_COMPATIBLE:
+        _dynamic_property_names.append("content-type")
     _internal_property_names = CoreX11WindowModel._internal_property_names + ["state"]
     _initial_x11_properties = CoreX11WindowModel._initial_x11_properties + [
         "WM_TRANSIENT_FOR",
@@ -467,7 +474,8 @@ class BaseWindowModel(CoreX11WindowModel):
             # the menu loader also has a lock.
             add_work_item(self.guess_content_type)
         metalog("_update_content_type() %s", content_type)
-        self._set_content_types(content_type)
+        content_types = content_type.replace("+", ",").split(",") if content_type else ()
+        self._set_content_types(*content_types)
 
     def guess_content_type(self) -> None:
         content_types = guess_content_type(self)
@@ -489,8 +497,10 @@ class BaseWindowModel(CoreX11WindowModel):
         add_work_item(self.guess_content_type)
 
     def _set_content_types(self, *content_types: str) -> None:
-        self._updateprop("content-type", "+".join(content_types) if content_types else "")
-        self._updateprop("content-types", tuple(content_types))
+        content_types = tuple(x for x in content_types if x)
+        self._updateprop("content-types", content_types)
+        if BACKWARDS_COMPATIBLE:
+            self._updateprop("content-type", "+".join(content_types) if content_types else "")
 
     def _handle_xpra_quality_change(self) -> None:
         quality: int = self.prop_get("_XPRA_QUALITY", "u32", True) or -1

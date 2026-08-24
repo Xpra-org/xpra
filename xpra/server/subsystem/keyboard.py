@@ -239,7 +239,7 @@ class KeyboardManager(StubSubsystem):
         if "modifiers" in props:
             ss.make_keymask_match(props.strtupleget("modifiers"))
 
-    def _process_keyboard_config(self, proto, packet: Packet) -> None:
+    def _process_config(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         props = typedict(packet.get_dict(1))
@@ -279,7 +279,7 @@ class KeyboardManager(StubSubsystem):
         }
         self.do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
 
-    def _process_keyboard_event(self, proto, packet: Packet) -> None:
+    def _process_event(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         keyname = packet.get_str(2)
         pressed = packet.get_bool(3)
@@ -429,7 +429,7 @@ class KeyboardManager(StubSubsystem):
     def _process_key_repeat(self, _proto, _packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
 
-    def _process_keyboard_sync(self, proto, packet: Packet) -> None:
+    def _process_sync(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
@@ -482,8 +482,8 @@ class KeyboardManager(StubSubsystem):
                 "key-action", "key-repeat", "layout-changed", "keymap-changed",
                 main_thread=True
             )
-            self.add_packet_handler("set-keyboard-sync-enabled", self._process_keyboard_sync, True)
-            self.add_packet_handler("keyboard-sync-enabled-status", self._process_keyboard_sync, True)
+            self.add_packet_handler("set-keyboard-sync-enabled", self._process_sync, True)
+            self.add_packet_handler("keyboard-sync-enabled-status", self._process_sync, True)
 
         self.add_packets(
             "keyboard-event", "keyboard-config", "keyboard-sync",

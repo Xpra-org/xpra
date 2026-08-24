@@ -110,7 +110,7 @@ PROPERTIES_DEBUG = [
 ]
 X11PROPERTY_SYNC = envbool("XPRA_X11PROPERTY_SYNC", True)
 X11PROPERTY_SYNC_BLOCKLIST = os.environ.get("XPRA_X11PROPERTY_SYNC_BLOCKLIST",
-                                            "_GTK,WM_,_NET,Xdnd").split(",")
+                                            "_GTK,WM_,_NET,Xdnd,XPRA_").split(",")
 SHAPE_DELAY = envint("XPRA_SHAPE_DELAY", 100)
 
 DEFAULT_ACTIONS = tuple(x for x in os.environ.get("XPRA_WINDOW_DEFAULT_ACTIONS", "").split(",") if x.strip())

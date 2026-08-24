@@ -7,12 +7,52 @@
 import unittest
 from unittest.mock import Mock, patch
 
+from xpra.net.common import Packet
 from xpra.util.objects import AdHocStruct, typedict
 from unit.test_util import stubbable
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class WebcamMixinTest(ServerMixinTest):
+
+    def test_window_stacking_packet(self):
+        from xpra.server.subsystem.window import WindowServer
+
+        window_server = stubbable(WindowServer)(self)
+        window_server.update_window_stacking = Mock()
+        window_server._process_stacking(object(), Packet("window-stacking", [3, 1, 2]))
+        window_server.update_window_stacking.assert_called_once_with((3, 1, 2))
+
+    def test_x11_window_stacking_filter(self):
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        def window(xid: int, override_redirect=False, tray=False):
+            model = Mock()
+            model.is_OR.return_value = override_redirect
+            model.is_tray.return_value = tray
+            model.get_property.return_value = xid
+            return model
+
+        manager = SeamlessWindowServer(AdHocStruct())
+        manager._wm = Mock()
+        manager._id_to_window = {
+            1: window(0x101),
+            2: window(0x102, override_redirect=True),
+            3: window(0x103, tray=True),
+            4: window(0x104),
+        }
+        manager.update_window_stacking((4, 2, 99, 1, 3, 4))
+        manager._wm.update_window_stacking.assert_called_once_with([0x104, 0x101])
+
+    def test_x11_window_stacking_capability(self):
+        from xpra.server.base import ServerBase
+        from xpra.x11.server.seamless import SeamlessServer
+
+        server = SeamlessServer.__new__(SeamlessServer)
+        server.subsystems = {"window": object()}
+        with patch.object(ServerBase, "get_server_features", return_value={}):
+            features = SeamlessServer.get_server_features(server)
+        self.assertTrue(typedict(features).boolget("window.stacking"))
 
     def test_monitor_relative_geometry(self):
         from xpra.x11.subsystem.window import SeamlessWindowServer
@@ -83,6 +123,8 @@ class WebcamMixinTest(ServerMixinTest):
             ws.load_existing_windows = load_existing_windows
             return ws
         self._test_mixin_class(_WindowServer, opts)
+        self.assertIn("window-stacking", self.mixin.get_packet_types())
+        self.assertFalse(typedict(self.mixin.get_server_features(None)).boolget("window.stacking"))
 
     def test_power_events_cleanup_video_encoders(self):
         from xpra.server.subsystem.window import WindowServer

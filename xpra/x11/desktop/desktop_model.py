@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.x11.error import XError, xsync
+from xpra.x11.error import XError, xsync, xswallow
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.x11.bindings.randr import RandRBindings
@@ -120,17 +120,16 @@ class ScreenDesktopModel(DesktopModelBase):
             if ow == rw and oh == rh:
                 return
             with xsync:
-                # `is_dummy16` verifies the RandR version,
-                # which `get_monitor_properties` does not check:
+                # `is_dummy16` verifies the RandR version, `get_monitor_properties` does not:
                 dummy16 = RandR.is_dummy16()
                 monitors = RandR.get_monitor_properties() if dummy16 else {}
             if dummy16 and len(monitors) == 1:
                 # the dummy driver's vfb setup creates a RandR 1.6 monitor:
-                # a window manager lays the desktop out using the monitor
-                # geometry, so resizing only the screen would leave the monitor -
-                # and the window manager's layout - at the old size.
-                # `set_crtc_config` resizes the screen, the crtc and the
-                # monitor together (and adds the mode if needed):
+                # a window manager lays the desktop out using the monitor geometry,
+                # so resizing only the screen would leave the monitor - and the
+                # window manager's layout - at the old size.
+                # `set_crtc_config` resizes the screen, the crtc and the monitor together
+                # (and adds the mode if needed):
                 with xsync:
                     if not RandR.set_crtc_config({0: {
                         "primary": True,
@@ -141,13 +140,13 @@ class ScreenDesktopModel(DesktopModelBase):
                         return
             else:
                 with xsync:
-                    if (rw, rh) not in RandR.get_xrr_screen_sizes():
-                        # the mode must exist before it can be set: this is not
-                        # specific to the dummy driver, Xvfb needs it too
-                        # (the seamless server adds missing modes whenever
-                        # `randr_exact_size` is set, which covers both the dummy
-                        # driver and Xvfb - see `do_get_best_screen_size`
-                        # in `xpra.x11.subsystem.display`):
+                    have_size = (rw, rh) in RandR.get_xrr_screen_sizes()
+                if not have_size:
+                    # the mode must exist before it can be set: this isn't specific
+                    # to the dummy driver, a real Xvfb needs it too (as long as it was
+                    # started with enough headroom in its maximum size) - but not all
+                    # drivers support adding modes on the fly, so don't treat failure as fatal:
+                    with xswallow:
                         RandR.add_screen_size(rw, rh)
                 with xsync:
                     if not RandR.set_screen_size(rw, rh):

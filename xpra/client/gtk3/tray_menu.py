@@ -163,7 +163,31 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def setup_menu(self) -> Gtk.Menu:
         log("setup_menu()")
-        return self.do_setup_menu(self.get_menu_items())
+        menu = Gtk.Menu()
+        menu.connect("deactivate", self.menu_deactivated)
+        menu.show()
+        menu_item_factories = iter(self.get_menu_item_factories())
+
+        def add_menu_item() -> bool:
+            try:
+                factory = next(menu_item_factories)
+            except StopIteration:
+                menu.show_all()
+                return False
+            try:
+                menu_item = factory()
+            except Exception:
+                log.error("Error creating tray menu item using %s:", factory, exc_info=True)
+                return True
+            if menu_item:
+                menu.append(menu_item)
+                menu_item.show_all()
+            # Return to the main loop between top-level sections.  Some of
+            # these create large submenus and register many idle callbacks.
+            return True
+
+        GLib.idle_add(add_menu_item)
+        return menu
 
     def do_setup_menu(self, items: Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]) -> Gtk.Menu:
         menu = Gtk.Menu()
@@ -175,7 +199,10 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def get_menu_items(self) -> Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]:
         log("get_menu_items()")
-        return gen_non_none_menu_items(
+        return gen_non_none_menu_items(*self.get_menu_item_factories())
+
+    def get_menu_item_factories(self) -> Sequence[Callable[[], Gtk.ImageMenuItem | Gtk.MenuItem | None]]:
+        return (
             self.make_titlemenuitem,
             self.make_infomenuitem,
             self.make_featuresmenuitem,
@@ -329,7 +356,7 @@ class GTKTrayMenu(GTKMenuHelper):
         def readonly_toggled(*args) -> None:
             v = readonly.get_active()
             self.client.readonly = v
-            self.client.send("readonly-toggled", v)
+            self.client.send_setting_change("readonly", v)
             log("readonly_toggled(%s) readonly=%s", args, self.client.readonly)
         readonly = checkitem(_("Read-only"), readonly_toggled)
         set_sensitive(readonly, False)

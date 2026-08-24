@@ -23,9 +23,10 @@ class Events(StubClientSubsystem):
         return {"events": True}
 
     @staticmethod
-    def _process_server_event(packet: Packet) -> None:
+    def _process_events(packet: Packet) -> None:
         log(": ".join(str(x) for x in packet[1:]))
 
     def init_authenticated_packet_handlers(self) -> None:
         # run directly from the network thread:
-        self.add_packets("server-event")
+        self.add_legacy_alias("server-event", "events")
+        self.add_packets("events")

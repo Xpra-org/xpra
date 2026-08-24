@@ -43,7 +43,17 @@ class DisplayMixinTest(ServerMixinTest):
             dm = stubbable(DisplayManager)(server)
             dm.calculate_workarea = calculate_workarea
             return dm
-        self._test_mixin_class(make_display_manager, opts, {}, DisplayConnection)
+        # modern clients send their display attributes in the `display` namespace,
+        # which `DisplayConnection.parse_client_caps` requires with BC=0
+        # (with BC=1 the namespaced form is honoured too):
+        caps = {
+            "display": {
+                "desktop_size": (1024, 768),
+                "refresh-rate": 60,
+                "resize-events": True,
+            },
+        }
+        self._test_mixin_class(make_display_manager, opts, caps, DisplayConnection)
 
 
 def main():

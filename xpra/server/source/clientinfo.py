@@ -53,6 +53,8 @@ class ClientInfoConnection(StubClientConnection):
         # client capabilities/options:
         self.client_type = ""
         self.client_version = ""
+        # the minimum version this client is willing to talk to:
+        self.client_protocol_version: Sequence[int] = ()
         self.client_revision = ""
         self.client_bits = 0
         self.client_platform = ""
@@ -85,6 +87,7 @@ class ClientInfoConnection(StubClientConnection):
         self.client_release = c.strget("platform.sysrelease")
         self.client_linux_distribution = c.strtupleget("platform.linux_distribution")
         self.client_version = c.strget("version")
+        self.client_protocol_version = c.inttupleget("protocol-version")
         self.client_revision = c.strget("build.revision")
         self.client_bits = c.intget("python.bits")
         self.client_proxy = c.boolget("proxy")
@@ -160,6 +163,8 @@ class ClientInfoConnection(StubClientConnection):
         }
         if self.client_version:
             info["version"] = vparts(self.client_version, FULL_INFO + 1)
+        if self.client_protocol_version:
+            info["protocol-version"] = self.client_protocol_version
 
         def addattr(key, name=None):
             v = getattr(self, (name or key).replace("-", "_"))

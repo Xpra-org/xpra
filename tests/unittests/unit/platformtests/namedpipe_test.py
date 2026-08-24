@@ -114,6 +114,37 @@ _pipe_serial = 0
 _pipe_serial_lock = threading.Lock()
 
 
+def _mp_peer_info_client(pipe_name: str, result_q, timeout: int = 15) -> None:
+    """Subprocess worker: connect, report our own pid and the peer info we see, stay connected."""
+    try:
+        from xpra.platform.win32.namedpipes.connection import connect_to_namedpipe, NamedPipeConnection
+        handle = connect_to_namedpipe(pipe_name, timeout=timeout)
+        conn = NamedPipeConnection(pipe_name, handle, {})
+        result_q.put(("ok", os.getpid(), dict(conn.peer_info)))
+        # stay connected: the peer queries only work whilst the pipe is connected
+        time.sleep(1.0)
+        conn.close()
+    except Exception as e:
+        result_q.put(("error", os.getpid(), repr(e)))
+
+
+class _CapturingLog:
+    """Wraps a Logger, recording `info` messages whilst delegating everything else."""
+
+    def __init__(self, real, lines: list):
+        self._real = real
+        self._lines = lines
+
+    def __call__(self, *args, **kwargs):
+        return self._real(*args, **kwargs)
+
+    def info(self, msg, *args) -> None:
+        self._lines.append(msg % args if args else msg)
+
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+
 def _unique_pipe(tag: str = "") -> str:
     global _pipe_serial
     with _pipe_serial_lock:
@@ -133,6 +164,8 @@ class _EchoServer:
         self._threads: list = []
         self._lock = threading.Lock()
         self.connection_count = 0
+        # the peer info collected for each accepted connection, in order:
+        self.peer_infos: list = []
         self.listener = NamedPipeListener(pipe_name, self._on_connect)
 
     def start(self) -> None:
@@ -143,10 +176,13 @@ class _EchoServer:
     def _on_connect(self) -> None:
         # the listener leaves the accepted handle on `pending_handle` (like `socket.accept()`)
         from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-        conn = NamedPipeConnection(self.pipe_name, self.listener.pending_handle, {})
+        # `server_side=True` matches what the real server does, so the peer info
+        # describes the client rather than ourselves:
+        conn = NamedPipeConnection(self.pipe_name, self.listener.pending_handle, {}, server_side=True)
         with self._lock:
             self._conns.append(conn)
             self.connection_count += 1
+            self.peer_infos.append(conn.peer_info)
         t = threading.Thread(target=self._echo_loop, args=(conn,), daemon=True)
         with self._lock:
             self._threads.append(t)
@@ -807,6 +843,126 @@ class TestNamedPipeStress(unittest.TestCase):
             self.assertTrue(s.listener.is_alive())
         finally:
             s.stop()
+
+
+@unittest.skipUnless(WIN32, "win32 named pipes only available on Windows")
+class TestNamedPipePeerInfo(unittest.TestCase):
+    """Peer identification: who is at the other end of the pipe?"""
+
+    def _server(self, tag: str = "") -> _EchoServer:
+        s = _EchoServer(_unique_pipe(tag))
+        s.start()
+        return s
+
+    def _client(self, pipe_name: str, timeout: int = 5):
+        from xpra.platform.win32.namedpipes.connection import connect_to_namedpipe, NamedPipeConnection
+        handle = connect_to_namedpipe(pipe_name, timeout=timeout)
+        return NamedPipeConnection(pipe_name, handle, {})
+
+    def _wait_for_peer_infos(self, server: _EchoServer, count: int = 1, timeout: float = 10) -> None:
+        deadline = time.time() + timeout
+        while len(server.peer_infos) < count and time.time() < deadline:
+            time.sleep(0.05)
+        self.assertGreaterEqual(len(server.peer_infos), count,
+                                "server only collected %i peer info(s)" % len(server.peer_infos))
+
+    def test_client_side_reports_the_server_process(self):
+        """`GetNamedPipeServerProcessId`: the client end sees the process listening."""
+        s = self._server("peer-client")
+        try:
+            conn = self._client(s.pipe_name)
+            peer = conn.peer_info
+            conn.close()
+            # the pipe server is this very process:
+            self.assertEqual(peer.get("pid"), os.getpid())
+            self.assertTrue(peer.get("name", "").lower().endswith(".exe"),
+                            "unexpected executable name %r" % peer.get("name"))
+            self.assertIn("session", peer)
+        finally:
+            s.stop()
+
+    def test_server_side_reports_the_client_process(self):
+        """`GetNamedPipeClientProcessId`: the server end sees the process connecting."""
+        s = self._server("peer-server")
+        try:
+            conn = self._client(s.pipe_name)
+            self._wait_for_peer_infos(s)
+            peer = s.peer_infos[0]
+            conn.close()
+            self.assertEqual(peer.get("pid"), os.getpid())
+            self.assertIn("session", peer)
+            # this only ever gets set for clients coming in over SMB / IPC$:
+            self.assertNotIn("computer", peer)
+        finally:
+            s.stop()
+
+    def test_get_info_includes_peer(self):
+        s = self._server("peer-info")
+        try:
+            conn = self._client(s.pipe_name)
+            info = conn.get_info()
+            conn.close()
+            self.assertEqual(info.get("type"), "named-pipe")
+            peer = info.get("peer")
+            self.assertTrue(peer, "no peer info in get_info()")
+            self.assertEqual(peer.get("pid"), os.getpid())
+        finally:
+            s.stop()
+
+    def test_server_side_reports_subprocess_client_pid(self):
+        """The pid the server reports really belongs to the other process."""
+        s = self._server("peer-mp")
+        try:
+            q: multiprocessing.Queue = multiprocessing.Queue()
+            p = multiprocessing.Process(target=_mp_peer_info_client, args=(s.pipe_name, q))
+            p.start()
+            try:
+                status, child_pid, child_peer = q.get(timeout=20)
+                self._wait_for_peer_infos(s)
+            finally:
+                p.join(timeout=10)
+                if p.is_alive():
+                    p.terminate()
+            self.assertEqual(status, "ok", "subprocess error: %s" % (child_peer,))
+            self.assertNotEqual(child_pid, os.getpid())
+            peer = s.peer_infos[0]
+            self.assertEqual(peer.get("pid"), child_pid,
+                             "server saw pid %s but the client is pid %s" % (peer.get("pid"), child_pid))
+            # and symmetrically, the client saw us:
+            self.assertEqual(child_peer.get("pid"), os.getpid())
+        finally:
+            s.stop()
+
+    def test_log_new_pipe_connection_lines(self):
+        from xpra.platform.win32.namedpipes import connection as npc
+        s = self._server("peer-log")
+        try:
+            conn = self._client(s.pipe_name)
+            lines: list = []
+            saved = npc.log
+            npc.log = _CapturingLog(saved, lines)
+            try:
+                npc.log_new_pipe_connection(conn, s.pipe_name)
+            finally:
+                npc.log = saved
+            conn.close()
+            self.assertEqual(len(lines), 3, "expected 3 log lines, got %s" % (lines,))
+            self.assertEqual(lines[0], "New named-pipe connection received")
+            self.assertTrue(lines[1].startswith(" from '"), "unexpected line %r" % lines[1])
+            self.assertIn("pid %i" % os.getpid(), lines[1])
+            # the executable path must not have had its backslashes escaped:
+            self.assertNotIn("\\\\", lines[1])
+            self.assertEqual(lines[2], " on %s" % s.pipe_name)
+        finally:
+            s.stop()
+
+    def test_peer_query_failure_is_not_fatal(self):
+        """An invalid handle must still produce a usable connection object."""
+        from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
+        from xpra.platform.win32.namedpipes.common import INVALID_HANDLE_VALUE
+        conn = NamedPipeConnection("test", INVALID_HANDLE_VALUE, {}, server_side=True)
+        self.assertEqual(conn.peer_info, {})
+        self.assertNotIn("peer", conn.get_info())
 
 
 def main():

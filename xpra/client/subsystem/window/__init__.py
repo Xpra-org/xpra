@@ -35,8 +35,6 @@ def get_window_client_base_classes() -> tuple[type, ...]:
     if features.systray:
         from xpra.client.subsystem.window.tray import WindowTray
         classes.append(WindowTray)
-    from xpra.client.subsystem.window.wheel import WindowWheel
-    classes.append(WindowWheel)
     from xpra.client.subsystem.window.window_icon import WindowIcon
     classes.append(WindowIcon)
     return tuple(classes)

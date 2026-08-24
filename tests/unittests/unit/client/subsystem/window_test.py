@@ -6,6 +6,7 @@
 
 import unittest
 
+from xpra.net.packet_type import WINDOW_STACKING
 from xpra.util.objects import AdHocStruct
 from unit.process_test_util import DisplayContext
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
@@ -33,9 +34,16 @@ class WindowManagerTest(ClientMixinTest):
             opts.window_close = "forward"
             opts.modal_windows = True
             opts.border = "red"
-            opts.mousewheel = "yes"
             opts.tray_icon = "yes"
-            self._test_mixin_class(WindowClient, opts)
+            self._test_mixin_class(WindowClient, opts, {"window": {"stacking": True}})
+            self.mixin.send_window_stacking((3, 1, 3, 2))
+            self.verify_packet(-1, (WINDOW_STACKING, [3, 1, 2]))
+            packet_count = len(self.packets)
+            self.mixin.send_window_stacking((3, 1, 2))
+            self.assertEqual(len(self.packets), packet_count)
+            self.mixin.server_window_stacking = False
+            self.mixin.send_window_stacking((2, 1))
+            self.assertEqual(len(self.packets), packet_count)
 
 
 def main():

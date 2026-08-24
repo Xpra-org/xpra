@@ -11,6 +11,10 @@ import unittest
 
 class TestDisplayUtil(unittest.TestCase):
 
+    def test_client_list_stacking_supported(self):
+        from xpra.x11.common import DEFAULT_NET_SUPPORTED
+        self.assertIn("_NET_CLIENT_LIST_STACKING", DEFAULT_NET_SUPPORTED)
+
     def test_repr(self):
         from xpra.x11.common import X11Event, REPR_FUNCTIONS
 

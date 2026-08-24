@@ -168,7 +168,7 @@ class SharingServer(StubSubsystem):
                 return f"{ConnectionMessage.SERVER_SHUTDOWN}:last client has exited"
         return ""
 
-    def _process_sharing_toggle(self, proto, packet: Packet) -> None:
+    def _process_toggle(self, proto, packet: Packet) -> None:
         assert self.sharing is None
         ss = self.get_server_source(proto)
         if not ss:
@@ -182,7 +182,7 @@ class SharingServer(StubSubsystem):
                     self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
                                                   f"client {ss.counter} no longer wishes to share the session")
 
-    def _process_sharing_lock(self, proto, packet: Packet) -> None:
+    def _process_lock(self, proto, packet: Packet) -> None:
         assert self.lock is None
         if ss := self.get_server_source(proto):
             ss.lock = packet.get_bool(1)

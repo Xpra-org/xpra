@@ -147,6 +147,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         log("do_owner_changed() enabled=%s, elapsed=%s", self._enabled, elapsed)
         if not self._enabled or elapsed < BLOCK_DELAY:
             return
+        self._clipboard_origin = ""
         self.schedule_emit_token()
 
     def get_contents(self, target: str, got_contents: ClipboardCallback, time=0) -> None:

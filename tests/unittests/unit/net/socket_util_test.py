@@ -320,6 +320,47 @@ class TestCloseSockets(unittest.TestCase):
         assert cleanup_called
 
 
+def has_ipv6(host="::1") -> bool:
+    """
+        `socket.has_ipv6` only tells us that Python was built with IPv6 support,
+        it does not tell us that this host can bind `host`:
+        kernels booted with `ipv6.disable=1` cannot even create an IPv6 socket,
+        and hosts with `net.ipv6.conf.all.disable_ipv6=1` can create one
+        but have no address left to bind it to.
+    """
+    if not socket.has_ipv6:
+        return False
+    try:
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    except OSError:
+        return False
+    try:
+        sock.bind((host, 0))
+    except OSError:
+        return False
+    finally:
+        sock.close()
+    return True
+
+
+class TestHasIPv6(unittest.TestCase):
+
+    def test_unassigned_address(self):
+        # the probe must bind and not just create a socket:
+        # this RFC 3849 documentation address is never assigned to a local interface
+        assert not has_ipv6("2001:db8::1")
+
+    def test_loopback_can_be_bound(self):
+        # whatever the probe says yes to must really be bindable:
+        if not has_ipv6():
+            self.skipTest("no IPv6 support on this host")
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        try:
+            sock.bind(("::1", 0))
+        finally:
+            sock.close()
+
+
 class TestCreateTcpSocket(unittest.TestCase):
 
     def test_ipv4(self):
@@ -330,8 +371,8 @@ class TestCreateTcpSocket(unittest.TestCase):
             sock.close()
 
     def test_ipv6(self):
-        if not socket.has_ipv6:
-            return
+        if not has_ipv6():
+            self.skipTest("no IPv6 support on this host")
         sock = create_tcp_socket("::1", 0)
         try:
             assert sock.family == socket.AF_INET6
@@ -695,7 +736,9 @@ class TestSocketFastRead(unittest.TestCase):
         finally:
             client.close()
 
-    def test_returns_empty_when_no_data(self):
+    def test_returns_none_when_no_data(self):
+        # the peer is connected but silent: this must be distinguishable from
+        # a closed connection, or slow clients get dropped (see `do_handle_new_connection`)
         from xpra.net.socket_util import socket_fast_read
         from xpra.net.bytestreams import SocketConnection
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -707,12 +750,29 @@ class TestSocketFastRead(unittest.TestCase):
         accepted, _ = server.accept()
         conn = SocketConnection(client, client.getsockname(), ("127.0.0.1", port), ("127.0.0.1", port), "tcp")
         try:
-            data = socket_fast_read(conn, timeout=0.02)
-            assert data == b""
+            assert socket_fast_read(conn, timeout=0.02) is None
         finally:
             accepted.close()
             client.close()
             server.close()
+
+    def test_returns_empty_when_closed(self):
+        from xpra.net.socket_util import socket_fast_read
+        from xpra.net.bytestreams import SocketConnection
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(("127.0.0.1", port))
+        accepted, _ = server.accept()
+        accepted.close()
+        server.close()
+        conn = SocketConnection(client, client.getsockname(), ("127.0.0.1", port), ("127.0.0.1", port), "tcp")
+        try:
+            assert socket_fast_read(conn, timeout=1) == b""
+        finally:
+            client.close()
 
 
 @unittest.skipUnless(sys.platform.startswith("linux"), "TCP_INFO only on Linux")

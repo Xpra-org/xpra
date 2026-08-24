@@ -138,9 +138,10 @@ class NetworkListener(StubClientSubsystem):
     def handle_new_connection(self, listener: SocketListener) -> None:
         socktype = listener.socktype
         if socktype == "named-pipe":
-            from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-            conn = NamedPipeConnection(listener.socket.pipe_name, listener.socket.pending_handle, listener.options)
-            log.info("New %s connection received on %s", socktype, conn.target)
+            from xpra.platform.win32.namedpipes.connection import NamedPipeConnection, log_new_pipe_connection
+            conn = NamedPipeConnection(listener.socket.pipe_name, listener.socket.pending_handle, listener.options,
+                                       server_side=True)
+            log_new_pipe_connection(conn, conn.target)
             self.client.make_protocol(conn)
             return
         conn = accept_connection(listener, SOCKET_TIMEOUT)

@@ -59,12 +59,12 @@ class BandwidthManager(StubSubsystem):
             }
         return caps
 
-    def _process_bandwidth_status(self, proto, packet: Packet) -> None:
+    def _process_status(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.update_connection_data(packet.get_dict(1))
 
-    def _process_bandwidth_limit(self, proto, packet: Packet) -> None:
-        log("_process_bandwidth_limit(%s, %s)", proto, packet)
+    def _process_limit(self, proto, packet: Packet) -> None:
+        log("_process_limit(%s, %s)", proto, packet)
         ss = self.get_server_source(proto)
         if not ss:
             return

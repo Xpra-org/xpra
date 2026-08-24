@@ -1505,3 +1505,19 @@ cdef extern from "wlr/types/wlr_xdg_activation_v1.h":
 
     wlr_xdg_activation_v1 *wlr_xdg_activation_v1_create(wl_display *display)
     const char *wlr_xdg_activation_token_v1_get_name(wlr_xdg_activation_token_v1 *token)
+
+
+cdef extern from "wlr/types/wlr_xdg_system_bell_v1.h":
+    cdef struct wlr_xdg_system_bell_v1_events:
+        wl_signal destroy
+        wl_signal ring
+
+    cdef struct wlr_xdg_system_bell_v1:
+        # wl_global *global
+        wlr_xdg_system_bell_v1_events events
+
+    cdef struct wlr_xdg_system_bell_v1_ring_event:
+        wl_client *client
+        wlr_surface *surface
+
+    wlr_xdg_system_bell_v1 *wlr_xdg_system_bell_v1_create(wl_display *display, uint32_t version)

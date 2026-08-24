@@ -15,12 +15,12 @@ from xpra.util.env import OSEnvContext
 class TestDisplayUtil(ServerTestUtil):
 
     def test_display(self):
-        from xpra.gtk.util import verify_gdk_display
+        from xpra.gtk.util import open_gdk_display
         with OSEnvContext():
             os.environ["GDK_BACKEND"] = "x11"
             os.environ.pop("DISPLAY", None)
             for d in ("NOTADISPLAY", ""):
-                if verify_gdk_display(d):
+                if open_gdk_display(d):
                     raise RuntimeError(f"{d!r} is not a valid display")
 
             display = self.find_free_display()
@@ -28,7 +28,16 @@ class TestDisplayUtil(ServerTestUtil):
             os.environ["DISPLAY"] = display
             from xpra.x11.bindings.display_source import X11DisplayContext    #@UnresolvedImport
             with X11DisplayContext(display):
-                verify_gdk_display(display)
+                gdk_display = open_gdk_display(display)
+                if gdk_display:
+                    # close the connection before killing the Xvfb below,
+                    # or GDK will terminate this process with an X11 IO error
+                    # the next time any test iterates a GTK main loop.
+                    # the reference must be dropped here too: GDK does a final
+                    # `XSync` when the display object is finalized,
+                    # which is fatal once the Xvfb is gone
+                    gdk_display.close()
+                    del gdk_display
             xvfb.terminate()
 
 

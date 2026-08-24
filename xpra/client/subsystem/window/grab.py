@@ -6,7 +6,7 @@
 import os
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -51,6 +51,10 @@ def should_force_grab(metadata: typedict) -> bool:
 
 class WindowGrab(StubClientSubsystem):
     __slots__ = ()
+    # these mixins are all composed into a single `WindowClient` instance,
+    # which is the subsystem registered as `window`: declaring the prefix here
+    # too keeps each mixin usable (and testable) on its own
+    PREFIX = "window"
     SLOT_NAMES = ("_window_with_grab", "pointer_grabbed")
 
     def __init__(self):
@@ -76,14 +80,14 @@ class WindowGrab(StubClientSubsystem):
         # ungrab via dedicated server packet:
         self.client.send_force_ungrab(wid)
 
-    def _process_pointer_grab(self, packet: Packet) -> None:
+    def _process_grab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log("grabbing %#x: %s", wid, window)
         if window:
             self.client.window_grab(wid, window)
 
-    def _process_pointer_ungrab(self, packet: Packet) -> None:
+    def _process_ungrab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log("ungrabbing %#x: %s", wid, window)
@@ -92,4 +96,7 @@ class WindowGrab(StubClientSubsystem):
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("pointer-grab", "pointer-ungrab", main_thread=True)
+        self.add_packets("window-grab", "window-ungrab", main_thread=True)
+        if BACKWARDS_COMPATIBLE:
+            self.add_legacy_alias("pointer-grab", "window-grab")
+            self.add_legacy_alias("pointer-ungrab", "window-ungrab")

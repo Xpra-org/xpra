@@ -168,7 +168,7 @@ class PrinterServer(StubSubsystem):
         self.server.send_disconnect(proto, ConnectionMessage.DONE)
         return True
 
-    def _process_printer_file(self, _proto, packet: Packet) -> None:
+    def _process_file(self, _proto, packet: Packet) -> None:
         code, message = self.do_print_file(packet)
         if code != ExitCode.OK:
             log.warn(message)
@@ -256,7 +256,7 @@ class PrinterServer(StubSubsystem):
         log(message)
         return ExitCode.OK if sent > 0 else ExitCode.REMOTE_ERROR, message
 
-    def _process_printer_devices(self, proto, packet: Packet) -> None:
+    def _process_devices(self, proto, packet: Packet) -> None:
         if not self.file_transfer.printing or WIN32:
             log.error("Error: received printer definitions data")
             log.error(" but this server does not support printer forwarding")

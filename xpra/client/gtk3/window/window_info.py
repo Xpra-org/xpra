@@ -148,7 +148,7 @@ class WindowInfo(Gtk.Window):
         self.fps_label = lrow("Frames Per Second")
         sep()
         self.gravity_label = lrow("Gravity")
-        self.content_type_label = lrow("Content Type")
+        self.content_types_label = lrow("Content Types")
         sep()
         self.pixel_depth_label = lrow("Pixel Depth")
         self.alpha_image = irow("Alpha Channel")
@@ -204,7 +204,7 @@ class WindowInfo(Gtk.Window):
             "focused": w._focused,
             "buttons": csv(b for b, s in w.button_pressed.items() if s) or "none",
             "gravity": gravity_str(w.window_gravity),
-            "content-type": w.content_type or "unknown",
+            "content-types": csv(w.content_types) or "unknown",
             "pixel-depth": w.pixel_depth or 24,
             "alpha": w._window_alpha,
             "opengl": w.is_GL(),
@@ -256,7 +256,7 @@ class WindowInfo(Gtk.Window):
         self.fps_label.set_text(fps)
         # self.group_leader_label.set_text(str(w.group_leader))
         self.gravity_label.set_text(gravity_str(w.window_gravity))
-        self.content_type_label.set_text(w.content_type or "unknown")
+        self.content_types_label.set_text(csv(w.content_types) or "unknown")
         # geometry:
         self.pixel_depth_label.set_text(str(w.pixel_depth or 24))
         self.bool_icon(self.alpha_image, w._window_alpha)

@@ -41,12 +41,18 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         self.get_subsystem("display").connect_compositor(self.compositor)
         if cursor := self.get_subsystem("cursor"):
             cursor.connect_compositor(self.compositor)
+        if bell := self.get_subsystem("bell"):
+            bell.connect_compositor(self.compositor)
 
     def get_child_env(self) -> dict[str, str]:
         env: dict[str, str] = super().get_child_env()
         if os.environ.get("NO_AT_BRIDGE") is None:
             env["NO_AT_BRIDGE"] = "1"
         return env
+
+    def get_bell_subsystem_class(self) -> type:
+        from xpra.wayland.server.subsystem.bell import WaylandBellServer
+        return WaylandBellServer
 
     def get_clipboard_subsystem_class(self) -> type:
         from xpra.wayland.server.subsystem.clipboard import WaylandClipboardManager

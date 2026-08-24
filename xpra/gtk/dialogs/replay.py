@@ -204,6 +204,229 @@ class TimelineScale(Gtk.DrawingArea):
         self._seek_cb(self._x_to_ms(x, tx, tw))
 
 
+class InputStateView(Gtk.DrawingArea):
+    """Mouse buttons and keyboard keys currently held in the recording."""
+
+    HEIGHT = 180
+    KEY_HEIGHT = 28
+    DEFAULT_MODIFIERS = ("Shift", "Ctrl", "Alt", "Super")
+    KEY_LABELS = {
+        "Control": "Ctrl",
+        "Escape": "Esc",
+        "ISO Level3 Shift": "AltGr",
+        "Return": "Enter",
+        "space": "Space",
+    }
+
+    def __init__(self, modifier_names: tuple[str, ...] = ()):
+        check_main_thread()
+        super().__init__()
+        self.buttons: tuple[int, ...] = ()
+        self.keys: tuple[tuple[str, bool], ...] = ()
+        self.modifiers = list(self.DEFAULT_MODIFIERS)
+        for name in modifier_names:
+            self._add_modifier(name)
+        self.set_size_request(-1, self.HEIGHT)
+        self.connect("draw", self._on_draw)
+
+    @classmethod
+    def key_label(cls, name: str) -> str:
+        label = name
+        if label.endswith(("_L", "_R")):
+            label = label[:-2]
+        label = label.replace("_", " ")
+        if label.startswith("KP "):
+            label = "Num " + label[3:]
+        return cls.KEY_LABELS.get(label, label)
+
+    def _add_modifier(self, name: str) -> None:
+        label = self.key_label(name)
+        if label not in self.modifiers:
+            self.modifiers.append(label)
+
+    def set_state(self, buttons: tuple[int, ...], keys: tuple[tuple[str, bool], ...]) -> None:
+        state = tuple(buttons), tuple(keys)
+        if state == (self.buttons, self.keys):
+            return
+        self.buttons, self.keys = state
+        for name, is_modifier in keys:
+            if is_modifier:
+                self._add_modifier(name)
+        self.queue_draw()
+
+    @staticmethod
+    def _set_color(cr: cairo.Context, pressed: bool) -> None:
+        if pressed:
+            cr.set_source_rgb(0, 0, 0)
+        else:
+            cr.set_source_rgb(1, 1, 1)
+
+    @staticmethod
+    def _text(cr: cairo.Context, text: str, cx: float, cy: float, pressed: bool, size: float = 11) -> None:
+        cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        cr.set_font_size(size)
+        extents = cr.text_extents(text)
+        cr.set_source_rgb(*(1, 1, 1) if pressed else (0, 0, 0))
+        cr.move_to(cx - extents.width / 2 - extents.x_bearing,
+                   cy - extents.height / 2 - extents.y_bearing)
+        cr.show_text(text)
+
+    @staticmethod
+    def _rounded_rect(cr: cairo.Context, x: float, y: float,
+                      width: float, height: float, radius: float) -> None:
+        TimelineScale._rounded_rect(cr, x, y, width, height, radius)
+
+    def _draw_pointer(self, cr: cairo.Context, width: int) -> None:
+        mouse_w, mouse_h = 76, 82
+        x, y = (width - mouse_w) / 2, 3
+        button_h = 31
+
+        # White mouse body, then clipped black fills for held left/right buttons.
+        self._rounded_rect(cr, x, y, mouse_w, mouse_h, 24)
+        cr.set_source_rgb(1, 1, 1)
+        cr.fill()
+        cr.save()
+        self._rounded_rect(cr, x, y, mouse_w, mouse_h, 24)
+        cr.clip()
+        if 1 in self.buttons:
+            cr.set_source_rgb(0, 0, 0)
+            cr.rectangle(x, y, mouse_w / 2, button_h)
+            cr.fill()
+        if 3 in self.buttons:
+            cr.set_source_rgb(0, 0, 0)
+            cr.rectangle(x + mouse_w / 2, y, mouse_w / 2, button_h)
+            cr.fill()
+        cr.restore()
+
+        cr.set_line_width(1.5)
+        cr.set_source_rgb(0, 0, 0)
+        self._rounded_rect(cr, x, y, mouse_w, mouse_h, 24)
+        cr.stroke()
+        cr.move_to(x, y + button_h)
+        cr.line_to(x + mouse_w, y + button_h)
+        cr.stroke()
+        cr.move_to(x + mouse_w / 2, y)
+        cr.line_to(x + mouse_w / 2, y + button_h)
+        cr.stroke()
+
+        self._text(cr, "1", x + mouse_w / 4, y + button_h / 2, 1 in self.buttons)
+        self._text(cr, "3", x + mouse_w * 3 / 4, y + button_h / 2, 3 in self.buttons)
+
+        # The middle button is represented by the wheel.
+        wheel_w, wheel_h = 13, 24
+        wheel_x = x + (mouse_w - wheel_w) / 2
+        wheel_y = y + 8
+        self._set_color(cr, 2 in self.buttons)
+        self._rounded_rect(cr, wheel_x, wheel_y, wheel_w, wheel_h, wheel_w / 2)
+        cr.fill_preserve()
+        cr.set_source_rgb(*(1, 1, 1) if 2 in self.buttons else (0, 0, 0))
+        cr.stroke()
+        self._text(cr, "2", wheel_x + wheel_w / 2, wheel_y + wheel_h / 2,
+                   2 in self.buttons, 9)
+
+        # Less common held buttons remain visible next to the mouse.
+        extra_buttons = tuple(button for button in self.buttons if button > 3)
+        extra_x = x + mouse_w + 12
+        for button in extra_buttons:
+            self._draw_key(cr, f"B{button}", extra_x, y + 28, True, 36)
+            extra_x += 42
+
+    @staticmethod
+    def _draw_timeline_legend(cr: cairo.Context, width: int, color) -> None:
+        """Draw the timeline key in the free space beside the virtual pointer."""
+        mouse_w = 76
+        mouse_x = (width - mouse_w) / 2
+        legend_w, gap = 140, 20
+        if mouse_x < legend_w + gap:
+            return
+        x = mouse_x - legend_w - gap
+
+        cr.set_source_rgba(color.red, color.green, color.blue, 0.8)
+        cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+        cr.set_font_size(10)
+        cr.move_to(x, 18)
+        cr.show_text("TIMELINE")
+
+        # Match the tall green sync-point ticks drawn across the timeline track.
+        cr.set_source_rgba(0.18, 0.88, 0.42, 0.85)
+        cr.rectangle(x + 7, 27, 2, 22)
+        cr.fill()
+        cr.set_source_rgba(color.red, color.green, color.blue, 0.9)
+        cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        cr.set_font_size(11)
+        cr.move_to(x + 22, 42)
+        cr.show_text("Sync point")
+
+        # Match the low-density amber to high-density red heatmap ramp.
+        gradient = cairo.LinearGradient(x, 59, x + 30, 59)
+        gradient.add_color_stop_rgba(0, 1.0, 0.72, 0.0, 0.3)
+        gradient.add_color_stop_rgba(1, 1.0, 0.10, 0.0, 1.0)
+        cr.set_source(gradient)
+        cr.rectangle(x, 54, 30, 10)
+        cr.fill()
+        cr.set_source_rgba(color.red, color.green, color.blue, 0.9)
+        cr.move_to(x + 38, 63)
+        cr.show_text("Event density")
+
+    def _draw_key(self, cr: cairo.Context, label: str, x: float, y: float,
+                  pressed: bool, width: float = 0) -> float:
+        if not width:
+            cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+            cr.set_font_size(11)
+            width = max(42, min(132, cr.text_extents(label).width + 20))
+        self._set_color(cr, pressed)
+        self._rounded_rect(cr, x, y, width, self.KEY_HEIGHT, 4)
+        cr.fill_preserve()
+        # A light outline keeps a black pressed key visible on dark themes.
+        cr.set_source_rgb(*(1, 1, 1) if pressed else (0, 0, 0))
+        cr.set_line_width(1.2)
+        cr.stroke()
+        self._text(cr, label, x + width / 2, y + self.KEY_HEIGHT / 2, pressed)
+        return width
+
+    def _draw_keyboard(self, cr: cairo.Context, width: int) -> None:
+        active_modifiers: set[str] = set()
+        pressed_keys: list[str] = []
+        for name, is_modifier in self.keys:
+            label = self.key_label(name)
+            if is_modifier or label in self.modifiers:
+                active_modifiers.add(label)
+            else:
+                pressed_keys.append(label)
+
+        # The modifiers are always present; other keys appear only while held.
+        keys = [(label, label in active_modifiers) for label in self.modifiers]
+        keys += [(label, True) for label in pressed_keys]
+        x, y = 8.0, 115.0
+        for label, pressed in keys:
+            cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+            cr.set_font_size(11)
+            key_width = max(42, min(132, cr.text_extents(label).width + 20))
+            if x > 8 and x + key_width > width - 8:
+                x = 8
+                y += self.KEY_HEIGHT + 6
+            self._draw_key(cr, label, x, y, pressed, key_width)
+            x += key_width + 6
+
+    def _on_draw(self, widget, cr: cairo.Context) -> None:
+        allocation = widget.get_allocation()
+        self._draw_pointer(cr, allocation.width)
+
+        style_color = widget.get_style_context().get_color(Gtk.StateFlags.NORMAL)
+        self._draw_timeline_legend(cr, allocation.width, style_color)
+        cr.set_source_rgba(style_color.red, style_color.green, style_color.blue, 0.4)
+        cr.set_line_width(1)
+        cr.move_to(4, 96.5)
+        cr.line_to(allocation.width - 4, 96.5)
+        cr.stroke()
+        cr.set_source_rgba(style_color.red, style_color.green, style_color.blue, 0.8)
+        cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+        cr.set_font_size(10)
+        cr.move_to(8, 108)
+        cr.show_text("KEYBOARD")
+        self._draw_keyboard(cr, allocation.width)
+
+
 class EventLog(Gtk.ScrolledWindow):
     """Scrollable log of non-visual events (keyboard, clipboard, pointer buttons)."""
 
@@ -277,7 +500,7 @@ class ControlWindow:
         self.replay = replay
 
         win = Gtk.Window(title="Xpra Replay")
-        win.set_default_size(720, 280)
+        win.set_default_size(720, 460)
         win.set_resizable(True)
         win.set_keep_above(True)
         win.connect("delete-event", lambda *_: replay.quit(ExitCode.OK))
@@ -318,6 +541,11 @@ class ControlWindow:
         self.speed_spin = Gtk.SpinButton(adjustment=adj, digits=2)
         self.speed_spin.connect("value-changed", self.speed_changed)
         row.pack_start(self.speed_spin, False, False, 0)
+
+        # Visual state of the recorded pointer and keyboard.
+        self.input_state = InputStateView(replay.get_modifier_keys())
+        outer.pack_start(self.input_state, False, False, 0)
+        replay.set_input_state_callback(self.input_state.set_state)
 
         # Event log
         self.event_log = EventLog()

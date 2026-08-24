@@ -10,12 +10,13 @@ from ctypes import (
     WinDLL,  # @UnresolvedImport
     POINTER, Structure, Union, c_void_p, c_ubyte, addressof,
 )
-from ctypes.wintypes import DWORD, ULONG, HANDLE, BOOL, INT, BYTE, WORD, LPCSTR
+from ctypes.wintypes import DWORD, ULONG, HANDLE, BOOL, INT, BYTE, WORD, LPCSTR, LPSTR
 
 from xpra.platform.win32.constants import WAIT_ABANDONED, WAIT_OBJECT_0, WAIT_TIMEOUT, WAIT_FAILED
 from xpra.platform.win32.common import LPSECURITY_ATTRIBUTES
 
 PDWORD = POINTER(DWORD)
+PULONG = POINTER(ULONG)
 PHANDLE = POINTER(HANDLE)
 LPDWORD = POINTER(DWORD)
 PVOID = c_void_p
@@ -97,6 +98,26 @@ FlushFileBuffers.restype = BOOL
 GetLastError = kernel32.GetLastError
 GetLastError.argtypes = []
 GetLastError.restype = DWORD
+# peer identification.
+# these must all be called whilst the pipe is still connected:
+# once the peer has closed its end, they fail with `ERROR_PIPE_NOT_CONNECTED`
+GetNamedPipeClientProcessId = kernel32.GetNamedPipeClientProcessId
+GetNamedPipeClientProcessId.argtypes = [HANDLE, PULONG]
+GetNamedPipeClientProcessId.restype = BOOL
+GetNamedPipeServerProcessId = kernel32.GetNamedPipeServerProcessId
+GetNamedPipeServerProcessId.argtypes = [HANDLE, PULONG]
+GetNamedPipeServerProcessId.restype = BOOL
+GetNamedPipeClientSessionId = kernel32.GetNamedPipeClientSessionId
+GetNamedPipeClientSessionId.argtypes = [HANDLE, PULONG]
+GetNamedPipeClientSessionId.restype = BOOL
+GetNamedPipeServerSessionId = kernel32.GetNamedPipeServerSessionId
+GetNamedPipeServerSessionId.argtypes = [HANDLE, PULONG]
+GetNamedPipeServerSessionId.restype = BOOL
+# unlike the calls above, this one only returns something for clients
+# connecting over SMB / IPC$: it fails with `ERROR_PIPE_NOT_CONNECTED` for local clients
+GetNamedPipeClientComputerNameA = kernel32.GetNamedPipeClientComputerNameA
+GetNamedPipeClientComputerNameA.argtypes = [HANDLE, LPSTR, ULONG]
+GetNamedPipeClientComputerNameA.restype = BOOL
 
 advapi32 = WinDLL("advapi32", use_last_error=True)
 OpenProcessToken = advapi32.OpenProcessToken

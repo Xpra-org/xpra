@@ -19,6 +19,7 @@ digraph Subsystems {
         color="#8ea9c2"; style="rounded,filled"; fillcolor="#f4f8fc";
         Window [label="window"]; Keyboard [label="keyboard"]; Pointer [label="pointer"];
         Display [label="display"]; Cursor [label="cursor"]; OpenGL [label="opengl"]; Bell [label="bell"];
+        BellSrv [label="bell server"];
         {rank=same; Window; Keyboard; Pointer;}
     }
 
@@ -32,7 +33,7 @@ digraph Subsystems {
     subgraph cluster_X11Ext {
         label="X11-only extensions";
         color="#8ea9c2"; style="rounded,filled"; fillcolor="#f4f8fc";
-        ICC [label="icc"]; BellSrv [label="bell server"]; SysTray [label="systray"];
+        ICC [label="icc"]; SysTray [label="systray"];
     }
 
     subgraph cluster_UI {
@@ -63,7 +64,8 @@ digraph Subsystems {
     Display -> Cursor; Display -> OpenGL; Display -> Bell;
     GStreamer -> Audio; Audio -> Pulseaudio; Audio -> AVSync;
     GStreamer -> Webcam [style=dashed]; GStreamer -> Encoding [style=dashed];
-    X11 -> ICC; Display -> ICC; X11 -> BellSrv; Bell -> BellSrv; X11 -> SysTray;
+    X11 -> ICC; Display -> ICC; X11 -> SysTray;
+    X11 -> BellSrv; Wayland -> BellSrv; Bell -> BellSrv;
     GTK -> Tray; SysTray -> Tray [style=dashed];
     SSL -> HTTP [style=dashed]; SSH -> SSHAgent;
     Printer -> FileT; DBus -> Notification; DBus -> Tray [style=dashed];

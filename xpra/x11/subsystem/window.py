@@ -103,7 +103,7 @@ class SeamlessWindowServer(WindowServer):
         self._focus_history: deque[int] = deque(maxlen=100)
         self._has_grab = 0
         self._has_focus = 0
-        self.last_raised = None
+        self.last_raised = 0
         self._exit_with_windows = False
         self.configure_damage_timers: dict[int, int] = {}
         self.snc_timer = 0
@@ -202,7 +202,7 @@ class SeamlessWindowServer(WindowServer):
     # --------------------------------------------------------------------
 
     def _new_window_signaled(self, _wm, window) -> None:
-        self.last_raised = None
+        self.last_raised = 0
         self._add_new_window(window)
 
     def do_x11_child_map_event(self, event: X11Event) -> None:
@@ -400,7 +400,7 @@ class SeamlessWindowServer(WindowServer):
     def _focus(self, server_source, wid: int, modifiers) -> None:
         focuslog("focus wid=%#x has_focus=%#x", wid, self._has_focus)
         if self.last_raised != wid:
-            self.last_raised = None
+            self.last_raised = 0
         if self._has_focus == wid:
             return
         self._focus_history.append(wid)
@@ -495,7 +495,7 @@ class SeamlessWindowServer(WindowServer):
             return
         self._has_grab = grab_id
         for ss in self.window_sources():
-            ss.pointer_grab(self._has_grab)
+            ss.window_grab(self._has_grab)
 
     def _window_ungrab(self, window, event) -> None:
         grab_id = self.get_wid(window)
@@ -505,7 +505,7 @@ class SeamlessWindowServer(WindowServer):
             return
         self._has_grab = 0
         for ss in self.window_sources():
-            ss.pointer_ungrab(grab_id)
+            ss.window_ungrab(grab_id)
 
     def _initiate_moveresize(self, window, event) -> None:
         geomlog("initiate_moveresize(%s, %s)", window, event)
@@ -522,7 +522,7 @@ class SeamlessWindowServer(WindowServer):
         wid = self.get_wid(window)
         focuslog("restack window(%s) wid=%#x, current focus=%s", (window, detail, sibling), wid, self._has_focus)
         if self.last_raised != wid:
-            self.last_raised = None
+            self.last_raised = 0
         if detail == 0 and self._has_focus == wid:
             return
         for ss in self.window_sources():
@@ -586,6 +586,22 @@ class SeamlessWindowServer(WindowServer):
         geomlog("resolved client monitor %i position %s to %s", index, position, resolved)
         return x, y, geometry[2], geometry[3]
 
+    def update_window_stacking(self, wids: Sequence[int]) -> None:
+        if not self._wm:
+            return
+        stacking = []
+        seen = set()
+        for wid in wids:
+            window = self.get_window(wid)
+            if not window or window.is_OR() or window.is_tray():
+                continue
+            xid = window.get_property("xid")
+            if xid not in seen:
+                seen.add(xid)
+                stacking.append(xid)
+        windowlog("client window stacking order: %s", stacking)
+        self._wm.update_window_stacking(stacking)
+
     @staticmethod
     def client_configure_window(win, geometry, resize_counter: int = 0) -> None:
         log("client_configure_window(%s, %s, %s)", win, geometry, resize_counter)
@@ -626,7 +642,7 @@ class SeamlessWindowServer(WindowServer):
     # packet handlers
     # --------------------------------------------------------------------
 
-    def _process_window_map(self, proto, packet: Packet) -> None:
+    def _process_map(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         if not (ss := self.get_server_source(proto)):
@@ -663,7 +679,7 @@ class SeamlessWindowServer(WindowServer):
             self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_window_unmap(self, proto, packet: Packet) -> None:
+    def _process_unmap(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
         wid = packet.get_wid()
@@ -837,7 +853,7 @@ class SeamlessWindowServer(WindowServer):
         with xswallow:
             window.raise_window()
 
-    def _process_window_close(self, proto, packet: Packet) -> None:
+    def _process_close(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         windowlog("client closed window %s - %s", wid, window)
@@ -847,7 +863,7 @@ class SeamlessWindowServer(WindowServer):
             windowlog("cannot close window %s: it is already gone!", wid)
         self.repaint_root_overlay()
 
-    def _process_window_signal(self, proto, packet: Packet) -> None:
+    def _process_signal(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         sig = packet.get_str(2)
         if sig not in WINDOW_SIGNALS:
@@ -867,7 +883,7 @@ class SeamlessWindowServer(WindowServer):
             os.kill(pid, sigval)
             log.info(f"sent signal {sig!r} to pid {pid} for window {wid:#x}")
         except Exception as e:
-            log("_process_window_signal(%s, %s)", proto, packet, exc_info=True)
+            log("_process_signal(%s, %s)", proto, packet, exc_info=True)
             log.error(f"Error: failed to send signal {sig!r} to pid {pid} for window {wid:#x}")
             log.estr(e)
 

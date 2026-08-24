@@ -139,7 +139,7 @@ DEFAULT_METADATA_SUPPORTED = (
     "opaque-region",
     "command", "workspace", "above", "below", "sticky",
     "set-initial-position", "requested-position",
-    "content-type", "content-types",
+    "content-types",
     "parent", "relative-position",
     "actions",
     "colourspace",

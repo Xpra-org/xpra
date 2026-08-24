@@ -418,7 +418,7 @@ class KeyboardHelper:
                 v = getattr(self, f"{x}_option", "")
             if not v:
                 v = getattr(self, x)
-            if v:
+            if v or isinstance(v, bool):
                 props[x] = v
         return props
 

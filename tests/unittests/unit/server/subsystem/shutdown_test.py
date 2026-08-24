@@ -7,6 +7,7 @@
 import unittest
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.dispatch import find_packet_handler
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import SHUTDOWN_SERVER, EXIT_SERVER
 from xpra.server import ServerExitMode
@@ -49,6 +50,14 @@ class ShutdownTest(unittest.TestCase):
         self.shutdown = ShutdownServer(self.server)
         self.shutdown.init_packet_handlers()
 
+    def get_handler(self, packet_type: str):
+        # `shutdown-*` packets live on the subsystem itself, which is what the
+        # server's dispatcher routes to; the legacy `exit-server` name is outside
+        # the subsystem's namespace, so it lands in the server's flat registry:
+        if found := find_packet_handler({self.shutdown.PREFIX: self.shutdown}, packet_type):
+            return found[2]
+        return self.server.packet_handlers[packet_type][0]
+
     def test_handlers_and_features(self) -> None:
         self.assertEqual(set(self.server.hello_request_handlers), {"exit", "stop"})
         # `exit-server` is only a separate packet in backwards-compatible mode,
@@ -56,22 +65,23 @@ class ShutdownTest(unittest.TestCase):
         expected = {SHUTDOWN_SERVER}
         if BACKWARDS_COMPATIBLE:
             expected.add(EXIT_SERVER)
-        self.assertEqual(set(self.server.packet_handlers), expected)
+        registered = set(self.server.packet_handlers) | set(self.shutdown.get_packet_types())
+        self.assertEqual(registered, expected)
         self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": self.shutdown.client_shutdown})
 
     def test_exit_request(self) -> None:
         if BACKWARDS_COMPATIBLE:
-            self.server.packet_handlers[EXIT_SERVER][0](None, Packet(EXIT_SERVER, "restart"))
+            self.get_handler(EXIT_SERVER)(None, Packet(EXIT_SERVER, "restart"))
         else:
             # exit is requested via a `shutdown-server` packet with the exit flag set:
-            self.server.packet_handlers[SHUTDOWN_SERVER][0](None, Packet(SHUTDOWN_SERVER, True, "restart"))
+            self.get_handler(SHUTDOWN_SERVER)(None, Packet(SHUTDOWN_SERVER, True, "restart"))
         self.assertEqual(self.server.cleanup_reasons, ["restart"])
         self.assertEqual(self.server.quit_modes, [ServerExitMode.EXIT])
 
     def test_shutdown_request(self) -> None:
         self.shutdown.client_shutdown = True
         # a `shutdown-server` packet without the exit flag requests a shutdown:
-        self.server.packet_handlers[SHUTDOWN_SERVER][0](None, Packet(SHUTDOWN_SERVER))
+        self.get_handler(SHUTDOWN_SERVER)(None, Packet(SHUTDOWN_SERVER))
         self.assertEqual(self.server.cleanup_reasons, [ConnectionMessage.SERVER_SHUTDOWN])
         self.assertEqual(self.server.quit_modes, [ServerExitMode.NORMAL])
 

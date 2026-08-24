@@ -259,9 +259,9 @@ class ClipboardClient(StubClientSubsystem):
             "pending-requests", "enable-selections",
             "status",
         ):
-            self.add_packet_handler(f"{ClipboardClient.PREFIX}-{x}", self._process_clipboard_packet, True)
+            self.add_packet_handler(f"{ClipboardClient.PREFIX}-{x}", self._process_packet, True)
         if BACKWARDS_COMPATIBLE:
-            self.add_packet_handler(f"{ClipboardClient.PREFIX}-token", self._process_clipboard_packet, True)
+            self.add_packet_handler(f"{ClipboardClient.PREFIX}-token", self._process_packet, True)
 
     def make_clipboard_helper(self):
         """
@@ -291,16 +291,16 @@ class ClipboardClient(StubClientSubsystem):
         self.client_supports_clipboard = False
         return None
 
-    def _process_clipboard_packet(self, packet: Packet) -> None:
+    def _process_packet(self, packet: Packet) -> None:
         ch = self.clipboard_helper
         packet_type = packet.get_type()
         log("process_clipboard_packet: %s, helper=%s", packet_type, ch)
         if packet_type == "clipboard-status":
-            self._process_clipboard_status(packet)
+            self._process_status(packet)
         elif ch:
             ch.process_clipboard_packet(packet)
 
-    def _process_clipboard_status(self, packet: Packet) -> None:
+    def _process_status(self, packet: Packet) -> None:
         clipboard_enabled = packet.get_bool(1)
         reason = packet.get_str(2)
         if self.clipboard_enabled != clipboard_enabled:

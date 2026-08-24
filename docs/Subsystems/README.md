@@ -74,6 +74,7 @@ graph LR
         Cursor[cursor]
         OpenGL[opengl]
         Bell[bell]
+        BellSrv[bell server]
     end
     Window --> Display
     Keyboard --> Display
@@ -81,6 +82,7 @@ graph LR
     Display --> Cursor
     Display --> OpenGL
     Display --> Bell
+    Bell --> BellSrv
 
     subgraph Media["Media pipeline"]
         GStreamer[gstreamer]
@@ -98,14 +100,13 @@ graph LR
 
     subgraph X11Ext["X11-only extensions"]
         ICC[icc]
-        BellSrv[bell server]
         SysTray[systray]
     end
     X11 --> ICC
     Display --> ICC
-    X11 --> BellSrv
-    Bell --> BellSrv
     X11 --> SysTray
+    X11 --> BellSrv
+    Wayland --> BellSrv
 
     subgraph UI["UI / lifecycle"]
         GTK[gtk]
@@ -147,6 +148,7 @@ graph LR
         Encryption[encryption]
         Sharing[sharing]
         ClientSession[client_session]
+        Settings[settings]
     end
     Printer --> FileT
     DBus --> Notification
@@ -254,6 +256,7 @@ These subsystems handle server-side infrastructure and have no corresponding cli
 | PulseAudio     | [pulseaudio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/pulseaudio.py)     | [audio feature](../Features/Audio.md)            |
 | RFB            | [rfb](https://github.com/Xpra-org/xpra/blob/master/xpra/server/rfb/server.py)                      | n/a                                              |
 | SessionFiles   | [sessionfiles](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/sessionfiles.py) | n/a                                              |
+| Settings       | [settings](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/settings.py)         | n/a                                              |
 | Shutdown       | [shutdown](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/shutdown.py)         | n/a                                              |
 | Splash         | [splash](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/splash.py)             | n/a                                              |
 | Suspend        | [suspend](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/suspend.py)           | n/a                                              |

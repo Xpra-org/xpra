@@ -5,7 +5,10 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import Mock, patch
 
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.dispatch import SubsystemPacketHandlers
 from xpra.util.objects import AdHocStruct
 from unit.test_util import silence_info, stubbable
 from unit.process_test_util import DisplayContext
@@ -13,6 +16,85 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class DisplayClientTest(ClientMixinTest):
+
+    def test_x11_window_stacking(self):
+        with DisplayContext():
+            from xpra.platform.posix.display import X11DisplayPropsWatcher
+
+            def window(xid: int | None):
+                model = Mock()
+                gdkwindow = Mock() if xid else None
+                if gdkwindow:
+                    gdkwindow.get_xid.return_value = xid
+                model.get_window.return_value = gdkwindow
+                return model
+
+            window_client = AdHocStruct()
+            window_client._id_to_window = {
+                1: window(0x101),
+                2: window(0x102),
+                3: window(None),
+            }
+            window_client.send_window_stacking = Mock()
+            display = AdHocStruct()
+            display.get_subsystem = lambda name: window_client if name == "window" else None
+            watcher = X11DisplayPropsWatcher(display, False)
+            with patch("xpra.x11.xroot_props.root_array_get",
+                       return_value=(0x999, 0x102, 0x101)) as root_array_get:
+                watcher._handle_root_prop_changed(None, "_NET_CLIENT_LIST_STACKING")
+            root_array_get.assert_called_once_with("_NET_CLIENT_LIST_STACKING", "window")
+            window_client.send_window_stacking.assert_called_once_with((2, 1))
+
+            window_client.server_window_stacking = True
+            watcher.init_x11_filter = Mock()
+            root_watcher = Mock()
+            with patch("xpra.x11.xroot_props.XRootPropWatcher", return_value=root_watcher) as watcher_class:
+                watcher.do_setup_xprops()
+            watcher_class.assert_called_once_with(["_NET_CLIENT_LIST_STACKING"], ())
+            root_watcher.do_notify.assert_called_once_with("_NET_CLIENT_LIST_STACKING")
+            self.assertIsNone(watcher._xsettings_watcher)
+
+    def test_show_desktop_packet_handlers(self):
+        from xpra.client.subsystem.display import DisplayClient
+
+        class Receiver(SubsystemPacketHandlers):
+            # derive from the real mixin so that `packet_handler_name` (and the
+            # `PREFIX` stripping it does) is exercised, not re-implemented here:
+            PREFIX = DisplayClient.PREFIX
+            screen_sizes = ()
+
+            def __init__(self):
+                self.aliases = {}
+                self.packet_handlers = {}
+
+            def add_legacy_alias(self, legacy_name, new_name):
+                if BACKWARDS_COMPATIBLE:
+                    self.aliases[legacy_name] = new_name
+
+            def add_packets(self, *packet_types, **_kwargs):
+                for packet_type in packet_types:
+                    name = self.packet_handler_name(packet_type)
+                    self.packet_handlers[packet_type] = getattr(DisplayClient, name)
+
+        receiver = Receiver()
+        DisplayClient.init_authenticated_packet_handlers(receiver)
+        self.assertIn("display-show-desktop", receiver.packet_handlers)
+        resize_packet_type = "desktop_size" if BACKWARDS_COMPATIBLE else "display-resized"
+        self.assertIn(resize_packet_type, receiver.packet_handlers)
+        self.assertNotIn("display-resized" if BACKWARDS_COMPATIBLE else "desktop_size", receiver.packet_handlers)
+
+        class Client:
+            can_scale = False
+            _process_resized = DisplayClient._process_resized
+
+        client = Client()
+        receiver.packet_handlers[resize_packet_type](client, Packet(resize_packet_type, 1024, 768, 3840, 2160))
+        self.assertEqual(client.server_actual_desktop_size, (1024, 768))
+        self.assertEqual(client.server_max_desktop_size, (3840, 2160))
+        if BACKWARDS_COMPATIBLE:
+            self.assertEqual(receiver.aliases, {"show-desktop": "display-show-desktop"})
+        else:
+            self.assertEqual(receiver.aliases, {})
 
     def test_display(self):
         with DisplayContext():
@@ -38,13 +120,19 @@ class DisplayClientTest(ClientMixinTest):
             opts.refresh_rate = "20"
             opts.xsettings = False
             with silence_info(display):
+                # the server sends its display attributes in the `display` namespace,
+                # which the client requires with BC=0 (and honours with BC=1):
                 self._test_mixin_class(_DisplayClient, opts, {
-                    "display" : ":999",
-                    "desktop_size" : (1024, 768),
-                    "max_desktop_size" : (3840, 2160),
-                    "actual_desktop_size" : (1024, 768),
-                    "resize_screen" : True,
+                    "display": {
+                        "name": ":999",
+                        "desktop_size": (1024, 768),
+                        "max_desktop_size": (3840, 2160),
+                        "actual_desktop_size": (1024, 768),
+                        "resize_screen": True,
+                    },
                 })
+            self.assertIsNotNone(self.mixin._x11_props)
+            self.assertFalse(self.mixin._x11_props.xsettings_enabled)
             # `get_monitors_info` now calls through to `xpra.platform.gui.get_monitors_info`
             # rather than returning `{}` unconditionally (see the toolkit-split plan):
             called = []

@@ -361,14 +361,14 @@ class WebcamForwarder(StubClientSubsystem):
 
     ######################################################################
     # packet handlers
-    def _process_webcam_stop(self, packet: Packet) -> None:
+    def _process_stop(self, packet: Packet) -> None:
         device_no = packet.get_u64(1)
         log("webcam-stop for device %i", device_no)
         if device_no != self.device_no:
             return
         self.stop_sending_webcam()
 
-    def _process_webcam_ack(self, packet: Packet) -> None:
+    def _process_ack(self, packet: Packet) -> None:
         log("process_webcam_ack: %s", packet)
         with self.lock:
             if self.device:

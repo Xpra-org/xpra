@@ -136,13 +136,11 @@ def ds_inited() -> bool:
     return dsinit
 
 
-def verify_gdk_display(display_name: str):
-    # pylint: disable=import-outside-toplevel
-    # Now we can safely load gtk and connect:
-    try:
-        Gdk = gi_import("Gdk")
-    except ImportError:
-        return None
+def open_gdk_display(display_name: str):
+    # `Gdk.Display.open` dispatches to the backend in use,
+    # so this works for X11, wayland and macos alike.
+    # (GDK has already opened a default display when this module was imported:
+    # whichever one the backend's environment pointed at)
     display = Gdk.Display.open(display_name)
     if not display:
         return None

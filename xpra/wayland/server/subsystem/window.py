@@ -255,6 +255,9 @@ class WaylandWindowServer(WindowServer):
                 sub_ws = ss.subsurface_sources.get(sub_wid)
                 if sub_ws:
                     sub_ws.update_geometry(wid, sx, sy, logical_w, logical_h, native_w, native_h)
+        if mapped and not rects:
+            window.acknowledge_changes()
+            return
         options = {"damage": True}
         last = len(rects) - 1
         for i, (x, y, w, h) in enumerate(rects):
@@ -427,7 +430,7 @@ class WaylandWindowServer(WindowServer):
         source.initiate_moveresize(wid, window, x_root, y_root, int(moveresize), 1,
                                    SOURCE_INDICATION_NORMAL)
 
-    def _process_window_map(self, proto, packet: Packet) -> None:
+    def _process_map(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         surface = self.get_surface(wid)

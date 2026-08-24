@@ -541,7 +541,7 @@ class RFBClientProtocol(RFBProtocol):
             },
             "window-type": ("NORMAL",),
             "has-alpha": False,
-            "content-type": "desktop",
+            "content-types": ("desktop",),
         }
         client_properties = {}
         self._process_packet_cb(self, Packet("new-window", WID, 0, 0, w, h, metadata, client_properties))

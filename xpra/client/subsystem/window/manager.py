@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.platform.gui import get_window_min_size, get_window_max_size, is_session_locked
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, PacketElement
-from xpra.net.packet_type import WINDOW_UNMAP, WINDOW_REFRESH
+from xpra.net.packet_type import WINDOW_UNMAP, WINDOW_REFRESH, WINDOW_STACKING
 from xpra.client.subsystem.window.grab import should_force_grab
 from xpra.client.subsystem.window.signalwatcher import kill_signalwatcher
 from xpra.exit_codes import ExitCode, ExitValue
@@ -68,11 +68,15 @@ def log_windows_info(windows: tuple) -> None:
 
 class WindowManagerClient(StubClientSubsystem):
     __slots__ = ()
+    # these mixins are all composed into a single `WindowClient` instance,
+    # which is the subsystem registered as `window`: declaring the prefix here
+    # too keeps each mixin usable (and testable) on its own
+    PREFIX = "window"
     SLOT_NAMES = (
-        "_id_to_window", "_locked_windows", "_win32_events", "_window_to_id",
+        "_id_to_window", "_locked_windows", "_win32_events", "_window_stacking", "_window_to_id",
         "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
-        "pixel_depth", "server_window_frame_extents", "server_window_states", "sync_focus",
-        "sync_position", "windows_enabled",
+        "pixel_depth", "server_window_frame_extents", "server_window_stacking", "server_window_states",
+        "sync_focus", "sync_position", "windows_enabled",
     )
 
     def __init__(self):
@@ -83,6 +87,7 @@ class WindowManagerClient(StubClientSubsystem):
         SignalEmitter.__init__(self)
         self._window_to_id: dict[Any, int] = {}
         self._id_to_window: dict[int, Any] = {}
+        self._window_stacking: tuple[int, ...] = ()
 
         self.auto_refresh_delay: int = -1
         self.min_window_size: tuple[int, int] = (0, 0)
@@ -97,6 +102,7 @@ class WindowManagerClient(StubClientSubsystem):
         self.sync_focus: bool = False
 
         self.server_window_frame_extents: bool = False
+        self.server_window_stacking: bool = False
         self.server_window_states: Sequence[str] = ()
         # windows created whilst the session was locked, which we have not shown yet:
         # wid -> (window, metadata, override_redirect), see `show_window_when_unlocked`
@@ -178,6 +184,8 @@ class WindowManagerClient(StubClientSubsystem):
             "min-size": self.min_window_size,
             "max-size": self.max_window_size,
             "read-only": self.client.readonly,
+            "stacking": self.server_window_stacking,
+            "stacking-order": self._window_stacking,
             "sync-position": self.sync_position,
             "sync-focus": self.sync_focus,
         }
@@ -190,23 +198,29 @@ class WindowManagerClient(StubClientSubsystem):
     # hello:
     def get_caps(self) -> dict[str, Any]:
         # FIXME: the messy bits without proper namespace:
-        caps = {
-            # features:
-            "windows": self.windows_enabled,
+        caps: dict[str, Any] = {
             "window": self.get_window_caps(),
             "auto_refresh_delay": int(self.auto_refresh_delay * 1000),
         }
+        if BACKWARDS_COMPATIBLE:
+            # older servers look for this flag outside the `window` namespace:
+            caps["windows"] = self.windows_enabled
         return caps
 
     def get_window_caps(self) -> dict[str, Any]:
         if not self.windows_enabled:
             return {}
         return {
+            "enabled": True,
             # implemented in the gtk client:
             "min-size": self.min_window_size,
             "max-size": self.max_window_size,
             "restack": True,
             "pre-map": True,
+            # we handle `window-grab` / `window-ungrab` (see `window/grab.py`).
+            # this namespace owns the `window` capabilities dictionary,
+            # which is why the flag is declared here rather than in `grab.py`:
+            "grabs": True,
             # ask the server to move and resize our windows
             # when another client changes their geometry:
             "sync-position": self.sync_position,
@@ -217,12 +231,20 @@ class WindowManagerClient(StubClientSubsystem):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_window_frame_extents = c.boolget("window.frame-extents")
+        self.server_window_stacking = c.boolget("window.stacking")
         if not c.boolget("windows", True):
             log.warn("Warning: window forwarding is not enabled on this server")
         self.server_window_states = c.strtupleget("window.states", DEFAULT_SERVER_WINDOW_STATES)
         # `server_is_desktop` is owned by the `display` subsystem (it parses the fuller set of caps)
         self.client.connect("startup-complete", self.log_windows_info)
         return True
+
+    def send_window_stacking(self, wids: Sequence[int]) -> None:
+        """Send a backend-provided bottom-to-top order when the server supports it."""
+        stacking = tuple(dict.fromkeys(wids))
+        if self.server_window_stacking and stacking != self._window_stacking:
+            self._window_stacking = stacking
+            self.send(WINDOW_STACKING, list(stacking))
 
     def log_windows_info(self, *_args) -> None:
         try:
@@ -252,7 +274,7 @@ class WindowManagerClient(StubClientSubsystem):
         # trays are overloaded onto `window-create` and identified by the `tray` metadata flag,
         # just like override-redirect windows are identified by `override-redirect`:
         if metadata.boolget("tray"):
-            if not getattr(self, "client_supports_system_tray", False):
+            if not getattr(self, "systemtray_enabled", False):
                 log.warn("Warning: ignoring tray window %#x, system tray forwarding is not available", wid)
                 return None
             return self.make_new_tray(wid, w, h, metadata)
@@ -539,14 +561,14 @@ class WindowManagerClient(StubClientSubsystem):
     def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
         raise NotImplementedError()
 
-    def _process_window_create(self, packet: Packet) -> None:
+    def _process_create(self, packet: Packet) -> None:
         return self._process_new_common(packet, False)
 
     def _process_new_override_redirect(self, packet: Packet) -> None:
         assert BACKWARDS_COMPATIBLE
         return self._process_new_common(packet, True)
 
-    def _process_window_initiate_moveresize(self, packet: Packet) -> None:
+    def _process_initiate_moveresize(self, packet: Packet) -> None:
         geomlog("%s", packet)
         wid = packet.get_wid()
         if window := self.get_window(wid):
@@ -558,7 +580,7 @@ class WindowManagerClient(StubClientSubsystem):
             display = self.get_subsystem("display")
             window.initiate_moveresize(display.sx(x_root), display.sy(y_root), direction, button, source_indication)
 
-    def _process_window_metadata(self, packet: Packet) -> None:
+    def _process_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
         metadata = packet.get_dict(2)
         metalog("metadata update for window %i: %s", wid, metadata)
@@ -566,7 +588,7 @@ class WindowManagerClient(StubClientSubsystem):
             metadata = self.client.cook_metadata(False, metadata)
             window.update_metadata(metadata)
 
-    def _process_window_move_resize(self, packet: Packet) -> None:
+    def _process_move_resize(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
         y = packet.get_i16(3)
@@ -581,12 +603,12 @@ class WindowManagerClient(StubClientSubsystem):
         if len(packet) > 6:
             resize_counter = packet.get_u64(6)
         window = self.get_window(wid)
-        geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s",
+        geomlog("_process_move_resize%s moving / resizing window %s (id=%s) to %s",
                 packet[1:], window, wid, (ax, ay, aw, ah))
         if window:
             window.move_resize(ax, ay, aw, ah, resize_counter)
 
-    def _process_window_resized(self, packet: Packet) -> None:
+    def _process_resized(self, packet: Packet) -> None:
         wid = packet.get_wid()
         w = packet.get_u32(2)
         h = packet.get_u32(3)
@@ -597,11 +619,11 @@ class WindowManagerClient(StubClientSubsystem):
         if len(packet) > 4:
             resize_counter = packet.get_u64(4)
         window = self.get_window(wid)
-        geomlog("_process_window_resized%s resizing window %s (wid=%#x) to %s", packet[1:], window, wid, (aw, ah))
+        geomlog("_process_resized%s resizing window %s (wid=%#x) to %s", packet[1:], window, wid, (aw, ah))
         if window:
             window.resize(aw, ah, resize_counter)
 
-    def _process_window_raise(self, packet: Packet) -> None:
+    def _process_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log(f"going to raise window {wid:#x} - {window}")
@@ -611,7 +633,7 @@ class WindowManagerClient(StubClientSubsystem):
                 return
             window.present()
 
-    def _process_window_restack(self, packet: Packet) -> None:
+    def _process_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
         detail = packet.get_i8(2)
         other_wid = packet.get_wid(3)
@@ -623,7 +645,7 @@ class WindowManagerClient(StubClientSubsystem):
         if window:
             window.restack(other_window, above)
 
-    def _process_window_destroy(self, packet: Packet) -> None:
+    def _process_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.get_window(wid):
             assert window is not None

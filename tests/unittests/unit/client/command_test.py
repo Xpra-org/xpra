@@ -5,12 +5,15 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from xpra.client.base.command import StopXpraClient
+from xpra.client.base.command import AbstractImageXpraClient, CommandConnectClient, InfoXpraClient, StopXpraClient
 from xpra.net.common import Packet
 from xpra.net.packet_type import SHUTDOWN_SERVER
 from xpra.exit_codes import ExitCode
 from xpra.scripts.config import make_defaults_struct
+from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.util.objects import typedict
 
 
@@ -66,6 +69,18 @@ class CommandClientTest(unittest.TestCase):
         self.assertEqual(timers[1][1], client.timeout)
         timers[0][1](*timers[0][2:])
         self.assertEqual(sent, [(SHUTDOWN_SERVER,)])
+
+    def test_info_allows_a_full_size_initial_response(self):
+        protocol = SimpleNamespace(max_packet_size=16 * 1024)
+        with patch.object(CommandConnectClient, "make_protocol", return_value=protocol):
+            self.assertIs(InfoXpraClient.make_protocol(InfoXpraClient.__new__(InfoXpraClient), None), protocol)
+        self.assertEqual(protocol.max_packet_size, MAX_PACKET_SIZE)
+
+    def test_image_request_allows_a_full_size_initial_response(self):
+        protocol = SimpleNamespace(max_packet_size=16 * 1024)
+        with patch.object(CommandConnectClient, "make_protocol", return_value=protocol):
+            self.assertIs(AbstractImageXpraClient.make_protocol(AbstractImageXpraClient.__new__(AbstractImageXpraClient), None), protocol)
+        self.assertEqual(protocol.max_packet_size, MAX_PACKET_SIZE)
 
 
 def main():

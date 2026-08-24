@@ -80,7 +80,7 @@ class Qt6Client:
             "client_type": "qt6",
             "rencodeplus": True,
             "session-id": uuid.uuid4().hex,
-            "windows": True,
+            "window": {"enabled": True},
             "keyboard": True,
             "bell": True,
             "pointer": {"double_click": {}},
@@ -88,6 +88,8 @@ class Qt6Client:
             "display": {"refresh-rate": 50},
         }
         if BACKWARDS_COMPATIBLE:
+            # older servers look for this flag outside the `window` namespace:
+            hello["windows"] = True
             hello["mouse"] = True
         self.send("hello", hello)
 

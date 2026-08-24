@@ -1128,6 +1128,7 @@ class Win32Clipboard(PrimaryHelperMixin, ClipboardTimeoutHelper):
             self.cancel_primary_request()
             for proxy in self._clipboard_proxies.values():
                 if proxy._can_send and not proxy._block_owner_change:
+                    proxy._clipboard_origin = ""
                     proxy.schedule_emit_token(min_delay)
         return r
 

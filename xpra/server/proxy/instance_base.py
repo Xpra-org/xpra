@@ -15,7 +15,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.packet_type import (
     INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
-    CONNECTION_LOST, CONNECTION_CLOSE, PING_ECHO,
+    CONNECTION_LOST, CONNECTION_CLOSE, PING_ECHO, POINTER_DEVICES,
 )
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.constants import MAX_PACKET_SIZE, ConnectionMessage
@@ -131,7 +131,7 @@ class ProxyInstance:
     def run(self) -> ExitValue:
         # server connection tweaks:
         # packets forwarded to the server (client -> server direction):
-        self.server_protocol.large_packets += ["input-devices", "keymap-changed", "server-settings"]
+        self.server_protocol.large_packets += [POINTER_DEVICES, "keymap-changed", "server-settings"]
         # packets forwarded to the client (server -> client direction) - draw packets
         # and window icons flow this way, so their large-packet exemption belongs on
         # the client protocol (where they are actually sent):

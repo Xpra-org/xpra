@@ -36,7 +36,7 @@ class ShellServer(StubSubsystem):
             ShellServer.PREFIX: True,
         }
 
-    def _process_shell_exec(self, proto, packet: Packet) -> None:
+    def _process_exec(self, proto, packet: Packet) -> None:
         code = packet.get_str(1)
         if ss := self.get_server_source(proto):
             self.counter += 1

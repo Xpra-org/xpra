@@ -7,7 +7,8 @@
 import unittest
 from time import monotonic
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import LOGGING_EVENT
 from xpra.util.objects import AdHocStruct
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.subsystem import logging
@@ -40,15 +41,17 @@ class InputMixinTest(ServerMixinTest):
                 self.do_log = do_log
 
         self._test_mixin_class(TestLoggingManager, opts, {}, FakeSource)
-        self.handle_packet(Packet("logging", 10, "hello", int(monotonic())))
+        self.handle_packet(Packet(LOGGING_EVENT, 10, "hello", int(monotonic())))
         message = log_messages[0]
         assert message[0] == 10
         assert message[1].endswith("hello")
-        # multi-part:
-        self.handle_packet(Packet("logging", 20, ["multi", "messages"], int(monotonic())))
+        if BACKWARDS_COMPATIBLE:
+            # multi-part messages are a legacy shape:
+            # modern clients send a single buffer (see `_process_event`)
+            self.handle_packet(Packet(LOGGING_EVENT, 20, ["multi", "messages"], int(monotonic())))
         # invalid:
         try:
-            self.handle_packet(Packet("logging", 20, nostr(), int(monotonic())))
+            self.handle_packet(Packet(LOGGING_EVENT, 20, nostr(), int(monotonic())))
         except TypeError:
             pass
         else:
@@ -64,7 +67,7 @@ class InputMixinTest(ServerMixinTest):
         opts = AdHocStruct()
         opts.remote_logging = "on"
         l.init(opts)
-        l._process_logging(None, ())  # pylint: disable=protected-access
+        l._process_event(None, ())  # pylint: disable=protected-access
 
 
 def main():
