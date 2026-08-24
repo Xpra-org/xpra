@@ -399,6 +399,7 @@ client_ENABLED = DEFAULT
 qt6_client_ENABLED = False
 pyglet_client_ENABLED = False
 tk_client_ENABLED = False
+terminal_client_ENABLED = False
 win32_client_ENABLED = DEFAULT and WIN32
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
@@ -649,7 +650,7 @@ SWITCHES += [
     "gtk_x11", "service",
     "gtk3", "cairo", "example",
     "wayland_client", "wayland_server",
-    "qt6_client", "pyglet_client", "tk_client", "win32_client",
+    "qt6_client", "pyglet_client", "tk_client", "terminal_client", "win32_client",
     "ism_ext",
     "pam", "xdg_open", "peercred", "landlock",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
@@ -3484,6 +3485,9 @@ if client_ENABLED:
         add_modules("xpra.client.pyglet")
     if tk_client_ENABLED:
         add_modules("xpra.client.tk")
+    if terminal_client_ENABLED:
+        add_modules("xpra.client.terminal")
+        add_modules("xpra.client.terminal.subsystem")
     if win32_client_ENABLED:
         add_modules("xpra.client.win32")
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
@@ -3609,8 +3613,6 @@ tace(nvfbc_ENABLED, f"xpra.codecs.nvidia.nvfbc.capture_{fbcplatform}", "nvfbc", 
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.nvencode", "nvenc")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.api", "nvenc")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
-
-tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", f"{cuda},nvdec")
 
 toggle_packages(dmabuf_ENABLED, "xpra.codecs.dmabuf")
 toggle_packages(pipewire_ENABLED, "xpra.codecs.pipewire")
@@ -3822,6 +3824,9 @@ if cythonize_more_ENABLED:
             ax("xpra.client.pyglet")
         if tk_client_ENABLED:
             ax("xpra.client.tk")
+        if terminal_client_ENABLED:
+            ax("xpra.client.terminal")
+            ax("xpra.client.terminal.subsystem")
         if win32_client_ENABLED:
             ax("xpra.client.win32")
             ax("xpra.client.win32.subsystem")
