@@ -275,6 +275,7 @@ Go deeper into client options, performance, deployment, and troubleshooting.
 
 - [Client](Client.md) — launch and configure the Xpra client
 - [Client implementations](Clients.md) — compare the available clients
+- [Terminal client](Client-Terminal.md) — render windows in a terminal emulator
 - [Configuration](Configuration.md) — use configuration files
 - [Client OpenGL](Client-OpenGL.md) — improve client rendering performance
 

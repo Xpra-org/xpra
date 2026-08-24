@@ -90,7 +90,7 @@ WAIT_SERVER_TIMEOUT: int = envint("WAIT_SERVER_TIMEOUT", 90)
 OPENGL_PROBE_TIMEOUT: int = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
 SYSTEMD_RUN: bool = envbool("XPRA_SYSTEMD_RUN", True)
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
-LIST_REPROBE_TIMEOUT: int = envint("XPRA_LIST_REPROBE_TIMEOUT", 30)
+LIST_REPROBE_TIMEOUT: int = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 SPLASH_EXIT_DELAY: int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 SPLASH_KEEPALIVE_INTERVAL: int = max(0, envint("XPRA_SPLASH_KEEPALIVE_INTERVAL", 5))
 
@@ -1851,7 +1851,7 @@ def allow_gi_gtk_modules(mods=NOGI) -> None:
 
 def make_client(opts):
     backend = opts.backend or "gtk"
-    BACKENDS = ("qt", "gtk", "pyglet", "tk", "win32", "auto") + ("native", ) * int(WIN32)
+    BACKENDS = ("qt", "gtk", "pyglet", "tk", "terminal", "win32", "auto") + ("native", ) * int(WIN32)
     if backend == "help":
         raise InitInfo("xpra clients support the following gui backends:\n * %s" % "\n * ".join(BACKENDS))
     if backend == "qt":
@@ -1878,6 +1878,28 @@ def make_client(opts):
         except ImportError as e:
             get_logger().debug("importing tk client", backtrace=True)
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the tk client component is missing: {e}") from None
+    if backend == "terminal":
+        no_gi_gtk_modules()
+        # the splash screen is a Gtk process which would fight for the terminal:
+        opts.splash = False
+        # there is no OpenGL rendering into a terminal
+        # (`get_gl_client_window_module()` never returns one):
+        opts.opengl = "no"
+        # there is nowhere to put a system tray icon in a terminal
+        # (`get_system_tray_classes()` returns nothing), so the tray forwarding
+        # must not be advertised to the server - it would send us tray windows
+        # we have no way of creating:
+        opts.system_tray = False
+        # the terminal client composes its subsystems from the client features,
+        # which is why the options above are turned off first:
+        from xpra.client.base.features import set_client_features
+        set_client_features(opts)
+        try:
+            from xpra.client.terminal.client import make_client as make_terminal_client
+            return make_terminal_client(opts)
+        except ImportError as e:
+            get_logger().debug("importing terminal client", backtrace=True)
+            raise InitExit(ExitCode.COMPONENT_MISSING, f"the terminal client component is missing: {e}") from None
     if backend == "win32":
         no_gi_gtk_modules()
         # probe before the client exists: `init_opengl` runs later, from `client.init(opts)`

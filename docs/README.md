@@ -53,6 +53,7 @@ Launch individual applications, a full desktop, or view an existing display.
 - [Picture encodings](Usage/Encodings.md)
 - [Server OpenGL](Usage/OpenGL.md) and [client OpenGL](Usage/Client-OpenGL.md)
 - [Client implementations](Usage/Clients.md)
+- [Terminal client](Usage/Client-Terminal.md)
 - [Xdummy](Usage/Xdummy.md)
 </details>
 
