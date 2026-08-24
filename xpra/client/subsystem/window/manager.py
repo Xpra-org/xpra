@@ -27,6 +27,7 @@ from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("window")
+focuslog = Logger("window", "focus")
 geomlog = Logger("geometry")
 metalog = Logger("metadata")
 execlog = Logger("client", "exec")
@@ -250,6 +251,7 @@ class WindowManagerClient(StubClientSubsystem):
     def send_window_stacking(self, wids: Sequence[int]) -> None:
         """Send a backend-provided bottom-to-top order when the server supports it."""
         stacking = tuple(dict.fromkeys(wids))
+        focuslog("send_window_stacking(%s) current order=%s", stacking, self._window_stacking)
         if self.server_window_stacking and stacking != self._window_stacking:
             self._window_stacking = stacking
             self.send(WINDOW_STACKING, list(stacking))

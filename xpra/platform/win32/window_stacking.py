@@ -14,7 +14,7 @@ from xpra.util.env import envint
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
-log = Logger("win32", "window")
+log = Logger("win32", "focus")
 
 GLib = gi_import("GLib")
 
@@ -101,6 +101,7 @@ class Win32WindowStackingWatcher:
             return
         if event != win32con.EVENT_OBJECT_REORDER and obj_id != win32con.OBJID_WINDOW:
             return
+        log("win_event%s", (hook, event, hwnd, obj_id, child_id, thread_id, timestamp))
         # this fires for every window shown, hidden or restacked on the desktop, ours or not:
         # `update_stacking` works out whether anything of ours has actually moved
         if not self.stacking_timer:

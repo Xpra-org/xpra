@@ -599,7 +599,7 @@ class SeamlessWindowServer(WindowServer):
             if xid not in seen:
                 seen.add(xid)
                 stacking.append(xid)
-        windowlog("client window stacking order: %s", stacking)
+        focuslog("client window stacking order: %s", stacking)
         self._wm.update_window_stacking(stacking)
 
     @staticmethod
