@@ -73,7 +73,7 @@ class WindowManagerClient(StubClientSubsystem):
     # too keeps each mixin usable (and testable) on its own
     PREFIX = "window"
     SLOT_NAMES = (
-        "_id_to_window", "_locked_windows", "_win32_events", "_window_stacking", "_window_to_id",
+        "_id_to_window", "_locked_windows", "_win32_events", "_win32_stacking", "_window_stacking", "_window_to_id",
         "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
         "pixel_depth", "server_window_frame_extents", "server_window_stacking", "server_window_states",
         "sync_focus", "sync_position", "windows_enabled",
@@ -109,6 +109,8 @@ class WindowManagerClient(StubClientSubsystem):
         self._locked_windows: dict[int, tuple] = {}
         # win32 WM/session event listener:
         self._win32_events = None
+        # win32 desktop z-order watcher:
+        self._win32_stacking = None
 
     def init(self, opts) -> None:
         self.auto_refresh_delay = opts.auto_refresh_delay
@@ -140,6 +142,9 @@ class WindowManagerClient(StubClientSubsystem):
             from xpra.platform.win32.window_events import Win32ClientEventsWatcher
             self._win32_events = Win32ClientEventsWatcher(self)
             self._win32_events.setup()
+            from xpra.platform.win32.window_stacking import Win32WindowStackingWatcher
+            self._win32_stacking = Win32WindowStackingWatcher(self)
+            self._win32_stacking.setup()
         elif OSX:
             self._setup_osx_events()
         return ExitCode.OK
@@ -163,6 +168,9 @@ class WindowManagerClient(StubClientSubsystem):
 
     def cleanup(self) -> None:
         log("WindowClient.cleanup()")
+        if ws := self._win32_stacking:
+            self._win32_stacking = None
+            ws.cleanup()
         if we := self._win32_events:
             self._win32_events = None
             we.cleanup()
