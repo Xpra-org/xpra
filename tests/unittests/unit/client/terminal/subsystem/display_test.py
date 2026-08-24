@@ -22,11 +22,13 @@ except ImportError:
 TERMINAL_SIZE = (1024, 600)
 
 SERVER_CAPS = {
-    "display": ":999",
-    "desktop_size": (1024, 600),
-    "max_desktop_size": (3840, 2160),
-    "actual_desktop_size": (1024, 600),
-    "resize_screen": True,
+    "display": {
+        "name": ":999",
+        "desktop_size": (1024, 600),
+        "max_desktop_size": (3840, 2160),
+        "actual_desktop_size": (1024, 600),
+        "resize_screen": True,
+    },
 }
 
 
@@ -115,9 +117,11 @@ class TerminalDisplayClientTest(ClientMixinTest):
         self.init_mixin()
         with silence_info(base_display):
             caps = self.mixin.get_caps()
-        self.assertEqual(caps["desktop_size"], TERMINAL_SIZE)
-        self.assertEqual(caps["monitors"][0]["geometry"], (0, 0) + TERMINAL_SIZE)
-        self.assertTrue(caps["resize-events"])
+        # with BC=0, the display attributes are namespaced under "display":
+        dc = caps["display"] if not base_display.BACKWARDS_COMPATIBLE else caps
+        self.assertEqual(dc["desktop_size"], TERMINAL_SIZE)
+        self.assertEqual(dc["monitors"][0]["geometry"], (0, 0) + TERMINAL_SIZE)
+        self.assertTrue(dc["resize-events"])
         # the server capabilities were parsed by `_test_mixin_class`:
         self.assertEqual(self.mixin.server_display, ":999")
         self.assertEqual(self.mixin.server_max_desktop_size, (3840, 2160))
