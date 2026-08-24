@@ -26,13 +26,14 @@ def get_resource_manager() -> bytes | None:
 
 class X11DisplayPropsWatcher:
     """
-    XSettings + root-window property watching (DPI, workarea, desktop names),
-    feeding the `display` subsystem. This is an X11-binding based, OS/display-server
-    concern, not a toolkit one.
+    XSettings + root-window property watching (DPI, workarea, desktop names,
+    window stacking), feeding the `display` and `window` subsystems. This is
+    an X11-binding based, OS/display-server concern, not a toolkit one.
     """
 
-    def __init__(self, display_client):
+    def __init__(self, display_client, xsettings_enabled: bool = True):
         self.display = display_client
+        self.xsettings_enabled = xsettings_enabled
         self._xsettings_watcher = None
         self._root_props_watcher = None
         self._x11_filter = None
@@ -70,22 +71,32 @@ class X11DisplayPropsWatcher:
 
     def do_setup_xprops(self, *args) -> None:
         log("do_setup_xprops(%s)", args)
-        ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
+        root_props = []
+        if self.xsettings_enabled:
+            root_props += ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
+        window = self.display.get_subsystem("window")
+        if window and window.server_window_stacking:
+            root_props.append("_NET_CLIENT_LIST_STACKING")
+        if not root_props:
+            return
         try:
             self.init_x11_filter()
             # pylint: disable=import-outside-toplevel
-            from xpra.x11.subsystem.xsettings_manager import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher, GTK_WORKAREAS_PREFIX
-            if self._xsettings_watcher is None:
+            if self.xsettings_enabled and self._xsettings_watcher is None:
+                from xpra.x11.subsystem.xsettings_manager import XSettingsWatcher
                 self._xsettings_watcher = XSettingsWatcher()
                 self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
                 self._handle_xsettings_changed()
             if self._root_props_watcher is None:
                 # the workarea property name varies with the current desktop, so match on its prefix:
-                self._root_props_watcher = XRootPropWatcher(ROOT_PROPS, (GTK_WORKAREAS_PREFIX, ))
+                prefixes = (GTK_WORKAREAS_PREFIX, ) if self.xsettings_enabled else ()
+                self._root_props_watcher = XRootPropWatcher(root_props, prefixes)
                 self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
-                # ensure we get the initial value:
-                self._root_props_watcher.do_notify("RESOURCE_MANAGER")
+                if self.xsettings_enabled:
+                    self._root_props_watcher.do_notify("RESOURCE_MANAGER")
+                if "_NET_CLIENT_LIST_STACKING" in root_props:
+                    self._root_props_watcher.do_notify("_NET_CLIENT_LIST_STACKING")
         except ImportError as e:
             log("do_setup_xprops%s", args, exc_info=True)
             log.error("Error: failed to load X11 properties/settings bindings:")
@@ -112,6 +123,11 @@ class X11DisplayPropsWatcher:
 
     def _handle_root_prop_changed(self, obj, prop) -> None:
         log("root_prop_changed(%s, %s)", obj, prop)
+        if prop == "_NET_CLIENT_LIST_STACKING":
+            window = self.display.get_subsystem("window")
+            if window:
+                window.send_window_stacking(self.get_window_stacking(window))
+            return
         if prop == "RESOURCE_MANAGER":
             rm = get_resource_manager()
             if rm is not None:
@@ -134,3 +150,16 @@ class X11DisplayPropsWatcher:
         handler = getattr(self.display, method_name, noop)
         log("handler(%r)=%s", prop, handler)
         handler("from %r event on %s" % (prop, self._root_props_watcher))
+
+    @staticmethod
+    def get_window_stacking(window_client) -> tuple[int, ...]:
+        from xpra.x11.xroot_props import root_array_get
+        xids = root_array_get("_NET_CLIENT_LIST_STACKING", "window") or ()
+        xid_to_wid = {}
+        for wid, window in window_client._id_to_window.items():
+            gdkwindow = window.get_window()
+            if gdkwindow:
+                xid_to_wid[gdkwindow.get_xid()] = wid
+        stacking = tuple(xid_to_wid[xid] for xid in xids if xid in xid_to_wid)
+        log("_NET_CLIENT_LIST_STACKING=%s, window stacking=%s", xids, stacking)
+        return stacking

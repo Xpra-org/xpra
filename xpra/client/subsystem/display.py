@@ -96,8 +96,8 @@ class DisplayClient(StubClientSubsystem):
         # which we are expected to convert to whatever our display uses:
         self.server_colourspace: Colourspace = SRGB
         self.log_screen_info = True
-        # X11 XSettings / root-window property watching (DPI, workarea, desktop names)
-        # feeds this subsystem; it's an OS/display-server concern, not a toolkit one:
+        # X11 XSettings / root-window property watching (DPI, workarea, desktop names,
+        # window stacking) feeds the display and window subsystems:
         self._x11_props = None
         # darwin GPU/display reconfiguration watching:
         self._cg_display = None
@@ -111,9 +111,9 @@ class DisplayClient(StubClientSubsystem):
         scalinglog("can_scale(%s)=%s", opts.desktop_scaling, self.can_scale)
         if self.can_scale:
             self.parse_scaling(opts.desktop_scaling)
-        if POSIX and not OSX and not is_Wayland() and str_to_bool(opts.xsettings):
+        if POSIX and not OSX and not is_Wayland():
             from xpra.platform.posix.display import X11DisplayPropsWatcher
-            self._x11_props = X11DisplayPropsWatcher(self)
+            self._x11_props = X11DisplayPropsWatcher(self, str_to_bool(opts.xsettings))
             self._x11_props.setup()
         elif OSX:
             from xpra.platform.darwin.display import DarwinDisplayReconfigWatcher

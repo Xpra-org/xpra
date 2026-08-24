@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import Mock, patch
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.dispatch import SubsystemPacketHandlers
@@ -15,6 +16,43 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class DisplayClientTest(ClientMixinTest):
+
+    def test_x11_window_stacking(self):
+        with DisplayContext():
+            from xpra.platform.posix.display import X11DisplayPropsWatcher
+
+            def window(xid: int | None):
+                model = Mock()
+                gdkwindow = Mock() if xid else None
+                if gdkwindow:
+                    gdkwindow.get_xid.return_value = xid
+                model.get_window.return_value = gdkwindow
+                return model
+
+            window_client = AdHocStruct()
+            window_client._id_to_window = {
+                1: window(0x101),
+                2: window(0x102),
+                3: window(None),
+            }
+            window_client.send_window_stacking = Mock()
+            display = AdHocStruct()
+            display.get_subsystem = lambda name: window_client if name == "window" else None
+            watcher = X11DisplayPropsWatcher(display, False)
+            with patch("xpra.x11.xroot_props.root_array_get",
+                       return_value=(0x999, 0x102, 0x101)) as root_array_get:
+                watcher._handle_root_prop_changed(None, "_NET_CLIENT_LIST_STACKING")
+            root_array_get.assert_called_once_with("_NET_CLIENT_LIST_STACKING", "window")
+            window_client.send_window_stacking.assert_called_once_with((2, 1))
+
+            window_client.server_window_stacking = True
+            watcher.init_x11_filter = Mock()
+            root_watcher = Mock()
+            with patch("xpra.x11.xroot_props.XRootPropWatcher", return_value=root_watcher) as watcher_class:
+                watcher.do_setup_xprops()
+            watcher_class.assert_called_once_with(["_NET_CLIENT_LIST_STACKING"], ())
+            root_watcher.do_notify.assert_called_once_with("_NET_CLIENT_LIST_STACKING")
+            self.assertIsNone(watcher._xsettings_watcher)
 
     def test_show_desktop_packet_handlers(self):
         from xpra.client.subsystem.display import DisplayClient
@@ -93,6 +131,8 @@ class DisplayClientTest(ClientMixinTest):
                         "resize_screen": True,
                     },
                 })
+            self.assertIsNotNone(self.mixin._x11_props)
+            self.assertFalse(self.mixin._x11_props.xsettings_enabled)
             # `get_monitors_info` now calls through to `xpra.platform.gui.get_monitors_info`
             # rather than returning `{}` unconditionally (see the toolkit-split plan):
             called = []

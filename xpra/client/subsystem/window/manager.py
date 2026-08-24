@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.platform.gui import get_window_min_size, get_window_max_size, is_session_locked
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, PacketElement
-from xpra.net.packet_type import WINDOW_UNMAP, WINDOW_REFRESH
+from xpra.net.packet_type import WINDOW_UNMAP, WINDOW_REFRESH, WINDOW_STACKING
 from xpra.client.subsystem.window.grab import should_force_grab
 from xpra.client.subsystem.window.signalwatcher import kill_signalwatcher
 from xpra.exit_codes import ExitCode, ExitValue
@@ -73,10 +73,10 @@ class WindowManagerClient(StubClientSubsystem):
     # too keeps each mixin usable (and testable) on its own
     PREFIX = "window"
     SLOT_NAMES = (
-        "_id_to_window", "_locked_windows", "_win32_events", "_window_to_id",
+        "_id_to_window", "_locked_windows", "_win32_events", "_window_stacking", "_window_to_id",
         "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
-        "pixel_depth", "server_window_frame_extents", "server_window_states", "sync_focus",
-        "sync_position", "windows_enabled",
+        "pixel_depth", "server_window_frame_extents", "server_window_stacking", "server_window_states",
+        "sync_focus", "sync_position", "windows_enabled",
     )
 
     def __init__(self):
@@ -87,6 +87,7 @@ class WindowManagerClient(StubClientSubsystem):
         SignalEmitter.__init__(self)
         self._window_to_id: dict[Any, int] = {}
         self._id_to_window: dict[int, Any] = {}
+        self._window_stacking: tuple[int, ...] = ()
 
         self.auto_refresh_delay: int = -1
         self.min_window_size: tuple[int, int] = (0, 0)
@@ -101,6 +102,7 @@ class WindowManagerClient(StubClientSubsystem):
         self.sync_focus: bool = False
 
         self.server_window_frame_extents: bool = False
+        self.server_window_stacking: bool = False
         self.server_window_states: Sequence[str] = ()
         # windows created whilst the session was locked, which we have not shown yet:
         # wid -> (window, metadata, override_redirect), see `show_window_when_unlocked`
@@ -182,6 +184,8 @@ class WindowManagerClient(StubClientSubsystem):
             "min-size": self.min_window_size,
             "max-size": self.max_window_size,
             "read-only": self.client.readonly,
+            "stacking": self.server_window_stacking,
+            "stacking-order": self._window_stacking,
             "sync-position": self.sync_position,
             "sync-focus": self.sync_focus,
         }
@@ -227,12 +231,20 @@ class WindowManagerClient(StubClientSubsystem):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_window_frame_extents = c.boolget("window.frame-extents")
+        self.server_window_stacking = c.boolget("window.stacking")
         if not c.boolget("windows", True):
             log.warn("Warning: window forwarding is not enabled on this server")
         self.server_window_states = c.strtupleget("window.states", DEFAULT_SERVER_WINDOW_STATES)
         # `server_is_desktop` is owned by the `display` subsystem (it parses the fuller set of caps)
         self.client.connect("startup-complete", self.log_windows_info)
         return True
+
+    def send_window_stacking(self, wids: Sequence[int]) -> None:
+        """Send a backend-provided bottom-to-top order when the server supports it."""
+        stacking = tuple(dict.fromkeys(wids))
+        if self.server_window_stacking and stacking != self._window_stacking:
+            self._window_stacking = stacking
+            self.send(WINDOW_STACKING, list(stacking))
 
     def log_windows_info(self, *_args) -> None:
         try:

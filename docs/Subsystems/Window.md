@@ -57,7 +57,8 @@ see [pointer synchronization](./Pointer.md#pointer-synchronization).
 
 An X11 seamless server advertises `window.stacking = true`. Clients may then send
 their current bottom-to-top window order using `window-stacking`; the topmost window
-is the final ID in the list.
+is the final ID in the list. X11 clients obtain this order from their local window
+manager's `_NET_CLIENT_LIST_STACKING` root property.
 
 <div class="docs-section-heading" markdown="1">
 
