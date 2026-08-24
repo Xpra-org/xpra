@@ -132,6 +132,25 @@ def is_a_tty(fileobj) -> bool:
         return False
 
 
+def guess_kitty_capable_terminal() -> bool:
+    """
+    Best-effort, pre-connection guess as to whether the current terminal understands
+    the kitty graphics protocol - used to decide whether the "terminal" backend can be
+    selected automatically when there is no other display available.
+    This is not authoritative: real support is only confirmed once connected,
+    with a live probe (see `handle_graphics_response`).
+    """
+    env = os.environ
+    if env.get("KITTY_WINDOW_ID") or "kitty" in env.get("TERM", ""):
+        return True
+    if env.get("KONSOLE_VERSION"):
+        return True
+    # Ghostty and WezTerm both identify themselves this way:
+    if env.get("TERM_PROGRAM") in ("ghostty", "WezTerm"):
+        return True
+    return False
+
+
 def mouse_coordinate_base() -> int:
     """ the value to subtract from an SGR pixel mouse report, see `MOUSE_COORDINATE_BASE` """
     if MOUSE_COORDINATE_BASE >= 0:

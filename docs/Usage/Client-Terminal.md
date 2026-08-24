@@ -38,6 +38,13 @@ xpra attach ssh://host/100 --backend=terminal
 
 `xpra attach --backend=help` lists every client backend available on the system.
 
+With the default `--backend=auto`, this backend is also picked automatically: if there is no
+`$DISPLAY` or `$WAYLAND_DISPLAY` (and the client isn't running on MS Windows or macOS, which
+always have a display), standard input and output are a terminal, and that terminal identifies
+itself as one of the emulators listed above. This is only a best-effort guess from environment
+variables (`KITTY_WINDOW_ID`, `TERM`, `KONSOLE_VERSION`, `TERM_PROGRAM`) made before connecting -
+actual protocol support is always confirmed with the startup probe described below.
+
 The terminal is left alone until the connection handshake completes, so password prompts still
 work normally. After that the client switches to the alternate screen, hides the cursor and puts
 the terminal in raw mode; all of this is undone when the session ends.

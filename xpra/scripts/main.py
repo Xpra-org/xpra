@@ -1851,6 +1851,12 @@ def allow_gi_gtk_modules(mods=NOGI) -> None:
 
 def make_client(opts):
     backend = opts.backend or "gtk"
+    if backend == "auto" and not _has_display() and sys.stdout.isatty() and sys.stdin.isatty():
+        # no GUI display and we are attached to a terminal:
+        # switch to the terminal client if it looks capable of rendering it
+        from xpra.client.terminal.client import guess_kitty_capable_terminal
+        if guess_kitty_capable_terminal():
+            backend = "terminal"
     BACKENDS = ("qt", "gtk", "pyglet", "tk", "terminal", "win32", "auto") + ("native", ) * int(WIN32)
     if backend == "help":
         raise InitInfo("xpra clients support the following gui backends:\n * %s" % "\n * ".join(BACKENDS))

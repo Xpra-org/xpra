@@ -794,6 +794,26 @@ class TerminalClientTest(unittest.TestCase):
             finally:
                 terminal_client.MOUSE_COORDINATE_BASE = saved
 
+    def test_guess_kitty_capable_terminal(self):
+        with OSEnvContext():
+            for var in ("KITTY_WINDOW_ID", "KONSOLE_VERSION", "TERM_PROGRAM", "TERM"):
+                os.environ.pop(var, None)
+            self.assertFalse(terminal_client.guess_kitty_capable_terminal())
+            os.environ["TERM"] = "xterm-kitty"
+            self.assertTrue(terminal_client.guess_kitty_capable_terminal())
+            os.environ["TERM"] = "screen"
+            os.environ["KITTY_WINDOW_ID"] = "1"
+            self.assertTrue(terminal_client.guess_kitty_capable_terminal())
+            os.environ.pop("KITTY_WINDOW_ID")
+            os.environ["KONSOLE_VERSION"] = "231000"
+            self.assertTrue(terminal_client.guess_kitty_capable_terminal())
+            os.environ.pop("KONSOLE_VERSION")
+            for value in ("WezTerm", "ghostty"):
+                os.environ["TERM_PROGRAM"] = value
+                self.assertTrue(terminal_client.guess_kitty_capable_terminal())
+            os.environ["TERM_PROGRAM"] = "iTerm.app"
+            self.assertFalse(terminal_client.guess_kitty_capable_terminal())
+
     def test_the_client_picks_up_the_mouse_coordinate_base(self):
         with OSEnvContext():
             os.environ.pop("KITTY_WINDOW_ID", None)
