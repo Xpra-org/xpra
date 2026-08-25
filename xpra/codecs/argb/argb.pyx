@@ -558,6 +558,23 @@ def bgrx_to_bgra(buf: SizedBuffer) -> memoryview:
     return rgbx_to_rgba(buf)
 
 
+def rgbx_to_bgrx(buf: SizedBuffer) -> memoryview:
+    #same swap as bgra_to_rgba: only the R and B bytes are exchanged,
+    #the G byte and the padding/alpha byte (untouched either way) stay put
+    return bgra_to_rgba(buf)
+
+
+def bgrx_to_rgbx(buf: SizedBuffer) -> memoryview:
+    #the swap is its own inverse:
+    return rgbx_to_bgrx(buf)
+
+
+def rgbx_to_bgra(buf: SizedBuffer) -> memoryview:
+    #same swap as bgra_to_rgbx: R and B are exchanged
+    #and the padding byte (undefined in `RGBX`) is forced opaque
+    return bgra_to_rgbx(buf)
+
+
 cdef memoryview rgbxdata_to_rgba(const unsigned int* rgbx, const int rgbx_len):
     if rgbx_len <= 0:
         return emptymem
@@ -785,9 +802,12 @@ def argb_swap(image, rgb_formats, supports_transparency=False) -> bool:
             return True
     elif pixel_format in ("RGBA", "RGBX"):
         checkstride()
-        if pixel_format=="RGBA" and "BGRA" in rgb_formats and supports_transparency:
-            log("argb_swap: rgba_to_bgra for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(rgba_to_bgra(pixels))
+        if supports_transparency and "BGRA" in rgb_formats:
+            log("argb_swap: %s_to_bgra for %s on %s", pixel_format.lower(), pixel_format, type(pixels))
+            if pixel_format == "RGBA":
+                image.set_pixels(rgba_to_bgra(pixels))
+            else:
+                image.set_pixels(rgbx_to_bgra(pixels))
             image.set_pixel_format("BGRA")
             #both formats use 4 bytes per pixel: the rowstride is unchanged
             return True
@@ -797,6 +817,12 @@ def argb_swap(image, rgb_formats, supports_transparency=False) -> bool:
             image.set_pixels(rgbx_to_rgb(pixels))
             image.set_pixel_format("RGB")
             image.set_rowstride(rs*3//4)
+            return True
+        if "BGRX" in rgb_formats:
+            #the R and B bytes are swapped, the padding/alpha byte is carried through unchanged:
+            log("argb_swap: rgbx_to_bgrx for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(rgbx_to_bgrx(pixels))
+            image.set_pixel_format("BGRX")
             return True
     elif pixel_format=="RGB":
         checkstride(3)
