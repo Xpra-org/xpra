@@ -9,6 +9,8 @@ import unittest
 from types import ModuleType
 from unittest.mock import Mock, patch
 
+from xpra.util.objects import typedict
+
 
 def load_window_server_class():
     modules = {}
@@ -99,6 +101,84 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
 
         server.get_surface.assert_not_called()
         server.refresh_window_area.assert_not_called()
+
+
+class WaylandWindowServerConfigureTest(unittest.TestCase):
+
+    @staticmethod
+    def make_server(window, surface):
+        server = Mock()
+        server.get_window.return_value = window
+        server.get_surface.return_value = surface
+        return server
+
+    def test_property_only_configure_updates_client_properties(self):
+        proto = Mock()
+        window = Mock()
+        surface = Mock()
+        server = self.make_server(window, surface)
+        properties = {"encodings.rgb_formats": ("RGBX",)}
+
+        WaylandWindowServer.do_process_window_configure(
+            server, proto, 7, typedict({"properties": properties}),
+        )
+
+        server._set_client_properties.assert_called_once_with(proto, 7, window, properties)
+        surface.resize.assert_not_called()
+        surface.frame_done.assert_not_called()
+        server.server.compositor.flush.assert_not_called()
+
+    def test_properties_are_applied_before_geometry(self):
+        proto = Mock()
+        window = Mock()
+        surface = Mock()
+        server = self.make_server(window, surface)
+        properties = {"encodings.rgb_formats": ("RGBX",)}
+        events = []
+        server._set_client_properties.side_effect = lambda *_args: events.append("properties")
+        surface.resize.side_effect = lambda *_args: events.append("resize")
+        surface.frame_done.side_effect = lambda: events.append("frame-done")
+        server.server.compositor.flush.side_effect = lambda: events.append("flush")
+
+        WaylandWindowServer.do_process_window_configure(
+            server,
+            proto,
+            7,
+            typedict({
+                "properties": properties,
+                "geometry": (10, 20, 800, 600),
+            }),
+        )
+
+        self.assertEqual(events, ["properties", "resize", "frame-done", "flush"])
+        server._set_client_properties.assert_called_once_with(proto, 7, window, properties)
+        surface.resize.assert_called_once_with(800, 600)
+        surface.frame_done.assert_called_once_with()
+        server.server.compositor.flush.assert_called_once_with()
+
+    def test_missing_window_or_surface_is_ignored(self):
+        proto = Mock()
+        properties = {"encodings.rgb_formats": ("RGBX",)}
+        config = typedict({
+            "properties": properties,
+            "geometry": (10, 20, 800, 600),
+        })
+        cases = (
+            ("window", None, Mock()),
+            ("surface", Mock(), None),
+        )
+
+        for missing, window, surface in cases:
+            with self.subTest(missing=missing):
+                server = self.make_server(window, surface)
+
+                WaylandWindowServer.do_process_window_configure(server, proto, 7, config)
+
+                server._set_client_properties.assert_not_called()
+                if surface is not None:
+                    surface.resize.assert_not_called()
+                    surface.frame_done.assert_not_called()
+                server.server.compositor.flush.assert_not_called()
 
 
 def main():
