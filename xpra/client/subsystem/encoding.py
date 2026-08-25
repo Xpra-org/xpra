@@ -351,9 +351,8 @@ class Encodings(StubClientSubsystem):
             caps["rgb_zstd"] = True
         # these are the defaults - when we instantiate a window,
         # we send the RGB modes its backing can really paint with, as part of the map event.
-        # until then, stick to the only two formats every backing supports:
-        # they are also the ones the servers capture with, so they need no conversion at all
-        rgb_formats = ["BGRX", "BGRA"]
+        # until then, stick to the formats every backing supports:
+        rgb_formats = ["BGRX", "BGRA", "RGBX", "RGBA"]
         caps["rgb_formats"] = rgb_formats
         # figure out which CSC modes (usually YUV) can give us those RGB modes:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
