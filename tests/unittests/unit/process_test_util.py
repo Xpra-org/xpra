@@ -373,6 +373,11 @@ class ProcessTestUtil(unittest.TestCase):
             stderr = cls._temp_file(prefix="Xorg-stderr-")
             log("stderr=%s for %s", stderr.name, cmd)
         xvfb = cls.class_run_command(cmd_expanded, env=env, stdout=stdout, stderr=stderr)
+        if not SHOW_XORG_OUTPUT:
+            # class_run_command only records capture files that it creates;
+            # keep these explicitly supplied wrappers alive until teardown.
+            xvfb.stdout_file = stdout
+            xvfb.stderr_file = stderr
         xvfb.display = display
         time.sleep(1)
         log("xvfb(%s)=%s" % (cmdstr, xvfb))
