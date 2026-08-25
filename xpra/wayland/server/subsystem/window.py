@@ -445,11 +445,15 @@ class WaylandWindowServer(WindowServer):
         self.server.compositor.flush()
         self.refresh_window(window)
 
-    def do_process_window_configure(self, _proto, wid, config: typedict) -> None:
+    def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         window = self.get_window(wid)
         surface = self.get_surface(wid)
         if not (window and surface):
             return
+        properties = config.dictget("properties")
+        if properties:
+            log("window client properties updates: %s", properties)
+            self._set_client_properties(proto, wid, window, properties)
         geometry = config.inttupleget("geometry")
         if geometry:
             w, h = geometry[2:4]
