@@ -39,6 +39,15 @@ cdef extern from "libyuv/convert_argb.h" namespace "libyuv":
                int width,
                int height) nogil
 
+    #RGBX / RGBA source (`ABGR` in libyuv's own naming: R,G,B,A/pad in memory)
+    #byte-swapped to `ARGB` (ie: BGRX/BGRA) - a SIMD shuffle, not a real conversion:
+    int ABGRToARGB(const uint8_t* src_abgr,
+               int src_stride_abgr,
+               uint8_t* dst_argb,
+               int dst_stride_argb,
+               int width,
+               int height) nogil
+
 cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
     #int BGRAToI420(const uint8_t* src_frame, ...
     #this is actually BGRX for little endian systems:
@@ -58,6 +67,18 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
                    uint8_t* dst_y, int dst_stride_y,
                    uint8_t* dst_uv, int dst_stride_uv,
                    int width, int height) nogil
+
+    #RGBX / RGBA source (`ABGR` in libyuv's own naming), native paths:
+    int ABGRToNV12(const uint8_t* src_abgr, int src_stride_abgr,
+                   uint8_t* dst_y, int dst_stride_y,
+                   uint8_t* dst_uv, int dst_stride_uv,
+                   int width, int height) nogil
+
+    int ABGRToJ420(const uint8_t* src_abgr, int src_stride_abgr,
+               uint8_t* dst_y, int dst_stride_y,
+               uint8_t* dst_u, int dst_stride_u,
+               uint8_t* dst_v, int dst_stride_v,
+               int width, int height) nogil
 
     int NV12ToRGB24(const uint8_t* src_y, int src_stride_y,
                     const uint8_t* src_uv, int src_stride_uv,
@@ -297,6 +318,7 @@ MAX_WIDTH = 32768
 MAX_HEIGHT = 32768
 COLORSPACES: Dict[str, Sequence[str]] = {
     "BGRX" : ("YUV444P", "YUV420P", "NV12"),
+    "RGBX" : ("YUV444P", "YUV420P", "NV12"),
     "NV12" : ("RGB", "BGRX", "RGBX", "YUV420P"),
     "YUV420P" : ("RGB", "XBGR", "RGBX", "BGRX", "NV12"),
     "YUV444P" : ("BGRX", "RGBX"),
@@ -672,6 +694,8 @@ cdef class Converter:
 
         if self.src_format in ("BGRX", "BGRA"):
             return self.convert_bgrx_image(image)
+        if self.src_format in ("RGBX", "RGBA"):
+            return self.convert_rgbx_image(image)
         if self.src_format=="NV12":
             if self.dst_format=="YUV420P":
                 return self.nv12_to_yuv(image)
@@ -1275,6 +1299,156 @@ cdef class Converter:
                                             out_planes[1], self.out_stride[1],
                                             out_planes[2], self.out_stride[2],
                                             width, height)
+            else:
+                raise RuntimeError(f"unexpected src format {self.src_format}")
+        if result!=0:
+            raise RuntimeError(f"libyuv.{fn_name} failed and returned {result}")
+        cdef double elapsed = monotonic()-start
+        log("libyuv.%s took %.1fms (full-range=%s)", fn_name, 1000.0*elapsed, bool(full_range))
+        self.time += elapsed
+        cdef object planes = []
+        cdef object strides = []
+        cdef object out_image
+        if self.yuv_scaling:
+            start = monotonic()
+            scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)
+            if scaled_buffer==NULL:
+                raise RuntimeError(f"failed to allocate {self.scaled_buffer_size} bytes for scaled buffer")
+            with nogil:
+                for i in range(self.planes):
+                    scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]
+                    ScalePlane(out_planes[i], self.out_stride[i],
+                               self.out_width[i], self.out_height[i],
+                               scaled_planes[i], self.scaled_stride[i],
+                               self.scaled_width[i], self.scaled_height[i],
+                               self.filtermode)
+            elapsed = monotonic()-start
+            log("libyuv.ScalePlane %i times, took %.1fms", self.planes, 1000.0*elapsed)
+            for i in range(self.planes):
+                strides.append(self.scaled_stride[i])
+                planes.append(PyMemoryView_FromMemory(<char *> scaled_planes[i], self.scaled_size[i], PyBUF_WRITE))
+            self.frames += 1
+            out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
+            out_image.cython_buffer = <uintptr_t> scaled_buffer
+        else:
+            #use output buffer directly:
+            for i in range(self.planes):
+                strides.append(self.out_stride[i])
+                plane = PyMemoryView_FromMemory(<char *> out_planes[i], self.out_size[i], PyBUF_WRITE)
+                planes.append(plane)
+            self.frames += 1
+            out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
+            out_image.cython_buffer = <uintptr_t> output_buffer
+        if SHOW_PLANE_RANGES:
+            divs = get_subsampling_divs(self.dst_format)
+            for i in range(self.planes):
+                xdiv, ydiv = divs[i]
+                show_plane_range("YUV"[i], planes[i], self.dst_width // xdiv, strides[i], self.dst_height // ydiv)
+        out_image.set_full_range(bool(full_range))
+        return out_image
+
+    def convert_rgbx_image(self, image: ImageWrapper) -> ImageWrapper:
+        self.validate_image_src_size(image)
+        cdef uint8_t *output_buffer
+        cdef uint8_t *out_planes[3]
+        cdef uint8_t *scaled_buffer
+        cdef uint8_t *scaled_planes[3]
+        cdef uint8_t *swap_buffer = NULL
+        cdef int i
+        cdef double start = monotonic()
+        cdef int iplanes = image.get_planes()
+        cdef int width = image.get_width()
+        cdef int height = image.get_height()
+        if iplanes!=ImageWrapper.PACKED:
+            raise ValueError(f"invalid plane input format: {iplanes}")
+        if self.rgb_scaling:
+            #first downscale:
+            image = argb_scale(image, self.src_width, self.src_height, self.dst_width, self.dst_height, self.filtermode)
+            width = self.dst_width
+            height = self.dst_height
+            self.validate_image_dst_size(image)
+        cdef int stride = image.get_rowstride()
+        pixels = image.get_pixels()
+        assert pixels, "failed to get pixels from %s" % image
+        if self.yuv_scaling:
+            #re-use the same temporary buffer every time:
+            output_buffer = self.output_buffer
+        else:
+            #allocate output buffer:
+            output_buffer = <unsigned char*> memalign(self.out_buffer_size)
+            if output_buffer==NULL:
+                raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
+        for i in range(self.planes):
+            #offsets are aligned, so this is safe and gives us aligned pointers:
+            out_planes[i] = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[i])
+        #get pointer to input:
+        cdef int result = -1
+        cdef int swap_result = 0
+        cdef int full_range = self.dst_full_range
+        cdef const uint8_t* src
+        cdef const uint8_t* argb_src
+        #`stride*height` as plain C `int` can overflow for large images, use `size_t`:
+        cdef size_t swap_buffer_size = (<size_t> stride) * (<size_t> height)
+        fn_name = ""
+        with buffer_context(pixels) as bc:
+            src = <const uint8_t*> (<uintptr_t> int(bc))
+            if self.dst_format=="NV12":
+                # we can't handle full-range here!
+                full_range = 0
+                fn_name = "ABGRToNV12"
+                with nogil:
+                    result = ABGRToNV12(src, stride,
+                                        out_planes[0], self.out_stride[0],
+                                        out_planes[1], self.out_stride[1],
+                                        width, height)
+            elif self.dst_format=="YUV420P" and full_range:
+                # libyuv has a native full-range ABGR->J420 path, no swap needed:
+                fn_name = "ABGRToJ420"
+                with nogil:
+                    result = ABGRToJ420(src, stride,
+                                        out_planes[0], self.out_stride[0],
+                                        out_planes[1], self.out_stride[1],
+                                        out_planes[2], self.out_stride[2],
+                                        width, height)
+            elif self.dst_format in ("YUV420P", "YUV444P"):
+                # libyuv has no limited-range ABGR->I420 path, and no ABGR->*444 path at all:
+                # do a SIMD byte-swap to BGRX first, then reuse the ARGB* conversion below
+                swap_buffer = <uint8_t*> memalign(swap_buffer_size)
+                if swap_buffer==NULL:
+                    raise RuntimeError(f"failed to allocate {swap_buffer_size} bytes for the swap buffer")
+                with nogil:
+                    swap_result = ABGRToARGB(src, stride, swap_buffer, stride, width, height)
+                if swap_result!=0:
+                    memfree(swap_buffer)
+                    raise RuntimeError(f"libyuv.ABGRToARGB failed and returned {swap_result}")
+                argb_src = <const uint8_t*> swap_buffer
+                if self.dst_format=="YUV420P":
+                    fn_name = "ARGBToI420"
+                    with nogil:
+                        result = ARGBToI420(argb_src, stride,
+                                            out_planes[0], self.out_stride[0],
+                                            out_planes[1], self.out_stride[1],
+                                            out_planes[2], self.out_stride[2],
+                                            width, height)
+                elif full_range and xpra_libyuv_has_ARGBToJ444():
+                    fn_name = "ARGBToJ444"
+                    with nogil:
+                        result = xpra_ARGBToJ444(argb_src, stride,
+                                                 out_planes[0], self.out_stride[0],
+                                                 out_planes[1], self.out_stride[1],
+                                                 out_planes[2], self.out_stride[2],
+                                                 width, height)
+                else:
+                    # Older libyuv snapshots lack ARGBToJ444.
+                    fn_name = "ARGBToI444"
+                    full_range = False
+                    with nogil:
+                        result = ARGBToI444(argb_src, stride,
+                                            out_planes[0], self.out_stride[0],
+                                            out_planes[1], self.out_stride[1],
+                                            out_planes[2], self.out_stride[2],
+                                            width, height)
+                memfree(swap_buffer)
             else:
                 raise RuntimeError(f"unexpected src format {self.src_format}")
         if result!=0:
