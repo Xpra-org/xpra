@@ -39,6 +39,10 @@ PIL_conv: dict[str, Sequence[tuple[str, str]]] = {
     "BGRX": (("BGRX", "RGB"), ("BGRX", "RGBX")),
     # try with alpha first:
     "BGRA": (("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")),
+    # PIL has no "BGRX" / "BGRA" *output* mode, so a RGBX/RGBA source can only be
+    # reformatted into "RGB" this way - swapping to BGR order is handled by argb_swap()
+    "RGBX": (("RGBX", "RGB"), ),
+    "RGBA": (("RGBX", "RGB"), ),
 }
 # as above but for clients which cannot handle alpha:
 PIL_conv_noalpha: dict[str, Sequence[tuple[str, str]]] = {
@@ -47,6 +51,8 @@ PIL_conv_noalpha: dict[str, Sequence[tuple[str, str]]] = {
     "BGRX": (("BGRX", "RGB"), ("BGRX", "RGBX")),
     # try with alpha first:
     "BGRA": (("BGRX", "RGB"), ("BGRA", "RGBA"), ("BGRX", "RGBX")),
+    "RGBX": (("RGBX", "RGB"), ),
+    "RGBA": (("RGBX", "RGB"), ),
 }
 
 
@@ -114,7 +120,10 @@ def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_trans
             major = 0
         if major < 10:
             pixels = pixels.tobytes()
-    img = Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
+    # the 3-arg form (rawmode, stride, orientation) is required: some raw modes
+    # (eg: "RGBX", "RGBA") use PIL's zero-copy `map_buffer` path, which rejects
+    # the shorter 2-arg form that other raw modes tolerate via the `frombytes` fallback
+    img = Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride(), 1)
     rowstride = w*len(target_format)    # number of characters is number of bytes per pixel!
     data = img.tobytes("raw", target_format)
     if len(data) != rowstride*h:
