@@ -1952,7 +1952,6 @@ class WindowVideoSource(WindowSource):
             if encoder_scaling != (1, 1) and not encoder_spec.can_scale:
                 videolog("scaling is now enabled, so skipping %s", encoder_spec)
                 return False
-        self._csc_encoder = csce
         enc_start = monotonic()
         ve = encoder_spec.make_instance()
         options.update(self.get_video_encoder_options(encoding, width, height))
@@ -1980,6 +1979,10 @@ class WindowVideoSource(WindowSource):
         self.max_h = max_h
         enc_end = monotonic()
         self.start_video_frame = 0
+        # publish both together, back-to-back, to narrow the window during which
+        # video_context_clean() (running on another thread) could observe a
+        # half-updated pair and end up clearing only one of the two:
+        self._csc_encoder = csce
         self._video_encoder = ve
         videolog("setup_pipeline: csc=%s, video encoder=%s, info: %s, setup took %.2fms",
                  csce, ve, ve.get_info(), (enc_end - enc_start) * 1000)
