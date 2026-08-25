@@ -28,10 +28,11 @@ log = Logger("draw")
 
 class GDIBacking(WindowBackingBase):
 
-    # the DIB section is always 32-bit, so both formats are painted the same way:
-    # `BGRA` is only offered when the window is transparent
+    # the DIB section is always 32-bit BGR-ordered, `RGBA`/`RGBX` are byte-swapped
+    # into `BGRA`/`BGRX` before painting (see `do_paint_rgb`).
+    # `BGRA` / `RGBA` are only offered when the window is transparent
     # (see `get_rgb_formats` in the superclass)
-    RGB_MODES = ("BGRA", "BGRX")
+    RGB_MODES = ("BGRA", "BGRX", "RGBA", "RGBX")
 
     def __init__(self, wid: int, hdc: HDC, hwnd: HWND, width: int, height: int, alpha: bool):
         super().__init__(wid, alpha)
@@ -169,6 +170,15 @@ class GDIBacking(WindowBackingBase):
             # make it opaque, which is what the server means by sending us `BGRX`
             from xpra.codecs.argb.argb import bgrx_to_bgra
             img_data = bgrx_to_bgra(img_data)
+        elif rgb_format == "RGBX":
+            # the DIB section is BGR-ordered: swap the R and B bytes,
+            # and force the padding byte opaque if this backing declares an alpha channel
+            from xpra.codecs.argb.argb import rgbx_to_bgra, rgbx_to_bgrx
+            img_data = rgbx_to_bgra(img_data) if self._alpha_enabled else rgbx_to_bgrx(img_data)
+        elif rgb_format == "RGBA":
+            # same byte swap as `BGRA` <-> `RGBA`, the real alpha value is preserved either way
+            from xpra.codecs.argb.argb import rgba_to_bgra
+            img_data = rgba_to_bgra(img_data)
 
         bw, bh = self.size
         bitmap_stride = bw * 4
