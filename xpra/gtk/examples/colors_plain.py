@@ -51,7 +51,7 @@ class ColorPlainWindow(Gtk.Window):
 
         def paint_block(x, y, w, h, R=255, G=255, B=255, label="") -> None:
             cr.set_operator(OPERATOR_SOURCE)
-            cr.set_source_rgb(R, G, B)
+            cr.set_source_rgb(R / 255, G / 255, B / 255)
             cr.rectangle(x, y, w, h)
             # print("rectangle(%s, %s, %s, %s) alpha=%s" % (rx, ry, rw, rh, alpha))
             cr.fill()
