@@ -119,7 +119,7 @@ class EncodingServer(StubSubsystem):
         self.threaded_encoding_done = True
         # any window mapped before the threaded init completed
         # may need to re-initialize its list of encodings:
-        log("reinit_encodings()", args)
+        log("reinit_encodings(%s)", args)
         encoding_sources = self.get_sources_by_type(EncodingsConnection)
         for ss in encoding_sources:
             ss.reinit_encodings(self)
