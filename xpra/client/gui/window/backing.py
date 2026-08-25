@@ -45,6 +45,11 @@ ALERT_ICON = os.environ.get("XPRA_ALERT_ICON", "alert")
 PREFER_CSC_SCALING = envbool("XPRA_PREFER_CSC_SCALING", True)
 VIDEO_MAX_SIZE = get_default_video_max_size()
 
+# the pixel formats the Pillow decoder can return on its own:
+PILLOW_DECODE_FORMATS = ("RGB", "RGBA", "RGBX")
+# and the ones it can be asked to pack its output into:
+PILLOW_PACK_FORMATS = ("BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR")
+
 PaintCallback: TypeAlias = Callable[[int | bool, str], None]
 PaintCallbacks: TypeAlias = MutableSequence[PaintCallback]
 
@@ -625,7 +630,22 @@ class WindowBackingBase:
     def paint_pillow(self, coding: str, img_data, x: int, y: int, width: int, height: int,
                      options: typedict, callbacks: PaintCallbacks) -> None:
         # can be called from any thread
+        rgb_formats = self.get_rgb_formats()
+        # Pillow decodes to one of `PILLOW_DECODE_FORMATS`:
+        # if this backing cannot paint any of those, ask the decoder to pack the pixels
+        # into the best format that it can. Pillow adds or drops the alpha channel as needed,
+        # and `get_rgb_formats` only offers formats with alpha if the backing is alpha-enabled.
+        if not any(pf in rgb_formats for pf in PILLOW_DECODE_FORMATS):
+            packable = tuple(pf for pf in rgb_formats if pf in PILLOW_PACK_FORMATS)
+            if not packable:
+                fire_paint_callbacks(callbacks, False,
+                                     f"{coding!r} cannot be decoded to any of: {csv(rgb_formats)}")
+                return
+            options["rgb_format"] = packable[0]
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
+        # the decoder may not have been able to honour the request,
+        # so record the format we actually got:
+        options["rgb_format"] = rgb_format
         self.ui_paint_rgb(coding, rgb_format, img_data,
                           x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
@@ -679,11 +699,17 @@ class WindowBackingBase:
             raise ValueError(f"cannot handle {img.get_planes()} in this backend")
         # if the backing can't handle this format,
         # ie: tray only supports RGBA
-        if pixel_format not in self.get_rgb_formats():
+        rgb_formats = self.get_rgb_formats()
+        if pixel_format not in rgb_formats:
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.rgb_transform import rgb_reformat
             has_alpha = "A" in pixel_format and self._alpha_enabled
-            rgb_reformat(img, self.get_rgb_formats(), has_alpha)
+            if not rgb_reformat(img, rgb_formats, has_alpha):
+                # painting the pixels unconverted would show the wrong colours:
+                img.free()
+                fire_paint_callbacks(callbacks, False,
+                                     f"cannot convert {pixel_format!r} to any of: {csv(rgb_formats)}")
+                return
             pixel_format = img.get_pixel_format()
         # replace with the actual rgb format we get from the decoder / rgb_reformat:
         options["rgb_format"] = pixel_format
