@@ -1584,8 +1584,13 @@ def handle_client_encoding_option(app, encoding: str) -> str:
     from xpra.client.base import features
     if not features.encoding:
         return ""
+    enc_subsystem = app.get_subsystem("encoding")
+    if not enc_subsystem:
+        return ""
+    # codecs may still be loading in the decode thread at this point (see `Encodings.load`):
+    enc_subsystem.ensure_codecs_loaded()
     einfo = ""
-    encodings = list(app.get_encodings()) + ["auto", "stream"]
+    encodings = list(enc_subsystem.get_encodings()) + ["auto", "stream"]
     err = encoding not in encodings
     ehelp = encoding == "help"
     if err and not ehelp:
