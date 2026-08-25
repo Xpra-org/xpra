@@ -448,6 +448,10 @@ class WindowVideoSource(WindowSource):
                 exclude.append(x)
                 continue
             csc_modes = self.full_csc_modes.strtupleget(x)
+            if not csc_modes and init:
+                # per-window csc data has not arrived yet:
+                # do_set_client_properties() will re-run update_encoding_selection() once it does
+                continue
             if (not csc_modes or x not in self.core_encodings) and first_time(f"nocsc-{x}-{self.wid:#x}"):
                 exclude.append(x)
                 msg_args = ("Warning: client does not support any csc modes with %s on window %i", x, self.wid)
