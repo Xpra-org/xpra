@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import ctypes
-import mmap
 import os
 import resource
 import sys
@@ -80,6 +79,11 @@ def writable_private_mappings(maps_path: str = "/proc/self/maps") -> Iterator[tu
 
 def mark_memory_nondumpable(libc=None, maps_path: str = "/proc/self/maps") -> tuple[int, int]:
     """Apply MADV_DONTDUMP to the process's writable private mappings."""
+    try:
+        # mmap may not be available
+        import mmap
+    except ImportError:
+        return 0, 0
     dontdump = getattr(mmap, "MADV_DONTDUMP", 0)
     if not dontdump:
         return 0, 0
