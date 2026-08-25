@@ -1111,8 +1111,45 @@ fi
 
 
 %changelog
-* Thu Aug 20 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
-- TODO
+* Tue Aug 25 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
+- 🔧 Platforms, build and packaging:
+   `libyuv` not detected without pkgconfig file + fixup
+   wayland: link to wayland-server
+   `xkb`: link to `libX11`
+   some qemu build environments lack `openat2` + workarounds
+   stop building DEBs on any failure
+   Fedora 45 package list
+- ⚠️ Major:
+   wayland screen updates stall
+   stale X11 timestamps cause focus issues
+   method wrongly returned failure code
+- Minor:
+   missing `content-types` attributes
+   safer display access
+   better forwards compatibility
+   window subsystems toggles not honoured
+- Recorder / replay:
+   unhandled packets stopped the recording
+   disable file and printer subsystems
+   replay loses some windows
+   remove unreachable handler
+- 🖧 Network:
+   don't drop clients that are slow to send their first packet
+   paramiko: try ssh keys in the same order as openssh
+   paramiko: try agent keys in the order the identity files are configured
+   AES in non-backwards compatible mode
+   remove unused clipboard loop handler
+   expose minimum protocol version supported: 5.1
+- 💄 Cosmetic:
+   make audio test more reliable + fixup
+   skip wayland window test when the bindings are not available
+   paramiko strict type check
+   don't sync `XPRA_*` X11 properties
+   unit test failures in constrained environments
+   duplicate registration of pointer grab handlers
+   silence spurious GCC warnings
+   unit tests fixes
+   make it easier to see which tests have failed and which are slow
 * Tue Aug 18 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split

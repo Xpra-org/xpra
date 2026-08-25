@@ -1,20 +1,44 @@
 # Changelog
 
-## [6.5.4] 2026-08-20
+## [6.5.4] 2026-08-25
 * 🔧 Platforms, build and packaging:
   * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
   * [wayland: link to wayland-server](https://github.com/Xpra-org/xpra/commit/36bae2f550e15500d4691795126bccb222bfae83)
   * [`xkb`: link to `libX11`](https://github.com/Xpra-org/xpra/commit/c9ae701f22a7b019b6fa34116fd946a47474470e)
+  * [some qemu build environments lack `openat2`](https://github.com/Xpra-org/xpra/commit/0cfecd0ea941ec48a85a15cd6e5eab416a18df3a) + [workarounds](https://github.com/Xpra-org/xpra/commit/2460d20a3aeb3af874a0e367f7276768fa55b981)
+  * [stop building DEBs on any failure](https://github.com/Xpra-org/xpra/commit/f29d9ed6c9b1c73ba6f501c124299eb986949402)
+  * [Fedora 45 package list](https://github.com/Xpra-org/xpra/commit/9f5fd7c6be0c17099f6aec161aeb653f25a208f3)
 * ⚠️ Major:
   * [wayland screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
   * [stale X11 timestamps cause focus issues](https://github.com/Xpra-org/xpra/commit/2896248d67d6c01ba3f5afaa9f947ac82393efaf)
+  * [method wrongly returned failure code](https://github.com/Xpra-org/xpra/commit/359cf5d0e69f23a2a8ae322f75356df00094dc57)
+* Minor:
+  * [missing `content-types` attributes](https://github.com/Xpra-org/xpra/commit/b4c153ca338741d827e30f36281b084d7323716c)
+  * [safer display access](https://github.com/Xpra-org/xpra/commit/ae46dee30facea5f8d28be08e3021d88b914c0f1)
+  * [better forwards compatibility](https://github.com/Xpra-org/xpra/commit/e5e9c8907535cc622da403ac45e5ece01e6c4eaa)
+  * [window subsystems toggles not honoured](https://github.com/Xpra-org/xpra/commit/75c5c028d77e22956feb484b4ccf97453b747ca6)
+* Recorder / replay:
+  * [unhandled packets stopped the recording](https://github.com/Xpra-org/xpra/commit/0d32a526972be0ef2c85c64d33451725000bbb9d)
+  * [disable file and printer subsystems](https://github.com/Xpra-org/xpra/commit/4bfadeaeab6c7470b2005ca2c3b18743d919471e)
+  * [replay loses some windows](https://github.com/Xpra-org/xpra/commit/63b73a65b15244717bb9662d2ad150781f6e4800)
+  * [remove unreachable handler](https://github.com/Xpra-org/xpra/commit/30a22d26185afb2b8882cec6fc4aee4a1b9a239a)
 * 🖧 Network:
+  * [don't drop clients that are slow to send their first packet](https://github.com/Xpra-org/xpra/commit/20d9bf5ca80ec1937e7883d9217da0630b601ff3)
   * [paramiko: try ssh keys in the same order as openssh](https://github.com/Xpra-org/xpra/commit/93afc72cac9cac340cc906b9e1c6f7d0eafd9c03)
   * [paramiko: try agent keys in the order the identity files are configured](https://github.com/Xpra-org/xpra/commit/8eb981fbdb4192a02220d9a1e15c86625e7ed144)
+  * [AES in non-backwards compatible mode](https://github.com/Xpra-org/xpra/commit/b974cc1d1a47f4f99ed5b455a80815cd4803ccf1)
+  * [remove unused clipboard loop handler](https://github.com/Xpra-org/xpra/commit/49fa7414573bc6471ae8fda055ce7e2a31896209)
+  * [expose minimum protocol version supported: 5.1](https://github.com/Xpra-org/xpra/commit/8ca52291c1e505bd647ff673fbabee05623af73d)
 * 💄 Cosmetic:
+  * [make audio test more reliable](https://github.com/Xpra-org/xpra/commit/65004e4144653adbbbbafb1a3e8af2109a2027f7) + [fixup](https://github.com/Xpra-org/xpra/commit/82e79e9ea16d039f47cd824e84f62a6dd02684a7)
+  * [skip wayland window test when the bindings are not available](https://github.com/Xpra-org/xpra/commit/d45c3f2eb00653ceda7d968386c28c8630cb26d7)
   * [paramiko strict type check](https://github.com/Xpra-org/xpra/commit/19380229b392c7df946635d42ae652722b43556b)
   * [don't sync `XPRA_*` X11 properties](https://github.com/Xpra-org/xpra/commit/24fc1a929614a790840b8b81f8ba86ec632420f2)
   * [unit test failures in constrained environments](https://github.com/Xpra-org/xpra/commit/988c7e9f0ab5d9cb4414447f5af672af018464bf)
+  * [duplicate registration of pointer grab handlers](https://github.com/Xpra-org/xpra/commit/7a9d80c325c2040b8dd6ce001725b94d9af87fe2)
+  * [silence spurious GCC warnings](https://github.com/Xpra-org/xpra/commit/a7e184aeb2dc4768684e1cfc12191199d6ba4bf5)
+  * [unit tests fixes](https://github.com/Xpra-org/xpra/commit/0a1ec7a682ee9cf0ba3199b7e9496942a4c1899f)
+  * [make it easier to see which tests have failed](https://github.com/Xpra-org/xpra/commit/eaa4ab710de18f8e94749730e28c578ae0e1125a) [and which are slow](https://github.com/Xpra-org/xpra/commit/bb94b6e177d130ea4a908efb432663bee644af91)
 
 ## [6.5.3] 2026-08-18
 * 🔧 Platforms, build and packaging:
