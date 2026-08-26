@@ -60,9 +60,9 @@ class X11ClientPaintTest(X11ClientTestUtil):
                 log("colors-plain %s quadrant OK at (%i, %i)", name, x, y)
         finally:
             if client:
-                client.terminate()
+                self.terminate_and_wait(client)
             if xvfb:
-                xvfb.terminate()
+                self.terminate_and_wait(xvfb)
             if server:
                 self.check_stop_server(server, "exit", server_display)
 
@@ -115,11 +115,11 @@ class X11ClientPaintTest(X11ClientTestUtil):
                     log("colors-plain %s quadrant OK at (%i, %i)", name, x, y)
             finally:
                 if client:
-                    client.terminate()
+                    self.terminate_and_wait(client)
                 if server:
                     self.check_stop_server(server, "exit", server_display)
         finally:
-            xvfb.terminate()
+            self.terminate_and_wait(xvfb)
 
     def test_xterm_position_and_color(self):
         server_display = self.find_free_display()
@@ -144,9 +144,9 @@ class X11ClientPaintTest(X11ClientTestUtil):
             self.wait_for_client_pixel(xvfb.display, xid, cw // 2, ch // 2, (0x10, 0x18, 0x20), tolerance=0)
         finally:
             if client:
-                client.terminate()
+                self.terminate_and_wait(client)
             if xvfb:
-                xvfb.terminate()
+                self.terminate_and_wait(xvfb)
             if server:
                 self.check_stop_server(server, "exit", server_display)
 

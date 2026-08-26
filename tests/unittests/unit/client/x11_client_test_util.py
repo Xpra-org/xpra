@@ -9,12 +9,23 @@ import time
 
 from xpra.os_util import get_hex_uuid
 from xpra.util.env import osexpand, OSEnvContext
+from xpra.util.io import pollwait
 from unit.server_test_util import ServerTestUtil, log
 
 
 class X11ClientTestUtil(ServerTestUtil):
 
     uq = 0
+
+    def terminate_and_wait(self, proc, timeout=5) -> None:
+        # a bare `proc.terminate()` only sends the signal and returns immediately:
+        # the next test's `find_free_display()` can then race this process's own
+        # display/socket cleanup and end up reusing a display it hasn't released yet:
+        if proc.poll() is None:
+            proc.terminate()
+            if pollwait(proc, timeout) is None:
+                proc.kill()
+                pollwait(proc, timeout)
 
     def run_client(self, *args):
         client_display = self.find_free_display()
