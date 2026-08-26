@@ -276,6 +276,11 @@ class WindowVideoSource(WindowSource):
         if "scroll" in self.server_core_encodings:
             add("scroll", self.scroll_encode)
 
+    def init_encoders(self) -> None:
+        if hasattr(self, "_encoders"):
+            self.video_context_clean()
+        super().init_encoders()
+
     def do_set_auto_refresh_delay(self, min_delay, delay) -> None:
         super().do_set_auto_refresh_delay(min_delay, delay)
         if r := self.video_subregion:
@@ -357,15 +362,6 @@ class WindowVideoSource(WindowSource):
             "src_format"    : src_format
         }
 
-    def suspend(self) -> None:
-        super().suspend()
-        # we'll create a new video pipeline when resumed:
-        self.video_context_clean()
-
-    def cleanup(self) -> None:
-        super().cleanup()
-        self.video_context_clean()
-
     def video_context_clean(self, encode_thread: bool = False) -> None:
         """Detach the video context and clean it from the encode thread."""
         self.cancel_video_encoder_flush()
@@ -381,16 +377,20 @@ class WindowVideoSource(WindowSource):
         def clean() -> None:
             if DEBUG_VIDEO_CLEAN:
                 log.warn("video_context_clean() done")
-            if csce:
-                self.csc_clean(csce)
-            if ve:
-                self.ve_clean(ve)
-            # this function always runs from the encode thread
-            # but the `video_context_clean` may have been called from another thread,
-            # in which case we want to run it again to close video contexts
-            # that may have been instantiated in the meantime:
-            if not encode_thread:
-                self.video_context_clean(True)
+            try:
+                try:
+                    if csce:
+                        self.csc_clean(csce)
+                finally:
+                    if ve:
+                        self.ve_clean(ve)
+            finally:
+                # this function always runs from the encode thread
+                # but the `video_context_clean` may have been called from another thread,
+                # in which case we want to run it again to close video contexts
+                # that may have been instantiated in the meantime:
+                if not encode_thread:
+                    self.video_context_clean(True)
 
         if encode_thread:
             # already in the correct thread
