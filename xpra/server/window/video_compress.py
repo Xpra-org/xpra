@@ -231,6 +231,7 @@ class WindowVideoSource(WindowSource):
         self._csc_encoder: ColorspaceConverter | None = None
         self._video_encoder: VideoEncoder | None = None
         self._last_pipeline_check = 0
+        self._client_csc_modes_resolved = False
 
     def do_init_encoders(self) -> None:
         super().do_init_encoders()
@@ -280,6 +281,27 @@ class WindowVideoSource(WindowSource):
         super().do_set_auto_refresh_delay(min_delay, delay)
         if r := self.video_subregion:
             r.set_auto_refresh_delay(self.base_auto_refresh_delay)
+
+    def set_client_properties(self, properties: typedict) -> None:
+        if properties.strget("event") == "map" or isinstance(properties.get("encoding.full_csc_modes"), dict):
+            self._client_csc_modes_resolved = True
+        super().set_client_properties(properties)
+
+    def waiting_for_client_csc_modes(self) -> bool:
+        return all((
+            not self._client_csc_modes_resolved,
+            not getattr(self, "parent_wid", 0),
+            not (self.is_OR or self.is_tray or self.is_shadow),
+            bool(self.common_video_encodings),
+            not self.non_video_encodings,
+            not any(self.full_csc_modes.strtupleget(encoding) for encoding in self.common_video_encodings),
+        ))
+
+    def damage(self, x: int, y: int, w: int, h: int, options=None) -> None:
+        if self.waiting_for_client_csc_modes():
+            videolog("dropping damage for window %#x until client CSC modes are known", self.wid)
+            return
+        super().damage(x, y, w, h, options)
 
     def update_av_sync_frame_delay(self) -> None:
         self.av_sync_frame_delay = 0

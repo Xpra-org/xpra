@@ -30,6 +30,99 @@ def load_window_server_class():
 WaylandWindowServer = load_window_server_class()
 
 
+class WaylandWindowServerInitialWindowTest(unittest.TestCase):
+
+    @staticmethod
+    def make_server(geometry):
+        server = object.__new__(WaylandWindowServer)
+        window = Mock()
+        window.is_managed.return_value = True
+        window.is_tray.return_value = False
+        window.is_OR.return_value = False
+        window.get_property.return_value = geometry
+        server._id_to_window = {7: window}
+        server.client_properties = {}
+        return server, window
+
+    def test_zero_size_window_is_announced_once_when_ready(self):
+        from xpra.net.packet_type import WINDOW_CREATE
+
+        server, window = self.make_server((0, 0, 0, 0))
+        source = Mock(uuid="client")
+
+        with patch.object(WaylandWindowServer, "_do_send_new_window_packet") as send_window:
+            server.send_initial_windows(source)
+            server.update_size(window, (800, 600))
+            window.get_property.return_value = (0, 0, 800, 600)
+            server.update_size(window, (800, 600))
+
+        window.hide.assert_not_called()
+        source.new_window.assert_not_called()
+        source.damage.assert_not_called()
+        send_window.assert_called_once_with(
+            WINDOW_CREATE, window, (0, 0, 800, 600),
+        )
+
+    def test_map_applies_properties_before_first_refresh(self):
+        from xpra.net.common import Packet
+        from xpra.server.subsystem.window import WindowServer
+        from xpra.server.window.compress import WindowSource
+        from xpra.server.window.video_compress import WindowVideoSource
+
+        proto = Mock()
+        window = Mock()
+        surface = Mock()
+        server = Mock()
+        server.get_window.return_value = window
+        server.get_surface.return_value = surface
+        source = object.__new__(WindowVideoSource)
+        source.wid = 7
+        source._client_csc_modes_resolved = False
+        source.is_OR = False
+        source.is_tray = False
+        source.is_shadow = False
+        source.common_video_encodings = ("h264",)
+        source.non_video_encodings = ()
+        source.full_csc_modes = typedict()
+        connection = Mock(uuid="client")
+        server.get_server_source.return_value = connection
+        events = []
+
+        def set_client_properties(_wid, _window, properties):
+            events.append("properties")
+            source.set_client_properties(properties)
+
+        connection.set_client_properties.side_effect = set_client_properties
+        server._set_client_properties.side_effect = (
+            lambda *args: WindowServer._set_client_properties(server, *args)
+        )
+        surface.resize.side_effect = lambda *_args: events.append("resize")
+        server.server.compositor.flush.side_effect = lambda: events.append("flush")
+
+        def refresh_window(_window):
+            events.append("refresh")
+            source.damage(0, 0, 800, 600)
+
+        server.refresh_window.side_effect = refresh_window
+        properties = {"encoding.full_csc_modes": {"h264": ("YUV420P",)}}
+
+        with patch.object(WindowSource, "set_client_properties"), \
+                patch.object(WindowSource, "damage") as damage:
+            source.damage(0, 0, 800, 600)
+            damage.assert_not_called()
+
+            WaylandWindowServer._process_map(
+                server, proto, Packet("window-map", 7, 0, 0, 800, 600, properties),
+            )
+
+        self.assertEqual(events, ["properties", "resize", "flush", "refresh"])
+        self.assertTrue(source._client_csc_modes_resolved)
+        damage.assert_called_once_with(0, 0, 800, 600, None)
+        server._set_client_properties.assert_called_once_with(
+            proto, 7, window, properties | {"event": "map"},
+        )
+
+
 class WaylandWindowServerCommitTest(unittest.TestCase):
 
     @staticmethod

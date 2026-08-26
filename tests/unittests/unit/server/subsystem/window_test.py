@@ -8,12 +8,47 @@ import unittest
 from unittest.mock import Mock, patch
 
 from xpra.net.common import Packet
+from xpra.net.packet_type import WINDOW_CREATE
 from xpra.util.objects import AdHocStruct, typedict
 from unit.test_util import stubbable
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class WebcamMixinTest(ServerMixinTest):
+
+    @staticmethod
+    def make_initial_window_server(geometry):
+        from xpra.server.subsystem.window import WindowServer
+
+        server = object.__new__(WindowServer)
+        window = Mock()
+        window.is_managed.return_value = True
+        window.is_tray.return_value = False
+        window.is_OR.return_value = False
+        window.get_property.return_value = geometry
+        server._id_to_window = {1: window}
+        server.client_properties = {}
+        return server, window
+
+    def test_initial_window_waits_for_nonzero_dimensions(self):
+        server, window = self.make_initial_window_server((10, 20, 0, 0))
+        source = Mock(uuid="client")
+
+        server.send_initial_windows(source)
+
+        window.hide.assert_not_called()
+        source.new_window.assert_not_called()
+        source.damage.assert_not_called()
+
+        server, window = self.make_initial_window_server((10, 20, 800, 600))
+        source = Mock(uuid="client")
+
+        server.send_initial_windows(source)
+
+        source.new_window.assert_called_once_with(
+            WINDOW_CREATE, 1, window, 10, 20, 800, 600, {},
+        )
+        source.damage.assert_called_once_with(1, window, 0, 0, 800, 600)
 
     def test_window_stacking_packet(self):
         from xpra.server.subsystem.window import WindowServer
