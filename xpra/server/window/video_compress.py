@@ -360,23 +360,16 @@ class WindowVideoSource(WindowSource):
     def suspend(self) -> None:
         super().suspend()
         # we'll create a new video pipeline when resumed:
-        self.cleanup_codecs()
+        self.video_context_clean()
 
     def cleanup(self) -> None:
         super().cleanup()
-        self.cleanup_codecs()
-
-    def cleanup_codecs(self) -> None:
-        """ Video encoders (x264, nvenc and vpx) and their csc helpers
-            require us to run cleanup code to free the memory they use.
-            We have to do this from the encode thread to be safe.
-            (the encoder and csc module may be in use by that thread)
-        """
-        self.cancel_video_encoder_flush()
         self.video_context_clean()
 
     def video_context_clean(self) -> None:
-        """ Calls clean() from the encode thread """
+        """Detach the video context and clean it from the encode thread."""
+        self.cancel_video_encoder_flush()
+        self.cancel_video_encoder_timer()
         csce = self._csc_encoder
         ve = self._video_encoder
         if csce or ve:
@@ -388,6 +381,9 @@ class WindowVideoSource(WindowSource):
             def clean() -> None:
                 if DEBUG_VIDEO_CLEAN:
                     log.warn("video_context_clean() done")
+                # An encode operation which was already in progress may have
+                # scheduled another flush after it was cancelled above.
+                self.cancel_video_encoder_flush()
                 self.csc_clean(csce)
                 self.ve_clean(ve)
             self.call_in_encode_thread(False, clean)
@@ -423,7 +419,7 @@ class WindowVideoSource(WindowSource):
     def set_new_encoding(self, encoding : str, strict=None) -> None:
         if self.encoding != encoding:
             # ensure we re-init the codecs asap:
-            self.cleanup_codecs()
+            self.video_context_clean()
         super().set_new_encoding(encoding, strict)
 
     def insert_encoder(self, encoder_name : str, encoding : str, encode_fn : Callable) -> None:
@@ -670,7 +666,7 @@ class WindowVideoSource(WindowSource):
         super().cancel_damage(limit)
         # we must clean the video encoder to ensure
         # we will resend a key frame because we may be missing a frame
-        self.cleanup_codecs()
+        self.video_context_clean()
 
     def full_quality_refresh(self, damage_options: dict) -> None:
         vs = self.video_subregion
@@ -705,7 +701,7 @@ class WindowVideoSource(WindowSource):
 
     def client_decode_error(self, error: int | float, message: str) -> None:
         # maybe the stream is now corrupted..
-        self.cleanup_codecs()
+        self.video_context_clean()
         super().client_decode_error(error, message)
 
     def get_refresh_exclude(self) -> rectangle | None:
@@ -1177,7 +1173,7 @@ class WindowVideoSource(WindowSource):
                 pass
             else:
                 videolog("video subregion was %s, now %s (window size: %i,%i)", old, newrect, ww, wh)
-                self.cleanup_codecs()
+                self.video_context_clean()
         if newrect:
             # remove this from regular refresh:
             if old is None or old != newrect:
@@ -1217,10 +1213,10 @@ class WindowVideoSource(WindowSource):
         super().update_encoding_options(force_reload)
         self.update_encoding_video_subregion()
         if force_reload:
-            self.cleanup_codecs()
+            self.video_context_clean()
         self.update_pipeline_scores(force_reload)
         if not self.verify_csc_and_encoder() and not force_reload:
-            self.cleanup_codecs()
+            self.video_context_clean()
         self._last_pipeline_check = monotonic()
 
     def update_pipeline_scores(self, force_reload=False) -> None:
@@ -1251,7 +1247,7 @@ class WindowVideoSource(WindowSource):
             # get_best_encoding() should ensure we don't end up with one
             # it duplicates some of these same checks
             scorelog(*info)
-            self.cleanup_codecs()
+            self.video_context_clean()
         # which video encodings to evaluate:
         if self.encoding in ("auto", "stream", "grayscale"):
             if not self.common_video_encodings:
@@ -2563,7 +2559,7 @@ class WindowVideoSource(WindowSource):
         v = ve.flush(frame)
         if ve.is_closed():
             videolog("do_flush_video_encoder encoder %s is closed following the flush", ve)
-            self.cleanup_codecs()
+            self.video_context_clean()
         if not v:
             videolog("do_flush_video_encoder: %s flush=%s", flush_data, v)
             return

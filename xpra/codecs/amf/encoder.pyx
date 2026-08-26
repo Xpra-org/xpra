@@ -634,7 +634,7 @@ cdef class Encoder:
         # Content type. AMF only reads these at `Init` - setting them on an open encoder
         # is accepted and then ignored - but that costs us nothing: the server already
         # drops the whole video pipeline when a window changes content-type
-        # (`content_type_changed` -> `reconfigure(True)` -> `cleanup_codecs`).
+        # (`content_type_changed` -> `reconfigure(True)` -> `video_context_clean`).
         screen_content = is_screen_content(self.content_types)
         if self.encoding == "h264":
             # The deblocking filter smooths away the block edges the quantizer leaves

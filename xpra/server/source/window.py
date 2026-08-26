@@ -118,9 +118,9 @@ class WindowsConnection(StubClientConnection):
 
     def cleanup_video_encoders(self) -> None:
         for ws in self.all_window_sources():
-            ws.cleanup_codecs()
+            ws.video_context_clean()
         for ws in tuple(self.subsurface_sources.values()):
-            ws.cleanup_codecs()
+            ws.video_context_clean()
 
     def suspend_window_sources(self) -> None:
         for ws in self.window_sources.values():
