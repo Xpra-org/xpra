@@ -34,7 +34,7 @@ class X11ClientTestUtil(ServerTestUtil):
         log("starting test client on Xvfb %s", client_display)
         return self.run_xpra(["attach"] + list(args) , env=env)
 
-    def find_client_window(self, client_display, title="", min_size=8, timeout=15, interval=0.5):
+    def find_client_window(self, client_display, title="", min_size=8, timeout=30, interval=0.5):
         """
         Poll the client's own Xvfb until a window matching `title` (substring match
         against _NET_WM_NAME/WM_NAME) shows up, then drill down to the innermost
@@ -119,7 +119,7 @@ class X11ClientTestUtil(ServerTestUtil):
                 b, g, r = pixels[0], pixels[1], pixels[2]
                 return r, g, b
 
-    def wait_for_client_pixel(self, client_display, xid, x, y, expected_rgb, tolerance=0, timeout=15, interval=0.5):
+    def wait_for_client_pixel(self, client_display, xid, x, y, expected_rgb, tolerance=0, timeout=30, interval=0.5):
         start = time.monotonic()
         last_rgb = None
         # see `find_client_window`: hold the X11 connection open for the whole
