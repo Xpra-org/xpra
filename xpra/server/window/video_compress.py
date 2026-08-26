@@ -366,7 +366,7 @@ class WindowVideoSource(WindowSource):
         super().cleanup()
         self.video_context_clean()
 
-    def video_context_clean(self) -> None:
+    def video_context_clean(self, encode_thread: bool = False) -> None:
         """Detach the video context and clean it from the encode thread."""
         self.cancel_video_encoder_flush()
         self.cancel_video_encoder_timer()
@@ -378,14 +378,24 @@ class WindowVideoSource(WindowSource):
             self._csc_encoder = None
             self._video_encoder = None
 
-            def clean() -> None:
-                if DEBUG_VIDEO_CLEAN:
-                    log.warn("video_context_clean() done")
-                # An encode operation which was already in progress may have
-                # scheduled another flush after it was cancelled above.
-                self.cancel_video_encoder_flush()
+        def clean() -> None:
+            if DEBUG_VIDEO_CLEAN:
+                log.warn("video_context_clean() done")
+            if csce:
                 self.csc_clean(csce)
+            if ve:
                 self.ve_clean(ve)
+            # this function always runs from the encode thread
+            # but the `video_context_clean` may have been called from another thread,
+            # in which case we want to run it again to close video contexts
+            # that may have been instantiated in the meantime:
+            if not encode_thread:
+                self.video_context_clean(True)
+
+        if encode_thread:
+            # already in the correct thread
+            clean()
+        else:
             self.call_in_encode_thread(False, clean)
 
     # noinspection PyMethodMayBeStatic
@@ -2505,7 +2515,7 @@ class WindowVideoSource(WindowSource):
         if not data:
             if ve.is_closed():
                 videolog("video encoder is closed: %s", ve)
-                self.video_context_clean()
+                self.video_context_clean(True)
                 return self.video_fallback(image, options, info=f"encoder {ve.get_type()} is closed")
             videolog.error("Error: %s video data is missing", encoding)
             return ()
@@ -2557,38 +2567,43 @@ class WindowVideoSource(WindowSource):
         h = ve.get_height()
         encoding = ve.get_encoding()
         v = ve.flush(frame)
-        if ve.is_closed():
+        closed = ve.is_closed()
+        if closed:
             videolog("do_flush_video_encoder encoder %s is closed following the flush", ve)
-            self.video_context_clean()
-        if not v:
-            videolog("do_flush_video_encoder: %s flush=%s", flush_data, v)
-            return
-        data, client_options = v
-        if not data:
-            videolog("do_flush_video_encoder: %s no data: %s", flush_data, v)
-            return
-        if self.video_stream_file:
-            self.video_stream_file.write(data)
-            self.video_stream_file.flush()
-        if frame < self.start_video_frame:
-            client_options["paint"] = False
-        if scaled_size:
-            client_options["scaled_size"] = scaled_size
-        client_options["flush-encoder"] = True
-        videolog("do_flush_video_encoder %s : (%s %s bytes, %s)",
-                 flush_data, len(data or ()), type(data), client_options)
-        now = monotonic()
-        # warning: 'options' will be missing the "window-size",
-        # so we may end up not honouring gravity during window resizing:
-        options = typedict()
-        packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0,
-                                       client_options, options)
-        self.queue_damage_packet(packet, now, now)
-        # check for more delayed frames since we want to support multiple b-frames:
-        if not self.b_frame_flush_timer and client_options.get("delayed", 0) > 0:
-            self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
-        else:
-            self.schedule_video_encoder_timer()
+        try:
+            if not v:
+                videolog("do_flush_video_encoder: %s flush=%s", flush_data, v)
+                return
+            data, client_options = v
+            if not data:
+                videolog("do_flush_video_encoder: %s no data: %s", flush_data, v)
+                return
+            if self.video_stream_file:
+                self.video_stream_file.write(data)
+                self.video_stream_file.flush()
+            if frame < self.start_video_frame:
+                client_options["paint"] = False
+            if scaled_size:
+                client_options["scaled_size"] = scaled_size
+            client_options["flush-encoder"] = True
+            videolog("do_flush_video_encoder %s : (%s %s bytes, %s)",
+                     flush_data, len(data or ()), type(data), client_options)
+            now = monotonic()
+            # warning: 'options' will be missing the "window-size",
+            # so we may end up not honouring gravity during window resizing:
+            options = typedict()
+            packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0,
+                                           client_options, options)
+            self.queue_damage_packet(packet, now, now)
+            if not closed:
+                # check for more delayed frames since we want to support multiple b-frames:
+                if not self.b_frame_flush_timer and client_options.get("delayed", 0) > 0:
+                    self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
+                else:
+                    self.schedule_video_encoder_timer()
+        finally:
+            if closed:
+                self.video_context_clean(True)
 
     def cancel_video_encoder_timer(self) -> None:
         if vet := self.video_encoder_timer:
