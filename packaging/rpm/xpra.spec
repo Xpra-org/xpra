@@ -44,22 +44,22 @@ autoprov: no
 %define CFLAGS -O2
 
 %if 0%{?fedora}
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --with-pyglet_client --with-tk_client --with-terminal_client
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --with-pyglet_client --with-tk_client
 %define pyglet 1
 %define pyqt6 1
 %endif
 
 %if 0%{?el8}
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-tk_client --with-terminal_client
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-tk_client
 %endif
 
 %if 0%{?el9}
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --with-tk_client --with-terminal_client
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --with-tk_client
 %define pyqt6 1
 %endif
 
 %if 0%{?el10}
-%define DEFAULT_BUILD_ARGS --without-evdi --without-cuda_rebuild --with-qt6_client --with-tk_client --with-terminal_client --without-docs --without-wireshark
+%define DEFAULT_BUILD_ARGS --without-evdi --without-cuda_rebuild --with-qt6_client --with-tk_client --without-docs --without-wireshark
 %define pyqt6 1
 %endif
 

@@ -20,7 +20,7 @@ protocol.
   [kitty](https://sw.kovidgoyal.net/kitty/), [Ghostty](https://ghostty.org/),
   [WezTerm](https://wezterm.org/) or [Konsole](https://konsole.kde.org/)
 * a terminal reporting its size in pixels (`TIOCGWINSZ`), which all of the above do
-* the client built with `--with-terminal_client` (the rpm and debian packages ship it)
+* the client built with `--with-terminal_client` (the default, the rpm and debian packages ship it)
 
 At startup the client asks the terminal whether it understands the graphics protocol. If no
 answer arrives, the session is aborted with an error rather than filling the terminal with
