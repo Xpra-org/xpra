@@ -46,26 +46,31 @@ class X11ClientTestUtil(ServerTestUtil):
         from xpra.x11.prop import prop_get
         start = time.monotonic()
         candidates = []
-        while time.monotonic() - start < timeout:
-            candidates = []
-            with OSEnvContext():
-                os.environ["DISPLAY"] = client_display
-                from xpra.x11.bindings.display_source import X11DisplayContext
-                with X11DisplayContext(client_display):
-                    from xpra.x11.bindings.window import X11WindowBindings
-                    x11window = X11WindowBindings()
+        # keep a single X11 connection open for the whole polling loop instead of
+        # opening and closing one on every iteration: besides the overhead, the X11
+        # bindings singletons (`X11WindowBindings()`, etc) cache the `Display*` they
+        # were created for, so churning through connections makes them "stale" on
+        # almost every call and forces them to be recreated constantly:
+        with OSEnvContext():
+            os.environ["DISPLAY"] = client_display
+            from xpra.x11.bindings.display_source import X11DisplayContext
+            with X11DisplayContext(client_display):
+                from xpra.x11.bindings.window import X11WindowBindings
+                x11window = X11WindowBindings()
 
-                    def mapped_size(xid):
-                        if not x11window.is_mapped(xid):
-                            return None
-                        geom = x11window.geometry_with_border(xid)
-                        if not geom:
-                            return None
-                        _wx, _wy, w, h, _border = geom
-                        if w < min_size or h < min_size:
-                            return None
-                        return w, h
+                def mapped_size(xid):
+                    if not x11window.is_mapped(xid):
+                        return None
+                    geom = x11window.geometry_with_border(xid)
+                    if not geom:
+                        return None
+                    _wx, _wy, w, h, _border = geom
+                    if w < min_size or h < min_size:
+                        return None
+                    return w, h
 
+                while time.monotonic() - start < timeout:
+                    candidates = []
                     for xid in x11window.get_all_x11_windows():
                         size = mapped_size(xid)
                         if not size:
@@ -91,7 +96,7 @@ class X11ClientTestUtil(ServerTestUtil):
                             continue
                         x, y = pos
                         return content_xid, x, y, content_w, content_h
-            time.sleep(interval)
+                    time.sleep(interval)
         raise AssertionError(
             "no window found on display %s matching title=%r after %s seconds, candidates seen: %s" % (
                 client_display, title, timeout, candidates))
@@ -117,10 +122,17 @@ class X11ClientTestUtil(ServerTestUtil):
     def wait_for_client_pixel(self, client_display, xid, x, y, expected_rgb, tolerance=0, timeout=15, interval=0.5):
         start = time.monotonic()
         last_rgb = None
-        while time.monotonic() - start < timeout:
-            last_rgb = self.read_client_pixel(client_display, xid, x, y)
-            if all(abs(a - b) <= tolerance for a, b in zip(last_rgb, expected_rgb)):
-                return last_rgb
-            time.sleep(interval)
+        # see `find_client_window`: hold the X11 connection open for the whole
+        # polling loop instead of reopening it (and re-creating the X11 bindings
+        # singletons) on every single pixel read:
+        with OSEnvContext():
+            os.environ["DISPLAY"] = client_display
+            from xpra.x11.bindings.display_source import X11DisplayContext
+            with X11DisplayContext(client_display):
+                while time.monotonic() - start < timeout:
+                    last_rgb = self.read_client_pixel(client_display, xid, x, y)
+                    if all(abs(a - b) <= tolerance for a, b in zip(last_rgb, expected_rgb)):
+                        return last_rgb
+                    time.sleep(interval)
         raise AssertionError("pixel (%i, %i) of window %#x on %s: expected %s (tolerance %i) but got %s" % (
             x, y, xid, client_display, expected_rgb, tolerance, last_rgb))
