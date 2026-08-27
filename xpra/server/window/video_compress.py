@@ -357,15 +357,6 @@ class WindowVideoSource(WindowSource):
             "src_format"    : src_format
         }
 
-    def suspend(self) -> None:
-        super().suspend()
-        # we'll create a new video pipeline when resumed:
-        self.video_context_clean()
-
-    def cleanup(self) -> None:
-        super().cleanup()
-        self.video_context_clean()
-
     def video_context_clean(self, encode_thread: bool = False) -> None:
         """Detach the video context and clean it from the encode thread."""
         self.cancel_video_encoder_flush()
