@@ -613,19 +613,18 @@ class WindowServer(StubSubsystem):
             if not window.is_managed():
                 # we keep references to windows that aren't meant to be displayed..
                 continue
+            x, y, w, h = window.get_property("geometry")
             # most of the code here is duplicated from the send functions,
             # so we can send just to the new client and request damage
             # just for the new client too:
             if window.is_tray():
                 # code more or less duplicated from _send_new_tray_window_packet:
-                w, h = window.get_dimensions()
                 if ss.system_tray:
                     if BACKWARDS_COMPATIBLE:
                         # old clients expect a dedicated `new-tray` packet:
                         ss.new_tray(wid, window, w, h)
                     else:
                         # trays are just `window-create` packets carrying `tray=True` in their metadata:
-                        x, y, w, h = window.get_property("geometry")
                         wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
                         ss.new_window(WINDOW_CREATE, wid, window, x, y, w, h, wprops)
                     ss.damage(wid, window, 0, 0, w, h)
@@ -634,9 +633,14 @@ class WindowServer(StubSubsystem):
                     window.move_resize(-200, -200, w, h)
             else:
                 # code more or less duplicated from _send_new_window_packet:
+                if w == h == 0:
+                    # The Wayland backend registers a 0x0 model before its first
+                    # valid commit. Its update_size() path sends the create packet
+                    # when that model becomes ready.
+                    log("not sending initial window %#x with zero dimensions", wid)
+                    continue
                 if not sharing and not window.is_OR():
                     window.hide()
-                x, y, w, h = window.get_property("geometry")
                 wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
                 packet_type = "new-override-redirect" if (window.is_OR() and BACKWARDS_COMPATIBLE) else WINDOW_CREATE
                 ss.new_window(packet_type, wid, window, x, y, w, h, wprops)
