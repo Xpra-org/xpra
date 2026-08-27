@@ -528,9 +528,15 @@ class WindowServer(StubServerMixin):
                     window.move_resize(-200, -200, w, h)
             else:
                 # code more or less duplicated from _send_new_window_packet:
+                x, y, w, h = window.get_property("geometry")
+                if w == h == 0:
+                    # The Wayland backend registers a 0x0 model before its first
+                    # valid commit. Its update_size() path sends the create packet
+                    # when that model becomes ready.
+                    log("not sending initial window %#x with zero dimensions", wid)
+                    continue
                 if not sharing and not window.is_OR():
                     window.hide()
-                x, y, w, h = window.get_property("geometry")
                 wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
                 packet_type = "new-override-redirect" if (window.is_OR() and BACKWARDS_COMPATIBLE) else WINDOW_CREATE
                 ss.new_window(packet_type, wid, window, x, y, w, h, wprops)
