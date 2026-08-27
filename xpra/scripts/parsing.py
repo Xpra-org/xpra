@@ -906,6 +906,35 @@ def parse_cmdline(cmdline: list[str]) -> tuple[optparse.Values, list[str]]:
     return do_parse_cmdline(cmdline, defaults)
 
 
+def warn_restricted_encoding_options(options) -> None:
+    # `rgb` is expanded to its core encodings by `fixup_encodings`.
+    encodings = tuple(dict.fromkeys(
+        "rgb" if x in ("rgb24", "rgb32") else x for x in options.encodings
+    ))
+    if len(encodings) < 3:
+        warn(f"Warning: only a few encodings are enabled: {csv(encodings)}")
+        warn(" this prevents Xpra from choosing the best compression for each screen update")
+        warn(" and may cause poor visual quality and performance")
+        warn(" this is almost always a misguided workaround for something that should be configured elsewhere, and it will break things")
+
+    enabled_video_encoders: set[str] = set()
+    for entry in options.video_encoders:
+        # An encoder's options may contain commas, whereas an entry without
+        # options may itself be a comma-separated list of encoder names.
+        entries = (entry,) if ":" in entry else entry.split(",")
+        for encoder in entries:
+            encoder = encoder.strip().lower()
+            if encoder and encoder != "none" and not encoder.startswith(("-", "no-")):
+                enabled_video_encoders.add(encoder.split(":", 1)[0])
+    single_video_encoder = len(enabled_video_encoders) == 1
+    restricts_video_encoders = "none" not in options.video_encoders and "all" not in enabled_video_encoders
+    if single_video_encoder and restricts_video_encoders:
+        warn(f"Warning: only one video encoder is enabled: {csv(enabled_video_encoders)}")
+        warn(" this prevents Xpra from choosing the best compression pipeline")
+        warn(" and may cause poor visual quality and performance")
+        warn(" this is almost always a misguided workaround for something that should be configured elsewhere, and it will break things")
+
+
 def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, list[str]]:
     # pylint: disable=consider-using-f-string
     #################################################################
@@ -1024,6 +1053,7 @@ def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, lis
                 break
 
     fixup_options(options)
+    warn_restricted_encoding_options(options)
 
     if options.sync_xvfb is not None:
         try:

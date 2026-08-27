@@ -88,6 +88,38 @@ class TestParsing(unittest.TestCase):
         self.assertIn("--socket-dirs=/tmp/b", args)
         self.assertIn("--socket-dirs=/tmp/c", args)
 
+    def test_restricted_encoding_warnings(self):
+        def warnings_for(*args: str) -> list[str]:
+            command_args = list(args)
+            option_names = {arg.split("=", 1)[0] for arg in args}
+            if "--encodings" not in option_names:
+                command_args.append("--encodings=all")
+            if "--video-encoders" not in option_names:
+                command_args.append("--video-encoders=all")
+            with patch("xpra.scripts.parsing.warn") as warning:
+                parse_cmdline(["xpra", "start", *command_args])
+            return [call.args[0] for call in warning.call_args_list]
+
+        messages = warnings_for("--encodings=h264,rgb")
+        self.assertTrue(any("only a few encodings" in message for message in messages))
+        self.assertTrue(any("best compression" in message for message in messages))
+        self.assertTrue(any("will break things" in message for message in messages))
+
+        messages = warnings_for("--video-encoders=nvenc")
+        self.assertTrue(any("only one video encoder" in message for message in messages))
+        self.assertTrue(any("best compression" in message for message in messages))
+        self.assertTrue(any("will break things" in message for message in messages))
+
+        for args in (
+                (),
+                ("--encodings=h264,rgb,jpeg",),
+                ("--video-encoders=nvenc,x264",),
+                ("--video-encoders=all",),
+                ("--video-encoders=none",),
+                ("--video-encoders=-nvenc",),
+        ):
+            self.assertEqual(warnings_for(*args), [], args)
+
     def test_ssh_parsing(self):
         assert parse_ssh_option("auto")[0] in ("paramiko", "ssh")
         assert parse_ssh_option("ssh") == ["ssh"]
