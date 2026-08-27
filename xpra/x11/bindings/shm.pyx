@@ -340,23 +340,27 @@ cdef class XShmImageWrapper(XImageWrapper):
         return ptr
 
     def freeze(self) -> bool:
-        if self.frozen:
-            return True
-        #we just force a restride, which will allocate a new pixel buffer:
-        cdef unsigned int newstride = roundup(self.width*len(self.pixel_format), 4)
-        self.timestamp = int(monotonic() * 1000)
-        self.frozen = True
-        return self.restride(newstride)
+        cdef unsigned int newstride
+        with self._lock:
+            if self.frozen:
+                return True
+            #we just force a restride, which will allocate a new pixel buffer:
+            newstride = roundup(self.width*len(self.pixel_format), 4)
+            self.timestamp = int(monotonic() * 1000)
+            self.frozen = True
+            return self.restride(newstride)
 
     def free(self) -> None:
-        #ensure we never try to XDestroyImage:
-        self.image = NULL
-        self.free_pixels()
-        cb = self.free_callback
-        if cb:
-            self.free_callback = None
-            cb()
-        xshmdebug("XShmImageWrapper.free() done for %s, callback fired=%s", self, bool(cb))
+        with self._lock:
+            #ensure we never try to XDestroyImage:
+            self.image = NULL
+            self.free_pixels()
+            self.freed = True
+            cb = self.free_callback
+            if cb:
+                self.free_callback = None
+                cb()
+            xshmdebug("XShmImageWrapper.free() done for %s, callback fired=%s", self, bool(cb))
 
     cdef void set_free_callback(self, object callback) noexcept:
         self.free_callback = callback

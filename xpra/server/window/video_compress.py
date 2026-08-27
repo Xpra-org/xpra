@@ -968,7 +968,8 @@ class WindowVideoSource(WindowSource):
         log("process_damage_region: av_delay=%s, must_freeze=%s, size=%s, encoding=%s",
             av_delay, must_freeze, (w, h), coding)
         if must_freeze:
-            image.freeze()
+            with image:
+                image.freeze()
 
         def call_encode(ew: int, eh: int, eimage: ImageWrapper, encoding: str, flush: int) -> None:
             if self.is_cancelled(sequence):
@@ -2110,21 +2111,22 @@ class WindowVideoSource(WindowSource):
                 scroll_data = ScrollData()
                 self.scroll_data = scroll_data
                 scrolllog("new scroll data: %s", scroll_data)
-            if not image.is_thread_safe():
-                # what we really want is to check that the frame has been frozen,
-                # so it doesn't get modified whilst we checksum or encode it,
-                # the "thread_safe" flag gives us that for the X11 case in most cases,
-                # (the other servers already copy the pixels from the "real" screen buffer)
-                # TODO: use a separate flag? (ximage uses this flag to know if it is safe
-                # to call image.free from another thread - which is theoretically more restrictive)
-                newstride = roundup(image.get_width() * image.get_bytesperpixel(), 4)
-                image.restride(newstride)
-            bpp = image.get_bytesperpixel()
-            pixels = image.get_pixels()
-            if not pixels:
-                return False
-            stride = image.get_rowstride()
-            scroll_data.update(pixels, x, y, w, h, stride, bpp)
+            with image:
+                if not image.is_thread_safe():
+                    # what we really want is to check that the frame has been frozen,
+                    # so it doesn't get modified whilst we checksum or encode it,
+                    # the "thread_safe" flag gives us that for the X11 case in most cases,
+                    # (the other servers already copy the pixels from the "real" screen buffer)
+                    # TODO: use a separate flag? (ximage uses this flag to know if it is safe
+                    # to call image.free from another thread - which is theoretically more restrictive)
+                    newstride = roundup(image.get_width() * image.get_bytesperpixel(), 4)
+                    image.restride(newstride)
+                bpp = image.get_bytesperpixel()
+                pixels = image.get_pixels()
+                if not pixels:
+                    return False
+                stride = image.get_rowstride()
+                scroll_data.update(pixels, x, y, w, h, stride, bpp)
             max_distance = min(1000, (100-min_percent)*h//100)
             scroll_data.calculate(max_distance)
             # marker telling us not to invalidate the scroll data from here on:

@@ -6,7 +6,7 @@
 
 from time import monotonic
 from typing import Tuple, Dict
-from threading import Lock
+from threading import Lock, RLock
 
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
@@ -19,7 +19,7 @@ from xpra.x11.bindings.xlib cimport (
     AllPlanes,
 )
 from xpra.buffers.membuf cimport memalign, memfree
-from xpra.util.env import first_time
+from xpra.util.env import first_time, envfloat
 from libc.stdlib cimport free
 from libc.string cimport memcpy
 from libc.stdint cimport uintptr_t
@@ -32,6 +32,8 @@ log = Logger("x11", "bindings", "ximage")
 ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
 
 ximage_counter_lock = Lock()
+
+FREE_LOCK_TIMEOUT: float = envfloat("XPRA_IMAGE_FREE_LOCK_TIMEOUT", 5.0)
 
 
 cdef extern from "Python.h":
@@ -156,6 +158,19 @@ cdef class XImageWrapper:
         self.palette = palette
         self.full_range = int(full_range)
         self.aligned = False
+        self._lock = RLock()
+        self.freed = False
+
+    def __enter__(self):
+        self._lock.acquire()
+        if self.freed:
+            self._lock.release()
+            raise RuntimeError("image wrapper has already been freed")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        self._lock.release()
+        return False
 
     cdef void set_image(self, XImage* image):
         assert not self.sub
@@ -261,18 +276,21 @@ cdef class XImageWrapper:
         return self.pixel_format
 
     def get_pixels(self):
-        if self.sub:
-            #we don't own the pixel buffer, our parent does:
-            #ensure it is still alive and hasn't been freed from under us
-            assert self.parent is not None, "sub-image is missing its parent reference"
-            assert (<XImageWrapper> self.parent).has_pixels(), "sub-image parent buffer has been freed"
-        cdef void *pix_ptr = self.get_pixels_ptr()
-        if pix_ptr==NULL:
-            return None
-        cdef int flags = PyBUF_READ
-        if self.pixels!=NULL:
-            flags = PyBUF_WRITE
-        return PyMemoryView_FromMemory(<char *> pix_ptr, self.get_size(), PyBUF_READ)
+        cdef void *pix_ptr
+        cdef int flags
+        with self._lock:
+            if self.sub:
+                #we don't own the pixel buffer, our parent does:
+                #ensure it is still alive and hasn't been freed from under us
+                assert self.parent is not None, "sub-image is missing its parent reference"
+                assert (<XImageWrapper> self.parent).has_pixels(), "sub-image parent buffer has been freed"
+            pix_ptr = self.get_pixels_ptr()
+            if pix_ptr==NULL:
+                return None
+            flags = PyBUF_READ
+            if self.pixels!=NULL:
+                flags = PyBUF_WRITE
+            return PyMemoryView_FromMemory(<char *> pix_ptr, self.get_size(), PyBUF_READ)
 
     def get_sub_image(self, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
         """
@@ -306,41 +324,45 @@ cdef class XImageWrapper:
             raise ValueError(f"invalid sub-image width: {x}+{w} greater than image width {self.width}")
         if y+h>self.height:
             raise ValueError(f"invalid sub-image height: {y}+{h} greater than image height {self.height}")
-        cdef void *src = self.get_pixels_ptr()
-        if src==NULL:
-            raise ValueError("source image does not have any pixels!")
-        cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
-        cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
+        cdef void *src
+        cdef unsigned char Bpp
+        cdef uintptr_t sub_ptr
         cdef XImageWrapper image
         cdef unsigned int newstride
         cdef void *new_buf
         cdef void *to
         cdef uintptr_t row
         cdef unsigned int i
-        if y+h==self.height and x>0:
-            #a zero-copy view would over-read the parent buffer on the last row,
-            #so copy the region into a tightly packed, self-owned buffer instead:
-            newstride = roundup(w*Bpp, 4)
-            new_buf = memalign(newstride*h)
-            if new_buf==NULL:
-                raise MemoryError("memalign failed for %i bytes!" % (newstride*h))
-            to = new_buf
-            row = sub_ptr
-            for i in range(h):
-                memcpy(to, <void *> row, w*Bpp)
-                to += newstride
-                row += self.rowstride
-            image = XImageWrapper(self.x+x, self.y+y, w, h, <uintptr_t> new_buf, self.pixel_format,
-                                 self.depth, newstride, self.planes, self.bytesperpixel, True, False,
-                                 self.palette, self.full_range)
-            #we used memalign, so free_pixels must use memfree:
-            image.aligned = True
-        else:
-            image = XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
-                                 self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True,
-                                 self.palette, self.full_range)
-            #keep the parent (and so its pixel buffer) alive for as long as this sub-image is:
-            image.parent = self
+        with self:
+            src = self.get_pixels_ptr()
+            if src==NULL:
+                raise ValueError("source image does not have any pixels!")
+            Bpp = BYTESPERPIXEL(self.depth)
+            sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
+            if y+h==self.height and x>0:
+                #a zero-copy view would over-read the parent buffer on the last row,
+                #so copy the region into a tightly packed, self-owned buffer instead:
+                newstride = roundup(w*Bpp, 4)
+                new_buf = memalign(newstride*h)
+                if new_buf==NULL:
+                    raise MemoryError("memalign failed for %i bytes!" % (newstride*h))
+                to = new_buf
+                row = sub_ptr
+                for i in range(h):
+                    memcpy(to, <void *> row, w*Bpp)
+                    to += newstride
+                    row += self.rowstride
+                image = XImageWrapper(self.x+x, self.y+y, w, h, <uintptr_t> new_buf, self.pixel_format,
+                                     self.depth, newstride, self.planes, self.bytesperpixel, True, False,
+                                     self.palette, self.full_range)
+                #we used memalign, so free_pixels must use memfree:
+                image.aligned = True
+            else:
+                image = XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
+                                     self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True,
+                                     self.palette, self.full_range)
+                #keep the parent (and so its pixel buffer) alive for as long as this sub-image is:
+                image.parent = self
         image.set_target_x(self.target_x+x)
         image.set_target_y(self.target_y+y)
         return image
@@ -432,8 +454,19 @@ cdef class XImageWrapper:
 
     def free(self) -> None:
         ximagedebug("%s.free()", self)
-        self.free_image()
-        self.free_pixels()
+        # critical sections entered via `with image:` (or any lock-holding method)
+        # must be short-lived and never block on UI-thread/GLib work,
+        # since the UI thread's deferred free() (see free_image_wrapper()) can block behind them
+        if not self._lock.acquire(timeout=FREE_LOCK_TIMEOUT):
+            log.error("Error: timeout waiting for the pixel lock of %s", self)
+            log.error(" a critical section may be blocking for too long")
+            self._lock.acquire()
+        try:
+            self.free_image()
+            self.free_pixels()
+            self.freed = True
+        finally:
+            self._lock.release()
 
     cdef void free_image(self) noexcept:
         ximagedebug("%s.free_image() image=%#x", self, <uintptr_t> self.image)
@@ -458,9 +491,10 @@ cdef class XImageWrapper:
         self.parent = None
 
     def freeze(self) -> bool:
-        #we don't need to do anything here because the non-XShm version
-        #already uses a copy of the pixels
-        return False
+        with self._lock:
+            #we don't need to do anything here because the non-XShm version
+            #already uses a copy of the pixels
+            return False
 
     def may_restride(self) -> bool:
         #if not given a newstride, assume it is optional and check if it is worth doing at all:
@@ -482,42 +516,46 @@ cdef class XImageWrapper:
         #start = monotonic()
         cdef unsigned int newsize = rowstride*self.height                #desirable size we could have
         cdef unsigned int size = self.rowstride*self.height
-        #is it worth re-striding to save space:
-        #(save at least 1KB and 10%)
-        #Note: we could also change the pixel format whilst we're at it
-        # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
-        cdef void *img_buf = self.get_pixels_ptr()
-        assert img_buf!=NULL, "this image wrapper is empty!"
+        cdef void *img_buf
         cdef void *new_buf
-        new_buf = memalign(newsize + rowstride)
-        if new_buf == NULL:
-            raise MemoryError("memalign failed for %i bytes!" % (newsize + rowstride))
-        cdef void *to = new_buf
-        cdef unsigned int oldstride = self.rowstride                     #using a local variable is faster
-        #Note: we don't zero the buffer,
-        #so if the newstride is bigger than oldstride, you get garbage..
+        cdef void *to
+        cdef unsigned int oldstride
         cdef unsigned int cpy_size
-        if oldstride==rowstride:
-            memcpy(to, img_buf, size)
-        else:
-            cpy_size = MIN(rowstride, oldstride)
-            for _ in range(self.height):
-                memcpy(to, img_buf, cpy_size)
-                to += rowstride
-                img_buf += oldstride
-        #we can now free the pixels buffer if present
-        #(but not the ximage - this is not running in the UI thread!)
-        self.free_pixels()
-        #set the new attributes:
-        self.rowstride = rowstride
-        self.pixels = <char *> new_buf
-        self.aligned = True
-        #without any X11 image to free, this is now thread safe:
-        if self.image==NULL:
-            self.thread_safe = 1
-        #log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes) took %.1fms",
-        #    rowstride, self.pixel_format, 100-100*newsize/size, oldstride, size, rowstride, newsize, (monotonic()-start)*1000)
-        return True
+        with self._lock:
+            #is it worth re-striding to save space:
+            #(save at least 1KB and 10%)
+            #Note: we could also change the pixel format whilst we're at it
+            # and convert BGRX to RGB for example (assuming RGB is also supported by the client)
+            img_buf = self.get_pixels_ptr()
+            assert img_buf!=NULL, "this image wrapper is empty!"
+            new_buf = memalign(newsize + rowstride)
+            if new_buf == NULL:
+                raise MemoryError("memalign failed for %i bytes!" % (newsize + rowstride))
+            to = new_buf
+            oldstride = self.rowstride                     #using a local variable is faster
+            #Note: we don't zero the buffer,
+            #so if the newstride is bigger than oldstride, you get garbage..
+            if oldstride==rowstride:
+                memcpy(to, img_buf, size)
+            else:
+                cpy_size = MIN(rowstride, oldstride)
+                for _ in range(self.height):
+                    memcpy(to, img_buf, cpy_size)
+                    to += rowstride
+                    img_buf += oldstride
+            #we can now free the pixels buffer if present
+            #(but not the ximage - this is not running in the UI thread!)
+            self.free_pixels()
+            #set the new attributes:
+            self.rowstride = rowstride
+            self.pixels = <char *> new_buf
+            self.aligned = True
+            #without any X11 image to free, this is now thread safe:
+            if self.image==NULL:
+                self.thread_safe = 1
+            #log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes) took %.1fms",
+            #    rowstride, self.pixel_format, 100-100*newsize/size, oldstride, size, rowstride, newsize, (monotonic()-start)*1000)
+            return True
 
 
 cdef int drawable_counter = 0
