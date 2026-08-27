@@ -60,6 +60,8 @@ cdef class XImageWrapper:
     cdef object palette
     cdef unsigned char full_range
     cdef unsigned char aligned
+    cdef object _lock
+    cdef unsigned char freed
 
     cdef void set_image(self, XImage* image)
 

@@ -49,31 +49,32 @@ class DXGIImageWrapper(ImageWrapper):
         return "DXGIImageWrapper(%dx%d %s)" % (self.width, self.height, self.pixel_format)
 
     def may_download(self) -> None:
-        if self.pixels is not None or self.freed:
-            return
-        if not self._map_pixels:
-            raise RuntimeError("DXGIImageWrapper: no map function available")
-        start = monotonic()
-        try:
-            data = self._map_pixels()
-            self._mapped = True     # staging is now mapped (Map succeeded)
-            self.pixels = bytes(data)
-        finally:
-            # Unmap only if Map actually succeeded; if _map_pixels raised,
-            # _mapped is still False and the staging was never mapped.
-            if self._unmap and self._mapped:
-                self._unmap()
-                self._mapped = False
-            self._unmap = None
-            self._map_pixels = None
-        elapsed = monotonic() - start
-        nbytes = len(self.pixels)
-        if elapsed > 0:
-            mbs = nbytes / elapsed / 1024 / 1024
-        else:
-            mbs = 9999
-        log("may_download() %s size=%i, elapsed=%ims %.0fMB/s",
-            self.pixel_format, nbytes, int(1000 * elapsed), mbs)
+        with self._lock:
+            if self.pixels is not None or self.freed:
+                return
+            if not self._map_pixels:
+                raise RuntimeError("DXGIImageWrapper: no map function available")
+            start = monotonic()
+            try:
+                data = self._map_pixels()
+                self._mapped = True     # staging is now mapped (Map succeeded)
+                self.pixels = bytes(data)
+            finally:
+                # Unmap only if Map actually succeeded; if _map_pixels raised,
+                # _mapped is still False and the staging was never mapped.
+                if self._unmap and self._mapped:
+                    self._unmap()
+                    self._mapped = False
+                self._unmap = None
+                self._map_pixels = None
+            elapsed = monotonic() - start
+            nbytes = len(self.pixels)
+            if elapsed > 0:
+                mbs = nbytes / elapsed / 1024 / 1024
+            else:
+                mbs = 9999
+            log("may_download() %s size=%i, elapsed=%ims %.0fMB/s",
+                self.pixel_format, nbytes, int(1000 * elapsed), mbs)
 
     def get_gpu_buffer(self):
         """Return the D3D11_USAGE_DEFAULT texture pointer, or None.
@@ -102,16 +103,17 @@ class DXGIImageWrapper(ImageWrapper):
         return True
 
     def free(self) -> None:
-        # Only unmap if the staging texture is currently mapped.
-        # If may_download() was never called, _mapped is False and the
-        # staging was never mapped — calling Unmap would be incorrect.
-        if self._unmap and self._mapped:
-            try:
-                self._unmap()
-            except Exception:
-                log("DXGIImageWrapper.free() unmap error", exc_info=True)
-        self._unmap = None
-        self._map_pixels = None
-        self._mapped = False
-        self._gpu_ptr = 0
-        super().free()
+        with self._lock:
+            # Only unmap if the staging texture is currently mapped.
+            # If may_download() was never called, _mapped is False and the
+            # staging was never mapped — calling Unmap would be incorrect.
+            if self._unmap and self._mapped:
+                try:
+                    self._unmap()
+                except Exception:
+                    log("DXGIImageWrapper.free() unmap error", exc_info=True)
+            self._unmap = None
+            self._map_pixels = None
+            self._mapped = False
+            self._gpu_ptr = 0
+            super().free()

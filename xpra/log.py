@@ -317,6 +317,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "compress"      : "Pixel compression",
     },
     "Codec": {
+        "image"         : "Image wrapper (pixel buffers passed between codecs)",
         "csc"           : "Colourspace conversion codecs",
         "cuda"          : "CUDA device access",
         "cython"        : "Cython CSC module",

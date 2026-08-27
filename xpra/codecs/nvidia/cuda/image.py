@@ -37,26 +37,27 @@ class CUDAImageWrapper(ImageWrapper):
             self.stream.synchronize()
 
     def may_download(self) -> None:
-        ctx = self.cuda_context
-        if self.pixels is not None or not ctx or self.freed:
-            return
-        assert self.cuda_device_buffer, "bug: no device buffer"
-        start = monotonic()
-        ctx.push()
-        host_buffer = pagelocked_empty(self.buffer_size, dtype=byte)  # pylint: disable=no-member
-        memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)  # pylint: disable=no-member
-        self.wait_for_stream()
-        self.pixels = host_buffer.tobytes()
-        elapsed = monotonic() - start
-        if elapsed > 0:
-            mbs = self.buffer_size / elapsed / 1024 / 1024
-        else:
-            mbs = 9999
-        log("may_download() from %#x to %s, size=%s, elapsed=%ims - %iMB/s",
-            int(self.cuda_device_buffer), host_buffer, self.buffer_size,
-            int(1000 * elapsed), mbs)
-        self.free_cuda()
-        ctx.pop()
+        with self._lock:
+            ctx = self.cuda_context
+            if self.pixels is not None or not ctx or self.freed:
+                return
+            assert self.cuda_device_buffer, "bug: no device buffer"
+            start = monotonic()
+            ctx.push()
+            host_buffer = pagelocked_empty(self.buffer_size, dtype=byte)  # pylint: disable=no-member
+            memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)  # pylint: disable=no-member
+            self.wait_for_stream()
+            self.pixels = host_buffer.tobytes()
+            elapsed = monotonic() - start
+            if elapsed > 0:
+                mbs = self.buffer_size / elapsed / 1024 / 1024
+            else:
+                mbs = 9999
+            log("may_download() from %#x to %s, size=%s, elapsed=%ims - %iMB/s",
+                int(self.cuda_device_buffer), host_buffer, self.buffer_size,
+                int(1000 * elapsed), mbs)
+            self.free_cuda()
+            ctx.pop()
 
     def freeze(self) -> bool:
         # this image is already a copy when we get it
@@ -96,8 +97,9 @@ class CUDAImageWrapper(ImageWrapper):
         self.buffer_size = 0
 
     def free(self) -> None:
-        self.free_cuda()
-        super().free()
+        with self._lock:
+            self.free_cuda()
+            super().free()
 
     def clean(self) -> None:
         try:

@@ -181,6 +181,9 @@ def free_image_wrapper(image: ImageWrapper) -> None:
     """ when not running in the UI thread,
         call this method to free an image wrapper safely
     """
+    # image.free() blocks on the image's pixel lock: any `with image:` critical
+    # section held by another thread must stay short and never block on UI-thread/GLib
+    # work, or the do_free_image() callback below would stall the UI thread behind it
     # log("free_image_wrapper(%s) thread_safe=%s", image, image.is_thread_safe())
     if image.is_thread_safe():
         image.free()

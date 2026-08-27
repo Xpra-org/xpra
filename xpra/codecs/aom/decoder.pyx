@@ -6,12 +6,11 @@
 #cython: wraparound=False
 
 import weakref
-from time import sleep
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec, check_image_size, MAX_IMAGE_DIMENSION
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envfloat
 from xpra.util.str_fn import hexstr
 from xpra.util.objects import typedict
 from xpra.common import SizedBuffer
@@ -19,6 +18,8 @@ from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
 log = Logger("decoder", "aom")
+
+WAIT_FOR_IMAGE_TIMEOUT: float = envfloat("XPRA_AOM_WAIT_FOR_IMAGE_TIMEOUT", 0.2)
 
 from libc.string cimport memset
 from libc.stdint cimport uint8_t, uintptr_t
@@ -124,6 +125,7 @@ cdef class Decoder:
     cdef aom_codec_iface_t *codec
     cdef aom_codec_ctx_t context
     cdef object image_wrapper
+    cdef object image_pixels
 
     cdef object __weakref__
 
@@ -194,23 +196,31 @@ cdef class Decoder:
         return info
 
     def wait_for_image(self) -> None:
-        cdef object wrapper = None
         ref = self.image_wrapper
+        pixels = self.image_pixels
+        self.image_wrapper = None  # clear the weakref
+        self.image_pixels = None
         if ref is None:
             return      # no image wrapper to wait for
-        for i in range(20):
-            wrapper = self.image_wrapper()
-            if wrapper is None or wrapper.freed:
-                self.image_wrapper = None  # clear the weakref
-                return
-            log("wait_for_image() wrapper=%s", wrapper)
-            # if the image wrapper still exists,
-            # then it references the libaom buffers
-            # we can't just call:
-            # `wrapper.clone_pixel_data()`
-            # because the pixel buffers may already be in use
-            sleep(i / 1000)  # wait a bit for the image wrapper to be released
-        raise RuntimeError("ImageWrapper is still in use, cannot decode new image")
+        wrapper = ref()
+        if wrapper is None or wrapper.freed or wrapper.pixels is not pixels:
+            # freed, or already cloned/replaced by the consumer since we handed it out:
+            # it no longer references our buffers, nothing to do
+            return
+        log("wait_for_image() wrapper=%s", wrapper)
+        # the pixel buffers reference our internal libaom planes directly:
+        # wait for any in-progress `with wrapper:` critical section to finish
+        # (an actual reader, not just something still holding the wrapper),
+        # then copy the pixels out so the wrapper no longer depends on our
+        # buffers - this lets us reuse them immediately without waiting for
+        # the wrapper itself to be freed or garbage collected
+        if not wrapper._lock.acquire(timeout=WAIT_FOR_IMAGE_TIMEOUT):
+            raise RuntimeError("ImageWrapper is still in use, cannot decode new image")
+        try:
+            if not wrapper.freed and wrapper.pixels is pixels:
+                wrapper.clone_pixel_data()
+        finally:
+            wrapper._lock.release()
 
     def decompress_image(self, data: SizedBuffer, options: typedict) -> ImageWrapper:
         log("decompress_image(%i bytes, %s)", len(data), options)
@@ -297,6 +307,7 @@ cdef class Decoder:
         wrapper = ImageWrapper(0, 0, self.width, self.height, pyplanes, pixel_format, depth,
                                pystrides, bytesperpixel=bytes_per_sample, planes=PlanarFormat.PLANAR_3, full_range=full_range)
         self.image_wrapper = weakref.ref(wrapper)
+        self.image_pixels = pyplanes
         return wrapper
 
 

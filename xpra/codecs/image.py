@@ -5,10 +5,17 @@
 
 from enum import IntEnum
 from time import monotonic
+from threading import RLock
 from collections.abc import Sequence
 
 from xpra.common import roundup
 from xpra.util.str_fn import memoryview_to_bytes
+from xpra.util.env import envfloat
+from xpra.log import Logger
+
+log = Logger("image")
+
+FREE_LOCK_TIMEOUT: float = envfloat("XPRA_IMAGE_FREE_LOCK_TIMEOUT", 5.0)
 
 
 def clone_plane(plane):
@@ -54,8 +61,20 @@ class ImageWrapper:
         self.timestamp: int = int(monotonic() * 1000)
         self.palette = palette
         self.full_range = full_range
+        self._lock = RLock()
         if width <= 0 or height <= 0:
             raise ValueError(f"invalid geometry {x},{y},{width},{height}")
+
+    def __enter__(self):
+        self._lock.acquire()
+        if self.freed:
+            self._lock.release()
+            raise RuntimeError("image wrapper has already been freed")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        self._lock.release()
+        return False
 
     def _cn(self):
         try:
@@ -175,59 +194,62 @@ class ImageWrapper:
         return False
 
     def restride(self, rowstride: int) -> bool:
-        if self.freed:
-            raise RuntimeError("image wrapper has already been freed")
-        if self.planes > 0:
-            # not supported yet for planar images
-            return False
-        pixels = self.pixels
-        assert pixels, "no pixel data to restride"
-        oldstride = self.rowstride
-        pos = 0
-        lines = []
-        for _ in range(self.height):
-            lines.append(memoryview_to_bytes(pixels[pos:pos + rowstride]))
-            pos += oldstride
-        if self.height > 0 and oldstride < rowstride:
-            # the last few lines may need padding if the new rowstride is bigger
-            # (usually just the last line)
-            # we do this here to avoid slowing down the main loop above
-            # as this should be a rarer case
-            for h in range(self.height):
-                i = -(1 + h)
-                line = lines[i]
-                if len(line) < rowstride:
-                    lines[i] = line + b"\0" * (rowstride - len(line))
-                else:
-                    break
-        self.rowstride = rowstride
-        self.pixels = b"".join(lines)
-        return True
+        with self._lock:
+            if self.freed:
+                raise RuntimeError("image wrapper has already been freed")
+            if self.planes > 0:
+                # not supported yet for planar images
+                return False
+            pixels = self.pixels
+            assert pixels, "no pixel data to restride"
+            oldstride = self.rowstride
+            pos = 0
+            lines = []
+            for _ in range(self.height):
+                lines.append(memoryview_to_bytes(pixels[pos:pos + rowstride]))
+                pos += oldstride
+            if self.height > 0 and oldstride < rowstride:
+                # the last few lines may need padding if the new rowstride is bigger
+                # (usually just the last line)
+                # we do this here to avoid slowing down the main loop above
+                # as this should be a rarer case
+                for h in range(self.height):
+                    i = -(1 + h)
+                    line = lines[i]
+                    if len(line) < rowstride:
+                        lines[i] = line + b"\0" * (rowstride - len(line))
+                    else:
+                        break
+            self.rowstride = rowstride
+            self.pixels = b"".join(lines)
+            return True
 
     def freeze(self) -> bool:
-        if self.freed:
-            raise RuntimeError("image wrapper has already been freed")
-        # some wrappers (XShm) need to be told to stop updating the pixel buffer
-        return False
+        with self._lock:
+            if self.freed:
+                raise RuntimeError("image wrapper has already been freed")
+            # some wrappers (XShm) need to be told to stop updating the pixel buffer
+            return False
 
     def clone_pixel_data(self) -> None:
-        if self.freed:
-            raise RuntimeError("image wrapper has already been freed")
-        pixels = self.pixels
-        planes = self.planes
-        if not pixels:
-            raise ValueError("no pixel data to clone")
-        if planes < 0:
-            raise ValueError(f"invalid number of planes {planes}")
-        if planes == 0:
-            # no planes, simple buffer:
-            self.pixels = clone_plane(pixels)
-        else:
-            self.pixels = [clone_plane(pixels[i]) for i in range(planes)]
-        self.thread_safe = True
-        if self.freed:  # pragma: no cover
-            # could be a race since this can run threaded
-            self.free()
+        with self._lock:
+            if self.freed:
+                raise RuntimeError("image wrapper has already been freed")
+            pixels = self.pixels
+            planes = self.planes
+            if not pixels:
+                raise ValueError("no pixel data to clone")
+            if planes < 0:
+                raise ValueError(f"invalid number of planes {planes}")
+            if planes == 0:
+                # no planes, simple buffer:
+                self.pixels = clone_plane(pixels)
+            else:
+                self.pixels = [clone_plane(pixels[i]) for i in range(planes)]
+            self.thread_safe = True
+            if self.freed:  # pragma: no cover
+                # could be a race since this can run threaded
+                self.free()
 
     def get_sub_image(self, x: int, y: int, w: int, h: int):
         # raise NotImplementedError("no sub-images for %s" % type(self))
@@ -264,11 +286,24 @@ class ImageWrapper:
         self.free()
 
     def free(self) -> None:
-        if not getattr(self, "freed", True):
-            self.freed = True
-            self.planes = PlanarFormat.INVALID
-            self.pixels = ()
-            self.pixel_format = ""
+        lock = getattr(self, "_lock", None)
+        if lock is None:
+            return
+        # critical sections entered via `with image:` (or any lock-holding method)
+        # must be short-lived and never block on UI-thread/GLib work,
+        # since the UI thread's deferred free() (see free_image_wrapper()) can block behind them
+        if not lock.acquire(timeout=FREE_LOCK_TIMEOUT):
+            log.error("Error: timeout waiting for the pixel lock of %s", self)
+            log.error(" a critical section may be blocking for too long")
+            lock.acquire()
+        try:
+            if not getattr(self, "freed", True):
+                self.freed = True
+                self.planes = PlanarFormat.INVALID
+                self.pixels = ()
+                self.pixel_format = ""
+        finally:
+            lock.release()
 
 
 def to_pil_image(image: ImageWrapper):

@@ -79,38 +79,39 @@ class DMABufImageWrapper(ImageWrapper):
             osclose(*fds)
 
     def may_download(self) -> None:
-        if self.pixels is not None or self.freed:
-            return
-        check_main_thread()
-        if not self.downloader:
-            raise RuntimeError("no dmabuf downloader is available")
-        start = monotonic()
-        try:
-            image = self.downloader()
-        except Exception:
+        with self._lock:
+            if self.pixels is not None or self.freed:
+                return
+            check_main_thread()
+            if not self.downloader:
+                raise RuntimeError("no dmabuf downloader is available")
+            start = monotonic()
+            try:
+                image = self.downloader()
+            except Exception:
+                self.close_fds()
+                self.downloader = None
+                self.release_buffer()
+                raise
+            if image is None:
+                self.close_fds()
+                self.downloader = None
+                self.release_buffer()
+                raise RuntimeError("dmabuf download failed")
+            self.pixels = image.get_pixels()
+            self.pixel_format = image.get_pixel_format()
+            self.depth = image.get_depth()
+            self.rowstride = image.get_rowstride()
+            self.bytesperpixel = image.get_bytesperpixel()
+            self.planes = image.get_planes()
+            self.palette = image.get_palette()
+            self.full_range = image.get_full_range()
             self.close_fds()
             self.downloader = None
             self.release_buffer()
-            raise
-        if image is None:
-            self.close_fds()
-            self.downloader = None
-            self.release_buffer()
-            raise RuntimeError("dmabuf download failed")
-        self.pixels = image.get_pixels()
-        self.pixel_format = image.get_pixel_format()
-        self.depth = image.get_depth()
-        self.rowstride = image.get_rowstride()
-        self.bytesperpixel = image.get_bytesperpixel()
-        self.planes = image.get_planes()
-        self.palette = image.get_palette()
-        self.full_range = image.get_full_range()
-        self.close_fds()
-        self.downloader = None
-        self.release_buffer()
-        elapsed = monotonic() - start
-        log("may_download() format=%#x, modifier=%#x, size=%ix%i, elapsed=%ims",
-            self.drm_format, self.modifier, self.width, self.height, int(1000 * elapsed))
+            elapsed = monotonic() - start
+            log("may_download() format=%#x, modifier=%#x, size=%ix%i, elapsed=%ims",
+                self.drm_format, self.modifier, self.width, self.height, int(1000 * elapsed))
 
     def get_pixels(self):
         self.may_download()
@@ -125,7 +126,8 @@ class DMABufImageWrapper(ImageWrapper):
         return super().get_sub_image(x, y, w, h)
 
     def free(self) -> None:
-        self.close_fds()
-        self.downloader = None
-        self.release_buffer()
-        super().free()
+        with self._lock:
+            self.close_fds()
+            self.downloader = None
+            self.release_buffer()
+            super().free()
