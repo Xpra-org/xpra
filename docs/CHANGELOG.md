@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.4] 2026-08-25
+## [6.5.4] 2026-08-27
 * 🔧 Platforms, build and packaging:
   * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
   * [wayland: link to wayland-server](https://github.com/Xpra-org/xpra/commit/36bae2f550e15500d4691795126bccb222bfae83)
@@ -9,9 +9,12 @@
   * [stop building DEBs on any failure](https://github.com/Xpra-org/xpra/commit/f29d9ed6c9b1c73ba6f501c124299eb986949402)
   * [Fedora 45 package list](https://github.com/Xpra-org/xpra/commit/9f5fd7c6be0c17099f6aec161aeb653f25a208f3)
 * ⚠️ Major:
-  * [wayland screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
   * [stale X11 timestamps cause focus issues](https://github.com/Xpra-org/xpra/commit/2896248d67d6c01ba3f5afaa9f947ac82393efaf)
   * [method wrongly returned failure code](https://github.com/Xpra-org/xpra/commit/359cf5d0e69f23a2a8ae322f75356df00094dc57)
+* Wayland backend:
+  * [screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
+  * [windows can end up duplicated on clients](https://github.com/Xpra-org/xpra/commit/33256c95d4c636982c6c6611503cd57606da9c36)
+  * [synchronize window encoding properties](https://github.com/Xpra-org/xpra/commit/cd7535c4fb28db901082e518de4a851d15b5b902)
 * Minor:
   * [missing `content-types` attributes](https://github.com/Xpra-org/xpra/commit/b4c153ca338741d827e30f36281b084d7323716c)
   * [safer display access](https://github.com/Xpra-org/xpra/commit/ae46dee30facea5f8d28be08e3021d88b914c0f1)
@@ -37,7 +40,9 @@
   * [unit test failures in constrained environments](https://github.com/Xpra-org/xpra/commit/988c7e9f0ab5d9cb4414447f5af672af018464bf)
   * [duplicate registration of pointer grab handlers](https://github.com/Xpra-org/xpra/commit/7a9d80c325c2040b8dd6ce001725b94d9af87fe2)
   * [silence spurious GCC warnings](https://github.com/Xpra-org/xpra/commit/a7e184aeb2dc4768684e1cfc12191199d6ba4bf5)
-  * [unit tests fixes](https://github.com/Xpra-org/xpra/commit/0a1ec7a682ee9cf0ba3199b7e9496942a4c1899f)
+  * [spurious packet errors on client disconnection](https://github.com/Xpra-org/xpra/commit/abc0777c6678d698798df561394fd05ef018d1e0)
+  * [wrong colours in example dialog](https://github.com/Xpra-org/xpra/commit/c6a7b68da3aff9cf9cd931cec46675cb7c890765)
+  * [unit tests fixes](https://github.com/Xpra-org/xpra/commit/0a1ec7a682ee9cf0ba3199b7e9496942a4c1899f): [clipboard](https://github.com/Xpra-org/xpra/commit/f2a59ddb3b80865de3422655ab4c4c2d2d048c80), [stop display](https://github.com/Xpra-org/xpra/commit/a06a6d1b3bbe40782fe1d6198195e502715f7192)
   * [make it easier to see which tests have failed](https://github.com/Xpra-org/xpra/commit/eaa4ab710de18f8e94749730e28c578ae0e1125a) [and which are slow](https://github.com/Xpra-org/xpra/commit/bb94b6e177d130ea4a908efb432663bee644af91)
 
 ## [6.5.3] 2026-08-18

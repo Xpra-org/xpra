@@ -7,9 +7,12 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     stop building DEBs on any failure
     Fedora 45 package list
   * ⚠️ Major:
-    wayland screen updates stall
     stale X11 timestamps cause focus issues
     method wrongly returned failure code
+  * Wayland backend:
+    screen updates stall
+    windows can end up duplicated on clients
+    synchronize window encoding properties
   * Minor:
     missing `content-types` attributes
     safer display access
@@ -35,10 +38,12 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     unit test failures in constrained environments
     duplicate registration of pointer grab handlers
     silence spurious GCC warnings
-    unit tests fixes
+    spurious packet errors on client disconnection
+    wrong colours in example dialog
+    unit tests fixes: clipboard, stop display
     make it easier to see which tests have failed and which are slow
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 25 Aug 2026 17:02:52 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Aug 2026 16:49:24 +0700
 
 xpra (6.5.3-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:

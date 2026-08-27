@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Tue Aug 25 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
+* Thu Aug 27 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
 - 🔧 Platforms, build and packaging:
    `libyuv` not detected without pkgconfig file + fixup
    wayland: link to wayland-server
@@ -1120,9 +1120,12 @@ fi
    stop building DEBs on any failure
    Fedora 45 package list
 - ⚠️ Major:
-   wayland screen updates stall
    stale X11 timestamps cause focus issues
    method wrongly returned failure code
+- Wayland backend:
+   screen updates stall
+   windows can end up duplicated on clients
+   synchronize window encoding properties
 - Minor:
    missing `content-types` attributes
    safer display access
@@ -1148,7 +1151,9 @@ fi
    unit test failures in constrained environments
    duplicate registration of pointer grab handlers
    silence spurious GCC warnings
-   unit tests fixes
+   spurious packet errors on client disconnection
+   wrong colours in example dialog
+   unit tests fixes: clipboard, stop display
    make it easier to see which tests have failed and which are slow
 * Tue Aug 18 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
