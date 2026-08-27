@@ -1,5 +1,8 @@
 # Changelog
 
+## [7.0] 2026-08-27
+* TODO
+
 ## [6.6] 2026-07-14
 * 🔧 Platforms, build and packaging:
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)

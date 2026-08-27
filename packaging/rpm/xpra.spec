@@ -79,7 +79,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.6
+Version:			7.0
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1147,6 +1147,8 @@ fi
 
 
 %changelog
+* Thu Aug 27 2026 Antoine Martin <antoine@xpra.org> 7.0-10
+- TODO
 * Thu May 14 2026 Antoine Martin <antoine@xpra.org> 6.6-10
 - TODO
 * Wed May 06 2026 Antoine Martin <antoine@xpra.org> 6.5-10
