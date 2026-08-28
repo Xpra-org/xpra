@@ -911,11 +911,12 @@ def warn_restricted_encoding_options(options) -> None:
     encodings = tuple(dict.fromkeys(
         "rgb" if x in ("rgb24", "rgb32") else x for x in options.encodings
     ))
-    if len(encodings) < 3:
+    if len(encodings) < 3 and (len(encodings) != 1 or encodings[0] != "rgb"):
         warn(f"Warning: only a few encodings are enabled: {csv(encodings)}")
         warn(" this prevents Xpra from choosing the best compression for each screen update")
         warn(" and may cause poor visual quality and performance")
-        warn(" this is almost always a misguided workaround for something that should be configured elsewhere, and it will break things")
+        warn(" this is almost always a misguided attempt at tuning compression,")
+        warn(" it should be configured elsewhere, and it will break things")
 
     enabled_video_encoders: set[str] = set()
     for entry in options.video_encoders:
@@ -932,7 +933,8 @@ def warn_restricted_encoding_options(options) -> None:
         warn(f"Warning: only one video encoder is enabled: {csv(enabled_video_encoders)}")
         warn(" this prevents Xpra from choosing the best compression pipeline")
         warn(" and may cause poor visual quality and performance")
-        warn(" this is almost always a misguided workaround for something that should be configured elsewhere, and it will break things")
+        warn(" this is almost always a misguided attempt at tuning compression,")
+        warn(" it should be configured elsewhere, and it will break things")
 
 
 def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, list[str]]:
