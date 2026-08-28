@@ -61,8 +61,10 @@ if OSX or WIN32:   # pragma: no cover
 
 def remove_dupes(seq: Iterable[Any]) -> list[Any]:
     seen: set[Any] = set()
-    seen_add: Callable = seen.add
-    return [x for x in seq if not (x in seen or seen_add(x))]
+    # note: `x not in seen and not seen.add(x)` rather than the more common
+    # `not (x in seen or seen.add(x))`: Cython 3.3.0 miscompiles the latter
+    # inside a comprehension filter (it gets evaluated to a constant)
+    return [x for x in seq if x not in seen and not seen.add(x)]
 
 
 _has_audio_support: bool | None = None
