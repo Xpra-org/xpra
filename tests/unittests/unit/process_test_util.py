@@ -35,22 +35,32 @@ SHOW_XORG_OUTPUT = envbool("XPRA_SHOW_XORG_OUTPUT", False)
 TEST_XVFB_COMMAND = os.environ.get("XPRA_TEST_VFB_COMMAND", "Xvfb")
 
 
-def show_proc_pipes(proc) -> None:
-    def showfile(fileobj, filetype="stdout") -> None:
-        if fileobj and fileobj.name and os.path.exists(fileobj.name):
-            log.warn("contents of %s file '%s':", filetype, fileobj.name)
-            try:
-                with fileobj as f:
-                    f.seek(0)
-                    for line in f:
-                        log.warn(" %s", line.decode("latin1").rstrip("\n\r"))
-            except Exception as e:
-                log.error("Error: failed to read '%s': %s", fileobj.name, e)
-        else:
-            log.warn("no %s file", filetype)
+def read_proc_pipe(fileobj, filetype="stdout") -> str:
+    if not (fileobj and getattr(fileobj, "name", "") and os.path.exists(fileobj.name)):
+        return ""
+    try:
+        with open(fileobj.name, "rb") as f:
+            data = f.read()
+    except OSError as e:
+        return f"(failed to read {filetype} file {fileobj.name!r}: {e})"
+    return data.decode("latin1").rstrip("\n\r")
 
-    showfile(proc.stdout_file, "stdout")
-    showfile(proc.stderr_file, "stderr")
+
+def proc_pipes_str(proc) -> str:
+    out = ""
+    for filetype in ("stdout", "stderr"):
+        fileobj = getattr(proc, f"{filetype}_file", None)
+        text = read_proc_pipe(fileobj, filetype)
+        if text:
+            out += f"\n----- {filetype} ({fileobj.name}) -----\n{text}"
+        else:
+            out += f"\n----- no {filetype} -----"
+    return out
+
+
+def show_proc_pipes(proc) -> None:
+    for line in proc_pipes_str(proc).splitlines():
+        log.warn("%s", line)
 
 
 def show_proc_error(proc, msg) -> NoReturn:
@@ -58,8 +68,10 @@ def show_proc_error(proc, msg) -> NoReturn:
         raise Exception("command failed to start: %s" % msg)
     log.warn("%s failed:", proc.command)
     log.warn("returncode=%s", proc.poll())
-    show_proc_pipes(proc)
-    raise Exception(msg + " command=%s" % proc.command)
+    # include the subprocess output in the exception itself:
+    # `log.warn` output ends up detached from the traceback in the test logs,
+    # so the captured stdout/stderr would otherwise be effectively hidden
+    raise Exception(f"{msg} command={proc.command}{proc_pipes_str(proc)}")
 
 
 class DisplayContext(OSEnvContext):

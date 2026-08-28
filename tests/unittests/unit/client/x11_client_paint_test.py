@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
 import unittest
 
 from xpra.util.env import envint, OSEnvContext
@@ -37,10 +36,12 @@ class X11ClientPaintTest(X11ClientTestUtil):
         }
 
     def _colors_start_arg(self):
-        # spawn "xpra example colors-plain" as the server's start child,
-        # using the same interpreter/module invocation as the test harness
-        # itself, in case a bare "xpra" isn't reliably on the child's PATH:
-        return "%s -m xpra.scripts.main example colors-plain" % sys.executable
+        # spawn "xpra example colors-plain" as the server's start child.
+        # use the `xpra` wrapper script (via get_xpra_cmd) rather than
+        # `python -m xpra.scripts.main`: `-m` cannot execute `xpra.scripts.main`
+        # when it is a compiled extension module (ie: cythonize_more builds),
+        # it fails with "No code object available for xpra.scripts.main":
+        return " ".join(self.get_xpra_cmd() + ["example", "colors-plain"])
 
     def _check_colors_pattern(self, server_args, client_args, tolerance):
         server_display = self.find_free_display()
