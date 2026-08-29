@@ -16,6 +16,10 @@ log = Logger("shadow")
 
 
 class ShadowDisplayMixin:
+    # shadow servers mirror an existing display, they cannot re-arrange it
+    # to give each client an area of its own (`sharing=combine`):
+    SHARING_LAYOUT_SUPPORTED = False
+
     def parse_screen_info(self, ss):
         if ss.desktop_size != (0, 0):
             log.info(" client root window size is %sx%s", *ss.desktop_size)

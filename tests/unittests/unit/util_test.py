@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util.objects import AtomicInteger, MutableInteger, typedict
-from xpra.util.screen import log_screen_sizes, MonitorLayout
+from xpra.util.screen import log_screen_sizes, MonitorLayout, combine_monitor_layouts, monitors_bounding_box
 from xpra.util.str_fn import (
     std, alnum, nonl, pver,
     obsc, csv, is_valid_hostname,
@@ -104,6 +104,66 @@ class TestMonitorLayout(unittest.TestCase):
         })
         self.assertFalse(layout)
         self.assertIsNone(layout.relative_position(0, 0))
+
+
+class TestCombinedMonitorLayouts(unittest.TestCase):
+
+    SINGLE = {
+        0: {"name": "left", "geometry": (0, 0, 1920, 1080), "workarea": (0, 24, 1920, 1056)},
+    }
+    DUAL = {
+        0: {"name": "main", "geometry": (0, 0, 2560, 1440)},
+        1: {"name": "side", "geometry": (2560, 0, 1280, 1024)},
+    }
+
+    def test_bounding_box(self):
+        self.assertEqual(monitors_bounding_box(self.SINGLE), (1920, 1080))
+        self.assertEqual(monitors_bounding_box(self.DUAL), (3840, 1440))
+        self.assertEqual(monitors_bounding_box({}), (0, 0))
+
+    def test_combine_horizontal(self):
+        monitors, areas = combine_monitor_layouts([self.SINGLE, self.DUAL])
+        self.assertEqual(areas, [(0, 0, 1920, 1080), (1920, 0, 3840, 1440)])
+        # re-indexed from zero, so that they can be used as crtc indexes:
+        self.assertEqual(sorted(monitors.keys()), [0, 1, 2])
+        self.assertEqual(monitors[0]["geometry"], (0, 0, 1920, 1080))
+        self.assertEqual(monitors[1]["geometry"], (1920, 0, 2560, 1440))
+        self.assertEqual(monitors[2]["geometry"], (4480, 0, 1280, 1024))
+        # the workarea is shifted with the geometry:
+        self.assertEqual(monitors[0]["workarea"], (0, 24, 1920, 1056))
+        self.assertEqual(monitors[2]["name"], "side")
+        # the screen has to be big enough for all of them:
+        self.assertEqual(monitors_bounding_box(monitors), (5760, 1440))
+        # the inputs are left untouched:
+        self.assertEqual(self.DUAL[0]["geometry"], (0, 0, 2560, 1440))
+
+    def test_combine_vertical(self):
+        monitors, areas = combine_monitor_layouts([self.SINGLE, self.DUAL], vertical=True)
+        self.assertEqual(areas, [(0, 0, 1920, 1080), (0, 1080, 3840, 1440)])
+        self.assertEqual(monitors[0]["geometry"], (0, 0, 1920, 1080))
+        self.assertEqual(monitors[1]["geometry"], (0, 1080, 2560, 1440))
+        self.assertEqual(monitors[2]["geometry"], (2560, 1080, 1280, 1024))
+
+    def test_combine_negative_origin(self):
+        # a client whose monitors are at negative coordinates is normalized first:
+        offset = {
+            0: {"geometry": (-1920, 0, 1920, 1080)},
+            1: {"geometry": (0, -200, 2560, 1440)},
+        }
+        monitors, areas = combine_monitor_layouts([self.SINGLE, offset])
+        self.assertEqual(areas, [(0, 0, 1920, 1080), (1920, 0, 4480, 1440)])
+        self.assertEqual(monitors[1]["geometry"], (1920, 200, 1920, 1080))
+        self.assertEqual(monitors[2]["geometry"], (3840, 0, 2560, 1440))
+
+    def test_combine_empty(self):
+        self.assertEqual(combine_monitor_layouts([]), ({}, []))
+        # a peer with no usable monitors gets an empty area and contributes nothing:
+        for empty in ({}, {0: {"geometry": (0, 0, 0, 100)}}, {0: None}):
+            with self.subTest(empty=empty):
+                monitors, areas = combine_monitor_layouts([empty, self.SINGLE])
+                self.assertEqual(areas, [(0, 0, 0, 0), (0, 0, 1920, 1080)])
+                self.assertEqual(len(monitors), 1)
+                self.assertEqual(monitors[0]["geometry"], (0, 0, 1920, 1080))
 
 
 class TestTypedict(unittest.TestCase):

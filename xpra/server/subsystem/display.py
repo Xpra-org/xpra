@@ -15,7 +15,7 @@ from xpra.server.source.display import DisplayConnection
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.util.parsing import get_refresh_rate_for_value, DEFAULT_REFRESH_RATE
+from xpra.util.parsing import get_refresh_rate_for_value, parse_sharing_layout, DEFAULT_REFRESH_RATE
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -71,10 +71,13 @@ class DisplayManager(StubSubsystem):
     """
     __slots__ = (
         "antialias", "bit_depth", "default_dpi", "display", "display_options", "dpi",
-        "original_desktop_display", "refresh_rate", "xdpi", "ydpi",
+        "original_desktop_display", "refresh_rate", "sharing_layout", "xdpi", "ydpi",
     )
     DEFAULT_REFRESH_RATE = DEFAULT_REFRESH_RATE
     PREFIX = "display"
+    # can this server give each client its own area of the virtual display?
+    # (`sharing=combine` - only the seamless X11 servers can, and only with RandR 1.6)
+    SHARING_LAYOUT_SUPPORTED = False
 
     # `display-geometry-changed` is emitted on this subsystem (via
     # `SignalEmitter`) when the display geometry changes. Peer subsystems
@@ -95,10 +98,14 @@ class DisplayManager(StubSubsystem):
         self.antialias: dict[str, Any] = {}
         self.refresh_rate = "auto"
         self.original_desktop_display = None
+        # how the virtual display is shared between multiple clients:
+        # `combine` gives each client its own area of it, anything else mirrors it
+        self.sharing_layout = ""
 
     def init(self, opts) -> None:
         self.default_dpi = int(opts.dpi)
         self.refresh_rate = opts.refresh_rate
+        self.sharing_layout = parse_sharing_layout(opts.sharing)
 
     def setup(self) -> None:
         from xpra.platform.gui import init as gui_init
@@ -106,6 +113,16 @@ class DisplayManager(StubSubsystem):
         gui_init()
         self.bit_depth = self.get_display_bit_depth()
         self.idle_add(self.print_screen_info)
+        if self.sharing_layout and not self.SHARING_LAYOUT_SUPPORTED:
+            session_type = getattr(self.server, "session_type", "")
+            self.disable_sharing_layout(f"{session_type!r} sessions share a single display between their clients")
+
+    def disable_sharing_layout(self, reason: str) -> None:
+        """ fall back to sharing the display as `sharing=yes` would """
+        log.warn("Warning: %r display sharing is not available", self.sharing_layout)
+        log.warn(" %s", reason)
+        log.warn(" the display will be shared as with `sharing=yes`")
+        self.sharing_layout = ""
 
     def print_screen_info(self) -> None:
         for x in self.get_display_description().split("\n"):
@@ -202,13 +219,15 @@ class DisplayManager(StubSubsystem):
 
     def get_display_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
-        if root_size := self.get_display_size():
+        # with `sharing=combine`, each client only sees its own area of the virtual display:
+        area_size = getattr(source, "get_display_area_size", lambda: ())()
+        if root_size := (area_size or self.get_display_size()):
             caps |= {
                 "actual_desktop_size": root_size,
                 "root_window_size": root_size,
                 "desktop_size": get_desktop_size_capability(source, *root_size),
             }
-        if max_size := self.get_max_screen_size():
+        if max_size := (area_size or self.get_max_screen_size()):
             caps["max_desktop_size"] = max_size
         if name := self.get_display_name():
             caps["name"] = name
@@ -234,6 +253,9 @@ class DisplayManager(StubSubsystem):
             "refresh-rate": self.refresh_rate,
             "name": self.get_display_name(),
         }
+        if self.sharing_layout:
+            # only set if this server can actually honour it, see `disable_sharing_layout`
+            i["sharing-layout"] = self.sharing_layout
         if self.display:
             i["address"] = self.display
         if self.original_desktop_display:
@@ -276,6 +298,14 @@ class DisplayManager(StubSubsystem):
         if not best:
             return desktop_size
         sw, sh = best
+        if self.sharing_layout:
+            # the display is sized to hold every client, not just this one,
+            # and this client is only told about the area it has been given:
+            ss.desktop_size_server = ss.get_display_area_size() or (sw, sh)
+            self.set_desktop_geometry_attributes(sw, sh)
+            self.apply_refresh_rate(ss)
+            log("do_parse_screen_info(..)=%s (combined)", (sw, sh))
+            return sw, sh
         # we will tell the client about the size chosen in the hello we send back,
         # so record this size as the current server desktop size to avoid change notifications:
         ss.desktop_size_server = sw, sh
@@ -392,12 +422,19 @@ class DisplayManager(StubSubsystem):
 
     def _apply_desktop_size(self, ss, width: int, height: int) -> None:
         log("client requesting new size: %sx%s", width, height)
-        # variant servers wrap `set_screen_size` (see SeamlessServer); route
-        # through self.server so the wrapper fires:
-        self.server.set_screen_size(width, height)
         log.info("received updated display dimensions")
         log.info(f"client display size is {width}x{height}")
         log_screen_sizes(width, height, ss.screen_sizes)
+        if self.sharing_layout:
+            # this client is only one part of the display: re-do the whole layout
+            # (which also re-assigns the areas, since this client's may have changed size)
+            width, height = self.configure_best_screen_size()
+            if width <= 0 or height <= 0:
+                return
+        else:
+            # variant servers wrap `set_screen_size` (see SeamlessServer); route
+            # through self.server so the wrapper fires:
+            self.server.set_screen_size(width, height)
         self.calculate_workarea(width, height)
         self.set_desktop_geometry_attributes(width, height)
 
@@ -468,6 +505,14 @@ class DisplayManager(StubSubsystem):
             raise ValueError("invalid dimensions: %ix%i" % (maxw, maxh))
         workarea = rectangle(0, 0, maxw, maxh)
         display_sources = self.get_sources_by_type(DisplayConnection)
+        if self.sharing_layout:
+            # the clients occupy distinct areas of the display, so intersecting
+            # their workareas would leave nothing usable: the whole display is the workarea
+            log("calculate_workarea(%s, %s) sharing layout %r: using the full display area",
+                maxw, maxh, self.sharing_layout)
+            self.server.set_workarea(workarea)
+            self.server.set_workareas(self.calculate_workareas(maxw, maxh, display_sources))
+            return
         for ss in display_sources:
             # derived from the `monitors` dict (modern clients) or `screen_sizes` (legacy):
             client_workarea = ss.get_client_workarea()
@@ -494,15 +539,19 @@ class DisplayManager(StubSubsystem):
 
     def calculate_workareas(self, maxw: int, maxh: int, display_sources) -> list[tuple[int, int, int, int]]:
         """ the per-monitor workareas, which can only be honoured for a single display client
-            (with more than one, the monitor layouts don't match and there is nothing sensible to export) """
-        if len(display_sources) != 1:
+            (with more than one, the monitor layouts don't match and there is nothing sensible to export)
+            - unless we are combining the clients' displays, in which case they all line up """
+        if len(display_sources) != 1 and not self.sharing_layout:
             return []
         screen = rectangle(0, 0, maxw, maxh)
         workareas = []
-        for client_workarea in display_sources[0].get_client_workareas():
-            common = screen.intersection_rect(rectangle(*client_workarea))
-            if common:
-                workareas.append((common.x, common.y, common.width, common.height))
+        for ss in display_sources:
+            ox, oy = ss.get_display_origin()
+            for client_workarea in ss.get_client_workareas():
+                wx, wy, ww, wh = client_workarea
+                common = screen.intersection_rect(rectangle(wx + ox, wy + oy, ww, wh))
+                if common:
+                    workareas.append((common.x, common.y, common.width, common.height))
         log("calculate_workareas(%s, %s) workareas=%s", maxw, maxh, workareas)
         return workareas
 

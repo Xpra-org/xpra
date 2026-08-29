@@ -270,6 +270,15 @@ class WindowServer(StubSubsystem):
                 # noinspection calling-non-callable
                 show()
 
+    def update_windows_visibility(self) -> None:
+        """
+        Re-evaluate which windows each client should show,
+        used when the clients' display areas change (`sharing=combine`).
+        """
+        for ss in self.window_sources():
+            for wid, window in tuple(self._id_to_window.items()):
+                ss.update_window_visibility(wid, window)
+
     def clamp_windows_to_screen(self, screen_w: int, screen_h: int) -> None:
         """
         No-op by default. Variants whose window models carry a
@@ -491,6 +500,14 @@ class WindowServer(StubSubsystem):
     def get_window_position(self, _window) -> tuple[int, int] | None:
         # where the window is actually mapped on the server screen:
         return None
+
+    @staticmethod
+    def get_window_geometry(window) -> tuple[int, int, int, int]:
+        # where the window is on the server's virtual display:
+        geometry = window.get_property("geometry")
+        if geometry and len(geometry) == 4:
+            return tuple(geometry)
+        return 0, 0, 0, 0
 
     def _window_mapped_at(self, proto, wid: int, window, coords=None) -> None:
         # record where a window is mapped by a client

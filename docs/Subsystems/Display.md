@@ -38,6 +38,45 @@ This can be used to reduce the amount of pixels needed to cover a monitor.
 
 <div class="docs-section-heading" markdown="1">
 
+## Combining the clients' displays
+
+</div>
+
+Normally, every client that shares a session sees the same virtual display:
+its size is the largest width and height requested by any of them.
+
+With `--sharing=combine`, the virtual display is instead made large enough to hold
+every client's monitors placed side by side, and each client is given its own area of it.
+
+Each client is told that the display is exactly the size of its own area, and
+the server translates between the two coordinate spaces:
+
+* the positions the server sends to a client (`window-create`, `window-move-resize`,
+  `window-initiate-moveresize`, `pointer-position`) have the origin of that client's area subtracted
+* the positions the client sends back are resolved from the `monitor` descriptor
+  attached to its `window-map`, `window-configure` and pointer packets, which is
+  offset by that same origin
+
+This is why `combine` requires `XPRA_BACKWARDS_COMPATIBLE=0`: without those monitor
+relative coordinates, the absolute positions sent by two different clients would be
+indistinguishable and could not be mapped back onto the combined display.
+It also requires a seamless server whose virtual display can be re-configured with
+RandR 1.6 (the `dummy` driver with 16 outputs).
+When any of those requirements is not met, the server warns and shares the display
+as it would with `sharing=yes`.
+
+Every window is still sent to every client, so that moving one from one user's screen
+to the next is just a metadata update rather than a new window: see
+[window](./Window.md) for how the windows outside a client's area are hidden.
+
+Note that each user can only move a window within their own screen, which covers their
+own area of the display: a window can straddle the boundary between two areas (and is
+then shown by both clients), but pushing it all the way onto another client's area
+requires the application itself to move it, or a window manager request.
+
+
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
 
 </div>

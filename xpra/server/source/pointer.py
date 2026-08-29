@@ -99,6 +99,11 @@ class PointerConnection(StubClientConnection, PointerSource):
     def update_mouse(self, wid: int, x: int, y: int, rx: int, ry: int) -> None:
         log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i",
             wid, x, y, rx, ry, self.mouse_last_position, self.counter)
+        # `sharing=combine`: the pointer position is absolute,
+        # so it must be translated to this client's area of the virtual display
+        # (`rx`, `ry` are relative to the window and need no adjustment):
+        if to_client_position := getattr(self, "to_client_position", None):
+            x, y = to_client_position(x, y)
         if self.mouse_last_position != (x, y) or self.mouse_last_relative_position != (rx, ry):
             self.mouse_last_position = (x, y)
             self.mouse_last_position = (rx, ry)

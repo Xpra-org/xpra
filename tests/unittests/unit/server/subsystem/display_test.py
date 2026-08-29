@@ -28,6 +28,7 @@ class DisplayMixinTest(ServerMixinTest):
         opts.opengl = "no"
         opts.refresh_rate = "auto"
         opts.resize_display = "no"
+        opts.sharing = "auto"
 
         def calculate_workarea(*_args) -> None:
             pass
@@ -54,6 +55,41 @@ class DisplayMixinTest(ServerMixinTest):
             },
         }
         self._test_mixin_class(make_display_manager, opts, caps, DisplayConnection)
+
+
+class SharingLayoutTest(unittest.TestCase):
+
+    def test_unsupported_layout_is_disabled(self):
+        # only the seamless X11 servers can give each client its own area of the display,
+        # everything else must fall back to sharing it as `sharing=yes` would
+        from xpra.server.subsystem.display import DisplayManager
+        opts = AdHocStruct()
+        opts.dpi = 96
+        opts.refresh_rate = "auto"
+        opts.sharing = "combine"
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.session_type = "test"
+        dm = stubbable(DisplayManager)(server)
+        dm.init(opts)
+        self.assertEqual(dm.sharing_layout, "combine")
+        self.assertFalse(DisplayManager.SHARING_LAYOUT_SUPPORTED)
+        dm.disable_sharing_layout("testing")
+        self.assertEqual(dm.sharing_layout, "")
+
+    def test_no_layout(self):
+        from xpra.server.subsystem.display import DisplayManager
+        opts = AdHocStruct()
+        opts.dpi = 96
+        opts.refresh_rate = "auto"
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        for sharing in ("yes", "no", "auto", "sync"):
+            with self.subTest(sharing=sharing):
+                opts.sharing = sharing
+                dm = stubbable(DisplayManager)(server)
+                dm.init(opts)
+                self.assertEqual(dm.sharing_layout, "")
 
 
 def main():
