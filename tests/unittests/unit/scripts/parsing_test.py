@@ -47,6 +47,11 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(fixup("auto", False, True), "all")
         self.assertEqual(fixup("yes", True, False), "yes")
 
+    def test_sharing_auto(self):
+        sharing = get_defaults()["sharing"]
+        self.assertIsInstance(sharing, str)
+        self.assertEqual(sharing, "auto")
+
     def test_socket_dir_is_deprecated(self):
         with warnings.catch_warnings(record=True) as records:
             warnings.simplefilter("always", DeprecationWarning)
