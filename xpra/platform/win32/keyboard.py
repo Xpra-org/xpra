@@ -128,7 +128,7 @@ class Keyboard(KeyboardBase):
                 self.AltGr_modifiers(names)
         if self.num_lock_modifier:
             try:
-                numlock = GetKeyState(win32con.VK_NUMLOCK)
+                numlock = GetKeyState(win32con.VK_NUMLOCK) & 0x0001
                 if numlock and self.num_lock_modifier not in names:
                     names.append(self.num_lock_modifier)
                 elif not numlock and self.num_lock_modifier in names:
