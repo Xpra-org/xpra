@@ -514,6 +514,8 @@ def testdecoding(decoder_module, encoding: str, cs: str, full: bool) -> None:
                             raise RuntimeError(f"expected image of height {h} but got {image.get_height()}")
                         log(f" test passed for {w}x{h} {encoding} - {cs}")
                         image.free()
+                    except EncodingNotSupported:
+                        raise
                     except Exception:
                         log.error(f"Error on {encoding} {w}x{h} test {cs} frame {i}")
                         raise

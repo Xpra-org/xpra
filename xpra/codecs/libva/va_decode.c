@@ -1186,13 +1186,16 @@ static LibVADecodeStatus map_output(LibVADecoder *dec, VASurfaceID surface,
 
     t0 = usec_now();
     status = vaDeriveImage(dec->display, surface, &image);
-    if (status != VA_STATUS_SUCCESS)
-        return set_error(dec, status, "vaDeriveImage");
+    if (status != VA_STATUS_SUCCESS) {
+        set_error(dec, status, "vaDeriveImage");
+        return LIBVA_DEC_NOT_AVAILABLE;
+    }
     status = vaMapBuffer(dec->display, image.buf, &data);
     t1 = usec_now();
     if (status != VA_STATUS_SUCCESS) {
         vaDestroyImage(dec->display, image.image_id);
-        return set_error(dec, status, "vaMapBuffer(output)");
+        set_error(dec, status, "vaMapBuffer(output)");
+        return LIBVA_DEC_NOT_AVAILABLE;
     }
 
     memset(frame, 0, sizeof(*frame));
