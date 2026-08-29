@@ -1261,7 +1261,7 @@ def get_defaults() -> dict[str, Any]:
         "xsettings"         : ["auto", "no"][int(OSX or WIN32)],
         "gsettings-sync"    : ["auto", "no"][int(OSX or WIN32)],
         "system-tray"       : True,
-        "sharing"           : None,
+        "sharing"           : "auto",
         "lock"              : None,
         "delay-tray"        : False,
         "windows"           : True,
