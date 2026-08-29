@@ -468,7 +468,7 @@ def testdecoder(decoder_module, full: bool) -> Sequence[str]:
             if encoding in codecs:
                 codecs.remove(encoding)
     if not codecs:
-        log.error(f"{dtype}: all the codecs have failed! {csv(decoder_module.get_encodings())}")
+        log.warn(f"Warning: all the {dtype} decoders have failed! ({csv(decoder_module.get_encodings())})")
     return tuple(codecs)
 
 
@@ -549,7 +549,7 @@ def testencoder(encoder_module, full: bool, options: typedict) -> Sequence[str]:
             del e
             codecs.remove(encoding)
     if not codecs:
-        log.error(f"{etype}: all the codecs have failed! ({csv(encoder_module.get_encodings())})")
+        log.warn(f"Warning: all the {etype} encoders have failed! ({csv(encoder_module.get_encodings())})")
     return tuple(codecs)
 
 

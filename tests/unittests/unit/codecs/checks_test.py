@@ -40,8 +40,8 @@ class CodecChecksTest(unittest.TestCase):
         self.assertEqual(log.call_count, 3)
         for encoding in decoder_module.get_encodings():
             log.assert_any_call(f"test: {encoding} decoding failed", exc_info=True)
-        log.warn.assert_not_called()
-        log.error.assert_called_once_with("test: all the codecs have failed! h264, vp8, vp9")
+        log.warn.assert_called_once_with("Warning: all the test decoders have failed! (h264, vp8, vp9)")
+        log.error.assert_not_called()
 
     def test_other_decoder_probe_failures_still_warn(self):
         decoder_module = DecoderModule(("h264", "vp9"))
