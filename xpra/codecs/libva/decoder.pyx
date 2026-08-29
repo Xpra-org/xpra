@@ -298,8 +298,11 @@ cdef class Decoder:
         if status != LIBVA_DEC_OK:
             detail = libva_decoder_get_last_error(self.context).decode("utf-8", "replace")
             last_sts = libva_decoder_get_last_status(self.context)
-            raise RuntimeError("libva decode error: %s (detail: %s, sts=%d)" % (
-                libva_decode_status_str(status).decode("latin-1"), detail, last_sts))
+            msg = "libva decode error: %s (detail: %s, sts=%d)" % (
+                libva_decode_status_str(status).decode("latin-1"), detail, last_sts)
+            if status in (LIBVA_DEC_NOT_AVAILABLE, LIBVA_DEC_UNSUPPORTED):
+                raise EncodingNotSupported(msg)
+            raise RuntimeError(msg)
 
         pixels = tuple(frame.planes[i][:frame.sizes[i]] for i in range(frame.nplanes))
         strides = tuple(frame.strides[i] for i in range(frame.nplanes))
