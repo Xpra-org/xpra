@@ -649,7 +649,18 @@ class X11DisplayManager(DisplayManager):
         # (the source has already been removed from the server's sources)
         if not self.sharing_layout:
             return
-        log("client_exited() re-configuring the combined display")
+        # this signal fires from the network thread,
+        # but re-configuring the display requires the UI thread:
+        self.idle_add(self.recombine_display)
+
+    def recombine_display(self) -> None:
+        if not self.sharing_layout:
+            return
+        if not self.get_sources_by_type(DisplayConnection):
+            # nobody left to re-assign the display to
+            log("recombine_display() no display clients left")
+            return
+        log("recombine_display() re-configuring the combined display")
         w, h = self.configure_best_screen_size()
         if w > 0 and h > 0:
             self.set_desktop_geometry_attributes(w, h)
