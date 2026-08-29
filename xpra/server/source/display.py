@@ -9,6 +9,7 @@ from collections.abc import Iterable, Sequence
 from xpra.util.env import first_time, envint
 from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
+from xpra.util.rectangle import rectangle
 from xpra.util.screen import get_screen_info, MonitorLayout
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
@@ -50,6 +51,9 @@ class DisplayConnection(StubClientConnection):
         self.screen_sizes: list = []
         self.monitors: dict[int, Any] = {}
         self.monitor_layout = MonitorLayout()
+        # the area of the server's virtual display that belongs to this client,
+        # only used by `sharing=combine` - `None` means the whole display:
+        self.display_area: rectangle | None = None
         self.desktops: int = 1
         self.desktop_names: Sequence[str] = ()
         self.show_desktop_allowed: bool = False
@@ -68,6 +72,8 @@ class DisplayConnection(StubClientConnection):
             "screens": len(self.screen_sizes),
             "screen": get_screen_info(self.screen_sizes),
         }
+        if area := self.display_area:
+            info["area"] = (area.x, area.y, area.width, area.height)
         if self.desktop_mode_size != (0, 0):
             info["desktop_mode_size"] = self.desktop_mode_size
         if self.desktop_size_unscaled != (0, 0):
@@ -117,10 +123,33 @@ class DisplayConnection(StubClientConnection):
         self.monitor_layout = MonitorLayout(self.monitors)
         log("set_monitors(%s) monitors=%s", monitors, self.monitors)
 
+    def set_display_area(self, area: rectangle | None) -> None:
+        """ which part of the server's virtual display this client occupies (`sharing=combine`) """
+        log("set_display_area(%s) was %s", area, self.display_area)
+        self.display_area = area
+
+    def get_display_origin(self) -> tuple[int, int]:
+        """ where this client's display area starts on the server's virtual display """
+        if area := self.display_area:
+            return area.x, area.y
+        return 0, 0
+
+    def get_display_area_size(self) -> tuple[int, ...]:
+        """ the size of the display as this client sees it,
+            empty unless this client has been given an area of its own """
+        if area := self.display_area:
+            return area.width, area.height
+        return ()
+
     def get_monitor_position(self, index: int, position: Sequence[int], normalized: bool = True) -> tuple[int, int] | None:
         if len(position) != 2:
             return None
-        return self.monitor_layout.position(index, int(position[0]), int(position[1]), normalized)
+        pos = self.monitor_layout.position(index, int(position[0]), int(position[1]), normalized)
+        if pos is None:
+            return None
+        # the client's monitor layout is placed at the origin of its display area:
+        ox, oy = self.get_display_origin()
+        return pos[0] + ox, pos[1] + oy
 
     def set_screen_sizes(self, screen_sizes: Iterable) -> None:
         log("set_screen_sizes(%s)", screen_sizes)
@@ -173,6 +202,10 @@ class DisplayConnection(StubClientConnection):
         log("updated_desktop_size%s desktop_size=%s", (root_w, root_h, max_w, max_h), self.desktop_size)
         if not self.hello_sent or not self.resize_events:
             return False
+        if area_size := self.get_display_area_size():
+            # this client only sees its own area of the virtual display:
+            root_w, root_h = area_size
+            max_w, max_h = area_size
         if self.desktop_size_server != (root_w, root_h):
             self.desktop_size_server = root_w, root_h
             self.send(DISPLAY_RESIZED, root_w, root_h, max_w, max_h)

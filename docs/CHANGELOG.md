@@ -1,7 +1,12 @@
 # Changelog
 
 ## [7.0] 2026-08-27
-* TODO
+* 🔧 Platforms, build and packaging:
+* 🌈 Encodings:
+  * [explicit image wrapper locking](https://github.com/Xpra-org/xpra/issues/5024)
+* ✨ Features:
+  * [`sharing=combine`: give each client its own area of the virtual display](https://github.com/Xpra-org/xpra/issues/1369)
+
 
 ## [6.6] 2026-07-14
 * 🔧 Platforms, build and packaging:

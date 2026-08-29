@@ -1003,6 +1003,26 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 #RandR 1.6 and the dummy version 0.4.0 or later
 ################################################################
 
+    def get_crtc_count(self) -> int:
+        """ how many monitors this display can be configured with """
+        self.context_check("get_crtc_count")
+        if not self._has_randr:
+            return 0
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        if rsc==NULL:
+            log.error("Error: cannot access screen resources")
+            return 0
+        cdef int count
+        try:
+            count = rsc.ncrtc
+            if rsc.noutput < count:
+                count = rsc.noutput
+        finally:
+            XRRFreeScreenResources(rsc)
+        log(f"get_crtc_count()={count}")
+        return count
+
     def is_dummy16(self) -> bool:
         self.context_check("is_dummy16")
         #figure out if we're dealing with the dummy with randr 1.6 support

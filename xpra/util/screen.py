@@ -45,6 +45,16 @@ class MonitorLayout:
                 return index, x - mx, y - my
         return None
 
+    def bounding_box(self) -> tuple[int, int]:
+        """The width and height needed to hold all of these monitors."""
+        geometries = self.geometries.values()
+        if not geometries:
+            return 0, 0
+        return (
+            max(geometry[0] + geometry[2] for geometry in geometries) - self.min_x,
+            max(geometry[1] + geometry[3] for geometry in geometries) - self.min_y,
+        )
+
     def normalized_position(self, x: int, y: int) -> tuple[int, int]:
         """Rebase an absolute point against the monitor layout's top-left edge."""
         return x - self.min_x, y - self.min_y
@@ -86,6 +96,41 @@ class MonitorLayout:
                         mdef["workarea"] = wx - self.min_x, wy - self.min_y, ww, wh
             normalized[index] = mdef
         return normalized
+
+
+def monitors_bounding_box(monitors: Mapping) -> tuple[int, int]:
+    """The width and height needed to hold all these monitor geometries."""
+    return MonitorLayout(monitors).bounding_box()
+
+
+def combine_monitor_layouts(layouts: Sequence[Mapping], vertical=False) -> tuple[dict[int, dict[str, Any]], list[tuple[int, int, int, int]]]:
+    """
+    Place each peer's monitors side by side in a single coordinate space,
+    re-indexed from zero so that they can be used as crtc indexes.
+    Returns the combined monitor definitions, and the area occupied by each peer,
+    in the same order as the layouts given.
+    """
+    combined: dict[int, dict[str, Any]] = {}
+    areas: list[tuple[int, int, int, int]] = []
+    offset = 0
+    for monitors in layouts:
+        layout = MonitorLayout(monitors)
+        width, height = layout.bounding_box()
+        ox, oy = (0, offset) if vertical else (offset, 0)
+        areas.append((ox, oy, width, height))
+        offset += height if vertical else width
+        # `normalized_monitors` rebases the peer's own coordinates to (0, 0),
+        # we then move the whole thing to the area we have just given it:
+        normalized = layout.normalized_monitors(monitors)
+        for index in sorted(layout.geometries):
+            # (skip the monitor definitions with no usable geometry)
+            mdef = dict(normalized[index])
+            for attr in ("geometry", "workarea"):
+                rect = mdef.get(attr)
+                if rect and len(rect) == 4:
+                    mdef[attr] = rect[0] + ox, rect[1] + oy, rect[2], rect[3]
+            combined[len(combined)] = mdef
+    return combined, areas
 
 
 def log_screen_sizes(root_w, root_h, sizes):

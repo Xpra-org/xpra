@@ -25,6 +25,11 @@ OFF_OPTIONS: Sequence[str] = ("off", )
 # using the `sharing` option, ie: `sharing=sync-focus,sync-position`:
 SYNC_SUBSYSTEMS: tuple[str, ...] = ("focus", "position", "pointer")
 
+# how the virtual display can be shared between multiple clients,
+# using the `sharing` option, ie: `sharing=combine`:
+# (`combine` places each client's monitors side by side, horizontally)
+SHARING_LAYOUTS: tuple[str, ...] = ("combine", )
+
 MIN_SCALING = envfloat("XPRA_MIN_SCALING", 0.1)
 MAX_SCALING = envfloat("XPRA_MAX_SCALING", 8)
 SCALING_OPTIONS = [float(x) for x in
@@ -363,24 +368,41 @@ def parse_sharing_sync(value: str) -> tuple[str, ...]:
     return tuple(subsystems)
 
 
-def is_sharing_sync(v: Any, subsystem: str = "") -> bool:
+def is_sharing_sync(value: str, subsystem: str = "") -> bool:
     """
     does the `sharing` option enable synchronization with the other clients?
     if a `subsystem` is specified, only that subsystem is checked
     """
-    if not isinstance(v, str):
-        return False
-    subsystems = parse_sharing_sync(v)
+    subsystems = parse_sharing_sync(value)
     if not subsystem:
         return bool(subsystems)
     return subsystem in subsystems
 
 
-def parse_sharing(v: Any) -> bool | None:
-    """ the `sharing` option is a boolean which also accepts the `sync` values """
-    if is_sharing_sync(v):
+@cache
+def parse_sharing_layout(value: str) -> str:
+    """
+    which multi-client display layout does the `sharing` option request?
+    ie: `combine` arranges each client's monitors side by side.
+    Returns an empty string when no layout is requested.
+    """
+    for part in value.lower().replace("_", "-").split(","):
+        part = part.strip()
+        if part in SHARING_LAYOUTS:
+            return part
+        # anything that looks like a layout but isn't one is worth warning about:
+        if part.startswith("combine"):
+            log = Logger("util")
+            log.warn(f"Warning: unknown sharing layout {part!r}")
+            log.warn(" valid options are: %s", csv(SHARING_LAYOUTS))
+    return ""
+
+
+def parse_sharing(value: str) -> bool | None:
+    """ the `sharing` option is a boolean which also accepts the `sync` and layout values """
+    if is_sharing_sync(value) or parse_sharing_layout(value):
         return True
-    return parse_bool_or("sharing", v)
+    return parse_bool_or("sharing", value)
 
 
 def print_bool(k, v, true_str='yes', false_str='no') -> str:

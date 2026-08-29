@@ -302,11 +302,15 @@ class SourceMixinsTest(unittest.TestCase):
 
         def get_window_id(_w):
             return 0
+
+        def get_window_geometry(_w):
+            return 0, 0, 0, 0
         return {
             "get_transient_for": get_transient_for,
             "get_focus": get_focus,
             "get_cursor_data": get_cursor_data,
             "get_window_id": get_window_id,
+            "get_window_geometry": get_window_geometry,
             "window_filters": (),
             "readonly": False,
         }
@@ -314,6 +318,122 @@ class SourceMixinsTest(unittest.TestCase):
     def test_windows(self):
         from xpra.server.source.window import WindowsConnection
         self._test_mixin_class(WindowsConnection, self._get_window_mixin_server_attributes())
+
+    def test_window_display_area(self):
+        # `sharing=combine`: the windows outside this client's area of the virtual display
+        # are sent to it, but hidden, and the coordinates are relative to that area
+        from xpra.server.source.window import WindowsConnection, HIDDEN_METADATA
+        from xpra.util.rectangle import rectangle
+
+        class FakeWindow:
+            def __init__(self, geometry):
+                self.geometry = geometry
+
+            @staticmethod
+            def is_tray() -> bool:
+                return False
+
+            def get_property(self, prop):
+                return {"iconic": False, "skip-taskbar": False, "skip-pager": True}.get(prop)
+
+        source = WindowsConnection()
+        WindowsConnection.__init__(source)
+        source.init_state()
+        source.hello_sent = True
+        source.window_enabled = True
+        source.window_metadata_supported = HIDDEN_METADATA
+        source.get_server_geometry = lambda window: window.geometry
+        packets = []
+        source.send = lambda *packet: packets.append(packet)
+
+        inside = FakeWindow((5000, 200, 800, 600))
+        outside = FakeWindow((100, 200, 800, 600))
+        # without an area, everything is visible and the coordinates are unchanged:
+        self.assertEqual(source.to_client_position(5000, 200), (5000, 200))
+        self.assertFalse(source.update_window_visibility(1, outside))
+        self.assertEqual(packets, [])
+
+        source.display_area = rectangle(4480, 0, 2560, 1440)
+        self.assertEqual(source.to_client_position(5000, 200), (520, 200))
+        self.assertFalse(source.update_window_visibility(1, inside))
+        self.assertEqual(packets, [], "a visible window needs no metadata update")
+        self.assertTrue(source.update_window_visibility(2, outside))
+        self.assertTrue(source.is_window_hidden(outside))
+        self.assertEqual(packets, [("window-metadata", 2, {k: True for k in HIDDEN_METADATA})])
+        # the override is applied to the metadata sent with the window itself:
+        self.assertEqual(source._make_metadata(outside, "iconic", skip_defaults=True), {"iconic": True})
+        self.assertEqual(source._make_metadata(inside, "iconic", skip_defaults=True), {})
+        # moving it back into the area restores the real values:
+        packets.clear()
+        outside.geometry = (4600, 200, 800, 600)
+        self.assertFalse(source.update_window_visibility(2, outside))
+        self.assertFalse(source.is_window_hidden(outside))
+        self.assertEqual(packets, [
+            ("window-metadata", 2, {"iconic": False, "skip-taskbar": False, "skip-pager": True}),
+        ])
+
+    def test_window_hidden_damage(self):
+        # a hidden window is unmapped as far as that client is concerned:
+        # no pixels are sent for it, and its window source is told to go idle
+        from xpra.server.source.window import WindowsConnection, HIDDEN_METADATA
+        from xpra.util.rectangle import rectangle
+
+        class FakeWindowSource:
+            def __init__(self):
+                self.calls = []
+
+            def unmap(self):
+                self.calls.append("unmap")
+
+            def map(self, mapped_at):
+                self.calls.append(("map", mapped_at))
+
+            def cancel_damage(self):
+                self.calls.append("cancel_damage")
+
+            def damage(self, x, y, w, h, options):
+                self.calls.append(("damage", x, y, w, h))
+
+        class FakeWindow:
+            geometry = (100, 200, 800, 600)
+
+            @staticmethod
+            def is_tray() -> bool:
+                return False
+
+            @staticmethod
+            def get_dimensions():
+                return 800, 600
+
+            @staticmethod
+            def get_property(prop):
+                return False
+
+        source = WindowsConnection()
+        WindowsConnection.__init__(source)
+        source.init_state()
+        source.hello_sent = True
+        source.window_enabled = True
+        source.window_metadata_supported = HIDDEN_METADATA
+        source.get_server_geometry = lambda window: window.geometry
+        source.send = lambda *packet: None
+        source.statistics = None
+        window = FakeWindow()
+        ws = FakeWindowSource()
+        source.window_sources[3] = ws
+        source.display_area = rectangle(4480, 0, 2560, 1440)
+
+        self.assertTrue(source.update_window_visibility(3, window))
+        self.assertEqual(ws.calls, ["unmap"])
+        # damage is dropped while it is hidden:
+        source.damage(3, window, 0, 0, 800, 600)
+        self.assertEqual(ws.calls, ["unmap"])
+        # once it moves into the area, it is mapped again (at its position on the
+        # server's display, like `_window_mapped_at` records) and fully refreshed:
+        ws.calls.clear()
+        window.geometry = (4600, 200, 800, 600)
+        self.assertFalse(source.update_window_visibility(3, window))
+        self.assertEqual(ws.calls, [("map", (4600, 200)), "cancel_damage", ("damage", 0, 0, 800, 600)])
 
     def test_window_stacking_sync_is_ungated(self):
         from xpra.server.source.window import WindowsConnection
@@ -371,6 +491,23 @@ class SourceMixinsTest(unittest.TestCase):
             self.assertEqual(packets, [(DISPLAY_SHOW_DESKTOP, True)])
             self.assertTrue(source.updated_desktop_size(1024, 768, 3840, 2160))
             self.assertEqual(packets[-1], (DISPLAY_RESIZED, 1024, 768, 3840, 2160))
+            # `sharing=combine`: this client only occupies part of the virtual display,
+            # so its monitor positions are offset by its area, and it is only told about its area:
+            from xpra.util.rectangle import rectangle
+            self.assertEqual(source.get_display_origin(), (0, 0))
+            self.assertEqual(source.get_display_area_size(), ())
+            source.set_display_area(rectangle(4480, 100, 2560, 1440))
+            self.assertEqual(source.get_display_origin(), (4480, 100))
+            self.assertEqual(source.get_display_area_size(), (2560, 1440))
+            self.assertEqual(source.get_info().get("area"), (4480, 100, 2560, 1440))
+            self.assertEqual(source.get_monitor_position(0, (100, 50)), (4580, 150))
+            self.assertEqual(source.get_monitor_position(1, (100, 50)), (6500, 150))
+            self.assertIsNone(source.get_monitor_position(99, (100, 50)))
+            self.assertTrue(source.updated_desktop_size(7040, 1540, 7040, 1540))
+            self.assertEqual(packets[-1], (DISPLAY_RESIZED, 2560, 1440, 2560, 1440))
+            source.set_display_area(None)
+            self.assertEqual(source.get_monitor_position(0, (100, 50)), (100, 50))
+            self.assertNotIn("area", source.get_info())
 
         caps = None if BACKWARDS_COMPATIBLE else {"display": {"monitors": {}}}
         self._test_mixin_class(DisplayConnection, client_caps=caps, test_fn=check_monitor_layout)

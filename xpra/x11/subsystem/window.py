@@ -81,6 +81,12 @@ def clamp_window(x: int, y: int, w: int, h: int):
     return mod, (x, y, w, h)
 
 
+def is_window_hidden(ss, window) -> bool:
+    """ is this window outside this client's area of the virtual display? (`sharing=combine`)
+        (weak dependency on the `WindowsConnection` mixin) """
+    return bool(getattr(ss, "is_window_hidden", noop)(window))
+
+
 class SeamlessWindowServer(WindowServer):
     """
     X11 seamless window subsystem.
@@ -572,6 +578,16 @@ class SeamlessWindowServer(WindowServer):
                 return None
         return pos[0], pos[1]
 
+    @staticmethod
+    def get_window_geometry(window) -> tuple[int, int, int, int]:
+        # the client-geometry is where the window is meant to be,
+        # which is what the clients should agree on:
+        if not (window.is_OR() or window.is_tray()):
+            geometry = window.get_property("client-geometry")
+            if geometry and len(geometry) == 4:
+                return tuple(geometry)
+        return WindowServer.get_window_geometry(window)
+
     def resolve_monitor_geometry(self, proto, geometry: Sequence[int], monitor: typedict) -> tuple[int, ...]:
         if not monitor or not (ss := self.get_server_source(proto)) or not hasattr(ss, "get_monitor_position"):
             return tuple(geometry)
@@ -663,6 +679,13 @@ class SeamlessWindowServer(WindowServer):
             monitor = typedict(packet.get_dict(8))
             x, y, w, h = self.resolve_monitor_geometry(proto, (x, y, w, h), monitor)
         geomlog("client %s mapped window %#x - %s, at: %s", ss, wid, window, (x, y, w, h))
+        if is_window_hidden(ss, window):
+            # `sharing=combine`: this window does not belong on this client's area,
+            # the user must have un-minimized it - put it back out of the way:
+            geomlog("ignoring map of hidden window %#x from %s", wid, ss)
+            if update := getattr(ss, "update_window_visibility", None):
+                update(wid, window, force=True)
+            return
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         cp = {}
         if len(packet) >= 7:
@@ -692,6 +715,11 @@ class SeamlessWindowServer(WindowServer):
         if ss is None:
             return
         self._window_mapped_at(proto, wid, window)
+        if is_window_hidden(ss, window):
+            # `sharing=combine`: this client is only echoing the iconification
+            # we asked it for, the window is still shown by the other clients:
+            geomlog("ignoring unmap of hidden window %#x from %s", wid, ss)
+            return
         if len(packet) >= 4:
             state = packet.get_dict(3)
             self._set_window_state(wid, window, state)
@@ -709,12 +737,15 @@ class SeamlessWindowServer(WindowServer):
     def client_clamp_window(self, proto, wid: int, window, x: int, y: int, w: int, h: int, resize_counter: int = 0):
         if not CLAMP_WINDOW_TO_ROOT:
             return x, y, w, h
+        ss = self.get_server_source(proto)
+        if ss and is_window_hidden(ss, window):
+            # this client cannot see this window, sending it a correction would be meaningless
+            return x, y, w, h
         mod, geom = clamp_window(x, y, w, h)
-        if mod:
-            if ss := self.get_server_source(proto):
-                resize_counter = max(resize_counter, window.get_property("resize-counter"))
-                x, y, w, h = geom
-                ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
+        if mod and ss:
+            resize_counter = max(resize_counter, window.get_property("resize-counter"))
+            x, y, w, h = geom
+            ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return geom
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
@@ -736,6 +767,12 @@ class SeamlessWindowServer(WindowServer):
         if properties:
             metadatalog("window client properties updates: %s", properties)
             self._set_client_properties(proto, wid, window, properties)
+
+        if is_window_hidden(ss, window):
+            # `sharing=combine`: this window is not on this client's area of the display,
+            # so its geometry and state are none of this client's business:
+            geomlog("ignoring configure of hidden window %#x from %s", wid, ss)
+            config = typedict({k: v for k, v in config.items() if k in ("pointer", "modifiers")})
 
         geometry = config.inttupleget("geometry")
         if geometry:

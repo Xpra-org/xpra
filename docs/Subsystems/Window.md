@@ -58,6 +58,20 @@ see [pointer synchronization](./Pointer.md#pointer-synchronization).
 `sync-stacking` does not require a `sync` or `record` socket option. Recording
 clients request it by default; regular GUI clients do not.
 
+With the `sharing=combine` server option, each client owns a distinct area of the
+virtual display (see [display](./Display.md#combining-the-clients-displays)).
+Every window is still sent to every client, but a client only shows the windows that
+intersect its own area: the others have their `iconic`, `skip-taskbar` and `skip-pager`
+metadata overridden to `True`, so that they stay out of the way until the window is
+moved onto that client's area.
+The positions in the window packets exchanged with a client are relative to its area.
+
+Since a hidden window is not shown by that client, it is also treated as unmapped for it:
+no pixels are sent for it until it becomes visible again.
+The `window-unmap`, `window-map` and `window-configure` packets that a client sends for
+a window it cannot see are ignored, so that echoing back the iconification the server
+asked for does not hide the window for everyone else.
+
 An X11 seamless server advertises `window.stacking = true`. Clients may then send
 their current bottom-to-top window order using `window-stacking`; the topmost window
 is the final ID in the list. X11 clients obtain this order from their local window

@@ -32,6 +32,7 @@ class SharingServer(StubSubsystem):
     def init(self, opts) -> None:
         # `sync` is just `yes` as far as the server is concerned,
         # the clients decide if they want their window geometry synchronized:
+        # (the `combine` value is applied by the display subsystem, which owns the virtual display)
         self.sharing = parse_sharing(opts.sharing)
         self.lock = opts.lock
         self.exit_with_client = opts.exit_with_client

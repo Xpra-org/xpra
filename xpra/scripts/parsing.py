@@ -1549,11 +1549,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Use memory mapped transfers for local connections. Default: %s." % defaults.mmap)
     replace_option("--enable-sharing", "--sharing=yes")
     legacy_bool_parse("sharing")
-    group.add_option("--sharing", action="store", metavar="yes|no|sync",
+    group.add_option("--sharing", action="store", metavar="yes|no|sync|combine",
                      dest="sharing", default=defaults.sharing,
                      help="Allow more than one client to connect to the same session,"
                           " 'sync' also synchronizes the window geometry, focus and pointer between clients."
                           " Individual subsystems can be selected using a comma separated list: %s."
+                          " 'combine' instead gives each client its own area of the virtual display,"
+                          " with their monitors placed side by side."
                           " Default: %s." % (csv(f"'sync-{subsystem}'" for subsystem in SYNC_SUBSYSTEMS),
                                              enabled_or_auto(defaults.sharing)))
     legacy_bool_parse("lock")

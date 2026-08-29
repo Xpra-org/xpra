@@ -79,6 +79,18 @@ class WebcamMixinTest(ServerMixinTest):
         )
         self.assertEqual(fallback, (10, 20, 800, 600))
 
+    def test_hidden_window_guard(self):
+        # `sharing=combine`: the inbound packet handlers ignore the windows
+        # that a client cannot see, this is the weak dependency they use
+        from xpra.x11.subsystem.window import is_window_hidden
+        window = object()
+        # a source without the `WindowsConnection` mixin never hides anything:
+        self.assertFalse(is_window_hidden(AdHocStruct(), window))
+        source = AdHocStruct()
+        source.is_window_hidden = lambda w: w is window
+        self.assertTrue(is_window_hidden(source, window))
+        self.assertFalse(is_window_hidden(source, object()))
+
     def test_monitor_relative_pointer(self):
         from xpra.x11.server import pointer
         from xpra.server.subsystem.pointer import PointerManager

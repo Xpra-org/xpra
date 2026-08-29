@@ -1835,7 +1835,7 @@ Decrease the \fBmin-speed\fP or \fBspeed\fP setting
 .PP
 
 .TP
-\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP|\fIauto\fP|\fIsync\fP
+\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP|\fIauto\fP|\fIsync\fP|\fIcombine\fP
 Sharing allows more than one client to connect to the same session.
 This must be enabled on both the server and all co-operating clients
 to function.
@@ -1860,6 +1860,21 @@ ie: \fB\-\-sharing\fP=\fIsync\-position,sync\-pointer\fP.
 The server may refuse to synchronize some of these subsystems,
 see the \fIsync\fP socket option.
 (servers treat all these values as \fIyes\fP)
+.br
+The \fIcombine\fP value enables sharing and combines the displays instead of
+mirroring them: the virtual display is made large enough to hold every client's
+monitors placed side by side, and each client is given its own area of it.
+Each client only shows the windows that intersect its own area, the others are
+sent to it minimized and hidden from its taskbar and pager.
+A window that straddles the boundary between two areas is shown by both clients,
+and one that is moved onto another client's area moves from one user's screen
+to the next without being re-created.
+This value can be combined with the \fIsync\fP values above, and requires a
+seamless server whose virtual display supports RandR 1.6
+(the \fIdummy\fP driver with 16 outputs), with \fBXPRA_BACKWARDS_COMPATIBLE=0\fP
+so that the clients send monitor relative coordinates.
+If any of those requirements is not met, the server logs a warning and
+falls back to behaving as \fIyes\fP.
 To allow sharing to work with unix domain sockets (either using local
 connections or via ssh), you should create at least one socket in a group
 accessible directory. On Posix with a default configuration, being a

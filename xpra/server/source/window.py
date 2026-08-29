@@ -34,6 +34,10 @@ bandwidthlog = Logger("bandwidth")
 eventslog = Logger("events")
 filterslog = Logger("filter")
 
+# the metadata we override for windows that are outside a client's display area
+# when using `sharing=combine`: the client keeps the window, but does not show it
+HIDDEN_METADATA: Sequence[str] = ("iconic", "skip-taskbar", "skip-pager")
+
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 CONGESTION_REPEAT_DELAY = envint("XPRA_CONGESTION_REPEAT_DELAY", 60)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5 * 1024 * 1024)
@@ -63,6 +67,7 @@ class WindowsConnection(StubClientConnection):
     def __init__(self):
         super().__init__()
         self.get_focus: Callable | None = None
+        self.get_server_geometry: Callable | None = None
         self.window_filters = []
         self.readonly = False
         # duplicated from encodings:
@@ -76,6 +81,7 @@ class WindowsConnection(StubClientConnection):
         # `WindowServer` is the standalone subsystem instance:
         window = server.subsystems["window"]
         self.get_focus = window.get_focus
+        self.get_server_geometry = window.get_window_geometry
         self.window_filters = window.window_filters
         self.readonly = server.readonly
 
@@ -104,11 +110,15 @@ class WindowsConnection(StubClientConnection):
         # for handling resize synchronization between client and server (this is not xsync!):
         self.window_configure_time = 0.0
         self.window_record = False
+        # `sharing=combine`: the windows that fall outside this client's display area,
+        # which are sent to it but not shown (see `HIDDEN_METADATA`)
+        self.hidden_windows: set = set()
 
     def cleanup(self) -> None:
         for window_source in self.all_window_sources():
             window_source.cleanup()
         self.window_sources = {}
+        self.hidden_windows = set()
         for ws in tuple(self.subsurface_sources.values()):
             ws.cleanup()
         self.subsurface_sources = {}
@@ -203,6 +213,9 @@ class WindowsConnection(StubClientConnection):
             "sync-focus": self.window_sync_focus,
             "sync-stacking": self.window_sync_stacking,
         }
+        if self.hidden_windows:
+            # `sharing=combine`: the windows outside this client's area of the display
+            info["hidden"] = len(self.hidden_windows)
         wsize: dict[str, Any] = {
             "min": self.window_min_size,
             "max": self.window_max_size,
@@ -329,18 +342,106 @@ class WindowsConnection(StubClientConnection):
         return v
 
     ######################################################################
+    # display area: with `sharing=combine`, this client only occupies a part
+    # of the server's virtual display, so the coordinates we send it are
+    # relative to that area, and the windows outside of it are hidden.
+    # (`display_area` is provided by the `DisplayConnection` subsystem,
+    #  it is `None` for every other sharing mode, which makes all of this a no-op)
+    def get_window_origin(self) -> tuple[int, int]:
+        area = getattr(self, "display_area", None)
+        if not area:
+            return 0, 0
+        return area.x, area.y
+
+    def to_client_position(self, x: int, y: int) -> tuple[int, int]:
+        """ translate a position on the server's virtual display to this client's coordinate space """
+        ox, oy = self.get_window_origin()
+        return x - ox, y - oy
+
+    def is_window_visible(self, window, geometry: Sequence[int] = ()) -> bool:
+        """ does this window intersect this client's area of the virtual display? """
+        area = getattr(self, "display_area", None)
+        if not area:
+            return True
+        if window.is_tray():
+            # trays are not placed on the desktop
+            return True
+        if not geometry or len(geometry) != 4:
+            if not self.get_server_geometry:
+                return True
+            geometry = self.get_server_geometry(window)
+        x, y, w, h = geometry
+        if w <= 0 or h <= 0:
+            return True
+        return bool(area.intersects(x, y, w, h))
+
+    def is_window_hidden(self, window) -> bool:
+        """ is this window outside this client's area of the virtual display? """
+        return window in self.hidden_windows
+
+    def get_hidden_metadata(self, window, hidden: bool) -> dict[str, Any]:
+        """ the `HIDDEN_METADATA` values to send for a window entering or leaving this client's area """
+        metadata: dict[str, Any] = {}
+        for prop in HIDDEN_METADATA:
+            if prop not in self.window_metadata_supported:
+                continue
+            if hidden:
+                metadata[prop] = True
+            else:
+                metadata.update(make_window_metadata(window, prop))
+        return metadata
+
+    def update_window_visibility(self, wid: int, window, geometry: Sequence[int] = (),
+                                 force=False, notify=True) -> bool:
+        """
+        Hide or show this window for this client, depending on whether it
+        intersects this client's area of the virtual display.
+        `notify` can be disabled when the caller is about to send the metadata itself.
+        Returns `True` if the window is hidden from this client.
+        """
+        hidden = not self.is_window_visible(window, geometry)
+        was_hidden = self.is_window_hidden(window)
+        if hidden == was_hidden and not force:
+            return hidden
+        metalog("update_window_visibility(%#x, %s, %s) hidden=%s (was %s)", wid, window, geometry, hidden, was_hidden)
+        if hidden:
+            self.hidden_windows.add(window)
+        else:
+            self.hidden_windows.discard(window)
+        if not self.can_send_window(window):
+            return hidden
+        if notify and (metadata := self.get_hidden_metadata(window, hidden)):
+            self.send(WINDOW_METADATA, wid, metadata)
+        # a hidden window is unmapped as far as this client is concerned,
+        # so we can stop sending it any pixels:
+        if ws := self.window_sources.get(wid):
+            if hidden:
+                ws.unmap()
+            else:
+                if self.get_server_geometry:
+                    # `mapped_at` is in server coordinates, as recorded by `_window_mapped_at`
+                    # (the client will correct it when it maps the window again):
+                    ws.map(self.get_server_geometry(window)[:2])
+                # it may have changed a lot since we stopped sending it:
+                self.refresh(wid, window, {})
+        return hidden
+
+    ######################################################################
     # windows:
     def initiate_moveresize(self, wid: int, window, x_root: int, y_root: int,
                             direction: int, button: int, source_indication: int) -> None:
         if not self.can_send_window(window):
             return
         log("initiate_moveresize sending to %s", self)
+        x_root, y_root = self.to_client_position(x_root, y_root)
         self.send(WINDOW_INITIATE_MOVERESIZE, wid, x_root, y_root, direction, button, source_indication)
 
     def or_window_geometry(self, wid: int, window, x: int, y: int, w: int, h: int) -> None:
         if not self.can_send_window(window):
             return
+        self.update_window_visibility(wid, window, (x, y, w, h))
         packet_type = "configure-override-redirect" if BACKWARDS_COMPATIBLE else WINDOW_MOVE_RESIZE
+        x, y = self.to_client_position(x, y)
         self.send(packet_type, wid, x, y, w, h)
 
     def window_metadata(self, wid: int, window, prop: str) -> None:
@@ -363,6 +464,11 @@ class WindowsConnection(StubClientConnection):
         if propname not in self.window_metadata_supported:
             metalog("make_metadata: client does not support %r", propname)
             return {}
+        if propname in HIDDEN_METADATA and self.is_window_hidden(window):
+            # this window is outside this client's area of the virtual display,
+            # tell it to keep the window out of the way:
+            # (unconditionally, since `skip_defaults` would drop the `False` default)
+            return {propname: True}
         metadata = make_window_metadata(window, propname, skip_defaults=skip_defaults)
         if getattr(self, "effective_readonly", lambda: self.readonly)():
             metalog("overriding size-constraints for readonly mode")
@@ -383,6 +489,12 @@ class WindowsConnection(StubClientConnection):
                    client_properties: dict) -> None:
         if not self.can_send_window(window):
             return
+        # decide if this window belongs on this client's area before making the metadata,
+        # so that `_make_metadata` can override it - no need to notify separately:
+        # (the geometry we are given may have been adjusted for this client,
+        #  the visibility must be decided from the position on the server's display)
+        hidden = self.update_window_visibility(wid, window, notify=False)
+        x, y = self.to_client_position(x, y)
         send_props = list(window.get_property_names())
         metalog("new window properties: %r", send_props)
         send_raw_icon = "icons" in send_props
@@ -399,6 +511,10 @@ class WindowsConnection(StubClientConnection):
         log("new_window(%s, %#x, %s, %i, %i, %i, %i, %s) metadata(%s)=%s",
             packet_type, wid, window, x, y, w, h, client_properties, send_props, metadata)
         self.send_async(packet_type, wid, x, y, w, h, metadata, client_properties or {})
+        if hidden and (hidden_metadata := self.get_hidden_metadata(window, True)):
+            # showing a new window usually de-iconifies it,
+            # so we have to ask for it to be hidden again once it exists:
+            self.send(WINDOW_METADATA, wid, hidden_metadata)
         if send_raw_icon:
             self.send_window_icon(wid, window)
 
@@ -419,11 +535,14 @@ class WindowsConnection(StubClientConnection):
         """
         if not self.can_send_window(window):
             return
+        self.update_window_visibility(wid, window, (x, y, ww, wh))
+        x, y = self.to_client_position(x, y)
         self.send(WINDOW_MOVE_RESIZE, wid, x, y, ww, wh, resize_counter)
 
     def resize_window(self, wid: int, window, ww: int, wh: int, resize_counter: int = 0) -> None:
         if not self.can_send_window(window):
             return
+        self.update_window_visibility(wid, window)
         self.send(WINDOW_RESIZED, wid, ww, wh, resize_counter)
 
     def cancel_damage(self, wid: int) -> None:
@@ -469,6 +588,7 @@ class WindowsConnection(StubClientConnection):
 
     def remove_window(self, wid: int, window) -> None:
         """ The given window is gone, ensure we free all the related resources """
+        self.hidden_windows.discard(window)
         if not self.can_send_window(window):
             return
         if ws := self.window_sources.pop(wid, None):
@@ -602,6 +722,10 @@ class WindowsConnection(StubClientConnection):
             (creating a new one if needed)
         """
         if not self.can_send_window(window):
+            return
+        if self.is_window_hidden(window):
+            # `sharing=combine`: this window is not on this client's area of the display,
+            # it is minimized there, so there is no point in sending it any pixels
             return
         assert window is not None
         if options:

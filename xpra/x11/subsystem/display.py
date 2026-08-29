@@ -19,6 +19,8 @@ from xpra.scripts.config import FALSE_OPTIONS, InitExit
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.common import may_notify_client
 from xpra.constants import MAX_WINDOW_SIZE, NotificationID
+from xpra.util.rectangle import rectangle
+from xpra.util.screen import combine_monitor_layouts, monitors_bounding_box
 from xpra.util.parsing import (
     parse_resolutions, parse_env_resolutions, get_refresh_rate_for_value,
     adjust_monitor_refresh_rate,
@@ -106,6 +108,7 @@ class X11DisplayManager(DisplayManager):
         "randr_exact_size", "randr_sizes_added", "vfb_startup_state", "xvfb", "xvfb_cmd",
     )
     toggle_features = ("randr",)
+    SHARING_LAYOUT_SUPPORTED = True
     """
     Mixin for servers that handle displays.
     """
@@ -221,6 +224,8 @@ class X11DisplayManager(DisplayManager):
             self.display_pid = get_display_pid()
         if self.randr and self.init_randr():
             self.set_initial_resolution()
+        self.verify_sharing_layout()
+        self.server.connect("client-exited", self.client_exited)
         with xsync:
             save_server_pid()
             save_server_mode(self.server.session_type)
@@ -388,10 +393,17 @@ class X11DisplayManager(DisplayManager):
 
     def configure_best_screen_size(self) -> tuple[int, int]:
         # return ServerBase.set_best_screen_size(self)
-        """ sets the screen size to use the largest width and height used by any of the clients """
+        """ sets the screen size to use the largest width and height used by any of the clients,
+            or, with `sharing=combine`, the size needed to hold all of them side by side """
         root_w, root_h = get_root_size()
         if not self.randr:
             return root_w, root_h
+        if self.sharing_layout:
+            w, h = self.get_combined_screen_size()
+            log("combined screen size: %ix%i", w, h)
+            if w <= 0 or h <= 0:
+                return root_w, root_h
+            return self.server.set_screen_size(w, h)
         from xpra.server.source.display import DisplayConnection
         display_clients = self.get_sources_by_type(DisplayConnection)
         max_w, max_h = 0, 0
@@ -471,8 +483,10 @@ class X11DisplayManager(DisplayManager):
     def set_screen_size(self, desired_w: int, desired_h: int):
         log("set_screen_size%s", (desired_w, desired_h))
         # clamp any pre-existing windows to the new screen bounds:
+        # (not when combining displays: the clients come and go, and moving
+        #  their windows around every time would be more disruptive than helpful)
         window_sub = self.get_subsystem("window")
-        if window_sub:
+        if window_sub and not self.sharing_layout:
             window_sub.clamp_windows_to_screen(desired_w, desired_h)
         # RandR 1.6 fast-path: mirror the client's monitor layout exactly
         # when the dummy driver supports it (seamless servers only - see
@@ -605,6 +619,124 @@ class X11DisplayManager(DisplayManager):
             for i, message in enumerate(messages):
                 log_fn("%s%s", ["", " "][i > 0], message)
 
+    ######################################################################
+    # `sharing=combine`: give each client its own area of the virtual display
+
+    def verify_sharing_layout(self) -> None:
+        """ `sharing=combine` needs a display we can re-configure with RandR 1.6,
+            and clients that send us monitor relative coordinates """
+        if not self.sharing_layout:
+            return
+        if BACKWARDS_COMPATIBLE:
+            self.disable_sharing_layout("it requires `XPRA_BACKWARDS_COMPATIBLE=0`")
+            return
+        if not self.mirror_client_layout:
+            self.disable_sharing_layout("this session uses a fixed virtual display")
+            return
+        if not self.randr or not self.randr_exact_size:
+            self.disable_sharing_layout("this display cannot be resized with RandR")
+            return
+        if not DUMMY_MONITORS:
+            self.disable_sharing_layout("monitor emulation is disabled")
+            return
+        with xlog:
+            from xpra.x11.bindings.randr import RandRBindings
+            if not RandRBindings().is_dummy16():
+                self.disable_sharing_layout("this display does not support RandR 1.6 monitors")
+
+    def client_exited(self, _server, _source) -> None:
+        # the areas of the remaining clients have to be re-assigned:
+        # (the source has already been removed from the server's sources)
+        if not self.sharing_layout:
+            return
+        log("client_exited() re-configuring the combined display")
+        w, h = self.configure_best_screen_size()
+        if w > 0 and h > 0:
+            self.set_desktop_geometry_attributes(w, h)
+        self.send_updated_screen_size()
+
+    def get_client_monitor_layouts(self) -> tuple[list, list[dict[int, Any]]]:
+        """ the monitor definitions of each display client, with their own (0, 0) origin """
+        sources: list = []
+        layouts: list[dict[int, Any]] = []
+        for ss in self.get_sources_by_type(DisplayConnection):
+            mdef = ss.get_normalized_monitor_definitions()
+            if not mdef:
+                # a client that does not tell us about its monitors
+                # (ie: the html5 client) still gets an area matching its display:
+                w, h = ss.desktop_size
+                if w <= 0 or h <= 0:
+                    log("no monitors and no desktop size for %s", ss)
+                    continue
+                mdef = {0: {"name": f"client{ss.counter}", "geometry": (0, 0, w, h)}}
+            sources.append(ss)
+            layouts.append(mdef)
+        return sources, layouts
+
+    def combine_client_monitor_layout(self) -> dict[int, Any]:
+        """ place every client's monitors side by side and give each client its own area,
+            falling back to sharing the display as usual if we cannot """
+        try:
+            return self.do_combine_client_monitor_layout()
+        except Exception:
+            log("combine_client_monitor_layout()", exc_info=True)
+            log.error("Error: failed to combine the displays of the connected clients")
+            self.clear_display_areas()
+            return {}
+
+    def do_combine_client_monitor_layout(self) -> dict[int, Any]:
+        from xpra.x11.bindings.randr import RandRBindings
+        randr = RandRBindings()
+        sources, layouts = self.get_client_monitor_layouts()
+        vertical = self.sharing_layout.endswith("-vertical")
+        mdef, areas = combine_monitor_layouts(layouts, vertical)
+        log("combine_client_monitor_layout() monitors=%s, areas=%s", mdef, areas)
+        if not mdef:
+            self.clear_display_areas()
+            return {}
+        with xsync:
+            crtcs = randr.get_crtc_count()
+        if len(mdef) > crtcs:
+            log.warn("Warning: cannot combine the displays of %i clients", len(sources))
+            log.warn(" %i monitors were requested but this display only has %i", len(mdef), crtcs)
+            self.clear_display_areas()
+            return {}
+        mdef = adjust_monitor_refresh_rate(self.refresh_rate, mdef)
+        with xlog:
+            if not randr.set_crtc_config(mdef):
+                log.warn("Warning: failed to configure the combined display")
+                self.clear_display_areas()
+                return {}
+        self.assign_display_areas(sources, areas)
+        return mdef
+
+    def clear_display_areas(self) -> None:
+        self.assign_display_areas()
+
+    def assign_display_areas(self, sources: Sequence = (), areas: Sequence = ()) -> None:
+        """ give each client its own area of the virtual display,
+            every client that has not been given one shares the whole display as usual """
+        assigned = dict(zip(sources, areas))
+        for ss in self.get_sources_by_type(DisplayConnection):
+            area = assigned.get(ss)
+            if not area or area[2] <= 0 or area[3] <= 0:
+                ss.set_display_area(None)
+                continue
+            x, y, w, h = area
+            if ss.get_display_origin() == (x, y) and ss.get_display_area_size() == (w, h):
+                continue
+            ss.set_display_area(rectangle(x, y, w, h))
+            log.info("client %i uses %ix%i of the display at %i,%i", ss.counter, w, h, x, y)
+        # the windows may now be on a different client's area:
+        if window_sub := self.get_subsystem("window"):
+            window_sub.update_windows_visibility()
+
+    def get_combined_screen_size(self) -> tuple[int, int]:
+        """ the size needed to hold every client's monitors, placed side by side """
+        _, layouts = self.get_client_monitor_layouts()
+        mdef = combine_monitor_layouts(layouts, self.sharing_layout.endswith("-vertical"))[0]
+        return monitors_bounding_box(mdef)
+
     def mirror_client_monitor_layout(self) -> dict[int, Any]:
         if not self.randr:
             return {}
@@ -612,6 +744,8 @@ class X11DisplayManager(DisplayManager):
         with xsync:
             if not RandRBindings().is_dummy16():
                 raise RuntimeError("cannot match monitor layout without RandR 1.6")
+        if self.sharing_layout:
+            return self.combine_client_monitor_layout()
         # if we have a single display client,
         # see if we can emulate its monitor geometry exactly
         from xpra.server.source.display import DisplayConnection
