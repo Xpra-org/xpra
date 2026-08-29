@@ -130,7 +130,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         return "Win32"
 
     def get_current_modifiers(self) -> Sequence[str]:
-        return ()
+        return get_modifiers()
 
     def get_mouse_position(self) -> tuple:
         pos = POINT()
@@ -339,7 +339,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     def window_mouse_moved_event(self, window, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
         log("window_mouse_moved_event(%s, %i, %i, %s, %s)", window, x, y, vk, buttons)
         device_id = -1
-        modifiers = vk
+        modifiers = get_modifiers()
         props = {}
         pos = self._pointer_data(window, x, y)
         self.get_subsystem("pointer").send_mouse_position(device_id, window.wid, pos, modifiers=modifiers, buttons=buttons, props=props)
@@ -347,7 +347,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     def window_mouse_clicked_event(self, window, button, pressed, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
         log("window_mouse_clicked_event(%s, %i, %s, %i, %i, %s, %s)", window, button, pressed, x, y, vk, buttons)
         device_id = -1
-        modifiers = vk
+        modifiers = get_modifiers()
         props = {}
         pos = self._pointer_data(window, x, y)
         self.get_subsystem("pointer").send_button(device_id, window.wid, button, pressed, pos, modifiers=modifiers, buttons=buttons, props=props)
