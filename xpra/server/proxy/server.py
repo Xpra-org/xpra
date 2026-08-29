@@ -25,7 +25,7 @@ from xpra.os_util import (
     WIN32, POSIX, OSX,
 )
 from xpra.util.io import umask_context
-from xpra.net.common import Packet, is_request_allowed
+from xpra.net.common import Packet, is_request_allowed, BACKWARDS_COMPATIBLE
 from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.server import features
 from xpra.server.core import ServerCore
@@ -571,7 +571,11 @@ class ProxyServer(ServerCore):
                 nosession("failed to start a new session")
                 return
         if display is None:
-            display = c.strget("display")
+            # modern clients send the display name in the `session` namespace,
+            # legacy clients send it as a top level string:
+            display = typedict(c.dictget("session") or {}).strget("display")
+            if not display and BACKWARDS_COMPATIBLE:
+                display = c.strget("display")
             selected_display = sessions.selected_display
             authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, "
                     "selected=%s, found displays=%s",

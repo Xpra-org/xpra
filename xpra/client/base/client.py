@@ -396,8 +396,10 @@ class XpraClientBase(PacketDispatcher):
 
     def _add_common_hello(self, capabilities: dict[str, Any]) -> dict[str, Any]:
         # shared by `make_hello_base` and `make_hello`:
-        # difficult to move this attribute:
-        if self.display:
+        # legacy servers expect the display name in this top level attribute,
+        # but it is also the namespace used by the display subsystem's capabilities,
+        # so only send it to the servers that need it - the others use `session.display`:
+        if self.display and BACKWARDS_COMPATIBLE:
             capabilities["display"] = self.display
         session = self.get_session_caps()
         if session:
