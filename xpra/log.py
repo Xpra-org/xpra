@@ -402,6 +402,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "exec"          : "Executing commands",
         # server features:
         "mdns"          : "mDNS session publishing",
+        "sharing"       : "Sharing the session between multiple clients",
         # server internals:
         "stats"         : "Server statistics",
         "xshm"          : "XShm pixel capture",

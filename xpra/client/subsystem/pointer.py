@@ -19,6 +19,7 @@ from xpra.util.parsing import is_sharing_sync, FALSE_OPTIONS
 from xpra.log import Logger
 
 log = Logger("pointer")
+sharinglog = Logger("sharing")
 
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
@@ -104,6 +105,8 @@ class PointerClient(StubClientSubsystem):
         # ask the server to forward the pointer events of the other clients,
         # so that we can show what the other users are doing:
         self.sync = is_sharing_sync(opts.sharing, "pointer")
+        sharinglog("pointer synchronization is %s (sharing=%r)",
+                   "enabled" if self.sync else "disabled", opts.sharing)
         self.wheel_smooth, self.wheel_map = parse_mousewheel(opts.mousewheel)
         log("wheel_map(%s)=%s, wheel_smooth=%s", opts.mousewheel, self.wheel_map, self.wheel_smooth)
 

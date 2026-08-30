@@ -33,6 +33,7 @@ metalog = Logger("metadata")
 bandwidthlog = Logger("bandwidth")
 eventslog = Logger("events")
 filterslog = Logger("filter")
+sharinglog = Logger("sharing")
 
 # the metadata we override for windows that are outside a client's display area
 # when using `sharing=combine`: the client keeps the window, but does not show it
@@ -373,7 +374,9 @@ class WindowsConnection(StubClientConnection):
         x, y, w, h = geometry
         if w <= 0 or h <= 0:
             return True
-        return bool(area.intersects(x, y, w, h))
+        visible = bool(area.intersects(x, y, w, h))
+        sharinglog("is_window_visible(%s, %s)=%s (area=%s)", window, geometry, visible, area)
+        return visible
 
     def is_window_hidden(self, window) -> bool:
         """ is this window outside this client's area of the virtual display? """
@@ -403,7 +406,12 @@ class WindowsConnection(StubClientConnection):
         was_hidden = self.is_window_hidden(window)
         if hidden == was_hidden and not force:
             return hidden
-        metalog("update_window_visibility(%#x, %s, %s) hidden=%s (was %s)", wid, window, geometry, hidden, was_hidden)
+        if hidden == was_hidden:
+            sharinglog("re-asserting %s state of window %#x for %s",
+                       "hidden" if hidden else "visible", wid, self)
+        else:
+            sharinglog("window %#x is now %s for %s",
+                       wid, "hidden" if hidden else "visible", self)
         if hidden:
             self.hidden_windows.add(window)
         else:
@@ -411,6 +419,7 @@ class WindowsConnection(StubClientConnection):
         if not self.can_send_window(window):
             return hidden
         if notify and (metadata := self.get_hidden_metadata(window, hidden)):
+            sharinglog("sending %s for window %#x", metadata, wid)
             self.send(WINDOW_METADATA, wid, metadata)
         # a hidden window is unmapped as far as this client is concerned,
         # so we can stop sending it any pixels:
@@ -468,6 +477,7 @@ class WindowsConnection(StubClientConnection):
             # this window is outside this client's area of the virtual display,
             # tell it to keep the window out of the way:
             # (unconditionally, since `skip_defaults` would drop the `False` default)
+            sharinglog("forcing %s=True for hidden window %s", propname, window)
             return {propname: True}
         metadata = make_window_metadata(window, propname, skip_defaults=skip_defaults)
         if getattr(self, "effective_readonly", lambda: self.readonly)():
@@ -726,6 +736,7 @@ class WindowsConnection(StubClientConnection):
         if self.is_window_hidden(window):
             # `sharing=combine`: this window is not on this client's area of the display,
             # it is minimized there, so there is no point in sending it any pixels
+            sharinglog("damage(%s) ignored: hidden from %s", window, self)
             return
         assert window is not None
         if options:

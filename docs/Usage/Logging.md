@@ -154,6 +154,7 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 | timeout                              | server timeouts                                                    |
 | exec                                 | executing commands                                                 |
 | mdns                                 | [mDNS](../Network/Multicast-DNS.md) session publishing             |
+| sharing                              | sharing the session between multiple clients                       |
 | stats                                | server statistics                                                  |
 | xshm                                 | XShm pixel capture                                                 |
 | **Audio:**                           |                                                                    |
