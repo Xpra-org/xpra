@@ -9,7 +9,7 @@ from xpra.util.objects import typedict
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
-log = Logger("server", "auth")
+log = Logger("server", "sharing")
 
 
 class SharingConnection(StubClientConnection):
@@ -29,6 +29,7 @@ class SharingConnection(StubClientConnection):
     def parse_client_caps(self, c: typedict) -> None:
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
+        log("%s wants share=%s, lock=%s", self, self.share, self.lock)
 
     def get_info(self) -> dict[str, Any]:
         return {

@@ -13,7 +13,7 @@ from xpra.util.parsing import str_to_bool, parse_sharing
 from xpra.net.constants import ConnectionMessage
 from xpra.log import Logger
 
-log = Logger("server", "auth")
+log = Logger("server", "sharing")
 
 
 class SharingServer(StubSubsystem):
@@ -175,6 +175,7 @@ class SharingServer(StubSubsystem):
         if not ss:
             return
         sharing = packet.get_bool(1)
+        log("client %i set sharing to %s", ss.counter, sharing)
         ss.share = sharing
         if not sharing:
             # disconnect other users:

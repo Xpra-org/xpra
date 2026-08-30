@@ -14,6 +14,7 @@ from xpra.net.common import LOG_HELLO, BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("subsystems")
+sharinglog = Logger("sharing")
 
 
 def get_enabled_mixins() -> Sequence[type]:
@@ -159,7 +160,7 @@ def get_client_connection_class(caps: typedict):
         def requires_sharing(self) -> bool:
             for cc in CC_BASES:
                 if cc.requires_sharing(self):
-                    log("%s.requires_sharing()=True", cc)
+                    sharinglog("%s.requires_sharing()=True", cc)
                     return True
             return False
 

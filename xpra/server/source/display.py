@@ -18,6 +18,7 @@ from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.log import Logger
 
 log = Logger("display")
+sharinglog = Logger("sharing")
 
 MIN_DPI: int = envint("XPRA_MIN_DPI", 10)
 MAX_DPI: int = envint("XPRA_MAX_DPI", 500)
@@ -125,7 +126,7 @@ class DisplayConnection(StubClientConnection):
 
     def set_display_area(self, area: rectangle | None) -> None:
         """ which part of the server's virtual display this client occupies (`sharing=combine`) """
-        log("set_display_area(%s) was %s", area, self.display_area)
+        sharinglog("set_display_area(%s) was %s", area, self.display_area)
         self.display_area = area
 
     def get_display_origin(self) -> tuple[int, int]:
@@ -204,6 +205,7 @@ class DisplayConnection(StubClientConnection):
             return False
         if area_size := self.get_display_area_size():
             # this client only sees its own area of the virtual display:
+            sharinglog("updated_desktop_size: %s only sees its %s area", self, area_size)
             root_w, root_h = area_size
             max_w, max_h = area_size
         if self.desktop_size_server != (root_w, root_h):

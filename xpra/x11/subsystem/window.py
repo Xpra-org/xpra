@@ -37,6 +37,7 @@ pointerlog = Logger("x11", "pointer")
 windowlog = Logger("server", "window")
 workspacelog = Logger("x11", "workspace")
 framelog = Logger("x11", "frame")
+sharinglog = Logger("sharing")
 
 NotifyPointerRoot = constants["NotifyPointerRoot"]
 NotifyDetailNone = constants["NotifyDetailNone"]
@@ -682,7 +683,7 @@ class SeamlessWindowServer(WindowServer):
         if is_window_hidden(ss, window):
             # `sharing=combine`: this window does not belong on this client's area,
             # the user must have un-minimized it - put it back out of the way:
-            geomlog("ignoring map of hidden window %#x from %s", wid, ss)
+            sharinglog("ignoring map of hidden window %#x from %s", wid, ss)
             if update := getattr(ss, "update_window_visibility", None):
                 update(wid, window, force=True)
             return
@@ -718,7 +719,7 @@ class SeamlessWindowServer(WindowServer):
         if is_window_hidden(ss, window):
             # `sharing=combine`: this client is only echoing the iconification
             # we asked it for, the window is still shown by the other clients:
-            geomlog("ignoring unmap of hidden window %#x from %s", wid, ss)
+            sharinglog("ignoring unmap of hidden window %#x from %s", wid, ss)
             return
         if len(packet) >= 4:
             state = packet.get_dict(3)
@@ -740,6 +741,7 @@ class SeamlessWindowServer(WindowServer):
         ss = self.get_server_source(proto)
         if ss and is_window_hidden(ss, window):
             # this client cannot see this window, sending it a correction would be meaningless
+            sharinglog("not clamping hidden window %#x for %s", wid, ss)
             return x, y, w, h
         mod, geom = clamp_window(x, y, w, h)
         if mod and ss:
@@ -771,7 +773,7 @@ class SeamlessWindowServer(WindowServer):
         if is_window_hidden(ss, window):
             # `sharing=combine`: this window is not on this client's area of the display,
             # so its geometry and state are none of this client's business:
-            geomlog("ignoring configure of hidden window %#x from %s", wid, ss)
+            sharinglog("ignoring configure of hidden window %#x from %s", wid, ss)
             config = typedict({k: v for k, v in config.items() if k in ("pointer", "modifiers")})
 
         geometry = config.inttupleget("geometry")

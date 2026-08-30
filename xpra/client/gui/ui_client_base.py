@@ -36,6 +36,7 @@ from xpra.log import Logger
 # inherits from `XpraClientBase` directly.
 
 log = Logger("client")
+sharinglog = Logger("sharing")
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
@@ -120,6 +121,7 @@ class UIXpraClient(XpraClientBase):
         self.session_name = opts.session_name
         self.readonly = opts.readonly
         self.client_supports_sharing = parse_sharing(opts.sharing) is True
+        sharinglog("sharing=%r: client_supports_sharing=%s", opts.sharing, self.client_supports_sharing)
         self.client_lock = opts.lock is True
         self.headerbar = opts.headerbar
 
@@ -358,6 +360,8 @@ class UIXpraClient(XpraClientBase):
         self.server_sharing_toggle = c.boolget("sharing-toggle")
         self.server_lock = c.boolget("lock")
         self.server_lock_toggle = c.boolget("lock-toggle")
+        sharinglog("server sharing=%s (toggle=%s), lock=%s (toggle=%s)",
+                   self.server_sharing, self.server_sharing_toggle, self.server_lock, self.server_lock_toggle)
         self.server_readonly = c.boolget("readonly")
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
@@ -469,10 +473,12 @@ class UIXpraClient(XpraClientBase):
 
     def send_sharing_enabled(self) -> None:
         assert self.server_sharing and self.server_sharing_toggle
+        sharinglog("send_sharing_enabled() sharing=%s", self.client_supports_sharing)
         self.send(SHARING_TOGGLE, self.client_supports_sharing)
 
     def send_lock_enabled(self) -> None:
         assert self.server_lock_toggle
+        sharinglog("send_lock_enabled() lock=%s", self.client_lock)
         self.send(SHARING_LOCK, self.client_lock)
 
     def send_notify_enabled(self) -> None:

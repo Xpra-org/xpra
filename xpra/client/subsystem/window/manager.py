@@ -31,6 +31,7 @@ focuslog = Logger("window", "focus")
 geomlog = Logger("geometry")
 metalog = Logger("metadata")
 execlog = Logger("client", "exec")
+sharinglog = Logger("sharing")
 
 OPENGL_REINIT_WINDOWS = envbool("XPRA_OPENGL_REINIT_WINDOWS", True)
 SHOW_DELAY: int = envint("XPRA_SHOW_DELAY", -1)
@@ -125,6 +126,8 @@ class WindowManagerClient(StubClientSubsystem):
         self.modal_windows = self.windows_enabled and opts.modal_windows
         self.sync_position = is_sharing_sync(opts.sharing, "position")
         self.sync_focus = is_sharing_sync(opts.sharing, "focus")
+        sharinglog("sharing=%r: sync_position=%s, sync_focus=%s",
+                   opts.sharing, self.sync_position, self.sync_focus)
 
     def init_ui(self, opts) -> None:
         # opengl setup is owned by the `opengl` subsystem:

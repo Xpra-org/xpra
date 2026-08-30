@@ -20,6 +20,7 @@ from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("screen")
+sharinglog = Logger("sharing")
 
 
 def get_display_type() -> str:
@@ -106,6 +107,7 @@ class DisplayManager(StubSubsystem):
         self.default_dpi = int(opts.dpi)
         self.refresh_rate = opts.refresh_rate
         self.sharing_layout = parse_sharing_layout(opts.sharing)
+        sharinglog("sharing layout %r from sharing=%r", self.sharing_layout, opts.sharing)
 
     def setup(self) -> None:
         from xpra.platform.gui import init as gui_init
@@ -119,9 +121,9 @@ class DisplayManager(StubSubsystem):
 
     def disable_sharing_layout(self, reason: str) -> None:
         """ fall back to sharing the display as `sharing=yes` would """
-        log.warn("Warning: %r display sharing is not available", self.sharing_layout)
-        log.warn(" %s", reason)
-        log.warn(" the display will be shared as with `sharing=yes`")
+        sharinglog.warn("Warning: %r display sharing is not available", self.sharing_layout)
+        sharinglog.warn(" %s", reason)
+        sharinglog.warn(" the display will be shared as with `sharing=yes`")
         self.sharing_layout = ""
 
     def print_screen_info(self) -> None:
@@ -221,6 +223,8 @@ class DisplayManager(StubSubsystem):
         caps: dict[str, Any] = {}
         # with `sharing=combine`, each client only sees its own area of the virtual display:
         area_size = getattr(source, "get_display_area_size", lambda: ())()
+        if area_size:
+            sharinglog("get_display_caps(%s) using display area size %s", source, area_size)
         if root_size := (area_size or self.get_display_size()):
             caps |= {
                 "actual_desktop_size": root_size,
@@ -304,7 +308,8 @@ class DisplayManager(StubSubsystem):
             ss.desktop_size_server = ss.get_display_area_size() or (sw, sh)
             self.set_desktop_geometry_attributes(sw, sh)
             self.apply_refresh_rate(ss)
-            log("do_parse_screen_info(..)=%s (combined)", (sw, sh))
+            sharinglog("do_parse_screen_info(%s, %s) combined display is %ix%i, this client gets %s",
+                       ss, desktop_size, sw, sh, ss.desktop_size_server)
             return sw, sh
         # we will tell the client about the size chosen in the hello we send back,
         # so record this size as the current server desktop size to avoid change notifications:
@@ -428,6 +433,7 @@ class DisplayManager(StubSubsystem):
         if self.sharing_layout:
             # this client is only one part of the display: re-do the whole layout
             # (which also re-assigns the areas, since this client's may have changed size)
+            sharinglog("_apply_desktop_size(%s, %i, %i) re-combining the display", ss, width, height)
             width, height = self.configure_best_screen_size()
             if width <= 0 or height <= 0:
                 return
@@ -508,8 +514,8 @@ class DisplayManager(StubSubsystem):
         if self.sharing_layout:
             # the clients occupy distinct areas of the display, so intersecting
             # their workareas would leave nothing usable: the whole display is the workarea
-            log("calculate_workarea(%s, %s) sharing layout %r: using the full display area",
-                maxw, maxh, self.sharing_layout)
+            sharinglog("calculate_workarea(%s, %s) sharing layout %r: using the full display area",
+                       maxw, maxh, self.sharing_layout)
             self.server.set_workarea(workarea)
             self.server.set_workareas(self.calculate_workareas(maxw, maxh, display_sources))
             return

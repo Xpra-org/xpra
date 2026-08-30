@@ -359,12 +359,13 @@ def parse_sharing_sync(value: str) -> tuple[str, ...]:
             continue
         subsystem = part[len("sync-"):]
         if subsystem not in SYNC_SUBSYSTEMS:
-            log = Logger("util")
+            log = Logger("util", "sharing")
             log.warn(f"Warning: unknown synchronization subsystem {subsystem!r}")
             log.warn(" valid options are: %s", csv(SYNC_SUBSYSTEMS))
             continue
         if subsystem not in subsystems:
             subsystems.append(subsystem)
+    Logger("sharing")("parse_sharing_sync(%r)=%s", value, subsystems)
     return tuple(subsystems)
 
 
@@ -386,23 +387,29 @@ def parse_sharing_layout(value: str) -> str:
     ie: `combine` arranges each client's monitors side by side.
     Returns an empty string when no layout is requested.
     """
+    layout = ""
     for part in value.lower().replace("_", "-").split(","):
         part = part.strip()
         if part in SHARING_LAYOUTS:
-            return part
+            layout = part
+            break
         # anything that looks like a layout but isn't one is worth warning about:
         if part.startswith("combine"):
-            log = Logger("util")
+            log = Logger("util", "sharing")
             log.warn(f"Warning: unknown sharing layout {part!r}")
             log.warn(" valid options are: %s", csv(SHARING_LAYOUTS))
-    return ""
+    Logger("sharing")("parse_sharing_layout(%r)=%r", value, layout)
+    return layout
 
 
 def parse_sharing(value: str) -> bool | None:
     """ the `sharing` option is a boolean which also accepts the `sync` and layout values """
     if is_sharing_sync(value) or parse_sharing_layout(value):
-        return True
-    return parse_bool_or("sharing", value)
+        shared: bool | None = True
+    else:
+        shared = parse_bool_or("sharing", value)
+    Logger("sharing")("parse_sharing(%r)=%s", value, shared)
+    return shared
 
 
 def print_bool(k, v, true_str='yes', false_str='no') -> str:

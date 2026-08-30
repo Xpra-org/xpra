@@ -31,6 +31,7 @@ from xpra.log import Logger
 
 log = Logger("screen")
 grablog = Logger("server", "grab")
+sharinglog = Logger("sharing")
 
 DUMMY_WIDTH_HEIGHT_MM = envbool("XPRA_DUMMY_WIDTH_HEIGHT_MM", True)
 DUMMY_MONITORS = envbool("XPRA_DUMMY_MONITORS", True)
@@ -100,6 +101,11 @@ def log_randr_warning(msg="no randr bindings", error="") -> None:
     if error:
         log.warn(error)
     log.warn(" the virtual display cannot be configured properly")
+
+
+def monitor_geometries(monitors: dict[int, Any]) -> dict[int, Any]:
+    """ just the geometry of each monitor, so we can log a layout without the full definitions """
+    return {index: mdef.get("geometry") for index, mdef in monitors.items()}
 
 
 class X11DisplayManager(DisplayManager):
@@ -400,8 +406,8 @@ class X11DisplayManager(DisplayManager):
             return root_w, root_h
         if self.sharing_layout:
             w, h = self.get_combined_screen_size()
-            log("combined screen size: %ix%i", w, h)
             if w <= 0 or h <= 0:
+                sharinglog("no combined screen size yet, keeping %ix%i", root_w, root_h)
                 return root_w, root_h
             return self.server.set_screen_size(w, h)
         from xpra.server.source.display import DisplayConnection
@@ -486,8 +492,12 @@ class X11DisplayManager(DisplayManager):
         # (not when combining displays: the clients come and go, and moving
         #  their windows around every time would be more disruptive than helpful)
         window_sub = self.get_subsystem("window")
-        if window_sub and not self.sharing_layout:
-            window_sub.clamp_windows_to_screen(desired_w, desired_h)
+        if window_sub:
+            if self.sharing_layout:
+                sharinglog("not clamping windows to %ix%i: the display is shared as %r",
+                           desired_w, desired_h, self.sharing_layout)
+            else:
+                window_sub.clamp_windows_to_screen(desired_w, desired_h)
         # RandR 1.6 fast-path: mirror the client's monitor layout exactly
         # when the dummy driver supports it (seamless servers only - see
         # `mirror_client_layout`). Falls through to standard screen-size
@@ -643,6 +653,8 @@ class X11DisplayManager(DisplayManager):
             from xpra.x11.bindings.randr import RandRBindings
             if not RandRBindings().is_dummy16():
                 self.disable_sharing_layout("this display does not support RandR 1.6 monitors")
+        if self.sharing_layout:
+            sharinglog("sharing layout %r can be used on this display", self.sharing_layout)
 
     def client_exited(self, _server, _source) -> None:
         # the areas of the remaining clients have to be re-assigned:
@@ -658,9 +670,9 @@ class X11DisplayManager(DisplayManager):
             return
         if not self.get_sources_by_type(DisplayConnection):
             # nobody left to re-assign the display to
-            log("recombine_display() no display clients left")
+            sharinglog("recombine_display() no display clients left")
             return
-        log("recombine_display() re-configuring the combined display")
+        sharinglog("recombine_display() re-configuring the combined display")
         w, h = self.configure_best_screen_size()
         if w > 0 and h > 0:
             self.set_desktop_geometry_attributes(w, h)
@@ -677,9 +689,12 @@ class X11DisplayManager(DisplayManager):
                 # (ie: the html5 client) still gets an area matching its display:
                 w, h = ss.desktop_size
                 if w <= 0 or h <= 0:
-                    log("no monitors and no desktop size for %s", ss)
+                    sharinglog("no monitors and no desktop size for %s", ss)
                     continue
+                sharinglog("client %i did not send any monitors, using its %ix%i display size",
+                           ss.counter, w, h)
                 mdef = {0: {"name": f"client{ss.counter}", "geometry": (0, 0, w, h)}}
+            sharinglog("client %i monitors: %s", ss.counter, monitor_geometries(mdef))
             sources.append(ss)
             layouts.append(mdef)
         return sources, layouts
@@ -690,8 +705,8 @@ class X11DisplayManager(DisplayManager):
         try:
             return self.do_combine_client_monitor_layout()
         except Exception:
-            log("combine_client_monitor_layout()", exc_info=True)
-            log.error("Error: failed to combine the displays of the connected clients")
+            sharinglog("combine_client_monitor_layout()", exc_info=True)
+            sharinglog.error("Error: failed to combine the displays of the connected clients")
             self.clear_display_areas()
             return {}
 
@@ -701,21 +716,24 @@ class X11DisplayManager(DisplayManager):
         sources, layouts = self.get_client_monitor_layouts()
         vertical = self.sharing_layout.endswith("-vertical")
         mdef, areas = combine_monitor_layouts(layouts, vertical)
-        log("combine_client_monitor_layout() monitors=%s, areas=%s", mdef, areas)
+        sharinglog("combining %i client layouts %s: monitors=%s, areas=%s",
+                   len(layouts), "vertically" if vertical else "horizontally",
+                   monitor_geometries(mdef), areas)
         if not mdef:
+            sharinglog("no monitors to combine")
             self.clear_display_areas()
             return {}
         with xsync:
             crtcs = randr.get_crtc_count()
         if len(mdef) > crtcs:
-            log.warn("Warning: cannot combine the displays of %i clients", len(sources))
-            log.warn(" %i monitors were requested but this display only has %i", len(mdef), crtcs)
+            sharinglog.warn("Warning: cannot combine the displays of %i clients", len(sources))
+            sharinglog.warn(" %i monitors were requested but this display only has %i", len(mdef), crtcs)
             self.clear_display_areas()
             return {}
         mdef = adjust_monitor_refresh_rate(self.refresh_rate, mdef)
         with xlog:
             if not randr.set_crtc_config(mdef):
-                log.warn("Warning: failed to configure the combined display")
+                sharinglog.warn("Warning: failed to configure the combined display")
                 self.clear_display_areas()
                 return {}
         self.assign_display_areas(sources, areas)
@@ -728,13 +746,16 @@ class X11DisplayManager(DisplayManager):
         """ give each client its own area of the virtual display,
             every client that has not been given one shares the whole display as usual """
         assigned = dict(zip(sources, areas))
+        sharinglog("assign_display_areas(%s, %s)", sources, areas)
         for ss in self.get_sources_by_type(DisplayConnection):
             area = assigned.get(ss)
             if not area or area[2] <= 0 or area[3] <= 0:
+                sharinglog("client %i shares the whole display", ss.counter)
                 ss.set_display_area(None)
                 continue
             x, y, w, h = area
             if ss.get_display_origin() == (x, y) and ss.get_display_area_size() == (w, h):
+                sharinglog("client %i keeps its %ix%i area at %i,%i", ss.counter, w, h, x, y)
                 continue
             ss.set_display_area(rectangle(x, y, w, h))
             log.info("client %i uses %ix%i of the display at %i,%i", ss.counter, w, h, x, y)
@@ -746,7 +767,9 @@ class X11DisplayManager(DisplayManager):
         """ the size needed to hold every client's monitors, placed side by side """
         _, layouts = self.get_client_monitor_layouts()
         mdef = combine_monitor_layouts(layouts, self.sharing_layout.endswith("-vertical"))[0]
-        return monitors_bounding_box(mdef)
+        size = monitors_bounding_box(mdef)
+        sharinglog("get_combined_screen_size()=%s from %i client layouts", size, len(layouts))
+        return size
 
     def mirror_client_monitor_layout(self) -> dict[int, Any]:
         if not self.randr:

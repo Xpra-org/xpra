@@ -22,6 +22,7 @@ focuslog = Logger("focus")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
 eventslog = Logger("events")
+sharinglog = Logger("sharing")
 
 
 def control_error(*args, **kwargs) -> NoReturn:
@@ -275,7 +276,10 @@ class WindowServer(StubSubsystem):
         Re-evaluate which windows each client should show,
         used when the clients' display areas change (`sharing=combine`).
         """
-        for ss in self.window_sources():
+        sources = self.window_sources()
+        sharinglog("update_windows_visibility() %i windows, %i clients",
+                   len(self._id_to_window), len(sources))
+        for ss in sources:
             for wid, window in tuple(self._id_to_window.items()):
                 ss.update_window_visibility(wid, window)
 
