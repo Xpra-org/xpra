@@ -227,6 +227,10 @@ class WindowReplay:
         if etype in ("pointer-button", "key-event", "key"):
             # Input state must still be updated when its source window has gone.
             self.client.process_input_event(event)
+        if etype == "stacking":
+            # the stacking order is session wide, it doesn't need a window:
+            self.client.set_stacking(event.inttupleget("stacking"))
+            return
         if etype in ("grab", "ungrab"):
             # handled before the `window is gone` check below,
             # so that a grab release can never be lost:
@@ -250,6 +254,7 @@ class WindowReplay:
                 self.window = self.client.make_client_window(self.wid, geom, metadata)
             log("new-window: %s", self.window)
             self.window.show()
+            self.may_stack(event)
             self.may_focus(event)
             self.may_grab(event)
         elif etype == "destroy":
@@ -319,8 +324,19 @@ class WindowReplay:
                 self.window.set_cursor_data(())
             self.window.update_metadata(metadata)
             self.window.move_resize(*geometry)
+            self.may_stack(event)
             self.may_focus(event)
             self.may_grab(event)
+        elif etype == "raise":
+            # the server only raises windows that gained the focus:
+            self.client.set_focused(self.wid, event.intget("timestamp", 0))
+        elif etype == "restack":
+            above = int(event.intget("detail", 0) == 0)
+            other_window = self.client.get_window(event.intget("other", 0))
+            log("restack: %s %s", ("below", "above")[above], other_window)
+            self.window.restack(other_window, above)
+        elif etype == "bell":
+            event_info("bell")
         elif etype == "metadata":
             metadata = typedict(event.dictget("metadata"))
             log("metadata: %s", metadata)
@@ -337,6 +353,14 @@ class WindowReplay:
                 self.window.move_resize(*geometry)
         else:
             log.warn("%r not handled yet!", etype)
+
+    def may_stack(self, event: typedict) -> None:
+        """
+        `new` and `sync` events carry the session-wide stacking order.
+        """
+        stacking = event.inttupleget("stacking", ())
+        if stacking:
+            self.client.set_stacking(stacking)
 
     def may_focus(self, event: typedict) -> None:
         """
@@ -405,7 +429,7 @@ class WindowModel:
         self.wid = wid
         self.show = self.draw_region = self.set_cursor_data = self.show_pointer_overlay = noop
         self.resize = self.move_resize = self.update_metadata = self.present = noop
-        self.destroy = noop
+        self.destroy = self.restack = noop
 
 
 def log_notable_event(etype: str, msg: str) -> None:
@@ -453,6 +477,25 @@ class Replay(GObjectClientAdapter):
     def make_client_window(self, wid: int, geometry: tuple[int, int, int, int], metadata: typedict):
         return WindowModel(wid)
 
+    def get_window(self, wid: int):
+        wr = self.window_replay.get(wid)
+        return wr.window if wr else None
+
+    def set_stacking(self, stacking: Sequence[int]) -> None:
+        """
+        Restore the recorded bottom-to-top window order.
+        Windows that are not on screen (yet, or any more) are skipped.
+        """
+        log("set_stacking(%s)", stacking)
+        below = None
+        for wid in stacking:
+            window = self.get_window(wid)
+            if not window:
+                continue
+            if below:
+                window.restack(below, 1)
+            below = window
+
     def set_focused(self, wid: int, timestamp: int = 0) -> None:
         """
         For now, we don't replay the focus itself:
@@ -464,8 +507,7 @@ class Replay(GObjectClientAdapter):
             return
         self.focus_timestamp = timestamp
         self.focused = wid
-        wr = self.window_replay.get(wid)
-        window = wr.window if wr else None
+        window = self.get_window(wid)
         log("set_focused(%#x, %i) window=%s", wid, timestamp, window)
         if window:
             window.present()
@@ -482,8 +524,7 @@ class Replay(GObjectClientAdapter):
         if timestamp < self.grab_timestamp:
             return
         self.grab_timestamp = timestamp
-        wr = self.window_replay.get(wid)
-        window = wr.window if wr else None
+        window = self.get_window(wid)
         if wid and not window:
             # the window is gone, and so is its grab:
             # the X11 server releases it when the window is destroyed

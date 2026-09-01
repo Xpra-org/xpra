@@ -153,6 +153,30 @@ class WindowReplayTest(unittest.TestCase):
         ])
         self.assertEqual(window_replay.next_event(), {})
 
+    def test_raise_event(self) -> None:
+        window_replay = self.make_window_replay()
+        window_replay.client.window_replay = {1: window_replay}
+
+        window_replay.do_process_event(typedict({"event": "raise", "timestamp": 10}))
+
+        self.assertEqual(window_replay.client.focused, 1)
+        window_replay.window.present.assert_called_once()
+
+    def test_stacking_event(self) -> None:
+        replay = Replay(make_defaults_struct())
+        windows = {}
+        for wid in (1, 2, 3):
+            wr = WindowReplay(replay, wid, "")
+            wr.window = Mock(spec=WindowModel(wid))
+            windows[wid] = wr
+        replay.window_replay = windows
+        # window 4 is not on screen (yet, or any more):
+        windows[1].do_process_event(typedict({"event": "stacking", "stacking": (3, 4, 1, 2)}))
+
+        windows[3].window.restack.assert_not_called()
+        windows[1].window.restack.assert_called_once_with(windows[3].window, 1)
+        windows[2].window.restack.assert_called_once_with(windows[1].window, 1)
+
 
 class ReplaySeekTest(unittest.TestCase):
 
