@@ -56,7 +56,7 @@ def get_sd_listen_sockets() -> Sequence[Tuple[str, Any, Tuple[str, int]]]:
 
 
 def get_sd_socket_type(fd) -> str:
-    from xpra.net.common import TCP_SOCKTYPES
+    from xpra.net.socktypes import TCP_SOCKTYPES
     socktype = os.environ.get("XPRA_SD%i_SOCKET_TYPE" % fd)
     if not socktype:
         socktype = os.environ.get("XPRA_SD_SOCKET_TYPE", "tcp")
