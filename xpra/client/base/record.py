@@ -634,7 +634,6 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             self.add_legacy_alias("pointer-grab", "window-grab")
             self.add_legacy_alias("pointer-ungrab", "window-ungrab")
         self.add_packets(
-            "startup-complete",
             "window-create",
             "window-raise",
             "window-restack",
