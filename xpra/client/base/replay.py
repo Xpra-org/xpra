@@ -88,7 +88,7 @@ def may_load_blob(event: dict, ext="", warn=True) -> bytes:
     blob_path = os.path.splitext(filename)[0] + f".{ext}"
     if not os.path.exists(blob_path):
         fn = log.warn if warn else log
-        fn("Warning: %s blob %r not found!", event.strget("event"), blob_path)
+        fn("Warning: %s blob %r not found!", event.strget("event") or ext, blob_path)
         return b""
     return load_binary_file(blob_path)
 
@@ -287,9 +287,14 @@ class WindowReplay:
                 log("creating window %#x from a sync point", self.wid)
                 self.window = self.client.make_client_window(self.wid, geometry, metadata)
                 self.window.show()
-            cursor = event.dictget("cursor-data", {})
-            if cursor:
-                self.window.set_cursor_data(to_cursor_data(typedict(cursor)))
+            cursor = event.get("cursor-data")
+            if isinstance(cursor, dict) and cursor:
+                cursor_data = typedict(cursor)
+                # the cursor pixels are saved as a blob belonging to this event:
+                cursor_data.setdefault("filename", event.get("filename", ""))
+                self.window.set_cursor_data(to_cursor_data(cursor_data))
+            else:
+                self.window.set_cursor_data(())
             self.window.update_metadata(metadata)
             self.window.move_resize(*geometry)
             self.may_focus(event)
