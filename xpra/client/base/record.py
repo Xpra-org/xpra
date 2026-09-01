@@ -583,7 +583,6 @@ class RecordClient(GObjectClientAdapter, ClientBaseClass):
             self.add_legacy_alias("draw", "window-draw")
             self.add_legacy_alias("bell", "window-bell")
         self.add_packets(
-            "startup-complete",
             "window-create",
             "window-raise",
             "window-restack",
