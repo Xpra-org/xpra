@@ -133,14 +133,20 @@ class WindowReplay:
         self.events: dict[int, dict] = {}
         self.group_index = 0
         self.event_index = 0
+        # the highest event index found, events are not always contiguous
+        self.last_index = -1
         self.cursor: tuple[str, int ,int, int, int, int, int, int, bytes, str] | tuple = ()
         self.sync_index: Sequence[tuple[int, int]] = []
         self.all_timestamps: Sequence[int] = []
         self.window = None
 
     def load(self):
-        self.events: dict[int, dict] = load_events_placeholders(self.directory)
+        self.set_events(load_events_placeholders(self.directory))
         self.ensure_sync_index()
+
+    def set_events(self, events: dict[int, dict]) -> None:
+        self.events = events
+        self.last_index = max(events.keys(), default=-1)
 
     def ensure_sync_index(self) -> None:
         """
@@ -170,32 +176,37 @@ class WindowReplay:
         return tuple(set(ts for ts, _ in self.sync_index))
 
     def get_event(self) -> dict:
-        if self.event_index >= len(self.events):
-            return {}
-        event = self.events[self.event_index]
-        may_load(event)
-        return event
+        """
+        The event at the current index.
+        Recordings can have gaps in them, so skip over any missing index.
+        """
+        while self.event_index <= self.last_index:
+            event = self.events.get(self.event_index)
+            if event is not None:
+                may_load(event)
+                return event
+            log("event %i is missing from %r", self.event_index, self.directory)
+            self.event_index += 1
+        return {}
 
     def count(self) -> int:
         return len(self.events)
 
     def first_event(self) -> dict:
-        event = self.events[0]
-        may_load(event)
-        return event
+        return self.load_event(min(self.events.keys(), default=-1))
 
     def last_event(self) -> dict:
-        last_id: int = max(self.events.keys())
-        event = self.events.get(last_id, {})
-        may_load(event)
+        return self.load_event(max(self.events.keys(), default=-1))
+
+    def load_event(self, index: int) -> dict:
+        event = self.events.get(index, {})
+        if event:
+            may_load(event)
         return event
 
     def next_event(self) -> dict:
-        if self.event_index < len(self.events):
+        if self.event_index <= self.last_index:
             self.event_index += 1
-            while self.event_index not in self.events and self.event_index < len(self.events):
-                log.warn("Warning: event %i missing!", self.event_index)
-                self.event_index += 1
         return self.get_event()
 
     def event_info(self, etype: str, msg: str):
@@ -376,11 +387,10 @@ class WindowReplay:
             # the latest snapshot at or before the target.
             self.event_index = sync_idx
         # Fast-replay from the current position or selected sync point.
-        while self.event_index < len(self.events):
-            ev = self.events.get(self.event_index)
+        while True:
+            ev = self.get_event()
             if not ev:
                 break
-            may_load(ev)
             if typedict(ev).intget("timestamp", 0) > target_ms:
                 break
             self.process_event()
