@@ -617,6 +617,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         window.record("pointer-wheel", position=pointer, button=button, distance=distance, modifiers=tuple(modifiers))
 
     def init_authenticated_packet_handlers(self) -> None:
+        super().init_authenticated_packet_handlers()
         self.add_packets("startup-complete", "encoding-set", main_thread=True)
         self.add_legacy_alias("encodings", "encoding-set")
         if BACKWARDS_COMPATIBLE:
