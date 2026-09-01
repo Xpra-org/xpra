@@ -268,6 +268,32 @@ class RecordClientTest(unittest.TestCase):
         with open(os.path.join(self.tmpdir, "1", "%i.png" % record["index"]), "rb") as f:
             self.assertEqual(f.read(), pixels)
 
+    def test_sync_points_save_the_cursor_pixels_separately(self):
+        self.new_window(1)
+        pixels = b"cursor-pixels"
+        self.process("cursor-data", "png", 9, 16, 4, 8, 999, pixels, "left_ptr")
+        cursor = self.last_event(1, "cursor-data")
+        self.assertNotIn("png", cursor)
+        # the cursor is embedded in every sync point,
+        # its pixels must be saved as a blob, not lost with the whole event:
+        sync = self.sync(1)
+        self.assertEqual(sync["cursor-data"]["serial"], 999)
+        self.assertNotIn("png", sync["cursor-data"])
+        with open(os.path.join(self.tmpdir, "1", "%i.png" % sync["index"]), "rb") as f:
+            self.assertEqual(f.read(), pixels)
+        # the cursor dictionary is shared with the other windows,
+        # so it must not be modified when it is saved:
+        self.assertEqual(self.client.get_window(1).cursor_data["png"], pixels)
+
+    def test_event_indexes_have_no_gaps(self):
+        self.new_window(1)
+        self.process("cursor-data", "png", 9, 16, 4, 8, 999, b"cursor-pixels", "left_ptr")
+        self.process("window-draw", 1, 0, 0, 100, 100, "png", b"\0" * 16, 1, 0, {})
+        self.sync(1)
+        for wid in (0, 1):
+            indexes = [record["index"] for record in self.events(wid)]
+            self.assertEqual(indexes, list(range(len(indexes))), f"gap in the events of window {wid:#x}")
+
     def test_grab_packets_are_registered(self):
         for packet_type in ("window-grab", "window-ungrab"):
             self.assertIsNotNone(self.find_handler(packet_type))

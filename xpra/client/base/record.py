@@ -53,10 +53,15 @@ def can_focus(metadata: typedict) -> bool:
 
 
 def save_json(path: str, data: dict) -> None:
+    def tostr(obj) -> str:
+        # this should not happen: binary data is saved as separate blob files,
+        # but a lossy event is still better than a hole in the event sequence:
+        log.warn("Warning: cannot serialize %s value, saving it as a string", type(obj))
+        return str(obj)
     try:
-        text = json.dumps(data)
-    except TypeError:
-        log.error("Error writing %r to %r", data, path)
+        text = json.dumps(data, default=tostr)
+    except (TypeError, ValueError):
+        log.error("Error writing %r to %r", data, path, exc_info=True)
         return
     with open(path, "w") as f:
         f.write(text)
@@ -92,6 +97,27 @@ class WindowModel:
     def update_metadata(self, metadata) -> None:
         self.metadata.update(metadata)
 
+    def extract_blobs(self, data: dict) -> dict:
+        """
+        json cannot store binary data, so it is saved as a separate file
+        named after the event and the key it was found in
+        (ie: `encoding` in `draw` packets or `pixels` in `cursor_data` packets).
+        `sync` events embed the cursor data, so nested dictionaries are
+        parsed too - and since those dictionaries are shared with the other
+        windows, a copy is returned rather than modifying them in place.
+        """
+        filtered: dict[str, Any] = {}
+        for key, value in data.items():
+            if isinstance(value, (bytes, memoryview)):
+                path = os.path.join(self.directory, f"{self.event_no}.{key}")
+                with open(path, "wb") as f:
+                    f.write(bytes(value))
+            elif isinstance(value, dict):
+                filtered[key] = self.extract_blobs(value)
+            else:
+                filtered[key] = value
+        return filtered
+
     def record(self, event: str, **kwargs) -> None:
         data = {
             "event": event,
@@ -100,16 +126,9 @@ class WindowModel:
             "time": int(time() * 1000),
             "index": self.event_no,
         }
-        # remove bytes data and store as a separate file
-        # (ie: `encoding` in `draw` packets or `pixels` in `cursor_data` packets)
-        for key, value in dict(kwargs).items():
-            if isinstance(value, (bytes, memoryview)):
-                bin_data = bytes(kwargs.pop(key, b""))
-                path = os.path.join(self.directory, f"{self.event_no}.{key}")
-                with open(path, "wb") as f:
-                    f.write(bin_data)
+        # binary data is stored in separate files,
         # everything else is added to the dictionary:
-        data.update(kwargs)
+        data.update(self.extract_blobs(kwargs))
         path = os.path.join(self.directory, f"{self.event_no}.json")
         save_json(path, data)
         (focuslog if event == "stacking" else log)("recorded: %s : %r", event, data)
