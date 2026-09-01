@@ -93,7 +93,7 @@ class WindowReplayTest(unittest.TestCase):
         replay = Replay(make_defaults_struct())
         window_replay = WindowReplay(replay, 1, "")
         window_replay.window = Mock(spec=WindowModel(1))
-        window_replay.events = {
+        window_replay.set_events({
             0: {"event": "new", "timestamp": 0, "geometry": (0, 0, 100, 100)},
             1: {"event": "move-resize", "timestamp": 10, "geometry": (10, 10, 100, 100)},
             2: {"event": "move-resize", "timestamp": 20, "geometry": (20, 20, 100, 100)},
@@ -101,7 +101,7 @@ class WindowReplayTest(unittest.TestCase):
             4: {"event": "move-resize", "timestamp": 40, "geometry": (40, 40, 100, 100)},
             5: {"event": "sync", "timestamp": 50, "geometry": (50, 50, 100, 100)},
             6: {"event": "move-resize", "timestamp": 60, "geometry": (60, 60, 100, 100)},
-        }
+        })
         window_replay.sync_index = ((0, 0), (30, 3), (50, 5))
         return window_replay
 
@@ -135,6 +135,23 @@ class WindowReplayTest(unittest.TestCase):
             call(60, 60, 100, 100),
         ])
         self.assertEqual(window_replay.event_index, 7)
+
+    def test_gaps_in_the_event_sequence_are_skipped(self) -> None:
+        window_replay = self.make_window_replay()
+        events = dict(window_replay.events)
+        # an event which failed to be recorded leaves a hole in the sequence:
+        del events[4]
+        window_replay.set_events(events)
+        window_replay.event_index = 3
+
+        window_replay.seek(60, 30)
+
+        # the events after the gap must still be replayed:
+        self.assertEqual(window_replay.window.move_resize.call_args_list, [
+            call(50, 50, 100, 100),
+            call(60, 60, 100, 100),
+        ])
+        self.assertEqual(window_replay.next_event(), {})
 
 
 class ReplaySeekTest(unittest.TestCase):
