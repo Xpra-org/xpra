@@ -325,9 +325,9 @@ def is_X11() -> bool:
         # x11 is not installed, so assume it isn't used
         return False
     gdk_backend = os.environ.get("GDK_BACKEND", "")
-    if gdk_backend == "x11":
+    if gdk_backend in ("x11", "wayland"):
         get_util_logger().debug(f"is_X11() GDK_BACKEND={gdk_backend}")
-        return True
+        return gdk_backend == "x11"
     if envbool("XPRA_GTK", False):
         try:
             from xpra.x11.gtk.bindings import is_X11_Display
@@ -337,11 +337,16 @@ def is_X11() -> bool:
     if OSX or WIN32:
         return False
     try:
-        from xpra.x11.bindings.xwayland import isxwayland
-        return not isxwayland()
+        from xpra.x11.bindings.xwayland import isX11, isxwayland
     except ImportError as e:
-        get_util_logger().debug("is_X11() isxwayland missing: %s", e)
-    return True
+        get_util_logger().debug("is_X11() xwayland bindings missing: %s", e)
+        return True
+    # `isxwayland()` also returns `False` when there is no X11 display to query at all,
+    # so we must first make sure that we can actually open one:
+    if not isX11():
+        get_util_logger().debug("is_X11() no X11 display can be opened")
+        return False
+    return not isxwayland()
 
 
 def nn(x) -> str:
