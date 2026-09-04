@@ -22,7 +22,12 @@ log = Logger("x11")
 DEF XNone = 0
 
 
-def isX11(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
+# `DISPLAY` must be looked up when these functions are called and not in their signature:
+# a default argument value is evaluated once, when this module is imported,
+# which is not necessarily the display we are running against by then
+
+def isX11(display_name: str = "") -> bool:
+    display_name = display_name or os.environ.get("DISPLAY", "")
     b = display_name.encode()
     cdef char* display = b
     cdef Display *d = NULL
@@ -35,7 +40,8 @@ def isX11(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
     return True
 
 
-def isxwayland(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
+def isxwayland(display_name: str = "") -> bool:
+    display_name = display_name or os.environ.get("DISPLAY", "")
     b = display_name.encode()
     cdef char* display = b
     cdef Display *d = NULL
