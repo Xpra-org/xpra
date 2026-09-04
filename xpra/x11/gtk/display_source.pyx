@@ -53,14 +53,22 @@ def init_gdk_display_source() -> None:
     root = Gdk.get_default_root_window()
     if root is None:
         raise RuntimeError("could not get the default root window")
-    display = Gdk.Display.get_default()
+    gdkdisplay = Gdk.Display.get_default()
+    #`gdk_x11_display_get_xdisplay` only asserts `GDK_IS_DISPLAY`, not `GDK_IS_X11_DISPLAY`:
+    #calling it with a wayland display would return a bogus pointer
+    #which would then crash every single X11 binding using it
+    if not isinstance(gdkdisplay, GdkX11.X11Display):
+        raise InitException("the default display %r is not an X11 display" % (gdkdisplay, ))
     #now we can get a display:
     cdef Display *x11_display = gdk_x11_display_get_xdisplay(gdk_display)
+    if x11_display == NULL:
+        raise InitException("no X11 display for %r" % (gdkdisplay, ))
     set_display(x11_display)
     name = gdk_display_get_name(gdk_display).decode()
     from xpra.log import Logger
     Logger("gtk").debug("gdk display initialized: %r", name)
     set_display_name(name)
+    display = gdkdisplay
 
 def close_gdk_display_source() -> None:
     #this triggers the garbage collection of the Display object:
