@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any
 from collections.abc import Sequence, Callable
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, is_admin
 from xpra.scripts.config import make_defaults_struct
 from xpra.util.env import osexpand
 from xpra.util.parsing import parse_simple_dict
@@ -29,7 +29,13 @@ def get_system_conf_file(dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> st
 
 def get_user_config_file(dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> str:
     from xpra.platform.paths import get_user_conf_dirs
-    return osexpand(os.path.join(get_user_conf_dirs()[0], dirname, filename))
+    # administrators modify the system configuration,
+    # and the root user does not have a configuration directory of its own:
+    # (we must never use `/root/.xpra` or `/root/.config/xpra`)
+    conf_dirs = () if is_admin() else get_user_conf_dirs()
+    if not conf_dirs:
+        return get_system_conf_file(dirname, filename)
+    return osexpand(os.path.join(conf_dirs[0], dirname, filename))
 
 
 def parse_user_config_file(dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> dict[str, str | list[str] | dict[str, str]]:
@@ -43,7 +49,11 @@ def parse_user_config_file(dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> 
 
 
 def save_user_config_file(options: dict,
-                          dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
+                          dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> str:
+    """
+        Saves the options to the configuration file,
+        returns the path of the file saved, or an empty string on failure.
+    """
     filename = get_user_config_file(dirname, filename)
     conf_dir = os.path.dirname(filename)
     log(f"save_user_config_file({options}, {dirname!r}, {filename!r}) {conf_dir=!r}")
@@ -54,27 +64,34 @@ def save_user_config_file(options: dict,
             log(f"os.makedirs({conf_dir!r}, 0o755)", exc_info=True)
             log.error(f"Error creating configuration directory {conf_dir!r}:")
             log.estr(e)
-            return
-    with open(filename, "w", encoding="utf8") as f:
-        f.write("# generated on " + datetime.now().strftime("%c")+"\n\n")
-        for k, v in options.items():
-            if isinstance(v, dict):
-                for dk, dv in v.items():
-                    f.write(f"{k} = {dk}={dv}\n")
-                continue
-            if not isinstance(v, (list, tuple)):
-                v = [v]
-            for item in v:
-                f.write(f"{k} = {item}\n")
+            return ""
+    try:
+        with open(filename, "w", encoding="utf8") as f:
+            f.write("# generated on " + datetime.now().strftime("%c")+"\n\n")
+            for k, v in options.items():
+                if isinstance(v, dict):
+                    for dk, dv in v.items():
+                        f.write(f"{k} = {dk}={dv}\n")
+                    continue
+                if not isinstance(v, (list, tuple)):
+                    v = [v]
+                for item in v:
+                    f.write(f"{k} = {item}\n")
+    except OSError as e:
+        log(f"open({filename!r}, 'w')", exc_info=True)
+        log.error(f"Error writing to configuration file {filename!r}:")
+        log.estr(e)
+        return ""
+    return filename
 
 
 def update_config_attribute(attribute: str, value: str | int | float | list,
-                            dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
-    update_config_attributes({attribute: value}, dirname, filename)
+                            dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> str:
+    return update_config_attributes({attribute: value}, dirname, filename)
 
 
 def update_config_attributes(attributes: dict[str, str | int | float | list],
-                             dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
+                             dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> str:
     config = parse_user_config_file(dirname, filename)
     for attribute, value in attributes.items():
         value_str = str(value)
@@ -82,7 +99,7 @@ def update_config_attributes(attributes: dict[str, str | int | float | list],
             value_str = "yes" if bool(value) else "no"
         config[attribute] = value_str
         log(f"update config: {attribute}={value_str}")
-    save_user_config_file(config, dirname, filename)
+    return save_user_config_file(config, dirname, filename)
 
 
 def unset_config_attribute(attribute: str, dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
@@ -99,16 +116,17 @@ def unset_config_attributes(attributes: Sequence[str], dirname="conf.d", filenam
 
 
 def update_config_env(attribute: str, value,
-                      dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
+                      dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> str:
     # there can be many env attributes
     log(f"update config env: {attribute}={value}")
     config = parse_user_config_file(dirname, filename)
-    env = config.get("env")
+    env = config.get("env", {})
     if not isinstance(env, dict):
         log.warn(f"Warning: env option was using invalid type {type(env)}")
-        config["env"] = env = {}
+        env = {}
     env[attribute] = str(value)
-    save_user_config_file(config, dirname, filename)
+    config["env"] = env
+    return save_user_config_file(config, dirname, filename)
 
 
 def get_config_env(var_name: str,

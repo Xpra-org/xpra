@@ -30,6 +30,9 @@ xpra xvfb :10
 ```
 Starting with version 6.3, you can configure xpra to use Xdummy as `xvfb` command using the GUI command `xpra configure vfb`. \
 Or from the command line using `xpra set xvfb Xdummy`.
+
+This saves the setting in `~/.config/xpra/conf.d/90_configure_tool.conf`, or in
+`/etc/xpra/conf.d/90_configure_tool.conf` when running as `root`.
 </details>
 <details>
   <summary>Xdummy with Xpra</summary>
@@ -39,7 +42,6 @@ You can choose at [build time](../Build/README.md) whether or not to use `Xdummy
 If your packages do not enable `Xdummy` by default,
 you may still be able to [change your settings at runtime](https://github.com/Xpra-org/xpra/issues/4456#issuecomment-2572596302).
 </details>
-
 
 ## Configuration
 
