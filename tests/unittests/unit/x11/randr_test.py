@@ -23,7 +23,10 @@ class RandrTest(ServerTestUtil):
 
     def start_test_xvfb(self, *args):
         display = self.find_free_display()
-        ServerTestUtil.test_xvfb_command = "Xdummy" if FULL_TEST else "Xvfb"
+        # `XPRA_TEST_VFB_COMMAND` can be used to test the `Xvfb` code paths
+        # on distributions where we would otherwise use `Xdummy`:
+        ServerTestUtil.test_xvfb_command = os.environ.get("XPRA_TEST_VFB_COMMAND") or (
+            "Xdummy" if FULL_TEST else "Xvfb")
         xvfb = self.start_Xvfb(display)
         time.sleep(1)
         assert display in self.find_X11_displays()
@@ -55,10 +58,15 @@ class RandrTest(ServerTestUtil):
                 log("vrefresh: %s", randr.get_vrefresh())
                 log("display vrefresh: %s", randr.get_vrefresh_display())
 
-                if not randr.is_dummy16():
-                    log.warn("no dummy 1.6 support!")
+                # `set_crtc_config` can configure a single monitor on any RandR 1.5 display,
+                # more than one monitor requires the dummy driver's 16 crtcs:
+                version = randr.get_version()
+                if version < (1, 5):
+                    log.warn("RandR version %s is too old to configure monitors", version)
                     return
-                log("dummy 1.6 driver, testing monitor configs")
+                dummy16 = randr.is_dummy16()
+                if not dummy16:
+                    log.warn("no dummy 1.6 support: only testing single monitor configurations")
 
                 def test_crtc_config(w: int, h: int, config: dict) -> None:
                     log("test_crtc_config(%i, %i, %s", w, h, config)
@@ -74,7 +82,16 @@ class RandrTest(ServerTestUtil):
                     # applying the same configuration again must be recognized as a no-op:
                     assert randr.is_current_monitor_config(config), f"{config} should already be applied"
 
-                test_crtc_config(751, 1122,{
+                def same_config(current: dict, changes: dict) -> dict:
+                    updated = {index: dict(monitor) for index, monitor in current.items()}
+                    for index, monitor in changes.items():
+                        updated.setdefault(index, {}).update(monitor)
+                    return updated
+
+                def assert_current(expected: bool, config: dict, msg: str) -> None:
+                    assert randr.is_current_monitor_config(config) == expected, f"{msg}: {config}"
+
+                test_crtc_config(751, 1122, {
                     0: {'geometry': (0, 0, 751, 1122), 'x': 0, 'y': 0, 'width': 751, 'height': 1122,
                         'name': 'VFB-0', 'index': 0},
                 })
@@ -87,62 +104,64 @@ class RandrTest(ServerTestUtil):
                     0: {'name': 'Foo', 'geometry': (0, 0, 790, 774), 'width-mm': 209, 'height-mm': 205},
                 })
 
-                # dual monitor
-                test_crtc_config(3840, 1080, {
-                    0: {'name': 'DP-0', 'geometry': (0, 0, 1920, 1080), 'width-mm': 209, 'height-mm': 205},
-                    1: {'name': 'HDMI-1', 'geometry': (1920, 0, 1920, 1080),
-                        'width-mm': 209, 'height-mm': 205, 'refresh-rate': 144000},
-                })
+                if dummy16:
+                    # dual monitor
+                    test_crtc_config(3840, 1080, {
+                        0: {'name': 'DP-0', 'geometry': (0, 0, 1920, 1080), 'width-mm': 209, 'height-mm': 205},
+                        1: {'name': 'HDMI-1', 'geometry': (1920, 0, 1920, 1080),
+                            'width-mm': 209, 'height-mm': 205, 'refresh-rate': 144000},
+                    })
 
-                test_crtc_config(4480, 2160, {
-                    0: {'name': 'VGA', 'geometry': (0, 0, 640, 480),
-                        'width-mm': 100, 'height-mm': 80, 'refresh-rate': 50000},
-                    1: {'name': 'DP-1', 'geometry': (640, 0, 3840, 2160), 'width-mm': 209, 'height-mm': 205},
-                })
+                    test_crtc_config(4480, 2160, {
+                        0: {'name': 'VGA', 'geometry': (0, 0, 640, 480),
+                            'width-mm': 100, 'height-mm': 80, 'refresh-rate': 50000},
+                        1: {'name': 'DP-1', 'geometry': (640, 0, 3840, 2160), 'width-mm': 209, 'height-mm': 205},
+                    })
 
                 # single again:
-                test_crtc_config(1024, 768,{
+                test_crtc_config(1024, 768, {
                     0: {'name': 'SVGA', 'geometry': (0, 0, 1024, 768), 'width-mm': 150, 'height-mm': 120},
                 })
-                test_crtc_config(1024, 768,{
+                test_crtc_config(1024, 768, {
                     0: {'name': 'SVGA', 'geometry': (0, 0, 1024, 768), 'width-mm': 150, 'height-mm': 120},
                 })
 
                 # `is_current_monitor_config` decides if `set_crtc_config` can be skipped:
-                current = {
+                single = {
                     0: {'name': 'DP-0', 'geometry': (0, 0, 1600, 900), 'primary': True,
                         'width-mm': 209, 'height-mm': 205, 'refresh-rate': 59951},
-                    1: {'name': 'DP-1', 'geometry': (1600, 0, 1280, 1024),
-                        'width-mm': 209, 'height-mm': 205, 'refresh-rate': 60000},
                 }
-                test_crtc_config(2880, 1024, current)
-
-                def same_config(changes: dict) -> dict:
-                    updated = {index: dict(monitor) for index, monitor in current.items()}
-                    for index, monitor in changes.items():
-                        updated[index].update(monitor)
-                    return updated
-
-                def assert_current(expected: bool, config: dict, msg: str) -> None:
-                    assert randr.is_current_monitor_config(config) == expected, f"{msg}: {config}"
-
-                # the plug names are not part of the configuration we compare:
-                assert_current(True, same_config({0: {"name": "eDP-1"}, 1: {"name": "HDMI-A-2"}}),
-                               "the plug names must be ignored")
+                test_crtc_config(1600, 900, single)
+                # the plug name is not part of the configuration we compare:
+                assert_current(True, same_config(single, {0: {"name": "eDP-1"}}),
+                               "the plug name must be ignored")
                 # neither is the jitter in the refresh rates reported by the clients:
-                assert_current(True, same_config({0: {"refresh-rate": 59952}, 1: {"refresh-rate": 60049}}),
-                               "a refresh rate rounding to the same Hz must be ignored")
+                assert_current(True, same_config(single, {0: {"refresh-rate": 59952}}),
+                               "a refresh rate rounding down to the same Hz must be ignored")
+                assert_current(True, same_config(single, {0: {"refresh-rate": 60049}}),
+                               "a refresh rate rounding up to the same Hz must be ignored")
                 # but everything else must be applied:
-                assert_current(False, same_config({0: {"refresh-rate": 50000}}),
+                assert_current(False, same_config(single, {0: {"refresh-rate": 50000}}),
                                "a different refresh rate must be applied")
-                assert_current(False, same_config({0: {"geometry": (0, 0, 1600, 1200)}}),
+                assert_current(False, same_config(single, {0: {"geometry": (0, 0, 1600, 1200)}}),
                                "a different geometry must be applied")
-                assert_current(False, same_config({0: {"primary": False}, 1: {"primary": True}}),
-                               "a different primary monitor must be applied")
-                assert_current(False, same_config({0: {"width-mm": 500}}),
+                assert_current(False, same_config(single, {0: {"width-mm": 500}}),
                                "different physical dimensions must be applied")
-                assert_current(False, {0: current[0]},
-                               "removing a monitor must be applied")
+                assert_current(False, same_config(single, {1: {'name': 'DP-1', 'geometry': (1600, 0, 1280, 1024)}}),
+                               "adding a monitor must be applied")
+
+                if dummy16:
+                    dual = same_config(single, {
+                        1: {'name': 'DP-1', 'geometry': (1600, 0, 1280, 1024),
+                            'width-mm': 209, 'height-mm': 205, 'refresh-rate': 60000},
+                    })
+                    test_crtc_config(2880, 1024, dual)
+                    assert_current(True, same_config(dual, {0: {"name": "eDP-1"}, 1: {"name": "HDMI-A-2"}}),
+                                   "the plug names must be ignored")
+                    assert_current(False, same_config(dual, {0: {"primary": False}, 1: {"primary": True}}),
+                                   "a different primary monitor must be applied")
+                    assert_current(False, {0: dual[0]},
+                                   "removing a monitor must be applied")
 
             finally:
                 if display_ptr:
