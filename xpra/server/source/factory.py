@@ -49,6 +49,8 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.file:
         from xpra.server.source.file import FileConnection
         mixins.append(FileConnection)
+    # must be after the file mixin: `PrinterConnection` has no file-transfer state
+    # of its own, it sets `printing` on the state owned by `FileConnection`
     if features.printer:
         from xpra.server.source.printer import PrinterConnection
         mixins.append(PrinterConnection)

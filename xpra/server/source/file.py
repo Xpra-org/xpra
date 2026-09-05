@@ -19,7 +19,13 @@ class FileConnection(FileTransferHandler, StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return bool("file" in caps or BACKWARDS_COMPATIBLE and caps.boolget("file-transfer"))
+        if "file" in caps:
+            return True
+        # printer forwarding shares this subsystem's state and packet handlers,
+        # so this mixin is also required whenever `PrinterConnection` is:
+        if caps.dictget("printer"):
+            return True
+        return bool(BACKWARDS_COMPATIBLE and (caps.boolget("file-transfer") or caps.boolget("printing")))
 
     def parse_client_caps(self, c: typedict) -> None:
         FileTransferHandler.parse_file_transfer_caps(self, c)
@@ -30,7 +36,7 @@ class FileConnection(FileTransferHandler, StubClientConnection):
         }
 
     def init_from(self, _protocol, server) -> None:
-        self.init_attributes()
+        # (`__init__` has just called `init_attributes()` to reset the defaults)
         # `FileServer` is the standalone subsystem instance:
         file_transfer = server.subsystems["file"].file_transfer
         # copy attributes
