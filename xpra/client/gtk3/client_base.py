@@ -944,7 +944,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = UIXpraClient.make_hello(self)
-        capabilities["encoding.transparency"] = self.has_transparency()
+        from xpra.client.base import features
+        if features.encoding:
+            capabilities["encoding.transparency"] = self.has_transparency()
         if FULL_INFO > 1:
             capabilities.setdefault("versions", {}).update(get_gtk_version_info())
         EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", FULL_INFO > 1)
@@ -969,7 +971,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                     icons += it.list_icons(context)
                 log(f"icons: {icons}")
                 capabilities["theme.default.icons"] = tuple(set(icons))
-        from xpra.client.base import features
         if features.window:
             if METADATA_SUPPORTED:
                 ms = [x.strip() for x in METADATA_SUPPORTED.split(",")]
@@ -996,11 +997,12 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             log("metadata.supported: %s", ms)
             capabilities["metadata.supported"] = ms
             capabilities.setdefault("window", {})["frame_sizes"] = self.get_window_frame_sizes()
-        capabilities.setdefault("encoding", {})["icons"] = {
-            "greedy": True,  # we don't set a default window icon anymore
-            "size": (64, 64),  # size we want
-            "max_size": (128, 128),  # limit
-        }
+        if features.encoding:
+            capabilities.setdefault("encoding", {})["icons"] = {
+                "greedy": True,  # we don't set a default window icon anymore
+                "size": (64, 64),  # size we want
+                "max_size": (128, 128),  # limit
+            }
         return capabilities
 
     def has_transparency(self) -> bool:
