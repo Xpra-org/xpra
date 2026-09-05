@@ -512,7 +512,9 @@ def read_xpra_conf(conf_dir: str) -> dict[str, Any]:
         debug(f"invalid config directory: {cdir!r}")
         return {}
     import glob
-    files = glob.glob(f"{cdir}/{DEFAULT_XPRA_CONF_FILENAME}") + glob.glob(f"{cdir}/conf.d/*.conf")
+    # `conf.d` files are sorted so that their numeric prefix defines the order
+    # in which they are applied, ie: "90_configure_tool.conf" overrides "55_server_x11.conf"
+    files = glob.glob(f"{cdir}/{DEFAULT_XPRA_CONF_FILENAME}") + sorted(glob.glob(f"{cdir}/conf.d/*.conf"))
     debug(f"read_xpra_conf({conf_dir}) found conf files: {files}")
     d = {}
     for f in files:
