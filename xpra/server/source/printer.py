@@ -11,7 +11,6 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import get_machine_id
-from xpra.net.file_transfer import FileTransferHandler
 from xpra.auth.auth_helper import AuthDef
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
@@ -42,7 +41,16 @@ def find_auth_password_file(auth_defs: Sequence[AuthDef]) -> str:
     return ""
 
 
-class PrinterConnection(FileTransferHandler, StubClientConnection):
+class PrinterConnection(StubClientConnection):
+    """
+    Printer forwarding.
+    `printing` / `remote_printing` / `remote_printing_ask` and the packets carrying
+    the print jobs are all part of the same `FileTransferHandler` state as regular
+    file transfers - which `FileConnection` owns, and which it mixes in whenever
+    printing is advertised (see `FileConnection.is_needed`).
+    So this subsystem has no `FileTransferHandler` of its own,
+    it owns only the printer configuration state.
+    """
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
@@ -60,28 +68,28 @@ class PrinterConnection(FileTransferHandler, StubClientConnection):
         self.remove_printers()
 
     def parse_client_caps(self, c: typedict) -> None:
-        FileTransferHandler.parse_printer_caps(self, c)
+        # `parse_printer_caps` comes from the `FileConnection` half of this instance:
+        self.parse_printer_caps(c)
         self.machine_id = c.strget("machine_id")
 
     def get_info(self) -> dict[str, Any]:
         return {
             "printer": {
                 "devices": self.printers,
-                "file-transfers": FileTransferHandler.get_info(self),
+                "printing": self.printing,
+                "printing-ask": self.printing_ask,
             },
         }
 
     def init_from(self, _protocol, server) -> None:
-        self.init_attributes()
+        # no `init_attributes()` here: the file-transfer attributes are shared with
+        # `FileConnection` (same instance), which is the subsystem that owns them
         self.unix_socket_paths: list[str] = server.unix_socket_paths
         # `PrinterServer` owns its own copy of the file-transfer attrs
-        # (init_printing may disable `printing` based on local sockets/auth):
+        # (`setup` / `init_printing` may disable `printing` based on local sockets/auth):
         file_transfer = server.subsystems["printer"].file_transfer
-        # copy attributes
-        for x in (
-                "printing", "printing_ask",
-        ):
-            setattr(self, x, getattr(file_transfer, x))
+        self.printing = file_transfer.printing
+        self.printing_ask = file_transfer.printing_ask
 
     ######################################################################
     # printing:

@@ -38,10 +38,12 @@ class SourceMixinsTest(unittest.TestCase):
         "speaker_codecs": (),
     }
 
-    def _test_mixin_class(self, mixin_class, server_props=None, client_caps=None, protocol=None, test_fn=None):
-        return self._test_mixin_classes((mixin_class, ), server_props, client_caps, protocol, test_fn)
+    def _test_mixin_class(self, mixin_class, server_props=None, client_caps=None, protocol=None, test_fn=None,
+                          subsystems=None):
+        return self._test_mixin_classes((mixin_class, ), server_props, client_caps, protocol, test_fn, subsystems)
 
-    def _test_mixin_classes(self, mixin_classes, server_props=None, client_caps=None, protocol=None, test_fn=None):
+    def _test_mixin_classes(self, mixin_classes, server_props=None, client_caps=None, protocol=None, test_fn=None,
+                            subsystems=None):
         assert mixin_classes
         for mixin_class in mixin_classes:
             assert mixin_class.is_needed(typedict(client_caps or {})) in (True, False)
@@ -68,9 +70,12 @@ class SourceMixinsTest(unittest.TestCase):
             "file": server,
             "idle": server,
             "mmap": server,
+            "printer": server,
             "webcam": server,
             "window": server,
         }
+        # some subsystems keep state of their own that the fake server can't stand in for:
+        server.subsystems.update(subsystems or {})
         #fake client caps object (as a typedict):
         d = typedict()
         if client_caps:
@@ -228,6 +233,43 @@ class SourceMixinsTest(unittest.TestCase):
             "file_transfer": FileTransferAttributes(),
             "machine_id": "123",
         })
+
+    def test_file_printer(self):
+        # `FileConnection` and `PrinterConnection` are mixed into the same instance
+        # and share a single set of file-transfer attributes:
+        # initializing the printer half must not wipe the file half - see #5028
+        from xpra.server.source.file import FileConnection
+        from xpra.server.source.printer import PrinterConnection
+        from xpra.net.file_transfer import FileTransferAttributes
+        file_transfer = FileTransferAttributes()
+        file_transfer.init_attributes(file_transfer="yes", file_size_limit="10M",
+                                      open_files="yes", open_url="yes", open_command="open-it")
+        # `PrinterServer` keeps its own copy, which is the one that owns `printing`:
+        printer_ft = AdHocStruct()
+        printer_ft.file_transfer = FileTransferAttributes()
+        printer_ft.file_transfer.init_attributes(printing="yes")
+
+        def check(_c, source):
+            # `cleanup()` resets the attributes, so this has to run before it:
+            self.assertTrue(source.file_transfer)
+            self.assertTrue(source.open_files)
+            self.assertTrue(source.open_url)
+            self.assertEqual(source.open_command, "open-it")
+            self.assertEqual(source.file_size_limit, 10 * 1000 * 1000)
+            # and `printing` must come from the printer subsystem's own copy:
+            self.assertTrue(source.printing)
+            self.assertTrue(source.remote_file_transfer)
+            self.assertTrue(source.remote_printing)
+
+        self._test_mixin_classes((FileConnection, PrinterConnection), {
+            "file_transfer": file_transfer,
+            "machine_id": "123",
+        }, {
+            # `printing` is parsed from the `file` namespace with backwards compatibility,
+            # from the `printer` one without it:
+            "file": {"enabled": True, "printing": True},
+            "printer": {"printing": True},
+        }, test_fn=check, subsystems={"printer": printer_ft})
 
     def test_idle(self):
         from xpra.server.source.idle_mixin import IdleConnection
