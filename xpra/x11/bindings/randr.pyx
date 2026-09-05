@@ -10,7 +10,7 @@ from typing import Dict, List, Tuple
 from libc.string cimport memset
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom, XEvent,
-    XDefaultRootWindow,
+    XDefaultRootWindow, XGetGeometry,
     XFree, XSync,
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
@@ -33,6 +33,7 @@ TIMESTAMPS = envbool("XPRA_RANDR_TIMESTAMPS", False)
 GAMMA = envbool("XPRA_RANDR_GAMMA", False)
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
 assert MAX_NEW_MODES>=2
+SKIP_UNCHANGED = envbool("XPRA_RANDR_SKIP_UNCHANGED", True)
 
 
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
@@ -118,6 +119,30 @@ CONNECTION_STR: Dict[int, str] = {
 
 def get_rotation(Rotation v) -> int:
     return ROTATIONS.get(v, 0)
+
+
+def normalize_rotation(rotation: int) -> int:
+    """ the rotation actually applied by `set_crtc_config` for this value """
+    return get_rotation(ROTATION_CONST.get(rotation, RR_Rotate_0))
+
+
+def dpi96(v) -> int:
+    """ the physical size in mm of `v` pixels at 96 dpi """
+    return round(v * 25.4 / 96)
+
+
+def vrefresh_hz(vrefresh) -> int:
+    """
+    round a refresh rate to the nearest integer Hz.
+    Clients report jittery values which we don't want to mistake
+    for monitor configuration changes: 59951 and 59952 mHz are both 60Hz.
+    """
+    if vrefresh <= 0:
+        vrefresh = DEFAULT_REFRESH_RATE
+    if vrefresh >= 1000:
+        # the value is in mHz:
+        vrefresh = vrefresh / 1000
+    return round(vrefresh)
 
 
 def get_rotations(Rotation v) -> List[int]:
@@ -1084,11 +1109,159 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         XRRDeleteMonitor(self.display, window, name_atom)
         self.XSync()
 
+    cdef tuple get_root_size(self):
+        cdef Window root = 0
+        cdef int x = 0
+        cdef int y = 0
+        cdef unsigned int w = 0, h = 0, bw = 0, depth = 0
+        if not XGetGeometry(self.display, XDefaultRootWindow(self.display), &root,
+                            &x, &y, &w, &h, &bw, &depth):
+            return 0, 0
+        return int(w), int(h)
+
+    cdef dict get_current_monitor_config(self):
+        """
+        The monitor configuration currently applied to this display,
+        in the same shape as the `monitor_defs` given to `set_crtc_config`
+        (keyed by crtc index) so that the two can be compared.
+        Returns an empty dict if this display does not match
+        the strict one-monitor-per-crtc-and-output model `set_crtc_config` applies,
+        since we then have no way of telling if a new configuration would change anything.
+        """
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        if rsc==NULL:
+            return {}
+        cdef XRRCrtcInfo *crtc_info = NULL
+        cdef XRRMonitorInfo *monitors = NULL
+        cdef int nmonitors = 0
+        cdef int index
+        cdef double hz
+        config = {}
+        try:
+            for i in range(rsc.ncrtc):
+                crtc_info = XRRGetCrtcInfo(self.display, rsc, rsc.crtcs[i])
+                if crtc_info==NULL:
+                    return {}
+                try:
+                    if crtc_info.noutput==0 or crtc_info.mode==0:
+                        #this crtc is disabled
+                        continue
+                    if crtc_info.noutput!=1 or crtc_info.outputs[0]!=rsc.outputs[i]:
+                        #`set_crtc_config` always drives output `i` with crtc `i`
+                        return {}
+                    hz = 0
+                    for j in range(rsc.nmode):
+                        if rsc.modes[j].id==crtc_info.mode and rsc.modes[j].hTotal and rsc.modes[j].vTotal:
+                            #(the cast matters: we build with `cdivision`)
+                            hz = (<double> rsc.modes[j].dotClock) / (rsc.modes[j].hTotal * rsc.modes[j].vTotal)
+                            break
+                    if hz<=0:
+                        #we cannot tell what this crtc is running at
+                        return {}
+                    config[i] = {
+                        "geometry"      : (crtc_info.x, crtc_info.y, crtc_info.width, crtc_info.height),
+                        "refresh-rate"  : vrefresh_hz(hz),
+                        "rotation"      : get_rotation(crtc_info.rotation),
+                    }
+                finally:
+                    XRRFreeCrtcInfo(crtc_info)
+                    crtc_info = NULL
+            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+            if monitors==NULL:
+                return {}
+            try:
+                if nmonitors!=len(config):
+                    #some monitors are unaccounted for
+                    return {}
+                for i in range(nmonitors):
+                    if monitors[i].noutput!=1:
+                        return {}
+                    if monitors[i].automatic:
+                        #this monitor was synthesized by the X server rather than configured by us,
+                        #so `set_crtc_config` still has work to do even if the geometry matches
+                        return {}
+                    #find the crtc driving this monitor's output:
+                    index = -1
+                    for j in range(rsc.noutput):
+                        if rsc.outputs[j]==monitors[i].outputs[0]:
+                            index = j
+                            break
+                    m = config.get(index)
+                    if m is None:
+                        return {}
+                    if (monitors[i].x, monitors[i].y, monitors[i].width, monitors[i].height)!=m["geometry"]:
+                        #the monitor and the crtc driving it disagree
+                        return {}
+                    m["primary"] = bool(monitors[i].primary)
+                    m["width-mm"] = int(monitors[i].mwidth)
+                    m["height-mm"] = int(monitors[i].mheight)
+            finally:
+                XRRFreeMonitors(monitors)
+        finally:
+            XRRFreeScreenResources(rsc)
+        return config
+
+    def is_current_monitor_config(self, monitor_defs: Dict) -> bool:
+        """
+        True if `monitor_defs` is the configuration already applied to this display,
+        in which case applying it again would only cause gratuitous RandR churn:
+        `set_crtc_config` resizes the screen, re-configures every crtc
+        and deletes and re-creates every monitor,
+        which can be enough to destroy the contents of the clients' windows.
+        The monitor names are excluded from the comparison
+        (`set_crtc_config` renames them to avoid clashing with the output names)
+        and the refresh rates are only compared rounded to the nearest Hz.
+        """
+        current = self.get_current_monitor_config()
+        if not current:
+            return False
+        #`set_crtc_config` makes the first monitor primary unless one of them claims to be
+        #(it walks the crtcs in index order, so the highest index wins):
+        primary = 0
+        for i, m in sorted(monitor_defs.items()):
+            if m and m.get("primary", False):
+                primary = int(i)
+        wanted = {}
+        mi = 0
+        for i, m in monitor_defs.items():
+            geometry = (m or {}).get("geometry")
+            if not geometry or len(geometry)!=4:
+                #we cannot tell what this would do
+                return False
+            x, y, width, height = geometry
+            wanted[int(i)] = {
+                "geometry"      : (x, y, width, height),
+                "refresh-rate"  : vrefresh_hz(m.get("refresh-rate.cooked") or m.get("refresh-rate", 0)),
+                "rotation"      : normalize_rotation(m.get("rotation", 0)),
+                "primary"       : bool(m.get("primary", primary==mi)),
+                "width-mm"      : int(m.get("width-mm", dpi96(width))),
+                "height-mm"     : int(m.get("height-mm", dpi96(height))),
+            }
+            mi += 1
+        if wanted!=current:
+            log("is_current_monitor_config() current=%s", current)
+            log("is_current_monitor_config() wanted =%s", wanted)
+            return False
+        #the monitors match, but the screen may still have to be resized:
+        screen_w, screen_h = 0, 0
+        for m in wanted.values():
+            x, y, width, height = m["geometry"]
+            screen_w = max(screen_w, x+width)
+            screen_h = max(screen_h, y+height)
+        root_w, root_h = self.get_root_size()
+        if (root_w, root_h)!=(screen_w, screen_h):
+            log("is_current_monitor_config() root size is %ix%i but this layout needs %ix%i",
+                root_w, root_h, screen_w, screen_h)
+            return False
+        return True
+
     def set_crtc_config(self, monitor_defs: Dict) -> bool:
         self.context_check("set_crtc_config")
         log(f"set_crtc_config({monitor_defs})")
-        def dpi96(v):
-            return round(v * 25.4 / 96)
+        if SKIP_UNCHANGED and self.is_current_monitor_config(monitor_defs):
+            log("set_crtc_config: this configuration is already applied, leaving the monitors alone")
+            return True
         #first, find the total screen area:
         screen_w, screen_h = 0, 0
         for m in monitor_defs.values():
