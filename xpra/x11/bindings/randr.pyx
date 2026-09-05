@@ -348,6 +348,15 @@ cdef extern from "X11/extensions/Xrandr.h":
     void XRRFreeMonitors(XRRMonitorInfo *monitors)
 
 
+cdef double mode_refresh_rate(XRRModeInfo *mi) noexcept:
+    """ the refresh rate of a mode, in Hz - 0 if it cannot be calculated """
+    if mi.hTotal == 0 or mi.vTotal == 0:
+        return 0
+    # (the cast matters: we build with `cdivision`,
+    # so an integer division would truncate 59.94Hz down to 59Hz)
+    return (<double> mi.dotClock) / (mi.hTotal * mi.vTotal)
+
+
 cdef dict get_mode_info(XRRModeInfo *mi, with_sync: bool):
     info = {
         "id"            : mi.id,
@@ -368,8 +377,9 @@ cdef dict get_mode_info(XRRModeInfo *mi, with_sync: bool):
             "v-total"       : mi.vTotal,
             "mode-flags"    : tuple(name for v,name in MODE_FLAGS_STR.items() if mi.modeFlags & v),
         }
-    if mi.hTotal and mi.vTotal:
-        info["refresh-rate"] = mi.dotClock / (mi.hTotal * mi.vTotal)
+    cdef double hz = mode_refresh_rate(mi)
+    if hz > 0:
+        info["refresh-rate"] = round(hz)
     return info
 
 
@@ -854,8 +864,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     for i in range(rsc.nmode):
                         mode_info = &rsc.modes[i]
                         if mode_info.id==crtc_info.mode:
-                            if mode_info.hTotal and mode_info.vTotal:
-                                rate = round(mode_info.dotClock / (mode_info.hTotal * mode_info.vTotal))
+                            hz = mode_refresh_rate(mode_info)
+                            if hz > 0:
+                                rate = round(hz)
                                 #outputs affected:
                                 output_names = []
                                 for o in range(crtc_info.noutput):
@@ -876,7 +887,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return self._set_screen_size(width, height)
 
     def add_screen_size(self, unsigned int w, unsigned int h, unsigned int vrefresh=DEFAULT_REFRESH_RATE) -> RRMode:
-        hz = vrefresh / 1000
+        # `1000.0` and not `1000`: we build with `cdivision`
+        hz = vrefresh / 1000.0
         hzstr = str(hz)
         if hzstr.find(".") > 0:
             hzstr = hzstr.rstrip("0").rstrip(".")
@@ -967,7 +979,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if hzstr.find(".") > 0:
             hzstr = hzstr.rstrip("0").rstrip(".")
         log("Modeline %ix%i@%s %s %s %s %s %s %s %s %s %s", w, h, hzstr,
-                        clock/1000/1000,
+                        clock/1000000.0,
                         w, w+xFront, w+xFront+xSync, xTotal,
                         h, h+yFront, h+yFront+ySync, yTotal)
         mode.width = w
@@ -1172,9 +1184,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         return {}
                     hz = 0
                     for j in range(rsc.nmode):
-                        if rsc.modes[j].id==crtc_info.mode and rsc.modes[j].hTotal and rsc.modes[j].vTotal:
-                            #(the cast matters: we build with `cdivision`)
-                            hz = (<double> rsc.modes[j].dotClock) / (rsc.modes[j].hTotal * rsc.modes[j].vTotal)
+                        if rsc.modes[j].id==crtc_info.mode:
+                            hz = mode_refresh_rate(&rsc.modes[j])
                             break
                     if hz<=0:
                         #we cannot tell what this crtc is running at
