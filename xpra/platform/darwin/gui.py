@@ -390,6 +390,75 @@ def get_displays_info() -> dict[str, Any]:
     return info
 
 
+def get_nsscreen_for_display(adid):
+    # NSScreen exposes the CGDirectDisplayID via deviceDescription()["NSScreenNumber"]:
+    try:
+        for screen in NSScreen.screens():
+            desc = screen.deviceDescription()
+            if desc and int(desc["NSScreenNumber"]) == int(adid):
+                return screen
+    except Exception:
+        log("failed to match NSScreen for display %#x", adid, exc_info=True)
+    return None
+
+
+def get_display_name(adid) -> str:
+    """
+    The name macOS shows for this display in the `Displays` settings panel,
+    ie: "Built-in Retina Display" or "DELL U2720Q".
+    (GTK's quartz backend names none of its monitors, unlike the X11 and wayland ones)
+    """
+    screen = get_nsscreen_for_display(adid)
+    if screen is None:
+        return ""
+    # `localizedName` was only added in macos 10.15:
+    if not screen.respondsToSelector_("localizedName"):
+        return ""
+    try:
+        return str(screen.localizedName() or "")
+    except Exception:
+        log("failed to query the name of display %#x", adid, exc_info=True)
+        return ""
+
+
+def get_display_names() -> list[str]:
+    """
+    The name of each active display, in `CGGetActiveDisplayList` order,
+    which is also the order GTK's quartz backend uses for its monitors
+    (see `gdk_quartz_display_init`), so these can be indexed by monitor number.
+    """
+    try:
+        err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
+    except Exception:
+        log("CGGetActiveDisplayList failed", exc_info=True)
+        return []
+    if err or not no:
+        return []
+    return [get_display_name(adid) for adid in active_displays]
+
+
+def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any]:
+    # GTK's quartz backend leaves its monitors unnamed, so enrich its data
+    # with the names shown in the macOS Displays settings panel.
+    from xpra.gtk.info import get_monitors_info as gtk_get_monitors_info
+    monitors_info = gtk_get_monitors_info(xscale, yscale)
+    try:
+        err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
+    except Exception:
+        log("CGGetActiveDisplayList failed", exc_info=True)
+        return monitors_info
+    if err or not no:
+        return monitors_info
+    # match by active-display index, as `get_display_icc_info` does:
+    for i, adid in enumerate(active_displays):
+        minfo = monitors_info.get(i)
+        if minfo is None:
+            continue
+        if name := get_display_name(adid):
+            minfo["name"] = name
+    return monitors_info
+
+
 def get_info() -> dict[str, Any]:
     from xpra.platform.gui import get_info_base
     i = get_info_base()

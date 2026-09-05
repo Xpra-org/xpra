@@ -18,7 +18,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
 from xpra.platform.darwin.pointer import move_pointer
-from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
+from xpra.platform.darwin.gui import get_CG_imagewrapper, get_display_names, take_screenshot
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -219,6 +219,19 @@ class ShadowServer(GTKShadowServerBase):
         capabilities["shadow"] = True
         capabilities["server_type"] = "Python/MacOS-Shadow"
         return capabilities
+
+    def get_shadow_monitors(self) -> list[tuple[str, int, int, int, int, int]]:
+        monitors = super().get_shadow_monitors()
+        # GTK's quartz backend leaves its monitors unnamed,
+        # so use the names macOS shows in the `Displays` settings panel
+        # (they end up as the window titles, and as the `--shadow` match strings):
+        names = get_display_names()
+        log("get_shadow_monitors() display names=%s", names)
+        monitors = [
+            (plug_name or (names[i] if i < len(names) else ""), x, y, width, height, scale_factor)
+            for i, (plug_name, x, y, width, height, scale_factor) in enumerate(monitors)
+        ]
+        return monitors
 
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
         info = super().get_threaded_info(proto, **kwargs)
