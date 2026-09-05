@@ -86,7 +86,9 @@ class XpraClient(GTKXpraClient):
         if not root:
             return -1, -1
         p = root.get_pointer()[-3:-1]
-        return self.cp(p[0] or 0, p[1] or 0)
+        pos = p[0] or 0, p[1] or 0
+        cp = getattr(self, "cp", None)
+        return cp(*pos) if cp else pos
 
 
 GObject.type_register(XpraClient)
