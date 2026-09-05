@@ -402,6 +402,41 @@ def get_nsscreen_for_display(adid):
     return None
 
 
+def get_display_name(adid) -> str:
+    """
+    The name macOS shows for this display in the `Displays` settings panel,
+    ie: "Built-in Retina Display" or "DELL U2720Q".
+    (GTK's quartz backend names none of its monitors, unlike the X11 and wayland ones)
+    """
+    screen = get_nsscreen_for_display(adid)
+    if screen is None:
+        return ""
+    # `localizedName` was only added in macos 10.15:
+    if not screen.respondsToSelector_("localizedName"):
+        return ""
+    try:
+        return str(screen.localizedName() or "")
+    except Exception:
+        log("failed to query the name of display %#x", adid, exc_info=True)
+        return ""
+
+
+def get_display_names() -> list[str]:
+    """
+    The name of each active display, in `CGGetActiveDisplayList` order,
+    which is also the order GTK's quartz backend uses for its monitors
+    (see `gdk_quartz_display_init`), so these can be indexed by monitor number.
+    """
+    try:
+        err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
+    except Exception:
+        log("CGGetActiveDisplayList failed", exc_info=True)
+        return []
+    if err or not no:
+        return []
+    return [get_display_name(adid) for adid in active_displays]
+
+
 def add_monitor_colour_info(minfo: dict[str, Any], adid) -> None:
     # free-form colourspace name from the display's colour space.
     # (this belongs under `colorspace`: `colourspace` is the structured
@@ -451,6 +486,8 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
         minfo = monitors_info.get(i)
         if minfo is None:
             continue
+        if name := get_display_name(adid):
+            minfo["name"] = name
         add_monitor_colour_info(minfo, adid)
     return monitors_info
 
