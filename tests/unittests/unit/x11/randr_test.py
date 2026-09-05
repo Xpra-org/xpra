@@ -71,6 +71,8 @@ class RandrTest(ServerTestUtil):
                     assert len(retrieved) == len(config), "expected %i monitors configured but got %i: %s vs %s" % (
                         len(config), len(retrieved), config, retrieved,
                     )
+                    # applying the same configuration again must be recognized as a no-op:
+                    assert randr.is_current_monitor_config(config), f"{config} should already be applied"
 
                 test_crtc_config(751, 1122,{
                     0: {'geometry': (0, 0, 751, 1122), 'x': 0, 'y': 0, 'width': 751, 'height': 1122,
@@ -105,6 +107,42 @@ class RandrTest(ServerTestUtil):
                 test_crtc_config(1024, 768,{
                     0: {'name': 'SVGA', 'geometry': (0, 0, 1024, 768), 'width-mm': 150, 'height-mm': 120},
                 })
+
+                # `is_current_monitor_config` decides if `set_crtc_config` can be skipped:
+                current = {
+                    0: {'name': 'DP-0', 'geometry': (0, 0, 1600, 900), 'primary': True,
+                        'width-mm': 209, 'height-mm': 205, 'refresh-rate': 59951},
+                    1: {'name': 'DP-1', 'geometry': (1600, 0, 1280, 1024),
+                        'width-mm': 209, 'height-mm': 205, 'refresh-rate': 60000},
+                }
+                test_crtc_config(2880, 1024, current)
+
+                def same_config(changes: dict) -> dict:
+                    updated = {index: dict(monitor) for index, monitor in current.items()}
+                    for index, monitor in changes.items():
+                        updated[index].update(monitor)
+                    return updated
+
+                def assert_current(expected: bool, config: dict, msg: str) -> None:
+                    assert randr.is_current_monitor_config(config) == expected, f"{msg}: {config}"
+
+                # the plug names are not part of the configuration we compare:
+                assert_current(True, same_config({0: {"name": "eDP-1"}, 1: {"name": "HDMI-A-2"}}),
+                               "the plug names must be ignored")
+                # neither is the jitter in the refresh rates reported by the clients:
+                assert_current(True, same_config({0: {"refresh-rate": 59952}, 1: {"refresh-rate": 60049}}),
+                               "a refresh rate rounding to the same Hz must be ignored")
+                # but everything else must be applied:
+                assert_current(False, same_config({0: {"refresh-rate": 50000}}),
+                               "a different refresh rate must be applied")
+                assert_current(False, same_config({0: {"geometry": (0, 0, 1600, 1200)}}),
+                               "a different geometry must be applied")
+                assert_current(False, same_config({0: {"primary": False}, 1: {"primary": True}}),
+                               "a different primary monitor must be applied")
+                assert_current(False, same_config({0: {"width-mm": 500}}),
+                               "different physical dimensions must be applied")
+                assert_current(False, {0: current[0]},
+                               "removing a monitor must be applied")
 
             finally:
                 if display_ptr:
