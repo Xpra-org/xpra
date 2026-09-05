@@ -124,8 +124,10 @@ cdef dict get_output_info(wlr_output *output, wlr_output_layout *output_layout):
             "logical-height": box.height,
         })
     if output.refresh:
-        info["vertical-refresh"] = round(output.refresh / 1000)
-        info["refresh"] = output.refresh        # MHz
+        # `1000.0` and not `1000`: we build with `cdivision`,
+        # so an integer division would truncate 59.94Hz down to 59Hz
+        info["vertical-refresh"] = round(output.refresh / 1000.0)
+        info["refresh"] = output.refresh        # mHz
     subpixel = SUBPIXEL_STR.get(output.subpixel, "")
     if subpixel:
         info["subpixel"] = subpixel
