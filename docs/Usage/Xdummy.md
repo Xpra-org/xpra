@@ -91,6 +91,9 @@ from the command line:
 xpra set xvfb Xdummy
 ```
 
+This saves the setting in `~/.config/xpra/conf.d/90_configure_tool.conf`, or in
+`/etc/xpra/conf.d/90_configure_tool.conf` when running as `root`.
+
 </section>
 
 <section class="docs-card docs-card-wide" markdown="1">

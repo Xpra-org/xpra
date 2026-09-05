@@ -7,6 +7,7 @@
 import unittest
 from unittest.mock import Mock, patch
 
+from xpra.exit_codes import ExitCode
 from xpra.scripts import settings
 from xpra.scripts.config import InitException
 
@@ -19,7 +20,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.vstr(str, ("a", "b")), "'a', 'b'")
 
     def test_set_values(self):
-        update = Mock()
+        update = Mock(return_value="/etc/xpra/conf.d/90_configure_tool.conf")
         option_types = {"daemon": bool, "compression_level": int, "start": list}
         with patch.object(settings, "OPTION_TYPES", option_types), \
                 patch("xpra.util.config.update_config_attribute", update):
@@ -29,6 +30,9 @@ class SettingsTest(unittest.TestCase):
             update.assert_called_with("compression_level", 7)
             settings.run_setting(True, ("start", "xterm", "xclock"))
             update.assert_called_with("start", ("xterm", "xclock"))
+            # when the configuration file cannot be saved:
+            update.return_value = ""
+            self.assertEqual(settings.run_setting(True, ("daemon", "yes")), ExitCode.FILE_NOT_FOUND)
 
     def test_unset_and_invalid_values(self):
         unset = Mock()
