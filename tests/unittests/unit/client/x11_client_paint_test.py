@@ -16,6 +16,9 @@ from unit.client.x11_client_test_util import X11ClientTestUtil, log
 CLIENT_TIMEOUT = envint("XPRA_TEST_CLIENT_TIMEOUT", 20)
 
 # colors-plain quadrants, see xpra/gtk/examples/colors_plain.py:
+# (its window uses `set_default_size(320, 320)` and there is no window manager
+# on the server side to resize it, so the client window contents are exactly this size)
+COLORS_SIZE = (320, 320)
 RED = (255, 0, 0)
 GREEN = (0, 254, 0)
 BLUE = (0, 0, 253)
@@ -53,8 +56,7 @@ class X11ClientPaintTest(X11ClientTestUtil):
             r = pollwait(client, CLIENT_TIMEOUT)
             if r is not None:
                 raise RuntimeError("client exited with code %s" % exit_str(r))
-            xid, _cx, _cy, cw, ch = self.find_client_window(xvfb.display, title="Colors")
-            assert cw >= 300 and ch >= 300, "unexpected colors-plain window size %ix%i" % (cw, ch)
+            xid, _cx, _cy, cw, ch = self.find_client_window(xvfb.display, title="Colors", size=COLORS_SIZE)
             for name, (point, expected) in self._quadrant_centers(cw, ch).items():
                 x, y = point
                 self.wait_for_client_pixel(xvfb.display, xid, x, y, expected, tolerance=tolerance)
@@ -108,8 +110,7 @@ class X11ClientPaintTest(X11ClientTestUtil):
                 r = pollwait(client, CLIENT_TIMEOUT)
                 if r is not None:
                     raise RuntimeError("client exited with code %s" % exit_str(r))
-                xid, _cx, _cy, cw, ch = self.find_client_window(client_display, title="Colors")
-                assert cw >= 300 and ch >= 300, "unexpected colors-plain window size %ix%i" % (cw, ch)
+                xid, _cx, _cy, cw, ch = self.find_client_window(client_display, title="Colors", size=COLORS_SIZE)
                 for name, (point, expected) in self._quadrant_centers(cw, ch).items():
                     x, y = point
                     self.wait_for_client_pixel(client_display, xid, x, y, expected, tolerance=4)
