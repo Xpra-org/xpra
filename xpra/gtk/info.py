@@ -230,6 +230,23 @@ def get_monitor_info(monitor: Gdk.Monitor) -> dict[str, Any]:
     return info
 
 
+def get_monitor_plug_name(monitor: Gdk.Monitor) -> str:
+    """
+    The panel identity as reported by `GdkMonitor`, if it has one:
+    on X11 the model is the RandR output name, elsewhere it is the EDID model.
+    Empty if the backend exposes neither (ie: macOS).
+    """
+    manufacturer = getattr(monitor, "get_manufacturer", noinfo)() or ""
+    model = getattr(monitor, "get_model", noinfo)() or ""
+    if manufacturer == "unknown":
+        manufacturer = ""
+    if model == "unknown":
+        model = ""
+    if manufacturer and model:
+        return f"{manufacturer} {model}"
+    return manufacturer or model
+
+
 def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any]:
     display = Gdk.Display.get_default()
     info: dict[int, Any] = {}
@@ -275,6 +292,10 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
             if isinstance(value, str):
                 value = value.strip()
             minfo[attr] = value
+        # every other monitor backend (win32, terminal, and the legacy `screen_sizes` data)
+        # supplies a name - without one, the server has to make one up (ie: "VFB1"):
+        if name := get_monitor_plug_name(monitor):
+            minfo["name"] = name
     return info
 
 
@@ -378,19 +399,7 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1) -> list[tuple[int, in
     for j in range(n_monitors):
         monitor = display.get_monitor(j)
         geom = monitor.get_geometry()
-        manufacturer, model = monitor.get_manufacturer(), monitor.get_model()
-        if manufacturer in ("unknown", None):
-            manufacturer = ""
-        if model in ("unknown", None):
-            model = ""
-        if manufacturer and model:
-            plug_name = "%s %s" % (manufacturer, model)
-        elif manufacturer:
-            plug_name = manufacturer
-        elif model:
-            plug_name = model
-        else:
-            plug_name = "%i" % j
+        plug_name = get_monitor_plug_name(monitor) or "%i" % j
         wmm, hmm = monitor.get_width_mm(), monitor.get_height_mm()
         monitor_info = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
         screenlog(" monitor %s: %s, model=%s, manufacturer=%s",

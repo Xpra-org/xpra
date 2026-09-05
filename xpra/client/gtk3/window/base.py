@@ -20,6 +20,7 @@ from xpra.util.str_fn import bytestostr
 from xpra.util.env import envint, envbool, first_time, ignorewarnings, IgnoreWarningsContext
 from xpra.util.gobject import no_arg_signal
 from xpra.util.thread import check_main_thread
+from xpra.gtk.info import get_monitor_plug_name
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
@@ -1341,20 +1342,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def monitor_changed(self, monitor) -> None:
         mid = _get_monitor_index(monitor)
         geom = monitor.get_geometry()
-        manufacturer = monitor.get_manufacturer()
-        model = monitor.get_model()
-        if manufacturer == "unknown":
-            manufacturer = ""
-        if model == "unknown":
-            model = ""
-        if manufacturer and model:
-            plug_name = "%s %s" % (manufacturer, model)
-        elif manufacturer:
-            plug_name = manufacturer
-        elif model:
-            plug_name = model
-        else:
-            plug_name = ""
+        plug_name = get_monitor_plug_name(monitor)
         plug_name += " %ix%i" % (geom.width, geom.height)
         if geom.x or geom.y:
             plug_name += " at %i,%i" % (geom.x, geom.y)
