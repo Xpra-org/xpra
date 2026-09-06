@@ -1,6 +1,6 @@
 [Unit]
 Description=Xpra Socket
-PartOf=xpra.service
+PartOf=xpra-server.service
 
 [Socket]
 #this doesn't work because of SELinux AVC denials:
