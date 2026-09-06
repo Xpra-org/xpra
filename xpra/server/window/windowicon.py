@@ -235,12 +235,18 @@ class WindowIconSource:
             delay = min(1000, max(50, w * h * self.batch_config.delay_per_megapixel // 1000000))
             log("send_window_icon() window=%s, wid=%#x, compression scheduled in %sms for batch delay=%i",
                 self.window, self.wid, delay, self.batch_config.delay_per_megapixel)
-            self.send_window_icon_timer = GLib.timeout_add(delay, self.call_in_encode_thread,
-                                                           True, self.compress_and_send_window_icon)
+            self.send_window_icon_timer = GLib.timeout_add(delay, self.queue_window_icon)
+
+    def queue_window_icon(self) -> None:
+        # the timer has fired, so the source is gone:
+        # clear the timer here rather than from the encode thread,
+        # otherwise `cancel_window_icon_timer` would try to remove a source
+        # which no longer exists - and would fail to cancel anything:
+        self.send_window_icon_timer = 0
+        self.call_in_encode_thread(True, self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self) -> None:
         # this runs in the work queue
-        self.send_window_icon_timer = 0
         idata = self.window_icon_data
         if not idata or not self.has_png:
             return
