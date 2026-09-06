@@ -2779,6 +2779,15 @@ class WindowSource(WindowIconSource):
             GLib.idle_add(call_may_send_delayed)
 
     def client_decode_error(self, error: float | int, message: str) -> None:
+        """
+            This is called from `damage_packet_acked`, so it runs in the network parse thread.
+            `decode_error_refresh_timer` is tested and assigned without any locking whilst
+            the UI thread may be cancelling that same timer, so we can end up scheduling
+            two refresh timers - or losing a cancellation.
+            Neither is worth paying for a lock: the worst case is one extra refresh,
+            and `full_quality_refresh` does nothing at all
+            once the window is gone or the window source is cancelled.
+        """
         # don't print error code -1, which is just a generic code for error
         emsg = {-1: ""}.get(error, error)
 
