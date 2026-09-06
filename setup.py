@@ -3393,7 +3393,7 @@ toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(shadow_ENABLED and x11_ENABLED, "xpra.x11.shadow")
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED, "xpra.x11.selection")
-toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
+toggle_packages(x11_ENABLED and dbus_ENABLED, "xpra.x11.dbus")
 toggle_packages(uinput_ENABLED, "xpra.uinput")
 toggle_packages(uinput_ENABLED and x11_ENABLED, "xpra.x11.uinput")
 toggle_packages(notifications_ENABLED, "xpra.notification")
@@ -3444,7 +3444,7 @@ if x11_ENABLED:
         ace("xpra.x11.bindings.record", "xtst")
     tace(xinput_ENABLED, "xpra.x11.bindings.xi2", "x11,xi")
 
-toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.gtk")
+toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk")
 toggle_packages(server_ENABLED and x11_ENABLED,
                 "xpra.x11.models", "xpra.x11.desktop", "xpra.x11.server", "xpra.x11.subsystem")
 if gtk_x11_ENABLED:
@@ -3920,11 +3920,12 @@ if cythonize_more_ENABLED:
         ax("xpra.x11.gtk")
     if x11_ENABLED:
         ax("xpra.x11")
-        ax("xpra.x11.desktop")
-        ax("xpra.x11.models")
-        ax("xpra.x11.subsystem")
         if server_ENABLED:
-            ax("xpra.x11.server")
+            ax("xpra.x11.desktop")
+            ax("xpra.x11.models")
+            ax("xpra.x11.subsystem")
+            if server_ENABLED:
+                ax("xpra.x11.server")
         if uinput_ENABLED:
             ax("xpra.x11.uinput")
     if uinput_ENABLED:
