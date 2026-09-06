@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.4] 2026-08-27
+## [6.5.4] 2026-09-06
 * 🔧 Platforms, build and packaging:
   * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
   * [wayland: link to wayland-server](https://github.com/Xpra-org/xpra/commit/36bae2f550e15500d4691795126bccb222bfae83)
@@ -8,9 +8,19 @@
   * [some qemu build environments lack `openat2`](https://github.com/Xpra-org/xpra/commit/0cfecd0ea941ec48a85a15cd6e5eab416a18df3a) + [workarounds](https://github.com/Xpra-org/xpra/commit/2460d20a3aeb3af874a0e367f7276768fa55b981)
   * [stop building DEBs on any failure](https://github.com/Xpra-org/xpra/commit/f29d9ed6c9b1c73ba6f501c124299eb986949402)
   * [Fedora 45 package list](https://github.com/Xpra-org/xpra/commit/9f5fd7c6be0c17099f6aec161aeb653f25a208f3)
+  * [workaround Cython 3.3.0 bug](https://github.com/Xpra-org/xpra/commit/3b3c6cd6b3d0b69d276546cf9d02afec1d6df02b)
+  * [MS Windows Num-Lock state](https://github.com/Xpra-org/xpra/commit/831659bf7ac484f44ee700d16e380ee90b2a0365)
+  * [MS Windows missing modifiers](https://github.com/Xpra-org/xpra/commit/d02f25096925f57b6f6fb60b97b1d691fd8dadf9)
 * ⚠️ Major:
+  * [crash: don't assume Gdk displays are X11 displays](https://github.com/Xpra-org/xpra/commit/d448cf6c5bfc6b608e641f1ecc465d6816c6cb38)
+  * [Wayland clients don't need a X11 display](https://github.com/Xpra-org/xpra/commit/92ddb0189adeec54760edc9654c06250adb91aef)
   * [stale X11 timestamps cause focus issues](https://github.com/Xpra-org/xpra/commit/2896248d67d6c01ba3f5afaa9f947ac82393efaf)
   * [method wrongly returned failure code](https://github.com/Xpra-org/xpra/commit/359cf5d0e69f23a2a8ae322f75356df00094dc57)
+  * [error when running without window forwarding](https://github.com/Xpra-org/xpra/commit/2d261e362b1e0c30149c103c43c3233f1ea8c7d2)
+  * [don't reject clients without encodings if they don't need any](https://github.com/Xpra-org/xpra/commit/1f9b24f6dc5f3e209e0fd34ab89f717b88bd67ec)
+  * [don't reconfigure monitors unless required](https://github.com/Xpra-org/xpra/commit/7db58048ac1e6a11c43f2eaab2a2b563cda9d2a4) [verify with Xvfb](https://github.com/Xpra-org/xpra/commit/76a8f16d7f7c9e26b3651821db43ce32ad947cbb)
+  * [errors running configuration subcommands as root](https://github.com/Xpra-org/xpra/commit/1b7ea2aa54007185771d1422ee7dd7a5dc40b04c)
+  * [honour configuration file naming order](https://github.com/Xpra-org/xpra/commit/a56d76c88482ac69b41a74eb644c9706c7d15f94)
 * Wayland backend:
   * [screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
   * [windows can end up duplicated on clients](https://github.com/Xpra-org/xpra/commit/33256c95d4c636982c6c6611503cd57606da9c36)
@@ -20,11 +30,19 @@
   * [safer display access](https://github.com/Xpra-org/xpra/commit/ae46dee30facea5f8d28be08e3021d88b914c0f1)
   * [better forwards compatibility](https://github.com/Xpra-org/xpra/commit/e5e9c8907535cc622da403ac45e5ece01e6c4eaa)
   * [window subsystems toggles not honoured](https://github.com/Xpra-org/xpra/commit/75c5c028d77e22956feb484b4ccf97453b747ca6)
+  * [lookup X11 display when used](https://github.com/Xpra-org/xpra/commit/e012701d3f23c4e3105192e325d700a91c510a75)
+  * [skip unused window attributes](https://github.com/Xpra-org/xpra/commit/05e9453474541afee9d2aa32e6614fd44c354bb3)
+  * [skip unused encoding attributes](https://github.com/Xpra-org/xpra/commit/e37db6e794063ba1d8757cfbafdc29a4ec37f8f8)
+  * [truncating integer divisions in Cython code](https://github.com/Xpra-org/xpra/commit/fff7a26ea37fefbf9771d682a792068ced8e57be)
 * Recorder / replay:
   * [unhandled packets stopped the recording](https://github.com/Xpra-org/xpra/commit/0d32a526972be0ef2c85c64d33451725000bbb9d)
   * [disable file and printer subsystems](https://github.com/Xpra-org/xpra/commit/4bfadeaeab6c7470b2005ca2c3b18743d919471e)
   * [replay loses some windows](https://github.com/Xpra-org/xpra/commit/63b73a65b15244717bb9662d2ad150781f6e4800)
   * [remove unreachable handler](https://github.com/Xpra-org/xpra/commit/30a22d26185afb2b8882cec6fc4aee4a1b9a239a)
+  * [missing authentication handlers](https://github.com/Xpra-org/xpra/commit/695dd70fd68016c0c541a533e5bd78511808b160)
+  * [don't lose the events that embed binary data](https://github.com/Xpra-org/xpra/commit/98c468de8565b880106ea170b2f89d7573751229)
+  * [skip over the gaps in the event sequence](https://github.com/Xpra-org/xpra/commit/388e60f2f064226ed33be48b7d84085ffc52cadb)
+  * [replay the raise, restack, stacking and bell events](https://github.com/Xpra-org/xpra/commit/097818f08a81bdd5de59c8a04d37dcdae815262f)
 * 🖧 Network:
   * [don't drop clients that are slow to send their first packet](https://github.com/Xpra-org/xpra/commit/20d9bf5ca80ec1937e7883d9217da0630b601ff3)
   * [paramiko: try ssh keys in the same order as openssh](https://github.com/Xpra-org/xpra/commit/93afc72cac9cac340cc906b9e1c6f7d0eafd9c03)
@@ -32,7 +50,10 @@
   * [AES in non-backwards compatible mode](https://github.com/Xpra-org/xpra/commit/b974cc1d1a47f4f99ed5b455a80815cd4803ccf1)
   * [remove unused clipboard loop handler](https://github.com/Xpra-org/xpra/commit/49fa7414573bc6471ae8fda055ce7e2a31896209)
   * [expose minimum protocol version supported: 5.1](https://github.com/Xpra-org/xpra/commit/8ca52291c1e505bd647ff673fbabee05623af73d)
+  * [socket activation regression](https://github.com/Xpra-org/xpra/commit/43062554b2a70230ebd675f874045b19b9066e5b)
+  * [file-transfers disabled by printing](https://github.com/Xpra-org/xpra/commit/913053ceb8bc8068ab07d60472a85825ae7dfd68)
 * 💄 Cosmetic:
+  * [expose monitor names](https://github.com/Xpra-org/xpra/commit/902f64244f8d01d344ea03aa7ecea392e76d89ea)
   * [make audio test more reliable](https://github.com/Xpra-org/xpra/commit/65004e4144653adbbbbafb1a3e8af2109a2027f7) + [fixup](https://github.com/Xpra-org/xpra/commit/82e79e9ea16d039f47cd824e84f62a6dd02684a7)
   * [skip wayland window test when the bindings are not available](https://github.com/Xpra-org/xpra/commit/d45c3f2eb00653ceda7d968386c28c8630cb26d7)
   * [paramiko strict type check](https://github.com/Xpra-org/xpra/commit/19380229b392c7df946635d42ae652722b43556b)
@@ -44,6 +65,8 @@
   * [wrong colours in example dialog](https://github.com/Xpra-org/xpra/commit/c6a7b68da3aff9cf9cd931cec46675cb7c890765)
   * [unit tests fixes](https://github.com/Xpra-org/xpra/commit/0a1ec7a682ee9cf0ba3199b7e9496942a4c1899f): [clipboard](https://github.com/Xpra-org/xpra/commit/f2a59ddb3b80865de3422655ab4c4c2d2d048c80), [stop display](https://github.com/Xpra-org/xpra/commit/a06a6d1b3bbe40782fe1d6198195e502715f7192)
   * [make it easier to see which tests have failed](https://github.com/Xpra-org/xpra/commit/eaa4ab710de18f8e94749730e28c578ae0e1125a) [and which are slow](https://github.com/Xpra-org/xpra/commit/bb94b6e177d130ea4a908efb432663bee644af91)
+  * [handler is already registered](https://github.com/Xpra-org/xpra/commit/9fbef47e45bc91df70dae1ae7ff7ef61789845b2)
+  * [cleanup pam config](https://github.com/Xpra-org/xpra/commit/f651735c15ed59ec675591b98cfa4db266762cce)
 
 ## [6.5.3] 2026-08-18
 * 🔧 Platforms, build and packaging:

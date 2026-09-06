@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Thu Aug 27 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
+* Sun Sep 06 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
 - 🔧 Platforms, build and packaging:
    `libyuv` not detected without pkgconfig file + fixup
    wayland: link to wayland-server
@@ -1119,9 +1119,19 @@ fi
    some qemu build environments lack `openat2` + workarounds
    stop building DEBs on any failure
    Fedora 45 package list
+   workaround Cython 3.3.0 bug
+   MS Windows Num-Lock state
+   MS Windows missing modifiers
 - ⚠️ Major:
+   crash: don't assume Gdk displays are X11 displays
+   Wayland clients don't need a X11 display
    stale X11 timestamps cause focus issues
    method wrongly returned failure code
+   error when running without window forwarding
+   don't reject clients without encodings if they don't need any
+   don't reconfigure monitors unless required verify with Xvfb
+   errors running configuration subcommands as root
+   honour configuration file naming order
 - Wayland backend:
    screen updates stall
    windows can end up duplicated on clients
@@ -1131,11 +1141,19 @@ fi
    safer display access
    better forwards compatibility
    window subsystems toggles not honoured
+   lookup X11 display when used
+   skip unused window attributes
+   skip unused encoding attributes
+   truncating integer divisions in Cython code
 - Recorder / replay:
    unhandled packets stopped the recording
    disable file and printer subsystems
    replay loses some windows
    remove unreachable handler
+   missing authentication handlers
+   don't lose the events that embed binary data
+   skip over the gaps in the event sequence
+   replay the raise, restack, stacking and bell events
 - 🖧 Network:
    don't drop clients that are slow to send their first packet
    paramiko: try ssh keys in the same order as openssh
@@ -1143,7 +1161,10 @@ fi
    AES in non-backwards compatible mode
    remove unused clipboard loop handler
    expose minimum protocol version supported: 5.1
+   socket activation regression
+   file-transfers disabled by printing
 - 💄 Cosmetic:
+   expose monitor names
    make audio test more reliable + fixup
    skip wayland window test when the bindings are not available
    paramiko strict type check
@@ -1155,6 +1176,8 @@ fi
    wrong colours in example dialog
    unit tests fixes: clipboard, stop display
    make it easier to see which tests have failed and which are slow
+   handler is already registered
+   cleanup pam config
 * Tue Aug 18 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
