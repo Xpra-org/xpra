@@ -117,6 +117,23 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
             "game": "video",
         })
 
+    def test_opaque_source_buffer_uses_x_pixel_format(self):
+        from xpra.wayland.server.wayland_surface import get_capture_pixel_format
+        xrgb = int.from_bytes(b"XR24", "little")
+        xbgr = int.from_bytes(b"XB24", "little")
+        argb = int.from_bytes(b"AR24", "little")
+        abgr = int.from_bytes(b"AB24", "little")
+
+        # Retain wlroots' channel order, but discard the meaningless alpha.
+        self.assertEqual(get_capture_pixel_format(argb, xrgb), "BGRX")
+        self.assertEqual(get_capture_pixel_format(abgr, xrgb), "RGBX")
+        self.assertEqual(get_capture_pixel_format(argb, xbgr), "BGRX")
+        self.assertEqual(get_capture_pixel_format(abgr, xbgr), "RGBX")
+
+        # An alpha-capable source must remain alpha-capable.
+        self.assertEqual(get_capture_pixel_format(argb, argb), "BGRA")
+        self.assertEqual(get_capture_pixel_format(abgr, argb), "RGBA")
+
     def test_unmapped_empty_damage_is_ignored(self):
         window = Mock()
         server = self.make_server(window)

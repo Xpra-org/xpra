@@ -60,6 +60,24 @@ WAYLAND_CONTENT_TYPE_TO_XPRA = {
 }
 
 
+def get_capture_pixel_format(read_format: int, source_format: int | None = None) -> str | None:
+    """Return Xpra's layout name for a wlroots texture readback format.
+
+    An XRGB/XBGR client buffer has no meaningful alpha.  Preserve wlroots'
+    chosen byte order, but express that fact by using the corresponding X
+    layout.  This only relabels the four-byte pixels; it does not copy them.
+    """
+    pixel_format = {
+        DRM_FORMAT_ABGR8888: "RGBA",
+        DRM_FORMAT_XBGR8888: "RGBX",
+        DRM_FORMAT_ARGB8888: "BGRA",
+        DRM_FORMAT_XRGB8888: "BGRX",
+    }.get(read_format)
+    if source_format in (DRM_FORMAT_XRGB8888, DRM_FORMAT_XBGR8888):
+        return {"RGBA": "RGBX", "BGRA": "BGRX"}.get(pixel_format, pixel_format)
+    return pixel_format
+
+
 # Single registry across every WaylandSurface subclass — keyed by the wl_surface
 # pointer (the only field common to xdg_surfaces and subsurfaces). Holds a
 # strong reference so wlroots-side listener pointers stay valid until the
@@ -349,20 +367,14 @@ cdef class WaylandSurface(ListenerObject):
             log("%s.capture_pixels: %i,%i %dx%d (%d bytes)", self, x, y, read_width, read_height, texture_size)
 
         cdef uint32_t read_format = wlr_texture_preferred_read_format(texture)
-        cdef str pixel_format
-        if read_format == DRM_FORMAT_ABGR8888:
-            pixel_format = "RGBA"
-        elif read_format == DRM_FORMAT_XBGR8888:
-            pixel_format = "RGBX"
-        elif read_format == DRM_FORMAT_ARGB8888:
-            pixel_format = "BGRA"
-        elif read_format == DRM_FORMAT_XRGB8888:
-            pixel_format = "BGRX"
-        else:
+        cdef str pixel_format = get_capture_pixel_format(
+            read_format, self._source_format if self._has_source_format else None,
+        )
+        if pixel_format is None:
             if first_time("read-format-%#x" % read_format):
                 log.warn("Warning: unsupported preferred pixel read format %#x, using ABGR8888", read_format)
             read_format = DRM_FORMAT_ABGR8888
-            pixel_format = "RGBA"
+            pixel_format = get_capture_pixel_format(read_format)
 
         cdef wlr_texture_read_pixels_options opts
         opts.data = <void*> texture_buffer.get_mem()
