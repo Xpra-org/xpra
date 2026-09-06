@@ -3180,13 +3180,20 @@ else:
                         break
                     except IndexError:
                         continue
-                if epan_dir:
-                    self.copytodir("fs/lib/wireshark/plugins/xpra_dissector.lua", epan_dir)
-                else:
-                    # an empty `epan_dir` is a relative path, which would install
-                    # the dissector at the top of the prefix instead:
-                    print("Warning: no wireshark plugins directory found,")
-                    print(" the xpra dissector will not be installed")
+                if not epan_dir:
+                    # wireshark is not installed on the build system, so there is no
+                    # versioned plugins directory to match - fall back to the
+                    # unversioned one this platform would use, which `copytodir`
+                    # creates for us. (an empty `epan_dir` is a relative path, and
+                    # would install the dissector at the top of the prefix instead)
+                    import sysconfig
+                    if os.path.exists("/usr/lib64") and not os.path.islink("/usr/lib64"):
+                        libdir = "/usr/lib64"
+                    else:
+                        multiarch = sysconfig.get_config_var("MULTIARCH")
+                        libdir = f"/usr/lib/{multiarch}" if multiarch else "/usr/lib"
+                    epan_dir = f"{libdir}/wireshark/plugins"
+                self.copytodir("fs/lib/wireshark/plugins/xpra_dissector.lua", epan_dir)
 
             if docs_ENABLED:
                 doc_dir = f"{self.actual_install_dir}/share/doc/xpra/"
