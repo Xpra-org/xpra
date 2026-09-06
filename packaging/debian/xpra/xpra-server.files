@@ -11,6 +11,10 @@ usr/libexec/xpra/gvfs-open
 usr/libexec/xpra/auth_dialog
 usr/libexec/xpra/daemonizer
 #etc/default/xpra
+#the encoder units are installed by `setup.py` into `debian/tmp`,
+#they are shipped but not enabled - same as the rpm packages:
+lib/systemd/system/xpra-encoder.service
+lib/systemd/system/xpra-encoder.socket
 usr/lib/tmpfiles.d/xpra.conf
 usr/lib/sysusers.d/xpra.conf
 etc/dbus-1/system.d/xpra.conf
