@@ -525,6 +525,8 @@ class WindowSource(WindowIconSource):
         self._damage_packet_sequence: int = 1
 
     def cleanup(self) -> None:
+        # `WindowIconSource.cleanup` cancels the window icon timer:
+        super().cleanup()
         self.cancel_damage(MAX_SEQUENCE)
         log("encoding_totals for wid=%#x with primary encoding=%s : %s",
             self.wid, self.encoding, self.statistics.encoding_totals)
