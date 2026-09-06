@@ -7,7 +7,7 @@ import json
 import os.path
 from time import monotonic, time
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.exit_codes import ExitValue
@@ -111,7 +111,7 @@ class WindowModel:
     def update_metadata(self, metadata) -> None:
         self.metadata.update(metadata)
 
-    def extract_blobs(self, data: dict) -> dict:
+    def extract_blobs(self, data: Mapping) -> dict:
         """
         json cannot store binary data, so it is saved as a separate file
         named after the event and the key it was found in
@@ -126,7 +126,7 @@ class WindowModel:
                 path = os.path.join(self.directory, f"{self.event_no}.{key}")
                 with open(path, "wb") as f:
                     f.write(bytes(value))
-            elif isinstance(value, dict):
+            elif isinstance(value, Mapping):
                 filtered[key] = self.extract_blobs(value)
             else:
                 filtered[key] = value
