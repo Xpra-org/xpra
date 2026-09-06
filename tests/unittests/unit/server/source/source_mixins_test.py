@@ -208,7 +208,7 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_encodings(self):
         from xpra.server.source.encoding import EncodingsConnection
-        self._test_mixin_class(EncodingsConnection, {
+        server_props = {
             "core_encodings": ("rgb32", "rgb24", "png", ),
             "encodings": ("rgb", "png", ),
             "default_encoding": "auto",
@@ -217,7 +217,8 @@ class SourceMixinsTest(unittest.TestCase):
             "default_min_quality": 10,
             "default_speed": 50,
             "default_min_speed": 10,
-        }, {
+        }
+        self._test_mixin_class(EncodingsConnection, server_props, {
             # modern clients send their encodings in the `encoding` namespace;
             # the flat `encodings.core` cap is ignored with BC=0
             "encoding": {
@@ -225,6 +226,12 @@ class SourceMixinsTest(unittest.TestCase):
                 "options": ("rgb32", "rgb24"),
             },
         })
+
+        # A --windows=no client does not need an encoding subsystem.  In
+        # particular, parsing its (empty) capabilities must not reject the
+        # connection merely because it has no encodings to advertise.
+        source = self._test_mixin_class(EncodingsConnection, server_props)
+        self.assertEqual(source.core_encodings, ())
 
     def test_file(self):
         from xpra.server.source.file import FileConnection
