@@ -69,7 +69,7 @@ class Window(WindowModelStub):
         "pid": (
             GObject.TYPE_INT,
             "PID of owning process", "",
-            -1, 65535, -1,
+            -1, 2147483647, -1,
             GObject.ParamFlags.READABLE,
         ),
         "title": (

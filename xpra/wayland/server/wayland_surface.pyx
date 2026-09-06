@@ -32,6 +32,7 @@ from xpra.wayland.server.wlroots cimport (
     wlr_surface, wlr_buffer, wlr_texture, wlr_client_buffer, wlr_box, wlr_fbox,
     wlr_texture_read_pixels_options, wlr_texture_read_pixels, wlr_texture_preferred_read_format,
     wlr_dmabuf_attributes, wlr_shm_attributes, wlr_buffer_get_dmabuf, wlr_buffer_get_shm,
+    wl_client, wl_resource_get_client, wl_client_get_credentials,
     wlr_surface_send_frame_done, wlr_surface_get_buffer_source_box,
     wlr_image_description_v1_data, wlr_surface_get_image_description_v1_data,
     DRM_FORMAT_ARGB8888, DRM_FORMAT_ABGR8888, DRM_FORMAT_XRGB8888, DRM_FORMAT_XBGR8888,
@@ -121,6 +122,22 @@ cdef class WaylandSurface(ListenerObject):
         if not self._has_source_format:
             return None
         return self._source_format
+
+    def get_client_pid(self) -> int:
+        """Return the Wayland peer process PID, or zero when unavailable.
+
+        This is the kernel credential of the client connected to the Wayland
+        socket.  It identifies the Wayland peer, which may be a toolkit broker
+        rather than the process that created an individual toplevel.
+        """
+        cdef wl_client *client = NULL
+        cdef int pid = 0
+        if self.wlr_surface == NULL or self.wlr_surface.resource == NULL:
+            return 0
+        client = wl_resource_get_client(self.wlr_surface.resource)
+        if client != NULL:
+            wl_client_get_credentials(client, &pid, NULL, NULL)
+        return max(0, pid)
 
     cdef void update_source_format(self, wlr_buffer *source) noexcept:
         """Record the raw client-buffer format without forcing a download or map."""

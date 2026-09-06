@@ -223,6 +223,7 @@ cdef extern from "wayland-server-core.h":
     wl_client* wl_client_create(wl_display *display, int fd)
     void wl_client_destroy(wl_client *client)
     wl_display* wl_client_get_display(wl_client *client)
+    void wl_client_get_credentials(const wl_client *client, int *pid, void *uid, void *gid)
 
 
 cdef extern from "wayland-server-protocol.h":
@@ -1381,7 +1382,7 @@ cdef extern from "wlr/types/wlr_compositor.h":
         wl_signal new_subsurface
         wl_signal destroy
     cdef struct wlr_surface:
-        #wl_resource resource
+        wl_resource *resource
         wlr_compositor *compositor
         wlr_client_buffer *buffer
         pixman_region32_t buffer_damage

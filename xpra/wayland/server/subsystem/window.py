@@ -79,6 +79,7 @@ class WaylandWindowServer(WindowServer):
         geom = (0, 0, size[0], size[1])
         window = Window({
             "client-machine": gethostname(),
+            "pid": surface.get_client_pid(),
             "display": self.server.compositor.get_display(),
             "surface": surface,
             "colourspace": surface.get_colourspace(),
@@ -129,6 +130,7 @@ class WaylandWindowServer(WindowServer):
         geom = (x, y, w, h)
         window = Window({
             "client-machine": gethostname(),
+            "pid": popup.get_client_pid(),
             "display": self.server.compositor.get_display(),
             "surface": popup,
             "colourspace": popup.get_colourspace(),

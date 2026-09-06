@@ -41,6 +41,12 @@ class WaylandLinkageTest(unittest.TestCase):
         from xpra.wayland.server.wayland_surface import WaylandSurface
         self.assertIsNone(WaylandSurface.__new__(WaylandSurface).source_format)
 
+    def test_surface_client_pid_starts_unavailable(self):
+        if importlib.util.find_spec("xpra.wayland.server.wayland_surface") is None:
+            self.skipTest("Wayland server module is not built")
+        from xpra.wayland.server.wayland_surface import WaylandSurface
+        self.assertEqual(WaylandSurface.__new__(WaylandSurface).get_client_pid(), 0)
+
 
 def main():
     unittest.main()
