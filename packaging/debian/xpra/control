@@ -71,9 +71,6 @@ Build-Depends: debhelper (>= 8)
               ,libseccomp-dev
               ,libxxhash-dev
               ,libqrencode-dev
-# the wireshark dissector is installed into the epan plugins directory,
-# which `setup.py` locates by globbing the build system's filesystem:
-              ,libwireshark-dev
               ,libwayland-dev
 # wayland compositor backend (xpra-server-wayland), only where wlroots 0.19 is available:
 #sid:              ,libwlroots-0.19-dev
