@@ -52,15 +52,17 @@ class X11ClientTestUtil(ServerTestUtil):
         contents are painted into, and return (xid, x, y, w, h) for that content
         window - x, y are root-relative.
 
-        The client always paints into the drawing area's own X11 window, which is a
-        child of the toplevel: with a headerbar (CSD, which the client adds to
-        decorated windows by default), that child is smaller than the toplevel and
-        offset by the titlebar height and the shadow border.
-        That child is only mapped once the client has finished setting the window up,
-        so we must wait for it instead of falling back to the toplevel: doing that
-        would silently shift every pixel lookup into the CSD chrome.
-        `size`, when given, is the exact content size to wait for - use it whenever
-        the test knows how big the window should be, so that a mismatch fails here
+        Where the contents end up depends on the backing: the cairo backing paints
+        straight into the toplevel (its drawing area is a windowless widget), whereas
+        the OpenGL backing gets an X11 window of its own as a child of the toplevel.
+        Both are handled here by picking the innermost window of the toplevel's tree
+        that still covers most of it.
+        Beware of the client's headerbar: it turns the window into a CSD one, so the
+        toplevel then also covers the titlebar and the shadow border and its top-left
+        corner is no longer the top-left corner of the contents
+        (use `--headerbar=no` to paint into the whole toplevel).
+        `size`, when given, is the exact content size to match - use it whenever the
+        test knows how big the window should be, so that any such mismatch fails here
         with a clear message rather than as a bogus pixel value later on.
         """
         from xpra.x11.prop import prop_get
@@ -89,28 +91,27 @@ class X11ClientTestUtil(ServerTestUtil):
                         return None
                     return w, h
 
+                def matches(w, h, maxw, maxh) -> bool:
+                    if w > maxw or h > maxh:
+                        return False
+                    if size:
+                        return (w, h) == tuple(size)
+                    # the contents cover the whole window minus the CSD chrome,
+                    # any other window of the tree (input-only helpers, etc) is much smaller:
+                    return w * h * 2 >= maxw * maxh
+
                 def find_content(xid, w, h):
-                    # `get_all_children` returns the whole subtree, so this also finds
-                    # the drawing area when it is nested deeper than the toplevel's
-                    # direct children.
-                    # The drawing area covers the whole window minus the CSD chrome,
-                    # every other child (input-only helpers, the CSD shadow, ...) is
-                    # much smaller, so pick the largest match:
-                    best = ()
+                    # `get_all_children` returns the whole subtree, parents first,
+                    # so this also finds windows nested deeper than the direct children:
+                    best = (xid, w, h) if matches(w, h, w, h) else ()
                     for descendant in x11window.get_all_children(xid):
                         dsize = mapped_size(descendant)
-                        if not dsize:
+                        if not dsize or not matches(dsize[0], dsize[1], w, h):
                             continue
-                        dw, dh = dsize
-                        if dw > w or dh > h:
-                            continue
-                        if size:
-                            if (dw, dh) != tuple(size):
-                                continue
-                        elif dw * dh * 2 < w * h:
-                            continue
-                        if not best or dw * dh > best[1] * best[2]:
-                            best = (descendant, dw, dh)
+                        # prefer the innermost match: the OpenGL drawing area covers its
+                        # parent window, which then only ever shows us unpainted pixels
+                        if not best or dsize[0] * dsize[1] <= best[1] * best[2]:
+                            best = (descendant, dsize[0], dsize[1])
                     return best
 
                 while time.monotonic() - start < timeout:
@@ -128,7 +129,7 @@ class X11ClientTestUtil(ServerTestUtil):
                             continue
                         content = find_content(xid, w, h)
                         if not content:
-                            # the toplevel is up but its contents are not mapped yet:
+                            # ie: the window is up but its contents don't have the expected size yet
                             candidates.append((xid, wtitle, w, h))
                             continue
                         content_xid, content_w, content_h = content

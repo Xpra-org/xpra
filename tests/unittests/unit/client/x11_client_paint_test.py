@@ -15,6 +15,13 @@ from unit.client.x11_client_test_util import X11ClientTestUtil, log
 
 CLIENT_TIMEOUT = envint("XPRA_TEST_CLIENT_TIMEOUT", 20)
 
+# the headerbar the client adds to decorated windows turns them into CSD windows,
+# where the contents are offset by the titlebar height and the shadow border.
+# The cairo backing paints into the toplevel window itself (its drawing area is a
+# windowless widget, unlike the OpenGL one), so there would then be no X11 window
+# containing just the pixels this test wants to sample:
+NO_CSD = "--headerbar=no"
+
 # colors-plain quadrants, see xpra/gtk/examples/colors_plain.py:
 # (its window uses `set_default_size(320, 320)` and there is no window manager
 # on the server side to resize it, so the client window contents are exactly this size)
@@ -52,7 +59,7 @@ class X11ClientPaintTest(X11ClientTestUtil):
         try:
             server = self.check_fast_start_server(
                 server_display, "--windows=yes", "--start=%s" % self._colors_start_arg(), *server_args)
-            xvfb, client = self.run_client(server_display, "--desktop-scaling=1", *client_args)
+            xvfb, client = self.run_client(server_display, "--desktop-scaling=1", NO_CSD, *client_args)
             r = pollwait(client, CLIENT_TIMEOUT)
             if r is not None:
                 raise RuntimeError("client exited with code %s" % exit_str(r))
@@ -105,7 +112,7 @@ class X11ClientPaintTest(X11ClientTestUtil):
                     server_display, "--windows=yes", "--encodings=png",
                     "--start=%s" % self._colors_start_arg())
                 client = self.do_run_client(
-                    client_display, server_display, "--desktop-scaling=1",
+                    client_display, server_display, "--desktop-scaling=1", NO_CSD,
                     "--encoding=png", "--opengl=force")
                 r = pollwait(client, CLIENT_TIMEOUT)
                 if r is not None:
@@ -134,7 +141,7 @@ class X11ClientPaintTest(X11ClientTestUtil):
             start_xterm = "xterm -geometry 80x24+120+90 -T testxterm -bg #101820 -fg #f0e0c0 -e sh -c 'sleep 60'"
             server = self.check_fast_start_server(
                 server_display, "--windows=yes", "--sync-xvfb=50", "--start=%s" % start_xterm)
-            xvfb, client = self.run_client(server_display, "--desktop-scaling=1")
+            xvfb, client = self.run_client(server_display, "--desktop-scaling=1", NO_CSD)
             r = pollwait(client, CLIENT_TIMEOUT)
             if r is not None:
                 raise RuntimeError("client exited with code %s" % exit_str(r))
