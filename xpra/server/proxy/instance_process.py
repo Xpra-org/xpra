@@ -171,7 +171,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 log("the socket directory '%s' does not exist, checking for $XDG_RUNTIME_DIR path", socket_dir)
                 for prefix in ("/run/user/", "/var/run/user/"):
                     if socket_dir.startswith(prefix):
-                        from xpra.scripts.server import create_runtime_dir  # pylint: disable=import-outside-toplevel
+                        from xpra.server.subsystem.process import create_runtime_dir  # pylint: disable=import-outside-toplevel
                         xrd = os.path.join(prefix, str(self.uid))  # ie: /run/user/99
                         log("creating XDG_RUNTIME_DIR=%s for uid=%i, gid=%i", xrd, self.uid, self.gid)
                         create_runtime_dir(xrd, self.uid, self.gid)
