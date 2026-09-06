@@ -1,3 +1,13 @@
 usr/share/xpra/cuda
-#etc/xpra/cuda.conf
 usr/lib/python3*/*/xpra/codecs/nvidia
+#`cuda.conf` is only ever read by `xpra/codecs/nvidia/cuda/context.py`,
+#and the license keys only by `xpra/codecs/nvidia/util.py` - which both
+#live in this package. The rpm packages ship them too.
+#`setup.py` only installs each of these files when the codec that needs it
+#is enabled, so both entries have to contain a wildcard: `dh_movefiles`
+#fails the build on a literal path that does not exist, but silently skips
+#a glob which matches nothing.
+#the keys are globbed rather than named because `get_license_keys` also
+#looks for version specific files - ie: `nvenc7.keys`:
+etc/xpra/cuda*.conf
+etc/xpra/*.keys
