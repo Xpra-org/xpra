@@ -7,11 +7,3 @@
 # their own dependencies - the rpm builds do ship it:
 usr/lib/python3*/*/xpra-*.egg-info
 usr/lib/python3*/*/xpra-*.egg-info/*
-
-# never packaged on Debian: `cuda.conf` was commented out of
-# `xpra-codecs-nvidia.files` by `bd1e526c13` when the modules were split into
-# separate packages, and the key files were never listed anywhere.
-# The rpm builds ship `cuda.conf` - this only preserves what Debian does today:
-etc/xpra/cuda.conf
-etc/xpra/nvenc.keys
-etc/xpra/nvfbc.keys
