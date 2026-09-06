@@ -72,6 +72,7 @@ cdef class CursorSurface(WaylandSurface):
         if self.wlr_surface == NULL:
             return
         if not self.wlr_surface.mapped:
+            self.update_source_format(NULL)
             self._emit("cursor-image", self.wid, None, self.hotspot_x, self.hotspot_y)
             return
         image = self.capture_pixels()
@@ -85,6 +86,7 @@ cdef class CursorSurface(WaylandSurface):
         self._detach_all()
         self._emit("destroy", self.wid)
         self.unregister()
+        self.update_source_format(NULL)
         self.wlr_surface = NULL
 
 

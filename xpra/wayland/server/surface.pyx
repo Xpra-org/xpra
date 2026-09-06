@@ -230,6 +230,7 @@ cdef class Surface(WaylandSurface):
 
     cdef void unmap(self) noexcept:
         self.unregister_toplevel_handlers()
+        self.update_source_format(NULL)
         log("XDG surface UNMAPPED")
         self._emit("unmap", self.wid)
 
@@ -252,6 +253,7 @@ cdef class Surface(WaylandSurface):
         if debug:
             log("xdg surface dropped")
         self.unregister()
+        self.update_source_format(NULL)
         # wlroots will free the wlr_xdg_surface (and the wl_surface inside it)
         # as soon as we return from this destroy event. Null both pointers so
         # any later Python-side method calls (frame_done, resize, focus, ...)
@@ -349,6 +351,8 @@ cdef class Surface(WaylandSurface):
         if wlr_surf.mapped:
             rects = get_damage_areas(&wlr_surf.buffer_damage)
             self.capture_surface_pixels()
+        else:
+            self.update_source_format(NULL)
 
         subsurfaces = collect_surfaces(wlr_surf)
         self._emit("commit", self.wid, bool(wlr_surf.mapped), size, rects, subsurfaces)

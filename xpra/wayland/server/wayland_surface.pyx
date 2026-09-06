@@ -31,7 +31,7 @@ cdef extern from "time.h":
 from xpra.wayland.server.wlroots cimport (
     wlr_surface, wlr_buffer, wlr_texture, wlr_client_buffer, wlr_box, wlr_fbox,
     wlr_texture_read_pixels_options, wlr_texture_read_pixels, wlr_texture_preferred_read_format,
-    wlr_dmabuf_attributes, wlr_buffer_get_dmabuf,
+    wlr_dmabuf_attributes, wlr_shm_attributes, wlr_buffer_get_dmabuf, wlr_buffer_get_shm,
     wlr_surface_send_frame_done, wlr_surface_get_buffer_source_box,
     wlr_image_description_v1_data, wlr_surface_get_image_description_v1_data,
     DRM_FORMAT_ARGB8888, DRM_FORMAT_ABGR8888, DRM_FORMAT_XRGB8888, DRM_FORMAT_XBGR8888,
@@ -61,6 +61,8 @@ cdef class WaylandSurface(ListenerObject):
 
     def __cinit__(self):
         self._callbacks = {}
+        self._source_format = 0
+        self._has_source_format = False
 
     def __repr__(self):
         return "%s(%i)" % (type(self).__name__, self.wid)
@@ -108,6 +110,43 @@ cdef class WaylandSurface(ListenerObject):
     def wl_surface_ptr(self) -> int:
         """Raw wl_surface pointer; 0 once the surface has been destroyed."""
         return <uintptr_t> self.wlr_surface
+
+    @property
+    def source_format(self) -> int | None:
+        """Latest committed source DRM FourCC, or None when it is unavailable.
+
+        This describes the client buffer before wlroots uploads or converts it;
+        it is deliberately independent from the texture readback format.
+        """
+        if not self._has_source_format:
+            return None
+        return self._source_format
+
+    cdef void update_source_format(self, wlr_buffer *source) noexcept:
+        """Record the raw client-buffer format without forcing a download or map."""
+        cdef wlr_dmabuf_attributes dmabuf
+        cdef wlr_shm_attributes shm
+        cdef uint32_t format = 0
+        cdef bint has_format = False
+        cdef const char *source_type = NULL
+        if source != NULL:
+            if wlr_buffer_get_dmabuf(source, &dmabuf):
+                format = dmabuf.format
+                has_format = True
+                source_type = "dmabuf"
+            elif wlr_buffer_get_shm(source, &shm):
+                format = shm.format
+                has_format = True
+                source_type = "shm"
+        if has_format:
+            if not self._has_source_format or self._source_format != format:
+                log("%s source buffer format=%#x (%s)", self, format, source_type)
+            self._source_format = format
+            self._has_source_format = True
+        elif self._has_source_format:
+            log("%s source buffer format unavailable", self)
+            self._source_format = 0
+            self._has_source_format = False
 
     def frame_done(self) -> None:
         """Tell the wayland client we finished rendering this frame.
@@ -183,10 +222,14 @@ cdef class WaylandSurface(ListenerObject):
         """Copy the current buffer's pixels out as an ImageWrapper.
         Returns None if the surface is destroyed or has no committed buffer."""
         if self.wlr_surface == NULL:
+            self.update_source_format(NULL)
             return None
         cdef wlr_client_buffer *client_buffer = self.wlr_surface.buffer
         if not client_buffer:
+            self.update_source_format(NULL)
             return None
+        cdef wlr_buffer *source = client_buffer.source
+        self.update_source_format(source)
 
         source_geometry = None
         if x < 0 or y < 0 or width <= 0 or height <= 0:
@@ -202,7 +245,6 @@ cdef class WaylandSurface(ListenerObject):
         if width <= 0 or height <= 0:
             return None
 
-        cdef wlr_buffer *source = client_buffer.source
         cdef wlr_dmabuf_attributes dmabuf
         if source != NULL and wlr_buffer_get_dmabuf(source, &dmabuf):
             if x != 0 or y != 0 or width != dmabuf.width or height != dmabuf.height:

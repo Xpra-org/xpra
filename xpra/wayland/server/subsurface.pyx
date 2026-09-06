@@ -72,6 +72,7 @@ cdef class Subsurface(WaylandSurface):
         if self.wlr_surface == NULL:
             return
         if not self.wlr_surface.mapped:
+            self.update_source_format(NULL)
             return
         image = self.capture_pixels()
         if image is None:
@@ -91,6 +92,7 @@ cdef class Subsurface(WaylandSurface):
         self._detach_all()
         self._emit("destroy", self.wid)
         self.unregister()
+        self.update_source_format(NULL)
         # wlroots will free both the wl_surface and the wlr_subsurface struct
         # the moment we return; null both pointers so any later Python-side
         # access (capture_pixels, frame_done, etc.) is a safe no-op.

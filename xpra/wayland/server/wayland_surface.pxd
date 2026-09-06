@@ -5,7 +5,8 @@
 
 
 from xpra.wayland.server.events cimport ListenerObject
-from xpra.wayland.server.wlroots cimport wlr_surface
+from xpra.wayland.server.wlroots cimport wlr_surface, wlr_buffer
+from libc.stdint cimport uint32_t
 
 
 cdef unsigned long next_wid() noexcept
@@ -27,6 +28,8 @@ cdef class WaylandSurface(ListenerObject):
     cdef wlr_surface *wlr_surface         # the actual wl_surface (NULL once destroyed)
     cdef readonly unsigned long wid       # xpra-assigned numeric id, lives forever
     cdef dict _callbacks                  # {event_name: [callable, ...]}
+    cdef uint32_t _source_format          # latest source DRM FourCC, when available
+    cdef bint _has_source_format
 
     cdef void register(self)              # add self to module-level `surfaces`
     cdef void unregister(self)            # remove from `surfaces`; safe to call twice
@@ -34,5 +37,6 @@ cdef class WaylandSurface(ListenerObject):
     cdef tuple get_buffer_source_geometry(self)
     cdef tuple get_buffer_source_geometry_for_surface_rect(self, int surface_x, int surface_y,
                                                            int surface_width, int surface_height)
+    cdef void update_source_format(self, wlr_buffer *source) noexcept
 
     cdef _emit_args(self, str event, tuple args)

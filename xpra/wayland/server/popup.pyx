@@ -114,6 +114,7 @@ cdef class Popup(WaylandSurface):
         self._emit("map", self.wid, (self.x, self.y), (width, height))
 
     cdef void unmap(self) noexcept:
+        self.update_source_format(NULL)
         log("XDG popup UNMAPPED: wid=%i", self.wid)
         self._emit("unmap", self.wid)
 
@@ -131,6 +132,8 @@ cdef class Popup(WaylandSurface):
             geom = &self.wlr_xdg_surface.geometry
             source_geometry = self.get_buffer_source_geometry_for_surface_rect(geom.x, geom.y, geom.width, geom.height)
             image = self.capture_pixels(source_geometry[0], source_geometry[1], source_geometry[2], source_geometry[3])
+        else:
+            self.update_source_format(NULL)
         self._emit("commit", self.wid, bool(self.wlr_surface.mapped),
                    (self.x, self.y), (width, height), image is not None)
         if image is not None:
@@ -149,6 +152,7 @@ cdef class Popup(WaylandSurface):
         self._detach_all()
         self._emit("destroy", self.wid)
         self.unregister()
+        self.update_source_format(NULL)
         self.wlr_surface = NULL
         self.wlr_xdg_surface = NULL
         self.wlr_xdg_popup = NULL

@@ -13,6 +13,7 @@ import unittest
 WAYLAND_MODULES = (
     "xpra.wayland.server.events",
     "xpra.wayland.server.display",
+    "xpra.wayland.server.wayland_surface",
 )
 
 
@@ -33,6 +34,12 @@ class WaylandLinkageTest(unittest.TestCase):
                     check=False,
                 )
                 self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_surface_source_format_starts_unavailable(self):
+        if importlib.util.find_spec("xpra.wayland.server.wayland_surface") is None:
+            self.skipTest("Wayland server module is not built")
+        from xpra.wayland.server.wayland_surface import WaylandSurface
+        self.assertIsNone(WaylandSurface.__new__(WaylandSurface).source_format)
 
 
 def main():
