@@ -55,9 +55,13 @@ For more details see [#1252](https://github.com/Xpra-org/xpra/issues/1252).
 ### Default Certificate
 When using the binary packages from https://xpra.org, a self-signed SSL certificate will be generated during the first installation.\
 It is placed in:
-* `/etc/xpra/ssl-cert.pem` on Posix platforms
-* `C:\ProgramData\Xpra\ssl-cert.pem` on MS Windows
-* `/Library/Application Support/Xpra/ssl-cert.pem` on Mac OS
+* `/etc/xpra/ssl/` on Posix platforms
+* `C:\ProgramData\Xpra\ssl\` on MS Windows
+* `/Library/Application Support/Xpra/ssl/` on Mac OS
+
+That directory holds the private key as `key.pem`, the certificate as `cert.pem`,
+and the two concatenated as `ssl-cert.pem` - which is the one the `ssl-cert`
+option locates by default.
 
 ### Warnings
 SSL options are not applicable to unix domain sockets, named pipes or vsock. \
