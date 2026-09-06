@@ -317,13 +317,14 @@ class EncodingsConnection(StubClientConnection):
         self.parse_encoding_caps(c, eopts)
 
     def parse_encoding_caps(self, c: typedict, eopts: typedict) -> None:
+        window_requested = wants_windows(c)
         if not BACKWARDS_COMPATIBLE:
             # should not be used, so blank it:
             c = typedict()
         self.encoding_options.update(eopts)
         self.encodings = eopts.strtupleget("options") or c.strtupleget("encodings")
         self.core_encodings = eopts.strtupleget("core") or c.strtupleget("encodings.core", self.encodings)
-        if not self.core_encodings:
+        if not self.core_encodings and window_requested:
             raise ClientException("client failed to specify any supported encodings")
         self.full_csc_modes = eopts.dictget("full_csc_modes")
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
