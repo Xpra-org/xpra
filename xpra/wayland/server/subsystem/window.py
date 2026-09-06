@@ -83,6 +83,7 @@ class WaylandWindowServer(WindowServer):
             "display": self.server.compositor.get_display(),
             "surface": surface,
             "colourspace": surface.get_colourspace(),
+            "content-types": surface.get_content_types(),
             "title": title,
             "app-id": app_id,
             "parent": 0,
@@ -134,6 +135,7 @@ class WaylandWindowServer(WindowServer):
             "display": self.server.compositor.get_display(),
             "surface": popup,
             "colourspace": popup.get_colourspace(),
+            "content-types": popup.get_content_types(),
             "title": "",
             "app-id": "",
             "parent": parent_wid,
@@ -248,6 +250,7 @@ class WaylandWindowServer(WindowServer):
         surface = self.get_surface(wid)
         self.track_toplevel(surface)
         self.update_colourspace(window, surface)
+        self.update_content_types(window, surface)
         self.update_size(window, size)
         self.update_opaque_region(window, surface)
         for sub_wid, sx, sy, logical_w, logical_h, native_w, native_h in subsurfaces:
@@ -301,6 +304,12 @@ class WaylandWindowServer(WindowServer):
         # so it only takes effect when the surface is committed:
         if surface:
             window._updateprop("colourspace", surface.get_colourspace())
+
+    @staticmethod
+    def update_content_types(window, surface) -> None:
+        # wp_content_type_v1 state is double-buffered and changes on commit.
+        if surface:
+            window._updateprop("content-types", surface.get_content_types())
 
     @staticmethod
     def update_opaque_region(window, surface) -> None:
@@ -357,7 +366,9 @@ class WaylandWindowServer(WindowServer):
             window = self._ensure_popup_window(parent_wid, popup, position, size)
             if not window:
                 return
-        self.update_colourspace(window, self.get_surface(wid))
+        surface = self.get_surface(wid)
+        self.update_colourspace(window, surface)
+        self.update_content_types(window, surface)
         self.update_geometry(window, position, size)
         if mapped and has_image:
             w, h = size

@@ -5,7 +5,7 @@
 
 
 from xpra.wayland.server.events cimport ListenerObject
-from xpra.wayland.server.wlroots cimport wlr_surface, wlr_buffer
+from xpra.wayland.server.wlroots cimport wlr_surface, wlr_buffer, wlr_content_type_manager_v1
 from libc.stdint cimport uint32_t
 
 
@@ -30,6 +30,7 @@ cdef class WaylandSurface(ListenerObject):
     cdef dict _callbacks                  # {event_name: [callable, ...]}
     cdef uint32_t _source_format          # latest source DRM FourCC, when available
     cdef bint _has_source_format
+    cdef wlr_content_type_manager_v1 *content_type_manager
 
     cdef void register(self)              # add self to module-level `surfaces`
     cdef void unregister(self)            # remove from `surfaces`; safe to call twice

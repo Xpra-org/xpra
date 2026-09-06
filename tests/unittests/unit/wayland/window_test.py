@@ -97,6 +97,18 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
         WaylandWindowServer.update_opaque_region(window, surface)
         window._updateprop.assert_called_with("opaque-region", ((0, 0, 100, 80),))
 
+    def test_commit_exports_surface_content_type(self):
+        window = Mock()
+        server = self.make_server(window)
+        surface = server.get_surface.return_value
+        surface.get_content_types.return_value = ("video",)
+
+        WaylandWindowServer.commit(server, 7, True, (100, 80), (), [])
+
+        server.update_content_types.assert_called_once_with(window, surface)
+        WaylandWindowServer.update_content_types(window, surface)
+        window._updateprop.assert_called_with("content-types", ("video",))
+
     def test_unmapped_empty_damage_is_ignored(self):
         window = Mock()
         server = self.make_server(window)

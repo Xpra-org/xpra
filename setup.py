@@ -3769,6 +3769,7 @@ tace(wayland_client_ENABLED, "xpra.wayland.client.wait_for_display", "wayland-cl
 WAYLAND_PROTOCOL_HEADERS = {
     "xdg-shell-protocol.h": "stable/xdg-shell/xdg-shell.xml",
     "color-management-v1-protocol.h": "staging/color-management/color-management-v1.xml",
+    "content-type-v1-protocol.h": "staging/content-type/content-type-v1.xml",
 }
 if wayland_server_ENABLED:
     toggle_packages(wayland_server_ENABLED, "xpra.wayland.server", "xpra.wayland.server.models", "xpra.wayland.server.subsystem")

@@ -80,6 +80,7 @@ from xpra.wayland.server.wlroots cimport (
     WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ, WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG,
     WP_COLOR_MANAGER_V1_PRIMARIES_SRGB, WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3,
     WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3, WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
+    wlr_content_type_manager_v1, wlr_content_type_manager_v1_create,
 )
 from xpra.wayland.server.pointer_protocols cimport (
     wlr_relative_pointer_manager_v1, wlr_relative_pointer_manager_v1_create,
@@ -149,6 +150,7 @@ cdef class WaylandCompositor(ListenerObject):
     cdef wlr_primary_selection_v1_device_manager *primary_selection_manager
     cdef wlr_data_control_manager_v1 *data_control_manager
     cdef wlr_color_manager_v1 *color_manager
+    cdef wlr_content_type_manager_v1 *content_type_manager
     cdef wlr_relative_pointer_manager_v1 *relative_pointer_manager
     cdef wlr_pointer_constraints_v1 *pointer_constraints
     cdef wlr_xdg_activation_v1 *activation_manager
@@ -278,6 +280,7 @@ cdef class WaylandCompositor(ListenerObject):
         self.create_system_bell()
 
         self.create_color_manager()
+        self.create_content_type_manager()
 
         self.relative_pointer_manager = wlr_relative_pointer_manager_v1_create(self.display_ptr)
         if not self.relative_pointer_manager:
@@ -373,6 +376,12 @@ cdef class WaylandCompositor(ListenerObject):
         if not self.color_manager:
             log.warn("Warning: unable to create the colour management manager")
             log.warn(" all surfaces will be assumed to be sRGB")
+
+    cdef void create_content_type_manager(self):
+        # `wp_content_type_v1`: clients may tag the kind of content they show.
+        self.content_type_manager = wlr_content_type_manager_v1_create(self.display_ptr, 1)
+        if not self.content_type_manager:
+            log.warn("Warning: unable to create the content type manager")
 
     cdef wlr_renderer *create_renderer(self) except NULL:
         cdef wlr_renderer *renderer = NULL
@@ -528,6 +537,7 @@ cdef class WaylandCompositor(ListenerObject):
             return
 
         cdef Surface surface = Surface()
+        surface.content_type_manager = self.content_type_manager
         surface.wlr_xdg_surface = xdg_surf
         surface.width = 0
         surface.height = 0
@@ -558,6 +568,7 @@ cdef class WaylandCompositor(ListenerObject):
                      <uintptr_t> popup.parent)
             return
         cdef Popup popup_surface = Popup()
+        popup_surface.content_type_manager = self.content_type_manager
         popup_surface.attach(parent, popup)
         size = (popup.base.geometry.width, popup.base.geometry.height)
         position = popup_surface.get_position()

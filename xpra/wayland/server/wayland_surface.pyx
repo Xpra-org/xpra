@@ -35,12 +35,21 @@ from xpra.wayland.server.wlroots cimport (
     wl_client, wl_resource_get_client, wl_client_get_credentials,
     wlr_surface_send_frame_done, wlr_surface_get_buffer_source_box,
     wlr_image_description_v1_data, wlr_surface_get_image_description_v1_data,
+    wlr_content_type_manager_v1, wlr_surface_get_content_type_v1,
+    WP_CONTENT_TYPE_V1_TYPE_NONE, WP_CONTENT_TYPE_V1_TYPE_PHOTO,
+    WP_CONTENT_TYPE_V1_TYPE_VIDEO, WP_CONTENT_TYPE_V1_TYPE_GAME,
     DRM_FORMAT_ARGB8888, DRM_FORMAT_ABGR8888, DRM_FORMAT_XRGB8888, DRM_FORMAT_XBGR8888,
 )
 
 
 log = Logger("wayland")
 cdef bint debug = log.is_debug_enabled()
+
+CONTENT_TYPES = {
+    WP_CONTENT_TYPE_V1_TYPE_PHOTO: "photo",
+    WP_CONTENT_TYPE_V1_TYPE_VIDEO: "video",
+    WP_CONTENT_TYPE_V1_TYPE_GAME: "game",
+}
 
 
 # Single registry across every WaylandSurface subclass — keyed by the wl_surface
@@ -138,6 +147,18 @@ cdef class WaylandSurface(ListenerObject):
         if client != NULL:
             wl_client_get_credentials(client, &pid, NULL, NULL)
         return max(0, pid)
+
+    def get_content_types(self) -> tuple[str, ...]:
+        """Return the committed ``wp_content_type_v1`` value, if one was set.
+
+        The protocol values are deliberately passed through unchanged for now;
+        they do not have a one-to-one mapping to Xpra content-type hints.
+        """
+        cdef int content_type = WP_CONTENT_TYPE_V1_TYPE_NONE
+        if self.content_type_manager != NULL and self.wlr_surface != NULL:
+            content_type = wlr_surface_get_content_type_v1(self.content_type_manager, self.wlr_surface)
+        content_type_name = CONTENT_TYPES.get(content_type)
+        return (content_type_name,) if content_type_name else ()
 
     cdef void update_source_format(self, wlr_buffer *source) noexcept:
         """Record the raw client-buffer format without forcing a download or map."""

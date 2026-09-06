@@ -691,6 +691,21 @@ cdef extern from "wlr/types/wlr_color_management_v1.h":
     const wlr_image_description_v1_data *wlr_surface_get_image_description_v1_data(wlr_surface *surface) nogil
 
 
+cdef extern from "wlr/types/wlr_content_type_v1.h":
+    cdef enum wp_content_type_v1_type:
+        WP_CONTENT_TYPE_V1_TYPE_NONE
+        WP_CONTENT_TYPE_V1_TYPE_PHOTO
+        WP_CONTENT_TYPE_V1_TYPE_VIDEO
+        WP_CONTENT_TYPE_V1_TYPE_GAME
+
+    cdef struct wlr_content_type_manager_v1:
+        pass
+
+    wlr_content_type_manager_v1 *wlr_content_type_manager_v1_create(wl_display *display, uint32_t version)
+    wp_content_type_v1_type wlr_surface_get_content_type_v1(wlr_content_type_manager_v1 *manager,
+                                                            wlr_surface *surface) nogil
+
+
 cdef extern from "wlr/types/wlr_input_device.h":
     cdef enum wlr_input_device_type:
         WLR_INPUT_DEVICE_KEYBOARD

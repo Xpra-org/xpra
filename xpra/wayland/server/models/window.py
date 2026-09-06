@@ -50,6 +50,11 @@ class Window(WindowModelStub):
             "the colourspace the surface is tagged with (wp_color_management_surface_v1)", "",
             GObject.ParamFlags.READABLE,
         ),
+        "content-types": (
+            GObject.TYPE_PYOBJECT,
+            "Content hints from wp_content_type_v1", "",
+            GObject.ParamFlags.READABLE,
+        ),
         "has-alpha": (
             GObject.TYPE_BOOLEAN,
             "Does the window use transparency", "",
@@ -156,7 +161,7 @@ class Window(WindowModelStub):
 
     # things that we expose:
     _property_names = [
-        "depth", "has-alpha", "opaque-region", "decorations", "colourspace",
+        "depth", "has-alpha", "opaque-region", "decorations", "colourspace", "content-types",
         "client-machine", "pid",
         "title", "role", "app-id",
         "command",
@@ -166,7 +171,7 @@ class Window(WindowModelStub):
     ]
     # exposed and changing (should be watched for notify signals):
     _dynamic_property_names = [
-        "title", "command", "colourspace", "opaque-region",
+        "title", "command", "colourspace", "opaque-region", "content-types",
         "parent", "transient-for", "relative-position",
         "iconic", "maximized", "fullscreen",
     ]
