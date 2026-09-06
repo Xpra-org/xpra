@@ -152,6 +152,16 @@ Recommends: ${qrcode:Depends}
         ,python3-dnspython
 # AES encryption:
         ,python3-cryptography
+# quic transport:
+# not available in Ubuntu before 24.04, nor in Debian Bookworm - there the
+# `xpra-server` service fails to start because it binds a quic socket:
+#noble:              ,python3-aioquic
+#questing:              ,python3-aioquic
+#resolute:              ,python3-aioquic
+#stonking:              ,python3-aioquic
+#trixie:              ,python3-aioquic
+#forky:              ,python3-aioquic
+#sid:              ,python3-aioquic
 # see sessions using mDNS:
         ,python3-zeroconf
 # query network interfaces:
