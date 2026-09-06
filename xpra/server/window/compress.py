@@ -2295,7 +2295,7 @@ class WindowSource(WindowIconSource):
         if not packet:
             return
         # queue packet for sending:
-        self.queue_damage_packet(packet, damage_time, process_damage_time)
+        self.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
     def schedule_auto_refresh(self, packet: Packet, options: typedict) -> None:
         if not self.can_refresh():
@@ -2538,14 +2538,17 @@ class WindowSource(WindowIconSource):
             "speed"         : self.refresh_speed,
         }
 
-    def queue_damage_packet(self, packet: Packet, damage_time: float, process_damage_time: float) -> None:
+    def queue_damage_packet(self, packet: Packet, damage_time: float,
+                            process_damage_time: float, options: typedict) -> None:
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
             we also record a number of statistics:
             - damage packet queue size
             - number of pixels in damage packet queue
-            - damage latency (via a callback once the packet is actually sent)
+            - damage latency
+            this is also where the auto-refresh is scheduled,
+            since this is where every draw packet ends up
         """
         # packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
         width = packet.get_u16(4)
@@ -2568,6 +2571,9 @@ class WindowSource(WindowIconSource):
         stats.last_packet_time = monotonic()
         if SCREEN_UPDATES_DIRECTORY:
             self.save_update(packet, damage_time)
+        # whilst the packet is still ours: lossy updates schedule a refresh,
+        # lossless ones clear the regions they have covered
+        self.schedule_auto_refresh(packet, options)
         self.queue_packet(packet, self.wid, pixcount, client_options.get("flush", 0) > 0)
 
     def save_update(self, packet: Packet, damage_time: float) -> None:
@@ -2963,7 +2969,7 @@ class WindowSource(WindowIconSource):
                     w, h, x, y, self.wid, coding,
                     100.0 * csize / psize, ceil(psize/1024), ceil(csize/1024),
                     self._damage_packet_sequence, client_info, options)
-        self.queue_damage_packet(packet, damage_time, process_damage_time)
+        self.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
     def mmap_encode(self, coding: str, image: ImageWrapper, _options) -> tuple:
         assert coding == "mmap"
