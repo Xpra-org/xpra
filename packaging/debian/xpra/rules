@@ -18,9 +18,14 @@ override_dh_auto_build:
 	python3 -B setup.py build_ext $(BUILDOPTS) -j $(NPROC)
 	python3 -B setup.py build $(BUILDOPTS)
 
+# `dh_missing` is not in the `dh` sequence for every debhelper version and
+# `--fail-missing` is not the default before compat 13, so run it here where
+# it is guaranteed to happen - once `dh_movefiles` has claimed everything the
+# `.files` lists ask for. Deliberate omissions belong in `not-installed`:
 override_dh_install:
 	dh_movefiles
 	dh_install
+	dh_missing --fail-missing
 
 override_dh_auto_install:
 	python3 -B setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb $(BUILDOPTS)

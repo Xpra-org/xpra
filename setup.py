@@ -3180,7 +3180,13 @@ else:
                         break
                     except IndexError:
                         continue
-                self.copytodir("fs/lib/wireshark/plugins/xpra_dissector.lua", epan_dir)
+                if epan_dir:
+                    self.copytodir("fs/lib/wireshark/plugins/xpra_dissector.lua", epan_dir)
+                else:
+                    # an empty `epan_dir` is a relative path, which would install
+                    # the dissector at the top of the prefix instead:
+                    print("Warning: no wireshark plugins directory found,")
+                    print(" the xpra dissector will not be installed")
 
             if docs_ENABLED:
                 doc_dir = f"{self.actual_install_dir}/share/doc/xpra/"
