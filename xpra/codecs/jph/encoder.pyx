@@ -22,7 +22,7 @@ from xpra.log import Logger
 log = Logger("encoder", "jph")
 
 
-cdef extern from "jph.h":
+cdef extern from "jph_encode.h":
     int jph_version_major()
     int jph_version_minor()
     int jph_version_patch()

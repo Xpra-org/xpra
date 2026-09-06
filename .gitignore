@@ -154,7 +154,8 @@ tests/unittests/test-file*
 !/xpra/codecs/vpl/vpl_decode.c
 !/xpra/codecs/libva/va_encode.c
 !/xpra/codecs/libva/va_decode.c
-!/xpra/codecs/jph/jph.cpp
+!/xpra/codecs/jph/jph_encode.cpp
+!/xpra/codecs/jph/jph_decode.cpp
 /xpra/codecs/*.c
 /xpra/gtk/*.c
 /xpra/gtk/dialogs/*.c
