@@ -101,13 +101,21 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
         window = Mock()
         server = self.make_server(window)
         surface = server.get_surface.return_value
-        surface.get_content_types.return_value = ("video",)
+        surface.get_content_types.return_value = ("picture",)
 
         WaylandWindowServer.commit(server, 7, True, (100, 80), (), [])
 
         server.update_content_types.assert_called_once_with(window, surface)
         WaylandWindowServer.update_content_types(window, surface)
-        window._updateprop.assert_called_with("content-types", ("video",))
+        window._updateprop.assert_called_with("content-types", ("picture",))
+
+    def test_wayland_content_type_mapping(self):
+        from xpra.wayland.server.wayland_surface import WAYLAND_CONTENT_TYPE_TO_XPRA
+        self.assertEqual(WAYLAND_CONTENT_TYPE_TO_XPRA, {
+            "photo": "picture",
+            "video": "video",
+            "game": "video",
+        })
 
     def test_unmapped_empty_damage_is_ignored(self):
         window = Mock()

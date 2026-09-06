@@ -8,6 +8,7 @@ from typing import Final
 from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
+from xpra.common import get_invalid_content_types, valid_content_types
 from xpra.util.env import first_time
 from xpra.constants import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.common import _NET_WM_STATE_ADD, _NET_WM_STATE_REMOVE, _NET_WM_STATE_TOGGLE, STATE_STRING
@@ -475,6 +476,11 @@ class BaseWindowModel(CoreX11WindowModel):
             add_work_item(self.guess_content_type)
         metalog("_update_content_type() %s", content_type)
         content_types = content_type.replace("+", ",").split(",") if content_type else ()
+        invalid = get_invalid_content_types(content_types)
+        if invalid:
+            metalog.warn("Warning: ignoring invalid _XPRA_CONTENT_TYPE value%s: %s",
+                         "s" if len(invalid) != 1 else "", ", ".join(invalid))
+        content_types = valid_content_types(content_types)
         self._set_content_types(*content_types)
 
     def guess_content_type(self) -> None:
@@ -497,7 +503,7 @@ class BaseWindowModel(CoreX11WindowModel):
         add_work_item(self.guess_content_type)
 
     def _set_content_types(self, *content_types: str) -> None:
-        content_types = tuple(x for x in content_types if x)
+        content_types = valid_content_types(x for x in content_types if x)
         self._updateprop("content-types", content_types)
         if BACKWARDS_COMPATIBLE:
             self._updateprop("content-type", "+".join(content_types) if content_types else "")

@@ -17,10 +17,15 @@ from xpra.server.window.content_guesser import (
     parse_content_categories_file,
     guess_content_type_from_defs,
     _merge_defs,
+    validate_content_type,
 )
 
 
 class TestContentGuesser(unittest.TestCase):
+
+    def test_content_type_validation(self):
+        self.assertEqual(validate_content_type("audio+video", "test"), "audio+video")
+        self.assertEqual(validate_content_type("picture+unknown", "test"), "picture")
 
     def test_parsers_reject_bad_entries_and_split_parent(self):
         defs = parse_content_types(("missing separators", "title:[=text", "title:ok=text"))

@@ -14,6 +14,7 @@ from xpra.util.env import first_time
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.dmabuf.image import DMABufImageWrapper
 from xpra.util.colourspace import SRGB
+from xpra.common import CONTENT_TYPE_PICTURE, CONTENT_TYPE_VIDEO
 from xpra.wayland.server.colourspace import get_colourspace as parse_colourspace
 
 from libc.string cimport memset
@@ -45,10 +46,17 @@ from xpra.wayland.server.wlroots cimport (
 log = Logger("wayland")
 cdef bint debug = log.is_debug_enabled()
 
-CONTENT_TYPES = {
+WAYLAND_CONTENT_TYPES = {
     WP_CONTENT_TYPE_V1_TYPE_PHOTO: "photo",
     WP_CONTENT_TYPE_V1_TYPE_VIDEO: "video",
     WP_CONTENT_TYPE_V1_TYPE_GAME: "game",
+}
+
+# wp_content_type_v1's names are not Xpra content-type names.
+WAYLAND_CONTENT_TYPE_TO_XPRA = {
+    "photo": CONTENT_TYPE_PICTURE,
+    "video": CONTENT_TYPE_VIDEO,
+    "game": CONTENT_TYPE_VIDEO,
 }
 
 
@@ -151,13 +159,13 @@ cdef class WaylandSurface(ListenerObject):
     def get_content_types(self) -> tuple[str, ...]:
         """Return the committed ``wp_content_type_v1`` value, if one was set.
 
-        The protocol values are deliberately passed through unchanged for now;
-        they do not have a one-to-one mapping to Xpra content-type hints.
+        Map the protocol's coarse content categories onto Xpra's content hints.
         """
         cdef int content_type = WP_CONTENT_TYPE_V1_TYPE_NONE
         if self.content_type_manager != NULL and self.wlr_surface != NULL:
             content_type = wlr_surface_get_content_type_v1(self.content_type_manager, self.wlr_surface)
-        content_type_name = CONTENT_TYPES.get(content_type)
+        wayland_content_type = WAYLAND_CONTENT_TYPES.get(content_type)
+        content_type_name = WAYLAND_CONTENT_TYPE_TO_XPRA.get(wayland_content_type)
         return (content_type_name,) if content_type_name else ()
 
     cdef void update_source_format(self, wlr_buffer *source) noexcept:

@@ -3,10 +3,36 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Protocol, Any
+from typing import Protocol, Any, Final
 from collections.abc import Callable, Sized, Iterable, Sequence
 
 from xpra.constants import NotificationID, Gravity
+
+
+# Window-content hints understood by Xpra's encoders and client backings.
+# Keep this list in sync with ``fs/etc/xpra/content-type``.
+CONTENT_TYPE_TEXT: Final[str] = "text"
+CONTENT_TYPE_AUDIO: Final[str] = "audio"
+CONTENT_TYPE_VIDEO: Final[str] = "video"
+CONTENT_TYPE_BROWSER: Final[str] = "browser"
+CONTENT_TYPE_PICTURE: Final[str] = "picture"
+CONTENT_TYPE_LOSSLESS: Final[str] = "lossless"
+CONTENT_TYPE_DESKTOP: Final[str] = "desktop"
+CONTENT_TYPES: Final[tuple[str, ...]] = (
+    CONTENT_TYPE_TEXT, CONTENT_TYPE_AUDIO, CONTENT_TYPE_VIDEO, CONTENT_TYPE_BROWSER,
+    CONTENT_TYPE_PICTURE, CONTENT_TYPE_LOSSLESS, CONTENT_TYPE_DESKTOP,
+)
+
+
+def get_invalid_content_types(content_types: Iterable[str]) -> tuple[str, ...]:
+    """Return content-type hints which are not part of Xpra's vocabulary."""
+    return tuple(x for x in content_types if x not in CONTENT_TYPES)
+
+
+def valid_content_types(content_types: Iterable[str]) -> tuple[str, ...]:
+    """Return only the recognized Xpra window-content hints."""
+    return tuple(x for x in content_types if x in CONTENT_TYPES)
+
 
 try:
     # Python 3.11 and later:

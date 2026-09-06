@@ -12,6 +12,7 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envbool
 from xpra.os_util import getuid, OSX, POSIX
 from xpra.util.io import get_proc_cmdline
+from xpra.common import get_invalid_content_types, valid_content_types
 from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger
 
@@ -23,6 +24,16 @@ CONTENT_TYPE_DEFS = os.environ.get("XPRA_CONTENT_TYPE_DEFS", "")
 
 ConfDict: TypeAlias = dict[str, Any]
 ConfParser: TypeAlias = Callable[[Sequence[str]], ConfDict]
+
+
+def validate_content_type(content_type: str, source: str) -> str:
+    """Discard unknown content hints obtained from configuration or XDG data."""
+    content_types = tuple(x for x in content_type.replace("+", ",").split(",") if x)
+    invalid = get_invalid_content_types(content_types)
+    if invalid:
+        log.warn("Warning: ignoring invalid content-type value%s from %s: %s",
+                 "s" if len(invalid) != 1 else "", source, ", ".join(invalid))
+    return "+".join(valid_content_types(content_types))
 
 
 def getprop(window, prop: str):
@@ -176,7 +187,7 @@ def parse_content_types(lines) -> dict[str, dict[Any, tuple[str, str]]]:
             continue
         # ignore comments:
         # "text    #some comments here" > "text"
-        content_type = content_type.split(":")[0].strip()
+        content_type = validate_content_type(content_type.split(":")[0].strip(), "content-type configuration")
         prop_name, regex = parts
         try:
             c = re.compile(regex)
@@ -237,7 +248,8 @@ def parse_content_categories_file(lines) -> ConfDict:
             log.warn(" %r is missing a '='", line)
             continue
         category, content_type = parts
-        d[category.strip("\t ").lower()] = content_type.strip("\t ")
+        source = "content-categories configuration"
+        d[category.strip("\t ").lower()] = validate_content_type(content_type.strip("\t "), source)
     log("parse_content_categories_file(%s)=%s", lines, d)
     return d
 
@@ -374,7 +386,7 @@ def guess_content_from_parent_pid(ppid: int) -> str:
 
 
 def guess_content_type(window) -> Sequence[str]:
-    guess_str = do_guess_content_type(window)
+    guess_str = validate_content_type(do_guess_content_type(window), "content-type lookup")
     if not guess_str:
         return ()
     return tuple(guess_str.replace("+", ",").split(","))
