@@ -95,6 +95,7 @@ class WaylandWindowServer(WindowServer):
             "image": None,
             "depth": 32,
             "has-alpha": True,
+            "opaque-region": surface.get_opaque_region(),
             "decorations": False,
         })
         window.setup()
@@ -246,6 +247,7 @@ class WaylandWindowServer(WindowServer):
         self.track_toplevel(surface)
         self.update_colourspace(window, surface)
         self.update_size(window, size)
+        self.update_opaque_region(window, surface)
         for sub_wid, sx, sy, logical_w, logical_h, native_w, native_h in subsurfaces:
             self.subsurface_info[sub_wid] = (wid, sx, sy, logical_w, logical_h, native_w, native_h)
             facade = self.subsurface_facades.get(sub_wid)
@@ -297,6 +299,11 @@ class WaylandWindowServer(WindowServer):
         # so it only takes effect when the surface is committed:
         if surface:
             window._updateprop("colourspace", surface.get_colourspace())
+
+    @staticmethod
+    def update_opaque_region(window, surface) -> None:
+        if surface:
+            window._updateprop("opaque-region", surface.get_opaque_region())
 
     def update_size(self, window, size: tuple[int, int]) -> None:
         old_geom = window.get_property("geometry")

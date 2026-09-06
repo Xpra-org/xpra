@@ -85,6 +85,18 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
         ])
         window.acknowledge_changes.assert_not_called()
 
+    def test_commit_exports_surface_opaque_region(self):
+        window = Mock()
+        server = self.make_server(window)
+        surface = server.get_surface.return_value
+        surface.get_opaque_region.return_value = ((0, 0, 100, 80),)
+
+        WaylandWindowServer.commit(server, 7, True, (100, 80), (), [])
+
+        server.update_opaque_region.assert_called_once_with(window, surface)
+        WaylandWindowServer.update_opaque_region(window, surface)
+        window._updateprop.assert_called_with("opaque-region", ((0, 0, 100, 80),))
+
     def test_unmapped_empty_damage_is_ignored(self):
         window = Mock()
         server = self.make_server(window)

@@ -23,7 +23,7 @@ from xpra.wayland.server.wlroots cimport (
     wl_listener,
     wlr_subsurface, wlr_surface_for_each_surface,
     wlr_surface,
-    wlr_fbox, wlr_surface_get_buffer_source_box,
+    wlr_box, wlr_fbox, wlr_surface_get_buffer_source_box,
     wlr_xdg_toplevel, wlr_xdg_surface,
     wlr_xdg_toplevel_decoration_v1,
     wlr_xdg_toplevel_move_event, wlr_xdg_toplevel_resize_event, wlr_xdg_toplevel_show_window_menu_event,
@@ -300,6 +300,20 @@ cdef class Surface(WaylandSurface):
             self.app_id = self.wlr_xdg_surface.toplevel.app_id.decode("utf8")
             log("Surface %i SET APP_ID: %s", self.wid, self.app_id)
 
+    def get_opaque_region(self) -> tuple:
+        """Return the committed opaque region in Xpra window coordinates.
+
+        wl_surface stores this state relative to the full surface, whereas
+        Xpra captures only xdg_surface.geometry (which excludes CSD margins).
+        """
+        cdef wlr_xdg_surface *xdg_surface = self.wlr_xdg_surface
+        if xdg_surface == NULL or self.wlr_surface == NULL:
+            return ()
+        cdef wlr_box *geometry = &xdg_surface.geometry
+        return get_clipped_opaque_region(&self.wlr_surface.opaque_region,
+                                         geometry.x, geometry.y,
+                                         geometry.width, geometry.height)
+
     cdef void request_show_window_menu(self, uint32_t serial, int32_t x, int32_t y) noexcept:
         # Client asked the compositor to pop up a window-management context
         # menu (move/resize/close). xpra is a remote display: we don't render
@@ -444,6 +458,36 @@ cdef list get_damage_areas(pixman_region32_t *damage):
         h = rects[i].y2 - rects[i].y1
         rectangles.append((x, y, w, h))
     return rectangles
+
+
+cdef tuple get_clipped_opaque_region(pixman_region32_t *region,
+                                     int x, int y, int width, int height):
+    """Translate a surface-local pixman region into a clipped window region."""
+    if width <= 0 or height <= 0:
+        return ()
+    cdef int n_rects = 0
+    cdef pixman_box32_t *rects = pixman_region32_rectangles(region, &n_rects)
+    cdef int x2 = x + width
+    cdef int y2 = y + height
+    cdef int rx1, ry1, rx2, ry2
+    rectangles = []
+    cdef int i
+    for i in range(n_rects):
+        rx1 = rects[i].x1
+        ry1 = rects[i].y1
+        rx2 = rects[i].x2
+        ry2 = rects[i].y2
+        if rx1 < x:
+            rx1 = x
+        if ry1 < y:
+            ry1 = y
+        if rx2 > x2:
+            rx2 = x2
+        if ry2 > y2:
+            ry2 = y2
+        if rx2 > rx1 and ry2 > ry1:
+            rectangles.append((rx1 - x, ry1 - y, rx2 - rx1, ry2 - ry1))
+    return tuple(rectangles)
 
 
 cdef struct collect_ctx:
