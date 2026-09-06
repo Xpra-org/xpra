@@ -57,7 +57,10 @@ class XI2Client(StubClientSubsystem):
             return
         try:
             from xpra.x11.gtk.bindings import init_x11_filter  # @UnresolvedImport, @UnusedImport
-            self._x11_filter = init_x11_filter()
+            init_x11_filter()
+            # A successful call holds a reference even when another component
+            # installed the shared GDK filter first.
+            self._x11_filter = True
             log("x11_filter=%s", self._x11_filter)
         except Exception as e:
             log("init_x11_filter()", exc_info=True)

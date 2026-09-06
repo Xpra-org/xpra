@@ -17,6 +17,18 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 class DisplayClientTest(ClientMixinTest):
 
+    def test_x11_filter_lifecycle(self):
+        from xpra.platform.posix.display import X11DisplayPropsWatcher
+
+        watcher = X11DisplayPropsWatcher(Mock(), False)
+        with patch("xpra.x11.gtk.bindings.init_x11_filter", return_value=False) as init_filter, \
+             patch("xpra.x11.gtk.bindings.cleanup_x11_filter") as cleanup_filter:
+            watcher.init_x11_filter()
+            self.assertTrue(watcher._x11_filter)
+            watcher.cleanup()
+        init_filter.assert_called_once_with()
+        cleanup_filter.assert_called_once_with()
+
     def test_x11_window_stacking(self):
         with DisplayContext():
             from xpra.platform.posix.display import X11DisplayPropsWatcher

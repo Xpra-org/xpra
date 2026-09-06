@@ -38,8 +38,8 @@ class GtkX11Server(GTKServer):
     def setup(self) -> None:
         gdk_init()
         from xpra.x11.gtk.bindings import init_x11_filter
-        self.x11_filter = init_x11_filter()
-        assert self.x11_filter
+        init_x11_filter()
+        self.x11_filter = True
         super().setup()
 
     def cleanup(self) -> None:
