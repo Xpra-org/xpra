@@ -21,8 +21,8 @@ etc/xpra/conf.d/30_picture.conf
 etc/xpra/conf.d/35_webcam.conf
 # the versioned `epan` directory when wireshark is installed on the build
 # system, the unversioned one that `setup.py` creates when it is not:
-usr/lib/*/wireshark/plugins/*/epan/xpra*
-usr/lib/*/wireshark/plugins/xpra*
+/usr/lib/*/wireshark/plugins/*/epan/xpra*
+/usr/lib/*/wireshark/plugins/xpra*
 usr/lib/python3*/*/xpra/auth/
 usr/lib/python3*/*/xpra/challenge/
 usr/lib/python3*/*/xpra/buffers/
