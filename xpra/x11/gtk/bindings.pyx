@@ -221,8 +221,8 @@ cdef int _INIT_X11_FILTER_DONE = 0
 
 
 def init_x11_filter() -> bool:
-    log("init_x11_filter()")
     """ returns True if we did initialize it, False if it was already initialized """
+    log("init_x11_filter()")
     global _INIT_X11_FILTER_DONE
     cdef Display *display
     if _INIT_X11_FILTER_DONE==0:
