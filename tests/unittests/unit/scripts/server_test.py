@@ -7,6 +7,7 @@
 
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
 import tempfile
 import unittest
@@ -29,10 +30,22 @@ from xpra.scripts.server import (
     sanitize_dbus_env,
     set_vfb_startup_state,
 )
-from xpra.server.subsystem.process import setup_pam_session, setup_runtime_dir
+from xpra.server.subsystem.process import create_runtime_dir, setup_pam_session, setup_runtime_dir
 
 
 class TestMain(unittest.TestCase):
+
+    def test_create_runtime_dir_concurrently(self):
+        uid, gid = os.getuid(), os.getgid()
+        with tempfile.TemporaryDirectory() as parent, \
+                patch("xpra.server.subsystem.process.POSIX", True), \
+                patch("xpra.server.subsystem.process.getuid", return_value=0), \
+                patch("xpra.server.subsystem.process.os.lchown"):
+            runtime_dir = os.path.join(parent, str(uid))
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                result = list(executor.map(lambda _: create_runtime_dir(runtime_dir, uid, gid), range(8)))
+            assert result == [runtime_dir] * 8
+            assert os.path.isdir(os.path.join(runtime_dir, "xpra"))
 
     def test_harden_server_process(self):
         harden_process = Mock()
