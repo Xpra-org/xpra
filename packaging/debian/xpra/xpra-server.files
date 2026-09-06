@@ -10,6 +10,7 @@ usr/libexec/xpra/gnome-open
 usr/libexec/xpra/gvfs-open
 usr/libexec/xpra/auth_dialog
 usr/libexec/xpra/daemonizer
+usr/libexec/xpra/xpra_weston_xvfb
 #etc/default/xpra
 #the systemd units are installed by `setup.py` into `debian/tmp`,
 #only `xpra.socket` is enabled and started - same as the rpm packages:
