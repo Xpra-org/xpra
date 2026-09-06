@@ -177,6 +177,7 @@ tests/unittests/test-file*
 /xpra/seccomp/*.c
 /xpra/server/*/*.c
 /xpra/server/*.c
+/xpra/client/terminal/subsystem/*.c
 /xpra/vulkan/*.c
 /xpra/x11/gtk/bindings.c
 /xpra/x11/gtk/common.c
