@@ -329,8 +329,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = UIXpraClient.make_hello(self)
+        from xpra.client.base import features
         display = self.get_subsystem("display")
-        capabilities["encoding.transparency"] = display.has_transparency() if display else False
+        if features.encoding:
+            capabilities["encoding.transparency"] = display.has_transparency() if display else False
         if FULL_INFO > 1:
             capabilities.setdefault("versions", {}).update(get_gtk_version_info())
         EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", FULL_INFO > 1)
@@ -355,38 +357,40 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                     icons += it.list_icons(context)
                 log(f"icons: {icons}")
                 capabilities["theme.default.icons"] = tuple(set(icons))
-        if METADATA_SUPPORTED:
-            ms = [x.strip() for x in METADATA_SUPPORTED.split(",")]
-        else:
-            # this is currently unused, and slightly redundant because of metadata.supported below:
-            capabilities["window.states"] = [
-                "fullscreen", "maximized",
-                "sticky", "above", "below",
-                "shaded", "iconified",
-                "skip-taskbar", "skip-pager",
-            ]
-            ms = list(DEFAULT_METADATA_SUPPORTED)
-            if BACKWARDS_COMPATIBLE:
-                ms.append("content-type")
-            # 4.4:
-            ms += ["parent", "relative-position", "override-redirect"]
-        if POSIX:
-            # this is only really supported on X11, but posix is easier to check for..
-            # "strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
-            ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors", "locale"]
-        if HAS_X11_BINDINGS:
-            ms += ["x11-property", "focused"]
-            XSHAPE = envbool("XPRA_XSHAPE", True)
-            if XSHAPE:
-                ms += ["shape"]
-        log("metadata.supported: %s", ms)
-        capabilities["metadata.supported"] = ms
-        capabilities.setdefault("window", {})["frame_sizes"] = self.get_window_frame_sizes()
-        capabilities.setdefault("encoding", {})["icons"] = {
-            "greedy": True,  # we don't set a default window icon anymore
-            "size": (64, 64),  # size we want
-            "max_size": (128, 128),  # limit
-        }
+        if features.window:
+            if METADATA_SUPPORTED:
+                ms = [x.strip() for x in METADATA_SUPPORTED.split(",")]
+            else:
+                # this is currently unused, and slightly redundant because of metadata.supported below:
+                capabilities["window.states"] = [
+                    "fullscreen", "maximized",
+                    "sticky", "above", "below",
+                    "shaded", "iconified",
+                    "skip-taskbar", "skip-pager",
+                ]
+                ms = list(DEFAULT_METADATA_SUPPORTED)
+                if BACKWARDS_COMPATIBLE:
+                    ms.append("content-type")
+                # 4.4:
+                ms += ["parent", "relative-position", "override-redirect"]
+            if POSIX:
+                # this is only really supported on X11, but posix is easier to check for..
+                # "strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
+                ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors", "locale"]
+            if HAS_X11_BINDINGS:
+                ms += ["x11-property", "focused"]
+                XSHAPE = envbool("XPRA_XSHAPE", True)
+                if XSHAPE:
+                    ms += ["shape"]
+            log("metadata.supported: %s", ms)
+            capabilities["metadata.supported"] = ms
+            capabilities.setdefault("window", {})["frame_sizes"] = self.get_window_frame_sizes()
+        if features.encoding:
+            capabilities.setdefault("encoding", {})["icons"] = {
+                "greedy": True,  # we don't set a default window icon anymore
+                "size": (64, 64),  # size we want
+                "max_size": (128, 128),  # limit
+            }
         return capabilities
 
     def set_windows_cursor(self, windows, cursor_data: Sequence) -> None:
