@@ -85,6 +85,11 @@ def create_runtime_dir(xrd: str, uid: int, gid: int) -> str:
         # don't keep root's directory, as this would not work:
         xrd = ""
     if not xrd:
+        # Root normally has no user login session, so it must not invent an
+        # XDG runtime directory under /run/user/0.  Keep an explicitly
+        # supplied directory above, as it may belong to a real root session.
+        if uid == 0:
+            return ""
         # find the "/run/user" directory:
         run_user = "/run/user"
         if not os.path.exists(run_user):

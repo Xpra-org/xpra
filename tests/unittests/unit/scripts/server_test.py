@@ -47,6 +47,15 @@ class TestMain(unittest.TestCase):
             assert result == [runtime_dir] * 8
             assert os.path.isdir(os.path.join(runtime_dir, "xpra"))
 
+    def test_root_does_not_create_a_runtime_dir(self):
+        with patch.dict(os.environ, {}, clear=False), \
+                patch("xpra.server.subsystem.process.getuid", return_value=0), \
+                patch("xpra.server.subsystem.process.os.mkdir") as mkdir:
+            os.environ.pop("XDG_RUNTIME_DIR", None)
+            xrd = create_runtime_dir("", 0, 0)
+        assert xrd == ""
+        mkdir.assert_not_called()
+
     def test_harden_server_process(self):
         harden_process = Mock()
         security_module = ModuleType("xpra.platform.posix.security")
