@@ -2667,7 +2667,7 @@ class WindowVideoSource(WindowSource):
         options = typedict()
         packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0,
                                        client_options, options)
-        self.queue_damage_packet(packet, now, now)
+        self.queue_damage_packet(packet, now, now, options)
         # check for more delayed frames since we want to support multiple b-frames:
         if not self.b_frame_flush_timer and client_options.get("delayed", 0) > 0:
             self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
