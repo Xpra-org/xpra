@@ -2,8 +2,11 @@ include COPYING README.md
 include xpra/buffers/memalign.h
 include xpra/buffers/memalign.c
 include xpra/buffers/xxh3.h
-include xpra/codecs/jph/jph.cpp
-include xpra/codecs/jph/jph.h
+include xpra/codecs/jph/jph_common.h
+include xpra/codecs/jph/jph_decode.cpp
+include xpra/codecs/jph/jph_decode.h
+include xpra/codecs/jph/jph_encode.cpp
+include xpra/codecs/jph/jph_encode.h
 include xpra/codecs/libva/va_common.h
 include xpra/codecs/libva/va_decode.c
 include xpra/codecs/libva/va_decode.h
