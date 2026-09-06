@@ -1,0 +1,17 @@
+# `dh_missing --fail-missing` fails the build if anything `setup.py` stages in
+# `debian/tmp` ends up in no binary package at all. List the deliberate
+# omissions here so that the accidental ones keep failing the build.
+
+# nothing in xpra reads its own metadata, and the `requires.txt` it contains
+# names python distributions which the Debian packages already satisfy through
+# their own dependencies - the rpm builds do ship it:
+usr/lib/python3*/*/xpra-*.egg-info
+usr/lib/python3*/*/xpra-*.egg-info/*
+
+# never packaged on Debian: `cuda.conf` was commented out of
+# `xpra-codecs-nvidia.files` by `bd1e526c13` when the modules were split into
+# separate packages, and the key files were never listed anywhere.
+# The rpm builds ship `cuda.conf` - this only preserves what Debian does today:
+etc/xpra/cuda.conf
+etc/xpra/nvenc.keys
+etc/xpra/nvfbc.keys
