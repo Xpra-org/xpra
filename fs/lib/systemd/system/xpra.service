@@ -14,6 +14,9 @@ ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
     --bind-quic=*:10000 --quic-auth=${QUIC_AUTH} \
     --ssl-cert=/etc/xpra/ssl/ssl-cert.pem --ssl-key=/etc/xpra/ssl/key.pem --ssl=on \
     --log-dir=/var/log --pidfile=/run/xpra/proxy/server.pid --debug=${DEBUG}
+#`--bind-quic` requires `python3-aioquic`, which is not packaged in Ubuntu
+#before 24.04 nor in Debian Bookworm - this service fails to start there
+#
 #rely on SIGKILL which returns 128+15=143
 SuccessExitStatus=0 143
 Restart=on-abnormal

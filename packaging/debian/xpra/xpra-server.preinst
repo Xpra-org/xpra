@@ -1,0 +1,27 @@
+#!/bin/sh
+
+set -e
+
+#`xpra-server.service` and `xpra-server.socket` were renamed to `xpra.service`
+#and `xpra.socket` so that we can ship the same units as the rpm packages.
+#`dpkg` removes the old unit files, but not the enablement symlinks created by
+#the maintainer scripts, so de-register them here - whilst the unit files are
+#still in place - otherwise the symlinks are left dangling and the old socket
+#carries on listening on the same port:
+case "${1}" in
+    upgrade)
+        if dpkg --compare-versions "${2}" lt-nl "7.0-1"; then
+            if [ -d /run/systemd/system ]; then
+                systemctl stop xpra-server.socket xpra-server.service > /dev/null 2>&1 || true
+            fi
+            if [ -x "/usr/bin/deb-systemd-helper" ]; then
+                for unit in xpra-server.socket xpra-server.service; do
+                    deb-systemd-helper purge "${unit}" > /dev/null 2>&1 || true
+                    deb-systemd-helper unmask "${unit}" > /dev/null 2>&1 || true
+                done
+            fi
+        fi
+    ;;
+esac
+
+#DEBHELPER#
