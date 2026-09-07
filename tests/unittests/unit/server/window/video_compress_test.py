@@ -32,8 +32,7 @@ class VideoContextCleanTest(unittest.TestCase):
         source.cancel_video_encoder_flush.assert_called_once_with()
         source.cancel_video_encoder_timer.assert_called_once_with()
         source.call_in_encode_thread.assert_called_once()
-        optional, clean = source.call_in_encode_thread.call_args.args
-        self.assertFalse(optional)
+        clean, = source.call_in_encode_thread.call_args.args
 
         clean()
 
@@ -46,8 +45,7 @@ class VideoContextCleanTest(unittest.TestCase):
         source = self.make_source()
 
         source.video_context_clean()
-        optional, clean = source.call_in_encode_thread.call_args.args
-        self.assertFalse(optional)
+        clean, = source.call_in_encode_thread.call_args.args
 
         csc = Mock()
         encoder = Mock()
@@ -70,8 +68,7 @@ class VideoContextCleanTest(unittest.TestCase):
         self.assertIsNone(source._csc_encoder)
         self.assertIsNone(source._video_encoder)
         source.call_in_encode_thread.assert_called_once()
-        optional, clean = source.call_in_encode_thread.call_args.args
-        self.assertFalse(optional)
+        clean, = source.call_in_encode_thread.call_args.args
 
         clean()
 

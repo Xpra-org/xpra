@@ -107,6 +107,8 @@ class WindowIconSource:
 
     def cleanup(self) -> None:
         self.cancel_window_icon_timer()
+        # if an icon is already queued for compression, it will be skipped:
+        self.window_icon_data = None
 
     def cancel_window_icon_timer(self) -> None:
         if swit := self.send_window_icon_timer:
@@ -243,7 +245,7 @@ class WindowIconSource:
         # otherwise `cancel_window_icon_timer` would try to remove a source
         # which no longer exists - and would fail to cancel anything:
         self.send_window_icon_timer = 0
-        self.call_in_encode_thread(True, self.compress_and_send_window_icon)
+        self.call_in_encode_thread(self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self) -> None:
         # this runs in the work queue

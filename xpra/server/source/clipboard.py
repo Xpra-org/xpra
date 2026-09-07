@@ -138,12 +138,15 @@ class ClipboardConnection(StubClientConnection):
                     log.warn(" limit sustained for more than %i seconds,", MAX_CLIPBOARD_LIMIT_DURATION)
                 return
         # call compress_clibboard via the encode work queue:
-        self.queue_encode((True, self.compress_clipboard, (packet,)))
+        self.queue_encode((self.compress_clipboard, (packet,)))
 
     def compress_clipboard(self, packet: Packet) -> None:
         # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressible, compressed_wrapper
         # Note: this runs in the 'encode' thread!
+        if self.is_closed():
+            # no point in compressing data we will never send
+            return
         lpacket = list(packet)
         for i, item in enumerate(lpacket):
             if isinstance(item, Compressible):

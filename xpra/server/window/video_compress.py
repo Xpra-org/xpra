@@ -387,7 +387,7 @@ class WindowVideoSource(WindowSource):
             # already in the correct thread
             clean()
         else:
-            self.call_in_encode_thread(False, clean)
+            self.call_in_encode_thread(clean)
 
     # noinspection PyMethodMayBeStatic
     def csc_clean(self, csce) -> None:
@@ -984,8 +984,8 @@ class WindowVideoSource(WindowSource):
                 self.wid, sequence, ew, eh, encoding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
             item = (ew, eh, damage_time, now, eimage, encoding, sequence, eoptions, flush)
             if av_delay <= 0:
-                # not optional: the encode thread now owns this image and must free it
-                self.call_in_encode_thread(False, self.make_data_packet_cb, *item)
+                # the encode thread now owns this image and must free it:
+                self.call_in_encode_thread(self.make_data_packet_cb, *item)
             else:
                 self.encode_queue.append(item)
                 self.schedule_encode_from_queue(av_delay)
@@ -1112,8 +1112,8 @@ class WindowVideoSource(WindowSource):
                 remove.append(index)
                 avsynclog("encode_from_queue: processing item %s/%s (overdue by %ims)",
                           index+1, len(self.encode_queue), int(1000*(now-due)))
-                # not optional: the encode thread now owns this image and must free it
-                self.call_in_encode_thread(False, self.make_data_packet_cb, *item)
+                # the encode thread now owns this image and must free it:
+                self.call_in_encode_thread(self.make_data_packet_cb, *item)
                 done_packet = True
             else:
                 # we only process one item per call (see "done_packet")
@@ -2034,7 +2034,7 @@ class WindowVideoSource(WindowSource):
         return packet
 
     def free_scroll_data(self) -> None:
-        self.call_in_encode_thread(False, self.do_free_scroll_data)
+        self.call_in_encode_thread(self.do_free_scroll_data)
 
     def do_free_scroll_data(self) -> None:
         sd = self.scroll_data
@@ -2541,7 +2541,7 @@ class WindowVideoSource(WindowSource):
         # but we want to run from the encode thread to access the encoder:
         self.b_frame_flush_timer = 0
         if self.b_frame_flush_data:
-            self.call_in_encode_thread(True, self.do_flush_video_encoder)
+            self.call_in_encode_thread(self.do_flush_video_encoder)
 
     def do_flush_video_encoder(self) -> None:
         flush_data = self.b_frame_flush_data

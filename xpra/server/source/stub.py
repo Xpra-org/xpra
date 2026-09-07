@@ -132,7 +132,7 @@ class StubClientConnection(SignalEmitter):
         """
         return {}
 
-    def queue_encode(self, item: None | tuple[bool, Callable, tuple]) -> None:
+    def queue_encode(self, item: None | tuple[Callable, tuple]) -> None:
         """
         Used by the window source to send data to be processed in the encode thread
         """

@@ -29,7 +29,7 @@ YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
 
-ENCODE_WORK_ITEM_TUPLE = tuple[bool, Callable, Sequence[Any]]
+ENCODE_WORK_ITEM_TUPLE = tuple[Callable, Sequence[Any]]
 ENCODE_WORK_ITEM: TypeAlias = ENCODE_WORK_ITEM_TUPLE | None
 
 
@@ -73,7 +73,7 @@ class ClientConnection(StubClientConnection):
         # this queue will hold functions to call to compress data (pixels, clipboard)
         # items placed in this queue are picked off by the "encode" thread,
         # the functions should add the packets they generate to the 'packet_queue'
-        self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, Sequence[Any]]] = SimpleQueue()
+        self.encode_work_queue: SimpleQueue[ENCODE_WORK_ITEM] = SimpleQueue()
         self.encode_thread = None
         self.encode_thread_lock = Lock()
         # functions to call from the encode thread when closing,
@@ -150,13 +150,16 @@ class ClientConnection(StubClientConnection):
     def encode_queue_size(self) -> int:
         return self.encode_work_queue.qsize()
 
-    def call_in_encode_thread(self, optional: bool, fn: Callable, *args) -> None:
+    def call_in_encode_thread(self, fn: Callable, *args) -> None:
         """
             This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
             The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
+            Every item queued here is guaranteed to be called, even when closing:
+            the callbacks own the resources they are given (images, encoders, etc)
+            and are responsible for checking if the work is still needed - see `is_cancelled`.
         """
         self.statistics.compression_work_qsizes.append((monotonic(), self.encode_queue_size()))
-        self.queue_encode((optional, fn, args))
+        self.queue_encode((fn, args))
 
     def call_in_encode_thread_at_end(self, fn: Callable, *args) -> None:
         """
@@ -176,7 +179,7 @@ class ClientConnection(StubClientConnection):
         at_end = self.encode_at_end
         self.encode_at_end = []
         for fn, args in at_end:
-            self.queue_encode((False, fn, args))
+            self.queue_encode((fn, args))
         self.queue_encode(None)
 
     def queue_packet(self, packet: Packet, wid=0, pixels=0,
@@ -200,18 +203,15 @@ class ClientConnection(StubClientConnection):
             This runs in a separate thread and calls all the function callbacks
             which are added to the 'encode_work_queue'.
             Must run until we hit the end of queue marker,
-            to ensure all the queued items get called,
-            those that are marked as optional will be skipped when is_closed()
+            to ensure all the queued items get called:
+            the callbacks are the ones deciding if the work is still needed,
+            since they are the ones owning the resources that must be released.
         """
         while True:
             item = self.encode_work_queue.get(True)
             if item is None:
                 return  # empty marker
-            # some function calls are optional and can be skipped when closing:
-            # (but some are not, like encoder clean functions)
-            optional_when_closing, fn, args = item
-            if optional_when_closing and self.is_closed():
-                continue
+            fn, args = item
             try:
                 fn(*args)
             except Exception as e:

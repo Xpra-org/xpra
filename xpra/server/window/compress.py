@@ -537,7 +537,7 @@ class WindowSource(WindowIconSource):
         self.batch_config.cleanup()
         # we can only clear the encoders after clearing the whole encoding queue:
         # (because mmap cannot be cancelled once queued for encoding)
-        self.call_in_encode_thread(False, self.encode_ended)
+        self.call_in_encode_thread(self.encode_ended)
 
     def encode_ended(self) -> None:
         log("encode_ended()")
@@ -2254,8 +2254,8 @@ class WindowSource(WindowIconSource):
         w = image.get_width()
         h = image.get_height()
         item = (w, h, damage_time, now, image, coding, sequence, eoptions, flush)
-        # not optional: the encode thread now owns this image and must free it
-        self.call_in_encode_thread(False, self.make_data_packet_cb, *item)
+        # the encode thread now owns this image and must free it:
+        self.call_in_encode_thread(self.make_data_packet_cb, *item)
         log("process_damage_region: wid=%#x, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
             self.wid, sequence, w, h, coding, 1000 * (now - damage_time), elapsed)
 
