@@ -155,6 +155,10 @@ class ProcessTestUtil(unittest.TestCase):
             "XPRA_LOG_DIR": tempfile.gettempdir(),
             "XPRA_NOTTY": "1",
             "XPRA_WAIT_FOR_INPUT": "0",
+            # `xpra list` re-probes the sockets it cannot identify,
+            # and the default timeout for doing so is longer
+            # than the time the tests are willing to wait for it:
+            "XPRA_LIST_REPROBE_TIMEOUT": "5",
         })
         cls.default_config = get_defaults()
         log("setUpClass(%s) default_env=%s", cls, cls.default_env)
