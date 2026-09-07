@@ -111,11 +111,13 @@ class EncodingsConnection(StubClientConnection):
 
     def cleanup(self) -> None:
         self.cancel_recalculate_timer()
-        if self.cuda_device_context:
-            # the video encoders are using this context, and they are only cleaned up
-            # when the window subsystem is - which happens after this one,
-            # so this can only be freed at the very end:
-            self.call_in_encode_thread_at_end(self.free_cuda_device_context)
+        # the video encoders are using the cuda context, and they are only cleaned up
+        # when the window subsystem is - which happens after this one,
+        # so this can only be freed at the very end.
+        # this is queued unconditionally because a context can still be allocated
+        # after this point (ie: `reinit_encodings` when the codecs finish loading),
+        # `free_cuda_device_context` is the one checking if there is anything to free:
+        self.call_in_encode_thread_at_end(self.free_cuda_device_context)
 
     def free_cuda_device_context(self) -> None:
         if cdd := self.cuda_device_context:
