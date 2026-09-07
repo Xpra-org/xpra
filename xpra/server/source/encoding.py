@@ -395,7 +395,7 @@ class EncodingsConnection(StubClientConnection):
             self.allocate_cuda_device_context()
 
     def wants_cuda_device(self) -> bool:
-        if getattr(self, "mmap_enabled", False):
+        if getattr(self, "mmap_write_area", None):
             return False
         from xpra.codecs.loader import has_codec
         common_encodings = set(x for x in self.encodings if x in self.server_encodings)
