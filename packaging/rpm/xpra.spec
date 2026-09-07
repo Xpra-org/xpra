@@ -855,7 +855,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n %{package_prefix}-codecs
 %{python3_sitearch}/xpra/codecs/csc_cython
-%{python3_sitearch}/xpra/codecs/dav1d
 %{python3_sitearch}/xpra/codecs/aom
 %{python3_sitearch}/xpra/codecs/drm
 #/xpra/codecs/evdi
@@ -865,6 +864,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/pipewire
 %{python3_sitearch}/xpra/codecs/v4l2
 %if ! 0%{?el8}
+%{python3_sitearch}/xpra/codecs/dav1d
 %{python3_sitearch}/xpra/codecs/vpl
 %{python3_sitearch}/xpra/codecs/libva
 %endif
