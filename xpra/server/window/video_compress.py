@@ -658,13 +658,16 @@ class WindowVideoSource(WindowSource):
         super().update_window_dimensions(ww, wh)
 
     def cancel_damage(self, limit: int = 0) -> None:
+        # first of all, mark the sequences as cancelled,
+        # so that the encode thread will not try to use
+        # the images we are about to free below:
+        super().cancel_damage(limit)
         self.cancel_encode_from_queue()
         self.free_encode_queue_images()
         if vsr := self.video_subregion:
             vsr.cancel_refresh_timer()
         self.free_scroll_data()
         self.last_scroll_time = 0
-        super().cancel_damage(limit)
         # we must clean the video encoder to ensure
         # we will resend a key frame because we may be missing a frame
         self.video_context_clean()
