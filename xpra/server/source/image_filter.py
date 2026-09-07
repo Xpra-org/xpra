@@ -8,6 +8,7 @@ from collections.abc import Callable
 from time import sleep
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.window.compress import WindowSource, free_image_wrapper
 from xpra.codecs.loader import load_codec
@@ -18,6 +19,8 @@ from xpra.util.env import envbool, envint
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
+
+GLib = gi_import("GLib")
 
 log = Logger("window", "events", "filter")
 # CONTENT_TYPES = set(os.environ.get("XPRA_IMAGEFILTER_CONTENT_TYPES", "text").split(","))
@@ -63,8 +66,17 @@ class ImageFilter:
         if not self.wait_for_thread():
             free_image_wrapper(image)
             return
+
+        def ui_callback(filtered: ImageWrapper) -> None:
+            # the callback ends up adding to the window source's encode queue,
+            # which must only ever be modified from the UI thread
+            def call_from_ui_thread() -> bool:
+                callback(filtered)
+                return False
+            GLib.idle_add(call_from_ui_thread)
+
         self.thread = start_thread(self.do_process_image, "image-filter-process-image-%#x" % self.wid,
-                                   daemon=True, args=(image, callback))
+                                   daemon=True, args=(image, ui_callback))
 
     def do_process_image(self, image: ImageWrapper, callback: Callable[[ImageWrapper], None]) -> None:
         if DELAY > 0:
