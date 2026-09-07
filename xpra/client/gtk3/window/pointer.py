@@ -22,6 +22,7 @@ log = Logger("window", "pointer")
 
 SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
 SMOOTH_SCROLL_NORM = envint("XPRA_SMOOTH_SCROLL_NORM", 50 if OSX else 100)
+SKIP_DUPLICATE_SCROLL_EVENTS = envbool("XPRA_SKIP_DUPLICATE_SCROLL_EVENTS", True)
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
 SIMULATE_MOUSE_UP = envbool("XPRA_SIMULATE_MOUSE_UP", True)
 BUTTON_POLLING_DELAY = envint("XPRA_BUTTON_POLLING_DELAY", 50)
@@ -277,6 +278,10 @@ class PointerWindow(GtkStubWindow):
             norm_y = norm_scroll(event.delta_y)
             if pointer_sub := self.get_subsystem("pointer"):
                 pointer_sub.wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
+            return True
+        pointer_sub = self.get_subsystem("pointer")
+        if SKIP_DUPLICATE_SCROLL_EVENTS and pointer_sub and pointer_sub.wheel_smooth and event.get_pointer_emulated():
+            log("ignoring emulated scroll event: direction=%i", event.direction)
             return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         log("do_scroll_event device=%s, direction=%s, button_mapping=%s",
