@@ -238,11 +238,16 @@ cdef class WaylandPointer(ListenerObject):
         wlr_seat_pointer_notify_frame(self.seat)
 
     def wheel_motion(self, button: int, distance: float) -> None:
+        wheel = WHEEL_BUTTONS.get(button)
+        if not wheel:
+            log.warn("Warning: unsupported wheel button %i", button)
+            return
+        # The mapped button owns direction (including client inversion).
+        # Xpra distances are wheel clicks, not Wayland surface coordinates.
+        distance = abs(distance) * wheel[1]
         cdef uint32_t time = get_time_msec()
-        cdef wl_pointer_axis orientation = WL_POINTER_AXIS_VERTICAL_SCROLL
-        if button in (6, 7):
-            orientation = WL_POINTER_AXIS_HORIZONTAL_SCROLL
-        self.do_wheel_motion(time, orientation, distance, round(distance * WHEEL_DISCRETE_STEP))
+        self.do_wheel_motion(time, wheel[0], distance,
+                             round(distance / WHEEL_AXIS_STEP * WHEEL_DISCRETE_STEP))
 
     cdef void do_wheel_motion(self, uint32_t time, wl_pointer_axis orientation, double distance,
                               int32_t discrete) noexcept:
