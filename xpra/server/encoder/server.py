@@ -108,12 +108,21 @@ class EncoderServer(ServerBase):
 
     def cleanup_source(self, source) -> None:
         if encoders := self.encoders.pop(source.uuid, {}):
-            for seq, encoder in encoders.items():
-                try:
-                    encoder.clean()
-                except RuntimeError:
-                    log.error(f"Error cleaning encoder {encoder} for sequence {seq} of connection {source}")
+            # the encode thread may still be using these encoders,
+            # and they must be cleaned before the cuda device context they may be using -
+            # which is also freed from the encode thread, and queued after this one
+            # since `EncodingsConnection.cleanup` only runs from `source.close()` below:
+            source.call_in_encode_thread_at_end(self.clean_encoders, source, encoders)
         super().cleanup_source(source)
+
+    @staticmethod
+    def clean_encoders(source, encoders: dict[int, Any]) -> None:
+        log("clean_encoders(%s, %s)", source, encoders)
+        for seq, encoder in encoders.items():
+            try:
+                encoder.clean()
+            except RuntimeError:
+                log.error(f"Error cleaning encoder {encoder} for sequence {seq} of connection {source}")
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
@@ -136,6 +145,9 @@ class EncoderServer(ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
+        ss.call_in_encode_thread(self.do_process_encode, ss, proto, packet)
+
+    def do_process_encode(self, ss, proto: SocketProtocol, packet: Packet) -> None:
         input_coding = packet.get_str(1)
         pixel_format = packet.get_str(2)
         raw_data = packet.get_buffer(3)
@@ -217,6 +229,9 @@ class EncoderServer(ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
+        ss.call_in_encode_thread(self.do_process_context_close, ss, packet)
+
+    def do_process_context_close(self, ss, packet: Packet) -> None:
         seq = packet.get_u64(1)
         message = packet.get_str(2)
         encoder = self.encoders.get(ss.uuid, {}).pop(seq, None)
@@ -233,6 +248,9 @@ class EncoderServer(ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
+        ss.call_in_encode_thread(self.do_process_context_request, ss, packet)
+
+    def do_process_context_request(self, ss, packet: Packet) -> None:
         seq = packet.get_u64(1)
         codec_type = packet.get_str(2)
         encoding = packet.get_str(3)
@@ -255,6 +273,9 @@ class EncoderServer(ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
+        ss.call_in_encode_thread(self.do_process_context_compress, ss, packet)
+
+    def do_process_context_compress(self, ss, packet: Packet) -> None:
         seq = packet.get_u64(1)
         metadata = packet.get_dict(2)
         # can be a pixel buffer, or a list of pixel buffers for planar images:
