@@ -133,8 +133,8 @@ class XI2_Window:
         dx, dy = 0, 0
         if (
                 valuators and device and device.get("enabled")
-                and wp and wp.server_input_devices == "uinput"  # noqa W503
-                and pointer_sub and pointer_sub.server_precise_wheel  # noqa W503
+                and wp and wp.server_input_devices == "uinput"
+                and pointer_sub and pointer_sub.server_precise_wheel
         ):
             XIModeRelative = 0
             classes = device.get("classes")
