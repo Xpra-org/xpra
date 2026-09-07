@@ -76,6 +76,9 @@ class ClientConnection(StubClientConnection):
         self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, Sequence[Any]]] = SimpleQueue()
         self.encode_thread = None
         self.encode_thread_lock = Lock()
+        # functions to call from the encode thread when closing,
+        # once every subsystem has queued the encoding work it needed:
+        self.encode_at_end: list[tuple[Callable, Sequence[Any]]] = []
         self.ordinary_packets: list[tuple[Packet, bool, bool]] = []
 
         self.suspended = False
@@ -110,8 +113,9 @@ class ClientConnection(StubClientConnection):
         return self.close_event.is_set()
 
     def cleanup(self) -> None:
-        log("%s.close()", self)
+        log("%s.cleanup()", self)
         self.close_event.set()
+        self.stop_encode_thread()
         self.protocol = None
         self.statistics.reset(0)
 
@@ -153,6 +157,27 @@ class ClientConnection(StubClientConnection):
         """
         self.statistics.compression_work_qsizes.append((monotonic(), self.encode_queue_size()))
         self.queue_encode((optional, fn, args))
+
+    def call_in_encode_thread_at_end(self, fn: Callable, *args) -> None:
+        """
+            Queue a function to be called from the 'encode' thread when this connection is closed,
+            after every subsystem has been cleaned up and has queued all of its encoding work.
+            This is how the resources shared with the encoders are released:
+            the cuda context and the mmap areas can only be freed
+            once the encode thread has finished using them.
+        """
+        self.encode_at_end.append((fn, args))
+
+    def stop_encode_thread(self) -> None:
+        # this subsystem is always the first one in `CC_BASES` and the subsystems
+        # are cleaned up in reverse order, so we get here last:
+        # all the other subsystems have queued the encoding work they needed,
+        # which makes it safe to run the deferred cleanups and to add the end of queue marker
+        at_end = self.encode_at_end
+        self.encode_at_end = []
+        for fn, args in at_end:
+            self.queue_encode((False, fn, args))
+        self.queue_encode(None)
 
     def queue_packet(self, packet: Packet, wid=0, pixels=0,
                      wait_for_more=False) -> None:

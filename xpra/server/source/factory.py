@@ -168,6 +168,10 @@ def get_client_connection_class(caps: typedict):
 
         def close(self) -> None:
             log("%s.close() %s", self, csv(CC_BASES))
+            # `close_event` belongs to the `ClientConnection` subsystem, which is always
+            # the first one - and therefore the last one to be cleaned up below.
+            # Set it here so that `is_closed()` is already `True` for the whole teardown:
+            self.close_event.set()
             for bc in reversed(CC_BASES):
                 log("%s.cleanup()", bc)
                 try:

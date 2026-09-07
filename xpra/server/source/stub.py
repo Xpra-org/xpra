@@ -137,6 +137,12 @@ class StubClientConnection(SignalEmitter):
         Used by the window source to send data to be processed in the encode thread
         """
 
+    def call_in_encode_thread_at_end(self, fn: Callable, *args) -> None:
+        """
+        Queue a function to be called from the encode thread when the connection is closed,
+        after all the subsystems have been cleaned up
+        """
+
     def send_more(self, packet_type: str, *parts: PacketElement, **kwargs) -> None:
         """
         Send a packet to the client,
