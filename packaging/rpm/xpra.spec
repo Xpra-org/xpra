@@ -260,11 +260,11 @@ BuildRequires:		pkgconfig(openjph)
 Requires:			libopenjph
 BuildRequires:		pkgconfig(libyuv)
 Requires:			libyuv
-BuildRequires:      libdav1d-devel
-Requires:           libdav1d
 BuildRequires:      libaom-devel
 Requires:           libaom
 %if ! 0%{?el8}
+BuildRequires:      libdav1d-devel
+Requires:           libdav1d
 BuildRequires:		libvpl-devel
 Requires:			libvpl
 Recommends:			intel-vpl-gpu-rt
