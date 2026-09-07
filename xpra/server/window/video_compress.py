@@ -1137,6 +1137,8 @@ class WindowVideoSource(WindowSource):
             GLib.source_remove(eqt)
 
     def free_encode_queue_images(self) -> None:
+        # must be called from the UI thread, which is the only thread
+        # allowed to modify the encode queue - see `encode_from_queue`
         eq = self.encode_queue
         avsynclog("free_encode_queue_images() freeing %i images for wid=%#x", len(eq), self.wid)
         if not eq:
@@ -1160,11 +1162,15 @@ class WindowVideoSource(WindowSource):
     def timer_encode_from_queue(self) -> None:
         self.encode_from_queue_timer = 0
         self.encode_from_queue_due = 0
-        self.call_in_encode_thread(True, self.encode_from_queue)
+        self.encode_from_queue()
 
     def encode_from_queue(self) -> None:
         # note: we use a queue here to ensure we preserve the order
         # (so we encode frames in the same order they were grabbed)
+        # this runs in the UI thread: it is the only thread allowed to modify the queue,
+        # so that the ownership of each image is never ambiguous.
+        # the items we pick are handed over to the encode thread,
+        # which then owns them and frees them - see `make_data_packet_cb`
         eq = self.encode_queue
         avsynclog("encode_from_queue: %s items for wid=%#x", len(eq), self.wid)
         if not eq:
@@ -1181,35 +1187,28 @@ class WindowVideoSource(WindowSource):
         now = monotonic()
         still_due = []
         remove = []
-        index = 0
-        item = None
-        sequence = None
         done_packet = False     # only one packet per iteration
-        try:
-            for index, item in enumerate(eq):
-                # item = (w, h, damage_time, now, image, coding, sequence, options, flush)
-                sequence = item[6]
-                if self.is_cancelled(sequence):
-                    free_image_wrapper(item[4])
-                    remove.append(index)
-                    continue
-                ts = item[3]
-                due = ts + av_delay
-                if due <= now and not done_packet:
-                    # found an item which is due
-                    remove.append(index)
-                    avsynclog("encode_from_queue: processing item %s/%s (overdue by %ims)",
-                              index+1, len(self.encode_queue), int(1000*(now-due)))
-                    self.make_data_packet_cb(*item)
-                    done_packet = True
-                else:
-                    # we only process one item per call (see "done_packet")
-                    # and just keep track of extra ones:
-                    still_due.append(int(1000*(due-now)))
-        except RuntimeError:
-            if not self.is_cancelled(sequence):
-                avsynclog.error("error processing encode queue at index %i", index)
-                avsynclog.error("item=%s", item, exc_info=True)
+        for index, item in enumerate(eq):
+            # item = (w, h, damage_time, now, image, coding, sequence, options, flush)
+            sequence = item[6]
+            if self.is_cancelled(sequence):
+                free_image_wrapper(item[4])
+                remove.append(index)
+                continue
+            ts = item[3]
+            due = ts + av_delay
+            if due <= now and not done_packet:
+                # found an item which is due
+                remove.append(index)
+                avsynclog("encode_from_queue: processing item %s/%s (overdue by %ims)",
+                          index+1, len(self.encode_queue), int(1000*(now-due)))
+                # not optional: the encode thread now owns this image and must free it
+                self.call_in_encode_thread(False, self.make_data_packet_cb, *item)
+                done_packet = True
+            else:
+                # we only process one item per call (see "done_packet")
+                # and just keep track of extra ones:
+                still_due.append(int(1000*(due-now)))
         # remove the items we've dealt with:
         # (in reverse order since we pop them from the queue)
         if remove:
@@ -1222,7 +1221,7 @@ class WindowVideoSource(WindowSource):
         first_due = max(ENCODE_QUEUE_MIN_GAP, min(still_due))
         avsynclog("encode_from_queue: first due in %ims, due list=%s (av-sync delay=%i, actual=%i, for wid=%#x)",
                   first_due, still_due, self.av_sync_delay, av_delay, self.wid)
-        GLib.idle_add(self.schedule_encode_from_queue, first_due)
+        self.schedule_encode_from_queue(first_due)
 
     def update_encoding_video_subregion(self) -> None:
         """
