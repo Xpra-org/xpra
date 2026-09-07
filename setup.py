@@ -3187,10 +3187,14 @@ else:
                     # creates for us. (an empty `epan_dir` is a relative path, and
                     # would install the dissector at the top of the prefix instead)
                     import sysconfig
-                    if os.path.exists("/usr/lib64") and not os.path.islink("/usr/lib64"):
+                    multiarch = sysconfig.get_config_var("MULTIARCH")
+                    # A Debian build host can have /usr/lib64, but Debian's
+                    # Wireshark plugins belong below its multiarch libdir.
+                    if os.path.exists("/etc/debian_version"):
+                        libdir = f"/usr/lib/{multiarch}" if multiarch else "/usr/lib"
+                    elif os.path.exists("/usr/lib64") and not os.path.islink("/usr/lib64"):
                         libdir = "/usr/lib64"
                     else:
-                        multiarch = sysconfig.get_config_var("MULTIARCH")
                         libdir = f"/usr/lib/{multiarch}" if multiarch else "/usr/lib"
                     epan_dir = f"{libdir}/wireshark/plugins"
                 self.copytodir("fs/lib/wireshark/plugins/xpra_dissector.lua", epan_dir)
