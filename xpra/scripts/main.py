@@ -90,7 +90,6 @@ WAIT_SERVER_TIMEOUT: int = envint("WAIT_SERVER_TIMEOUT", 90)
 OPENGL_PROBE_TIMEOUT: int = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
 SYSTEMD_RUN: bool = envbool("XPRA_SYSTEMD_RUN", True)
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
-LIST_REPROBE_TIMEOUT: int = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 SPLASH_EXIT_DELAY: int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 SPLASH_KEEPALIVE_INTERVAL: int = max(0, envint("XPRA_SPLASH_KEEPALIVE_INTERVAL", 5))
 
@@ -3054,7 +3053,11 @@ def run_clean_sockets(opts, args) -> ExitValue:
                                      matching_display=matching_display)
     if matching_display and not results:
         raise InitInfo(f"no UNKNOWN socket for display {matching_display!r}")
-    clean_sockets(dotxpra, results)
+    # `socket_details` returns a dict of socket_dir -> [(state, display, sockpath), ..],
+    # but `clean_sockets` wants a list of (socket_dir, display, sockpath):
+    sockets = [(socket_dir, display, sockpath)
+               for socket_dir, values in results.items() for _, display, sockpath in values]
+    clean_sockets(dotxpra, sockets)
     return ExitCode.OK
 
 
