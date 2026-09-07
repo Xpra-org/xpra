@@ -99,13 +99,16 @@ class EncoderServer(ServerBase):
         return "EncoderServer"
 
     def init(self, opts) -> None:
+        # this also dispatches `init` to all the subsystems used below:
         super().init(opts)
         from xpra.codecs.pillow.encoder import get_encodings
         encodings = get_encodings()
-        if self.encoding not in ("auto", ) and self.encoding not in encodings:
-            raise ValueError(f"unsupported encoding {self.encoding!r}")
-        # default to True rather than None (aka "auto"):
-        self.sharing = self.sharing is not False
+        if enc := self.get_subsystem("encoding"):
+            if enc.encoding not in ("auto", ) and enc.encoding not in encodings:
+                raise ValueError(f"unsupported encoding {enc.encoding!r}")
+        if sharing := self.get_subsystem("sharing"):
+            # default to True rather than None (aka "auto"):
+            sharing.sharing = sharing.sharing is not False
 
     def cleanup_source(self, source) -> None:
         if encoders := self.encoders.pop(source.uuid, {}):
