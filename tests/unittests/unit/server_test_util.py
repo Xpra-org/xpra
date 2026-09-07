@@ -21,6 +21,7 @@ log = Logger("test")
 
 SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
 STOP_WAIT_TIMEOUT = envint("XPRA_STOP_WAIT_TIMEOUT", 20)
+CLEAN_SOCKETS_TIMEOUT = envint("XPRA_TEST_CLEAN_SOCKETS_TIMEOUT", 15)
 
 
 def log_gap(N=10) -> None:
@@ -56,6 +57,18 @@ class ServerTestUtil(ProcessTestUtil):
             for x in cls.dotxpra._sockdirs:
                 cls.default_xpra_args += ["--socket-dirs=%s" % x]
         cls.existing_displays = cls.displays()
+        # a previous run may have left sockets behind:
+        # remove them now, so that the `xpra list` in `setUp`
+        # does not have to re-probe them for every single test
+        cls.clean_sockets()
+
+    @classmethod
+    def clean_sockets(cls) -> None:
+        cmd = cls.get_xpra_cmd() + ["clean-sockets"]
+        proc = cls.class_run_command(cmd)
+        if pollwait(proc, CLEAN_SOCKETS_TIMEOUT) is None:
+            log.warn("Warning: %s is taking too long", cmd)
+            proc.terminate()
 
     @classmethod
     def tearDownClass(cls):
