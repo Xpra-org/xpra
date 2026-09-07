@@ -8,7 +8,7 @@
 from typing import Any, TypeAlias
 from collections.abc import Callable, Sequence
 from time import sleep, monotonic
-from threading import Event
+from threading import Event, Lock
 from collections import deque
 from queue import SimpleQueue
 
@@ -75,6 +75,7 @@ class ClientConnection(StubClientConnection):
         # the functions should add the packets they generate to the 'packet_queue'
         self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, Sequence[Any]]] = SimpleQueue()
         self.encode_thread = None
+        self.encode_thread_lock = Lock()
         self.ordinary_packets: list[tuple[Packet, bool, bool]] = []
 
         self.suspended = False
@@ -131,9 +132,16 @@ class ClientConnection(StubClientConnection):
         # holds functions to call to compress data (pixels, clipboard)
         # items placed in this queue are picked off by the "encode" thread,
         # the functions should add the packets they generate to the 'packet_queue'
-        self.queue_encode = self.encode_work_queue.put
-        self.queue_encode(item)
-        self.encode_thread = start_thread(self.encode_loop, "encode")
+        # this can be called concurrently from more than one thread,
+        # and we must only ever start a single encode thread:
+        # threads that got here with a stale `queue_encode` reference
+        # just queue their item, in the order in which they acquire the lock
+        put = self.encode_work_queue.put
+        with self.encode_thread_lock:
+            if not self.encode_thread:
+                self.encode_thread = start_thread(self.encode_loop, "encode")
+                self.queue_encode = put
+            put(item)
 
     def encode_queue_size(self) -> int:
         return self.encode_work_queue.qsize()
