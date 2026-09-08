@@ -655,13 +655,15 @@ class WindowVideoSource(WindowSource):
 
     def cancel_damage(self, limit : int=0):
         self.cancel_encode_from_queue()
+        # Mark sequences cancelled before freeing queued images: the encode
+        # thread can otherwise race with this cleanup and use a freed image.
+        super().cancel_damage(limit)
         self.free_encode_queue_images()
         vsr = self.video_subregion
         if vsr:
             vsr.cancel_refresh_timer()
         self.free_scroll_data()
         self.last_scroll_time = 0
-        super().cancel_damage(limit)
         self.stop_gstreamer_pipeline()
         #we must clean the video encoder to ensure
         #we will resend a key frame because we may be missing a frame
