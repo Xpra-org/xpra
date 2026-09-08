@@ -68,9 +68,12 @@ class X11ClipboardTestUtil(X11ClientTestUtil):
 
         if SANITY_CHECKS:
             log("sanity checks")
-            #xclip sanity check: retrieve from the same display:
-            self.copy_and_verify(client_display, client_display, True, wait=0, selection=selection)
-            self.copy_and_verify(server_display, server_display, True, wait=0, selection=selection)
+            #xclip sanity check: retrieve from the same display.
+            #these copies are synchronized to the other display just like any other one,
+            #so they have to be given the time to land there before the next one is made:
+            #otherwise this check ends up reading the value the other display has just sent us
+            self.copy_and_verify(client_display, client_display, True, selection=selection)
+            self.copy_and_verify(server_display, server_display, True, selection=selection)
 
         log("copy client %s to server %s", client_display, server_display)
         for _ in range(2):
