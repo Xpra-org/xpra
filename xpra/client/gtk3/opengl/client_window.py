@@ -81,10 +81,23 @@ class GLClientWindowBase(ClientWindow):
         if "RGB" in rgb_formats:
             rgb_formats.append("BGR")
 
+    def do_map_event(self, event) -> None:
+        log("GL do_map_event(%s)", event)
+        ClientWindow.do_map_event(self, event)
+        # a configure event is not guaranteed to follow: without a window manager,
+        # windows that are mapped at the size they asked for don't get one at all,
+        # and the backing would then never paint anything to the screen
+        self.enable_paint_screen()
+
     def do_configure_event(self, event) -> None:
         log("GL do_configure_event(%s)", event)
         ClientWindow.do_configure_event(self, event)
-        self._backing.paint_screen = True
+        self.enable_paint_screen()
+
+    def enable_paint_screen(self) -> None:
+        backing = self._backing
+        if backing:
+            backing.paint_screen = True
 
     def destroy(self) -> None:
         self.remove_backing()
