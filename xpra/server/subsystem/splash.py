@@ -34,6 +34,13 @@ MODE_TO_NAME: dict[str, str] = {
     "proxy": "Proxy",
 }
 
+BACKEND_TO_NAME: dict[str, str] = {
+    "dxgi": "DXGI",
+    "gdi": "GDI",
+    "x11": "X11",
+    "wayland": "Wayland",
+}
+
 
 def is_splash_enabled(mode: str, daemon: bool, splash: bool | None, display: str) -> bool:
     log("is_splash_enabled%s", (mode, daemon, splash, display))
@@ -65,7 +72,7 @@ class SplashServer(StubSubsystem):
     """
         Manages the splash screen
     """
-    __slots__ = ("daemon", "mode", "progress_fn", "splash", "splash_process")
+    __slots__ = ("daemon", "mode", "progress_fn", "splash", "splash_process", "backend")
     PREFIX = "splash"
 
     def __init__(self, server=None):
@@ -73,12 +80,14 @@ class SplashServer(StubSubsystem):
         log("SplashServer()")
         self.splash_process: Popen | None = None
         self.mode = ""
+        self.backend = ""
         self.daemon = False
         self.splash = False
         self.progress_fn = noop
 
     def init(self, opts) -> None:
         self.mode = str(opts.mode)
+        self.backend = opts.backend
         self.daemon = bool(opts.daemon)
         self.splash = opts.splash
 
@@ -87,6 +96,9 @@ class SplashServer(StubSubsystem):
         use_stderr = PROGRESS_TO_STDERR
         if is_splash_enabled(self.mode, self.daemon, self.splash, display_name):
             mode_str = MODE_TO_NAME.get(self.mode, "").split(" Upgrade")[0]
+            if self.backend not in ("", "auto", "win32"):
+                backend_str = BACKEND_TO_NAME.get(self.backend)
+                mode_str = f"{backend_str} {mode_str}"
             title = f"Xpra {mode_str} Server {__version__}"
             self.splash_process = make_progress_process(title)
             if self.splash_process:
