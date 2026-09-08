@@ -6,7 +6,9 @@
 
 import unittest
 from io import BytesIO
+from unittest.mock import patch
 
+from xpra.clipboard import proxy as proxy_module
 from xpra.clipboard.proxy import ClipboardProxyCore, filter_data
 from xpra.codecs.image_type import get_image_type
 
@@ -36,6 +38,133 @@ class AsynchronousProxy(ClipboardProxyCore):
     def respond(self) -> None:
         callback, self.callback = self.callback, None
         callback()
+
+
+class FakeGLib:
+    """
+    Records the timers which are still armed, and lets the test fire them.
+    The idle callbacks are kept apart from the timeouts: the proxy uses one
+    to lift the owner change block, which is not what these tests are about.
+    """
+
+    def __init__(self):
+        self.timers: dict[int, tuple] = {}
+        self.idles: dict[int, tuple] = {}
+        self.counter = 0
+
+    def timeout_add(self, delay: int, callback, *args) -> int:
+        self.counter += 1
+        self.timers[self.counter] = (delay, callback, args)
+        return self.counter
+
+    def idle_add(self, callback, *args) -> int:
+        self.counter += 1
+        self.idles[self.counter] = (callback, args)
+        return self.counter
+
+    def source_remove(self, source: int) -> None:
+        for sources in (self.timers, self.idles):
+            if source in sources:
+                del sources[source]
+                return
+        raise ValueError(f"source {source} is not armed")
+
+    def delays(self) -> list:
+        return [delay for delay, _callback, _args in self.timers.values()]
+
+    def fire_all(self) -> None:
+        for timer in tuple(self.timers):
+            armed = self.timers.pop(timer, None)
+            if armed:
+                _delay, callback, args = armed
+                callback(*args)
+
+
+class CountingProxy(ClipboardProxyCore):
+    """ counts the tokens instead of sending them """
+
+    def __init__(self):
+        super().__init__("CLIPBOARD")
+        self.tokens = 0
+
+    def do_emit_token(self) -> None:
+        self.tokens += 1
+
+
+class ClipboardSchedulingTest(unittest.TestCase):
+
+    def make_proxy(self, want_targets=False, greedy=False) -> tuple:
+        glib = FakeGLib()
+        patcher = patch.object(proxy_module, "GLib", glib)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        proxy = CountingProxy()
+        proxy._enabled = True
+        proxy._want_targets = want_targets
+        proxy._greedy_client = greedy
+        return proxy, glib
+
+    def test_delay_grows_with_the_cost_of_the_token(self):
+        delay = proxy_module.DELAY_SEND_TOKEN
+        for want_targets, greedy, expected in (
+            (False, False, delay),
+            (True, False, delay * 2),
+            (False, True, delay * 2),
+            (True, True, delay * 4),
+        ):
+            with self.subTest(want_targets=want_targets, greedy=greedy):
+                proxy, _glib = self.make_proxy(want_targets, greedy)
+                self.assertEqual(proxy.emit_token_delay(), expected)
+
+    def test_an_isolated_change_is_not_delayed(self):
+        # `_last_emit_token` is 0, so the whole delay has already elapsed:
+        proxy, glib = self.make_proxy(greedy=True)
+        proxy.schedule_emit_token()
+        self.assertEqual(proxy.tokens, 1)
+        self.assertEqual(glib.timers, {})
+
+    def test_the_next_change_waits_for_the_delay(self):
+        proxy, glib = self.make_proxy(greedy=True)
+        proxy.schedule_emit_token()
+        self.assertEqual(proxy.tokens, 1)
+        # the token which follows straight after is held back:
+        proxy.schedule_emit_token()
+        self.assertEqual(proxy.tokens, 1)
+        self.assertEqual(len(glib.timers), 1)
+        # ... and sent when the timer fires:
+        glib.fire_all()
+        self.assertEqual(proxy.tokens, 2)
+        self.assertEqual(proxy._emit_token_timer, 0)
+
+    def test_a_scheduled_token_is_never_discarded(self):
+        # a pending token belongs to an owner change the peer has not heard about:
+        # scheduling another one must not cancel it
+        proxy, glib = self.make_proxy(greedy=True)
+        proxy.schedule_emit_token()
+        proxy.schedule_emit_token()
+        armed = dict(glib.timers)
+        self.assertEqual(len(armed), 1)
+        for _ in range(5):
+            proxy.schedule_emit_token()
+        self.assertEqual(glib.timers, armed)
+        self.assertEqual(proxy.tokens, 1)
+
+    def test_min_delay_is_honoured(self):
+        # ie: the win32 backend asks for 500ms for the applications
+        # which are slow to put their data on the clipboard
+        proxy, glib = self.make_proxy()
+        proxy.schedule_emit_token(500)
+        self.assertEqual(proxy.tokens, 0)
+        self.assertEqual(glib.delays(), [500])
+
+    def test_delay_can_be_turned_off(self):
+        proxy, glib = self.make_proxy(greedy=True)
+        with patch.object(proxy_module, "DELAY_SEND_TOKEN", -1):
+            self.assertEqual(proxy.emit_token_delay(), 0)
+            proxy.schedule_emit_token()
+            proxy.schedule_emit_token()
+        self.assertEqual(proxy.tokens, 2)
+        self.assertEqual(glib.timers, {})
 
 
 class ClipboardProxyTest(unittest.TestCase):

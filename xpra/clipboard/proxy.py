@@ -169,29 +169,41 @@ class ClipboardProxyCore:
         if self._have_token or ((self._greedy_client or self._want_targets) and self._can_send):
             self.schedule_emit_token()
 
-    def schedule_emit_token(self, min_delay: int = 0) -> None:
-        if min_delay == 0:
-            self.cancel_emit_token()
-            GLib.idle_add(self.emit_token)
-            return
-        if self._have_token or (not self._want_targets and not self._greedy_client) or DELAY_SEND_TOKEN < 0:
-            # token ownership will change or told not to wait
-            self.cancel_emit_token()
-            GLib.idle_add(self.emit_token)
-            return
-        if not self._emit_token_timer:
-            # we already had sent the token,
-            # or sending it is expensive, so wait a bit:
-            self.do_schedule_emit_token(min_delay)
+    def emit_token_delay(self) -> int:
+        """
+        How far apart the tokens we send have to be, in milliseconds.
 
-    def do_schedule_emit_token(self, min_delay: int = 0) -> None:
-        now = monotonic()
-        elapsed = int((now - self._last_emit_token) * 1000)
-        delay = max(min_delay, DELAY_SEND_TOKEN - elapsed)
-        log("do_schedule_emit_token(%i) selection=%s, elapsed=%i (max=%i), delay=%i",
-            min_delay, self._selection, elapsed, DELAY_SEND_TOKEN, delay)
+        This is the only part of the scheduling that varies, so it is the one
+        to override: a bare token is just a notification and costs nothing,
+        but collecting the targets costs a round trip to the application which
+        owns the selection, and a greedy client also makes us fetch the
+        contents - so those are spaced out further.
+        """
+        if DELAY_SEND_TOKEN < 0:
+            # told not to wait
+            return 0
+        scale = 1
+        if self._want_targets:
+            scale *= 2
+        if self._greedy_client:
+            scale *= 2
+        return DELAY_SEND_TOKEN * scale
+
+    def schedule_emit_token(self, min_delay: int = 0) -> None:
+        if self._emit_token_timer:
+            # a token is already scheduled: `emit_token` collects the clipboard state
+            # when it fires, so it will send whatever is current by then.
+            # cancelling it here would discard an owner change
+            # that the peer has not been told about yet
+            return
+        # the delay only has to space the tokens out, so the time already elapsed
+        # counts towards it: an isolated clipboard change is not delayed at all,
+        # only the ones following closely behind another are
+        elapsed = int((monotonic() - self._last_emit_token) * 1000)
+        delay = max(min_delay, self.emit_token_delay() - elapsed)
+        log("schedule_emit_token(%i) selection=%s, elapsed=%i, delay=%i",
+            min_delay, self._selection, elapsed, delay)
         if delay <= 0:
-            # enough time has passed
             self.emit_token()
         else:
             self._emit_token_timer = GLib.timeout_add(delay, self.emit_token)
