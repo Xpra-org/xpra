@@ -203,6 +203,16 @@ class TestCleanSessionPath(unittest.TestCase):
         clean_session_path(path)
         assert not os.path.exists(path)
 
+    def test_removes_dangling_symlink(self):
+        from xpra.scripts.session import clean_session_path
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "agent.default")
+            os.symlink(os.path.join(d, "missing-agent"), path)
+            assert os.path.islink(path)
+            assert not os.path.exists(path)
+            clean_session_path(path)
+            assert not os.path.lexists(path)
+
     def test_removes_empty_dir(self):
         from xpra.scripts.session import clean_session_path
         d = tempfile.mkdtemp()

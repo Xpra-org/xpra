@@ -248,7 +248,10 @@ def clean_session_path(path: str) -> None:
     from xpra.log import Logger
     log = Logger("server")
     log(f"clean_session_path({path})")
-    if not os.path.exists(path):
+    # `ssh/agent.default` is a symlink to an external agent socket, which may
+    # have disappeared by the time session cleanup runs.  `exists()` returns
+    # False for such dangling symlinks, but they still need unlinking.
+    if not os.path.lexists(path):
         return
     try:
         if os.path.isdir(path):
