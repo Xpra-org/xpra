@@ -178,7 +178,7 @@ check("no gtk", "xpra.x11.gtk" not in sys.modules,
 check("no gtk", common.get_pywindow is lookup,
       "importing the gtk bindings replaced `get_pywindow`")
 # the `StructureNotifyMask` and the gdk wrapper are only there for gtk's benefit:
-check("no gtk", helper.window is None, "the clipboard looked up a gdk window on a server")
+check("no gtk", helper.gtk_event_window is None, "the clipboard looked up a gdk window on a server")
 helper.cleanup()
 
 for failure in failures:

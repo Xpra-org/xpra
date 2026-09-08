@@ -86,17 +86,18 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     def __init__(self, send_packet_cb: Callable, progress_cb=noop, **kwargs):
         GObject.GObject.__init__(self)
         self.gtk_filter = False
-        self.window = None
+        # gtk's wrapper for `event_window_xid`, which only exists to keep gtk's own
+        # lookup of that window working - nothing here ever uses it, see `init_event_window`:
+        self.gtk_event_window = None
         # this also decides whether gtk is going to be processing our events:
         self.init_gtk_filter()
         with xsync:
             self.event_window_xid = init_event_window(self.gtk_filter)
             add_event_receiver(self.event_window_xid, self)
             if self.gtk_filter:
-                # gtk must know about this window before we use it,
-                # and must keep knowing about it - see `init_event_window`:
-                from xpra.x11.common import get_pywindow
-                self.window = get_pywindow(self.event_window_xid)
+                # gtk must know about this window before we use it, and must keep knowing:
+                from xpra.x11.gtk import gtk_get_pywindow
+                self.gtk_event_window = gtk_get_pywindow(self.event_window_xid)
         super().__init__(send_packet_cb, progress_cb, **kwargs)
 
     def init_gtk_filter(self) -> None:
