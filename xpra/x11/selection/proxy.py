@@ -393,7 +393,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if elapsed >= TOKEN_BACKOFF_RESET:
             # the clipboard has been idle long enough: reset the back-off
             self._emit_token_backoff = 0
-        delay = max(min_delay, self._emit_token_backoff)
+        # the back-off only has to space the tokens out: the time already elapsed counts towards it,
+        # so an isolated clipboard change is still sent without any delay
+        delay = max(min_delay, self._emit_token_backoff - elapsed)
         log("schedule_emit_token(%i) selection=%s, elapsed=%i, backoff=%i, delay=%i",
             min_delay, self._selection, elapsed, self._emit_token_backoff, delay)
         if delay <= 0:
@@ -405,14 +407,16 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         # we collect the targets (and contents for greedy clients) here,
         # *after* the back-off delay, so that we send the latest clipboard state:
         self._emit_token_timer = 0
-        self._last_emit_token = monotonic()
-        self._sent_token_events += 1
         generation = self._selection_generation
         with xsync:
             owner = X11Window.XGetSelectionOwner(self._selection)
         if owner == self.xid:
             log("not emitting token for %s: the selection contains remote data", self._selection)
             return
+        # only count the tokens we do send, so that the back-off
+        # is not stretched by the ones we decide to skip:
+        self._last_emit_token = monotonic()
+        self._sent_token_events += 1
         if owner != self._targets_owner:
             self.targets = ()
             self.target_data = {}
