@@ -96,6 +96,9 @@ class ClipboardProxyCore:
         self._block_owner_change: int = 0
         self._last_emit_token: float = 0
         self._emit_token_timer: int = 0
+        # when the token that is scheduled is due, as a monotonic time in milliseconds
+        # (only meaningful whilst `_emit_token_timer` is armed)
+        self._emit_token_due: int = 0
         # counters for info:
         self._selection_request_events: int = 0
         self._selection_get_events: int = 0
@@ -190,26 +193,42 @@ class ClipboardProxyCore:
         return DELAY_SEND_TOKEN * scale
 
     def schedule_emit_token(self, min_delay: int = 0) -> None:
-        if self._emit_token_timer:
-            # a token is already scheduled: `emit_token` collects the clipboard state
-            # when it fires, so it will send whatever is current by then.
-            # cancelling it here would discard an owner change
-            # that the peer has not been told about yet
-            return
+        """
+        Schedule the token, keeping whichever deadline comes first.
+
+        `min_delay` is the time the application which owns the selection needs to make
+        its data available. A change asking for one must not hold back a token an
+        earlier change had already scheduled sooner, and a long one must not make the
+        changes which follow it wait either - so the earliest deadline always wins.
+
+        The times are compared in whole milliseconds, and each is converted from the
+        clock separately: subtracting two readings that are close together loses the
+        last millisecond and makes the comparison unreliable.
+        """
+        now = round(monotonic() * 1000)
         # the delay only has to space the tokens out, so the time already elapsed
         # counts towards it: an isolated clipboard change is not delayed at all,
         # only the ones following closely behind another are
-        elapsed = int((monotonic() - self._last_emit_token) * 1000)
+        elapsed = now - round(self._last_emit_token * 1000)
         delay = max(min_delay, self.emit_token_delay() - elapsed)
-        log("schedule_emit_token(%i) selection=%s, elapsed=%i, delay=%i",
-            min_delay, self._selection, elapsed, delay)
+        due = now + delay
+        log("schedule_emit_token(%i) selection=%s, elapsed=%i, delay=%i, scheduled=%s",
+            min_delay, self._selection, elapsed, delay, bool(self._emit_token_timer))
+        if self._emit_token_timer:
+            if due >= self._emit_token_due:
+                # the token already scheduled will not be late for this change
+                return
+            # this change needs it sooner than it is due:
+            self.cancel_emit_token()
         if delay <= 0:
             self.emit_token()
         else:
+            self._emit_token_due = due
             self._emit_token_timer = GLib.timeout_add(delay, self.emit_token)
 
     def emit_token(self) -> None:
         self._emit_token_timer = 0
+        self._emit_token_due = 0
         if not self._block_owner_change:
             self._block_owner_change = GLib.idle_add(self.remove_block)
         self._have_token = False
@@ -222,6 +241,7 @@ class ClipboardProxyCore:
         pass
 
     def cancel_emit_token(self) -> None:
+        self._emit_token_due = 0
         if ett := self._emit_token_timer:
             self._emit_token_timer = 0
             GLib.source_remove(ett)

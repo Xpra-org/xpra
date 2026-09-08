@@ -80,6 +80,19 @@ class FakeGLib:
                 callback(*args)
 
 
+class FakeClock:
+    """ lets the tests move time forward without sleeping """
+
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, ms: int) -> None:
+        self.now += ms / 1000
+
+
 class CountingProxy(ClipboardProxyCore):
     """ counts the tokens instead of sending them """
 
@@ -95,14 +108,16 @@ class ClipboardSchedulingTest(unittest.TestCase):
 
     def make_proxy(self, want_targets=False, greedy=False) -> tuple:
         glib = FakeGLib()
-        patcher = patch.object(proxy_module, "GLib", glib)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        clock = FakeClock()
+        for attr, value in (("GLib", glib), ("monotonic", clock)):
+            patcher = patch.object(proxy_module, attr, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
         proxy = CountingProxy()
         proxy._enabled = True
         proxy._want_targets = want_targets
         proxy._greedy_client = greedy
-        return proxy, glib
+        return proxy, glib, clock
 
     def test_delay_grows_with_the_cost_of_the_token(self):
         delay = proxy_module.DELAY_SEND_TOKEN
@@ -113,52 +128,80 @@ class ClipboardSchedulingTest(unittest.TestCase):
             (True, True, delay * 4),
         ):
             with self.subTest(want_targets=want_targets, greedy=greedy):
-                proxy, _glib = self.make_proxy(want_targets, greedy)
+                proxy = self.make_proxy(want_targets, greedy)[0]
                 self.assertEqual(proxy.emit_token_delay(), expected)
 
     def test_an_isolated_change_is_not_delayed(self):
         # `_last_emit_token` is 0, so the whole delay has already elapsed:
-        proxy, glib = self.make_proxy(greedy=True)
+        proxy, glib, _clock = self.make_proxy(greedy=True)
         proxy.schedule_emit_token()
         self.assertEqual(proxy.tokens, 1)
         self.assertEqual(glib.timers, {})
 
     def test_the_next_change_waits_for_the_delay(self):
-        proxy, glib = self.make_proxy(greedy=True)
+        proxy, glib, _clock = self.make_proxy(greedy=True)
         proxy.schedule_emit_token()
         self.assertEqual(proxy.tokens, 1)
-        # the token which follows straight after is held back:
+        # the change which follows straight after is held back:
         proxy.schedule_emit_token()
         self.assertEqual(proxy.tokens, 1)
-        self.assertEqual(len(glib.timers), 1)
+        self.assertEqual(glib.delays(), [proxy.emit_token_delay()])
         # ... and sent when the timer fires:
         glib.fire_all()
         self.assertEqual(proxy.tokens, 2)
         self.assertEqual(proxy._emit_token_timer, 0)
 
-    def test_a_scheduled_token_is_never_discarded(self):
-        # a pending token belongs to an owner change the peer has not heard about:
-        # scheduling another one must not cancel it
-        proxy, glib = self.make_proxy(greedy=True)
+    def test_rescheduling_keeps_the_deadline_already_set(self):
+        # every change works out the same deadline, since it is counted from the last
+        # token sent: the timer is left alone rather than restarted over and over
+        proxy, glib, clock = self.make_proxy(greedy=True)
         proxy.schedule_emit_token()
         proxy.schedule_emit_token()
         armed = dict(glib.timers)
-        self.assertEqual(len(armed), 1)
-        for _ in range(5):
+        self.assertEqual(glib.delays(), [proxy.emit_token_delay()])
+        for _ in range(3):
+            clock.advance(50)
             proxy.schedule_emit_token()
-        self.assertEqual(glib.timers, armed)
+            self.assertEqual(glib.timers, armed)
+        # and it is still sent exactly once:
         self.assertEqual(proxy.tokens, 1)
+        glib.fire_all()
+        self.assertEqual(proxy.tokens, 2)
+
+    def test_a_long_delay_does_not_hold_back_the_next_change(self):
+        # ie: the win32 backend asks for 500ms for an application which is slow
+        # to put its data on the clipboard - the changes after it must not wait
+        proxy, glib, clock = self.make_proxy(greedy=True)
+        proxy.schedule_emit_token()
+        proxy.schedule_emit_token(500)
+        self.assertEqual(glib.delays(), [500])
+        clock.advance(100)
+        proxy.schedule_emit_token()
+        self.assertEqual(glib.delays(), [proxy.emit_token_delay() - 100])
+
+    def test_a_long_delay_does_not_hold_back_a_token_already_due(self):
+        # the other way around: a change which needs the extra time
+        # must not push back the token an earlier one had scheduled
+        proxy, glib, clock = self.make_proxy(greedy=True)
+        proxy.schedule_emit_token()
+        proxy.schedule_emit_token()
+        armed = dict(glib.timers)
+        clock.advance(100)
+        proxy.schedule_emit_token(500)
+        self.assertEqual(glib.timers, armed)
 
     def test_min_delay_is_honoured(self):
-        # ie: the win32 backend asks for 500ms for the applications
-        # which are slow to put their data on the clipboard
-        proxy, glib = self.make_proxy()
+        # `min_delay` is a floor: the application which owns the selection needs
+        # that long to publish its data, whether a token is due or not
+        proxy, glib, _clock = self.make_proxy()
         proxy.schedule_emit_token(500)
         self.assertEqual(proxy.tokens, 0)
         self.assertEqual(glib.delays(), [500])
+        glib.fire_all()
+        self.assertEqual(proxy.tokens, 1)
 
     def test_delay_can_be_turned_off(self):
-        proxy, glib = self.make_proxy(greedy=True)
+        proxy, glib, _clock = self.make_proxy(greedy=True)
         with patch.object(proxy_module, "DELAY_SEND_TOKEN", -1):
             self.assertEqual(proxy.emit_token_delay(), 0)
             proxy.schedule_emit_token()
