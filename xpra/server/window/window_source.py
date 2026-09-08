@@ -2464,13 +2464,17 @@ class WindowSource(WindowIconSource):
                     late_pct = round(elapsed_ms*100/max_send_delay)-100
                     send_speed = int(ldata*8*1000/elapsed_ms)
                     self.networksend_congestion_event("slow send", late_pct, send_speed)
-            self.schedule_auto_refresh(packet, options or {})
         if process_damage_time>0:
             now = monotonic()
             damage_in_latency = now-process_damage_time
             statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         #log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
         self.statistics.last_packet_time = monotonic()
+        # Schedule while this draw packet is still owned by the window source;
+        # waiting for the network send callback can leave a lossy update without
+        # its required refresh.
+        self.schedule_auto_refresh(packet, options or {})
+
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent,
                           self.get_fail_cb(packet), client_options.get("flush", 0))
 
