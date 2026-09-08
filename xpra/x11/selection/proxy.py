@@ -148,7 +148,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def got_token(self, targets, target_data=None, claim=True, synchronous_client=False) -> None:
         # the remote end now owns the clipboard
         self._selection_generation += 1
-        self.cancel_emit_token()
+        # any token we have scheduled but not sent yet is left alone:
+        # it belongs to a local owner change the peer has not heard about,
+        # and this token was sent before the peer could know about it.
+        # `do_emit_token` re-checks the selection owner when it fires,
+        # so it turns into a no-op by itself if we claim the selection here
         if not self._enabled:
             return
         self._got_token_events += 1
