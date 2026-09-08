@@ -447,6 +447,9 @@ def init_x11_filter() -> bool:
 def cleanup_x11_filter() -> bool:
     log("cleanup_x11_filter()")
     global _INIT_X11_FILTER_DONE
+    if _INIT_X11_FILTER_DONE<=0:
+        log.warn("Warning: cleanup_x11_filter() called without a matching init_x11_filter()")
+        return False
     _INIT_X11_FILTER_DONE -= 1
     if _INIT_X11_FILTER_DONE==0:
         gdk_window_remove_filter(<GdkWindow*>0, x_event_filter, NULL)
