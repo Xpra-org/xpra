@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.7] 2026-08-14
+## [5.1.7] 2026-09-08
 * Platforms, build and packaging:
   * [almalinux build failures](https://github.com/Xpra-org/xpra/commit/e371556e6710cb19b02f215af7f4754313d59f00) [and rockylinux](https://github.com/Xpra-org/xpra/commit/dc839d9bc7bdd46b7161b37f89d98263b2405a1f)
   * [missing default build list](https://github.com/Xpra-org/xpra/commit/403e684f0cb731c01e2799ac4c335110268c0605) - [unused arm64 list](https://github.com/Xpra-org/xpra/commit/ebdcf11bb30609e541c5b47a7dded68affce2d12)
@@ -11,6 +11,9 @@
   * [googlesource downloads are not reliable](https://github.com/Xpra-org/xpra/commit/8eca03acb642b27e47d372b73e2393355fc947a5)
   * [macOS: always enable logging to file when spawned from the GUI](https://github.com/Xpra-org/xpra/commit/f78b14b5e9bedd9a214600fb906e3d6efec57a00)
 * Encodings:
+  * [damage cancellation could free images while they were still being encoded](https://github.com/Xpra-org/xpra/commit/b8293340957ff401f06833f42779f2c19941fa46)
+  * [concurrent damage could start multiple encode threads](https://github.com/Xpra-org/xpra/commit/ea08e44ac490654dc2b0fd06c9417ca88f553f63)
+  * [lossy updates could miss their auto-refresh](https://github.com/Xpra-org/xpra/commit/4f57718ee5dad0bf63c45eda79d59895f34021a8)
   * [Cython CSC validation](https://github.com/Xpra-org/xpra/commit/a729bf03259bf37cd78d29d89b99cd92d2f1cf37), [conversion rounding](https://github.com/Xpra-org/xpra/commit/237b28358bdd8c42debee1d5e12be31b37d33344), [30-bit issues](https://github.com/Xpra-org/xpra/commit/d8cbf7fa27f417f40e8acc8b1d4e03f02e82f0ed)
   * [invalid scroll rectangles emitted when the damage region moves](https://github.com/Xpra-org/xpra/commit/b3c9df9e052ff5bdb210341b047d7)
   * [BGRX must use opaque alpha](https://github.com/Xpra-org/xpra/commit/e9fed0db4ab04c1a3bd3c5ded9c9e2a83d56ec16)
@@ -27,6 +30,7 @@
   * [limit is actually 4GB](https://github.com/Xpra-org/xpra/commit/0377ba073f3ead0b6d69505e74c9faee2504f8ba)
   * [validate the token location and size](https://github.com/Xpra-org/xpra/commit/ddec4ce4fcef68ba4a3f395a916007838b53ff4e)
 * Major:
+  * [X11 events could stop being routed after unmatched filter cleanup](https://github.com/Xpra-org/xpra/commit/23f81b0c5119e4c2c619e67a1cc20558ee972ae9) [or shared filter use](https://github.com/Xpra-org/xpra/commit/91bf9a9025c52ed862025eacfd09c10153484783)
   * [handle duplicated mode attribute in session files](https://github.com/Xpra-org/xpra/commit/d8ac8e684c21689b7c43e2c230d06dc7c535f543)
   * [allow upgrades on displays where no window manager is left](https://github.com/Xpra-org/xpra/commit/d564e1a846369563b10730d594cbbd7d3c232ee9)
   * [chunked file transfer early rejection errors out](https://github.com/Xpra-org/xpra/commit/075e60d24ca4e14b06321864afb32a51cf6b7514)
@@ -53,6 +57,7 @@
   * [discard alpha padding in RGBX uploads](https://github.com/Xpra-org/xpra/commit/8b18363e5b798464b53690aa6c0ff92f6f936494)
   * [include unit test](https://github.com/Xpra-org/xpra/commit/ded0b142584bd3af0ab2f2c737afc52d64cce106)
 * Minor:
+  * [`xpra clean-sockets` could skip every socket](https://github.com/Xpra-org/xpra/commit/cd4aef51336f98e5dc2288dabccf0c67f2e6afd6)
   * [clean dead ssh agent symlinks](https://github.com/Xpra-org/xpra/commit/00074c3f140b86995c49dc48b04bac0a1ff085c6)
   * [always point the ssh agent symlink at a client](https://github.com/Xpra-org/xpra/commit/c587579aae44e34d4efbeaacf68a8462a6d02e9f)
   * [clamp the shadow server refresh rate](https://github.com/Xpra-org/xpra/commit/c71a1022c4854ec051c1ff48d0e447c5bdbfc6bd)
