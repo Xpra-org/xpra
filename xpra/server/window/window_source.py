@@ -487,6 +487,8 @@ class WindowSource(WindowIconSource):
         self._damage_packet_sequence : int = 1
 
     def cleanup(self) -> None:
+        # This cancels a pending window-icon timer before its state is torn down.
+        super().cleanup()
         self.cancel_damage(INFINITY)
         log("encoding_totals for wid=%s with primary encoding=%s : %s",
             self.wid, self.encoding, self.statistics.encoding_totals)
