@@ -73,6 +73,16 @@ class InputMixinTest(ServerMixinTest):
             self.emit("setting-changed", "readonly", True, source)
             self.assertEqual(device.cleared, [])
 
+    def test_server_readonly_settles_the_keys(self):
+        with DisplayContext():
+            mixin, source, device = self.make_keyboard_mixin()
+            # the keys pressed before the switch must still be released,
+            # even though the whole server is now readonly:
+            self.readonly = True
+            self.emit("setting-changed", "readonly", True, None)
+            self.assertEqual(device.cleared, [(10, )])
+            self.assertEqual(mixin.keys_pressed, {})
+
     def test_other_settings_are_ignored(self):
         with DisplayContext():
             mixin, source, device = self.make_keyboard_mixin()

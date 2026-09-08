@@ -472,9 +472,16 @@ class KeyboardManager(StubSubsystem):
             self.clear_keys_pressed()
 
     def clear_keys_pressed(self, *args) -> None:
+        """
+        Release the keys we are still holding down.
+
+        This runs even when the server is readonly, unlike `control_command_key`:
+        these releases are not new input, they complete the presses we injected
+        ourselves. Refusing them would not keep anything out of the session,
+        it would leave a key stuck in it - and stuck for good, since `cleanup`
+        and the `key` control command would then refuse to release it too.
+        """
         log("clear_keys_pressed%s", args)
-        if self.server.readonly:
-            return
         # make sure the timer doesn't fire and interfere:
         self.cancel_key_repeat_timer()
         keycodes = tuple(self.keys_pressed.keys())
