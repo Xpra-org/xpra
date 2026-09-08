@@ -420,7 +420,7 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1) -> list[tuple[int, in
         if GTK_WORKAREA and hasattr(monitor, "get_workarea"):
             rect = monitor.get_workarea()
             monitor_info += valid_workarea(rect.x, rect.y, rect.width, rect.height)
-        elif (wa := monitor_workarea(geom)):
+        elif wa := monitor_workarea(geom):
             monitor_info += valid_workarea(*wa)
         monitors.append(tuple(monitor_info))
     screen = display.get_default_screen()

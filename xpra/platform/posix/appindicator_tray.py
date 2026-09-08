@@ -93,7 +93,7 @@ class AppindicatorTray(TrayBase):
         if not self._has_icon:
             self.tray_widget.set_label(tooltip or "Xpra", "")
 
-    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, _options=None) -> None:
+    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, options=None) -> None:
         # use a temporary file (yuk)
         self.clean_last_tmp_icon()
         # pylint: disable=import-outside-toplevel

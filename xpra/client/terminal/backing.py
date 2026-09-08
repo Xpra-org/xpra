@@ -299,9 +299,9 @@ class TerminalBacking(WindowBackingBase):
     # ------------------------------------------------------------------
     # scroll
 
-    def paint_scroll(self, scroll_data, options: typedict, callbacks: PaintCallbacks) -> None:
+    def paint_scroll(self, img_data, options: typedict, callbacks: PaintCallbacks) -> None:
         # newer servers use an option, older ones overload the image data:
-        scrolls = options.tupleget("scroll", scroll_data)
+        scrolls = options.tupleget("scroll", img_data)
         self.with_gfx_context(self.do_scroll_paints, scrolls, callbacks)
 
     def clip_scrolls(self, scrolls: Sequence[Sequence[int]]) -> list[tuple[int, int, int, int, int, int]]:

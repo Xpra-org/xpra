@@ -8,7 +8,7 @@ from subprocess import Popen
 from shutil import which
 from time import monotonic, sleep
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 
 from xpra.audio.common import (
     AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET, AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET,
@@ -464,7 +464,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.send_async(AUDIO_KEEPALIVE_PACKET, timestamp)
 
     @staticmethod
-    def audio_keepalive_timer_add(delay: int, fn) -> int:
+    def audio_keepalive_timer_add(delay: int, fn: Callable) -> int:
         return GLib.timeout_add(delay, fn)
 
     @staticmethod

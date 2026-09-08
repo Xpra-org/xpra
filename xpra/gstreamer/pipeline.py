@@ -218,7 +218,7 @@ class Pipeline(GObject.GObject):
     def parse_tag_message(self, message) -> None:
         """ this is overriden in some subclasses """
 
-    def on_message(self, _bus, message) -> int:
+    def on_message(self, bus, message) -> int:
         log("on_message: %s", message)
         p = self.pipeline
         if not p:

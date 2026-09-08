@@ -1922,10 +1922,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 upload = "pbo"
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, plane)
                 pixel_data = None
-                size = rowstride * h
+                size: int = rowstride * h
             else:
                 upload, pixel_data = pixels_for_upload(plane)
-                size = len(pixel_data)
+                size: int = len(pixel_data)
             glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0)
             try:
                 glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
