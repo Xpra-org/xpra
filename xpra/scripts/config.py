@@ -1672,7 +1672,10 @@ def fixup_keyboard(options) -> None:
     # variants and layouts can be specified as CSV, convert them to lists:
     def p(v) -> list[str]:
         try:
-            if isinstance(v, Sequence):
+            if isinstance(v, str):
+                # `str` is also a `Sequence`, and iterating one yields characters:
+                seq = v.split(",")
+            elif isinstance(v, Sequence):
                 seq = v
             else:
                 seq = str(v).split(",")
