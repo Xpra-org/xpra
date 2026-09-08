@@ -26,7 +26,7 @@ from xpra.log import Logger
 
 from xpra.wayland.server.wlroots cimport (
     wl_array_add,
-    wl_display, wl_display_next_serial,
+    wl_display, wl_display_next_serial, wl_display_flush_clients,
     wl_array,
     wlr_data_source, wlr_data_source_impl,
     wlr_data_source_init, wlr_data_source_destroy, wlr_data_source_send,
@@ -258,6 +258,7 @@ cdef class WaylandSelection:
             return
         serial = wl_display_next_serial(self.display)
         wlr_seat_set_selection(self.seat, source.source, serial)
+        self.flush()
 
     def clear(self) -> None:
         cdef uint32_t serial
@@ -265,6 +266,7 @@ cdef class WaylandSelection:
             return
         serial = wl_display_next_serial(self.display)
         wlr_seat_set_selection(self.seat, NULL, serial)
+        self.flush()
 
     def source_targets(self, uintptr_t source_ptr) -> tuple:
         cdef wlr_data_source *source = <wlr_data_source*> source_ptr
@@ -279,6 +281,17 @@ cdef class WaylandSelection:
             os.close(fd)
             return
         wlr_data_source_send(source, <const char*> mime, fd)
+        self.flush()
+
+    cdef void flush(self) noexcept:
+        # the wlroots calls above only queue events on the native clients' connections.
+        # We get here from xpra packet handlers and GLib callbacks, so the compositor's
+        # own dispatch is not about to run and flush them for us:
+        # an unflushed `selection` event leaves the client unaware that the clipboard
+        # changed, and an unflushed `send` event leaves it waiting on a pipe
+        # that nobody told it to write to.
+        if self.display != NULL:
+            wl_display_flush_clients(self.display)
 
 
 cdef class WaylandPrimarySelection:
@@ -295,6 +308,7 @@ cdef class WaylandPrimarySelection:
             return
         serial = wl_display_next_serial(self.display)
         wlr_seat_set_primary_selection(self.seat, source.source, serial)
+        self.flush()
 
     def clear(self) -> None:
         cdef uint32_t serial
@@ -302,6 +316,7 @@ cdef class WaylandPrimarySelection:
             return
         serial = wl_display_next_serial(self.display)
         wlr_seat_set_primary_selection(self.seat, NULL, serial)
+        self.flush()
 
     def source_targets(self, uintptr_t source_ptr) -> Tuple:
         cdef wlr_primary_selection_source *source = <wlr_primary_selection_source*> source_ptr
@@ -316,6 +331,17 @@ cdef class WaylandPrimarySelection:
             os.close(fd)
             return
         wlr_primary_selection_source_send(source, <const char*> mime, fd)
+        self.flush()
+
+    cdef void flush(self) noexcept:
+        # the wlroots calls above only queue events on the native clients' connections.
+        # We get here from xpra packet handlers and GLib callbacks, so the compositor's
+        # own dispatch is not about to run and flush them for us:
+        # an unflushed `selection` event leaves the client unaware that the clipboard
+        # changed, and an unflushed `send` event leaves it waiting on a pipe
+        # that nobody told it to write to.
+        if self.display != NULL:
+            wl_display_flush_clients(self.display)
 
 
 class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
