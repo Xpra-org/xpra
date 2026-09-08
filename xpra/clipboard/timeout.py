@@ -28,11 +28,18 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
 
     def cleanup(self) -> None:
-        # reply to outstanding requests with "no data":
-        for request_id in tuple(self._clipboard_outstanding_requests.keys()):
-            self._clipboard_got_contents(request_id)
-        self._clipboard_outstanding_requests = {}
+        self.cancel_outstanding_requests()
         super().cleanup()
+
+    def cancel_outstanding_requests(self) -> None:
+        # reply to all the outstanding requests with "no data":
+        # `_clipboard_got_contents` cancels the timer and removes each request as it answers it,
+        # so the dictionary must not be cleared before they have all been served
+        cor = self._clipboard_outstanding_requests
+        if cor:
+            log.info("cancelling %i clipboard requests", len(cor))
+        for request_id in tuple(cor):
+            self._clipboard_got_contents(request_id)
 
     ############################################################################
     # network methods for communicating with the remote clipboard:
@@ -82,9 +89,4 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
 
     def client_reset(self) -> None:
         super().client_reset()
-        # timeout all pending requests
-        if cor := self._clipboard_outstanding_requests:
-            log.info("cancelling %i clipboard requests", len(cor))
-            self._clipboard_outstanding_requests = {}
-            for request_id in cor:
-                self._clipboard_got_contents(request_id)
+        self.cancel_outstanding_requests()
