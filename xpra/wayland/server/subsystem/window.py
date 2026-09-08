@@ -203,6 +203,13 @@ class WaylandWindowServer(WindowServer):
         log("new surface image for window %i: %s", wid, image)
         # Do not free the image while window compression threads may still reference it.
         image.free = noop
+        # The buffer the client has committed tells us whether these pixels really have
+        # an alpha channel: an `XRGB` / `XBGR` one has none, which lets the window source
+        # use a video encoding for them. This is internal state and not `has-alpha`:
+        # the client's backing must keep the alpha a subsurface may still paint into it.
+        # It has to be published before the image, so that the encoding selection is
+        # already up to date when the `commit` which follows this signal becomes damage:
+        window._updateprop("frame-has-alpha", "A" in image.get_pixel_format())
         window._updateprop("image", image)
 
     def map(self, wid: int, title: str, app_id: str, size: tuple[int, int]) -> None:

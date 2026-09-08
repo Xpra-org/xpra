@@ -61,6 +61,12 @@ class Window(WindowModelStub):
             False,
             GObject.ParamFlags.READABLE,
         ),
+        "frame-has-alpha": (
+            GObject.TYPE_BOOLEAN,
+            "Does the buffer the client has committed have an alpha channel", "",
+            True,
+            GObject.ParamFlags.READABLE,
+        ),
         "opaque-region": (
             GObject.TYPE_PYOBJECT,
             "Compositor can assume that there is no transparency for this region", "",
@@ -176,7 +182,10 @@ class Window(WindowModelStub):
         "iconic", "maximized", "fullscreen",
     ]
     # should not be exported to the clients:
-    _internal_property_names = []
+    # `has-alpha` is the capability the client creates its visual and backing from,
+    # so it must not follow the buffers: a surface can commit an opaque one and still
+    # gain a translucent subsurface later, which the client paints into that backing
+    _internal_property_names = ["frame-has-alpha"]
     _MODELTYPE = "Wayland"
 
     def __init__(self, props: dict[str, Any]):

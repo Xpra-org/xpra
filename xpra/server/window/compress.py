@@ -375,12 +375,11 @@ class WindowSource(WindowIconSource):
         if "opaque-region" in dyn_props:
             sid = window.connect("notify::opaque-region", self.window_opaque_region_changed)
             self.window_signal_handlers.append(sid)
+        if "frame-has-alpha" in window.get_internal_property_names():
+            sid = window.connect("notify::frame-has-alpha", self.frame_has_alpha_changed)
+            self.window_signal_handlers.append(sid)
 
-        if self.has_alpha and BROWSER_ALPHA_FIX and not self.is_OR:
-            # remove alpha from 'NORMAL' browser windows
-            # of a size greater than 200x200:
-            if "browser" in self.content_types and "NORMAL" in self.window_type and ww >= 200 and wh >= 200:
-                self.has_alpha = False
+        self.update_has_alpha()
 
         # will be overridden by update_quality() and update_speed() called from update_encoding_selection()
         # just here for clarity:
@@ -814,6 +813,37 @@ class WindowSource(WindowIconSource):
         self.window_type = set(window.get_property("window-type"))
         log("window_type_changed(window, %s) window_type=%s", window, args, self.window_type)
         self.assign_encoding_getter()
+        return True
+
+    def update_has_alpha(self) -> None:
+        """
+        Whether the pixels we are going to encode have an alpha channel worth keeping.
+
+        This is not the same question as the `has-alpha` the client was told about:
+        that one is the window's capability, which the client's visual and backing are
+        created from and which cannot change afterwards.
+        Some windows only have an alpha channel some of the time - a wayland surface
+        says so by committing an `XRGB` buffer rather than an `ARGB` one - and telling
+        the client would cost it the alpha it may still need, ie: for a subsurface
+        painted into the same backing. So the frame value stays internal to the server.
+        """
+        window = self.window
+        has_alpha = HAS_ALPHA and window.has_alpha()
+        if has_alpha and "frame-has-alpha" in window.get_internal_property_names():
+            has_alpha = bool(window.get_property("frame-has-alpha"))
+        if has_alpha and BROWSER_ALPHA_FIX and not self.is_OR:
+            # remove alpha from 'NORMAL' browser windows
+            # of a size greater than 200x200:
+            ww, wh = self.window_dimensions
+            if "browser" in self.content_types and "NORMAL" in self.window_type and ww >= 200 and wh >= 200:
+                has_alpha = False
+        self.has_alpha = has_alpha
+
+    def frame_has_alpha_changed(self, window, *args) -> bool:
+        self.update_has_alpha()
+        log("frame_has_alpha_changed(%s, %s) has_alpha=%s", window, args, self.has_alpha)
+        # recompute `_want_alpha` and re-assign the encoding selection it chooses:
+        self.update_encoding_options()
         return True
 
     def window_opaque_region_changed(self, window, *args) -> bool:

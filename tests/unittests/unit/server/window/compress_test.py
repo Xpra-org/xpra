@@ -43,6 +43,57 @@ class CompressTest(unittest.TestCase):
         source.client_bit_depth = 24
         return source
 
+    @staticmethod
+    def make_window(has_alpha=True, frame_has_alpha=True, frame_property=True):
+        """ a window model exposing `frame-has-alpha` the way the wayland models do """
+        return SimpleNamespace(
+            has_alpha=lambda: has_alpha,
+            get_internal_property_names=lambda: ["frame-has-alpha"] if frame_property else [],
+            get_property=lambda name: {"frame-has-alpha": frame_has_alpha}[name],
+        )
+
+    def make_alpha_source(self, **window_kwargs) -> WindowSource:
+        source = self.make_source()
+        source.window = self.make_window(**window_kwargs)
+        source.is_OR = False
+        source.window_type = set()
+        source.window_dimensions = 800, 600
+        return source
+
+    def test_an_opaque_buffer_gives_up_the_alpha_channel(self) -> None:
+        for has_alpha, frame_has_alpha, expected in (
+                (True, True, True),
+                (True, False, False),
+                # the frame can only narrow the capability, never widen it:
+                (False, True, False),
+                (False, False, False),
+        ):
+            with self.subTest(has_alpha=has_alpha, frame_has_alpha=frame_has_alpha):
+                source = self.make_alpha_source(has_alpha=has_alpha, frame_has_alpha=frame_has_alpha)
+                source.update_has_alpha()
+                self.assertEqual(source.has_alpha, expected)
+
+    def test_a_window_without_frame_alpha_keeps_its_capability(self) -> None:
+        # ie: an x11 window, whose alpha is decided once by its depth
+        source = self.make_alpha_source(has_alpha=True, frame_has_alpha=False, frame_property=False)
+        source.update_has_alpha()
+        self.assertTrue(source.has_alpha)
+
+    def test_wanting_alpha_hides_the_video_selection(self) -> None:
+        # `get_transparent_encoding` only ever returns a `TRANSPARENCY_ENCODINGS` value,
+        # and it is returned before `get_best_encoding_impl_default` - the one method
+        # `WindowVideoSource` overrides to offer video - can be reached at all:
+        source = self.make_source()
+        source._encoding_hint = ""
+        source._encoders = {}
+        source._mmap = None
+        source.strict = False
+        source.common_encodings = ("rgb24", "rgb32", "png", "webp", "h264")
+        source._want_alpha = True
+        self.assertEqual(source.get_best_encoding_impl(), source.get_transparent_encoding)
+        source._want_alpha = False
+        self.assertEqual(source.get_best_encoding_impl(), source.get_auto_encoding)
+
     @patch.object(compress, "monotonic", return_value=100)
     def test_automatic_screen_quality_is_promoted(self, _monotonic) -> None:
         for content_types in ((), ("browser",), ("desktop",)):

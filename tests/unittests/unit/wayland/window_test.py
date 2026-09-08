@@ -10,6 +10,10 @@ from types import ModuleType
 from unittest.mock import Mock, patch
 
 from xpra.util.objects import typedict
+# `load_window_server_class` restores `sys.modules` wholesale, which drops every
+# module imported inside it - including `gi.repository.GObject`, which cannot be
+# imported a second time. So anything needing it has to be imported before that:
+from xpra.wayland.server.models.subsurface_window import SubsurfaceWindow
 
 
 def load_window_server_class():
@@ -133,6 +137,45 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
         # An alpha-capable source must remain alpha-capable.
         self.assertEqual(get_capture_pixel_format(argb, argb), "BGRA")
         self.assertEqual(get_capture_pixel_format(abgr, argb), "RGBA")
+
+    def test_surface_image_publishes_the_buffer_alpha_before_the_image(self):
+        for pixel_format, has_alpha in (
+                ("RGBA", True), ("BGRA", True),
+                ("RGBX", False), ("BGRX", False),
+        ):
+            window = Mock()
+            server = self.make_server(window)
+            server.pending_popups = {}
+            image = Mock()
+            image.get_pixel_format.return_value = pixel_format
+
+            WaylandWindowServer.surface_image(server, 7, image)
+
+            # `has-alpha` is the capability the client's backing is built from and must
+            # not follow the buffers, and the frame value has to be published before the
+            # image, so the encoding selection is current when the `commit` becomes damage:
+            self.assertEqual(window._updateprop.call_args_list, [
+                (("frame-has-alpha", has_alpha), ),
+                (("image", image), ),
+            ], f"unexpected properties published for a {pixel_format!r} buffer")
+
+    def test_subsurface_alpha_is_its_own_buffer_and_not_the_parent(self):
+        # a translucent parent with an opaque video plane in a subsurface
+        # is the canonical use for one, so the child must not inherit its parent:
+        facade = SubsurfaceWindow(320, 240, has_alpha=True, depth=32)
+        changes = []
+        facade.connect("notify::frame-has-alpha",
+                       lambda *_args: changes.append(facade.get_property("frame-has-alpha")))
+        for pixel_format, has_alpha in (("BGRX", False), ("BGRA", True), ("BGRA", True)):
+            image = Mock()
+            image.get_pixel_format.return_value = pixel_format
+            facade.set_image(image)
+            self.assertEqual(facade.get_property("frame-has-alpha"), has_alpha,
+                             f"for a {pixel_format!r} buffer")
+            # the exported capability must not follow the buffer:
+            self.assertTrue(facade.has_alpha())
+        # an unchanged format must not notify:
+        self.assertEqual(changes, [False, True])
 
     def test_unmapped_empty_damage_is_ignored(self):
         window = Mock()

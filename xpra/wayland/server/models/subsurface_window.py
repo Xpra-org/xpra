@@ -24,11 +24,16 @@ class SubsurfaceWindow(WindowModelStub):
     __gproperties__ = {
         "depth": (GObject.TYPE_INT, "bit depth", "", -1, 64, -1, GObject.ParamFlags.READABLE),
         "has-alpha": (GObject.TYPE_BOOLEAN, "alpha channel", "", False, GObject.ParamFlags.READABLE),
+        "frame-has-alpha": (GObject.TYPE_BOOLEAN, "alpha channel of the current buffer", "",
+                            True, GObject.ParamFlags.READABLE),
     }
 
     _property_names = ["depth", "has-alpha"]
     _dynamic_property_names: list[str] = []
-    _internal_property_names: list[str] = []
+    # a subsurface has its own buffer, so its transparency is its own:
+    # the canonical use for one is an opaque video plane inside a parent
+    # which is only translucent for its shadow and rounded corners
+    _internal_property_names: list[str] = ["frame-has-alpha"]
     _MODELTYPE = "WaylandSubsurface"
 
     def __init__(self, width: int, height: int, has_alpha: bool = True, depth: int = 32):
@@ -43,6 +48,9 @@ class SubsurfaceWindow(WindowModelStub):
 
     def set_image(self, image: ImageWrapper) -> None:
         self._image = image
+        # publish the alpha the buffer really has, so that an opaque subsurface
+        # can be encoded as video even if its parent window is translucent:
+        self._updateprop("frame-has-alpha", "A" in image.get_pixel_format())
 
     def update_dimensions(self, width: int, height: int) -> None:
         self._width = width
