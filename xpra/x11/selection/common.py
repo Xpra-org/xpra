@@ -8,6 +8,9 @@ from typing import Sequence, Iterable
 
 from xpra.util.str_fn import repr_ellipsized
 from xpra.x11.error import xsync
+from xpra.log import Logger
+
+log = Logger("x11", "util")
 
 
 sizeof_long = struct.calcsize(b'@L')
@@ -15,6 +18,37 @@ sizeof_long = struct.calcsize(b'@L')
 
 class AlreadyOwned(Exception):
     pass
+
+
+def x11_event_loop_running() -> bool:
+    """ True when the X11 event loop is already routing events - see `x11.subsystem.x11init` """
+    try:
+        from xpra.x11.bindings import loop
+    except ImportError:
+        return False
+    return bool(loop.loop)
+
+
+def gtk_event_window(xid: int):
+    """
+        gtk's wrapper for one of our event windows, or None when gtk is not the one
+        routing our X11 events. Servers pump them from `x11.bindings.loop` instead,
+        and must not load the gtk bindings at all.
+        Nothing ever uses the value: it exists so that gtk's own lookup of the window
+        keeps working for the events it processes after ours - see the callers.
+    """
+    if x11_event_loop_running():
+        return None
+    try:
+        # `gtk_get_pywindow` only loads the gtk bindings when it is called, so the call has
+        # to be guarded too; and importing the package runs its `__init__`, which injects
+        # gtk's lookup into `xpra.x11.common` - neither may happen on a server:
+        from xpra.x11.gtk import gtk_get_pywindow
+        return gtk_get_pywindow(xid)
+    except ImportError:
+        # a process which cannot load the gtk bindings is not using them for routing
+        log("gtk_event_window(%#x)", xid, exc_info=True)
+        return None
 
 
 def xatoms_to_strings(data: bytes) -> Sequence[str]:

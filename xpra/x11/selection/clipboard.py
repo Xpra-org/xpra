@@ -13,7 +13,10 @@ from xpra.x11.common import X11Event
 from xpra.x11.error import xsync, xlog
 from xpra.x11.prop import prop_set
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
-from xpra.x11.selection.common import xatoms_to_strings, strings_to_xatoms, xfixes_selection_input
+from xpra.x11.selection.common import (
+    xatoms_to_strings, strings_to_xatoms, xfixes_selection_input,
+    x11_event_loop_running, gtk_event_window,
+)
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.log import Logger
 
@@ -30,15 +33,6 @@ IGNORED_PROPERTIES = (
 IGNORED_MESSAGES = (
     "_GTK_LOAD_ICONTHEMES",
 )
-
-
-def x11_event_loop_running() -> bool:
-    """ True when the X11 event loop is already routing events - see `x11.subsystem.x11init` """
-    try:
-        from xpra.x11.bindings import loop
-    except ImportError:
-        return False
-    return bool(loop.loop)
 
 
 def init_event_window(gtk_filter: bool) -> int:
@@ -96,8 +90,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
             add_event_receiver(self.event_window_xid, self)
             if self.gtk_filter:
                 # gtk must know about this window before we use it, and must keep knowing:
-                from xpra.x11.gtk import gtk_get_pywindow
-                self.gtk_event_window = gtk_get_pywindow(self.event_window_xid)
+                self.gtk_event_window = gtk_event_window(self.event_window_xid)
         super().__init__(send_packet_cb, progress_cb, **kwargs)
 
     def init_gtk_filter(self) -> None:

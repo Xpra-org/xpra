@@ -7,14 +7,13 @@ import os
 from typing import Final
 
 from xpra.util.parsing import TRUE_OPTIONS
-from xpra.x11.common import get_pywindow
 from xpra.x11.error import xsync
 from xpra.util.str_fn import csv
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.core import constants
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
-from xpra.x11.selection.common import AlreadyOwned, xfixes_selection_input
+from xpra.x11.selection.common import AlreadyOwned, xfixes_selection_input, gtk_event_window
 from xpra.x11.common import X11Event
 from xpra.x11.prop import prop_set
 from xpra.x11.info import get_wininfo
@@ -42,7 +41,11 @@ def get_owner(selection: str) -> int:
 def create_manager_window() -> int:
     X11Window = X11WindowBindings()
     rxid = X11Window.get_root_xid()
-    event_mask = PropertyChangeMask
+    # a client is not told about the destruction of its own windows unless it asks:
+    # `do_x11_destroy_event` below wants to know when this one goes away, and so does gtk,
+    # which resolves the screen for the xfixes events it processes after us through its own
+    # lookup of this window - and dereferences a NULL screen when it no longer knows it.
+    event_mask = PropertyChangeMask | StructureNotifyMask
     xid = X11Window.CreateWindow(rxid, -1, -1, event_mask=event_mask, inputoutput=InputOnly)
     prop_set(xid, "WM_TITLE", "latin1", "XPRA-SELECTION-MANAGER")
     log("create_manager_window()=%#x", xid)
@@ -74,8 +77,9 @@ class ManagerSelection(GObject.GObject):
         self.exit_timer: int = 0
         with xsync:
             self.xid = create_manager_window()
-            # so gtk doesn't get confused:
-            self.window = get_pywindow(self.xid)
+            # keeps gtk's lookup of this window working, when gtk is the one
+            # routing our events - nothing here ever uses it:
+            self.gtk_manager_window = gtk_event_window(self.xid)
             rxid = X11WindowBindings().get_root_xid()
             for xid in (self.xid, rxid):
                 for selection in self.selections:
