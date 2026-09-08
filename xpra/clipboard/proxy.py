@@ -198,15 +198,14 @@ class ClipboardProxyCore:
 
     def emit_token(self) -> None:
         self._emit_token_timer = 0
-        boc = self._block_owner_change
-        if not boc:
+        if not self._block_owner_change:
             self._block_owner_change = GLib.idle_add(self.remove_block)
         self._have_token = False
         self._last_emit_token = monotonic()
         self.do_emit_token()
         self._sent_token_events += 1
 
-    def do_emit_token(self):
+    def do_emit_token(self) -> None:
         # self.emit("send-clipboard-token")
         pass
 

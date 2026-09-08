@@ -537,7 +537,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         # the ones the peer prefers, minus the duplicates
         return dedup_targets(self.get_eager_targets(targets))
 
-    def do_emit_token(self):
+    def do_emit_token(self) -> None:
         if not self._greedy_client:
             # send just the token
             self.send_clipboard_token_handler(self, {"targets": (), "data": {}})
@@ -587,7 +587,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
-    def get_contents(self, target: str, callback: ClipboardCallback):
+    def get_contents(self, target: str, callback: ClipboardCallback) -> None:
         log("get_contents%s", (target, callback))
 
         def got_contents(*args) -> None:
