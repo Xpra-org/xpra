@@ -18,7 +18,7 @@ class KeyboardConfig(KeyboardConfigBase):
     the layout that one client asked for: installing it on the device belongs
     to the keyboard subsystem - see `WaylandKeyboardManager.install_keymap`.
     """
-    __slots__ = ("layout", "model", "variant", "options", "keys_pressed")
+    __slots__ = ("layout", "layouts", "model", "variant", "variants", "options", "keys_pressed")
 
     def __init__(self):
         super().__init__()
@@ -26,6 +26,9 @@ class KeyboardConfig(KeyboardConfigBase):
         self.model = ""
         self.variant = ""
         self.options = ""
+        # the other layouts this client can switch to:
+        self.layouts: tuple[str, ...] = ()
+        self.variants: tuple[str, ...] = ()
         # this is shared between clients, see `KeyboardConnection.set_keymap`:
         self.keys_pressed: dict[int, Any] = {}
 
@@ -36,8 +39,10 @@ class KeyboardConfig(KeyboardConfigBase):
         info = super().get_info()
         info |= {
             "layout": self.layout,
+            "layouts": self.layouts,
             "model": self.model,
             "variant": self.variant,
+            "variants": self.variants,
             "options": self.options,
         }
         return info
@@ -54,8 +59,32 @@ class KeyboardConfig(KeyboardConfigBase):
         keymap = typedict(props.dictget("keymap")) or props
         # the keyboard model is only ever sent as part of `query_struct`:
         model = typedict(keymap.dictget("query_struct")).strget("model")
-        return self.update_layout(keymap.strget("layout"), model,
+        mods = self.update_layout(keymap.strget("layout"), model,
                                   keymap.strget("variant"), keymap.strget("options"))
+        layouts = keymap.strtupleget("layouts")
+        variants = keymap.strtupleget("variants")
+        if (layouts, variants) != (self.layouts, self.variants):
+            self.layouts = layouts
+            self.variants = variants
+            mods += 1
+        return mods
+
+    def get_layout_groups(self) -> tuple[tuple[str, str], ...]:
+        """
+            The (layout, variant) pairs this client can use, active layout first.
+            `layouts` and `variants` are paired by position, the way xkb pairs them,
+            and a layout with no variant of its own simply gets an empty one.
+            The active `layout` and `variant` are authoritative: a layout of the same
+            name further down the list is that same layout, not another group.
+        """
+        groups: list[tuple[str, str]] = []
+        if self.layout:
+            groups.append((self.layout, self.variant))
+        for i, layout in enumerate(self.layouts):
+            if not layout or any(layout == name for name, _ in groups):
+                continue
+            groups.append((layout, self.variants[i] if i < len(self.variants) else ""))
+        return tuple(groups)
 
     def set_layout(self, layout: str, variant: str, options: str) -> bool:
         # the legacy `layout-changed` packet does not carry the model
@@ -71,6 +100,8 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def get_hash(self) -> str:
         """ this hash changes whenever a different keymap would have to be installed """
-        if not any((self.layout, self.model, self.variant, self.options)):
+        groups = self.get_layout_groups()
+        if not groups and not any((self.model, self.options)):
             return ""
-        return "/".join((self.layout, self.model, self.variant, self.options))
+        return "/".join(("+".join(f"{layout}:{variant}" for layout, variant in groups),
+                         self.model, self.options))

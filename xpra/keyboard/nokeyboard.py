@@ -34,6 +34,16 @@ class NoKeyboardDevice:
         return False
 
     @staticmethod
+    def get_keycode_for_keysym(keysym: int) -> tuple[int, int]:
+        """ this is not a real keyboard """
+        return -1, 0
+
+    @staticmethod
+    def get_keycode_for_keyname(name: str) -> tuple[int, int]:
+        """ this is not a real keyboard """
+        return -1, 0
+
+    @staticmethod
     def get_keycodes_down() -> Sequence[int]:
         return ()
 

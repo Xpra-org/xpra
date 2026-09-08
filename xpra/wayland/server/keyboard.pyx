@@ -21,7 +21,7 @@ from xpra.wayland.server.wlroots cimport (
     XKB_CONTEXT_NO_FLAGS, XKB_KEYMAP_COMPILE_NO_FLAGS, XKB_KEYSYM_NO_FLAGS,
     xkb_keycode_t, xkb_keysym_t, xkb_layout_index_t, xkb_level_index_t,
     xkb_keymap_min_keycode, xkb_keymap_max_keycode,
-    xkb_keymap_num_layouts_for_key, xkb_keymap_num_levels_for_key,
+    xkb_keymap_num_layouts, xkb_keymap_num_layouts_for_key, xkb_keymap_num_levels_for_key,
     xkb_keymap_key_get_syms_by_level, xkb_keysym_from_name,
 )
 
@@ -100,6 +100,9 @@ cdef class WaylandKeyboard:
             The layout attributes come from the client, so a layout we cannot compile
             is not a fatal error: we keep the keymap that is already installed.
         """
+        if self.keyboard == NULL:
+            # `cleanup` can have run before a packet gets here
+            return False
         cdef xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS)
         if context == NULL:
             log.error("Error: failed to create a new xkb context")
@@ -131,6 +134,13 @@ cdef class WaylandKeyboard:
         return True
 
     cdef void _build_keysym_map(self, xkb_keymap *keymap) noexcept:
+        """
+            Map each keysym to the (keycode, layout group) which produces it.
+            The keymap can hold up to 4 layout groups - one per client layout,
+            see `WaylandKeyboardManager.get_layout_groups` - so the group has to be
+            part of the answer: it tells the caller which group to switch to
+            before pressing the key.
+        """
         cdef xkb_keycode_t min_kc = xkb_keymap_min_keycode(keymap)
         cdef xkb_keycode_t max_kc = xkb_keymap_max_keycode(keymap)
         cdef xkb_keycode_t kc
@@ -138,6 +148,7 @@ cdef class WaylandKeyboard:
         cdef xkb_level_index_t level, n_levels
         cdef const xkb_keysym_t *syms
         cdef int n_syms, i
+        cdef unsigned int sym
         cdef dict mapping = {}
         for kc in range(min_kc, max_kc + 1):
             n_layouts = xkb_keymap_num_layouts_for_key(keymap, kc)
@@ -146,24 +157,29 @@ cdef class WaylandKeyboard:
                 for level in range(n_levels):
                     n_syms = xkb_keymap_key_get_syms_by_level(keymap, kc, layout, level, &syms)
                     for i in range(n_syms):
-                        # Prefer the first (lowest keycode/layout/level) mapping for each keysym:
-                        mapping.setdefault(<unsigned int> syms[i], <unsigned int> kc)
+                        sym = <unsigned int> syms[i]
+                        existing = mapping.get(sym)
+                        # prefer the lowest group, so that keysyms shared by more than one layout
+                        # do not cause a group switch, then the lowest keycode / level within it:
+                        if existing is None or existing[1] > <unsigned int> layout:
+                            mapping[sym] = (<unsigned int> kc, <unsigned int> layout)
         self.keysym_to_keycode = mapping
-        log("built keysym->keycode map with %i entries (keycodes %i..%i)",
-            len(mapping), min_kc, max_kc)
+        log("built keysym->keycode map with %i entries (keycodes %i..%i, %i group(s))",
+            len(mapping), min_kc, max_kc, xkb_keymap_num_layouts(keymap))
 
-    def get_keycode_for_keysym(self, keysym: int) -> int:
-        return self.keysym_to_keycode.get(int(keysym), -1)
+    def get_keycode_for_keysym(self, keysym: int) -> tuple[int, int]:
+        """ returns the (keycode, group) for this keysym, or (-1, 0) if the keymap has no such symbol """
+        return self.keysym_to_keycode.get(int(keysym), (-1, 0))
 
-    def get_keycode_for_keyname(self, name: str) -> int:
+    def get_keycode_for_keyname(self, name: str) -> tuple[int, int]:
         cdef xkb_keysym_t sym
         if not name:
-            return -1
+            return -1, 0
         bname = name.encode("latin1")
         sym = xkb_keysym_from_name(bname, XKB_KEYSYM_NO_FLAGS)
         if sym == 0:
-            return -1
-        return self.keysym_to_keycode.get(int(sym), -1)
+            return -1, 0
+        return self.keysym_to_keycode.get(int(sym), (-1, 0))
 
     def press_key(self, keycode: int, press: bool) -> None:
         cdef uint32_t time_msec = get_time_msec()
