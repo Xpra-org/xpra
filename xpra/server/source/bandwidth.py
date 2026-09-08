@@ -61,7 +61,8 @@ class BandwidthConnection(StubClientConnection):
         self.adapter_type = ccd.strget("adapter-type")
         self.jitter = ccd.intget("jitter", 0)
         bandwidth_limit = c.intget("bandwidth-limit", 0)
-        if getattr(self, "mmap_size", 0) > 0:
+        mmap_write_area = getattr(self, "mmap_write_area", None)
+        if mmap_write_area and mmap_write_area.enabled:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
             self.bandwidth_detection = False
@@ -95,8 +96,8 @@ class BandwidthConnection(StubClientConnection):
     def update_bandwidth_limits(self) -> None:
         if not self.bandwidth_detection:
             return
-        mmap_size = getattr(self, "mmap_size", 0)
-        if mmap_size > 0:
+        mmap_write_area = getattr(self, "mmap_write_area", None)
+        if mmap_write_area and mmap_write_area.enabled:
             return
         # calculate soft bandwidth limit based on send congestion data:
         bandwidth_limit = 0
