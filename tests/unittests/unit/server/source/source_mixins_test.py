@@ -339,6 +339,31 @@ class SourceMixinsTest(unittest.TestCase):
             m.update_bandwidth_limits()
         self._test_mixin_class(BandwidthConnection, test_fn=test_update)
 
+    def test_bandwidth_with_mmap(self):
+        from xpra.server.source.bandwidth import BandwidthConnection
+
+        def test_mmap(_c, m):
+            # mmap state moved to the mmap area object: a connection with an
+            # active write area must still disable bandwidth limiting.
+            m.mmap_write_area = AdHocStruct()
+            m.mmap_write_area.enabled = True
+            m.parse_client_caps(typedict({
+                "bandwidth-limit": 500,
+                "bandwidth-detection": True,
+                "connection-data": {"jitter": 20},
+            }))
+            self.assertEqual(m.bandwidth_limit, 0)
+            self.assertFalse(m.bandwidth_detection)
+            self.assertEqual(m.jitter, 0)
+            # This must return before accessing the regular bandwidth state.
+            m.bandwidth_detection = True
+            m.update_bandwidth_limits()
+
+        self._test_mixin_class(BandwidthConnection, {
+            "limit": 1000,
+            "detection": True,
+        }, test_fn=test_mmap)
+
     def _get_window_mixin_server_attributes(self):
         def get_transient_for(_w):
             return None

@@ -156,7 +156,8 @@ class EncodingsConnection(StubClientConnection):
         log(f"video specs={video}")
         self.send_async(ENCODING_SET, {"encodings": d, "video": video})
         # only print encoding info when not using mmap:
-        if getattr(self, "mmap_size", 0) == 0:
+        mmap_write_area = getattr(self, "mmap_write_area", None)
+        if not mmap_write_area or not mmap_write_area.enabled:
             self.print_encoding_info()
 
     def recalculate_delays(self) -> None:
