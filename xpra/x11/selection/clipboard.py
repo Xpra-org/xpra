@@ -85,21 +85,21 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
 
     def __init__(self, send_packet_cb: Callable, progress_cb=noop, **kwargs):
         GObject.GObject.__init__(self)
-        self.x11_filter = False
+        self.gtk_filter = False
         self.window = None
         # this also decides whether gtk is going to be processing our events:
-        self.init_x11_filter()
+        self.init_gtk_filter()
         with xsync:
-            self.event_window_xid = init_event_window(self.x11_filter)
+            self.event_window_xid = init_event_window(self.gtk_filter)
             add_event_receiver(self.event_window_xid, self)
-            if self.x11_filter:
+            if self.gtk_filter:
                 # gtk must know about this window before we use it,
                 # and must keep knowing about it - see `init_event_window`:
                 from xpra.x11.common import get_pywindow
                 self.window = get_pywindow(self.event_window_xid)
         super().__init__(send_packet_cb, progress_cb, **kwargs)
 
-    def init_x11_filter(self) -> None:
+    def init_gtk_filter(self) -> None:
         # X11 events only reach the receivers registered above if something routes them
         # to `xpra.x11.dispatch`: without that we would never see a selection owner change
         # or a conversion property notify. There are two routers:
@@ -111,14 +111,14 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
             from xpra.x11.gtk.bindings import init_x11_filter
         except ImportError:
             # a process which cannot load the gtk bindings is not using them for routing
-            log("init_x11_filter()", exc_info=True)
+            log("init_gtk_filter()", exc_info=True)
             return
         # the filter is shared and reference counted, so take a reference of our own
         # rather than relying on another subsystem (xsettings, window stacking, xi2..)
         # happening to be enabled and holding one for us.
         # A successful call holds a reference even when the filter was already installed:
         init_x11_filter()
-        self.x11_filter = True
+        self.gtk_filter = True
 
     def __repr__(self):
         return "X11Clipboard"
@@ -137,16 +137,16 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
             remove_event_receiver(xid, self)
             remove_event_window(xid)
 
-    def cleanup_x11_filter(self) -> None:
-        if self.x11_filter:
-            self.x11_filter = False
+    def cleanup_gtk_filter(self) -> None:
+        if self.gtk_filter:
+            self.gtk_filter = False
             from xpra.x11.gtk.bindings import cleanup_x11_filter
             cleanup_x11_filter()
 
     def cleanup(self) -> None:
         ClipboardTimeoutHelper.cleanup(self)
         self.cleanup_window()
-        self.cleanup_x11_filter()
+        self.cleanup_gtk_filter()
 
     def make_proxy(self, selection):
         from xpra.x11.selection.proxy import ClipboardProxy
