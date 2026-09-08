@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from xpra.net.common import Packet
 from xpra.clipboard import core
-from xpra.clipboard.common import ALL_CLIPBOARDS, parse_greedy
+from xpra.clipboard.common import ALL_CLIPBOARDS, parse_greedy, parse_want_targets
 from xpra.clipboard.core import ClipboardProtocolHelperCore
 from xpra.util.objects import typedict
 
@@ -21,6 +21,7 @@ class ClipboardProxy:
         self._can_send = True
         self._can_receive = True
         self._greedy_client = False
+        self._want_targets = False
         self._clipboard_origin = ""
         self.tokens = []
 
@@ -33,6 +34,9 @@ class ClipboardProxy:
 
     def set_greedy_client(self, greedy: bool) -> None:
         self._greedy_client = greedy
+
+    def set_want_targets(self, want_targets: bool) -> None:
+        self._want_targets = want_targets
 
 
 class ClipboardHelper(ClipboardProtocolHelperCore):
@@ -214,11 +218,12 @@ class ClipboardCoreTest(unittest.TestCase):
         )])
         self.assertTrue(proxy._greedy_client)
 
-    def test_greedy_capability_backwards_compatibility(self):
+    def test_selection_capabilities_backwards_compatibility(self):
         caps = typedict({"greedy": ("CLIPBOARD",)})
         self.assertTrue(caps.boolget("greedy"))
         self.assertEqual(parse_greedy(caps), ("CLIPBOARD",))
         self.assertEqual(parse_greedy(typedict({"greedy": True})), tuple(ALL_CLIPBOARDS))
+        self.assertEqual(parse_want_targets(typedict({"want_targets": True})), tuple(ALL_CLIPBOARDS))
 
         helper, _proxy, _packets = self.make_helper(False)
         helper.local_preferred_targets = ()
@@ -237,6 +242,18 @@ class ClipboardCoreTest(unittest.TestCase):
         helper._local_to_remote["CLIPBOARD"] = "PRIMARY"
         helper.set_greedy_client(("PRIMARY",))
         self.assertTrue(clipboard._greedy_client)
+
+    def test_per_selection_want_targets(self):
+        helper, clipboard, _packets = self.make_helper(False)
+        primary = ClipboardProxy("PRIMARY")
+        helper._clipboard_proxies["PRIMARY"] = primary
+        helper.set_want_targets_client(("PRIMARY",))
+        self.assertFalse(clipboard._want_targets)
+        self.assertTrue(primary._want_targets)
+
+        helper._local_to_remote["CLIPBOARD"] = "PRIMARY"
+        helper.set_want_targets_client(("PRIMARY",))
+        self.assertTrue(clipboard._want_targets)
 
     def test_outgoing_greedy_is_per_selection(self):
         helper, clipboard, packets = self.make_helper(False)

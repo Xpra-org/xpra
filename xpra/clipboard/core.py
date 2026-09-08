@@ -18,10 +18,7 @@ from xpra.os_util import POSIX, get_hex_uuid
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
 from xpra.util.env import envint, envbool
-from xpra.clipboard.common import (
-    ALL_CLIPBOARDS,
-    get_format_size, sizeof_long, sizeof_short, compile_filters, get_local_selections,
-)
+from xpra.clipboard.common import get_format_size, sizeof_long, sizeof_short, compile_filters, get_local_selections
 from xpra.clipboard.targets import (
     HTML_TARGETS,
     PLAIN_TEXT_TARGETS,
@@ -143,9 +140,9 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
     def local_greedy_selection(self, selection: str) -> bool:
         return selection in self.local_greedy
 
-    def set_want_targets_client(self, want_targets: Sequence[str] | bool) -> None:
+    def set_want_targets_client(self, want_targets: Sequence[str]) -> None:
         log("set_want_targets_client(%s)", want_targets)
-        self._want_targets = tuple(ALL_CLIPBOARDS if want_targets is True else (want_targets or ()))
+        self._want_targets = tuple(want_targets)
         # pass it on to the ClipboardProxy instances:
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_want_targets(self.proxy_want_targets(selection))
@@ -246,9 +243,9 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_enabled(selection in selections)
 
-    def set_greedy_client(self, greedy: Sequence[str] | bool) -> None:
+    def set_greedy_client(self, greedy: Sequence[str]) -> None:
         log("set_greedy_client(%s)", greedy)
-        self._greedy = tuple(ALL_CLIPBOARDS if greedy is True else (greedy or ()))
+        self._greedy = tuple(greedy)
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_greedy_client(self.proxy_greedy(selection))
 
