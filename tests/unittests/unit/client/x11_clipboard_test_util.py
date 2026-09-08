@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import time
+from subprocess import PIPE
 
 from unit.client.x11_client_test_util import X11ClientTestUtil
 from xpra.util.env import envbool
@@ -23,14 +24,49 @@ def has_xclip():
 
 class X11ClipboardTestUtil(X11ClientTestUtil):
 
+    @staticmethod
+    def proc_output(proc) -> str:
+        """
+        What a command wrote before it failed.
+        `class_run_command` redirects to temporary files unless pipes are asked for,
+        so this has to be read back from them - we cannot use pipes for `xclip -i`,
+        which forks and holds them open for as long as it owns the selection.
+        """
+        msgs = []
+        for name, f in (("stdout", proc.stdout_file), ("stderr", proc.stderr_file)):
+            if not f:
+                #ie: XPRA_TEST_DEBUG sends the output to the terminal instead
+                continue
+            try:
+                with open(f.name, "rb") as fd:
+                    data = fd.read().decode("utf8", "replace").strip()
+            except OSError as e:
+                data = "cannot be read: %s" % e
+            if data:
+                msgs.append("%s=%r" % (name, data))
+        return ", ".join(msgs) or "no output"
+
     def get_clipboard_value(self, display, selection="clipboard"):
-        out = X11ClientTestUtil.get_command_output("xclip -display %s -selection %s -o" % (display, selection), shell=True)
-        return out.decode()
+        """
+        Returns the contents of the selection, and what `xclip` complained about.
+        `xclip -o` fails whenever the selection has no owner, which is a legitimate
+        outcome here, so the error is handed back instead of raising - already
+        formatted so that the caller can append it to its assertion message.
+        """
+        cmd = "xclip -display %s -selection %s -o" % (display, selection)
+        proc = self.class_run_command(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        out, err = proc.communicate()
+        error = ""
+        if proc.returncode != 0:
+            error = " ('%s' returned %s: %s)" % (
+                cmd, proc.returncode, err.decode("utf8", "replace").strip() or "no error output")
+        return out.decode(), error
 
     def set_clipboard_value(self, display, value, selection="clipboard"):
         cmd = "echo -n '%s' | xclip -display %s -selection %s -i" % (value, display, selection)
         xclip = self.run_command(cmd, shell=True)
-        assert pollwait(xclip, 5)==0, "xclip command '%s' returned %s" % (cmd, xclip.poll())
+        r = pollwait(xclip, 5)
+        assert r==0, "xclip command '%s' returned %s (%s)" % (cmd, r, self.proc_output(xclip))
 
     def copy_and_verify(self, display1, display2, synced=True, wait=1, selection="clipboard"):
         log("copy_and_verify%s", (display1, display2, synced, wait, selection))
@@ -38,16 +74,17 @@ class X11ClipboardTestUtil(X11ClientTestUtil):
         self.set_clipboard_value(display1, value, selection)
         #wait for synchronization to occur:
         time.sleep(wait)
-        new_value = self.get_clipboard_value(display2, selection)
+        new_value, error = self.get_clipboard_value(display2, selection)
         if synced:
-            assert new_value==value, "clipboard contents for %s do not match, expected '%s' but got '%s'" % (selection, value, new_value)
+            assert new_value==value, "clipboard contents for %s do not match, expected '%s' but got '%s'%s" % (
+                selection, value, new_value, error)
         else:
             assert new_value!=value, "clipboard contents for %s match but synchronization was not expected: value='%s'" % (selection, value)
         if SANITY_CHECKS and display2!=display1:
             #verify that the value has not changed on the original display:
-            new_value = self.get_clipboard_value(display1, selection)
-            assert new_value==value, "clipboard contents for %s changed on the display we copied from, expected '%s' but got '%s'" % (
-                selection, value, new_value)
+            new_value, error = self.get_clipboard_value(display1, selection)
+            assert new_value==value, "clipboard contents for %s changed on the display we copied from, expected '%s' but got '%s'%s" % (
+                selection, value, new_value, error)
         return value
 
     def do_test_copy_selection(self, selection="clipboard", direction="both"):
