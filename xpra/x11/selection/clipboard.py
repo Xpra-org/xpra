@@ -41,14 +41,23 @@ def x11_event_loop_running() -> bool:
     return bool(loop.loop)
 
 
-def init_event_window() -> int:
+def init_event_window(gtk_filter: bool) -> int:
     from xpra.x11.bindings.core import constants
     from xpra.x11.bindings.window import X11WindowBindings
     X11Window = X11WindowBindings()
     InputOnly: Final[int] = constants["InputOnly"]
     PropertyChangeMask: Final[int] = constants["PropertyChangeMask"]
     rxid = X11Window.get_root_xid()
-    xid = X11Window.CreateWindow(rxid, -1, -1, event_mask=PropertyChangeMask, inputoutput=InputOnly)
+    event_mask = PropertyChangeMask
+    if gtk_filter:
+        # this one is for gtk rather than for us: its event filter returns
+        # `GDK_FILTER_CONTINUE`, so gtk also processes every xfixes selection event we ask
+        # for, and resolves the screen through its own lookup of this window - a lookup
+        # which returns NULL once it has forgotten it, and a NULL screen is dereferenced
+        # unchecked. Without a `DestroyNotify` gtk only forgets this window when its
+        # wrapper is garbage collected, at a time unrelated to the event queue.
+        event_mask |= constants["StructureNotifyMask"]
+    xid = X11Window.CreateWindow(rxid, -1, -1, event_mask=event_mask, inputoutput=InputOnly)
     prop_set(xid, "WM_TITLE", "latin1", "Xpra-Clipboard")
     X11Window.selectSelectionInput(xid)
     log(f"init_event_window()={xid=}")
@@ -77,13 +86,17 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     def __init__(self, send_packet_cb: Callable, progress_cb=noop, **kwargs):
         GObject.GObject.__init__(self)
         self.x11_filter = False
+        self.window = None
+        # this also decides whether gtk is going to be processing our events:
         self.init_x11_filter()
         with xsync:
-            self.event_window_xid = init_event_window()
+            self.event_window_xid = init_event_window(self.x11_filter)
             add_event_receiver(self.event_window_xid, self)
-            # gtk must know about this window before we use it:
-            from xpra.x11.common import get_pywindow
-            self.window = get_pywindow(self.event_window_xid)
+            if self.x11_filter:
+                # gtk must know about this window before we use it,
+                # and must keep knowing about it - see `init_event_window`:
+                from xpra.x11.common import get_pywindow
+                self.window = get_pywindow(self.event_window_xid)
         super().__init__(send_packet_cb, progress_cb, **kwargs)
 
     def init_x11_filter(self) -> None:

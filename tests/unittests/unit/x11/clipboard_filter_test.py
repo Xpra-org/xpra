@@ -111,6 +111,30 @@ Gtk.main()
 check("events", events, "no xfixes selection event was delivered to the clipboard")
 helper.cleanup()
 
+# gtk has to forget the event window when it is destroyed, and in event order:
+# our filter returns GDK_FILTER_CONTINUE, so gtk resolves the screen for every xfixes
+# selection event through this lookup, and dereferences the result without checking it.
+# Without a `DestroyNotify` it would only forget the window when the wrapper is garbage
+# collected, at a time unrelated to the events still queued for that window.
+import gi
+gi.require_version("GdkX11", "3.0")
+from gi.repository import GdkX11
+Gdk = gi_import("Gdk")
+
+gdk_display = Gdk.Display.get_default()
+helper = make_helper()
+xid = helper.event_window_xid
+check("destroy", GdkX11.X11Window.lookup_for_display(gdk_display, xid) is not None,
+      "gtk does not know the clipboard event window")
+helper.cleanup()
+gdk_display.sync()
+for _ in range(100):
+    if not Gtk.events_pending():
+        break
+    Gtk.main_iteration_do(False)
+check("destroy", GdkX11.X11Window.lookup_for_display(gdk_display, xid) is None,
+      "gtk still knows the destroyed clipboard event window")
+
 for failure in failures:
     print("FAIL %s" % failure)
 print("done")
@@ -153,6 +177,8 @@ check("no gtk", "xpra.x11.gtk" not in sys.modules,
       "the clipboard imported the gtk bindings on a server")
 check("no gtk", common.get_pywindow is lookup,
       "importing the gtk bindings replaced `get_pywindow`")
+# the `StructureNotifyMask` and the gdk wrapper are only there for gtk's benefit:
+check("no gtk", helper.window is None, "the clipboard looked up a gdk window on a server")
 helper.cleanup()
 
 for failure in failures:
