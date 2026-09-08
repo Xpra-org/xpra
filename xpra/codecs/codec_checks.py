@@ -264,7 +264,7 @@ def make_test_image(pixel_format:str, w:int, h:int, plane_values=(0x20, 0x80, 0x
             #yuv444 = yuv.tobytes("raw", "YCbCr")
             #planes = ()
         else:
-            planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
+            planes = tuple(makebuf(sizes[i], plane_values[i]) for i in range(nplanes))
         return makeimage(planes, rowstride=strides, planes=nplanes)
         #l = len(y)+len(u)+len(v)
     if pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48"):
