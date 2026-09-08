@@ -18,15 +18,6 @@ class Unmanageable(Exception):
     pass
 
 
-# gtk will inject its lookup function here
-# (which we can eventually remove)
-def nolookup(_xid: int):
-    return object()
-
-
-get_pywindow = nolookup
-
-
 # the `XRes` bindings, validated the first time they are used:
 # `ResBindings()` hands out a new instance if the X11 connection has been replaced,
 # so comparing identities also re-validates the extension for the new connection

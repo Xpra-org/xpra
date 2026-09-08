@@ -142,8 +142,7 @@ print("done")
 
 
 # Servers route their own X11 events from `x11.bindings.loop` and forbid the gtk modules,
-# so the clipboard must not reach for the gtk bindings there: importing `xpra.x11.gtk`
-# replaces `xpra.x11.common.get_pywindow` with a version which cannot work in that process.
+# so the clipboard must not reach for the gtk bindings there.
 NO_GTK_CHECKS = r"""
 import sys
 from xpra.scripts.main import no_gi_gtk_modules
@@ -157,7 +156,6 @@ register_glib_source(GLib.MainContext.default())
 # this is what `X11Init.setup()` does once the event loop is routing:
 no_gi_gtk_modules()
 
-import xpra.x11.common as common
 from xpra.x11.selection.clipboard import X11Clipboard, x11_event_loop_running
 
 failures = []
@@ -170,13 +168,10 @@ def check(name, condition, message):
 
 check("loop", x11_event_loop_running(), "the X11 event loop should be routing events")
 
-lookup = common.get_pywindow
 helper = X11Clipboard(lambda *_args: None)
 helper.init_proxies([sys.argv[1]])
 check("no gtk", "xpra.x11.gtk" not in sys.modules,
       "the clipboard imported the gtk bindings on a server")
-check("no gtk", common.get_pywindow is lookup,
-      "importing the gtk bindings replaced `get_pywindow`")
 # the `StructureNotifyMask` and the gdk wrapper are only there for gtk's benefit:
 check("no gtk", helper.gtk_event_window is None, "the clipboard looked up a gdk window on a server")
 helper.cleanup()

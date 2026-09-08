@@ -15,11 +15,3 @@ inject_gdk()
 def gtk_get_pywindow(xid: int):
     from xpra.x11.gtk.bindings import get_pywindow as gpw
     return gpw(xid)
-
-
-def inject_pywindow() -> None:
-    from xpra.x11 import common
-    common.get_pywindow = gtk_get_pywindow
-
-
-inject_pywindow()
