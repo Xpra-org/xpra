@@ -31,6 +31,13 @@ python3 setup.py unittests unit.codecs.argb_test
 python3 setup.py unittests --skip-fail unit.client.splash_test --skip-slow unit.x11.x11_server_test
 ```
 
+Never run anything against a low display number (`:0`, and any display you did
+not start yourself): those belong to a real desktop session, and X11 test code
+takes selection ownership, selects events on the root window and installs GDK
+event filters - enough to break the session it is pointed at. Start an `Xvfb`
+on a free display instead, the way `unit/x11/*_test.py` do through
+`ServerTestUtil.find_free_display()` and `start_Xvfb()`.
+
 ### Lint
 ```sh
 # ruff (fast linter, used in pre-commit)
