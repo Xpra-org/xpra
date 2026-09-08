@@ -170,8 +170,9 @@ class X11ServerCore(GTKServerBase):
         with xlog:
             self.init_cursor()
         with xlog:
-            self.x11_filter = init_x11_filter()
-        assert self.x11_filter
+            init_x11_filter()
+            # Keep our lease even when another component installed the filter.
+            self.x11_filter = True
         with xlog:
             self.save_mode()
 

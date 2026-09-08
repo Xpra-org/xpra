@@ -644,7 +644,9 @@ class ClientExtras:
             return
         try:
             from xpra.x11.gtk3.gdk_bindings import init_x11_filter  #@UnresolvedImport, @UnusedImport
-            self.x11_filter = init_x11_filter()
+            init_x11_filter()
+            # We own a reference even if another component installed it first.
+            self.x11_filter = True
             log("x11_filter=%s", self.x11_filter)
         except Exception as e:
             log("init_x11_filter()", exc_info=True)
