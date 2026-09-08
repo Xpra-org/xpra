@@ -3409,7 +3409,12 @@ def run_clean_sockets(opts, args) -> int:
                                      matching_display=matching_display)
     if matching_display and not results:
         raise InitInfo(f"no UNKNOWN socket for display {matching_display!r}")
-    clean_sockets(dotxpra, results)
+    # socket_details() is keyed by socket directory, whereas clean_sockets()
+    # consumes individual (directory, display, path) entries.
+    sockets = [(socket_dir, display, sockpath)
+               for socket_dir, values in results.items()
+               for _, display, sockpath in values]
+    clean_sockets(dotxpra, sockets)
     return ExitCode.OK
 
 
