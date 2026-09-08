@@ -9,7 +9,7 @@
 import sys
 from typing import Dict, Any, Optional, Tuple, Callable, Union, List
 from time import sleep, monotonic
-from threading import Event
+from threading import Event, Lock
 from collections import deque
 from queue import Queue
 
@@ -85,6 +85,7 @@ class ClientConnection(StubSourceMixin):
         #the functions should add the packets they generate to the 'packet_queue'
         self.encode_work_queue : Queue[Union[None,Tuple[bool,Callable,Tuple[Any,...]]]] = Queue()
         self.encode_thread = None
+        self.encode_thread_lock = Lock()
         self.ordinary_packets : List[Tuple[PacketType,bool,Callable,Callable]] = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
@@ -253,9 +254,14 @@ class ClientConnection(StubSourceMixin):
         #holds functions to call to compress data (pixels, clipboard)
         #items placed in this queue are picked off by the "encode" thread,
         #the functions should add the packets they generate to the 'packet_queue'
-        self.queue_encode = self.encode_work_queue.put
-        self.queue_encode(item)
-        self.encode_thread = start_thread(self.encode_loop, "encode")
+        # This method can be reached concurrently.  Start exactly one encode
+        # thread and keep queue ownership ordered under the same lock.
+        put = self.encode_work_queue.put
+        with self.encode_thread_lock:
+            if not self.encode_thread:
+                self.encode_thread = start_thread(self.encode_loop, "encode")
+                self.queue_encode = put
+            put(item)
 
     def encode_queue_size(self) -> int:
         return self.encode_work_queue.qsize()
