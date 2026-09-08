@@ -9,7 +9,7 @@ import shutil
 import tempfile
 import unittest
 
-from xpra.scripts.config import read_xpra_conf
+from xpra.scripts.config import read_xpra_conf, fixup_keyboard
 
 
 class ReadConfTest(unittest.TestCase):
@@ -39,6 +39,33 @@ class ReadConfTest(unittest.TestCase):
 
     def test_missing_dir(self):
         self.assertEqual(read_xpra_conf(os.path.join(self.tmpdir, "does-not-exist")), {})
+
+
+class FixupKeyboardTest(unittest.TestCase):
+
+    @staticmethod
+    def fixup(layouts, variants):
+        class Options:
+            keyboard_backend = "auto"
+            keyboard_raw = "no"
+        options = Options()
+        options.keyboard_layouts = layouts
+        options.keyboard_variants = variants
+        fixup_keyboard(options)
+        return options.keyboard_layouts, options.keyboard_variants
+
+    def test_csv(self):
+        # `str` is also a `Sequence`, so this used to be split into characters:
+        self.assertEqual(self.fixup("fr,us", "oss,"), (["fr", "us"], ["oss", ""]))
+
+    def test_single_value(self):
+        self.assertEqual(self.fixup("fr", ""), (["fr"], []))
+
+    def test_list_is_kept(self):
+        self.assertEqual(self.fixup(["fr", "us"], []), (["fr", "us"], []))
+
+    def test_duplicates_and_whitespace(self):
+        self.assertEqual(self.fixup(" fr , us , fr ", "")[0], ["fr", "us"])
 
 
 def main():
