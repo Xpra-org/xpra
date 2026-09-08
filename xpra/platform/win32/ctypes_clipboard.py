@@ -146,6 +146,7 @@ def get_clients(envvar, default="") -> Sequence[str]:
 
 BLOCKLISTED_CLIPBOARD_CLIENTS = get_clients("BLOCKLISTED")
 SYNCDELAY_CLIPBOARD_CLIENTS = get_clients("NOSYNC", "VBoxTray.exe")
+NOSYNC_DELAY = envint("XPRA_CLIPBOARD_NOSYNC_DELAY", 500)
 log("BLOCKLISTED_CLIPBOARD_CLIENTS=%s", BLOCKLISTED_CLIPBOARD_CLIENTS)
 log("SYNCDELAY_CLIPBOARD_CLIENTS=%s", SYNCDELAY_CLIPBOARD_CLIENTS)
 COMPRESSED_IMAGES = envbool("XPRA_CLIPBOARD_COMPRESSED_IMAGES", True)
@@ -1121,7 +1122,7 @@ class Win32Clipboard(PrimaryHelperMixin, ClipboardTimeoutHelper):
                 # ie: don't try to sync from VirtualBox
                 log("CLIPBOARDUPDATE coming from '%s' ignored", owner_info)
                 return r
-            min_delay = 500 * int(is_syncdelay(owner_info))
+            min_delay = NOSYNC_DELAY if is_syncdelay(owner_info) else 0
             log("CLIPBOARDUPDATE coming from '%s', min_delay=%i", owner_info, min_delay)
             # a local clipboard change takes precedence
             # over any remote `PRIMARY` contents we were about to fetch:
