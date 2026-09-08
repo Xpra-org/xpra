@@ -995,7 +995,7 @@ class WindowVideoSource(WindowSource):
                     self.wid, sequence, ew, eh, encoding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
             item = (ew, eh, damage_time, now, eimage, encoding, sequence, options, flush)
             if av_delay<=0:
-                self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
+                self.call_in_encode_thread(False, self.make_data_packet_cb, *item)
             else:
                 self.encode_queue.append(item)
                 self.schedule_encode_from_queue(av_delay)
