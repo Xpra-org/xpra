@@ -12,12 +12,12 @@ log = Logger("shadow")
 
 def screenshot(filename: str) -> int:
     # pylint: disable=import-outside-toplevel
+    from xpra.x11.gtk.display_source import init_gdk_display_source
+    init_gdk_display_source()
     from xpra.x11.xroot_props import get_root_size
-    from xpra.gtk.util import get_default_root_window
     from xpra.x11.shadow.backends import CAPTURE_BACKENDS
     from xpra.server.shadow.shadow_server_base import try_setup_capture
-    root = get_default_root_window()
-    capture = try_setup_capture(CAPTURE_BACKENDS, "auto", root)
+    capture = try_setup_capture(CAPTURE_BACKENDS, "auto")
     capture.refresh()
     w, h = get_root_size()
     image = capture.get_image(0, 0, w, h)
@@ -40,8 +40,8 @@ def main(*args) -> int:
         s.geometry = geom
         return s
 
-    from xpra.x11.gtk import gdk_display_source  # pylint: disable=import-outside-toplevel, no-name-in-module
-    gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
+    from xpra.x11.gtk.display_source import init_gdk_display_source  # pylint: disable=import-outside-toplevel
+    init_gdk_display_source()
     from xpra.x11.shadow.filter import window_matches
     for w in window_matches(args, cb):
         print(f"{w}")
