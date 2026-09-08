@@ -82,6 +82,34 @@ class X11WindowBindingsTest(ServerTestUtil):
             xvfb.terminate()
             self.assertIsNotNone(pollwait(xvfb, 10))
 
+    def test_window_pid(self):
+        display = self.find_free_display()
+        xvfb = self.start_Xvfb(display)
+        try:
+            with OSEnvContext():
+                os.environ["DISPLAY"] = display
+                from xpra.x11.bindings.core import get_root_xid
+                from xpra.x11.bindings.display_source import X11DisplayContext
+                from xpra.x11.bindings.window import X11WindowBindings
+
+                with X11DisplayContext(display):
+                    from xpra.x11.bindings.res import ResBindings
+                    if not ResBindings().check_xres():
+                        raise unittest.SkipTest("no XRes extension")
+                    from xpra.x11.common import get_pid
+                    x11window = X11WindowBindings()
+                    window = x11window.CreateWindow(get_root_xid(), 0, 0, 32, 32)
+                    try:
+                        # we created this window, so it must be attributed to this process,
+                        # both on the first call and via the cached bindings:
+                        self.assertEqual(get_pid(window), os.getpid())
+                        self.assertEqual(get_pid(window), os.getpid())
+                    finally:
+                        x11window.DestroyWindow(window)
+        finally:
+            xvfb.terminate()
+            self.assertIsNotNone(pollwait(xvfb, 10))
+
 
 def main():
     if POSIX and not OSX:

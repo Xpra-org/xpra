@@ -6,7 +6,6 @@
 
 import os
 import signal
-import sys
 from time import monotonic
 from collections import deque
 from typing import Any
@@ -21,7 +20,7 @@ from xpra.constants import WORKSPACE_NAMES
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_CREATE, WINDOW_METADATA
 from xpra.server import features
-from xpra.x11.common import Unmanageable, X11Event
+from xpra.x11.common import Unmanageable, X11Event, get_pid
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.error import xsync, xswallow, xlog, XError
@@ -329,12 +328,15 @@ class SeamlessWindowServer(WindowServer):
         if root_overlay and root_overlay.is_overlay_window(xid):
             windowlog("ignoring root overlay window %#x", xid)
             return
-        Gdk = sys.modules.get("gi.repository.Gdk")
-        if Gdk:
-            from xpra.x11.common import get_pywindow
-            gdk_window = get_pywindow(xid)
-            if not gdk_window or gdk_window.get_window_type() == Gdk.WindowType.TEMP:
-                windowlog("ignoring TEMP window %#x", xid)
+        pid = 0
+        with xswallow:
+            pid = get_pid(xid)
+        if pid == os.getpid():
+            # one of our own windows (ie: a gtk menu or dialog):
+            # the only ones we do want to manage are the system tray corral windows
+            from xpra.x11.tray import get_tray_window
+            if not get_tray_window(xid):
+                windowlog("ignoring our own window %#x", xid)
                 return
         if window := self.get_window(xid):
             if window.is_managed():

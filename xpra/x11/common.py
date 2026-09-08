@@ -27,6 +27,32 @@ def nolookup(_xid: int):
 get_pywindow = nolookup
 
 
+# the `XRes` bindings, validated the first time they are used:
+# `ResBindings()` hands out a new instance if the X11 connection has been replaced,
+# so comparing identities also re-validates the extension for the new connection
+_xres = None
+_xres_ok = False
+
+
+def get_pid(xid: int) -> int:
+    """
+    the pid of the process which created this window, zero if it cannot be found
+    (must be called from an X11 error handler context)
+    """
+    global _xres, _xres_ok
+    try:
+        from xpra.x11.bindings.res import ResBindings
+    except ImportError:
+        return 0
+    xres = ResBindings()
+    if xres is not _xres:
+        _xres = xres
+        _xres_ok = xres.check_xres()
+    if not _xres_ok:
+        return 0
+    return xres.get_pid(xid)
+
+
 REPR_FUNCTIONS: dict[type, Callable[[Any], Any]] = {}
 
 

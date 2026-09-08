@@ -7,6 +7,7 @@
 import re
 from typing import Any
 
+from xpra.x11.common import get_pid
 from xpra.x11.error import xsync
 from xpra.x11.prop import prop_get
 from xpra.log import Logger
@@ -34,17 +35,6 @@ def i(v: str) -> int:
         return int(v)
     except ValueError:
         return 0
-
-
-def get_pid(xid: int) -> int:
-    try:
-        from xpra.x11.bindings.res import ResBindings  # pylint: disable=import-outside-toplevel
-    except ImportError:
-        return 0
-    XRes = ResBindings()
-    if not XRes.check_xres():
-        return 0
-    return XRes.get_pid(xid)
 
 
 def window_matches(wspec, model_class):
