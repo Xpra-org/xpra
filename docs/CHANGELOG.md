@@ -12,6 +12,7 @@
   * [MS Windows Num-Lock state](https://github.com/Xpra-org/xpra/commit/831659bf7ac484f44ee700d16e380ee90b2a0365)
   * [MS Windows missing modifiers](https://github.com/Xpra-org/xpra/commit/d02f25096925f57b6f6fb60b97b1d691fd8dadf9)
 * ⚠️ Major:
+  * [OpenGL windows can remain blank until they receive a configure event](https://github.com/Xpra-org/xpra/commit/94c55c05fb11cb1a985a1e3cc03bc5634e9874d2)
   * [crash: don't assume Gdk displays are X11 displays](https://github.com/Xpra-org/xpra/commit/d448cf6c5bfc6b608e641f1ecc465d6816c6cb38)
   * [Wayland clients don't need a X11 display](https://github.com/Xpra-org/xpra/commit/92ddb0189adeec54760edc9654c06250adb91aef)
   * [stale X11 timestamps cause focus issues](https://github.com/Xpra-org/xpra/commit/2896248d67d6c01ba3f5afaa9f947ac82393efaf)
@@ -21,11 +22,21 @@
   * [don't reconfigure monitors unless required](https://github.com/Xpra-org/xpra/commit/7db58048ac1e6a11c43f2eaab2a2b563cda9d2a4) [verify with Xvfb](https://github.com/Xpra-org/xpra/commit/76a8f16d7f7c9e26b3651821db43ce32ad947cbb)
   * [errors running configuration subcommands as root](https://github.com/Xpra-org/xpra/commit/1b7ea2aa54007185771d1422ee7dd7a5dc40b04c)
   * [honour configuration file naming order](https://github.com/Xpra-org/xpra/commit/a56d76c88482ac69b41a74eb644c9706c7d15f94)
+  * [the encoder server fails to start](https://github.com/Xpra-org/xpra/commit/6339ab5f304382fae13cc23c32d0574364f67060)
 * Wayland backend:
   * [screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
   * [windows can end up duplicated on clients](https://github.com/Xpra-org/xpra/commit/33256c95d4c636982c6c6611503cd57606da9c36)
   * [synchronize window encoding properties](https://github.com/Xpra-org/xpra/commit/cd7535c4fb28db901082e518de4a851d15b5b902)
+* 🌈 Encodings:
+  * [CUDA device detection fails when mmap is enabled](https://github.com/Xpra-org/xpra/commit/ff8ffc5486f523617e459aea483b59589b4ddd18)
+  * [threaded image filters hand window damage to the wrong thread](https://github.com/Xpra-org/xpra/commit/e9f90e51998fb37aa3f302e5deb422d26efa1f28), [racing with encode-queue cleanup](https://github.com/Xpra-org/xpra/commit/f5c46a893274d0f047960e4473ee0276ec93a1f9)
+  * [damage cancellation can free an image while it is being encoded](https://github.com/Xpra-org/xpra/commit/b8293340957ff401f06833f42779f2c19941fa46)
+  * [concurrent damage can start multiple encode threads and prevent shutdown](https://github.com/Xpra-org/xpra/commit/ea08e44ac490654dc2b0fd06c9417ca88f553f63)
+  * [pending damage images leak when a connection closes](https://github.com/Xpra-org/xpra/commit/7176e271d2c52f6d05090dbaf8dfdd21f72a37fb)
+  * [lossy screen updates are never followed by an auto-refresh](https://github.com/Xpra-org/xpra/commit/4f57718ee5dad0bf63c45eda79d59895f34021a8)
 * Minor:
+  * [X11 events can stop being routed after an unmatched filter cleanup](https://github.com/Xpra-org/xpra/commit/23f81b0c5119e4c2c619e67a1cc20558ee972ae9) [and leave the filter unusable](https://github.com/Xpra-org/xpra/commit/91bf9a9025c52ed862025eacfd09c10153484783)
+  * [window-icon timers survive after their window is removed](https://github.com/Xpra-org/xpra/commit/fb0388fe68b8e917f09d8a7fdd3081101d59296e) [or raise warnings after firing](https://github.com/Xpra-org/xpra/commit/9409e7158bfdc66d45a937690a8ec7f2560934e2)
   * [missing `content-types` attributes](https://github.com/Xpra-org/xpra/commit/b4c153ca338741d827e30f36281b084d7323716c)
   * [safer display access](https://github.com/Xpra-org/xpra/commit/ae46dee30facea5f8d28be08e3021d88b914c0f1)
   * [better forwards compatibility](https://github.com/Xpra-org/xpra/commit/e5e9c8907535cc622da403ac45e5ece01e6c4eaa)
@@ -35,6 +46,7 @@
   * [skip unused encoding attributes](https://github.com/Xpra-org/xpra/commit/e37db6e794063ba1d8757cfbafdc29a4ec37f8f8)
   * [truncating integer divisions in Cython code](https://github.com/Xpra-org/xpra/commit/fff7a26ea37fefbf9771d682a792068ced8e57be)
 * Recorder / replay:
+  * [record clients cannot serialize typed capability values](https://github.com/Xpra-org/xpra/commit/c1f39e9bd0d0b2317bf4470f530fdef34fe4a551)
   * [unhandled packets stopped the recording](https://github.com/Xpra-org/xpra/commit/0d32a526972be0ef2c85c64d33451725000bbb9d)
   * [disable file and printer subsystems](https://github.com/Xpra-org/xpra/commit/4bfadeaeab6c7470b2005ca2c3b18743d919471e)
   * [replay loses some windows](https://github.com/Xpra-org/xpra/commit/63b73a65b15244717bb9662d2ad150781f6e4800)
@@ -44,6 +56,7 @@
   * [skip over the gaps in the event sequence](https://github.com/Xpra-org/xpra/commit/388e60f2f064226ed33be48b7d84085ffc52cadb)
   * [replay the raise, restack, stacking and bell events](https://github.com/Xpra-org/xpra/commit/097818f08a81bdd5de59c8a04d37dcdae815262f)
 * 🖧 Network:
+  * [`xpra clean-sockets` skips every socket](https://github.com/Xpra-org/xpra/commit/cd4aef51336f98e5dc2288dabccf0c67f2e6afd6)
   * [don't drop clients that are slow to send their first packet](https://github.com/Xpra-org/xpra/commit/20d9bf5ca80ec1937e7883d9217da0630b601ff3)
   * [paramiko: try ssh keys in the same order as openssh](https://github.com/Xpra-org/xpra/commit/93afc72cac9cac340cc906b9e1c6f7d0eafd9c03)
   * [paramiko: try agent keys in the order the identity files are configured](https://github.com/Xpra-org/xpra/commit/8eb981fbdb4192a02220d9a1e15c86625e7ed144)
@@ -53,6 +66,7 @@
   * [socket activation regression](https://github.com/Xpra-org/xpra/commit/43062554b2a70230ebd675f874045b19b9066e5b)
   * [file-transfers disabled by printing](https://github.com/Xpra-org/xpra/commit/913053ceb8bc8068ab07d60472a85825ae7dfd68)
 * 💄 Cosmetic:
+  * [GTK clients can send duplicate scroll events](https://github.com/Xpra-org/xpra/commit/34a50cac8b964b53128a4f8d0b3a7274611c0f79)
   * [expose monitor names](https://github.com/Xpra-org/xpra/commit/902f64244f8d01d344ea03aa7ecea392e76d89ea)
   * [make audio test more reliable](https://github.com/Xpra-org/xpra/commit/65004e4144653adbbbbafb1a3e8af2109a2027f7) + [fixup](https://github.com/Xpra-org/xpra/commit/82e79e9ea16d039f47cd824e84f62a6dd02684a7)
   * [skip wayland window test when the bindings are not available](https://github.com/Xpra-org/xpra/commit/d45c3f2eb00653ceda7d968386c28c8630cb26d7)
