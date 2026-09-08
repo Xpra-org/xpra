@@ -79,7 +79,8 @@ cdef class WaylandKeyboard:
         self.keyboard_impl.name = b"xpra-virtual-keyboard"
         self.keyboard_impl.led_update = virtual_keyboard_led_update
         wlr_keyboard_init(self.keyboard, &self.keyboard_impl, b"virtual-keyboard")
-        self.set_layout()
+        if not self.set_layout():
+            raise RuntimeError("failed to compile the default keymap")
         # set a default repeat rate:
         wlr_keyboard_set_repeat_info(self.keyboard, 25, 600)
         wlr_seat_set_keyboard(self.seat, self.keyboard)
@@ -93,10 +94,16 @@ cdef class WaylandKeyboard:
             free(self.keyboard)
             self.keyboard = NULL
 
-    def set_layout(self, layout="us", model="pc105", variant="", options="") -> None:
+    def set_layout(self, layout="us", model="pc105", variant="", options="") -> bool:
+        """
+            Compile the layout and install it on the virtual keyboard.
+            The layout attributes come from the client, so a layout we cannot compile
+            is not a fatal error: we keep the keymap that is already installed.
+        """
         cdef xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS)
         if context == NULL:
-            raise RuntimeError("failed to create new xkb context")
+            log.error("Error: failed to create a new xkb context")
+            return False
         cdef xkb_rule_names rules
         memset(&rules, 0, sizeof(xkb_rule_names))
         rules.rules = NULL
@@ -112,11 +119,16 @@ cdef class WaylandKeyboard:
             rules.options = boptions
         cdef xkb_keymap *keymap = xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS)
         if keymap == NULL:
-            raise RuntimeError(f"failed to set keymap layout {layout!r}")
+            xkb_context_unref(context)
+            log.warn("Warning: failed to compile the keymap for layout %r", layout)
+            log.warn(" model=%r, variant=%r, options=%r", model, variant, options)
+            return False
         wlr_keyboard_set_keymap(self.keyboard, keymap)
         self._build_keysym_map(keymap)
         xkb_keymap_unref(keymap)
         xkb_context_unref(context)
+        log("set_layout(%r, %r, %r, %r) keymap installed", layout, model, variant, options)
+        return True
 
     cdef void _build_keysym_map(self, xkb_keymap *keymap) noexcept:
         cdef xkb_keycode_t min_kc = xkb_keymap_min_keycode(keymap)

@@ -29,6 +29,11 @@ class NoKeyboardDevice:
         """ this is not a real keyboard """
 
     @staticmethod
+    def set_layout(layout="us", model="pc105", variant="", options="") -> bool:
+        """ this is not a real keyboard """
+        return False
+
+    @staticmethod
     def get_keycodes_down() -> Sequence[int]:
         return ()
 

@@ -22,8 +22,39 @@ class WaylandKeyboardManager(KeyboardManager):
     def get_keyboard_config(self, props=None):
         from xpra.wayland.server.keyboard_config import KeyboardConfig
         keyboard_config = KeyboardConfig()
+        p = typedict(props or {})
+        keyboard_config.enabled = p.boolget("keyboard", True)
+        keyboard_config.parse(p)
         log("get_keyboard_config(%s)=%s", props, keyboard_config)
         return keyboard_config
+
+    def set_keymap(self, server_source, force=False) -> None:
+        if getattr(server_source, "effective_readonly", lambda: self.server.readonly)():
+            return
+        log("set_keymap(%s, %s) current config=%s", server_source, force, self.config)
+        server_source.set_keymap(self.config, self.config_hash, self.keys_pressed, force)
+        self.set_current_config(server_source.keyboard_config)
+
+    def set_current_config(self, config) -> None:
+        # the config we record as current is the one installed on the seat,
+        # so only install a keymap when the recorded hash actually changes:
+        installed = self.config_hash
+        super().set_current_config(config)
+        if config and config.enabled and self.config_hash != installed:
+            self.install_keymap(config)
+
+    def install_keymap(self, config) -> None:
+        # the whole seat shares a single `wlr_keyboard`, so the most recent client
+        # to send its keyboard configuration owns the keymap.
+        # The other clients still get the right keys because `get_keycode` below
+        # resolves their keysyms against whichever keymap is installed.
+        if not self.device:
+            return
+        layout = config.layout or "us"
+        model = config.model or "pc105"
+        log("install_keymap(%s) layout=%r, model=%r, variant=%r, options=%r",
+            config, layout, model, config.variant, config.options)
+        self.device.set_layout(layout, model, config.variant, config.options)
 
     def get_keycode(self, ss, client_keycode: int, keyname: str,
                     pressed: bool, modifiers: list, keyval: int, keystr: str, group: int):
