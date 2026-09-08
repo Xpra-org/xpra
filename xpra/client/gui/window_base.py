@@ -555,13 +555,20 @@ class ClientWindowBase(ClientWidgetBase):
         """ see gtk3 window for implementation """
 
     def set_has_alpha(self, alpha: bool) -> None:
-        if alpha != self._has_alpha:
-            # win32 without opengl can't do transparency,
-            # so it triggers too many warnings
-            log_fn = alphalog.debug if WIN32 else alphalog.warn
-            log_fn("Warning: window %#x changed its transparency attribute", self.wid)
-            log_fn(" from %s to %s, behaviour is undefined", self._has_alpha, alpha)
-            self._has_alpha = alpha
+        if alpha == self._has_alpha:
+            return
+        # losing the alpha channel is safe: the window keeps the visual and the backing
+        # it was realized with, and opaque pixels painted into them just render opaque.
+        # (a wayland window does this whenever its client commits an `XRGB` buffer)
+        # gaining one is the undefined case: the visual is chosen once, at realize time.
+        # win32 without opengl can't do transparency, so it warns about everything:
+        if alpha and not WIN32:
+            alphalog.warn("Warning: window %#x changed its transparency attribute", self.wid)
+            alphalog.warn(" from %s to %s, behaviour is undefined", self._has_alpha, alpha)
+        else:
+            alphalog("window %#x changed its transparency attribute from %s to %s",
+                     self.wid, self._has_alpha, alpha)
+        self._has_alpha = alpha
 
     def set_maximized(self, maximized: bool) -> None:
         if maximized != self._maximized:
