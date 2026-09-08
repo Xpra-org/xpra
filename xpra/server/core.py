@@ -157,6 +157,8 @@ SIGNALS: dict[str, int] = {
     "client-exited": 0,
     "last-client-exited": 0,
     "new-ui-driver": 0,
+    # (setting, value, source): `source` is `None` for the server wide settings
+    "setting-changed": 3,
 }
 
 
@@ -1980,6 +1982,7 @@ class ServerCore(GLibServer):
                 continue
             ss.set_control_readonly(onoff)
             ss.send_setting_change("readonly", ss.server_enforced_readonly())
+            self.emit("setting-changed", "readonly", ss.effective_readonly(), ss)
             count += 1
         msg = f"set client readonly={onoff} for {count} client(s)"
         log.info(msg)

@@ -26,6 +26,9 @@ class FakeSource:
     def server_enforced_readonly(self) -> bool:
         return self.enforced_readonly
 
+    def effective_readonly(self) -> bool:
+        return self.enforced_readonly or self.client_readonly
+
     def set_client_readonly(self, readonly: bool) -> None:
         self.client_readonly = readonly
 

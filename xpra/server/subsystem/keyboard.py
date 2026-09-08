@@ -85,7 +85,8 @@ class KeyboardManager(StubSubsystem):
         log("keyboard_device=%s", self.device)
 
         self.set_current_config(self.get_keyboard_config({"keymap": self.keymap_options}))
-        self.server.connect("last-client-exited", self.clear_keys_pressed)
+        self.server.connect("client-exited", self.client_exited)
+        self.server.connect("setting-changed", self.setting_changed_handler)
         self.add_keyboard_control_commands()
 
     def add_keyboard_control_commands(self) -> None:
@@ -160,7 +161,6 @@ class KeyboardManager(StubSubsystem):
         """ GTK servers will start listening for the 'keys-changed' signal """
 
     def parse_hello_ui_keyboard(self, ss, c: typedict) -> None:
-        from xpra.server.source.keyboard import KeyboardConnection
         keyboard_clients = self.get_sources_by_type(KeyboardConnection, ss)
         kb_client = hasattr(ss, "keyboard_config")
         if not kb_client:
@@ -301,6 +301,7 @@ class KeyboardManager(StubSubsystem):
         log(f"keyboard event: {wid=}, {keyname=!r}, {pressed}, {attrs}, {keyboard_config=}")
         if not keyboard_config:
             return
+        ss.key_events += 1
         self.server.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
         log("do_process_keyboard_event%s server keycode=%s, group=%i",
@@ -362,7 +363,6 @@ class KeyboardManager(StubSubsystem):
         if keycode in self.keys_timedout:
             del self.keys_timedout[keycode]
 
-        from xpra.server.source.keyboard import KeyboardConnection  # pylint: disable=import-outside-toplevel
         keyboard_sources = self.get_sources_by_type(KeyboardConnection)
         record_connections = tuple(x for x in keyboard_sources if x.keyboard_record)
 
@@ -446,6 +446,30 @@ class KeyboardManager(StubSubsystem):
             keyboard_sources = self.get_sources_by_type(KeyboardConnection)
             for ss in keyboard_sources:
                 ss.keys_changed()
+
+    @staticmethod
+    def used_keyboard(ss) -> bool:
+        """
+        True if this client has sent us key events, so it may have left one pressed.
+        The clients which only watch (ie: a `record` client) never send any,
+        and the connections which have no keyboard at all cannot.
+        """
+        return isinstance(ss, KeyboardConnection) and bool(ss.key_events)
+
+    def setting_changed_handler(self, _server, setting: str, value, ss=None) -> None:
+        if setting != "readonly" or not value:
+            return
+        # a client which has just become readonly can no longer unpress
+        # the keys it was holding down: its key events are dropped from now on
+        if ss is not None and not self.used_keyboard(ss):
+            return
+        log("readonly enabled for %s, settling the keys pressed: %s", ss or "the server", self.keys_pressed)
+        self.clear_keys_pressed()
+
+    def client_exited(self, _server, ss) -> None:
+        log("client_exited(%s) used keyboard=%s, keys pressed=%s", ss, self.used_keyboard(ss), self.keys_pressed)
+        if self.used_keyboard(ss):
+            self.clear_keys_pressed()
 
     def clear_keys_pressed(self, *args) -> None:
         log("clear_keys_pressed%s", args)

@@ -35,9 +35,11 @@ class SettingsServer(StubSubsystem):
 
     def setting_changed(self, setting: str, value: Any) -> None:
         for ss in self.get_sources_by_type():
-            if setting == "readonly":
-                value = ss.server_enforced_readonly()
-            ss.send_setting_change(setting, value)
+            # `readonly` is enforced per client:
+            sv = ss.server_enforced_readonly() if setting == "readonly" else value
+            ss.send_setting_change(setting, sv)
+        # and let the subsystems react to it:
+        self.server.emit("setting-changed", setting, value, None)
 
     def add_client_setting(self, setting: str, getter: str, apply: Callable[[Any, Any], None]) -> None:
         """
@@ -64,6 +66,7 @@ class SettingsServer(StubSubsystem):
     def set_client_readonly(self, ss, readonly: bool) -> None:
         ss.set_client_readonly(readonly)
         log("client %s toggled readonly=%s", ss, ss.client_readonly)
+        self.server.emit("setting-changed", "readonly", ss.effective_readonly(), ss)
 
     def _process_readonly_toggled(self, proto, packet: Packet) -> None:
         # legacy packet, superseded by "setting-change":

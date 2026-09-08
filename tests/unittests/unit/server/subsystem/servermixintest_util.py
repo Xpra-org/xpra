@@ -12,13 +12,14 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.dispatch import find_packet_handler
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.signal_emitter import SignalEmitter
+from xpra.server.base import SIGNALS as SERVER_SIGNALS
 from xpra.util.glib_scheduler import GLibScheduler
 from xpra.server.source.stub import StubClientConnection
 
 from unit.test_util import stubbable
 
 
-class FakeServerBase(GLibScheduler):
+class FakeServerBase(GLibScheduler, SignalEmitter):
     """Minimal server stand-in for subsystem unit tests.
 
     Provides the `subsystems` registry that subsystems and source classes
@@ -27,7 +28,10 @@ class FakeServerBase(GLibScheduler):
     constructed with this as their server get a working `idle_add` & co.
     """
 
+    __signals__ = SERVER_SIGNALS
+
     def __init__(self):
+        SignalEmitter.__init__(self)
         self.subsystems: dict = {}
 
     def get_subsystem(self, prefix: str):
@@ -35,6 +39,8 @@ class FakeServerBase(GLibScheduler):
 
 
 class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
+
+    __signals__ = SERVER_SIGNALS
 
     @classmethod
     def setUpClass(cls):

@@ -36,6 +36,9 @@ class KeyboardConnection(StubClientConnection):
         self.keyboard_config = None
         self.ibus = False
         self.keyboard_record = False
+        # how many key events this client has sent:
+        # a client which never pressed a key cannot have left one pressed
+        self.key_events = 0
 
     def cleanup(self) -> None:
         self.keyboard_config = None
@@ -55,6 +58,7 @@ class KeyboardConnection(StubClientConnection):
         kci = {
             "ibus": self.ibus,
             "record": self.keyboard_record,
+            "key-events": self.key_events,
         }
         if kc := self.keyboard_config:
             kci.update(kc.get_info())
