@@ -1918,14 +1918,15 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, self.textures[index])
             set_alignment(w, rowstride, tex_name)
             plane = img_data[index]
+            size: int
             if pbo:
                 upload = "pbo"
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, plane)
                 pixel_data = None
-                size: int = rowstride * h
+                size = rowstride * h
             else:
                 upload, pixel_data = pixels_for_upload(plane)
-                size: int = len(pixel_data)
+                size = len(pixel_data)
             glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0)
             try:
                 glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
