@@ -23,6 +23,7 @@ from libc.time cimport timespec
 
 from xpra.buffers.membuf cimport getbuf, MemBuf
 from xpra.wayland.server.events cimport ListenerObject
+from xpra.wayland.server.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
 
 cdef extern from "time.h":
     int clock_gettime(int clk_id, timespec *tp)
@@ -58,6 +59,22 @@ WAYLAND_CONTENT_TYPE_TO_XPRA = {
     "video": CONTENT_TYPE_VIDEO,
     "game": CONTENT_TYPE_VIDEO,
 }
+
+
+cdef list get_damage_areas(pixman_region32_t *damage):
+    """The rectangles a commit has damaged, in surface-local coordinates."""
+    cdef int n_rects = 0
+    cdef pixman_box32_t *rects = pixman_region32_rectangles(damage, &n_rects)
+
+    rectangles = []
+    cdef int i
+    for i in range(n_rects):
+        x = rects[i].x1
+        y = rects[i].y1
+        w = rects[i].x2 - rects[i].x1
+        h = rects[i].y2 - rects[i].y1
+        rectangles.append((x, y, w, h))
+    return rectangles
 
 
 def get_capture_pixel_format(read_format: int, source_format: int | None = None) -> str | None:

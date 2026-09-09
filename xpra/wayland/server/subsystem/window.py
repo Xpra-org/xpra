@@ -36,7 +36,7 @@ PER_SURFACE_EVENTS: Final[Sequence[str]] = (
     "new-subsurface",
 )
 PER_SUBSURFACE_EVENTS: Final[Sequence[str]] = (
-    "commit", "destroy", "subsurface-image",
+    "commit", "destroy", "subsurface-image", "subsurface-empty-commit",
 )
 
 
@@ -310,10 +310,21 @@ class WaylandWindowServer(WindowServer):
         else:
             facade.update_dimensions(logical_w, logical_h)
         facade.set_image(image)
+        # this damage has to reach a client before the child's frame callback can be
+        # answered - marking it before the damage, which can be sent synchronously:
+        facade.mark_damage_frame_pending()
         for ss in self.window_sources():
             sub_ws = ss.make_subsurface_source(wid, parent_wid, ox, oy, facade,
                                                logical_w, logical_h, native_w, native_h)
             sub_ws.damage(0, 0, logical_w, logical_h, {})
+
+    def subsurface_empty_commit(self, wid: int) -> None:
+        # the child asked for another frame callback without damaging anything:
+        # answer it here, since no damage will come through to do it for us
+        facade = self.subsurface_facades.get(wid)
+        log("subsurface-empty-commit: wid=%i, facade=%s", wid, facade)
+        if facade:
+            facade.acknowledge_empty_changes()
 
     @staticmethod
     def update_colourspace(window, surface) -> None:

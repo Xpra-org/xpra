@@ -6,10 +6,13 @@
 
 from xpra.wayland.server.events cimport ListenerObject
 from xpra.wayland.server.wlroots cimport wlr_surface, wlr_buffer, wlr_content_type_manager_v1
+from xpra.wayland.server.pixman cimport pixman_region32_t
 from libc.stdint cimport uint32_t
 
 
 cdef unsigned long next_wid() noexcept
+
+cdef list get_damage_areas(pixman_region32_t *damage)
 
 
 cdef class WaylandSurface(ListenerObject):

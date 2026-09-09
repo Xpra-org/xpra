@@ -11,7 +11,7 @@ from xpra.wayland.server.wlroots cimport (
     wlr_subsurface,
     wlr_surface,
 )
-from xpra.wayland.server.wayland_surface cimport WaylandSurface, next_wid
+from xpra.wayland.server.wayland_surface cimport WaylandSurface, next_wid, get_damage_areas
 
 
 log = Logger("wayland")
@@ -73,6 +73,13 @@ cdef class Subsurface(WaylandSurface):
             return
         if not self.wlr_surface.mapped:
             self.update_source_format(NULL)
+            return
+        if not get_damage_areas(&self.wlr_surface.buffer_damage):
+            # The client committed without damaging anything, just to get another
+            # frame callback. The previous buffer is still attached, so capturing
+            # would re-encode an identical image as a full-surface update:
+            # answer the callback instead, if we do not owe one for real damage.
+            self._emit("subsurface-empty-commit", self.wid)
             return
         image = self.capture_pixels()
         if image is None:

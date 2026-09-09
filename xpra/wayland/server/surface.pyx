@@ -12,7 +12,7 @@ from xpra.constants import MoveResize
 
 from libc.stdint cimport uintptr_t, uint32_t, int32_t
 
-from xpra.wayland.server.wayland_surface cimport WaylandSurface, next_wid
+from xpra.wayland.server.wayland_surface cimport WaylandSurface, next_wid, get_damage_areas
 from xpra.wayland.server.subsurface cimport Subsurface
 # `surfaces` is the shared registry (Python dict) defined in wayland_surface.pyx
 from xpra.wayland.server.wayland_surface import surfaces
@@ -443,21 +443,6 @@ cdef class Surface(WaylandSurface):
         wlr_xdg_toplevel_set_activated(toplevel, focused)
 
     # __dealloc__ inherited from ListenerObject: detach + free the listeners array.
-
-
-cdef list get_damage_areas(pixman_region32_t *damage):
-    cdef int n_rects = 0
-    cdef pixman_box32_t *rects = pixman_region32_rectangles(damage, &n_rects)
-
-    rectangles = []
-    cdef int i
-    for i in range(n_rects):
-        x = rects[i].x1
-        y = rects[i].y1
-        w = rects[i].x2 - rects[i].x1
-        h = rects[i].y2 - rects[i].y1
-        rectangles.append((x, y, w, h))
-    return rectangles
 
 
 cdef tuple get_clipped_opaque_region(pixman_region32_t *region,

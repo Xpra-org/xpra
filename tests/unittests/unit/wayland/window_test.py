@@ -326,6 +326,39 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
         # an unchanged format must not notify:
         self.assertEqual(changes, [False, True])
 
+    def test_a_subsurface_empty_commit_answers_its_callback(self):
+        # the child committed without damaging anything: no damage will come through
+        # to answer its frame callback, so the handler has to do it
+        window = Mock()
+        server = self.make_server(window)
+        facade = Mock()
+        server.subsurface_facades[2] = facade
+
+        WaylandWindowServer.subsurface_empty_commit(server, 2)
+
+        facade.acknowledge_empty_changes.assert_called_once_with()
+
+    def test_a_subsurface_empty_commit_for_an_unknown_child_is_ignored(self):
+        window = Mock()
+        server = self.make_server(window)
+        WaylandWindowServer.subsurface_empty_commit(server, 2)   # must not raise
+
+    def test_subsurface_damage_is_marked_before_it_can_be_sent(self):
+        window = Mock()
+        server = self.make_server(window)
+        facade = Mock()
+        server.subsurface_facades[2] = facade
+        server.subsurface_info[2] = (7, 0, 0, 5, 6, 5, 6)
+        source = Mock()
+        server.window_sources.return_value = (source,)
+        source.make_subsurface_source.return_value.damage.side_effect = (
+            lambda *_args: facade.mark_damage_frame_pending.assert_called_once_with()
+        )
+
+        WaylandWindowServer.subsurface_image(server, 2, Mock(), 5, 6, 5, 6)
+
+        source.make_subsurface_source.return_value.damage.assert_called_once()
+
     def test_unmapped_empty_damage_is_ignored(self):
         window = Mock()
         server = self.make_server(window)
