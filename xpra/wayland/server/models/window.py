@@ -211,6 +211,7 @@ class Window(FrameCallbackModel):
             return
         self._managed = False
         self.cancel_damage_frame_timer()
+        self.cancel_empty_ack_timer()
         self.managed_disconnect()
 
     def get_image(self, x: int, y: int, width: int, height: int) -> ImageWrapper:

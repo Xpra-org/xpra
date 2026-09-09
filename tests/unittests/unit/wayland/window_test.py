@@ -74,8 +74,40 @@ class WaylandWindowFrameTest(unittest.TestCase):
         self.assertEqual(self.surface.frame_done.call_count, count)
         self.assertEqual(self.display.flush_clients.call_count, count)
 
-    def test_an_empty_commit_is_acknowledged_straight_away(self):
-        self.window.acknowledge_empty_changes()
+    def only_timer(self):
+        self.assertEqual(len(self.glib.timers), 1)
+        timer, (delay, _callback) = tuple(self.glib.timers.items())[0]
+        return timer, delay
+
+    def test_an_empty_commit_is_answered_at_the_pacing_delay(self):
+        # answering from the dispatch which delivered the commit would let the client
+        # commit again immediately: this server has no output refresh to pace it
+        self.window.schedule_empty_acknowledgement()
+        self.assertAcknowledged(0)
+        timer, delay = self.only_timer()
+        self.assertEqual(delay, frame_model.EMPTY_ACK_DELAY)
+
+        self.assertFalse(self.glib.fire(timer), "the answer must not repeat")
+
+        self.assertAcknowledged(1)
+        self.assertFalse(self.glib.timers)
+
+    def test_repeated_empty_commits_share_one_answer(self):
+        for _ in range(5):
+            self.window.schedule_empty_acknowledgement()
+        timer, _delay = self.only_timer()
+        self.glib.fire(timer)
+        self.assertAcknowledged(1)
+
+    def test_damage_cancels_an_answer_already_scheduled(self):
+        # otherwise it would fire while the damage is still in the batch queue
+        # and drain that frame's callback with it:
+        self.window.schedule_empty_acknowledgement()
+        self.window.mark_damage_frame_pending()
+        timer, delay = self.only_timer()
+        self.assertEqual(delay, frame_model.FRAME_TIMEOUT, "the empty answer should be gone")
+        self.assertAcknowledged(0)
+        self.window.acknowledge_changes()
         self.assertAcknowledged(1)
         self.assertFalse(self.glib.timers)
 
@@ -83,20 +115,22 @@ class WaylandWindowFrameTest(unittest.TestCase):
         # `frame_done` drains every callback queued on the surface, so answering an empty
         # commit now would release the client for the damage we have not sent yet:
         self.window.mark_damage_frame_pending()
-        self.window.acknowledge_empty_changes()
+        self.window.schedule_empty_acknowledgement()
         self.assertAcknowledged(0)
+        self.assertEqual(self.only_timer()[1], frame_model.FRAME_TIMEOUT,
+                         "an empty commit must not schedule anything while we owe a frame")
         # the ordinary acknowledgement, from `send_delayed_regions`:
         self.window.acknowledge_changes()
         self.assertAcknowledged(1)
         self.assertFalse(self.glib.timers, "the timeout should have been cancelled")
-        # and the guard is gone:
-        self.window.acknowledge_empty_changes()
+        # and the guard is gone, so the next empty commit schedules its answer:
+        self.window.schedule_empty_acknowledgement()
+        self.glib.fire(self.only_timer()[0])
         self.assertAcknowledged(2)
 
     def test_a_frame_which_is_never_sent_is_acknowledged_by_the_timeout(self):
         self.window.mark_damage_frame_pending()
-        self.assertEqual(len(self.glib.timers), 1)
-        timer, (delay, _callback) = tuple(self.glib.timers.items())[0]
+        timer, delay = self.only_timer()
         self.assertEqual(delay, frame_model.FRAME_TIMEOUT)
 
         self.assertFalse(self.glib.fire(timer), "the timeout must not repeat")
@@ -191,10 +225,10 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
             facade.update_dimensions.assert_called_once_with(5, 6)
             subsource.update_geometry.assert_called_once_with(7, 3, 4, 5, 6, 10, 12)
 
-        window.acknowledge_empty_changes.side_effect = check_subsurface_updates
+        window.schedule_empty_acknowledgement.side_effect = check_subsurface_updates
         WaylandWindowServer.commit(server, 7, True, (100, 80), (), [subsurface])
 
-        window.acknowledge_empty_changes.assert_called_once_with()
+        window.schedule_empty_acknowledgement.assert_called_once_with()
         server.refresh_window_area.assert_not_called()
 
     def test_mapped_damage_refreshes_without_immediate_acknowledgement(self):
@@ -235,7 +269,7 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
         WaylandWindowServer.commit(server, 7, False, (100, 80), (), [])
 
         window.mark_damage_frame_pending.assert_not_called()
-        window.acknowledge_empty_changes.assert_not_called()
+        window.schedule_empty_acknowledgement.assert_not_called()
         server.refresh_window_area.assert_not_called()
 
     def test_commit_exports_surface_opaque_region(self):
@@ -336,7 +370,7 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
 
         WaylandWindowServer.subsurface_empty_commit(server, 2)
 
-        facade.acknowledge_empty_changes.assert_called_once_with()
+        facade.schedule_empty_acknowledgement.assert_called_once_with()
 
     def test_a_subsurface_empty_commit_for_an_unknown_child_is_ignored(self):
         window = Mock()

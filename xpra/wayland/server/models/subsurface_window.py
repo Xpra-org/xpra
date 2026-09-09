@@ -59,6 +59,7 @@ class SubsurfaceWindow(FrameCallbackModel):
         # there is no `unmanaged` signal to emit: the subsystem drops the facade directly
         self._managed = False
         self.cancel_damage_frame_timer()
+        self.cancel_empty_ack_timer()
         self._internal_set_property("surface", None)
         super().unmanage(exiting)
 

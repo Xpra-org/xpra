@@ -273,7 +273,7 @@ class WaylandWindowServer(WindowServer):
                 if sub_ws:
                     sub_ws.update_geometry(wid, sx, sy, logical_w, logical_h, native_w, native_h)
         if mapped and not rects:
-            window.acknowledge_empty_changes()
+            window.schedule_empty_acknowledgement()
             return
         if rects:
             # this damage has to reach a client before the frame callback can be answered.
@@ -324,7 +324,7 @@ class WaylandWindowServer(WindowServer):
         facade = self.subsurface_facades.get(wid)
         log("subsurface-empty-commit: wid=%i, facade=%s", wid, facade)
         if facade:
-            facade.acknowledge_empty_changes()
+            facade.schedule_empty_acknowledgement()
 
     @staticmethod
     def update_colourspace(window, surface) -> None:
