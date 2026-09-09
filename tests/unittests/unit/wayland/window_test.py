@@ -14,6 +14,7 @@ from xpra.util.objects import typedict
 # module imported inside it - including `gi.repository.GObject`, which cannot be
 # imported a second time. So anything needing it has to be imported before that:
 from xpra.wayland.server.models.subsurface_window import SubsurfaceWindow
+from xpra.wayland.server.models import window as window_model
 
 
 def load_window_server_class():
@@ -32,6 +33,92 @@ def load_window_server_class():
 
 
 WaylandWindowServer = load_window_server_class()
+
+
+class FakeGLib:
+    """ enough of GLib to see which timers a model arms and cancels """
+
+    def __init__(self):
+        self.timers: dict[int, tuple[int, object]] = {}
+        self.counter = 0
+
+    def timeout_add(self, delay: int, callback, *args) -> int:
+        self.counter += 1
+        self.timers[self.counter] = (delay, lambda: callback(*args))
+        return self.counter
+
+    def source_remove(self, timer: int) -> None:
+        assert timer in self.timers, f"removing unknown timer {timer}"
+        del self.timers[timer]
+
+    def fire(self, timer: int):
+        delay, callback = self.timers.pop(timer)
+        return callback()
+
+
+class WaylandWindowFrameTest(unittest.TestCase):
+
+    def setUp(self):
+        self.glib = FakeGLib()
+        patcher = patch.object(window_model, "GLib", self.glib)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.surface = Mock()
+        self.display = Mock()
+        self.window = window_model.Window({"surface": self.surface, "display": self.display})
+        self.window.setup()
+
+    def assertAcknowledged(self, count: int) -> None:
+        self.assertEqual(self.surface.frame_done.call_count, count)
+        self.assertEqual(self.display.flush_clients.call_count, count)
+
+    def test_an_empty_commit_is_acknowledged_straight_away(self):
+        self.window.acknowledge_empty_changes()
+        self.assertAcknowledged(1)
+        self.assertFalse(self.glib.timers)
+
+    def test_a_frame_we_have_not_sent_holds_back_the_empty_acknowledgement(self):
+        # `frame_done` drains every callback queued on the surface, so answering an empty
+        # commit now would release the client for the damage we have not sent yet:
+        self.window.mark_damage_frame_pending()
+        self.window.acknowledge_empty_changes()
+        self.assertAcknowledged(0)
+        # the ordinary acknowledgement, from `send_delayed_regions`:
+        self.window.acknowledge_changes()
+        self.assertAcknowledged(1)
+        self.assertFalse(self.glib.timers, "the timeout should have been cancelled")
+        # and the guard is gone:
+        self.window.acknowledge_empty_changes()
+        self.assertAcknowledged(2)
+
+    def test_a_frame_which_is_never_sent_is_acknowledged_by_the_timeout(self):
+        self.window.mark_damage_frame_pending()
+        self.assertEqual(len(self.glib.timers), 1)
+        timer, (delay, _callback) = tuple(self.glib.timers.items())[0]
+        self.assertEqual(delay, window_model.FRAME_TIMEOUT)
+
+        self.assertFalse(self.glib.fire(timer), "the timeout must not repeat")
+
+        self.assertAcknowledged(1)
+        self.assertFalse(self.glib.timers)
+        # firing must clear the timer id before acknowledging,
+        # or the cancellation would remove a source which is already gone:
+        self.assertEqual(self.window._damage_frame_timer, 0)
+
+    def test_later_damage_does_not_push_the_deadline_back(self):
+        # a client which renders on its own timer rather than waiting for the callbacks
+        # would otherwise keep the deadline out of reach and never recover:
+        self.window.mark_damage_frame_pending()
+        armed = tuple(self.glib.timers)
+        for _ in range(5):
+            self.window.mark_damage_frame_pending()
+        self.assertEqual(tuple(self.glib.timers), armed)
+
+    def test_the_timeout_is_dropped_with_the_window(self):
+        self.window.mark_damage_frame_pending()
+        self.window.unmanage()
+        self.assertFalse(self.glib.timers, "a pending timeout would keep the model alive")
+        self.assertAcknowledged(0)
 
 
 class WaylandWindowServerCommitTest(unittest.TestCase):
@@ -66,10 +153,10 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
             facade.update_dimensions.assert_called_once_with(5, 6)
             subsource.update_geometry.assert_called_once_with(7, 3, 4, 5, 6, 10, 12)
 
-        window.acknowledge_changes.side_effect = check_subsurface_updates
+        window.acknowledge_empty_changes.side_effect = check_subsurface_updates
         WaylandWindowServer.commit(server, 7, True, (100, 80), (), [subsurface])
 
-        window.acknowledge_changes.assert_called_once_with()
+        window.acknowledge_empty_changes.assert_called_once_with()
         server.refresh_window_area.assert_not_called()
 
     def test_mapped_damage_refreshes_without_immediate_acknowledgement(self):
@@ -88,6 +175,30 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
             (window, 5, 6, 7, 8, {"damage": True, "more": False}),
         ])
         window.acknowledge_changes.assert_not_called()
+        window.mark_damage_frame_pending.assert_called_once_with()
+
+    def test_damage_is_marked_before_it_can_be_sent(self):
+        # `refresh_window_area` can send the delayed regions synchronously, which
+        # acknowledges the frame - so marking it afterwards would never be cleared:
+        window = Mock()
+        server = self.make_server(window)
+        server.refresh_window_area.side_effect = (
+            lambda *_args, **_kwargs: window.mark_damage_frame_pending.assert_called_once_with()
+        )
+
+        WaylandWindowServer.commit(server, 7, True, (100, 80), ((1, 2, 3, 4),), [])
+
+        self.assertEqual(server.refresh_window_area.call_count, 1)
+
+    def test_an_unmapped_commit_does_not_wait_for_a_frame_it_will_not_get(self):
+        window = Mock()
+        server = self.make_server(window)
+
+        WaylandWindowServer.commit(server, 7, False, (100, 80), (), [])
+
+        window.mark_damage_frame_pending.assert_not_called()
+        window.acknowledge_empty_changes.assert_not_called()
+        server.refresh_window_area.assert_not_called()
 
     def test_commit_exports_surface_opaque_region(self):
         window = Mock()

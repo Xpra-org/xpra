@@ -270,8 +270,13 @@ class WaylandWindowServer(WindowServer):
                 if sub_ws:
                     sub_ws.update_geometry(wid, sx, sy, logical_w, logical_h, native_w, native_h)
         if mapped and not rects:
-            window.acknowledge_changes()
+            window.acknowledge_empty_changes()
             return
+        if rects:
+            # this damage has to reach a client before the frame callback can be answered.
+            # marking it must happen before the first `refresh_window_area`, which can send
+            # the delayed regions synchronously - and would then have nothing left to clear:
+            window.mark_damage_frame_pending()
         options = {"damage": True}
         last = len(rects) - 1
         for i, (x, y, w, h) in enumerate(rects):
