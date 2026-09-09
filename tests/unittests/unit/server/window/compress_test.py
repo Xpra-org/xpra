@@ -6,7 +6,7 @@
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from xpra.server.window import compress
 from xpra.server.window.compress import WindowSource
@@ -93,6 +93,43 @@ class CompressTest(unittest.TestCase):
         self.assertEqual(source.get_best_encoding_impl(), source.get_transparent_encoding)
         source._want_alpha = False
         self.assertEqual(source.get_best_encoding_impl(), source.get_auto_encoding)
+
+    @staticmethod
+    def make_cancellable_source() -> WindowSource:
+        source = object.__new__(WindowSource)
+        source.wid = 1
+        source._sequence = 5
+        source._damage_cancelled = 0
+        source._damage_delayed = None
+        source.encode_queue = []
+        source.refresh_regions = []
+        source.refresh_event_time = 0
+        for timer in ("expire_timer", "may_send_timer", "soft_timer", "refresh_timer",
+                      "timeout_timer", "av_sync_timer", "decode_error_refresh_timer"):
+            setattr(source, timer, 0)
+        source.statistics = SimpleNamespace(encoding_pending={})
+        source.window = Mock()
+        return source
+
+    def test_dropping_a_delayed_region_acknowledges_it(self) -> None:
+        # nothing else will: `send_delayed_regions` is never going to run for it,
+        # and a wayland client throttles its rendering on that acknowledgement
+        source = self.make_cancellable_source()
+        source._damage_delayed = "some delayed regions"
+
+        source.cancel_damage()
+
+        self.assertIsNone(source._damage_delayed)
+        source.window.acknowledge_changes.assert_called_once_with()
+
+    def test_cancelling_without_a_delayed_region_acknowledges_nothing(self) -> None:
+        # anything already extracted was acknowledged before it was extracted,
+        # so there is nothing outstanding to answer for here
+        source = self.make_cancellable_source()
+
+        source.cancel_damage()
+
+        source.window.acknowledge_changes.assert_not_called()
 
     @patch.object(compress, "monotonic", return_value=100)
     def test_automatic_screen_quality_is_promoted(self, _monotonic) -> None:
