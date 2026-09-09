@@ -15,6 +15,8 @@ from xpra.util.objects import typedict
 # imported a second time. So anything needing it has to be imported before that:
 from xpra.wayland.server.models.subsurface_window import SubsurfaceWindow
 from xpra.wayland.server.models import window as window_model
+from xpra.wayland.server.models import frame as frame_model
+from xpra.server.window.compress import WindowSource
 
 
 def load_window_server_class():
@@ -60,7 +62,7 @@ class WaylandWindowFrameTest(unittest.TestCase):
 
     def setUp(self):
         self.glib = FakeGLib()
-        patcher = patch.object(window_model, "GLib", self.glib)
+        patcher = patch.object(frame_model, "GLib", self.glib)
         patcher.start()
         self.addCleanup(patcher.stop)
         self.surface = Mock()
@@ -95,7 +97,7 @@ class WaylandWindowFrameTest(unittest.TestCase):
         self.window.mark_damage_frame_pending()
         self.assertEqual(len(self.glib.timers), 1)
         timer, (delay, _callback) = tuple(self.glib.timers.items())[0]
-        self.assertEqual(delay, window_model.FRAME_TIMEOUT)
+        self.assertEqual(delay, frame_model.FRAME_TIMEOUT)
 
         self.assertFalse(self.glib.fire(timer), "the timeout must not repeat")
 
@@ -119,6 +121,42 @@ class WaylandWindowFrameTest(unittest.TestCase):
         self.window.unmanage()
         self.assertFalse(self.glib.timers, "a pending timeout would keep the model alive")
         self.assertAcknowledged(0)
+
+
+class WaylandSubsurfaceFrameTest(unittest.TestCase):
+
+    def setUp(self):
+        self.glib = FakeGLib()
+        patcher = patch.object(frame_model, "GLib", self.glib)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.surface = Mock()
+        self.display = Mock()
+        self.facade = SubsurfaceWindow(320, 240, surface=self.surface, display=self.display)
+
+    def test_a_subsurface_answers_its_own_surface(self):
+        # `wlr_surface_send_frame_done` drains the callbacks of the surface it is given,
+        # and nothing walks the tree, so the parent cannot answer for the child:
+        parent_surface = Mock()
+        self.facade.acknowledge_changes()
+        self.surface.frame_done.assert_called_once_with()
+        self.display.flush_clients.assert_called_once_with()
+        parent_surface.frame_done.assert_not_called()
+
+    def test_a_window_source_can_acknowledge_a_subsurface_frame(self):
+        # `send_delayed_regions` calls this on every damage it sends, and the facade
+        # used to have no `acknowledge_changes` at all - it raised `AttributeError`:
+        source = Mock()
+        source.window = self.facade
+        WindowSource.send_delayed_regions(source, Mock())
+        self.surface.frame_done.assert_called_once_with()
+
+    def test_dropping_a_subsurface_cancels_its_frame_timeout(self):
+        self.facade.mark_damage_frame_pending()
+        self.assertTrue(self.glib.timers)
+        self.facade.unmanage()
+        self.assertFalse(self.glib.timers, "a pending timeout would keep the facade alive")
+        self.assertFalse(self.facade.is_managed())
 
 
 class WaylandWindowServerCommitTest(unittest.TestCase):

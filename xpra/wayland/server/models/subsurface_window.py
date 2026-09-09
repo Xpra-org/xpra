@@ -8,12 +8,12 @@ from typing import Any
 from xpra.codecs.image import ImageWrapper
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
-from xpra.server.window.model import WindowModelStub
+from xpra.wayland.server.models.frame import FrameCallbackModel
 
 GObject = gi_import("GObject")
 
 
-class SubsurfaceWindow(WindowModelStub):
+class SubsurfaceWindow(FrameCallbackModel):
     """Minimal window-like facade so a WindowSource can be constructed for a
     wayland subsurface. The subsurface is not a window in its own right: it
     has no title, no parent/transient relationship the client cares about,
@@ -22,6 +22,12 @@ class SubsurfaceWindow(WindowModelStub):
     GTK frame's "text" content-type)."""
 
     __gproperties__ = {
+        # the child's own `wl_surface` and the display to flush: a subsurface has its own
+        # frame callbacks, which only `frame_done` on this surface can answer
+        "surface": (GObject.TYPE_PYOBJECT, "the wayland Subsurface object", "",
+                    GObject.ParamFlags.READABLE),
+        "display": (GObject.TYPE_PYOBJECT, "the wayland Display object", "",
+                    GObject.ParamFlags.READABLE),
         "depth": (GObject.TYPE_INT, "bit depth", "", -1, 64, -1, GObject.ParamFlags.READABLE),
         "has-alpha": (GObject.TYPE_BOOLEAN, "alpha channel", "", False, GObject.ParamFlags.READABLE),
         "frame-has-alpha": (GObject.TYPE_BOOLEAN, "alpha channel of the current buffer", "",
@@ -36,15 +42,25 @@ class SubsurfaceWindow(WindowModelStub):
     _internal_property_names: list[str] = ["frame-has-alpha"]
     _MODELTYPE = "WaylandSubsurface"
 
-    def __init__(self, width: int, height: int, has_alpha: bool = True, depth: int = 32):
+    def __init__(self, width: int, height: int, has_alpha: bool = True, depth: int = 32,
+                 surface=None, display=None):
         super().__init__()
         self._width = width
         self._height = height
         self._image: ImageWrapper | None = None
+        self._internal_set_property("surface", surface)
+        self._internal_set_property("display", display)
         self._internal_set_property("depth", depth)
         self._internal_set_property("has-alpha", has_alpha)
         self._setup_done = True
         self._managed = True
+
+    def unmanage(self, exiting=False) -> None:
+        # there is no `unmanaged` signal to emit: the subsystem drops the facade directly
+        self._managed = False
+        self.cancel_damage_frame_timer()
+        self._internal_set_property("surface", None)
+        super().unmanage(exiting)
 
     def set_image(self, image: ImageWrapper) -> None:
         self._image = image

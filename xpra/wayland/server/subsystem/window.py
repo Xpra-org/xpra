@@ -43,7 +43,7 @@ PER_SUBSURFACE_EVENTS: Final[Sequence[str]] = (
 class WaylandWindowServer(WindowServer):
     __slots__ = (
         "focused", "pending_popups", "pointer_focus", "subsurface_facades", "subsurface_info",
-        "toplevel_wid",
+        "subsurfaces", "toplevel_wid",
     )
 
     def __init__(self, server=None):
@@ -56,6 +56,9 @@ class WaylandWindowServer(WindowServer):
         self.subsurface_info: dict[int, tuple[int, int, int, int, int, int, int]] = {}
         # subsurface wid -> SubsurfaceWindow facade kept alive across the subsurface lifetime.
         self.subsurface_facades: dict[int, SubsurfaceWindow] = {}
+        # subsurface wid -> the native Subsurface: a child has its own frame callbacks,
+        # which only `frame_done` on its own surface can answer
+        self.subsurfaces: dict[int, Subsurface] = {}
 
     def connect_compositor(self, compositor) -> None:
         compositor.connect("new-surface", self.new_surface)
@@ -300,7 +303,9 @@ class WaylandWindowServer(WindowServer):
         self.subsurface_info[wid] = (parent_wid, ox, oy, logical_w, logical_h, native_w, native_h)
         facade = self.subsurface_facades.get(wid)
         if facade is None:
-            facade = SubsurfaceWindow(logical_w, logical_h, has_alpha=True, depth=32)
+            facade = SubsurfaceWindow(logical_w, logical_h, has_alpha=True, depth=32,
+                                      surface=self.subsurfaces.get(wid),
+                                      display=self.server.compositor.get_display())
             self.subsurface_facades[wid] = facade
         else:
             facade.update_dimensions(logical_w, logical_h)
@@ -399,9 +404,12 @@ class WaylandWindowServer(WindowServer):
     def destroy(self, wid: int) -> None:
         # The wlroots xdg surface is being freed. Drop every server-side
         # surface reference before delayed focus or encoder callbacks can use it.
+        self.subsurfaces.pop(wid, None)
         if wid in self.subsurface_info:
             self.subsurface_info.pop(wid, None)
-            self.subsurface_facades.pop(wid, None)
+            if facade := self.subsurface_facades.pop(wid, None):
+                # drop the frame timeout: it holds a reference to the facade
+                facade.unmanage()
             for ss in self.window_sources():
                 ss.cleanup_subsurface_source(wid)
         window = self.get_window(wid)
@@ -430,6 +438,7 @@ class WaylandWindowServer(WindowServer):
                        width: int, height: int, native_width: int = 0, native_height: int = 0) -> None:
         log.info("new subsurface of %i: %s %ix%i native=%ix%i",
                  wid, subsurface, width, height, native_width, native_height)
+        self.subsurfaces[subsurface.wid] = subsurface
         self._register_surface_events(subsurface, PER_SUBSURFACE_EVENTS)
 
     def move(self, wid: int, serial: int) -> None:
