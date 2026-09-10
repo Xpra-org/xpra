@@ -23,6 +23,9 @@ class WaylandManager(StubSubsystem):
     dropped (see `do_run_server`), so that the socket is owned by that user.
     """
     __slots__ = ("compositor", "displayfd", "socket_name", "started")
+    # the session-files subsystem subscribes to this before the socket is bound,
+    # and renames the session directory when it hears the name we picked:
+    __signals__ = ["display-name"]
     PREFIX = "wayland"
 
     def __init__(self, server=None):
