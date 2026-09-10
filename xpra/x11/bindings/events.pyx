@@ -66,6 +66,7 @@ cdef void init_x11_events():
         ConfigureRequest    : ("", "x11-child-configure-request-event"),
         SelectionRequest    : ("x11-selection-request", ""),
         SelectionClear      : ("x11-selection-clear", ""),
+        SelectionNotify     : ("x11-selection-notify", ""),
         FocusIn             : ("x11-focus-in-event", ""),
         FocusOut            : ("x11-focus-out-event", ""),
         ClientMessage       : ("x11-client-message-event", ""),
@@ -278,6 +279,8 @@ cdef dict parse_SelectionClear(Display *d, XEvent *e):
 cdef dict parse_SelectionNotify(Display *d, XEvent *e):
     cdef XSelectionEvent * selection_e = <XSelectionEvent*> e
     return {
+        # the reply is delivered to the requestor, which is how it gets routed:
+        "window": selection_e.requestor,
         "requestor": selection_e.requestor,
         "selection": atom_str(d, selection_e.selection),
         "target": atom_str(d, selection_e.target),
@@ -455,7 +458,9 @@ cdef object parse_xevent(Display *d, XEvent *e):
     cdef int etype = e.type
     global x_event_type_names, x_event_signals
     cdef str event_type = x_event_type_names.get(etype, "") or str(etype)
-    if e.xany.send_event and etype not in (ClientMessage, UnmapNotify):
+    # a selection owner answers a conversion request with `XSendEvent`,
+    # so its replies - a refusal in particular - are synthetic:
+    if e.xany.send_event and etype not in (ClientMessage, UnmapNotify, SelectionNotify):
         log("parse_xevent ignoring %s send_event", event_type)
         return None
 
