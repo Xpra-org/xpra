@@ -190,6 +190,22 @@ class ClipboardCoreTest(unittest.TestCase):
         # the timer was removed, not merely forgotten:
         self.assertFalse(spin_until(lambda: proxy.emitted > 1))
 
+    def test_send_tokens_goes_through_the_scheduler(self):
+        helper, proxy, _packets = self.make_helper(False)
+        self.addCleanup(proxy.cleanup)
+        proxy.schedule_emit_token()
+        proxy.schedule_emit_token()
+        self.assertNotEqual(proxy._emit_token_timer, 0)
+        helper.send_tokens(("CLIPBOARD", ))
+        # the token which was scheduled is superseded, not left to fire as well:
+        self.assertEqual(proxy._emit_token_timer, 0)
+        self.assertFalse(spin_until(lambda: proxy.emitted > 2))
+        # and this one is counted and timed, so that the next change is spaced out from it:
+        self.assertEqual(proxy.emitted, 2)
+        self.assertEqual(proxy._sent_token_events, 2)
+        self.assertNotEqual(proxy._last_emit_token, 0)
+        self.assertFalse(proxy._have_token)
+
     def test_modern_packet_omits_empty_targets(self):
         helper, proxy, packets = self.make_helper(False)
         with patch.object(core, "get_hex_uuid", return_value="origin-2"):

@@ -295,8 +295,10 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         log("send_tokens(%s)", selections)
         for selection in selections:
             if proxy := self._clipboard_proxies.get(selection):
-                proxy._have_token = False
-                proxy.do_emit_token()
+                # this token replaces any we had scheduled,
+                # and is counted and timed like any other:
+                proxy.cancel_emit_token()
+                proxy.emit_token()
 
     def send_all_tokens(self) -> None:
         # only send the tokens that we're actually handling:

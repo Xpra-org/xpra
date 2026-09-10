@@ -39,7 +39,6 @@ class ClipboardProxy(ClipboardProxyCore):
         self.contents.append((target, dtype, dformat, data))
 
 
-
 class ClipboardTimeoutTest(unittest.TestCase):
 
     def make_helper(self):
