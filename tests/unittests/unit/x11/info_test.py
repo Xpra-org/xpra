@@ -15,6 +15,25 @@ class TestX11Info(unittest.TestCase):
         from xpra.x11.info import get_wininfo
         self.assertEqual(get_wininfo(0), "None")
 
+    def test_wininfo_waits_to_be_formatted(self):
+        # the debug log lines it is used in must not cost anything
+        # when that log category is switched off
+        from xpra.x11 import info
+        calls = []
+
+        def counting_get_wininfo(xid: int) -> str:
+            calls.append(xid)
+            return f"window {xid}"
+
+        wininfo = info.WinInfo(123)
+        saved, info.get_wininfo = info.get_wininfo, counting_get_wininfo
+        try:
+            self.assertEqual(calls, [])
+            self.assertEqual(f"{wininfo}", "window 123")
+            self.assertEqual(calls, [123])
+        finally:
+            info.get_wininfo = saved
+
 
 def main():
     unittest.main()

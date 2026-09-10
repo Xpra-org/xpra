@@ -20,7 +20,7 @@ from xpra.x11.bindings.core import constants
 from xpra.x11.bindings.window import PropertyError, X11WindowBindings
 from xpra.x11.common import X11Event
 from xpra.x11.error import xsync, XError
-from xpra.x11.info import get_wininfo
+from xpra.x11.info import get_wininfo, WinInfo
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -217,7 +217,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not requestor:
             log.warn("Warning: clipboard selection request without a window, dropped")
             return
-        wininfo = get_wininfo(requestor)
+        wininfo = WinInfo(requestor)
         prop = event.property
         target = str(event.target)
         log("clipboard request for %s from window %s, target=%s, prop=%s",
@@ -489,7 +489,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.local_request_counter += 1
             timer = GLib.timeout_add(CONVERT_TIMEOUT, self.timeout_get_contents, target, request_id)
             self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents)
-            log("requesting local XConvertSelection from %s as '%s' into '%s'", get_wininfo(owner), target, prop)
+            log("requesting local XConvertSelection from %s as '%s' into '%s'", WinInfo(owner), target, prop)
             X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=CurrentTime)
 
     def timeout_get_contents(self, target: str, request_id: int) -> None:

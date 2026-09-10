@@ -53,3 +53,20 @@ def get_wininfo(xid: int) -> str:
             X11Window = X11WindowBindings()
             xid = X11Window.getParent(xid)
     return csv(wininfo)
+
+
+class WinInfo:
+    """
+    `get_wininfo()` costs a handful of round trips to the X11 server,
+    so defer it until the log message it belongs to is actually formatted
+    """
+    __slots__ = ("xid", )
+
+    def __init__(self, xid: int):
+        self.xid = xid
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return get_wininfo(self.xid)

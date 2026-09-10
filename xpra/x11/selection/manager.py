@@ -16,7 +16,7 @@ from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.selection.common import AlreadyOwned, xfixes_selection_input, gtk_event_window
 from xpra.x11.common import X11Event
 from xpra.x11.prop import prop_set
-from xpra.x11.info import get_wininfo
+from xpra.x11.info import get_wininfo, WinInfo
 from xpra.util.env import envint
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -109,7 +109,7 @@ class ManagerSelection(GObject.GObject):
                     log.error("Error: %r is already owned by %s", selection, get_wininfo(owner))
                     raise AlreadyOwned()
 
-                log(f"got existing owner window {owner:x} for %r: %s", selection, get_wininfo(owner))
+                log(f"got existing owner window {owner:x} for %r: %s", selection, WinInfo(owner))
 
                 # we have to wait for the current owner to exit,
                 # before we can emit `selection-acquired`:
@@ -158,8 +158,7 @@ class ManagerSelection(GObject.GObject):
             log.warn("Warning: unsupported selection target: %s", target)
             return
         if prop != "VERSION":
-            wininfo = get_wininfo(requestor)
-            log("requestor: %s", wininfo)
+            log("requestor: %s", WinInfo(requestor))
             log.warn("Warning: unknown property requested from the selection manager")
             return
 
