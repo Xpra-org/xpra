@@ -315,7 +315,10 @@ class TestMain(unittest.TestCase):
             "showconfig",
             "showsetting xvfb",
             "encoding",
-            "webcam",
+            # `webcam` opens a window and stays there once it has a camera to show,
+            # so ask it for one which cannot exist: that reaches the same argument
+            # handling and exits whether or not this machine has a webcam
+            "webcam nosuchcamera",
             "keyboard",
             "keymap",
             "gui-info",
