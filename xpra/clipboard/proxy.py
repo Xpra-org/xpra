@@ -172,25 +172,33 @@ class ClipboardProxyCore:
         if self._have_token or ((self._greedy_client or self._want_targets) and self._can_send):
             self.schedule_emit_token()
 
-    def emit_token_delay(self) -> int:
+    def emit_token_scale(self) -> int:
         """
-        How far apart the tokens we send have to be, in milliseconds.
+        How much the delay between tokens is stretched by, for this peer.
 
-        This is the only part of the scheduling that varies, so it is the one
-        to override: a bare token is just a notification and costs nothing,
-        but collecting the targets costs a round trip to the application which
-        owns the selection, and a greedy client also makes us fetch the
-        contents - so those are spaced out further.
+        A bare token is just a notification and costs nothing, but collecting
+        the targets costs a round trip to the application which owns the
+        selection, and a greedy client also makes us fetch the contents - so
+        those are spaced out further.
         """
-        if DELAY_SEND_TOKEN < 0:
-            # told not to wait
-            return 0
         scale = 1
         if self._want_targets:
             scale *= 2
         if self._greedy_client:
             scale *= 2
-        return DELAY_SEND_TOKEN * scale
+        return scale
+
+    def emit_token_delay(self) -> int:
+        """
+        How far apart the tokens we send have to be, in milliseconds.
+
+        This is the only part of the scheduling that varies,
+        so it is the one to override.
+        """
+        if DELAY_SEND_TOKEN < 0:
+            # told not to wait
+            return 0
+        return DELAY_SEND_TOKEN * self.emit_token_scale()
 
     def schedule_emit_token(self, min_delay: int = 0) -> None:
         """
