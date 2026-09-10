@@ -40,8 +40,21 @@ class Dispatcher(PacketDispatcher):
         self.calls = []
 
     def call_packet_handler(self, main, handler, proto, packet):
+        # record the routing decision, but leave the call itself
+        # to the dispatcher: that is where the error boundary is
         self.calls.append((main, packet.get_type()))
-        handler(proto, packet)
+        super().call_packet_handler(main, handler, proto, packet)
+
+
+class DeferringDispatcher(PacketDispatcher):
+    """ stands in for the client and the glib server: they hand `main` packets to a main loop """
+
+    def __init__(self):
+        super().__init__()
+        self.deferred = []
+
+    def call_in_main_thread(self, call) -> None:
+        self.deferred.append(call)
 
 
 class DispatchTest(unittest.TestCase):
@@ -92,6 +105,38 @@ class DispatchTest(unittest.TestCase):
         with silence_error(dispatch):
             dispatcher.dispatch_packet(proto, Packet("bad"), authenticated=True)
         handler.assert_called_once()
+
+    def test_a_deferred_handler_error_is_contained(self):
+        dispatcher = DeferringDispatcher()
+        handler = Mock(side_effect=ValueError("bad"))
+        dispatcher.add_packet_handler("bad", handler, main_thread=True)
+        proto = Mock()
+        proto.is_closed.return_value = False
+        dispatcher.dispatch_packet(proto, Packet("bad"), authenticated=True)
+        # the dispatcher has returned and the handler has not run yet:
+        handler.assert_not_called()
+        self.assertEqual(len(dispatcher.deferred), 1)
+        # so this is the only thing left to catch what it raises:
+        with silence_error(dispatch):
+            dispatcher.deferred[0]()
+        handler.assert_called_once()
+
+    def test_the_handler_arguments_belong_to_the_endpoint(self):
+        packets = []
+
+        class ClientLike(DeferringDispatcher):
+            # the client's handlers take the packet on its own, see `XpraClientBase`:
+            @staticmethod
+            def packet_handler_args(_proto, packet):
+                return (packet, )
+
+        dispatcher = ClientLike()
+        dispatcher.add_packet_handler("one", packets.append)
+        proto = Mock()
+        proto.is_closed.return_value = False
+        packet = Packet("one", 1)
+        dispatcher.dispatch_packet(proto, packet, authenticated=True)
+        self.assertEqual(packets, [packet])
 
     def make_subsystems(self, dispatcher) -> dict[str, Subsystem]:
         subsystems = {}

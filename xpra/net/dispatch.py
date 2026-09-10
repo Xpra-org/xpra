@@ -238,10 +238,7 @@ class PacketDispatcher:
 
         def call_handler(main: bool) -> None:
             may_log_packet(False, packet_type, packet)
-            try:
-                self.call_packet_handler(main, handler, proto, packet)
-            except (AssertionError, TypeError, ValueError, RuntimeError):
-                log.error(f"Error processing {packet_type!r}", exc_info=True)
+            self.call_packet_handler(main, handler, proto, packet)
 
         try:
             if authenticated and not proto.is_closed():
@@ -273,10 +270,33 @@ class PacketDispatcher:
             log.error(f" received from {proto}:")
             log.error(f" using {handler}", exc_info=True)
 
+    def call_packet_handler(self, main: bool, handler: PacketHandlerType, proto, packet: Packet) -> None:
+        args = self.packet_handler_args(proto, packet)
+
+        def call() -> None:
+            # the errors of a packet handler have to stop here, rather than in
+            # `dispatch_packet`: `main` hands this call to a main loop, so by the time
+            # it runs, the dispatcher has long returned and is no longer on the stack
+            try:
+                handler(*args)
+            except (AssertionError, TypeError, ValueError, RuntimeError):
+                log.error(f"Error processing {packet.get_type()!r} packet", exc_info=True)
+
+        if main:
+            self.call_in_main_thread(call)
+        else:
+            call()
+
     @staticmethod
-    def call_packet_handler(main: bool, handler: PacketHandlerType, proto, packet: Packet) -> None:
-        # subclasses should handle the `main` flag and call the handler from the main thread when set
-        handler(proto, packet)
+    def packet_handler_args(proto, packet: Packet) -> tuple:
+        # what the handlers of this endpoint expect to be called with
+        return proto, packet
+
+    @staticmethod
+    def call_in_main_thread(call: Callable) -> None:
+        # there is no main loop to hand this to here:
+        # the endpoints which have one override this and defer to it
+        call()
 
     @staticmethod
     def handle_invalid_packet(proto, packet: Packet) -> None:

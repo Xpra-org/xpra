@@ -9,7 +9,6 @@ from collections.abc import Callable
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import gi_import
 from xpra.net.dispatch import PacketDispatcher
-from xpra.net.common import Packet, PacketHandlerType
 from xpra.util.glib import register_os_signals, register_SIGUSR_signals
 from xpra.util.glib_scheduler import GLibScheduler
 from xpra.common import noerr
@@ -82,10 +81,5 @@ class GLibServer(SignalEmitter, PacketDispatcher, GLibScheduler):
         log.info("xpra is ready.")
         noerr(sys.stdout.flush)
 
-    def call_packet_handler(self, main: bool, handler: PacketHandlerType, proto, packet: Packet) -> None:
-        def call() -> None:
-            handler(proto, packet)
-        if main:
-            self.idle_add(call)
-        else:
-            call()
+    def call_in_main_thread(self, call: Callable) -> None:
+        self.idle_add(call)

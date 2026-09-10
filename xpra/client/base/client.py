@@ -17,7 +17,7 @@ from xpra.scripts.config import InitExit
 from xpra.common import noerr, noop, may_show_progress, stop_asyncio_loop
 from xpra.net.constants import ConnectionMessage
 from xpra.net.common import (
-    Packet, PacketElement, PacketHandlerType,
+    Packet, PacketElement,
     disconnect_is_an_error,
     FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
 )
@@ -723,17 +723,13 @@ class XpraClientBase(PacketDispatcher):
     def init_authenticated_packet_handlers(self) -> None:
         self._dispatch_fire("init_authenticated_packet_handlers")
 
-    def call_packet_handler(self, main: bool, handler: PacketHandlerType, _proto, packet: Packet) -> None:
-        """
-        The client packet handlers don't need the `proto` argument,
-        so `call_packet_handler` is overriden here so we can drop it.
-        """
-        def call() -> None:
-            handler(packet)
-        if main:
-            self.idle_add(call)
-        else:
-            call()
+    @staticmethod
+    def packet_handler_args(_proto, packet: Packet) -> tuple:
+        # the client packet handlers don't need the `proto` argument
+        return (packet, )
+
+    def call_in_main_thread(self, call: Callable) -> None:
+        self.idle_add(call)
 
     def process_packet(self, proto, packet) -> None:
         self.dispatch_packet(proto, packet, True)
