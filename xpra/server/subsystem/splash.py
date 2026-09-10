@@ -99,6 +99,8 @@ class SplashServer(StubSubsystem):
             if self.backend not in ("", "auto", "win32"):
                 backend_str = BACKEND_TO_NAME.get(self.backend)
                 mode_str = f"{backend_str} {mode_str}"
+            elif self.backend == "auto" and mode_str == "seamless":
+                mode_str = "X11 Seamless"
             title = f"Xpra {mode_str} Server {__version__}"
             self.splash_process = make_progress_process(title)
             if self.splash_process:
