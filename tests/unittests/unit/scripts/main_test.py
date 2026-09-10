@@ -26,7 +26,7 @@ from xpra.common import noop, noerr
 from xpra.scripts.config import InitException, InitExit, InitInfo
 from xpra.scripts.main import (
     nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
-    handle_client_encoding_option,
+    handle_client_encoding_option, normalize_client_encoding_option,
     isdisplaytype,
     check_display,
     enforce_client_landlock,
@@ -443,6 +443,17 @@ class TestMain(unittest.TestCase):
         app = SimpleNamespace(get_subsystem=subsystems.get, client_toolkit=lambda: "test")
         self.assertEqual(handle_client_encoding_option(app, "png"), "png")
         self.assertEqual(order, ["start the decode thread", "load the codecs"])
+
+    def test_auto_encoding_is_normalized_before_the_subsystems_read_it(self):
+        # `Encodings.init` reads `opts.encoding` once, as the client is initialized,
+        # so `auto` has to have become "no preference" by then - the validation below
+        # cannot do it, it has to wait for the codecs
+        self.assertEqual(normalize_client_encoding_option("auto"), "")
+        self.assertEqual(normalize_client_encoding_option(""), "")
+        self.assertEqual(normalize_client_encoding_option("png"), "png")
+        # validation normalizes too: `record` mode validates before it initializes
+        app = SimpleNamespace(get_subsystem=lambda _name: None, client_toolkit=lambda: "test")
+        self.assertEqual(handle_client_encoding_option(app, "auto"), "")
 
     def test_unsupported_encoding_option_is_refused(self):
         subsystems = {

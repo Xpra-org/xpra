@@ -1522,6 +1522,7 @@ def get_client_gui_app(opts, request_mode: str, extra_args: Sequence[str], mode:
         raise InitException(msg) from None
     may_show_progress(app, 30, "client configuration")
     try:
+        opts.encoding = normalize_client_encoding_option(opts.encoding)
         app.init(opts)
 
         def handshake_complete(*_args) -> None:
@@ -1579,9 +1580,16 @@ def get_client_gui_app(opts, request_mode: str, extra_args: Sequence[str], mode:
     return app
 
 
+def normalize_client_encoding_option(encoding: str) -> str:
+    # `auto` is how the command line spells "no preference", which is what an unset
+    # encoding means everywhere else. The subsystems only read `opts.encoding` once,
+    # as they are initialized (see `Encodings.init`), so this has to happen before
+    # they do - unlike the validation below, which needs the codecs loaded:
+    return "" if encoding == "auto" else encoding
+
+
 def handle_client_encoding_option(app, encoding: str) -> str:
-    if encoding == "auto":
-        encoding = ""
+    encoding = normalize_client_encoding_option(encoding)
     if not encoding:
         return ""
     from xpra.client.base import features
