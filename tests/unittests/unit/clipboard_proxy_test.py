@@ -99,9 +99,11 @@ class CountingProxy(ClipboardProxyCore):
     def __init__(self):
         super().__init__("CLIPBOARD")
         self.tokens = 0
+        self.sends = True
 
-    def do_emit_token(self) -> None:
+    def do_emit_token(self) -> bool:
         self.tokens += 1
+        return self.sends
 
 
 class ClipboardSchedulingTest(unittest.TestCase):
@@ -199,6 +201,24 @@ class ClipboardSchedulingTest(unittest.TestCase):
         self.assertEqual(glib.delays(), [500])
         glib.fire_all()
         self.assertEqual(proxy.tokens, 1)
+
+    def test_a_token_we_did_not_send_does_not_hold_back_the_next_one(self):
+        # ie: the X11 proxy finds the selection holds remote data when the timer fires
+        proxy, glib, _clock = self.make_proxy(greedy=True)
+        proxy.sends = False
+        proxy.schedule_emit_token()
+        self.assertEqual(proxy.tokens, 1)
+        self.assertEqual(proxy._sent_token_events, 0)
+        # nothing went out, so the change which follows is not spaced out from it:
+        proxy.schedule_emit_token()
+        self.assertEqual(proxy.tokens, 2)
+        self.assertEqual(glib.timers, {})
+        # whereas one that is sent does:
+        proxy.sends = True
+        proxy.schedule_emit_token()
+        self.assertEqual(proxy._sent_token_events, 1)
+        proxy.schedule_emit_token()
+        self.assertEqual(glib.delays(), [proxy.emit_token_delay()])
 
     def test_delay_can_be_turned_off(self):
         proxy, glib, _clock = self.make_proxy(greedy=True)

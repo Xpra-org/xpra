@@ -51,8 +51,9 @@ class OSC52ClipboardProxy(ClipboardProxyCore):
     def __repr__(self):
         return "OSC52ClipboardProxy(%s)" % self._selection
 
-    def do_emit_token(self) -> None:
+    def do_emit_token(self) -> bool:
         log("not emitting a token for the %r selection: OSC 52 cannot read the clipboard", self._selection)
+        return False
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         # the peer has new clipboard contents for us

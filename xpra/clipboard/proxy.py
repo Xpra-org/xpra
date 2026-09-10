@@ -240,13 +240,24 @@ class ClipboardProxyCore:
         if not self._block_owner_change:
             self._block_owner_change = GLib.idle_add(self.remove_block)
         self._have_token = False
+        if not self.do_emit_token():
+            # nothing was advertised, so this must neither count
+            # nor space out the token which follows it
+            return
         self._last_emit_token = monotonic()
-        self.do_emit_token()
         self._sent_token_events += 1
 
-    def do_emit_token(self) -> None:
+    def do_emit_token(self) -> bool:
+        """
+        Advertise the local selection to the peer.
+
+        Returns whether a token was sent - a backend which finds it has nothing
+        to advertise says so, rather than being counted as if it had.
+        Collecting the targets or the contents first is allowed to finish
+        asynchronously: what is reported is the decision, not the packet.
+        """
         # self.emit("send-clipboard-token")
-        pass
+        return False
 
     def cancel_emit_token(self) -> None:
         self._emit_token_due = 0

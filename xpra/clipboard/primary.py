@@ -66,8 +66,9 @@ class PrimaryProxyMixin:
         self.cancel_request()
         super().cleanup()
 
-    def do_emit_token(self) -> None:
+    def do_emit_token(self) -> bool:
         log("not emitting a token for the %r selection", self._selection)
+        return False
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         # the remote end has new `PRIMARY` selection contents for us

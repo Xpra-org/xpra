@@ -228,10 +228,10 @@ class OSXClipboardProxy(ClipboardProxyCore):
     def clear(self) -> None:
         self.pasteboard.clearContents()
 
-    def do_emit_token(self) -> None:
+    def do_emit_token(self) -> bool:
         if not (self._want_targets or self._greedy_client):
             self.send_clipboard_token_handler(self, {"targets": (), "data": {}})
-            return
+            return True
         targets = self.get_targets()
         log("do_emit_token() targets=%s", targets)
 
@@ -243,13 +243,14 @@ class OSXClipboardProxy(ClipboardProxyCore):
 
         if not targets or not self._greedy_client:
             send_token({})
-            return
+            return True
         # greedy clients want the data with the token:
         # send as many formats as the peer is interested in,
         # so that the application pasting can choose the one it prefers
         eager_targets = self.get_eager_targets(targets)
         log("do_emit_token() eager targets=%s", eager_targets)
         self.collect_contents(eager_targets, send_token)
+        return True
 
     def get_pasteboard_string(self, nstype: str) -> str:
         value = self.pasteboard.stringForType_(nstype)

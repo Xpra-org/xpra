@@ -401,9 +401,15 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if delay <= 0:
             self.do_emit_token()
         else:
-            self._emit_token_timer = GLib.timeout_add(delay, self.do_emit_token)
+            self._emit_token_timer = GLib.timeout_add(delay, self.emit_token_timeout)
 
-    def do_emit_token(self) -> None:
+    def emit_token_timeout(self) -> bool:
+        # what `do_emit_token` reports is not what a GLib timer means
+        # by a return value, and this timer only ever fires once:
+        self.do_emit_token()
+        return False
+
+    def do_emit_token(self) -> bool:
         # we collect the targets (and contents for greedy clients) here,
         # *after* the back-off delay, so that we send the latest clipboard state:
         self._emit_token_timer = 0
@@ -412,7 +418,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             owner = X11Window.XGetSelectionOwner(self._selection)
         if owner == self.xid:
             log("not emitting token for %s: the selection contains remote data", self._selection)
-            return
+            return False
         # only count the tokens we do send, so that the back-off
         # is not stretched by the ones we decide to skip:
         self._last_emit_token = monotonic()
@@ -430,7 +436,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not (self._want_targets or self._greedy_client):
             self._have_token = False
             self.emit("send-clipboard-token", {"targets": (), "data": {}})
-            return
+            return True
 
         # we need the targets, and the target data for greedy clients:
 
@@ -463,7 +469,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
         if self.targets:
             with_targets(self.targets)
-            return
+            return True
 
         def got_targets(dtype: str, dformat: int, data: Any) -> None:
             if generation != self._selection_generation:
@@ -483,6 +489,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             with_targets(self.targets)
 
         self.get_contents("TARGETS", got_targets)
+        return True
 
     def choose_targets(self, targets) -> Sequence[str]:
         return self.get_eager_targets(targets)
