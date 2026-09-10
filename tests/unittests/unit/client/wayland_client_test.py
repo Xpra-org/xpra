@@ -7,6 +7,7 @@
 import unittest
 
 from xpra.os_util import OSX, POSIX
+from xpra.os_util import get_hex_uuid
 from unit.wayland.test_util import WestonTestUtil
 
 
@@ -49,6 +50,65 @@ class WaylandClientTest(WestonTestUtil):
                 client.terminate()
             if server.poll() is None:
                 self.stop_wayland_server(server)
+
+    def test_wayland_clipboard(self):
+        server = self.start_wayland_server()
+        client = None
+        try:
+            client = self.run_wayland_client(server.display)
+            self.assert_running(client, "Wayland client")
+            server_env = self.wayland_server_env(server)
+            client_value = get_hex_uuid()
+            self.set_wayland_clipboard(self.wayland_client_env(), client_value)
+            self.wait_for_wayland_clipboard(server_env, client_value)
+            server_value = get_hex_uuid()
+            self.set_wayland_clipboard(server_env, server_value)
+            self.wait_for_wayland_clipboard(self.wayland_client_env(),
+                                            server_value)
+        finally:
+            if client and client.poll() is None:
+                client.terminate()
+            if server.poll() is None:
+                self.stop_wayland_server(server)
+
+    def check_wayland_clipboard_direction(self, direction: str) -> None:
+        server = self.start_wayland_server()
+        try:
+            server_env = self.wayland_server_env(server)
+            client = self.run_wayland_client(
+                server.display, f"--clipboard-direction={direction}")
+            try:
+                self.assert_running(client, f"Wayland {direction} client")
+                client_value = get_hex_uuid()
+                self.set_wayland_clipboard(self.wayland_client_env(),
+                                           client_value)
+                if direction == "to-server":
+                    self.wait_for_wayland_clipboard(server_env, client_value)
+                else:
+                    self.assert_wayland_clipboard_not_value(server_env,
+                                                            client_value)
+                server_value = get_hex_uuid()
+                self.set_wayland_clipboard(server_env, server_value)
+                if direction == "to-client":
+                    self.wait_for_wayland_clipboard(self.wayland_client_env(),
+                                                    server_value)
+                else:
+                    self.assert_wayland_clipboard_not_value(
+                        self.wayland_client_env(), server_value)
+            finally:
+                self.terminate_process(client)
+        finally:
+            if server.poll() is None:
+                self.stop_wayland_server(server)
+
+    def test_wayland_clipboard_to_server(self):
+        self.check_wayland_clipboard_direction("to-server")
+
+    def test_wayland_clipboard_to_client(self):
+        self.check_wayland_clipboard_direction("to-client")
+
+    def test_wayland_clipboard_disabled(self):
+        self.check_wayland_clipboard_direction("disabled")
 
     def test_client_exits_when_weston_stops(self):
         display = self.find_free_display()

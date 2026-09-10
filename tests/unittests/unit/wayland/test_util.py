@@ -9,6 +9,7 @@
 import importlib.util
 import os
 import shutil
+import subprocess
 import tempfile
 import time
 import unittest
@@ -20,6 +21,7 @@ from unit.server_test_util import ServerTestUtil
 
 WESTON_TIMEOUT = 10
 CLIENT_TIMEOUT = 20
+CLIPBOARD_TIMEOUT = 5
 
 
 class WestonTestUtil(ServerTestUtil):
@@ -31,6 +33,8 @@ class WestonTestUtil(ServerTestUtil):
             raise unittest.SkipTest("Weston is not installed")
         if not shutil.which("weston-terminal"):
             raise unittest.SkipTest("weston-terminal is not installed")
+        if not shutil.which("wl-copy") or not shutil.which("wl-paste"):
+            raise unittest.SkipTest("wl-clipboard is not installed")
         if importlib.util.find_spec("xpra.wayland.server.compositor") is None:
             raise unittest.SkipTest("the Wayland server backend is not built")
         ServerTestUtil.setUpClass()
@@ -50,7 +54,7 @@ class WestonTestUtil(ServerTestUtil):
         env.pop("DISPLAY", None)
         self.weston = self.run_command([
             "weston", "--backend=headless-backend.so",
-            f"--socket={self.weston_socket}", "--idle-time=0",
+            f"--socket={self.weston_socket}", "--idle-time=0", "--fake-seat",
         ], env=env)
         self.wait_for_weston()
 
@@ -97,11 +101,72 @@ class WestonTestUtil(ServerTestUtil):
         env.pop("DISPLAY", None)
         return env
 
-    def run_wayland_client(self, display: str):
+    def run_wayland_client(self, display: str, *args: str):
         return self.run_xpra([
             "attach", display,
-            "--clipboard=no", "--notification=no", "--opengl=no",
+            "--clipboard=yes", "--notification=no", "--opengl=no",
+            *args,
         ], env=self.wayland_client_env())
+
+    def wayland_server_env(self, server) -> dict[str, str]:
+        env = self.get_run_env()
+        env.update({
+            "XDG_RUNTIME_DIR": server.runtime.name,
+            "WAYLAND_DISPLAY": server.display,
+        })
+        env.pop("DISPLAY", None)
+        return env
+
+    def set_wayland_clipboard(self, env: dict[str, str], value: str,
+                              selection: str = "clipboard") -> None:
+        cmd = ["wl-copy", "--type", "text/plain;charset=utf-8"]
+        if selection == "primary":
+            cmd.append("--primary")
+        # wl-copy forks a process to own the selection.  It inherits stdout and
+        # stderr, so communicate() waits for the clipboard owner to exit.
+        proc = self.run_command(cmd, env=env, stdin=subprocess.PIPE)
+        proc.stdin.write(value.encode("utf8"))
+        proc.stdin.close()
+        if pollwait(proc, WESTON_TIMEOUT) != 0:
+            self.show_proc_error(proc, f"{' '.join(cmd)} failed")
+
+    def get_wayland_clipboard(self, env: dict[str, str],
+                              selection: str = "clipboard") -> tuple[str, str]:
+        cmd = ["wl-paste", "--no-newline"]
+        if selection == "primary":
+            cmd.append("--primary")
+        proc = self.run_command(cmd, env=env, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        out, err = proc.communicate(timeout=WESTON_TIMEOUT)
+        error = ""
+        if proc.returncode:
+            error = (f" ({' '.join(cmd)} returned {proc.returncode}: "
+                     f"{err.decode('utf8', 'replace').strip()})")
+        return out.decode("utf8", "replace"), error
+
+    def wait_for_wayland_clipboard(self, env: dict[str, str], value: str,
+                                   selection: str = "clipboard") -> None:
+        deadline = time.monotonic() + CLIENT_TIMEOUT
+        result = error = ""
+        while time.monotonic() < deadline:
+            result, error = self.get_wayland_clipboard(env, selection)
+            if result == value:
+                return
+            time.sleep(0.1)
+        raise AssertionError(f"{selection} clipboard did not contain "
+                             f"{value!r}: got {result!r}{error}")
+
+    def assert_wayland_clipboard_not_value(self, env: dict[str, str],
+                                           value: str,
+                                           selection: str = "clipboard"
+                                           ) -> None:
+        deadline = time.monotonic() + CLIPBOARD_TIMEOUT
+        while time.monotonic() < deadline:
+            result, _error = self.get_wayland_clipboard(env, selection)
+            if result == value:
+                raise AssertionError(f"{selection} clipboard unexpectedly "
+                                     f"contained {value!r}")
+            time.sleep(0.1)
 
     def assert_running(self, proc, description: str) -> None:
         r = pollwait(proc, 1)

@@ -64,7 +64,7 @@ jobs:
                 libbrotli-dev \
                 libxxhash-dev libqrencode-dev \
                 libdrm-dev libwayland-dev libwayland-bin wayland-protocols libxkbcommon-dev libpixman-1-dev \
-                libwlroots-0.19-dev weston \
+                libwlroots-0.19-dev weston wl-clipboard \
                 python3-coverage \
                 openssl \
                 tigervnc-standalone-server tigervnc-viewer \
