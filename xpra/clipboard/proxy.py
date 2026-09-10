@@ -21,6 +21,8 @@ GLib = gi_import("GLib")
 log = Logger("clipboard")
 
 DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
+# a back-off resets once the clipboard has been idle for this many milliseconds:
+TOKEN_BACKOFF_RESET = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_RESET", 1000)
 MAX_CLIPBOARD_TOKEN_SIZE = envint("XPRA_CLIPBOARD_TOKEN_MAX_SIZE", 4 * 1024 * 1024)
 
 
@@ -96,6 +98,9 @@ class ClipboardProxyCore:
         self._block_owner_change: int = 0
         self._last_emit_token: float = 0
         self._emit_token_timer: int = 0
+        # the delay in force, once it has grown past `TOKEN_DELAY`
+        # (0 whilst the clipboard is idle, and always 0 without a back-off)
+        self._emit_token_backoff: int = 0
         # when the token that is scheduled is due, as a monotonic time in milliseconds
         # (only meaningful whilst `_emit_token_timer` is armed)
         self._emit_token_due: int = 0
@@ -172,6 +177,14 @@ class ClipboardProxyCore:
         if self._have_token or ((self._greedy_client or self._want_targets) and self._can_send):
             self.schedule_emit_token()
 
+    # how far apart the tokens we send are, in milliseconds,
+    # before `emit_token_scale()` stretches it:
+    TOKEN_DELAY = DELAY_SEND_TOKEN
+    # the cap on the exponential back-off, in milliseconds:
+    # 0 means the delay above is used as it is and never grows,
+    # which is what every backend but X11 wants
+    TOKEN_BACKOFF_MAX = 0
+
     def emit_token_scale(self) -> int:
         """
         How much the delay between tokens is stretched by, for this peer.
@@ -195,10 +208,10 @@ class ClipboardProxyCore:
         This is the only part of the scheduling that varies,
         so it is the one to override.
         """
-        if DELAY_SEND_TOKEN < 0:
+        if self.TOKEN_DELAY < 0:
             # told not to wait
             return 0
-        return DELAY_SEND_TOKEN * self.emit_token_scale()
+        return self._emit_token_backoff or self.TOKEN_DELAY * self.emit_token_scale()
 
     def schedule_emit_token(self, min_delay: int = 0) -> None:
         """
@@ -218,6 +231,9 @@ class ClipboardProxyCore:
         # counts towards it: an isolated clipboard change is not delayed at all,
         # only the ones following closely behind another are
         elapsed = now - round(self._last_emit_token * 1000)
+        if elapsed >= TOKEN_BACKOFF_RESET:
+            # the clipboard has been idle long enough: start again from `TOKEN_DELAY`
+            self._emit_token_backoff = 0
         delay = max(min_delay, self.emit_token_delay() - elapsed)
         due = now + delay
         log("schedule_emit_token(%i) selection=%s, elapsed=%i, delay=%i, scheduled=%s",
@@ -246,6 +262,11 @@ class ClipboardProxyCore:
             return
         self._last_emit_token = monotonic()
         self._sent_token_events += 1
+        if self.TOKEN_BACKOFF_MAX > 0:
+            # space out any token which follows this one closely,
+            # and keep doubling that for as long as they keep coming:
+            backoff = self._emit_token_backoff * 2 or self.TOKEN_DELAY * self.emit_token_scale()
+            self._emit_token_backoff = min(self.TOKEN_BACKOFF_MAX, backoff)
 
     def do_emit_token(self) -> bool:
         """

@@ -106,16 +106,23 @@ class CountingProxy(ClipboardProxyCore):
         return self.sends
 
 
+class BackingOffProxy(CountingProxy):
+    """ counts the tokens of a backend which spaces them out exponentially, as X11 does """
+
+    TOKEN_DELAY = 20
+    TOKEN_BACKOFF_MAX = 100
+
+
 class ClipboardSchedulingTest(unittest.TestCase):
 
-    def make_proxy(self, want_targets=False, greedy=False) -> tuple:
+    def make_proxy(self, want_targets=False, greedy=False, proxy_class=CountingProxy) -> tuple:
         glib = FakeGLib()
         clock = FakeClock()
         for attr, value in (("GLib", glib), ("monotonic", clock)):
             patcher = patch.object(proxy_module, attr, value)
             patcher.start()
             self.addCleanup(patcher.stop)
-        proxy = CountingProxy()
+        proxy = proxy_class()
         proxy._enabled = True
         proxy._want_targets = want_targets
         proxy._greedy_client = greedy
@@ -220,9 +227,40 @@ class ClipboardSchedulingTest(unittest.TestCase):
         proxy.schedule_emit_token()
         self.assertEqual(glib.delays(), [proxy.emit_token_delay()])
 
+    def test_the_back_off_doubles_up_to_its_cap(self):
+        proxy, glib, _clock = self.make_proxy(proxy_class=BackingOffProxy)
+        # the first change is not delayed, and each one which follows it waits twice as long:
+        for expected in (0, 20, 40, 80, 100, 100):
+            proxy.schedule_emit_token()
+            self.assertEqual(glib.delays(), [expected] if expected else [])
+            glib.fire_all()
+        self.assertEqual(proxy.tokens, 6)
+
+    def test_the_back_off_resets_once_the_clipboard_is_idle(self):
+        proxy, glib, clock = self.make_proxy(proxy_class=BackingOffProxy)
+        for _ in range(4):
+            proxy.schedule_emit_token()
+            glib.fire_all()
+        self.assertEqual(proxy._emit_token_backoff, BackingOffProxy.TOKEN_BACKOFF_MAX)
+        clock.advance(proxy_module.TOKEN_BACKOFF_RESET)
+        proxy.schedule_emit_token()
+        # back to the base delay, all of which has already elapsed:
+        self.assertEqual(glib.timers, {})
+        self.assertEqual(proxy._emit_token_backoff, BackingOffProxy.TOKEN_DELAY)
+
+    def test_a_flat_delay_never_backs_off(self):
+        # which is what every backend but X11 asks for
+        proxy, glib, _clock = self.make_proxy()
+        for _ in range(4):
+            proxy.schedule_emit_token()
+            glib.fire_all()
+        self.assertEqual(proxy._emit_token_backoff, 0)
+        proxy.schedule_emit_token()
+        self.assertEqual(glib.delays(), [proxy_module.DELAY_SEND_TOKEN])
+
     def test_delay_can_be_turned_off(self):
         proxy, glib, _clock = self.make_proxy(greedy=True)
-        with patch.object(proxy_module, "DELAY_SEND_TOKEN", -1):
+        with patch.object(type(proxy), "TOKEN_DELAY", -1):
             self.assertEqual(proxy.emit_token_delay(), 0)
             proxy.schedule_emit_token()
             proxy.schedule_emit_token()

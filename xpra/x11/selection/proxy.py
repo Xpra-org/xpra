@@ -5,7 +5,6 @@
 
 import os
 import struct
-from time import monotonic
 from typing import Sequence, Any, Final
 
 from xpra.util.env import envbool, envint
@@ -39,13 +38,11 @@ MAX_DATA_SIZE: int = 4 * 1024 * 1024
 RECLAIM = envbool("XPRA_CLIPBOARD_RECLAIM", True)
 # exponential back-off to avoid flooding the peer when the clipboard owner
 # changes repeatedly in a short time:
-# (the back-off resets once the clipboard has been idle for this many milliseconds)
-TOKEN_BACKOFF_RESET: int = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_RESET", 1000)
 # the initial back-off delay in milliseconds (doubles on each repeat),
 # scaled up when the client needs the targets, and again when it is greedy (also needs the contents):
-TOKEN_BACKOFF_DELAY: int = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_DELAY", 20)
+BACKOFF_DELAY: int = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_DELAY", 20)
 # absolute cap on the back-off delay in milliseconds, regardless of scale:
-TOKEN_BACKOFF_MAX: int = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_MAX", 1000)
+BACKOFF_MAX: int = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_MAX", 1000)
 BLOCKLISTED_CLIPBOARD_CLIENTS: list[str] = os.environ.get(
     "XPRA_BLOCKLISTED_CLIPBOARD_CLIENTS",
     "clipit,Software,gnome-shell"
@@ -98,6 +95,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         "send-clipboard-request": n_arg_signal(2),
     }
 
+    # X11 selection owners change far more often than a user copies anything,
+    # so start from a shorter delay than the other backends and grow it:
+    TOKEN_DELAY = BACKOFF_DELAY
+    TOKEN_BACKOFF_MAX = BACKOFF_MAX
+
     def __init__(self, xid: int, selection="CLIPBOARD"):
         ClipboardProxyCore.__init__(self, selection)
         GObject.GObject.__init__(self)
@@ -114,7 +116,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.incr_data_type: str = ""
         self.incr_data_chunks: list[bytes] = []
         self.incr_data_timer: int = 0
-        self._emit_token_backoff: int = 0
         self._selection_generation: int = 0
 
     def reset_incr_data(self) -> None:
@@ -385,56 +386,20 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.do_owner_changed()
         self.schedule_emit_token()
 
-    def schedule_emit_token(self, min_delay: int = 0) -> None:
-        if self._emit_token_timer:
-            # a token is already scheduled, it will pick up the latest clipboard state when it fires
-            return
-        elapsed = int((monotonic() - self._last_emit_token) * 1000)
-        if elapsed >= TOKEN_BACKOFF_RESET:
-            # the clipboard has been idle long enough: reset the back-off
-            self._emit_token_backoff = 0
-        # the back-off only has to space the tokens out: the time already elapsed counts towards it,
-        # so an isolated clipboard change is still sent without any delay
-        delay = max(min_delay, self._emit_token_backoff - elapsed)
-        log("schedule_emit_token(%i) selection=%s, elapsed=%i, backoff=%i, delay=%i",
-            min_delay, self._selection, elapsed, self._emit_token_backoff, delay)
-        if delay <= 0:
-            self.do_emit_token()
-        else:
-            self._emit_token_timer = GLib.timeout_add(delay, self.emit_token_timeout)
-
-    def emit_token_timeout(self) -> bool:
-        # what `do_emit_token` reports is not what a GLib timer means
-        # by a return value, and this timer only ever fires once:
-        self.do_emit_token()
-        return False
-
     def do_emit_token(self) -> bool:
         # we collect the targets (and contents for greedy clients) here,
         # *after* the back-off delay, so that we send the latest clipboard state:
-        self._emit_token_timer = 0
         generation = self._selection_generation
         with xsync:
             owner = X11Window.XGetSelectionOwner(self._selection)
         if owner == self.xid:
             log("not emitting token for %s: the selection contains remote data", self._selection)
             return False
-        # only count the tokens we do send, so that the back-off
-        # is not stretched by the ones we decide to skip:
-        self._last_emit_token = monotonic()
-        self._sent_token_events += 1
         if owner != self._targets_owner:
             self.targets = ()
             self.target_data = {}
             self._targets_owner = 0
-        # increase the back-off for any token sent again in a short time:
-        if self._emit_token_backoff <= 0:
-            self._emit_token_backoff = min(TOKEN_BACKOFF_MAX, TOKEN_BACKOFF_DELAY * self.emit_token_scale())
-        else:
-            self._emit_token_backoff = min(TOKEN_BACKOFF_MAX, self._emit_token_backoff * 2)
-
         if not (self._want_targets or self._greedy_client):
-            self._have_token = False
             self.emit("send-clipboard-token", {"targets": (), "data": {}})
             return True
 
@@ -443,7 +408,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         def send_token_with_targets() -> None:
             if generation != self._selection_generation:
                 return
-            self._have_token = False
             self.emit("send-clipboard-token", {"targets": tuple(self.targets), "data": {}})
 
         def with_targets(otargets: Sequence[str]) -> None:
@@ -459,7 +423,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             def got_target_data(target_data) -> None:
                 if generation != self._selection_generation:
                     return
-                self._have_token = False
                 self.emit("send-clipboard-token", {
                     "targets": tuple(otargets),
                     "data": target_data,
