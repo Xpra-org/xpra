@@ -144,6 +144,21 @@ class WestonTestUtil(ServerTestUtil):
                      f"{err.decode('utf8', 'replace').strip()})")
         return out.decode("utf8", "replace"), error
 
+    def get_wayland_clipboard_types(self, env: dict[str, str],
+                                    selection: str = "clipboard"
+                                    ) -> tuple[str, ...]:
+        cmd = ["wl-paste", "--list-types"]
+        if selection == "primary":
+            cmd.append("--primary")
+        proc = self.run_command(cmd, env=env, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        out, err = proc.communicate(timeout=WESTON_TIMEOUT)
+        if proc.returncode:
+            raise AssertionError(f"{' '.join(cmd)} failed with "
+                                 f"{proc.returncode}: "
+                                 f"{err.decode('utf8', 'replace').strip()}")
+        return tuple(out.decode("utf8", "replace").splitlines())
+
     def wait_for_wayland_clipboard(self, env: dict[str, str], value: str,
                                    selection: str = "clipboard") -> None:
         deadline = time.monotonic() + CLIENT_TIMEOUT
@@ -155,6 +170,19 @@ class WestonTestUtil(ServerTestUtil):
             time.sleep(0.1)
         raise AssertionError(f"{selection} clipboard did not contain "
                              f"{value!r}: got {result!r}{error}")
+
+    def wait_for_wayland_clipboard_type(self, env: dict[str, str],
+                                        mime_type: str,
+                                        selection: str = "clipboard") -> None:
+        deadline = time.monotonic() + CLIENT_TIMEOUT
+        types: tuple[str, ...] = ()
+        while time.monotonic() < deadline:
+            types = self.get_wayland_clipboard_types(env, selection)
+            if mime_type in types:
+                return
+            time.sleep(0.1)
+        raise AssertionError(f"{selection} clipboard did not advertise "
+                             f"{mime_type!r}: got {types!r}")
 
     def assert_wayland_clipboard_not_value(self, env: dict[str, str],
                                            value: str,

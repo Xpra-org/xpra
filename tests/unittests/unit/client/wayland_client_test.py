@@ -71,6 +71,35 @@ class WaylandClientTest(WestonTestUtil):
             if server.poll() is None:
                 self.stop_wayland_server(server)
 
+    def test_wayland_clipboard_mime_type(self):
+        server = self.start_wayland_server()
+        client = None
+        try:
+            client = self.run_wayland_client(server.display)
+            self.assert_running(client, "Wayland client")
+            server_env = self.wayland_server_env(server)
+            mime_type = "text/plain;charset=utf-8"
+            client_value = ("Xpra clipboard:\n"
+                            "\u20ac \u0e20\u0e32\u0e29\u0e32"
+                            "\u0e44\u0e17\u0e22 "
+                            "\u65e5\u672c\u8a9e")
+            self.set_wayland_clipboard(self.wayland_client_env(), client_value)
+            self.wait_for_wayland_clipboard(server_env, client_value)
+            self.wait_for_wayland_clipboard_type(server_env, mime_type)
+            server_value = ("Wayland server:\n"
+                            "\u043a\u0438\u0440\u0438\u043b\u043b"
+                            "\u0438\u0446\u0430 \U0001f30d")
+            self.set_wayland_clipboard(server_env, server_value)
+            self.wait_for_wayland_clipboard(self.wayland_client_env(),
+                                            server_value)
+            self.wait_for_wayland_clipboard_type(self.wayland_client_env(),
+                                                 mime_type)
+        finally:
+            if client and client.poll() is None:
+                client.terminate()
+            if server.poll() is None:
+                self.stop_wayland_server(server)
+
     def check_wayland_clipboard_direction(self, direction: str) -> None:
         server = self.start_wayland_server()
         try:
