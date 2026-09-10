@@ -23,6 +23,11 @@ def get_wintitle(xid: int) -> str:
 
 
 def get_wininfo(xid: int) -> str:
+    if not xid:
+        # `XNone` is a valid state, it means "no window":
+        # asking the server about it only costs us a `BadWindow` for each
+        # property we look up, and a pid which belongs to somebody else
+        return "None"
     wininfo = [f"xid={xid:x}"]
     try:
         from xpra.x11.bindings.res import ResBindings
