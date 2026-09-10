@@ -183,7 +183,7 @@ cdef class WaylandSelectionSource:
         self.source = NULL
         self.proxy = None
         if proxy is not None:
-            proxy.primary_source_destroyed(self)
+            proxy.source_destroyed(self)
 
     def send(self, mime_type: str, fd: int) -> None:
         proxy = self.proxy
@@ -234,7 +234,7 @@ cdef class WaylandPrimarySource:
         self.source = NULL
         self.proxy = None
         if proxy is not None:
-            proxy.primary_source_destroyed(self)
+            proxy.source_destroyed(self)
 
     def send(self, mime_type: str, fd: int) -> None:
         proxy = self.proxy
@@ -350,19 +350,25 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
         "send-clipboard-request": n_arg_signal(2),
     }
 
+    # the two selections differ only in which native objects they are made of:
+    SELECTION_SIGNAL = "primary-selection"
+    SELECTION_API = WaylandPrimarySelection
+    SOURCE_CLASS = WaylandPrimarySource
+
     def __init__(self, selection, compositor):
         ClipboardProxyCore.__init__(self, selection)
         GObject.GObject.__init__(self)
         self.compositor = compositor
-        self.selection_api = WaylandPrimarySelection(compositor.get_display_ptr(), compositor.get_seat_ptr())
+        self.selection_api = self.SELECTION_API(compositor.get_display_ptr(), compositor.get_seat_ptr())
         self.local_source_ptr = 0
+        self.source_generation = 0
         self.remote_source = None
         self.remote_source_ptr = 0
         self.targets = ()
         self.target_data = {}
         self.pending_reads = {}
         self.pending_writes = defaultdict(list)
-        compositor.connect("primary-selection", self.primary_selection_changed)
+        compositor.connect(self.SELECTION_SIGNAL, self.selection_changed)
 
     def __repr__(self):
         return "WaylandPrimaryClipboardProxy(%s)" % self._selection
@@ -388,8 +394,12 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.remote_source = None
             self.remote_source_ptr = 0
 
-    def primary_selection_changed(self, source_ptr: int) -> None:
-        log("primary_selection_changed(%#x) remote=%#x", source_ptr, self.remote_source_ptr)
+    def selection_changed(self, source_ptr: int) -> None:
+        log("%s selection_changed(%#x) remote=%#x", self._selection, source_ptr, self.remote_source_ptr)
+        # wlroots frees the outgoing source before a new one is allocated, and both are
+        # fixed-size heap objects - so the next source can land at the address the last
+        # one had. Only this counter can tell an asynchronous read that it is stale:
+        self.source_generation += 1
         self.local_source_ptr = source_ptr
         if source_ptr == self.remote_source_ptr:
             return
@@ -401,11 +411,12 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     def local_source_changed(self, source_ptr: int) -> None:
         targets = self.selection_api.source_targets(source_ptr)
+        generation = self.source_generation
         self.targets = tuple(x for x in targets if x != ORIGIN_MIME_TYPE)
         self.target_data = {}
 
         def got_origin(_dtype: str, dformat: int, data) -> None:
-            if source_ptr != self.local_source_ptr:
+            if generation != self.source_generation:
                 return
             origin = bytestostr(data) if dformat == 8 and data else ""
             if len(origin) > MAX_ORIGIN_SIZE:
@@ -420,7 +431,7 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self._clipboard_origin = ""
             self.do_owner_changed()
 
-    def primary_source_destroyed(self, source) -> None:
+    def source_destroyed(self, source) -> None:
         if source is self.remote_source:
             self.remote_source = None
             self.remote_source_ptr = 0
@@ -436,10 +447,10 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.emit("send-clipboard-token", {"targets": tuple(targets), "data": {}})
             return
         eager_targets = self.get_eager_targets(targets)
-        source_ptr = self.local_source_ptr
+        generation = self.source_generation
 
         def got_target_data(target_data) -> None:
-            if source_ptr != self.local_source_ptr:
+            if generation != self.source_generation:
                 return
             self.emit("send-clipboard-token", {
                 "targets": tuple(targets),
@@ -515,7 +526,7 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self._have_token = False
             return
         source_targets = tuple(dict.fromkeys(self.targets + tuple(self.target_data)))
-        source = WaylandPrimarySource(self, source_targets, self.target_data)
+        source = self.SOURCE_CLASS(self, source_targets, self.target_data)
         self.remote_source = source
         self.remote_source_ptr = source.ptr()
         self.selection_api.set_source(source)
@@ -555,64 +566,12 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
 class WaylandClipboardProxy(WaylandPrimaryClipboardProxy):
 
-    def __init__(self, selection, compositor):
-        ClipboardProxyCore.__init__(self, selection)
-        GObject.GObject.__init__(self)
-        self.compositor = compositor
-        self.selection_api = WaylandSelection(compositor.get_display_ptr(), compositor.get_seat_ptr())
-        self.local_source_ptr = 0
-        self.remote_source = None
-        self.remote_source_ptr = 0
-        self.targets = ()
-        self.target_data = {}
-        self.pending_reads = {}
-        self.pending_writes = defaultdict(list)
-        compositor.connect("selection", self.selection_changed)
+    SELECTION_SIGNAL = "selection"
+    SELECTION_API = WaylandSelection
+    SOURCE_CLASS = WaylandSelectionSource
 
     def __repr__(self):
         return "WaylandClipboardProxy(%s)" % self._selection
-
-    def selection_changed(self, source_ptr: int) -> None:
-        log("selection_changed(%#x) remote=%#x", source_ptr, self.remote_source_ptr)
-        self.local_source_ptr = source_ptr
-        if source_ptr == self.remote_source_ptr:
-            return
-        if source_ptr == 0:
-            self.targets = ()
-            self.target_data = {}
-            return
-        self.local_source_changed(source_ptr)
-
-    def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
-        self.cancel_emit_token()
-        if not self._enabled:
-            return
-        self._got_token_events += 1
-        log("got_token(%s, %s, claim=%s)", targets, Ellipsizer(target_data), claim)
-        self.targets = tuple(
-            x for x in (bytestostr(y) for y in (targets or ()))
-            if x != ORIGIN_MIME_TYPE
-        )
-        self.target_data = dict(target_data or {})
-        self.target_data.pop(ORIGIN_MIME_TYPE, None)
-        has_contents = bool(self.targets or self.target_data)
-        if self._clipboard_origin:
-            self.target_data[ORIGIN_MIME_TYPE] = (ORIGIN_MIME_TYPE, 8, self._clipboard_origin.encode())
-        if not claim or not self._can_receive:
-            return
-        if not has_contents:
-            if self.remote_source:
-                self.remote_source.destroy()
-                self.remote_source = None
-                self.remote_source_ptr = 0
-            self._have_token = False
-            return
-        source_targets = tuple(dict.fromkeys(self.targets + tuple(self.target_data)))
-        source = WaylandSelectionSource(self, source_targets, self.target_data)
-        self.remote_source = source
-        self.remote_source_ptr = source.ptr()
-        self.selection_api.set_source(source)
-        self._have_token = True
 
 
 GObject.type_register(WaylandPrimaryClipboardProxy)
