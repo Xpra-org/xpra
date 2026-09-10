@@ -219,6 +219,8 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         """Reset state associated with the disconnected clipboard peer."""
         self._clipboard_origins.clear()
         for proxy in self._clipboard_proxies.values():
+            # a token we have scheduled but not sent belongs to the peer which is gone:
+            proxy.cancel_emit_token()
             proxy._clipboard_origin = ""
 
     def set_direction(self, can_send: bool, can_receive: bool,

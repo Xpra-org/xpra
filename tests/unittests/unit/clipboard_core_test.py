@@ -6,37 +6,49 @@
 
 import unittest
 from collections import deque
+from time import monotonic, sleep
 from unittest.mock import patch
+
+from xpra.os_util import gi_import
 
 from xpra.net.common import Packet
 from xpra.clipboard import core
 from xpra.clipboard.common import ALL_CLIPBOARDS, parse_greedy, parse_want_targets
 from xpra.clipboard.core import ClipboardProtocolHelperCore
+from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.util.objects import typedict
 
+GLib = gi_import("GLib")
 
-class ClipboardProxy:
+
+def spin_until(predicate, timeout=0.2) -> bool:
+    """ runs the main loop, so that a timer which is still armed gets to fire """
+    context = GLib.MainContext.default()
+    deadline = monotonic() + timeout
+    while monotonic() < deadline and not predicate():
+        while context.pending():
+            context.iteration(False)
+        sleep(0.005)
+    return predicate()
+
+
+class ClipboardProxy(ClipboardProxyCore):
+    """ the real proxy, with the tokens counted instead of sent """
+
     def __init__(self, selection: str):
-        self._selection = selection
+        super().__init__(selection)
+        self._enabled = True
         self._can_send = True
         self._can_receive = True
-        self._greedy_client = False
-        self._want_targets = False
-        self._clipboard_origin = ""
         self.tokens = []
+        self.emitted = 0
 
-    @staticmethod
-    def is_enabled() -> bool:
+    def do_emit_token(self) -> bool:
+        self.emitted += 1
         return True
 
     def got_token(self, targets, target_data, claim, synchronous_client) -> None:
         self.tokens.append((targets, target_data, claim, synchronous_client))
-
-    def set_greedy_client(self, greedy: bool) -> None:
-        self._greedy_client = greedy
-
-    def set_want_targets(self, want_targets: bool) -> None:
-        self._want_targets = want_targets
 
 
 class ClipboardHelper(ClipboardProtocolHelperCore):
@@ -165,6 +177,18 @@ class ClipboardCoreTest(unittest.TestCase):
         helper.client_reset()
         self.assertEqual(helper._clipboard_origins, {})
         self.assertEqual(proxy._clipboard_origin, "")
+
+    def test_client_reset_drops_the_token_scheduled_for_the_old_peer(self):
+        helper, proxy, _packets = self.make_helper(False)
+        self.addCleanup(proxy.cleanup)
+        proxy.schedule_emit_token()
+        proxy.schedule_emit_token()
+        self.assertEqual(proxy.emitted, 1)
+        self.assertNotEqual(proxy._emit_token_timer, 0)
+        helper.client_reset()
+        self.assertEqual(proxy._emit_token_timer, 0)
+        # the timer was removed, not merely forgotten:
+        self.assertFalse(spin_until(lambda: proxy.emitted > 1))
 
     def test_modern_packet_omits_empty_targets(self):
         helper, proxy, packets = self.make_helper(False)

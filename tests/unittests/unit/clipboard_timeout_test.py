@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from xpra.clipboard import timeout
+from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 
 
@@ -29,17 +30,14 @@ class FakeGLib:
         del self.timers[timer]
 
 
-class ClipboardProxy:
+class ClipboardProxy(ClipboardProxyCore):
     def __init__(self, selection: str):
-        self._selection = selection
-        self._clipboard_origin = ""
+        super().__init__(selection)
         self.contents = []
 
     def got_contents(self, target: str, dtype: str = "", dformat: int = 0, data=None) -> None:
         self.contents.append((target, dtype, dformat, data))
 
-    def cleanup(self) -> None:
-        """ nothing to clean up """
 
 
 class ClipboardTimeoutTest(unittest.TestCase):
