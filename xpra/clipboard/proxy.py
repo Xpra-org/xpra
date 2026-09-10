@@ -25,6 +25,10 @@ log = Logger("clipboard")
 # last token counts towards this - so it only ever costs anything when the
 # clipboard is changing repeatedly, which is exactly when it should:
 DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 20)
+# the delay doubles for as long as the tokens keep coming, up to this many
+# milliseconds - which bounds a selection changing continuously at one token
+# per second, well inside the budget `send_clipboard` allows:
+BACKOFF_MAX = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_MAX", 1000)
 # a back-off resets once the clipboard has been idle for this many milliseconds:
 TOKEN_BACKOFF_RESET = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_RESET", 1000)
 MAX_CLIPBOARD_TOKEN_SIZE = envint("XPRA_CLIPBOARD_TOKEN_MAX_SIZE", 4 * 1024 * 1024)
@@ -185,9 +189,8 @@ class ClipboardProxyCore:
     # before `emit_token_scale()` stretches it:
     TOKEN_DELAY = DELAY_SEND_TOKEN
     # the cap on the exponential back-off, in milliseconds:
-    # 0 means the delay above is used as it is and never grows,
-    # which is what every backend but X11 wants
-    TOKEN_BACKOFF_MAX = 0
+    # 0 turns the back-off off, and the delay above is then used as it is
+    TOKEN_BACKOFF_MAX = BACKOFF_MAX
 
     def emit_token_scale(self) -> int:
         """
@@ -266,7 +269,7 @@ class ClipboardProxyCore:
             return
         self._last_emit_token = monotonic()
         self._sent_token_events += 1
-        if self.TOKEN_BACKOFF_MAX > 0:
+        if self.TOKEN_BACKOFF_MAX > 0 and self.TOKEN_DELAY > 0:
             # space out any token which follows this one closely,
             # and keep doubling that for as long as they keep coming:
             backoff = self._emit_token_backoff * 2 or self.TOKEN_DELAY * self.emit_token_scale()

@@ -7,7 +7,7 @@ import os
 import struct
 from typing import Sequence, Any, Final
 
-from xpra.util.env import envbool, envint
+from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.clipboard.common import ClipboardCallback, env_timeout
 from xpra.clipboard.targets import must_discard_extra, must_discard, TEXT_TARGETS
@@ -36,13 +36,6 @@ StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 
 MAX_DATA_SIZE: int = 4 * 1024 * 1024
 RECLAIM = envbool("XPRA_CLIPBOARD_RECLAIM", True)
-# exponential back-off to avoid flooding the peer when the clipboard owner
-# changes repeatedly in a short time:
-# the initial back-off delay in milliseconds (doubles on each repeat),
-# scaled up when the client needs the targets, and again when it is greedy (also needs the contents):
-BACKOFF_DELAY: int = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_DELAY", 20)
-# absolute cap on the back-off delay in milliseconds, regardless of scale:
-BACKOFF_MAX: int = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_MAX", 1000)
 BLOCKLISTED_CLIPBOARD_CLIENTS: list[str] = os.environ.get(
     "XPRA_BLOCKLISTED_CLIPBOARD_CLIENTS",
     "clipit,Software,gnome-shell"
@@ -94,11 +87,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         "send-clipboard-token": one_arg_signal,
         "send-clipboard-request": n_arg_signal(2),
     }
-
-    # X11 selection owners change far more often than a user copies anything,
-    # so start from a shorter delay than the other backends and grow it:
-    TOKEN_DELAY = BACKOFF_DELAY
-    TOKEN_BACKOFF_MAX = BACKOFF_MAX
 
     def __init__(self, xid: int, selection="CLIPBOARD"):
         ClipboardProxyCore.__init__(self, selection)

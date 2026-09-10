@@ -107,10 +107,16 @@ class CountingProxy(ClipboardProxyCore):
 
 
 class BackingOffProxy(CountingProxy):
-    """ counts the tokens of a backend which spaces them out exponentially, as X11 does """
+    """ counts the tokens of a backend which asks for a lower cap than the default """
 
     TOKEN_DELAY = 20
     TOKEN_BACKOFF_MAX = 100
+
+
+class FlatProxy(CountingProxy):
+    """ counts the tokens of a backend which opts out of the back-off """
+
+    TOKEN_BACKOFF_MAX = 0
 
 
 class ClipboardSchedulingTest(unittest.TestCase):
@@ -248,9 +254,25 @@ class ClipboardSchedulingTest(unittest.TestCase):
         self.assertEqual(glib.timers, {})
         self.assertEqual(proxy._emit_token_backoff, BackingOffProxy.TOKEN_DELAY)
 
-    def test_a_flat_delay_never_backs_off(self):
-        # which is what every backend but X11 asks for
+    def test_every_backend_backs_off_by_default(self):
+        # the first change is still sent at once: what the back-off bounds is a
+        # selection which keeps changing, so that it cannot outrun the peer
         proxy, glib, _clock = self.make_proxy()
+        expected = []
+        delay = proxy_module.DELAY_SEND_TOKEN
+        while delay < proxy_module.BACKOFF_MAX:
+            expected.append(delay)
+            delay *= 2
+        expected.append(proxy_module.BACKOFF_MAX)
+        delays = []
+        for _ in range(len(expected) + 1):
+            proxy.schedule_emit_token()
+            delays += glib.delays()
+            glib.fire_all()
+        self.assertEqual(delays, expected)
+
+    def test_the_back_off_can_be_turned_off(self):
+        proxy, glib, _clock = self.make_proxy(proxy_class=FlatProxy)
         for _ in range(4):
             proxy.schedule_emit_token()
             glib.fire_all()
