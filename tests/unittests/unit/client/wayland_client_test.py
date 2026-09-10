@@ -4,6 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import shutil
+import tempfile
 import unittest
 
 from xpra.os_util import OSX, POSIX
@@ -72,6 +75,33 @@ class WaylandClientTest(WestonTestUtil):
         finally:
             self.terminate_process(second_terminal)
             self.terminate_process(client)
+            if server.poll() is None:
+                self.stop_wayland_server(server)
+
+    def test_wayland_focus_and_input(self):
+        if not shutil.which("wtype"):
+            self.skipTest("wtype is not installed")
+        server = self.start_wayland_server()
+        client = wtype = None
+        value = get_hex_uuid()
+        filename = os.path.join(tempfile.gettempdir(),
+                                f"xpra-wayland-input-{value}")
+        try:
+            client = self.run_wayland_client(server.display)
+            self.assert_running(client, "Wayland client")
+            command = f"printf {value} > {filename}"
+            wtype = self.run_command(
+                ["wtype", "-s", "500", command, "-k", "Return"],
+                env=self.wayland_client_env())
+            self.wait_for_exit(wtype, "wtype")
+            if wtype.returncode != 0:
+                self.show_proc_error(wtype, "wtype failed")
+            self.wait_for_file_contents(filename, value)
+        finally:
+            self.terminate_process(wtype)
+            self.terminate_process(client)
+            if os.path.exists(filename):
+                os.unlink(filename)
             if server.poll() is None:
                 self.stop_wayland_server(server)
 

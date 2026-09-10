@@ -184,6 +184,22 @@ class WestonTestUtil(ServerTestUtil):
         raise AssertionError(f"{selection} clipboard did not advertise "
                              f"{mime_type!r}: got {types!r}")
 
+    def wait_for_file_contents(self, filename: str, value: str) -> None:
+        deadline = time.monotonic() + CLIENT_TIMEOUT
+        result = ""
+        while time.monotonic() < deadline:
+            try:
+                with open(filename, encoding="utf8") as f:
+                    result = f.read()
+            except FileNotFoundError:
+                pass
+            else:
+                if result == value:
+                    return
+            time.sleep(0.1)
+        raise AssertionError(f"{filename} did not contain {value!r}: "
+                             f"got {result!r}")
+
     def assert_wayland_clipboard_not_value(self, env: dict[str, str],
                                            value: str,
                                            selection: str = "clipboard"
