@@ -105,37 +105,33 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     ############################################################################
     # forward local requests to the remote clipboard:
     ############################################################################
-    def schedule_emit_token(self, min_delay=0) -> None:
-        def send_token(targets=(), target_data=None):
-            self._have_token = False
+    def do_emit_token(self) -> bool:
+        def send_token(targets=(), target_data=None) -> bool:
             self.emit("send-clipboard-token", {
                 "targets": tuple(targets),
                 "data": target_data or {},
             })
+            return True
 
         if not (self._want_targets or self._greedy_client):
-            send_token()
-            return
+            return send_token()
         # we need the targets:
         r = self.clipboard.wait_for_targets()
         targets = tuple(a.name() for a in (r[1] if r and len(r) == 2 and r[0] else []))
         if not targets:
-            send_token()
-            return
+            return send_token()
         if not self._greedy_client:
-            send_token(targets)
-            return
+            return send_token(targets)
         # for now, we only handle text targets:
         text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
         if text_targets:
             if text := self.clipboard.wait_for_text():
                 # should verify the target is actually utf8...
                 text_target = text_targets[0]
-                send_token(targets, {
+                return send_token(targets, {
                     text_target: ("UTF8_STRING", 8, text),
                 })
-                return
-        send_token(targets)
+        return send_token(targets)
 
     def owner_change(self, clipboard, event) -> None:
         log("owner_change(%s, %s) window=%s, selection=%s",
@@ -144,8 +140,8 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
     def do_owner_changed(self) -> None:
         elapsed = monotonic() - self._owner_change_embargo
-        log("do_owner_changed() enabled=%s, elapsed=%s", self._enabled, elapsed)
-        if not self._enabled or elapsed < BLOCK_DELAY:
+        log("do_owner_changed() enabled=%s, can-send=%s, elapsed=%s", self._enabled, self._can_send, elapsed)
+        if not self._enabled or not self._can_send or elapsed < BLOCK_DELAY:
             return
         self._clipboard_origin = ""
         self.schedule_emit_token()
