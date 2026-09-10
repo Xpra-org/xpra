@@ -239,6 +239,15 @@ class PointerClient(StubClientSubsystem):
 
     def send_button(self, device_id: int, wid: int, button: int, pressed: bool,
                     pointer, modifiers, buttons, props) -> None:
+        client = self.client
+        if pressed and (client.readonly or client.server_readonly or not self.server_pointer):
+            # only the press: a release is never held back, or a button which went down
+            # before the policy changed would stay down on the server. It cannot escape
+            # on its own - the state check below only lets a release through when we
+            # did send its press
+            log("send_button(..) press ignored: readonly=%s, server-readonly=%s, server-pointer=%s",
+                client.readonly, client.server_readonly, self.server_pointer)
+            return
         pressed_state = self.button_state.get(button, False)
         if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state == pressed:
             log("button action: unchanged state, ignoring event")

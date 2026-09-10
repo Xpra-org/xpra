@@ -108,6 +108,38 @@ class PointerClientTest(ClientMixinTest):
         self.mixin.server_pointer = True
         self.assertEqual(wheel(), 1, "the wheel event was not sent")
 
+    def test_button_presses_respect_the_pointer_policy(self):
+        from xpra.client.subsystem.pointer import PointerClient
+        opts = AdHocStruct()
+        opts.mousewheel = "on"
+        opts.sharing = "no"
+        self._test_mixin_class(PointerClient, opts, {})
+        sent = []
+        self.mixin.send_positional = lambda *args: sent.append(args)
+
+        def click(pressed: bool) -> int:
+            sent.clear()
+            self.mixin.send_button(-1, 1, 1, pressed, (100, 200), (), (), {})
+            return len(sent)
+
+        self.assertEqual(click(True), 1, "the button press was not sent")
+        self.assertEqual(click(False), 1, "the button release was not sent")
+        # the gtk adapter refuses all three of these before it gets here,
+        # but the win32, pyglet and terminal clients call us directly:
+        for attribute in ("readonly", "server_readonly"):
+            setattr(self, attribute, True)
+            self.assertEqual(click(True), 0, f"a button press was sent with {attribute}")
+            setattr(self, attribute, False)
+        self.mixin.server_pointer = False
+        self.assertEqual(click(True), 0, "a button press was sent to a server without a pointer")
+        self.mixin.server_pointer = True
+        # a button which is already down is released whatever the policy has become,
+        # or it would stay down on the server for good:
+        self.assertEqual(click(True), 1, "the button press was not sent")
+        self.readonly = True
+        self.assertEqual(click(False), 1, "a button which was down was not released")
+        self.readonly = False
+
     def test_remote_pointer(self):
         from xpra.client.subsystem.pointer import PointerClient
         opts = AdHocStruct()
