@@ -184,9 +184,9 @@ class ClipboardSchedulingTest(unittest.TestCase):
         proxy.schedule_emit_token()
         proxy.schedule_emit_token(500)
         self.assertEqual(glib.delays(), [500])
-        clock.advance(100)
+        clock.advance(10)
         proxy.schedule_emit_token()
-        self.assertEqual(glib.delays(), [proxy.emit_token_delay() - 100])
+        self.assertEqual(glib.delays(), [proxy.emit_token_delay() - 10])
 
     def test_a_long_delay_does_not_hold_back_a_token_already_due(self):
         # the other way around: a change which needs the extra time

@@ -20,7 +20,11 @@ GLib = gi_import("GLib")
 
 log = Logger("clipboard")
 
-DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
+# how far apart two tokens have to be, in milliseconds:
+# an isolated clipboard change is not delayed at all, since the time since the
+# last token counts towards this - so it only ever costs anything when the
+# clipboard is changing repeatedly, which is exactly when it should:
+DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 20)
 # a back-off resets once the clipboard has been idle for this many milliseconds:
 TOKEN_BACKOFF_RESET = envint("XPRA_CLIPBOARD_TOKEN_BACKOFF_RESET", 1000)
 MAX_CLIPBOARD_TOKEN_SIZE = envint("XPRA_CLIPBOARD_TOKEN_MAX_SIZE", 4 * 1024 * 1024)
