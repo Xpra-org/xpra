@@ -335,6 +335,14 @@ class PointerClient(StubClientSubsystem):
     def wheel_event(self, device_id=-1, wid=0, deltax=0, deltay=0, pointer=(), props=None) -> None:
         # this is a different entry point for mouse wheel events,
         # which provides finer grained deltas (if supported by the server)
+        client = self.client
+        if client.readonly or client.server_readonly or not self.server_pointer:
+            # the button path applies the same policy in the toolkit adapter
+            # (see `PointerWindow._button_action`), but wheel events arrive here
+            # from four of them - gtk, win32, xi2 and the terminal client:
+            log("wheel_event(..) ignored: readonly=%s, server-readonly=%s, server-pointer=%s",
+                client.readonly, client.server_readonly, self.server_pointer)
+            return
         # accumulate deltas:
         if deltax:
             self.wheel_deltax += deltax

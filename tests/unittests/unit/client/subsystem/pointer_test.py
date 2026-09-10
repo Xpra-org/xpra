@@ -76,6 +76,38 @@ class PointerClientTest(ClientMixinTest):
         self.glib.timeout_add(5000, self.stop)
         self.main_loop.run()
 
+    def test_wheel_events_respect_the_pointer_policy(self):
+        from xpra.client.subsystem.pointer import PointerClient
+        opts = AdHocStruct()
+        opts.mousewheel = "on"
+        opts.sharing = "no"
+        self._test_mixin_class(PointerClient, opts, {})
+        sent = []
+
+        def record(*args) -> float:
+            sent.append(args)
+            # the undelivered remainder of the distance:
+            return 0.0
+
+        self.mixin.send_wheel_delta = record
+
+        def wheel() -> int:
+            sent.clear()
+            self.mixin.wheel_event(-1, 1, 0, 1.0, (100, 200))
+            return len(sent)
+
+        self.assertEqual(wheel(), 1, "the wheel event was not sent")
+        # the button path refuses all three of these (see `PointerWindow._button_action`),
+        # and every toolkit sends its wheel events through `wheel_event`:
+        for attribute in ("readonly", "server_readonly"):
+            setattr(self, attribute, True)
+            self.assertEqual(wheel(), 0, f"a wheel event was sent with {attribute}")
+            setattr(self, attribute, False)
+        self.mixin.server_pointer = False
+        self.assertEqual(wheel(), 0, "a wheel event was sent to a server without a pointer")
+        self.mixin.server_pointer = True
+        self.assertEqual(wheel(), 1, "the wheel event was not sent")
+
     def test_remote_pointer(self):
         from xpra.client.subsystem.pointer import PointerClient
         opts = AdHocStruct()

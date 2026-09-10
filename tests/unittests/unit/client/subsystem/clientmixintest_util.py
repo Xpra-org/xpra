@@ -164,6 +164,7 @@ class ClientMixinTest(unittest.TestCase):
         x.source_remove = self.source_remove
         self.exit_code = None
         self.readonly = False
+        self.server_readonly = False
         self.session_name = ""
         self.display_desc = {}
         self.quit = self.fake_quit
