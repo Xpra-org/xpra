@@ -83,6 +83,20 @@ class DecodeTest(unittest.TestCase):
         thread.join(5)
         self.assertFalse(thread.is_alive(), "the exit marker did not stop the decode thread")
 
+    def test_run_twice_keeps_one_worker(self):
+        # an explicit `--encoding` is validated before the client runs, and that has to
+        # start the decode thread to get the codecs loaded - `run()` then comes round again
+        decode = self.make_decode()
+        decode.run()
+        thread = decode._thread
+        try:
+            decode.run()
+            self.assertIs(decode._thread, thread, "a second decode thread was started")
+        finally:
+            decode.cleanup()
+        thread.join(5)
+        self.assertFalse(thread.is_alive())
+
     def test_add_decode_work_uses_the_decode_subsystem(self):
         client = FakeClient()
         decode = self.make_decode(client)

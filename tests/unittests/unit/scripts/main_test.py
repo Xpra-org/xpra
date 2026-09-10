@@ -23,9 +23,10 @@ from xpra.util.io import pollwait
 from xpra.util.objects import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.common import noop, noerr
-from xpra.scripts.config import InitException, InitExit
+from xpra.scripts.config import InitException, InitExit, InitInfo
 from xpra.scripts.main import (
     nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
+    handle_client_encoding_option,
     isdisplaytype,
     check_display,
     enforce_client_landlock,
@@ -417,6 +418,40 @@ class TestMain(unittest.TestCase):
             assert proc.returncode == 0, f"initenv failed with {proc.returncode}{self._subcommand_output(proc)}"
         finally:
             self._close_subcommand_output(proc)
+
+    def test_encoding_option_loads_the_codecs_on_the_decode_thread(self):
+        # `ensure_codecs_loaded()` waits for the decode thread, so the decode subsystem
+        # has to be running before we get there - otherwise the wait is the full
+        # `XPRA_CODEC_LOAD_TIMEOUT` and the codecs end up loaded on this thread instead
+        order = []
+
+        class FakeEncodings:
+            @staticmethod
+            def ensure_codecs_loaded() -> None:
+                order.append("load the codecs")
+
+            @staticmethod
+            def get_encodings() -> tuple[str, ...]:
+                return ("rgb24", "png")
+
+        class FakeDecode:
+            @staticmethod
+            def run() -> None:
+                order.append("start the decode thread")
+
+        subsystems = {"encoding": FakeEncodings(), "decode": FakeDecode()}
+        app = SimpleNamespace(get_subsystem=subsystems.get, client_toolkit=lambda: "test")
+        self.assertEqual(handle_client_encoding_option(app, "png"), "png")
+        self.assertEqual(order, ["start the decode thread", "load the codecs"])
+
+    def test_unsupported_encoding_option_is_refused(self):
+        subsystems = {
+            "encoding": SimpleNamespace(ensure_codecs_loaded=noop, get_encodings=lambda: ("rgb24", )),
+        }
+        app = SimpleNamespace(get_subsystem=subsystems.get, client_toolkit=lambda: "test")
+        # no `decode` subsystem to start: the encoding subsystem loads them itself
+        with self.assertRaises(InitInfo):
+            handle_client_encoding_option(app, "nosuchencoding")
 
 
 def main():

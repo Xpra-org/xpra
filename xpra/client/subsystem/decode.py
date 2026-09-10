@@ -12,7 +12,7 @@ from collections.abc import Callable
 from xpra.os_util import LINUX
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.env import envbool, envint
-from xpra.util.thread import start_thread
+from xpra.util.thread import make_thread, start_thread
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
@@ -84,7 +84,12 @@ class Decode(StubClientSubsystem):
         self._counter: int = 0
 
     def run(self) -> ExitValue:
-        self._thread = start_thread(self._decode_thread_loop, "decode")
+        # an explicit `--encoding` is validated against the codecs before the client runs,
+        # and that has to start us early (see `handle_client_encoding_option`),
+        # so this is called twice - there is only ever one worker:
+        if self._thread is None:
+            self._thread = make_thread(self._decode_thread_loop, "decode")
+            self._thread.start()
         return ExitCode.OK
 
     def cleanup(self) -> None:
@@ -115,7 +120,7 @@ class Decode(StubClientSubsystem):
             with log.trap_error("Error in decode work %s%s", fn, args):
                 fn(*args)
                 sleep(0)
-        self._thread = None
+        # the thread we were is kept: `run()` must not start a replacement for it
         log("decode thread ended")
 
     def preload(self) -> None:

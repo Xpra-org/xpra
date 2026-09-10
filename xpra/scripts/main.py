@@ -1523,7 +1523,6 @@ def get_client_gui_app(opts, request_mode: str, extra_args: Sequence[str], mode:
     may_show_progress(app, 30, "client configuration")
     try:
         app.init(opts)
-        opts.encoding = handle_client_encoding_option(app, opts.encoding)
 
         def handshake_complete(*_args) -> None:
             may_show_progress(app, 100, "connection established")
@@ -1543,6 +1542,11 @@ def get_client_gui_app(opts, request_mode: str, extra_args: Sequence[str], mode:
         app.init_ui(opts)
         may_show_progress(app, 50, "loading user interface")
         app.load()
+        # only now: validating an explicit encoding starts the decode thread, whose
+        # `preload` hooks run against every other subsystem - and those want to be
+        # initialized and loaded by then (`Notifications.preload_decode` looks at the
+        # notifier `load` creates, for one):
+        opts.encoding = handle_client_encoding_option(app, opts.encoding)
         if request_mode:
             sns = get_start_new_session_dict(opts, request_mode, extra_args)
             extra_args = [f"socket:{opts.system_proxy_socket}"]
@@ -1586,7 +1590,13 @@ def handle_client_encoding_option(app, encoding: str) -> str:
     enc_subsystem = app.get_subsystem("encoding")
     if not enc_subsystem:
         return ""
-    # codecs may still be loading in the decode thread at this point (see `Encodings.load`):
+    # `ensure_codecs_loaded` waits for the decode thread to load them, and the decode
+    # subsystem is normally started by `app.run()` - which has not happened yet. Start it
+    # here, or the wait below is a flat `XPRA_CODEC_LOAD_TIMEOUT` (30 seconds by default)
+    # followed by loading the codecs on this thread, which is exactly what the decode
+    # thread owns them to avoid (see `docs/Usage/Seccomp.md`):
+    if decode := app.get_subsystem("decode"):
+        decode.run()
     enc_subsystem.ensure_codecs_loaded()
     einfo = ""
     encodings = list(enc_subsystem.get_encodings()) + ["auto", "stream"]
