@@ -426,12 +426,11 @@ class WaylandPrimaryClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.remote_source_ptr = 0
 
     def do_owner_changed(self) -> None:
-        if not self._enabled:
+        if not self._enabled or not self._can_send:
             return
         self.schedule_emit_token()
 
-    def schedule_emit_token(self, min_delay=0) -> None:
-        self._have_token = False
+    def do_emit_token(self) -> None:
         targets = self.targets if (self._want_targets or self._greedy_client) else ()
         if not self._greedy_client:
             self.emit("send-clipboard-token", {"targets": tuple(targets), "data": {}})
