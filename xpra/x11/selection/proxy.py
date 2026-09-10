@@ -95,7 +95,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.owned: bool = False
         self._want_targets: bool = False
         self.remote_requests: dict[str, list[tuple[int, str, str, float]]] = {}
-        self.local_requests: dict[str, dict[int, tuple[int, ClipboardCallback]]] = {}
+        self.local_requests: dict[str, dict[int, tuple[int, ClipboardCallback, int]]] = {}
         self.local_request_counter: int = 0
         self.targets: Sequence[str] = ()
         self.target_data: dict[str, tuple[str, int, Any]] = {}
@@ -485,19 +485,26 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 log("we are the %s selection owner, using empty reply", self._selection)
                 got_contents("", 0, b"")
                 return
+            # ICCCM: a conversion request should carry the timestamp of whatever caused it.
+            # We have no such event - the peer asked for this over the network - so take the
+            # server's own idea of the time. An owner is entitled to refuse a request from
+            # outside the period it has owned the selection, and `CurrentTime` also tells us
+            # nothing about which request an answer belongs to.
+            request_time = X11Window.get_server_time(self.xid)
             request_id = self.local_request_counter
             self.local_request_counter += 1
             timer = GLib.timeout_add(CONVERT_TIMEOUT, self.timeout_get_contents, target, request_id)
-            self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents)
-            log("requesting local XConvertSelection from %s as '%s' into '%s'", WinInfo(owner), target, prop)
-            X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=CurrentTime)
+            self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents, request_time)
+            log("requesting local XConvertSelection from %s as '%s' into '%s' at %s",
+                WinInfo(owner), target, prop, request_time)
+            X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=request_time)
 
     def timeout_get_contents(self, target: str, request_id: int) -> None:
         try:
             target_requests = self.local_requests.get(target)
             if target_requests is None:
                 return
-            timer, got_contents = target_requests.pop(request_id)
+            timer, got_contents, _request_time = target_requests.pop(request_id)
             if not target_requests:
                 del self.local_requests[target]
         except KeyError:
@@ -505,6 +512,44 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         GLib.source_remove(timer)
         log.warn("Warning: %s selection request for '%s' timed out", self._selection, target)
         log.warn(" request %i", request_id)
+        if target == "TARGETS":
+            got_contents("ATOM", 32, b"")
+        else:
+            got_contents("", 0, b"")
+
+    def take_local_request(self, target: str, request_time: int) -> tuple:
+        # the timestamp is what tells two conversions of the same target apart:
+        # should the server ever hand out the same one twice, the older request
+        # is the one which gets the answer
+        target_requests = self.local_requests.get(target, {})
+        for request_id, request in tuple(target_requests.items()):
+            if request[2] != request_time:
+                continue
+            del target_requests[request_id]
+            if not target_requests:
+                del self.local_requests[target]
+            return request
+        return ()
+
+    def do_conversion_notify_event(self, event: X11Event) -> None:
+        log("do_conversion_notify_event(%s)", event)
+        if not self._enabled or event.requestor != self.xid or event.selection != self._selection:
+            return
+        if event.property:
+            # a conversion which succeeded is collected from the property it names,
+            # see `do_property_notify`
+            return
+        # `property=None` is the owner - or the X server, when there is no owner -
+        # telling us that this representation is not available. Without it, the request
+        # could only ever end in `timeout_get_contents` and its warning.
+        target = str(event.target)
+        request = self.take_local_request(target, event.time)
+        if not request:
+            log("no %r request made at %s is still waiting for an answer", target, event.time)
+            return
+        timer, got_contents, _request_time = request
+        GLib.source_remove(timer)
+        log("%s conversion to %r was refused", self._selection, target)
         if target == "TARGETS":
             got_contents("ATOM", 32, b"")
         else:
@@ -567,7 +612,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def got_local_contents(self, target: str, dtype="", dformat: int = 8, data=b"") -> None:
         data = filter_data(dtype, dformat, data)
         target_requests = self.local_requests.pop(target, {})
-        for timer, got_contents in target_requests.values():
+        for timer, got_contents, _request_time in target_requests.values():
             if log.is_debug_enabled():
                 log("got_local_contents: calling %s%s",
                     got_contents, (dtype, dformat, Ellipsizer(data)))

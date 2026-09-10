@@ -29,6 +29,8 @@ IGNORED_PROPERTIES = (
     "_NET_WM_NAME", "WM_NAME", "_NET_WM_ICON_NAME", "WM_ICON_NAME",
     "WM_PROTOCOLS", "WM_NORMAL_HINTS", "WM_CLIENT_MACHINE", "WM_LOCALE_NAME",
     "_NET_WM_PID", "WM_CLIENT_LEADER", "_NET_WM_USER_TIME_WINDOW",
+    # `get_server_time` leaves the deletion of this one behind:
+    "XPRA_TIMESTAMP_PROP",
 )
 IGNORED_MESSAGES = (
     "_GTK_LOAD_ICONTHEMES",
@@ -73,6 +75,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         "x11-client-message-event": one_arg_signal,
         "x11-selection-request": one_arg_signal,
         "x11-selection-clear": one_arg_signal,
+        "x11-selection-notify": one_arg_signal,
         "x11-property-notify-event": one_arg_signal,
         "x11-xfixes-selection-notify-event": one_arg_signal,
     }
@@ -169,6 +172,12 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         log("do_x11_selection_clear(%s)", event)
         if proxy := self._get_proxy(event.selection):
             proxy.do_selection_clear_event(event)
+
+    def do_x11_selection_notify(self, event: X11Event) -> None:
+        # the answer to one of our own `XConvertSelection` calls:
+        log("do_x11_selection_notify(%s)", event)
+        if proxy := self._get_proxy(event.selection):
+            proxy.do_conversion_notify_event(event)
 
     def do_x11_xfixes_selection_notify_event(self, event: X11Event) -> None:
         log("do_x11_xfixes_selection_notify_event(%s)", event)

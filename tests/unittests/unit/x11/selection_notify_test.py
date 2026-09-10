@@ -123,16 +123,125 @@ print("done")
 """
 
 
+# A conversion which is refused has to complete straight away. The only thing which
+# distinguishes the repair from the defect is that the request never reaches
+# `CONVERT_TIMEOUT`: both end up calling the callback with an empty value.
+CONVERSION_CHECKS = r"""
+import sys
+from time import monotonic, sleep
+
+from xpra.os_util import gi_import
+from xpra.x11.bindings.display_source import init_display_source
+from xpra.x11.bindings.loop import register_glib_source
+
+GObject = gi_import("GObject")
+GLib = gi_import("GLib")
+
+init_display_source()
+register_glib_source(GLib.MainContext.default())
+
+from xpra.util.gobject import one_arg_signal
+from xpra.x11.bindings.core import constants
+from xpra.x11.bindings.window import X11WindowBindings
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
+from xpra.x11.error import xsync
+from xpra.x11.selection.clipboard import X11Clipboard
+
+SELECTION = sys.argv[1]
+X11Window = X11WindowBindings()
+failures = []
+
+
+def check(name, condition, message):
+    if not condition:
+        failures.append("%s: %s" % (name, message))
+
+
+# an owner which turns down every representation it is asked for:
+class RefusingOwner(GObject.GObject):
+    __gsignals__ = {
+        "x11-selection-request": one_arg_signal,
+    }
+
+    def __init__(self, xid: int):
+        super().__init__()
+        self.xid = xid
+        self.requests = []
+
+    def do_x11_selection_request(self, event) -> None:
+        self.requests.append(event)
+        with xsync:
+            # no property: ICCCM's negative reply
+            X11Window.sendSelectionNotify(event.requestor, event.selection, str(event.target), "", event.time)
+
+
+GObject.type_register(RefusingOwner)
+
+
+def pump(predicate, timeout=5) -> bool:
+    context = GLib.MainContext.default()
+    deadline = monotonic() + timeout
+    while monotonic() < deadline and not predicate():
+        context.iteration(False)
+        sleep(0.005)
+    return predicate()
+
+
+with xsync:
+    oxid = X11Window.CreateWindow(X11Window.get_root_xid(), -1, -1,
+                                  event_mask=constants["PropertyChangeMask"],
+                                  inputoutput=constants["InputOnly"])
+owner = RefusingOwner(oxid)
+add_event_receiver(oxid, owner)
+with xsync:
+    X11Window.XSetSelectionOwner(oxid, SELECTION)
+    check("owner", X11Window.XGetSelectionOwner(SELECTION) == oxid, "could not take the selection")
+
+helper = X11Clipboard(lambda *_args: None)
+helper.init_proxies([SELECTION])
+proxy = helper._clipboard_proxies[SELECTION]
+proxy.set_enabled(True)
+
+results = []
+start = monotonic()
+proxy.get_contents("TARGETS", lambda *args: results.append(args))
+check("refusal", pump(lambda: bool(results)), "the refused conversion never completed")
+elapsed = 1000 * (monotonic() - start)
+check("refusal", bool(owner.requests), "the owner was never asked to convert anything")
+if results:
+    check("refusal", results[0] == ("ATOM", 32, b""), "got %r instead of an empty target list" % (results[0], ))
+# `CONVERT_TIMEOUT` is 100ms, and the whole point is not to wait for it:
+check("refusal", elapsed < 100, "the refusal took %ims, which is the conversion timeout" % elapsed)
+
+# a second conversion for the same target must not be completed by the first answer:
+results.clear()
+proxy.get_contents("STRING", lambda *args: results.append(args))
+proxy.get_contents("STRING", lambda *args: results.append(args))
+check("two", pump(lambda: len(results) == 2), "only %i of the 2 refusals completed" % len(results))
+check("two", results == [("", 0, b"")] * 2, "got %r" % (results, ))
+check("two", not proxy.local_requests, "requests are still pending: %s" % (proxy.local_requests, ))
+
+helper.cleanup()
+remove_event_receiver(oxid, owner)
+with xsync:
+    X11Window.DestroyWindow(oxid)
+
+for failure in failures:
+    print("FAIL %s" % failure)
+print("done")
+"""
+
+
 class X11SelectionNotifyTest(ServerTestUtil):
 
-    def test_selection_notify_reaches_the_requestor(self):
+    def run_checks(self, checks: str) -> None:
         display = self.find_free_display()
         xvfb = self.start_Xvfb(display)
         try:
             env = os.environ.copy()
             env["DISPLAY"] = display
             proc = subprocess.run(
-                (sys.executable, "-c", CHECKS, SELECTION),
+                (sys.executable, "-c", checks, SELECTION),
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 text=True, check=False, env=env, timeout=120,
             )
@@ -142,6 +251,14 @@ class X11SelectionNotifyTest(ServerTestUtil):
         self.assertIn("done", proc.stdout, f"checks did not complete:\n{proc.stderr}")
         failures = [line for line in proc.stdout.splitlines() if line.startswith("FAIL ")]
         self.assertFalse(failures, "\n".join(failures))
+        # `timeout_get_contents` is the failure this is all about:
+        self.assertNotIn("timed out", proc.stderr, f"a conversion timed out:\n{proc.stderr}")
+
+    def test_selection_notify_reaches_the_requestor(self):
+        self.run_checks(CHECKS)
+
+    def test_a_refused_conversion_does_not_time_out(self):
+        self.run_checks(CONVERSION_CHECKS)
 
 
 def main():
