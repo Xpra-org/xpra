@@ -76,6 +76,24 @@ TRANSLATED_TARGETS = parse_translated_targets(os.environ.get(
 log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
 
 
+class IncrTransfer:
+    """
+    The state of one incremental transfer.
+    The owner delivers it one chunk at a time on the property the conversion named,
+    which is also what tells two concurrent transfers apart
+    """
+    __slots__ = ("size", "dtype", "chunks", "timer")
+
+    def __init__(self, size: int):
+        self.size = size
+        self.dtype = ""
+        self.chunks: list[bytes] = []
+        self.timer = 0
+
+    def __repr__(self):
+        return f"IncrTransfer({self.size} bytes as {self.dtype!r})"
+
+
 class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     __gsignals__ = {
         "x11-client-message-event": one_arg_signal,
@@ -100,17 +118,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.targets: Sequence[str] = ()
         self.target_data: dict[str, tuple[str, int, Any]] = {}
         self._targets_owner: int = 0
-        self.incr_data_size: int = 0
-        self.incr_data_type: str = ""
-        self.incr_data_chunks: list[bytes] = []
-        self.incr_data_timer: int = 0
+        self.incr_transfers: dict[str, IncrTransfer] = {}
         self._selection_generation: int = 0
-
-    def reset_incr_data(self) -> None:
-        self.incr_data_size: int = 0
-        self.incr_data_type: str = ""
-        self.incr_data_chunks: list[bytes] = []
-        self.incr_data_timer: int = 0
 
     def __repr__(self):
         return f"X11ClipboardProxy({self._selection})"
@@ -133,6 +142,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.local_requests = {}
         for target in lr:
             self.got_local_contents(target)
+        for atom in tuple(self.incr_transfers):
+            self.cancel_incr_transfer(atom)
 
     def got_token(self, targets, target_data=None, claim=True, synchronous_client=False) -> None:
         # the remote end now owns the clipboard
@@ -560,51 +571,52 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not self._enabled:
             return
         # ie: atom="PRIMARY-TARGETS", atom="PRIMARY-STRING"
-        parts = event.atom.split("-", 1)
+        atom = event.atom
+        parts = atom.split("-", 1)
         assert len(parts) == 2
         # selection = parts[0]        # ie: PRIMARY
         target = parts[1]  # ie: VALUE
+        # only the chunks written to this very property belong to its transfer:
+        # any other conversion running at the same time has a property of its own
+        incr = self.incr_transfers.get(atom)
         try:
             with xsync:
-                dtype, dformat = X11Window.GetWindowPropertyType(self.xid, event.atom, True)
-                data = X11Window.XGetWindowProperty(self.xid, event.atom, dtype, buffer_size=MAX_DATA_SIZE, incr=True)
+                dtype, dformat = X11Window.GetWindowPropertyType(self.xid, atom, True)
+                data = X11Window.XGetWindowProperty(self.xid, atom, dtype, buffer_size=MAX_DATA_SIZE, incr=True)
                 # all the code below deals with INCRemental transfers:
-                if dtype == "INCR" and not self.incr_data_size:
+                if dtype == "INCR" and incr is None:
                     # start of an incremental transfer, extract the size
                     assert dformat == 32
-                    self.incr_data_size = struct.unpack("@L", data)[0]
-                    self.incr_data_chunks = []
-                    self.incr_data_type = ""
-                    log("incremental clipboard data of size %s", self.incr_data_size)
-                    self.reschedule_incr_data_timer()
-                    X11Window.XDeleteProperty(self.xid, event.atom)
+                    size = struct.unpack("@L", data)[0]
+                    log("incremental clipboard data of size %s on %r", size, atom)
+                    self.incr_transfers[atom] = IncrTransfer(size)
+                    self.reschedule_incr_timer(atom)
+                    X11Window.XDeleteProperty(self.xid, atom)
                     return
-                if self.incr_data_size > 0:
+                if incr is not None:
                     # incremental is now in progress:
-                    if not self.incr_data_type:
-                        self.incr_data_type = dtype
-                    elif self.incr_data_type != dtype:
+                    if not incr.dtype:
+                        incr.dtype = dtype
+                    elif incr.dtype != dtype:
                         log.error("Error: invalid change of data type")
-                        log.error(" from %s to %s", self.incr_data_type, dtype)
-                        self.reset_incr_data()
-                        self.cancel_incr_data_timer()
+                        log.error(" from %s to %s", incr.dtype, dtype)
+                        self.cancel_incr_transfer(atom)
                         return
                     if data:
                         log("got incremental data: %i bytes", len(data))
-                        self.incr_data_chunks.append(data)
-                        self.reschedule_incr_data_timer()
-                        X11Window.XDeleteProperty(self.xid, event.atom)
+                        incr.chunks.append(data)
+                        self.reschedule_incr_timer(atom)
+                        X11Window.XDeleteProperty(self.xid, atom)
                         return
-                    self.cancel_incr_data_timer()
-                    data = b"".join(self.incr_data_chunks)
+                    data = b"".join(incr.chunks)
                     log("got incremental data termination, total size=%i bytes", len(data))
-                    self.reset_incr_data()
+                    self.cancel_incr_transfer(atom)
                     self.got_local_contents(target, dtype, dformat, data)
                     return
         except PropertyError:
-            log("do_property_notify() property '%s' is gone?", event.atom, exc_info=True)
+            log("do_property_notify() property '%s' is gone?", atom, exc_info=True)
             return
-        log("%s=%s (%s : %s)", event.atom, Ellipsizer(data), dtype, dformat)
+        log("%s=%s (%s : %s)", atom, Ellipsizer(data), dtype, dformat)
         if target == "TARGETS":
             self.targets = xatoms_to_strings(data or b"")
         self.got_local_contents(target, dtype, dformat, data)
@@ -619,18 +631,28 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             GLib.source_remove(timer)
             got_contents(dtype, dformat, data)
 
-    def reschedule_incr_data_timer(self) -> None:
-        self.cancel_incr_data_timer()
-        self.incr_data_timer = GLib.timeout_add(1 * 1000, self.incr_data_timeout)
+    def reschedule_incr_timer(self, atom: str) -> None:
+        incr = self.incr_transfers.get(atom)
+        if incr is None:
+            return
+        if idt := incr.timer:
+            incr.timer = 0
+            GLib.source_remove(idt)
+        incr.timer = GLib.timeout_add(1 * 1000, self.incr_transfer_timeout, atom)
 
-    def cancel_incr_data_timer(self) -> None:
-        if idt := self.incr_data_timer:
-            self.incr_data_timer = 0
+    def cancel_incr_transfer(self, atom: str) -> None:
+        incr = self.incr_transfers.pop(atom, None)
+        if incr and incr.timer:
+            idt = incr.timer
+            incr.timer = 0
             GLib.source_remove(idt)
 
-    def incr_data_timeout(self) -> None:
-        log.warn("Warning: incremental data timeout")
-        self.reset_incr_data()
+    def incr_transfer_timeout(self, atom: str) -> None:
+        log.warn("Warning: incremental data timeout for %r", atom)
+        # this is the timer firing, so it must not be removed again:
+        incr = self.incr_transfers.pop(atom, None)
+        if incr:
+            incr.timer = 0
 
 
 GObject.type_register(ClipboardProxy)
