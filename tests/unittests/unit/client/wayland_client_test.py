@@ -51,6 +51,30 @@ class WaylandClientTest(WestonTestUtil):
             if server.poll() is None:
                 self.stop_wayland_server(server)
 
+    def test_wayland_window_lifecycle(self):
+        server = self.start_wayland_server()
+        client = second_terminal = None
+        try:
+            client = self.run_wayland_client(server.display)
+            self.assert_running(client, "Wayland client")
+            second_terminal = self.run_command(
+                ["weston-terminal"], env=self.wayland_server_env(server))
+            info = self.wait_for_server_info(server.display, "windows.count",
+                                             "2")
+            app_ids = {info.get(f"windows.{i}.app-id") for i in (1, 2)}
+            self.assertEqual(app_ids,
+                             {"org.freedesktop.weston.wayland-terminal"})
+            self.terminate_process(second_terminal)
+            second_terminal = None
+            self.wait_for_server_info(server.display, "windows.count", "1")
+            self.assert_running(client,
+                                "Wayland client after window destruction")
+        finally:
+            self.terminate_process(second_terminal)
+            self.terminate_process(client)
+            if server.poll() is None:
+                self.stop_wayland_server(server)
+
     def test_wayland_clipboard(self):
         server = self.start_wayland_server()
         client = None
