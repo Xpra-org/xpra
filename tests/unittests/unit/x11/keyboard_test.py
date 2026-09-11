@@ -181,6 +181,19 @@ class TestX11Keyboard(ServerTestUtil):
                     f"expected keycode {keycodes[0]} for keyval {keyval:#x} in group {group}, got {keycode}"
                 assert rgroup == group, \
                     f"group {group} was not preserved for keyval {keyval:#x}, got {rgroup}"
+        # clients can send a group which does not exist on the server:
+        # we should then fall back to the lowest group which has this keysym,
+        # deterministically - and not to whichever one happens to come last
+        missing_group = max(max(groups) for groups in keyval_mappings.values()) + 1
+        for keyval, groups in candidates:
+            lowest = min(groups)
+            config.pressed_translation = {}
+            keycode, rgroup = config.get_keycode(0, keyname, True, [], keyval, "", missing_group)
+            log("keyval %#x group %i: keycode=%i, group=%i (%s)", keyval, missing_group, keycode, rgroup, groups)
+            assert rgroup == lowest, \
+                f"expected group {lowest} for keyval {keyval:#x} not in group {missing_group}, got {rgroup}"
+            assert keycode == groups[lowest][0], \
+                f"expected keycode {groups[lowest][0]} for keyval {keyval:#x} in group {lowest}, got {keycode}"
 
     def test_keys_changed(self):
         # the lookup tables are derived from the server's keymap,

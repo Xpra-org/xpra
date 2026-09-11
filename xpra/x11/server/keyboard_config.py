@@ -689,11 +689,16 @@ class KeyboardConfig(KeyboardConfigBase):
                 if keycodes:
                     keycode = keycodes[0]
                 else:
-                    # try other groups:
-                    for group, keycodes in group_mapping.items():
+                    # this keysym is not available in the client's group,
+                    # use the lowest group that does have it:
+                    # (the keycode is usually the same in every group,
+                    # so what we are really choosing here is the group to switch to)
+                    for kgroup in sorted(group_mapping):
+                        keycodes = group_mapping[kgroup]
                         if keycodes:
                             keycode = keycodes[0]
-                            rgroup = group
+                            rgroup = kgroup
+                            break
         return keycode, rgroup
 
     def get_current_mask(self) -> list[str]:
