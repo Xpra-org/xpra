@@ -39,8 +39,8 @@ extern "C" __global__ void XRGB_to_YUV444(uint8_t *srcImage, int src_w, int src_
     }
 
     //edge-extend the valid content into the aligned output padding
-    const int src_y = min(gy * src_h / dst_h, h - 1);
-    const int src_x = min(gx * src_w / dst_w, w - 1);
+    const int src_y = min((int)((gy + 0.5f) * src_h / dst_h), h - 1);
+    const int src_x = min((int)((gx + 0.5f) * src_w / dst_w), w - 1);
     const uint32_t si = (src_y * srcPitch) + src_x * 4;
     const uint8_t R = srcImage[si+1];
     const uint8_t G = srcImage[si+2];
