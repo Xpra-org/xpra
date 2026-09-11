@@ -49,6 +49,7 @@ cdef extern from "glib.h":
 
     GSource         *g_source_new(GSourceFuncs *source_funcs, guint struct_size) nogil
     void             g_source_add_poll(GSource *source, GPollFD *fd) nogil
+    void             g_source_set_priority(GSource *source, gint priority) nogil
     guint            g_source_attach(GSource *source, GMainContext *context) nogil
     void             g_source_unref(GSource *source) nogil
     GMainContext    *g_main_context_default() nogil
@@ -60,6 +61,7 @@ cdef extern from "glib.h":
     int G_IO_ERR
     int G_IO_NVAL
     gboolean G_SOURCE_CONTINUE
+    gint G_PRIORITY_DEFAULT_IDLE
 
 from xpra.x11.bindings.events import get_x_event_type_name, get_x_event_signals
 from xpra.x11.dispatch import route_event
@@ -69,6 +71,13 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "events")
 
 POLL_DELAY = envint("XPRA_X11_POLL_DELAY", 100)
+# Each `process_events()` call handles at most this many events (0 = unlimited)
+# and stops after this much time (in milliseconds, 0 = unlimited),
+# so that an X11 client generating events faster than we can process them
+# does not starve the GLib main loop of the other sources:
+# network packets, timers, control commands, etc
+MAX_EVENTS = envint("XPRA_X11_MAX_EVENTS", 256)
+MAX_EVENT_TIME = envint("XPRA_X11_MAX_EVENT_TIME", 10)
 
 
 cdef int x11_io_error_handler(Display *display) except 0:
@@ -112,13 +121,29 @@ cdef class EventLoop:
         XSetIOErrorHandler(&x11_io_error_handler)
 
     def process_events(self) -> int:
+        """
+        Handle the X11 events Xlib has queued, within the `MAX_EVENTS` / `MAX_EVENT_TIME` budget.
+        Whatever is left stays in the Xlib queue, where `X11GSource` finds it again
+        (through `XPending`) on the next main loop iteration - once the other sources
+        have had their turn. Returns the number of events handled.
+        """
         log("process_events()")
         cdef XEvent event
         cdef unsigned int count = 0
+        cdef unsigned int max_events = max(0, MAX_EVENTS)
+        cdef double deadline = 0
+        if MAX_EVENT_TIME > 0:
+            deadline = monotonic() + MAX_EVENT_TIME / 1000.0
         while XPending(self.display):
             XNextEvent(self.display, &event)
             self.process_event(&event)
             count += 1
+            if max_events and count >= max_events:
+                log("process_events() event budget reached: %i events", count)
+                break
+            if deadline and monotonic() >= deadline:
+                log("process_events() time budget reached after %i events", count)
+                break
         log("process_events() done %i events", count)
         return count
 
@@ -272,6 +297,16 @@ def register_glib_source(context) -> None:
     source.poll_fd.fd = fd
     source.poll_fd.events = G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR | G_IO_NVAL
     source.loop = <PyObject *> loop
+    # Run at the same priority as `GLib.idle_add`.
+    # This source reports itself ready for as long as Xlib has anything queued, and GLib only
+    # dispatches the sources sharing the priority of the highest priority source that is ready.
+    # So at any priority above the idle callbacks (measured: 199 starves them, 200 does not),
+    # a client generating events faster than we handle them would be the only thing that ever
+    # runs, and the idle callbacks never would - which is how packets reach the main thread,
+    # how listen sockets are added and how authentication runs.
+    # Timers and fd sources keep `G_PRIORITY_DEFAULT` and still come first, but they are only
+    # ready now and then, so they cannot starve us the way we were starving the idle callbacks:
+    g_source_set_priority(<GSource *> source, G_PRIORITY_DEFAULT_IDLE)
     g_source_add_poll(<GSource *> source, &source.poll_fd)
     g_source_attach(<GSource *> source, g_main_context_default())
     g_source_unref(<GSource *> source)
