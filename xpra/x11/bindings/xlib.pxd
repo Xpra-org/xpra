@@ -270,8 +270,8 @@ cdef extern from "X11/Xlib.h":
     #Threading:
     Status XInitThreads()
 
-    # error handling:
-    ctypedef int (*X11IOERRORHANDLER)(Display *) except 0
+    # error handling: Xlib may invoke these callbacks without the Python GIL
+    ctypedef int (*X11IOERRORHANDLER)(Display *) noexcept nogil
     int XSetIOErrorHandler(X11IOERRORHANDLER  handler)
     ctypedef struct XErrorEvent:
         int type
@@ -281,7 +281,7 @@ cdef extern from "X11/Xlib.h":
         unsigned char request_code
         unsigned char minor_code
         XID resourceid
-    ctypedef int (*X11ERRORHANDLER)(Display *, XErrorEvent *event) except 0
+    ctypedef int (*X11ERRORHANDLER)(Display *, XErrorEvent *event) noexcept nogil
     int XSetErrorHandler(X11ERRORHANDLER handler)
 
     # events:

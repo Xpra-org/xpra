@@ -80,7 +80,8 @@ MAX_EVENTS = envint("XPRA_X11_MAX_EVENTS", 256)
 MAX_EVENT_TIME = envint("XPRA_X11_MAX_EVENT_TIME", 10)
 
 
-cdef int x11_io_error_handler(Display *display) except 0:
+# Xlib can invoke these handlers from calls made without the GIL.
+cdef int x11_io_error_handler(Display *display) noexcept with gil:
     message = "X11 fatal IO error"
     log.warn(message)
     return 0
@@ -89,7 +90,7 @@ cdef int x11_io_error_handler(Display *display) except 0:
 last_error: Dict[str, int] = {}
 
 
-cdef int x11_error_handler(Display *display, XErrorEvent *event) except 0:
+cdef int x11_error_handler(Display *display, XErrorEvent *event) noexcept with gil:
     einfo = {
         "serial": event.serial,
         "error": event.error_code,

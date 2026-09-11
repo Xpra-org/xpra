@@ -34,12 +34,13 @@ cdef void end(msg: str, int code = exit_code) noexcept:
     exit_event.set()
 
 
-cdef int x11_io_error_handler(Display *display) except 0:
+# XNextEvent is called below without the GIL, so Xlib may invoke these handlers without it.
+cdef int x11_io_error_handler(Display *display) noexcept with gil:
     end("X11 fatal IO error", 0)
     return 0
 
 
-cdef int x11_error_handler(Display *display, XErrorEvent *event) except 0:
+cdef int x11_error_handler(Display *display, XErrorEvent *event) noexcept nogil:
     #X11 error handler called (ignored)
     return 0
 
