@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import OSX
 from xpra.util.env import envbool
 
 
@@ -31,7 +31,11 @@ def get_window_base_classes() -> tuple[type, ...]:
     if WORKSPACE:
         from xpra.client.gtk3.window.workspace import WorkspaceWindow
         WINDOW_BASES.append(WorkspaceWindow)
-    XSHAPE = envbool("XPRA_XSHAPE", not (OSX or WIN32))
+    # the shape subsystem falls back to the gdk api without the X11 bindings,
+    # which the win32 backend honours using `SetWindowRgn`,
+    # and the wayland backend for input shapes only
+    # (the macos backend does not implement shapes at all)
+    XSHAPE = envbool("XPRA_XSHAPE", not OSX)
     if XSHAPE:
         from xpra.client.gtk3.window.shape import ShapeWindow
         WINDOW_BASES.append(ShapeWindow)
