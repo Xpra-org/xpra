@@ -848,7 +848,10 @@ def gen_caches() -> None:
         raise RuntimeError(f"gdk-pixbuf-query-loaders.exe failed and returned {proc.returncode}: {err}"
                            " - you may need to run `chcp.com 65001`")
     # replace absolute paths:
-    cache = re.sub(r'".*xpra/dist/lib/', '"lib/', cache)
+    # `gdk-pixbuf-query-loaders.exe` uses forward slashes,
+    # but the drive letter case may not match ours:
+    dist_lib = os.path.abspath(LIB_DIR).replace("\\", "/")
+    cache = re.sub(f'"{re.escape(dist_lib)}/', '"lib/', cache.replace("\\", "/"), flags=re.IGNORECASE)
     with open(f"{LIB_DIR}/gdk-pixbuf-2.0/2.10.0/loaders.cache", "w") as cache_file:
         cache_file.write(cache)
     step("Generating icons and theme cache")
