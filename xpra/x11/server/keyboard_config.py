@@ -628,6 +628,28 @@ class KeyboardConfig(KeyboardConfigBase):
                 kml(f"adding {mod} to modifiers")
                 modifiers.append(mod)
 
+        def apply_level(sublevel: int) -> None:
+            # toggle the modifiers needed to reach this level within its group:
+            # keypad overrules shift state (see #2702):
+            if keyname.startswith("KP_"):
+                if numlock_modifier and not numlock:
+                    toggle_modifier(numlock_modifier)
+            elif (sublevel & 1) ^ shift:
+                # shift state does not match
+                toggle_modifier("shift")
+            if int(bool(sublevel & 2)) ^ mode:
+                # try to set / unset mode:
+                for mod, keynames in self.keynames_for_mod.items():
+                    if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
+                        # found mode switch modified
+                        toggle_modifier(mod)
+                        break
+
+        def level_cost(sublevel: int) -> int:
+            # how far this level is from the modifier state we already have:
+            # `mode` is harder to toggle than `shift` - see `get_levels`
+            return int(bool(sublevel & 1) != shift) + 2 * int(bool(sublevel & 2) != mode)
+
         levels = get_levels(bool(mode), shift, bool(group))
         level0 = levels[0]
         kml("will try levels: %s", levels)
@@ -645,20 +667,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 kml("not toggling any modifiers state for keysyms=%s", keysyms)
                 break
 
-            # keypad overrules shift state (see #2702):
-            if keyname.startswith("KP_"):
-                if numlock_modifier and not numlock:
-                    toggle_modifier(numlock_modifier)
-            elif (level & 1) ^ shift:
-                # shift state does not match
-                toggle_modifier("shift")
-            if int(bool(level & 2)) ^ mode:
-                # try to set / unset mode:
-                for mod, keynames in self.keynames_for_mod.items():
-                    if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
-                        # found mode switch modified
-                        toggle_modifier(mod)
-                        break
+            apply_level(level % 4)
             rgroup = level // 4
             if rgroup != group:
                 kml("switching group from %i to %i", group, rgroup)
@@ -685,20 +694,24 @@ class KeyboardConfig(KeyboardConfigBase):
             if group_mapping := self.keyval_mappings.get(keyval, {}):
                 # this keyval was found!
                 # try to preserve the group:
-                keycodes = group_mapping.get(group, [])
-                if keycodes:
-                    keycode = keycodes[0]
-                else:
+                entries = group_mapping.get(group, ())
+                if not entries:
                     # this keysym is not available in the client's group,
                     # use the lowest group that does have it:
                     # (the keycode is usually the same in every group,
                     # so what we are really choosing here is the group to switch to)
                     for kgroup in sorted(group_mapping):
-                        keycodes = group_mapping[kgroup]
-                        if keycodes:
-                            keycode = keycodes[0]
+                        if group_mapping[kgroup]:
+                            entries = group_mapping[kgroup]
                             rgroup = kgroup
                             break
+                if entries:
+                    # of the keys which can produce this keysym in this group,
+                    # use the one needing the fewest modifier changes:
+                    keycode, sublevel = min(entries, key=lambda entry: level_cost(entry[1]))
+                    kml("keyval %#x found at level %i of keycode %i in group %i",
+                        keyval, sublevel, keycode, rgroup)
+                    apply_level(sublevel)
         return keycode, rgroup
 
     def get_current_mask(self) -> list[str]:

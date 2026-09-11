@@ -172,7 +172,9 @@ def get_keycode_mappings() -> dict[int, list[str]]:
     return X11Keyboard.get_keycode_mappings()
 
 
-def get_keyval_mappings() -> dict[int, dict[int, Sequence[int]]]:
+def get_keyval_mappings() -> dict[int, dict[int, Sequence[tuple[int, int]]]]:
+    # maps each keysym to the groups it is found in,
+    # and for each group, the (keycode, level) pairs which can produce it
     X11Keyboard = X11KeyboardBindings()
     if XKB and X11Keyboard.hasXkb():
         return X11Keyboard.get_xkb_keysym_mappings()

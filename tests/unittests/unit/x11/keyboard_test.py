@@ -153,47 +153,65 @@ class TestX11Keyboard(ServerTestUtil):
 
     def test_keyval_group(self):
         # the last resort keyval lookup should honour the group the client sent,
-        # rather than picking an arbitrary one
+        # and set the modifiers needed to reach the level the keysym is at
         from xpra.x11.xkbhelper import do_set_keymap, get_keyval_mappings
         from xpra.x11.server.keyboard_config import KeyboardConfig
         # two groups: `AltGr` and friends aside, group 1 is reached by switching layout
         do_set_keymap("us,de", "", "", {})
         keyval_mappings = get_keyval_mappings()
-        # we need a keysym which lives on a different keycode in each group,
+        # we need keysyms which live on a different keycode in each group,
         # otherwise we cannot tell which group was used:
         candidates = tuple(
             (keyval, groups) for keyval, groups in keyval_mappings.items()
-            if len(groups) > 1 and len(set(keycodes[0] for keycodes in groups.values())) > 1
+            if len(groups) > 1 and len(set(entries[0][0] for entries in groups.values())) > 1
         )
         if not candidates:
             raise unittest.SkipTest("no keysym found on more than one group")
         config = KeyboardConfig()
         config.keyval_mappings = keyval_mappings
+        # so that `mod5` can be toggled to reach the `AltGr` levels:
+        config.compute_modifiers()
         # a keyname the server knows nothing about, so that every keyname lookup fails
         # and we always end up in the keyval fallback:
         keyname = "xpra_unmatched_keyname"
+        levels_used = set()
+
+        def press(keyval: int, group: int) -> tuple[int, int, int]:
+            # returns the (keycode, group, level) the server would actually use
+            modifiers: list[str] = []
+            config.pressed_translation = {}
+            keycode, rgroup = config.get_keycode(0, keyname, True, modifiers, keyval, "", group)
+            mode = any(set(config.keynames_for_mod.get(mod, ())) & {"ISO_Level3_Shift", "Mode_switch"}
+                       for mod in modifiers)
+            level = int("shift" in modifiers) + 2 * int(mode)
+            log("keyval %#x group %i: keycode=%i, group=%i, modifiers=%s, level=%i",
+                keyval, group, keycode, rgroup, modifiers, level)
+            levels_used.add(level)
+            return keycode, rgroup, level
+
         for keyval, groups in candidates:
-            for group, keycodes in groups.items():
-                config.pressed_translation = {}
-                keycode, rgroup = config.get_keycode(0, keyname, True, [], keyval, "", group)
-                log("keyval %#x group %i: keycode=%i, group=%i (%s)", keyval, group, keycode, rgroup, groups)
-                assert keycode == keycodes[0], \
-                    f"expected keycode {keycodes[0]} for keyval {keyval:#x} in group {group}, got {keycode}"
+            for group, entries in groups.items():
+                keycode, rgroup, level = press(keyval, group)
                 assert rgroup == group, \
                     f"group {group} was not preserved for keyval {keyval:#x}, got {rgroup}"
+                assert (keycode, level) in entries, \
+                    f"keyval {keyval:#x} in group {group}: keycode {keycode} at level {level} " \
+                    f"does not produce it, only {entries} do"
         # clients can send a group which does not exist on the server:
         # we should then fall back to the lowest group which has this keysym,
         # deterministically - and not to whichever one happens to come last
         missing_group = max(max(groups) for groups in keyval_mappings.values()) + 1
         for keyval, groups in candidates:
             lowest = min(groups)
-            config.pressed_translation = {}
-            keycode, rgroup = config.get_keycode(0, keyname, True, [], keyval, "", missing_group)
-            log("keyval %#x group %i: keycode=%i, group=%i (%s)", keyval, missing_group, keycode, rgroup, groups)
+            keycode, rgroup, level = press(keyval, missing_group)
             assert rgroup == lowest, \
                 f"expected group {lowest} for keyval {keyval:#x} not in group {missing_group}, got {rgroup}"
-            assert keycode == groups[lowest][0], \
-                f"expected keycode {groups[lowest][0]} for keyval {keyval:#x} in group {lowest}, got {keycode}"
+            assert (keycode, level) in groups[lowest], \
+                f"keyval {keyval:#x} in group {lowest}: keycode {keycode} at level {level} " \
+                f"does not produce it, only {groups[lowest]} do"
+        # the shifted and `AltGr` levels must have been exercised above,
+        # or we would not be testing much:
+        assert levels_used.issuperset({0, 1, 2}), f"only levels {levels_used} were tested"
 
     def test_keys_changed(self):
         # the lookup tables are derived from the server's keymap,
