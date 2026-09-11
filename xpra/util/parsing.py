@@ -593,7 +593,7 @@ def get_default_video_max_size() -> tuple[int, int]:
     svalues = os.environ.get("XPRA_VIDEO_MAX_SIZE", "").replace("x", ",").split(",")
     if len(svalues) == 2:
         try:
-            return int(svalues[0]), int(svalues[0])
+            return int(svalues[0]), int(svalues[1])
         except (TypeError, ValueError):
             pass
     return 4096, 4096

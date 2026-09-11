@@ -520,8 +520,7 @@ class TestGetDefaultVideoMaxSize(unittest.TestCase):
         with OSEnvContext():
             import os
             os.environ["XPRA_VIDEO_MAX_SIZE"] = "1920x1080"
-            w, h = get_default_video_max_size()
-            self.assertEqual(w, 1920)
+            self.assertEqual(get_default_video_max_size(), (1920, 1080))
 
 
 class TestValidatedMonitorData(unittest.TestCase):
