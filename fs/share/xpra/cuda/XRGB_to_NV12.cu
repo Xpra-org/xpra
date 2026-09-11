@@ -32,63 +32,44 @@ extern "C" __global__ void XRGB_to_NV12(uint8_t *srcImage, int src_w, int src_h,
                           uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
                           int w, int h)
 {
-    const uint32_t gx = blockIdx.x * blockDim.x + threadIdx.x;
-    const uint32_t gy = blockIdx.y * blockDim.y + threadIdx.y;
-    const uint32_t src_y = gy*2 * src_h / dst_h;
-    const uint32_t src_x = gx*2 * src_w / dst_w;
+    const int gx = blockIdx.x * blockDim.x + threadIdx.x;
+    const int gy = blockIdx.y * blockDim.y + threadIdx.y;
+    const int dst_x = gx * 2;
+    const int dst_y = gy * 2;
+    if (dst_x >= dst_w || dst_y >= dst_h) {
+        return;
+    }
 
-    if ((src_x < w) & (src_y < h)) {
-        //4 bytes per pixel, and 2 pixels width/height at a time:
-        //byte index:
-        uint32_t si = (src_y * srcPitch) + src_x * 4;
-
-        //we may read up to 4 32-bit RGB pixels:
-        uint8_t R[4];
-        uint8_t G[4];
-        uint8_t B[4];
-        uint8_t j = 0;
-        R[0] = srcImage[si+1];
-        G[0] = srcImage[si+2];
-        B[0] = srcImage[si+3];
-        for (j=1; j<4; j++) {
-            R[j] = R[0];
-            G[j] = G[0];
-            B[j] = B[0];
-        }
-
-        //write up to 4 Y pixels:
-        uint32_t di = (gy * 2 * dstPitch) + gx * 2;
-        dstImage[di] = quant(YR * R[0] + YG * G[0] + YB * B[0] + YC);
-        if (gx*2 + 1 < src_w) {
-            R[1] = srcImage[si+5];
-            G[1] = srcImage[si+6];
-            B[1] = srcImage[si+7];
-            dstImage[di + 1] = quant(YR * R[1] + YG * G[1] + YB * B[1] + YC);
-        }
-        if (gy*2 + 1 < src_h) {
-            si += srcPitch;
-            di += dstPitch;
-            R[2] = srcImage[si+1];
-            G[2] = srcImage[si+2];
-            B[2] = srcImage[si+3];
-            dstImage[di] = quant(YR * R[2] + YG * G[2] + YB * B[2] + YC);
-            if (gx*2 + 1 < src_w) {
-                R[3] = srcImage[si+5];
-                G[3] = srcImage[si+6];
-                B[3] = srcImage[si+7];
-                dstImage[di + 1] = quant(YR * R[3] + YG * G[3] + YB * B[3] + YC);
+    //edge-extend the valid content into the aligned output padding
+    const int src_x = min(dst_x * src_w / dst_w, w - 1);
+    const int src_y = min(dst_y * src_h / dst_h, h - 1);
+    uint8_t R[4];
+    uint8_t G[4];
+    uint8_t B[4];
+    for (int j = 0; j < 2; j++) {
+        const int sy = min(src_y + j, h - 1);
+        for (int i = 0; i < 2; i++) {
+            const int sx = min(src_x + i, w - 1);
+            const uint32_t si = (sy * srcPitch) + sx * 4;
+            const int p = j * 2 + i;
+            R[p] = srcImage[si+1];
+            G[p] = srcImage[si+2];
+            B[p] = srcImage[si+3];
+            if (dst_x + i < dst_w && dst_y + j < dst_h) {
+                const uint32_t di = (dst_y + j) * dstPitch + dst_x + i;
+                dstImage[di] = quant(YR * R[p] + YG * G[p] + YB * B[p] + YC);
             }
         }
-
-        //write 1 U and 1 V pixel:
-        float u = 0;
-        float v = 0;
-        for (j=0; j<4; j++) {
-            u += UR * R[j] + UG * G[j] + UB * B[j] + UC;
-            v += VR * R[j] + VG * G[j] + VB * B[j] + VC;
-        }
-        di = (dst_h + gy) * dstPitch + gx * 2;
-        dstImage[di]      = quant(u / 4.0);
-        dstImage[di + 1]  = quant(v / 4.0);
     }
+
+    //write 1 U and 1 V pixel:
+    float u = 0;
+    float v = 0;
+    for (int j = 0; j < 4; j++) {
+        u += UR * R[j] + UG * G[j] + UB * B[j] + UC;
+        v += VR * R[j] + VG * G[j] + VB * B[j] + VC;
+    }
+    const uint32_t di = (dst_h + gy) * dstPitch + dst_x;
+    dstImage[di]      = quant(u / 4.0);
+    dstImage[di + 1]  = quant(v / 4.0);
 }
