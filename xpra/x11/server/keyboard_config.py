@@ -685,7 +685,7 @@ class KeyboardConfig(KeyboardConfigBase):
             if group_mapping := self.keyval_mappings.get(keyval, {}):
                 # this keyval was found!
                 # try to preserve the group:
-                keycodes = group_mapping.get(keyval, [])
+                keycodes = group_mapping.get(group, [])
                 if keycodes:
                     keycode = keycodes[0]
                 else:
