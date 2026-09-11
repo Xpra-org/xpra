@@ -4,9 +4,12 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import Mock
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
+from xpra.server.window.compress import WindowSource
 from xpra.server.window.video_compress import WindowVideoSource
+from xpra.util.objects import typedict
 
 
 class VideoContextCleanTest(unittest.TestCase):
@@ -114,6 +117,35 @@ class VideoContextCleanTest(unittest.TestCase):
         source.queue_damage_packet.assert_called_once()
         source.schedule_video_encoder_flush.assert_not_called()
         source.schedule_video_encoder_timer.assert_not_called()
+
+
+class NonVideoEncodingsTest(unittest.TestCase):
+
+    def test_client_properties_exclude_unregistered_encodings(
+        self,
+    ) -> None:
+        source = WindowVideoSource.__new__(WindowVideoSource)
+        source.common_encodings = ("jpeg",)
+        source.core_encodings = ("jpeg",)
+        source.picture_encodings = ("jpeg", "webp")
+        source._encoders = {"jpeg": Mock()}
+        source.scroll_min_percent = 0
+        source.scroll_preference = 100
+        source.video_subregion = SimpleNamespace(supported=True)
+        source.scaling_control = 0
+        source.edge_encoding = ""
+        source.full_csc_modes = typedict()
+
+        def set_core_encodings(window_source, properties) -> None:
+            window_source.core_encodings = properties.strtupleget("encodings.core", ())
+
+        properties = typedict({"encodings.core": ("jpeg", "webp")})
+        with patch.object(
+            WindowSource, "do_set_client_properties", set_core_encodings,
+        ):
+            source.do_set_client_properties(properties)
+
+        self.assertEqual(source.non_video_encodings, ("jpeg",))
 
 
 def main() -> None:
