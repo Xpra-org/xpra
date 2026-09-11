@@ -1338,7 +1338,10 @@ def create_exe(args) -> str:
 
 
 def sign_file(filename: str) -> None:
-    log_command(["signtool.exe", "sign", "/fd", "SHA256", "/v", "/f", KEY_FILE, "/t", TIMESTAMP_SERVER, filename], "signtool.log")
+    cmd = ["signtool.exe", "sign", "/fd", "SHA256", "/v", "/f", KEY_FILE,
+           # RFC3161 timestamp, `/t` is the legacy Authenticode one:
+           "/tr", TIMESTAMP_SERVER, "/td", "SHA256", filename]
+    log_command(cmd, "signtool.log")
 
 
 def create_msi(exe: str) -> str:
