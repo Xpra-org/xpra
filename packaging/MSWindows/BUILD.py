@@ -248,15 +248,15 @@ def check_signtool() -> None:
         return
     try:
         signtool = find_command("signtool", "SIGNTOOL",
-                                f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe"
-                                f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe"
-                                f"{PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
+                                f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe",
+                                f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe",
+                                f"{PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe",
                                 f"{PROGRAMFILES_X86}\\Windows Kits\\10\\App Certification Kit\\signtool.exe")
     except RuntimeError:
         signtool = ""
     if not signtool:
         # try the hard (slow) way:
-        signtool = find_vs_command("signtool.exe")
+        signtool = find_vs_command("signtool")
         if not signtool:
             raise RuntimeError("signtool not found")
     debug(f"{signtool=}")
