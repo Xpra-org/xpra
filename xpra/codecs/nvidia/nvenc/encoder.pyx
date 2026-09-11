@@ -515,8 +515,7 @@ cdef class Encoder:
         no_preset[self.encoding] = monotonic()
         raise ValueError("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
-    def init_context(self, encoding: str, unsigned int width, unsigned int height, src_format: str,
-                     options: typedict) -> None:
+    def init_context(self, encoding: str, unsigned int width, unsigned int height, src_format: str, options: typedict) -> None:
         log("init_context%s", (encoding, width, height, src_format, options))
         options = options or typedict()
         cuda_device_context = options.get("cuda-device-context")
@@ -1648,13 +1647,9 @@ cdef class Encoder:
         #a grid is a group of blocks: (gridw * gridh) blocks
         cdef uint32_t blockw = 32
         cdef uint32_t blockh = 32
-        cdef uint32_t gridw = MAX(1, w//(blockw*dx))
-        cdef uint32_t gridh = MAX(1, h//(blockh*dy))
-        #if dx or dy made us round down, add one:
-        if gridw*dx*blockw<w:
-            gridw += 1
-        if gridh*dy*blockh<h:
-            gridh += 1
+        #cover the whole aligned output so the kernels can edge-extend the padding:
+        cdef uint32_t gridw = MAX(1, (self.encoder_width + blockw*dx - 1)//(blockw*dx))
+        cdef uint32_t gridh = MAX(1, (self.encoder_height + blockh*dy - 1)//(blockh*dy))
         cdef unsigned int in_w = self.input_width
         cdef unsigned int in_h = self.input_height
         if self.scaling:
