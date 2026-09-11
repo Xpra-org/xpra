@@ -64,10 +64,7 @@ cdef extern from "glib.h":
 from xpra.x11.bindings.events import get_x_event_type_name, get_x_event_signals
 from xpra.x11.dispatch import route_event
 from xpra.util.env import envint
-from xpra.os_util import gi_import
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("x11", "bindings", "events")
 
@@ -178,14 +175,16 @@ cdef class EventLoop:
         log("Xexit(%s) last_error=%s", flush, last_error)
         if not flush:
             XFlush(self.display)
-        elif self.is_synced():
-            # nothing to sync, but replies may have queued up events
-            # whilst they were read from the connection:
-            GLib.timeout_add(0, self.process_events)
-        else:
+        elif not self.is_synced():
             XSync(self.display, False)
-            # check for new events in next GLib loop iteration:
-            GLib.timeout_add(0, self.process_events)
+        # either way, replies may have queued up events whilst they were read from the connection,
+        # but there is no need to schedule a check for them here:
+        # `X11GSource` calls `XPending` from its `prepare` and `check` functions,
+        # so it picks them up on the next main loop iteration.
+        # (do not be tempted to add a `GLib.timeout_add(0, self.process_events)` back here:
+        # `process_events` returns an event count, and GLib re-fires a timeout whose callback
+        # returns a truthy value, so every error trap exited whilst events are still pending
+        # would leave behind a 0ms timer that spins at full speed and never goes away)
         if not last_error:
             return None
         err = last_error.get("error", "unknown")
