@@ -213,6 +213,67 @@ class TestX11Keyboard(ServerTestUtil):
         # or we would not be testing much:
         assert levels_used.issuperset({0, 1, 2}), f"only levels {levels_used} were tested"
 
+    def test_keysym_aliases(self):
+        # keysyms have more than one name and the layers do not agree on which one to use:
+        # GDK says `Page_Up` and `AudioMute` where X11 says `Prior` and `XF86AudioMute`
+        from gi.repository import Gdk  # @UnresolvedImport pylint: disable=import-outside-toplevel
+        from xpra.x11.xkbhelper import (
+            do_set_keymap, get_keycode_mappings, set_keycode_translation, canonical_keysym,
+        )
+        from xpra.x11.bindings.keyboard import X11KeyboardBindings
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        do_set_keymap("us", "", "", {})
+        for keyname, expected in (
+            ("Page_Up", "Prior"), ("Page_Down", "Next"), ("KP_Page_Up", "KP_Prior"),
+            ("AudioMute", "XF86AudioMute"), ("0x1008ff12", "XF86AudioMute"), ("U+0041", "A"),
+            # already the name the X11 server uses, or not a keysym name at all:
+            ("Prior", "Prior"), ("a", "a"), ("", ""), ("\u2192", "\u2192"), ("xpra_unknown_keyname", "xpra_unknown_keyname"),
+        ):
+            canonical = canonical_keysym(keyname)
+            assert canonical == expected, f"canonical_keysym({keyname!r})={canonical!r}, expected {expected!r}"
+
+        # a GTK client which has no `x11_keycodes` to send (ie: running on wayland)
+        # uses the GDK name for every keysym, both in its keymap and in its key events:
+        X11Keyboard = X11KeyboardBindings()
+        mappings = get_keycode_mappings()
+        keycode_for_keyname: dict[str, int] = {}
+        for keycode, keynames in mappings.items():
+            for keyname in keynames:
+                if keyname:
+                    keycode_for_keyname.setdefault(keyname, keycode)
+        client_keynames = {}
+        for keyname in keycode_for_keyname:
+            keyval = X11Keyboard.parse_keysym(keyname)
+            client_keynames[keyname] = Gdk.keyval_name(keyval) or keyname
+        aliased = tuple(keyname for keyname, cname in client_keynames.items() if keyname != cname)
+        log("GDK names %i of the %i server keysyms differently: %s", len(aliased), len(client_keynames), aliased)
+        assert aliased, "GDK agrees with X11 on the name of every keysym?"
+
+        # none of its keymap entries should be dropped:
+        client_keycodes = tuple(
+            (X11Keyboard.parse_keysym(keyname), cname, keycode_for_keyname[keyname], 0, 0)
+            for keyname, cname in client_keynames.items()
+        )
+        trans = set_keycode_translation({}, client_keycodes)
+        missing = tuple(cname for cname in client_keynames.values() if not trans.get(cname))
+        assert not missing, f"the client keymap entries for {missing} were dropped"
+
+        # and its key events should resolve to the same keycode as the X11 name,
+        # with no keyval for the last resort lookup to use:
+        config = KeyboardConfig()
+        config.update_keycode_mappings()
+
+        def keycode_for(keyname: str) -> int:
+            config.pressed_translation = {}
+            return config.get_keycode(0, keyname, True, [], 0, "", 0)[0]
+
+        for keyname, cname in client_keynames.items():
+            keycode = keycode_for(cname)
+            expected = keycode_for(keyname)
+            assert keycode == expected, \
+                f"the client name {cname!r} resolved to keycode {keycode}, " \
+                f"but the server name {keyname!r} resolves to {expected}"
+
     def test_keys_changed(self):
         # the lookup tables are derived from the server's keymap,
         # so they have to be re-derived when something inside the session changes it

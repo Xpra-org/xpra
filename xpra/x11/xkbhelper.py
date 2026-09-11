@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from functools import lru_cache
 from typing import Any
 from collections.abc import Iterable, Sequence
 
@@ -181,6 +182,28 @@ def get_keyval_mappings() -> dict[int, dict[int, Sequence[tuple[int, int]]]]:
     return {}
 
 
+@lru_cache(maxsize=512)
+def canonical_keysym(keysym: str) -> str:
+    """
+    Keysyms have more than one name, and the keyboard layers do not agree on which one to use:
+    GDK says `Page_Up` and `AudioMute` where X11 says `Prior` and `XF86AudioMute`.
+    Return the name used by the X11 server, so that the keysyms we get from the client
+    can be matched against the server keymap.
+    The name is returned unchanged if it cannot be parsed.
+    """
+    if not keysym.isascii():
+        # keysym names are ascii, this one cannot be one:
+        return keysym
+    X11Keyboard = X11KeyboardBindings()
+    keyval = X11Keyboard.parse_keysym(keysym)
+    if not keyval and not keysym.startswith("XF86"):
+        # GDK drops the vendor prefix: `AudioMute` for `XF86AudioMute`
+        keyval = X11Keyboard.parse_keysym("XF86" + keysym)
+    if keyval:
+        return X11Keyboard.keysym_str(keyval) or keysym
+    return keysym
+
+
 def set_keycode_translation(xkbmap_x11_keycodes: dict, xkbmap_keycodes: Iterable) -> dict[str | tuple[int, str], int]:
     x11_keycodes = get_keycode_mappings()
     keycodes: dict[int, set]
@@ -242,6 +265,10 @@ def do_set_keycode_translation(keycodes: dict[int, set]) -> dict[str | tuple[int
 
     def find_keycode(kc: int, keysym, i: int) -> tuple:
         keycodes = tuple(x11_keycodes_for_keysym.get(keysym, set()))
+        if not keycodes:
+            # the client may know this keysym by another name - ie: `Page_Up` for `Prior`:
+            keysym = canonical_keysym(keysym)
+            keycodes = tuple(x11_keycodes_for_keysym.get(keysym, set()))
         if not keycodes:
             return ()
 
