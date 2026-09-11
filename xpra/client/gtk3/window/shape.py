@@ -5,6 +5,8 @@
 
 from collections.abc import Sequence
 
+from cairo import RectangleInt, Region  # pylint: disable=no-name-in-module
+
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.util.env import envbool
 from xpra.log import Logger
@@ -45,21 +47,33 @@ class ShapeWindow(GtkStubWindow):
 
     def set_shape(self, shape) -> None:
         log("set_shape(%s)", shape)
-        from xpra.client.gtk3.window.base import HAS_X11_BINDINGS
-        if not HAS_X11_BINDINGS:
+        if not shape:
             return
         self.when_realized("shape", self.do_set_shape, shape)
 
+    def get_shape_kinds(self) -> tuple[tuple[int, str], ...]:
+        from xpra.client.gtk3.window.base import HAS_X11_BINDINGS
+        if HAS_X11_BINDINGS:
+            from xpra.x11.bindings.shape import SHAPE_KIND
+            return tuple(SHAPE_KIND.items())
+        # without the X11 bindings, we can only use the gdk api,
+        # which has no equivalent for the `Clip` shape:
+        # it would be applied as a bounding shape,
+        # and since servers send it as a full window rectangle
+        # for windows which only have a bounding shape,
+        # that would undo the bounding shape we just applied.
+        # (the kind values are unused with the gdk api)
+        return (0, "Bounding"), (0, "ShapeInput")
+
     def do_set_shape(self, shape) -> None:
-        from xpra.x11.bindings.shape import XShapeBindings, SHAPE_KIND
-        xid = self.get_window().get_xid()
+        from xpra.client.gtk3.window.base import HAS_X11_BINDINGS
         x_off, y_off = shape.get("x", 0), shape.get("y", 0)
         # adjust the offsets for scaling just once,
         # scaling them again for each shape kind would compound the scaling factor:
         scaling = self._xscale != 1 or self._yscale != 1
         if scaling:
             x_off, y_off = self.sx(x_off), self.sy(y_off)
-        for kind, name in SHAPE_KIND.items():
+        for kind, name in self.get_shape_kinds():
             rectangles = shape.get("%s.rectangles" % name)  # ie: Bounding.rectangles = [(0, 0, 150, 100)]
             if rectangles:
                 if scaling:
@@ -67,12 +81,44 @@ class ShapeWindow(GtkStubWindow):
                 if name == "Bounding" and self.border.shown and self.border.size > 0:
                     ww, wh = self._size
                     rectangles = add_border_rectangles(rectangles, ww, wh, self.border.size)
-                # too expensive to log with actual rectangles:
-                log("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)", xid, name, x_off, y_off, len(rectangles))
-                from xpra.x11.error import xlog
-                with xlog:
-                    XShape = XShapeBindings()
-                    XShape.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
+                if HAS_X11_BINDINGS:
+                    self.x11_shape_combine_rectangles(kind, name, x_off, y_off, rectangles)
+                else:
+                    self.gdk_shape_combine_rectangles(name, x_off, y_off, rectangles)
+
+    def x11_shape_combine_rectangles(self, kind: int, name: str, x_off: int, y_off: int, rectangles) -> None:
+        from xpra.x11.bindings.shape import XShapeBindings
+        xid = self.get_window().get_xid()
+        # too expensive to log with actual rectangles:
+        log("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)", xid, name, x_off, y_off, len(rectangles))
+        from xpra.x11.error import xlog
+        with xlog:
+            XShape = XShapeBindings()
+            XShape.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
+
+    def gdk_shape_combine_rectangles(self, name: str, x_off: int, y_off: int, rectangles) -> None:
+        """
+        Apply the shape using the gdk api, for clients without the X11 bindings.
+        The gdk X11 backend maps both calls to `XShape`,
+        the wayland backend can only honour the input shape
+        (`shape_combine_region` is a no-op there),
+        and the win32 backend uses `SetWindowRgn`.
+        """
+        gdk_window = self.get_window()
+        region = Region()
+        for rect in rectangles:
+            region.union(RectangleInt(*rect))
+        # too expensive to log with actual rectangles:
+        log("gdk shape_combine_region(%s, %s, %i, %i, %i rects)", gdk_window, name, x_off, y_off, len(rectangles))
+        if name == "ShapeInput":
+            gdk_window.input_shape_combine_region(region, x_off, y_off)
+            return
+        gdk_window.shape_combine_region(region, x_off, y_off)
+        # gdk only pushes the bounding shape to the window system
+        # when it processes updates for a window with a dirty geometry,
+        # and a shape which only shrinks the window invalidates nothing at all,
+        # so make sure that there is something to process:
+        gdk_window.invalidate_rect(None, True)
 
     def lazy_scale_shape(self, rectangles) -> list:
         # scale the rectangles without a bitmap...
