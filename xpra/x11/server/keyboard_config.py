@@ -21,7 +21,7 @@ from xpra.x11.xkbhelper import (
     do_set_keymap, set_all_keycodes, set_keycode_translation,
     get_modifiers_from_meanings, get_modifiers_from_keycodes,
     clear_modifiers, set_modifiers, map_missing_modifiers,
-    clean_keyboard_state, get_keycode_mappings, get_keyval_mappings,
+    clean_keyboard_state, get_keycode_mappings, get_keyval_mappings, canonical_keysym,
     DEBUG_KEYSYMS, grok_modifier_map,
 )
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -570,7 +570,15 @@ class KeyboardConfig(KeyboardConfigBase):
             keycode = self.keycode_translation.get((client_keycode, keyname), 0) or client_keycode
             kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
             return keycode, group
-        return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
+        keycode, rgroup = self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
+        if keycode < 0 and keyname:
+            # the client may know this keysym by another name - ie: `Page_Up` for `Prior`:
+            canonical = canonical_keysym(keyname)
+            if canonical != keyname:
+                kmlog(keyname, "do_get_keycode: trying canonical keysym name %r", canonical)
+                keycode, rgroup = self.find_matching_keycode(client_keycode, canonical,
+                                                             pressed, modifiers, keyval, keystr, group)
+        return keycode, rgroup
 
     def find_matching_keycode(self, client_keycode: int, keyname: str,
                               pressed: bool, modifiers: list[str], keyval: int, keystr: str, group: int) -> tuple[int, int]:
