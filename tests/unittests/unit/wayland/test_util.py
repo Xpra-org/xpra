@@ -27,6 +27,8 @@ CLIPBOARD_TIMEOUT = 5
 class WestonTestUtil(ServerTestUtil):
     """Run Xpra clients against a private Weston headless compositor."""
 
+    weston_fake_seat = False
+
     @classmethod
     def setUpClass(cls):
         if not shutil.which("weston"):
@@ -37,6 +39,11 @@ class WestonTestUtil(ServerTestUtil):
             raise unittest.SkipTest("wl-clipboard is not installed")
         if importlib.util.find_spec("xpra.wayland.server.compositor") is None:
             raise unittest.SkipTest("the Wayland server backend is not built")
+        help_output = subprocess.run(["weston", "--help"],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT,
+                                     check=False, text=True).stdout
+        cls.weston_fake_seat = "--fake-seat" in help_output
         ServerTestUtil.setUpClass()
 
     def setUp(self):
@@ -52,10 +59,13 @@ class WestonTestUtil(ServerTestUtil):
             "WAYLAND_DISPLAY": self.weston_socket,
         })
         env.pop("DISPLAY", None)
-        self.weston = self.run_command([
+        cmd = [
             "weston", "--backend=headless-backend.so",
-            f"--socket={self.weston_socket}", "--idle-time=0", "--fake-seat",
-        ], env=env)
+            f"--socket={self.weston_socket}", "--idle-time=0",
+        ]
+        if self.weston_fake_seat:
+            cmd.append("--fake-seat")
+        self.weston = self.run_command(cmd, env=env)
         self.wait_for_weston()
 
     def tearDown(self):
