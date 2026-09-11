@@ -189,6 +189,47 @@ class TestX11Keyboard(ServerTestUtil):
         assert "adiaeresis" in mappings.get(keycode, ()), \
             f"'adiaeresis' was resolved to keycode {keycode}: {mappings.get(keycode)}"
 
+    def test_keys_changed_after_set_keymap(self):
+        # setting a keymap ourselves also fires the `keys-changed` signal:
+        # the x11 keyboard subsystem suppresses it whilst the new keymap is applied,
+        # then calls `_keys_changed()` itself when the suppression timer expires.
+        # So `keys_changed()` always runs just after `set_keymap()`,
+        # and it must not undo anything `set_keymap()` had just set up.
+        from copy import deepcopy
+        from xpra.x11.xkbhelper import do_set_keymap
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        # (`modifier_map` is left out: `set_keymap()` never computes it,
+        # `compute_modifier_map()` is what refreshes it from the parsed `mod_meanings`)
+        attrs = (
+            "keycode_translation", "keycode_mappings", "keyval_mappings", "keynames_for_mod",
+            "keycodes_for_modifier_keynames", "modifier_client_keycodes", "mod_nuisance",
+        )
+        keycodes = (
+            (113, "q", 81, 0, 0), (81, "Q", 81, 0, 1),
+            (50, "2", 50, 0, 0), (34, "quotedbl", 50, 0, 1),
+            (0xffe1, "Shift_L", 16, 0, 0), (0xffe3, "Control_L", 17, 0, 0),
+            (0xffe9, "Alt_L", 18, 0, 0), (0xffea, "Alt_R", 165, 0, 0),
+        )
+        # with and without a native client keymap, since they build the translation differently:
+        for x11_keycodes in ({}, {81: ("q", "Q"), 50: ("2", "quotedbl"), 16: ("Shift_L", )}):
+            do_set_keymap("us", "", "", {})
+            config = KeyboardConfig()
+            config.query_struct = {}
+            config.layout = "us"
+            config.x11_keycodes = x11_keycodes
+            config.keycodes = keycodes
+            config.set_keymap()
+            expected = {attr: deepcopy(getattr(config, attr)) for attr in attrs}
+            config.keys_changed()
+            for attr, value in expected.items():
+                assert getattr(config, attr) == value, \
+                    f"keys_changed() modified {attr!r} set up by set_keymap(), x11_keycodes={bool(x11_keycodes)}"
+            # and it must settle: calling it again changes nothing at all
+            expected = {attr: deepcopy(getattr(config, attr)) for attr in attrs + ("modifier_map", )}
+            config.keys_changed()
+            for attr, value in expected.items():
+                assert getattr(config, attr) == value, f"keys_changed() is not idempotent for {attr!r}"
+
 
 def main():
     # can only work with an X11 server
