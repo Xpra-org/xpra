@@ -3,4 +3,3 @@ URIs: https://xpra.org/lts
 Suites: jammy
 Components: main
 Signed-By: /usr/share/keyrings/xpra.asc
-Architectures: amd64

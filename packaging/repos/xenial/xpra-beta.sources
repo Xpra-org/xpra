@@ -3,4 +3,3 @@ URIs: https://xpra.org/beta
 Suites: xenial
 Components: main
 Signed-By: /usr/share/keyrings/xpra.asc
-Architectures: amd64 arm64

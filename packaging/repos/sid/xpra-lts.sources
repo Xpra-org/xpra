@@ -3,4 +3,3 @@ URIs: https://xpra.org/lts
 Suites: sid
 Components: main
 Signed-By: /usr/share/keyrings/xpra.asc
-Architectures: amd64 arm64 riscv64

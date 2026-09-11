@@ -1,2 +1,2 @@
-deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/ bookworm main
-deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/beta/ bookworm main
+deb [signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/ bookworm main
+deb [signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/beta/ bookworm main

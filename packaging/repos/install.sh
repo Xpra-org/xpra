@@ -18,6 +18,23 @@ if [ "${ID}" == "msys2" ]; then
   exit 1
 fi
 
+# download a file and install it, so that a failed download
+# (ie: no repository file for this distribution)
+# cannot leave an invalid file behind:
+download() {
+  URL=$1
+  DST=$2
+  TMP=$(mktemp)
+  if ! curl -f -L -o "${TMP}" "${URL}"; then
+    rm -f "${TMP}"
+    echo "failed to download ${URL}"
+    exit 1
+  fi
+  sudo cp "${TMP}" "${DST}"
+  sudo chmod 644 "${DST}"
+  rm -f "${TMP}"
+}
+
 # Helper for Linux Mint → detect the Ubuntu base codename
 get_ubuntu_codename_from_mint() {
   local repo_file="/etc/apt/sources.list.d/official-package-repositories.list"
@@ -50,7 +67,7 @@ dnfinstall() {
   # alternative:
   # sudo dnf install -y "https://download1.rpmfusion.org/free/${distro}/rpmfusion-free-release-${MAJOR_VERSION}.noarch.rpm"
   echo "downloading the repository file"
-  sudo curl -o "/etc/yum.repos.d/${REPO}.repo" "${GITHUB_REPOS}/$DISTRO/${REPO}.repo"
+  download "${GITHUB_REPOS}/${DISTRO}/${REPO}.repo" "/etc/yum.repos.d/${REPO}.repo"
   echo "installing 'xpra'"
   sudo dnf install -y xpra
   sudo dnf install -y xpra-html5
@@ -106,7 +123,7 @@ fi
 ############################
 if [ "${ID}" == "linuxmint" ]; then
   echo "installing xpra.org gpg key"
-  sudo curl -o "/usr/share/keyrings/xpra.asc" "https://xpra.org/xpra.asc"
+  download "https://xpra.org/xpra.asc" "/usr/share/keyrings/xpra.asc"
 
   echo "determining Ubuntu base codename for Linux Mint"
   VERSION_CODENAME=$(get_ubuntu_codename_from_mint)
@@ -120,7 +137,7 @@ if [ "${ID}" == "linuxmint" ]; then
 
   echo "Linux Mint detected, using Ubuntu codename: ${VERSION_CODENAME}"
   echo "installing xpra.org repository file"
-  sudo curl -o "/etc/apt/sources.list.d/${REPO}.sources" "${GITHUB_REPOS}/${VERSION_CODENAME}/${REPO}.sources"
+  download "${GITHUB_REPOS}/${VERSION_CODENAME}/${REPO}.sources" "/etc/apt/sources.list.d/${REPO}.sources"
   sudo apt-get update
   sudo apt-get install -y xpra
   exit 0
@@ -131,10 +148,10 @@ fi
 ############################
 if [ "${ID}" == "debian" ] || [ "${ID}" == "ubuntu" ]; then
   echo "installing xpra.org gpg key"
-  sudo curl -o "/usr/share/keyrings/xpra.asc" "https://xpra.org/xpra.asc"
+  download "https://xpra.org/xpra.asc" "/usr/share/keyrings/xpra.asc"
   echo "installing xpra.org repository file"
   VERSION_CODENAME=$(grep -e "^VERSION_CODENAME=" /etc/os-release | awk -F= '{print $2}' | sed 's/"//g')
-  sudo curl -o "/etc/apt/sources.list.d/${REPO}.sources" "${GITHUB_REPOS}/${VERSION_CODENAME}/${REPO}.sources"
+  download "${GITHUB_REPOS}/${VERSION_CODENAME}/${REPO}.sources" "/etc/apt/sources.list.d/${REPO}.sources"
   sudo apt-get update
   sudo apt-get install -y xpra
   sudo apt-get install -y xpra-html5
