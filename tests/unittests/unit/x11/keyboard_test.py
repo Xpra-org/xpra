@@ -151,6 +151,44 @@ class TestX11Keyboard(ServerTestUtil):
             produced = keysym_produced(keysym, client_keycode, group)
             assert produced == keysym, f"expected {keysym!r} but the server would produce {produced!r}"
 
+    def test_keys_changed(self):
+        # the lookup tables are derived from the server's keymap,
+        # so they have to be re-derived when something inside the session changes it
+        # (ie: `setxkbmap`, `xmodmap`, or an ibus engine switching layout)
+        from xpra.x11.xkbhelper import get_keycode_mappings, do_set_keymap
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        do_set_keymap("us", "", "", {})
+        config = KeyboardConfig()
+        config.query_struct = {}
+        config.layout = "us"
+        # a non-X11 client (ie: HTML5) sends `keycodes` but no `x11_keycodes`,
+        # so its keys are resolved against the server's keymap:
+        config.keycodes = (
+            (113, "q", 81, 0, 0), (81, "Q", 81, 0, 1),
+            (0xffe1, "Shift_L", 16, 0, 0), (0xffe3, "Control_L", 17, 0, 0),
+        )
+        config.set_keymap()
+
+        def get_keycode(keysym: str) -> int:
+            config.pressed_translation = {}
+            # `keyval` is left at zero to avoid the keyval fallback:
+            return config.get_keycode(0, keysym, True, [], 0, "", 0)[0]
+
+        assert get_keycode("adiaeresis") < 0, "'adiaeresis' should not be reachable with a 'us' layout"
+        # something else changes the keymap from within the session:
+        do_set_keymap("de", "", "", {})
+        mappings = get_keycode_mappings()
+        if not any("adiaeresis" in keysyms for keysyms in mappings.values()):
+            raise unittest.SkipTest("no German keymap available")
+        # until it is told about it, the config still describes the keymap we started with:
+        assert config.keycode_mappings != mappings, "the keycode mappings should still be stale"
+        assert get_keycode("adiaeresis") < 0, "'adiaeresis' should not be resolved from a stale keymap"
+        config.keys_changed()
+        assert config.keycode_mappings == mappings, "the keycode mappings were not refreshed"
+        keycode = get_keycode("adiaeresis")
+        assert "adiaeresis" in mappings.get(keycode, ()), \
+            f"'adiaeresis' was resolved to keycode {keycode}: {mappings.get(keycode)}"
+
 
 def main():
     # can only work with an X11 server

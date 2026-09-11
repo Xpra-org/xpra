@@ -89,8 +89,7 @@ class KeyboardConnection(StubClientConnection):
 
     def keys_changed(self) -> None:
         if kc := self.keyboard_config:
-            kc.compute_modifier_map()
-            kc.compute_modifier_keynames()
+            kc.keys_changed()
         log("keys_changed() updated keyboard config=%s", self.keyboard_config)
 
     def make_keymask_match(self, modifiers: Sequence[str], ignored_modifier_keycode=0, ignored_modifier_keynames=None) -> None:

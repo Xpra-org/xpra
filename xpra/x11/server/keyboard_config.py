@@ -536,6 +536,26 @@ class KeyboardConfig(KeyboardConfigBase):
     def update_keyval_mappings(self) -> None:
         self.keyval_mappings = get_keyval_mappings()
 
+    def keys_changed(self) -> None:
+        """
+        The X11 keymap has changed underneath us:
+        `setxkbmap` or `xmodmap` was run inside the session, an ibus engine switched layout, etc.
+        Every lookup table we derived from the keymap is now stale, so re-derive them.
+        This must not modify the keymap itself - we are reacting to someone else's change.
+        """
+        if not self.enabled:
+            return
+        with xlog:
+            self.update_keycode_mappings()
+            self.update_keyval_mappings()
+            # keysyms may have moved to a different keycode, or appeared:
+            self.map_all_keynames()
+            self.add_loose_matches()
+            self.compute_modifier_map()
+            self.compute_modifier_keynames()
+        log("keys_changed() %i keycodes, %i keycode translation entries",
+            len(self.keycode_mappings), len(self.keycode_translation))
+
     def do_get_keycode(self, client_keycode: int, keyname: str, pressed: bool, modifiers: list[str], keyval: int,
                        keystr: str, group: int) -> tuple[int, int]:
         if not self.enabled:
