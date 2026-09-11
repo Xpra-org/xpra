@@ -1453,7 +1453,10 @@ class WindowVideoSource(WindowSource):
                     max_w = min(encoder_spec.max_w, vmw)
                     max_h = min(encoder_spec.max_h, vmh)
                     if (csc_spec and csc_spec.can_scale) or encoder_spec.can_scale:
-                        if cached_scaling[0] >= width and cached_scaling[1] >= height:
+                        if (
+                            width <= max_w and height <= max_h
+                            and cached_scaling[0] >= width and cached_scaling[1] >= height
+                        ):
                             scaling = cached_scaling[2]
                         else:
                             scaling = self.calculate_scaling(width, height, max_w, max_h)

@@ -148,6 +148,53 @@ class NonVideoEncodingsTest(unittest.TestCase):
         self.assertEqual(source.non_video_encodings, ("jpeg",))
 
 
+class ScalingCacheTest(unittest.TestCase):
+
+    def test_candidate_limits_override_generic_scaling(self) -> None:
+        source = WindowVideoSource.__new__(WindowVideoSource)
+        source.video_helper = Mock()
+        source.video_helper.get_csc_specs.return_value = {}
+        encoder_spec = SimpleNamespace(
+            can_scale=True,
+            codec_type="test",
+            max_w=2048,
+            max_h=2048,
+            output_colorspaces=("RGB",),
+        )
+        source.video_helper.get_encoder_specs.return_value = {
+            "RGB": (encoder_spec,),
+        }
+        source._current_quality = 50
+        source._fixed_min_quality = 0
+        source._current_speed = 50
+        source._fixed_min_speed = 0
+        source.content_types = ()
+        source.is_shadow = False
+        source.video_max_size = (4096, 4096)
+        source.video_subregion = None
+        source.full_csc_modes = typedict({"h264": ("RGB",)})
+        source.encoding_options = typedict()
+        source._csc_encoder = None
+        source._video_encoder = None
+        source.matches_video_subregion = Mock(return_value=None)
+        source.get_video_fps = Mock(return_value=0)
+        source.is_cancelled = Mock(return_value=False)
+        source.calculate_scaling = Mock(side_effect=((1, 1), (2, 3)))
+
+        with patch(
+            "xpra.server.window.video_compress.get_pipeline_score",
+            return_value=(1,),
+        ) as get_pipeline_score:
+            source.get_video_pipeline_options(("h264",), 3000, 2000, "RGB")
+
+        scaling_calls = tuple(call.args for call in source.calculate_scaling.call_args_list)
+        self.assertEqual(scaling_calls, (
+            (3000, 2000, 4096, 4096),
+            (3000, 2000, 2048, 2048),
+        ))
+        self.assertEqual(get_pipeline_score.call_args.args[5], (2, 3))
+
+
 def main() -> None:
     unittest.main()
 
