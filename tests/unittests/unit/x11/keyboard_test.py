@@ -151,6 +151,37 @@ class TestX11Keyboard(ServerTestUtil):
             produced = keysym_produced(keysym, client_keycode, group)
             assert produced == keysym, f"expected {keysym!r} but the server would produce {produced!r}"
 
+    def test_keyval_group(self):
+        # the last resort keyval lookup should honour the group the client sent,
+        # rather than picking an arbitrary one
+        from xpra.x11.xkbhelper import do_set_keymap, get_keyval_mappings
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        # two groups: `AltGr` and friends aside, group 1 is reached by switching layout
+        do_set_keymap("us,de", "", "", {})
+        keyval_mappings = get_keyval_mappings()
+        # we need a keysym which lives on a different keycode in each group,
+        # otherwise we cannot tell which group was used:
+        candidates = tuple(
+            (keyval, groups) for keyval, groups in keyval_mappings.items()
+            if len(groups) > 1 and len(set(keycodes[0] for keycodes in groups.values())) > 1
+        )
+        if not candidates:
+            raise unittest.SkipTest("no keysym found on more than one group")
+        config = KeyboardConfig()
+        config.keyval_mappings = keyval_mappings
+        # a keyname the server knows nothing about, so that every keyname lookup fails
+        # and we always end up in the keyval fallback:
+        keyname = "xpra_unmatched_keyname"
+        for keyval, groups in candidates:
+            for group, keycodes in groups.items():
+                config.pressed_translation = {}
+                keycode, rgroup = config.get_keycode(0, keyname, True, [], keyval, "", group)
+                log("keyval %#x group %i: keycode=%i, group=%i (%s)", keyval, group, keycode, rgroup, groups)
+                assert keycode == keycodes[0], \
+                    f"expected keycode {keycodes[0]} for keyval {keyval:#x} in group {group}, got {keycode}"
+                assert rgroup == group, \
+                    f"group {group} was not preserved for keyval {keyval:#x}, got {rgroup}"
+
     def test_keys_changed(self):
         # the lookup tables are derived from the server's keymap,
         # so they have to be re-derived when something inside the session changes it
