@@ -54,13 +54,15 @@ class ShapeWindow(GtkStubWindow):
         from xpra.x11.bindings.shape import XShapeBindings, SHAPE_KIND
         xid = self.get_window().get_xid()
         x_off, y_off = shape.get("x", 0), shape.get("y", 0)
+        # adjust the offsets for scaling just once,
+        # scaling them again for each shape kind would compound the scaling factor:
+        scaling = self._xscale != 1 or self._yscale != 1
+        if scaling:
+            x_off, y_off = self.sx(x_off), self.sy(y_off)
         for kind, name in SHAPE_KIND.items():
             rectangles = shape.get("%s.rectangles" % name)  # ie: Bounding.rectangles = [(0, 0, 150, 100)]
             if rectangles:
-                # adjust for scaling:
-                if self._xscale != 1 or self._yscale != 1:
-                    x_off = self.sx(x_off)
-                    y_off = self.sy(y_off)
+                if scaling:
                     rectangles = self.scale_shape_rectangles(name, rectangles)
                 if name == "Bounding" and self.border.shown and self.border.size > 0:
                     ww, wh = self._size
