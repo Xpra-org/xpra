@@ -7,6 +7,11 @@
 
 #include <stdint.h>
 
+__device__ __forceinline__ uint8_t quant(float value)
+{
+    return (uint8_t)min(max(__float2int_rn(value), 0), 255);
+}
+
 // Y = 0.299 * R + 0.587 * G + 0.114 * B + 0
 #define YR 0.299
 #define YG 0.587
@@ -53,12 +58,12 @@ extern "C" __global__ void BGRX_to_NV12(uint8_t *srcImage, int src_w, int src_h,
 
         //write up to 4 Y pixels:
         uint32_t di = (gy * 2 * dstPitch) + gx * 2;
-        dstImage[di] = __float2int_rn(YR * R[0] + YG * G[0] + YB * B[0] + YC);
+        dstImage[di] = quant(YR * R[0] + YG * G[0] + YB * B[0] + YC);
         if (gx*2 + 1 < src_w) {
             R[1] = srcImage[si+6];
             G[1] = srcImage[si+5];
             B[1] = srcImage[si+4];
-            dstImage[di + 1] = __float2int_rn(YR * R[1] + YG * G[1] + YB * B[1] + YC);
+            dstImage[di + 1] = quant(YR * R[1] + YG * G[1] + YB * B[1] + YC);
         }
         if (gy*2 + 1 < src_h) {
             si += srcPitch;
@@ -66,12 +71,12 @@ extern "C" __global__ void BGRX_to_NV12(uint8_t *srcImage, int src_w, int src_h,
             R[2] = srcImage[si+2];
             G[2] = srcImage[si+1];
             B[2] = srcImage[si];
-            dstImage[di] = __float2int_rn(YR * R[2] + YG * G[2] + YB * B[2] + YC);
+            dstImage[di] = quant(YR * R[2] + YG * G[2] + YB * B[2] + YC);
             if (gx*2 + 1 < src_w) {
                 R[3] = srcImage[si+6];
                 G[3] = srcImage[si+5];
                 B[3] = srcImage[si+4];
-                dstImage[di + 1] = __float2int_rn(YR * R[3] + YG * G[3] + YB * B[3] + YC);
+                dstImage[di + 1] = quant(YR * R[3] + YG * G[3] + YB * B[3] + YC);
             }
         }
 
@@ -83,7 +88,7 @@ extern "C" __global__ void BGRX_to_NV12(uint8_t *srcImage, int src_w, int src_h,
             v += VR * R[j] + VG * G[j] + VB * B[j] + VC;
         }
         di = (dst_h + gy) * dstPitch + gx * 2;
-        dstImage[di]      = __float2int_rn(u / 4.0);
-        dstImage[di + 1]  = __float2int_rn(v / 4.0);
+        dstImage[di]      = quant(u / 4.0);
+        dstImage[di + 1]  = quant(v / 4.0);
     }
 }

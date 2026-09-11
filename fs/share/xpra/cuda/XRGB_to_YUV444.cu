@@ -7,6 +7,11 @@
 
 #include <stdint.h>
 
+__device__ __forceinline__ uint8_t quant(float value)
+{
+    return (uint8_t)min(max(__float2int_rn(value), 0), 255);
+}
+
 // Y = 0.299 * R + 0.587 * G + 0.114 * B + 0
 #define YR 0.299
 #define YG 0.587
@@ -44,10 +49,10 @@ extern "C" __global__ void XRGB_to_YUV444(uint8_t *srcImage, int src_w, int src_
 
         uint32_t di;
         di = (gy * dstPitch) + gx;
-        dstImage[di] = __float2int_rn(YR * R + YG * G + YB * B + YC);
+        dstImage[di] = quant(YR * R + YG * G + YB * B + YC);
         di += dstPitch*dst_h;
-        dstImage[di] = __float2int_rn(UR * R + UG * G + UB * B + UC);
+        dstImage[di] = quant(UR * R + UG * G + UB * B + UC);
         di += dstPitch*dst_h;
-        dstImage[di] = __float2int_rn(VR * R + VG * G + VB * B + VC);
+        dstImage[di] = quant(VR * R + VG * G + VB * B + VC);
     }
 }
