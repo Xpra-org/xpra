@@ -228,7 +228,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not requestor:
             log.warn("Warning: clipboard selection request without a window, dropped")
             return
-        wininfo = WinInfo(requestor)
+        # the blocklist below matches against this, so it cannot be deferred
+        # the way the debug-only call sites can:
+        wininfo = get_wininfo(requestor)
         prop = event.property
         target = str(event.target)
         log("clipboard request for %s from window %s, target=%s, prop=%s",
