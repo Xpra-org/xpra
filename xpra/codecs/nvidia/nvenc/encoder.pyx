@@ -1293,10 +1293,14 @@ cdef class Encoder:
             # pushed, pycuda emitted "X in out-of-thread context could not
             # be cleaned up" warnings and leaked the underlying pinned /
             # device memory. Accumulated pinned-memory leaks eventually
-            # SEGV in pycuda. compress_image always finishes in bounded
-            # time and do_clean runs on a daemon thread, so waiting is
-            # safe — strictly preferable to leaking.
-            cdc.lock.acquire()
+            # SEGV in pycuda. Cleanup must wait for the lock, but a stuck
+            # CUDA/NVENC operation should remain visible in the logs.  Back
+            # off between warnings, capping the interval so a long wait is
+            # still reported regularly.
+            cleanup_lock_wait = 1
+            while not cdc.lock.acquire(timeout=cleanup_lock_wait):
+                log.warn("Warning: still waiting %is for CUDA device lock during encoder cleanup", cleanup_lock_wait)
+                cleanup_lock_wait = min(cleanup_lock_wait * 2, 60)
             try:
                 if cdc.context:
                     cdc.context.push()
