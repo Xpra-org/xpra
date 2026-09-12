@@ -714,6 +714,10 @@ class GLWindowBackingBase(WindowBackingBase):
             if ofbo is not None:
                 self.offscreen_fbo = None
                 glDeleteFramebuffers(1, [ofbo])
+            tfbo = self.tmp_fbo
+            if tfbo is not None:
+                self.tmp_fbo = None
+                glDeleteFramebuffers(1, [tfbo])
             textures = self.textures
             if len(textures) > 0:
                 self.textures = []
