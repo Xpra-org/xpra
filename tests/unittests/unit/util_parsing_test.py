@@ -563,6 +563,11 @@ class TestValidatedMonitorData(unittest.TestCase):
         result = validated_monitor_data(monitors)
         self.assertIn(0, result)
 
+    def test_refresh_rate_hz_normalized_to_mhz(self):
+        result = validated_monitor_data({0: {"refresh-rate": 60, "refresh-rate.cooked": 50}})
+        self.assertEqual(result[0]["refresh-rate"], 60000)
+        self.assertEqual(result[0]["refresh-rate.cooked"], 50000)
+
     def test_empty(self):
         self.assertEqual(validated_monitor_data({}), {})
 
