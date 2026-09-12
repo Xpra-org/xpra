@@ -1,0 +1,25 @@
+# Downstream trees that github's fork list cannot tell us about.
+#
+# Read by tests/scripts/find_downstream_changes.py: one git URL per line, with an
+# optional note after it, `#` starts a comment.  Two kinds of tree belong here:
+#
+#   * forks hosted elsewhere (gitlab, salsa, codeberg, self-hosted) - they share
+#     history with upstream, so they are scanned commit by commit;
+#   * distro packaging trees - no shared history, so they are scanned for the
+#     *.patch/*.diff files they ship, which is where a distro's fixes live.
+#
+# Add what you come across; the scan drops anything unrelated to xpra by itself.
+
+# --- distro packaging (patches shipped to users, rarely sent upstream) ---------
+https://salsa.debian.org/bluca/xpra.git                             debian packaging (active)
+https://salsa.debian.org/aerusso/xpra.git                           debian packaging
+https://src.fedoraproject.org/rpms/xpra.git                         fedora dist-git (all branches)
+https://gitlab.archlinux.org/archlinux/packaging/packages/xpra.git   arch linux package
+
+# --- other forges --------------------------------------------------------------
+# `find_downstream_changes.py discover --forges` keyword-searches salsa,
+# gitlab.archlinux.org, gitlab.alpinelinux.org, gitlab.com and codeberg; add
+# anything it cannot see (self-hosted gitea/cgit, or a tree someone emailed you)
+# here instead:
+#
+# https://git.example.org/someone/xpra.git                          why it matters
