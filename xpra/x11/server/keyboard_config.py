@@ -568,8 +568,15 @@ class KeyboardConfig(KeyboardConfigBase):
         log("do_get_keycode has x11: %s, client_keycode=%s", bool(self.x11_keycodes), client_keycode)
         if self.x11_keycodes and client_keycode > 0:
             keycode = self.keycode_translation.get((client_keycode, keyname), 0) or client_keycode
-            kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
-            return keycode, group
+            keysyms = self.keycode_mappings.get(keycode, ())
+            canonical = canonical_keysym(keyname)
+            if keyname in keysyms or canonical in keysyms:
+                kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
+                return keycode, group
+            kmlog(keyname,
+                  "native keycode %i resolved to %i with keysyms=%s; matching by keysym instead",
+                  client_keycode, keycode, keysyms)
+            return self.find_matching_keycode(client_keycode, canonical, pressed, modifiers, keyval, keystr, group)
         keycode, rgroup = self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
         if keycode < 0 and keyname:
             # the client may know this keysym by another name - ie: `Page_Up` for `Prior`:
