@@ -41,6 +41,7 @@ import numpy
 from libc.stdint cimport uintptr_t, int8_t, uint8_t, uint16_t, uint32_t, uint64_t   # pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset, memcpy
+from cpython.ref cimport Py_INCREF
 
 from xpra.codecs.nvidia.nvenc.nvencode cimport init_nvencode_library, create_nvencode_instance, get_current_cuda_context
 
@@ -1253,7 +1254,40 @@ cdef class Encoder:
 
     def __dealloc__(self):
         if not self.closed:
-            self.clean()
+            if self.threaded_init:
+                # clean() starts threaded_clean, which retains a bound
+                # method holding self. Cython frees cdef instances after
+                # __dealloc__ returns even if that resurrects self, so the
+                # cleanup thread would dereference freed memory. We cannot
+                # clean safely here, but must also prevent Cython from
+                # decrefing PyCUDA objects without their CUDA context
+                # pushed. Intentionally leak their references instead.
+                # Callers must call clean() before dropping the last ref.
+                try:
+                    log.warn("!" * 78)
+                    log.warn("CRITICAL: nvenc Encoder %s GC'd without clean()", self)
+                    log.warn("GPU resources are being intentionally leaked to avoid a use-after-free crash")
+                    log.warn("Call Encoder.clean() before dropping the last reference")
+                    log.warn("!" * 78)
+                except Exception:
+                    pass
+                for resource in (
+                    self.cuda_device_context,
+                    self.inputBuffer,
+                    self.cudaInputBuffer,
+                    self.cudaOutputBuffer,
+                    self.kernel,
+                ):
+                    if resource is not None:
+                        Py_INCREF(resource)
+                self.cuda_device_context = None
+                self.inputBuffer = None
+                self.cudaInputBuffer = None
+                self.cudaOutputBuffer = None
+                self.kernel = None
+                self.closed = 1
+            else:
+                self.clean()
 
     def clean(self) -> None:
         f = self.file
