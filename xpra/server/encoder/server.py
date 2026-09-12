@@ -214,8 +214,20 @@ class EncoderServer(ServerBase):
                         log(f" supported pixel formats for {encoding!r}: %s", csv(input_cs_options))
                         raise ValueError(msg)
                 add_device_context(ss, options)
-                encoder.init_context(encoding, width, height, pixel_format, typedict(options))
-                bdata, client_options = encoder.compress_image(image, typedict(options))
+                try:
+                    encoder.init_context(encoding, width, height, pixel_format, typedict(options))
+                    bdata, client_options = encoder.compress_image(image, typedict(options))
+                finally:
+                    # A one-shot encoder has no owner after this request.
+                    # Always clean it explicitly so its CUDA resources are
+                    # released under the correct context rather than from
+                    # Encoder.__dealloc__.
+                    try:
+                        encoder.clean()
+                    except Exception:
+                        # Do not replace a successful encode result or mask
+                        # the original encode failure with a cleanup error.
+                        log.error(f"Error cleaning one-shot encoder {encoder}", exc_info=True)
                 bpp = 24
                 stride = 0
                 coding = encoding
