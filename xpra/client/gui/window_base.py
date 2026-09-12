@@ -870,7 +870,9 @@ class ClientWindowBase(ClientWidgetBase):
 
     def after_draw_refresh(self, success, message="") -> None:
         backing = self._backing
-        paintlog(f"after_draw_refresh({success}, {message!r}) pending_refresh={self.pending_refresh}, {backing=}")
+        pr = self.pending_refresh
+        self.pending_refresh = []
+        paintlog(f"after_draw_refresh({success}, {message!r}) pending_refresh={pr}, {backing=}")
         if not backing:
             return
         if backing.repaint_all or self._xscale != 1 or self._yscale != 1 or is_Wayland():
@@ -878,8 +880,6 @@ class ClientWindowBase(ClientWidgetBase):
             rw, rh = self.get_size()
             self.idle_add(self.repaint, 0, 0, rw, rh)
             return
-        pr = self.pending_refresh
-        self.pending_refresh = []
         display = self._client.get_subsystem("display")
         for x, y, w, h in pr:
             rx, ry, rw, rh = display.srect(x, y, w, h) if display else (x, y, w, h)
