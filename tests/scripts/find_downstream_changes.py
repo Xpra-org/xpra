@@ -443,7 +443,13 @@ GITEA_INSTANCES = ("https://codeberg.org",)
 
 
 def discover_forges(registry: Registry, web: WebCache, term: str, cutoff: datetime) -> None:
-    """keyword search on gitlab/gitea instances - noisy by design, the fetch step verifies"""
+    """keyword search on gitlab/gitea instances - noisy by design, the fetch step verifies
+
+    Forge search is substring search, and "xpra" sits inside words ("neoflexpractice",
+    "landingyandexpracticum"), so require it to be a word of its own in the repo name.
+    Whatever still gets through is dropped by classify() once fetched.
+    """
+    named = re.compile(rf"(^|[-_.]){re.escape(term)}([-_.]|$)", re.I)
     added = 0
     for base in GITLAB_INSTANCES:
         url = f"{base}/api/v4/projects?search={term}&per_page=100&order_by=last_activity_at"
@@ -455,7 +461,7 @@ def discover_forges(registry: Registry, web: WebCache, term: str, cutoff: dateti
         for project in projects if isinstance(projects, list) else []:
             name = project.get("path", "")
             active = project.get("last_activity_at", "")
-            if term not in name or (active and parse_time(active) < cutoff):
+            if not named.search(name) or (active and parse_time(active) < cutoff):
                 continue
             added += registry.add(project["http_url_to_repo"], f"gitlab-search:{source_id(base)}",
                                   active, project.get("path_with_namespace", ""))[1]
@@ -468,7 +474,7 @@ def discover_forges(registry: Registry, web: WebCache, term: str, cutoff: dateti
             continue
         for project in (result or {}).get("data", []) if isinstance(result, dict) else []:
             active = project.get("updated_at", "")
-            if term not in project.get("name", "") or (active and parse_time(active) < cutoff):
+            if not named.search(project.get("name", "")) or (active and parse_time(active) < cutoff):
                 continue
             added += registry.add(project["clone_url"], f"gitea-search:{source_id(base)}",
                                   active, project.get("full_name", ""))[1]

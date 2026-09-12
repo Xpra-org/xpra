@@ -11,8 +11,9 @@
 # Add what you come across; the scan drops anything unrelated to xpra by itself.
 
 # --- distro packaging (patches shipped to users, rarely sent upstream) ---------
-https://salsa.debian.org/bluca/xpra.git                             debian packaging (active)
-https://salsa.debian.org/aerusso/xpra.git                           debian packaging
+https://salsa.debian.org/debian/xpra.git                             debian packaging (official)
+https://salsa.debian.org/bluca/xpra.git                             debian packaging (active fork of it)
+https://salsa.debian.org/aerusso/xpra.git                           debian packaging (older patches)
 https://src.fedoraproject.org/rpms/xpra.git                         fedora dist-git (all branches)
 https://gitlab.archlinux.org/archlinux/packaging/packages/xpra.git   arch linux package
 
