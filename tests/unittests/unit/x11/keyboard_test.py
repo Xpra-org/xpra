@@ -274,6 +274,31 @@ class TestX11Keyboard(ServerTestUtil):
                 f"the client name {cname!r} resolved to keycode {keycode}, " \
                 f"but the server name {keyname!r} resolves to {expected}"
 
+    def test_native_keycode_keysym_mismatch(self):
+        # A native client keymap can become stale, or omit the key event's keysym.
+        # Do not send its numeric keycode if it produces a different server keysym.
+        from xpra.x11.xkbhelper import do_set_keymap, get_keycode_mappings
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        do_set_keymap("us", "", "", {})
+        mappings = get_keycode_mappings()
+        keyname = "Prior"
+        server_keycode = next((keycode for keycode, keysyms in mappings.items() if keyname in keysyms), 0)
+        if not server_keycode:
+            raise unittest.SkipTest(f"no {keyname!r} keycode in the server keymap")
+        client_keycode = next(
+            keycode for keycode, keysyms in mappings.items()
+            if keycode != server_keycode and keyname not in keysyms
+        )
+        config = KeyboardConfig()
+        config.x11_keycodes = {client_keycode: (keyname, )}
+        config.keycode_mappings = mappings
+        # This is the usual non-keycode-specific mapping, retained even if
+        # the matching (client_keycode, keyname) entry is missing.
+        config.keycode_translation = {keyname: server_keycode}
+        keycode, group = config.get_keycode(client_keycode, keyname, True, [], 0, "", 0)
+        assert keycode == server_keycode
+        assert group == 0
+
     def test_keys_changed(self):
         # the lookup tables are derived from the server's keymap,
         # so they have to be re-derived when something inside the session changes it
