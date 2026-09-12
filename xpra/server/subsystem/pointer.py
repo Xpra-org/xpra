@@ -446,6 +446,19 @@ class PointerManager(StubSubsystem):
             key: props[key] for key in ("window-position", "monitor") if key in props
         }
         if self.process_mouse_common(proto, device_id, wid, pointer, pointer_props):
+            # Pointer motion is still useful if a window disappears between
+            # the client sending the event and the server processing it, but
+            # a click must never be delivered to whichever window is now
+            # under that position.  ``wid == 0`` is the root/global target.
+            window_sub = self.get_subsystem("window")
+            if wid > 0 and window_sub is not None and not window_sub.get_window(wid):
+                # Do let through a matching release for a button we already
+                # injected: dropping it would leave the pointer device's
+                # button state stuck down.
+                buttons = self.buttons_pressed.get(device_id, ())
+                if pressed or button not in buttons:
+                    log("dropping pointer button event for invalid window id: %s", wid)
+                    return
             seq = self.pointer_sequence.get(device_id, 0)
             self.may_record_pointer_event("pointer-button", device_id, seq, wid, button, pressed, pointer, {},
                                           exclude=self.get_server_source(proto))

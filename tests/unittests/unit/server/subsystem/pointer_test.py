@@ -120,6 +120,33 @@ class PointerPipelineTest(unittest.TestCase):
         m.process_pointer_button(object(), 0, 1, 3, True, (10, 20), {})
         self.assertEqual(m.calls, [])
 
+    def test_button_not_clicked_for_a_window_that_has_gone_away(self):
+        m = self.make_manager()
+        m.server.subsystems["window"] = AdHocStruct()
+        m.server.subsystems["window"].get_window = lambda _wid: None
+
+        m.process_pointer_button(object(), 0, 1, 3, True, (10, 20), {})
+
+        # Keep the motion behavior, but do not turn a stale window ID into a
+        # click on the window now underneath the pointer.
+        self.assertEqual(m.calls, [
+            ("adjust", 1, (10, 20)),
+            ("target", 1, (10, 20)),
+            ("move", 1, (10, 20)),
+            ("record", "pointer-motion"),
+        ])
+
+    def test_stale_window_allows_release_of_an_held_button(self):
+        m = self.make_manager()
+        m.server.subsystems["window"] = AdHocStruct()
+        m.server.subsystems["window"].get_window = lambda _wid: None
+        m.buttons_pressed[0] = {3}
+
+        m.process_pointer_button(object(), 0, 1, 3, False, (10, 20), {})
+
+        self.assertIn(("click", 3, False, {}), m.calls)
+        self.assertNotIn(0, m.buttons_pressed)
+
     def test_button_props_reach_the_device(self):
         m = self.make_manager()
         props = {"modifiers": (), "window-position": (1, 2)}
