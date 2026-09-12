@@ -2033,7 +2033,7 @@ xpra (0.0.7.32-1) UNRELEASED; urgency=low
   * key mappings: try to reset modifier keys as well as regular keys
   * key mappings: apply keymap using Cython code rather than execing xmodmap
   * key mappings: fire change callbacks only once when all the work is done
-  * use dbus for tray notifications if available, prefered to pynotify
+  * use dbus for tray notifications if available, preferred to pynotify
   * show full version information in about dialog
 
  -- Antoine Martin <antoine@xpra.org>  Thu, 08 Dec 2011 23:23:52 +0700

@@ -33,7 +33,7 @@ rather than the builtin [multiprocessing](https://docs.python.org/3/library/mult
 ### Pulseaudio
 
 [xpra.audio.pulseaudio](https://github.com/Xpra-org/xpra/tree/master/xpra/audio/pulseaudio) is often used for playback on Linux systems. \
-This is also the prefered backend for audio capture in server sessions.
+This is also the preferred backend for audio capture in server sessions.
 The xpra server will usually start a pulseaudio instance hidden away
 in a per-session user prefix so that multiple sessions can forward audio streams
 independently.

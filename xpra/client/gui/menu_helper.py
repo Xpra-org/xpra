@@ -84,7 +84,7 @@ class MenuHelper:
         raise NotImplementedError
 
     def show_shortcuts(self, *args) -> None:
-        self.client.show_shorcuts(*args)
+        self.client.show_shortcuts(*args)
 
     def show_session_info(self, *args) -> None:
         self.client.show_session_info(*args)

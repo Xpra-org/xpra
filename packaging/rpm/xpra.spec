@@ -2879,7 +2879,7 @@ fi
 - key mappings: try to reset modifier keys as well as regular keys
 - key mappings: apply keymap using Cython code rather than execing xmodmap
 - key mappings: fire change callbacks only once when all the work is done
-- use dbus for tray notifications if available, prefered to pynotify
+- use dbus for tray notifications if available, preferred to pynotify
 - show full version information in about dialog
 
 * Mon Nov 28 2011 Antoine Martin <antoine@xpra.org> 0.0.7.31-1
