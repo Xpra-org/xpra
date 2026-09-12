@@ -762,6 +762,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
         glFlush()
 
+        target = GL_TEXTURE_RECTANGLE
         for x, y, w, h, xdelta, ydelta in scrolls:
             if abs(xdelta) >= bw:
                 fail(f"invalid xdelta value: {xdelta}, backing width is {bw}")
@@ -778,18 +779,22 @@ class GLWindowBackingBase(WindowBackingBase):
             # these should be errors,
             # but desktop-scaling can cause a mismatch between the backing size
             # and the real window size server-side... so we clamp the dimensions instead
+            if x < 0:
+                w += x
+                x = 0
+            if y < 0:
+                h += y
+                y = 0
             if x + w > bw:
                 w = bw - x
             if y + h > bh:
                 h = bh - y
             if x + w + xdelta > bw:
                 w = bw - x - xdelta
-                if w <= 0:
-                    continue  # nothing left!
             if y + h + ydelta > bh:
                 h = bh - y - ydelta
-                if h <= 0:
-                    continue  # nothing left!
+            if w <= 0 or h <= 0:
+                continue  # nothing left!
             if x + xdelta < 0:
                 rect = (x, y, w, h)
                 fail(f"horizontal scroll {x} by {xdelta} rectangle {rect} overflows the backing buffer size {self.size}")
@@ -798,6 +803,12 @@ class GLWindowBackingBase(WindowBackingBase):
                 rect = (x, y, w, h)
                 fail(f"vertical scroll {y} by {ydelta} rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
+            # paint_box() uses the temporary FBO with TEX_RGB as its read source,
+            # so restore the scroll snapshot before processing every rectangle.
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   target, self.textures[TEX_TMP_FBO], 0)
+            glReadBuffer(GL_COLOR_ATTACHMENT0)
             # opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
             glBlitFramebuffer(x, bh - y, x + w, bh - (y + h),
                               x + xdelta, bh - (y + ydelta), x + w + xdelta, bh - (y + h + ydelta),
@@ -806,7 +817,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
         glFlush()
 
-        target = GL_TEXTURE_RECTANGLE
         # restore normal paint state:
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)

@@ -467,6 +467,66 @@ class TestPaintBoxEarlyReturn(unittest.TestCase):
         b.paint_box("h264", 10, 20, 80, 60)
 
 
+class TestScrollPaints(unittest.TestCase):
+
+    def test_negative_origin_is_clipped(self):
+        from xpra.opengl.backing import N_TEXTURES
+        b = _make_mock_backing()
+        b.size = 100, 80
+        b.offscreen_fbo = 10
+        b.tmp_fbo = 11
+        b.textures = list(range(N_TEXTURES))
+        with (
+            patch.object(b, "copy_fbo"),
+            patch.object(b, "paint_box"),
+            patch.object(b, "painted"),
+            patch("xpra.opengl.backing.glBindFramebuffer"),
+            patch("xpra.opengl.backing.glFramebufferTexture2D"),
+            patch("xpra.opengl.backing.glReadBuffer"),
+            patch("xpra.opengl.backing.glBindTexture"),
+            patch("xpra.opengl.backing.glFlush"),
+            patch("xpra.opengl.backing.glBlitFramebuffer") as blit,
+        ):
+            b.do_scroll_paints(object(), [(-10, -5, 30, 20, 5, 3)], 0, [])
+        blit.assert_called_once_with(
+            0, 80, 20, 65,
+            5, 77, 25, 62,
+            unittest.mock.ANY, unittest.mock.ANY,
+        )
+
+    def test_scroll_snapshot_is_restored_for_each_rectangle(self):
+        from OpenGL.GL import GL_COLOR_ATTACHMENT0, GL_READ_FRAMEBUFFER, GL_TEXTURE_RECTANGLE
+        from xpra.opengl.backing import N_TEXTURES, TEX_TMP_FBO
+        b = _make_mock_backing()
+        b.size = 100, 80
+        b.offscreen_fbo = 10
+        b.tmp_fbo = 11
+        b.textures = list(range(N_TEXTURES))
+        events = []
+
+        def attached(framebuffer, attachment, target, texture, level):
+            if framebuffer == GL_READ_FRAMEBUFFER and texture == b.textures[TEX_TMP_FBO]:
+                assert attachment == GL_COLOR_ATTACHMENT0
+                assert target == GL_TEXTURE_RECTANGLE
+                assert level == 0
+                events.append("snapshot")
+
+        with (
+            patch.object(b, "copy_fbo"),
+            patch.object(b, "paint_box", side_effect=lambda *args: events.append("paint")),
+            patch.object(b, "painted"),
+            patch("xpra.opengl.backing.glBindFramebuffer"),
+            patch("xpra.opengl.backing.glFramebufferTexture2D", side_effect=attached),
+            patch("xpra.opengl.backing.glReadBuffer"),
+            patch("xpra.opengl.backing.glBindTexture"),
+            patch("xpra.opengl.backing.glFlush"),
+            patch("xpra.opengl.backing.glBlitFramebuffer", side_effect=lambda *args: events.append("blit")),
+        ):
+            b.do_scroll_paints(object(), [(0, 0, 20, 20, 5, 0), (30, 20, 10, 10, 0, 5)], 0, [])
+
+        assert events == ["snapshot", "blit", "paint", "snapshot", "blit", "paint"]
+
+
 # ---------------------------------------------------------------------------
 # GL context tests: require an actual OpenGL context.
 # On Linux uses Xvfb + Mesa software rendering (LIBGL_ALWAYS_SOFTWARE=1).
