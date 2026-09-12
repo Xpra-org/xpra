@@ -112,6 +112,7 @@ class UIXpraClient(XpraClientBase):
 
         # state:
         self._on_server_setting_changed: dict[str, Sequence[Callable[[str, Any], None]]] = {}
+        self.redraw_timer = 0
 
     def init(self, opts) -> None:
         """ initialize variables from configuration """
@@ -139,6 +140,7 @@ class UIXpraClient(XpraClientBase):
 
     def cleanup(self) -> None:
         log("UIXpraClient.cleanup()")
+        self.cancel_redraw_timer()
         # subsystems cleaned up and the protocol closed by `XpraClientBase.cleanup`:
         # (cleaner and needed when we run embedded in the client launcher)
         XpraClientBase.cleanup(self)
@@ -529,11 +531,10 @@ class UIXpraClient(XpraClientBase):
 
     def schedule_timer_redraw(self) -> None:
         log("schedule_timer_redraw()")
+        if self.redraw_timer:
+            return
 
         def timer_redraw() -> bool:
-            if self._protocol is None:
-                # no longer connected!
-                return False
             ok = self.server_ok() and not FORCE_ALERT
             log("timer_redraw() ok=%s", ok)
             # ensure every window has the latest state:
@@ -541,10 +542,18 @@ class UIXpraClient(XpraClientBase):
                 if not window.is_tray():
                     window.set_alert_state(not ok)
             self.redraw_windows()
+            if ok:
+                self.redraw_timer = 0
             return not ok  # repaint again until ok
 
         self.idle_add(self.redraw_windows)
-        self.timeout_add(100, timer_redraw)
+        self.redraw_timer = self.timeout_add(100, timer_redraw)
+
+    def cancel_redraw_timer(self) -> None:
+        rt = self.redraw_timer
+        if rt:
+            self.redraw_timer = 0
+            self.source_remove(rt)
 
     def redraw_windows(self) -> None:
         # redraws all the windows without requesting a refresh from the server:
