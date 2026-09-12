@@ -38,11 +38,10 @@ class WaylandClientTest(WestonTestUtil):
         server = self.start_wayland_server()
         client = None
         try:
-            info = self.wait_for_server_info(server.display, "windows.count",
-                                             "1")
-            self.assertEqual(info.get("windows.1.app-id"),
-                             "org.freedesktop.weston.wayland-terminal")
-            self.assertEqual(info.get("windows.1.title"), "Wayland Terminal")
+            info = self.wait_for_server_info(
+                server.display, "windows.1.app-id",
+                "org.freedesktop.weston.wayland-terminal")
+            self.assertTrue(info.get("windows.1.title"))
             client = self.run_wayland_client(server.display)
             self.assert_running(client, "Wayland client")
             self.stop_wayland_server(server)

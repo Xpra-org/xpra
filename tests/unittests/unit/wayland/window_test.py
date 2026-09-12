@@ -30,11 +30,13 @@ def load_window_server_class():
         setattr(module, class_name, type(class_name, (), {}))
         modules[module_name] = module
     with patch.dict(sys.modules, modules):
-        from xpra.wayland.server.subsystem.window import WaylandWindowServer
-    return WaylandWindowServer
+        from xpra.wayland.server.subsystem.window import (
+            PER_SURFACE_EVENTS, WaylandWindowServer,
+        )
+    return WaylandWindowServer, PER_SURFACE_EVENTS
 
 
-WaylandWindowServer = load_window_server_class()
+WaylandWindowServer, PER_SURFACE_EVENTS = load_window_server_class()
 
 
 class FakeGLib:
@@ -73,6 +75,17 @@ class WaylandWindowFrameTest(unittest.TestCase):
     def assertAcknowledged(self, count: int) -> None:
         self.assertEqual(self.surface.frame_done.call_count, count)
         self.assertEqual(self.display.flush_clients.call_count, count)
+
+    def test_app_id_is_dynamic_metadata(self):
+        changes = []
+        self.assertIn("app-id", self.window.get_dynamic_property_names())
+        self.window.connect(
+            "notify::app-id",
+            lambda window, _pspec: changes.append(window.get_property("app-id")))
+
+        self.window._updateprop("app-id", "com.example.Application")
+
+        self.assertEqual(changes, ["com.example.Application"])
 
     def only_timer(self):
         self.assertEqual(len(self.glib.timers), 1)
@@ -409,6 +422,21 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
 
         server.get_surface.assert_not_called()
         server.refresh_window_area.assert_not_called()
+
+    def test_surface_metadata_updates_the_window(self):
+        window = Mock()
+        server = self.make_server(window)
+
+        self.assertIn("title", PER_SURFACE_EVENTS)
+        self.assertIn("app-id", PER_SURFACE_EVENTS)
+
+        WaylandWindowServer.title(server, 7, "New title")
+        WaylandWindowServer.app_id(server, 7, "com.example.Application")
+
+        self.assertEqual(window._updateprop.call_args_list, [
+            (("title", "New title"),),
+            (("app-id", "com.example.Application"),),
+        ])
 
 
 class WaylandWindowServerConfigureTest(unittest.TestCase):

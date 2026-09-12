@@ -29,6 +29,7 @@ focuslog = Logger("server", "wayland", "focus")
 # Per-surface signals connected on each new Surface in `new_surface`.
 PER_SURFACE_EVENTS: Final[Sequence[str]] = (
     "map", "unmap", "commit", "destroy",
+    "title", "app-id",
     "minimize", "maximize", "fullscreen",
     "move", "resize",
     "surface-image",
@@ -223,6 +224,16 @@ class WaylandWindowServer(WindowServer):
         window._updateprop("title", title)
         window._updateprop("app-id", app_id)
         self.update_size(window, size)
+
+    def title(self, wid: int, title: str) -> None:
+        window = self.get_window(wid)
+        if window:
+            window._updateprop("title", title)
+
+    def app_id(self, wid: int, app_id: str) -> None:
+        window = self.get_window(wid)
+        if window:
+            window._updateprop("app-id", app_id)
 
     def unmap(self, wid: int) -> None:
         window = self.get_window(wid)

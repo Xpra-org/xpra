@@ -290,15 +290,16 @@ cdef class Surface(WaylandSurface):
         self._emit("minimize", self.wid)
 
     cdef void set_title(self) noexcept:
-        if self.wlr_xdg_surface.toplevel.title:
-            self.title = self.wlr_xdg_surface.toplevel.title.decode("utf8")
-            log("Surface %i SET TITLE: %r", self.wid, self.title)
-            self._emit("title", self.wid, self.title)
+        title = self.wlr_xdg_surface.toplevel.title
+        self.title = title.decode("utf8") if title else ""
+        log("Surface %i SET TITLE: %r", self.wid, self.title)
+        self._emit("title", self.wid, self.title)
 
     cdef void set_app_id(self) noexcept:
-        if self.wlr_xdg_surface.toplevel.app_id:
-            self.app_id = self.wlr_xdg_surface.toplevel.app_id.decode("utf8")
-            log("Surface %i SET APP_ID: %s", self.wid, self.app_id)
+        app_id = self.wlr_xdg_surface.toplevel.app_id
+        self.app_id = app_id.decode("utf8") if app_id else ""
+        log("Surface %i SET APP_ID: %s", self.wid, self.app_id)
+        self._emit("app-id", self.wid, self.app_id)
 
     def get_opaque_region(self) -> tuple:
         """Return the committed opaque region in Xpra window coordinates.

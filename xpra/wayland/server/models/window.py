@@ -177,7 +177,8 @@ class Window(FrameCallbackModel):
     ]
     # exposed and changing (should be watched for notify signals):
     _dynamic_property_names = [
-        "title", "command", "colourspace", "opaque-region", "content-types",
+        "title", "app-id", "command", "colourspace", "opaque-region",
+        "content-types",
         "parent", "transient-for", "relative-position",
         "iconic", "maximized", "fullscreen",
     ]
