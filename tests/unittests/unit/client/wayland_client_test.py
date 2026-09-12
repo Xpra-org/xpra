@@ -11,6 +11,7 @@ import unittest
 
 from xpra.os_util import OSX, POSIX
 from xpra.os_util import get_hex_uuid
+from unit.process_test_util import read_proc_pipe
 from unit.wayland.test_util import WestonTestUtil
 
 
@@ -94,6 +95,11 @@ class WaylandClientTest(WestonTestUtil):
                 env=self.wayland_client_env())
             self.wait_for_exit(wtype, "wtype")
             if wtype.returncode != 0:
+                error = read_proc_pipe(getattr(wtype, "stderr_file", None),
+                                       "stderr")
+                if "virtual keyboard protocol" in error:
+                    self.skipTest("Wayland compositor does not support the "
+                                  "virtual keyboard protocol")
                 self.show_proc_error(wtype, "wtype failed")
             self.wait_for_file_contents(filename, value)
         finally:

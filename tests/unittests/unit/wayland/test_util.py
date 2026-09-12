@@ -16,6 +16,7 @@ import unittest
 
 from xpra.exit_codes import exit_str
 from xpra.util.io import pollwait
+from unit.process_test_util import read_proc_pipe
 from unit.server_test_util import ServerTestUtil
 
 
@@ -138,6 +139,11 @@ class WestonTestUtil(ServerTestUtil):
         proc.stdin.write(value.encode("utf8"))
         proc.stdin.close()
         if pollwait(proc, WESTON_TIMEOUT) != 0:
+            error = read_proc_pipe(getattr(proc, "stderr_file", None),
+                                   "stderr")
+            if "does not seem to implement seat" in error:
+                raise unittest.SkipTest("Wayland compositor does not "
+                                        "implement wl_seat")
             self.show_proc_error(proc, f"{' '.join(cmd)} failed")
 
     def get_wayland_clipboard(self, env: dict[str, str],
