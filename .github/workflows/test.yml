@@ -52,7 +52,7 @@ jobs:
                 python3-dbus python3-cryptography \
                 python3-netifaces python3-scramp \
                 python3-opengl \
-                openssh-client sshpass python3-paramiko \
+                openssh-client sshpass python3-asyncssh python3-paramiko \
                 python3-setproctitle python3-xdg \
                 libpam-dev xserver-xorg-dev xutils-dev xserver-xorg-video-dummy xvfb keyboard-configuration \
                 python3-kerberos python3-gssapi python3-aioquic \

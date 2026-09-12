@@ -28,6 +28,7 @@ from xpra.gtk.widget import (
 )
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import csv
+from xpra.util.parsing import parse_simple_dict
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.env import IgnoreWarningsContext
 from xpra.net.constants import DEFAULT_PORT
@@ -236,6 +237,7 @@ class ApplicationWindow:
         ssh_cmd = parse_ssh_option(self.config.ssh)[0].strip().lower()
         self.is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
         self.is_paramiko = ssh_cmd.startswith("paramiko")
+        self.is_asyncssh = ssh_cmd.startswith("asyncssh")
 
     def create_window_with_config(self) -> None:
         self.do_create_window()
@@ -619,11 +621,11 @@ class ApplicationWindow:
         sshpass = False
         if ssh or sshtossh:
             if not self.is_putty:
-                self.proxy_key_entry.set_text("OpenSSH/Paramiko use ~/.ssh")
+                self.proxy_key_entry.set_text("SSH clients use ~/.ssh")
                 self.proxy_key_entry.set_editable(False)
                 self.proxy_key_entry.set_sensitive(False)
                 self.proxy_key_browse.hide()
-            if self.is_paramiko or self.is_putty:
+            if self.is_paramiko or self.is_asyncssh or self.is_putty:
                 can_use_password = True
             else:
                 # we can also use password if sshpass is installed:
@@ -764,8 +766,6 @@ class ApplicationWindow:
                 params["display"] = "auto"
                 params["display_as_args"] = []
             params["ssh"] = self.config.ssh
-            params["is_putty"] = self.is_putty
-            params["is_paramiko"] = self.is_paramiko
             password = self.config.password
             host = self.config.host
             upos = host.find("@")
@@ -784,13 +784,24 @@ class ApplicationWindow:
             ssh_cmd = parse_ssh_option(self.config.ssh)
             ssh_cmd_0 = ssh_cmd[0].strip().lower()
             self.is_putty = ssh_cmd_0.endswith("plink") or ssh_cmd_0.endswith("plink.exe")
-            self.is_paramiko = ssh_cmd_0 == "paramiko"
+            ssh_backend = ssh_cmd_0.split(":", 1)[0]
+            self.is_paramiko = ssh_backend == "paramiko"
+            self.is_asyncssh = ssh_backend == "asyncssh"
+            params["is_putty"] = self.is_putty
+            params["is_paramiko"] = self.is_paramiko
+            params["is_asyncssh"] = self.is_asyncssh
+            if self.is_paramiko or self.is_asyncssh:
+                ssh_cmd[0] = ssh_backend
+                if ":" in self.config.ssh:
+                    params[f"{ssh_backend}-config"] = parse_simple_dict(self.config.ssh.split(":", 1)[1])
             full_ssh = ssh_cmd[:]
             full_ssh += get_ssh_args(params, ssh_cmd)
             if username:
                 params["username"] = username
             if self.nostrict_host_check.get_active():
                 full_ssh += ["-o", "StrictHostKeyChecking=no"]
+                if self.is_asyncssh:
+                    params["strict-host-check"] = False
             if params["type"] == MODE_NESTED_SSH:
                 params["type"] = "ssh"
                 params["proxy_host"] = self.config.proxy_host

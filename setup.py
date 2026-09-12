@@ -3763,7 +3763,7 @@ toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(mmap_ENABLED, "xpra.net.mmap")
 toggle_packages(quic_ENABLED, "xpra.net.aio")
 toggle_packages(quic_ENABLED, "xpra.net.quic")
-toggle_packages(ssh_ENABLED, "xpra.net.ssh", "xpra.net.ssh.paramiko")
+toggle_packages(ssh_ENABLED, "xpra.net.ssh", "xpra.net.ssh.asyncssh", "xpra.net.ssh.paramiko")
 toggle_packages(ssl_ENABLED, "xpra.net.tls")
 toggle_packages(http_ENABLED or quic_ENABLED, "xpra.net.http")
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
@@ -3896,6 +3896,7 @@ if cythonize_more_ENABLED:
         ax("xpra.net.rdp")
     if ssh_ENABLED:
         ax("xpra.net.ssh")
+        ax("xpra.net.ssh.asyncssh")
         ax("xpra.net.ssh.paramiko")
     if ssl_ENABLED:
         ax("xpra.net.tls")

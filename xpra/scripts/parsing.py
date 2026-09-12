@@ -674,7 +674,7 @@ def parse_ssh_option(ssh_setting: str) -> list[str]:
 # command and query modes that just run a single request through the proxy
 # and have no session that needs the ssh agent:
 # for these, agent forwarding should not be enabled by default
-# (an explicit `-A`, `XPRA_SSH_AGENT=1` or `paramiko:agent=yes` is still honoured).
+# (an explicit `-A`, `XPRA_SSH_AGENT=1` or a builtin backend's `agent=yes` is still honoured).
 # `fnmatch` patterns are used so that whole families (ie: `list-*`, `*-info`) are covered,
 # even for modes that don't support the ssh transport yet:
 NO_SSH_AGENT_MODES = (
@@ -703,18 +703,20 @@ def get_ssh_display_attributes(args, ssh_option="auto", mode="") -> dict[str, An
     ssh_cmd = ssh[0].lower()
     is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
     is_paramiko = ssh_cmd.split(":")[0] == "paramiko"
+    is_asyncssh = ssh_cmd.split(":")[0] == "asyncssh"
     agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in ssh)
     desc: dict[str, Any] = {}
-    if is_paramiko:
-        ssh[0] = "paramiko"
-        desc["is_paramiko"] = is_paramiko
-        paramiko_config = {}
+    if is_paramiko or is_asyncssh:
+        backend = "asyncssh" if is_asyncssh else "paramiko"
+        ssh[0] = backend
+        desc[f"is_{backend}"] = True
+        backend_config = {}
         if ssh_option.find(":") > 0:
-            paramiko_config = parse_simple_dict(ssh_option.split(":", 1)[1])
-            desc["paramiko-config"] = paramiko_config
+            backend_config = parse_simple_dict(ssh_option.split(":", 1)[1])
+            desc[f"{backend}-config"] = backend_config
         default_agent = "yes" if mode_needs_ssh_agent(mode) else "no"
-        agent_forwarding |= paramiko_config.get("agent", default_agent).lower() in TRUE_OPTIONS
-        paramiko_config["agent"] = str(agent_forwarding)
+        agent_forwarding |= backend_config.get("agent", default_agent).lower() in TRUE_OPTIONS
+        backend_config["agent"] = str(agent_forwarding)
     elif is_putty:
         desc["is_putty"] = True
     desc["agent"] = agent_forwarding
@@ -738,19 +740,19 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix: str = "") -> list[str]:
         raise RuntimeError(f"missing host from session descriptor {desc}")
     key = desc.get(f"{prefix}key")
     is_putty = any(ssh_cmd.lower().endswith(x) for x in ("plink", "plink.exe", "putty", "putty.exe"))
-    is_paramiko = ssh_cmd == "paramiko"
+    is_builtin = ssh_cmd in ("asyncssh", "paramiko")
     args = []
     if password and is_putty:
         args += ["-pw", password]
-    if username and not is_paramiko:
+    if username and not is_builtin:
         args += ["-l", username]
     if ssh_port and ssh_port != 22:
         # grr, why bother doing it different?
         if is_putty:
             args += ["-P", str(ssh_port)]
-        elif not is_paramiko:
+        elif not is_builtin:
             args += ["-p", str(ssh_port)]
-    if not is_paramiko:
+    if not is_builtin:
         args += ["-T", host]
         if key:
             key_path = os.path.abspath(key)
@@ -764,18 +766,18 @@ def get_ssh_args(desc, ssh=("paramiko",), prefix: str = "") -> list[str]:
 
 def get_ssh_proxy_args(desc, ssh) -> list[str]:
     is_putty = ssh[0].endswith("plink") or ssh[0].endswith("plink.exe")
-    is_paramiko = ssh[0] == "paramiko"
+    is_builtin = ssh[0] in ("asyncssh", "paramiko")
     args = []
     proxyline = ssh
     if is_putty:
         proxyline += ["-nc", "%host:%port"]
-    elif not is_paramiko:
+    elif not is_builtin:
         proxyline += ["-W", "%h:%p"]
     # the double quotes are in case the password has something like "&"
     proxyline += get_ssh_args(desc, ssh, prefix="proxy_")
     if is_putty:
         args += ["-proxycmd", " ".join(proxyline)]
-    elif not is_paramiko:
+    elif not is_builtin:
         args += ["-o", "ProxyCommand " + " ".join(proxyline)]
     return args
 

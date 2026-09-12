@@ -68,8 +68,11 @@ For details, see [#1920](https://github.com/Xpra-org/xpra/issues/1920), use the 
 
 </div>
 
-The client can either use the builtin ssh client (based on [paramiko](http://www.paramiko.org/)), or an external tool. \
-This can be configured using the `ssh` command line option. The default setting is `auto` which will use `paramiko` if it is present and fallback to the platform's default external tool when it is not.
+The client can use either of the builtin SSH clients (based on [paramiko](http://www.paramiko.org/)
+or [AsyncSSH](https://asyncssh.readthedocs.io/)), or an external tool. This can be configured using
+the `ssh` command line option. The default setting is `auto`, which uses `paramiko` if it is present
+and falls back to the platform's default external tool when it is not. Select the AsyncSSH backend
+explicitly with `--ssh=asyncssh`.
 
 On most platforms the default external tool is the `ssh` command, but on MS Windows it is putty `plink`.
 
@@ -99,6 +102,23 @@ After `--ssh=paramiko`, add a double-colon `:` and then one or more of the avail
   e.g.: `--ssh=paramiko:stricthostkeychecking=yes`
 
 Multiple options can be given as a comma-separated string, e.g.: `--ssh=paramiko:auth=agent+publickey,stricthostkeychecking=yes`
+
+### [AsyncSSH](https://asyncssh.readthedocs.io/)
+
+The optional AsyncSSH backend uses Xpra's shared asyncio thread while exposing the same blocking
+byte-stream interface as the other transports. It reads the system and user OpenSSH client config
+files and supports their `ProxyJump` and `ProxyCommand` settings natively, including multi-hop
+`ProxyJump` chains.
+
+Select it with `--ssh=asyncssh`. The same inline settings used by the Paramiko backend are accepted
+with an `asyncssh:` prefix, for example:
+```
+xpra attach --ssh=asyncssh:auth=agent+publickey ssh://host/
+```
+
+The AsyncSSH backend also supports proxy credentials supplied by nested SSH URLs or the launcher,
+remote TCP port channels, agent forwarding, password and private-key passphrase prompts, and Xpra's
+host-key confirmation dialog.
 
 ### passwords
 

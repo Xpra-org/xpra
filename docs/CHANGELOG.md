@@ -2,6 +2,8 @@
 
 ## [7.0] 2026-08-27
 * 🔧 Platforms, build and packaging:
+* 🖧 Network:
+  * [optional AsyncSSH client backend](https://github.com/Xpra-org/xpra/commit/fd89a3dc5589ede85884d747b878a52bd41780f1)
 * 🌈 Encodings:
   * [explicit image wrapper locking](https://github.com/Xpra-org/xpra/issues/5024)
 * ✨ Features:

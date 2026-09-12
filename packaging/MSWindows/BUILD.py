@@ -756,7 +756,7 @@ def zip_modules(light: bool) -> None:
     # so they will require special treatment:
     # xpra numpy cryptography PIL nacl cffi gtk gobject glib aioquic pylsqpack > /dev/null
     ZIPPED = [
-        "OpenGL", "encodings", "future", "paramiko", "html",
+        "OpenGL", "encodings", "future", "asyncssh", "paramiko", "html",
         "pyasn1", "asn1crypto", "async_timeout",
         "OpenSSL", "keyring",
         "ifaddr", "pyaes", "service_identity",

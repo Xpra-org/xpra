@@ -40,7 +40,10 @@ def connect_to_ssh(display_desc: dict[str, Any], debug_cb=noop, ssh_fail_cb=noop
     own UI; the default `noop` is fine for CLI clients that rely on the `log.error` output.
     Synchronous failures during connect are still raised normally.
     """
-    if display_desc.get("is_paramiko", False):
+    if display_desc.get("is_asyncssh", False):
+        from xpra.net.ssh.asyncssh.client import connect_to
+        conn = connect_to(display_desc)
+    elif display_desc.get("is_paramiko", False):
         from xpra.net.ssh.paramiko.client import connect_to
         conn = connect_to(display_desc)
     else:

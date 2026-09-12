@@ -21,6 +21,23 @@ class SSHTest(unittest.TestCase):
     def test_default_keyfiles(self):
         assert isinstance(get_default_keyfiles(), list)
 
+    def test_asyncssh_backend_parsing(self):
+        from xpra.scripts.parsing import get_ssh_args, get_ssh_display_attributes
+        args = []
+        desc = get_ssh_display_attributes(
+            args, "asyncssh:auth=publickey,stricthostkeychecking=yes", "info"
+        )
+        assert desc["is_asyncssh"] is True
+        assert desc["asyncssh-config"]["auth"] == "publickey"
+        assert desc["asyncssh-config"]["stricthostkeychecking"] == "yes"
+        assert desc["agent"] is False
+        assert args == []
+        assert get_ssh_args({
+            "host": "example.com",
+            "port": 2222,
+            "username": "user",
+        }, ["asyncssh"]) == []
+
     def test_parse_proxyjump(self):
         from xpra.net.ssh.paramiko.client import parse_proxyjump
         # disabled / empty:

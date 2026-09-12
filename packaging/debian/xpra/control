@@ -145,6 +145,7 @@ Recommends: ${qrcode:Depends}
 # text packet compression:
         ,${brotli:Depends}
 # ssh transport:
+        ,python3-asyncssh
         ,python3-paramiko
         ,python3-dnspython
 # AES encryption:

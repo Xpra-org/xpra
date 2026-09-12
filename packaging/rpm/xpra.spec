@@ -196,6 +196,7 @@ Recommends:			%{py3rpmname}-cryptography
 Recommends:			%{py3rpmname}-netifaces
 Recommends:			%{py3rpmname}-dbus
 Recommends:			%{py3rpmname}-dns
+Recommends:			%{py3rpmname}-asyncssh
 Recommends:			%{py3rpmname}-paramiko
 Suggests:			%{py3rpmname}-pyyaml
 Suggests:			%{py3rpmname}-kerberos

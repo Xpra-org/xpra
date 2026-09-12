@@ -1005,7 +1005,7 @@ class NetworkWindow(SessionOptions):
             bwoptions[bwlimit] = s
         self.combo("Bandwidth Limit", "bandwidth-limit", bwoptions)
         # ssl options
-        # ssh=paramiko | plink
+        # ssh=paramiko | asyncssh | plink
         # exit-ssh
         # Remote Logging
         # open-files

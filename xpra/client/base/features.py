@@ -144,7 +144,7 @@ def enforce_client_features() -> None:
         "dbus": "dbus,xpra.dbus",
         "mmap": "mmap,xpra.net.mmap,xpra.client.subsystem.mmap",
         "ssl": "ssl,xpra.net.tls",
-        "ssh": "paramiko,xpra.net.ssh",
+        "ssh": "asyncssh,paramiko,xpra.net.ssh",
         "logging": "xpra.client.subsystem.logging",
         "tray": "xpra.client.subsystem.tray",
         "systray": "xpra.client.subsystem.window.tray",

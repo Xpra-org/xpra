@@ -102,7 +102,7 @@ apt-get install python3-dbus python3-cryptography \
 ```
 [SSH](../Network/SSH.md):
 ```shell
-apt-get install openssh-client sshpass python3-paramiko
+apt-get install openssh-client sshpass python3-asyncssh python3-paramiko
 ```
 </details>
 

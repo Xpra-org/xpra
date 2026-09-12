@@ -55,6 +55,7 @@ gui = [
 ]
 cli = [
     # network features:
+    "asyncssh",
     "paramiko",
     "pyopenssl",
     "cryptography",
