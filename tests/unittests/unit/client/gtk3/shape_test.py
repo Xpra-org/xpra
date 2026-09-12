@@ -139,11 +139,18 @@ class GDKShapeDisplayTest(unittest.TestCase):
             raise unittest.SkipTest(f"no X11 shape bindings: {e}")
         from xpra.x11.error import xsync
         from unit.process_test_util import DisplayContext
-        Gtk = gi_import("Gtk")
-        Gdk = gi_import("Gdk")
         kinds = {name: kind for kind, name in SHAPE_KIND.items()}
         with DisplayContext():
-            gtk_window = Gtk.Window()
+            Gtk = gi_import("Gtk")
+            Gdk = gi_import("Gdk")
+            initialized = Gtk.init_check()
+            if isinstance(initialized, tuple):
+                initialized = initialized[0]
+            self.assertTrue(
+                initialized, "Gtk failed to initialize on the test display")
+            # `Gtk.Window()` checks the auto-init result cached when this module
+            # was imported, before `DisplayContext` started its Xvfb.
+            gtk_window = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
             gtk_window.set_default_size(*SIZE)
             mapped: list[bool] = []
             gtk_window.connect("map-event", lambda *_args: mapped.append(True))
