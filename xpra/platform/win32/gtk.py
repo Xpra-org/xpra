@@ -160,10 +160,16 @@ def add_window_hooks(window) -> None:
                 apply_maxsize_hints(window, window.geometry_hints)
 
         if LANGCHANGE:
-            def inputlangchange(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
+            def inputlangchange(_hwnd: int, _event: int, wParam: int, lParam: int) -> None:
                 keylog("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
                 window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
-                return 0
+                # Returning None makes `Win32Hooks._wndproc` forward the message to the
+                # original (GDK) window procedure. GDK-Win32 handles WM_INPUTLANGCHANGE by
+                # switching its active keyboard layout and emitting `keys-changed`;
+                # swallowing the message here left GDK translating key events with the
+                # layout that was active at startup, so after a layout switch the server
+                # received keysyms of the old layout and typing stopped working (#3857).
+                return None
 
             win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
 
