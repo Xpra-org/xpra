@@ -525,6 +525,8 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 offset = sym_map.offset + width * group
                 for i in range(width):
                     keysym = xkb.map.syms[offset + i]
+                    if keysym == NoSymbol:
+                        continue
                     entries = keysyms.setdefault(keysym, {}).setdefault(group, [])
                     entry = (keycode, i)
                     if entry not in entries:
