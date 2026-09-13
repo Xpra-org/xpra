@@ -1264,12 +1264,18 @@ class WindowSource(WindowIconSource):
         self.cancel_decode_error_refresh_timer()
         # if a region was delayed, we can just drop it now:
         self.refresh_regions = []
+        dropped = self._damage_delayed
         self._damage_delayed = None
         # make sure we don't account for those as they will get dropped
         # (generally before encoding - only one may still get encoded):
         for sequence in tuple(self.statistics.encoding_pending.keys()):
             if self._damage_cancelled >= sequence:
                 self.statistics.encoding_pending.pop(sequence, None)
+        if dropped is not None:
+            # A delayed region has not reached send_delayed_regions(), which
+            # normally acknowledges it before extraction.  Tell the window
+            # now so a Wayland client is not left throttled forever.
+            self.window.acknowledge_changes()
 
     def cancel_expire_timer(self) -> None:
         if et := self.expire_timer:
