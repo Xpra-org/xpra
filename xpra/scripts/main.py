@@ -1401,6 +1401,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
         raise InitException(msg) from None
     may_show_progress(app, 30, "client configuration")
     try:
+        opts.encoding = normalize_client_encoding_option(opts.encoding)
         app.init(opts)
 
         def handshake_complete(*_args) -> None:
@@ -1454,9 +1455,14 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
     return app
 
 
+def normalize_client_encoding_option(encoding: str) -> str:
+    # `auto` is the command-line spelling of no preference.  Subsystems read
+    # this option during init, before validation below has access to codecs.
+    return "" if encoding == "auto" else encoding
+
+
 def handle_client_encoding_option(app, encoding: str) -> str:
-    if encoding == "auto":
-        encoding = ""
+    encoding = normalize_client_encoding_option(encoding)
     if not encoding:
         return ""
     from xpra.client.base import features

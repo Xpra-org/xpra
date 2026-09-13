@@ -22,7 +22,7 @@ from xpra.platform.paths import get_xpra_command
 from xpra.common import noop, noerr
 from xpra.scripts.config import InitException
 from xpra.scripts.main import (
-    nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
+    nox, use_systemd_run, systemd_run_command, systemd_run_wrap, normalize_client_encoding_option,
     isdisplaytype,
     check_display,
 )
@@ -36,6 +36,11 @@ def _get_test_socket_dir():
 
 
 class TestMain(unittest.TestCase):
+
+    def test_auto_encoding_is_normalized_before_client_init(self):
+        self.assertEqual(normalize_client_encoding_option("auto"), "")
+        self.assertEqual(normalize_client_encoding_option(""), "")
+        self.assertEqual(normalize_client_encoding_option("png"), "png")
 
     def test_nox(self):
         with OSEnvContext():
