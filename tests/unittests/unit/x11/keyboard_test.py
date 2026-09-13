@@ -159,6 +159,7 @@ class TestX11Keyboard(ServerTestUtil):
         # two groups: `AltGr` and friends aside, group 1 is reached by switching layout
         do_set_keymap("us,de", "", "", {})
         keyval_mappings = get_keyval_mappings()
+        assert 0 not in keyval_mappings, "NoSymbol must not be exposed as a usable keyval"
         # we need keysyms which live on a different keycode in each group,
         # otherwise we cannot tell which group was used:
         candidates = tuple(
