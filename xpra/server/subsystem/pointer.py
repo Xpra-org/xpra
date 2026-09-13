@@ -69,6 +69,7 @@ class PointerServer(StubServerMixin):
         self.input_devices = "auto"
         self.input_devices_data = {}
         self.pointer_sequence = {}
+        self.buttons_pressed: dict[int, set[int]] = {}
         self.last_mouse_user = ""
         self.pointer_device_map: dict = {}
         self.pointer_device = None
@@ -371,6 +372,16 @@ class PointerServer(StubServerMixin):
                 self._button1_drag.pop(wid, None)
         props = {}
         if self.process_mouse_common(proto, device_id, wid, pointer, props):
+            # Motion remains useful if a window disappeared while its event
+            # was in flight, but a press must not click the window now below
+            # the pointer.  A matching release is still needed to avoid
+            # leaving an injected button pressed.
+            get_window = getattr(self, "get_window", None)
+            if wid > 0 and get_window and not get_window(wid):
+                buttons = self.buttons_pressed.get(device_id, ())
+                if pressed or button not in buttons:
+                    log("dropping pointer button event for invalid window id: %s", wid)
+                    return
             seq = self.pointer_sequence.get(device_id, 0)
             self.may_record_pointer_event("pointer-button", device_id, seq, wid, button, pressed, pointer, props)
             self.button_action(device_id, wid, button, pressed, props)
@@ -504,6 +515,13 @@ class PointerServer(StubServerMixin):
             self.record_wheel_event(wid, button)
         log("%s%s", device.click, (button, pressed, props))
         device.click(button, pressed, props)
+        buttons = self.buttons_pressed.setdefault(device_id, set())
+        if pressed:
+            buttons.add(button)
+        else:
+            buttons.discard(button)
+            if not buttons:
+                self.buttons_pressed.pop(device_id, None)
 
     def _process_pointer_motion(self, proto, packet: Packet) -> None:
         # v5 packet format
