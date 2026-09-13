@@ -8,6 +8,7 @@ import importlib.util
 import subprocess
 import sys
 import unittest
+from pathlib import Path
 
 
 WAYLAND_MODULES = (
@@ -18,6 +19,17 @@ WAYLAND_MODULES = (
 
 
 class WaylandLinkageTest(unittest.TestCase):
+
+    def test_core_data_device_listeners_are_not_forwarding_gated(self):
+        source = (Path(__file__).resolve().parents[4]
+                  / "xpra/wayland/server/compositor.pyx").read_text(encoding="utf8")
+        clipboard_gate = source.index("        if features.clipboard:")
+        for listener in (
+            "L_REQUEST_SET_SELECTION, xpra_wlr_seat_request_set_selection_signal(self.seat)",
+            "L_SET_SELECTION, xpra_wlr_seat_set_selection_signal(self.seat)",
+        ):
+            with self.subTest(listener=listener):
+                self.assertLess(source.index(listener), clipboard_gate)
 
     def test_isolated_imports(self):
         available = tuple(module for module in WAYLAND_MODULES if importlib.util.find_spec(module))

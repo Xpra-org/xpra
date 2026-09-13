@@ -301,6 +301,12 @@ cdef class WaylandCompositor(ListenerObject):
         cdef int caps = WL_SEAT_CAPABILITY_POINTER | WL_SEAT_CAPABILITY_KEYBOARD | WL_SEAT_CAPABILITY_TOUCH
         wlr_seat_set_capabilities(self.seat, caps)
 
+        # The core data-device selection remains a compositor service when
+        # clipboard forwarding is disabled.  Only Xpra's forwarding helpers
+        # and the optional primary-selection protocol are feature-gated.
+        self.add_listener(L_REQUEST_SET_SELECTION, xpra_wlr_seat_request_set_selection_signal(self.seat))
+        self.add_listener(L_SET_SELECTION, xpra_wlr_seat_set_selection_signal(self.seat))
+
         if features.clipboard:
             self.data_control_manager = wlr_data_control_manager_v1_create(self.display_ptr)
             if not self.data_control_manager:
@@ -308,8 +314,6 @@ cdef class WaylandCompositor(ListenerObject):
             self.primary_selection_manager = wlr_primary_selection_v1_device_manager_create(self.display_ptr)
             if not self.primary_selection_manager:
                 raise RuntimeError("Failed to create primary selection manager")
-            self.add_listener(L_REQUEST_SET_SELECTION, xpra_wlr_seat_request_set_selection_signal(self.seat))
-            self.add_listener(L_SET_SELECTION, xpra_wlr_seat_set_selection_signal(self.seat))
             self.add_listener(L_REQUEST_SET_PRIMARY_SELECTION, xpra_wlr_seat_request_set_primary_selection_signal(self.seat))
             self.add_listener(L_SET_PRIMARY_SELECTION, xpra_wlr_seat_set_primary_selection_signal(self.seat))
 
