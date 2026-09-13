@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.4] 2026-09-06
+## [6.5.4] 2026-09-13
 * 🔧 Platforms, build and packaging:
   * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
   * [wayland: link to wayland-server](https://github.com/Xpra-org/xpra/commit/36bae2f550e15500d4691795126bccb222bfae83)
@@ -9,8 +9,8 @@
   * [stop building DEBs on any failure](https://github.com/Xpra-org/xpra/commit/f29d9ed6c9b1c73ba6f501c124299eb986949402)
   * [Fedora 45 package list](https://github.com/Xpra-org/xpra/commit/9f5fd7c6be0c17099f6aec161aeb653f25a208f3)
   * [workaround Cython 3.3.0 bug](https://github.com/Xpra-org/xpra/commit/3b3c6cd6b3d0b69d276546cf9d02afec1d6df02b)
-  * [MS Windows Num-Lock state](https://github.com/Xpra-org/xpra/commit/831659bf7ac484f44ee700d16e380ee90b2a0365)
-  * [MS Windows missing modifiers](https://github.com/Xpra-org/xpra/commit/d02f25096925f57b6f6fb60b97b1d691fd8dadf9)
+  * [MS Windows builds find the version-stamping tool reliably](https://github.com/Xpra-org/xpra/commit/881aefe7fc831d7305d1c5eccb1bf21b0c664cc5)
+  * [Debian packages retain the Wireshark dissector when the normal packaging path is unavailable](https://github.com/Xpra-org/xpra/commit/6ab686bc9f21be9b3c9bed191514229719b9ad4a)
 * ⚠️ Major:
   * [OpenGL windows can remain blank until they receive a configure event](https://github.com/Xpra-org/xpra/commit/94c55c05fb11cb1a985a1e3cc03bc5634e9874d2)
   * [crash: don't assume Gdk displays are X11 displays](https://github.com/Xpra-org/xpra/commit/d448cf6c5bfc6b608e641f1ecc465d6816c6cb38)
@@ -23,17 +23,39 @@
   * [errors running configuration subcommands as root](https://github.com/Xpra-org/xpra/commit/1b7ea2aa54007185771d1422ee7dd7a5dc40b04c)
   * [honour configuration file naming order](https://github.com/Xpra-org/xpra/commit/a56d76c88482ac69b41a74eb644c9706c7d15f94)
   * [the encoder server fails to start](https://github.com/Xpra-org/xpra/commit/6339ab5f304382fae13cc23c32d0574364f67060)
+  * [an X11 event flood no longer freezes the session, new connections, or management commands](https://github.com/Xpra-org/xpra/commit/3a879eba370712d5af9df083303965d2202fb88b)
+  * [X11 error callbacks are safe when they run outside the main Python thread](https://github.com/Xpra-org/xpra/commit/4bbef138154edee5524173be2cc5df6fe9e971d9)
+  * [X11 error handling no longer consumes CPU in a busy timer loop](https://github.com/Xpra-org/xpra/commit/031a9d02b11cc00c98182c8d4ea85d437b742c77)
+  * [late mouse clicks for closed windows are ignored rather than affecting another window](https://github.com/Xpra-org/xpra/commit/5ff701393abe1cae295b10c8997fe812a1785d07)
+  * [mmap-based forwarding recognizes its current attributes and remains usable](https://github.com/Xpra-org/xpra/commit/8367c9d7aa886d85da1a477ca44e61ec2d5bba3b)
+  * [monitor refresh rates are normalized when supplied in different forms](https://github.com/Xpra-org/xpra/commit/97a00642c56d20ebcc9fcfcafc901a7710456859)
+  * [normalized monitor refresh rates retain the intended configured value](https://github.com/Xpra-org/xpra/commit/7c1c52dbe328ac039ca69bc7c27cec3089e81039)
 * Wayland backend:
   * [screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
   * [windows can end up duplicated on clients](https://github.com/Xpra-org/xpra/commit/33256c95d4c636982c6c6611503cd57606da9c36)
   * [synchronize window encoding properties](https://github.com/Xpra-org/xpra/commit/cd7535c4fb28db901082e518de4a851d15b5b902)
 * 🌈 Encodings:
-  * [CUDA device detection fails when mmap is enabled](https://github.com/Xpra-org/xpra/commit/ff8ffc5486f523617e459aea483b59589b4ddd18)
   * [threaded image filters hand window damage to the wrong thread](https://github.com/Xpra-org/xpra/commit/e9f90e51998fb37aa3f302e5deb422d26efa1f28), [racing with encode-queue cleanup](https://github.com/Xpra-org/xpra/commit/f5c46a893274d0f047960e4473ee0276ec93a1f9)
   * [damage cancellation can free an image while it is being encoded](https://github.com/Xpra-org/xpra/commit/b8293340957ff401f06833f42779f2c19941fa46)
   * [concurrent damage can start multiple encode threads and prevent shutdown](https://github.com/Xpra-org/xpra/commit/ea08e44ac490654dc2b0fd06c9417ca88f553f63)
   * [pending damage images leak when a connection closes](https://github.com/Xpra-org/xpra/commit/7176e271d2c52f6d05090dbaf8dfdd21f72a37fb)
   * [lossy screen updates are never followed by an auto-refresh](https://github.com/Xpra-org/xpra/commit/4f57718ee5dad0bf63c45eda79d59895f34021a8)
+  * [video maximum-size settings are interpreted correctly](https://github.com/Xpra-org/xpra/commit/5898b8646f545a0de1bf8bd1d4c672edb495b377)
+  * [invalid video encoding or scaling choices are rejected before they can break video forwarding](https://github.com/Xpra-org/xpra/commit/8126fc178e05e6770922de0a65a0efd3b7e31f97)
+  * [client encoding validation runs after the requested features are available](https://github.com/Xpra-org/xpra/commit/82c7fb3cf21fc3f38b181692c8ee7215fc901899)
+  * [command-line encoding choices are handled consistently during startup](https://github.com/Xpra-org/xpra/commit/82f5bab6bec70828399a49991484476fffc21ec3)
+  * [one-shot encoder sessions release their resources cleanly](https://github.com/Xpra-org/xpra/commit/2789cdf5ec5c3350237f4a2689ab1b2ef91ea70b)
+  * [OpenGL scrolling no longer clips updates or reuses stale snapshots](https://github.com/Xpra-org/xpra/commit/5725e90285e99bc9af69666df98bd53349bc7b27)
+  * [closing OpenGL windows releases their temporary graphics resources](https://github.com/Xpra-org/xpra/commit/af31e117ded263dcbb3c5090dea2f3cf1f73acd4)
+  * [window repaints no longer leave an outdated auto-refresh pending](https://github.com/Xpra-org/xpra/commit/8e142a5b00707a0447936090e7bfb3038d5c908b)
+  * [client shutdown cleans up delayed redraws](https://github.com/Xpra-org/xpra/commit/dcfcf9bd3296beaff4b58881d57d2602891e1b8e)
+  * [dropped delayed screen updates are acknowledged so later updates can proceed](https://github.com/Xpra-org/xpra/commit/60a7aa82a9403820accab8a20f1e938d59bb0650)
+* CUDA and NVENC:
+  * [CUDA device detection fails when mmap is enabled](https://github.com/Xpra-org/xpra/commit/ff8ffc5486f523617e459aea483b59589b4ddd18)
+  * [CUDA video conversion keeps colour values within the valid range](https://github.com/Xpra-org/xpra/commit/8cbb72ef852352985bb9141a7e411a2ced5b4fc7)
+  * [CUDA video conversion handles image edges without corrupt output](https://github.com/Xpra-org/xpra/commit/793eebca4ff5f5b68db6d77fcce319d26a8ccc4d)
+  * [slow CUDA cleanup is clearly reported instead of silently stalling a session](https://github.com/Xpra-org/xpra/commit/11a80620b25329fa5fad1f676fd4936280af3623)
+  * [NVENC sessions retain needed fallback resources instead of failing unexpectedly](https://github.com/Xpra-org/xpra/commit/2f12e3a29b7a59f4f47a1f8a85c3f634690d95a5)
 * Minor:
   * [X11 events can stop being routed after an unmatched filter cleanup](https://github.com/Xpra-org/xpra/commit/23f81b0c5119e4c2c619e67a1cc20558ee972ae9) [and leave the filter unusable](https://github.com/Xpra-org/xpra/commit/91bf9a9025c52ed862025eacfd09c10153484783)
   * [window-icon timers survive after their window is removed](https://github.com/Xpra-org/xpra/commit/fb0388fe68b8e917f09d8a7fdd3081101d59296e) [or raise warnings after firing](https://github.com/Xpra-org/xpra/commit/9409e7158bfdc66d45a937690a8ec7f2560934e2)
@@ -45,7 +67,26 @@
   * [skip unused window attributes](https://github.com/Xpra-org/xpra/commit/05e9453474541afee9d2aa32e6614fd44c354bb3)
   * [skip unused encoding attributes](https://github.com/Xpra-org/xpra/commit/e37db6e794063ba1d8757cfbafdc29a4ec37f8f8)
   * [truncating integer divisions in Cython code](https://github.com/Xpra-org/xpra/commit/fff7a26ea37fefbf9771d682a792068ced8e57be)
-* Recorder / replay:
+  * [the shadow screenshot tool works again](https://github.com/Xpra-org/xpra/commit/59f2b7a0b1ea58db0133025149ab804c9b29e1f9)
+  * [session cleanup removes dangling SSH-agent links](https://github.com/Xpra-org/xpra/commit/fb455661350e09bafc04f196abcc68bdf2299648)
+  * [server runtime directories are created more safely and reliably](https://github.com/Xpra-org/xpra/commit/3f0e754d54579ab4fae7292d872e2e102dc359a7)
+* *️⃣ Keyboard:
+  * [multiple keyboard layouts supplied on the command line are applied correctly](https://github.com/Xpra-org/xpra/commit/27163f510760c67945fafd80a800d6ef473af9e9)
+  * [clients keep typing the right keys after the server keyboard layout changes](https://github.com/Xpra-org/xpra/commit/52a0bc17610b5c55b70efa1a7cbf460087440395)
+  * [Page Up, media and other differently named X11/GTK keys work on non-X11 clients](https://github.com/Xpra-org/xpra/commit/1756e13acdf4cc5a374fc52f9de7252051e3be64)
+  * [invalid native keycodes no longer produce the wrong character](https://github.com/Xpra-org/xpra/commit/db33a0cdbe2e362b3b0c8bce1cb9e85e47592dc8)
+  * [keyboard fallbacks preserve the client layout group](https://github.com/Xpra-org/xpra/commit/75f3088a87b0e9e9729b409c94cd007f2b43d178)
+  * [keyboard fallbacks choose a consistent primary layout when no group matches](https://github.com/Xpra-org/xpra/commit/e4deae2288ffcf1eb27e33cf48bbc9b958a0b2d4)
+  * [keyboard fallbacks apply the modifiers needed to type the intended character](https://github.com/Xpra-org/xpra/commit/8b49263cc7cd30d6f8ca1842a2a9277942dde25e)
+  * [MS Windows clients pick up keyboard-layout changes reliably](https://github.com/Xpra-org/xpra/commit/236082efa362f61c18f86961fb5b482e4c0c59f1)
+  * [MS Windows Num-Lock state](https://github.com/Xpra-org/xpra/commit/831659bf7ac484f44ee700d16e380ee90b2a0365)
+  * [MS Windows missing modifiers](https://github.com/Xpra-org/xpra/commit/d02f25096925f57b6f6fb60b97b1d691fd8dadf9)
+* 📋 Clipboard:
+  * [clipboard requests waiting during a client reset complete instead of timing out](https://github.com/Xpra-org/xpra/commit/bff0639c236a7d5a70ab49ced33963bac3a7d7b4)
+  * [simultaneous large and small clipboard transfers no longer mix their contents or time out](https://github.com/Xpra-org/xpra/commit/e0fa31834f937dde201144685cfafbec7eb88cfb)
+  * [an unowned X11 selection no longer triggers misleading errors or needless server queries](https://github.com/Xpra-org/xpra/commit/b8ef0a0fe2c1ebdd63268a41700f6ff2195494be)
+  * [X11 clipboard conversion replies reach the application window that requested them](https://github.com/Xpra-org/xpra/commit/a7ba07fc062d6c2e04a9d95b46670acd6458c05c)
+* 🎥 Recorder / replay:
   * [record clients cannot serialize typed capability values](https://github.com/Xpra-org/xpra/commit/c1f39e9bd0d0b2317bf4470f530fdef34fe4a551)
   * [unhandled packets stopped the recording](https://github.com/Xpra-org/xpra/commit/0d32a526972be0ef2c85c64d33451725000bbb9d)
   * [disable file and printer subsystems](https://github.com/Xpra-org/xpra/commit/4bfadeaeab6c7470b2005ca2c3b18743d919471e)
@@ -81,6 +122,8 @@
   * [make it easier to see which tests have failed](https://github.com/Xpra-org/xpra/commit/eaa4ab710de18f8e94749730e28c578ae0e1125a) [and which are slow](https://github.com/Xpra-org/xpra/commit/bb94b6e177d130ea4a908efb432663bee644af91)
   * [handler is already registered](https://github.com/Xpra-org/xpra/commit/9fbef47e45bc91df70dae1ae7ff7ef61789845b2)
   * [cleanup pam config](https://github.com/Xpra-org/xpra/commit/f651735c15ed59ec675591b98cfa4db266762cce)
+  * [installed test suites are assembled correctly](https://github.com/Xpra-org/xpra/commit/208d14761334207543c3ff9c0e4745d19a9bb410)
+  * [tests recover quickly from stale sockets rather than repeatedly waiting for timeouts](https://github.com/Xpra-org/xpra/commit/0a014b931863f852d7102a0ca9c81fa6b6213e5e)
 
 ## [6.5.3] 2026-08-18
 * 🔧 Platforms, build and packaging:

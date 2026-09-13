@@ -7,9 +7,10 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     stop building DEBs on any failure
     Fedora 45 package list
     workaround Cython 3.3.0 bug
-    MS Windows Num-Lock state
-    MS Windows missing modifiers
+    MS Windows builds find the version-stamping tool reliably
+    Debian packages retain the Wireshark dissector when the normal packaging path is unavailable
   * ⚠️ Major:
+    OpenGL windows can remain blank until they receive a configure event
     crash: don't assume Gdk displays are X11 displays
     Wayland clients don't need a X11 display
     stale X11 timestamps cause focus issues
@@ -19,11 +20,43 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     don't reconfigure monitors unless required verify with Xvfb
     errors running configuration subcommands as root
     honour configuration file naming order
+    the encoder server fails to start
+    an X11 event flood no longer freezes the session, new connections, or management commands
+    X11 error callbacks are safe when they run outside the main Python thread
+    X11 error handling no longer consumes CPU in a busy timer loop
+    late mouse clicks for closed windows are ignored rather than affecting another window
+    mmap-based forwarding recognizes its current attributes and remains usable
+    monitor refresh rates are normalized when supplied in different forms
+    normalized monitor refresh rates retain the intended configured value
   * Wayland backend:
     screen updates stall
     windows can end up duplicated on clients
     synchronize window encoding properties
+  * 🌈 Encodings:
+    threaded image filters hand window damage to the wrong thread, racing with encode-queue cleanup
+    damage cancellation can free an image while it is being encoded
+    concurrent damage can start multiple encode threads and prevent shutdown
+    pending damage images leak when a connection closes
+    lossy screen updates are never followed by an auto-refresh
+    video maximum-size settings are interpreted correctly
+    invalid video encoding or scaling choices are rejected before they can break video forwarding
+    client encoding validation runs after the requested features are available
+    command-line encoding choices are handled consistently during startup
+    one-shot encoder sessions release their resources cleanly
+    OpenGL scrolling no longer clips updates or reuses stale snapshots
+    closing OpenGL windows releases their temporary graphics resources
+    window repaints no longer leave an outdated auto-refresh pending
+    client shutdown cleans up delayed redraws
+    dropped delayed screen updates are acknowledged so later updates can proceed
+  * CUDA and NVENC:
+    CUDA device detection fails when mmap is enabled
+    CUDA video conversion keeps colour values within the valid range
+    CUDA video conversion handles image edges without corrupt output
+    slow CUDA cleanup is clearly reported instead of silently stalling a session
+    NVENC sessions retain needed fallback resources instead of failing unexpectedly
   * Minor:
+    X11 events can stop being routed after an unmatched filter cleanup and leave the filter unusable
+    window-icon timers survive after their window is removed or raise warnings after firing
     missing `content-types` attributes
     safer display access
     better forwards compatibility
@@ -32,7 +65,27 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     skip unused window attributes
     skip unused encoding attributes
     truncating integer divisions in Cython code
+    the shadow screenshot tool works again
+    session cleanup removes dangling SSH-agent links
+    server runtime directories are created more safely and reliably
+  * Keyboard:
+    multiple keyboard layouts supplied on the command line are applied correctly
+    clients keep typing the right keys after the server keyboard layout changes
+    Page Up, media and other differently named X11/GTK keys work on non-X11 clients
+    invalid native keycodes no longer produce the wrong character
+    keyboard fallbacks preserve the client layout group
+    keyboard fallbacks choose a consistent primary layout when no group matches
+    keyboard fallbacks apply the modifiers needed to type the intended character
+    MS Windows clients pick up keyboard-layout changes reliably
+    MS Windows Num-Lock state
+    MS Windows missing modifiers
+  * Clipboard:
+    clipboard requests waiting during a client reset complete instead of timing out
+    simultaneous large and small clipboard transfers no longer mix their contents or time out
+    an unowned X11 selection no longer triggers misleading errors or needless server queries
+    X11 clipboard conversion replies reach the application window that requested them
   * Recorder / replay:
+    record clients cannot serialize typed capability values
     unhandled packets stopped the recording
     disable file and printer subsystems
     replay loses some windows
@@ -42,6 +95,7 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     skip over the gaps in the event sequence
     replay the raise, restack, stacking and bell events
   * 🖧 Network:
+    `xpra clean-sockets` skips every socket
     don't drop clients that are slow to send their first packet
     paramiko: try ssh keys in the same order as openssh
     paramiko: try agent keys in the order the identity files are configured
@@ -51,6 +105,7 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     socket activation regression
     file-transfers disabled by printing
   * 💄 Cosmetic:
+    GTK clients can send duplicate scroll events
     expose monitor names
     make audio test more reliable + fixup
     skip wayland window test when the bindings are not available
@@ -65,8 +120,10 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     make it easier to see which tests have failed and which are slow
     handler is already registered
     cleanup pam config
+    installed test suites are assembled correctly
+    tests recover quickly from stale sockets rather than repeatedly waiting for timeouts
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 06 Sep 2026 12:47:36 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 13 Sep 2026 12:23:07 +0700
 
 xpra (6.5.3-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
