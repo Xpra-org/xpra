@@ -3672,8 +3672,10 @@ toggle_packages(avif_ENABLED, "xpra.codecs.avif")
 tace(avif_encoder_ENABLED, "xpra.codecs.avif.encoder", "libavif")
 tace(avif_decoder_ENABLED, "xpra.codecs.avif.decoder", "libavif")
 toggle_packages(jph_ENABLED, "xpra.codecs.jph")
-tace(jph_encoder_ENABLED, "xpra.codecs.jph.encoder,xpra/codecs/jph/jph_encode.cpp", OPENJPH_PKG_CONFIG, language="c++")
-tace(jph_decoder_ENABLED, "xpra.codecs.jph.decoder,xpra/codecs/jph/jph_decode.cpp", OPENJPH_PKG_CONFIG, language="c++")
+tace(jph_encoder_ENABLED, "xpra.codecs.jph.encoder,xpra/codecs/jph/jph_encode.cpp", OPENJPH_PKG_CONFIG,
+     language="c++", depends=["xpra/codecs/jph/jph_common.h"])
+tace(jph_decoder_ENABLED, "xpra.codecs.jph.decoder,xpra/codecs/jph/jph_decode.cpp", OPENJPH_PKG_CONFIG,
+     language="c++", depends=["xpra/codecs/jph/jph_common.h"])
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.libyuv")
 if csc_libyuv_ENABLED:
     if libyuv_fallback:
