@@ -2597,6 +2597,18 @@ else:
                         break
                     except IndexError:
                         continue
+                if not epan_dir:
+                    # No versioned plugin directory exists on the build host.
+                    # Install in the unversioned platform directory instead.
+                    import sysconfig
+                    multiarch = sysconfig.get_config_var("MULTIARCH")
+                    if os.path.exists("/etc/debian_version"):
+                        libdir = f"/usr/lib/{multiarch}" if multiarch else "/usr/lib"
+                    elif os.path.exists("/usr/lib64") and not os.path.islink("/usr/lib64"):
+                        libdir = "/usr/lib64"
+                    else:
+                        libdir = f"/usr/lib/{multiarch}" if multiarch else "/usr/lib"
+                    epan_dir = f"{libdir}/wireshark/plugins"
                 self.copytodir("fs/lib/wireshark/plugins/xpra_dissector.lua", epan_dir)
 
             if docs_ENABLED:
