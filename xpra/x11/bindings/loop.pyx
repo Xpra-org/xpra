@@ -70,10 +70,7 @@ from xpra.x11.error import XError, xsync
 from xpra.x11.common import X11Event
 from xpra.util.env import envint
 from xpra.util.str_fn import csv
-from xpra.os_util import gi_import
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("x11", "bindings", "events")
 
@@ -199,10 +196,12 @@ cdef class EventLoop:
         log("Xexit(%s) last_error=%s", flush, last_error)
         if flush:
             XSync(self.display, False)
-            # check for new events in next GLib loop iteration:
-            GLib.timeout_add(0, self.process_events)
         else:
             XFlush(self.display)
+        # XSync may have queued events while reading replies.  X11GSource
+        # checks XPending on the next main-loop iteration, so scheduling a
+        # GLib timeout here is both redundant and unsafe: process_events()
+        # returns a truthy event count, which would leave a 0ms timer spinning.
         if not last_error:
             return None
         err = last_error.get("error", "unknown")
