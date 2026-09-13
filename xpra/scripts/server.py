@@ -11,6 +11,8 @@ import glob
 import shlex
 import os.path
 import datetime
+from errno import ENOTDIR
+from stat import S_ISDIR
 from typing import Any, NoReturn, Final
 from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence, Callable
@@ -158,6 +160,27 @@ def sanitize_env() -> None:
              )
 
 
+def mkdir_runtime_dir(path: str, uid: int, gid: int) -> None:
+    """Create a private runtime directory, or validate one created concurrently."""
+    while True:
+        try:
+            os.mkdir(path, 0o700)
+        except FileExistsError:
+            try:
+                st = os.lstat(path)
+            except FileNotFoundError:
+                continue
+            if not S_ISDIR(st.st_mode):
+                raise OSError(ENOTDIR, "runtime directory path is not a directory", path)
+            if st.st_mode & 0o077:
+                raise PermissionError(f"unsafe runtime directory: {path}")
+            return
+        else:
+            if POSIX:
+                os.lchown(path, uid, gid)
+            return
+
+
 def create_runtime_dir(xrd: str, uid: int, gid: int) -> str:
     if not POSIX or OSX or getuid() != 0:
         return ""
@@ -169,6 +192,10 @@ def create_runtime_dir(xrd: str, uid: int, gid: int) -> str:
         # don't keep root's directory, as this would not work:
         xrd = ""
     if not xrd:
+        # Root normally has no user login session, so it must not invent an
+        # XDG runtime directory under /run/user/0.
+        if uid == 0:
+            return ""
         # find the "/run/user" directory:
         run_user = "/run/user"
         if not os.path.exists(run_user):
@@ -177,15 +204,9 @@ def create_runtime_dir(xrd: str, uid: int, gid: int) -> str:
             xrd = os.path.join(run_user, str(uid))
     if not xrd:
         return ""
-    if not os.path.exists(xrd):
-        os.mkdir(xrd, 0o700)
-        if POSIX:
-            os.lchown(xrd, uid, gid)
+    mkdir_runtime_dir(xrd, uid, gid)
     xpra_dir = os.path.join(xrd, "xpra")
-    if not os.path.exists(xpra_dir):
-        os.mkdir(xpra_dir, 0o700)
-        if POSIX:
-            os.lchown(xpra_dir, uid, gid)
+    mkdir_runtime_dir(xpra_dir, uid, gid)
     return xrd
 
 
