@@ -510,8 +510,13 @@ class WindowVideoSource(WindowSource):
             self.scaling_control = max(0, min(100, properties.intget("scaling.control", 0)))
         super().do_set_client_properties(properties)
         # encodings may have changed, so redo this:
-        nv_common = set(self.picture_encodings) & set(self.core_encodings)
-        log("common non-video (%s & %s)=%s", self.picture_encodings, self.core_encodings, nv_common)
+        nv_common = (
+            set(self.picture_encodings) & set(self.core_encodings) & set(self._encoders)
+        )
+        log(
+            "common non-video (%s & %s & %s)=%s",
+            self.picture_encodings, self.core_encodings, tuple(self._encoders), nv_common,
+        )
         self.non_video_encodings = preforder(nv_common)
         if not VIDEO_SKIP_EDGE:
             try:
@@ -1542,7 +1547,8 @@ class WindowVideoSource(WindowSource):
                     max_w = min(encoder_spec.max_w, vmw)
                     max_h = min(encoder_spec.max_h, vmh)
                     if (csc_spec and csc_spec.can_scale) or encoder_spec.can_scale:
-                        if cached_scaling[0] >= width and cached_scaling[1] >= height:
+                        within_encoder_limits = width <= max_w and height <= max_h
+                        if within_encoder_limits and cached_scaling[0] >= width and cached_scaling[1] >= height:
                             scaling = cached_scaling[2]
                         else:
                             scaling = self.calculate_scaling(width, height, max_w, max_h)
