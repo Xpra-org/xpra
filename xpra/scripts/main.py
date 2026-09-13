@@ -1402,7 +1402,6 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
     may_show_progress(app, 30, "client configuration")
     try:
         app.init(opts)
-        opts.encoding = handle_client_encoding_option(app, opts.encoding)
 
         def handshake_complete(*_args) -> None:
             may_show_progress(app, 100, "connection established")
@@ -1422,6 +1421,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
         app.init_ui(opts)
         may_show_progress(app, 50, "loading user interface")
         app.load()
+        opts.encoding = handle_client_encoding_option(app, opts.encoding)
         if request_mode:
             sns = get_start_new_session_dict(opts, request_mode, extra_args)
             extra_args = [f"socket:{opts.system_proxy_socket}"]
