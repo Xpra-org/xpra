@@ -523,6 +523,7 @@ def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
             "geometry": td.inttupleget,
             "primary": td.boolget,
             "refresh-rate": td.intget,
+            "refresh-rate.cooked": td.intget,
             "scale-factor": td.intget,
             "width-mm": td.intget,
             "height-mm": td.intget,
