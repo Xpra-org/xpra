@@ -42,6 +42,7 @@ CWY: Final[int] = constants["CWY"]
 CWWidth: Final[int] = constants["CWWidth"]
 CWHeight: Final[int] = constants["CWHeight"]
 InputOnly: Final[int] = constants["InputOnly"]
+XNone: Final[int] = constants["XNone"]
 
 NotifyPointerRoot: Final[int] = constants["NotifyPointerRoot"]
 NotifyDetailNone: Final[int] = constants["NotifyDetailNone"]
@@ -98,6 +99,7 @@ class Wm(GObject.GObject):
 
         self._wm_name = wm_name
         self._ewmh_window = 0
+        self._focus_window = 0
         self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
 
         self._windows: dict[int, Any] = {}
@@ -136,6 +138,7 @@ class Wm(GObject.GObject):
     def _got_wm_selection(self, *_args):
         # Set up the necessary EWMH properties on the root window.
         self._ewmh_window = self._setup_ewmh_window()
+        self._focus_window = self._setup_focus_window()
 
         root_w, root_h = X11Window.getGeometry(rxid)[2:4]
         # Start with just one desktop:
@@ -320,6 +323,10 @@ class Wm(GObject.GObject):
             with xswallow:
                 prop_del(xid, "_NET_SUPPORTING_WM_CHECK")
                 prop_del(xid, "_NET_WM_NAME")
+        if xid := self._focus_window:
+            self._focus_window = 0
+            with xswallow:
+                X11Window.DestroyWindow(xid)
 
     def do_x11_child_map_request_event(self, event: X11Event) -> None:
         log("Found a potential client")
@@ -373,8 +380,43 @@ class Wm(GObject.GObject):
         # something real.  This is easy to detect -- a FocusIn event with
         # detail PointerRoot or None is generated on the root window.
         focuslog("wm.do_x11_focus_in_event(%s)", event)
-        # if event.detail in (NotifyPointerRoot, NotifyDetailNone):
-        #     self._world_window.reset_x_focus()
+        if event.detail in (NotifyPointerRoot, NotifyDetailNone):
+            self.reset_x_focus()
+
+    def _setup_focus_window(self) -> int:
+        # X11 has no usable "nobody has the focus" state:
+        # `None` discards keystrokes silently and stops generating focus events,
+        # and `PointerRoot` turns the session into focus-follows-mouse.
+        # So, like every other window manager, we keep a window of our own around
+        # to park the input focus on - see `reset_x_focus`.
+        # Unlike the EWMH window above, this one has to be mapped:
+        # only viewable windows can be given the input focus.
+        # It is `InputOnly` and off-screen so that it cannot be seen or swallow pointer events,
+        # and `override-redirect` so that mapping it does not come back to us as a map request:
+        xid = X11Window.CreateWindow(rxid, -1, -1, OR=True, inputoutput=InputOnly)
+        prop_set(xid, "WM_NAME", "utf8", f"{self._wm_name}-focus")
+        X11Window.MapWindow(xid)
+        focuslog("focus sink window: %#x", xid)
+        return xid
+
+    def get_focus_window(self) -> int:
+        return self._focus_window
+
+    def reset_x_focus(self) -> None:
+        """ take the X11 input focus away from all the client windows,
+            by parking it on our focus sink window
+        """
+        xid = self._focus_window
+        focuslog("reset_x_focus() focus sink=%#x", xid)
+        if not xid:
+            return
+        with xlog:
+            # `CurrentTime` rather than a real server timestamp:
+            # the sink is our own window so no client is racing us for it,
+            # and taking the focus away from everything must not be silently dropped
+            # just because the timestamp we fetched turned out to be stale
+            X11Window.XSetInputFocus(xid)
+            root_set("_NET_ACTIVE_WINDOW", "u32", XNone)
 
     # noinspection PyMethodMayBeStatic
     def do_x11_focus_out_event(self, event: X11Event) -> None:

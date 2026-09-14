@@ -81,6 +81,16 @@ def clamp_window(x: int, y: int, w: int, h: int):
     return mod, (x, y, w, h)
 
 
+def set_focused_state(window, focused: bool) -> None:
+    """ update the `_NET_WM_STATE_FOCUSED` state of a window model
+        (`get` returns the default for the models that have no such property)
+    """
+    if window is None or window.get("focused", focused) == focused:
+        return
+    focuslog("focus: setting focused=%s on %s", focused, window)
+    window.update_wm_state("focused", focused)
+
+
 def is_window_hidden(ss, window) -> bool:
     """ is this window outside this client's area of the virtual display? (`sharing=combine`)
         (weak dependency on the `WindowsConnection` mixin) """
@@ -324,6 +334,10 @@ class SeamlessWindowServer(WindowServer):
 
     def _add_new_or_window(self, xid: int) -> None:
         log("_add_new_or_window(%#x)", xid)
+        if self._wm and xid == self._wm.get_focus_window():
+            # this one is mapped, unlike the other windows the window manager owns:
+            windowlog("ignoring the focus sink window %#x", xid)
+            return
         root_overlay = self.get_subsystem("root-overlay")
         if root_overlay and root_overlay.is_overlay_window(xid):
             windowlog("ignoring root overlay window %#x", xid)
@@ -421,6 +435,13 @@ class SeamlessWindowServer(WindowServer):
             keyboard = self.get_subsystem("keyboard")
             clear_keys_pressed: Callable[[], None] = getattr(keyboard, "clear_keys_pressed", noop)
             clear_keys_pressed()
+            set_focused_state(had_focus, False)
+            if wm := self._wm:
+                # X11 has no state we can use to mean "no window has the focus",
+                # so park it on the window manager's focus sink instead:
+                # without this, the window that just lost the focus
+                # would still be receiving all the key events we inject
+                wm.reset_x_focus()
             self._has_focus = 0
 
         if wid == 0:
@@ -446,6 +467,8 @@ class SeamlessWindowServer(WindowServer):
         if window.get("attention-requested", False):
             focuslog("focus: clearing the attention request of %s", window)
             window.update_wm_state("attention-requested", False)
+        set_focused_state(had_focus, False)
+        set_focused_state(window, True)
         if server_source and modifiers is not None:
             make_keymask_match = getattr(server_source, "make_keymask_match", noop)
             focuslog("focus: will set modifier mask to %s using %s", modifiers, make_keymask_match)

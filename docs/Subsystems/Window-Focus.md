@@ -420,6 +420,7 @@ On X11:
 | Mechanism                                | Implementation                                                                                                |
 |------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `XSetInputFocus` and `WM_TAKE_FOCUS`     | [xpra.x11.models.window](https://github.com/Xpra-org/xpra/blob/master/xpra/x11/models/window.py)               |
+| focus sink                               | [xpra.x11.wm](https://github.com/Xpra-org/xpra/blob/master/xpra/x11/wm.py)                                     |
 | `WM_HINTS` `input` field                 | [xpra.x11.models.base](https://github.com/Xpra-org/xpra/blob/master/xpra/x11/models/base.py)                   |
 | `_NET_ACTIVE_WINDOW` client message      | [xpra.x11.models.base](https://github.com/Xpra-org/xpra/blob/master/xpra/x11/models/base.py)                   |
 | `_NET_ACTIVE_WINDOW` root property       | [xpra.x11.models.core](https://github.com/Xpra-org/xpra/blob/master/xpra/x11/models/core.py)                   |
@@ -436,6 +437,24 @@ On the client side, the win32 shim watches `WM_ACTIVATEAPP` to detect session le
 ([xpra.platform.win32.window_events](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/win32/window_events.py))
 and the macOS shim uses `activateIgnoringOtherApps:` as a focus workaround
 ([xpra.platform.darwin.gui](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/darwin/gui.py)).
+
+None of the values that `XSetInputFocus` accepts means "no window has the focus":
+`None` discards keystrokes silently and stops generating focus events,
+and `PointerRoot` turns the session into focus-follows-mouse, which would send
+the key events we inject to whichever window happens to be under the pointer.
+So, like every other window manager, xpra keeps a _focus sink_ around:
+a 1x1 `InputOnly` override-redirect window, mapped off-screen so that it is viewable
+(only viewable windows can be given the input focus) without being visible
+or swallowing pointer events. `reset_x_focus()` parks the input focus on it
+and clears the `_NET_ACTIVE_WINDOW` root property.
+This happens when the client tells us that none of its windows are focused
+(a `window-focus` packet with `wid=0`), and also when the X11 focus falls back
+to the root window on its own - which is what happens when the focused window
+disappears, and is detected as a `FocusIn` event on the root window
+with a detail of `PointerRoot` or `None`.
+
+The `_NET_WM_STATE_FOCUSED` state of the window models follows the same path:
+the window gaining the focus has it added and the one losing it has it removed.
 
 The "polite fallback" is forwarded rather than replayed: the server exposes the merged
 `WM_HINTS` urgency and `_NET_WM_STATE_DEMANDS_ATTENTION` state as the `attention-requested`
