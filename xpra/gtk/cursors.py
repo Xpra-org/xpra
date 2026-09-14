@@ -111,6 +111,12 @@ def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | N
         w = pixbuf.get_width()
         h = pixbuf.get_height()
         pixels = pixbuf.get_pixels()
+        # this is a local cursor: the server hotspot belongs to the image we did not use,
+        # the theme records its own with the pixbuf:
+        hotspot = tuple(pixbuf.get_option(f"{axis}_hot") or "" for axis in ("x", "y"))
+        if all(value.isdigit() for value in hotspot):
+            log("using local cursor hotspot %s instead of %s", hotspot, (xhot, yhot))
+            xhot, yhot = int(hotspot[0]), int(hotspot[1])
     x = max(0, min(xhot, w - 1))
     y = max(0, min(yhot, h - 1))
     csize = display.get_default_cursor_size()
