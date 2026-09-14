@@ -134,6 +134,23 @@ class AttentionRequestedTest(ServerTestUtil):
         return proc, int(line.strip())
 
     @staticmethod
+    def give_focus(model) -> None:
+        """ replay a `window-focus` packet for this window, without a server """
+        from collections import deque
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        class FocusStub:
+            last_raised = 0
+            _has_focus = 0
+            _focus_history = deque(maxlen=10)
+
+            @staticmethod
+            def get_window(_wid):
+                return model
+
+        SeamlessWindowServer._focus(FocusStub(), None, 1, None)
+
+    @staticmethod
     def set_wm_hints(xid: int, flags: int) -> None:
         from xpra.x11.prop import raw_prop_set
         raw_prop_set(xid, "WM_HINTS", "WM_HINTS", 32,
@@ -156,12 +173,12 @@ class AttentionRequestedTest(ServerTestUtil):
 
                 with X11DisplayContext(display):
                     from xpra.x11.bindings.core import get_root_xid
-                    from xpra.x11.bindings.window import X11WindowBindings
                     from xpra.x11.models.window import WindowModel
-                    x11window = X11WindowBindings()
-                    parking = x11window.CreateWindow(get_root_xid(), 0, 0, 1, 1, OR=1)
-                    # the urgency hint was set before we managed the window:
-                    model = WindowModel(parking, xid, (1024, 768))
+                    # the urgency hint was set before we managed the window,
+                    # and the window manager parks the corral windows on the root window:
+                    model = WindowModel(get_root_xid(), xid, (1024, 768))
+                    # mapped, so that it can be given the X11 input focus:
+                    model.show()
                     self.assertTrue(model.get_property("attention-requested"))
                     self.assertIn(DEMANDS_ATTENTION, model.get_property("state"))
 
@@ -188,6 +205,11 @@ class AttentionRequestedTest(ServerTestUtil):
                     self.set_wm_hints(xid, InputHint | StateHint | XUrgencyHint)
                     model._handle_wm_hints_change()
                     self.assertTrue(model.get_property("attention-requested"))
+
+                    # EWMH: giving the window focus clears the request
+                    self.give_focus(model)
+                    self.assertFalse(model.get_property("attention-requested"))
+                    self.assertNotIn(DEMANDS_ATTENTION, model.get_property("state"))
         finally:
             if client:
                 client.terminate()

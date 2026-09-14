@@ -441,6 +441,11 @@ class SeamlessWindowServer(WindowServer):
             self.last_raised = wid
             window.raise_window()
             window.give_client_focus()
+        # EWMH: activating a window also clears its demands-attention state
+        # (`get` returns the default for the models that have no such property)
+        if window.get("attention-requested", False):
+            focuslog("focus: clearing the attention request of %s", window)
+            window.update_wm_state("attention-requested", False)
         if server_source and modifiers is not None:
             make_keymask_match = getattr(server_source, "make_keymask_match", noop)
             focuslog("focus: will set modifier mask to %s using %s", modifiers, make_keymask_match)
