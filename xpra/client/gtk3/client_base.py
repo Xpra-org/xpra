@@ -422,7 +422,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             if gdkwin:
                 if cur:
                     cur._cursors[w] = cursor_data
-                gdkwin.set_cursor(cursor)
+                # a local move or resize drag owns the cursor until it ends:
+                if not getattr(w, "moveresize_cursor", ""):
+                    gdkwin.set_cursor(cursor)
 
     def window_grab(self, wid: int, window) -> None:
         event_mask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK

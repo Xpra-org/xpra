@@ -346,6 +346,7 @@ class PointerWindow(GtkStubWindow):
             self.button_pressed.pop(button, None)
             if not self.button_pressed:
                 self.cancel_button_polling()
+                self.cancel_moveresize_cursor()
         send_button(server_button, depressed)
 
     def cancel_button_polling(self) -> None:
@@ -376,6 +377,10 @@ class PointerWindow(GtkStubWindow):
         pointer = self.get_subsystem("pointer")
         pressed = tuple(self.button_pressed.keys())
         log("do_poll_buttons(%s, %s) pressed=%s", pointer_data, buttons, pressed)
+        if pressed and not any(button in buttons for button in pressed):
+            # the drag is over as far as the pointer device is concerned,
+            # give the cursor back even if we don't simulate the release below:
+            self.cancel_moveresize_cursor()
         for button in pressed:
             if button not in buttons:
                 log(f"button {button=} unpressed")

@@ -23,6 +23,7 @@ from xpra.util.thread import check_main_thread
 from xpra.gtk.info import get_monitor_plug_name
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import set_visual
+from xpra.gtk.cursors import new_cursor
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.common import (
     force_size_constraint, noop,
@@ -174,6 +175,21 @@ GDK_MOVERESIZE_MAP = {int(d): we for d, we in {
     # MOVERESIZE_SIZE_KEYBOARD,
 }.items()}
 
+# the cursor to use whilst we are dragging the window ourselves,
+# matching the names that gdk's win32 backend uses for the same purpose:
+MOVERESIZE_CURSOR_MAP: dict[int, str] = {int(d): name for d, name in {
+    MoveResize.SIZE_TOPLEFT: "nw-resize",
+    MoveResize.SIZE_TOP: "n-resize",
+    MoveResize.SIZE_TOPRIGHT: "ne-resize",
+    MoveResize.SIZE_RIGHT: "e-resize",
+    MoveResize.SIZE_BOTTOMRIGHT: "se-resize",
+    MoveResize.SIZE_BOTTOM: "s-resize",
+    MoveResize.SIZE_BOTTOMLEFT: "sw-resize",
+    MoveResize.SIZE_LEFT: "w-resize",
+    MoveResize.MOVE: "move",
+    MoveResize.MOVE_KEYBOARD: "move",
+}.items()}
+
 
 def get_follow_window_types() -> Sequence[Gdk.WindowTypeHint]:
     types_strs: list[str] = os.environ.get(
@@ -246,6 +262,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.moveresize_timer: int = 0
         self.moveresize_event: tuple[int, int, int, int, tuple[int], int, int, int, int] | tuple = ()
         self.moveresize_data: tuple[tuple, tuple] | tuple = ()
+        self.moveresize_cursor: str = ""
         # only set this initially:
         # (so the server can't make us kill just any pid!)
         watcher_pid = metadata.intget("watcher-pid", 0)
@@ -258,6 +275,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.connect_after("realize", self.on_realize)
         self.connect("unrealize", self.on_unrealize)
         self.connect("key-press-event", self.key_may_break_moveresize)
+        self.connect("focus-out-event", self.focus_may_break_moveresize)
         self.add_events(self.get_window_event_mask())
         ClientWindowBase.init_window(self, client, metadata, client_props)
 
@@ -1099,6 +1117,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     dirstr, button, buttons)
             self.moveresize_event = ()
             self.cancel_moveresize_timer()
+            self.cancel_moveresize_cursor()
             # flush any pending resize so the final size is applied
             if self.moveresize_data:
                 self.do_moveresize()
@@ -1148,6 +1167,33 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             geomlog("cancel_moveresize_timer() timer=%i", mrt)
             self.moveresize_timer = 0
             self.source_remove(mrt)
+
+    def set_moveresize_cursor(self, direction: int) -> None:
+        # whilst we drag the window, the cursor belongs to the drag
+        # and not to the remote application.
+        # (on the platforms where the drag is done with a pointer grab,
+        # the grab's cursor wins and this is just a no-op)
+        self.moveresize_cursor = ""
+        name = MOVERESIZE_CURSOR_MAP.get(direction, "")
+        gdkwin = getattr(self, "drawing_area", self).get_window()
+        cursor = new_cursor(gdkwin.get_display(), name) if (name and gdkwin) else None
+        geomlog("set_moveresize_cursor(%s) name=%r cursor=%s",
+                MOVERESIZE_DIRECTION_STRING.get(direction, direction), name, cursor)
+        if not cursor:
+            # without a cursor of our own to show,
+            # there is no reason to hold back the server's:
+            return
+        self.moveresize_cursor = name
+        gdkwin.set_cursor(cursor)
+
+    def cancel_moveresize_cursor(self) -> None:
+        if not self.moveresize_cursor:
+            return
+        geomlog("cancel_moveresize_cursor()")
+        self.moveresize_cursor = ""
+        # re-apply whatever the server asked for whilst we were dragging:
+        # (weak dependency on `PointerWindow`)
+        self._client.set_windows_cursor([self], getattr(self, "cursor_data", ()))
 
     def snap_to_server_grid(self, sw: int, sh: int, nearest: bool = False) -> tuple[int, int]:
         """snap server-coordinate dimensions to the application's resize increment grid"""
@@ -1213,6 +1259,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.moveresize_event = ()
             self.moveresize_data = ()
             self.cancel_moveresize_timer()
+            self.cancel_moveresize_cursor()
         elif MOVERESIZE_GDK:
             if direction in (MoveResize.MOVE, MoveResize.MOVE_KEYBOARD):
                 self.begin_move_drag(button, x, y, 0)
@@ -1230,6 +1277,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.moveresize_event = (x_root, y_root, direction, button, (), wx, wy, ww, wh)
         poll = getattr(self, "start_button_polling", noop)
         poll()
+        if direction != MoveResize.CANCEL:
+            self.set_moveresize_cursor(direction)
 
     def initiate_moveresize_x11(self, x_root: int, y_root: int, direction: int,
                                 button: int, source_indication: int) -> None:
@@ -1666,15 +1715,28 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.get_subsystem("window").window_close_event(self.wid)
         return True
 
+    def focus_may_break_moveresize(self, _window, _event) -> bool:
+        # keyboard initiated drags have no button to release,
+        # so the cursor could get stuck if the drag ends by losing the focus:
+        if self.moveresize_cursor:
+            geomlog("focus lost during moveresize")
+            self.cancel_moveresize_cursor()
+        # let the event propagate to the next handler:
+        return False
+
     def key_may_break_moveresize(self, _window, event) -> bool:
         check_main_thread()
         keyval = event.keyval
         keyname = Gdk.keyval_name(keyval) or ""
-        if self.moveresize_event and keyname in BREAK_MOVERESIZE:
-            # cancel move resize if there is one:
-            self.moveresize_event = ()
-            self.cancel_moveresize_timer()
-            return True
+        if keyname in BREAK_MOVERESIZE:
+            # `gdk` handles the key itself for the drags it started,
+            # we only have to give the cursor back:
+            self.cancel_moveresize_cursor()
+            if self.moveresize_event:
+                # cancel move resize if there is one:
+                self.moveresize_event = ()
+                self.cancel_moveresize_timer()
+                return True
         # let the event propagate to the next handler
         return False
 

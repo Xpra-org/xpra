@@ -6,8 +6,10 @@
 # ABOUTME: Tests for resize increment snapping in manual moveresize.
 # ABOUTME: Verifies that alt-drag resize respects size hint increments (eg terminal cells).
 
+import os
 import unittest
 
+from xpra.os_util import gi_import
 from xpra.constants import MoveResize
 from xpra.client.gtk3.window.base import calculate_moveresize_data, snap_to_increment
 
@@ -158,6 +160,164 @@ class TestSnapToIncrement(unittest.TestCase):
         assert snapped_w <= screen_w
         assert snapped_h <= screen_h
         assert (snapped_w, snapped_h) != (screen_w, screen_h)
+
+
+class TestMoveResizeCursor(unittest.TestCase):
+    """
+    Whilst we drag the window ourselves, the cursor belongs to the drag
+    and not to the remote application.
+    On the platforms where the drag is done with a pointer grab
+    (x11, win32, wayland), the grab's cursor wins and this is a no-op,
+    but macos has no grab - and neither does our own fallback drag.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
+            raise unittest.SkipTest("no display")
+
+    def make_window(self):
+        """ the smallest object the moveresize cursor methods need """
+        from xpra.client.gtk3.window.base import GTKClientWindowBase
+        from xpra.client.gtk3.window.pointer import PointerWindow
+        Gtk = gi_import("Gtk")
+
+        applied = []
+
+        class FakeClient:
+            @staticmethod
+            def set_windows_cursor(windows, cursor_data) -> None:
+                applied.append((tuple(windows), cursor_data))
+
+        class FakeWindow:
+            set_moveresize_cursor = GTKClientWindowBase.set_moveresize_cursor
+            cancel_moveresize_cursor = GTKClientWindowBase.cancel_moveresize_cursor
+            key_may_break_moveresize = GTKClientWindowBase.key_may_break_moveresize
+            focus_may_break_moveresize = GTKClientWindowBase.focus_may_break_moveresize
+            do_poll_buttons = PointerWindow.do_poll_buttons
+
+            def __init__(self):
+                self.moveresize_cursor = ""
+                self.moveresize_event = ()
+                self.cursor_data = ()
+                self.button_pressed: dict[int, int] = {}
+                self._client = FakeClient()
+                self.toplevel = Gtk.Window()
+                self.drawing_area = Gtk.DrawingArea()
+                self.toplevel.add(self.drawing_area)
+                self.toplevel.realize()
+                # the drawing area needs its own gdk window,
+                # that is the one the cursor gets set on:
+                self.drawing_area.show()
+                self.drawing_area.realize()
+                assert self.drawing_area.get_window()
+
+            @staticmethod
+            def get_subsystem(_name):
+                return None
+
+        return FakeWindow(), applied
+
+    def test_direction_sets_the_matching_cursor(self):
+        from xpra.client.gtk3.window.base import MOVERESIZE_CURSOR_MAP
+        from xpra.gtk.cursors import new_cursor
+        window, _ = self.make_window()
+        gdkwin = window.drawing_area.get_window()
+        display = gdkwin.get_display()
+        expected = {
+            MoveResize.SIZE_TOPLEFT: "nw-resize",
+            MoveResize.SIZE_BOTTOMRIGHT: "se-resize",
+            MoveResize.SIZE_LEFT: "w-resize",
+            MoveResize.MOVE: "move",
+        }
+        for direction, name in expected.items():
+            with self.subTest(direction=direction):
+                assert MOVERESIZE_CURSOR_MAP.get(direction) == name
+                # the name must resolve to a real cursor, or we would set nothing:
+                assert new_cursor(display, name), f"no cursor for {name!r}"
+                window.set_moveresize_cursor(direction)
+                assert window.moveresize_cursor == name
+
+    def test_cancel_restores_the_server_cursor(self):
+        window, applied = self.make_window()
+        window.cursor_data = ("raw", 0, 0, 16, 16, 0, 0, 0x1234, b"\xff" * 1024, "left_ptr")
+        window.set_moveresize_cursor(MoveResize.SIZE_BOTTOMRIGHT)
+        assert not applied, "nothing should have been re-applied yet"
+        window.cancel_moveresize_cursor()
+        assert window.moveresize_cursor == ""
+        assert applied == [((window, ), window.cursor_data)], f"{applied=}"
+        # a second cancel is a no-op:
+        window.cancel_moveresize_cursor()
+        assert len(applied) == 1
+
+    def test_server_cursors_are_suppressed_during_the_drag(self):
+        """ the real `set_windows_cursor` must leave the drag cursor alone """
+        from xpra.client.gtk3.client_base import GTKXpraClient
+        window, _ = self.make_window()
+        gdkwin = window.drawing_area.get_window()
+        applied = []
+        gdkwin.set_cursor = applied.append
+
+        class FakeClient:
+            set_windows_cursor = GTKXpraClient.set_windows_cursor
+
+            @staticmethod
+            def get_subsystem(_name):
+                return None
+
+        client = FakeClient()
+        cursor_data = ("raw", 0, 0, 16, 16, 0, 0, 0x1234, b"\xff" * 1024, "left_ptr")
+        client.set_windows_cursor([window], cursor_data)
+        assert len(applied) == 1, f"{applied=}"
+        window.set_moveresize_cursor(MoveResize.SIZE_TOP)
+        assert window.moveresize_cursor == "n-resize"
+        set_during_drag = len(applied)
+        client.set_windows_cursor([window], cursor_data)
+        client.set_windows_cursor([window], ())
+        assert len(applied) == set_during_drag, "the server cursor was applied during the drag"
+        # but the cursor data is still recorded, so we can restore it:
+        assert window.cursor_data == ()
+
+    def test_unknown_directions_set_no_cursor(self):
+        window, applied = self.make_window()
+        for direction in (MoveResize.SIZE_KEYBOARD, MoveResize.CANCEL):
+            with self.subTest(direction=direction):
+                window.set_moveresize_cursor(direction)
+                assert window.moveresize_cursor == ""
+        window.cancel_moveresize_cursor()
+        assert not applied, "nothing to restore"
+
+    def test_button_release_polling_ends_the_drag(self):
+        window, applied = self.make_window()
+        window.button_pressed[1] = 1
+        window.set_moveresize_cursor(MoveResize.SIZE_BOTTOMRIGHT)
+        # still held down:
+        window.do_poll_buttons((0, 0), [], (1, ))
+        assert window.moveresize_cursor == "se-resize"
+        # released:
+        window.do_poll_buttons((0, 0), [], ())
+        assert window.moveresize_cursor == ""
+        assert len(applied) == 1
+
+    def test_keyboard_drag_ends_on_escape_and_focus_loss(self):
+        for end in ("escape", "focus"):
+            with self.subTest(end=end):
+                window, applied = self.make_window()
+                # a keyboard move has no button to release:
+                window.set_moveresize_cursor(MoveResize.MOVE_KEYBOARD)
+                assert window.moveresize_cursor == "move"
+                window.do_poll_buttons((0, 0), [], ())
+                assert window.moveresize_cursor == "move", "no button was pressed"
+                if end == "escape":
+                    Gdk = gi_import("Gdk")
+                    event = Gdk.EventKey()
+                    event.keyval = Gdk.KEY_Escape
+                    # no fallback drag in progress, so the event must propagate:
+                    assert window.key_may_break_moveresize(window, event) is False
+                else:
+                    assert window.focus_may_break_moveresize(window, None) is False
+                assert window.moveresize_cursor == ""
+                assert len(applied) == 1
 
 
 if __name__ == "__main__":
