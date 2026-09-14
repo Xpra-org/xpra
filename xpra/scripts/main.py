@@ -2630,8 +2630,8 @@ def run_daemon(cmd: list[str], **kwargs):
 
 def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode: str, defaults) -> ExitValue:
     no_gtk()
-    display = None
-    display_name = None
+    display = {}
+    display_name = ""
     server_mode = {
         "_proxy": "seamless",
         "_proxy_shadow_start": "shadow",
@@ -2639,7 +2639,7 @@ def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode:
     server_mode = MODE_ALIAS.get(server_mode, server_mode)
     if mode != "_proxy" and server_mode in ("seamless", "desktop", "monitor", "shadow", "shadow-screen", "expand"):
         attach = parse_bool_or("attach", opts.attach, None)
-        state = None
+        state = SocketState.UNKNOWN
         if attach is not False:
             # maybe this server already exists?
             dotxpra = DotXpra(opts.socket_dirs)
