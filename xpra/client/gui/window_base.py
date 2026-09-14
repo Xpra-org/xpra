@@ -184,6 +184,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._skip_taskbar = False
         self._iconified = False
         self._focused = False
+        self._attention_requested = False
         self._opaque_region = ()
         self._actions = ()
         self.window_gravity = OVERRIDE_GRAVITY or DEFAULT_GRAVITY
@@ -467,6 +468,7 @@ class ClientWindowBase(ClientWidgetBase):
             "skip-taskbar": bool,
             "skip-pager": bool,
             "focused": bool,
+            "attention-requested": bool,
             "workspace": int,
             "bypass-compositor": int,
             "strut": dict,
@@ -533,6 +535,11 @@ class ClientWindowBase(ClientWidgetBase):
 
     def set_opaque_region(self, rectangles: tuple | None) -> None:
         pass  # see gtk client window base
+
+    def set_attention_requested(self, attention: bool) -> None:
+        """ ask the desktop to draw the user's attention to this window,
+            see the toolkit specific window classes for the implementations
+        """
 
     def set_decorations(self, decorated: bool) -> None:
         was_decorated = self.get_decorated()

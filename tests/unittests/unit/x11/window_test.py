@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import os
+import struct
+import subprocess
+import sys
 import unittest
 from unittest.mock import call, patch
 
@@ -107,6 +110,87 @@ class X11WindowBindingsTest(ServerTestUtil):
                     finally:
                         x11window.DestroyWindow(window)
         finally:
+            xvfb.terminate()
+            self.assertIsNotNone(pollwait(xvfb, 10))
+
+
+class AttentionRequestedTest(ServerTestUtil):
+    """
+    `attention-requested` is a virtual property backed by the `state` property,
+    so it can only be updated via `update_wm_state`.
+    """
+
+    def start_urgent_window(self, display: str) -> tuple:
+        helper = os.path.join(os.path.dirname(os.path.abspath(__file__)), "urgent_window.py")
+        env = self.get_default_run_env()
+        env["DISPLAY"] = display
+        proc = self.run_command([sys.executable, helper, display, "urgent"],
+                                env=env, stdout=subprocess.PIPE)
+        with proc.stdout:
+            line = proc.stdout.readline()
+        if not line:
+            proc.terminate()
+            raise unittest.SkipTest("failed to create a window on %s" % display)
+        return proc, int(line.strip())
+
+    @staticmethod
+    def set_wm_hints(xid: int, flags: int) -> None:
+        from xpra.x11.prop import raw_prop_set
+        raw_prop_set(xid, "WM_HINTS", "WM_HINTS", 32,
+                     struct.pack(b"@9l", flags, 1, 1, 0, 0, 0, 0, 0, 0))
+
+    def test_wm_hints_urgency(self):
+        InputHint = 1 << 0
+        StateHint = 1 << 1
+        WindowGroupHint = 1 << 6
+        XUrgencyHint = 1 << 8
+        DEMANDS_ATTENTION = "_NET_WM_STATE_DEMANDS_ATTENTION"
+        display = self.find_free_display()
+        xvfb = self.start_Xvfb(display)
+        client = None
+        try:
+            client, xid = self.start_urgent_window(display)
+            with OSEnvContext():
+                os.environ["DISPLAY"] = display
+                from xpra.x11.bindings.display_source import X11DisplayContext
+
+                with X11DisplayContext(display):
+                    from xpra.x11.bindings.core import get_root_xid
+                    from xpra.x11.bindings.window import X11WindowBindings
+                    from xpra.x11.models.window import WindowModel
+                    x11window = X11WindowBindings()
+                    parking = x11window.CreateWindow(get_root_xid(), 0, 0, 1, 1, OR=1)
+                    # the urgency hint was set before we managed the window:
+                    model = WindowModel(parking, xid, (1024, 768))
+                    self.assertTrue(model.get_property("attention-requested"))
+                    self.assertIn(DEMANDS_ATTENTION, model.get_property("state"))
+
+                    notified = []
+                    model.connect("notify::attention-requested",
+                                  lambda *_args: notified.append(model.get_property("attention-requested")))
+
+                    # clearing the urgency hint must clear the state and notify the clients:
+                    self.set_wm_hints(xid, InputHint | StateHint)
+                    model._handle_wm_hints_change()
+                    self.assertFalse(model.get_property("attention-requested"))
+                    self.assertNotIn(DEMANDS_ATTENTION, model.get_property("state"))
+                    self.assertEqual(notified, [False])
+
+                    # a request made through `_NET_WM_STATE` must survive
+                    # an unrelated `WM_HINTS` change:
+                    model.update_wm_state("attention-requested", True)
+                    self.set_wm_hints(xid, InputHint | StateHint | WindowGroupHint)
+                    model._handle_wm_hints_change()
+                    self.assertTrue(model.get_property("attention-requested"))
+
+                    # and the urgency hint must still be able to set it again:
+                    model.update_wm_state("attention-requested", False)
+                    self.set_wm_hints(xid, InputHint | StateHint | XUrgencyHint)
+                    model._handle_wm_hints_change()
+                    self.assertTrue(model.get_property("attention-requested"))
+        finally:
+            if client:
+                client.terminate()
             xvfb.terminate()
             self.assertIsNotNone(pollwait(xvfb, 10))
 

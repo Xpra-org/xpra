@@ -204,6 +204,7 @@ class ClientWindow(GObject.GObject):
         self._below = False
         self._skip_taskbar = False
         self._type_toolwindow = False
+        self.attention_requested = False
         self.backing = None
         log("new window: %#x %s", self.wid, self.metadata)
 
@@ -629,6 +630,9 @@ class ClientWindow(GObject.GObject):
         if "shape" in metadata:
             self.set_shape(metadata.dictget("shape", {}))
 
+        if "attention-requested" in metadata:
+            self.set_attention_requested(metadata.boolget("attention-requested"))
+
     def apply_transient_for(self, wid: int) -> None:
         if not self.hwnd:
             return
@@ -762,16 +766,30 @@ class ClientWindow(GObject.GObject):
             "attributes": attributes,
         }
 
-    def set_alert_state(self, alert_state: bool) -> None:
+    def set_attention_requested(self, attention: bool) -> None:
+        if attention == self.attention_requested:
+            return
+        self.attention_requested = attention
+        log("set_attention_requested(%s) hwnd=%s", attention, self.hwnd)
+        self.flash_window(attention)
+
+    def flash_window(self, flash: bool) -> None:
         if not self.hwnd:
             return
         fwi = FLASHWINFO()
         fwi.cbSize = sizeof(FLASHWINFO)
         fwi.hwnd = self.hwnd
-        fwi.dwFlags = (FLASHW_ALL | FLASHW_TIMERNOFG) if alert_state else FLASHW_STOP
+        # `FLASHW_TIMERNOFG` stops the flashing as soon as the window comes to the foreground:
+        fwi.dwFlags = (FLASHW_ALL | FLASHW_TIMERNOFG) if flash else FLASHW_STOP
         fwi.uCount = 0
         fwi.dwTimeout = 0
         FlashWindowEx(byref(fwi))
+
+    def set_alert_state(self, alert_state: bool) -> None:
+        if not self.hwnd:
+            return
+        # don't stop the flashing if the window is still asking for attention:
+        self.flash_window(alert_state or self.attention_requested)
         # the OpenGL backing also renders an in-window alert overlay,
         # so it needs a repaint to pick the new state up:
         if (backing := self.backing) and backing.alert_state != alert_state:

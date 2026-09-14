@@ -9,17 +9,13 @@ from xpra.os_util import gi_import
 from xpra.tray_base import TrayBase
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.platform.darwin.menu import getOSXMenuHelper
-from xpra.platform.darwin import set_exit_cb
+from xpra.platform.darwin import set_exit_cb, INFO_REQUEST
 from xpra.platform.gui import ready as gui_ready
 from xpra.log import Logger
 
 GdkPixbuf = gi_import("GdkPixbuf")
 
 log = Logger("tray", "osx")
-
-# constants for attention_request:
-CRITICAL_REQUEST = 0
-INFO_REQUEST = 10
 
 
 class OSXTray(TrayBase):

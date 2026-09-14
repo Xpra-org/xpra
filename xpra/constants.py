@@ -138,6 +138,7 @@ DEFAULT_METADATA_SUPPORTED = (
     "role", "opacity", "xid", "group-leader",
     "opaque-region",
     "command", "workspace", "above", "below", "sticky",
+    "attention-requested",
     "set-initial-position", "requested-position",
     "content-types",
     "parent", "relative-position",

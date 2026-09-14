@@ -987,6 +987,23 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 _send_client_message(self.get_window(), "_NET_WM_STATE", _NET_WM_STATE_ADD, "_NET_WM_STATE_FOCUSED")
         self.when_realized("focused", do_focused)
 
+    def set_attention_requested(self, attention: bool) -> None:
+        if attention == self._attention_requested:
+            return
+        if attention and (self._override_redirect or self.is_tray()):
+            # menus, tooltips and trays don't get to ask for attention
+            return
+        self._attention_requested = attention
+        statelog("set_attention_requested(%s) for wid=%#x", attention, self.wid)
+        if OSX:
+            # gdk-quartz does not implement the urgency hint:
+            from xpra.platform.darwin.gui import set_window_attention
+            set_window_attention(self.wid, attention)
+            return
+        # on X11 this sets the `WM_HINTS` urgency flag,
+        # and gdk-win32 turns it into a `FlashWindowEx` call:
+        self.set_urgency_hint(attention)
+
     def set_opaque_region(self, rectangles=()):
         if self._opaque_region == rectangles:
             return
@@ -1691,6 +1708,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.may_send_client_properties()
 
     def cleanup(self) -> None:
+        self.set_attention_requested(False)
         self.cancel_window_state_timer()
         self.cancel_send_iconifiy_timer()
         self.cancel_moveresize_timer()

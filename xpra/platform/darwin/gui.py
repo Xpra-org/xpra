@@ -16,7 +16,7 @@ from AppKit import NSScreen, NSBeep, NSApp
 from xpra.os_util import gi_import
 from xpra.common import roundup
 from xpra.util.env import envint, envbool
-from xpra.platform.darwin import get_OSXApplication
+from xpra.platform.darwin import get_OSXApplication, INFO_REQUEST
 from xpra.log import Logger
 
 log = Logger("osx", "events")
@@ -128,6 +128,31 @@ def get_backends() -> list[type]:
 def system_bell(*_args) -> bool:
     NSBeep()
     return True
+
+
+# macOS asks for attention on behalf of the whole application and not per window
+# (see `NSApplication.requestUserAttention:`), so we have to keep track of which
+# windows want it and only issue a single request for all of them:
+attention_wids: set[int] = set()
+attention_request_id: int = -1
+
+
+def set_window_attention(wid: int, attention: bool) -> None:
+    global attention_request_id
+    if attention:
+        attention_wids.add(wid)
+    else:
+        attention_wids.discard(wid)
+    macapp = get_OSXApplication()
+    log("set_window_attention(%#x, %s) wids=%s, request=%i, macapp=%s",
+        wid, attention, attention_wids, attention_request_id, macapp)
+    if not macapp:
+        return
+    if attention_wids and attention_request_id < 0:
+        attention_request_id = macapp.attention_request(INFO_REQUEST)
+    elif not attention_wids and attention_request_id >= 0:
+        macapp.cancel_attention_request(attention_request_id)
+        attention_request_id = -1
 
 
 def _sizetotuple(s) -> tuple[int, int]:

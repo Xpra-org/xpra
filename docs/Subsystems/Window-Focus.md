@@ -437,4 +437,11 @@ On the client side, the win32 shim watches `WM_ACTIVATEAPP` to detect session le
 and the macOS shim uses `activateIgnoringOtherApps:` as a focus workaround
 ([xpra.platform.darwin.gui](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/darwin/gui.py)).
 
+The "polite fallback" is forwarded rather than replayed: the server exposes the merged
+`WM_HINTS` urgency and `_NET_WM_STATE_DEMANDS_ATTENTION` state as the `attention-requested`
+window metadata attribute, and each client maps it to whatever its own desktop uses -
+`gtk_window_set_urgency_hint` on X11, `FlashWindowEx` on MS Windows and
+`requestUserAttention:` on macOS. The server never tries to raise or focus the window
+itself for this: which windows get to interrupt the user is the client desktop's decision.
+
 Debugging output for all of this is available with `-d focus`.

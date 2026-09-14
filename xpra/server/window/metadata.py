@@ -66,6 +66,7 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "skip-pager": False,
     "modal": False,
     "focused": False,
+    "attention-requested": False,
     "has-alpha": False,
     "override-redirect": False,
     "tray": False,

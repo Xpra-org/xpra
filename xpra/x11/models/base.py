@@ -246,6 +246,7 @@ class BaseWindowModel(CoreX11WindowModel):
         "group-leader", "window-type", "workspace", "strut", "opacity",
         "content-types",
         # virtual attributes:
+        "attention-requested",
         "fullscreen", "focused", "maximized", "above", "below", "shaded",
         "skip-taskbar", "skip-pager", "sticky",
     ]
@@ -291,6 +292,7 @@ class BaseWindowModel(CoreX11WindowModel):
         super().__init__(xid)
         self.last_unmap_serial = 0
         self._input_field = True  # The WM_HINTS input field
+        self._wm_hints_urgent = False  # the last urgency value we saw in WM_HINTS
         self._content_type_retry_pending = False
         if GUESS_CONTENT:
             # watch for changes to properties that are used to derive the content-type:
@@ -444,7 +446,15 @@ class BaseWindowModel(CoreX11WindowModel):
         if "window_group" in wm_hints:
             group_leader = wm_hints.get("window_group", 0)
         self._updateprop("group-leader", group_leader)
-        self._updateprop("attention-requested", wm_hints.get("urgency", False))
+        # `attention-requested` is a virtual property backed by `state`,
+        # so it must be updated via `update_wm_state` and not `_updateprop`.
+        # Only act on actual changes to the urgency bit: applications update
+        # WM_HINTS for unrelated reasons and we would then clear a request
+        # made through `_NET_WM_STATE_DEMANDS_ATTENTION` instead.
+        urgent = wm_hints.get("urgency", False)
+        if urgent != self._wm_hints_urgent:
+            self._wm_hints_urgent = urgent
+            self.update_wm_state("attention-requested", urgent)
         _input = wm_hints.get("input")
         metalog("wm_hints.input = %s", _input)
         # we only set this value once:

@@ -145,6 +145,10 @@ def set_exit_cb(ecb: Callable):
 
 macapp = None
 
+# constants for `GtkosxApplication.attention_request`:
+CRITICAL_REQUEST = 0
+INFO_REQUEST = 10
+
 
 def get_OSXApplication():
     global macapp
