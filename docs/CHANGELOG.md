@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.4] 2026-09-13
+## [6.5.4] 2026-09-14
 * 🔧 Platforms, build and packaging:
   * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
   * [wayland: link to wayland-server](https://github.com/Xpra-org/xpra/commit/36bae2f550e15500d4691795126bccb222bfae83)
@@ -12,7 +12,7 @@
   * [MS Windows builds find the version-stamping tool reliably](https://github.com/Xpra-org/xpra/commit/881aefe7fc831d7305d1c5eccb1bf21b0c664cc5)
   * [Debian packages retain the Wireshark dissector when the normal packaging path is unavailable](https://github.com/Xpra-org/xpra/commit/6ab686bc9f21be9b3c9bed191514229719b9ad4a)
 * ⚠️ Major:
-  * [OpenGL windows can remain blank until they receive a configure event](https://github.com/Xpra-org/xpra/commit/94c55c05fb11cb1a985a1e3cc03bc5634e9874d2)
+  * [OpenGL windows can remain blank until they receive a configure event](https://github.com/Xpra-org/xpra/commit/3b3bc5aabdcb5a94afab2122a73c4eadfa9c8531)
   * [crash: don't assume Gdk displays are X11 displays](https://github.com/Xpra-org/xpra/commit/d448cf6c5bfc6b608e641f1ecc465d6816c6cb38)
   * [Wayland clients don't need a X11 display](https://github.com/Xpra-org/xpra/commit/92ddb0189adeec54760edc9654c06250adb91aef)
   * [stale X11 timestamps cause focus issues](https://github.com/Xpra-org/xpra/commit/2896248d67d6c01ba3f5afaa9f947ac82393efaf)
@@ -30,6 +30,9 @@
   * [mmap-based forwarding recognizes its current attributes and remains usable](https://github.com/Xpra-org/xpra/commit/8367c9d7aa886d85da1a477ca44e61ec2d5bba3b)
   * [monitor refresh rates are normalized when supplied in different forms](https://github.com/Xpra-org/xpra/commit/97a00642c56d20ebcc9fcfcafc901a7710456859)
   * [normalized monitor refresh rates retain the intended configured value](https://github.com/Xpra-org/xpra/commit/7c1c52dbe328ac039ca69bc7c27cec3089e81039)
+  * [GTK clients fail to restack a window above or below another window](https://github.com/Xpra-org/xpra/commit/13843cb28c36d35f48a4008a3e12e165a201a974)
+  * [resizing desktop sessions has no effect on Xvfb displays](https://github.com/Xpra-org/xpra/commit/91821990d2f67c5e9333fda3d8866b5feecbbd50)
+  * [window managers in resized desktop sessions keep placing windows and panels using the old monitor size](https://github.com/Xpra-org/xpra/commit/9752434151dfb6079cac83da31aee5746c3c3b72)
 * Wayland backend:
   * [screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
   * [windows can end up duplicated on clients](https://github.com/Xpra-org/xpra/commit/33256c95d4c636982c6c6611503cd57606da9c36)
@@ -50,6 +53,9 @@
   * [window repaints no longer leave an outdated auto-refresh pending](https://github.com/Xpra-org/xpra/commit/8e142a5b00707a0447936090e7bfb3038d5c908b)
   * [client shutdown cleans up delayed redraws](https://github.com/Xpra-org/xpra/commit/dcfcf9bd3296beaff4b58881d57d2602891e1b8e)
   * [dropped delayed screen updates are acknowledged so later updates can proceed](https://github.com/Xpra-org/xpra/commit/60a7aa82a9403820accab8a20f1e938d59bb0650)
+  * [strict encoding requests can be downgraded before the per-window capabilities are received](https://github.com/Xpra-org/xpra/commit/a362e493353961d98dabf1d7e7ade864017568fb)
+  * [clients that only accept BGRX / BGRA pixels, like MS Windows GDI rendering, fail to paint RGBX / RGBA updates](https://github.com/Xpra-org/xpra/commit/d8b503908722f446b38cc20c5c440a08e1e79db6)
+  * [video pipeline setup can race with cleanup and leave a mismatched colourspace converter and video encoder](https://github.com/Xpra-org/xpra/commit/06f92fec66711e2325dde5ff62390aee37437bd0)
 * CUDA and NVENC:
   * [CUDA device detection fails when mmap is enabled](https://github.com/Xpra-org/xpra/commit/ff8ffc5486f523617e459aea483b59589b4ddd18)
   * [CUDA video conversion keeps colour values within the valid range](https://github.com/Xpra-org/xpra/commit/8cbb72ef852352985bb9141a7e411a2ced5b4fc7)
@@ -70,12 +76,13 @@
   * [the shadow screenshot tool works again](https://github.com/Xpra-org/xpra/commit/59f2b7a0b1ea58db0133025149ab804c9b29e1f9)
   * [session cleanup removes dangling SSH-agent links](https://github.com/Xpra-org/xpra/commit/fb455661350e09bafc04f196abcc68bdf2299648)
   * [server runtime directories are created more safely and reliably](https://github.com/Xpra-org/xpra/commit/3f0e754d54579ab4fae7292d872e2e102dc359a7)
+  * [with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes](https://github.com/Xpra-org/xpra/commit/aefa64cb2042170dc1ffe5044998f8d746fd39f9)
 * *️⃣ Keyboard:
   * [multiple keyboard layouts supplied on the command line are applied correctly](https://github.com/Xpra-org/xpra/commit/27163f510760c67945fafd80a800d6ef473af9e9)
   * [clients keep typing the right keys after the server keyboard layout changes](https://github.com/Xpra-org/xpra/commit/52a0bc17610b5c55b70efa1a7cbf460087440395)
   * [Page Up, media and other differently named X11/GTK keys work on non-X11 clients](https://github.com/Xpra-org/xpra/commit/1756e13acdf4cc5a374fc52f9de7252051e3be64)
   * [invalid native keycodes no longer produce the wrong character](https://github.com/Xpra-org/xpra/commit/db33a0cdbe2e362b3b0c8bce1cb9e85e47592dc8)
-  * [keyboard fallbacks preserve the client layout group](https://github.com/Xpra-org/xpra/commit/75f3088a87b0e9e9729b409c94cd007f2b43d178)
+  * [keyboard fallbacks preserve the client layout group](https://github.com/Xpra-org/xpra/commit/75f3088a87b0e9e9729b409c94cd007f2b43d178) + [fixup](https://github.com/Xpra-org/xpra/commit/d13569e5b102eaf30b09642e4f68f26dd75e31aa)
   * [keyboard fallbacks choose a consistent primary layout when no group matches](https://github.com/Xpra-org/xpra/commit/e4deae2288ffcf1eb27e33cf48bbc9b958a0b2d4)
   * [keyboard fallbacks apply the modifiers needed to type the intended character](https://github.com/Xpra-org/xpra/commit/8b49263cc7cd30d6f8ca1842a2a9277942dde25e)
   * [MS Windows clients pick up keyboard-layout changes reliably](https://github.com/Xpra-org/xpra/commit/236082efa362f61c18f86961fb5b482e4c0c59f1)
@@ -108,7 +115,7 @@
   * [file-transfers disabled by printing](https://github.com/Xpra-org/xpra/commit/913053ceb8bc8068ab07d60472a85825ae7dfd68)
 * 💄 Cosmetic:
   * [GTK clients can send duplicate scroll events](https://github.com/Xpra-org/xpra/commit/34a50cac8b964b53128a4f8d0b3a7274611c0f79)
-  * [expose monitor names](https://github.com/Xpra-org/xpra/commit/902f64244f8d01d344ea03aa7ecea392e76d89ea)
+  * [expose monitor names](https://github.com/Xpra-org/xpra/commit/902f64244f8d01d344ea03aa7ecea392e76d89ea) + [on macOS](https://github.com/Xpra-org/xpra/commit/63c1f9d1e623eb78f21da4f0397f11df1694c3a0)
   * [make audio test more reliable](https://github.com/Xpra-org/xpra/commit/65004e4144653adbbbbafb1a3e8af2109a2027f7) + [fixup](https://github.com/Xpra-org/xpra/commit/82e79e9ea16d039f47cd824e84f62a6dd02684a7)
   * [skip wayland window test when the bindings are not available](https://github.com/Xpra-org/xpra/commit/d45c3f2eb00653ceda7d968386c28c8630cb26d7)
   * [paramiko strict type check](https://github.com/Xpra-org/xpra/commit/19380229b392c7df946635d42ae652722b43556b)
@@ -117,12 +124,14 @@
   * [duplicate registration of pointer grab handlers](https://github.com/Xpra-org/xpra/commit/7a9d80c325c2040b8dd6ce001725b94d9af87fe2)
   * [silence spurious GCC warnings](https://github.com/Xpra-org/xpra/commit/a7e184aeb2dc4768684e1cfc12191199d6ba4bf5)
   * [spurious packet errors on client disconnection](https://github.com/Xpra-org/xpra/commit/abc0777c6678d698798df561394fd05ef018d1e0)
+  * [logging error during encoding initialization when encoding debug logging is enabled](https://github.com/Xpra-org/xpra/commit/d0019abf940839cc38ce9eff2015d1ef948fb71a)
   * [wrong colours in example dialog](https://github.com/Xpra-org/xpra/commit/c6a7b68da3aff9cf9cd931cec46675cb7c890765)
   * [unit tests fixes](https://github.com/Xpra-org/xpra/commit/0a1ec7a682ee9cf0ba3199b7e9496942a4c1899f): [clipboard](https://github.com/Xpra-org/xpra/commit/f2a59ddb3b80865de3422655ab4c4c2d2d048c80), [stop display](https://github.com/Xpra-org/xpra/commit/a06a6d1b3bbe40782fe1d6198195e502715f7192)
   * [make it easier to see which tests have failed](https://github.com/Xpra-org/xpra/commit/eaa4ab710de18f8e94749730e28c578ae0e1125a) [and which are slow](https://github.com/Xpra-org/xpra/commit/bb94b6e177d130ea4a908efb432663bee644af91)
   * [handler is already registered](https://github.com/Xpra-org/xpra/commit/9fbef47e45bc91df70dae1ae7ff7ef61789845b2)
   * [cleanup pam config](https://github.com/Xpra-org/xpra/commit/f651735c15ed59ec675591b98cfa4db266762cce)
   * [installed test suites are assembled correctly](https://github.com/Xpra-org/xpra/commit/208d14761334207543c3ff9c0e4745d19a9bb410)
+  * [X11 event filter regression test fails on this branch](https://github.com/Xpra-org/xpra/commit/708672fe63aa1b81add1e55c4a7389a78368bbde)
   * [tests recover quickly from stale sockets rather than repeatedly waiting for timeouts](https://github.com/Xpra-org/xpra/commit/0a014b931863f852d7102a0ca9c81fa6b6213e5e)
 
 ## [6.5.3] 2026-08-18
