@@ -5,7 +5,7 @@
 
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import, WIN32
+from xpra.os_util import gi_import
 from xpra.util.env import envbool, first_time
 from xpra.log import Logger
 
@@ -119,7 +119,8 @@ def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | N
         return None
     GdkPixbuf = gi_import("GdkPixbuf")
     from xpra.util.system import is_Wayland
-    USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", not WIN32 and not is_Wayland())
+    # wayland does not give us cursor images, it only knows the names:
+    USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", not is_Wayland())
     log("make_cursor(%s) has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
         Ellipsizer(cursor_data),
         len(cursor_data) >= 10, bool(cursor_types), xscale, yscale, USE_LOCAL_CURSORS)
