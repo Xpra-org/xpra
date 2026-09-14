@@ -41,10 +41,30 @@ def get_default_cursor() -> Gdk.Cursor:
     return Gdk.Cursor.new_from_name(display, "default")
 
 
-def get_local_cursor(cursor_name: str):
-    display = Gdk.Display.get_default()
-    if not cursor_name or not display:
-        return None
+# the servers send x11 cursor names,
+# which the other platforms don't necessarily know:
+# macos only has the css names, win32 only the legacy cursor types,
+# and some names have no equivalent at all - just something close enough:
+CURSOR_ALIASES: dict[str, tuple[str, ...]] = {
+    "size_ver": ("ns-resize", "sb_v_double_arrow"),
+    "size_hor": ("ew-resize", "sb_h_double_arrow"),
+    "size_fdiag": ("nwse-resize", "bottom_right_corner"),
+    "size_bdiag": ("nesw-resize", "bottom_left_corner"),
+    "size_all": ("move", "fleur"),
+    "sb_v_double_arrow": ("ns-resize", ),
+    "sb_h_double_arrow": ("ew-resize", ),
+    "top_side": ("n-resize", "ns-resize"),
+    "bottom_side": ("s-resize", "ns-resize"),
+    "left_side": ("w-resize", "ew-resize"),
+    "right_side": ("e-resize", "ew-resize"),
+    "top_left_corner": ("nw-resize", "nwse-resize"),
+    "top_right_corner": ("ne-resize", "nesw-resize"),
+    "bottom_left_corner": ("sw-resize", "nesw-resize"),
+    "bottom_right_corner": ("se-resize", "nwse-resize"),
+}
+
+
+def new_cursor(display, cursor_name: str):
     try:
         cursor = Gdk.Cursor.new_from_name(display, cursor_name)
     except TypeError:
@@ -52,21 +72,35 @@ def get_local_cursor(cursor_name: str):
         cursor = None
     if cursor:
         log("Gdk.Cursor.new_from_name(%s, %s)=%s", display, cursor_name, cursor)
-    else:
-        gdk_cursor = cursor_types.get(cursor_name.upper())
-        log("gdk_cursor(%s)=%s", cursor_name, gdk_cursor)
-        if gdk_cursor:
-            try:
-                cursor = Gdk.Cursor.new_for_display(display, gdk_cursor)
-                log("Cursor.new_for_display(%s, %s)=%s", display, gdk_cursor, cursor)
-            except TypeError as e:
-                log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
-                if first_time("cursor:%s" % cursor_name.upper()):
-                    log.error("Error creating cursor %s: %s", cursor_name.upper(), e)
-    if cursor:
-        pixbuf = cursor.get_image()
-        log("image=%s", pixbuf)
-        return pixbuf
+        return cursor
+    gdk_cursor = cursor_types.get(cursor_name.upper())
+    log("gdk_cursor(%s)=%s", cursor_name, gdk_cursor)
+    if gdk_cursor is None:
+        return None
+    try:
+        cursor = Gdk.Cursor.new_for_display(display, gdk_cursor)
+        log("Cursor.new_for_display(%s, %s)=%s", display, gdk_cursor, cursor)
+        return cursor
+    except TypeError as e:
+        log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
+        if first_time("cursor:%s" % cursor_name.upper()):
+            log.error("Error creating cursor %s: %s", cursor_name.upper(), e)
+    return None
+
+
+def get_local_cursor(cursor_name: str):
+    display = Gdk.Display.get_default()
+    if not cursor_name or not display:
+        return None
+    # some cursors exist but have no image we can use (win32 does that),
+    # so keep trying the aliases until we find one we can paint:
+    for name in (cursor_name, ) + CURSOR_ALIASES.get(cursor_name.lower(), ()):
+        cursor = new_cursor(display, name)
+        if cursor:
+            pixbuf = cursor.get_image()
+            log("%s.get_image()=%s", name, pixbuf)
+            if pixbuf:
+                return pixbuf
     if cursor_name not in missing_cursor_names:
         log("cursor name '%s' not found", cursor_name)
         missing_cursor_names.add(cursor_name)
