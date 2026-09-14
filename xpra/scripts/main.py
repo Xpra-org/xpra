@@ -2475,7 +2475,10 @@ def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], ar
                 start_thread(proc.wait, "server-startup-reaper")
     if not display:
         # use display specified on command line:
-        display = pick_display(error_cb, opts, args, cmdline)
+        try:
+            display = pick_display(error_cb, opts, args, cmdline)
+        except ValueError as e:
+            raise InitExit(ExitCode.SERVER_NOT_FOUND, str(e)) from None
     delpath = ""
     if display and not server_mode.startswith("shadow"):
         display_name = display_name or display.get("display") or display.get("display_name")

@@ -27,6 +27,7 @@
   * [X11 error callbacks are safe when they run outside the main Python thread](https://github.com/Xpra-org/xpra/commit/4bbef138154edee5524173be2cc5df6fe9e971d9)
   * [X11 error handling no longer consumes CPU in a busy timer loop](https://github.com/Xpra-org/xpra/commit/031a9d02b11cc00c98182c8d4ea85d437b742c77)
   * [late mouse clicks for closed windows are ignored rather than affecting another window](https://github.com/Xpra-org/xpra/commit/5ff701393abe1cae295b10c8997fe812a1785d07)
+  * [simulated mouse releases retain the button originally pressed when modifiers change](https://github.com/Xpra-org/xpra/commit/cb32a201c912962e33a72d0407e683153927fe10)
   * [mmap-based forwarding recognizes its current attributes and remains usable](https://github.com/Xpra-org/xpra/commit/8367c9d7aa886d85da1a477ca44e61ec2d5bba3b)
   * [monitor refresh rates are normalized when supplied in different forms](https://github.com/Xpra-org/xpra/commit/97a00642c56d20ebcc9fcfcafc901a7710456859)
   * [normalized monitor refresh rates retain the intended configured value](https://github.com/Xpra-org/xpra/commit/7c1c52dbe328ac039ca69bc7c27cec3089e81039)
@@ -76,6 +77,7 @@
   * [the shadow screenshot tool works again](https://github.com/Xpra-org/xpra/commit/59f2b7a0b1ea58db0133025149ab804c9b29e1f9)
   * [session cleanup removes dangling SSH-agent links](https://github.com/Xpra-org/xpra/commit/fb455661350e09bafc04f196abcc68bdf2299648)
   * [server runtime directories are created more safely and reliably](https://github.com/Xpra-org/xpra/commit/3f0e754d54579ab4fae7292d872e2e102dc359a7)
+  * [proxy startup reports a missing display cleanly instead of raising an internal error](https://github.com/Xpra-org/xpra/commit/aba3d8e3114cfc8bcd9ffff0b9d6d62607e1bb96)
   * [with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes](https://github.com/Xpra-org/xpra/commit/aefa64cb2042170dc1ffe5044998f8d746fd39f9)
 * *️⃣ Keyboard:
   * [multiple keyboard layouts supplied on the command line are applied correctly](https://github.com/Xpra-org/xpra/commit/27163f510760c67945fafd80a800d6ef473af9e9)
