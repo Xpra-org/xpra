@@ -40,16 +40,19 @@ extern "C" __global__ void BGRX_to_NV12(uint8_t *srcImage, int src_w, int src_h,
         return;
     }
 
-    //edge-extend the valid content into the aligned output padding
-    const int src_x = min(dst_x * src_w / dst_w, w - 1);
-    const int src_y = min(dst_y * src_h / dst_h, h - 1);
+    // Map every output luma pixel independently.  Mapping only dst_x/dst_y
+    // and then incrementing the source coordinate made each 2x2 output block
+    // sample a contiguous 2x2 source block, irrespective of the scale.
     uint8_t R[4];
     uint8_t G[4];
     uint8_t B[4];
     for (int j = 0; j < 2; j++) {
-        const int sy = min(src_y + j, h - 1);
+        const int dy = dst_y + j;
+        // Pixel-centre nearest-neighbour coordinate, clamped for padding.
+        const int sy = min(((2 * dy + 1) * src_h) / (2 * dst_h), h - 1);
         for (int i = 0; i < 2; i++) {
-            const int sx = min(src_x + i, w - 1);
+            const int dx = dst_x + i;
+            const int sx = min(((2 * dx + 1) * src_w) / (2 * dst_w), w - 1);
             const uint32_t si = (sy * srcPitch) + sx * 4;
             const int p = j * 2 + i;
             R[p] = srcImage[si+2];
