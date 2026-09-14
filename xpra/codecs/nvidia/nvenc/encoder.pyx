@@ -96,7 +96,7 @@ from xpra.codecs.nvidia.nvenc.api cimport (
     NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME,
     NV_ENC_PARAMS_RC_CONSTQP, NV_ENC_PARAMS_RC_VBR, NV_ENC_LEVEL, NV_ENC_LEVEL_AUTOSELECT,
     NV_ENC_LEVEL_AV1_AUTOSELECT, NV_ENC_TIER_AV1_0, NV_ENC_TIER_AV1_1, NV_ENC_AV1_PART_SIZE_AUTOSELECT,
-    NV_ENC_VUI_COLOR_PRIMARIES_BT709, NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709, NV_ENC_VUI_MATRIX_COEFFS_BT709,
+    NV_ENC_VUI_COLOR_PRIMARIES_BT709, NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SRGB, NV_ENC_VUI_MATRIX_COEFFS_SMPTE170M,
     NV_ENC_BIT_DEPTH_8,
 )
 
@@ -1068,10 +1068,14 @@ cdef class Encoder:
         vui.videoSignalTypePresentFlag = 1          # videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present
         vui.videoFormat = 0                         # 0=Component
         vui.videoFullRangeFlag = self.full_range
-        vui.colourDescriptionPresentFlag = 0
-        #vui.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
-        #vui.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
-        #vui.colourMatrix = 5    #AVCOL_SPC_BT470BG  - switch to AVCOL_SPC_BT709?
+        # Xpra's RGB-to-YUV kernels use the Rec. 601 (Kr=0.299, Kb=0.114)
+        # matrix. The captured framebuffer is sRGB, though, so its primaries
+        # and transfer characteristics must not be advertised as legacy SDTV.
+        # SMPTE 170M is the H.273/AVC representation of that Rec. 601 matrix.
+        vui.colourDescriptionPresentFlag = 1
+        vui.colourPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_BT709
+        vui.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SRGB
+        vui.colourMatrix = NV_ENC_VUI_MATRIX_COEFFS_SMPTE170M
 
     cdef void tune_hevc(self, NV_ENC_CONFIG_HEVC *hevc, int gopLength):
         hevc.chromaFormatIDC = self.get_chroma_format()
@@ -1089,10 +1093,10 @@ cdef class Encoder:
         vui.videoSignalTypePresentFlag = 1          # videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present
         vui.videoFormat = 0                         # 0=Component
         vui.videoFullRangeFlag = self.full_range
-        vui.colourDescriptionPresentFlag = 0
-        #vui.colourPrimaries = 1
-        #vui.transferCharacteristics = 1
-        #vui.colourMatrix = 5
+        vui.colourDescriptionPresentFlag = 1
+        vui.colourPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_BT709
+        vui.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SRGB
+        vui.colourMatrix = NV_ENC_VUI_MATRIX_COEFFS_SMPTE170M
 
     cdef void tune_av1(self, NV_ENC_CONFIG_AV1 *av1, int gopLength):
         memset(av1, 0, sizeof(NV_ENC_CONFIG_AV1))
@@ -1127,8 +1131,8 @@ cdef class Encoder:
             av1.intraRefreshCnt = 4
         av1.maxNumRefFramesInDPB = 16
         av1.colorPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_BT709
-        av1.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709
-        av1.matrixCoefficients = NV_ENC_VUI_MATRIX_COEFFS_BT709
+        av1.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SRGB
+        av1.matrixCoefficients = NV_ENC_VUI_MATRIX_COEFFS_SMPTE170M
         av1.colorRange = self.full_range  # 1=full-range, 0=studio/limited
         av1.chromaSamplePosition = 0
         av1.outputBitDepth = NV_ENC_BIT_DEPTH_8
