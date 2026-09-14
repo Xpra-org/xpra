@@ -6,7 +6,6 @@
 
 import gc
 import unittest
-from types import SimpleNamespace
 
 from xpra.common import noop
 from xpra.net.common import BACKWARDS_COMPATIBLE, Packet
@@ -48,6 +47,12 @@ class PopupModalTest(unittest.TestCase):
                 return x, y
 
         class PopupManager(WindowManagerClient):
+            _ui_event = noop
+
+            @staticmethod
+            def destroy_window(_wid, window):
+                window.destroy()
+
             def make_new_window(self, wid, geom, backing_size, metadata, override_redirect, client_properties):
                 window = NativeWindow(geom, metadata, override_redirect)
                 window.backing_size = backing_size
@@ -80,12 +85,6 @@ class PopupModalTest(unittest.TestCase):
 
     def setUp(self):
         self.manager = self.manager_class()
-        self.manager.client = SimpleNamespace(
-            _ui_event=noop,
-            cook_metadata=self.manager.cook_metadata,
-            destroy_window=lambda _wid, window: window.destroy(),
-            subsystems={"display": SimpleNamespace(sx=int, sy=int)},
-        )
         self.addCleanup(self.destroy_windows)
 
     def destroy_windows(self):
@@ -103,7 +102,7 @@ class PopupModalTest(unittest.TestCase):
         )
 
     def create_popup(self, wid, **metadata):
-        self.manager._process_create(Packet(
+        self.manager._process_window_create(Packet(
             "window-create", wid, 10, 20, 120, 80,
             {"override-redirect": True, **metadata}, {"workspace": 2},
         ))
@@ -127,12 +126,12 @@ class PopupModalTest(unittest.TestCase):
     def test_first_popup_and_disabled_modal_policy(self):
         popup = self.create_popup(4)
         self.assertIsNotNone(popup)
-        self.manager._process_destroy(Packet("window-destroy", 4))
+        self.manager._process_window_destroy(Packet("window-destroy", 4))
         parent = self.register_window(3, modal=True)
         self.manager.modal_windows = False
         self.assertIsNotNone(self.create_popup(4))
         self.assertTrue(parent.get_modal())
-        self.manager._process_destroy(Packet("window-destroy", 4))
+        self.manager._process_window_destroy(Packet("window-destroy", 4))
         self.assertTrue(parent.get_modal())
 
     def test_relative_geometry_keeps_the_parent_and_popup_ids(self):
@@ -169,7 +168,7 @@ class PopupModalTest(unittest.TestCase):
         popup = self.register_window(4, override_redirect=True)
         modal_changes = []
         popup.connect("notify::modal", lambda window, _prop: modal_changes.append(window.get_modal()))
-        self.manager._process_destroy(Packet("window-destroy", 4))
+        self.manager._process_window_destroy(Packet("window-destroy", 4))
         self.assertTrue(parent.get_modal())
         self.assertFalse(unrelated.get_modal())
         self.assertFalse(tray.get_modal())
@@ -182,10 +181,10 @@ class PopupModalTest(unittest.TestCase):
         self.create_popup(4)
         self.create_popup(5)
         self.assertTrue(all(not parent.get_modal() for parent in parents))
-        self.manager._process_destroy(Packet("window-destroy", 4))
+        self.manager._process_window_destroy(Packet("window-destroy", 4))
         self.assertTrue(all(not parent.get_modal() for parent in parents))
         self.assertEqual(set(self.manager._id_to_window), {3, 5, 8})
-        self.manager._process_destroy(Packet("window-destroy", 5))
+        self.manager._process_window_destroy(Packet("window-destroy", 5))
         self.assertTrue(all(parent.get_modal() for parent in parents))
         self.assertEqual(set(self.manager._id_to_window), {3, 8})
 
