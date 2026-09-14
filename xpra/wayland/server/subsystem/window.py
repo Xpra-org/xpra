@@ -299,6 +299,10 @@ class WaylandWindowServer(WindowServer):
 
     def subsurface_image(self, wid: int, image: ImageWrapper,
                          logical_w: int, logical_h: int, native_w: int, native_h: int) -> None:
+        """Handle ``subsurface-image`` signals dynamically connected in ``new_subsurface``.
+
+        ``Subsurface.commit`` emits this signal after capturing damaged child pixels.
+        """
         info = self.subsurface_info.get(wid)
         if not info:
             log("subsurface-image: no parent info for wid=%i, dropping", wid)
