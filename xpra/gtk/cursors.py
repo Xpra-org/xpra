@@ -99,7 +99,9 @@ def get_local_cursor(cursor_name: str):
         if cursor:
             pixbuf = cursor.get_image()
             log("%s.get_image()=%s", name, pixbuf)
-            if pixbuf:
+            # #2498: gtk3 on MS Windows hands out empty pixel buffers,
+            # which would paint an invisible cursor:
+            if pixbuf and any(pixbuf.get_pixels()):
                 return pixbuf
     if cursor_name not in missing_cursor_names:
         log("cursor name '%s' not found", cursor_name)
