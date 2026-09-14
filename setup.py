@@ -3580,7 +3580,8 @@ toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia.cuda")
 CUDA_BIN = f"{share_xpra}/cuda"
 if cuda_kernels_ENABLED:
     kernels = (
-        "XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444",
+        "XRGB_to_NV12", "XRGB_to_NV12_box", "XRGB_to_YUV444",
+        "BGRX_to_NV12", "BGRX_to_NV12_box", "BGRX_to_YUV444",
         "BGRX_to_RGB", "RGBX_to_RGB", "RGBA_to_RGBAP", "BGRA_to_RGBAP",
     )
     rebuild = []

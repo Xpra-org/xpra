@@ -113,7 +113,8 @@ def main(args) -> int:
     nvcc_args = get_nvcc_args(nvcc, nvcc_version)
     if len(args) == 1:
         kernels = (
-            "XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444",
+            "XRGB_to_NV12", "XRGB_to_NV12_box", "XRGB_to_YUV444",
+            "BGRX_to_NV12", "BGRX_to_NV12_box", "BGRX_to_YUV444",
             "BGRX_to_RGB", "RGBX_to_RGB", "RGBA_to_RGBAP", "BGRA_to_RGBAP",
         )
     else:

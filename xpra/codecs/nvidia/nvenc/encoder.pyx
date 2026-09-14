@@ -109,6 +109,9 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 DESIRED_TUNING = os.environ.get("XPRA_NVENC_TUNING", "")
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "") or os.environ.get("XPRA_NVENC_SAVE_TO_FILE", "")
+NV12_SCALING_FILTER = os.environ.get("XPRA_NVENC_NV12_SCALING_FILTER", "point").strip().lower()
+if NV12_SCALING_FILTER not in ("point", "box", "auto"):
+    raise ValueError(f"invalid NV12 scaling filter {NV12_SCALING_FILTER!r}: expected point, box, or auto")
 
 cdef int SUPPORT_30BPP = envbool("XPRA_NVENC_SUPPORT_30BPP", True)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
@@ -127,6 +130,8 @@ cdef int SUPPORT_ROI = envbool("XPRA_NVENC_ROI", False)
 cdef int ROI_CHANGED_DELTA = envint("XPRA_NVENC_ROI_CHANGED_DELTA", -8)
 # QP delta applied to macroblocks outside any damage region (fewer bits = lower quality)
 cdef int ROI_BACKGROUND_DELTA = envint("XPRA_NVENC_ROI_BACKGROUND_DELTA", 8)
+cdef int BOX_MIN_QUALITY = envint("XPRA_NVENC_NV12_BOX_MIN_QUALITY", 60)
+cdef int BOX_MAX_SPEED = envint("XPRA_NVENC_NV12_BOX_MAX_SPEED", 60)
 
 device_lock = Lock()
 
@@ -391,6 +396,7 @@ cdef class Encoder:
     cdef int width_mask
     cdef int height_mask
     cdef int scaling
+    cdef object scaling_filter
     cdef int speed
     cdef int quality
     cdef uint32_t target_bitrate
@@ -542,6 +548,7 @@ cdef class Encoder:
         self.scaled_width = options.intget("scaled-width", width)
         self.scaled_height = options.intget("scaled-height", height)
         self.scaling = bool(self.scaled_width!=self.width or self.scaled_height!=self.height)
+        self.scaling_filter = self.get_scaling_filter()
         self.input_width = roundup(width, 32)
         self.input_height = roundup(height, 32)
         self.encoder_width = roundup(self.scaled_width, 32)
@@ -780,7 +787,9 @@ cdef class Encoder:
             hmult = 3
         elif self.pixel_format=="NV12":
             assert YUV420_ENABLED
-            kernel_name = "%s_to_NV12" % (self.src_format.replace("A", "X"))  #ie: BGRX_to_NV12
+            kernel_name = "%s_to_NV12" % (self.src_format.replace("A", "X"))
+            if self.scaling_filter=="box":
+                kernel_name += "_box"
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12
             #1 full Y plane and 2 U+V planes subsampled by 4:
             plane_size_div = 2
@@ -1461,6 +1470,16 @@ cdef class Encoder:
     def get_encoding(self) -> str:
         return self.encoding
 
+    cdef str get_scaling_filter(self):
+        """Select once: dimensions and the initial speed/quality are context-static."""
+        if not self.scaling or (self.scaled_width>=self.width and self.scaled_height>=self.height):
+            return "point"
+        if NV12_SCALING_FILTER == "auto":
+            if self.quality>=BOX_MIN_QUALITY and self.speed<=BOX_MAX_SPEED:
+                return "box"
+            return "point"
+        return NV12_SCALING_FILTER
+
     def get_src_format(self) -> str:
         return self.src_format
 
@@ -1873,7 +1892,7 @@ cdef class Encoder:
             client_options["quality"] = min(99, self.quality)   #ensure we cap it at 99 because this is lossy
         if self.scaling:
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
-            client_options["scaling-quality"] = "low"   #our dumb scaling kernels produce low quality output
+            client_options["scaling-quality"] = self.scaling_filter
         cdef double end = monotonic()
         self.frames += 1
         self.last_frame_times.append((start, end))
