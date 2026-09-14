@@ -387,7 +387,12 @@ class PointerWindow(GtkStubWindow):
                 if SIMULATE_MOUSE_UP:
                     device_id = 0
                     wid = self.get_mouse_event_wid()
-                    server_button = self.translate_button(button, modifiers)
+                    # use the button we sent the press with:
+                    # the modifiers may have changed since, and `translate_button`
+                    # would then release a different button from the one held down
+                    server_button = self.button_pressed.get(button, -1)
+                    if server_button < 0:
+                        server_button = self.translate_button(button, modifiers)
                     sprops = {}
                     self._client.send_button(device_id, wid, server_button, False, pointer_data, modifiers, buttons,
                                              sprops)
