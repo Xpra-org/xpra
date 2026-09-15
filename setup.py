@@ -4025,12 +4025,20 @@ if ext_modules:
         })
 
     nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or EMULATED) else os.cpu_count()))
-    setup_options["ext_modules"] = cythonize(ext_modules,
-                                             nthreads=nthreads,
-                                             gdb_debug=debug_ENABLED,
-                                             compiler_directives=compiler_directives,
-                                             **cythonize_kwargs
-                                             )
+    # the "forkserver" (default on Linux since Python 3.14) and "spawn" (macOS and MS Windows) start methods
+    # re-run the main module in the worker processes, which would call `cythonize` again from there,
+    # but the workers only need `Cython.Build.Dependencies`, so hide this file from `multiprocessing`:
+    main_file = globals().pop("__file__", None)
+    try:
+        setup_options["ext_modules"] = cythonize(ext_modules,
+                                                 nthreads=nthreads,
+                                                 gdb_debug=debug_ENABLED,
+                                                 compiler_directives=compiler_directives,
+                                                 **cythonize_kwargs
+                                                 )
+    finally:
+        if main_file:
+            globals()["__file__"] = main_file
 if cmdclass:
     setup_options["cmdclass"] = cmdclass
 if scripts:
