@@ -466,7 +466,7 @@ class WindowManagerClient(StubClientMixin):
         ay = self.sy(y)
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
-        resize_counter = -1
+        resize_counter = 0
         if len(packet) > 6:
             resize_counter = int(packet[6])
         window = self.get_window(wid)
@@ -481,7 +481,7 @@ class WindowManagerClient(StubClientMixin):
         h = int(packet[3])
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
-        resize_counter = -1
+        resize_counter = 0
         if len(packet) > 4:
             resize_counter = int(packet[4])
         window = self.get_window(wid)

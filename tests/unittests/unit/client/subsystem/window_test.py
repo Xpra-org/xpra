@@ -6,42 +6,74 @@
 
 import unittest
 
+from xpra.net.common import Packet
 from xpra.util.objects import AdHocStruct
 from unit.process_test_util import DisplayContext
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class WindowManagerTest(ClientMixinTest):
+    def test_missing_resize_counter_defaults_to_zero(self):
+        from xpra.client.subsystem.window.manager import WindowManagerClient
 
-	def test_windowmanager(self):
-		with DisplayContext():
-			from xpra.client.subsystem.window import WindowClient
-			def _WindowClient():
-				def get_mouse_position():
-					return 0, 0
-				wc = WindowClient()
-				wc.get_mouse_position = get_mouse_position
-				return wc
-			opts = AdHocStruct()
-			opts.system_tray = True
-			opts.cursors = True
-			opts.bell = True
-			opts.input_devices = True
-			opts.auto_refresh_delay = 0
-			opts.min_size = "100x100"
-			opts.max_size = "2000x2000"
-			opts.pixel_depth = 24
-			opts.windows = True
-			opts.window_close = "forward"
-			opts.modal_windows = True
-			opts.border = "red"
-			opts.mousewheel = "yes"
-			opts.tray_icon = "yes"
-			self._test_mixin_class(_WindowClient, opts)
+        resize_counters = []
+
+        class Window:
+            @staticmethod
+            def move_resize(_x, _y, _w, _h, resize_counter):
+                resize_counters.append(resize_counter)
+
+            @staticmethod
+            def resize(_w, _h, resize_counter):
+                resize_counters.append(resize_counter)
+
+        manager = AdHocStruct()
+        manager.sx = lambda value: value
+        manager.sy = lambda value: value
+        manager.get_window = lambda _wid: Window()
+        WindowManagerClient._process_window_move_resize(
+            manager,
+            Packet("window-move-resize", 1, 2, 3, 4, 5),
+        )
+        WindowManagerClient._process_window_resized(
+            manager,
+            Packet("window-resized", 1, 4, 5),
+        )
+        self.assertEqual(resize_counters, [0, 0])
+
+    def test_windowmanager(self):
+        with DisplayContext():
+            from xpra.client.subsystem.window import WindowClient
+
+            def _WindowClient():
+                def get_mouse_position():
+                    return 0, 0
+
+                wc = WindowClient()
+                wc.get_mouse_position = get_mouse_position
+                return wc
+
+            opts = AdHocStruct()
+            opts.system_tray = True
+            opts.cursors = True
+            opts.bell = True
+            opts.input_devices = True
+            opts.auto_refresh_delay = 0
+            opts.min_size = "100x100"
+            opts.max_size = "2000x2000"
+            opts.pixel_depth = 24
+            opts.windows = True
+            opts.window_close = "forward"
+            opts.modal_windows = True
+            opts.border = "red"
+            opts.mousewheel = "yes"
+            opts.tray_icon = "yes"
+            self._test_mixin_class(_WindowClient, opts)
+
 
 def main():
-	unittest.main()
+    unittest.main()
 
 
-if __name__ == '__main__':
-	main()
+if __name__ == "__main__":
+    main()

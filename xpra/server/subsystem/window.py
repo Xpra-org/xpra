@@ -466,7 +466,9 @@ class WindowServer(StubServerMixin):
         if not skip_geometry:
             config["geometry"] = (x, y, w, h)
         if len(packet) >= 8:
-            config["resize-counter"] = packet.get_u64(7)
+            # Legacy clients have historically used -1 as the sentinel for
+            # a resize notification without a counter.
+            config["resize-counter"] = packet.get_i64(7)
         if len(packet) >= 7:
             cprops = packet.get_dict(6)
             if cprops:
