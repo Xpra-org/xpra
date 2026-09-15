@@ -364,7 +364,26 @@ skip_build = "--skip-build" in argv
 ARCH = os.environ.get("MSYSTEM_CARCH", "") or get_status_output(["uname", "-m"])[1].strip("\n\r")
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 RISCV = ARCH.startswith("riscv")
-print(f"ARCH={ARCH}")
+
+
+def is_emulated() -> bool:
+    # qemu-user fakes `/proc/self/exe` and `/proc/cpuinfo` for the process it emulates,
+    # but not for other processes: a child's exe link points to the binfmt interpreter
+    if not LINUX:
+        return False
+    try:
+        with subprocess.Popen([sys.executable, "-c", "import sys;sys.stdin.read()"], stdin=subprocess.PIPE) as proc:
+            try:
+                exe = os.readlink(f"/proc/{proc.pid}/exe")
+            finally:
+                proc.stdin.close()
+    except OSError:
+        return False
+    return os.path.basename(exe).startswith("qemu-")
+
+
+EMULATED = (ARM or RISCV) and is_emulated()
+print(f"ARCH={ARCH}, EMULATED={EMULATED}")
 TIMEOUT = 60
 if ARM or RISCV:
     # arm64 and riscv builds run on emulated CPU, very slowly
@@ -3995,7 +4014,7 @@ if ext_modules:
             "profile" : True,
         })
 
-    nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or ARM or RISCV) else os.cpu_count()))
+    nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or EMULATED) else os.cpu_count()))
     setup_options["ext_modules"] = cythonize(ext_modules,
                                              nthreads=nthreads,
                                              gdb_debug=debug_ENABLED,
