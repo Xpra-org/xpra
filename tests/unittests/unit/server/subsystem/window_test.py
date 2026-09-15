@@ -7,7 +7,7 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import AdHocStruct, typedict
 from unit.test_util import stubbable
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
@@ -31,6 +31,7 @@ class WebcamMixinTest(ServerMixinTest):
         recorder.send_window_stacking.assert_called_once_with((3, 1, 2))
         regular.send_window_stacking.assert_not_called()
 
+    @unittest.skipUnless(BACKWARDS_COMPATIBLE, "legacy packets disabled")
     def test_legacy_configure_accepts_negative_resize_counter(self):
         from xpra.server.subsystem.window import WindowServer
 
