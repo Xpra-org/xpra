@@ -2999,12 +2999,22 @@ if cuda_kernels_ENABLED:
     if cuda_kernels_ENABLED:
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
     if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED or nvdec_ENABLED):
-        CUDA_BIN_DIR = os.path.abspath("./cuda/")
-        add_data_files("", glob(f"{CUDA_BIN_DIR}/cudart64*dll"))
+        # cuda 13 moved the DLLs from `bin` to `bin/x64`:
+        CUDA_BIN_DIRS = tuple(os.path.abspath(f"./cuda/{subdir}") for subdir in ("bin/x64", "bin", ""))
+
+        def add_cuda_dll(name: str) -> None:
+            for cuda_bin_dir in CUDA_BIN_DIRS:
+                dlls = glob(f"{cuda_bin_dir}/{name}64*dll")
+                if dlls:
+                    add_data_files("", dlls)
+                    return
+            print(f"Warning: no {name!r} DLL found in {CUDA_BIN_DIRS}")
+
+        add_cuda_dll("cudart")
         # if pycuda is built with curand, add this:
-        # add_data_files("", glob(f"{CUDA_BIN_DIR}/curand64*dll"))
+        # add_cuda_dll("curand")
         if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
-            add_data_files("", glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
+            add_cuda_dll("nvjpeg")
 if cuda_kernels_ENABLED or is_DEB():
     add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
