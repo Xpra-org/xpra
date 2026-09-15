@@ -3995,7 +3995,7 @@ if ext_modules:
             "profile" : True,
         })
 
-    nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or WIN32 or OSX or ARM or RISCV) else os.cpu_count()))
+    nthreads = int(os.environ.get("NTHREADS", 0 if (debug_ENABLED or ARM or RISCV) else os.cpu_count()))
     setup_options["ext_modules"] = cythonize(ext_modules,
                                              nthreads=nthreads,
                                              gdb_debug=debug_ENABLED,
