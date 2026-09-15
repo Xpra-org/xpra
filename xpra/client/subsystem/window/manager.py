@@ -626,7 +626,7 @@ class WindowManagerClient(StubClientSubsystem):
         ay = display.sy(y)
         aw = max(1, display.sx(w))
         ah = max(1, display.sy(h))
-        resize_counter = -1
+        resize_counter = 0
         if len(packet) > 6:
             resize_counter = packet.get_u64(6)
         window = self.get_window(wid)
@@ -642,7 +642,7 @@ class WindowManagerClient(StubClientSubsystem):
         display = self.get_subsystem("display")
         aw = max(1, display.sx(w))
         ah = max(1, display.sy(h))
-        resize_counter = -1
+        resize_counter = 0
         if len(packet) > 4:
             resize_counter = packet.get_u64(4)
         window = self.get_window(wid)

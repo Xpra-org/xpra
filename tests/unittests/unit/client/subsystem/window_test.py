@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from xpra.os_util import WIN32, OSX
+from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_STACKING
 from xpra.util.objects import AdHocStruct
 from unit.process_test_util import DisplayContext
@@ -15,6 +16,40 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class WindowManagerTest(ClientMixinTest):
+
+    def test_missing_resize_counter_defaults_to_zero(self):
+        from xpra.client.subsystem.window.manager import WindowManagerClient
+
+        resize_counters = []
+
+        class Display:
+            @staticmethod
+            def sx(value):
+                return value
+
+            @staticmethod
+            def sy(value):
+                return value
+
+        class Window:
+            @staticmethod
+            def move_resize(_x, _y, _w, _h, resize_counter):
+                resize_counters.append(resize_counter)
+
+            @staticmethod
+            def resize(_w, _h, resize_counter):
+                resize_counters.append(resize_counter)
+
+        manager = AdHocStruct()
+        manager.get_subsystem = lambda _name: Display()
+        manager.get_window = lambda _wid: Window()
+        WindowManagerClient._process_move_resize(
+            manager, Packet("window-move-resize", 1, 2, 3, 4, 5),
+        )
+        WindowManagerClient._process_resized(
+            manager, Packet("window-resized", 1, 4, 5),
+        )
+        self.assertEqual(resize_counters, [0, 0])
 
     @unittest.skipUnless(WIN32, "win32 only")
     def test_win32_window_stacking(self):

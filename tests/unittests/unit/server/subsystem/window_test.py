@@ -31,6 +31,20 @@ class WebcamMixinTest(ServerMixinTest):
         recorder.send_window_stacking.assert_called_once_with((3, 1, 2))
         regular.send_window_stacking.assert_not_called()
 
+    def test_legacy_configure_accepts_negative_resize_counter(self):
+        from xpra.server.subsystem.window import WindowServer
+
+        window_server = stubbable(WindowServer)(self)
+        window = Mock()
+        window.is_OR.return_value = False
+        window_server.is_readonly = lambda _proto: False
+        window_server.get_window = Mock(return_value=window)
+        window_server.do_process_window_configure = Mock()
+        packet = Packet("configure-window", 1, 2, 3, 4, 5, {}, -1)
+        window_server._process_configure_window(object(), packet)
+        config = window_server.do_process_window_configure.call_args.args[2]
+        self.assertEqual(config.intget("resize-counter"), -1)
+
     def test_x11_window_stacking_filter(self):
         from xpra.x11.subsystem.window import SeamlessWindowServer
 
