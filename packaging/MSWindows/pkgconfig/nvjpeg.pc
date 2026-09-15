@@ -1,9 +1,9 @@
 cudaroot=./cuda
-libdir=${cudaroot}/lib/x64
 includedir=${cudaroot}/include
 
 Name: nvjpeg
 Description: Library for the nvjpeg GPU compression
 Version: 13
 Cflags: "-I${includedir}" -Wno-error
-Libs: "-L${libdir}" -lnvjpeg
+# the import libraries are in either "lib/x64" or "lib/arm64":
+Libs: "-L${cudaroot}/lib/x64" "-L${cudaroot}/lib/arm64" -lnvjpeg

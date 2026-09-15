@@ -3627,8 +3627,9 @@ if cuda_kernels_ENABLED:
     if cuda_kernels_ENABLED:
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
     if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED or nvdec_ENABLED):
-        # cuda 13 moved the DLLs from `bin` to `bin/x64`:
-        CUDA_BIN_DIRS = tuple(os.path.abspath(f"./cuda/{subdir}") for subdir in ("bin/x64", "bin", ""))
+        # cuda 13 moved the DLLs from `bin` to `bin/x64` or `bin/arm64`:
+        CUDA_ARCH_BIN = "bin/arm64" if ARM else "bin/x64"
+        CUDA_BIN_DIRS = tuple(os.path.abspath(f"./cuda/{subdir}") for subdir in (CUDA_ARCH_BIN, "bin", ""))
 
         def add_cuda_dll(name: str) -> None:
             for cuda_bin_dir in CUDA_BIN_DIRS:
