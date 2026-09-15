@@ -5,8 +5,9 @@ SET KERNEL=%1
 SET CUDA_SRC=fs\share\xpra\cuda\%KERNEL%.cu
 SET CUDA_BIN=fs\share\xpra\cuda\%KERNEL%.fatbin
 
-SET NVCC_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\current\bin\
-SET NVCC=%NVCC_DIR%\nvcc.exe
+REM CUDA can be installed in the source tree, or in its default location:
+SET NVCC=cuda\bin\nvcc.exe
+IF NOT EXIST "%NVCC%" SET NVCC=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\current\bin\nvcc.exe
 
 CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
 CALL "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
