@@ -107,19 +107,22 @@ class CursorClient(StubClientSubsystem):
             "backwards-compatible": BACKWARDS_COMPATIBLE,
         }
         from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size
+        default_size = get_default_cursor_size()
+        # The server uses this value for Xcursor.size.  Cursor images are scaled
+        # by the client along with the desktop, so advertise the corresponding
+        # server-side (logical) size rather than our native cursor size.
+        display = self.get_subsystem("display")
+        xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
+        logical_default_size = round(sum(default_size) / (xscale + yscale))
         for name, size in {
-            "default": get_default_cursor_size(),
+            "default": (logical_default_size, logical_default_size),
             "max": get_max_cursor_size(),
         }.items():
             if min(size) > 0:
                 cursor_caps[name] = size
         if BACKWARDS_COMPATIBLE:
-            dsize = get_default_cursor_size()
-            if max(dsize) > 0:
-                # scaling factors are owned by the `display` subsystem:
-                display = self.get_subsystem("display")
-                xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
-                cursor_caps["size"] = round(sum(get_default_cursor_size()) / (xscale + yscale))
+            if logical_default_size > 0:
+                cursor_caps["size"] = logical_default_size
         caps: dict[str, Any] = {CursorClient.PREFIX: cursor_caps}
         if BACKWARDS_COMPATIBLE:
             caps["cursors"] = self.client_supports
