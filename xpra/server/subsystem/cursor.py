@@ -44,7 +44,7 @@ class CursorManager(StubSubsystem):
         else:
             windows_clients = len(self.get_sources_by_type(WindowsConnection, ss))
         if windows_clients > 0:
-            self.size = 24
+            self.size = 32
         else:
             caps = typedict(c.dictget("cursor"))
             if caps:

@@ -17,7 +17,7 @@ compression layer is stubbed with identity for the same reason.
 import unittest
 from unittest.mock import MagicMock
 
-from xpra.util.objects import AdHocStruct
+from xpra.util.objects import AdHocStruct, typedict
 from xpra.net.packet_type import CURSOR_DATA
 
 from unit.loopback_util import LoopbackTest
@@ -30,6 +30,27 @@ def _opts():
 
 
 class CursorLoopbackTest(LoopbackTest):
+
+    def test_shared_session_uses_32px_cursor_size(self):
+        """A shared X11 display needs one stable cursor-size fallback."""
+        from xpra.server.subsystem.cursor import CursorManager
+
+        server = AdHocStruct()
+        server.get_sources_by_type = lambda *_args: (object(),)
+        cursor = CursorManager(server)
+        cursor.add_new_client(AdHocStruct(), typedict({"cursor": {"default": (64, 64)}}))
+
+        self.assertEqual(cursor.size, 32)
+
+    def test_unshared_session_uses_reported_cursor_size(self):
+        from xpra.server.subsystem.cursor import CursorManager
+
+        server = AdHocStruct()
+        server.get_sources_by_type = lambda *_args: ()
+        cursor = CursorManager(server)
+        cursor.add_new_client(AdHocStruct(), typedict({"cursor": {"default": (64, 48)}}))
+
+        self.assertEqual(cursor.size, 64)
 
     def _connect(self):
         from xpra.client.subsystem.cursor import CursorClient
