@@ -2602,9 +2602,6 @@ if WIN32:
             ICONS = ["scalable", "cursors", "index.theme"]
             for theme in ("Adwaita", ):   # "hicolor"
                 add_dir("share/icons/"+theme, ICONS)
-            add_dir("share/themes/Windows-10", [
-                "CREDITS", "LICENSE.md", "README.md",
-                "gtk-3.20", "index.theme"])
         if gtk3_ENABLED or audio_ENABLED:
             # causes warnings:
             # add_dir('lib', ["gio"])

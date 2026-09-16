@@ -276,12 +276,6 @@ def do_init_env() -> None:
         # Gtk and gi:
         os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
         os.environ["PATH"] = os.pathsep.join(PATH)
-        if not os.environ.get("GTK_THEME") and not os.environ.get("GTK_DEBUG"):
-            for theme in ("Windows-10", "win32"):
-                tdir = os.path.join(edir, "share", "themes", theme)
-                if os.path.exists(tdir):
-                    os.environ["GTK_THEME"] = theme
-                    break
         # GStreamer's plugins:
         gst_dir = os.path.join(libdir, "gstreamer-1.0")   # ie: C:\Program Files\Xpra\lib\gstreamer-1.0
         os.environ["GST_PLUGIN_PATH"] = gst_dir
