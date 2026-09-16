@@ -7,7 +7,7 @@
 import win32con
 from typing import Any
 from collections.abc import MutableSequence, Callable
-from ctypes.wintypes import HWND, BYTE, HICON, HDC
+from ctypes.wintypes import HWND, BYTE, HICON, HDC, POINT
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
@@ -22,7 +22,7 @@ from xpra.platform.win32.common import (
     WNDPROC, WNDCLASSEX, RegisterClassExW, UnregisterClassW,
     CreateWindowExW, DestroyWindow, DefWindowProcW,
     CreateCompatibleDC, DeleteDC,
-    LoadCursor,
+    LoadCursor, SetCursor, GetCursorPos, WindowFromPoint, ScreenToClient, GetClientRect,
     ShowWindow, UpdateWindow,
     DestroyIcon, CREATESTRUCT,
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, GetWindowRect, SendMessageW,
@@ -190,6 +190,8 @@ class ClientWindow(GObject.GObject):
         self.pixels = c_void_p()
         self.hicon = 0
         self.hicons: set[HICON] = set()
+        # the cursor to show over the window contents, owned by the client:
+        self.hcursor = 0
         self.style = 0
         self.resize_counter = 0
         # state:
@@ -367,6 +369,11 @@ class ClientWindow(GObject.GObject):
             if msg == win32con.WM_GETMINMAXINFO and lparam:
                 self.apply_size_constraints(lparam)
                 return 0
+            if msg == win32con.WM_SETCURSOR and (lparam & 0xffff) == win32con.HTCLIENT and self.hcursor:
+                # only over the window contents,
+                # `DefWindowProcW` sets the resize cursors over the borders:
+                SetCursor(self.hcursor)
+                return 1
             if msg in (win32con.WM_ENTERSIZEMOVE, win32con.WM_ENTERMENULOOP):
                 # entering a native modal loop (window drag/resize, or system /
                 # popup menu tracking): keep GLib serviced for its duration, then
@@ -951,6 +958,26 @@ class ClientWindow(GObject.GObject):
         else:
             SetWindowPos(self.hwnd, win32con.HWND_BOTTOM, 0, 0, 0, 0, flags)
 
+    def set_cursor(self, hcursor: int) -> None:
+        """
+        Use this cursor over the window contents, or the default one if `hcursor` is 0.
+        """
+        log("set_cursor(%#x) hwnd=%#x", hcursor, self.hwnd)
+        self.hcursor = hcursor
+        # `WM_SETCURSOR` only comes with the next pointer event,
+        # so update it now if the pointer is already over the window contents:
+        if self.hwnd and self.is_pointer_over_contents():
+            SetCursor(hcursor or self.wc.hCursor)
+
+    def is_pointer_over_contents(self) -> bool:
+        pos = POINT()
+        if not GetCursorPos(byref(pos)) or (WindowFromPoint(pos) or 0) != self.hwnd:
+            return False
+        rect = RECT()
+        if not ScreenToClient(self.hwnd, byref(pos)) or not GetClientRect(self.hwnd, byref(rect)):
+            return False
+        return rect.left <= pos.x < rect.right and rect.top <= pos.y < rect.bottom
+
     def update_icon(self, img):
         iconlog("update_icon(%s) size=%s", img, img.size)
         self.hicon = img_to_hicon(img)
@@ -980,6 +1007,8 @@ class ClientWindow(GObject.GObject):
         for hicon in tuple(self.hicons):
             DestroyIcon(hicon)
         self.hicons.clear()
+        # the client destroys it once no window uses it anymore:
+        self.hcursor = 0
 
         if hdc := self.hdc:
             self.hdc = 0

@@ -20,6 +20,7 @@ from xpra.util.gobject import no_arg_signal
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.win32.gtk import is_loaded as gtk_is_loaded, load_gtk
+from xpra.client.win32.cursor import Win32Cursors
 from xpra.client.win32.subsystem.display import Win32DisplayClient
 from xpra.platform.gui import get_xdpi, get_ydpi
 from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
@@ -32,6 +33,7 @@ log = Logger("client")
 netlog = Logger("client", "network")
 keylog = Logger("client", "keyboard")
 grablog = Logger("client", "grab")
+cursorlog = Logger("client", "cursor")
 
 GLib = gi_import("GLib")
 GObject = gi_import("GObject")
@@ -103,6 +105,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         self.win32_message_source = 0
         self.wheel_delta = 0
         self._grab_handle = 0
+        self.hcursors = Win32Cursors()
         self.client_type = "win32"
         # connect the win32 window signals + create the native window for each new window:
         if window := self.get_subsystem("window"):
@@ -125,6 +128,8 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             self.win32_message_source = 0
             GLib.source_remove(wms)
         UIXpraClient.cleanup(self)
+        # the windows are gone by now:
+        self.hcursors.cleanup()
 
     def client_toolkit(self) -> str:
         return "Win32"
@@ -140,8 +145,24 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             position = display.cp(*position)
         return position
 
-    def set_windows_cursor(self, windows, cursor_data):
-        log("set_windows_cursor(%s, %s) not implemented in this backend", windows, cursor_data)
+    def set_windows_cursor(self, windows, cursor_data: Sequence) -> None:
+        cursorlog("set_windows_cursor(%s, %i values)", windows, len(cursor_data or ()))
+        hcursor = 0
+        if cursor_data:
+            display = self.get_subsystem("display")
+            xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
+            # an invalid cursor gives us 0, which is the default cursor:
+            hcursor = self.hcursors.get_hcursor(cursor_data, xscale, yscale)
+        cur = self.get_subsystem("cursor")
+        for window in windows:
+            set_cursor = getattr(window, "set_cursor", None)
+            if not set_cursor:
+                continue
+            # so the `cursor` subsystem can re-apply it, ie: when the scaling changes:
+            if cur:
+                cur._cursors[window] = cursor_data
+            set_cursor(hcursor)
+        self.hcursors.free_unused(getattr(window, "hcursor", 0) for window in self.get_windows())
 
     def window_grab(self, wid: int, window) -> None:
         # confine the pointer to the window (via `ClipCursor`):
