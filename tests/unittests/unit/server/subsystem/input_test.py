@@ -45,8 +45,21 @@ class InputMixinTest(ServerMixinTest):
     def test_exiting_client_settles_the_keys_it_pressed(self):
         with DisplayContext():
             mixin, source, device = self.make_keyboard_mixin()
+            idle_calls = []
+
+            def idle_add(callback, *args):
+                idle_calls.append((callback, args))
+                return 0
+
+            mixin.idle_add = idle_add
             source.key_events = 1
             self.emit("client-exited", source)
+            # Client cleanup is called by a protocol reader thread, whereas
+            # X11 keyboard operations must be performed by the main thread.
+            self.assertEqual(device.cleared, [])
+            self.assertEqual(idle_calls, [(mixin.clear_keys_pressed, ())])
+            callback, args = idle_calls[0]
+            callback(*args)
             self.assertEqual(device.cleared, [(10, )])
             self.assertEqual(mixin.keys_pressed, {})
 

@@ -469,7 +469,10 @@ class KeyboardManager(StubSubsystem):
     def client_exited(self, _server, ss) -> None:
         log("client_exited(%s) used keyboard=%s, keys pressed=%s", ss, self.used_keyboard(ss), self.keys_pressed)
         if self.used_keyboard(ss):
-            self.clear_keys_pressed()
+            # Client cleanup runs from the protocol reader thread.  The input
+            # device may use X11/XTest, which must only be accessed by the
+            # main thread.
+            self.idle_add(self.clear_keys_pressed)
 
     def clear_keys_pressed(self, *args) -> None:
         """
