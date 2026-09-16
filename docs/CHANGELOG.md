@@ -13,6 +13,8 @@
   * [Debian packages retain the Wireshark dissector when the normal packaging path is unavailable](https://github.com/Xpra-org/xpra/commit/6ab686bc9f21be9b3c9bed191514229719b9ad4a)
   * [Adwaita theme layout changes](https://github.com/Xpra-org/xpra/commit/319f6dc55393b6925f28b4ef7686db38cd460d7b) [+ remove unused references](https://github.com/Xpra-org/xpra/commit/e44bdd456fb9052df7ed9da7393b5d3bcaceaf97)
   * [remove outdated dependencies](https://github.com/Xpra-org/xpra/commit/00c12bf42cd6cb48a6d2e6202e34bd6e859a3706)
+* ✨ Features:
+  * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)
 * ⚠️ Major:
   * [warn rather than leaking memory with buggy Debian libraries](https://github.com/Xpra-org/xpra/commit/828279fa4aae80990c5a8a2df48daa73d49bbd80)
   * [OpenGL windows can remain blank until they receive a configure event](https://github.com/Xpra-org/xpra/commit/3b3bc5aabdcb5a94afab2122a73c4eadfa9c8531)

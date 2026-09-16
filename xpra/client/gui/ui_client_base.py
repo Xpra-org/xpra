@@ -16,7 +16,7 @@ from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
 from xpra.common import noerr, may_notify_client
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
-from xpra.net.common import Packet, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION
 from xpra.net.packet_type import CURSOR_SET, KEYBOARD_SYNC
 from xpra.os_util import gi_import
 from xpra.util.child_reaper import reaper_cleanup
@@ -246,6 +246,18 @@ class UIXpraClient(ClientBaseClass):
             c.setup_connection(self, conn)
 
     def parse_server_capabilities(self, c: typedict) -> bool:
+        # Servers running in backwards-compatible mode send the legacy packet
+        # names and capabilities layout that a non-compatible client cannot
+        # handle.
+        min_version = c.inttupleget("protocol-version")
+        if not BACKWARDS_COMPATIBLE and self._protocol.TYPE != "rfb" and (
+                not min_version or min_version < MIN_PROTOCOL_VERSION):
+            self.warn_and_quit(
+                ExitCode.INCOMPATIBLE_VERSION,
+                "the server is running in backwards compatible mode, which is not supported by clients "
+                "using `XPRA_BACKWARDS_COMPATIBLE=0`",
+            )
+            return False
         for cb in CLIENT_BASES:
             sublog("%s.parse_server_capabilities(..)", cb)
             try:
