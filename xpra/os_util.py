@@ -64,7 +64,11 @@ def gi_import(mod="Gtk", version="") -> ModuleType:
         except (ValueError, AssertionError) as e:
             raise ImportError(f"unable to import {mod!r} {version=!r}: {e}") from None
         import importlib
-        return importlib.import_module(f"gi.repository.{mod}")
+        module = importlib.import_module(f"gi.repository.{mod}")
+        if mod == "GLib":
+            from xpra.util.glib_idle import install
+            install(module)
+        return module
 
 
 def is_container() -> bool:
