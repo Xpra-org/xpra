@@ -690,14 +690,35 @@ def get_double_click_distance() -> tuple[int, int]:
         return -1, -1
 
 
+def _get_cursor_base_size() -> int:
+    """
+    The "pointer size" from the accessibility settings, in pixels at 96 DPI,
+    or 0 if there is none (Windows 10 before 1903).
+    """
+    try:
+        from winreg import OpenKey, HKEY_CURRENT_USER, QueryValueEx
+        with OpenKey(HKEY_CURRENT_USER, r"Control Panel\Cursors") as key:
+            return int(QueryValueEx(key, "CursorBaseSize")[0])
+    except (OSError, TypeError, ValueError):
+        log("_get_cursor_base_size()", exc_info=True)
+        return 0
+
+
 def get_default_cursor_size() -> tuple[int, int]:
     try:
         w = GetSystemMetrics(win32con.SM_CXCURSOR)
         h = GetSystemMetrics(win32con.SM_CYCURSOR)
-        return w, h
     except Exception as e:
         log.warn("failed to get the default cursor size: %s", e)
         return 32, 32
+    # `SM_CXCURSOR` follows the DPI (it is 32 at 96 DPI), but not the pointer size:
+    # Windows only applies that one to its own cursors, and the ones we create
+    # are shown at their own size, so the server has to draw them bigger for us
+    base = _get_cursor_base_size()
+    log("get_default_cursor_size() SM_CXCURSOR=%ix%i, CursorBaseSize=%i", w, h, base)
+    if base > 0:
+        w, h = round(w * base / 32), round(h * base / 32)
+    return w, h
 
 
 def get_max_cursor_size() -> tuple[int, int]:
