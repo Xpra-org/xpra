@@ -31,6 +31,10 @@
 #define LIBVA_POC_LSB_BITS (LIBVA_LOG2_MAX_PIC_ORDER_CNT_LSB_MINUS4 + 4)
 
 static libva_log_fn g_log_fn = NULL;
+/* `g_device` is empty on MS Windows - the adapter is picked by the driver rather than
+   named by a path - so it cannot double as the "have we probed yet?" flag: */
+static int g_probed = 0;
+static int g_available = 0;
 static char g_device[256] = "";
 static char g_vendor[256] = "";
 static char g_error[256] = "";
@@ -452,7 +456,7 @@ static int try_device(const char *device) {
 }
 
 #ifdef _WIN32
-LibVADecodeStatus libva_decode_startup(void) {
+static LibVADecodeStatus probe_devices(void) {
     g_error[0] = 0;
     if (try_device(""))
         return LIBVA_DEC_OK;
@@ -461,7 +465,7 @@ LibVADecodeStatus libva_decode_startup(void) {
     return LIBVA_DEC_NOT_AVAILABLE;
 }
 #else
-LibVADecodeStatus libva_decode_startup(void) {
+static LibVADecodeStatus probe_devices(void) {
     const char *env_device = getenv("XPRA_LIBVA_DEVICE");
     DIR *dir;
     struct dirent *entry;
@@ -496,8 +500,21 @@ LibVADecodeStatus libva_decode_startup(void) {
 }
 #endif
 
+/* Probing walks every profile and entrypoint of every adapter, which costs hundreds of
+   milliseconds - far too much for the capability queries below to each pay for, so the
+   outcome is remembered whether or not an adapter was found. */
+LibVADecodeStatus libva_decode_startup(void) {
+    if (!g_probed) {
+        g_probed = 1;
+        g_available = probe_devices() == LIBVA_DEC_OK;
+    }
+    return g_available ? LIBVA_DEC_OK : LIBVA_DEC_NOT_AVAILABLE;
+}
+
 void libva_decode_shutdown(void) {
     libva_log("libva decode shutdown");
+    g_probed = 0;
+    g_available = 0;
 }
 
 const char *libva_decode_get_device(void) {
@@ -522,7 +539,7 @@ int libva_decode_get_minor(void) {
 
 int libva_decode_supports(const char *encoding, const char *colorspace) {
     LibVACodec codec;
-    if (!g_device[0] && libva_decode_startup() != LIBVA_DEC_OK)
+    if (libva_decode_startup() != LIBVA_DEC_OK)
         return 0;
     if (!codec_from_name(encoding, &codec))
         return 0;
@@ -574,7 +591,7 @@ LibVADecodeStatus libva_decoder_create(LibVADecoder **out, const char *encoding,
         return LIBVA_DEC_NOT_AVAILABLE;
     if (width <= 0 || height <= 0)
         return LIBVA_DEC_ERROR;
-    if (!g_device[0] && libva_decode_startup() != LIBVA_DEC_OK)
+    if (libva_decode_startup() != LIBVA_DEC_OK)
         return LIBVA_DEC_NOT_AVAILABLE;
     if (!libva_decode_supports(encoding, colorspace))
         return LIBVA_DEC_NOT_AVAILABLE;

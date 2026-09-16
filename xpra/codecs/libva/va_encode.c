@@ -51,6 +51,10 @@
 #define LIBVA_H264_CABAC_INIT_IDC 0
 
 static libva_log_fn g_log_fn = NULL;
+/* `g_device` is empty on MS Windows - the adapter is picked by the driver rather than
+   named by a path - so it cannot double as the "have we probed yet?" flag: */
+static int g_probed = 0;
+static int g_available = 0;
 static char g_device[256] = "";
 static char g_vendor[256] = "";
 static char g_error[256] = "";
@@ -720,7 +724,7 @@ static int try_device(const char *device) {
 }
 
 #ifdef _WIN32
-LibVAEncodeStatus libva_encode_startup(void) {
+static LibVAEncodeStatus probe_devices(void) {
     g_error[0] = 0;
     if (try_device("")) {
         libva_log("libva encode startup: using (%s)", g_vendor);
@@ -732,7 +736,7 @@ LibVAEncodeStatus libva_encode_startup(void) {
     return LIBVA_ENC_NOT_AVAILABLE;
 }
 #else
-LibVAEncodeStatus libva_encode_startup(void) {
+static LibVAEncodeStatus probe_devices(void) {
     const char *env_device = getenv("XPRA_LIBVA_DEVICE");
     DIR *dir;
     struct dirent *entry;
@@ -775,8 +779,21 @@ LibVAEncodeStatus libva_encode_startup(void) {
 }
 #endif
 
+/* Probing walks every profile and entrypoint of every adapter, which costs hundreds of
+   milliseconds - far too much for the capability queries below to each pay for, so the
+   outcome is remembered whether or not an adapter was found. */
+LibVAEncodeStatus libva_encode_startup(void) {
+    if (!g_probed) {
+        g_probed = 1;
+        g_available = probe_devices() == LIBVA_ENC_OK;
+    }
+    return g_available ? LIBVA_ENC_OK : LIBVA_ENC_NOT_AVAILABLE;
+}
+
 void libva_encode_shutdown(void) {
     libva_log("libva encode shutdown");
+    g_probed = 0;
+    g_available = 0;
 }
 
 const char *libva_encode_get_device(void) {
@@ -877,7 +894,7 @@ LibVAEncodeStatus libva_encoder_create(LibVAEncoder **out, const char *encoding,
         return LIBVA_ENC_NOT_AVAILABLE;
     if (width <= 0 || height <= 0 || (width & 1) || (height & 1))
         return LIBVA_ENC_ERROR;
-    if (!g_device[0] && libva_encode_startup() != LIBVA_ENC_OK)
+    if (libva_encode_startup() != LIBVA_ENC_OK)
         return LIBVA_ENC_NOT_AVAILABLE;
     if ((codec == LIBVA_CODEC_H264 && !g_h264_supported) ||
         (codec == LIBVA_CODEC_VP8 && !g_vp8_supported) ||
