@@ -170,16 +170,17 @@ def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | N
         sy = round(y * yscale)
         sw = max(1, sw)
         sh = max(1, sh)
-        # ensure we honour the max size if there is one:
+        # ensure we honour the max size if there is one,
+        # shrinking both axes by the same ratio so the cursor keeps its shape and hotspot:
         if 0 < cmaxw < sw or 0 < cmaxh < sh:
             ratio = 1.0
             if cmaxw > 0:
-                ratio = max(ratio, w / cmaxw)
+                ratio = max(ratio, sw / cmaxw)
             if cmaxh > 0:
-                ratio = max(ratio, h / cmaxh)
+                ratio = max(ratio, sh / cmaxh)
             log("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
             sx, sy = round(sx / ratio), round(sy / ratio)
-            sw, sh = min(cmaxw, round(sw / ratio)), min(cmaxh, round(sh / ratio))
+            sw, sh = max(1, round(sw / ratio)), max(1, round(sh / ratio))
 
         log("scaling cursor to %ix%i for desktop-scale %s/%s", sw, sh, xscale, yscale)
         pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)

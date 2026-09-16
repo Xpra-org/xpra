@@ -30,7 +30,7 @@ class TestCursors(unittest.TestCase):
             raise unittest.SkipTest("no display")
         os.environ["XPRA_USE_LOCAL_CURSORS"] = "1"
 
-    def make(self, name: str, xscale=1.0, yscale=1.0) -> tuple:
+    def make(self, name: str, xscale=1.0, yscale=1.0, **kwargs) -> tuple:
         """ the size and hotspot make_cursor() ends up using """
         from xpra.gtk.cursors import make_cursor
         made = []
@@ -42,7 +42,7 @@ class TestCursors(unittest.TestCase):
 
         Gdk.Cursor.new_from_pixbuf = record
         try:
-            assert make_cursor(cursor_data(name), xscale, yscale)
+            assert make_cursor(cursor_data(name, **kwargs), xscale, yscale)
         finally:
             Gdk.Cursor.new_from_pixbuf = new_from_pixbuf
         assert made, f"no cursor created for {name!r}"
@@ -81,6 +81,24 @@ class TestCursors(unittest.TestCase):
     def test_server_cursor(self):
         # no local cursor for this name: the server's image and hotspot are used as-is
         self.assertEqual(self.make("no-such-cursor-name"), (16, 16, 3, 1))
+
+    def test_max_size(self):
+        get_maximal_cursor_size = Gdk.Display.get_maximal_cursor_size
+
+        def make_limited(max_size, scale, **kwargs) -> tuple:
+            Gdk.Display.get_maximal_cursor_size = lambda _display: max_size
+            try:
+                return self.make("no-such-cursor-name", scale, scale, **kwargs)
+            finally:
+                Gdk.Display.get_maximal_cursor_size = get_maximal_cursor_size
+
+        # scaled up to 64x64 then shrunk back to the 32x32 limit, hotspot included:
+        self.assertEqual(make_limited((32, 32), 4), (32, 32, 6, 2))
+        # both axes shrink by the same ratio, even when only one of them is too big:
+        tall = {"w": 8, "h": 16, "xhot": 3, "yhot": 15}
+        self.assertEqual(make_limited((32, 32), 4, **tall), (16, 32, 6, 30))
+        # no limit on one axis:
+        self.assertEqual(make_limited((0, 32), 4, **tall), (16, 32, 6, 30))
 
 
 def main():
