@@ -8,7 +8,7 @@ from typing import Callable
 
 from xpra.os_util import gi_import, POSIX
 from xpra.util.io import stderr_print, get_util_logger
-from xpra.util.system import SIGNAMES
+from xpra.util.system import SIGNAMES, deadly_signal
 
 _glib_unix_signals: dict[int, int] = {}
 
@@ -68,6 +68,11 @@ def register_os_signal(callback: Callable[[int], None],
     else:
         def os_signal(_signum, _frame) -> None:
             write_signal()
+            # The callback only runs once the main loop gets to it.  A second
+            # termination signal must therefore exit without waiting, but
+            # leave non-termination signals (such as SIGUSR1/SIGUSR2) alone.
+            if signum in (signal.SIGINT, signal.SIGTERM):
+                signal.signal(signum, deadly_signal)
             GLib.idle_add(do_handle_signal)
 
         signal.signal(signum, os_signal)
