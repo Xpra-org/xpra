@@ -7,7 +7,7 @@ from ctypes import sizeof, byref
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import GetCursorInfo, CURSORINFO
-from xpra.platform.win32.gui import get_fixed_cursor_size
+from xpra.platform.win32.gui import get_default_cursor_size
 from xpra.platform.win32.shadow.cursor import get_cursor_data
 from xpra.server.shadow.cursor import ShadowCursorManager
 from xpra.log import Logger
@@ -51,7 +51,7 @@ class Win32ShadowCursorManager(ShadowCursorManager):
             return self.last_cursor_data
         cd[0] = ci.ptScreenPos.x
         cd[1] = ci.ptScreenPos.y
-        w, h = get_fixed_cursor_size()
+        w, h = get_default_cursor_size()
         return (
             cd,
             ((w, h), [(w, h), ]),

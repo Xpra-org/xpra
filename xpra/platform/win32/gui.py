@@ -690,23 +690,20 @@ def get_double_click_distance() -> tuple[int, int]:
         return -1, -1
 
 
-def get_fixed_cursor_size() -> tuple[int, int]:
+def get_default_cursor_size() -> tuple[int, int]:
     try:
         w = GetSystemMetrics(win32con.SM_CXCURSOR)
         h = GetSystemMetrics(win32con.SM_CYCURSOR)
         return w, h
     except Exception as e:
-        log.warn("failed to get window frame size information: %s", e)
-        # best to try to use a limit anyway:
+        log.warn("failed to get the default cursor size: %s", e)
         return 32, 32
 
 
-def get_default_cursor_size() -> tuple[int, int]:
-    return get_fixed_cursor_size()
-
-
 def get_max_cursor_size() -> tuple[int, int]:
-    return get_fixed_cursor_size()
+    # cursors are shown at whatever size we create them,
+    # `SM_CXCURSOR` is only the size of the system cursors:
+    return 2 ** 15 - 1, 2 ** 15 - 1
 
 
 def get_window_min_size() -> tuple[int, int]:

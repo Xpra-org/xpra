@@ -13,7 +13,7 @@ and it must still go through the same scaling as any other cursor.
 import os
 import unittest
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, WIN32
 
 Gdk = gi_import("Gdk")
 
@@ -22,11 +22,18 @@ def cursor_data(name: str, w=16, h=16, xhot=3, yhot=1) -> tuple:
     return "raw", 0, 0, w, h, xhot, yhot, 0x1234, b"\xff" * (w * h * 4), name
 
 
+def made(w: int, h: int, x: int, y: int) -> tuple:
+    """ the cursor we expect to hand to GDK, which needs square cursors on win32 """
+    if WIN32:
+        w = h = max(w, h)
+    return w, h, x, y
+
+
 class TestCursors(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
+        if not WIN32 and not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
             raise unittest.SkipTest("no display")
         os.environ["XPRA_USE_LOCAL_CURSORS"] = "1"
 
@@ -82,23 +89,52 @@ class TestCursors(unittest.TestCase):
         # no local cursor for this name: the server's image and hotspot are used as-is
         self.assertEqual(self.make("no-such-cursor-name"), (16, 16, 3, 1))
 
+    def test_large_cursor(self):
+        # bigger than the system cursors (32x32 on win32) and not square:
+        self.assertEqual(self.make("no-such-cursor-name", w=64, h=96, xhot=40, yhot=90), made(64, 96, 40, 90))
+
+    def test_win32_hotspot(self):
+        if not WIN32:
+            raise unittest.SkipTest("win32 only")
+        from xpra.gtk.cursors import make_cursor
+        for w, h, xhot, yhot in ((64, 96, 40, 90), (96, 64, 90, 40), (16, 16, 3, 1)):
+            cursor = make_cursor(cursor_data("no-such-cursor-name", w, h, xhot, yhot))
+            # read back what GDK gave to win32:
+            surface, x, y = cursor.get_surface()
+            self.assertEqual((x, y), (xhot, yhot))
+            stride = surface.get_stride()
+            pixels = surface.get_data()
+            opaque = [(px, py) for py in range(surface.get_height()) for px in range(surface.get_width())
+                      if pixels[py * stride + px * 4 + 3]]
+            # the image must be where the hotspot expects it:
+            self.assertEqual((min(opaque), max(opaque)), ((0, 0), (w - 1, h - 1)), f"for {w}x{h} cursor")
+
     def test_max_size(self):
+        import xpra.platform.gui as platform_gui
+        get_max_cursor_size = platform_gui.get_max_cursor_size
         get_maximal_cursor_size = Gdk.Display.get_maximal_cursor_size
 
-        def make_limited(max_size, scale, **kwargs) -> tuple:
-            Gdk.Display.get_maximal_cursor_size = lambda _display: max_size
+        def make_limited(gdk_max, scale, platform_max=(-1, -1), **kwargs) -> tuple:
+            platform_gui.get_max_cursor_size = lambda: platform_max
+            Gdk.Display.get_maximal_cursor_size = lambda _display: gdk_max
             try:
                 return self.make("no-such-cursor-name", scale, scale, **kwargs)
             finally:
+                platform_gui.get_max_cursor_size = get_max_cursor_size
                 Gdk.Display.get_maximal_cursor_size = get_maximal_cursor_size
 
         # scaled up to 64x64 then shrunk back to the 32x32 limit, hotspot included:
         self.assertEqual(make_limited((32, 32), 4), (32, 32, 6, 2))
         # both axes shrink by the same ratio, even when only one of them is too big:
         tall = {"w": 8, "h": 16, "xhot": 3, "yhot": 15}
-        self.assertEqual(make_limited((32, 32), 4, **tall), (16, 32, 6, 30))
+        self.assertEqual(make_limited((32, 32), 4, **tall), made(16, 32, 6, 30))
         # no limit on one axis:
-        self.assertEqual(make_limited((0, 32), 4, **tall), (16, 32, 6, 30))
+        self.assertEqual(make_limited((0, 32), 4, **tall), made(16, 32, 6, 30))
+        # the platform limit replaces the one from GDK:
+        self.assertEqual(make_limited((32, 32), 4, platform_max=(48, 48)), (48, 48, 9, 3))
+        # and on win32, there is no real limit:
+        if WIN32:
+            self.assertEqual(make_limited((32, 32), 4, platform_max=get_max_cursor_size()), (64, 64, 12, 4))
 
 
 def main():

@@ -81,7 +81,6 @@ def monochrome_cursor_pixels(hbmMask) -> tuple[bytes, int, int] | None:
 
 
 def get_cursor_data(hCursor) -> list | None:
-    # w, h = get_fixed_cursor_size()
     if not hCursor:
         return None
     dc = None

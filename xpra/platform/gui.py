@@ -220,10 +220,6 @@ def get_double_click_distance() -> tuple[int, int]:
     return -1, -1
 
 
-def get_fixed_cursor_size() -> tuple[int, int]:
-    return -1, -1
-
-
 def get_default_cursor_size() -> tuple[int, int]:
     return -1, -1
 
@@ -354,7 +350,6 @@ def get_info_base() -> dict[str, Any]:
         "session-type": get_session_type(),
         "vertical-refresh": get_vrefresh(),
         "cursor-size": {
-            "fixed": get_fixed_cursor_size(),
             "default": get_default_cursor_size(),
             "max": get_max_cursor_size(),
         },
@@ -397,7 +392,7 @@ platform_import(globals(), "gui", False,
                 "get_window_min_size", "get_window_max_size",
                 "get_mouse_config",
                 "get_double_click_time", "get_double_click_distance",
-                "get_fixed_cursor_size", "get_default_cursor_size", "get_max_cursor_size",
+                "get_default_cursor_size", "get_max_cursor_size",
                 "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",

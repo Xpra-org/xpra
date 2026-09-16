@@ -5,7 +5,7 @@
 
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, WIN32
 from xpra.util.env import envbool, first_time
 from xpra.log import Logger
 
@@ -110,9 +110,9 @@ def get_local_cursor(cursor_name: str):
 
 
 def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | None:
-    from xpra.util.str_fn import Ellipsizer, repr_ellipsized, bytestostr, hexstr, memoryview_to_bytes
+    from xpra.util.str_fn import Ellipsizer, repr_ellipsized, bytestostr, hexstr
     from xpra.gtk.pixbuf import get_pixbuf_from_data
-    from xpra.platform.gui import get_fixed_cursor_size
+    from xpra.platform.gui import get_max_cursor_size
     # if present, try cursor by name:
     display = Gdk.Display.get_default()
     if not display:
@@ -157,7 +157,10 @@ def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | N
     x = max(0, min(xhot, w - 1))
     y = max(0, min(yhot, h - 1))
     csize = display.get_default_cursor_size()
-    cmaxw, cmaxh = display.get_maximal_cursor_size()
+    # the platform knows better than GDK, which reports `SM_CXCURSOR` as the limit on win32:
+    cmaxw, cmaxh = get_max_cursor_size()
+    if min(cmaxw, cmaxh) <= 0:
+        cmaxw, cmaxh = display.get_maximal_cursor_size()
     log("new %s cursor at %s,%s with serial=%#x, dimensions: %sx%s, len(pixels)=%s",
         encoding, xhot, yhot, serial, w, h, len(pixels))
     log("default cursor size is %s, maximum=%s", csize, (cmaxw, cmaxh))
@@ -184,29 +187,17 @@ def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | N
 
         log("scaling cursor to %ix%i for desktop-scale %s/%s", sw, sh, xscale, yscale)
         pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)
-        pixels = pixbuf.get_pixels()
         w, h, x, y = sw, sh, sx, sy
 
-    fw, fh = get_fixed_cursor_size()
-    # OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
-    # we may have to paste it into a bigger pixbuf, or crop it:
-    if fw > 0 and fh > 0 and (w, h) != (fw, fh):
-        if w <= fw and h <= fh:
-            log("pasting %ix%i cursor to fixed OS size %ix%i", w, h, fw, fh)
-            try:
-                from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
-            except ImportError:
-                return None
-            img = Image.frombytes("RGBA", (w, h), memoryview_to_bytes(pixels), "raw", "BGRA", w * 4, 1)
-            target = Image.new("RGBA", (fw, fh))
-            target.paste(img, (0, 0, w, h))
-            pixels = target.tobytes("raw", "BGRA")
-            pixbuf = get_pixbuf_from_data(pixels, True, fw, fh, fw * 4)
-        else:
-            log("downscaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
-            pixbuf = pixbuf.scale_simple(fw, fh, GdkPixbuf.InterpType.BILINEAR)
-            xratio, yratio = w / fw, h / fh
-            x, y = round(x / xratio), round(y / yratio)
+    if WIN32 and w != h:
+        # GDK centers non-square cursors in a square bitmap without moving the hotspot,
+        # so give it a square one with the cursor in the top-left corner:
+        size = max(w, h)
+        log("padding %ix%i cursor to %ix%i", w, h, size, size)
+        square = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8, size, size)
+        square.fill(0)
+        pixbuf.copy_area(0, 0, w, h, square, 0, 0)
+        pixbuf = square
     if SAVE_CURSORS:
         pixbuf.savev("cursor-%#x.png" % serial, "png", [], [])
     # clamp to pixbuf size:
