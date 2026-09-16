@@ -2611,7 +2611,7 @@ if WIN32:
             add_gi(
                 "Atk-1.0",
                 "Notify-0.7",
-                "GDesktopEnums-3.0", "Soup-2.4",
+                "GDesktopEnums-3.0",
                 "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0",
                 "HarfBuzz-0.0",
                 "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
@@ -2624,11 +2624,11 @@ if WIN32:
             # we no longer support GtkGL:
             # if opengl_ENABLED:
             #    add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
-            add_DLLs('curl', 'soup')
+            add_DLLs('curl')
 
         if client_ENABLED:
             # svg pixbuf loader:
-            add_DLLs("rsvg", "croco")
+            add_DLLs("rsvg")
             # gio module and `xpra.net.libproxy`:
             add_DLLs("proxy")
 
