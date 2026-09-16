@@ -28,6 +28,7 @@ DEFINE_GUID(MF_LOW_LATENCY, 0x9c27891a, 0xed7a, 0x40e1,
 
 struct MFDecoder {
     IMFTransform    *transform;
+    IMFActivate     *activate;        /* kept so the MFT can be shut down properly */
     IMFMediaType    *input_type;
     IMFMediaType    *output_type;
     IMFSample       *output_sample;   /* reusable output sample (for MFTs that don't allocate) */
@@ -40,10 +41,12 @@ struct MFDecoder {
     UINT             dxgi_reset_token; /* token from MFCreateDXGIDeviceManager */
     int              width;
     int              height;
+    int              codec;
     int              is_hw;
     int              provides_samples; /* MFT allocates its own output samples */
     HRESULT          last_hr;         /* last failing HRESULT for diagnostics */
     char             last_error[128]; /* human-readable description of last error */
+    char             name[128];       /* MFT friendly name, for logging */
 };
 
 static int  g_com_owned = 0;
@@ -472,68 +475,60 @@ static const char* codec_to_name(int codec) {
     }
 }
 
-MFDecodeStatus mf_decoder_create(MFDecoder **out, int codec, int width, int height) {
+/* Undo everything `activate_mft` set up, so that the next candidate starts from a
+   clean decoder — and so that the one we are walking away from does not keep its
+   D3D device for the rest of the session. */
+static void release_mft(MFDecoder *dec) {
+    if (dec->output_sample) { IMFSample_Release(dec->output_sample);           dec->output_sample = NULL; }
+    if (dec->output_buffer) { IMFMediaBuffer_Release(dec->output_buffer);      dec->output_buffer = NULL; }
+    if (dec->input_type)    { IMFMediaType_Release(dec->input_type);           dec->input_type = NULL; }
+    if (dec->output_type)   { IMFMediaType_Release(dec->output_type);          dec->output_type = NULL; }
+    if (dec->transform)     { IMFTransform_Release(dec->transform);            dec->transform = NULL; }
+    if (dec->activate) {
+        /* the MFT holds its device until the activation object that created it
+           is told to let go — releasing our reference is not enough: */
+        IMFActivate_ShutdownObject(dec->activate);
+        IMFActivate_Release(dec->activate);
+        dec->activate = NULL;
+    }
+    /* both of these outlive the transform, so they go after it */
+    if (dec->dxgi_manager)  { IMFDXGIDeviceManager_Release(dec->dxgi_manager); dec->dxgi_manager = NULL; }
+    if (dec->d3d_device)    { ID3D11Device_Release(dec->d3d_device);           dec->d3d_device = NULL; }
+    dec->dxgi_reset_token = 0;
+    dec->provides_samples = 0;
+    dec->is_hw   = 0;
+    dec->name[0] = 0;
+}
+
+/* Configure one candidate MFT. `MFTEnumEx` returns every decoder that claims the
+   format, and being listed is not a promise that this one can be set up, so
+   anything that goes wrong here is reported as "not available" and the caller
+   moves on to the next entry rather than giving up on the codec. */
+static MFDecodeStatus activate_mft(MFDecoder *dec, IMFActivate *activate, const GUID *subtype) {
     HRESULT hr;
-    MFDecoder *dec;
-    IMFActivate **activates = NULL;
-    UINT32 num_activates = 0;
-    MFT_REGISTER_TYPE_INFO input_info;
     DWORD i;
-    const GUID *subtype;
 
-    *out = NULL;
-
-    subtype = codec_to_subtype(codec);
-    if (!subtype)
-        return MF_DEC_NOT_AVAILABLE;
-
-    dec = (MFDecoder *)calloc(1, sizeof(MFDecoder));
-    if (!dec)
-        return MF_DEC_ERROR;
-
-    dec->width  = width;
-    dec->height = height;
-
-    /* enumerate decoders for the requested codec.
-       The inbox MFTs are sync MFTs that use DXVA hardware acceleration
-       internally — they don't register as MFT_ENUM_FLAG_HARDWARE.
-       SORTANDFILTER prefers hardware-backed MFTs when available. */
-    input_info.guidMajorType = MFMediaType_Video;
-    input_info.guidSubtype   = *subtype;
-
-    mf_log("mf_decoder_create: enumerating %s decoders for %dx%d",
-           codec_to_name(codec), width, height);
-    hr = MFTEnumEx(MFT_CATEGORY_VIDEO_DECODER,
-                   MFT_ENUM_FLAG_SYNCMFT | MFT_ENUM_FLAG_SORTANDFILTER,
-                   &input_info, NULL,
-                   &activates, &num_activates);
-    mf_log("mf_decoder_create: MFTEnumEx returned hr=0x%08lX, found %u decoders",
-           (unsigned long)hr, (unsigned int)num_activates);
-
-    if (FAILED(hr) || num_activates == 0) {
-        if (activates)
-            CoTaskMemFree(activates);
-        free(dec);
-        return MF_DEC_NOT_AVAILABLE;
+    /* the friendly name is the only thing that tells the candidates apart in a log */
+    {
+        WCHAR *wname = NULL;
+        UINT32 wlen  = 0;
+        if (SUCCEEDED(IMFActivate_GetAllocatedString(activate, &MFT_FRIENDLY_NAME_Attribute,
+                                                     &wname, &wlen)) && wname) {
+            WideCharToMultiByte(CP_UTF8, 0, wname, -1, dec->name, sizeof(dec->name) - 1, NULL, NULL);
+            CoTaskMemFree(wname);
+        }
     }
 
-    /* check if the selected MFT is D3D11-aware (hardware accelerated) */
-    dec->is_hw = 0;
-
-    /* activate the first (highest-priority) MFT */
-    hr = IMFActivate_ActivateObject(activates[0], &IID_IMFTransform,
-                                    (void **)&dec->transform);
-    /* release all activation objects — MFTEnumEx returns an array we must clean up */
-    for (i = 0; i < num_activates; i++)
-        IMFActivate_Release(activates[i]);
-    CoTaskMemFree(activates);
-
+    hr = IMFActivate_ActivateObject(activate, &IID_IMFTransform, (void **)&dec->transform);
     if (FAILED(hr)) {
-        mf_log("mf_decoder_create: ActivateObject failed: 0x%08lX", (unsigned long)hr);
-        free(dec);
-        return MF_DEC_ERROR;
+        mf_log("mf_decoder_create: ActivateObject('%s') failed: 0x%08lX",
+               dec->name, (unsigned long)hr);
+        dec->transform = NULL;
+        return MF_DEC_NOT_AVAILABLE;
     }
-    mf_log("mf_decoder_create: MFT activated successfully");
+    dec->activate = activate;
+    IMFActivate_AddRef(activate);
+    mf_log("mf_decoder_create: activated '%s'", dec->name);
 
     /* configure MFT attributes: low-latency mode and detect hardware acceleration */
     {
@@ -624,14 +619,15 @@ MFDecodeStatus mf_decoder_create(MFDecoder **out, int codec, int width, int heig
     IMFMediaType_SetGUID(dec->input_type, &MF_MT_MAJOR_TYPE, &MFMediaType_Video);
     IMFMediaType_SetGUID(dec->input_type, &MF_MT_SUBTYPE, subtype);
     IMFMediaType_SetUINT64(dec->input_type, &MF_MT_FRAME_SIZE,
-                           ((UINT64)width << 32) | (UINT64)height);
+                           ((UINT64)dec->width << 32) | (UINT64)dec->height);
 
     hr = IMFTransform_SetInputType(dec->transform, 0, dec->input_type, 0);
     if (FAILED(hr)) {
         mf_log("mf_decoder_create: SetInputType failed: 0x%08lX", (unsigned long)hr);
         goto fail;
     }
-    mf_log("mf_decoder_create: input type set (%s, %dx%d)", codec_to_name(codec), width, height);
+    mf_log("mf_decoder_create: input type set (%s, %dx%d)",
+           codec_to_name(dec->codec), dec->width, dec->height);
 
     /* negotiate output type: look for NV12 */
     {
@@ -689,15 +685,86 @@ MFDecodeStatus mf_decoder_create(MFDecoder **out, int codec, int width, int heig
     /* notify begin streaming */
     IMFTransform_ProcessMessage(dec->transform, MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0);
     IMFTransform_ProcessMessage(dec->transform, MFT_MESSAGE_NOTIFY_START_OF_STREAM, 0);
-
-    mf_log("mf_decoder_create: decoder ready (%dx%d, hw=%d, provides_samples=%d)",
-           dec->width, dec->height, dec->is_hw, dec->provides_samples);
-    *out = dec;
     return MF_DEC_OK;
 
 fail:
-    mf_decoder_destroy(dec);
     return MF_DEC_NOT_AVAILABLE;
+}
+
+MFDecodeStatus mf_decoder_create(MFDecoder **out, int codec, int width, int height) {
+    HRESULT hr;
+    MFDecoder *dec;
+    IMFActivate **activates = NULL;
+    UINT32 num_activates = 0;
+    MFT_REGISTER_TYPE_INFO input_info;
+    MFDecodeStatus status = MF_DEC_NOT_AVAILABLE;
+    DWORD i;
+    const GUID *subtype;
+
+    *out = NULL;
+
+    subtype = codec_to_subtype(codec);
+    if (!subtype)
+        return MF_DEC_NOT_AVAILABLE;
+
+    dec = (MFDecoder *)calloc(1, sizeof(MFDecoder));
+    if (!dec)
+        return MF_DEC_ERROR;
+
+    dec->width  = width;
+    dec->height = height;
+    dec->codec  = codec;
+
+    /* enumerate decoders for the requested codec.
+       The inbox MFTs are sync MFTs that use DXVA hardware acceleration
+       internally — they don't register as MFT_ENUM_FLAG_HARDWARE.
+       SORTANDFILTER prefers hardware-backed MFTs when available. */
+    input_info.guidMajorType = MFMediaType_Video;
+    input_info.guidSubtype   = *subtype;
+
+    mf_log("mf_decoder_create: enumerating %s decoders for %dx%d",
+           codec_to_name(codec), width, height);
+    hr = MFTEnumEx(MFT_CATEGORY_VIDEO_DECODER,
+                   MFT_ENUM_FLAG_SYNCMFT | MFT_ENUM_FLAG_SORTANDFILTER,
+                   &input_info, NULL,
+                   &activates, &num_activates);
+    mf_log("mf_decoder_create: MFTEnumEx returned hr=0x%08lX, found %u decoders",
+           (unsigned long)hr, (unsigned int)num_activates);
+
+    if (FAILED(hr) || num_activates == 0) {
+        if (activates)
+            CoTaskMemFree(activates);
+        free(dec);
+        return MF_DEC_NOT_AVAILABLE;
+    }
+
+    /* SORTANDFILTER puts the best candidate first, so this is also the order we
+       would like them in — but a candidate that cannot be configured must not
+       cost us the ones behind it: */
+    for (i = 0; i < num_activates; i++) {
+        status = activate_mft(dec, activates[i], subtype);
+        if (status == MF_DEC_OK)
+            break;
+        mf_log("mf_decoder_create: candidate %u/%u ('%s') is unusable, trying the next one",
+               (unsigned int)(i + 1), (unsigned int)num_activates, dec->name);
+        release_mft(dec);
+    }
+    /* release all activation objects — MFTEnumEx returns an array we must clean up */
+    for (i = 0; i < num_activates; i++)
+        IMFActivate_Release(activates[i]);
+    CoTaskMemFree(activates);
+
+    if (status != MF_DEC_OK) {
+        mf_log("mf_decoder_create: none of the %u %s decoders could be configured",
+               (unsigned int)num_activates, codec_to_name(codec));
+        mf_decoder_destroy(dec);
+        return MF_DEC_NOT_AVAILABLE;
+    }
+
+    mf_log("mf_decoder_create: decoder ready ('%s', %dx%d, hw=%d, provides_samples=%d)",
+           dec->name, dec->width, dec->height, dec->is_hw, dec->provides_samples);
+    *out = dec;
+    return MF_DEC_OK;
 }
 
 void mf_decoder_destroy(MFDecoder *dec) {
@@ -713,20 +780,7 @@ void mf_decoder_destroy(MFDecoder *dec) {
         IMFTransform_ProcessMessage(dec->transform, MFT_MESSAGE_NOTIFY_END_STREAMING, 0);
     }
 
-    if (dec->output_sample)
-        IMFSample_Release(dec->output_sample);
-    if (dec->output_buffer)
-        IMFMediaBuffer_Release(dec->output_buffer);
-    if (dec->input_type)
-        IMFMediaType_Release(dec->input_type);
-    if (dec->output_type)
-        IMFMediaType_Release(dec->output_type);
-    if (dec->transform)
-        IMFTransform_Release(dec->transform);
-    if (dec->dxgi_manager)
-        IMFDXGIDeviceManager_Release(dec->dxgi_manager);
-    if (dec->d3d_device)
-        ID3D11Device_Release(dec->d3d_device);
+    release_mft(dec);
 
     free(dec);
 }
