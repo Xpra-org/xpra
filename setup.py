@@ -1998,7 +1998,7 @@ if WIN32:
                         {"locale" : ["en"]},
                         {"themes" : ["Default"]}
                     ])
-            ICONS = ["24x24", "48x48", "scalable", "cursors", "index.theme"]
+            ICONS = ["scalable", "cursors", "index.theme"]
             for theme in ("Adwaita", ):   # "hicolor"
                 add_dir("share/icons/"+theme, ICONS)
             add_dir("share/themes/Windows-10", [
