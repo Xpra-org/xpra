@@ -25,7 +25,7 @@ from xpra.codecs.nvidia.cuda.context import (
     cuda_device_context, load_device,
 )
 from xpra.codecs.constants import (
-    VideoSpec, TransientCodecException, CSC_ALIAS,
+    VideoSpec, TransientCodecException,
     get_profile, get_level, get_level_value, get_level_tuple,
 )
 from xpra.codecs.image import ImageWrapper
@@ -613,6 +613,16 @@ cdef class Encoder:
         if self.pixel_format=="r210":
             return "YUV444P10"
         return "YUV420P"
+
+    cdef str _get_client_csc(self):
+        # the colorspace the client decodes this stream with:
+        # the output colorspace of the spec it negotiated (see `get_COLORSPACES`),
+        # not the pixel format we upload - `BGRX` is encoded as 4:4:4
+        return {
+            "NV12": "YUV420P",
+            "BGRX": "YUV444P",
+            "r210": "GBRP10",
+        }.get(self.pixel_format, self.pixel_format)
 
     cdef double _get_level(self, options):
         # no validation needed here: nvenc's `NV_ENC_LEVEL` has a constant for every level
@@ -1878,7 +1888,7 @@ cdef class Encoder:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
         client_options = {
-            "csc"       : CSC_ALIAS.get(self.pixel_format, self.pixel_format),
+            "csc"       : self._get_client_csc(),
             "frame"     : int(self.frames),
             "pts"       : int(timestamp-self.first_frame_timestamp),
         }
