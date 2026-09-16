@@ -42,6 +42,7 @@ class CursorsConnection(StubClientConnection):
         self.get_cursor_data_cb: Callable = nodata
         self.send_cursors = False
         self.cursor_encodings: Sequence[str] = ()
+        self.cursor_size = 0
         self.cursor_timer = 0
         self.cursor_backwards_compatible = BACKWARDS_COMPATIBLE
         self.last_cursor_sent: tuple = ()
@@ -54,6 +55,7 @@ class CursorsConnection(StubClientConnection):
         # WindowSource for each Window ID
         self.send_cursors = False
         self.cursor_encodings = ()
+        self.cursor_size = 0
         self.last_cursor_sent = ()
 
     def cleanup(self) -> None:
@@ -69,10 +71,14 @@ class CursorsConnection(StubClientConnection):
             dcursor = typedict(cursor)
             self.cursor_encodings = dcursor.strtupleget("encodings")
             self.cursor_backwards_compatible = dcursor.boolget("backwards-compatible", True)
+            default_cursor_size = dcursor.inttupleget("default", (0, 0))
+            self.cursor_size = max(0, default_cursor_size[0], default_cursor_size[1])
         if self.cursor_backwards_compatible:
             self.send_cursors |= getattr(self, "window_enabled", False) and c.boolget("cursors")
             if not self.cursor_encodings:
                 self.cursor_encodings = c.strtupleget("encodings.cursor")
+            if not self.cursor_size:
+                self.cursor_size = c.intget("cursor.size", 0)
         log(f"parse_client_caps(..) cursors={self.send_cursors}, cursor encodings={self.cursor_encodings}")
 
     def get_caps(self) -> dict[str, Any]:

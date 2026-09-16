@@ -36,22 +36,26 @@ class CursorManager(StubSubsystem):
         self.enabled = opts.cursors
 
     def add_new_client(self, ss, c: typedict) -> None:
+        caps = typedict(c.dictget("cursor"))
+        default_cursor_size = caps.inttupleget("default", (0, 0))
+        cursor_size = max(0, default_cursor_size[0], default_cursor_size[1])
+        if not cursor_size and BACKWARDS_COMPATIBLE:
+            cursor_size = c.intget("cursor.size", 0)
         try:
             from xpra.server.source.window import WindowsConnection
         except ImportError:
             # the `window` subsystem is disabled (ie: `--windows=no`):
             windows_clients = 0
         else:
-            windows_clients = len(self.get_sources_by_type(WindowsConnection, ss))
-        if windows_clients > 0:
-            self.size = 32
-        else:
-            caps = typedict(c.dictget("cursor"))
-            if caps:
-                default_cursor_size = caps.inttupleget("default", (0, 0))
-                self.size = max(0, default_cursor_size[0], default_cursor_size[1])
-                if not self.size and BACKWARDS_COMPATIBLE:
-                    self.size = c.intget("cursor.size", 0)
+            windows_clients = self.get_sources_by_type(WindowsConnection, ss)
+        if windows_clients:
+            client_sizes = tuple(getattr(x, "cursor_size", 0) for x in windows_clients)
+            if cursor_size and all(size == cursor_size for size in client_sizes):
+                self.size = cursor_size
+            else:
+                self.size = 32
+        elif cursor_size:
+            self.size = cursor_size
 
     def send_initial_data(self, ss) -> None:
         from xpra.server.source.cursor import CursorsConnection

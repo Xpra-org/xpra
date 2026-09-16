@@ -52,6 +52,26 @@ class CursorLoopbackTest(LoopbackTest):
 
         self.assertEqual(cursor.size, 64)
 
+    def test_shared_session_uses_common_reported_cursor_size(self):
+        from xpra.server.subsystem.cursor import CursorManager
+
+        server = AdHocStruct()
+        other = AdHocStruct()
+        other.cursor_size = 64
+        server.get_sources_by_type = lambda *_args: (other,)
+        cursor = CursorManager(server)
+        cursor.add_new_client(AdHocStruct(), typedict({"cursor": {"default": (64, 64)}}))
+
+        self.assertEqual(cursor.size, 64)
+
+    def test_source_records_reported_cursor_size(self):
+        from xpra.server.source.cursor import CursorsConnection
+
+        source = CursorsConnection()
+        source.parse_client_caps(typedict({"cursor": {"default": (64, 48)}}))
+
+        self.assertEqual(source.cursor_size, 64)
+
     def _connect(self):
         from xpra.client.subsystem.cursor import CursorClient
         from xpra.server.subsystem.cursor import CursorManager
