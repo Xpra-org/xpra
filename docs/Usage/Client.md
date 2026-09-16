@@ -1,64 +1,99 @@
-# Xpra Client
+# Connect to an Xpra session
 
-There are many ways to launch the xpra client. \
-The default GUI interface can be used to access the launcher and the session browser.
+Use the Xpra client to connect to a session that is running on this computer,
+on a server, or on another computer on your local network. For most people,
+the graphical tools are the easiest place to start.
 
-<div class="docs-section-heading" markdown="1">
+## Connect, save, or find a session
 
-## Launcher
+Open **Xpra** from your application menu, then choose the task you need:
 
+<div class="docs-grid" markdown="1">
+<section class="docs-card" markdown="1">
+
+### Connect
+
+Choose **Connect** to enter a server address and credentials. You can save
+these details as a session file to reuse the connection later.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Browse
+
+Choose **Browse** to see sessions found on this computer or advertised on your
+local network. Select one to connect with the regular client or in a browser.
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Reuse a saved connection
+
+Double-click an `.xpra` session file to open its saved connection details. If
+it is set to connect automatically, Xpra connects without showing the dialog.
+
+</section>
 </div>
-The launcher is accessible using the `launcher` subcommand:
+
+## Connect from a terminal
+
+When you need a repeatable command, or are troubleshooting a connection, use:
+
 ```shell
-xpra launcher [session-file.xpra]
+xpra attach ssh://USER@HOST/DISPLAY
 ```
-It provides a GUI for filling in the address of the server you want to connect to: mode, hostname or IP address, port, etc. \
-These options can be loaded from and saved into a session file.
 
-<div class="docs-section-heading" markdown="1">
+Replace `USER`, `HOST`, and `DISPLAY` with the account name, server name, and
+Xpra display number or session name. The display can be omitted when that
+account has only one active Xpra session.
 
-## Session Files
+On Windows, use `Xpra_cmd.exe` rather than `Xpra.exe` when running from a
+terminal: it prints diagnostic messages there instead of sending them to a log
+file.
 
-</div>
-Session files use the extension `.xpra` and record all the session settings, including the connection parameters shown in the session launcher. \
-Any command line option can be specified in this file by removing the `--` that precedes options when they're used via the command line.
-ie: `--min-quality=50` becomes just `min-quality=50`. \
-Double-clicking a session file brings up the launcher and if the session file contains `autoconnect=true` then the connection will be made without first showing the launcher dialog.
-The [html5 client](https://github.com/Xpra-org/xpra-html5) can also generate session files from its connection form.
+<details markdown="1">
+<summary>Create and edit session files</summary>
 
-<div class="docs-section-heading" markdown="1">
+Session files use the `.xpra` extension and store the settings shown by the
+connection window. The launcher can create them for you. To open one from a
+terminal, run:
 
-## Session Browser
+```shell
+xpra launcher session-file.xpra
+```
 
-</div>
-`xpra sessions` shows the session browser, this window lists all the sessions that can be found either on the local system or through [mDNS](../Network/Multicast-DNS.md) on the local network. \
-From this list, it is possible to start a connection to the sessions, either using the regular client or using the html5 client in a browser.
+You can also edit a session file in a text editor. Command-line options use
+the same names, without the leading `--`; for example, `--min-quality=50`
+becomes `min-quality=50` in the file. Set `autoconnect=true` to connect as
+soon as the file is opened.
 
-<div class="docs-section-heading" markdown="1">
+The [HTML5 client](https://github.com/Xpra-org/xpra-html5) can generate session
+files from its connection form as well.
+</details>
 
-## URL mapping
+<details markdown="1">
+<summary>Browser links, session discovery, and platform details</summary>
 
-</div>
-This mechanism allows browsers and other applications to launch an xpra client and specify connection options without having to first download or generate a session file. \
-For example, this is a valid URL for connecting to _HOST_ in _ssl_ mode on port 10000: `xpra+ssl://HOST:10000/`. \
-For more details, see [url mode mapping](https://github.com/Xpra-org/xpra/issues/1894#issue-792112051)
+Run `xpra sessions` to open the session browser. It lists sessions found
+locally and through [multicast DNS](../Network/Multicast-DNS.md) on the local
+network.
 
-<div class="docs-section-heading" markdown="1">
+Applications and browsers can also open Xpra connection links. For example,
+`xpra+ssl://HOST:10000/` connects to `HOST` in SSL mode on port `10000`. See
+[URL mode mapping](https://github.com/Xpra-org/xpra/issues/1894#issue-792112051)
+for details.
 
-## Platform Quirks
+Browser links and `.xpra` files need Xpra to be installed from a proper system
+package so the operating system can register the integration. On Windows, use
+the EXE or MSI installer rather than a ZIP archive; on macOS, use the PKG
+installer rather than a DMG archive. Source installations on other platforms
+may need [manual integration steps](https://github.com/Xpra-org/xpra/issues/1894#issuecomment-765501182).
+</details>
 
-</div>
-Both the URL mapping and session files require xpra to be installed using proper packages rather than archives. \
-This ensures that the operating system integration is registered correctly. \
-On MS Windows, that means using `EXE` or `MSI` installers and not `ZIP` files. On MacOS, `PKG` and not `DMG` archives. \
-When installing from source on other platforms, [manual steps](https://github.com/Xpra-org/xpra/issues/1894#issuecomment-765501182) may be required.
+## Next steps
 
-<div class="docs-section-heading" markdown="1">
-
-## Command line
-
-</div>
-The command line is the most powerful tool for running the client and has the advantage of printing out diagnostic messages directly
-on the terminal where it is executed. \
-On MS Windows, the command you should use is `Xpra_cmd.exe` rather than plain `Xpra.exe` as  the latter uses a log file. \
-The command line should always be used when testing or debugging.
+- [Choose a session type and start a server](README.md)
+- [Configure persistent client settings](Configuration.md)
+- [Use SSH or another connection method](../Network/README.md)

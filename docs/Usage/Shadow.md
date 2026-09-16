@@ -1,67 +1,73 @@
-# Shadow mode
+# Share a desktop that is already in use
 
-Shadow mode gives remote access to an existing display session. It is useful
-when the applications are already running on a physical desktop and you need
-to see or control that desktop remotely.
+Shadow mode lets you view and control the desktop that is currently displayed
+on another computer. Use it for remote assistance or to return to work that is
+already open on a physical desktop.
 
-Shadowing is supported on Linux, macOS, and Windows. On most platforms, the
-display must be active: it cannot be locked or turned off. Screen capture can
-also use substantially more CPU on the server and client than a regular Xpra
-session.
+It works with Linux, macOS, and Windows servers. The display usually needs to
+be active and unlocked. If you want a separate remote session instead, use
+[desktop mode](Desktop.md); to run only selected applications, use
+[seamless mode](Seamless.md).
 
-## Start and connect
+## Connect securely with SSH
 
-<div class="docs-grid" markdown="1">
-<section class="docs-card" markdown="1">
-
-### SSH one-liner
-
-If Xpra is installed on the remote host and you can log in with SSH, start and
-attach to a temporary shadow server in one command:
+If Xpra is installed on the remote computer and you can log in to it with SSH,
+start sharing its current desktop with one command:
 
 ```shell
 xpra shadow ssh://HOST/
 ```
 
-The shadow server stops when you disconnect. While it is running, it is also
-available through its Unix-domain socket, for example:
+Replace `HOST` with the remote computer’s name or IP address. The shadow
+server stops when you disconnect, leaving the desktop itself untouched.
+
+If you prefer a graphical tool, open **Xpra** from your application menu and
+choose **Shadow**. Enter the remote computer’s address and credentials there.
+
+## Before you share
+
+- Anyone connected can see the display and, unless input is disabled, control
+  its keyboard and pointer. Confirm that sharing it is appropriate.
+- Screen capture can use more CPU on both computers than a regular Xpra
+  session, especially at high resolutions or with rapidly changing content.
+- For an existing Xpra seamless or desktop session, attach directly instead of
+  shadowing it. Direct attachment preserves Xpra’s normal window and display
+  handling.
+
+<details markdown="1">
+<summary>Keep a shadow server running or connect without SSH</summary>
+
+Start a persistent shadow server manually when you need to configure it more
+closely:
 
 ```shell
-xpra info ssh://HOST/DISPLAY
+xpra shadow :0
 ```
 
-</section>
+On Linux and other X11 systems, `:0` commonly means the primary display. On
+macOS and Windows there is no X11 display name, so omit it. You can also omit
+it when the system has only one active display.
 
-<section class="docs-card" markdown="1">
-
-### Start from a shell
-
-Start a persistent shadow server manually when you need to configure more
-options. This example exposes the main display on TCP port `10000`:
+To accept TCP connections, bind an address and port:
 
 ```shell
 xpra shadow :0 --bind-tcp=0.0.0.0:10000
 ```
 
-On Windows and macOS there is no X11 display name such as `:0`, so omit the
-display argument. You can also omit it when the system has only one active
-`$DISPLAY`.
+This TCP example intentionally has no authentication or encryption. Do not
+expose it beyond a trusted network until you have configured both
+[authentication](Authentication.md) and [encryption](../Network/Encryption.md).
+</details>
 
-</section>
-</div>
+<details markdown="1">
+<summary>Diagnostics and implementation details</summary>
 
-## Security and session selection
+While the server is running, it is also available through its Unix-domain
+socket. For example:
 
-The TCP example above is intentionally minimal and does not provide
-[authentication](Authentication.md) or [encryption](../Network/Encryption.md).
-Configure both before exposing a shadow server beyond a trusted network.
-
-Do not shadow an existing [seamless](Seamless.md) or
-[desktop](Desktop.md) session when you can attach to that Xpra session directly.
-Attaching preserves the session’s normal window and display handling and avoids
-capturing the screen again.
-
-## Diagnostics
+```shell
+xpra info ssh://HOST/DISPLAY
+```
 
 Use `-d ssh` or another relevant category to enable
 [debug logging](Logging.md). The shadow server also displays a system-tray
@@ -69,10 +75,9 @@ menu while it is running and changes its icon when a client connects.
 
 ![Shadow server tray menu](../images/win32-shadow-tray-menu.png)
 
-For more general diagnostic steps, see [Debugging Xpra](../Debugging.md).
+For general diagnostic steps, see [Debugging Xpra](../Debugging.md).
 
-<details markdown="1">
-<summary>Related issues</summary>
+Known platform-specific work is tracked in these issues:
 
 - [#899](https://github.com/Xpra-org/xpra/issues/899) generic shadow improvements
 - [#389](https://github.com/Xpra-org/xpra/issues/389) Windows shadow server improvements
@@ -80,9 +85,15 @@ For more general diagnostic steps, see [Debugging Xpra](../Debugging.md).
 - [#390](https://github.com/Xpra-org/xpra/issues/390) damage events for the POSIX shadow server
 - [#391](https://github.com/Xpra-org/xpra/issues/391) macOS shadow server improvements
 - [#530](https://github.com/Xpra-org/xpra/issues/530) resize shadow windows on the client
-- [#972](https://github.com/Xpra-org/xpra/issues/972) fullscreen mode in the Xpra client
-- [#1099](https://github.com/Xpra-org/xpra/issues/1099) keyboard layout issue with the Windows shadow server
+- [#972](https://github.com/Xpra-org/xpra/issues/972) fullscreen mode in the client
+- [#1099](https://github.com/Xpra-org/xpra/issues/1099) keyboard layout on Windows
 - [#1150](https://github.com/Xpra-org/xpra/issues/1150) named pipes for Windows
-- [#1321](https://github.com/Xpra-org/xpra/issues/1321) scrolling with the macOS shadow server
+- [#1321](https://github.com/Xpra-org/xpra/issues/1321) scrolling with the macOS shadow screen
 - [#1322](https://github.com/Xpra-org/xpra/issues/1322) resizing the macOS shadow screen
 </details>
+
+## Next steps
+
+- [Connect to and configure Xpra clients](Client.md)
+- [Use SSH or another connection method](../Network/README.md)
+- [Forward clipboard, audio, and other features](../Features/README.md)

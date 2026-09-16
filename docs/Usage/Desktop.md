@@ -1,190 +1,150 @@
-# Desktop Mode
+# Remote desktop sessions
 
-Desktop mode forwards a complete desktop session in a window, instead of
-forwarding each application window separately as in [seamless mode](Seamless.md).
-It requires an X11 server on the Xpra server and is not available on macOS or
-Windows servers.
+Use Xpra desktop mode when you want to use a complete remote Linux desktop,
+rather than have each remote application appear as its own local window. The
+remote desktop opens in one Xpra window and keeps running when you disconnect,
+so you can reconnect later and carry on where you left off.
 
-<div class="docs-section-heading" markdown="1">
+Desktop sessions need an X11-capable Linux or Unix server. If the desktop you
+want to access is already running, use [shadow mode](Shadow.md) instead; it
+also works with macOS and Windows servers.
 
-## Choose a desktop mode
-
-Use desktop mode for one virtual screen, or monitor mode when the client has
-multiple displays and the server supports [Xdummy](Xdummy.md).
-
-</div>
+## Choose what you want to do
 
 <div class="docs-grid" markdown="1">
 <section class="docs-card" markdown="1">
 
-### Desktop mode
+### Start a new remote desktop
 
-`desktop` runs a full desktop environment in one virtual screen. Its behaviour
-is similar to VNC, with the additional benefits of the Xpra protocol, including
-audio and printer forwarding. See the [forwarded features](../Features/README.md).
-
-You can also connect to a desktop session with a VNC client.
+Choose this when you want a separate, private desktop for remote work. Start
+with [the quick start](#start-a-desktop) below.
 
 </section>
 
 <section class="docs-card" markdown="1">
 
-### Monitor mode
+### Reach a desktop already on screen
 
-`monitor` is an improved version of `desktop` for multi-monitor clients. It
-mirrors the client’s monitor layout and can expose a separate virtual monitor
-for each client display, rather than placing the whole desktop in one window.
-
-Monitor mode is supported only on server platforms where [Xdummy](Xdummy.md)
-is available. It is not supported with the simpler Xvfb backend. See the
-[Xdummy guide](Xdummy.md) for platform and package requirements.
+Choose [shadow mode](Shadow.md) when someone is already logged in at the
+server and you need to view or control that same display.
 
 </section>
 
-<section class="docs-card docs-card-wide" markdown="1">
-
-### Shadowing an existing desktop
-
-To access an existing desktop session, use the [shadow server](Shadow.md).
-Shadow mode is also available on macOS and Windows, where X11 desktop and
-monitor servers are not.
-
-</section>
-</div>
-
-<div class="docs-section-heading" markdown="1">
-
-## Start a session
-
-Start the server first, then connect from an Xpra client or a compatible VNC
-client.
-
-</div>
-
-<div class="docs-grid" markdown="1">
 <section class="docs-card" markdown="1">
 
-### Desktop mode
+### Run individual applications instead
+
+Choose [seamless mode](Seamless.md) when you only need a few remote
+applications and want their windows to mix with the windows on your computer.
+
+</section>
+</div>
+
+## Start a desktop
+
+You need to start an Xpra server on the remote computer, then connect to it
+from your own computer. The easiest way to do both is over SSH:
 
 ```shell
-xpra desktop --start=xterm
+xpra desktop --start-child=fluxbox ssh://USER@HOST/
 ```
 
-Then connect as usual from the client, or with a VNC client.
+Replace `USER` and `HOST` with your login name and the server name. `fluxbox`
+is a small desktop window manager used as an example; replace it with the
+command that starts the desktop environment installed on your server.
 
-</section>
-
-<section class="docs-card" markdown="1">
-
-### Monitor mode
-
-On a server with Xdummy support, start the multi-monitor session with:
+When you close the Xpra client window or choose **Disconnect**, the remote
+desktop continues to run. Connect again with:
 
 ```shell
-xpra monitor --start=xterm
+xpra attach ssh://USER@HOST/
 ```
 
-Attach from an Xpra client as usual. The server follows the client’s monitor
-layout as it changes.
+If you prefer not to type commands, open **Xpra** from your application menu,
+choose **Start**, then choose a desktop session. The graphical tool can start
+a session on this computer or a remote host.
 
-</section>
+<details markdown="1">
+<summary>Start the server and connect in separate steps</summary>
 
-<section class="docs-card docs-card-wide" markdown="1">
-
-### Start and connect in one command
-
-Use the SSH syntax from the client when you want to start and attach in one
-step:
+On the server, start a desktop session on a free display. `:100` is an example
+display number:
 
 ```shell
-xpra desktop --start=xterm ssh://USER@HOST/
+xpra desktop :100 --start-child=fluxbox
 ```
 
-Replace `desktop` with `monitor` when the server supports Xdummy and you want
-multi-monitor mode.
-
-</section>
-</div>
-
-<div class="docs-section-heading" markdown="1">
-
-## Run a window manager or desktop environment
-
-Replace the example application with the command that starts the window manager
-or desktop environment of your choice.
-
-</div>
-
-<div class="docs-grid" markdown="1">
-<section class="docs-card docs-card-wide" markdown="1">
-
-### Example: Fluxbox
+Then, on your own computer, connect to it:
 
 ```shell
-xpra desktop --start=fluxbox
+xpra attach ssh://USER@HOST/100
 ```
 
-The same `--start` option works with `monitor`. More featureful window
-managers and desktop environments tend to use more bandwidth and may appear to
-run more slowly.
-
-</section>
-</div>
-
-<div class="docs-section-heading" markdown="1">
-
-## Desktop size
-
-The initial desktop size comes from the default resolution of the `xvfb`
-backend. Resize the virtual screen at any time with regular X11 tools such as
-`xrandr`.
-
-</div>
-
-<div class="docs-grid" markdown="1">
-<section class="docs-card" markdown="1">
-
-### Set the initial size
+If the client is on the same machine and uses the same account, use:
 
 ```shell
-xpra desktop --resize-display="1024x768" --start=fluxbox
+xpra attach :100
+```
+</details>
+
+## Pick the desktop style
+
+For most people, `desktop` is the right choice. It creates one remote screen
+and shows it in an Xpra window, much like a traditional remote-desktop tool.
+
+If you regularly use several monitors, `monitor` can make the remote session
+follow your local monitor layout. It needs additional server support, so start
+with normal desktop mode unless you specifically need this behaviour.
+
+<details markdown="1">
+<summary>Use multiple monitors</summary>
+
+On a server with [Xdummy](Xdummy.md) support, start the session with:
+
+```shell
+xpra monitor --start-child=fluxbox ssh://USER@HOST/
 ```
 
-</section>
+Monitor mode exposes a virtual monitor for each of the client’s displays and
+updates the layout as it changes. It is unavailable with the simpler Xvfb
+backend; see [Xdummy](Xdummy.md) for platform and package requirements.
+</details>
 
-<section class="docs-card" markdown="1">
+## Things to know
 
-### Monitor mode sizing
+- Use the desktop environment or window manager you already have installed.
+  More elaborate desktops usually use more bandwidth and can feel slower over
+  a constrained connection.
+- A desktop session is separate from the computer’s physical display. To share
+  that existing display, use [shadow mode](Shadow.md).
+- Ensure that shutdown and reboot choices shown inside the remote desktop are
+  appropriate for the server you are using.
 
-Monitor mode uses the client’s monitor geometry. Configure the Xdummy virtual
-size large enough for the maximum combined monitor layout; see the
-[Xdummy configuration guide](Xdummy.md).
+<details markdown="1">
+<summary>Compatibility, size, and session lifetime</summary>
 
-</section>
-</div>
+Desktop and monitor servers require an X11 server and are not available on
+macOS or Windows servers. You can attach with an Xpra client; a desktop
+session can also accept a VNC client when VNC support is enabled.
 
-<div class="docs-section-heading" markdown="1">
+The initial desktop size comes from the `xvfb` backend. Set it explicitly when
+needed:
 
-## Caveats
+```shell
+xpra desktop --resize-display="1024x768" --start-child=fluxbox
+```
 
-</div>
+You can later resize the virtual screen with normal X11 tools such as
+`xrandr`. Monitor mode instead uses the client’s monitor geometry; configure
+the Xdummy virtual size for the largest combined layout you expect.
 
-<div class="docs-grid" markdown="1">
-<section class="docs-card" markdown="1">
+To end a session automatically when its window manager exits, use
+`--start-child` with `--exit-with-children`. Otherwise, the session remains
+available after its client disconnects.
+</details>
 
-### End the session with the window manager
+## Next steps
 
-Use `--start-child` together with `--exit-with-children` if the session should
-terminate when the window manager exits.
-
-</section>
-
-<section class="docs-card" markdown="1">
-
-### Shutdown actions
-
-Some desktop environments show options to shut down or reboot the system from
-their start menu. Decide whether those actions are appropriate for the server.
-
-</section>
-</div>
+- [Connect to and configure Xpra clients](Client.md)
+- [Forward audio, clipboard, printers, and other features](../Features/README.md)
+- [Use SSH or another connection method](../Network/README.md)

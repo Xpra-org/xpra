@@ -1,46 +1,73 @@
-# Xpra Configuration
+# Configure Xpra
 
-The most common configuration options are available directly from the main GUI tool.\
-Simply run `xpra` and click on the `Configure` button, or run the subcommand: `xpra configure`.
+Most day-to-day Xpra settings can be changed from its graphical configuration
+tool. Open **Xpra** from your application menu, choose **Configure**, then
+choose the area you want to change: features, picture quality, packages,
+server components, or debugging.
 
-***
+The graphical tool is the best starting point because it describes the setting
+and saves the choice for you. Use the methods below when you need a repeatable
+change, want to manage settings remotely, or cannot use the graphical tool.
 
-Most other important xpra settings can be configured from the command line or through xpra's configuration files.
+## Change one setting permanently
 
-You can find some example configuration files here: [template /etc/xpra/ directory](https://github.com/Xpra-org/xpra/tree/master/fs/etc)
+Use `xpra set` to save a single setting for your user account. For example,
+this makes Xpra use a 120 DPI display scale:
 
-The configuration files use the exact same format as the command line options, which can be shown using `xpra --help`, just without the `--` prefix.\
-The manual is also shipped with all binary installations and should be easily accessible. (ie: `man xpra`)
-
-_(some more obscure features can be configured using environment variables)_
-
-***
-
-Starting with version 6.3, settings can be changed permanently from the command line:
 ```shell
 xpra set dpi 120
 ```
-To erase this setting:
+
+Remove a saved setting and return to the default with:
+
 ```shell
 xpra unset dpi
 ```
 
-***
+Run `xpra --help` or read the manual for the full list of settings available in
+your installed Xpra version.
 
-<div class="docs-section-heading" markdown="1">
+<details markdown="1">
+<summary>Configure Xpra with files or command-line options</summary>
 
-## Configuration files location
+Most settings can also be passed on the command line or written in Xpra
+configuration files. The setting names are the same as the command-line
+options, but configuration files omit the leading `--`. For example:
 
-</div>
+```text
+min-quality=50
+```
 
-The exact location of the configuration files varies widely from platform to platform, and even from one version of the OS to another.
-* for unix-like operating systems, the system configuration files can usually be found in `/etc/xpra` and the per-user settings can be placed in `~/.config/xpra` - you can also run the `xpra/platform/paths.py` script for more details
-* on Mac OS X, we ship a command line tool found under `Xpra.app/Contents/Helpers/Path_info` which will show the file locations, the default location for user configuration files should be `~/Library/Application Support/Xpra` you can also use - `
-~/.config/xpra`
-* on MS Windows, run the `Path_info.exe` tool found in the Xpra installation folder
+matches the command-line option `--min-quality=50`.
 
+Example files are available in the
+[template `/etc/xpra/` directory](https://github.com/Xpra-org/xpra/tree/master/fs/etc).
+The installed manual is the reference for the version you are running; on most
+Unix-like systems, open it with:
 
-----
+```shell
+man xpra
+```
 
-You should generally not edit the system default configuration files, as those may be overwritten whenever xpra is (re)installed.
-Use the per-user configuration files instead, or add your own configuration file.
+Some less common features are configured through environment variables.
+</details>
+
+<details markdown="1">
+<summary>Find configuration files on your platform</summary>
+
+Use a per-user configuration file for your own settings. Do not normally edit
+system defaults because an Xpra upgrade may replace them.
+
+- On Unix-like systems, system files are commonly in `/etc/xpra` and per-user
+  files in `~/.config/xpra`. Run `xpra/platform/paths.py` for exact locations.
+- On macOS, the per-user location is usually
+  `~/Library/Application Support/Xpra`; `~/.config/xpra` also works. Run
+  `Xpra.app/Contents/Helpers/Path_info` for the paths used by your installation.
+- On Windows, run `Path_info.exe` from the Xpra installation folder.
+</details>
+
+## Next steps
+
+- [Choose which features to forward](../Features/README.md)
+- [Connect and save client settings](Client.md)
+- [Use logging to diagnose a problem](Logging.md)
