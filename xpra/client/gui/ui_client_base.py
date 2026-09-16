@@ -16,7 +16,9 @@ from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
 from xpra.common import noerr, may_notify_client
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
-from xpra.net.common import Packet, PacketElement, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import (
+    Packet, PacketElement, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION,
+)
 from xpra.net.packet_type import (
     CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK,
     DISPLAY_MONITOR_CONFIGURE, DISPLAY_UNGRAB,
@@ -354,6 +356,17 @@ class UIXpraClient(XpraClientBase):
     ######################################################################
     # connection setup:
     def parse_server_capabilities(self, c: typedict) -> bool:
+        # A server running in backwards compatible mode accepts peers older than
+        # our `MIN_PROTOCOL_VERSION`, and sends every client the legacy packet
+        # names and capabilities layout they need (for example, a `display`
+        # name string rather than the `display` capabilities namespace).
+        min_version = c.inttupleget("protocol-version")
+        if not BACKWARDS_COMPATIBLE and self._protocol.TYPE != "rfb" and (
+                not min_version or min_version < MIN_PROTOCOL_VERSION):
+            self.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION,
+                               "the server is running in backwards compatible mode,"
+                               " which is not supported by clients using `XPRA_BACKWARDS_COMPATIBLE=0`")
+            return False
         if not XpraClientBase.parse_server_capabilities(self, c):
             return False
         self.server_session_name = c.strget("session_name")

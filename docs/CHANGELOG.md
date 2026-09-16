@@ -8,6 +8,7 @@
   * [explicit image wrapper locking](https://github.com/Xpra-org/xpra/issues/5024)
 * ✨ Features:
   * [`sharing=combine`: give each client its own area of the virtual display](https://github.com/Xpra-org/xpra/issues/1369)
+  * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)
 
 
 ## [6.6] 2026-07-14
