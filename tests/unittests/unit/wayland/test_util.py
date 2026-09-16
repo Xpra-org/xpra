@@ -239,7 +239,6 @@ class WestonTestUtil(ServerTestUtil):
             self.show_proc_error(proc, f"{description} did not exit")
 
     def start_wayland_server(self):
-        before = set(self.displays())
         runtime = tempfile.TemporaryDirectory(prefix="xpra-wayland-server-")
         os.chmod(runtime.name, 0o700)
         env = self.get_run_env()
@@ -258,9 +257,18 @@ class WestonTestUtil(ServerTestUtil):
             if server.poll() is not None:
                 runtime.cleanup()
                 self.show_proc_error(server, "Wayland server failed to start")
-            new_displays = set(self.displays()) - before
-            candidates = sorted(x for x in new_displays
-                                if x.startswith("wayland-"))
+            # The public socket directory can contain a stale wayland-N socket.
+            # Xpra probes and replaces that socket during startup, so comparing
+            # it with the sockets present before startup can miss this server.
+            # Its private session directory is unique to this invocation.
+            session_dir = os.path.join(runtime.name, "xpra")
+            try:
+                candidates = sorted(
+                    entry.name for entry in os.scandir(session_dir)
+                    if entry.name.startswith("wayland-")
+                    and os.path.exists(os.path.join(entry.path, "socket")))
+            except FileNotFoundError:
+                candidates = []
             if candidates:
                 display = candidates[0]
                 break
@@ -272,11 +280,20 @@ class WestonTestUtil(ServerTestUtil):
                                  "Wayland server did not create a session "
                                  "socket")
         server.display = display
-        version = self.run_xpra(["version", display])
-        if pollwait(version, CLIENT_TIMEOUT) != 0:
-            self.show_proc_error(version,
-                                 f"version check failed for {display}")
-        return server
+        version = None
+        while time.monotonic() < deadline:
+            version = self.run_xpra(["version", display])
+            if pollwait(version, 1) == 0:
+                return server
+            if server.poll() is not None:
+                self.terminate_process(server)
+                runtime.cleanup()
+                self.show_proc_error(server, "Wayland server exited")
+            time.sleep(0.25)
+        self.terminate_process(server)
+        runtime.cleanup()
+        self.show_proc_error(version,
+                             f"version check failed for {display}")
 
     def stop_wayland_server(self, server) -> None:
         try:
