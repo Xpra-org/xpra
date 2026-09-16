@@ -174,7 +174,8 @@ class ARGBSwapTest(unittest.TestCase):
         bpp = len(pixel)
         rowstride = self.WIDTH * bpp
         pixels = bytes(bytearray(pixel)) * (self.WIDTH * self.HEIGHT)
-        image = ImageWrapper(0, 0, self.WIDTH, self.HEIGHT, memoryview(pixels), pixel_format, 24, rowstride, planes=ImageWrapper.PACKED)
+        image = ImageWrapper(0, 0, self.WIDTH, self.HEIGHT, memoryview(pixels), pixel_format, 24, rowstride,
+                             bytesperpixel=bpp, planes=ImageWrapper.PACKED)
         r = argb_swap(image, rgb_formats, transparency)
         assert r is True, f"argb_swap failed for {pixel_format} to one of {rgb_formats}"
         return image
@@ -187,6 +188,8 @@ class ARGBSwapTest(unittest.TestCase):
         # the rowstride must match the new number of bytes per pixel:
         self.assertEqual(image.get_rowstride(), self.WIDTH * len(out_pixel),
                          f"invalid rowstride for {out_format}")
+        self.assertEqual(image.get_bytesperpixel(), len(out_pixel),
+                         f"invalid bytesperpixel for {out_format}")
 
     def test_rgbx_to_rgb(self):
         # the red byte already comes first, only the 4th byte is dropped:

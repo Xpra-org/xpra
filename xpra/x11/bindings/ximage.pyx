@@ -412,6 +412,9 @@ cdef class XImageWrapper:
     def set_rowstride(self, unsigned int rowstride) -> None:
         self.rowstride = rowstride
 
+    def set_bytesperpixel(self, unsigned int bytesperpixel) -> None:
+        self.bytesperpixel = bytesperpixel
+
     def set_pixel_format(self, pixel_format) -> None:
         assert pixel_format is not None and pixel_format in RGB_FORMATS, "invalid pixel format: %s" % pixel_format
         self.pixel_format = pixel_format
