@@ -78,6 +78,20 @@ def hotspot(hcursor: int) -> tuple[int, int]:
     return info.xHotspot, info.yHotspot
 
 
+def bitmap_size(hcursor: int) -> tuple[int, int]:
+    from xpra.platform.win32.common import GetIconInfo, ICONINFO, GetObjectA, Bitmap, DeleteObject
+    info = ICONINFO()
+    assert GetIconInfo(hcursor, byref(info))
+    try:
+        bitmap = Bitmap()
+        assert GetObjectA(info.hbmColor, sizeof(Bitmap), byref(bitmap))
+        return bitmap.bmWidth, bitmap.bmHeight
+    finally:
+        for handle in (info.hbmColor, info.hbmMask):
+            if handle:
+                DeleteObject(handle)
+
+
 @unittest.skipUnless(WIN32, "the win32 client is only available on MS Windows")
 class HCursorTest(unittest.TestCase):
 
@@ -132,10 +146,16 @@ class HCursorTest(unittest.TestCase):
 class Win32CursorsTest(unittest.TestCase):
 
     def setUp(self):
-        from xpra.client.win32.cursor import Win32Cursors
-        self.cursors = Win32Cursors()
+        from xpra.client.win32 import cursor
+        self.cursors = cursor.Win32Cursors()
+        self.get_default_cursor_size = cursor.get_default_cursor_size
+        # the size of the system cursors, which the cursors are padded to:
+        self.system_size = (32, 32)
+        cursor.get_default_cursor_size = lambda: self.system_size
 
     def tearDown(self):
+        from xpra.client.win32 import cursor
+        cursor.get_default_cursor_size = self.get_default_cursor_size
         self.cursors.cleanup()
 
     def test_scaling(self):
@@ -145,6 +165,27 @@ class Win32CursorsTest(unittest.TestCase):
         self.assertEqual(region(pixels, 32, 0, 1, 24), {WHITE})
         self.assertEqual(region(pixels, 0, 24, 32, 1), {WHITE})
         self.assertEqual(hotspot(hcursor), (8, 18))
+        self.assertEqual(bitmap_size(hcursor), (32, 32))
+
+    def test_padding(self):
+        self.system_size = (48, 40)
+        hcursor = self.cursors.get_hcursor(cursor_data(16, 16, 3, 5, rgba(16, 16, BLUE)))
+        # pasted in the top-left corner of a transparent image as big as the system cursors,
+        # so nothing is left over from a bigger cursor shown before this one:
+        self.assertEqual(bitmap_size(hcursor), (48, 40))
+        self.assertEqual(hotspot(hcursor), (3, 5))
+        pixels = draw(hcursor)
+        self.assertEqual(region(pixels, 0, 0, 16, 16), {(255, 0, 0)})
+        self.assertEqual(region(pixels, 16, 0, 32, 40), {WHITE})
+        self.assertEqual(region(pixels, 0, 16, 16, 24), {WHITE})
+        # only the axes that are smaller get padded:
+        self.assertEqual(bitmap_size(self.cursors.get_hcursor(cursor_data(64, 16, 0, 0, rgba(64, 16)))), (64, 40))
+        self.assertEqual(bitmap_size(self.cursors.get_hcursor(cursor_data(64, 64, 0, 0, rgba(64, 64)))), (64, 64))
+        # a new system cursor size needs a new cursor:
+        self.system_size = (64, 64)
+        resized = self.cursors.get_hcursor(cursor_data(16, 16, 3, 5, rgba(16, 16, BLUE)))
+        self.assertNotEqual(resized, hcursor)
+        self.assertEqual(bitmap_size(resized), (64, 64))
 
     def test_shared(self):
         pixels = rgba(16, 16)

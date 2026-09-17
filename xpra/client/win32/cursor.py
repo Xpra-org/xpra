@@ -9,6 +9,7 @@ from collections.abc import Sequence, Iterable
 import win32con
 
 from xpra.util.str_fn import memoryview_to_bytes
+from xpra.platform.gui import get_default_cursor_size
 from xpra.platform.win32.common import (
     GetDC, ReleaseDC, BITMAPV5HEADER, CreateDIBSection, CreateBitmap, DeleteObject,
     ICONINFO, CreateIconIndirect, DestroyCursor,
@@ -32,6 +33,20 @@ def scale_cursor(w: int, h: int, xhot: int, yhot: int, pixels: bytes,
     img = Image.frombytes("RGBA", (w, h), pixels, "raw", "RGBA", w * 4, 1)
     pixels = img.resize((sw, sh), Image.Resampling.BILINEAR).tobytes("raw", "RGBA")
     return sw, sh, round(xhot * xscale), round(yhot * yscale), pixels
+
+
+def pad_cursor(w: int, h: int, pixels: bytes, min_width: int, min_height: int) -> tuple[int, int, bytes]:
+    """
+    Paste the cursor in the top-left corner of a transparent image of at least this size,
+    so the hotspot does not move.
+    """
+    pw, ph = max(w, min_width), max(h, min_height)
+    if (pw, ph) == (w, h):
+        return w, h, pixels
+    stride = w * 4
+    padding = bytes((pw - w) * 4)
+    rows = b"".join(pixels[y * stride:(y + 1) * stride] + padding for y in range(h))
+    return pw, ph, rows + bytes((ph - h) * pw * 4)
 
 
 def make_hcursor(w: int, h: int, xhot: int, yhot: int, pixels: bytes) -> int:
@@ -115,13 +130,17 @@ class Win32Cursors:
         if w <= 0 or h <= 0 or len(pixels) < w * h * 4:
             log.warn("Warning: invalid %ix%i cursor with %i bytes of pixel data", w, h, len(pixels))
             return 0
-        key = (w, h, xhot, yhot, pixels, xscale, yscale)
+        # pixels of the previous cursor can remain visible outside of a smaller one (seen with VirtualBox),
+        # so we make them at least as big as the system cursors:
+        min_size = get_default_cursor_size()
+        key = (w, h, xhot, yhot, pixels, xscale, yscale, min_size)
         hcursor = self.hcursors.get(key, 0)
         if not hcursor:
             sw, sh, sx, sy, spixels = scale_cursor(w, h, xhot, yhot, pixels, xscale, yscale)
-            hcursor = make_hcursor(sw, sh, sx, sy, spixels)
-            log("make_hcursor for %ix%i cursor with serial=%#x, scaled to %ix%i: %#x",
-                w, h, serial, sw, sh, hcursor)
+            pw, ph, spixels = pad_cursor(sw, sh, spixels, *min_size)
+            hcursor = make_hcursor(pw, ph, sx, sy, spixels)
+            log("make_hcursor for %ix%i cursor with serial=%#x, scaled to %ix%i, padded to %ix%i: %#x",
+                w, h, serial, sw, sh, pw, ph, hcursor)
             if hcursor:
                 self.hcursors[key] = hcursor
         return hcursor

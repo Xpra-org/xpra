@@ -112,7 +112,7 @@ def get_local_cursor(cursor_name: str):
 def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | None:
     from xpra.util.str_fn import Ellipsizer, repr_ellipsized, bytestostr, hexstr
     from xpra.gtk.pixbuf import get_pixbuf_from_data
-    from xpra.platform.gui import get_max_cursor_size
+    from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size
     # if present, try cursor by name:
     display = Gdk.Display.get_default()
     if not display:
@@ -189,10 +189,12 @@ def make_cursor(cursor_data: Sequence, xscale=1.0, yscale=1.0) -> Gdk.Cursor | N
         pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)
         w, h, x, y = sw, sh, sx, sy
 
-    if WIN32 and w != h:
-        # GDK centers non-square cursors in a square bitmap without moving the hotspot,
-        # so give it a square one with the cursor in the top-left corner:
-        size = max(w, h)
+    # on win32, paste the cursor in the top-left corner of a transparent square:
+    # * pixels of the previous cursor can remain visible outside of a smaller one (seen with VirtualBox),
+    #   so make it at least as big as the system cursors
+    # * GDK centers non-square cursors in a square bitmap without moving the hotspot
+    size = max(w, h, *get_default_cursor_size()) if WIN32 else 0
+    if size and (w, h) != (size, size):
         log("padding %ix%i cursor to %ix%i", w, h, size, size)
         square = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8, size, size)
         square.fill(0)

@@ -22,10 +22,17 @@ def cursor_data(name: str, w=16, h=16, xhot=3, yhot=1) -> tuple:
     return "raw", 0, 0, w, h, xhot, yhot, 0x1234, b"\xff" * (w * h * 4), name
 
 
+# what the tests pretend the size of the system cursors is:
+SYSTEM_CURSOR_SIZE = (48, 48)
+
+
 def made(w: int, h: int, x: int, y: int) -> tuple:
-    """ the cursor we expect to hand to GDK, which needs square cursors on win32 """
+    """
+    The cursor we expect to hand to GDK: on win32, it is padded to a square
+    at least as big as the system cursors.
+    """
     if WIN32:
-        w = h = max(w, h)
+        w = h = max(w, h, *SYSTEM_CURSOR_SIZE)
     return w, h, x, y
 
 
@@ -36,6 +43,15 @@ class TestCursors(unittest.TestCase):
         if not WIN32 and not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
             raise unittest.SkipTest("no display")
         os.environ["XPRA_USE_LOCAL_CURSORS"] = "1"
+
+    def setUp(self):
+        import xpra.platform.gui as platform_gui
+        self.get_default_cursor_size = platform_gui.get_default_cursor_size
+        platform_gui.get_default_cursor_size = lambda: SYSTEM_CURSOR_SIZE
+
+    def tearDown(self):
+        import xpra.platform.gui as platform_gui
+        platform_gui.get_default_cursor_size = self.get_default_cursor_size
 
     def make(self, name: str, xscale=1.0, yscale=1.0, **kwargs) -> tuple:
         """ the size and hotspot make_cursor() ends up using """
@@ -72,22 +88,23 @@ class TestCursors(unittest.TestCase):
         w, h, x, y = self.make("size_fdiag")
         # the local image is used, with the hotspot of the local image
         # and not the one the server sent for its own:
-        self.assertEqual((w, h), (pixbuf.get_width(), pixbuf.get_height()))
+        self.assertEqual((w, h), made(pixbuf.get_width(), pixbuf.get_height(), x, y)[:2])
         self.assertEqual((str(x), str(y)), (pixbuf.get_option("x_hot"), pixbuf.get_option("y_hot")))
 
     def test_local_cursor_scaling(self):
         from xpra.gtk.cursors import get_local_cursor
-        if not get_local_cursor("size_fdiag"):
+        pixbuf = get_local_cursor("size_fdiag")
+        if not pixbuf:
             raise unittest.SkipTest("no cursor theme")
-        w, h, x, y = self.make("size_fdiag")
+        w, h = pixbuf.get_width(), pixbuf.get_height()
+        x, y = self.make("size_fdiag")[2:]
         for scale in (2.0, 0.5):
-            sw, sh, sx, sy = self.make("size_fdiag", scale, scale)
-            self.assertEqual((sw, sh), (round(w * scale), round(h * scale)))
-            self.assertEqual((sx, sy), (round(x * scale), round(y * scale)))
+            expected = made(round(w * scale), round(h * scale), round(x * scale), round(y * scale))
+            self.assertEqual(self.make("size_fdiag", scale, scale), expected)
 
     def test_server_cursor(self):
         # no local cursor for this name: the server's image and hotspot are used as-is
-        self.assertEqual(self.make("no-such-cursor-name"), (16, 16, 3, 1))
+        self.assertEqual(self.make("no-such-cursor-name"), made(16, 16, 3, 1))
 
     def test_large_cursor(self):
         # bigger than the system cursors (32x32 on win32) and not square:
@@ -102,11 +119,13 @@ class TestCursors(unittest.TestCase):
             # read back what GDK gave to win32:
             surface, x, y = cursor.get_surface()
             self.assertEqual((x, y), (xhot, yhot))
+            # square, and at least as big as the system cursors:
+            self.assertEqual((surface.get_width(), surface.get_height()), made(w, h, x, y)[:2])
             stride = surface.get_stride()
             pixels = surface.get_data()
             opaque = [(px, py) for py in range(surface.get_height()) for px in range(surface.get_width())
                       if pixels[py * stride + px * 4 + 3]]
-            # the image must be where the hotspot expects it:
+            # the image must be where the hotspot expects it, and the rest is transparent:
             self.assertEqual((min(opaque), max(opaque)), ((0, 0), (w - 1, h - 1)), f"for {w}x{h} cursor")
 
     def test_max_size(self):
@@ -124,17 +143,17 @@ class TestCursors(unittest.TestCase):
                 Gdk.Display.get_maximal_cursor_size = get_maximal_cursor_size
 
         # scaled up to 64x64 then shrunk back to the 32x32 limit, hotspot included:
-        self.assertEqual(make_limited((32, 32), 4), (32, 32, 6, 2))
+        self.assertEqual(make_limited((32, 32), 4), made(32, 32, 6, 2))
         # both axes shrink by the same ratio, even when only one of them is too big:
         tall = {"w": 8, "h": 16, "xhot": 3, "yhot": 15}
         self.assertEqual(make_limited((32, 32), 4, **tall), made(16, 32, 6, 30))
         # no limit on one axis:
         self.assertEqual(make_limited((0, 32), 4, **tall), made(16, 32, 6, 30))
         # the platform limit replaces the one from GDK:
-        self.assertEqual(make_limited((32, 32), 4, platform_max=(48, 48)), (48, 48, 9, 3))
+        self.assertEqual(make_limited((32, 32), 4, platform_max=(48, 48)), made(48, 48, 9, 3))
         # and on win32, there is no real limit:
         if WIN32:
-            self.assertEqual(make_limited((32, 32), 4, platform_max=get_max_cursor_size()), (64, 64, 12, 4))
+            self.assertEqual(make_limited((32, 32), 4, platform_max=get_max_cursor_size()), made(64, 64, 12, 4))
 
 
 def main():
