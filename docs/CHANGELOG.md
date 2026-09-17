@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.4] 2026-09-14
+## [6.5.4] 2026-09-17
 * 🔧 Platforms, build and packaging:
   * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
   * [wayland: link to wayland-server](https://github.com/Xpra-org/xpra/commit/36bae2f550e15500d4691795126bccb222bfae83)
@@ -11,7 +11,10 @@
   * [workaround Cython 3.3.0 bug](https://github.com/Xpra-org/xpra/commit/3b3c6cd6b3d0b69d276546cf9d02afec1d6df02b)
   * [MS Windows builds find the version-stamping tool reliably](https://github.com/Xpra-org/xpra/commit/881aefe7fc831d7305d1c5eccb1bf21b0c664cc5)
   * [Debian packages retain the Wireshark dissector when the normal packaging path is unavailable](https://github.com/Xpra-org/xpra/commit/6ab686bc9f21be9b3c9bed191514229719b9ad4a)
+  * [Adwaita theme layout changes](https://github.com/Xpra-org/xpra/commit/319f6dc55393b6925f28b4ef7686db38cd460d7b) [+ remove unused references](https://github.com/Xpra-org/xpra/commit/e44bdd456fb9052df7ed9da7393b5d3bcaceaf97)
+  * [remove outdated dependencies](https://github.com/Xpra-org/xpra/commit/00c12bf42cd6cb48a6d2e6202e34bd6e859a3706)
 * ⚠️ Major:
+  * [warn rather than leaking memory with buggy Debian libraries](https://github.com/Xpra-org/xpra/commit/828279fa4aae80990c5a8a2df48daa73d49bbd80)
   * [OpenGL windows can remain blank until they receive a configure event](https://github.com/Xpra-org/xpra/commit/3b3bc5aabdcb5a94afab2122a73c4eadfa9c8531)
   * [crash: don't assume Gdk displays are X11 displays](https://github.com/Xpra-org/xpra/commit/d448cf6c5bfc6b608e641f1ecc465d6816c6cb38)
   * [Wayland clients don't need a X11 display](https://github.com/Xpra-org/xpra/commit/92ddb0189adeec54760edc9654c06250adb91aef)
@@ -34,6 +37,8 @@
   * [GTK clients fail to restack a window above or below another window](https://github.com/Xpra-org/xpra/commit/13843cb28c36d35f48a4008a3e12e165a201a974)
   * [resizing desktop sessions has no effect on Xvfb displays](https://github.com/Xpra-org/xpra/commit/91821990d2f67c5e9333fda3d8866b5feecbbd50)
   * [window managers in resized desktop sessions keep placing windows and panels using the old monitor size](https://github.com/Xpra-org/xpra/commit/9752434151dfb6079cac83da31aee5746c3c3b72)
+  * [automatically release the correct button](https://github.com/Xpra-org/xpra/commit/4c442b76ad74d8c4fb0304291ad85adc9e15addb)
+  * [blurry popups screen updates](https://github.com/Xpra-org/xpra/commit/9b58a061f1667669c2e333f5459bfb2acf1b304d)
 * Wayland backend:
   * [screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
   * [windows can end up duplicated on clients](https://github.com/Xpra-org/xpra/commit/33256c95d4c636982c6c6611503cd57606da9c36)
@@ -58,11 +63,14 @@
   * [clients that only accept BGRX / BGRA pixels, like MS Windows GDI rendering, fail to paint RGBX / RGBA updates](https://github.com/Xpra-org/xpra/commit/d8b503908722f446b38cc20c5c440a08e1e79db6)
   * [video pipeline setup can race with cleanup and leave a mismatched colourspace converter and video encoder](https://github.com/Xpra-org/xpra/commit/06f92fec66711e2325dde5ff62390aee37437bd0)
 * CUDA and NVENC:
-  * [CUDA device detection fails when mmap is enabled](https://github.com/Xpra-org/xpra/commit/ff8ffc5486f523617e459aea483b59589b4ddd18)
-  * [CUDA video conversion keeps colour values within the valid range](https://github.com/Xpra-org/xpra/commit/8cbb72ef852352985bb9141a7e411a2ced5b4fc7)
-  * [CUDA video conversion handles image edges without corrupt output](https://github.com/Xpra-org/xpra/commit/793eebca4ff5f5b68db6d77fcce319d26a8ccc4d)
-  * [slow CUDA cleanup is clearly reported instead of silently stalling a session](https://github.com/Xpra-org/xpra/commit/11a80620b25329fa5fad1f676fd4936280af3623)
+  * [update default CUDA location on MS Windows](https://github.com/Xpra-org/xpra/commit/97831062f9143ec8482f6d3c86880f61cf04351d)
+  * [bump CUDA libraries to SDK 13](https://github.com/Xpra-org/xpra/commit/78575d225555bdfb45a33e8320a4c3a273733775)
+  * [device detection fails when mmap is enabled](https://github.com/Xpra-org/xpra/commit/ff8ffc5486f523617e459aea483b59589b4ddd18)
+  * [video conversion keeps colour values within the valid range](https://github.com/Xpra-org/xpra/commit/8cbb72ef852352985bb9141a7e411a2ced5b4fc7)
+  * [video conversion handles image edges without corrupt output](https://github.com/Xpra-org/xpra/commit/793eebca4ff5f5b68db6d77fcce319d26a8ccc4d)
+  * [slow cleanup is clearly reported instead of silently stalling a session](https://github.com/Xpra-org/xpra/commit/11a80620b25329fa5fad1f676fd4936280af3623)
   * [NVENC sessions retain needed fallback resources instead of failing unexpectedly](https://github.com/Xpra-org/xpra/commit/2f12e3a29b7a59f4f47a1f8a85c3f634690d95a5)
+  * [NVENC streams fail to decode due to invalid `csc` attribute](https://github.com/Xpra-org/xpra/commit/89331c43c2360d58f2db486987a4d98e8439d322)
 * Minor:
   * [X11 events can stop being routed after an unmatched filter cleanup](https://github.com/Xpra-org/xpra/commit/23f81b0c5119e4c2c619e67a1cc20558ee972ae9) [and leave the filter unusable](https://github.com/Xpra-org/xpra/commit/91bf9a9025c52ed862025eacfd09c10153484783)
   * [window-icon timers survive after their window is removed](https://github.com/Xpra-org/xpra/commit/fb0388fe68b8e917f09d8a7fdd3081101d59296e) [or raise warnings after firing](https://github.com/Xpra-org/xpra/commit/9409e7158bfdc66d45a937690a8ec7f2560934e2)
@@ -78,7 +86,8 @@
   * [session cleanup removes dangling SSH-agent links](https://github.com/Xpra-org/xpra/commit/fb455661350e09bafc04f196abcc68bdf2299648)
   * [server runtime directories are created more safely and reliably](https://github.com/Xpra-org/xpra/commit/3f0e754d54579ab4fae7292d872e2e102dc359a7)
   * [proxy startup reports a missing display cleanly instead of raising an internal error](https://github.com/Xpra-org/xpra/commit/aba3d8e3114cfc8bcd9ffff0b9d6d62607e1bb96)
-  * [with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes](https://github.com/Xpra-org/xpra/commit/aefa64cb2042170dc1ffe5044998f8d746fd39f9)
+  * [with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes](https://github.com/Xpra-org/xpra/commit/aefa64cb2042170dc1ffe5044998f8d746fd39f9) [+ test fixup](https://github.com/Xpra-org/xpra/commit/ea86e59b6c58501d9f5f1ad78f04a8cf19a2ca0e)
+  * [keep the cursor shape when clamping it to the maximum size](https://github.com/Xpra-org/xpra/commit/bba3e4d38c4c767f703e0b5d706bda6a211bccb3)
 * *️⃣ Keyboard:
   * [multiple keyboard layouts supplied on the command line are applied correctly](https://github.com/Xpra-org/xpra/commit/27163f510760c67945fafd80a800d6ef473af9e9)
   * [clients keep typing the right keys after the server keyboard layout changes](https://github.com/Xpra-org/xpra/commit/52a0bc17610b5c55b70efa1a7cbf460087440395)
@@ -135,6 +144,9 @@
   * [installed test suites are assembled correctly](https://github.com/Xpra-org/xpra/commit/208d14761334207543c3ff9c0e4745d19a9bb410)
   * [X11 event filter regression test fails on this branch](https://github.com/Xpra-org/xpra/commit/708672fe63aa1b81add1e55c4a7389a78368bbde)
   * [tests recover quickly from stale sockets rather than repeatedly waiting for timeouts](https://github.com/Xpra-org/xpra/commit/0a014b931863f852d7102a0ca9c81fa6b6213e5e)
+  * [clearer message when session is not found](https://github.com/Xpra-org/xpra/commit/1f886bfd6ee20211852886a018283e72bef20a77)
+  * [update all image wrapper metadata after conversion](https://github.com/Xpra-org/xpra/commit/ebc12cc5f198dd85df6c36655037b12154494803)
+  * [gtk dropped its own stock icon names](https://github.com/Xpra-org/xpra/commit/b4811e957f1c9f803edf6b21b271849d7bad8ee1)
 
 ## [6.5.3] 2026-08-18
 * 🔧 Platforms, build and packaging:

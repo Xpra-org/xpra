@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Mon Sep 14 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
+* Thu Sep 17 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
 - 🔧 Platforms, build and packaging:
    `libyuv` not detected without pkgconfig file + fixup
    wayland: link to wayland-server
@@ -1122,7 +1122,10 @@ fi
    workaround Cython 3.3.0 bug
    MS Windows builds find the version-stamping tool reliably
    Debian packages retain the Wireshark dissector when the normal packaging path is unavailable
+   Adwaita theme layout changes + remove unused references
+   remove outdated dependencies
 - ⚠️ Major:
+   warn rather than leaking memory with buggy Debian libraries
    OpenGL windows can remain blank until they receive a configure event
    crash: don't assume Gdk displays are X11 displays
    Wayland clients don't need a X11 display
@@ -1138,12 +1141,15 @@ fi
    X11 error callbacks are safe when they run outside the main Python thread
    X11 error handling no longer consumes CPU in a busy timer loop
    late mouse clicks for closed windows are ignored rather than affecting another window
+   simulated mouse releases retain the button originally pressed when modifiers change
    mmap-based forwarding recognizes its current attributes and remains usable
    monitor refresh rates are normalized when supplied in different forms
    normalized monitor refresh rates retain the intended configured value
    GTK clients fail to restack a window above or below another window
    resizing desktop sessions has no effect on Xvfb displays
    window managers in resized desktop sessions keep placing windows and panels using the old monitor size
+   automatically release the correct button
+   blurry popups screen updates
 - Wayland backend:
    screen updates stall
    windows can end up duplicated on clients
@@ -1168,11 +1174,14 @@ fi
    clients that only accept BGRX / BGRA pixels, like MS Windows GDI rendering, fail to paint RGBX / RGBA updates
    video pipeline setup can race with cleanup and leave a mismatched colourspace converter and video encoder
 - CUDA and NVENC:
-   CUDA device detection fails when mmap is enabled
-   CUDA video conversion keeps colour values within the valid range
-   CUDA video conversion handles image edges without corrupt output
-   slow CUDA cleanup is clearly reported instead of silently stalling a session
+   update default CUDA location on MS Windows
+   bump CUDA libraries to SDK 13
+   device detection fails when mmap is enabled
+   video conversion keeps colour values within the valid range
+   video conversion handles image edges without corrupt output
+   slow cleanup is clearly reported instead of silently stalling a session
    NVENC sessions retain needed fallback resources instead of failing unexpectedly
+   NVENC streams fail to decode due to invalid `csc` attribute
 - Minor:
    X11 events can stop being routed after an unmatched filter cleanup and leave the filter unusable
    window-icon timers survive after their window is removed or raise warnings after firing
@@ -1187,7 +1196,9 @@ fi
    the shadow screenshot tool works again
    session cleanup removes dangling SSH-agent links
    server runtime directories are created more safely and reliably
-   with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes
+   proxy startup reports a missing display cleanly instead of raising an internal error
+   with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes + test fixup
+   keep the cursor shape when clamping it to the maximum size
 - *️⃣ Keyboard:
    multiple keyboard layouts supplied on the command line are applied correctly
    clients keep typing the right keys after the server keyboard layout changes
@@ -1244,6 +1255,9 @@ fi
    installed test suites are assembled correctly
    X11 event filter regression test fails on this branch
    tests recover quickly from stale sockets rather than repeatedly waiting for timeouts
+   clearer message when session is not found
+   update all image wrapper metadata after conversion
+   gtk dropped its own stock icon names
 * Tue Aug 18 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split

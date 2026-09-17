@@ -9,7 +9,10 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     workaround Cython 3.3.0 bug
     MS Windows builds find the version-stamping tool reliably
     Debian packages retain the Wireshark dissector when the normal packaging path is unavailable
+    Adwaita theme layout changes + remove unused references
+    remove outdated dependencies
   * ⚠️ Major:
+    warn rather than leaking memory with buggy Debian libraries
     OpenGL windows can remain blank until they receive a configure event
     crash: don't assume Gdk displays are X11 displays
     Wayland clients don't need a X11 display
@@ -25,12 +28,15 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     X11 error callbacks are safe when they run outside the main Python thread
     X11 error handling no longer consumes CPU in a busy timer loop
     late mouse clicks for closed windows are ignored rather than affecting another window
+    simulated mouse releases retain the button originally pressed when modifiers change
     mmap-based forwarding recognizes its current attributes and remains usable
     monitor refresh rates are normalized when supplied in different forms
     normalized monitor refresh rates retain the intended configured value
     GTK clients fail to restack a window above or below another window
     resizing desktop sessions has no effect on Xvfb displays
     window managers in resized desktop sessions keep placing windows and panels using the old monitor size
+    automatically release the correct button
+    blurry popups screen updates
   * Wayland backend:
     screen updates stall
     windows can end up duplicated on clients
@@ -55,11 +61,14 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     clients that only accept BGRX / BGRA pixels, like MS Windows GDI rendering, fail to paint RGBX / RGBA updates
     video pipeline setup can race with cleanup and leave a mismatched colourspace converter and video encoder
   * CUDA and NVENC:
-    CUDA device detection fails when mmap is enabled
-    CUDA video conversion keeps colour values within the valid range
-    CUDA video conversion handles image edges without corrupt output
-    slow CUDA cleanup is clearly reported instead of silently stalling a session
+    update default CUDA location on MS Windows
+    bump CUDA libraries to SDK 13
+    device detection fails when mmap is enabled
+    video conversion keeps colour values within the valid range
+    video conversion handles image edges without corrupt output
+    slow cleanup is clearly reported instead of silently stalling a session
     NVENC sessions retain needed fallback resources instead of failing unexpectedly
+    NVENC streams fail to decode due to invalid `csc` attribute
   * Minor:
     X11 events can stop being routed after an unmatched filter cleanup and leave the filter unusable
     window-icon timers survive after their window is removed or raise warnings after firing
@@ -74,7 +83,9 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     the shadow screenshot tool works again
     session cleanup removes dangling SSH-agent links
     server runtime directories are created more safely and reliably
-    with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes
+    proxy startup reports a missing display cleanly instead of raising an internal error
+    with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes + test fixup
+    keep the cursor shape when clamping it to the maximum size
   * *️⃣ Keyboard:
     multiple keyboard layouts supplied on the command line are applied correctly
     clients keep typing the right keys after the server keyboard layout changes
@@ -131,7 +142,10 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     installed test suites are assembled correctly
     X11 event filter regression test fails on this branch
     tests recover quickly from stale sockets rather than repeatedly waiting for timeouts
- -- Antoine Martin <antoine@xpra.org>  Mon, 14 Sep 2026 19:17:37 +0700
+    clearer message when session is not found
+    update all image wrapper metadata after conversion
+    gtk dropped its own stock icon names
+ -- Antoine Martin <antoine@xpra.org>  Thu, 17 Sep 2026 16:00:20 +0700
 
 xpra (6.5.3-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
@@ -247,6 +261,2399 @@ xpra (6.5.3-1) UNRELEASED; urgency=low
     match argument order
     use empty buffers instead of `None`
     skip irrelevant tests, and more
+    fix shadow unit test
+    remove unavailable commands
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Aug 2026 18:23:33 +0700
+
+xpra (6.5.2-1) UNRELEASED; urgency=low
+  * 🔧 Platforms, build and packaging:
+    Cython fails to compile on arm64
+    python fido 2.2.1
+    DEB unwanted dependencies on `libdav1d`
+    Cython 3.2.9
+    missing `xpra-server-wayland` DEB package, with full support on Debian Sid and Ubuntu Resolute
+  * Major:
+    macOS client crash with audio enabled or speaker state changes
+    Gtk X11 clients OpenGL errors
+    missing wheel events with MS Windows clients
+    shadow sessions can hang with VNC connections
+    parsing of bind options using legacy form
+    incomplete asynchronous keyboard initialization always apply initial settings
+    X11 atom-name typos
+    power events not used
+    nvenc: choose a profile matching the chroma format
+  * Clipboard:
+    some default targets missing
+    prevent stale emission
+    target ownership confusion
+  * Minor:
+    tray and system-tray are independent
+    webcam does not restart following suspend + resume
+    missing window raise / restack
+    don't request OpenGL contexts with depth or stencil buffers
+    ssh agent symlink not cleaned up, update properly
+    Cython CSC module validation
+    ensure we never use dialogs from secondary threads
+    validate port numbers ourselves
+    `record` forwards compatibility
+    example clients now usable: handle more base packet types
+    wheel events may land in the wrong location
+    audio: unnecessary restarts
+    `peercred` wrongly queried on all stream sockets
+    IPv6 socket warnings
+  * Stricter Types:
+    full cythonization fixes
+    SSL CA data is binary
+    ensure types compared are always the same
+    keyboard option parsing type mismatch
+    minor annotation fixes, more
+  * Cosmetic:
+    skip notification warnings during cleanup
+    system tray does not detect mmap
+    clipboard type hint
+    webcam suspend test failure
+    invalid type used in unreachable runtime path
+    X11 client tests for all display bit depths
+    cleanup unavailable server log requests
+    simplify: env values have a non-None default
+    stray commas
+    silence macOS legacy SSL warnings
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 26 Jul 2026 18:30:43 +0700
+
+xpra (6.5.1-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    `pynvml 13.610.43`
+    `pytools 2026.1.1`
+    `torch-vision 0.27.1`
+    `torch 2.12.1`
+    `cython 3.2.8`
+    `cython 3.3` build warnings: use stricter types
+  * Security:
+    RCE: URL parsing subversion
+    don't download to `$HOME` as fallback
+    never download to a dot file
+    restrict which types of URLs can be opened
+    verify download path stays within the download directory
+    ensure auto-accepted file download matches the request
+    harden requested file response validation
+    only load pillow if needed
+    ensure that the server only uses one of the allowed encodings
+    no longer enable control channel on clients by default
+    validate untrusted mDNS record fields before building connection URIs
+  * Major:
+    `xpra info` fails to connect + better limit
+    ssh connection failures, launcher also fails
+    html5 client clipboard is disabled
+    cairo backend fails to paint in 30 bit per pixel mode
+  * Minor:
+    gsettings lookup always failed in desktop servers
+    ssh proxied connections used the wrong config
+    error handling in fdproxy
+    encode client fails to use `mmap` transfers
+    keyboard errors with X11 servers missing the Xkb extension
+    internal errors updating av-sync delay
+    mmap write errors should fall through
+    safer network capability parsing
+    don't send raw xpm icons
+    workarea calculations could fail
+    experimental client backends failed to use jpeg
+    `monitor` mode is desktop-like for clients
+  * File-transfers:
+    better parsing compatibility
+    legacy packet names, preserve printer and title, etc
+    tighten file transfer authorization
+    reject malformed file transfer input
+  * Encodings:
+    buffer overflow in fallback Cython CSC module
+    codec module availability detection
+    avif can be used for lossless and grayscale
+  * Cosmetic:
+    no need to try to use invalid displayfd values
+    socket directory double-quoted in runner script
+    message shows incorrect mmap limit
+    logging error when notification icon parsing fails
+    notification theme icon default size + fixup test
+    remove legacy unused file
+    remove bogus statements
+    match method signature
+    planar data debug logging errors
+    remove duplicated keys, add missing one
+    incorrect metadata used for debug logging
+    webcam handshake function
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 03 Jul 2026 03:00:53 +0700
+
+xpra (6.5-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    use `wasapi2` on MS Windows
+    support for Linux Mint in install scripts
+    fix cursor scaling on MS Windows
+    macOS notarization preparation
+    PoC native MS Windows client backend
+    add `printing` build option on MS Windows
+    `ArchLinux` setup support
+    remove `libspng` codecs
+  * Network:
+    re-enable `ssl-protocol=TLS_CLIENT` by default
+    per authentication module options
+    re-connect fails for seamless remote ssh start
+    http error pages overrides
+    expose http headers to authentication modules
+    client support for WebTransport connections
+    handle X11 buffered reads without timers
+  * OpenGL:
+    Catmull-Rom bicubic scaling shader
+    sigmoid upscaling and anti-ringing upscale shader
+    MS Windows can use OpenGL for opaque-region-covered alpha windows
+    fix `NV12` shader
+    support `YUV420P16` natively
+    faster client startup with `opengl=nocheck`
+  * Encodings:
+    `MediaFoundation` hardware video decoder for MS Windows
+    pre-process screen updates with filters (ie: `pytorch`)
+    prefer AV1
+    NVENC supports lossless mode with `hevc`
+  * Documentation:
+    network diagnostics
+    subsystems
+  * Features:
+    wayland backend
+    memory savings and optimizations
+    wireshark dissector
+    multiple content-types per window
+    faster content-type detection
+    content aware cairo upscaling filter
+    session recording client and replay tool
+    asynchronous initialization
+    more specific content types
+    notification forwarding fixes and improvements
+    fido2 authentication module
+    support `image/png` with Gtk clipboard backend (Wayland)
+    monitor geometry syncing tools
+    snap window resize to increment grid
+    support free-threaded builds
+    better unit test coverage
+    `xpra top` GUI
+  * Webcam:
+    window mode
+    libcamera backend
+  * Cosmetic:
+    honour MS Windows dark / light theme
+    session info graph labels for HiDPI displays
+    window encoders details in session info
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 19 Nov 2025 22:26:55 +0700
+
+xpra (6.4-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    major modularization
+    Gtk-free server
+    MacOS seamless X11 server
+    faster unit tests
+    memory aligned allocations on MS Windows
+    faster cython bindings, common utility module
+    pulseaudio for containers
+    remove `python-avahi` mDNS backend
+    deprecate legacy features
+  * Encodings:
+    nvenc AV1 encoder
+    aom AV1 decoder
+    handle 8-bit pixel depth with mmap transfers
+    convert JpegXL background images for the html5 client
+    encoder server redundancy
+  * Features:
+    emulate middle click button
+    make per-window menu more easily accessible
+    record correct pid for daemonized processes
+    configurable window grouping
+    blend window border with OpenGL backend
+    easier debug logging and toggle
+  * Network:
+    stronger packet data types
+    honour `IdentityFile` and `IdentitiesOnly` in ssh configs
+    ssh host key verification for non-standard ports
+  * Configuration:
+    configure refresh rate
+   `fakescreenfps` when supported
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 14 Sep 2025 21:51:51 +0700
+
+xpra (6.3-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    rewritten MS Windows build script
+    `RHEL` 10 and clones
+    `weston` + `Xwayland` option for `xvfb`
+    per-branch version check
+    test tk client
+    test pyglet client
+    remove copyright end years
+  * Configuration:
+    `xvfb` aliases
+    configure `xvfb` dialog
+    easily modify settings
+  * Encodings:
+    AMD AMF encoder
+    encoder server
+    avoid subsampling in lossless mode
+  * Features:
+    server power events
+    ibus keyboard layouts
+    specify refresh rate range
+    save selection in run dialog
+    `OpenGL` `YUVA` support for `jpeg` with alpha
+  * Network:
+    bi-directional `mmap`
+    `hyperv` connections
+    `nginx` proxy documentation
+    `http-header` authentication module
+    option for trusting connections
+    reusable authentication modules
+    reusable control commands
+    validate quic headers
+    `AES` fixes
+  * Improvements:
+    skip unused slow imports
+    avoid loading `numpy` unnecessarily
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 04 Mar 2025 17:31:09 +0700
+
+xpra (6.2.0-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    pycuda for Fedora 41
+    move `opengl` module to top level
+    re-enable cython csc module
+  * Fixes:
+    AES padding
+  * Features:
+    PoC PyQt6 client
+    `minimal` command line switch
+    option to completely disable all of GStreamer
+    strongly enforce disabled subsystems
+    watch for start menu file changes reliably, on all platforms
+    improve transient and permanent hardware codec failures differently
+    continue to remove GTK
+    guess initial server display resolution
+  * Network:
+    multi-processing proxy server with SSL
+    more control commands for proxy instances
+    inline more data in network packets
+    SSL setup made easy
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 09 Oct 2024 18:00:27 +0700
+
+xpra (6.1-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    RHEL 10 builds
+    make it easier to setup a development environment and to install the repositories
+  * Encodings:
+    faster scaling of subsampled images without OpenGL
+    zero-copy drawing without OpenGL
+    scale YUV before converting to RGB
+    full range video compression
+    GPU checks from a containerized environment
+    colorspace fixes
+  * Network:
+    WebTransport server
+    QUIC fast-open
+  * Features:
+    handle display scaling correctly on more platforms
+    use native file chooser on some platforms
+    support custom window grouping
+    optional username verification for authentication modules
+    resize virtual display to a specific resolution only
+    filter environment exposed to xvfb subcommand
+  * Cosmetic:
+    many type hints added
+    linter warnings fixed
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 18 Jul 2024 18:04:31 +0700
+
+xpra (6.0-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    require and take advantage of Python 3.10+
+    cythonize everything and build test on git push
+    workaround for distributions incompatible with CUDA
+    add `xpra-client-gnome` package
+    use the system provided xxHash library
+    riscv64 builds
+    PEP 517: pyproject.toml
+  * Features:
+    OpenGL core profile
+    `xpra configure` tool
+    faster `mmap`
+    make it easier to disable almost everything
+    remove legacy compatibility
+    try harder to locate the correct xauth file
+    honour MacOS backing scale factor with OpenGL
+    workspace support for MS Windows 10
+    readonly memoryviews
+  * Network:
+    abstract sockets
+    wait for local server sockets to become available
+    enable websocket upgrades without the html5 client
+    update ssh agent to active user
+    use libnm to access network information
+    ssl auto upgrade
+    honour `/etc/ssh/ssh_config`
+    `xpra list-clients`
+  * Cosmetic:
+    silence warnings: #4023, #2177, #3988, #4028
+    easier call tracing
+    PEP 8: code style
+  * Documentation:
+    ivshmem
+    subsystems
+    authentication handlers
+    record some SBOM data
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 25 Apr 2023 14:54:03 +0200
+
+xpra (5.0-1) UNRELEASED; urgency=low
+  * Major improvements:
+    - QUIC transport
+    - split packaging
+    - freedesktop screencast / remotedesktop
+    - ease of use: easier basic commands, open html5 client, disable all audio features
+  * Platforms, build and packaging:
+    - Python 3.12 installations
+    - replace Python2 builds
+    - LTS feature deprecation
+    - stricter type checks
+    - more MacOS workarounds
+  * Server:
+    - try harder to find a valid menu prefix
+    - exit with windows
+    - side buttons with MS Windows shadow servers
+    - mirror client monitor layout
+    - side buttons with MS Windows shadow servers
+  * Client:
+    - allow keyboard shortcuts in readonly mode
+    - show decoder statistics
+    - keyboard layout switching shortcut
+    - layout switching detection for MS Windows
+    - mirror mouse cursor when sharing
+  * Minor:
+    - generic exec authentication module
+    - audio `removesilence`
+    - make pulseaudio real-time and high-priority scheduling modes configurable
+    - use urrlib for parsing
+    - GTK removal progress
+    - documentation updates and fixes: broken links, typos
+  * Network:
+    - smaller handshake packet
+    - SSL auto-upgrade
+    - better IPv6
+    - new packet format
+    - ssh agent forwarding automatic switching when sharing
+    - use libnm to query network devices
+    - exclude more user data by default
+  * Encodings:
+    - use intra refresh
+    - `stream` encoding for desktop mode
+    - GStreamer codecs
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 19 Aug 2023 00:12:01 +0700
+
+xpra (4.4-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    - Native LZ4 bindings
+    - Safer native brotli bindings
+    - Native qrencode bindings
+    - openSUSE build tweaks, Fedora 37, Oracle Linux / Rocky Linux / Alma Linux / CentOS Stream : 8 and 9
+    - Debian finally moved to `libexec`
+    - MS Windows taskbar integration
+    - SSH server support on MS Windows, including starting shadow sessions
+  * Server:
+    - Configurable vertical refresh rate
+    - Virtual Monitors
+    - Multi-monitor desktop mode
+    - Expand an existing desktop
+    - Exit with windows
+    - Full shadow keyboard mapping
+    - xwait subcommand
+    - guess content-type from parent pid
+    - cups print backend status report
+    - Override sockets on upgrade
+    - Allow additional options to X server invocation
+    - Control commands for modifying command environment and read only flag
+    - Start new commands via a proxy server's SSH listener
+  * Shadow server:
+    - Geometry restrictions
+    - Shadow specific applications
+  * Client:
+    - Automatic keyboard grabs
+    - Pointer confinement
+    - Faster window initial data
+    - Improved DPI detection on MS Windows
+    - Show all current keyboard shortcuts
+    - Preserve all options when reconnecting
+    - Option to accept SSL mismatched host permanently
+    - Forward all command line options
+    - Smooth scrolling options
+    - Per-window scaling - experimental
+    - Workaround Wayland startup hangs
+  * Security and authentication:
+    - Configurable information disclosure
+    - Keycloak authentication
+    - Capability based authentication
+    - Authentication for web server scripts
+    - OTP authentication
+    - Workaround paramiko `No existing session` error
+  * Encodings and latency:
+    - Option to cap picture quality
+    - Expose scaling quality
+    - NVJPEG decoder
+    - AVIF encoding
+    - selective `scroll` encoding detection
+  * Network:
+    - SOCKS proxy connection support
+    - SSH agent forwarding
+    - SSH workarounds for polluted stream premable
+    - proxy network performance improvement
+  * Misc:
+    - easier xpra subcommand invocation
+  * Refactoring and preparation for the next LTS release:
+    - Feature deprecation
+    - Remove "app menus" support
+    - Remove ancient complicated code
+    - Simplify the build file
+    - More robust info handlers
+    - Remove scary warnings
+    - f-strings
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 01 Oct 2022 21:31:22 +0200
+
+xpra (4.3-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    - arm64 support #3291, including nvenc and nvjpeg: #3378
+    - non-system header builds (eg: conda): #3360
+    - fixed MacOS shadow start via ssh: #3343
+    - parallel builds: #3255
+    - don't ship too may pillow plugins: #3133
+    - easier access to documentation: #3015
+    - Python 3.10 buffer api compatibility: #3031
+  * Misc:
+    - make it easier to silence OpenGL validation warnings: #3380
+    - don't wait for printers: #3170
+    - make it easier to autostart: #3134
+    - 'clean' subcommand: #3099
+    - flexible 'run_scaled' subcommand: #3303
+    - more flexible key shortcuts configuration: #3183
+  * Encodings and latency:
+    - significant latency and performance improvements: #3337
+    - spng decoder #3373 and encoder: #3374
+    - jpeg with transparency: #3367
+    - faster argb module: #3361
+    - faster nvjpeg module using CUDA, add transparency: #2984
+    - faster xshape scaling: #1226
+    - downscale jpeg and webp: #3333
+    - disable av-sync for applications without audio: #3351
+    - opaque region support: #3317
+    - show FPS on client window: #3311
+    - nvenc to use the same device context as nvjpeg: #3195
+    - nvenc disable unsupported presets: #3136
+  * Network:
+    - make it easier to use SSL: #3299
+    - support more AES modes: GCM, CFB and CTR, #3247
+    - forked rencodeplus encoder: #3229
+  * Server:
+    - shadow specific areas or monitors: #3320
+    - faster icon lookup: #3326
+    - don't trust _NET_WM_PID: #3251
+    - move all sessions to a sub-directory: #3217
+    - more reliable server cleanup: #3218
+    - better VNC support: #3256
+    - more seamless server upgrades: #541
+    - source /etc/profile: #3083
+    - switch input method to ibus: #2359
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 08 Dec 2021 21:56:48 +0700
+
+xpra (4.2-1) UNRELEASED; urgency=low
+  * use pinentry for password prompts and ssh prompts
+  * nvjpeg encoder
+  * gui for starting remote sessions
+  * new subcommands: `recover`, `displays`, `list-sessions`, `clean-displays`, `clean-sockets`
+  * many fixes:
+    - window initial position
+    - focus issues
+    - non-opengl paint corruption
+    - slow rendering on MacOS
+    - handle smooth scroll events with wayland clients
+    - always lossless screen updates for terminals
+    - clipboard timeout
+    - peercred auth options
+  * support multiple clients using mmap simultaneously with non-default file paths
+  * only synchronize xsettings with seamless servers
+  * automatic desktop scaling is now disabled
+  * workaround for gnome applications starting slowly (documentation)
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 May 2021 23:16:11 +0700
+
+xpra (4.1-1) UNRELEASED; urgency=low
+  * Overhauled container based build system
+  * Splash screen
+  * `run_scaled` utility script
+  * Client:
+    - header bar option for window control menu
+    - generate a qrcode to connect
+    - show all keyboard shortcuts
+    - progress bar for file transfers
+    - GTK cairo backend support for more native bit depths
+    - disable xpra's keyboard shortcuts from the system tray menu
+    - automatically include the server log in bug reports
+  * OpenGL client backend:
+    - render at fixed bit depths with the `pixel-depth` option
+    - support more bit depths
+  * Clipboard:
+    - MacOS support for images, more text formats, etc
+    - MS Windows support for images
+    - wayland clients
+  * Server:
+    - faster server startup
+    - `xpra list-windows` subcommand
+    - new window control commands: move / resize and map / unmap
+    - remote logging from server to client
+    - support window re-stacking
+  * `xpra top`:
+    - show pids, shortcuts
+    - more details in the list view
+    - show speed and quality
+  * Display:
+    - bumped maximum resolution beyond 8K
+    - set the initial resolution more easily using the 'resize-display' option
+  * Encoding:
+    - server side picture downscaling
+    - libva hardware accelerated encoding
+    - NVENC 30-bit accelerated encoding
+    - vpx 30-bit
+    - x264 30-bit
+    - faster 30-bit RGB subsampling
+    - scroll encoding now handled more generically
+    - black and white mode
+  * Network:
+    - IGD / UPNP
+    - SO_KEEPALIVE option
+    - clients can be queried and controlled using local sockets
+    - specify connection attributes using the connection string
+    - nested SSH tunnels
+    - websocket header modules
+    - specify the socket type with socket activation
+    - expose the packet flush flag
+    - `xpra shell` subcommand for interacting with processes in real time
+    - custom group sockets directory permissions and name
+  * Testing:
+    - better test coverage
+    - cleanup output
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 27 Feb 2021 22:54:51 +0700
+
+xpra (4.0-1) UNRELEASED; urgency=low
+  * Drop support for:
+    - Python 2, GTK2
+    - legacy versions (pre 1.0)
+    - weak authentication
+  * Network, per socket options:
+    - authentication and encryption
+    - ssl
+    - ssh
+    - bind options for client
+  * make it easier to send files from the server
+  * xpra toolbox subcommand
+  * xpra help subcommand
+  * xpra top new features
+  * faster startup
+  * signal handling fixes
+  * smoother window resizing
+  * refactoring and testing
+    - unit tests coverage and fixes
+    - completely skip loading unused features at runtime
+    - get rid of capabilities data after parsing it
+    - better module dependency separation
+    - don't convert to a string before we need it
+  * more useful window and tray title
+  * make it easier to source environment
+  * disable desktop animations in desktop mode
+  * automatic start-or-upgrade, automatic X11 display rescue
+  * support MS Windows OpenSSH server to start shadow
+  * more selective use of OpenGL acceleration in client
+  * expose server OpenGL capabilities
+  * cleaner HTML5 syntax
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 10 May 2020 14:13:00 +0700
+
+xpra (3.0-1) UNRELEASED; urgency=low
+  * Python 3 port complete, now the default: #1571, #2195
+  * much nicer HTML5 client user interface: #2269
+  * Window handling:
+    - smoother window resizing: #478 (OpenGL)
+    - honouring gravity: #2217
+    - lock them in readonly mode: #2137
+  * xpra top subcommand: #2348
+  * faster startup:
+    - #2347 faster client startup
+    - #2341 faster server startup
+  * OpenGL:
+    - more reliable driver probing: #2204
+    - cursor paint support: #1497
+    - transparency on MacOS: #1794
+  * Encoding:
+    - lossless window scrolling: #1320
+    - scrolling acceleration for non-OpenGL backends: #2295
+    - harden image parsing: #2279
+    - workaround slow video encoder initialization (ie: NVENC)
+      using replacement frames: #2048
+    - avoid loading codecs we don't need: #2344
+    - skip some CUDA devices, speedup enumeration: #2415
+  * Clipboard:
+    - new native clipboard implementations for all platforms: #812
+    - HTML5 asynchronous clipboard: #1844
+    - HTML5 support for copying images: #2312 (with watermarking)
+    - brotli compression for text data: #2289
+  * Authentication:
+    - modular client authentication handlers: #1796
+    - mysql authentication module: #2287
+    - generic SQL authentication module: #2288
+  * Network:
+    - client listen mode: #1022
+    - retry to connect until it succeeds or times out: #2346
+    - mdns TXT attributes updated at runtime: #2187
+    - zeroconf fixes: #2317
+    - drop pybonjour: #2297
+    - paramiko honours IdentityFile: #2282,
+      handles SIGINT better: #2378
+    - proxy server fixes for ssl and ssh sockets: #2399, remove spurious options: #2193
+    - proxy ping and timeouts: #2408
+    - proxy dynamic authentication: #2261
+  * Automated Testing:
+    - test HTML5 client: #2231
+    - many new mixin tests: #1773 (and bugs found)
+  * start-new-commands is now enabled by default: #2278,
+      and the UI allows free text: #2221
+  * basic support for native GTK wayland client: #2243
+  * forward custom X11 properties: #2311
+  * xpra launcher visual feedback during connection: #1421,
+    sharing option: #2115
+  * "Window" menu on MacOS: #1808
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 21 Sep 2019 09:56:38 +0700
+
+xpra (2.5-1) UNRELEASED; urgency=low
+  * Python 3 port mostly complete, including packaging for Debian
+  * pixel compression and bandwidth management:
+    - better recovery from network congestion
+    - distinguish refresh from normal updates
+    - better tuning for mmap connections
+    - heuristics improvements
+    - use video encoders more aggressively
+    - prevent too many delayed frames with x264
+    - better video region detection with opengl content
+  * better automatic tuning for client applications
+    - based on application categories
+    - application supplied hints
+    - application window encoding hints
+    - using environment variables and disabling video
+  * HTML5 client improvements
+  * Client improvements:
+    - make it easier to start new commands, provide start menu
+    - probe OpenGL in a subprocess to detect and workaround driver crashes
+    - use appindicator if available
+  * Packaging:
+    - merge xpra and its dependencies into the ​MSYS2 repository
+    - ship fewer files in MS Windows installers
+    - partial support for parallel installation of 32-bit and 64-bit version on MS Windows
+    - MacOS library updates
+    - CentOS 7: libyuv and turbojpeg
+    - Windows Services for Linux (WSL) support
+    - Fedora 30 and Ubuntu Disco support
+    - Ubuntu HWE compatibility (manual steps required due to upstream bug)
+  * Server improvements:
+    - start command on last client exit
+    - honour minimum window size
+    - Python 3
+    - upgrade-desktop subcommand
+  * Network layer:
+    - less copying
+    - use our own websocket layer
+    - make it easier to install mdns on MS Windows
+    - make mmap group configurable
+    - TCP CORK support on Linux
+  * SSH transport:
+    - support .ssh/config with paramiko backend
+    - connecting via ssh proxy hosts
+  * SSHFP with paramiko:
+    - clipboard: restrict clipboard data transfers size
+    - audio: support wasapi on MS Windows
+  * code cleanups, etc
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 19 Mar 2019 22:09:11 +0700
+
+xpra (2.4-1) UNRELEASED; urgency=low
+  * SSH client integration (paramiko)
+  * builtin server support for TCP socket upgrades to SSH (paramiko)
+  * automatic TCP port allocation
+  * expose desktop-sessions as VNC via mdns
+  * add zeroconf backend
+  * register more URL schemes
+  * window content type heuristics configuration
+  * use content type it to better tune automatic encoding selection
+  * automatic video scaling
+  * bandwidth-limit management in video encoders
+  * HTML5 client mpeg1 and h264 decoding
+  * HTML5 client support for forwarding of URL open requests
+  * HTML5 client Internet Explorer 11 compatibility
+  * HTML5 client toolbar improvements
+  * HTML5 fullscreen mode support
+  * limit video dimensions to cap CPU and bandwidth usage
+  * keyboard layout handling fixes
+  * better memory management and resource usage
+  * new default GUI welcome screen
+  * desktop file for starting shadow servers more easily
+  * clipboard synchronization with multiple clients
+  * use notifications bubbles for more important events
+  * workarounds for running under Wayland with GTK3
+  * modal windows enabled by default
+  * support xdg base directory specification and socket file time
+  * improved python3 support (still client only)
+  * multi-window shadow servers on MacOS and MS Windows
+  * buildbot upgrade
+  * more reliable unit tests
+  * fixes and workarounds for Java client applications
+  * locally authenticated users can shutdown proxy servers
+  * restrict potential privileged information leakage
+  * enhanced per-client window filtering
+  * remove extra pixel copy in opengl enabled client
+  * clip pointer events to the actual window content size
+  * new platforms: Ubuntu Cosmic, Fedora 29
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 13 Oct 2018 13:51:43 +0700
+
+xpra (2.3-1) UNRELEASED; urgency=low
+  * stackable authentication modules
+  * tcp wrappers authentication module
+  * gss, kerberos, ldap and u2f authentication modules
+  * request access to the session
+  * pulseaudio server per session to prevent audio leaking
+  * better network bandwidth utilization and congestion management
+  * faster encoding and decoding: YUV for webp and jpeg, encoder hints, better vsync
+  * notifications actions forwarding, custom icons, expose warnings
+  * upload notification and management
+  * shadow servers multi window mode
+  * tighter client OS integratioin
+  * client window positioning and multi-screen support
+  * unique application icon used as tray icon
+  * multi stop or attach
+  * control start commands
+  * forward signals sent to windows client side
+  * forward requests to open URLs or files on the server side
+  * html5 client improvements: top bar, debugging, etc
+  * custom http headers, support content security policy
+  * python3 port improvements
+  * bug fixes: settings synchronization, macos keyboard mapping, etc
+  * packaging: switch back to ffmpeg system libraries, support GTK3 on macos
+  * structural improvements: refactoring, fewer synchronized X11 calls, etc
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 08 May 2018 00:20:15 +0700
+
+xpra (2.2-1) UNRELEASED; urgency=low
+  * support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
+  * UDP transport (experimental) with bind-udp and udp://host:port URLs
+  * TCP sockets can be upgrade to Websockets and / or SSL, RFB
+  * multiple bind options for all socket types supported: tcp, ssl, ws, wss, udp, rfb
+  * bandwidth-limit option, support for very low bandwidth connections
+  * detect network performance characteristics
+  * xpra sessions browser tool for both mDNS and local sessions
+  * support arbitrary resolutions with Xvfb (not with Xdummy yet)
+  * new OpenGL backends, with support for GTK3 on most platforms
+  * window transparency on MS Windows
+  * optimized webp encoding, supported in HTML5 client
+  * uinput virtual pointer device for supporting fine grained scrolling
+  * connection strings now support the standard URI format protocol://host:port/
+  * rencode is now used by default for the initial packet
+  * skip sending audio packets when inactive
+  * improved support for non-us keyboard layouts with non-X11 clients
+  * better modifier key support on Mac OS
+  * clipboard support with GTK3
+  * displayfd command line option
+  * cosmetic system tray menu layout changes
+  * dbus service for the system wide proxy server (stub)
+  * move mmap file to $XDG_RUNTIME_DIR (where applicable)
+  * password prompt dialog in client
+  * fixed memory leaks
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 11 Dec 2017 22:48:59 +0700
+
+xpra (2.1-1) UNRELEASED; urgency=low
+  * improve system wide proxy server, logind support on, socket activation
+  * new authentication modules: peercred, sqlite
+  * split packages for RPM, MS Windows and Mac OS
+  * digitally signed MS Windows installers
+  * HTML5 client improvements:
+   file upload support
+   better non-us keyboard and language support
+   safe HMAC authentication over HTTP, re-connection etc
+   more complete window management, (pre-)compression (zlib, brotli)
+   mobile on-screen keyboard
+   audio forwarding for IE
+   remote drag and drop support
+  * better Multicast DNS support, with a GUI launcher
+  * improved image depth / deep color handling
+  * desktop mode can now be resized easily
+  * any window can be made fullscreen (Shift+F11 to trigger)
+  * Python3 GTK3 client is now usable
+  * shutdown the server from the tray menu
+  * terminate child commands on server shutdown
+  * macos library updates: #1501, support for virtual desktops
+  * NVENC SDK version 8 and HEVC support
+  * Nvidia capture SDK support for fast shadow servers
+  * shadow servers improvements: show shadow pointer in opengl client
+  * structural improvements and important bug fixes
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 24 Jul 2017 21:11:38 +0700
+
+xpra (2.0-1) UNRELEASED; urgency=low
+  * dropped support for outdated OS and libraries (long list)
+  * 64-bit builds for MS Windows and MacOSX
+  * MS Windows MSYS2 based build system with fully up to date libraries
+  * MS Windows full support for named-pipe connections
+  * MS Windows and MacOSX support for mmap transfers
+  * more configurable mmap options to support KVM's ivshmem
+  * faster HTML5 client, now packaged separately (RPM only)
+  * clipboard synchronization support for the HTML5 client
+  * faster window scrolling detection, bandwidth savings
+  * support more screen bit depths: 8, 16, 24, 30 and 32
+  * support 10-bit per pixel rendering with the OpenGL client backend
+  * improved keyboard mapping support when sharing sessions
+  * faster native turbojpeg codec
+  * OpenGL enabled by default on more chipsets, with better driver sanity checks
+  * better handling of tablet input devices (multiple platforms and HTML5 client)
+  * synchronize Xkb layout group
+  * support stronger HMAC authentication digest modes
+  * unit tests are now executed automatically on more platforms
+  * fix python-lz4 0.9.0 API breakage
+  * fix html5 visual corruption with scroll paint packets
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 17 Mar 2017 14:08:46 +0700
+
+
+xpra (1.0-1) UNRELEASED; urgency=low
+  * SSL socket support
+  * IANA assigned default port 14500 (specifying the TCP port is now optional)
+  * include a system-wide proxy server service on our default port,
+    using system authentication
+  * MS Windows users can start a shadow server from the start menu,
+    which is also accessible via http
+  * list all local network sessions exposed via mdns using xpra list-mdns
+  * the proxy servers can start new sessions on demand
+  * much faster websocket / http server for the HTML5 client, with SSL support
+  * much improved HTML client, including support for native video decoding
+  * VNC-like desktop support: "xpra start-desktop"
+  * pointer grabs using Shift+Menu, keyboard grabs using Control+Menu
+  * window scrolling detection for much faster compression
+  * server-side support for 10-bit colours
+  * better automatic encoding selection and video tuning, support H264 b-frames
+  * file transfer improvements
+  * SSH password input support on all platforms in launcher
+  * client applications can trigger window move and resize
+    with MS Windows and Mac OS X clients
+  * geometry handling improvements, multi-monitor, fullscreen
+  * drag and drop support between application windows
+  * colour management synchronisation (and DPI, workspace, etc)
+  * the configuration file is now split into multiple logical parts,
+    see /etc/xpra/conf.d
+  * more configuration options for printers
+  * clipboard direction restrictions
+  * webcam improvements: better framerate, device selection menu
+  * audio codec improvements, new codecs, mpeg audio
+  * reliable video support for all Debian and Ubuntu versions
+    via private ffmpeg libraries
+  * use XDG_RUNTIME_DIR if possible, move more files to /run
+    (sockets, log file)
+  * build and packaging improvements: minify during build:
+    rpm "python2", netbsd v4l
+  * selinux policy for printing
+  * Mac OS X PKG installer now sets up
+    ".xpra" file and "xpra:" URL associations
+  * Mac OS X remote shadow start support
+    (though not all versions are supported)
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 06 Dec 2016 17:47:26 +0700
+
+
+xpra (0.17.0-1) UNRELEASED; urgency=low
+  * GStreamer 1.6.x on MS Windows and OSX
+  * opus is now the default sound codec
+  * microphone and speaker forwarding no longer cause sound loops
+  * new sound container formats: matroska, gdp
+  * much improved shadow servers, especially for OSX and MS Windows
+  * use newer Plink SSH with Windows Vista onwards
+  * OSX PKG installer, with file association
+  * libyuv codec for faster colourspace conversion
+  * NVENC v6, HEVC hardware encoding
+  * xvid mpeg4 codec
+  * shadow servers now expose a tray icon and menu
+  * improved tablet input device support on MS Windows
+  * improved window geometry handling
+  * OSX dock clicks now restore existing windows
+  * OSX clipboard synchronization menu
+  * new encryption backend: python-cryptography, hardware accelerated AES
+  * the dbus server can now be started automatically
+  * support for using /var/run on Linux and multiple sockets
+  * support for AF_VSOCK virtual networking
+  * broadcast sessions via mDNS on MS Windows and OSX
+  * window geometry fixes
+  * window close event is now configurable, automatically disconnects
+  * webcam forwarding (limited scope)
+  * SELinux policy improvements (still incomplete)
+  * new event based start commands: after connection / on connection
+  * split file authentication module
+  * debug logging and message improvements
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 18 Apr 2016 12:28:05 +0700
+
+
+xpra (0.16.0-1) UNRELEASED; urgency=low
+  * remove more legacy code, cleanups, etc
+  * switch to GStreamer 1.x on most platforms
+  * mostly gapless audio playback
+  * audio-video synchronization
+  * zero copy memoryview buffers (Python 2.7 and later), safer read-only buffers
+  * improved vp9 support
+  * handling of very high client resolutions (8k and above)
+  * more reliable window positioning and geometry
+  * enable OpenGL accelerated rendering by default on all platforms
+  * add more sanity checks to codecs and csc modules
+  * network and protocol improvements: safety checks, threading
+  * encryption improvements: support TCP only encryption, PKCS#7 padding
+  * improved printer forwarding
+  * improved DPI and anti-alias synchronization and handling
+  * better multi-monitor support
+  * support for screen capture tools (disabled by default)
+  * automatic desktop scaling to save bandwidth and CPU (upscale on client)
+  * support remote SSH start without specifying a display
+  * support multiple socket directories
+  * lz4 faster modes with automatic speed tuning
+  * server file upload from system tray
+  * new subcommand: "xpra showconfig"
+  * option to select a specific clibpoard to synchronize with (MS Windows only)
+  * faster OpenGL screen updates: group screen updates
+  * dbus server for easier runtime control
+  * replace calls to setxkbmap with native X11 API
+  * XShm for override-redirect windows and shadow servers
+  * faster X11 shadow servers
+  * XShape forwarding for X11 clients
+  * improved logging and debugging tools, fault injection
+  * more robust error handling and recovery from client errors
+  * NVENC support for MS Windows shadow servers
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 16 Dec 2015 10:12:01 +0700
+
+
+xpra (0.15.0-1) UNRELEASED; urgency=low
+  * printer forwarding
+  * functional HTML5 client
+  * add session idle timeout switch
+  * add html command line switch for easily setting up an HTML5 xpra server
+  * dropped support for Python 2.5 and older,
+    allowing for many code cleanups and improvements
+  * include manual in html format with MS Windows and OSX builds
+  * add option to control socket permissions (easier setup of containers)
+  * client log output forwarding to the server
+  * fixed workarea coordinates detection for MS Windows clients
+  * improved video region detection and handling
+  * more complete support for window states (keep above, below, sticky, etc..)
+    and general window manager responsabilities
+  * allow environment variables passed to children to be specified
+    in the config files
+  * faster reformatting of window pixels before compression stage
+  * support multiple delta regions and expire them (better compression)
+  * allow new child commands to be started on the fly, also from the client's
+    system tray (disabled by default)
+  * detect mismatch between some codecs and their shared library dependencies
+  * NVENC SDK support for versions 4 and 5, YUV444 and lossless mode
+  * libvpx support for vp9 lossless mode, much improved performance tuning
+  * add support for child commands that do not interfere with
+    "exit-with-children"
+  * add scaling command line and config file switch for controlling automatic
+    scaling aggressiveness
+  * sound processing is now done in a separate process
+    (lower latency, and more reliable)
+  * add more control over sound command line options, so sound can start
+    disabled and still be turned on manually later
+  * add command line option for selecting the sound source
+    (pulseaudio, alsa, etc)
+  * show sound bandwidth usage
+  * better window icon forwarding, especially for non X11 clients
+  * optimized OpenGL rendering for X11 clients
+  * handle screen update storms better
+  * window group-leader support on MS Windows
+    (correct window grouping in the task bar)
+  * GTK3 port improvements (still work in progress)
+  * added unit tests which are run automatically during packaging
+  * more detailed information in xpra info (cursor, CPU, connection, etc)
+  * more detailed bug report information
+  * more minimal MS Windows and OSX builds
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 28 Apr 2015 12:16:50 +0700
+
+xpra (0.14.0-1) UNRELEASED; urgency=low
+  * support for lzo compression
+  * support for choosing the compressors enabled (lz4, lzo, zlib)
+  * support for choosing the packet encoders enabled (bencode, rencode, yaml)
+  * support for choosing the video decoders enabled
+  * built in bug report tool, capable of collecting debug information
+  * automatic display selection using Xorg "-displayfd"
+  * better video region support, increased quality for non-video regions
+  * more reliable exit and cleanup code, hooks and notifications
+  * prevent SSH timeouts on login password or passphrase input
+  * automatic launch the correct tool on MS Windows
+  * OSX: may use the Application Services folder for a global configuration
+  * removed python-webm, we now use the native cython codec only
+  * OpenCL: warn when AMD icd is present (causes problems with signals)
+  * better avahi mDNS error reporting
+  * better clipboard compression support
+  * better packet level network tuning
+  * support for input methods
+  * xpra info cleanups and improvments (show children, more versions, etc)
+  * integrated keyboard layout detection on *nix
+  * upgrade and shadow now ignore start child
+  * improved automatic encoding selection, also faster
+  * keyboard layout selection via system tray on *nix
+  * more Cython compile time optimizations
+  * some focus issues fixed
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 14 Aug 2014 15:34:58 +0700
+
+xpra (0.13.9-1) UNRELEASED; urgency=low
+  * fix clipboard on OSX
+  * fix remote ssh start with start-child issues
+  * use secure "compare_digest" if available
+  * fix crashes in codec cleanup
+  * fix video encoding fallback code
+  * fix fakeXinerama setup wrongly skipped in some cases
+  * fix connection failures with large screens and uncompressed RGB
+  * fix Ubuntu trustyi Xvfb configuration
+  * fix clipboard errors with no data
+  * fix opencl platform initialization errors
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 13 Aug 2014 21:56:26 +0700
+
+xpra (0.13.8-1) UNRELEASED; urgency=low
+  * fix server early exit when pulseaudio terminates
+  * fix SELinux static codec library label (make it persistent)
+  * fix missed auto-refresh when batching
+  * fix disabled clipboard packets coming through
+  * fix cleaner client connection shutdown sequence and exit code
+  * fix resource leak on connection error
+  * fix potential bug in fallback encoding selection
+  * fix deadlock on worker race it was meant to prevent
+  * fix remote ssh server start timeout
+  * fix avahi double free on exit
+  * fix png and jpeg painting via gdk pixbuf (when PIL is missing)
+  * fix webp refresh loops
+  * honour lz4-off environment variable
+  * fix proxy handling of raw RGB data for large screen sizes
+  * fix potential error from missing data in client packets
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 06 Aug 2014 09:33:07 +0700
+
+xpra (0.13.7-1) UNRELEASED; urgency=low
+  * fix x11 server pixmap memory leak
+  * fix speed and quality values range (1 to 100)
+  * fix nvenc device allocation errors
+  * fix unnecessary refreshes with nvenc
+  * fix "initenv" compatibility with older servers
+  * don't start child when upgrading or shadowing
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 10 Jul 2014 19:47:21 +0200
+
+xpra (0.13.6-1) UNRELEASED; urgency=low
+  * fix compatibility older versions of pygtk (centos5)
+  * fix compatibility with python 2.4 (centos5)
+  * fix AltGr workaround with win32 clients
+  * fix some missing keys with 'fr' keyboard layout (win32)
+  * fix installation on systems without python-glib (centos5)
+  * fix Xorg version detection for Fedora rawhide
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 17 Jun 2014 23:02:29 +0700
+
+xpra (0.13.5-3) UNRELEASED; urgency=low
+  * re-fix opengl compatibility
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 14 Jun 2014 01:04:46 +0700
+
+xpra (0.13.5-1) UNRELEASED; urgency=low
+  * fix use correct dimensions when evaluating video
+  * fix invalid latency statistics recording
+  * fix auto-refresh wrongly cancelled
+  * fix connection via nested ssh commands
+  * fix statically linked builds of swscale codec
+  * fix system tray icons when upgrading server
+  * fix opengl compatibility with older libraries
+  * fix ssh connection with shells not starting in home directory
+  * fix keyboard layout change forwarding
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 13 Jun 2014 20:40:10 +0700
+
+xpra (0.13.4-1) UNRELEASED; urgency=low
+  * fix numeric keypad period key mapping on some non-us keyboards
+  * fix client launcher GUI on OSX
+  * fix remote ssh start with clean user account
+  * fix remote shadow start with automatic display selection
+  * fix avoid scaling during resize
+  * fix changes of speed and quality via xpra control (make it stick)
+  * fix xpra info global batch statistics
+  * fix focus issue with some applications
+  * fix batch delay use
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 10 Jun 2014 21:40:12 +0700
+
+xpra (0.13.3-1) UNRELEASED; urgency=low
+  * fix xpra upgrade
+  * fix xpra control error handling
+  * fix window refresh on inactive workspace
+  * fix slow cursor updates
+  * fix error in rgb strict mode
+  * add missing x11 server type information
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 05 Jun 2014 15:36:09 +0700
+
+xpra (0.13.2-1) UNRELEASED; urgency=low
+  * fix painting of forwarded tray
+  * fix initial window workspace
+  * fix launcher with debug option in config file
+  * fix compilation of x265 encoder
+  * fix infinite recursion in cython csc module
+  * don't include sound utilities when building without sound
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 01 Jun 2014 21:03:26 +0700
+
+xpra (0.13.1-1) UNRELEASED; urgency=low
+  * honour lossless encodings
+  * fix avcodec2 build for Debian jessie and sid
+  * fix pam authentication module
+  * fix proxy server launched without a display
+  * fix xpra info data format (wrong prefix)
+  * fix transparency with png/L mode
+  * fix loss of transparency when toggling OpenGL
+  * fix re-stride code for compatibility with ancient clients
+  * fix timer reference leak causing some warnings
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 28 May 2014 14:32:01 +0700
+
+xpra (0.13.0-1) UNRELEASED; urgency=low
+  * Python3 / GTK3 client support
+  * NVENC module included in binary builds
+  * support for enhanced dummy driver with DPI option
+  * better build system with features auto-detection
+  * removed unsupported CUDA csc module
+  * improved buffer support
+  * faster webp encoder
+  * improved automatic encoding selection
+  * support running MS Windows installer under wine
+  * support for window opacity forwarding
+  * fix password mode in launcher
+  * edge resistance for automatic image downscaling
+  * increased default memory allocation of the dummy driver
+  * more detailed version information and tools
+  * stricter handling of server supplied values
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 22 May 2014 21:33:03 +0700
+
+xpra (0.12.6-1) UNRELEASED; urgency=low
+  * fix invalid pixel buffer size causing encoding failures
+  * fix auto-refresh infinite loop, and honour refresh quality
+  * fix sound sink with older versions of GStreamer plugins
+  * fix Qt applications crashes caused by a newline in xsettings..
+  * fix error with graphics drivers only supporting OpenGL 2.x only
+  * fix error in cairo backing cleanup
+  * fix RGB pixel data buffer size (re-stride as needed)
+  * avoid buggy swscale 2.1.0 on Ubuntu
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 16 May 2014 12:37:44 +0700
+
+xpra (0.12.5-1) UNRELEASED; urgency=low
+  * fix error when clients supply invalid screen dimensions
+  * fix MS Windows build without ffmpeg
+  * fix cairo backing alternative
+  * fix keyboard and sound test tools initialization and cleanup
+  * fix gcc version test used for enabling sanitizer build options
+  * fix exception handling in client when called from the launcher
+  * fix libav dependencies for Debian and Ubuntu builds
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 03 May 2014 15:23:02 +0700
+
+xpra (0.12.4-1) UNRELEASED; urgency=low
+  * fix xpra shadow subcommand
+  * fix xpra shadow keyboard mapping support for non-posix clients
+  * avoid Xorg dummy warning in log
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 23 Apr 2014 13:59:22 +0700
+
+xpra (0.12.3-1) UNRELEASED; urgency=low
+  * fix mispostioned windows
+  * fix quickly disappearing windows (often menus)
+  * fix server errors when closing windows
+  * fix NVENC server initialization crash with driver version mismatch
+  * fix rare invalid memory read with XShm
+  * fix webp decoder leak
+  * fix memory leak on client disconnection
+  * fix focus errors if windows disappear
+  * fix mmap errors on window close
+  * fix incorrect x264 encoder speed reported via "xpra info"
+  * fix potential use of mmap as an invalid fallback for video encoding
+  * fix logging errors in debug mode
+  * fix timer expired warning
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 09 Apr 2014 12:39:07 +0700
+
+xpra (0.12.2-1) UNRELEASED; urgency=low
+  * fix switching to RGB encoding via client tray
+  * fix remote server start via SSH
+  * fix workspace change detection causing slow screen updates
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 30 Mar 2014 11:56:39 +0700
+
+xpra (0.12.1-1) UNRELEASED; urgency=low
+  * fix 32-bit server timestamps
+  * fix client PNG handling on installations without PIL / Pillow
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Mar 2014 21:59:50 +0700
+
+xpra (0.12.0-2) UNRELEASED; urgency=low
+  * fix x264 decoding
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Mar 2014 09:28:54 +0700
+
+xpra (0.12.0-2) UNRELEASED; urgency=low
+  * fix x264 decoding
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Mar 2014 09:28:54 +0700
+
+xpra (0.12.0-1) UNRELEASED; urgency=low
+  * NVENC support for YUV444 mode, support for automatic bitrate tuning
+  * NVENC and CUDA load balancing for multiple cards
+  * proxy encoding: ability to encode on proxy server
+  * fix fullscreen on multiple monitors via fakeXinerama
+  * OpenGL rendering improvements (for transparent windows, etc)
+  * support window grabs (drop down menus, etc)
+  * support specifying the SSH port number more easily
+  * enabled TCP_NODELAY socket option by default (lower latency)
+  * add ability to easily select video encoders and csc modules
+  * add local unix domain socket support to proxy server instances
+  * add "xpra control" commands to control encoding speed and quality
+  * improved handling of window resizing
+  * improved compatibility with command line tools (xdotool, wmctrl)
+  * ensure windows on other workspaces do not waste bandwidth
+  * ensure iconified windows do not waste bandwidth
+  * ensure maximized and fullscreen windows are prioritised
+  * ensure we reset xsettings when client disconnects
+  * better bandwidth utilization of jittery connections
+  * faster network code (larger receive buffers)
+  * better automatic encoding selection for smaller regions
+  * improved command line options
+  * trimmed all the ugly PyOpenGL warnings on startup
+  * much improved logging and debugging tools
+  * make it easier to distinguish xpra windows from local windows
+  * improved build system: smaller and more correct build output
+  * automatically stop remote shadow servers when client disconnects
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 23 Mar 2014 13:30:38 +0700
+
+xpra (0.11.6-1) UNRELEASED; urgency=low
+  * correct fix for system tray forwarding
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Mar 2014 16:54:38 +0700
+
+xpra (0.11.5-1) UNRELEASED; urgency=low
+  * fix "xpra info" with bencoder
+  * ensure we re-sanitize window size hints when they change
+  * workaround applications with nonsensical size hints (ie: handbrake)
+  * fix 32-bit painting with GTK pixbuf loader (when PIL is not installed or disabled)
+  * fix system tray forwarding geometry issues
+  * fix workspace restore
+  * fix compilation warning
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Mar 2014 12:08:50 +0700
+
+xpra (0.11.4-1) UNRELEASED; urgency=low
+  * fix NVENC GPU memory leak
+  * fix video compatibility with ancient clients
+  * fix vpx decoding in ffmpeg decoders
+  * fix transparent system tray image with RGB encoding
+  * fix client crashes with system tray forwarding
+  * fix webp codec loader error handler
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 01 Mar 2014 08:06:48 +0700
+
+xpra (0.11.3-1) UNRELEASED; urgency=low
+  * fix compatibility with ancient versions of GTK
+  * fix crashes with malformed socket names
+  * fix server builds without client modules
+  * honour mdns flag set in config file
+  * blacklist VMware OpenGL driver which causes client crashes
+  * ensure all "control" subcommands run in UI thread
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 14 Feb 2014 14:55:10 +0700
+
+xpra (0.11.2-1) UNRELEASED; urgency=low
+  * fix Cython 0.20 compatibility
+  * fix OpenGL pixel upload alignment code
+  * fix xpra command line help page tokens
+  * fix compatibility with old versions of the python glib library
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 29 Jan 2014 12:13:35 +0700
+
+xpra (0.11.1-1) UNRELEASED; urgency=low
+  * fix compatibility with old/unsupported servers
+  * fix shadow mode
+  * fix paint issue with transparent tooltips on OSX and MS Windows
+  * fix pixel format typo in OpenGL logging
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 24 Jan 2014 15:15:48 +0700
+
+xpra (0.11.0-1) UNRELEASED; urgency=low
+  * NVENC hardware h264 encoding acceleration
+  * OpenCL and CUDA colourspace conversion acceleration
+  * proxy server mode for serving multiple sessions through one port
+  * support for sharing a TCP port with a web server
+  * server control command for modifying settings at runtime
+  * server exit command, which leaves Xvfb running
+  * publish session via mDNS
+  * OSX client two way clipboard support
+  * support for transparency with OpenGL window rendering
+  * support for transparency with 8-bit PNG modes
+  * support for more authentication mechanisms
+  * support remote shadow start via ssh
+  * support faster lz4 compression
+  * faster bencoder, rewritten in Cython
+  * builtin fallback colourspace conversion module
+  * real time frame latency graphs
+  * improved system tray forwarding support and native integration
+  * removed most of the Cython/C code duplication
+  * stricter and safer value parsing
+  * more detailed status information via UI and "xpra info"
+  * experimental HTML5 client
+  * drop non xpra clients with a more friendly response
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 20 Jan 2014 17:33:48 +0700
+
+xpra (0.10.12-1) UNRELEASED; urgency=low
+  * fix missing auto-refresh with lossy colourspace conversion
+  * fix spurious warning from Nvidia OpenGL driver
+  * fix OpenGL client crash with some drivers (ie: VirtualBox)
+  * fix crash in bencoder caused by empty data to encode
+  * big warnings about webp leaking memory
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 14 Jan 2014 15:28:21 +0700
+
+xpra (0.10.11-1) UNRELEASED; urgency=low
+  * fix popup windows focus issue
+  * fix "xpra upgrade" subcommand
+  * fix server backtrace in error handler
+  * restore server target information in tray tooltip
+  * fix bencoder error with no-windows switch (missing encoding)
+  * add support for RGBX pixel format required by some clients
+  * avoid ffmpeg "data is not aligned" warning on client
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 07 Jan 2014 12:41:09 +0700
+
+xpra (0.10.10-1) UNRELEASED; urgency=low
+  * fix focus regression
+  * fix MS Windows clipboard copy including null byte
+  * fix h264 decoding with old versions of avcodec
+  * fix potential invalid read past the end of the buffer
+  * fix static vpx build arguments
+  * fix RGB modes exposed for transparent windows
+  * fix crash on clipboard loops: detect and disable clipboard
+  * support for ffmpeg version 2.x
+  * support for video encoding of windows bigger than 4k
+  * support video encoders that re-start the stream
+  * fix crash in decoding error path
+  * forward compatibility with namespace changes
+  * forward compatibility with the new generic encoding names
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 04 Dec 2013 18:53:44 +0700
+
+xpra (0.10.9-1) UNRELEASED; urgency=low
+  * fix h264 decoding of padded images
+  * fix plain RGB encoding with very old clients
+  * fix "xpra info" error when old clients are connected
+  * remove warning when "help" is specified as encoding
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 05 Nov 2013 11:18:29 +0700
+
+xpra (0.10.8-1) UNRELEASED; urgency=low
+  * fix misapplied patch breaking all windows with transparency
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 22 Oct 2013 20:26:42 +0700
+
+xpra (0.10.7-1) UNRELEASED; urgency=low
+  * fix client crash on Linux with AMD cards and fglrx driver
+  * fix missing WM_CLASS on X11 clients
+  * fix "xpra info" on shadow servers
+  * add usable 1366x768 dummy resolution
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 22 Oct 2013 13:02:40 +0700
+
+xpra (0.10.6-1) UNRELEASED; urgency=low
+  * fix window titles reverting to "unknown host"
+  * fix tray forwarding bug causing client disconnections
+  * replace previous rencode fix with warning
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 15 Oct 2013 10:29:54 +0700
+
+xpra (0.11.0-1) UNRELEASED; urgency=low
+  * proxy server mode for serving multiple sessions through one port
+  * support for more authentication mechanisms
+  * lz4 compression
+  * real time frame latency graphs
+  * removed most of the Cython/C code duplication
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 11 Oct 2013 12:39:49 +0700
+
+xpra (0.10.5-1) UNRELEASED; urgency=low
+  * fix client time out when the initial connection fails
+  * fix shadow mode
+  * fix connection failures when some system information is missing
+  * fix client disconnection requests
+  * fix encryption cipher error messages
+  * fix client errors when some features are disabled
+  * fix potential rencode bug with unhandled data types
+  * error out if the client requests authentication and none is available
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 10 Oct 2013 15:39:42 +0700
+
+xpra (0.10.4-1) UNRELEASED; urgency=low
+  * fix modifier key handling (was more noticeable with MS Windows clients)
+  * fix auto-refresh
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 10 Sep 2013 12:36:08 +0700
+
+xpra (0.10.3-1) UNRELEASED; urgency=low
+  * fix transient windows with no parent
+  * fix metadata updates handling (maximize, etc)
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 06 Sep 2013 11:08:42 +0700
+
+xpra (0.10.2-1) UNRELEASED; urgency=low
+  * fix connection error with unicode user name
+  * fix vpx compilation warning
+  * fix python 2.4 compatibility
+  * fix handling of scaling attribute via environment override
+  * build fix: ensure all builds include source information
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 29 Aug 2013 15:18:25 +0700
+
+xpra (0.10.1-1) UNRELEASED; urgency=low
+  * fix avcodec buffer pointer errors on some 32-bit Linux
+  * fix invalid time convertion
+  * fix OpenGL scaling with fractions
+  * compilation fix for some newer versions of libav
+  * disable OpenGL on Ubuntu 12.04 and earlier (non functional)
+  * honour scaling at high quality settings
+  * add ability to disable transparency via environment variable
+  * silence PyOpenGL warnings we can do nothing about
+  * fix CentOS 6.3 packaging dependencies
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 20 Aug 2013 21:09:46 +0700
+
+xpra (0.10.0-6) UNRELEASED; urgency=low
+  * performance: X11 shared memory (XShm) pixels transfers
+  * performance: zero-copy window pixels to picture encoders
+  * performance: zero copy decoded pixels to window (but not with OpenGL..)
+  * performance: multi-threaded x264 encoding and decoding
+  * support for speed tuning (latency vs bandwidth) with more encodings
+  * support for grayscale and palette based png encoding
+  * support for window and tray transparency
+  * support webp lossless
+  * support x264's "ultrafast" preset
+  * support forwarding of group-leader application window information
+  * prevent slow encoding from creating backlogs
+  * OpenGL accelerated client rendering enabled by default wherever supported
+  * register as a generic URL handler
+  * fullscreen toggle support
+  * stricter Cython code
+  * better handling of sound buffering and overruns
+  * experimental support for a Qt based client
+  * support for different window layouts with custom widgets
+  * don't try to synchronize with clipboards that do not exist
+  * refactoring: move features and components to sub-modules
+  * refactoring: split X11 bindings from pure gtk code
+  * refactoring: codecs split encoding and decoding side
+  * refactoring: move more common code to utility classes
+  * refactoring: remove direct dependency on gobject in many places
+  * refactoring: platform code better separated
+  * refactoring: move wimpiggy inside xpra, delete parti
+  * export and expose more version information (x264/vpx/webp/PIL, OpenGL..)
+  * export compiler information with build (Cython, C compiler, etc)
+  * export much more debugging information about system state and statistics
+  * simplify non-UI subcommands and their packets, also use rencode
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 13 Aug 2013 13:15:11 +0700
+
+xpra (0.9.8-1) UNRELEASED; urgency=low
+  * fix client workarea size change detection (again)
+  * fix crashes handling info requests
+  * fix Ubuntu raring clients: must use Xvfb
+  * speedup server startup when no XAUTHORITY file exists yet
+  * fix server hangs due to sound cleanup deadlock
+  * use lockless window video decoder cleanup (much faster)
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 29 Jul 2013 17:55:21 +0700
+
+xpra (0.9.7-1) UNRELEASED; urgency=low
+  * fix error in sound cleanup code
+  * fix network threads accounting
+  * fix missing window icons
+  * fix client availibility of remote session start feature
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 16 Jul 2013 16:21:27 +0700
+
+xpra (0.9.6-1) UNRELEASED; urgency=low
+  * fix lost clicks on some popup menus (mostly with MS Windows clients)
+  * fix client workarea size change detection
+  * fix reading of unique "machine-id" on posix
+  * fix window reference leak for windows we fail to manage
+  * fix compatibility with pillow (PIL fork)
+  * fix session-info window graphs jumping (smoother motion)
+  * fix webp loading code for non-Linux posix systems
+  * fix window group-leader attribute setting
+  * fix man page indentation
+  * fix variable test vs use (correctness only)
+  * forward compatibility with future "xpra info" namespace changes
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 30 Jun 2013 16:33:26 +0700
+
+xpra (0.9.5-1) UNRELEASED; urgency=low
+  * fix auto-refresh: don't refresh unnecessarily
+  * fix wrong initial timeout when ssh takes a long time to connect
+  * fix client monitor/resolution size change detection
+  * fix attributes reported to clients when encoding overrides are used
+  * Gentoo ebuild uses virtual to allow one to choose pillow or PIL
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 06 Jun 2013 15:33:54 +0700
+
+xpra (0.9.4-1) UNRELEASED; urgency=low
+  * revert cursor scaling fix which broke other applications
+  * fix auto refresh mis-firing
+  * fix type (atom) of the X11 visual property we expose
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 27 May 2013 11:17:15 +0700
+
+xpra (0.9.3-2) UNRELEASED; urgency=low
+  * fix clipboard for *nix clients
+  * fix selection timestamp parsing
+  * fix crash due to logging code location
+  * fix pixel area request dimensions for lossless edges
+  * fix advertized tray visual property
+  * fix cursors are too small with some applications
+  * fix crash when low level debug code is enabled
+  * reset cursors when disabling cursor forwarding
+  * workaround invalid window size hints
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 20 May 2013 16:02:59 +0700
+
+xpra (0.9.2-1) UNRELEASED; urgency=low
+  * fix double error when loading build information (missing about dialog)
+  * fix and simplify build "clean" subcommand
+  * fix OpenGL rendering alignment for padded rowstrides case
+  * fix potential double error when tray initialization fails
+  * fix window static properties usage
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 13 May 2013 22:48:41 +0700
+
+xpra (0.9.1-1) UNRELEASED; urgency=low
+  * honour initial client window's requested position
+  * fix for hidden appindicator
+  * fix string formatting error in non-cython fallback math code
+  * fix error if ping packets fail from the start
+  * fix for windows without a valid window-type (ie: shadows)
+  * fix OpenGL missing required feature detection (and add debug)
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 08 May 2013 21:08:09 +0700
+
+xpra (0.9.0-1) UNRELEASED; urgency=low
+  * fix focus problems with old Xvfb display servers
+  * fix Python 2.4 and 2.5 compatibility (many)
+  * fix failed server upgrades killing the virtual display
+  * fix screenshot command with "OR" windows
+  * fix support "OR" windows that move and resize
+  * IPv6 server support
+  * OpenGL client rendering
+  * support for many more audio codecs: flac, opus, wavpack, wav, speex
+  * support starting remote sessions with "xpra start"
+  * add --log-file command line option
+  * add clipboard regex string filtering
+  * add clipboard transfer in progress animation via system tray
+  * detect broken/slow connections and temporarily grey out windows
+  * reduce regular packet header sizes using numeric lookup tables
+  * allow more options in xpra config and launcher files
+  * safer test for windows to ignore (window IDs starts at 1 again)
+  * expose more version and statistical data via xpra info
+  * improved OpenGL client rendering (still disabled by default)
+  * upgrade to rencode 1.0.2
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 25 Mar 2013 00:20:32 +0100
+
+xpra (0.8.8-1) UNRELEASED; urgency=low
+  * fix server deadlock on dead connections
+  * fix compatibility with older versions of Python
+  * fix sound capture script usage via command line
+  * fix screen number preserve code
+  * fix error in logs in shadow mode
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 07 Mar 2013 00:35:22 +0700
+
+xpra (0.8.7-1) UNRELEASED; urgency=low
+  * fix x264 crash with older versions of libav
+  * fix 32-bit builds breakage introduce by python2.4 fix in 0.8.6
+  * fix missing sound forwarding when using the GUI launcher
+  * fix microphone forwarding errors
+  * fix client window properties store
+  * fix first workspace not preserved and other workspace issues
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 27 Feb 2013 00:27:50 +0700
+
+xpra (0.8.6-1) UNRELEASED; urgency=low
+  * fix python2.4 compatibility in icon grabbing code
+  * fix libav compatibility on MS Windows with VisualStudio
+  * fix exit message location
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 22 Feb 2013 16:45:53 +0700
+
+xpra (0.8.5-1) UNRELEASED; urgency=low
+  * fix server crash with transient windows
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 17 Feb 2013 18:11:27 +0700
+
+xpra (0.8.4-1) UNRELEASED; urgency=low
+  * fix hello packet encoding bug
+  * fix colours in launcher and session-info windows
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 13 Feb 2013 11:21:54 +0700
+
+xpra (0.8.3-1) UNRELEASED; urgency=low
+  * Python 2.4 compatiblity fixes (CentOS 5.x)
+  * fix static builds of vpx and x264
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 12 Feb 2013 12:45:47 +0700
+
+xpra (0.8.2-1) UNRELEASED; urgency=low
+  * fix libav uninitialized structure crash
+  * fix warning on installations without sound libraries
+  * fix warning when pulseaudio utils are not installed
+  * fix delta compression race
+  * fix the return of some ghost windows
+  * stop pulseaudio on exit, warn if it fails to start
+  * re-enable system tray forwarding, fix location conflicts
+  * remove spurious "too many receivers" warnings
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 10 Feb 2013 14:21:24 +0700
+
+xpra (0.8.1-1) UNRELEASED; urgency=low
+  * fix server daemonize on some platforms
+  * fix server SSH support on platforms with old versions of glib
+  * fix "xpra upgrade" closing applications
+  * fix detection of almost-lossless frames with x264
+  * fix starting of a duplicate pulseaudio server on upgrade
+  * fix debian packaging: lint warnings, add missing sound dependencies
+  * fix compatibility with older versions of pulseaudio (pactl)
+  * fix session-info window when a tray is being forwarded
+  * remove warning on builds with limited encoding support
+  * disable tray forwarding by default as it causes problems with some apps
+  * rename "Quality" to "Min Quality" in tray menu
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 04 Feb 2013 00:08:20 +0700
+
+xpra (0.8.0-1) UNRELEASED; urgency=low
+  * fix modal windows support
+  * fix default mouse cursor: now uses the client's default cursor
+  * fix short lived windows: avoid doing unnecessary work, avoid re-registering
+  * fix limit the number of raw packets per client to prevent memory exhaustion
+  * fix authentication: ensure salt is per connection
+  * fix for ubuntu global application menus
+  * fix proxy handling of deadly signals
+  * fix pixel queue size calculations used for performance tuning decisions
+  * edge resistance for colourspace conversion changes to prevent yoyo effect
+  * more aggressive picture quality tuning
+  * better CPU utilization
+  * new command line options and tray menu to trade latency for bandwidth
+  * x264 disable unecessary I-frames and avoid IDR frames
+  * performance and latency optimizations in critical sections
+  * avoid server loops: prevent the client from connecting to itself
+  * group windows according to the remote application they belong to
+  * sound forwarding (initial code, high latency)
+  * faster and more reliable client and server exit (from signal or otherwise)
+  * "xpra shadow" mode to clone an existing X11 display (not for compositors)
+  * support for delta pixels mode (most useful for shadow mode)
+  * avoid warnings and X11 errors with the screenshot command
+  * better mouse cursor support: send cursors by name so their size matches
+  * mitigate bandwidth eating cursor change storms: simple cursor batching
+  * support system tray icon forwarding (limited)
+  * preserve window workspace
+  * AES packet encryption for TCP mode (without key secure exchange for now)
+  * launcher entry box for username in SSH mode
+  * launcher improvements: highlight the password field if needed, warnings etc
+  * better window manager specification compatibility
+  * use lossless encoders more aggressively when possible
+  * new x264 tuning options: profiles to use and thresholds
+  * better detection of dead server sockets: retry and remove them if needed
+  * improved session information dialog and graphs
+  * more detailed hierarchical per-window details via "xpra info"
+  * send window icons in dedicated compressed packet
+  * detect overly large main packets
+  * partial/initial Java/AWT keyboard support
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 31 Jan 2013 00:55:50 +0700
+
+xpra (0.7.0-1) UNRELEASED; urgency=low
+  * fix "AltGr" key handling with MS Windows clients (and others)
+  * fix crash with x264 encoding
+  * fix crash with fast disappearing tooltip windows
+  * avoid storing password in a file when using the launcher
+  * many latency fixes and improvements: lower latency,
+    better line congestion handling, etc
+  * lower client latency: decompress pictures in a dedicated thread
+  * better launcher command feedback
+  * better automatic compression heuristics
+  * support for Xdummy on platforms with only a suid binary installed
+  * support for 'webp' lossy picture encoding (better and faster than jpeg)
+  * support fixed picture quality with x264, webp and jpeg
+  * support for multiple "start-child" options in config files or command line
+  * more reliable auto-refresh
+  * performance optimizations: caching results, avoid unnecessary video encoder
+    re-initialization
+  * faster re-connection (skip keyboard re-configuration)
+  * better isolation of the virtual display process and child processes
+  * show performance statistics graphs on session info dialog (click to save)
+  * start with compression enabled, even for initial packet
+  * show more version and client information in logs and via "xpra info"
+  * client launcher improvements: prevent logging conflict, add version info
+  * large source layout cleanup, compilation warnings fixed
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 08 Oct 2012 22:27:26 +0700
+
+xpra (0.6.4-1) UNRELEASED; urgency=low
+  * fix bencoder to properly handle dicts with non-string keys
+  * fix swscale bug with windows that are too small by switch encoding
+  * fix locking of video encoder resizing leading to missing video frames
+  * fix crash with compression turned off: fix unicode encoding
+  * fix lack of locking sometimes causing errors with "xpra info"
+  * fix password file handling: exceptions and ignore carriage returns
+  * prevent races during setup and cleanup of network connections
+  * take shortcut if there is nothing to send
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 05 Oct 2012 21:31:07 +0700
+
+xpra (0.6.3-1) UNRELEASED; urgency=low
+  * fix memory leak in server after client disconnection
+  * fix launcher: clear socket timeout once connected and add missing options
+  * fix potential bug in network code (prevent disconnection)
+  * enable auto-refresh by default since we now use a lossy encoder by default
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Sep 2012 21:40:40 +0700
+
+xpra (0.6.2-1) UNRELEASED; urgency=low
+  * fix missing key frames with x264/vpx: always reset the video encoder when
+    we skip some frames (forces a new key frame)
+  * fix server crash on invalid keycodes (zero or negative)
+  * fix latency: isolate per-window latency statistics from each other
+  * fix latency: ensure we never record zero or even negative decode time
+  * fix refresh: server error was causing refresh requests to be ignored
+  * fix window options handling: using it for more than one value would fail
+  * fix video encoder/windows dimensions mismatch causing missing key frames
+  * fix damage options merge code (options were being squashed)
+  * ensure that small lossless regions do not cancel the auto-refresh timer
+  * restore protocol main packet compression and single chunk sending
+  * drop unnecessary OpenGL dependencies from some deb/rpm packages
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 26 Sep 2012 00:09:55 +0700
+
+xpra (0.6.1-1) UNRELEASED; urgency=low
+  * fix compress clipboard data (previous fix was ineffectual)
+  * fix missing damage data queue statistics (was causing latency issues)
+  * use memory aligned allocations for colourspace conversion
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 14 Sep 2012 22:19:45 +0700
+
+xpra (0.6.0-5) UNRELEASED; urgency=low
+  * fix launcher: don't block the UI whilst connecting, and use a lower timeout,
+    fix icon lookup on *nix
+  * fix clipboard contents too big (was causing connection drops):
+    try to compress them and just drop them if they are still too big
+  * x264 or vpx are now the default encodings (if available)
+  * compress rgb24 pixel data with zlib from the damage thread
+  * better build environment detection
+  * experimental multi-user support (see --enable-sharing)
+  * better, more accurate "xpra info" statistics (per encoding, etc)
+  * tidy up main source directory
+  * simplify video encoders/decoders setup and cleanup code
+  * remove 'nogil' switch (as 'nogil' is much faster)
+  * test all socket types with automated tests
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 08 Sep 2012 11:33:52 +0700
+
+xpra (0.5.4-1) UNRELEASED; urgency=low
+  * fix man page typo
+  * fix non bash login shell compatibility
+  * fix xpra screenshot argument parsing error handling
+  * fix video encoding mismatch when switching encoding
+  * fix ssh mode on OpenBSD
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 08 Sep 2012 11:07:55 +0700
+
+xpra (0.5.3-1) UNRELEASED; urgency=low
+  * zlib compatibility fix: use chunked decompression when supported
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 05 Sep 2012 12:17:25 +0700
+
+xpra (0.5.2-1) UNRELEASED; urgency=low
+  * fix xpra launcher icon lookup on *nix
+  * fix big clipboard packets causing disconnection: just drop them instead
+  * force disconnection after irrecoverable network parsing error
+  * fix zlib compression in raw packet mode: always flush the buffer
+  * fix window refresh: do not skip all windows after a hidden one!
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 29 Aug 2012 10:31:27 +0700
+
+xpra (0.5.1-2) UNRELEASED; urgency=low
+  * fix xpra_launcher
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 25 Aug 2012 04:29:56 +0700
+
+xpra (0.5.1-1) UNRELEASED; urgency=low
+  * fix DPI issue with Xdummy: set virtual screen to 96dpi by default
+  * avoid looping forever doing maths on 'infinity' value
+  * fix incomplete cloning of attributes causing default values to be used
+  * damage data queue batch factor was being calculated but not used
+  * ensure we update the data we use for calculations (was using zero value)
+  * ensure "send_bell" is initialized before use
+  * add missing path string in warning message
+  * fix test code compatibility with older xpra versions
+  * statistics shown for 'damage_packet_queue_pixels' were incorrect
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 25 Aug 2012 00:50:35 +0700
+
+xpra (0.5.0-2) UNRELEASED; urgency=low
+  * fix font size by setting a default DPI for Xdummy
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 22 Aug 2012 01:38:24 +0700
+
+xpra (0.5.0-1) UNRELEASED; urgency=low
+  * new packet encoder written in C (much faster and data is now smaller too)
+  * read provided /etc/xpra/xpra.conf and user's own ~/.xpra/xpra.conf
+  * support Xdummy out of the box on platforms with recent enough versions of
+    Xorg (and not installed suid)
+  * pass dpi to server and allow clients to specify dpi on the command line
+  * fix xsettings endianness problems
+  * fix clipboard tokens sent twice on start
+  * new command line options and UI to disable notifications forwarding,
+    cursors and bell
+  * x264: adapt colourspace conversion, encoding speed and picture quality
+    according to link and encoding/decoding performance
+  * automatically change video encoding: handle small region updates
+    (ie: blinking cursor or spinner) without doing a full video frame refresh
+  * fairer window batching calculations, better performance over low latency
+    links and bandwidth constrained links
+  * lower tcp socket connection timeout (10 seconds)
+  * better compression of cursor data
+  * log date and time with messages, better log messages
+  * send more client and server version information (python, gtk, etc)
+  * build cleanups: let distutils clean take care of removing all generated
+    .c files
+  * code cleanups: move all win32 specific headers to win32 tree, fix vpx
+    compilation warnings, whitespace, etc
+  * removed old "--no-randr" option
+  * drop compatibility with versions older than 0.3: we now assume the
+    "raw_packets" feature is supported
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 20 Aug 2012 18:25:32 +0700
+
+xpra (0.4.2-1) UNRELEASED; urgency=low
+  * fix clipboard atom packing (was more noticeable with qt and Java
+    applications)
+  * fix clipboard selection for non X11 clients: only 'multiple' codepath
+    requires X11 bindings
+  * fix python3 build
+  * fix potential double free in x264 error path
+  * fix logging format error on "window dimensions have changed.." (parameter
+    grouping was wrong)
+  * fix colour bleeding with x264 (ie: green on black text)
+  * remove incorrect and unnecessary callback to setup_xprops which may have
+    caused the pulseaudio flag to use the wrong value
+  * delay 'check packet size' to allow the limit to be raised - important over
+    slower links where it triggers more easily
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 16 Aug 2012 15:20:58 +0700
+
+xpra (0.4.1-1) UNRELEASED; urgency=low
+  * fix clipboard bugs
+  * fix batch delay calculations with multiple windows
+  * fix tests (update import statements)
+  * robustify cython version string parsing
+  * fix source files changed detection during build
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 31 Jul 2012 21:15:21 +0700
+
+xpra (0.4.0-1) UNRELEASED; urgency=low
+  * fix client application resizing its own window
+  * fix window dimensions hints not applied
+  * fix memleak in x264 cleanup code
+  * fix xpra command exit code (more complete fix)
+  * fix latency bottleneck in processing of damage requests
+  * fix free uninitialized pointers in video decoder initialization error
+    codepath
+  * fix x264 related crash when resizing windows to one pixel width or height
+  * fix accounting of client decode time: ignore figure in case of decoding
+    error
+  * fix subversion build information detection on MS Windows
+  * fix some binary packages which were missing some menu icons
+  * restore keyboard compatiblity code for MS Windows and OSX clients
+  * use padded buffers to prevent colourspace conversion from reading random
+    memory
+  * release Python's GIL during vpx and x264 compression and colourspace
+    conversion
+  * better UI launcher: UI improvements, detect encodings, fix standalone/win32
+    usage, minimize window once the client has started
+  * "xpra stop" disconnects all potential clients cleanly before exiting
+  * x264 used memory aligned buffer for better performance
+  * avoid vpx/x264 overhead for very small damage regions
+  * detect dead connection with ping packets: disconnect if echo not received
+  * force a full refresh when the encoding is changed
+  * more dynamic framerate performance adjustments, based on more metrics
+  * new menu option to toggle keyboard sync at runtime
+  * vpx/x264 runtime imports: detect broken installations and warn, but ignore
+    when the codec is simply not installed
+  * enable environment debugging for damage batching via "XPRA_DEBUG_LATENCY"
+    env variable
+  * simplify build by using setup file to generate all constants
+  * text clients now ignore packets they are not meant to handle
+  * removed compression menu since the default is good enough
+  * "xpra info" reports all build version information
+  * report server pygtk/gtk versions and show them on session info dialog and
+    "xpra info"
+  * ignore dependency issues during sdist/clean phase of build
+  * record more statistics (mostly latency) in test reports
+  * documentation and logging added to code, moved test code out of main
+    packages
+  * debian: build with hardening features
+  * debian: don't record as modified the files we know we modify during build
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 23 Jul 2012 13:10:57 +0700
+
+xpra (0.3.3-1) UNRELEASED; urgency=low
+  * do not try to free the empty x264/vpx buffers after a decompression failure
+  * fix xpra command exit code (zero) when no error occurred
+  * fix Xvfb deadlock on shutdown
+  * fix wrongly removing unix domain socket on startup failure
+  * fix wrongly killing Xvfb on startup failure
+  * fix race in network code and meta data packets
+  * ensure clients use raw_packets if the server supports it (fixes 'gibberish' compressed packet errors)
+  * fix screen resolution reported by the server
+  * fix maximum packet size check wrongly dropping valid connections
+  * honour the --no-tray command line argument
+  * detect Xvfb startup failures and avoid taking over other displays
+  * don't record invalid placeholder value for "server latency"
+  * fix missing "damage-sequence" packet for sequence zero
+  * fix window focus with some Tk based application (ie: git gui)
+  * prevent large clipboard packets from causing the connection to drop
+  * fix for connection with older clients and server without raw packet support and rgb24 encoding
+  * high latency fix: reduce batch delay when screen updates slow down
+  * non-US keyboard layout fix
+  * correctly calculate min_batch_delay shown in statistics via "xpra info"
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 10 Jul 2012 16:10:37 +0700
+
+xpra (0.3.2-2) UNRELEASED; urgency=low
+  * fix debian packaging of xpra_launcher
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 05 Jun 2012 20:18:08 +0700
+
+xpra (0.3.2-1) UNRELEASED; urgency=low
+  * fix missing 'a' key using OS X clients
+  * fix debian packaging for xpra_launcher
+  * fix unicode decoding problems in window title
+  * fix latency issue
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 04 Jun 2012 00:14:00 +0700
+
+xpra (0.3.1-1) UNRELEASED; urgency=low
+  * fix DoS in network connections setup code
+  * fix for non-ascii characters in source file
+  * log remote IP or socket address
+  * more graceful disconnection of invalid clients
+  * updates to the man page and xpra command help page
+  * support running the automated tests against older versions
+  * "xpra info" to report the number of clients connected
+  * use xpra's own icon for its own windows (about and info dialogs)
+  * log remote IP or socket address
+  * more graceful disconnection of invalid clients
+  * updates to man page and xpra command help page
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 23 May 2012 18:05:45 +0100
+
+xpra (0.3.0-1) UNRELEASED; urgency=low
+  * zero-copy network code, per packet compression
+  * fix race causing DoS in threaded network protocol setup
+  * fix vpx encoder memory leak
+  * fix vpx/x264 decoding: recover from frame failures
+  * fix small per-window memory leak in server
+  * per-window update batching auto-tuning, which is fairer
+  * windows update batching now takes into account the number of pixels rather than just the number of regions to update
+  * support --socket-dir option over ssh
+  * IPv6 support using the syntax: ssh/::ffff:192.168.1.100/10 or tcp/::ffff:192.168.1.100/10000
+  * all commands now return a non-zero exit code in case of failure
+  * new "xpra info" command to report server statistics
+  * prettify some of the logging and error messages
+  * avoid doing most of the keyboard setup code when clients are in read-only mode
+  * automated regression and performance tests
+  * remove compatibility code for versions older than 0.1
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 20 May 2012 15:00:42 +0200
+
+xpra (0.2.0-1) UNRELEASED; urgency=low
+  * x264 and vpx video encoding support
+  * gtk3 and python 3 partial support (client only - no keyboard support)
+  * detect missing X11 server extensions and exit with error
+  * X11 server no longer listens on a TCP port
+  * clipboard fixes for Qt/KDE applications
+  * option for clients not to supply any keyboard mapping data (the server will no longer complain)
+  * show more system version information in session information dialog
+  * hide window decorations for openoffice splash screen (workaround)
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 20 Apr 2012 14:19:47 +0700
+
+xpra (0.1.0-1) UNRELEASED; urgency=low
+  * security: strict filtering of packet handlers until connection authenticated
+  * prevent DoS: limit number of concurrent connections attempting login (20)
+  * prevent DoS: limit initial packet size (memory exhaustion: 32KB)
+  * mmap: options to place sockets in /tmp and share mmap area across users via unix groups
+  * remove large amount of compatiblity code for older versions
+  * fix for Mac OS X clients sending hexadecimal keysyms
+  * fix for clipboard sharing and some applications (ie: Qt)
+  * notifications systems with dbus: re-connect if needed
+  * notifications: try not to interfere with existing notification services
+  * mmap: check for protected file access and ignore rather than error out (oops)
+  * clipboard: handle empty data rather than timing out
+  * spurious warnings: remove many harmless stacktraces/error messages
+  * detect and discard broken windows with invalid atoms, avoids vfb + xpra crash
+  * unpress keys all keys on start (if any)
+  * fix screen size check: also check vertical size is sufficient
+  * fix for invisible 0 by 0 windows: restore a minimum size
+  * fix for window dimensions causing enless resizing or missing window contents
+  * toggle cursors, bell and notifications by telling the server not to bother sending them, saves bandwidth
+  * build/deploy: don't modify file in source tree, generate it at build time only
+  * add missing GPL2 license file to show in about dialog
+  * Python 2.5: workarounds to restore support
+  * turn off compression over local connections (when mmap is enabled)
+  * clients can specify maximum refresh rate and screen update batching options
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 21 Mar 2012 18:03:38 +0700
+
+xpra (0.0.7.36-1) UNRELEASED; urgency=low
+  * fix clipboard bug which was causing Java applications to crash
+  * ensure we always properly disconnect previous client when new connection is accepted
+  * avoid warnings with Java applications, focus errors, etc
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 09 Feb 2012 02:41:53 +0700
+
+xpra (0.0.7.35-1) UNRELEASED; urgency=low
+  * ssh password input fix
+  * ability to take screenshots ("xpra screenshot")
+  * report server version ("xpra version")
+  * slave windows (drop down menus, etc) now move with their parent window
+  * show more session statistics: damage regions per second
+  * posix clients no longer interfere with the GTK/X11 main loop
+  * ignore missing properties when they are changed, and report correct source of the problem
+  * code style cleanups and improvements
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 01 Feb 2012 19:03:55 +0700
+
+xpra (0.0.7.34-1) UNRELEASED; urgency=low
+  * security: restrict access to run-xpra script (chmod)
+  * security: cursor data sent to the client was too big (exposing server memory)
+  * fix thread leak - properly this time, SIGUSR1 now dumps all threads
+  * off-by-one keyboard mapping error could cause modifiers to be lost
+  * pure python/cython method for finding modifier mappings (faster and more reliable)
+  * retry socket read/write after temporary error EINTR
+  * avoid warnings when asked to refresh windows which are now hidden
+  * auto-refresh was using an incorrect window size
+  * logging formatting fixes (only shown with logging on)
+  * hide picture encoding menu when mmap in use (since it is then ignored)
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 19 Jan 2012 02:12:42 +0700
+
+xpra (0.0.7.33-1) UNRELEASED; urgency=low
+  * readonly command line option
+  * correctly stop all network related threads on disconnection
+  * faster pixel data transfers for large areas
+  * fix on-the-fly change of pixel encoding
+  * fix potential exhaustion of mmap area
+  * keyboard: better modifiers detection, synchronization of capslock and numlock
+  * keyboard: support all modifiers correctly with and without keyboard-sync option
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 13 Jan 2012 03:30:37 +0700
+
+xpra (0.0.7.32-1) UNRELEASED; urgency=low
+  * bug fix: disconnection could leave the server (and X11 server) in a broken state due to threaded UI calls
+  * bug fix: don't remove window focus when just any connection is lost, only when the real client goes away
+  * bug fix: initial windows should get focus (partial fix)
+  * bug fix: correctly clear focus when a window goes away
+  * support key repeat latency workaround without needing raw keycodes (OS X and MS Windows)
+  * command line switch to enable client side key repeat: "--no-keyboard-sync" (for high latency/jitter links)
+  * session info dialog: shows realtime connection and server details
+  * menu entry in system tray to raise all managed windows
+  * key mappings: try harder to unpress all keys before setting the new keymap
+  * key mappings: try to reset modifier keys as well as regular keys
+  * key mappings: apply keymap using Cython code rather than execing xmodmap
+  * key mappings: fire change callbacks only once when all the work is done
+  * use dbus for tray notifications if available, prefered to pynotify
+  * show full version information in about dialog
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 08 Dec 2011 23:23:52 +0700
+
+xpra (0.0.7.31-1) UNRELEASED; urgency=low
+  * threaded server for much lower latency
+  * fast memory mapped transfers for local connections
+  * adaptive damage batching, fixes window refresh
+  * xpra "detach" command
+  * fixed system tray for Ubuntu clients
+  * fixed maximized windows on Ubuntu clients
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 23 Nov 2011 17:46:03 +0700
+
+xpra (0.0.7.30-1) UNRELEASED; urgency=low
+  * fix for update batching causing screen corruption
+  * fix AttributeError jpegquality: make PIL (aka python-imaging) truly optional
+  * fix for jitter compensation code being a little bit too trigger-happy
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 01 Nov 2011 15:08:06 +0700
+
+xpra (0.0.7.29-2) UNRELEASED; urgency=low
+  * fix partial packets on boundary causing connection to drop (properly this time)
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 26 Oct 2011 14:43:00 +0700
+
+xpra (0.0.7.29-1) UNRELEASED; urgency=low
+  * fix partial packets on boundary causing connection to drop
+  * support ubuntu's appindicator (yet another system tray implementation)
+  * improve disconnection diagnostic messages
+  * scale cursor down to the client's default size
+  * better handling of right click on system tray icon
+  * posix: detect when there is no DISPLAY and error out
+  * remove harmless warnings about missing properties on startup
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 25 Oct 2011 23:25:26 +0700
+
+xpra (0.0.7.28-2) UNRELEASED; urgency=low
+
+  * fix password mode - oops
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Oct 2011 00:37:15 +0700
+
+xpra (0.0.7.28-1) UNRELEASED; urgency=low
+
+  * much more efficient and backwards compatible network code, prevents a CPU bottleneck on the client
+  * forwarding of system notifications, system bell and custom cursors
+  * system tray menu to make it easier to change settings and disconnect
+  * automatically resize Xdummy to match the client's screen size whenever it changes
+  * PNG image compression support
+  * JPEG and PNG compression are now optional, only available if the Python Imaging Library is installed
+  * scale window icons before sending if they are too big
+  * fixed keyboard mapping for OSX and MS Windows clients
+  * compensate for line jitter causing keys to repeat
+  * fixed cython warnings, unused variables, etc
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Oct 2011 00:37:15 +0700
+
+xpra (0.0.7.27-1) UNRELEASED; urgency=low
+
+  * compatibility fix for python 2.4 (remove "with" statement)
+  * slow down updates from windows that refresh continuously
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 22 Sep 2011 11:05:45 +0700
+
+xpra (0.0.7.26-1) UNRELEASED; urgency=low
+
+  * minor changes to support the Android client (work in progress)
+  * allow keyboard shortcuts to be specified, default is meta+shift+F4 to quit (disconnects client)
+  * clear modifiers when applying new keymaps to prevent timeouts
+  * reduce context switching in the network read loop code
+  * try harder to close connections cleanly
+  * removed some unused code, fixed some old test code
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 20 Sep 2011 23:15:09 +0700
+
+xpra (0.0.7.25-1) UNRELEASED; urgency=low
+
+  * Use xmodmap to grab the exact keymap, this should ensure all keys are mapped correctly
+  * Reset modifiers whenever we gain or lose focus, or when the keymap changes
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 31 Aug 2011 19:26:34 +0700
+
+xpra (0.0.7.24-1) UNRELEASED; urgency=low
+
+  * Use raw keycodes whenever possible, should fix keymapping issues for all Unix-like clients
+  * Keyboard fixes for AltGr and special keys for non Unix-like clients
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 15 Aug 2011 15:10:22 +0200
+
+xpra (0.0.7.23-2) UNRELEASED; urgency=low
+
+  * Rebuilt with debian patches applied: "--with quilt" flag was missing
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 27 Jul 2011 18:15:03 +0000
+
+xpra (0.0.7.23-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+  * Moved debian/parti.1 to main source tree
+  * Try to use setxkbmap before xkbcomp to setup the matching keyboard layout
+  * Handle keyval level (shifted keys) explicitly,
+    should fix missing key mappings
+  * More generic option for setting window titles
+  * Exit if the server dies
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 24 Jul 2011 23:09:42 +0700
+
+xpra (0.0.7.22.1+dfsg-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+  * Refreshed manpage.diff & setup.diff patches
+  * debian/control: B-D on cython instead of python-pyrex
+  * debian/clean: Added wimpiggy/lowlevel/constants.pxi
+  * debian/rules: Added an override for dh_auto_build to run
+    make_constants_pxi.py before the normal build.
+  * debian/copyrights:
+    + Updated copyrights.
+    + Added copyrights for Debian packaging.
+  * debian/watch: Switched to new upstream URL
+
+ -- أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@sabily.org>  Sun, 19 Jun 2011 04:09:42 +0200
+
+parti-all (0.0.6+dfsg-1) experimental; urgency=low
+
+  [ أحمد المحمودي (Ahmed El-Mahmoudy) ]
+  * Initial release to Debian (Closes: #607973)
+  * Added debian/repack script to repack upstream tarball.
+  * debian/watch:
+    + Updated URL.
+    + Added demangling for dfsg.
+    + Added call for repack script
+  * Removed stray xpra.dirs
+  * Renamed wimpiggy to python-wimpiggy
+    + debian/control:
+      - Added "Section: python" for python-wimpiggy
+      - Added Provides/Conflicts: wimpiggy
+  * Switch to 3.0 (quilt) source format.
+  * Use dh_python2 instead of python-central.
+    + Removed debian/pycompat
+    + debian/control:
+      - build-dep on python-all-dev >= 2.6.6-2
+      - Use X-Python-Version in source stanza and remove X[BS]-Python-Version
+        fields.
+  * Use debhelper without CDBS.
+    + debian/rules: build-dep on debhelper >= 7.0.50~ to support dh overrides.
+  * debian/control:
+    + Bumped Standards-Version to 3.9.1, no changes needed.
+    + Added Vcs-* fields
+    + Set PAPT as Maintainer, and myself as uploader.
+    + Better package descriptions.
+    + Added ipython to parti's Depends.
+  * Added debian/parti.1, debian/parti.manpages, debian/parti.links
+  * debian/docs: Remove NEWS
+  * debian/{xpra,parti}.install: Install xpra & parti packages as private
+    packages.
+  * Added private-pkg.diff patch to add /usr/lib/xpra to sys.path for xpra
+    script and /usr/lib/parti to sys.path for parti script.
+  * debian/copyright:
+    + Removed clauses for working-notes/specs/* files, as the specs/ folder is
+      removed in this DFSG.
+    + Added clause for parti/addons/ipython_view.py
+
+  [ Miguel Landaeta ]
+  * Add myself to Uploaders.
+  * Move clean target to debian/clean file.
+
+  [ Michael Schutte <michi@uiae.at> ]
+  * Add Suggests on openssh-{client,server} for xpra.
+  * Add a couple of patches:
+    - manpage.patch: Fix a typo in xpra manpage.
+    - run_xauth.patch: Run xauth regardless of __debug__.
+  * Install upstream changelog file.
+
+  [ Jakub Wilk ]
+  * Export LDFLAGS in debian/rules.
+
+ -- أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@sabily.org>  Fri, 25 Mar 2011 19:23:24 +0200
+
+parti-all (0.0.6-0ubuntu10) natty; urgency=low
+
+  * debian/rules: Pass the same args to the custom install, as cdbs does.
+
+ -- Matthias Klose <doko@ubuntu.com>  Sat, 04 Dec 2010 14:03:38 +0100
+
+parti-all (0.0.6-0ubuntu9) natty; urgency=low
+
+  * Rebuild to add support for python 2.7.
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 03 Dec 2010 00:06:35 +0000
+
+parti-all (0.0.6-0ubuntu8) karmic; urgency=low
+
+  * debian/control:
+    - xpra depends on x11-xserver-utils not x11-server-utils. (LP: #397456)
+
+ -- أحمد المحمودي (Ahmed El-Mahmoudy) <aelmahmoudy@users.sourceforge.net>  Thu, 09 Jul 2009 17:36:27 +0300
+
+parti-all (0.0.6-0ubuntu7) karmic; urgency=low
+
+  * Add dependency on x11-server-utils for xpra.  Thanks Antoine Martin.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Fri, 12 Jun 2009 15:12:59 +0100
+
+parti-all (0.0.6-0ubuntu6) karmic; urgency=low
+
+  * Clear generated C code on clean.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Thu, 04 Jun 2009 12:29:41 +0100
+
+parti-all (0.0.6-0ubuntu5) karmic; urgency=low
+
+  * Work around Debian bug #525436.  parti.install is being processed before
+    debian/tmp/* exists.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Wed, 03 Jun 2009 17:10:01 +0100
+
+parti-all (0.0.6-0ubuntu4) karmic; urgency=low
+
+  * Created better descriptions for Xpra and wimpiggy.
+  * Noted the licenses for the files in working-notes/specs in
+    debian/copyright.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Tue, 02 Jun 2009 12:44:00 +0100
+
+parti-all (0.0.6-0ubuntu3) karmic; urgency=low
+
+  * Add a watch file.
+  * Upload to the Ubuntu archive (LP: #306068).
+
+ -- Evan Dandrea <evand@ubuntu.com>  Fri, 01 May 2009 12:31:11 +0100
+
+parti-all (0.0.6-0ubuntu2) jaunty; urgency=low
+
+  * Change the maintainer to Ubuntu MOTU Developers.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Tue, 28 Apr 2009 13:24:19 +0100
+
+parti-all (0.0.6-0ubuntu1) jaunty; urgency=low
+
+  * Initial release.
+
+ -- Evan Dandrea <evand@ubuntu.com>  Mon, 27 Apr 2009 01:43:36 +0100
     fix shadow unit test
     remove unavailable commands
 
