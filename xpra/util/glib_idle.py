@@ -34,18 +34,38 @@ def get_env_value() -> bool | None:
     return envbool("XPRA_GLIB_IDLE_QUEUE")
 
 
-def has_create_closure() -> bool:
-    # `g_callable_info_create_closure` was added in GObject-Introspection 1.72,
-    # at the same time as `g_callable_info_free_closure` stopped freeing anything.
+def get_girepository_library():
     # PyGObject is already loaded, so this finds the library it is using without touching the filesystem:
     from ctypes import CDLL
     for name in ("libgirepository-1.0.so.1", "libgirepository-1.0-1.dll", "libgirepository-1.0.1.dylib"):
         try:
-            lib = CDLL(name)
+            return CDLL(name)
         except OSError:
             continue
-        return hasattr(lib, "g_callable_info_create_closure")
-    return False
+    return None
+
+
+def get_girepository_version() -> str:
+    from ctypes import c_uint
+    lib = get_girepository_library()
+    if not lib:
+        return "unknown"
+    try:
+        version = []
+        for component in ("major", "minor", "micro"):
+            get_version = getattr(lib, f"gi_get_{component}_version")
+            get_version.restype = c_uint
+            version.append(str(get_version()))
+        return ".".join(version)
+    except AttributeError:
+        return "unknown"
+
+
+def has_create_closure() -> bool:
+    # `g_callable_info_create_closure` was added in GObject-Introspection 1.72,
+    # at the same time as `g_callable_info_free_closure` stopped freeing anything.
+    lib = get_girepository_library()
+    return bool(lib and hasattr(lib, "g_callable_info_create_closure"))
 
 
 def needs_idle_queue(gi) -> bool:
@@ -147,7 +167,7 @@ def install(GLib) -> None:
     GLib._xpra_idle_queue = source
     GLib.idle_add = idle_add
     GLib.source_remove = source_remove
-    log.warn("Warning: PyGObject %s leaks memory with this version of GObject-Introspection", gi.__version__)
+    log.warn("Warning: PyGObject %s leaks memory with GObject-Introspection %s", gi.__version__, get_girepository_version())
     log.warn(" every GLib callback leaks an executable closure, PyGObject 3.44.2 or later fixes this")
     log.warn(" xpra will use a workaround for `GLib.idle_add`, but other callbacks still leak")
     log.warn(" see https://github.com/Xpra-org/xpra/issues/5044")
