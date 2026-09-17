@@ -44,9 +44,12 @@ def import_gst() -> ModuleType | None:
         {k: v for k, v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k == "PATH")})
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
     try:
-        Gst = gi_import("Gst")
-        log("Gst=%s", Gst)
-        Gst.init(None)
+        gst = gi_import("Gst")
+        log("Gst=%s", gst)
+        # Newer PyGObject bindings reject None here.  An empty argv preserves
+        # the old behaviour of not passing Xpra's command-line options to Gst.
+        gst.init([])
+        Gst = gst
     except Exception as e:
         log("Warning failed to import GStreamer 1.x", exc_info=True)
         log.warn("Warning: failed to import GStreamer 1.x:")
