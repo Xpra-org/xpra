@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.4] 2026-09-17
+## [6.5.4] 2026-09-18
 * 🔧 Platforms, build and packaging:
   * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
   * [wayland: link to wayland-server](https://github.com/Xpra-org/xpra/commit/36bae2f550e15500d4691795126bccb222bfae83)
@@ -13,10 +13,9 @@
   * [Debian packages retain the Wireshark dissector when the normal packaging path is unavailable](https://github.com/Xpra-org/xpra/commit/6ab686bc9f21be9b3c9bed191514229719b9ad4a)
   * [Adwaita theme layout changes](https://github.com/Xpra-org/xpra/commit/319f6dc55393b6925f28b4ef7686db38cd460d7b) [+ remove unused references](https://github.com/Xpra-org/xpra/commit/e44bdd456fb9052df7ed9da7393b5d3bcaceaf97)
   * [remove outdated dependencies](https://github.com/Xpra-org/xpra/commit/00c12bf42cd6cb48a6d2e6202e34bd6e859a3706)
-* ✨ Features:
-  * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)
 * ⚠️ Major:
-  * [warn rather than leaking memory with buggy Debian libraries](https://github.com/Xpra-org/xpra/commit/828279fa4aae80990c5a8a2df48daa73d49bbd80)
+  * [warn rather than leaking memory with buggy Debian libraries](https://github.com/Xpra-org/xpra/commit/828279fa4aae80990c5a8a2df48daa73d49bbd80) [and show the problematic GI version](https://github.com/Xpra-org/xpra/commit/5d72528bef1302ed2d4ab29e0faba36d0ac6336a)
+  * [GStreamer initialization with newer PyGObject](https://github.com/Xpra-org/xpra/commit/57389b2061698936b703d4929ffbc814280ce4c2)
   * [OpenGL windows can remain blank until they receive a configure event](https://github.com/Xpra-org/xpra/commit/3b3bc5aabdcb5a94afab2122a73c4eadfa9c8531)
   * [crash: don't assume Gdk displays are X11 displays](https://github.com/Xpra-org/xpra/commit/d448cf6c5bfc6b608e641f1ecc465d6816c6cb38)
   * [Wayland clients don't need a X11 display](https://github.com/Xpra-org/xpra/commit/92ddb0189adeec54760edc9654c06250adb91aef)
@@ -90,6 +89,7 @@
   * [proxy startup reports a missing display cleanly instead of raising an internal error](https://github.com/Xpra-org/xpra/commit/aba3d8e3114cfc8bcd9ffff0b9d6d62607e1bb96)
   * [with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes](https://github.com/Xpra-org/xpra/commit/aefa64cb2042170dc1ffe5044998f8d746fd39f9) [+ test fixup](https://github.com/Xpra-org/xpra/commit/ea86e59b6c58501d9f5f1ad78f04a8cf19a2ca0e)
   * [keep the cursor shape when clamping it to the maximum size](https://github.com/Xpra-org/xpra/commit/bba3e4d38c4c767f703e0b5d706bda6a211bccb3)
+  * [skip audio capabilities when server has no speaker or microphone](https://github.com/Xpra-org/xpra/commit/7247883916a52df836462c0c42b9213539074e51)
 * *️⃣ Keyboard:
   * [multiple keyboard layouts supplied on the command line are applied correctly](https://github.com/Xpra-org/xpra/commit/27163f510760c67945fafd80a800d6ef473af9e9)
   * [clients keep typing the right keys after the server keyboard layout changes](https://github.com/Xpra-org/xpra/commit/52a0bc17610b5c55b70efa1a7cbf460087440395)
@@ -127,6 +127,7 @@
   * [socket activation regression](https://github.com/Xpra-org/xpra/commit/43062554b2a70230ebd675f874045b19b9066e5b)
   * [file-transfers disabled by printing](https://github.com/Xpra-org/xpra/commit/913053ceb8bc8068ab07d60472a85825ae7dfd68)
 * 💄 Cosmetic:
+  * [clearer message when server is too old](https://github.com/Xpra-org/xpra/commit/1624a77a06c662992cee2894791cfab46016f75b)
   * [GTK clients can send duplicate scroll events](https://github.com/Xpra-org/xpra/commit/34a50cac8b964b53128a4f8d0b3a7274611c0f79)
   * [expose monitor names](https://github.com/Xpra-org/xpra/commit/902f64244f8d01d344ea03aa7ecea392e76d89ea) + [on macOS](https://github.com/Xpra-org/xpra/commit/63c1f9d1e623eb78f21da4f0397f11df1694c3a0)
   * [make audio test more reliable](https://github.com/Xpra-org/xpra/commit/65004e4144653adbbbbafb1a3e8af2109a2027f7) + [fixup](https://github.com/Xpra-org/xpra/commit/82e79e9ea16d039f47cd824e84f62a6dd02684a7)

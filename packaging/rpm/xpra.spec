@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Thu Sep 17 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
+* Fri Sep 18 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
 - 🔧 Platforms, build and packaging:
    `libyuv` not detected without pkgconfig file + fixup
    wayland: link to wayland-server
@@ -1125,7 +1125,8 @@ fi
    Adwaita theme layout changes + remove unused references
    remove outdated dependencies
 - ⚠️ Major:
-   warn rather than leaking memory with buggy Debian libraries
+   warn rather than leaking memory with buggy Debian libraries and show the problematic GI version
+   GStreamer initialization with newer PyGObject
    OpenGL windows can remain blank until they receive a configure event
    crash: don't assume Gdk displays are X11 displays
    Wayland clients don't need a X11 display
@@ -1199,6 +1200,7 @@ fi
    proxy startup reports a missing display cleanly instead of raising an internal error
    with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes + test fixup
    keep the cursor shape when clamping it to the maximum size
+   skip audio capabilities when server has no speaker or microphone
 - *️⃣ Keyboard:
    multiple keyboard layouts supplied on the command line are applied correctly
    clients keep typing the right keys after the server keyboard layout changes
@@ -1236,6 +1238,7 @@ fi
    socket activation regression
    file-transfers disabled by printing
 - 💄 Cosmetic:
+   clearer message when server is too old
    GTK clients can send duplicate scroll events
    expose monitor names + on macOS
    make audio test more reliable + fixup

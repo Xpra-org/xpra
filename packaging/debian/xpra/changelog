@@ -12,7 +12,8 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     Adwaita theme layout changes + remove unused references
     remove outdated dependencies
   * ⚠️ Major:
-    warn rather than leaking memory with buggy Debian libraries
+    warn rather than leaking memory with buggy Debian libraries and show the problematic GI version
+    GStreamer initialization with newer PyGObject
     OpenGL windows can remain blank until they receive a configure event
     crash: don't assume Gdk displays are X11 displays
     Wayland clients don't need a X11 display
@@ -86,6 +87,7 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     proxy startup reports a missing display cleanly instead of raising an internal error
     with `modal-windows` enabled, popup menus and tooltips fail to appear while other windows are open, and modal dialogs stay non-modal after a popup closes + test fixup
     keep the cursor shape when clamping it to the maximum size
+    skip audio capabilities when server has no speaker or microphone
   * *️⃣ Keyboard:
     multiple keyboard layouts supplied on the command line are applied correctly
     clients keep typing the right keys after the server keyboard layout changes
@@ -123,6 +125,7 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     socket activation regression
     file-transfers disabled by printing
   * 💄 Cosmetic:
+    clearer message when server is too old
     GTK clients can send duplicate scroll events
     expose monitor names + on macOS
     make audio test more reliable + fixup
@@ -145,7 +148,7 @@ xpra (6.5.4-1) UNRELEASED; urgency=low
     clearer message when session is not found
     update all image wrapper metadata after conversion
     gtk dropped its own stock icon names
- -- Antoine Martin <antoine@xpra.org>  Thu, 17 Sep 2026 16:00:20 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 18 Sep 2026 16:48:25 +0700
 
 xpra (6.5.3-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
