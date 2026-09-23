@@ -484,6 +484,30 @@ for dylib in *dylib; do
 done
 
 
+# Rewrite the install name to "@loader_path/<leaf>", keeping the leaf of the
+# existing install name (ie: libturbojpeg.0.dylib) rather than the real file
+# name (libturbojpeg.0.5.0.dylib): consumers were linked against that leaf,
+# and dyld refuses a dylib whose install name leaf does not match the request.
+function set_loader_id() {
+  dylib="$1"
+  leaf=$(otool -D "${dylib}" | tail -n +2 | head -n 1)
+  leaf=$(basename "${leaf:-${dylib}}")
+  install_name_tool -id "@loader_path/${leaf}" "${dylib}"
+}
+
+# The name to reference a bundled dylib by: the leaf of its install name.
+# py2app references the real file (ie: libz.1.3.2.dylib) but the install
+# name is the symlink (libz.1.dylib), and dyld enforces that these match
+# for hardened binaries:
+function bundled_leaf() {
+  leaf=$(basename "$1")
+  id=""
+  if [ -e "${FRAMEWORKS_DIR}/${leaf}" ]; then
+    id=$(otool -D "${FRAMEWORKS_DIR}/${leaf}" | tail -n +2 | head -n 1)
+  fi
+  basename "${id:-${leaf}}"
+}
+
 function change_prefix() {
   filename="$1"
   old_prefix="$2"
@@ -519,7 +543,7 @@ for dylib in *.dylib; do
   if [[ -L "${dylib}" ]]; then
     continue
   fi
-  install_name_tool -id "@loader_path/${dylib}" "${dylib}"
+  set_loader_id "${dylib}"
 done
 # fix rpath:
 for dylib in *.dylib; do
@@ -558,7 +582,7 @@ if [ "${DO_X11}" == "1" ]; then
     fi
     thin_macho "${dylib}"
     # claim our own identity so downstream consumers don't see /opt/X11/lib/...
-    install_name_tool -id "@loader_path/${dylib}" "${dylib}"
+    set_loader_id "${dylib}"
     change_prefix "${dylib}" "/opt/X11/lib/" "@loader_path/"
   done
 
@@ -597,14 +621,14 @@ find "${PYDIR}/" "${FRAMEWORKS_DIR}/lib-dynload/" -name "*.so" -print0 | while I
     # Get all dylib dependencies
     otool -L "${file}" | grep -E "@executable_path.*\.dylib" | awk '{print $1}' | while read dep; do
       # Extract just the library name
-      libname=$(basename "$dep")
+      libname=$(bundled_leaf "$dep")
       # Change to @rpath
       install_name_tool -change "$dep" "@rpath/$libname" "${file}"
     done
     # Catch bare relative install names (ie: jhbuild's libxxhash.0.dylib),
     # which a hardened binary refuses to load - rewrite them to @rpath:
     otool -L "${file}" | tail -n +2 | awk '{print $1}' | grep -E '^[^/@]+\.dylib$' | while read dep; do
-      install_name_tool -change "$dep" "@rpath/$(basename "$dep")" "${file}"
+      install_name_tool -change "$dep" "@rpath/$(bundled_leaf "$dep")" "${file}"
     done
 done
 popd > /dev/null || exit 1
