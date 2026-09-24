@@ -7,7 +7,7 @@ import os
 import sys
 import mmap
 from ctypes import c_ubyte, c_uint32
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from xpra.net.mmap.common import (
     DEFAULT_TOKEN_BYTES, MAX_TOKEN_BYTES, MmapPointerError,
@@ -15,7 +15,8 @@ from xpra.net.mmap.common import (
 )
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.common import roundup, noop
-from xpra.client.gui.window.backing import PaintCallback
+if TYPE_CHECKING:
+    from xpra.client.gui.window.backing import PaintCallback
 from xpra.os_util import WIN32, POSIX, get_hex_uuid, get_group_id
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
@@ -347,7 +348,7 @@ def validate_chunks(mmap_area, descr_data: tuple[tuple[int, int], ...]) -> None:
 
 # descr_data is a list of (offset, length)
 # areas from the mmap region
-def mmap_read(mmap_area, *descr_data: tuple[int, int]) -> tuple[bytes | memoryview, PaintCallback]:
+def mmap_read(mmap_area, *descr_data: tuple[int, int]) -> tuple[bytes | memoryview, "PaintCallback"]:
     """
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.

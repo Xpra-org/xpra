@@ -4,15 +4,16 @@
 # later version. See the file COPYING for details.
 
 from random import randint
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from xpra.net.mmap.common import DEFAULT_TOKEN_BYTES
 from xpra.net.mmap.io import read_mmap_token, write_mmap_token, mmap_read, mmap_write, mmap_free_size
-from xpra.client.gui.window.backing import PaintCallback
 from xpra.os_util import get_int_uuid
 from xpra.util.objects import typedict
 from xpra.util.stats import std_unit
 from xpra.log import Logger
+if TYPE_CHECKING:
+    from xpra.client.gui.window.backing import PaintCallback
 
 log = Logger("mmap")
 
@@ -126,7 +127,7 @@ class BaseMmapArea:
     def write_data(self, data) -> list[tuple[int, int]]:
         return mmap_write(self.mmap, self.size, data)
 
-    def mmap_read(self, *descr_data: tuple[int, int]) -> tuple[bytes | memoryview, PaintCallback]:
+    def mmap_read(self, *descr_data: tuple[int, int]) -> tuple[bytes | memoryview, "PaintCallback"]:
         return mmap_read(self.mmap, *descr_data)
 
     def get_free_size(self) -> int:
