@@ -492,11 +492,15 @@ def check_gtk_client() -> None:
 
     check_gtk("client")
 
-    try:
-        find_spec("xpra.client.gui")
-        find_spec("xpra.client.gtk3")
-    except ImportError as e:
-        raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed: %s" % e) from None
+    # `find_spec` only raises when a parent package is missing,
+    # it returns `None` when the module itself is:
+    for mod in ("xpra.client.gui", "xpra.client.gtk3"):
+        try:
+            spec = find_spec(mod)
+        except ImportError as e:
+            raise InitExit(ExitCode.FILE_NOT_FOUND, f"`xpra-client-gtk3` is not installed: {e}") from None
+        if not spec:
+            raise InitExit(ExitCode.FILE_NOT_FOUND, f"`xpra-client-gtk3` is not installed: {mod!r} not found")
 
 
 def gtk_init_check() -> bool:
