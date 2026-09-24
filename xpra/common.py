@@ -3,8 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Protocol, Any, Final
-from collections.abc import Callable, Sized, Iterable, Sequence
+from typing import Protocol, Any, Final, TypeAlias
+from collections.abc import Callable, Sized, Iterable, Sequence, MutableSequence
 
 from xpra.constants import NotificationID, Gravity
 
@@ -60,6 +60,9 @@ def gravity_str(v) -> str:
 
 
 DEFAULT_DPI: int = 96
+
+PaintCallback: TypeAlias = Callable[[int | bool, str], None]
+PaintCallbacks: TypeAlias = MutableSequence[PaintCallback]
 
 
 def noop(*_args, **_kwargs) -> None:

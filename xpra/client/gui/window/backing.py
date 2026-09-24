@@ -8,7 +8,7 @@ import os
 from time import monotonic
 from threading import Lock
 from collections import deque
-from typing import Any, TypeAlias, MutableSequence, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.net import compression
@@ -24,6 +24,7 @@ from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
 from xpra.codecs.constants import TransientCodecException, CodecStateException, EncodingNotSupported
 from xpra.codecs.protocols import VideoDecoder, ColorspaceConverter
 from xpra.constants import Gravity
+from xpra.common import PaintCallbacks
 from xpra.log import Logger
 
 if TYPE_CHECKING:
@@ -49,9 +50,6 @@ VIDEO_MAX_SIZE = get_default_video_max_size()
 PILLOW_DECODE_FORMATS = ("RGB", "RGBA", "RGBX")
 # and the ones it can be asked to pack its output into:
 PILLOW_PACK_FORMATS = ("BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR")
-
-PaintCallback: TypeAlias = Callable[[int | bool, str], None]
-PaintCallbacks: TypeAlias = MutableSequence[PaintCallback]
 
 
 _PIL_font = None
