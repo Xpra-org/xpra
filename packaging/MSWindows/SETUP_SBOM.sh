@@ -34,4 +34,7 @@ echo "Installing Python ${PYTHON_VERSION} (${ARCH}) to ${INSTALL_DIR}..."
     Include_pip=1 \
     Include_launcher=0
 
+echo "Installing cyclonedx-bom..."
+"${INSTALL_DIR}\\python.exe" -m pip install cyclonedx-bom
+
 echo "Done."
