@@ -22,6 +22,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-python-build"
 #             "${MINGW_PACKAGE_PREFIX}-python-pytools"
              "${MINGW_PACKAGE_PREFIX}-python-typing_extensions"
              "${MINGW_PACKAGE_PREFIX}-python-markupsafe"
+             "${MINGW_PACKAGE_PREFIX}-boost"
              "${MINGW_PACKAGE_PREFIX}-cc")
 source=("https://pypi.io/packages/source/${_realname:0:1}/${_realname}/${_realname}-${pkgver}.tar.gz")
 sha256sums=('759516160628ba06f32ce7e563e3f5b9214691dc9528a03ea99ea1073f4e14ba')
