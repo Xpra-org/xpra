@@ -14,7 +14,7 @@ PACMAN=${PACMAN:-"pacman --noconfirm --needed -S"}
 #most packages get installed here: (python, gtk, etc):
 $PACMAN ${XPKG}python ${XPKG}libnotify ${XPKG}gtk3
 #media libraries (more than we actually need):
-$PACMAN ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
+$PACMAN ${XPKG}libavif ${XPKG}libyuv ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #more codecs:
 $PACMAN ${XPKG}libx264 ${XPKG}libvpx ${XPKG}openh264 ${XPKG}dav1d ${XPKG}aom ${XPKG}libwebp
 #network layer libraries:
