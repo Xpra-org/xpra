@@ -1,8 +1,8 @@
-includedir=C:/msys64/mingw64/lib/nvenc12/Interface
-libdir=C:/msys64/mingw64/lib/nvenc12/Lib/x64
+includedir=C:/msys64/mingw64/lib/nvenc13/Interface
+libdir=C:/msys64/mingw64/lib/nvenc13/Lib/x64
 
 Name: nvdec
 Description: NVDEC
-Version: 12
+Version: 13
 Libs: -L${libdir} -lnvcuvid
 Cflags: -I${includedir} -Wno-deprecated-declarations

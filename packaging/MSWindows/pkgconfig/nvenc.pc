@@ -1,8 +1,8 @@
-libdir=C:/msys64/mingw64/lib/nvenc12/Lib/x64/
-includedir=C:/msys64/mingw64/lib/nvenc12/Interface
+libdir=C:/msys64/mingw64/lib/nvenc13/Lib/x64/
+includedir=C:/msys64/mingw64/lib/nvenc13/Interface
 
 Name: nvenc
 Description: NVIDIA NVENC Video Encoder
-Version: 12
+Version: 13
 Libs: -L${libdir} -lnvEncodeAPI
 Cflags: -I${includedir} -Wno-deprecated-declarations
