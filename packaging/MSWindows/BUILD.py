@@ -86,7 +86,7 @@ def parse_command_line(argv: list[str]):
     add("tests", help="run the unit tests", default=False)
     add("zip-modules", help="zip up python modules")
     add("cuda", help="build CUDA kernels for nvidia codecs")
-    add("service", help="build the system service", default=ARCH != "aarch64")
+    add("service", help="build the system service", default=False)
     add("docs", help="generate the documentation", default=ARCH != "aarch64")
     add("html5", help="bundle the `xpra-html5` client")
     add("manual", help="bundle the user manual")
