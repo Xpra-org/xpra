@@ -53,7 +53,7 @@ done
 VS_INSTALLER="vs_buildtools.exe"
 if [[ ! -f "$VS_INSTALLER" ]]; then
 	echo "Downloading Visual Studio Build Tools..."
-	curl -fL -o "$VS_INSTALLER" "https://aka.ms/vs/17/release/vs_buildtools.exe"
+	curl -fL -o "$VS_INSTALLER" "https://aka.ms/vs/18/release/vs_buildtools.exe"
 fi
 echo "Installing Visual Studio Build Tools..."
 ./"$VS_INSTALLER" --quiet --wait --norestart --nocache \
