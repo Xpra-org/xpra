@@ -88,7 +88,7 @@ def parse_command_line(argv: list[str]):
     add("zip-modules", help="zip up python modules")
     add("printing", help="bundle pdfium for remote printing")
     add("cuda", help="build CUDA kernels for nvidia codecs")
-    add("service", help="build the system service", default=ARCH != "aarch64")
+    add("service", help="build the system service", default=False)
     add("docs", help="generate the documentation", default=ARCH != "aarch64")
     add("html5", help="bundle the `xpra-html5` client")
     add("qt6-client", help="build the Qt6 client", default=False)
