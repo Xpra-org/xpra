@@ -11,6 +11,7 @@ IF NOT EXIST "%NVCC%" SET NVCC=C:\Program Files\NVIDIA GPU Computing Toolkit\CUD
 
 CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
 CALL "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+CALL "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 CALL "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 
 "%NVCC%" -fatbin -c %CUDA_SRC% -o %CUDA_BIN% ^

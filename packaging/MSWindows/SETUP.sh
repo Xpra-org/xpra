@@ -21,40 +21,30 @@ $PACMAN ${XPKG}libvpl
 #more codecs:
 $PACMAN ${XPKG}libde265 ${XPKG}libx264 ${XPKG}libvpx ${XPKG}openh264 ${XPKG}dav1d ${XPKG}aom ${XPKG}libwebp ${XPKG}openjph
 #network layer libraries:
-$PACMAN ${XPKG}lz4 ${XPKG}zstd ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium
+$PACMAN ${XPKG}lz4 ${XPKG}zstd ${XPKG}xxhash heimdal-libs ${XPKG}libsodium
 #pinentry is not available for aarch64 yet:
 $PACMAN ${XPKG}pinentry
 #make qr codes:
 $PACMAN ${XPKG}qrencode
-#not strictly needed:
-$PACMAN ${XPKG}dbus-glib
 #python GStreamer bindings:
 $PACMAN ${XPKG}gst-python
 #development tools and libs for building extra packages:
-$PACMAN base-devel ${XPKG}yasm ${XPKG}nasm gcc groff subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
+$PACMAN base-devel ${XPKG}yasm ${XPKG}nasm gcc subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
 #python extensions:
-for x in cryptography cffi pycparser numpy pillow appdirs asyncssh paramiko comtypes netifaces setproctitle pyu2f fido2 ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos coverage psutil oauthlib pysocks pyopenssl importlib_resources pylsqpack aioquic service_identity pyvda watchdog pyqt6 winloop pyglet; do
+for x in cryptography cffi pycparser numpy pillow appdirs asyncssh paramiko comtypes netifaces setproctitle pyu2f fido2 ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi py-cpuinfo winkerberos coverage psutil oauthlib pysocks pyopenssl importlib_resources pylsqpack aioquic service_identity pyvda watchdog winloop pyglet; do
 	$PACMAN ${XPKG}python-${x}
 done
 #not yet available for aarch64?:
 for x in cx-freeze gssapi; do
 	$PACMAN ${XPKG}python-${x}
 done
-$PACMAN ${XPKG}amf-headers
-
-#dependencies of browser_cookie3 and pycuda,
-#best to manage them via pacman rather than have them installed via pip,
-#so we get automatic updates:
-#(pycryptodome* is not yet available for aarch64?)
-for x in mako markupsafe typing_extensions platformdirs pip pycryptodome pycryptodomex keyring idna; do
+for x in markupsafe typing_extensions platformdirs pip idna; do
 	$PACMAN ${XPKG}python-${x}
 done
 $PACMAN ${XPKG}cython
 $PACMAN openssl-devel
-#these need to be converted to PKGBUILD:
-for x in browser-cookie3 pyaes pbkdf2 pytools scramp; do
-	pip3 install --break-system-packages $x
-done
+#scram authentication (#1771), needs to be converted to PKGBUILD:
+pip3 install --break-system-packages scramp
 # to keep these libraries updated, you may need:
 # SETUPTOOLS_USE_DISTUTILS=stdlib pip install --upgrade $PACKAGE
 
@@ -108,37 +98,10 @@ echo "Installing Inno Setup ${INNO_VERSION}..."
     //SUPPRESSMSGBOXES \
     //DIR="${INSTALL_DIR}"
 
-# pandoc:
-PANDOC_VERSION="3.9"
-BASE_URL="https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}"
-ARCHIVE="pandoc-${PANDOC_VERSION}-windows-x86_64.zip"
-DOWNLOAD_URL="${BASE_URL}/${ARCHIVE}"
-if [[ ! -f "$ARCHIVE" ]]; then
-    echo "Downloading Pandoc ${PANDOC_VERSION}..."
-    curl -fL -o "$ARCHIVE" "$DOWNLOAD_URL"
-fi
-echo "Installing Pandoc ${PANDOC_VERSION} to ${INSTALL_DIR}..."
-$PACMAN unzip
-unzip -o "$ARCHIVE" "pandoc-${PANDOC_VERSION}/pandoc.exe" -d pandoc_tmp
-mv "pandoc_tmp/pandoc-${PANDOC_VERSION}/pandoc.exe" "${MINGW_PREFIX}/bin/"
-rm -rf pandoc_tmp
-
 echo "to generate the MSI, install MSIWrapper:"
 echo "https://www.exemsi.com/"
 echo
-echo "to support NVIDIA hardware accelerated encoders NVENC, NVJPEG"
-echo "and NVFBC screen capture:"
-echo "* install CUDA into './cuda' in the xpra source tree,"
-echo "  making sure to include the 'CUDA Runtime' component ('cuda_cudart'),"
-echo "  which provides 'library_types.h', 'cuda_runtime_api.h' and 'cuda.lib'"
-echo "* or install it in its default location and link it into the source tree:"
-echo " 'pushd /c/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA/;ln -sf v13.4 current;popd'"
-echo " 'ln -sf /c/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA/current ./cuda'"
-echo "  (without 'MSYS=winsymlinks:nativestrict', 'ln -s' makes a full copy)"
-echo "* install 'NVidia_Capture' into '$MINGW_PREFIX/lib/nvenc'"
-echo "* add the pkg-config files:"
-echo " 'cp pkgconfig/*.pc $MINGW_PREFIX/lib/pkgconfig/'"
-echo "* install python-setuptools python-numpy python-pip"
+echo "for non-light builds, run SETUP_EXTRAS.sh"
 echo
 echo "for SBOM, run SETUP_SBOM.sh"
 echo
