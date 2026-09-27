@@ -32,11 +32,17 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         self._clipboard_outstanding_requests : Dict[int, Tuple[int,str,str]] = {}
 
     def cleanup(self) -> None:
-        #reply to outstanding requests with "no data":
-        for request_id in tuple(self._clipboard_outstanding_requests.keys()):
-            self._clipboard_got_contents(request_id)
-        self._clipboard_outstanding_requests = {}
+        self.cancel_outstanding_requests()
         super().cleanup()
+
+    def cancel_outstanding_requests(self) -> None:
+        # `_clipboard_got_contents` removes each request as it answers it, so
+        # do not clear the dictionary before calling it.
+        cor = self._clipboard_outstanding_requests
+        if cor:
+            log.info("cancelling %i clipboard request%s", len(cor), engs(cor))
+        for request_id in tuple(cor):
+            self._clipboard_got_contents(request_id)
 
     def make_proxy(self, selection:str):
         raise NotImplementedError()
@@ -125,10 +131,4 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
 
     def client_reset(self) -> None:
         super().client_reset()
-        #timeout all pending requests
-        cor = self._clipboard_outstanding_requests
-        if cor:
-            log.info("cancelling %i clipboard request%s", len(cor), engs(cor))
-            self._clipboard_outstanding_requests = {}
-            for request_id in cor:
-                self._clipboard_got_contents(request_id)
+        self.cancel_outstanding_requests()
