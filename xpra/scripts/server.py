@@ -475,16 +475,19 @@ def clean_session_path(path) -> None:
     from xpra.log import Logger
     log = Logger("server")
     log(f"clean_session_path({path})")
-    if os.path.exists(path):
-        try:
-            if os.path.isdir(path):
-                os.rmdir(path)
-            else:
-                os.unlink(path)
-        except OSError as e:
-            log(f"clean_session_path({path})", exc_info=True)
-            log.error(f"Error removing session path {path}")
-            log.estr(e)
+    # An ssh agent link can be dangling by the time session cleanup runs.
+    # ``exists()`` is false for that link even though it still needs unlinking.
+    if not os.path.lexists(path):
+        return
+    try:
+        if os.path.isdir(path):
+            os.rmdir(path)
+        else:
+            os.unlink(path)
+    except OSError as e:
+        log(f"clean_session_path({path})", exc_info=True)
+        log.error(f"Error removing session path {path}")
+        log.estr(e)
 
 SERVER_SAVE_SKIP_OPTIONS : Tuple[str,...] = (
     "systemd-run",
