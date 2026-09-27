@@ -838,8 +838,10 @@ class ClientWindowBase(ClientWidgetBase):
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     def after_draw_refresh(self, success, message="") -> None:
+        pr = self.pending_refresh
+        self.pending_refresh = []
         plog("after_draw_refresh(%s, %s) pending_refresh=%s",
-             success, message, self.pending_refresh)
+             success, message, pr)
         backing = self._backing
         if not backing:
             return
@@ -848,8 +850,6 @@ class ClientWindowBase(ClientWidgetBase):
             rw, rh = self.get_size()
             self.idle_add(self.repaint, 0, 0, rw, rh)
             return
-        pr = self.pending_refresh
-        self.pending_refresh = []
         for x, y, w, h in pr:
             rx, ry, rw, rh = self._client.srect(x, y, w, h)
             if self.window_offset:
