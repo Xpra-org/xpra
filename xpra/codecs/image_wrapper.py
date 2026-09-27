@@ -140,6 +140,9 @@ class ImageWrapper:
     def set_rowstride(self, rowstride : int):
         self.rowstride = rowstride
 
+    def set_bytesperpixel(self, bytesperpixel : int):
+        self.bytesperpixel = bytesperpixel
+
     def set_pixel_format(self, pixel_format):
         self.pixel_format = pixel_format
 
