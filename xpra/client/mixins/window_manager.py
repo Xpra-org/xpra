@@ -1174,11 +1174,11 @@ class WindowClient(StubClientMixin):
             #find any modal windows and remove the flag
             #so that the OR window can get the focus
             #(it will be re-enabled when the OR window disappears)
-            for wid, window in self._id_to_window.items():
+            for existing_wid, window in self._id_to_window.items():
                 if window.is_OR() or window.is_tray():
                     continue
                 if window.get_modal():
-                    metalog("temporarily removing modal flag from %s", wid)
+                    metalog("temporarily removing modal flag from %s", existing_wid)
                     window.set_modal(False)
         return self._process_new_common(packet, True)
 
@@ -1324,7 +1324,7 @@ class WindowClient(StubClientMixin):
                 continue
             if w._metadata.boolget("modal") and not w.get_modal():
                 metalog("re-enabling modal flag on %s", wid)
-                window.set_modal(True)
+                w.set_modal(True)
 
 
     def destroy_window(self, wid:int, window) -> None:
