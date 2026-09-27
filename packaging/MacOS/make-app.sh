@@ -339,6 +339,11 @@ codesign --force --sign - "${LAUNCHER_BIN}"
 echo "- install applet entry-module data files"
 mkdir -p "${RSCDIR}/share/xpra/helpers"
 cp "${MACOS_SCRIPT_DIR}/Helpers/applet_modules/"* "${RSCDIR}/share/xpra/helpers/"
+# the main executable is named after the app (ie: "Xpra-Light"),
+# and the launcher looks up its entry module using that name:
+if [ "${APP_NAME}" != "Xpra" ]; then
+       cp "${MACOS_SCRIPT_DIR}/Helpers/applet_modules/Xpra" "${RSCDIR}/share/xpra/helpers/${APP_NAME}"
+fi
 
 echo "- install launcher binary as MacOS/Xpra and Helpers/* (hardlinked)"
 # Main bundle executable. Overwrites whatever py2app produced.
