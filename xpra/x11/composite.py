@@ -87,7 +87,6 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         #   4) call NameWindowPixmap
         # we are safe.  (I think.)
         listening: list[int] = []
-        e = None
         try:
             xid = X11Window.getParent(self.xid)
             while xid not in (0, rxid):
@@ -106,7 +105,10 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
                 listening.append(xid)
                 xid = parent
             pixmap = X11Composite.XCompositeNameWindowPixmap(self.xid)
-            handle = XImage.wrap_drawable(pixmap)
+            # `wrap_pixmap` takes ownership of the pixmap unconditionally:
+            # it is freed with the wrapper, or immediately if the wrapping
+            # fails or raises - so there is nothing to free here
+            handle = XImage.wrap_pixmap(pixmap)
         except Exception:
             try:
                 self._cleanup_listening(listening)
@@ -114,7 +116,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
                 log(f"failed to cleanup listening for {listening}", exc_info=True)
             raise
         if handle is None:
-            log("failed to name a window pixmap for %#x: %s", self.xid, e)
+            log("failed to name a window pixmap for %#x", self.xid)
             self._cleanup_listening(listening)
         else:
             self._contents_handle = handle
