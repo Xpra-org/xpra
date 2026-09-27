@@ -1053,16 +1053,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 sx, sy, sw, sh = self.srect(x, y, w, h)
             sw = max(1, sw)
             sh = max(1, sh)
-            #ensure we honour the max size if there is one:
+            # Ensure we honour the maximum size while preserving the cursor
+            # shape and hotspot after desktop scaling.
             if 0<cmaxw<sw or 0<cmaxh<sh:
                 ratio = 1.0
                 if cmaxw>0:
-                    ratio = max(ratio, w/cmaxw)
+                    ratio = max(ratio, sw/cmaxw)
                 if cmaxh>0:
-                    ratio = max(ratio, h/cmaxh)
+                    ratio = max(ratio, sh/cmaxh)
                 cursorlog("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
-                sx, sy = round(x/ratio), round(y/ratio)
-                sw, sh = min(cmaxw, round(w/ratio)), min(cmaxh, round(h/ratio))
+                sx, sy = round(sx/ratio), round(sy/ratio)
+                sw, sh = max(1, round(sw/ratio)), max(1, round(sh/ratio))
             if sw!=w or sh!=h:
                 cursorlog("scaling cursor from %ix%i hotspot at %ix%i to %ix%i hotspot at %ix%i",
                           w, h, x, y, sw, sh, sx, sy)
