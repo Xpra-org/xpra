@@ -1562,7 +1562,10 @@ def fixup_keyboard(options) -> None:
 
     def p(v) -> List[str]:
         try:
-            if isinstance(v, Sequence):
+            if isinstance(v, str):
+                # ``str`` is a Sequence too, but its members are characters.
+                seq = v.split(",")
+            elif isinstance(v, Sequence):
                 seq = v
             else:
                 seq = str(v).split(",")
