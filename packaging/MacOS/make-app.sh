@@ -371,7 +371,7 @@ for special in Manual Shadow; do
 done
 # we dont need the wrappers that may have been installed by distutils:
 rm -f "${MACOS_DIR}"/*bin
-rm -f "${MACOS_DIR}/${APP_NAME}-bin" "${MACOS_DIR}/Xpra-Light" >& /dev/null
+rm -f "${MACOS_DIR}/${APP_NAME}-bin" >& /dev/null
 if [ "${LIGHT}" == "1" ]; then
 	rm -f "${HELPERS_DIR}/Shadow"
 	rm -f "${FRAMEWORKS_DIR}/bin/Shadow"
