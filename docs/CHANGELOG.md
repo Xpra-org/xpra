@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.5.4] 2026-09-18
+## [6.5.4] 2026-09-27
 * 🔧 Platforms, build and packaging:
   * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
   * [wayland: link to wayland-server](https://github.com/Xpra-org/xpra/commit/36bae2f550e15500d4691795126bccb222bfae83)
@@ -13,7 +13,13 @@
   * [Debian packages retain the Wireshark dissector when the normal packaging path is unavailable](https://github.com/Xpra-org/xpra/commit/6ab686bc9f21be9b3c9bed191514229719b9ad4a)
   * [Adwaita theme layout changes](https://github.com/Xpra-org/xpra/commit/319f6dc55393b6925f28b4ef7686db38cd460d7b) [+ remove unused references](https://github.com/Xpra-org/xpra/commit/e44bdd456fb9052df7ed9da7393b5d3bcaceaf97)
   * [remove outdated dependencies](https://github.com/Xpra-org/xpra/commit/00c12bf42cd6cb48a6d2e6202e34bd6e859a3706)
+  * [macOS hardened runtime fix](https://github.com/Xpra-org/xpra/commit/7fc1e4a7ec580a5e49b45eca5eac4b45b725d6d4)
+  * [MSYS2 renamed `libyuv`](https://github.com/Xpra-org/xpra/commit/d489177be635377a0ecdaccf7eb7153b1eaf837f)
+  * [locate global Python interpreter for MS Windows SBOM](https://github.com/Xpra-org/xpra/commit/8152a71cb28bc4da86bc3843147e63f9f69ce511)
+  * [don't bother building the unused Windows service component](https://github.com/Xpra-org/xpra/commit/ba18a2ed80f9b72e83558cbc7e104017560b4bf3)
+  * [locate VisualStudio commands more reliably](https://github.com/Xpra-org/xpra/commit/ff3122be8a3060e4dd3e806f7f8efb8e8bec8cb7)
 * ⚠️ Major:
+  * [X11 Pixmap leak](https://github.com/Xpra-org/xpra/commit/fdbf994adfe126a3c4c88968f7f6667d0094e682) [+ regression tests](https://github.com/Xpra-org/xpra/commit/ad341153cb89acde16f30b6d2175e14bd7ce604d)
   * [warn rather than leaking memory with buggy Debian libraries](https://github.com/Xpra-org/xpra/commit/828279fa4aae80990c5a8a2df48daa73d49bbd80) [and show the problematic GI version](https://github.com/Xpra-org/xpra/commit/5d72528bef1302ed2d4ab29e0faba36d0ac6336a)
   * [GStreamer initialization with newer PyGObject](https://github.com/Xpra-org/xpra/commit/57389b2061698936b703d4929ffbc814280ce4c2)
   * [OpenGL windows can remain blank until they receive a configure event](https://github.com/Xpra-org/xpra/commit/3b3bc5aabdcb5a94afab2122a73c4eadfa9c8531)
@@ -40,6 +46,8 @@
   * [window managers in resized desktop sessions keep placing windows and panels using the old monitor size](https://github.com/Xpra-org/xpra/commit/9752434151dfb6079cac83da31aee5746c3c3b72)
   * [automatically release the correct button](https://github.com/Xpra-org/xpra/commit/4c442b76ad74d8c4fb0304291ad85adc9e15addb)
   * [blurry popups screen updates](https://github.com/Xpra-org/xpra/commit/9b58a061f1667669c2e333f5459bfb2acf1b304d)
+  * [handle missing file caps more gracefully](https://github.com/Xpra-org/xpra/commit/f5e56f6e2df57ec5fcbdc623858f2f036ccb16e3)
+  * [unable to start servers without the client installed](https://github.com/Xpra-org/xpra/commit/fb30807f61a7b10708e61e5a84ba398c58b33042)
 * Wayland backend:
   * [screen updates stall](https://github.com/Xpra-org/xpra/commit/cb3e8509de30e7095afb7bdddad7ce53393c3a66)
   * [windows can end up duplicated on clients](https://github.com/Xpra-org/xpra/commit/33256c95d4c636982c6c6611503cd57606da9c36)
@@ -72,6 +80,7 @@
   * [slow cleanup is clearly reported instead of silently stalling a session](https://github.com/Xpra-org/xpra/commit/11a80620b25329fa5fad1f676fd4936280af3623)
   * [NVENC sessions retain needed fallback resources instead of failing unexpectedly](https://github.com/Xpra-org/xpra/commit/2f12e3a29b7a59f4f47a1f8a85c3f634690d95a5)
   * [NVENC streams fail to decode due to invalid `csc` attribute](https://github.com/Xpra-org/xpra/commit/89331c43c2360d58f2db486987a4d98e8439d322)
+  * [use NVENC SDKv13 paths](https://github.com/Xpra-org/xpra/commit/1c16e5a108fc72861ec10622234883778b2fe633)
 * Minor:
   * [X11 events can stop being routed after an unmatched filter cleanup](https://github.com/Xpra-org/xpra/commit/23f81b0c5119e4c2c619e67a1cc20558ee972ae9) [and leave the filter unusable](https://github.com/Xpra-org/xpra/commit/91bf9a9025c52ed862025eacfd09c10153484783)
   * [window-icon timers survive after their window is removed](https://github.com/Xpra-org/xpra/commit/fb0388fe68b8e917f09d8a7fdd3081101d59296e) [or raise warnings after firing](https://github.com/Xpra-org/xpra/commit/9409e7158bfdc66d45a937690a8ec7f2560934e2)
@@ -150,6 +159,7 @@
   * [clearer message when session is not found](https://github.com/Xpra-org/xpra/commit/1f886bfd6ee20211852886a018283e72bef20a77)
   * [update all image wrapper metadata after conversion](https://github.com/Xpra-org/xpra/commit/ebc12cc5f198dd85df6c36655037b12154494803)
   * [gtk dropped its own stock icon names](https://github.com/Xpra-org/xpra/commit/b4811e957f1c9f803edf6b21b271849d7bad8ee1)
+  * [reliably detect a missing gtk3 client](https://github.com/Xpra-org/xpra/commit/de40e40454a86650cafe1c464f83db4f6f9100d3)
 
 ## [6.5.3] 2026-08-18
 * 🔧 Platforms, build and packaging:

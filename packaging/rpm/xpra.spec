@@ -1111,7 +1111,7 @@ fi
 
 
 %changelog
-* Fri Sep 18 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
+* Sun Sep 27 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
 - 🔧 Platforms, build and packaging:
    `libyuv` not detected without pkgconfig file + fixup
    wayland: link to wayland-server
@@ -1124,7 +1124,13 @@ fi
    Debian packages retain the Wireshark dissector when the normal packaging path is unavailable
    Adwaita theme layout changes + remove unused references
    remove outdated dependencies
+   macOS hardened runtime fix
+   MSYS2 renamed `libyuv`
+   locate global Python interpreter for MS Windows SBOM
+   don't bother building the unused Windows service component
+   locate VisualStudio commands more reliably
 - ⚠️ Major:
+   X11 Pixmap leak + regression tests
    warn rather than leaking memory with buggy Debian libraries and show the problematic GI version
    GStreamer initialization with newer PyGObject
    OpenGL windows can remain blank until they receive a configure event
@@ -1151,6 +1157,8 @@ fi
    window managers in resized desktop sessions keep placing windows and panels using the old monitor size
    automatically release the correct button
    blurry popups screen updates
+   handle missing file caps more gracefully
+   unable to start servers without the client installed
 - Wayland backend:
    screen updates stall
    windows can end up duplicated on clients
@@ -1183,6 +1191,7 @@ fi
    slow cleanup is clearly reported instead of silently stalling a session
    NVENC sessions retain needed fallback resources instead of failing unexpectedly
    NVENC streams fail to decode due to invalid `csc` attribute
+   use NVENC SDKv13 paths
 - Minor:
    X11 events can stop being routed after an unmatched filter cleanup and leave the filter unusable
    window-icon timers survive after their window is removed or raise warnings after firing
@@ -1261,6 +1270,7 @@ fi
    clearer message when session is not found
    update all image wrapper metadata after conversion
    gtk dropped its own stock icon names
+   reliably detect a missing gtk3 client
 * Tue Aug 18 2026 Antoine Martin <antoine@xpra.org> 6.5.3-10
 - 🔧 Platforms, build and packaging:
    fix the DEB wayland package split
