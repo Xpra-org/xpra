@@ -653,7 +653,7 @@ def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
             })
         if not OSX:
             from xpra.platform.posix.paths import get_runtime_dir
-            rd = get_runtime_dir()
+            rd = get_runtime_dir(uid or os.geteuid())
             if rd and "XDG_RUNTIME_DIR" not in os.environ:
                 d["XDG_RUNTIME_DIR"] = rd
     if actual_username:
