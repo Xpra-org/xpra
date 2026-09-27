@@ -10,6 +10,10 @@ def window_name(xid:int) -> str:
     return prop_get(xid, "_NET_WM_NAME", "utf8", True) or "unknown"
 
 def window_info(xid:int) -> str:
+    if not xid:
+        # XNone is a valid state meaning "no window".  Do not query X11 for
+        # its properties or geometry: those requests can yield BadWindow.
+        return "None"
     from xpra.x11.gtk_x11.prop import prop_get
     net_wm_name = prop_get(xid, "_NET_WM_NAME", "utf8", True)
     from xpra.x11.bindings.window import X11WindowBindings
