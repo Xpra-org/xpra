@@ -44,9 +44,13 @@ def import_gst() -> Optional[ModuleType]:
         import gi
         gi.require_version('Gst', '1.0')  # @UndefinedVariable
         from gi.repository import Gst as gst           #@UnresolvedImport
-        Gst = gst
         log("Gst=%s", gst)
-        gst.init(None)
+        # Newer PyGObject bindings reject None here.  An empty argv preserves
+        # the old behaviour of not passing Xpra's command-line options to Gst.
+        gst.init([])
+        # Do not cache Gst until initialization has succeeded, so a later
+        # call can retry after a transient initialization failure.
+        Gst = gst
     except Exception as e:
         log("Warning failed to import GStreamer 1.x", exc_info=True)
         log.warn("Warning: failed to import GStreamer 1.x:")
