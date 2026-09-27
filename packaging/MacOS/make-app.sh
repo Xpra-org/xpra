@@ -143,7 +143,7 @@ log_error "add_build_info" "${BUILD_INFO_LOG}"
 VERSION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
 REVISION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
 REV_MOD=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
-echo "- version ${VERSION}-${REVISION}${REV_MOD}"
+echo "- version ${VERSION}-r${REVISION}${REV_MOD}"
 
 echo -n "- updating metadata:"
 for info_plist in "Info.plist" "Xpra_NoDock.app/Contents/Info.plist"; do
