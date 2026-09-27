@@ -827,8 +827,9 @@ fi
 
 
 %changelog
-* Tue Sep 8 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+* Sun Sep 27 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - Platforms, build and packaging:
+   MSYS2 builds no longer require obsolete Soup and croco dependencies
    almalinux build failures and rockylinux
    missing default build list - unused arm64 list
    RHEL builds need our private openh264 and CentOS
@@ -838,6 +839,7 @@ fi
    googlesource downloads are not reliable
    macOS: always enable logging to file when spawned from the GUI
 - Encodings:
+   ARGB conversions reported the wrong bytes-per-pixel value
    damage cancellation could free images while they were still being encoded
    concurrent damage could start multiple encode threads
    lossy updates could miss their auto-refresh
@@ -857,6 +859,7 @@ fi
    limit is actually 4GB
    validate the token location and size
 - Major:
+   X11 error callbacks could use Python state without holding the GIL
    X11 events could stop being routed after unmatched filter cleanup or shared filter use
    handle duplicated mode attribute in session files
    allow upgrades on displays where no window manager is left
@@ -873,6 +876,7 @@ fi
    try the next notifier backend when one fails
    skip notification warnings during cleanup
 - Clipboard:
+   clipboard requests could be left unanswered when a client reset
    raw atoms cause connection to drop
    blinking for every pending transfer is excessive
    don't ask the server for progress updates
@@ -884,6 +888,15 @@ fi
    discard alpha padding in RGBX uploads
    include unit test
 - Minor:
+   X11 diagnostics queried invalid window ID zero
+   stale partial refresh regions could be replayed after a full repaint
+   popup windows could prevent regular modal windows from regaining their modal state
+   scaled cursors could be distorted or disappear when clamped to a maximum size
+   GStreamer initialization failed with newer PyGObject versions
+   runtime directory creation could race concurrent server starts
+   video maximum-size overrides ignored the requested height
+   comma-separated keyboard layouts were parsed as individual characters
+   dangling SSH agent symlinks were left behind on session cleanup
    `xpra clean-sockets` could skip every socket
    clean dead ssh agent symlinks
    always point the ssh agent symlink at a client

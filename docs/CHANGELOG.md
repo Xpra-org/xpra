@@ -1,7 +1,8 @@
 # Changelog
 
-## [5.1.7] 2026-09-08
+## [5.1.7] 2026-09-27
 * Platforms, build and packaging:
+  * [MSYS2 builds no longer require obsolete Soup and croco dependencies](https://github.com/Xpra-org/xpra/commit/00c12bf42cd6cb48a6d2e6202e34bd6e859a3706)
   * [almalinux build failures](https://github.com/Xpra-org/xpra/commit/e371556e6710cb19b02f215af7f4754313d59f00) [and rockylinux](https://github.com/Xpra-org/xpra/commit/dc839d9bc7bdd46b7161b37f89d98263b2405a1f)
   * [missing default build list](https://github.com/Xpra-org/xpra/commit/403e684f0cb731c01e2799ac4c335110268c0605) - [unused arm64 list](https://github.com/Xpra-org/xpra/commit/ebdcf11bb30609e541c5b47a7dded68affce2d12)
   * [RHEL builds need our private openh264](https://github.com/Xpra-org/xpra/commit/c31381a14a88580626dbf1e61356af2e5f9dbd2d) [and CentOS](https://github.com/Xpra-org/xpra/commit/46941f44b363f2bf37a7bcddfc15ccf83102ccb4)
@@ -11,6 +12,7 @@
   * [googlesource downloads are not reliable](https://github.com/Xpra-org/xpra/commit/8eca03acb642b27e47d372b73e2393355fc947a5)
   * [macOS: always enable logging to file when spawned from the GUI](https://github.com/Xpra-org/xpra/commit/f78b14b5e9bedd9a214600fb906e3d6efec57a00)
 * Encodings:
+  * [ARGB conversions reported the wrong bytes-per-pixel value](https://github.com/Xpra-org/xpra/commit/ebc12cc5f198dd85df6c36655037b12154494803)
   * [damage cancellation could free images while they were still being encoded](https://github.com/Xpra-org/xpra/commit/b8293340957ff401f06833f42779f2c19941fa46)
   * [concurrent damage could start multiple encode threads](https://github.com/Xpra-org/xpra/commit/ea08e44ac490654dc2b0fd06c9417ca88f553f63)
   * [lossy updates could miss their auto-refresh](https://github.com/Xpra-org/xpra/commit/4f57718ee5dad0bf63c45eda79d59895f34021a8)
@@ -30,6 +32,7 @@
   * [limit is actually 4GB](https://github.com/Xpra-org/xpra/commit/0377ba073f3ead0b6d69505e74c9faee2504f8ba)
   * [validate the token location and size](https://github.com/Xpra-org/xpra/commit/ddec4ce4fcef68ba4a3f395a916007838b53ff4e)
 * Major:
+  * [X11 error callbacks could use Python state without holding the GIL](https://github.com/Xpra-org/xpra/commit/4bbef138154edee5524173be2cc5df6fe9e971d9)
   * [X11 events could stop being routed after unmatched filter cleanup](https://github.com/Xpra-org/xpra/commit/23f81b0c5119e4c2c619e67a1cc20558ee972ae9) [or shared filter use](https://github.com/Xpra-org/xpra/commit/91bf9a9025c52ed862025eacfd09c10153484783)
   * [handle duplicated mode attribute in session files](https://github.com/Xpra-org/xpra/commit/d8ac8e684c21689b7c43e2c230d06dc7c535f543)
   * [allow upgrades on displays where no window manager is left](https://github.com/Xpra-org/xpra/commit/d564e1a846369563b10730d594cbbd7d3c232ee9)
@@ -46,6 +49,7 @@
   * [try the next notifier backend when one fails](https://github.com/Xpra-org/xpra/commit/cc1dde1226dcab2fc64c4021370a09977e5be36f)
   * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/d329fc942cd9475f67bdce1c13280dac98d1d9a5)
 * Clipboard:
+  * [clipboard requests could be left unanswered when a client reset](https://github.com/Xpra-org/xpra/commit/bff0639c236a7d5a70ab49ced33963bac3a7d7b4)
   * [raw atoms cause connection to drop](https://github.com/Xpra-org/xpra/commit/87b6b68166283fd583b2edea29a9900dfe27e23f)
   * [blinking for every pending transfer is excessive](https://github.com/Xpra-org/xpra/commit/fc3fa9099ba82168bee3afa5275a746ee1285fe8)
   * [don't ask the server for progress updates](https://github.com/Xpra-org/xpra/commit/8a6a81a91f44cd73c8b926c1be5d58c1277465d6)
@@ -57,6 +61,15 @@
   * [discard alpha padding in RGBX uploads](https://github.com/Xpra-org/xpra/commit/8b18363e5b798464b53690aa6c0ff92f6f936494)
   * [include unit test](https://github.com/Xpra-org/xpra/commit/ded0b142584bd3af0ab2f2c737afc52d64cce106)
 * Minor:
+  * [X11 diagnostics queried invalid window ID zero](https://github.com/Xpra-org/xpra/commit/b8ef0a0fe2c1ebdd63268a41700f6ff2195494be)
+  * [stale partial refresh regions could be replayed after a full repaint](https://github.com/Xpra-org/xpra/commit/8e142a5b00707a0447936090e7bfb3038d5c908b)
+  * [popup windows could prevent regular modal windows from regaining their modal state](https://github.com/Xpra-org/xpra/commit/aefa64cb2042170dc1ffe5044998f8d746fd39f9)
+  * [scaled cursors could be distorted or disappear when clamped to a maximum size](https://github.com/Xpra-org/xpra/commit/bba3e4d38c4c767f703e0b5d706bda6a211bccb3)
+  * [GStreamer initialization failed with newer PyGObject versions](https://github.com/Xpra-org/xpra/commit/57389b2061698936b703d4929ffbc814280ce4c2)
+  * [runtime directory creation could race concurrent server starts](https://github.com/Xpra-org/xpra/commit/3f0e754d54579ab4fae7292d872e2e102dc359a7)
+  * [video maximum-size overrides ignored the requested height](https://github.com/Xpra-org/xpra/commit/5898b8646f545a0de1bf8bd1d4c672edb495b377)
+  * [comma-separated keyboard layouts were parsed as individual characters](https://github.com/Xpra-org/xpra/commit/27163f510760c67945fafd80a800d6ef473af9e9)
+  * [dangling SSH agent symlinks were left behind on session cleanup](https://github.com/Xpra-org/xpra/commit/fb455661350e09bafc04f196abcc68bdf2299648)
   * [`xpra clean-sockets` could skip every socket](https://github.com/Xpra-org/xpra/commit/cd4aef51336f98e5dc2288dabccf0c67f2e6afd6)
   * [clean dead ssh agent symlinks](https://github.com/Xpra-org/xpra/commit/00074c3f140b86995c49dc48b04bac0a1ff085c6)
   * [always point the ssh agent symlink at a client](https://github.com/Xpra-org/xpra/commit/c587579aae44e34d4efbeaacf68a8462a6d02e9f)
