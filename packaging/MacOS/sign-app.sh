@@ -91,8 +91,8 @@ echo "  Helpers"
 sign_runtime "${CONTENTS_DIR}/Helpers/"*
 echo "  Xpra_NoDock.app"
 sign_runtime "${CONTENTS_DIR}/Xpra_NoDock.app"
-echo "  MacOS/Xpra"
-sign_runtime "${CONTENTS_DIR}/MacOS/Xpra"
+echo "  MacOS/${APP_NAME}"
+sign_runtime "${CONTENTS_DIR}/MacOS/${APP_NAME}"
 echo "  ${APP_NAME}"
 sign_runtime "${APP_DIR}"
 
@@ -108,4 +108,6 @@ spctl --assess -vvv --type execute "${APP_DIR}"
 
 echo "*******************************************************************************"
 echo "Copying ${APP_NAME} to ~/Desktop"
+# ditto merges into an existing bundle, which would leave stale files behind and break the seal:
+rm -fr "${HOME}/Desktop/${APP_NAME}.app"
 ditto "${APP_DIR}" "${HOME}/Desktop/${APP_NAME}.app"

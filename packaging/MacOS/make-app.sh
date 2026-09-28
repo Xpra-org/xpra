@@ -146,7 +146,8 @@ REV_MOD=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sy
 echo "- version ${VERSION}-r${REVISION}${REV_MOD}"
 
 echo -n "- updating metadata:"
-for info_plist in "Info.plist" "Xpra_NoDock.app/Contents/Info.plist"; do
+# the Xpra_NoDock.app Info.plist is updated after it is copied into the bundle
+for info_plist in "Info.plist"; do
 	echo -n " $info_plist"
 	plist="${MACOS_SCRIPT_DIR}/${info_plist}"
 	git checkout "${plist}" >& /dev/null
@@ -715,3 +716,11 @@ ln -sf "../../Helpers" "${SUB_APP}/Contents/Helpers"
 # org.xpra.xpra signature on a shared inode.
 mkdir -p "${SUB_APP}/Contents/MacOS"
 cp "${LAUNCHER_BIN}" "${SUB_APP}/Contents/MacOS/${APP_NAME}"
+# update the metadata of the copy, including the executable name,
+# which must match the launcher we just copied for it to be signed as the main executable:
+SUB_PLIST="${SUB_APP}/Contents/Info.plist"
+sed -i '' -e "s+%VERSION%+$VERSION+g" "${SUB_PLIST}"
+sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${SUB_PLIST}"
+sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${SUB_PLIST}"
+sed -i '' -e "s+%ARCH%+$ARCH+g" "${SUB_PLIST}"
+plutil -replace CFBundleExecutable -string "${APP_NAME}" "${SUB_PLIST}"
