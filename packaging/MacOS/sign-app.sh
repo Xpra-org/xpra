@@ -36,11 +36,10 @@ if ! security show-keychain-info "$KEYCHAIN" 2>/dev/null; then
 fi
 
 TEAM_ID=$(get_team_id "$CODESIGN_KEYNAME")
-if [ -z "$TEAM_ID" ]; then
-  ENTITLEMENTS_FILE="${MACOS_SCRIPT_DIR}/entitlements.plist"
-else
-  ENTITLEMENTS_FILE=""
-fi
+echo "team id: ${TEAM_ID:-none}"
+# the entitlements are needed even with a Developer ID certificate,
+# ie: python's ctypes callbacks require 'allow-unsigned-executable-memory' with the hardened runtime:
+ENTITLEMENTS_FILE="${MACOS_SCRIPT_DIR}/entitlements.plist"
 export ENTITLEMENTS_FILE
 
 # for libraries and executables:
