@@ -203,14 +203,19 @@ def do_get_sshpass_command() -> str:
 
 
 def do_get_xpra_command() -> list[str]:
-    if sys.argv and sys.argv[0].lower().endswith("/xpra"):
+    if sys.argv and sys.argv[0].lower().endswith(("/xpra", "/xpra-light")):
         return [sys.argv[0]]
-    # try to use the one from the app bundle:
+    # try to use the one from the app bundle,
+    # the "Xpra-Light" bundle uses a different name for its main executable:
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
-    xpra_cmd = os.path.join(base, "MacOS", "Xpra")
-    if os.path.exists(xpra_cmd):
-        return [xpra_cmd]
+    for xpra_cmd in (
+        os.path.join(base, "MacOS", "Xpra"),
+        os.path.join(base, "MacOS", "Xpra-Light"),
+        os.path.join(base, "Helpers", "Xpra"),
+    ):
+        if os.path.exists(xpra_cmd):
+            return [xpra_cmd]
     return ["xpra"]
 
 
