@@ -55,7 +55,8 @@ function sign_runtime() {
 # for plain python modules:
 function sign() {
   codesign --remove-signature "$@" 2>/dev/null || true
-  codesign --sign "${CODESIGN_KEYNAME}" "$@"
+  # no need for a (slow) timestamp server round trip, notarization only requires it for executable code:
+  codesign --sign "${CODESIGN_KEYNAME}" --timestamp=none "$@"
 }
 
 export -f sign
