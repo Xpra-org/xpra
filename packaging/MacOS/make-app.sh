@@ -133,7 +133,7 @@ git checkout "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist" >& /dev/null
 
 echo "*******************************************************************************"
 PYVERSIONSTR="${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}"
-echo "Building Xpra for Python ${PYVERSIONSTR} using $NPROC logical CPUs"
+echo "Building ${APP_NAME} for Python ${PYVERSIONSTR} using $NPROC logical CPUs"
 cd "${XPRA_SRC_DIR}" || exit 1
 echo "- regenerate source and build info"
 rm -f "xpra/src_info.py" "xpra/build_info.py"
