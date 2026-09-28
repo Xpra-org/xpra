@@ -24,7 +24,7 @@ get_team_id() {
   security find-identity -v -p codesigning | grep "$keyname" | head -1 | grep -o '([A-Z0-9]\{10\})' | tr -d '()'
 }
 
-export CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=-}"
+export CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=Developer ID Application}"
 # verify that it is unlocked:
 if [ -z "${KEYCHAIN}" ]; then
   KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
