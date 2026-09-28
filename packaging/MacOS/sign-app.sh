@@ -2,9 +2,6 @@
 
 MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 LIGHT="${LIGHT:=0}"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-  LIGHT="1"
-fi
 if [ "${LIGHT}" == "1" ]; then
   APP_NAME="Xpra-Light"
 else

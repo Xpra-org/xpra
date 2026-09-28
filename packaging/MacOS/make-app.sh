@@ -23,9 +23,6 @@ STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_TESTS="${STRIP_TESTS:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 LIGHT="${LIGHT:=0}"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-  LIGHT="1"
-fi
 ARCH="${ARCH:=$(arch)}"
 if [ "${ARCH}" == "i386" ]; then
 	ARCH="x86_64"

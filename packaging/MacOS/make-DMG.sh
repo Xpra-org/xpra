@@ -5,9 +5,6 @@ cd "${MACOS_SCRIPT_DIR}" || exit 1
 
 PYTHON="python3"
 LIGHT="${LIGHT:=0}"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-  LIGHT="1"
-fi
 if [ "${LIGHT}" == "1" ]; then
   APP_NAME="Xpra-Light"
 else
