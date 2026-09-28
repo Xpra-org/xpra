@@ -41,6 +41,10 @@
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<string>True</string>
+       <key>NSMicrophoneUsageDescription</key>
+       <string>Xpra can forward your microphone to the remote session.</string>
+       <key>NSCameraUsageDescription</key>
+       <string>Xpra can forward your webcam to the remote session.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
