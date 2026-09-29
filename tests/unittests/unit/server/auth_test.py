@@ -15,7 +15,7 @@ import hmac
 from time import monotonic
 from typing import Callable
 
-from xpra.os_util import WIN32, OSX, POSIX, get_hex_uuid
+from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.env import OSEnvContext
 from xpra.util.str_fn import strtobytes
 from xpra.util.objects import typedict
@@ -280,11 +280,12 @@ class TestAuth(unittest.TestCase):
         assert a.stat_password_filetime() == 0
         # inaccessible:
         if POSIX:
-            filename = "./test-file-auth-%s-%s" % (get_hex_uuid(), os.getpid())
-            with open(filename, 'wb') as f:
-                os.fchmod(f.fileno(), 0o200)  #write-only
-            a.password_filename = filename
-            a.load_password_file()
+            with tempfile.NamedTemporaryFile(prefix="test-file-auth-") as f:
+                os.fchmod(f.fileno(), 0o200)  # write-only
+                a.password_filename = f.name
+                data = a.load_password_file()
+                if os.geteuid() != 0:
+                    assert not data, f"inaccessible password file should not return any data, got {data!r}"
 
     def test_multifile(self):
         def genfiledata(a) -> tuple[str, str]:
