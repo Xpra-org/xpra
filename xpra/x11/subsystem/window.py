@@ -24,6 +24,7 @@ from xpra.x11.common import Unmanageable, X11Event, get_pid
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.error import xsync, xswallow, xlog, XError
+from xpra.x11.xroot_props import root_get, root_set
 from xpra.log import Logger
 
 log = Logger("server", "window")
@@ -40,6 +41,7 @@ sharinglog = Logger("sharing")
 
 NotifyPointerRoot = constants["NotifyPointerRoot"]
 NotifyDetailNone = constants["NotifyDetailNone"]
+XNone = constants["XNone"]
 
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
@@ -498,6 +500,8 @@ class SeamlessWindowServer(WindowServer):
         # gone.  This prevents stale focus state while WINDOW_DESTROY is sent.
         if self._has_focus == wid:
             self.reset_focus()
+        elif not wm_exiting:
+            self.restore_active_window(window)
         wid = self._remove_window(window)
         self.cancel_configure_damage(wid)
         if self._exit_with_windows and not self.models():
@@ -505,6 +509,21 @@ class SeamlessWindowServer(WindowServer):
             self.server.clean_quit()
         elif not wm_exiting:
             self.repaint_root_overlay()
+
+    def restore_active_window(self, window) -> None:
+        """
+        A window can become `_NET_ACTIVE_WINDOW` without being given the input focus,
+        ie: a short-lived transient window which sends a `_NET_ACTIVE_WINDOW` client message.
+        When it goes away, the property must go back to the window which does have the focus,
+        otherwise the toolkits which rely on it consider that window inactive.
+        """
+        with xswallow:
+            if root_get("_NET_ACTIVE_WINDOW", "u32") != window.xid:
+                return
+            focused = self.get_window(self._has_focus)
+            xid = focused.xid if focused else XNone
+            focuslog("restore_active_window(%s) giving it back to %#x", window, xid)
+            root_set("_NET_ACTIVE_WINDOW", "u32", xid)
 
     def _x11_focus_in_event(self, wm, event: X11Event) -> None:
         """Clear server focus when X11 falls back to the root window.

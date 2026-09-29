@@ -37,6 +37,20 @@ class FocusStub:
         from xpra.x11.subsystem.window import SeamlessWindowServer
         SeamlessWindowServer._focus(self, None, wid, None)
 
+    def lose_window(self, window) -> None:
+        """ what happens when a window goes away, without a server """
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+        self.restore_active_window = lambda w: SeamlessWindowServer.restore_active_window(self, w)
+        self.reset_focus = lambda: self.focus(0)
+        self._remove_window = lambda w: self.windows.pop(self.get_wid(w))
+        self.cancel_configure_damage = lambda wid: None
+        self.repaint_root_overlay = lambda: None
+        self._exit_with_windows = False
+        SeamlessWindowServer._lost_window(self, window)
+
+    def get_wid(self, window) -> int:
+        return next(wid for wid, w in self.windows.items() if w is window)
+
 
 class X11WindowTest(ServerTestUtil):
     """
@@ -274,6 +288,37 @@ class X11WindowTest(ServerTestUtil):
         # and the sink goes away with the window manager:
         wm.cleanup()
         self.assertFalse(wm.get_focus_window())
+
+    def test_lost_active_window(self):
+        """
+        A transient window can become `_NET_ACTIVE_WINDOW` without taking the input focus
+        (ie: by sending a `_NET_ACTIVE_WINDOW` client message),
+        the property must not be left pointing at it when it goes away.
+        """
+        from xpra.x11.bindings.window import X11WindowBindings
+        from xpra.x11.xroot_props import root_get, root_set
+        X11Window = X11WindowBindings()
+        parent = self.manage_window(self.start_window())
+        transient = self.manage_window(self.start_window())
+        other = self.manage_window(self.start_window())
+        server = FocusStub(windows={1: parent, 2: transient, 3: other})
+        server.focus(1)
+        # what the `_NET_ACTIVE_WINDOW` client message handler does:
+        transient.set_active()
+        self.assertEqual(X11Window.XGetInputFocus()[0], parent.xid)
+        server.lose_window(transient)
+        self.assertEqual(root_get("_NET_ACTIVE_WINDOW", "u32"), parent.xid)
+        self.assertEqual(server._has_focus, 1)
+
+        # losing a window which is not the active one leaves the property alone:
+        server.lose_window(other)
+        self.assertEqual(root_get("_NET_ACTIVE_WINDOW", "u32"), parent.xid)
+
+        # and without any focused window, the property is cleared:
+        server._has_focus = 0
+        root_set("_NET_ACTIVE_WINDOW", "u32", parent.xid)
+        server.lose_window(parent)
+        self.assertEqual(root_get("_NET_ACTIVE_WINDOW", "u32"), 0)
 
 
 def main():
