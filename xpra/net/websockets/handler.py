@@ -27,7 +27,7 @@ SUPPORT_HyBi_PROTOCOLS: Sequence[str] = ("7", "8", "13")
 class UpgradeError(ValueError):
     """ a websocket upgrade failure, with the http error code and headers to reply with """
 
-    def __init__(self, message: str, code: int = 403, headers: dict[str, str] | None = None):
+    def __init__(self, message: str, code: int = 400, headers: dict[str, str] | None = None):
         super().__init__(message)
         self.code = code
         self.headers = headers or {}
@@ -69,7 +69,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         log.warn(" the 'http-origin' option is set to %r", std(self.origin))
         log.warn(" add this origin to the 'http-origin' option to allow it")
         # don't echo the origin back to the client:
-        raise ValueError("websocket connection from an unauthorized origin")
+        raise UpgradeError("websocket connection from an unauthorized origin", 403)
 
     def handle_websocket(self) -> None:
         log("handle_websocket() calling %s, request=%s (%s)",
@@ -84,7 +84,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             raise UpgradeError("the 'Connection' header does not include 'Upgrade'", 400)
         ver = self.headers.get("Sec-WebSocket-Version", "")
         if not ver:
-            raise ValueError("Missing Sec-WebSocket-Version header")
+            raise UpgradeError("Missing Sec-WebSocket-Version header")
 
         if ver not in SUPPORT_HyBi_PROTOCOLS:
             # RFC 6455 section 4.4: tell the client which versions we do support
@@ -95,11 +95,11 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         # browsers separate the protocols with ", ":
         protocols = [protocol.strip() for protocol in self.headers.get("Sec-WebSocket-Protocol", "").split(",")]
         if "binary" not in protocols:
-            raise ValueError("client does not support 'binary' protocol")
+            raise UpgradeError("client does not support 'binary' protocol")
 
         key = self.headers.get("Sec-WebSocket-Key", "")
         if not key:
-            raise ValueError("Missing Sec-WebSocket-Key header")
+            raise UpgradeError("Missing Sec-WebSocket-Key header")
         accept = make_websocket_accept_hash(strtobytes(key))
         log(f"websocket hash for key {key!r} = {accept!r}")
         self.write_byte_strings(
@@ -139,15 +139,16 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                 return
             try:
                 self.handle_websocket()
-            except Exception as e:
+            except UpgradeError as e:
                 log("do_GET()", exc_info=True)
                 log.error("Error: cannot handle websocket upgrade:")
                 log.estr(e)
-                code = 403
-                if isinstance(e, UpgradeError):
-                    code = e.code
-                    self.extra_headers.update(e.headers)
-                self.send_error(code, f"failed to handle websocket: {e}")
+                self.extra_headers.update(e.headers)
+                self.send_error(e.code, f"failed to handle websocket: {e}")
+            except Exception:
+                # a bug, don't send the details to the client:
+                log.error("Error: websocket upgrade failure", exc_info=True)
+                self.send_error(500, "websocket upgrade failure")
             return
         if self.headers.get("Upgrade-Insecure-Requests", "") == "1" and self.redirect_https:
             self.do_redirect_https()

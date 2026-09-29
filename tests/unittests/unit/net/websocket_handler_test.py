@@ -22,15 +22,19 @@ UPGRADE_REQUEST = (
 
 
 def upgrade_request(**replace) -> bytes:
-    """ the upgrade request, with some header values replaced (or removed with `None`) """
+    """ the upgrade request, with some header values replaced, added, or removed with `None` """
+    replace = dict(replace)
     lines = []
     for line in UPGRADE_REQUEST:
         name = line.split(b":")[0].decode().replace("-", "_").lower()
         if name in replace:
-            if replace[name] is None:
+            value = replace.pop(name)
+            if value is None:
                 continue
-            line = b"%s: %s" % (line.split(b":")[0], replace[name])
+            line = b"%s: %s" % (line.split(b":")[0], value)
         lines.append(line)
+    for name, value in replace.items():
+        lines.append(b"%s: %s" % (name.replace("_", "-").title().encode(), value))
     return b"\r\n".join(lines + [b"", b""])
 
 
@@ -98,7 +102,7 @@ class TestWebSocketUpgrade(unittest.TestCase):
     def test_binary_protocol_required(self):
         server = self.server()
         response = server.request(upgrade_request(sec_websocket_protocol=b"chat, base64"))
-        self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 403 "))
+        self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 400 "))
         self.assertEqual(server.upgraded, [])
 
     def test_failure_after_upgrade(self):
@@ -132,6 +136,31 @@ class TestWebSocketUpgrade(unittest.TestCase):
                 response = server.request(upgrade_request(connection=connection))
                 self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 400 "))
                 self.assertEqual(server.upgraded, [])
+
+    def test_error_codes(self):
+        for code, replace in (
+            (400, {"sec_websocket_version": None}),
+            (400, {"sec_websocket_key": None}),
+            (400, {"sec_websocket_protocol": b"chat"}),
+            (403, {"origin": b"http://evil.example"}),
+        ):
+            with self.subTest(replace=replace):
+                server = self.server()
+                response = server.request(upgrade_request(**replace))
+                self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 %i " % code), status(response))
+                self.assertEqual(server.upgraded, [])
+
+    def test_internal_error(self):
+        from xpra.net.websockets import handler
+
+        def fail(_key):
+            raise RuntimeError("some internal details")
+        with patch.object(handler, "make_websocket_accept_hash", fail):
+            server = self.server()
+            response = server.request(upgrade_request())
+        self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 500 "), status(response))
+        self.assertNotIn(b"internal details", response)
+        self.assertEqual(server.upgraded, [])
 
     def test_slow_request(self):
         # sending the request one byte at a time must not keep the handler forever,
