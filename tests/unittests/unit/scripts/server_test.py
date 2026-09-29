@@ -392,6 +392,31 @@ class TestMain(unittest.TestCase):
         assert result.displayfd == 0
         assert "Error: invalid displayfd 'not-an-int':" in stderr.getvalue()
 
+    def test_start_server_vfb_destroys_uinput_devices_on_failure(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        session_files = SimpleNamespace(write_session_file=Mock())
+        xvfb = XvfbManager(SimpleNamespace(subsystems={"session-files": session_files}))
+        xvfb.start_vfb = True
+        xvfb.xauth_data = "test-xauth"
+        xvfb.xvfb_cmd = ["Xorg", "-config", "xorg.conf"]
+        xvfb.input_devices = "uinput"
+        device = Mock()
+        devices = {"pointer": {"uinput": device, "device": "/dev/input/event42"}}
+
+        def fail_start(*args):
+            args[-1]()  # prepare the devices before the Xorg launch
+            raise InitException("Xorg startup failed")
+
+        with patch("xpra.uinput.setup.has_uinput", return_value=True), \
+                patch("xpra.uinput.setup.create_input_devices", return_value=devices), \
+                patch("xpra.uinput.setup.wait_for_input_devices") as wait_for_devices, \
+                patch("xpra.x11.vfb_util.start_Xvfb", side_effect=fail_start):
+            with self.assertRaises(InitException):
+                xvfb.start_server_vfb(":42", ":42", "/tmp/xauth", {}, None,
+                                      False, False, False, False, "seamless", lambda *_args: None)
+        wait_for_devices.assert_called_once_with(devices)
+        device.destroy.assert_called_once_with()
+
     def test_xvfb_setup_vfb_emits_display_name(self):
         from xpra.server.subsystem.xvfb import XvfbManager
         session_files = SimpleNamespace()

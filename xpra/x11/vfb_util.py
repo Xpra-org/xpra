@@ -13,7 +13,7 @@ import glob
 import shlex
 import signal
 from time import monotonic
-from typing import NoReturn
+from typing import Callable, NoReturn
 from collections.abc import Sequence
 from subprocess import Popen, PIPE, call
 import os.path
@@ -254,7 +254,8 @@ def mklogdir(xorg_log_file: str, uid: int, gid: int) -> None:
 
 
 def start_Xvfb(xvfb_cmd: Sequence[str], vfb_geom, pixel_depth: int, fps: int, display_name: str, cwd,
-               uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
+               uid: int, gid: int, username: str, uinput_uuid="",
+               prepare_uinput: Callable[[], None] | None = None) -> tuple[Popen, str]:
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
     if not xvfb_cmd:
@@ -333,6 +334,8 @@ def start_Xvfb(xvfb_cmd: Sequence[str], vfb_geom, pixel_depth: int, fps: int, di
         # (we have to assume that Xorg is configured to use this path..)
         xorg_conf_dir = pathexpand(get_Xdummy_confdir())
         create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
+        if prepare_uinput:
+            prepare_uinput()
 
     xvfb_executable = xvfb_cmd[0]
     env = get_xvfb_env(xvfb_executable)

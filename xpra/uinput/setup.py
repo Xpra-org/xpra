@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import monotonic, sleep
 from typing import Any
 
 from xpra.util.env import envbool
@@ -198,3 +199,42 @@ def create_uinput_devices(uinput_uuid: str, uid: int) -> dict[str, Any]:
 
 def create_input_devices(uinput_uuid: str, uid: int) -> dict[str, Any]:
     return create_uinput_devices(uinput_uuid, uid)
+
+
+def wait_for_input_devices(devices: dict[str, Any], timeout: float = 3) -> bool:
+    """Wait for udev to classify virtual devices before Xorg enumerates them."""
+    expected_properties = {
+        "pointer": b"E:ID_INPUT_MOUSE=1",
+        "touchpad": b"E:ID_INPUT_TOUCHPAD=1",
+    }
+    pending = {
+        info["device"]: (device_type, expected_properties[device_type])
+        for device_type, info in devices.items()
+        if device_type in expected_properties and info.get("device")
+    }
+    if not pending:
+        return True
+
+    log = get_logger()
+    deadline = monotonic() + timeout
+    while pending and monotonic() < deadline:
+        for device_path, (device_type, expected) in tuple(pending.items()):
+            try:
+                device_stat = os.stat(device_path)
+                udev_data = f"/run/udev/data/c{os.major(device_stat.st_rdev)}:{os.minor(device_stat.st_rdev)}"
+                with open(udev_data, "rb") as data_file:
+                    properties = data_file.read()
+                if expected in properties.splitlines():
+                    log("udev classified %s device %s", device_type, device_path)
+                    pending.pop(device_path)
+            except OSError:
+                pass
+        if pending:
+            sleep(0.05)
+
+    if pending:
+        log.warn("Warning: udev did not classify uinput devices before Xorg startup:")
+        for device_path, (device_type, _) in pending.items():
+            log.warn(" %s device %s", device_type, device_path)
+        return False
+    return True

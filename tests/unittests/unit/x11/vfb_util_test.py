@@ -7,7 +7,7 @@
 import os
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 class TestVfbUtil(unittest.TestCase):
@@ -148,6 +148,37 @@ class TestVfbUtil(unittest.TestCase):
         cmd = ["/usr/bin/Xorg", "-config"]
         with self.assertRaises(InitException):
             patch_uinput(cmd)
+
+    def test_start_xvfb_prepares_uinput_before_launch(self):
+        from xpra.x11.vfb_util import start_Xvfb
+        events = []
+
+        def configure(*_args):
+            events.append("configure")
+
+        def prepare():
+            events.append("prepare")
+
+        def launch(*_args, **_kwargs):
+            events.append("launch")
+            return Mock(pid=1234)
+
+        with patch("xpra.x11.vfb_util.get_Xdummy_confdir", return_value="/tmp"), \
+                patch("xpra.x11.vfb_util.create_xorg_device_configs", side_effect=configure), \
+                patch("xpra.x11.vfb_util.get_xvfb_env", return_value={}), \
+                patch("xpra.x11.vfb_util.Popen", side_effect=launch):
+            start_Xvfb(["Xorg", "-config", "xorg.conf"], (), 0, 0, ":42", "/tmp",
+                       os.getuid(), os.getgid(), "", "test-uuid", prepare)
+        self.assertEqual(events, ["configure", "prepare", "launch"])
+
+    def test_start_xvfb_skips_uinput_without_config(self):
+        from xpra.x11.vfb_util import start_Xvfb
+        prepare = Mock()
+        with patch("xpra.x11.vfb_util.get_xvfb_env", return_value={}), \
+                patch("xpra.x11.vfb_util.Popen", return_value=Mock(pid=1234)):
+            start_Xvfb(["Xvfb"], (), 0, 0, ":42", "/tmp",
+                       os.getuid(), os.getgid(), "", "test-uuid", prepare)
+        prepare.assert_not_called()
 
     # patch_pixel_depth
     def test_patch_depth_update_existing(self):

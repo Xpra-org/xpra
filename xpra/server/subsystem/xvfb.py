@@ -182,11 +182,12 @@ class XvfbManager(StubSubsystem):
             return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
 
         create_input_devices = noop
+        wait_for_input_devices = noop
         uinput_uuid_len = 0
         use_uinput = False
         if self.backend != "wayland":
             try:
-                from xpra.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
+                from xpra.uinput.setup import has_uinput, create_input_devices, wait_for_input_devices, UINPUT_UUID_LEN
                 uinput_uuid_len = UINPUT_UUID_LEN
                 use_uinput = not (shadowing or proxying or encoder or runner) and self.input_devices.lower() in (
                     "uinput", "auto",
@@ -206,6 +207,12 @@ class XvfbManager(StubSubsystem):
                 uinput_uuid = get_rand_chars(uinput_uuid_len).decode("latin1")
                 if session_files:
                     session_files.write_session_file("uinput-uuid", uinput_uuid)
+
+            def prepare_uinput() -> None:
+                nonlocal devices
+                devices = create_input_devices(uinput_uuid, self.uid) or {}
+                wait_for_input_devices(devices)
+
             vfb_geom: tuple | None = ()
             resize = self.resize_display.lower()
             if resize not in ALL_BOOLEAN_OPTIONS and resize != "auto":
@@ -214,8 +221,19 @@ class XvfbManager(StubSubsystem):
                 if resolutions:
                     vfb_geom = resolutions[0]
             fps = get_refresh_rate_for_value(self.refresh_rate, 60) if self.refresh_rate else 0
-            xvfb, display_name = start_Xvfb(result_cmd, vfb_geom, pixel_depth, fps, display_name, self.cwd,
-                                            self.uid, self.gid, self.username, uinput_uuid)
+            try:
+                xvfb, display_name = start_Xvfb(result_cmd, vfb_geom, pixel_depth, fps, display_name, self.cwd,
+                                                self.uid, self.gid, self.username, uinput_uuid,
+                                                prepare_uinput if uinput_uuid else None)
+            except Exception:
+                # start_Xvfb may fail after the virtual devices have been created.
+                for info in devices.values():
+                    if device := info.get("uinput"):
+                        try:
+                            device.destroy()
+                        except Exception:
+                            log("failed to destroy uinput device %s", device, exc_info=True)
+                raise
             assert xauthority
             xauth_add(xauthority, display_name, self.xauth_data, self.uid, self.gid)
             xvfb_pid = xvfb.pid
@@ -239,7 +257,7 @@ class XvfbManager(StubSubsystem):
             log(f"reloaded xvfb.pid={xvfb_pid} from session file")
             if use_uinput:
                 uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
-        if uinput_uuid:
+        if uinput_uuid and not self.start_vfb:
             devices = create_input_devices(uinput_uuid, self.uid) or {}
         return VFBStartResult(xvfb, xvfb_pid, devices, display_name, result_cmd, displayfd)
 
