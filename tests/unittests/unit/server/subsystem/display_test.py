@@ -57,6 +57,38 @@ class DisplayMixinTest(ServerMixinTest):
         self._test_mixin_class(make_display_manager, opts, caps, DisplayConnection)
 
 
+class ConfigureDisplayTest(unittest.TestCase):
+
+    def test_dpi_change(self):
+        # a DPI change must not prevent the rest of the display configuration from being applied
+        from unittest.mock import Mock
+        from xpra.net.common import Packet
+        from xpra.server.subsystem.display import DisplayManager
+        opts = AdHocStruct()
+        opts.dpi = 96
+        opts.refresh_rate = "auto"
+        opts.sharing = "auto"
+        xsettings = Mock()
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.subsystems = {"xsettings": xsettings}
+        server.calculate_desktops = Mock()
+        ss = Mock()
+        server.get_server_source = lambda _proto: ss
+        dm = stubbable(DisplayManager)(server)
+        dm.init(opts)
+        dm.apply_refresh_rate = Mock()
+        dm._process_configure(None, Packet("configure-display", {
+            "dpi": {"x": 120, "y": 144},
+            "desktop-names": ("one", "two"),
+        }))
+        self.assertEqual((dm.xdpi, dm.ydpi, dm.dpi), (120, 144, 132))
+        ss.set_desktops.assert_called_once_with(2, ("one", "two"))
+        server.calculate_desktops.assert_called_once_with()
+        dm.apply_refresh_rate.assert_called_once_with(ss)
+        xsettings.update_all_server_settings.assert_called_once_with()
+
+
 class SharingLayoutTest(unittest.TestCase):
 
     def test_unsupported_layout_is_disabled(self):
