@@ -34,4 +34,5 @@ class X11_DBUS_Server(DBUS_Server):
 
     @dbus.service.method(INTERFACE)
     def ShowAllWindows(self):
-        self.server.subsystems["window"].show_all_windows()
+        if window := self.server.get_subsystem("window"):
+            window.show_all_windows()
