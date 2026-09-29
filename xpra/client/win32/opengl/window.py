@@ -47,9 +47,9 @@ def enable_composition_alpha(hwnd: HWND) -> bool:
     needed for that: the pixels are premultiplied all the way from the X11 window
     they were captured from - which is what `cairo`'s `ARGB32` and Qt's
     `Format_ARGB32_Premultiplied` consume them as, and what the avif codec sets
-    `alphaPremultiplied` for. (`unpremultiply_argb` exists but is unused;
-    `premultiply_argb` is only used for window icons, since EWMH icons are the
-    one thing that really does arrive with straight alpha)
+    `alphaPremultiplied` for. (`premultiply_argb` and `unpremultiply_argb` exist
+    but are unused: EWMH icons are the one thing that really does arrive with
+    straight alpha, and they are sent as PNG, which uses straight alpha too)
 
     (this assumes DWM composition is on, which it always is since Windows 8:
     it can no longer be turned off, and `DwmIsCompositionEnabled` just returns

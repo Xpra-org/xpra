@@ -257,15 +257,11 @@ class WindowIconSource:
             w, h, pixel_format, len(pixel_data), self.wid)
         if pixel_format not in ("BGRA", "RGBA", "png"):
             raise RuntimeError(f"invalid window icon format {pixel_format}")
-        if pixel_format == "BGRA":
-            # BGRA data is always unpremultiplied
-            # (that's what we get from NetWMIcons)
-            from xpra.codecs.argb.argb import premultiply_argb  # pylint: disable=import-outside-toplevel
-            pixel_data = premultiply_argb(pixel_data)
+        # pixel data uses straight alpha, just like PNG
+        # (`BGRA` is what we get from NetWMIcons)
 
         max_w, max_h = self.window_icon_max_size
-        # use png if supported and if "premult_argb32" is not supported by the client (ie: html5)
-        # or if we must downscale it (bigger than what the client is willing to deal with),
+        # encode as png if it is not already, or if we must downscale it (bigger than what the client is willing to deal with),
         # or if we want to save window icons
         must_scale = w > max_w or h > max_h
         log("compress_and_send_window_icon: %sx%s (max-size=%s, standard-size=%s), pixel_format=%s",
