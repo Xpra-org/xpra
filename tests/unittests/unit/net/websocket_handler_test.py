@@ -143,6 +143,11 @@ class TestWebSocketUpgrade(unittest.TestCase):
             (400, {"sec_websocket_key": None}),
             (400, {"sec_websocket_protocol": b"chat"}),
             (403, {"origin": b"http://evil.example"}),
+            # not base64:
+            (400, {"sec_websocket_key": b"not a key!"}),
+            # not 16 bytes:
+            (400, {"sec_websocket_key": b"dG9vIHNob3J0"}),
+            (400, {"sec_websocket_key": b"dGhpcyBrZXkgaXMgZmFyIHRvbyBsb25n"}),
         ):
             with self.subTest(replace=replace):
                 server = self.server()

@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from base64 import b64decode
+from binascii import Error as Base64Error
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.util.env import envbool
@@ -100,6 +102,13 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         key = self.headers.get("Sec-WebSocket-Key", "")
         if not key:
             raise UpgradeError("Missing Sec-WebSocket-Key header")
+        # RFC 6455 section 4.2.1: a base64 encoded 16 byte value
+        try:
+            valid = len(b64decode(key, validate=True)) == 16
+        except (Base64Error, ValueError):
+            valid = False
+        if not valid:
+            raise UpgradeError("invalid Sec-WebSocket-Key header")
         accept = make_websocket_accept_hash(strtobytes(key))
         log(f"websocket hash for key {key!r} = {accept!r}")
         self.write_byte_strings(
