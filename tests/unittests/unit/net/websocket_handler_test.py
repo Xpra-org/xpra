@@ -4,8 +4,115 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import socket
 import unittest
-from unittest.mock import MagicMock
+from threading import Thread
+from time import monotonic, sleep
+from unittest.mock import MagicMock, patch
+
+UPGRADE_REQUEST = (
+    b"GET / HTTP/1.1",
+    b"Host: localhost",
+    b"Upgrade: websocket",
+    b"Connection: Upgrade",
+    b"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==",
+    b"Sec-WebSocket-Version: 13",
+    b"Sec-WebSocket-Protocol: binary",
+)
+
+
+def upgrade_request(**replace) -> bytes:
+    """ the upgrade request, with some header values replaced (or removed with `None`) """
+    lines = []
+    for line in UPGRADE_REQUEST:
+        name = line.split(b":")[0].decode().replace("-", "_").lower()
+        if name in replace:
+            if replace[name] is None:
+                continue
+            line = b"%s: %s" % (line.split(b":")[0], replace[name])
+        lines.append(line)
+    return b"\r\n".join(lines + [b"", b""])
+
+
+class ServerSocket:
+    """ runs the real request handler on one end of a socket pair """
+
+    def __init__(self, new_websocket_client=None, timeout: float = 5.0):
+        self.client, self.server = socket.socketpair()
+        self.server.settimeout(timeout)
+        self.client.settimeout(5)
+        self.upgraded = []
+        self.new_websocket_client = new_websocket_client or self.upgraded.append
+        self.thread = Thread(target=self.handle, daemon=True)
+        self.thread.start()
+
+    def handle(self) -> None:
+        from xpra.net.websockets.handler import WebSocketRequestHandler
+        WebSocketRequestHandler(self.server, ("peer", 0), self.new_websocket_client)
+
+    def request(self, data: bytes) -> bytes:
+        self.client.sendall(data)
+        self.thread.join(5)
+        return self.read_response()
+
+    def read_response(self) -> bytes:
+        self.client.settimeout(0.5)
+        response = b""
+        try:
+            while data := self.client.recv(4096):
+                response += data
+        except OSError:
+            pass
+        return response
+
+    def close(self) -> None:
+        self.client.close()
+        self.server.close()
+
+
+def status(response: bytes) -> list[bytes]:
+    return [line for line in response.split(b"\r\n") if line.startswith(b"HTTP/")]
+
+
+class TestWebSocketUpgrade(unittest.TestCase):
+
+    def server(self, *args, **kwargs) -> ServerSocket:
+        server = ServerSocket(*args, **kwargs)
+        self.addCleanup(server.close)
+        return server
+
+    def test_upgrade(self):
+        server = self.server()
+        response = server.request(upgrade_request())
+        self.assertEqual(status(response), [b"HTTP/1.1 101 Switching Protocols"])
+        self.assertEqual(len(server.upgraded), 1)
+
+    def test_slow_request(self):
+        # sending the request one byte at a time must not keep the handler forever,
+        # even if each byte arrives well within the socket timeout:
+        from xpra.net.http import handler
+        with patch.object(handler, "REQUEST_TIMEOUT", 1):
+            server = self.server(timeout=5)
+            start = monotonic()
+            try:
+                for c in upgrade_request():
+                    server.client.send(bytes([c]))
+                    sleep(0.2)
+                    if not server.thread.is_alive():
+                        break
+            except OSError:
+                pass
+            server.thread.join(5)
+        self.assertFalse(server.thread.is_alive())
+        self.assertLess(monotonic() - start, 3)
+        self.assertEqual(server.upgraded, [])
+
+    def test_request_timeout_is_not_the_socket_timeout(self):
+        # the deadline only applies to the request, not to the websocket connection:
+        timeouts = []
+        server = self.server(lambda wsh: timeouts.append(wsh.connection.gettimeout()), timeout=5)
+        server.request(upgrade_request())
+        self.assertEqual(timeouts, [5])
 
 
 class TestWebSocketHandler(unittest.TestCase):
