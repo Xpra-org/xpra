@@ -78,6 +78,10 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         for k, v in self.headers.items():
             log(f" {k}={v}")
         self.check_websocket_origin()
+        # ie: Firefox sends "keep-alive, Upgrade"
+        connection = [token.strip().lower() for token in self.headers.get("Connection", "").split(",")]
+        if "upgrade" not in connection:
+            raise UpgradeError("the 'Connection' header does not include 'Upgrade'", 400)
         ver = self.headers.get("Sec-WebSocket-Version", "")
         if not ver:
             raise ValueError("Missing Sec-WebSocket-Version header")

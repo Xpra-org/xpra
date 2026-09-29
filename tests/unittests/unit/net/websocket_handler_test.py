@@ -118,6 +118,21 @@ class TestWebSocketUpgrade(unittest.TestCase):
         self.assertIn(b"Sec-WebSocket-Version: 13, 8, 7\r\n", response)
         self.assertEqual(server.upgraded, [])
 
+    def test_connection_header(self):
+        for connection in (b"upgrade", b"keep-alive, Upgrade", b"Upgrade,keep-alive"):
+            with self.subTest(connection=connection):
+                server = self.server()
+                response = server.request(upgrade_request(connection=connection))
+                self.assertEqual(status(response), [b"HTTP/1.1 101 Switching Protocols"])
+
+    def test_connection_header_required(self):
+        for connection in (None, b"keep-alive", b"close"):
+            with self.subTest(connection=connection):
+                server = self.server()
+                response = server.request(upgrade_request(connection=connection))
+                self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 400 "))
+                self.assertEqual(server.upgraded, [])
+
     def test_slow_request(self):
         # sending the request one byte at a time must not keep the handler forever,
         # even if each byte arrives well within the socket timeout:
@@ -153,7 +168,7 @@ class TestWebSocketHandler(unittest.TestCase):
         from xpra.net.websockets.handler import WebSocketRequestHandler
 
         handler = WebSocketRequestHandler.__new__(WebSocketRequestHandler)
-        handler.headers = headers or {}
+        handler.headers = {"Connection": "Upgrade"} | (headers or {})
         handler.path = path
         handler.redirect_https = redirect_https
         handler.origin = origin
