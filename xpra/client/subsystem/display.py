@@ -616,9 +616,9 @@ class DisplayClient(StubClientSubsystem):
 
     def do_process_screen_size_change(self) -> None:
         self.screen_size_change_timer = 0
-        self.update_screen_size()
-        log("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s", MONITOR_CHANGE_REINIT)
-        if MONITOR_CHANGE_REINIT:
+        changed = self.update_screen_size()
+        log("do_process_screen_size_change() changed=%s, MONITOR_CHANGE_REINIT=%s", changed, MONITOR_CHANGE_REINIT)
+        if changed and MONITOR_CHANGE_REINIT:
             log.info("screen size change: will reinit the windows")
             if window := self.get_subsystem("window"):
                 window.reinit_windows()
@@ -651,14 +651,14 @@ class DisplayClient(StubClientSubsystem):
         self._monitor_layout = MonitorLayout(monitors)
         return root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh, monitors
 
-    def update_screen_size(self) -> None:
+    def update_screen_size(self) -> bool:
         self.screen_size_change_timer = 0
         screen_settings = self.get_screen_settings()
         log("update_screen_size()     new settings=%s", screen_settings)
         log("update_screen_size() current settings=%s", self._last_screen_settings)
         if self._last_screen_settings == screen_settings:
             log("screen size unchanged")
-            return
+            return False
         root_w, root_h, sss = screen_settings[:3]
         log.info("sending updated screen size to server: %sx%s", root_w, root_h)
         log_screen_sizes(root_w, root_h, sss)
@@ -691,6 +691,7 @@ class DisplayClient(StubClientSubsystem):
         self._last_screen_settings = screen_settings
         # update the max packet size (may have gone up):
         self.set_max_packet_size()
+        return True
 
     def get_xdpi(self) -> int:
         return get_xdpi()
