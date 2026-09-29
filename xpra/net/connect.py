@@ -168,9 +168,15 @@ def connect_to_tcp(display_desc: dict[str, Any]):
             # so a server that never responds would block us forever:
             conn.deadline = monotonic() + MAX_WRITE_TIME + MAX_READ_TIME
             try:
+                if dtype == "wss":
+                    # Unlike the plain TCP socket, the TLS socket is blocking after
+                    # the handshake. Keep each SSL read or write within the deadline.
+                    sock.settimeout(0.1)
                 client_upgrade(conn.read, conn.write, host, port, display_path)
             finally:
                 conn.deadline = 0
+                if dtype == "wss":
+                    sock.settimeout(None)
     conn.target = get_host_target_string(display_desc)
     return conn
 
