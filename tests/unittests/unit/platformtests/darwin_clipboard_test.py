@@ -158,7 +158,35 @@ class DarwinClipboardTest(unittest.TestCase):
         proxy, _ = self.make_proxy()
         values = []
         proxy.get_contents("application/x-made-up", lambda *args: values.append(args))
-        self.assertEqual(values, [("application/x-made-up", 8, b"")])
+        self.assertEqual(values, [("application/x-made-up", 0, None)])
+
+    def test_missing_contents_send_none(self):
+        # requesting a target which the pasteboard no longer has must fail the conversion,
+        # not send an empty (successful) response:
+        from xpra.net.common import Packet
+        helper, packets = self.make_helper()
+        proxy = helper._clipboard_proxies["CLIPBOARD"]
+        proxy.set_direction(True, True)
+        proxy.got_token((), {"UTF8_STRING": ("UTF8_STRING", 8, b"hello")})
+        del packets[:]
+
+        def get_image_contents(_target):
+            raise RuntimeError("test failure")
+        requests = (
+            (1, "image/png"),
+            (2, "text/uri-list"),
+            (3, "application/x-made-up"),
+            (4, "image/png"),
+        )
+        for request_id, target in requests:
+            if request_id == 4:
+                proxy.get_image_contents = get_image_contents
+            helper.process_clipboard_packet(Packet("clipboard-request", request_id, "CLIPBOARD", target))
+        replies = [packet for packet in packets if packet[0].startswith("clipboard-contents")]
+        self.assertEqual(replies, [("clipboard-contents-none", request_id, "CLIPBOARD") for request_id, _ in requests])
+        # the text is still sent as valid contents:
+        helper.process_clipboard_packet(Packet("clipboard-request", 5, "CLIPBOARD", "UTF8_STRING"))
+        self.assertEqual(packets[-1][:2], ("clipboard-contents", 5))
 
     def test_contents_are_merged(self):
         # the replies to separate requests must not clobber each other:

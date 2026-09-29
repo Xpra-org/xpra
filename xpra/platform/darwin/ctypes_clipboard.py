@@ -293,7 +293,12 @@ class OSXClipboardProxy(ClipboardProxyCore):
         except Exception:
             log.error("Error: failed to get %r data from the pasteboard", target, exc_info=True)
             data = b""
-        got_contents(target, 8, data or b"")
+        if not data:
+            # the pasteboard does not have this target (anymore),
+            # tell the peer so the conversion fails instead of pasting nothing:
+            got_contents(target, 0, None)
+            return
+        got_contents(target, 8, data)
 
     def get_target_data(self, target: str) -> bytes | str:
         if target in TSV_TARGETS:
