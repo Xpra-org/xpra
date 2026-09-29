@@ -5,9 +5,6 @@ cd "${MACOS_SCRIPT_DIR}" || exit 1
 
 PYTHON="python3"
 LIGHT="${LIGHT:=0}"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-  LIGHT="1"
-fi
 if [ "${LIGHT}" == "1" ]; then
   APP_NAME="Xpra-Light"
 else
@@ -42,6 +39,23 @@ mkdir -p "image/Blank"
 cp "Blank.dmg.bz2" "image/"
 bunzip2 "image/Blank.dmg.bz2"
 hdiutil mount "image/Blank.dmg" -mountpoint "./image/Blank"
+
+if [ "${APP_NAME}" != "Xpra" ]; then
+       # the blank DMG ships an empty 'Xpra.app' placeholder,
+       # and its '.DS_Store' records the icon position under that name:
+       # remove the placeholder and move the icon position to our app name
+       echo "Replacing the 'Xpra.app' placeholder with '${APP_NAME}.app'"
+       rmdir "./image/Blank/Xpra.app" || { hdiutil detach "image/Blank"; exit 1; }
+       ${PYTHON} - "./image/Blank/.DS_Store" "${APP_NAME}.app" << 'EOF' || { hdiutil detach "image/Blank"; exit 1; }
+import sys
+from ds_store import DSStore
+filename, app = sys.argv[1:3]
+with DSStore.open(filename, "r+") as d:
+    d[app]["Iloc"] = d["Xpra.app"]["Iloc"]
+    # delete does not encode str codes, so this one must be bytes:
+    del d["Xpra.app"][b"Iloc"]
+EOF
+fi
 
 echo "Copying app into the DMG"
 ditto "${APP_DIR}" "./image/Blank/${APP_NAME}.app"

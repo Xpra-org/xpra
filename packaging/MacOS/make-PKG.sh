@@ -4,9 +4,6 @@ MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && 
 cd "${MACOS_SCRIPT_DIR}" || exit 1
 
 LIGHT="${LIGHT:=0}"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-  LIGHT="1"
-fi
 if [ "${LIGHT}" == "1" ]; then
   APP_NAME="Xpra-Light"
 else
@@ -34,8 +31,8 @@ rm -f "./image/${PKG_FILENAME}" >& /dev/null
 echo "Making ${PKG_FILENAME}"
 
 #create directory structure:
-rm -fr "./image/flat" "./image/root"
-mkdir -p "./image/flat/base.pkg" "./image/flat/Resources/en.lproj"
+rm -fr "./image/flat" "./image/root" "./image/scripts"
+mkdir -p "./image/flat/Resources/en.lproj"
 mkdir -p "./image/root/Applications"
 ditto "${APP_DIR}" "./image/root/Applications/${APP_NAME}.app"
 
@@ -43,36 +40,27 @@ ditto "${APP_DIR}" "./image/root/Applications/${APP_NAME}.app"
 mkdir -p "./image/root/Library/LaunchAgents/"
 cp "./org.xpra.Agent.plist" "./image/root/Library/LaunchAgents/"
 
-pushd "./image/root" > /dev/null || exit 1
-find . | cpio -o --format odc --owner 0:80 | gzip -c > "../flat/base.pkg/Payload"
-popd > /dev/null || exit 1
-
-FILECOUNT=$(find "./image/root" | wc -l)
-DISKUSAGE=$(du -sk "./image/root")
-
 #add the postinstall fix script (cups backend and shortcuts)
 mkdir ./image/scripts
 cp postinstall ./image/scripts/
 chmod +x ./image/scripts/postinstall
-pushd ./image/scripts > /dev/null || exit 1
-find . | cpio -o --format odc --owner 0:80 | gzip -c > ../flat/base.pkg/Scripts
-popd > /dev/null || exit 1
 
-mkbom -u 0 -g 80 ./image/root ./image/flat/base.pkg/Bom
+# always install into /Applications,
+# never "upgrade" another copy of the app found elsewhere (ie: on the Desktop):
+pkgbuild --analyze --root "./image/root" "./image/flat/components.plist"
+i=0
+while plutil -extract "${i}" raw "./image/flat/components.plist" > /dev/null 2>&1; do
+	plutil -replace "${i}.BundleIsRelocatable" -bool NO "./image/flat/components.plist"
+	i=$((i+1))
+done
 
-cat > ./image/flat/base.pkg/PackageInfo << EOF
-<pkg-info format-version="2" identifier="org.xpra.pkg" version="$VERSION" install-location="/" auth="root">
-  <payload installKBytes="$DISKUSAGE" numberOfFiles="$FILECOUNT"/>
-  <scripts>
-	<postinstall file="./postinstall"/>
-  </scripts>
-  <bundle-version>
-	<bundle id="org.xpra.${APP_NAME}" CFBundleIdentifier="org.xpra.${APP_NAME}" path="./Applications/${APP_NAME}.app" CFBundleVersion="$VERSION">
-		<bundle id="org.xpra.Xpra_NoDock" CFBundleIdentifier="org.xpra.Xpra_NoDock" path="./Contents/Xpra_NoDock.app" CFBundleVersion="$VERSION"/>
-	</bundle>
-  </bundle-version>
-</pkg-info>
-EOF
+# use pkgbuild rather than cpio for the payload,
+# so the extended attributes holding the signatures of scripts are preserved:
+pkgbuild --root "./image/root" --component-plist "./image/flat/components.plist" \
+	--scripts "./image/scripts" \
+	--identifier "org.xpra.pkg" --version "$VERSION" \
+	--install-location "/" --ownership recommended \
+	"./image/flat/base.pkg" || exit 1
 
 cat > ./image/flat/Distribution << EOF
 <?xml version="1.0" encoding="utf-8"?>
@@ -91,30 +79,19 @@ cat > ./image/flat/Distribution << EOF
 	<choice id="choice1" title="base">
 		<pkg-ref id="org.xpra.pkg"/>
 	</choice>
-	<pkg-ref id="org.xpra.pkg" installKBytes="$DISKUSAGE" version="$VERSION" auth="Root">#base.pkg</pkg-ref>
+	<pkg-ref id="org.xpra.pkg" version="$VERSION" auth="Root">base.pkg</pkg-ref>
 </installer-script>
 EOF
 
 #add license and background files to image:
 cp "background.png" "GPL.rtf" "./image/flat/Resources/en.lproj/"
 
-pushd "./image/flat" > /dev/null || exit 1
-xar --compression none -cf "../${PKG_FILENAME}" *
-popd > /dev/null || exit 1
+productbuild --distribution "./image/flat/Distribution" \
+	--resources "./image/flat/Resources" --package-path "./image/flat" \
+	"./image/${PKG_FILENAME}" || exit 1
 
 #clean temporary build directories
 rm -fr "./image/flat" "./image/root" "./image/scripts"
-
-if [ ! -z "${CODESIGN_KEYNAME}" ]; then
-		echo "Signing with key '${CODESIGN_KEYNAME}'"
-		productsign --sign "${CODESIGN_KEYNAME}" "./image/${PKG_FILENAME}" "./image/${PKG_FILENAME}.signed"
-		if [ "$?" == "0" ]; then
-			ls -la ./image/*pkg*
-			mv "./image/${PKG_FILENAME}.signed" "./image/${PKG_FILENAME}"
-		fi
-else
-		echo "PKG Signing skipped (no keyname)"
-fi
 
 #show resulting file and copy it to the desktop
 du -sm "./image/$PKG_FILENAME"

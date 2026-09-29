@@ -24,9 +24,6 @@ STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_TESTS="${STRIP_TESTS:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 LIGHT="${LIGHT:=0}"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-  LIGHT="1"
-fi
 ARCH="${ARCH:=$(arch)}"
 if [ "${ARCH}" == "i386" ]; then
 	ARCH="x86_64"
@@ -139,7 +136,7 @@ git checkout "./Info.plist" "./Xpra_NoDock.app/Contents/Info.plist" >& /dev/null
 
 echo "*******************************************************************************"
 PYVERSIONSTR="${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}"
-echo "Building Xpra for Python ${PYVERSIONSTR} using $NPROC logical CPUs"
+echo "Building ${APP_NAME} for Python ${PYVERSIONSTR} using $NPROC logical CPUs"
 cd "${XPRA_SRC_DIR}" || exit 1
 echo "- regenerate source and build info"
 rm -f "xpra/src_info.py" "xpra/build_info.py"
@@ -149,7 +146,7 @@ log_error "add_build_info" "${BUILD_INFO_LOG}"
 VERSION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
 REVISION=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
 REV_MOD=$(PYTHONPATH="." "${PYTHON}" -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
-echo "- version ${VERSION}-${REVISION}${REV_MOD}"
+echo "- version ${VERSION}-r${REVISION}${REV_MOD}"
 
 echo -n "- updating metadata:"
 # the Xpra_NoDock.app Info.plist is updated after it is copied into the bundle
@@ -260,7 +257,7 @@ if [ "${GSTREAMER_VIDEO}" == "0" ]; then
 	rm -fr "${PYDIR}/xpra/codecs/gstreamer"
 fi
 
-for module in "AVFoundation" "pkg_resources" "gi" "cffi" "OpenGL" "OpenGL_accelerate" "zeroconf"; do
+for module in "AVFoundation" "gi" "cffi" "OpenGL" "OpenGL_accelerate" "zeroconf"; do
   echo "- ${module}"
   # py2app's modulegraph only follows imports it can see in Python source, so it
   # mishandles packages whose structure lives in compiled extensions:
@@ -648,7 +645,7 @@ find "${CONTENTS_DIR}" -name "*.la" -exec rm -f {} \;
 echo "- header files"
 rm -fr "${RSCDIR}/include"
 echo "- unused scripts"
-rm "${RSCDIR}/main.py" "${RSCDIR}/site.pyc"
+rm "${RSCDIR}/site.pyc"
 
 echo "- unwanted files in python modules"
 for x in "*.html" "*.c" "*.cpp" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
@@ -676,9 +673,6 @@ if [ "$STRIP_GSTREAMER" == "1" ]; then
 	# we always need 'video' because pbutils links with it...
 	GST_DYLIBS="app audio base codecparsers codecs gl net pbutils reamer riff rtp tag video"
 	# not sure: allocators mse play player rtp rtsp sctp sdp webrtc
-	if [ "${GSTREAMER_VIDEO}" == "1" ]; then
-    GST_DYLIBS="${GST_DYLIBS} mpegts stmse"
-	fi
 	echo "  keeping: ${GST_DYLIBS}"
 	KEEP="${FRAMEWORKS_DIR}/gst.temp"
 	mkdir "${KEEP}" || exit 1
@@ -695,13 +689,8 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
   GST_PLUGIN_DIR="${RSCDIR}/lib/gstreamer-1.0"
 	KEEP="${RSCDIR}/lib/gstreamer-1.0.keep"
 	mkdir "${KEEP}" || exit 1
+	# note: faac is not built at the moment because gstreamer has not update the API to faac >= 2.0
 	PLUGINS="app applemedia audioconvert audiolatency audioparsers audiorate audioresample audiotestsrc coreelements cutter faac flac gdp isomp4 matroska ogg opus opusparse oss4 osxaudio rtp speex volume vorbis wavenc wavparse"
-	if [ "${GSTREAMER_VIDEO}" == "1" ]; then
-    # video sink for testing:
-    PLUGINS="${PLUGINS} autodetect osxvideo"
-		# video support:
-		PLUGINS="${PLUGINS} vpx x264 aom openh264 videoconvert videorate videoscale libav"
-	fi
 	for x in $PLUGINS; do
 		KMP="${KMP} $x"
 		mv "${GST_PLUGIN_DIR}/libgst${x}.dylib" "${KEEP}/"

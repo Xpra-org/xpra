@@ -2,9 +2,6 @@
 
 MACOS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 LIGHT="${LIGHT:=0}"
-if [ "${CLIENT_ONLY}" == "1" ]; then
-  LIGHT="1"
-fi
 if [ "${LIGHT}" == "1" ]; then
   APP_NAME="Xpra-Light"
 else
@@ -24,7 +21,7 @@ get_team_id() {
   security find-identity -v -p codesigning | grep "$keyname" | head -1 | grep -o '([A-Z0-9]\{10\})' | tr -d '()'
 }
 
-export CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=-}"
+export CODESIGN_KEYNAME="${CODESIGN_KEYNAME:=Developer ID Application}"
 # verify that it is unlocked:
 if [ -z "${KEYCHAIN}" ]; then
   KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
@@ -36,11 +33,10 @@ if ! security show-keychain-info "$KEYCHAIN" 2>/dev/null; then
 fi
 
 TEAM_ID=$(get_team_id "$CODESIGN_KEYNAME")
-if [ -z "$TEAM_ID" ]; then
-  ENTITLEMENTS_FILE="${MACOS_SCRIPT_DIR}/entitlements.plist"
-else
-  ENTITLEMENTS_FILE=""
-fi
+echo "team id: ${TEAM_ID:-none}"
+# the entitlements are needed even with a Developer ID certificate,
+# ie: python's ctypes callbacks require 'allow-unsigned-executable-memory' with the hardened runtime:
+ENTITLEMENTS_FILE="${MACOS_SCRIPT_DIR}/entitlements.plist"
 export ENTITLEMENTS_FILE
 
 # for libraries and executables:
@@ -56,7 +52,8 @@ function sign_runtime() {
 # for plain python modules:
 function sign() {
   codesign --remove-signature "$@" 2>/dev/null || true
-  codesign --sign "${CODESIGN_KEYNAME}" "$@"
+  # no need for a (slow) timestamp server round trip, notarization only requires it for executable code:
+  codesign --sign "${CODESIGN_KEYNAME}" --timestamp=none "$@"
 }
 
 export -f sign
