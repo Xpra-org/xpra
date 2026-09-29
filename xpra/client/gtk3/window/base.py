@@ -257,6 +257,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._follow_configure = None
         self.window_state_timer: int = 0
         self.send_iconify_timer: int = 0
+        self._server_iconify_pending = False
         self.remove_pointer_overlay_timer: int = 0
         self.show_pointer_overlay_timer: int = 0
         self.moveresize_timer: int = 0
@@ -686,6 +687,16 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 log.estr(e)
         Gtk.Window.deiconify(self)
 
+    def set_iconic(self, iconified: bool) -> None:
+        if not iconified:
+            self._server_iconify_pending = False
+            self.cancel_send_iconifiy_timer()
+        elif not self._iconified:
+            # The base method updates _iconified before GTK confirms it.
+            # Keep that event so we can release focus and notify the server.
+            self._server_iconify_pending = True
+        ClientWindowBase.set_iconic(self, iconified)
+
     def window_state_updated(self, widget, event) -> None:
         statelog("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s",
                  self, widget, repr(event), event.changed_mask, event.new_window_state)
@@ -720,6 +731,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 setattr(self, var, value)  # ie: self._maximized = True
                 actual_updates[state] = value
                 statelog("%s=%s (was %s)", var, value, cur)
+        if self._server_iconify_pending and "iconified" in state_updates:
+            self._server_iconify_pending = False
+            if state_updates["iconified"]:
+                actual_updates["iconified"] = True
         server_updates: dict[str, bool] = {k: v for k, v in actual_updates.items()
                                            if k in self.get_subsystem("window").server_window_states}
         # iconification is handled a bit differently...
@@ -1709,6 +1724,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def cleanup(self) -> None:
         self.set_attention_requested(False)
+        self._server_iconify_pending = False
         self.cancel_window_state_timer()
         self.cancel_send_iconifiy_timer()
         self.cancel_moveresize_timer()
