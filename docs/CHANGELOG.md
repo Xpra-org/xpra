@@ -82,6 +82,7 @@
   * [NVENC streams fail to decode due to invalid `csc` attribute](https://github.com/Xpra-org/xpra/commit/89331c43c2360d58f2db486987a4d98e8439d322)
   * [use NVENC SDKv13 paths](https://github.com/Xpra-org/xpra/commit/1c16e5a108fc72861ec10622234883778b2fe633)
 * Minor:
+  * [avoid repeated pointer position updates when the pointer is unchanged](https://github.com/snyh/xpra/commit/9796f5f672c7)
   * [X11 events can stop being routed after an unmatched filter cleanup](https://github.com/Xpra-org/xpra/commit/23f81b0c5119e4c2c619e67a1cc20558ee972ae9) [and leave the filter unusable](https://github.com/Xpra-org/xpra/commit/91bf9a9025c52ed862025eacfd09c10153484783)
   * [window-icon timers survive after their window is removed](https://github.com/Xpra-org/xpra/commit/fb0388fe68b8e917f09d8a7fdd3081101d59296e) [or raise warnings after firing](https://github.com/Xpra-org/xpra/commit/9409e7158bfdc66d45a937690a8ec7f2560934e2)
   * [missing `content-types` attributes](https://github.com/Xpra-org/xpra/commit/b4c153ca338741d827e30f36281b084d7323716c)
