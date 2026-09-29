@@ -106,5 +106,5 @@ class PointerConnection(StubClientConnection, PointerSource):
             x, y = to_client_position(x, y)
         if self.mouse_last_position != (x, y) or self.mouse_last_relative_position != (rx, ry):
             self.mouse_last_position = (x, y)
-            self.mouse_last_position = (rx, ry)
+            self.mouse_last_relative_position = (rx, ry)
             self.send_async("pointer-position", wid, x, y, rx, ry)

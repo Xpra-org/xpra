@@ -9,6 +9,7 @@
 * ✨ Features:
   * [`sharing=combine`: give each client its own area of the virtual display](https://github.com/Xpra-org/xpra/issues/1369)
   * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)
+  * [avoid repeated pointer position updates when the pointer is unchanged](https://github.com/snyh/xpra/commit/9796f5f672c7)
 
 
 ## [6.6] 2026-07-14
