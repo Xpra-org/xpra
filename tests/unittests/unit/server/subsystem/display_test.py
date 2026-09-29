@@ -126,6 +126,24 @@ class ConfigureDisplayTest(unittest.TestCase):
             dm.update_dpi(120, 144)
         server.set_dpi.assert_called_once_with(120, 144)
 
+    def test_shadow_apply_dpi(self):
+        # shadow servers must not modify the display they are shadowing:
+        from unittest.mock import Mock, patch
+        try:
+            from xpra.x11.shadow.display import X11ShadowDisplayManager
+            from xpra.x11.subsystem import display
+        except ImportError as e:
+            raise unittest.SkipTest(f"x11 shadow display subsystem is not available: {e}") from None
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.subsystems = {}
+        server.set_dpi = Mock()
+        dm = stubbable(X11ShadowDisplayManager)(server)
+        with patch.object(display, "get_root_size", return_value=(1920, 1080)):
+            dm.update_dpi(120, 144)
+        self.assertEqual(dm.dpi, 132)
+        server.set_dpi.assert_not_called()
+
 
 class SharingLayoutTest(unittest.TestCase):
 
