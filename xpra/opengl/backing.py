@@ -1362,7 +1362,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 name = "cross"
                 if img.mode != "RGBA":
                     img = img.convert("RGBA")
-                pixels = img.tobytes("raw", "BGRA")
+                pixels = img.tobytes("raw", "RGBA")
             except Exception as e:
                 log(f"Image.open({filename})", exc_info=True)
                 log.warn(f"Warning: failed to load {filename!r}: {e}")
