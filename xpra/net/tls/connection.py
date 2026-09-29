@@ -6,6 +6,7 @@
 import ssl
 import socket
 import select
+from time import monotonic
 from typing import Any
 from threading import RLock
 from collections.abc import Callable
@@ -68,8 +69,12 @@ class SSLSocketConnection(SocketConnection):
             # wait for readiness with the lock released, so the other direction can proceed:
             rlist = (raw, ) if wait_read else ()
             wlist = () if wait_read else (raw, )
+            wait = timeout
+            if self.deadline:
+                # don't wait past the connection's deadline:
+                wait = max(0.0, min(timeout, self.deadline - monotonic()))
             try:
-                readable, writable, _ = select.select(rlist, wlist, (), timeout)
+                readable, writable, _ = select.select(rlist, wlist, (), wait)
             except (OSError, ValueError):
                 # socket closed underneath us:
                 if not self.active:

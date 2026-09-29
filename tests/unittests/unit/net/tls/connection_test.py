@@ -32,6 +32,7 @@ class TestSSLSocketConnection(unittest.TestCase):
         # state normally set up by SSLSocketConnection.__init__:
         conn._ssl_lock = threading.RLock()
         conn.timeout = 0
+        conn.deadline = 0.0
         conn.active = True
         conn.socktype = "ssl"
         conn.socktype_wrapped = "ssl"
@@ -192,6 +193,7 @@ class TestSSLSocketConnectionConcurrency(unittest.TestCase):
         conn._socket = fake_sock
         conn._ssl_lock = threading.RLock()
         conn.timeout = 10
+        conn.deadline = 0.0
         conn.active = True
         return conn
 
