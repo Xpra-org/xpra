@@ -23,7 +23,9 @@ def get_subsystem_classes() -> dict[str, type]:
     from xpra.server.subsystem.sharing import SharingServer
     from xpra.server.subsystem.notification import NotificationForwarder
     from xpra.server.subsystem.info import InfoServer
+    from xpra.server.subsystem.display import DisplayManager
     classes = {
+        "display": DisplayManager,
         "window": WindowServer,
         "keyboard": KeyboardManager,
         "pointer": PointerManager,
@@ -196,7 +198,17 @@ class DBUSServerMethodsTest(unittest.TestCase):
             "SendNotification": (1, "title", "message", "*"),
         }.items():
             self.call(method, *args)
+        from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
+        X11_DBUS_Server.SetDPI(self.dbus_server, 120, 144)
         self.assertEqual(dict(self.call("ListWindows")), {})
+
+    def test_set_dpi(self) -> None:
+        from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server
+        X11_DBUS_Server.SetDPI(self.dbus_server, 120, 144)
+        self.subsystems["display"].update_dpi.assert_called_once_with(120, 144)
+        with self.assertRaises(ValueError):
+            X11_DBUS_Server.SetDPI(self.dbus_server, 0, 144)
+        self.subsystems["display"].update_dpi.assert_called_once()
 
     def test_reset_xsettings(self) -> None:
         if "xsettings" not in self.subsystems:

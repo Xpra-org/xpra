@@ -88,6 +88,44 @@ class ConfigureDisplayTest(unittest.TestCase):
         dm.apply_refresh_rate.assert_called_once_with(ss)
         xsettings.update_all_server_settings.assert_called_once_with()
 
+    def test_update_dpi(self):
+        # ie: from dbus `SetDPI`, the new value must be used for the xsettings
+        from unittest.mock import Mock
+        from xpra.server.subsystem.display import DisplayManager
+        opts = AdHocStruct()
+        opts.dpi = 96
+        opts.refresh_rate = "auto"
+        opts.sharing = "auto"
+        xsettings = Mock()
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.subsystems = {"xsettings": xsettings}
+        dm = stubbable(DisplayManager)(server)
+        dm.init(opts)
+        dm.apply_dpi = Mock()
+        dm.update_dpi(120, 144)
+        self.assertEqual((dm.xdpi, dm.ydpi, dm.dpi), (120, 144, 132))
+        dm.apply_dpi.assert_called_once_with()
+        xsettings.update_all_server_settings.assert_called_once_with()
+
+    def test_x11_apply_dpi(self):
+        # the physical dimensions of the display must match the new DPI:
+        from unittest.mock import Mock, patch
+        try:
+            from xpra.x11.subsystem import display
+        except ImportError as e:
+            raise unittest.SkipTest(f"x11 display subsystem is not available: {e}") from None
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.subsystems = {}
+        server.set_dpi = Mock()
+        # without randr, so that we don't need an X11 display:
+        dm = stubbable(display.X11DisplayManager)(server)
+        self.assertFalse(dm.randr)
+        with patch.object(display, "get_root_size", return_value=(1920, 1080)):
+            dm.update_dpi(120, 144)
+        server.set_dpi.assert_called_once_with(120, 144)
+
 
 class SharingLayoutTest(unittest.TestCase):
 

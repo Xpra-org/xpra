@@ -547,21 +547,9 @@ class X11DisplayManager(DisplayManager):
                 ydpi = round(client_h * 25.4 / hmm)
                 log("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)",
                     xdpi, ydpi, client_w, wmm, client_h, hmm)
-        if wmm == 0 or hmm == 0:
-            wmm = round(desired_w * 25.4 / xdpi)
-            hmm = round(desired_h * 25.4 / ydpi)
-            log(f"display dimensions for dpi {xdpi}x{ydpi} and resolution {desired_w}x{desired_h} is {wmm}x{hmm}")
-        from xpra.x11.bindings.randr import RandRBindings
-        if DUMMY_WIDTH_HEIGHT_MM:
-            # FIXME: we assume there is only one output:
-            output = 0
-            with xsync:
-                RandRBindings().set_output_int_property(output, "WIDTH_MM", wmm)
-                RandRBindings().set_output_int_property(output, "HEIGHT_MM", hmm)
-        log("set_dpi(%i, %i)", xdpi, ydpi)
-        # variant-overridable on the server (e.g. SeamlessServer.set_dpi):
-        self.server.set_dpi(xdpi, ydpi)
+        self.set_physical_size(desired_w, desired_h, xdpi, ydpi, wmm, hmm)
 
+        from xpra.x11.bindings.randr import RandRBindings
         # try to find the best screen size to resize to:
         w, h = self.get_best_screen_size(desired_w, desired_h)
 
@@ -600,6 +588,26 @@ class X11DisplayManager(DisplayManager):
             # show dpi via idle_add so server has time to change the screen size (mm)
             self.idle_add(self.show_dpi, xdpi, ydpi)
         return root_w, root_h
+
+    def set_physical_size(self, width: int, height: int, xdpi: int, ydpi: int, wmm=0, hmm=0) -> None:
+        if wmm == 0 or hmm == 0:
+            wmm = round(width * 25.4 / xdpi)
+            hmm = round(height * 25.4 / ydpi)
+            log(f"display dimensions for dpi {xdpi}x{ydpi} and resolution {width}x{height} is {wmm}x{hmm}")
+        if DUMMY_WIDTH_HEIGHT_MM and self.randr:
+            from xpra.x11.bindings.randr import RandRBindings
+            # FIXME: we assume there is only one output:
+            output = 0
+            with xsync:
+                RandRBindings().set_output_int_property(output, "WIDTH_MM", wmm)
+                RandRBindings().set_output_int_property(output, "HEIGHT_MM", hmm)
+        log("set_dpi(%i, %i)", xdpi, ydpi)
+        # variant-overridable on the server (e.g. SeamlessServer.set_dpi):
+        self.server.set_dpi(xdpi, ydpi)
+
+    def apply_dpi(self) -> None:
+        root_w, root_h = get_root_size()
+        self.set_physical_size(root_w, root_h, self.xdpi, self.ydpi)
 
     def show_dpi(self, xdpi: int, ydpi: int):
         root_w, root_h = get_root_size()

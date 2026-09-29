@@ -26,7 +26,11 @@ class X11_DBUS_Server(DBUS_Server):
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetDPI(self, xdpi, ydpi):
-        self.server.set_dpi(xdpi, ydpi)
+        xdpi, ydpi = int(xdpi), int(ydpi)
+        if xdpi <= 0 or ydpi <= 0:
+            raise ValueError(f"invalid dpi {xdpi}x{ydpi}")
+        if display := self.server.get_subsystem("display"):
+            display.update_dpi(xdpi, ydpi)
 
     @dbus.service.method(INTERFACE, in_signature='ii', out_signature='ii')
     def SetScreenSize(self, width, height):

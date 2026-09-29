@@ -425,6 +425,18 @@ class DisplayManager(StubSubsystem):
     def set_screen_size(self, width: int, height: int):
         """ subclasses should override this method if they support resizing """
 
+    def update_dpi(self, xdpi: int, ydpi: int) -> None:
+        """ a DPI change which does not come from a client, ie: dbus `SetDPI` """
+        self.xdpi, self.ydpi = xdpi, ydpi
+        self.dpi = round((xdpi + ydpi) / 2)
+        log("update_dpi(%i, %i)", xdpi, ydpi)
+        self.apply_dpi()
+        if xsettings := self.get_subsystem("xsettings"):
+            xsettings.update_all_server_settings()
+
+    def apply_dpi(self) -> None:
+        """ subclasses that can change the display's physical dimensions should override this method """
+
     def _apply_desktop_size(self, ss, width: int, height: int) -> None:
         log("client requesting new size: %sx%s", width, height)
         log.info("received updated display dimensions")
