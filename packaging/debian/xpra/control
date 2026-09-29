@@ -58,9 +58,9 @@ Build-Depends: debhelper (>= 8)
               ,python-gi-dev
               ,gcc
 # only needed for building the CUDA kernels instead of gcc >= 14:
-#trixie:              ,clang-19
-#forky:              ,clang-19
-#sid:              ,clang-19
+#trixie:              ,clang-22
+#forky:              ,clang-22
+#sid:              ,clang-22
               ,dh-python
               ,libsystemd-dev
               ,libpam0g-dev
