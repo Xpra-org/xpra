@@ -96,9 +96,9 @@ class EncodingsConnection(StubClientConnection):
         self.default_speed = enc.default_speed
         self.default_min_speed = enc.default_min_speed
 
-    def reinit_encodings(self, server) -> None:
-        self.server_core_encodings = server.core_encodings
-        self.server_encodings = server.encodings
+    def reinit_encodings(self, encoding_subsystem) -> None:
+        self.server_core_encodings = encoding_subsystem.core_encodings
+        self.server_encodings = encoding_subsystem.encodings
         # If this client connected before nvenc finished loading, CUDA context allocation
         # was skipped in parse_encoding_caps. Allocate it now if still missing.
         if not self.cuda_device_context and self.wants_cuda_device():
@@ -135,12 +135,12 @@ class EncodingsConnection(StubClientConnection):
             "encoding": self.encoding,
         }
 
-    def threaded_init_complete(self, encoding) -> None:
+    def threaded_init_complete(self, encoding_subsystem) -> None:
         if not self.hello_sent:
             # hello has not been sent yet; the source will be picked up by add_new_client once it is
             return
         # by now, all the codecs have been initialized
-        d = encoding.get_encoding_info()
+        d = encoding_subsystem.get_encoding_info()
         if FULL_INFO > 1:
             from xpra.codecs.loader import codec_versions
             # codec_versions: dict[str, tuple[Any, ...]] = {}
