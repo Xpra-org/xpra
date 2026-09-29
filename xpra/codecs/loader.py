@@ -114,15 +114,19 @@ def should_warn(name: str) -> bool:
 def pillow_import_block() -> None:
     # the only ones we want to keep:
     # "Bmp", "Gif", "Ppm", "Png", "Jpeg", "Xpm"
-    for image_plugin in (
+    blocked = [
         "Blp", "Cur", "Pcx", "Dcx", "Dds", "Eps", "Fits", "Fli",
         "Fpx", "Ftex", "Gbr", "Jpeg2K", "Icns", "Ico",
         "Im", "Imt",
-        "Iptc", "McIdas", "Mic", "Mpeg", "Tiff", "Mpo", "Msp",
+        "Iptc", "McIdas", "Mic", "Mpeg", "Mpo", "Msp",
         "Palm", "Pcd", "Pdf", "Pixar", "Psd", "Qoi",
         "Sgi", "Spider", "Sun", "Tga",
         "Wmf", "Xbm", "XVThumb",
-    ):
+    ]
+    # macos can use tiff for clipboard images:
+    if not OSX:
+        blocked.append("Tiff")
+    for image_plugin in blocked:
         # noinspection PyTypeChecker
         sys.modules[f"PIL.{image_plugin}ImagePlugin"] = None
 
