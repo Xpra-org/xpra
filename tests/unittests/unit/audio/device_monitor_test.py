@@ -4,14 +4,18 @@
 
 import ctypes
 import importlib.util
+import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from xpra.platform.darwin.audio_device_monitor import AudioDeviceMonitor
+OSX = sys.platform == "darwin"
+if OSX:
+    from xpra.platform.darwin.audio_device_monitor import AudioDeviceMonitor
 
 
+@unittest.skipUnless(OSX, "CoreAudio is only available on macOS")
 class CoreAudioMonitorTest(unittest.TestCase):
     def test_wrapper_reports_failed_registration(self):
         from xpra.audio.device_monitor import AudioDeviceMonitor as DeviceMonitor
