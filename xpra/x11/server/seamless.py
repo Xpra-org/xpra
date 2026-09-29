@@ -32,6 +32,7 @@ from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.server.base import ServerBase
 from xpra.x11.error import xsync, xswallow, xlog, XError
+from xpra.x11.xroot_props import root_get, root_set
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -51,6 +52,7 @@ pointerlog = Logger("x11", "pointer")
 screenlog = Logger("x11", "screen")
 
 SubstructureNotifyMask = constants["SubstructureNotifyMask"]
+XNone = constants["XNone"]
 
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
@@ -712,6 +714,11 @@ class SeamlessServer(GObject.GObject, ServerBase):
         self.refresh_window(window)
 
     def _lost_window(self, window, wm_exiting=False) -> None:
+        wid = self._window_to_id[window]
+        if self._has_focus == wid:
+            self.reset_focus()
+        if not wm_exiting:
+            self.restore_active_window(window)
         wid = self._remove_window(window)
         self.cancel_configure_damage(wid)
         if self._exit_with_windows and len(self._id_to_window) == 0:
@@ -719,6 +726,16 @@ class SeamlessServer(GObject.GObject, ServerBase):
             self.clean_quit()
         elif not wm_exiting:
             self.repaint_root_overlay()
+
+    def restore_active_window(self, window) -> None:
+        """Restore the root active window when its window goes away."""
+        with xswallow:
+            if root_get("_NET_ACTIVE_WINDOW", "u32") != window.xid:
+                return
+            focused = self.get_window(self._has_focus)
+            xid = focused.xid if focused else XNone
+            focuslog("restore_active_window(%s) giving it back to %#x", window, xid)
+            root_set("_NET_ACTIVE_WINDOW", "u32", xid)
 
     def _contents_changed(self, window, event) -> None:
         if window.is_OR() or window.is_tray() or window.get_property("shown"):
