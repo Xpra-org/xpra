@@ -113,12 +113,11 @@ def write_request(write: Callable, http_request) -> None:
 def read_server_upgrade(read: Callable) -> dict[str, str]:
     now = monotonic()
     response = b""
-
-    def hasheader(k) -> bool:
-        return k in parse_response_header(response)
-
-    while monotonic() - now < MAX_READ_TIME and not (
-            hasheader("sec-websocket-protocol") or hasheader("www-authenticate")):
+    # read until the end of the headers, whatever the response is:
+    while b"\r\n\r\n" not in response:
+        elapsed = monotonic() - now
+        if elapsed >= MAX_READ_TIME:
+            raise TimeoutError(f"http read timeout, the websocket upgrade response is incomplete after {elapsed:.1f} seconds")
         data = read(READ_CHUNK_SIZE)
         if not data:
             raise ConnectionClosedException("the server closed the connection during the websocket upgrade")
