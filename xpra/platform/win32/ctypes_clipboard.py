@@ -616,7 +616,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         def nodata(*args) -> None:
             log("nodata%s", args)
-            got_contents(target, 8, b"")
+            got_contents(target, 0, None)
 
         if target in WIN32_IMAGE_TARGETS:
             def got_image(img_data, trusted=False):
@@ -661,7 +661,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             if error_text:
                 log.warn("Warning: failed to get clipboard data as text")
                 log.warn(" %s", error_text)
-            got_contents(target, 8, b"")
+            got_contents(target, 0, None)
 
         utf8 = is_utf8_target(target)
         self.get_clipboard_text(utf8, got_text, errback)

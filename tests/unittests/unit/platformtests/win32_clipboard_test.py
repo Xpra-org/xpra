@@ -139,6 +139,26 @@ class Win32ClipboardTest(unittest.TestCase):
         primary.got_contents("image/png", "image/png", 8, b"not text")
         self.assertEqual(texts, ["hello"])
 
+    def test_failed_contents_requests_send_none(self):
+        helper, packets = self.make_helper()
+        proxy = helper._clipboard_proxies["CLIPBOARD"]
+        proxy.get_clipboard_text = lambda _utf8, _got_text, errback: errback("unavailable")
+        proxy.get_clipboard_image = lambda _format, _got_image, errback: errback("unavailable")
+        helper.process_clipboard_packet(Packet("clipboard-request", 1, "CLIPBOARD", "UTF8_STRING"))
+        helper.process_clipboard_packet(Packet("clipboard-request", 2, "CLIPBOARD", "image/png"))
+        flush()
+        self.assertEqual(packets, [
+            ("clipboard-contents-none", 1, "CLIPBOARD"),
+            ("clipboard-contents-none", 2, "CLIPBOARD"),
+        ])
+
+        proxy.get_clipboard_text = lambda _utf8, got_text, _errback: got_text(b"")
+        helper.process_clipboard_packet(Packet("clipboard-request", 3, "CLIPBOARD", "UTF8_STRING"))
+        flush()
+        self.assertEqual(len(packets), 3)
+        self.assertEqual(packets[2],
+                         ("clipboard-contents", 3, "CLIPBOARD", "UTF8_STRING", 8, "bytes", b"", 0))
+
     def use_new_packet_format(self):
         # only the 6.5+ packet format can carry more than one clipboard format:
         from xpra.clipboard import core
