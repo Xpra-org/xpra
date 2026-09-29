@@ -65,10 +65,10 @@ def ssl_handshake(ssl_sock, timeout: float = SSL_HANDSHAKE_TIMEOUT) -> None:
         log("do_handshake", exc_info=True)
         log_ssl_info(ssl_sock)
         import ssl
-        ssleof_error = getattr(ssl, "SSLEOFError", None)
-        if ssleof_error and isinstance(e, ssleof_error):
-            return
         status = ExitCode.SSL_FAILURE
+        if isinstance(e, (ssl.SSLEOFError, ConnectionError)):
+            # the handshake did not complete, so the socket is unusable:
+            raise InitExit(status, "the connection was closed during the SSL handshake") from None
         if isinstance(e, TimeoutError):
             raise InitExit(status, f"SSL handshake timed out after {timeout} seconds") from None
         ssl_cert_verification_error = getattr(ssl, "SSLCertVerificationError", None)
