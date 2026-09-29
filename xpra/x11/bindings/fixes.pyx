@@ -191,6 +191,13 @@ cdef class XFixesBindingsInstance(X11CoreBindingsInstance):
                 r = (argb >> 16)   & 0xff
                 g = (argb >> 8)    & 0xff
                 b = argb           & 0xff
+                # X11 cursors use premultiplied alpha, we send straight alpha:
+                if a == 0:
+                    r = g = b = 0
+                elif a != 0xff:
+                    r = min(255, r * 255 // a)
+                    g = min(255, g * 255 // a)
+                    b = min(255, b * 255 // a)
                 pixels[i*4]     = r
                 pixels[i*4+1]   = g
                 pixels[i*4+2]   = b

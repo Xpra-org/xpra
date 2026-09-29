@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.codecs.image import ImageWrapper
+from xpra.codecs.argb.argb import unpremultiply_argb
 from xpra.server.source.cursor import CursorsConnection
 from xpra.server.subsystem.cursor import CursorManager
 from xpra.log import Logger
@@ -125,7 +126,10 @@ class WaylandCursorManager(CursorManager):
                         rgba_buffer[di + 3] = pixels[si + 3]
                     else:
                         rgba_buffer[di:di + 4] = pixels[si:si + 4]
-            rgba = bytes(rgba_buffer)
+            rgba = rgba_buffer
+        # wayland buffers use premultiplied alpha, we send straight alpha
+        # (this gives us a writable memoryview, which cannot be hashed)
+        rgba = unpremultiply_argb(rgba)
         hotspot_x = max(0, min(hotspot_x, width - 1))
         hotspot_y = max(0, min(hotspot_y, height - 1))
         return 0, 0, width, height, hotspot_x, hotspot_y, serial, rgba, "wayland"

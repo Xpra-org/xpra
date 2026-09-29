@@ -89,8 +89,10 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     alpha = max(0.0, (5.0 - elapsed) / 5.0)
     log("cairo_paint_pointer_overlay%s drawing pointer with cairo, alpha=%s",
         (context, x, y, start_time), alpha)
-    bgra = memoryview_to_bytes(pixels)
-    img = make_image_surface(Format.ARGB32, "BGRA", bgra, cw, ch, cw * 4)
+    # cursor pixels are RGBA with straight alpha, cairo wants premultiplied alpha:
+    from xpra.codecs.argb.argb import premultiply_argb
+    rgba = memoryview_to_bytes(premultiply_argb(pixels))
+    img = make_image_surface(Format.ARGB32, "RGBA", rgba, cw, ch, cw * 4)
     context.translate(x, y)
     context.set_source_surface(img, 0, 0)
     context.set_operator(Operator.OVER)
