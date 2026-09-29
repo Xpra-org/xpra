@@ -414,16 +414,7 @@ class DisplayManager(StubServerMixin):
         monitors = attrs.dictget("monitors")
         if monitors:
             ss.set_monitors(monitors)
-        if desktop_size:
-            width, height = desktop_size
-            log("client requesting new size: %sx%s", width, height)
-            self.set_screen_size(width, height)
-            log.info("received updated display dimensions")
-            log.info(f"client display size is {width}x{height}")
-            log_screen_sizes(width, height, ss.screen_sizes)
-            self.calculate_workarea(width, height)
-            self.set_desktop_geometry_attributes(width, height)
-        # DPI
+        # the DPI must be updated before resizing, since it is used for the display's physical dimensions:
         dpi = 0
         dpi_caps = attrs.get("dpi")
         # unprefixed legacy mode:
@@ -441,6 +432,15 @@ class DisplayManager(StubServerMixin):
             log("new dpi: %ix%i", dpix, dpiy)
             self.dpi = round((dpix + dpiy) / 2)
             self.dpi_changed()
+        if desktop_size:
+            width, height = desktop_size
+            log("client requesting new size: %sx%s", width, height)
+            self.set_screen_size(width, height)
+            log.info("received updated display dimensions")
+            log.info(f"client display size is {width}x{height}")
+            log_screen_sizes(width, height, ss.screen_sizes)
+            self.calculate_workarea(width, height)
+            self.set_desktop_geometry_attributes(width, height)
         desktop_names = attrs.strtupleget("desktop-names")
         if desktop_names:
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)

@@ -42,6 +42,32 @@ class DisplayMixinTest(ServerMixinTest):
         self._test_mixin_class(make_display_manager, opts, {}, DisplayConnection)
 
 
+class ConfigureDisplayTest(unittest.TestCase):
+
+    def test_dpi_is_applied_before_resizing(self):
+        # the new DPI is used for the physical dimensions of the resized display
+        from unittest.mock import Mock
+        from xpra.net.common import Packet
+        from xpra.server.subsystem.display import DisplayManager
+        dm = DisplayManager()
+        ss = Mock()
+        ss.screen_sizes = ()
+        dm.get_server_source = lambda _proto: ss
+        dm.calculate_workarea = Mock()
+        dm.set_desktop_geometry_attributes = Mock()
+        dm.apply_refresh_rate = Mock()
+        dm.dpi_changed = Mock()
+        dpi_used = []
+        dm.set_screen_size = lambda *_args: dpi_used.append((dm.xdpi, dm.ydpi))
+        dm._process_display_configure(None, Packet("configure-display", {
+            "desktop-size": (1920, 1080),
+            "dpi": {"x": 120, "y": 144},
+        }))
+        self.assertEqual(dpi_used, [(120, 144)])
+        self.assertEqual(dm.dpi, 132)
+        dm.dpi_changed.assert_called_once_with()
+
+
 def main():
     unittest.main()
 
