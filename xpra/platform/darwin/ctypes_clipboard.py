@@ -29,6 +29,7 @@ TARGET_TRANS = {
 }
 
 IMAGE_FORMATS = ["image/png", "image/jpeg", "image/tiff"]
+NSPasteboardTypeJPEG = "public.jpeg"
 
 
 def filter_targets(targets) -> Sequence[str]:
@@ -92,8 +93,12 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if any(t in (NSStringPboardType, NSPasteboardTypeURL, "public.utf8-plain-text", "public.html", "TEXT") for t in
                types):
             targets += ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"]
-        if any(t in (NSTIFFPboardType, NSPasteboardTypePNG) for t in types):
-            targets += IMAGE_FORMATS
+        if any(t in (NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeJPEG) for t in types):
+            targets.append("image/png")
+            if NSPasteboardTypeJPEG in types:
+                targets.append("image/jpeg")
+            if NSTIFFPboardType in types:
+                targets.append("image/tiff")
         log("get_targets() targets(%s)=%s", types, targets)
         return targets
 
@@ -122,6 +127,9 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if target == "image/png" and NSPasteboardTypePNG in types:
             src_dtype = target
             img_data = self.pasteboard.dataForType_(NSPasteboardTypePNG)
+        elif target == "image/jpeg" and NSPasteboardTypeJPEG in types:
+            src_dtype = target
+            img_data = self.pasteboard.dataForType_(NSPasteboardTypeJPEG)
         elif target == "image/tiff" and NSTIFFPboardType in types:
             src_dtype = target
             img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
@@ -131,6 +139,9 @@ class OSXClipboardProxy(ClipboardProxyCore):
         elif NSTIFFPboardType in types:
             src_dtype = "image/tiff"
             img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
+        elif NSPasteboardTypeJPEG in types:
+            src_dtype = "image/jpeg"
+            img_data = self.pasteboard.dataForType_(NSPasteboardTypeJPEG)
         else:
             log("image target '%s' not found in %s", target, types)
             return None
