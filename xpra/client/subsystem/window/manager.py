@@ -669,7 +669,7 @@ class WindowManagerClient(StubClientSubsystem):
         window = self.get_window(wid)
         other_window = self.get_window(other_wid)
         log("restack window %s - %s %s %s",
-            wid, window, ["above", "below"][above], other_window)
+            wid, window, ["below", "above"][above], other_window)
         if window:
             window.restack(other_window, above)
             self.window_stacking_changed()
