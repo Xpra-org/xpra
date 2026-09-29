@@ -114,6 +114,8 @@ _on_change = noop       # callback
 _enumerator = None      # IMMDeviceEnumerator raw pointer
 _client = None          # _Client instance (prevent GC)
 _vtbl = None            # _Vtbl instance (prevent GC)
+_registered = False
+_com_initialized = False
 
 # prevent GC of the WINFUNCTYPE closures:
 _prevent_gc = []
@@ -148,27 +150,22 @@ def _make_callbacks():
 
     @_ON_DEFAULT
     def on_default(this, flow, role, device_id):
-        # eRender=0, eConsole=0:
+        # Xpra uses the default DirectSound/WASAPI output, not the voice endpoint.
+        # wasapisink's default role is console; ignore unrelated role changes.
         if flow == 0 and role == 0 and _event:
             ctypes.windll.kernel32.SetEvent(_event)
         return S_OK
 
     @_ON_STATE
     def on_state(this, device_id, new_state):
-        if _event:
-            ctypes.windll.kernel32.SetEvent(_event)
         return S_OK
 
     @_ON_ADDED
     def on_added(this, device_id):
-        if _event:
-            ctypes.windll.kernel32.SetEvent(_event)
         return S_OK
 
     @_ON_REMOVED
     def on_removed(this, device_id):
-        if _event:
-            ctypes.windll.kernel32.SetEvent(_event)
         return S_OK
 
     @_ON_PROPERTY
@@ -186,7 +183,6 @@ def _check_event() -> bool:
     WAIT_OBJECT_0 = 0
     result = ctypes.windll.kernel32.WaitForSingleObject(_event, 0)
     if result == WAIT_OBJECT_0:
-        ctypes.windll.kernel32.ResetEvent(_event)
         log("audio device change detected")
         _on_change()
     return True     # keep polling
@@ -194,10 +190,30 @@ def _check_event() -> bool:
 
 def start(on_change) -> None:
     """Register IMMNotificationClient and start polling the event."""
-    global _event, _poll_timer, _on_change, _enumerator, _client, _vtbl
+    global _event, _poll_timer, _on_change, _enumerator, _client, _vtbl, _registered, _com_initialized
 
+    if _poll_timer:
+        _on_change = on_change
+        return
+    if _registered:
+        # A previous unregister failed. Keep its COM callback alive and reuse it.
+        _on_change = on_change
+        _poll_timer = GLib.timeout_add(POLL_INTERVAL_MS, _check_event)
+        return
     ole32 = ctypes.windll.ole32
-    ole32.CoInitializeEx(None, COINIT_MULTITHREADED)
+    ole32.CoCreateInstance.argtypes = (POINTER(GUID), c_void_p, DWORD, POINTER(GUID), POINTER(c_void_p))
+    ole32.CoCreateInstance.restype = HRESULT
+    kernel32 = ctypes.windll.kernel32
+    kernel32.CreateEventW.argtypes = (c_void_p, ctypes.c_int, ctypes.c_int, LPCWSTR)
+    kernel32.CreateEventW.restype = c_void_p
+    kernel32.WaitForSingleObject.argtypes = (c_void_p, DWORD)
+    kernel32.SetEvent.argtypes = (c_void_p,)
+    kernel32.CloseHandle.argtypes = (c_void_p,)
+    # CoCreateInstance works in the existing GUI thread apartment.
+    hr = ole32.CoInitializeEx(None, COINIT_MULTITHREADED)
+    if hr not in (S_OK, 1, -2147417850):  # S_FALSE, RPC_E_CHANGED_MODE
+        raise OSError("CoInitializeEx failed: 0x%08x" % (hr & 0xFFFFFFFF))
+    _com_initialized = hr in (S_OK, 1)
 
     # create the notification client with pure ctypes vtable:
     callbacks = _make_callbacks()
@@ -214,7 +230,16 @@ def start(on_change) -> None:
         byref(IID_IMMDeviceEnumerator), byref(_enumerator),
     )
     if hr != 0:
+        stop()
         raise OSError("CoCreateInstance(MMDeviceEnumerator) failed: 0x%08x" % (hr & 0xFFFFFFFF))
+
+    # The callback must have somewhere to record a change as soon as registration succeeds.
+    # Auto-reset keeps notifications raised while a previous change is being handled.
+    _event = kernel32.CreateEventW(None, False, False, None)
+    if not _event:
+        stop()
+        raise OSError("CreateEventW failed")
+    _on_change = on_change
 
     # register the notification callback via IMMDeviceEnumerator vtable.
     # vtable index 6 = RegisterEndpointNotificationCallback:
@@ -227,30 +252,37 @@ def start(on_change) -> None:
     register_fn = _ENUM_REGISTER(vtable[0][6])
     hr = register_fn(_enumerator, byref(_client))
     if hr != 0:
+        stop()
         raise OSError("RegisterEndpointNotificationCallback failed: 0x%08x" % (hr & 0xFFFFFFFF))
+    _registered = True
 
-    # create the Windows event and start polling:
-    _event = ctypes.windll.kernel32.CreateEventW(None, True, False, None)
-    _on_change = on_change
+    # Changes delivered during registration remain signaled until polling starts.
     _poll_timer = GLib.timeout_add(POLL_INTERVAL_MS, _check_event)
     log("audio device monitor started")
 
 
-def stop() -> None:
+def stop() -> bool:
     """Unregister and clean up."""
-    global _event, _poll_timer, _on_change, _enumerator, _client, _vtbl
+    global _event, _poll_timer, _on_change, _enumerator, _client, _vtbl, _registered, _com_initialized
 
     if _poll_timer:
         GLib.source_remove(_poll_timer)
         _poll_timer = 0
+    _on_change = noop
 
-    if _enumerator and _client:
+    if _registered:
         try:
             vtable = ctypes.cast(_enumerator, POINTER(POINTER(c_void_p * 20)))[0]
             unregister_fn = _ENUM_UNREGISTER(vtable[0][7])
-            unregister_fn(_enumerator, byref(_client))
+            hr = unregister_fn(_enumerator, byref(_client))
         except Exception:
-            log("stop() unregister failed", exc_info=True)
+            log.warn("Warning: audio device notification unregister failed; retaining callback", exc_info=True)
+            return False
+        if hr != S_OK:
+            log.warn("Warning: audio device notification unregister failed: 0x%08x; retaining callback",
+                     hr & 0xFFFFFFFF)
+            return False
+        _registered = False
 
     if _enumerator:
         # Release
@@ -265,6 +297,9 @@ def stop() -> None:
 
     _client = None
     _vtbl = None
-    _on_change = noop
     _prevent_gc.clear()
+    if _com_initialized:
+        ctypes.windll.ole32.CoUninitialize()
+        _com_initialized = False
     log("audio device monitor stopped")
+    return True
