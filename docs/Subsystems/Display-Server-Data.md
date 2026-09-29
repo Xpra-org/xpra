@@ -145,7 +145,7 @@ Common cursor packet data:
 * hotspot coordinates,
 * stable serial or identifier,
 * cursor name, if provided,
-* cursor RGBA or BGRA bitmap bytes,
+* cursor RGBA bitmap bytes,
 * default and maximum cursor sizes,
 * whether the current cursor matches the default,
 * cursor visibility or absence.

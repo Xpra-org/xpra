@@ -84,5 +84,7 @@ The supported encodings are:
 ### Cursor Packet Data
 
 `cursor-data` contains, in order: encoding, width, height, hotspot X, hotspot Y,
-serial number, encoded bytes and cursor name. `raw` bytes are BGRA pixels;
+serial number, encoded bytes and cursor name. `raw` bytes are RGBA pixels;
 `png` bytes contain a PNG image. The hotspot must lie within the cursor image.
+X11 and Wayland servers older than 7.0 send `png` cursors with the red and blue
+channels swapped, and clients older than 7.0 swap them back.

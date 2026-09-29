@@ -328,8 +328,8 @@ class TestRFBClient(unittest.TestCase):
         self.assertEqual((cd[2], cd[3]), (w, h))
         self.assertEqual((cd[4], cd[5]), (xhot, yhot))
         self.assertEqual(cd[6], 1)  # serial
-        expect = bytes([10, 11, 12, 0xFF, 20, 21, 22, 0x00,
-                        30, 31, 32, 0x00, 40, 41, 42, 0xFF])
+        expect = bytes([12, 11, 10, 0xFF, 22, 21, 20, 0x00,
+                        32, 31, 30, 0x00, 42, 41, 40, 0xFF])  # RGBA
         self.assertEqual(bytes(cd[7]), expect)
 
     def test_cursor_empty(self):

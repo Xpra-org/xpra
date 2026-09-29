@@ -48,7 +48,7 @@ def decompress_cursor_data(encoding: str, cpixels: SizedBuffer, serial: int) -> 
                 f.write(cpixels)
         from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
         img = open_only(cpixels, ("png",))
-        raw = img.tobytes("raw", "BGRA")
+        raw = img.convert("RGBA").tobytes("raw", "RGBA")
         log("used PIL to convert png cursor to raw")
         return raw
     log.warn(f"Warning: invalid cursor encoding: {encoding}")

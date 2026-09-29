@@ -703,20 +703,20 @@ class RFBClientProtocol(RFBProtocol):
             return total
         pixels = body[:pixel_size]
         mask = body[pixel_size:total]
-        # combine the BGRX pixels with the mask into a BGRA cursor image:
-        bgra = bytearray(pixel_size)
+        # combine the BGRX pixels with the mask into an RGBA cursor image:
+        rgba = bytearray(pixel_size)
         for row in range(h):
             mask_row = row * mask_stride
             for col in range(w):
                 i = (row * w + col) * 4
-                bgra[i] = pixels[i]          # B
-                bgra[i + 1] = pixels[i + 1]  # G
-                bgra[i + 2] = pixels[i + 2]  # R
+                rgba[i] = pixels[i + 2]      # R
+                rgba[i + 1] = pixels[i + 1]  # G
+                rgba[i + 2] = pixels[i]      # B
                 opaque = (mask[mask_row + (col >> 3)] >> (7 - (col & 7))) & 1
-                bgra[i + 3] = 0xFF if opaque else 0
+                rgba[i + 3] = 0xFF if opaque else 0
         self.cursor_serial += 1
         log("cursor update: %ix%i, hotspot=%s", w, h, (x, y))
-        cursor = Packet("cursor-data", "raw", w, h, x, y, self.cursor_serial, bytes(bgra), "")
+        cursor = Packet("cursor-data", "raw", w, h, x, y, self.cursor_serial, bytes(rgba), "")
         self._process_packet_cb(self, cursor)
         return total
 

@@ -72,7 +72,7 @@ class ShadowCursorManager(CursorManager):
                 pixels = ci[7]
                 cursorlog("saving cursor %#x with size %ix%i, %i bytes", serial, w, h, len(pixels))
                 from PIL import Image
-                img = Image.frombuffer("RGBA", (w, h), pixels, "raw", "BGRA", 0, 1)
+                img = Image.frombuffer("RGBA", (w, h), pixels, "raw", "RGBA", 0, 1)
                 img.save("cursor-%#x.png" % serial, format="PNG")
 
     def do_get_cursor_data(self):

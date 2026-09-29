@@ -25,7 +25,7 @@ UINT_MAX = 2 ** 32 - 1
 
 def monochrome_cursor_pixels(hbmMask) -> tuple[bytes, int, int] | None:
     """
-    Convert the mask bitmap of a black and white cursor into `BGRA` pixels.
+    Convert the mask bitmap of a black and white cursor into `RGBA` pixels.
 
     These cursors have no colour bitmap: `hbmMask` is a 1-bit bitmap twice as tall
     as the cursor, holding the `AND` mask on top of the `XOR` mask.
@@ -151,8 +151,11 @@ def get_cursor_data(hCursor) -> list | None:
             log.warn("Warning: invalid cursor buffer size, got %i bytes but expected %i", r, buf_size)
             return None
         else:
-            # 32-bit data:
-            pixels = bytearray(strtobytes(buf.raw))
+            # 32-bit `BGRA` data, cursor pixels are `RGBA`:
+            bgra = strtobytes(buf.raw)
+            pixels = bytearray(bgra)
+            pixels[0::4] = bgra[2::4]
+            pixels[2::4] = bgra[0::4]
             has_alpha = False
             has_pixels = False
             for i in range(len(pixels) // 4):

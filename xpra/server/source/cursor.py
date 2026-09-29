@@ -160,7 +160,7 @@ class CursorsConnection(StubClientConnection):
             Image = None
         if "png" in self.cursor_encodings and Image:
             from xpra.codecs.image import to_png
-            img = Image.frombytes("RGBA", (w, h), bin_pixels, "raw", "BGRA", w * 4, 1)
+            img = Image.frombytes("RGBA", (w, h), bin_pixels, "raw", "RGBA", w * 4, 1)
             pngdata = to_png(img)
             cpixels = Compressed("png cursor", pngdata)
             if SAVE_CURSORS:

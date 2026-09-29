@@ -36,8 +36,8 @@ def get_cursor_cgimage(nsimage):
 
 def get_cursor_pixels(cgimage) -> tuple[int, int, bytes]:
     # render the cursor image into a known BGRA bitmap context
-    # (premultiplied alpha, rowstride = width * 4) so the pixels match
-    # the format expected by the cursor packet encoder:
+    # (premultiplied alpha, rowstride = width * 4),
+    # then convert it to the straight alpha `RGBA` pixels of cursor packets:
     width = CG.CGImageGetWidth(cgimage)
     height = CG.CGImageGetHeight(cgimage)
     if not width or not height:
@@ -53,7 +53,9 @@ def get_cursor_pixels(cgimage) -> tuple[int, int, bytes]:
     image = CG.CGBitmapContextCreateImage(context)
     provider = CG.CGImageGetDataProvider(image)
     data = CG.CGDataProviderCopyData(provider)
-    return width, height, bytes(data)
+    from PIL import Image
+    img = Image.frombytes("RGBa", (width, height), bytes(data), "raw", "BGRa", rowstride, 1)
+    return width, height, img.convert("RGBA").tobytes("raw", "RGBA")
 
 
 class DarwinShadowCursorManager(ShadowCursorManager):
