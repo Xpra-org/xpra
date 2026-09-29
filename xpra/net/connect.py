@@ -153,12 +153,18 @@ def connect_to_tcp(display_desc: dict[str, Any]):
         port = display_desc.get("port", 0)
         # do the websocket upgrade and switch to binary
         try:
-            from xpra.net.websockets.common import client_upgrade
+            from xpra.net.websockets.common import client_upgrade, MAX_READ_TIME, MAX_WRITE_TIME
         except ImportError as e:  # pragma: no cover
             raise InitExit(ExitCode.UNSUPPORTED, f"cannot handle websocket connection: {e}") from None
         else:
             display_path = display_desc_to_display_path(display_desc)
-            client_upgrade(conn.read, conn.write, host, port, display_path)
+            # without a deadline, the socket timeouts are retried for as long as the connection is active,
+            # so a server that never responds would block us forever:
+            conn.deadline = monotonic() + MAX_WRITE_TIME + MAX_READ_TIME
+            try:
+                client_upgrade(conn.read, conn.write, host, port, display_path)
+            finally:
+                conn.deadline = 0
     conn.target = get_host_target_string(display_desc)
     return conn
 

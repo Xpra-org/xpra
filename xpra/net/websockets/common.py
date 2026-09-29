@@ -106,7 +106,10 @@ def write_request(write: Callable, http_request) -> None:
         elapsed = monotonic() - now
         if elapsed >= MAX_WRITE_TIME:
             raise RuntimeError(f"http write timeout, took more {elapsed:.1f} seconds")
-        w = write(http_request)
+        try:
+            w = write(http_request)
+        except TimeoutError:
+            raise TimeoutError(f"http write timeout, took more {monotonic() - now:.1f} seconds") from None
         http_request = http_request[w:]
 
 
@@ -118,7 +121,11 @@ def read_server_upgrade(read: Callable) -> dict[str, str]:
         elapsed = monotonic() - now
         if elapsed >= MAX_READ_TIME:
             raise TimeoutError(f"http read timeout, the websocket upgrade response is incomplete after {elapsed:.1f} seconds")
-        data = read(READ_CHUNK_SIZE)
+        try:
+            data = read(READ_CHUNK_SIZE)
+        except TimeoutError:
+            what = "incomplete" if response else "no"
+            raise TimeoutError(f"http read timeout, {what} websocket upgrade response after {monotonic() - now:.1f} seconds") from None
         if not data:
             raise ConnectionClosedException("the server closed the connection during the websocket upgrade")
         response += data
