@@ -387,7 +387,7 @@ class WindowServer(StubSubsystem):
                     parent = self._id_to_window.get(transient_for)
                     parent_ws = ss.get_window_source(transient_for)
                     pos = self.get_window_position(parent)
-                    geomlog("transient-for=%s : %#x, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
+                    geomlog("transient-for=%#x : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
                     if pos and parent and parent_ws:
                         mapped_at = parent_ws.mapped_at
                         if mapped_at:
