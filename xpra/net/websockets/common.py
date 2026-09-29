@@ -14,6 +14,7 @@ from enum import IntEnum
 from collections.abc import Callable
 from importlib import import_module
 
+from xpra.net.common import ConnectionClosedException
 from xpra.util.str_fn import strtobytes
 from xpra.log import Logger
 
@@ -118,7 +119,10 @@ def read_server_upgrade(read: Callable) -> dict[str, str]:
 
     while monotonic() - now < MAX_READ_TIME and not (
             hasheader("sec-websocket-protocol") or hasheader("www-authenticate")):
-        response += read(READ_CHUNK_SIZE)
+        data = read(READ_CHUNK_SIZE)
+        if not data:
+            raise ConnectionClosedException("the server closed the connection during the websocket upgrade")
+        response += data
     return parse_response_header(response)
 
 
