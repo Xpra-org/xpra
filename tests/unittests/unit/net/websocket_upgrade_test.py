@@ -192,15 +192,26 @@ class WebsocketUpgradeTest(unittest.TestCase):
 
     def check_fails(self, behaviour: str, exception_type, message: str, timeout=20, max_time=FAIL_TIME) -> None:
         start = monotonic()
-        with self.assertRaises(exception_type) as cm:
+        # don't use `assertRaises`: it releases the traceback,
+        # and freeing the frames that reference the socket would close it for us.
+        # Keeping the error alive ensures that only an explicit close satisfies the leak check below.
+        error = None
+        try:
             self.connect(behaviour, timeout)
-        elapsed = monotonic() - start
-        self.assertIn(message, str(cm.exception))
-        self.assertLess(elapsed, max_time, f"{behaviour!r} took {elapsed:.1f} seconds")
-        if behaviour in WAITING_BEHAVIOURS:
-            # the client must not leak its socket when the connection fails:
-            server = self.servers[-1]
-            self.assertTrue(server.client_closed.wait(2), f"the client did not close its socket after {behaviour!r}")
+        except exception_type as e:
+            error = e
+        try:
+            if error is None:
+                self.fail(f"{behaviour!r} did not raise {exception_type.__name__}")
+            elapsed = monotonic() - start
+            self.assertIn(message, str(error))
+            self.assertLess(elapsed, max_time, f"{behaviour!r} took {elapsed:.1f} seconds")
+            if behaviour in WAITING_BEHAVIOURS:
+                # the client must not leak its socket when the connection fails:
+                server = self.servers[-1]
+                self.assertTrue(server.client_closed.wait(2), f"the client did not close its socket after {behaviour!r}")
+        finally:
+            error = None
 
     def test_upgrade(self) -> None:
         conn = self.connect("upgrade")
