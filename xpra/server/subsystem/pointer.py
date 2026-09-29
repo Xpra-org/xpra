@@ -566,8 +566,9 @@ class PointerManager(StubSubsystem):
         drag["accum_dy_abs"] = 0
         log("drag-as-scroll: wid=%i y=%i zone=%s",
             wid, cur_y, drag["in_scrollbar_zone"])
-        for ss in self.window_sources():
-            ss.record_scroll_event(wid)
+        if window_sub := self.get_subsystem("window"):
+            for ss in window_sub.window_sources():
+                ss.record_scroll_event(wid)
 
     def button_action(self, device_id: int, wid: int, button: int, pressed: bool, props: dict) -> None:
         device = self.get_pointer_device(device_id)
