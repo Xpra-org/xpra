@@ -265,4 +265,6 @@ def add_handler(event: str, handler: Callable) -> None:
 
 
 def remove_handler(event: str, handler: Callable) -> None:
-    get_app_delegate().remove_handler(event, handler)
+    # don't create a delegate just to unregister a handler:
+    if app_delegate := get_app_delegate(False):
+        app_delegate.remove_handler(event, handler)
