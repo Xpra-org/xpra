@@ -143,7 +143,13 @@ def connect_to_tcp(display_desc: dict[str, Any]):
             raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
         if not sock:
             raise RuntimeError(f"failed to wrap socket {raw_sock} as {dtype!r}")
-        ssl_handshake(sock)
+        # the socket is now in blocking mode,
+        # don't wait forever for a server that never completes the handshake:
+        sock.settimeout(timeout)
+        try:
+            ssl_handshake(sock)
+        finally:
+            sock.settimeout(None)
         conn._socket = sock
         conn.timeout = timeout
 
