@@ -81,7 +81,10 @@ class DragNDropWindow(GtkStubWindow):
 
     def drag_got_data_cb(self, wid: int, context, x: int, y: int, selection, info, time: int) -> None:
         log("drag_got_data_cb(%#x, %s, %i, %i, %r, %s, %i)", wid, context, x, y, selection, info, time)
+        # the context must always be finished, even when we don't use the data,
+        # otherwise the source keeps the drag open and subsequent drops never reach us:
         if self.is_readonly():
+            context.finish(False, False, time)
             return
         targets = list(x.name() for x in context.list_targets())
         actions = context.get_actions()
@@ -100,6 +103,7 @@ class DragNDropWindow(GtkStubWindow):
         log("drag_got_data_cb selection: data type=%s, format=%s, length=%s, target=%s, text=%s, uris=%s",
             dtype, fmt, length, target, text, uris)
         if not uris:
+            context.finish(False, False, time)
             return
         filelist = []
         for uri in uris:
@@ -117,6 +121,9 @@ class DragNDropWindow(GtkStubWindow):
                 continue
             filelist.append(abspath)
         log("drag_got_data_cb: will try to upload: %s", csv(filelist))
+        if not filelist:
+            context.finish(False, False, time)
+            return
         pending = set(filelist)
 
         def file_done(filename: str) -> None:
@@ -137,6 +144,7 @@ class DragNDropWindow(GtkStubWindow):
 
     def drag_process_file(self, filename: str, file_done_cb: Callable) -> None:
         if self.is_readonly():
+            file_done_cb(filename)
             return
 
         try:
@@ -151,7 +159,14 @@ class DragNDropWindow(GtkStubWindow):
             gfile = Gio.File.new_for_path(path=filename)
 
             def got_file_data(gfile, result, user_data=None) -> None:
-                _, data, entity = gfile.load_contents_finish(result)
+                try:
+                    _, data, entity = gfile.load_contents_finish(result)
+                except Exception as e:
+                    log("load_contents_finish(%s)", result, exc_info=True)
+                    log.error("Error: failed to read '%s':", filename)
+                    log.estr(e)
+                    file_done_cb(filename)
+                    return
                 basename = gfile.get_basename()
                 filesize = len(data)
                 log("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
