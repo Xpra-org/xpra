@@ -24,6 +24,15 @@ HTTPS_REDIRECT_PERMANENT = envbool("XPRA_HTTPS_REDIRECT_PERMANENT", True)
 SUPPORT_HyBi_PROTOCOLS: Sequence[str] = ("7", "8", "13")
 
 
+class UpgradeError(ValueError):
+    """ a websocket upgrade failure, with the http error code and headers to reply with """
+
+    def __init__(self, message: str, code: int = 403, headers: dict[str, str] | None = None):
+        super().__init__(message)
+        self.code = code
+        self.headers = headers or {}
+
+
 class WebSocketRequestHandler(HTTPRequestHandler):
     server_version = "Xpra-WebSocket-Server"
 
@@ -74,7 +83,10 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             raise ValueError("Missing Sec-WebSocket-Version header")
 
         if ver not in SUPPORT_HyBi_PROTOCOLS:
-            raise ValueError(f"Unsupported protocol version {ver}")
+            # RFC 6455 section 4.4: tell the client which versions we do support
+            raise UpgradeError(f"Unsupported protocol version {ver}", 426, {
+                "Sec-WebSocket-Version": ", ".join(reversed(SUPPORT_HyBi_PROTOCOLS)),
+            })
 
         # browsers separate the protocols with ", ":
         protocols = [protocol.strip() for protocol in self.headers.get("Sec-WebSocket-Protocol", "").split(",")]
@@ -127,7 +139,11 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                 log("do_GET()", exc_info=True)
                 log.error("Error: cannot handle websocket upgrade:")
                 log.estr(e)
-                self.send_error(403, f"failed to handle websocket: {e}")
+                code = 403
+                if isinstance(e, UpgradeError):
+                    code = e.code
+                    self.extra_headers.update(e.headers)
+                self.send_error(code, f"failed to handle websocket: {e}")
             return
         if self.headers.get("Upgrade-Insecure-Requests", "") == "1" and self.redirect_https:
             self.do_redirect_https()

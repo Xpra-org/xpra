@@ -111,6 +111,13 @@ class TestWebSocketUpgrade(unittest.TestCase):
         self.assertTrue(response.endswith(b"\r\n\r\n"))
         self.assertEqual(server.client.recv(1), b"")
 
+    def test_unsupported_version(self):
+        server = self.server()
+        response = server.request(upgrade_request(sec_websocket_version=b"99"))
+        self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 426 "))
+        self.assertIn(b"Sec-WebSocket-Version: 13, 8, 7\r\n", response)
+        self.assertEqual(server.upgraded, [])
+
     def test_slow_request(self):
         # sending the request one byte at a time must not keep the handler forever,
         # even if each byte arrives well within the socket timeout:
