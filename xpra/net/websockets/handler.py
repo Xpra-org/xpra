@@ -95,7 +95,16 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             b"",
             b"",
         )
-        self.new_websocket_client(self)
+        try:
+            self.new_websocket_client(self)
+        except Exception as e:
+            # the upgrade response has already been sent,
+            # so we can't reply with an http error without corrupting the websocket stream:
+            log("new_websocket_client(%s)", self, exc_info=True)
+            log.error("Error: failed to start the websocket connection:")
+            log.estr(e)
+            self.close_connection = True
+            return
         # don't use our finish method that closes the socket,
         # but do call the superclass's finish() method:
         self.finish = super().finish
