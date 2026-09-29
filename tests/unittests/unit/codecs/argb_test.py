@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from struct import pack
 from time import monotonic
 
 from xpra.util.str_fn import hexstr
@@ -12,7 +13,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.codecs.argb.argb import (     # pylint: disable=no-name-in-module
     r210_to_rgba, r210_to_rgbx, argb_to_rgba, bgra_to_rgba, rgbx_to_rgba, bgrx_to_bgra,
     rgb_to_bgrx, bgrx_to_rgb, rgbx_to_rgb, bgrx_to_l, bgra_to_la, rgb_to_l, bgr_to_l,
-    argb_swap,
+    argb_swap, premultiply_argb, unpremultiply_argb,
 )
 
 
@@ -34,6 +35,26 @@ def cmp(inbytes, outbytes, fn, *args):
 
 
 class ARGBTest(unittest.TestCase):
+
+    def test_premultiply_argb(self):
+        # ARGB32 pixels are stored in native byte order.
+        cmp(pack("=3I", 0x00FF8040, 0x804080FF, 0xFF123456),
+            pack("=3I", 0x00000000, 0x80204080, 0xFF123456),
+            premultiply_argb)
+
+    def test_unpremultiply_argb(self):
+        cmp(pack("=4I", 0x00FF8040, 0x80204080, 0x40804020, 0xFF123456),
+            pack("=4I", 0x00000000, 0x803F7FFF, 0x40FFFF7F, 0xFF123456),
+            unpremultiply_argb)
+
+    def test_premultiply_argb_roundtrip(self):
+        # These partial-alpha channels divide exactly, so integer rounding is lossless.
+        pixels = pack("=3I", 0x00000000, 0x550306FF, 0xFF123456)
+        self.assertEqual(bytes(unpremultiply_argb(premultiply_argb(pixels))), pixels)
+
+    def test_unpremultiply_argb_roundtrip(self):
+        pixels = pack("=3I", 0x00000000, 0x55010255, 0xFF123456)
+        self.assertEqual(bytes(premultiply_argb(unpremultiply_argb(pixels))), pixels)
 
     def test_r210_to_rgba(self):
         cmp((0xff, 0xfe, 0x7f, 0x7e),
