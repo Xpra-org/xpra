@@ -2632,6 +2632,8 @@ class WindowVideoSource(WindowSource):
         videolog("do_flush_video_encoder: %s", flush_data)
         if not flush_data:
             return
+        # consume the data now, so we don't hold on to an encoder that has been replaced or closed:
+        self.b_frame_flush_data = ()
         ve, csc, frame, x, y, scaled_size = flush_data
         if self._video_encoder != ve or ve.is_closed():
             return
