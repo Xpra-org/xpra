@@ -10,6 +10,7 @@ from unittest.mock import patch
 from xpra.clipboard import timeout
 from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
+from xpra.net.common import Packet
 
 
 class FakeGLib:
@@ -88,6 +89,14 @@ class ClipboardTimeoutTest(unittest.TestCase):
         self.request(helper, proxy)
         helper._clipboard_got_contents(0, "STRING", 8, b"hello")
         self.assertEqual(proxy.contents, [("UTF8_STRING", "STRING", 8, b"hello")])
+        self.assertEqual(glib.timers, {})
+        self.assertEqual(helper._clipboard_outstanding_requests, {})
+
+    def test_no_contents_reply_matches_timeout(self):
+        helper, proxy, glib = self.make_helper()
+        self.request(helper, proxy)
+        helper._process_contents_none(Packet("clipboard-contents-none", 0, "CLIPBOARD"))
+        self.assertEqual(proxy.contents, [("UTF8_STRING", "", 0, None)])
         self.assertEqual(glib.timers, {})
         self.assertEqual(helper._clipboard_outstanding_requests, {})
 

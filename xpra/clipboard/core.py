@@ -652,7 +652,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
     def _process_contents_none(self, packet: Packet) -> None:
         log("process clipboard contents none")
         request_id = packet.get_u64(1)
-        self._clipboard_got_contents(request_id, "", 8, b"")
+        self._clipboard_got_contents(request_id, "", 0, None)
 
     def _clipboard_got_contents(self, request_id: int, dtype: str, dformat: int, data) -> None:
         raise NotImplementedError()
