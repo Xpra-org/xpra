@@ -24,6 +24,7 @@ from subprocess import getstatusoutput, check_output, Popen, PIPE
 from shutil import which, rmtree, copyfile, move, copytree
 
 KEY_FILE = "E:\\xpra.pfx"
+KEY_PASSWORD = os.environ.get("SIGN_PFX_PASS", "")
 DIST = "dist"
 LIB_DIR = f"{DIST}/lib"
 
@@ -265,8 +266,10 @@ def command_args(cmd: str | list[str]) -> list[str]:
     return parts
 
 
-def log_command(cmd: str | list[str], log_filename: str, **kwargs) -> None:
-    debug(f"running {cmd!r} and sending the output to {log_filename!r}")
+def log_command(cmd: str | list[str], log_filename: str,
+                display_cmd: str | list[str] | None = None, **kwargs) -> None:
+    shown_cmd = cmd if display_cmd is None else display_cmd
+    debug(f"running {shown_cmd!r} and sending the output to {log_filename!r}")
     if not os.path.isabs(log_filename):
         log_filename = os.path.join(LOG_DIR, log_filename)
     delfile(log_filename)
@@ -276,7 +279,7 @@ def log_command(cmd: str | list[str], log_filename: str, **kwargs) -> None:
         ret = Popen(cmd, stdout=f, stderr=f, **kwargs).wait()
     if ret != 0:
         show_tail(log_filename)
-        raise RuntimeError(f"{cmd!r} failed and returned {ret}, see {log_filename!r}")
+        raise RuntimeError(f"{shown_cmd!r} failed and returned {ret}, see {log_filename!r}")
     # surface warnings even on success:
     with open(log_filename, "r") as f:
         for line in f:
@@ -1341,10 +1344,16 @@ def create_exe(args) -> str:
 
 
 def sign_file(filename: str) -> None:
-    cmd = ["signtool.exe", "sign", "/fd", "SHA256", "/v", "/f", KEY_FILE,
-           # RFC3161 timestamp, `/t` is the legacy Authenticode one:
-           "/tr", TIMESTAMP_SERVER, "/td", "SHA256", filename]
-    log_command(cmd, "signtool.log")
+    cmd = ["signtool.exe", "sign", "/fd", "SHA256", "/v", "/f", KEY_FILE]
+    display_cmd = cmd.copy()
+    if KEY_PASSWORD:
+        cmd += ["/p", KEY_PASSWORD]
+        display_cmd += ["/p", "***"]
+    # RFC3161 timestamp, `/t` is the legacy Authenticode one:
+    timestamp_args = ["/tr", TIMESTAMP_SERVER, "/td", "SHA256", filename]
+    cmd += timestamp_args
+    display_cmd += timestamp_args
+    log_command(cmd, "signtool.log", display_cmd=display_cmd)
 
 
 def create_msi(exe: str) -> str:
