@@ -1107,7 +1107,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         window = self.get_window(wid)
         other_window = self._id_to_window.get(other_wid)
         focuslog("restack window %s - %s %s %s",
-                 wid, window, ["above", "below"][above], other_window)
+                 wid, window, ["below", "above"][above], other_window)
         if window:
             window.restack(other_window, above)
 
