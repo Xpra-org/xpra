@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import shlex
 from collections import namedtuple
 import dbus.service  # @UnresolvedImport
 import dbus.types  # @UnresolvedImport
@@ -59,34 +60,40 @@ class DBUS_Server(DBUS_Server_Base):
     def Focus(self, wid):
         wid = ni(wid)
         self.log(".Focus(%i)", wid)
-        self.server.control_command_focus(wid)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_focus(wid)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Suspend(self):
         self.log(".Suspend()")
-        self.server.control_command_suspend()
+        if window := self.server.get_subsystem("window"):
+            window.control_command_suspend()
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Resume(self):
         self.log(".Resume()")
-        self.server.control_command_resume()
+        if window := self.server.get_subsystem("window"):
+            window.control_command_resume()
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Ungrab(self):
         self.log(".Ungrab()")
-        self.server.control_command_resume()
+        if window := self.server.get_subsystem("window"):
+            window.control_command_ungrab()
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def Start(self, command):
         c = ns(command)
         self.log(".Start(%s)", c)
-        self.server.do_control_command_start(True, c)
+        if command_sub := self.server.get_subsystem("command"):
+            command_sub.do_control_command_start(True, *shlex.split(c))
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def StartChild(self, command):
         c = ns(command)
         self.log(".StartChild(%s)", c)
-        self.server.do_control_command_start(False, c)
+        if command_sub := self.server.get_subsystem("command"):
+            command_sub.do_control_command_start(False, *shlex.split(c))
 
     @dbus.service.method(INTERFACE, in_signature='sb')
     def ToggleFeature(self, feature, state):
@@ -99,18 +106,21 @@ class DBUS_Server(DBUS_Server_Base):
     def KeyPress(self, keycode):
         k = ni(keycode)
         self.log(".KeyPress(%i)", k)
-        self.server.control_command_key(str(k), press=True)
+        if keyboard := self.server.get_subsystem("keyboard"):
+            keyboard.control_command_key(str(k), press=True)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def KeyRelease(self, keycode):
         k = ni(keycode)
         self.log(".KeyRelease(%i)", k)
-        self.server.control_command_key(str(k), press=False)
+        if keyboard := self.server.get_subsystem("keyboard"):
+            keyboard.control_command_key(str(k), press=False)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def ClearKeysPressed(self):
         self.log(".ClearKeysPressed()")
-        self.server.clear_keys_pressed()
+        if keyboard := self.server.get_subsystem("keyboard"):
+            keyboard.clear_keys_pressed()
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetKeyboardRepeat(self, repeat_delay, repeat_interval):
@@ -132,7 +142,8 @@ class DBUS_Server(DBUS_Server_Base):
         button, pressed = ni(button), nb(pressed)
         self.log(".MouseClick%s", (button, pressed))
         device_id = -1
-        self.server.button_action(device_id, 0, button, pressed)
+        if pointer := self.server.get_subsystem("pointer"):
+            pointer.button_action(device_id, 0, button, pressed, {})
 
     @dbus.service.method(INTERFACE, in_signature='iiii')
     def SetWorkarea(self, x, y, w, h):
@@ -145,19 +156,22 @@ class DBUS_Server(DBUS_Server_Base):
     def SetVideoRegion(self, wid, x, y, w, h):
         wid, x, y, w, h = ni(wid), ni(x), ni(y), ni(w), ni(h)
         self.log(".SetVideoRegion%s", (wid, x, y, w, h))
-        self.server.control_command_video_region(wid, x, y, w, h)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_video_region(wid, x, y, w, h)
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionEnabled(self, wid, enabled):
         wid, enabled = ni(wid), nb(enabled)
         self.log(".SetVideoRegionEnabled(%i, %s)", wid, enabled)
-        self.server.control_command_video_region_enabled(wid, enabled)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_video_region_enabled(wid, enabled)
 
     @dbus.service.method(INTERFACE, in_signature='ib')
     def SetVideoRegionDetection(self, wid, detection):
         wid, detection = ni(wid), nb(detection)
         self.log(".SetVideoRegionDetection(%i, %s)", wid, detection)
-        self.server.control_command_video_region_detection(wid, detection)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_video_region_detection(wid, detection)
 
     @dbus.service.method(INTERFACE, in_signature='iaai')
     def SetVideoRegionExclusionZones(self, wid, zones):
@@ -166,30 +180,35 @@ class DBUS_Server(DBUS_Server_Base):
         for zone in zones:
             nzones.append([ni(x) for x in zone])
         log("SetVideoRegionExclusionZones(%i, %s)", wid, nzones)
-        self.server.control_command_video_region_exclusion_zones(wid, nzones)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_video_region_exclusion_zones(wid, nzones)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def ResetVideoRegion(self, wid):
         wid = ni(wid)
         self.log(".ResetVideoRegion(%i)", wid)
-        self.server.control_command_reset_video_region(wid)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_reset_video_region(wid)
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def LockBatchDelay(self, wid, delay):
         wid, delay = ni(wid), ni(delay)
         self.log(".LockBatchDelay(%i, %i)", wid, delay)
-        self.server.control_command_lock_batch_delay(wid, delay)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_lock_batch_delay(wid, delay)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def UnlockBatchDelay(self, wid):
         wid = ni(wid)
         self.log(".UnlockBatchDelay(%i)", wid)
-        self.server.control_command_unlock_batch_delay(wid)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_unlock_batch_delay(wid)
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{is}')
     def ListWindows(self):
         d = {}
-        for wid, window in self.server._id_to_window.items():
+        window_sub = self.server.get_subsystem("window")
+        for wid, window in (window_sub._id_to_window.items() if window_sub else ()):
             try:
                 d[wid] = window.get_property("title")
             except Exception:  # pragma: no cover
@@ -201,19 +220,25 @@ class DBUS_Server(DBUS_Server_Base):
     def SetLock(self, lock):
         s = ns(lock)
         self.log(".SetLock(%s)", s)
-        self.server.control_command_set_lock(s)
+        if sharing_sub := self.server.get_subsystem("sharing"):
+            sharing_sub.control_command_set_lock(s)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def SetSharing(self, sharing):
         s = ns(sharing)
         self.log(".SetSharing(%s)", s)
-        self.server.control_command_set_sharing(s)
+        if sharing_sub := self.server.get_subsystem("sharing"):
+            sharing_sub.control_command_set_sharing(s)
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def SetUIDriver(self, uuid):
         s = ns(uuid)
         self.log(".SetUIDriver(%s)", s)
-        self.server.control_command_set_ui_driver(s)
+        sources = [source for source in get_sources_by_type(self.server) if source.uuid == s]
+        if len(sources) != 1:
+            log.warn("Warning: cannot set the ui driver to %r, found %i matching clients", s, len(sources))
+            return
+        self.server.set_ui_driver(sources[0])
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def SetIdleTimeout(self, value):
@@ -227,14 +252,16 @@ class DBUS_Server(DBUS_Server_Base):
     def MoveWindowToWorkspace(self, wid, workspace):
         wid, workspace = ni(wid), ni(workspace)
         self.log(".MoveWindowToWorkspace(%i, %i)", wid, workspace)
-        self.server.control_command_workspace(wid, workspace)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_workspace(wid, workspace)
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowScaling(self, wid, scaling):
         wid, scaling = ni(wid), ns(scaling)
         self.log(".SetWindowScaling(%i, %s)", wid, scaling)
         s = parse_scaling_value(scaling)
-        self.server.control_command_scaling(s, wid)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_scaling(s, wid)
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowScalingControl(self, wid, scaling_control):
@@ -244,35 +271,41 @@ class DBUS_Server(DBUS_Server_Base):
             sc = None
         else:
             sc = from0to100(int(ns(scaling_control)))
-        self.server.control_command_scaling_control(sc, wid)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_scaling_control(sc, wid)
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowEncoding(self, wid, encoding):
         wid, encoding = ni(wid), ns(encoding)
         self.log(".SetWindowEncoding(%i, %s)", wid, encoding)
-        self.server.control_command_encoding(encoding, wid)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_encoding(encoding, wid)
 
     @dbus.service.method(INTERFACE, in_signature='i')
     def RefreshWindow(self, wid):
         wid = ni(wid)
         self.log(".RefreshWindow(%i)", wid)
-        self.server.control_command_refresh(wid)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_refresh(wid)
 
     @dbus.service.method(INTERFACE, in_signature='ai')
     def RefreshWindows(self, window_ids):
         wids = [ni(x) for x in window_ids]
         self.log(".RefreshWindows(%s)", wids)
-        self.server.control_command_refresh(*wids)
+        if window := self.server.get_subsystem("window"):
+            window.control_command_refresh(*wids)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def RefreshAllWindows(self):
         self.log(".RefreshAllWindows()")
-        self.server.control_command_refresh(*self.server._id_to_window.keys())
+        if window := self.server.get_subsystem("window"):
+            window.control_command_refresh(*window._id_to_window.keys())
 
     @dbus.service.method(INTERFACE, in_signature='')
     def ResetWindowFilters(self):
         self.log(".ResetWindowFilters()")
-        self.server.reset_window_filters()
+        if window := self.server.get_subsystem("window"):
+            window.reset_window_filters()
 
     @dbus.service.method(INTERFACE, in_signature='s')
     def EnableDebug(self, category):
@@ -292,13 +325,15 @@ class DBUS_Server(DBUS_Server_Base):
     def SendNotification(self, nid, title, message, uuids):
         nid, title, message, uuids = ni(nid), ns(title), ns(message), ns(uuids)
         self.log(".SendNotification%s", (nid, title, message, uuids))
-        self.server.control_command_send_notification(nid, title, message, uuids)
+        if notification := self.server.get_subsystem("notification"):
+            notification.control_command_send_notification(nid, title, message, uuids)
 
     @dbus.service.method(INTERFACE, in_signature='is')
     def CloseNotification(self, nid, uuids):
         nid, uuids = ni(nid), ns(uuids)
         self.log(".CloseNotification%s", (nid, uuids))
-        self.server.control_command_close_notification(nid, uuids)
+        if notification := self.server.get_subsystem("notification"):
+            notification.control_command_close_notification(nid, uuids)
 
     @dbus.service.method(INTERFACE, in_signature='sii')
     def SetClipboardProperties(self, direction, max_copyin, max_copyout):
@@ -351,9 +386,10 @@ class DBUS_Server(DBUS_Server_Base):
                 log("GetAllInfo:gotinfo", exc_info=True)
                 errback(str(e))
 
-        v = self.server.get_all_info(gotinfo)
-        self.log(".GetAllInfo()=%s", v)
-        return v
+        if info_sub := self.server.get_subsystem("info"):
+            info_sub.get_all_info(gotinfo)
+        else:
+            errback("no info subsystem")
 
     @dbus.service.method(INTERFACE, in_signature='s', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetInfo(self, subsystem, callback, errback):
@@ -369,6 +405,7 @@ class DBUS_Server(DBUS_Server_Base):
                 log("GetInfo:gotinfo", exc_info=True)
                 errback(str(e))
 
-        v = self.server.get_all_info(gotinfo, subsystems=(subsystem, ))
-        self.log(".GetInfo(%s)=%s", subsystem, v)
-        return v
+        if info_sub := self.server.get_subsystem("info"):
+            info_sub.get_all_info(gotinfo, subsystems=(subsystem, ))
+        else:
+            errback("no info subsystem")

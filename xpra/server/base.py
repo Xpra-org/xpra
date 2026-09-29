@@ -373,9 +373,6 @@ class ServerBase(ServerCore):
         log.warn(" if you do not have a dedicated dbus session for this xpra instance,")
         log.warn(" use the 'notifications=no' option")
 
-    def update_all_server_settings(self, reset: bool = False) -> None:
-        pass  # may be overridden in subclasses (ie: x11 server)
-
     ######################################################################
     # hello:
     def get_server_features(self, server_source=None) -> dict[str, Any]:

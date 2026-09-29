@@ -21,7 +21,8 @@ class X11_DBUS_Server(DBUS_Server):
 
     @dbus.service.method(INTERFACE)
     def ResetXSettings(self):
-        self.server.update_all_server_settings(True)
+        if xsettings := self.server.get_subsystem("xsettings"):
+            xsettings.update_all_server_settings(True)
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetDPI(self, xdpi, ydpi):
