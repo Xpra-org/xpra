@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from io import BytesIO
 from time import monotonic
 from typing import Any
 
@@ -65,12 +64,9 @@ def filter_data(dtype: str = "", dformat: int = 0, data=b"", trusted: bool = Fal
             img_draw = ImageDraw.Draw(img)
             w, h = img.size
             img_draw.text((10, max(0, h // 2 - 16)), 'via Xpra, %s' % datetime.now().isoformat(), fill='black')
-        # now save it:
         img_type = (output_dtype or dtype).split("/")[-1]
-        buf = BytesIO()
-        img.save(buf, img_type.upper())  # ie: "PNG"
-        data = buf.getvalue()
-        buf.close()
+        from xpra.codecs.image import to_bytesbuffer
+        data = to_bytesbuffer(img, img_type)
     return data
 
 

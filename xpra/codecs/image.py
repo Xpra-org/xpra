@@ -312,11 +312,24 @@ def to_pil_encoding(image: ImageWrapper, encoding: str, strip_alpha=False) -> by
     return to_bytesbuffer(pil_image, encoding)
 
 
+def to_rgb_image(img):
+    """Return an RGB image, compositing transparency onto white when needed."""
+    if "A" in img.getbands() or "transparency" in img.info:
+        from PIL import Image
+        rgba = img.convert("RGBA")
+        rgb = Image.new("RGB", img.size, "white")
+        rgb.paste(rgba, mask=rgba.getchannel("A"))
+        return rgb
+    if img.mode != "RGB":
+        return img.convert("RGB")
+    return img
+
+
 def to_bytesbuffer(img, encoding="png") -> bytes:
     from io import BytesIO
     buf = BytesIO()
-    if encoding == "jpeg" and img.mode == "RGBA":
-        img = img.convert("RGB")
+    if encoding == "jpeg":
+        img = to_rgb_image(img)
     img.save(buf, encoding)
     data = buf.getvalue()
     buf.close()

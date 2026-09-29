@@ -112,7 +112,7 @@
   * [MS Windows Num-Lock state](https://github.com/Xpra-org/xpra/commit/831659bf7ac484f44ee700d16e380ee90b2a0365)
   * [MS Windows missing modifiers](https://github.com/Xpra-org/xpra/commit/d02f25096925f57b6f6fb60b97b1d691fd8dadf9)
 * 📋 Clipboard:
-  * [avoid advertising JPEG for PNG and TIFF macOS clipboard contents](https://github.com/snyh/xpra/commit/f03b19c9b745)
+  * [avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images](https://github.com/snyh/xpra/commit/f03b19c9b745)
   * [clipboard requests waiting during a client reset complete instead of timing out](https://github.com/Xpra-org/xpra/commit/bff0639c236a7d5a70ab49ced33963bac3a7d7b4)
   * [simultaneous large and small clipboard transfers no longer mix their contents or time out](https://github.com/Xpra-org/xpra/commit/e0fa31834f937dde201144685cfafbec7eb88cfb)
   * [an unowned X11 selection no longer triggers misleading errors or needless server queries](https://github.com/Xpra-org/xpra/commit/b8ef0a0fe2c1ebdd63268a41700f6ff2195494be)
