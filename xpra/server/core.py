@@ -755,8 +755,7 @@ class ServerCore(ServerBaseClass):
             # would otherwise eat into the peek timeout budget (and with
             # TLS 1.3 can race with post-handshake writes like NewSessionTickets
             # and block the read thread):
-            from xpra.net.tls.socket import ssl_handshake
-            ssl_handshake(ssl_conn._socket)
+            self.ssl_handshake(ssl_conn)
             http = socktype == "wss"
             can_peek = SSL_PEEK and (self.ssl_mode.lower() in TRUE_OPTIONS or self.ssl_mode == "auto")
             if can_peek and socktype == "ssl" and can_upgrade_to("wss"):
@@ -853,6 +852,17 @@ class ServerCore(ServerBaseClass):
         ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype, socket_options=socket_options)
         ssllog("ssl_wrap(%s, %s)=%s", conn, socket_options, ssl_conn)
         return ssl_conn
+
+    @staticmethod
+    def ssl_handshake(ssl_conn) -> None:
+        from xpra.net.tls.socket import ssl_handshake
+        try:
+            ssl_handshake(ssl_conn._socket)
+        except BaseException:
+            # the original socket has been detached by the ssl wrapper,
+            # so closing the original connection would not close anything:
+            force_close_connection(ssl_conn)
+            raise
 
     def get_ssl_socket_options(self, socket_options: dict) -> dict[str, Any]:
         ssllog(f"get_ssl_socket_options({socket_options})")
@@ -1051,8 +1061,7 @@ class ServerCore(ServerBaseClass):
                 return False, None, b""
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl", socket_options=socket_options)
             conn.socktype_wrapped = socktype
-            from xpra.net.tls.socket import ssl_handshake
-            ssl_handshake(sock)
+            self.ssl_handshake(conn)
             # Clear the pre-upgrade encrypted peek data: after wrapping, only
             # decrypted bytes peeked from `conn` may be passed on.
             peek_data = b""
