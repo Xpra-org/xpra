@@ -1429,6 +1429,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         log(f"get_group_leader: refkey={refkey}, metadata={metadata}, refs={self._ref_to_group_leader}")
         if group_leader_window := self._ref_to_group_leader.get(refkey):
             log("found existing group leader window %s using ref=%s", group_leader_window, refkey)
+            wids = self._group_leader_wids.setdefault(group_leader_window, [])
+            if wid not in wids:
+                wids.append(wid)
             return group_leader_window
         # we need to create one:
         title = "%s group leader for window %s" % (self.session_name or "Xpra", wid)
