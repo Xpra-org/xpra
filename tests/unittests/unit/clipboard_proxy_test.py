@@ -301,6 +301,33 @@ class ClipboardProxyTest(unittest.TestCase):
                 converted = filter_data("image/png", 8, png, trusted=True, output_dtype=target)
                 self.assertEqual(get_image_type(converted), target.split("/", 1)[1])
 
+    def test_filter_transparent_images_to_jpeg(self):
+        from PIL import Image
+        from xpra.codecs.image import to_rgb_image
+
+        palette = Image.new("P", (16, 16), 0)
+        palette.putpalette([255, 0, 0] + [0, 0, 0] * 255)
+        palette.info["transparency"] = 0
+        images = (
+            ("RGBA", Image.new("RGBA", (16, 16), (255, 0, 0, 128)), (255, 127, 127)),
+            ("LA", Image.new("LA", (16, 16), (40, 128)), (147, 147, 147)),
+            ("palette", palette, (255, 255, 255)),
+            ("grayscale", Image.new("L", (16, 16), 120), (120, 120, 120)),
+        )
+        for name, img, expected in images:
+            with self.subTest(mode=name):
+                rgb = to_rgb_image(img)
+                self.assertEqual(rgb.mode, "RGB")
+                self.assertEqual(rgb.getpixel((0, 0)), expected)
+                buf = BytesIO()
+                img.save(buf, "PNG")
+                jpeg = filter_data("image/png", 8, buf.getvalue(), trusted=True, output_dtype="image/jpeg")
+                self.assertEqual(get_image_type(jpeg), "jpeg")
+                with Image.open(BytesIO(jpeg)) as converted:
+                    self.assertEqual(converted.mode, "RGB")
+                    for actual, value in zip(converted.getpixel((8, 8)), expected):
+                        self.assertAlmostEqual(actual, value, delta=4)
+
     def test_get_eager_targets(self):
         proxy = SynchronousProxy({})
         proxy.set_preferred_targets(("text/html", "UTF8_STRING"))

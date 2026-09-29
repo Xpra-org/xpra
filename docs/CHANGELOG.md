@@ -7,7 +7,7 @@
 * 🌈 Encodings:
   * [explicit image wrapper locking](https://github.com/Xpra-org/xpra/issues/5024)
 * 📋 Clipboard:
-  * [avoid advertising JPEG for PNG and TIFF macOS clipboard contents](https://github.com/snyh/xpra/commit/f03b19c9b745)
+  * [avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images](https://github.com/snyh/xpra/commit/f03b19c9b745)
 * ✨ Features:
   * [`sharing=combine`: give each client its own area of the virtual display](https://github.com/Xpra-org/xpra/issues/1369)
   * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)
