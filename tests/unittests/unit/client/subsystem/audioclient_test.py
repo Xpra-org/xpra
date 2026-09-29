@@ -231,10 +231,47 @@ class DeviceInvalidationTest(unittest.TestCase):
         x = self._make_client()
         fake_sink = self._make_fake_sink(x)
         x.resume_restart = False
+        x.may_notify = lambda *a: None
+        scheduled = []
+        x.timeout_add = lambda delay, fn, *a: scheduled.append((delay, fn)) or 0
 
         x.sink_error(fake_sink, "some other fatal error")
         assert x.sink is None, "sink should have been stopped"
         assert not x.resume_restart, "resume flag should not be set"
+        assert not scheduled, "no restart should be scheduled: %s" % (scheduled, )
+
+    def test_recoverable_error_restarts_with_backoff(self):
+        from xpra.client.subsystem import audio
+        saved = audio._is_recoverable_audio_error
+        audio._is_recoverable_audio_error = lambda estr: "88890004" in estr
+        try:
+            x = self._make_client()
+            scheduled = []
+            x.timeout_add = lambda delay, fn, *a: scheduled.append((delay, fn)) or len(scheduled)
+            x.source_remove = lambda timer: None
+            for _ in range(8):
+                x.sink_error(self._make_fake_sink(x), "IAudioClient::GetCurrentPadding failed (88890004)")
+                assert x.sink is None, "sink should have been stopped"
+            delays = [delay for delay, _ in scheduled]
+            assert delays == [1000, 2000, 4000, 8000, 16000, 32000, 60000, 60000], "unexpected delays: %s" % (delays, )
+            assert all(fn == x.device_restart for _, fn in scheduled)
+            assert not x.resume_restart, "must not rely on power resume to restart"
+            # a sink reaching the ready state resets the backoff:
+            fake_sink = self._make_fake_sink(x)
+            x.emit = lambda *a: None
+            x.sink_state_changed(fake_sink, "ready")
+            assert x.device_restart_delay == 0
+        finally:
+            audio._is_recoverable_audio_error = saved
+
+    def test_stop_cancels_pending_restart(self):
+        x = self._make_client()
+        removed = []
+        x.source_remove = removed.append
+        x.device_restart_timer = 42
+        x.stop_receiving_audio()
+        assert removed == [42]
+        assert x.device_restart_timer == 0
 
 
 if __name__ == '__main__':

@@ -100,7 +100,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     __slots__ = (
         "_remote_machine_id", "audio_echo_timeout_start", "audio_keepalive_check_timer", "audio_sink",
         "audio_keepalive_stale_warning", "audio_keepalive_timer", "audio_remote_keepalive", "av_sync",
-        "av_sync_delta", "in_bytecount", "latest_audio_timestamp", "latest_echoed_audio_timestamp",
+        "av_sync_delta", "device_restart_delay", "device_restart_timer", "in_bytecount", "latest_audio_timestamp", "latest_echoed_audio_timestamp",
         "latest_sent_audio_timestamp", "microphone_allowed", "microphone_codecs", "microphone_device",
         "microphone_enabled", "on_sink_ready", "out_bytecount", "properties", "queue_used_sent",
         "resume_restart", "server_av_sync", "server_decoders", "server_encoders", "server_eos_sequence",
@@ -135,6 +135,8 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.in_bytecount: int = 0
         self.out_bytecount: int = 0
         self.resume_restart = False
+        self.device_restart_delay: int = 0
+        self.device_restart_timer: int = 0
         self.server_av_sync: bool = False
         self.server_pulseaudio_id = ""
         self.server_pulseaudio_server = ""
@@ -244,6 +246,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
 
     def cleanup(self) -> None:
         self.cancel_audio_keepalive_timers()
+        self.cancel_device_restart_timer()
         self.stop_all_audio()
 
     def stop_all_audio(self) -> None:
@@ -508,6 +511,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     def start_receiving_audio(self) -> None:
         """ ask the server to start sending audio and emit the client signal """
         log("start_receiving_audio() audio sink=%s", self.sink)
+        self.cancel_device_restart_timer()
         enabled = False
         try:
             if self.sink is not None:
@@ -548,6 +552,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         """
         ss = self.sink
         log("stop_receiving_audio(%s) audio sink=%s", tell_server, ss)
+        self.cancel_device_restart_timer()
         if self.speaker_enabled:
             self.speaker_enabled = False
             # `stop_receiving_audio` can be called from the network thread (via `_process_data`),
@@ -572,6 +577,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             return
         log("sink_state_changed(%s, %s) on_sink_ready=%s", sink, state, self.on_sink_ready)
         if state == "ready":
+            self.device_restart_delay = 0
             self.on_sink_ready()
             self.on_sink_ready = noop
         self.emit("speaker-changed")
@@ -598,19 +604,41 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             # audio subprocess detected a device change — restart quickly:
             log.info("audio output device changed, restarting speaker")
             self.stop_receiving_audio()
-            self.timeout_add(self.DEVICE_RESTART_DELAY_MS, self.start_receiving_audio)
+            self.device_restart_timer = self.timeout_add(self.DEVICE_RESTART_DELAY_MS, self.device_restart)
             return
         if _is_recoverable_audio_error(estr):
-            # recoverable device error (e.g. WASAPI invalidation before monitor detected it):
-            log.info("audio device removed, waiting for new device")
-            self.resume_restart = True
-        else:
-            self.may_notify("Speaker forwarding error", estr)
-            log.warn("Error: stopping speaker:")
-            log.warn(" %s", estr)
+            # recoverable device error (e.g. WASAPI invalidation before the monitor detected it),
+            # the device monitor dies with the sink, so we have to retry ourselves:
+            self.stop_receiving_audio()
+            self.schedule_device_restart()
+            return
+        self.may_notify("Speaker forwarding error", estr)
+        log.warn("Error: stopping speaker:")
+        log.warn(" %s", estr)
         self.stop_receiving_audio()
 
     DEVICE_RESTART_DELAY_MS = 1000
+    DEVICE_RESTART_MAX_DELAY_MS = 60000
+
+    def schedule_device_restart(self) -> None:
+        # exponential backoff, reset when a sink becomes ready:
+        if self.device_restart_delay:
+            self.device_restart_delay = min(self.device_restart_delay * 2, self.DEVICE_RESTART_MAX_DELAY_MS)
+        else:
+            self.device_restart_delay = self.DEVICE_RESTART_DELAY_MS
+        log.info("audio device removed, restarting speaker in %i seconds", self.device_restart_delay // 1000)
+        self.cancel_device_restart_timer()
+        self.device_restart_timer = self.timeout_add(self.device_restart_delay, self.device_restart)
+
+    def device_restart(self) -> bool:
+        self.device_restart_timer = 0
+        self.start_receiving_audio()
+        return False
+
+    def cancel_device_restart_timer(self) -> None:
+        if timer := self.device_restart_timer:
+            self.device_restart_timer = 0
+            self.source_remove(timer)
 
     def process_stopped(self, sink, *args) -> None:
         if self.client.exit_code is not None:
