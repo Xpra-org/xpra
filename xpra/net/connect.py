@@ -145,13 +145,7 @@ def connect_to_tcp(display_desc: dict[str, Any]):
             if not sock:
                 raw_sock.close()
                 raise RuntimeError(f"failed to wrap socket {raw_sock} as {dtype!r}")
-            # the socket is now in blocking mode,
-            # don't wait forever for a server that never completes the handshake:
-            sock.settimeout(timeout)
-            try:
-                ssl_handshake(sock)
-            finally:
-                sock.settimeout(None)
+            ssl_handshake(sock, timeout)
             conn._socket = sock
             conn.timeout = timeout
 
