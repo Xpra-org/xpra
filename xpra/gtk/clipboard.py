@@ -190,6 +190,11 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 return
             # we should handle more datatypes here..
 
+    def got_contents(self, target: str, dtype="", dformat: int = 0,
+                     data=None) -> None:
+        log("got_contents(%s, %s, %s, %s)",
+            target, dtype, dformat, Ellipsizer(data))
+
     ############################################################################
     # forward local requests to the remote clipboard:
     ############################################################################
