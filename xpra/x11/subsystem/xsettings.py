@@ -249,7 +249,7 @@ class XSettingsServer(StubSubsystem):
             pointer = self.get_subsystem("pointer")
             dc_time = getattr(pointer, "double_click_time", 0)
             dc_distance = getattr(pointer, "double_click_distance", (-1, -1))
-            have_override = dc_time > 0 or dc_distance != (-1, -1) or antialias or dpi > 0
+            have_override = dc_time > 0 or dc_distance != (-1, -1) or antialias or dpi > 0 or cursor_size > 0
             if k == "xsettings-blob" and have_override:
                 # start by removing blocklisted options:
                 def filter_blocklisted() -> tuple[int, list]:
@@ -279,6 +279,8 @@ class XSettingsServer(StubSubsystem):
 
                 if dpi > 0:
                     v = set_xsettings_int("Xft/DPI", dpi * 1024)
+                if cursor_size > 0:
+                    v = set_xsettings_int("Gtk/CursorThemeSize", cursor_size)
                 if double_click_time > 0:
                     v = set_xsettings_int("Net/DoubleClickTime", double_click_time)
                 if antialias:
