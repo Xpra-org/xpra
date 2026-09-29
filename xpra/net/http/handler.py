@@ -3,11 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import io
 import os
 import sys
 import glob
 import hmac
 import time
+from time import monotonic
 import hashlib
 import posixpath
 import socket
@@ -37,6 +39,8 @@ AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD", "")
 AUTH_DIGEST_ALGORITHM = "SHA-256"
 AUTH_DIGEST_QOP = "auth"
 AUTH_DIGEST_NONCE_TTL = envint("XPRA_HTTP_AUTH_DIGEST_NONCE_TTL", 300)
+# how long clients have to send the request line and headers:
+REQUEST_TIMEOUT = envint("XPRA_HTTP_REQUEST_TIMEOUT", 10)
 
 
 http_headers_cache: dict[str, str] = {}
@@ -288,6 +292,36 @@ def load_path(accept_encoding: list[str], path: str) -> tuple[int, dict[str, Any
         return 200, extra_headers, content
 
 
+class RequestReader(io.RawIOBase):
+    """
+    Reads from the socket, but only until the deadline:
+    the socket timeout only applies to each read,
+    so a client sending its request slowly enough could hold on to the connection forever.
+    """
+
+    def __init__(self, sock, timeout: float):
+        self.sock = sock
+        self.sock_timeout = sock.gettimeout()
+        self.deadline = monotonic() + timeout
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, buf) -> int:
+        if self.deadline:
+            remaining = self.deadline - monotonic()
+            if remaining <= 0:
+                raise TimeoutError("the http request is incomplete")
+            timeout = self.sock_timeout
+            self.sock.settimeout(remaining if timeout is None else min(timeout, remaining))
+        return self.sock.recv_into(buf)
+
+    def clear_deadline(self) -> None:
+        if self.deadline:
+            self.deadline = 0
+            self.sock.settimeout(self.sock_timeout)
+
+
 # noinspection PyPep8Naming
 class HTTPRequestHandler(BaseHTTPRequestHandler):
     """
@@ -322,6 +356,19 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.extra_headers: dict[str, Any] = {}
         self.post_data = b""
         super().__init__(sock, addr, server)
+
+    def setup(self) -> None:
+        super().setup()
+        self.rfile.close()
+        self.rfile = io.BufferedReader(RequestReader(self.connection, REQUEST_TIMEOUT))
+
+    def parse_request(self) -> bool:
+        try:
+            return super().parse_request()
+        finally:
+            # the headers have been read, the body is not subject to the request deadline:
+            if isinstance(raw := getattr(self.rfile, "raw", None), RequestReader):
+                raw.clear_deadline()
 
     def log_error(self, fmt, *args) -> None:  # pylint: disable=arguments-differ
         # don't log 404s at error level:
