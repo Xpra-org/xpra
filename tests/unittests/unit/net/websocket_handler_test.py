@@ -87,6 +87,20 @@ class TestWebSocketUpgrade(unittest.TestCase):
         self.assertEqual(status(response), [b"HTTP/1.1 101 Switching Protocols"])
         self.assertEqual(len(server.upgraded), 1)
 
+    def test_protocol_list(self):
+        for protocols in (b"binary, chat", b"chat, binary", b"chat,binary", b"chat , binary "):
+            with self.subTest(protocols=protocols):
+                server = self.server()
+                response = server.request(upgrade_request(sec_websocket_protocol=protocols))
+                self.assertEqual(status(response), [b"HTTP/1.1 101 Switching Protocols"])
+                self.assertIn(b"Sec-WebSocket-Protocol: binary", response)
+
+    def test_binary_protocol_required(self):
+        server = self.server()
+        response = server.request(upgrade_request(sec_websocket_protocol=b"chat, base64"))
+        self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 403 "))
+        self.assertEqual(server.upgraded, [])
+
     def test_slow_request(self):
         # sending the request one byte at a time must not keep the handler forever,
         # even if each byte arrives well within the socket timeout:
