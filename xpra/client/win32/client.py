@@ -192,7 +192,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     def get_group_leader(self, wid: int, metadata: typedict, _override_redirect: bool):
         return None
 
-    def destroy_window(self, wid: int, window) -> None:
+    def destroy_window(self, wid: int, window, reinit=False) -> None:
         # `destroy_all_windows()` calls this via `self.client`, so the backend can
         # augment the teardown; win32 has no group leaders (see `get_group_leader`),
         # so we just delegate to the window subsystem, which calls `window.destroy()`

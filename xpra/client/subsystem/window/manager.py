@@ -550,7 +550,7 @@ class WindowManagerClient(StubClientSubsystem):
                     backing.close()
 
             # now we can unmap it:
-            self.client.destroy_window(wid, window)
+            self.client.destroy_window(wid, window, reinit=True)
             # explicitly tell the server we have unmapped it:
             # (so it will reset the video encoders, etc)
             if not window.is_OR():

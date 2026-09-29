@@ -602,6 +602,9 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         log(f"get_group_leader: refkey={refkey}, metadata={metadata}, refs={self._ref_to_group_leader}")
         if group_leader_window := self._ref_to_group_leader.get(refkey):
             log("found existing group leader window %s using ref=%s", group_leader_window, refkey)
+            wids = self._group_leader_wids.setdefault(group_leader_window, [])
+            if wid not in wids:
+                wids.append(wid)
             return group_leader_window
         # we need to create one:
         title = "%s group leader for window %s" % (self.session_name or "Xpra", wid)
@@ -617,12 +620,17 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         self._group_leader_wids.setdefault(group_leader_window, []).append(wid)
         return group_leader_window
 
-    def destroy_window(self, wid: int, window) -> None:
+    def destroy_window(self, wid: int, window, reinit=False) -> None:
         # augment the window subsystem's own destroy with group-leader cleanup:
         if w := self.get_subsystem("window"):
             w.destroy_window(wid, window)
         group_leader = window.group_leader
         if group_leader is None or not self._group_leader_wids:
+            return
+        if reinit:
+            # the window is about to be re-created with the same wid and group ref,
+            # so keep the group leader (and our record of this wid) for it to re-use:
+            log("keeping group leader %s for re-initialized window %#x", group_leader, wid)
             return
         wids = self._group_leader_wids.get(group_leader)
         if wids is None:

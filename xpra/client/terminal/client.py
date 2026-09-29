@@ -894,7 +894,7 @@ class XpraTerminalClient(GObjectClientAdapter, UIXpraClient):
                 self.focus_window(self._stack[-1])
         self.update_zorder()
 
-    def destroy_window(self, wid: int, window) -> None:
+    def destroy_window(self, wid: int, window, reinit=False) -> None:
         self.forget_window(wid)
         if w := self.get_subsystem("window"):
             w.destroy_window(wid, window)
