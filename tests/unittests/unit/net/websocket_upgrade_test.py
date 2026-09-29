@@ -232,6 +232,31 @@ class WebsocketUpgradeTest(unittest.TestCase):
         self.check_fails("auth", ValueError, "requires authentication", max_time=MAX_TIME)
 
 
+class WriteRequestTest(unittest.TestCase):
+
+    def test_closed_connection(self) -> None:
+        # writing to a connection which has been closed must fail straight away,
+        # rather than spinning until the time limit:
+        from xpra.net.bytestreams import SocketConnection
+        client, server = socket.socketpair()
+        self.addCleanup(server.close)
+        conn = SocketConnection(client, "local", "peer", "test", "tcp")
+        conn.close()
+        start = monotonic()
+        with self.assertRaises(ConnectionClosedException):
+            common.write_request(conn.write, b"GET / HTTP/1.1\r\n\r\n")
+        self.assertLess(monotonic() - start, 1)
+
+    def test_partial_writes(self) -> None:
+        written = []
+
+        def write(data: bytes) -> int:
+            written.append(data[:3])
+            return len(written[-1])
+        common.write_request(write, b"GET / HTTP/1.1\r\n\r\n")
+        self.assertEqual(b"".join(written), b"GET / HTTP/1.1\r\n\r\n")
+
+
 @unittest.skipUnless(OPENSSL, "openssl is required to generate a test certificate")
 class SecureWebsocketUpgradeTest(WebsocketUpgradeTest):
 

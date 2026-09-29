@@ -110,6 +110,9 @@ def write_request(write: Callable, http_request) -> None:
             w = write(http_request)
         except TimeoutError:
             raise TimeoutError(f"http write timeout, took more {monotonic() - now:.1f} seconds") from None
+        if not w:
+            # the connection is no longer active, retrying would only spin until the time limit:
+            raise ConnectionClosedException("the connection was closed during the websocket upgrade")
         http_request = http_request[w:]
 
 
