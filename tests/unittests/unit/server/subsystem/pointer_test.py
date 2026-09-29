@@ -244,6 +244,30 @@ class PointerPipelineTest(unittest.TestCase):
         self.assertEqual(m.calls, [("click", 1, False, {})])
         self.assertEqual(m.buttons_pressed, {})
 
+    def test_drag_scroll_is_recorded_by_the_window_sources(self):
+        from unittest.mock import Mock, create_autospec, patch
+        from xpra.server.subsystem import pointer
+        from xpra.server.subsystem.window import WindowServer
+        server = make_server()
+        window_source = Mock()
+        window = create_autospec(WindowServer, instance=True)
+        window.window_sources.return_value = [window_source]
+        server.subsystems["window"] = window
+        m = RecordingPointerManager(server)
+        # button 1 was pressed on the scrollbar:
+        m._button1_drag[1] = {
+            "last_x": 100,
+            "last_y": 100,
+            "accum_dx_abs": 0,
+            "accum_dy_abs": 0,
+            "in_scrollbar_zone": True,
+            "looks_like_selection": False,
+            "last_emit_t_ms": 0.0,
+        }
+        with patch.object(pointer, "DRAG_SCROLL_ENABLED", True):
+            m._maybe_record_drag_scroll(1, (100, 150))
+        window_source.record_scroll_event.assert_called_once_with(1)
+
     def test_disconnect_clears_drag_state(self):
         m = self.make_manager()
         m._button1_drag[1] = {}
