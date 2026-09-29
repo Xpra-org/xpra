@@ -101,6 +101,16 @@ class TestWebSocketUpgrade(unittest.TestCase):
         self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 403 "))
         self.assertEqual(server.upgraded, [])
 
+    def test_failure_after_upgrade(self):
+        # once the upgrade response is sent, the connection can only be closed:
+        def new_websocket_client(_wsh):
+            raise OSError("failed to start the protocol")
+        server = self.server(new_websocket_client)
+        response = server.request(upgrade_request())
+        self.assertEqual(status(response), [b"HTTP/1.1 101 Switching Protocols"])
+        self.assertTrue(response.endswith(b"\r\n\r\n"))
+        self.assertEqual(server.client.recv(1), b"")
+
     def test_slow_request(self):
         # sending the request one byte at a time must not keep the handler forever,
         # even if each byte arrives well within the socket timeout:
