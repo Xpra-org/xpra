@@ -480,7 +480,7 @@ class DisplayManager(StubSubsystem):
             self.xdpi, self.ydpi = dpix, dpiy
             log("new dpi: %ix%i", dpix, dpiy)
             self.dpi = round((dpix + dpiy) / 2)
-            self.dpi_changed()
+            # the xsettings are updated with the new value below
         desktop_names = attrs.strtupleget("desktop-names")
         if desktop_names:
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)
@@ -494,13 +494,6 @@ class DisplayManager(StubSubsystem):
         # ensures that DPI and antialias information gets reset:
         if xsettings := self.get_subsystem("xsettings"):
             xsettings.update_all_server_settings()
-
-    def dpi_changed(self) -> None:
-        """
-        The x11 servers override this method
-        to also update the XSettings.
-        """
-        self.update_server_settings()
 
     def calculate_desktops(self):
         """ seamless servers can update the desktops """
