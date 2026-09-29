@@ -807,9 +807,6 @@ class X11DisplayManager(DisplayManager):
             if first_time("DPI-warning-%s" % ss.uuid):
                 may_notify_client(ss, NotificationID.DPI, "DPI Issue", body, icon_name="font")
 
-    def set_dpi(self, xdpi: int, ydpi: int) -> None:
-        """ overridden in the seamless server """
-
     ################################################################
     # display-ungrab:
 
