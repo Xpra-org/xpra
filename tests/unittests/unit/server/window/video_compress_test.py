@@ -118,6 +118,53 @@ class VideoContextCleanTest(unittest.TestCase):
         source.schedule_video_encoder_flush.assert_not_called()
         source.schedule_video_encoder_timer.assert_not_called()
 
+    def test_flush_data_released_for_replaced_encoder(self) -> None:
+        # the flush data must not keep a reference to an encoder which has been replaced:
+        source = self.make_source()
+        old_encoder = Mock()
+        old_encoder.is_closed.return_value = False
+        source._video_encoder = Mock()
+        source.b_frame_flush_data = old_encoder, None, 1, 0, 0, None
+
+        source.do_flush_video_encoder()
+
+        self.assertEqual(source.b_frame_flush_data, ())
+        old_encoder.flush.assert_not_called()
+
+    def test_flush_data_released_for_closed_encoder(self) -> None:
+        source = self.make_source()
+        encoder = Mock()
+        encoder.is_closed.return_value = True
+        source._video_encoder = encoder
+        source.b_frame_flush_data = encoder, None, 1, 0, 0, None
+
+        source.do_flush_video_encoder()
+
+        self.assertEqual(source.b_frame_flush_data, ())
+        encoder.flush.assert_not_called()
+
+    def test_flush_data_released_after_flush(self) -> None:
+        source = self.make_source()
+        encoder = Mock()
+        encoder.is_closed.return_value = False
+        encoder.get_type.return_value = "test"
+        encoder.flush.return_value = b"data", {}
+        source._video_encoder = encoder
+        source.b_frame_flush_data = encoder, None, 1, 0, 0, None
+        source.b_frame_flush_timer = 0
+        source.start_video_frame = 0
+        source.video_stream_file = None
+        source.make_draw_packet = Mock(return_value=("draw",))
+        source.queue_damage_packet = Mock()
+        source.schedule_video_encoder_flush = Mock()
+        source.schedule_video_encoder_timer = Mock()
+
+        source.do_flush_video_encoder()
+
+        encoder.flush.assert_called_once_with(1)
+        self.assertEqual(source.b_frame_flush_data, ())
+        source.schedule_video_encoder_timer.assert_called_once_with()
+
 
 class NonVideoEncodingsTest(unittest.TestCase):
 
