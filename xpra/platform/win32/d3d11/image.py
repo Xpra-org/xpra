@@ -58,7 +58,8 @@ class DXGIImageWrapper(ImageWrapper):
             try:
                 data = self._map_pixels()
                 self._mapped = True     # staging is now mapped (Map succeeded)
-                self.pixels = bytes(data)
+                # (`data` is already a copy of the staging texture)
+                self.pixels = data
             finally:
                 # Unmap only if Map actually succeeded; if _map_pixels raised,
                 # _mapped is still False and the staging was never mapped.

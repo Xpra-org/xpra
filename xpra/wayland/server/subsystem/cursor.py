@@ -108,7 +108,7 @@ class WaylandCursorManager(CursorManager):
         if isinstance(rowstride, (tuple, list)):
             rowstride = rowstride[0]
         rowstride = int(rowstride)
-        pixels = bytes(image.get_pixels())
+        pixels = memoryview(image.get_pixels()).cast("B")
         if pixel_format == "RGBA" and rowstride == width * 4:
             rgba = pixels
         else:

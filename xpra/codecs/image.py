@@ -206,23 +206,20 @@ class ImageWrapper:
             pixels = self.pixels
             assert pixels, "no pixel data to restride"
             oldstride = self.rowstride
+            # slicing a memoryview does not copy, so `join` is the only copy:
+            mv = memoryview(pixels).cast("B")
             pos = 0
             lines = []
             for _ in range(self.height):
-                lines.append(memoryview_to_bytes(pixels[pos:pos + rowstride]))
+                lines.append(mv[pos:pos + rowstride])
                 pos += oldstride
             if self.height > 0 and oldstride < rowstride:
-                # the last few lines may need padding if the new rowstride is bigger
-                # (usually just the last line)
-                # we do this here to avoid slowing down the main loop above
-                # as this should be a rarer case
-                for h in range(self.height):
-                    i = -(1 + h)
-                    line = lines[i]
-                    if len(line) < rowstride:
-                        lines[i] = line + b"\0" * (rowstride - len(line))
-                    else:
-                        break
+                # the last few lines may be short if the new rowstride is bigger
+                # (usually just the last line), and only the last ones can be short:
+                # so padding at the very end is the same as padding each of them
+                padding = self.height * rowstride - sum(len(line) for line in lines)
+                if padding > 0:
+                    lines.append(b"\0" * padding)
             self.rowstride = rowstride
             self.pixels = b"".join(lines)
             return True
@@ -272,9 +269,10 @@ class ImageWrapper:
         oldstride = self.rowstride
         pos = y * oldstride + x * self.bytesperpixel
         newstride = w * self.bytesperpixel
+        mv = memoryview(pixels).cast("B")
         lines = []
         for _ in range(h):
-            lines.append(memoryview_to_bytes(pixels[pos:pos + newstride]))
+            lines.append(mv[pos:pos + newstride])
             pos += oldstride
         image = ImageWrapper(self.x + x, self.y + y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride,
                              planes=self.planes, thread_safe=True, palette=self.palette, full_range=self.full_range)

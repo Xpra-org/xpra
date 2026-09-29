@@ -421,7 +421,7 @@ cdef class Encoder:
                 free_buffers()
                 return memoryview(output_buf), client_options
             #now compress alpha:
-            jpeg = memoryview(output_buf).tobytes()
+            jpeg = output_buf
             start = monotonic()
             #set RGB to the alpha channel:
             for i in range(3):
@@ -447,9 +447,8 @@ cdef class Encoder:
                 errcheck(r, "nvjpegEncodeRetrieveBitstream")
                 end = monotonic()
                 log("nvjpeg: downloaded %i alpha bytes in %.1fms", length, 1000*(end-start))
-                jpega = memoryview(output_buf).tobytes()
                 client_options["alpha-offset"] = len(jpeg)
-                return jpeg+jpega, client_options
+                return b"".join((jpeg, output_buf)), client_options
             finally:
                 free_buffers()
                 #restore settings:

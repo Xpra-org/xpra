@@ -29,6 +29,7 @@ from typing import Any
 
 from libc.stdint cimport uintptr_t, uint8_t, uint32_t
 from libc.string cimport memcpy
+from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
 from xpra.log import Logger
 
@@ -615,14 +616,15 @@ def _do_map(uintptr_t ctx_ptr, uintptr_t staging_ptr, uintptr_t gpu_ptr,
     cdef int dst_stride    = width * bpp
     cdef int nbytes        = dst_stride * height
 
-    buf = bytearray(nbytes)
-    cdef uint8_t [:] mv = buf
+    # copy straight into a new bytes object:
+    cdef bytes buf = PyBytes_FromStringAndSize(NULL, nbytes)
+    cdef uint8_t *dst = <uint8_t *> PyBytes_AS_STRING(buf)
     cdef int row
     for row in range(height):
-        memcpy(&mv[row * dst_stride],
+        memcpy(dst + row * dst_stride,
                src + (y + row) * src_pitch + x * bpp,
                dst_stride)
-    return bytes(buf)
+    return buf
 
 
 def _do_unmap(uintptr_t ctx_ptr, uintptr_t staging_ptr) -> None:

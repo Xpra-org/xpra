@@ -282,7 +282,7 @@ cdef class Encoder:
                                   quality, TJSAMP_GRAY)
             client_options["alpha-offset"] = len(cdata)
             may_save_image("jpeg", adata, now)
-            cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
+            cdata = b"".join((cdata, adata))
         self.frames += 1
         return memoryview(cdata), client_options
 
@@ -352,7 +352,7 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
                                   quality, TJSAMP_GRAY)
             may_save_image("jpeg", adata, now)
             client_options["alpha-offset"] = len(cdata)
-            cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
+            cdata = b"".join((cdata, adata))
             bpp = 32
         return coding, Compressed(coding, memoryview(cdata), False), client_options, width, height, 0, bpp
     finally:

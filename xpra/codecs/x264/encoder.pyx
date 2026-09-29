@@ -1111,22 +1111,19 @@ cdef class Encoder:
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
         log("x264 encode %7s frame %5i as %4s slice with %i nals, tune=%s, total %7i bytes, keyframe=%-5s, delayed=%i",
             self.src_format, self.frames, slice_type, i_nals, s(self.tune), frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
-        bnals = []
         nal_indexes = []
         cdef unsigned int index = 0
         for i in range(i_nals):
-            out = <char *>nals[i].p_payload
-            cdata = out[:nals[i].i_payload]
-            bnals.append(cdata)
             index += nals[i].i_payload
             nal_indexes.append(index)
             if LOG_NALS:
                 log.info(" nal %s priority:%10s, type:%10s, payload=%#x, payload size=%i",
                          i, NAL_PRIORITIES.get(nals[i].i_ref_idc, nals[i].i_ref_idc), NAL_TYPES.get(nals[i].i_type, nals[i].i_type), <uintptr_t> nals[i].p_payload, nals[i].i_payload)
-        cdata = b"".join(bnals)
-        if len(cdata)!=frame_size:
+        if index!=frame_size:
             log.warn("Warning: h264 nals do not match frame size")
-            log.warn(" expected %i bytes, but got %i nals and %i bytes", frame_size, len(bnals), len(cdata))
+            log.warn(" expected %i bytes, but got %i nals and %i bytes", frame_size, i_nals, index)
+        # x264 guarantees that the payloads of all the NALs are sequential in memory:
+        cdata = (<char *> nals[0].p_payload)[:frame_size]
         self.bytes_out += frame_size
         #restore speed and quality if we temporarily modified them:
         if speed>=0:

@@ -717,7 +717,9 @@ cdef class Encoder:
             pos += 4
             if pos + nal_len > total:
                 break
-            out.append(STARTCODE + dataptr[pos:pos + nal_len])
+            # (appended separately to avoid copying the NAL twice)
+            out.append(STARTCODE)
+            out.append(dataptr[pos:pos + nal_len])
             pos += nal_len
 
         self.frame_keyframe = keyframe
