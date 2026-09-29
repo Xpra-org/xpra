@@ -20,11 +20,12 @@ from xpra.net.tls.parsing import (
     parse_ssl_options_mask, parse_ssl_verify_mask, parse_ssl_protocol, parse_ssl_verify_mode,
 )
 from xpra.scripts.config import InitExit, InitException
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.str_fn import print_nested_dict, Ellipsizer
 
 SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
+SSL_HANDSHAKE_TIMEOUT = envint("XPRA_SSL_HANDSHAKE_TIMEOUT", 20)
 
 
 def ssl_wrap_socket(sock, **kwargs):
@@ -50,8 +51,12 @@ def log_ssl_info(ssl_sock) -> None:
             print_nested_dict(ssl_sock.getpeercert(), prefix=" ", print_fn=log)
 
 
-def ssl_handshake(ssl_sock) -> None:
+def ssl_handshake(ssl_sock, timeout: float = SSL_HANDSHAKE_TIMEOUT) -> None:
     log = get_ssl_logger()
+    # the socket is usually in blocking mode (see `do_wrap_socket`),
+    # don't wait forever for a peer that never completes the handshake:
+    previous_timeout = ssl_sock.gettimeout()
+    ssl_sock.settimeout(timeout)
     try:
         ssl_sock.do_handshake(True)
         log.info("SSL handshake complete, %s", ssl_sock.version())
@@ -64,6 +69,8 @@ def ssl_handshake(ssl_sock) -> None:
         if ssleof_error and isinstance(e, ssleof_error):
             return
         status = ExitCode.SSL_FAILURE
+        if isinstance(e, TimeoutError):
+            raise InitExit(status, f"SSL handshake timed out after {timeout} seconds") from None
         ssl_cert_verification_error = getattr(ssl, "SSLCertVerificationError", None)
         if ssl_cert_verification_error and isinstance(e, ssl_cert_verification_error):
             verify_code = getattr(e, "verify_code", 0)
@@ -76,6 +83,11 @@ def ssl_handshake(ssl_sock) -> None:
             log("host failed SSL verification: %s", msg)
             raise SSLVerifyFailure(status, msg, verify_code, ssl_sock) from None
         raise InitExit(status, f"SSL handshake failed: {e}") from None
+    finally:
+        try:
+            ssl_sock.settimeout(previous_timeout)
+        except OSError:
+            log("failed to restore the socket timeout", exc_info=True)
 
 
 def get_ssl_wrap_socket_context(cert: str = "", key: str = "", key_password: str = "",

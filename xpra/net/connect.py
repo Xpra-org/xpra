@@ -162,13 +162,7 @@ def connect_to_tcp(display_desc: dict[str, Any]):
             raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
         if not sock:
             raise RuntimeError(f"failed to wrap socket {raw_sock} as {dtype!r}")
-        # the socket is now in blocking mode,
-        # don't wait forever for a server that never completes the handshake:
-        sock.settimeout(timeout)
-        try:
-            ssl_handshake(sock)
-        finally:
-            sock.settimeout(None)
+        ssl_handshake(sock, timeout)
         # The read and write threads share this single OpenSSL object, which is not
         # safe for concurrent use. Wrap it in an `SSLSocketConnection`, which serializes
         # the SSL calls (issue #4918): a plain `SocketConnection` lets the two threads
