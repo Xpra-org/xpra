@@ -28,6 +28,8 @@ MAX_TIME = 0.5
 FAIL_TIME = 5
 # give up waiting for a connection attempt that is stuck:
 HANG_TIME = 10
+# the server keeps the connection open for these, so it can tell when the client closes it:
+WAITING_BEHAVIOURS = ("silent", "partial", "not-found", "auth", "no-tls")
 
 
 class FakeServer:
@@ -40,6 +42,7 @@ class FakeServer:
         self.behaviour = behaviour
         self.ssl_context = ssl_context
         self.stop = threading.Event()
+        self.client_closed = threading.Event()
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.bind(("127.0.0.1", 0))
         self.listener.listen(1)
@@ -59,8 +62,18 @@ class FakeServer:
         self.thread.join(5)
 
     def wait(self) -> None:
-        # keep the connection open without sending anything:
-        self.stop.wait(30)
+        # keep the connection open without sending anything, until the client closes it:
+        self.sock.settimeout(0.1)
+        while not self.stop.is_set():
+            try:
+                if not self.sock.recv(4096):
+                    break
+            except TimeoutError:
+                continue
+            except (OSError, ValueError):
+                break
+        if not self.stop.is_set():
+            self.client_closed.set()
 
     def run(self) -> None:
         try:
@@ -184,6 +197,10 @@ class WebsocketUpgradeTest(unittest.TestCase):
         elapsed = monotonic() - start
         self.assertIn(message, str(cm.exception))
         self.assertLess(elapsed, max_time, f"{behaviour!r} took {elapsed:.1f} seconds")
+        if behaviour in WAITING_BEHAVIOURS:
+            # the client must not leak its socket when the connection fails:
+            server = self.servers[-1]
+            self.assertTrue(server.client_closed.wait(2), f"the client did not close its socket after {behaviour!r}")
 
     def test_upgrade(self) -> None:
         conn = self.connect("upgrade")

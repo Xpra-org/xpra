@@ -146,54 +146,65 @@ def connect_to_tcp(display_desc: dict[str, Any]):
     display_name = display_desc["display_name"]
     timeout = display_desc.get("timeout", SOCKET_TIMEOUT)
     sock = retry_socket_connect(display_desc)
-    # use non-blocking until the connection is finalized
-    sock.settimeout(0.1)
-    conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name,
-                            dtype, socket_options=display_desc)
+    try:
+        # use non-blocking until the connection is finalized
+        sock.settimeout(0.1)
+        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name,
+                                dtype, socket_options=display_desc)
 
-    if dtype in ("ssl", "wss"):
-        raw_sock = sock
-        from xpra.net.tls.socket import ssl_handshake, ssl_wrap_socket
-        # convert option names to function arguments:
-        ssl_options = {k.replace("-", "_"): v for k, v in display_desc.get("ssl-options", {}).items()}
-        try:
-            sock = ssl_wrap_socket(sock, **ssl_options)
-        except ValueError as e:
-            raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
-        if not sock:
-            raise RuntimeError(f"failed to wrap socket {raw_sock} as {dtype!r}")
-        ssl_handshake(sock, timeout)
-        # The read and write threads share this single OpenSSL object, which is not
-        # safe for concurrent use. Wrap it in an `SSLSocketConnection`, which serializes
-        # the SSL calls (issue #4918): a plain `SocketConnection` lets the two threads
-        # call `SSL_read` and `SSL_write` at the same time, corrupting the record stream
-        # - typically the client's first packet (the `hello`) is silently dropped, the
-        # server then times out the login and the connection fails intermittently.
-        from xpra.net.tls.connection import SSLSocketConnection
-        conn = SSLSocketConnection(sock, conn.local, conn.remote, conn.endpoint, dtype,
-                                   socket_options=display_desc)
-        conn.timeout = timeout
-
-    # wrap in a websocket:
-    if dtype in ("ws", "wss"):
-        host = display_desc["host"]
-        port = display_desc.get("port", 0)
-        # do the websocket upgrade and switch to binary
-        try:
-            from xpra.net.websockets.common import client_upgrade, MAX_READ_TIME, MAX_WRITE_TIME
-        except ImportError as e:  # pragma: no cover
-            raise InitExit(ExitCode.UNSUPPORTED, f"cannot handle websocket connection: {e}") from None
-        else:
-            display_path = display_desc_to_display_path(display_desc)
-            # without a deadline, the socket timeouts are retried for as long as the connection is active,
-            # so a server that never responds would block us forever:
-            conn.deadline = monotonic() + MAX_WRITE_TIME + MAX_READ_TIME
+        if dtype in ("ssl", "wss"):
+            raw_sock = sock
+            from xpra.net.tls.socket import ssl_handshake, ssl_wrap_socket
+            # convert option names to function arguments:
+            ssl_options = {k.replace("-", "_"): v for k, v in display_desc.get("ssl-options", {}).items()}
             try:
-                client_upgrade(conn.read, conn.write, host, port, display_path)
-            finally:
-                conn.deadline = 0
-    conn.target = get_host_target_string(display_desc)
-    return conn
+                sock = ssl_wrap_socket(sock, **ssl_options)
+            except ValueError as e:
+                raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
+            if not sock:
+                raw_sock.close()
+                raise RuntimeError(f"failed to wrap socket {raw_sock} as {dtype!r}")
+            ssl_handshake(sock, timeout)
+            # The read and write threads share this single OpenSSL object, which is not
+            # safe for concurrent use. Wrap it in an `SSLSocketConnection`, which serializes
+            # the SSL calls (issue #4918): a plain `SocketConnection` lets the two threads
+            # call `SSL_read` and `SSL_write` at the same time, corrupting the record stream
+            # - typically the client's first packet (the `hello`) is silently dropped, the
+            # server then times out the login and the connection fails intermittently.
+            from xpra.net.tls.connection import SSLSocketConnection
+            conn = SSLSocketConnection(sock, conn.local, conn.remote, conn.endpoint, dtype,
+                                       socket_options=display_desc)
+            conn.timeout = timeout
+
+        # wrap in a websocket:
+        if dtype in ("ws", "wss"):
+            host = display_desc["host"]
+            port = display_desc.get("port", 0)
+            # do the websocket upgrade and switch to binary
+            try:
+                from xpra.net.websockets.common import client_upgrade, MAX_READ_TIME, MAX_WRITE_TIME
+            except ImportError as e:  # pragma: no cover
+                raise InitExit(ExitCode.UNSUPPORTED, f"cannot handle websocket connection: {e}") from None
+            else:
+                display_path = display_desc_to_display_path(display_desc)
+                # without a deadline, the socket timeouts are retried for as long as the connection is active,
+                # so a server that never responds would block us forever:
+                conn.deadline = monotonic() + MAX_WRITE_TIME + MAX_READ_TIME
+                try:
+                    client_upgrade(conn.read, conn.write, host, port, display_path)
+                finally:
+                    conn.deadline = 0
+        conn.target = get_host_target_string(display_desc)
+        return conn
+    except BaseException:
+        # don't leak the socket when we fail to setup the connection,
+        # `sock` is the wrapped ssl socket if we got that far:
+        if sock:
+            try:
+                sock.close()
+            except OSError as e:
+                debug("failed to close %s: %s", sock, e)
+        raise
 
 
 def connect_to_socket(display_desc: dict[str, Any]):
