@@ -721,3 +721,9 @@ sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${SUB_PLIST}"
 sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${SUB_PLIST}"
 sed -i '' -e "s+%ARCH%+$ARCH+g" "${SUB_PLIST}"
 plutil -replace CFBundleExecutable -string "${APP_NAME}" "${SUB_PLIST}"
+
+
+echo "*******************************************************************************"
+echo "Checking the bundle for Homebrew or other external dependencies"
+"${MACOS_SCRIPT_DIR}/check-app.sh" "${APP_DIR}" || exit 1
+
