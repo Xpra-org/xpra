@@ -88,6 +88,41 @@ class ConfigureDisplayTest(unittest.TestCase):
         dm.apply_refresh_rate.assert_called_once_with(ss)
         xsettings.update_all_server_settings.assert_called_once_with()
 
+    def test_dpi_is_applied_before_resizing(self):
+        # the new DPI is used for the physical dimensions of the resized display,
+        # and must also be applied when the display is not resized
+        from unittest.mock import Mock
+        from xpra.net.common import Packet
+        from xpra.server.subsystem.display import DisplayManager
+        opts = AdHocStruct()
+        opts.dpi = 96
+        opts.refresh_rate = "auto"
+        opts.sharing = "auto"
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.subsystems = {}
+        ss = Mock()
+        server.get_server_source = lambda _proto: ss
+        dm = stubbable(DisplayManager)(server)
+        dm.init(opts)
+        dm.apply_refresh_rate = Mock()
+        dpi_used = []
+        dm._apply_desktop_size = lambda *_args: dpi_used.append(("resize", dm.xdpi, dm.ydpi))
+        dm.apply_dpi = lambda: dpi_used.append(("apply", dm.xdpi, dm.ydpi))
+        dm._process_configure(None, Packet("configure-display", {
+            "desktop-size": (1920, 1080),
+            "dpi": {"x": 120, "y": 144},
+        }))
+        self.assertEqual(dpi_used, [("resize", 120, 144), ("apply", 120, 144)])
+        # DPI only:
+        dpi_used.clear()
+        dm._process_configure(None, Packet("configure-display", {"dpi": {"x": 96, "y": 96}}))
+        self.assertEqual(dpi_used, [("apply", 96, 96)])
+        # unchanged DPI:
+        dpi_used.clear()
+        dm._process_configure(None, Packet("configure-display", {"dpi": {"x": 96, "y": 96}}))
+        self.assertEqual(dpi_used, [])
+
     def test_update_dpi(self):
         # ie: from dbus `SetDPI`, the new value must be used for the xsettings
         from unittest.mock import Mock

@@ -473,9 +473,7 @@ class DisplayManager(StubSubsystem):
             ss.vrefresh = vrefresh
         if "monitors" in attrs:
             ss.set_monitors(attrs.dictget("monitors"))
-        if desktop_size != (0, 0):
-            self._apply_desktop_size(ss, *desktop_size)
-        # DPI
+        # the DPI must be updated before resizing, since it is used for the display's physical dimensions:
         dpi = 0
         dpi_caps = attrs.get("dpi")
         # unprefixed legacy mode:
@@ -488,11 +486,17 @@ class DisplayManager(StubSubsystem):
             tdpi = typedict(dpi_caps)
             dpix = tdpi.intget("x", dpix)
             dpiy = tdpi.intget("y", dpiy)
-        if dpix and dpiy and (dpix != self.xdpi or dpiy != self.ydpi):
+        dpi_changed = bool(dpix and dpiy and (dpix != self.xdpi or dpiy != self.ydpi))
+        if dpi_changed:
             self.xdpi, self.ydpi = dpix, dpiy
             log("new dpi: %ix%i", dpix, dpiy)
             self.dpi = round((dpix + dpiy) / 2)
             # the xsettings are updated with the new value below
+        if desktop_size != (0, 0):
+            self._apply_desktop_size(ss, *desktop_size)
+        if dpi_changed:
+            # the display may not have been resized, or not resized to the exact size requested:
+            self.apply_dpi()
         desktop_names = attrs.strtupleget("desktop-names")
         if desktop_names:
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)
