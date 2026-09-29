@@ -6,6 +6,8 @@
   * [optional AsyncSSH client backend](https://github.com/Xpra-org/xpra/commit/fd89a3dc5589ede85884d747b878a52bd41780f1)
 * 🌈 Encodings:
   * [explicit image wrapper locking](https://github.com/Xpra-org/xpra/issues/5024)
+* 📋 Clipboard:
+  * [avoid advertising JPEG for PNG and TIFF macOS clipboard contents](https://github.com/snyh/xpra/commit/f03b19c9b745)
 * ✨ Features:
   * [`sharing=combine`: give each client its own area of the virtual display](https://github.com/Xpra-org/xpra/issues/1369)
   * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)

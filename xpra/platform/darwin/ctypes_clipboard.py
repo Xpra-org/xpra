@@ -103,14 +103,19 @@ def normalize_type(nstype: str) -> str:
 def pasteboard_targets(types: Iterable[str]) -> Sequence[str]:
     """ the clipboard targets matching these pasteboard types """
     available = set(normalize_type(bytestostr(nstype)) for nstype in types)
+    image_targets = tuple(
+        target for target in IMAGE_TARGETS
+        if (target != "image/jpeg" or NSPasteboardTypeJPEG in available)
+        and (target != "image/tiff" or NSPasteboardTypeTIFF in available)
+    )
     targets: list[str] = []
     for nstype, nstargets in PASTEBOARD_TARGETS.items():
         if nstype not in available:
             continue
         if nstype in IMAGE_TYPES_TARGETS:
-            # we can convert to any of the image formats we support
-            # (macOS often only exposes `TIFF` whilst most applications want `PNG`):
-            nstargets = IMAGE_TARGETS
+            # PNG can be converted from other image types, but only advertise
+            # JPEG and TIFF when the pasteboard actually has those types.
+            nstargets = image_targets
         targets += [target for target in nstargets if target not in targets]
     return _filter_targets(targets)
 

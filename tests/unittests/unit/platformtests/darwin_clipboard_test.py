@@ -76,12 +76,19 @@ class DarwinClipboardTest(unittest.TestCase):
         # native pasteboard types must never be exposed to the peer:
         for nstype in ("com.apple.traditional-mac-plain-text", "dyn.ah62d", "NeXT TIFF v4.0 pasteboard type"):
             self.assertNotIn(nstype, pasteboard_targets((nstype, )))
-        # we can convert to any image format, no matter which one the pasteboard holds:
-        image_targets = pasteboard_targets(("public.tiff", ))
-        self.assertIn("image/png", image_targets)
-        self.assertIn("image/tiff", image_targets)
-        self.assertIn("image/webp", image_targets)
-        self.assertIn("image/bmp", image_targets)
+        # PNG and TIFF must not offer JPEG unless the pasteboard has JPEG data:
+        png_targets = pasteboard_targets(("public.png", ))
+        self.assertIn("image/png", png_targets)
+        self.assertNotIn("image/jpeg", png_targets)
+        self.assertNotIn("image/tiff", png_targets)
+        tiff_targets = pasteboard_targets(("public.tiff", ))
+        self.assertIn("image/png", tiff_targets)
+        self.assertIn("image/tiff", tiff_targets)
+        self.assertNotIn("image/jpeg", tiff_targets)
+        self.assertIn("image/webp", tiff_targets)
+        self.assertIn("image/bmp", tiff_targets)
+        jpeg_targets = pasteboard_targets(("public.png", "public.jpeg"))
+        self.assertIn("image/jpeg", jpeg_targets)
         # we only request one target per pasteboard format:
         offered = ("UTF8_STRING", "text/plain", "text/html", "image/png", "image/tiff")
         self.assertEqual(select_targets(offered), ("UTF8_STRING", "text/html", "image/png"))
