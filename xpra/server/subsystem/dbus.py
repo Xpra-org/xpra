@@ -116,7 +116,15 @@ class DbusManager(StubSubsystem):
 
     def setup(self) -> None:
         if self.enabled:
-            self.init_dbus_env()
+            # with Landlock, `init_dbus_env` has already been called before `setup`
+            # (see `enforce_server_landlock`), so the bus runs outside the Landlock domain:
+            if not self.env:
+                self.init_dbus_env()
+            # save the properties here rather than in `init_dbus_env`:
+            # the X11 display connection is only opened by the preceding X11 subsystem's `setup`,
+            # and this also updates them when the environment was reloaded from the session files
+            if features.x11 and self.env:
+                save_dbus_x11_properties(self.env)
             if self.control:
                 self.init_dbus_server()
 
@@ -141,8 +149,6 @@ class DbusManager(StubSubsystem):
             sf.write_session_file("dbus.env", dbus_env_data.encode("utf8"))
             sf.session_files.extend(("dbus.pid", "dbus.env"))
         os.environ.update(self.env)
-        if features.x11:
-            save_dbus_x11_properties(self.env)
 
     def init_dbus_server(self) -> None:
         log("init_dbus_server() env: %s", {k: v for k, v in os.environ.items() if k.startswith("DBUS_")})
