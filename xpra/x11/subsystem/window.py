@@ -48,6 +48,8 @@ SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 # how long a client configure event is still considered to be the cause of a geometry change:
 CLIENT_CONFIGURE_TIMEOUT = envint("XPRA_CLIENT_CONFIGURE_TIMEOUT", 1000) / 1000
 CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", False)
+# move the X11 windows we clamp to the visible area, and not just the position we report to the clients:
+CLAMP_UPDATE_GEOMETRY = envbool("XPRA_CLAMP_UPDATE_GEOMETRY", True)
 ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
 PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
 
@@ -59,6 +61,30 @@ WINDOW_SIGNALS = os.environ.get(
 
 def rindex(alist, avalue) -> int:
     return len(alist) - alist[::-1].index(avalue) - 1
+
+
+def clamp_to_visible_area(x: int, y: int, w: int, h: int, areas: Sequence) -> tuple[int, int]:
+    """
+    Returns the position of a window which is not fully contained in the visible `areas`,
+    moved to the area it overlaps the most (or to the first one if it overlaps none).
+    Windows larger than their area are aligned with its top-left corner.
+    """
+    from xpra.util.rectangle import rectangle
+    w = max(1, w)
+    h = max(1, h)
+    remaining = [rectangle(x, y, w, h)]
+    for area in areas:
+        remaining = [rect for r in remaining for rect in r.subtract_rect(area)]
+    if not remaining:
+        return x, y
+
+    def overlap(area) -> int:
+        i = area.intersection(x, y, w, h)
+        return i.width * i.height if i else 0
+    area = max(areas, key=overlap)
+    nx = area.x if w >= area.width else max(area.x, min(x, area.x + area.width - w))
+    ny = area.y if h >= area.height else max(area.y, min(y, area.y + area.height - h))
+    return nx, ny
 
 
 def clamp_window(x: int, y: int, w: int, h: int):
@@ -135,25 +161,50 @@ class SeamlessWindowServer(WindowServer):
         super().init_packet_handlers()
         self.add_packets("window-signal", main_thread=True)
 
+    def get_visible_areas(self, screen_w: int, screen_h: int) -> list:
+        """
+        The parts of the screen that the client can see:
+        its monitors if there is a single display client, otherwise the whole screen.
+        """
+        from xpra.util.rectangle import rectangle
+        from xpra.server.source.display import DisplayConnection
+        screen = rectangle(0, 0, screen_w, screen_h)
+        sources = self.get_sources_by_type(DisplayConnection)
+        areas = []
+        if len(sources) == 1:
+            monitors = sources[0].get_normalized_monitor_definitions() or {}
+            for index in sorted(monitors):
+                geometry = monitors[index].get("geometry")
+                if geometry and len(geometry) == 4:
+                    # the screen may be smaller than the client's monitors:
+                    area = screen.intersection(*geometry)
+                    if area:
+                        areas.append(area)
+        return areas or [screen]
+
     def clamp_windows_to_screen(self, screen_w: int, screen_h: int) -> None:
         """
-        Clamp every non-tray, non-OR window so its `client-geometry`
-        stays within the screen bounds after a resize. Only relevant in
-        seamless mode: desktop/monitor/shadow window models don't carry
+        Move every non-tray, non-OR window which is not fully visible after a resize
+        into the client monitor it overlaps the most.
+        Only relevant in seamless mode: desktop/monitor/shadow window models don't carry
         a `client-geometry` property.
         """
-        for window in self._id_to_window.values():
+        areas = self.get_visible_areas(screen_w, screen_h)
+        for window in tuple(self._id_to_window.values()):
             if window.is_tray() or window.is_OR():
                 continue
-            cg = window.get_property("client-geometry")
-            if not cg:
+            geometry = window.get_property("client-geometry")
+            if not geometry:
                 continue
-            x, y, w, h = cg
-            if x >= screen_w or y >= screen_h:
-                x = min(x, screen_w - 64)
-                y = min(y, screen_h - 64)
-                geomlog("clamped window %s", window)
-                window.set_property("client-geometry", (x, y, w, h))
+            x, y, w, h = geometry
+            nx, ny = clamp_to_visible_area(x, y, w, h, areas)
+            if (nx, ny) == (x, y):
+                continue
+            geomlog("clamped window %s from %s to %s using visible areas %s", window, (x, y), (nx, ny), areas)
+            window.set_property("client-geometry", (nx, ny, w, h))
+            # hidden windows are configured when they are shown again:
+            if CLAMP_UPDATE_GEOMETRY and window.get_property("shown"):
+                window._update_client_geometry()
 
     # --------------------------------------------------------------------
     # WM lifecycle - the seamless server creates the `Wm` instance, calls
