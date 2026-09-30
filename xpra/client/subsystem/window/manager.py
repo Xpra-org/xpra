@@ -41,6 +41,8 @@ OSX_EVENT_LISTENER = envbool("XPRA_OSX_EVENT_LISTENER", True)
 # ie: with `_NET_ACTIVE_WINDOW` - clients without restack support get a `raise-window` instead,
 # so present the window the same way: de-iconify it, raise it and give it the focus
 RESTACK_PRESENT = envbool("XPRA_RESTACK_PRESENT", True)
+# on macOS, presenting the window does not activate the application:
+OSX_RESTACK_ACTIVATE = envbool("XPRA_OSX_RESTACK_ACTIVATE", True)
 
 DEFAULT_SERVER_WINDOW_STATES: Final[Sequence[str]] = (
     "iconified", "fullscreen", "above", "below",
@@ -682,7 +684,10 @@ class WindowManagerClient(StubClientSubsystem):
             window.restack(other_window, above)
             if RESTACK_PRESENT and above and not other_wid:
                 focuslog("presenting restacked window %#x", wid)
-                present_window(window)
+                if present_window(window) and OSX and OSX_RESTACK_ACTIVATE:
+                    with focuslog.trap_error(f"Error activating window {wid:#x}"):
+                        from xpra.platform.darwin.gui import activate_window
+                        activate_window(window)
             self.window_stacking_changed()
 
     def _process_destroy(self, packet: Packet) -> None:

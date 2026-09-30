@@ -651,6 +651,19 @@ def enable_focus_workaround() -> None:
     NSApp.activateIgnoringOtherApps_(True)
 
 
+def activate_window(window) -> None:
+    """
+    `Gtk.Window.present()` orders the window front and makes it key,
+    but it does not activate the application,
+    so the window stays behind the windows of the active application.
+    (since macOS 14, activation is cooperative and the system may refuse it)
+    """
+    NSApp.activateIgnoringOtherApps_(True)
+    from xpra.platform.darwin.window_stacking import get_nswindow
+    if nswindow := get_nswindow(window):
+        nswindow.makeKeyAndOrderFront_(None)
+
+
 def can_access_display() -> bool:
     # see: https://stackoverflow.com/a/11511419/428751
     d = Quartz.CGSessionCopyCurrentDictionary()

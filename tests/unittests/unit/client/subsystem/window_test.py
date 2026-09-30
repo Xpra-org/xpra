@@ -79,6 +79,39 @@ class WindowManagerTest(ClientMixinTest):
         with patch.object(manager_module, "RESTACK_PRESENT", False):
             self.assertFalse(restack(1, 0, 0))
 
+    def test_restack_above_activates_the_macos_application(self):
+        import sys
+        from types import SimpleNamespace
+        from xpra.client.subsystem.window import manager as manager_module
+        from xpra.client.subsystem.window.manager import WindowManagerClient
+
+        def restack(detail: int, sibling: int, focused=False, osx=True, activate=True, present=True) -> list:
+            window = Mock()
+            window.has_toplevel_focus.return_value = focused
+            manager = AdHocStruct()
+            manager.get_window = {1: window}.get
+            manager.window_stacking_changed = Mock()
+            activated = []
+            # a stand-in for the macOS platform module, which cannot be imported elsewhere:
+            darwin_gui = SimpleNamespace(activate_window=activated.append)
+            with (
+                patch.dict(sys.modules, {"xpra.platform.darwin.gui": darwin_gui}),
+                patch.object(manager_module, "OSX", osx),
+                patch.object(manager_module, "OSX_RESTACK_ACTIVATE", activate),
+                patch.object(manager_module, "RESTACK_PRESENT", present),
+            ):
+                WindowManagerClient._process_restack(manager, Packet("window-restack", 1, detail, sibling))
+            return activated
+
+        self.assertEqual(len(restack(0, 0)), 1)
+        # not on other platforms, and not when turned off:
+        self.assertEqual(restack(0, 0, osx=False), [])
+        self.assertEqual(restack(0, 0, activate=False), [])
+        self.assertEqual(restack(0, 0, present=False), [])
+        # not when the window is already focused, or for other restacks:
+        self.assertEqual(restack(0, 0, focused=True), [])
+        self.assertEqual(restack(1, 0), [])
+
     @unittest.skipUnless(WIN32, "win32 only")
     def test_win32_window_stacking(self):
         from xpra.platform.win32 import constants as win32con
