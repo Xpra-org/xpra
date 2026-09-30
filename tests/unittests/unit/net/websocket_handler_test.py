@@ -102,8 +102,16 @@ class TestWebSocketUpgrade(unittest.TestCase):
     def test_binary_protocol_required(self):
         server = self.server()
         response = server.request(upgrade_request(sec_websocket_protocol=b"chat, base64"))
-        self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 400 "))
+        self.assertTrue(response.startswith(b"HTTP/1.0 400 "), response)
         self.assertEqual(server.upgraded, [])
+
+    def test_error_response_header_directory(self):
+        from xpra.net.http import handler
+        with patch.object(handler, "may_reload_headers", return_value={}) as load_headers:
+            server = self.server()
+            response = server.request(upgrade_request(sec_websocket_version=b"99"))
+        self.assertTrue(response.startswith(b"HTTP/1.0 426 "), response)
+        load_headers.assert_called_once_with(("/etc/xpra/http-headers",))
 
     def test_failure_after_upgrade(self):
         # once the upgrade response is sent, the connection can only be closed:
@@ -118,7 +126,7 @@ class TestWebSocketUpgrade(unittest.TestCase):
     def test_unsupported_version(self):
         server = self.server()
         response = server.request(upgrade_request(sec_websocket_version=b"99"))
-        self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 426 "))
+        self.assertTrue(response.startswith(b"HTTP/1.0 426 "), response)
         self.assertIn(b"Sec-WebSocket-Version: 13, 8, 7\r\n", response)
         self.assertEqual(server.upgraded, [])
 
@@ -134,7 +142,7 @@ class TestWebSocketUpgrade(unittest.TestCase):
             with self.subTest(connection=connection):
                 server = self.server()
                 response = server.request(upgrade_request(connection=connection))
-                self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 400 "))
+                self.assertTrue(response.startswith(b"HTTP/1.0 400 "), response)
                 self.assertEqual(server.upgraded, [])
 
     def test_error_codes(self):
@@ -152,7 +160,7 @@ class TestWebSocketUpgrade(unittest.TestCase):
             with self.subTest(replace=replace):
                 server = self.server()
                 response = server.request(upgrade_request(**replace))
-                self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 %i " % code), status(response))
+                self.assertTrue(response.startswith(b"HTTP/1.0 %i " % code), response)
                 self.assertEqual(server.upgraded, [])
 
     def test_internal_error(self):
@@ -163,7 +171,7 @@ class TestWebSocketUpgrade(unittest.TestCase):
         with patch.object(handler, "make_websocket_accept_hash", fail):
             server = self.server()
             response = server.request(upgrade_request())
-        self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 500 "), status(response))
+        self.assertTrue(response.startswith(b"HTTP/1.0 500 "), response)
         self.assertNotIn(b"internal details", response)
         self.assertEqual(server.upgraded, [])
 

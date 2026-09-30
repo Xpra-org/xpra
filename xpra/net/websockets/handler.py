@@ -5,7 +5,7 @@
 
 from base64 import b64decode
 from binascii import Error as Base64Error
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.util.env import envbool
 from xpra.util.str_fn import is_valid_hostname, strtobytes, std
@@ -40,7 +40,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
 
     def __init__(self, sock, addr, new_websocket_client: Callable,
                  web_root: str = "/usr/share/xpra/www/",
-                 http_headers_dir: Iterable[str] = "/etc/xpra/http-headers",
+                 http_headers_dirs: Sequence[str] = ("/etc/xpra/http-headers",),
                  script_paths: dict[str, Callable[[str], HttpResponse]] | None = None,
                  redirect_https: bool = False,
                  origin: str = "auto",
@@ -53,7 +53,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         self.origin = origin
         self.finish = self.finish_and_close
         super().__init__(sock, addr,
-                         web_root, http_headers_dir, script_paths,
+                         web_root, http_headers_dirs, script_paths,
                          username, password)
 
     def check_websocket_origin(self) -> None:
