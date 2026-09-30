@@ -280,6 +280,7 @@ def get_child_reaper() -> ChildReaper:
     global singleton
     if singleton is None:
         singleton = ChildReaper()
+    assert singleton
     return singleton
 
 

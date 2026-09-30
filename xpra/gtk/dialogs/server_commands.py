@@ -259,6 +259,7 @@ def get_server_commands_window(client) -> ServerCommandsWindow:
     global _instance
     if _instance is None:
         _instance = ServerCommandsWindow(client)
+    assert _instance
     return _instance
 
 

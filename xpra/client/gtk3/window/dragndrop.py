@@ -150,6 +150,7 @@ class DragNDropWindow(GtkStubWindow):
         try:
             filesize = os.stat(filename).st_size
         except OSError:
+            # noinspection unused-local
             filesize = -1
         else:
             if not self._file_handler.check_file_size("upload", filename, filesize):

@@ -111,6 +111,7 @@ class GSettingsClient(StubClientSubsystem):
             try:
                 s = self.settings.get(schema_id)
                 if s is None:
+                    # noinspection unbound-local-variable
                     s = Gio.Settings.new(schema_id)
                     self.settings[schema_id] = s
                 values[gsettings_key(schema_id, key)] = s.get_value(key).print_(True)

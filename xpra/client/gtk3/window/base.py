@@ -1446,7 +1446,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not follow:
             return
         # adjust our relative position:
-        fpos = getattr(follow, "_pos", None)
+        fpos: tuple[int, int] | None = getattr(follow, "_pos", None)
         if not fpos:
             return
         fx, fy = fpos

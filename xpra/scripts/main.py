@@ -1948,6 +1948,7 @@ def make_client(opts):
         raise ValueError(f"invalid gui backend {backend!r}, must be one of: "+csv(BACKENDS))
 
     progress_process = None
+    # noinspection simplify-boolean-check
     if opts.splash is not False:
         from xpra import __version__
         title = opts.session_name or "Xpra Client v%s" % __version__

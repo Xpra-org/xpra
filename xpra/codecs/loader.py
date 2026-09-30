@@ -521,8 +521,8 @@ def main(args: list[str]) -> int:
 
         def load_in_thread() -> None:
             try:
-                codecs = do_main_load(args)
-                print_codecs(codecs)
+                loaded = do_main_load(args)
+                print_codecs(loaded)
                 unload_codecs()
             finally:
                 GLib.idle_add(main_loop.quit)
@@ -608,8 +608,8 @@ def print_codecs(list_codecs: Sequence[str]) -> None:
     out("")
     out.info("codecs versions:")
 
-    def forcever(v) -> str:
-        return pver(v, numsep=".", strsep=".").lstrip("v")
+    def forcever(ver) -> str:
+        return pver(ver, numsep=".", strsep=".").lstrip("v")
     print_nested_dict(codec_versions, vformat=forcever, print_fn=out.info)
 
 

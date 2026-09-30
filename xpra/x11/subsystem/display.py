@@ -818,6 +818,7 @@ class X11DisplayManager(DisplayManager):
     ################################################################
     # display-ungrab:
 
+    # noinspection method-may-be-static
     def _process_ungrab(self, proto, _packet: Packet) -> None:
         # ignore the window id: wid = packet.get_wid()
         grablog("display ungrab from %s", proto)

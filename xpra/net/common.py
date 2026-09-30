@@ -304,11 +304,11 @@ def proc_net_addr_keys(addr) -> tuple[str, str]:
     """
     import socket
     ip = str(addr[0]).split("%", 1)[0]
-    v4 = v6 = ""
     if ip.count(":") == 0:
         v4 = proc_net_addr(socket.AF_INET, addr)
         v6 = proc_net_addr(socket.AF_INET6, (f"::ffff:{ip}", addr[1]))
     else:
+        v4 = ""
         v6 = proc_net_addr(socket.AF_INET6, addr)
         if ip.lower().startswith("::ffff:") and ip.count(".") == 3:
             v4 = proc_net_addr(socket.AF_INET, (ip[len("::ffff:"):], addr[1]))

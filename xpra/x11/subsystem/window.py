@@ -122,6 +122,7 @@ def set_focused_state(window, focused: bool) -> None:
 def is_window_hidden(ss, window) -> bool:
     """ is this window outside this client's area of the virtual display? (`sharing=combine`)
         (weak dependency on the `WindowsConnection` mixin) """
+    # noinspection none-function-assignment
     return bool(getattr(ss, "is_window_hidden", noop)(window))
 
 

@@ -317,4 +317,5 @@ def get_menu_provider() -> MenuProvider:
     global singleton
     if singleton is None:
         singleton = MenuProvider()
+    assert singleton
     return singleton
