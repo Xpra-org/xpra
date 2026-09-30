@@ -201,7 +201,10 @@ class MenuProvider:
 
         def cache_ended(ended_proc: Popen) -> None:
             self.menu_cache_process = None
-            output = ended_proc.stdout.read() if ended_proc.stdout else ""
+            output = ""
+            if stdout := ended_proc.stdout:
+                with stdout:
+                    output = stdout.read()
             modified = 0
             for line in output.splitlines():
                 if line.startswith("modified="):
