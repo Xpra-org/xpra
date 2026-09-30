@@ -1112,7 +1112,7 @@ cdef class Encoder:
         log("x264 encode %7s frame %5i as %4s slice with %i nals, tune=%s, total %7i bytes, keyframe=%-5s, delayed=%i",
             self.src_format, self.frames, slice_type, i_nals, s(self.tune), frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
         nal_indexes = []
-        cdef unsigned int index = 0
+        cdef int index = 0
         for i in range(i_nals):
             index += nals[i].i_payload
             nal_indexes.append(index)
