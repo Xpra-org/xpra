@@ -96,9 +96,12 @@ class TestWebSocketUpgrade(unittest.TestCase):
                 self.assertIn(b"Sec-WebSocket-Protocol: binary", response)
 
     def test_binary_protocol_required(self):
-        server = self.server()
-        response = server.request(upgrade_request(sec_websocket_protocol=b"chat, base64"))
-        self.assertTrue(status(response)[0].startswith(b"HTTP/1.0 403 "))
+        from xpra.net.http import handler as http_handler
+        with patch.object(http_handler, "may_reload_headers", return_value={}) as reload_headers:
+            server = self.server()
+            response = server.request(upgrade_request(sec_websocket_protocol=b"chat, base64"))
+        self.assertTrue(response.startswith(b"HTTP/1.0 403 "), response)
+        reload_headers.assert_called_once_with(("/etc/xpra/http-headers",))
         self.assertEqual(server.upgraded, [])
 
     def test_failure_after_upgrade(self):

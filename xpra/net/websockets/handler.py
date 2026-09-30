@@ -28,7 +28,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
 
     def __init__(self, sock, addr, new_websocket_client,
                  web_root="/usr/share/xpra/www/",
-                 http_headers_dir="/etc/xpra/http-headers",
+                 http_headers_dirs: Sequence[str] = ("/etc/xpra/http-headers",),
                  script_paths: dict[str, Callable[[str], HttpResponse]] = None,
                  redirect_https=False,
                  username=AUTH_USERNAME,
@@ -39,7 +39,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         self.redirect_https = redirect_https
         self.finish = self.finish_and_close
         super().__init__(sock, addr,
-                         web_root, http_headers_dir, script_paths,
+                         web_root, http_headers_dirs, script_paths,
                          username, password)
 
     def handle_websocket(self) -> None:
