@@ -176,7 +176,7 @@ class EncoderServer(ServerBase):
                 raise RuntimeError("mmap packet but mmap read is not available")
             chunks = options.pop("chunks", ())
             rgb_data, free = ss.mmap_read_area.mmap_read(*chunks)
-        if options.get("lz4") > 0:
+        if options.get("lz4", 0) > 0:
             from xpra.net.lz4.lz4 import decompress
             rgb_data = decompress(rgb_data, max_size=64*1024*1024)
             free()
