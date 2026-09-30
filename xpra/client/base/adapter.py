@@ -151,7 +151,7 @@ class RemoteServerAdapter(baseclass):
 
     def scheduled_connect(self, delay: int) -> bool:
         self.connect_timer = 0
-        # connect() does I/O, so we have to use a separate thread to call it:
+        # do_connect() does I/O, so we have to use a separate thread to call it:
         start_thread(self.threaded_scheduled_connect, "encoder-server-connect", True, (delay, ))
         return False
 
@@ -162,7 +162,7 @@ class RemoteServerAdapter(baseclass):
             # try again:
             self.schedule_connect(delay)
 
-    def connect(self) -> None:
+    def open_connection(self) -> None:
         if self.is_connected() or self.connecting:
             log("already connected / connecting")
             return

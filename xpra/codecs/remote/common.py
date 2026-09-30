@@ -106,7 +106,7 @@ class RemoteCodec:
         self.pixel_format = pixel_format
         self.closed = False
         try:
-            self.server.connect()
+            self.server.open_connection()
         except (OSError, InitExit) as e:
             log("failed to connect to remote encoder server %s", self.server)
             log(" %s", e)

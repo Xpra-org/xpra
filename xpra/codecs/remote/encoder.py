@@ -149,7 +149,7 @@ servers: list[EncoderClient] = []
 def add_server(options: dict) -> None:
     try:
         server = EncoderClient(options)
-        server.connect()
+        server.open_connection()
         log("%s: %s, %s", get_type(), get_version(), get_info())
         servers.append(server)
     except (InitExit, OSError, RuntimeError):
