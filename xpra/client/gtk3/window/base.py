@@ -1019,7 +1019,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # and gdk-win32 turns it into a `FlashWindowEx` call:
         self.set_urgency_hint(attention)
 
-    def set_opaque_region(self, rectangles=()):
+    def set_opaque_region(self, rectangles: tuple[tuple[int, int, int, int], ...] = ()) -> None:
         if self._opaque_region == rectangles:
             return
         self._opaque_region = rectangles

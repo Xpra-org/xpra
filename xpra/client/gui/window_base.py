@@ -533,7 +533,7 @@ class ClientWindowBase(ClientWidgetBase):
         # only implemented for X11
         pass
 
-    def set_opaque_region(self, rectangles: tuple | None) -> None:
+    def set_opaque_region(self, rectangles: tuple[tuple[int, int, int, int], ...]) -> None:
         pass  # see gtk client window base
 
     def set_attention_requested(self, attention: bool) -> None:
