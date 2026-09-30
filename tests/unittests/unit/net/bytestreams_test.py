@@ -141,6 +141,17 @@ class TestSocketPeekWrapper(unittest.TestCase):
         assert data == b"data"
         mock_sock.recv.assert_called_once_with(4, 0)
 
+    def test_request_reader_sees_peeked_data(self):
+        # the http request handler must see the data that was peeked before the upgrade:
+        from xpra.net.http.handler import RequestReader
+        wrapper, mock_sock = self._make(b"GET / HTTP/1.1\r\n\r\n")
+        mock_sock.gettimeout.return_value = None
+        rfile = io.BufferedReader(RequestReader(wrapper, 10))
+        assert rfile.readline() == b"GET / HTTP/1.1\r\n"
+        assert rfile.readline() == b"\r\n"
+        mock_sock.recv.assert_not_called()
+        mock_sock.recv_into.assert_not_called()
+
     def test_makefile_read_mode_returns_peek_file(self):
         from xpra.net.bytestreams import SocketPeekFile
         wrapper, mock_sock = self._make(b"peeked")

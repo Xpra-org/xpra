@@ -250,7 +250,11 @@ class RequestReader(io.RawIOBase):
                 raise TimeoutError("the http request is incomplete")
             timeout = self.sock_timeout
             self.sock.settimeout(remaining if timeout is None else min(timeout, remaining))
-        return self.sock.recv_into(buf)
+        # use `recv` and not `recv_into`: `SocketPeekWrapper` must return the peeked data first
+        data = self.sock.recv(len(buf))
+        size = len(data)
+        buf[:size] = data
+        return size
 
     def clear_deadline(self) -> None:
         if self.deadline:
