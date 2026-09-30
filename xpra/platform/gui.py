@@ -58,9 +58,8 @@ def get_default_icon() -> str:
     return _default_icon
 
 
-def force_focus(duration=2000) -> None:
-    # only implemented on macos
-    assert isinstance(duration, int)
+def force_focus() -> None:
+    """ only implemented on macos """
 
 
 def use_stdin() -> bool:

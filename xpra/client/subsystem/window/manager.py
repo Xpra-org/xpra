@@ -20,7 +20,7 @@ from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.parsing import is_sharing_sync
-from xpra.os_util import WIN32, OSX, gi_import
+from xpra.os_util import WIN32, OSX
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.common import noop
@@ -35,7 +35,8 @@ sharinglog = Logger("sharing")
 
 OPENGL_REINIT_WINDOWS = envbool("XPRA_OPENGL_REINIT_WINDOWS", True)
 SHOW_DELAY: int = envint("XPRA_SHOW_DELAY", -1)
-OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
+# activate the application when the first window or tray is received (any non-zero value):
+OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 1)
 OSX_EVENT_LISTENER = envbool("XPRA_OSX_EVENT_LISTENER", True)
 # the server asks us to restack a window above all others when an application activates it,
 # ie: with `_NET_ACTIVE_WINDOW` - clients without restack support get a `raise-window` instead,
@@ -172,12 +173,10 @@ class WindowManagerClient(StubClientSubsystem):
 
     def _setup_osx_events(self) -> None:
         if OSX_FOCUS_WORKAROUND:
-            from xpra.platform.darwin.gui import enable_focus_workaround, disable_focus_workaround
-            GLib = gi_import("GLib")
+            from xpra.platform.darwin.gui import enable_focus_workaround
 
             def first_ui_received(*_args):
                 enable_focus_workaround()
-                GLib.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
 
             self.client.connect("first-ui-received", first_ui_received)
         if OSX_EVENT_LISTENER:

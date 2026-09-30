@@ -166,9 +166,6 @@ class GTKDialogClient(StubClientSubsystem):
         def handle_response(dialog, response) -> None:
             if values:
                 return
-            if OSX:
-                from xpra.platform.darwin.gui import disable_focus_workaround
-                disable_focus_workaround()
             password = dialog.password_input.get_text()
             dialog.hide()
             dialog.close()

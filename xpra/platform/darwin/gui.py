@@ -590,10 +590,8 @@ def take_screenshot() -> tuple[int, int, str, int, bytes]:
     return image.get_width(), image.get_height(), "png", image.get_rowstride(), data
 
 
-def force_focus(duration=2000) -> None:
+def force_focus() -> None:
     enable_focus_workaround()
-    GLib = gi_import("GLib")
-    GLib.timeout_add(duration, disable_focus_workaround)
 
 
 __osx_open_signal = False
@@ -643,11 +641,8 @@ def wait_for_open_handlers(show_cb: Callable[[], None],
     GLib.timeout_add(delay, may_show)
 
 
-def disable_focus_workaround() -> None:
-    NSApp.activateIgnoringOtherApps_(False)
-
-
 def enable_focus_workaround() -> None:
+    # this activates the application once, there is nothing to turn off afterwards:
     NSApp.activateIgnoringOtherApps_(True)
 
 
