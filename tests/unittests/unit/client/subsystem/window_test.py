@@ -51,6 +51,34 @@ class WindowManagerTest(ClientMixinTest):
         )
         self.assertEqual(resize_counters, [0, 0])
 
+    def test_restack_above_presents_the_window(self):
+        from xpra.client.subsystem.window import manager as manager_module
+        from xpra.client.subsystem.window.manager import WindowManagerClient
+
+        def restack(wid: int, detail: int, sibling: int, focused=False):
+            windows = {1: Mock(), 2: Mock()}
+            windows[1].has_toplevel_focus.return_value = focused
+            manager = AdHocStruct()
+            manager.get_window = windows.get
+            manager.window_stacking_changed = Mock()
+            WindowManagerClient._process_restack(manager, Packet("window-restack", wid, detail, sibling))
+            window = windows[wid]
+            window.restack.assert_called_once_with(windows.get(sibling), int(detail == 0))
+            manager.window_stacking_changed.assert_called_once_with()
+            return window.present.called
+
+        # above all other windows, ie: `_NET_ACTIVE_WINDOW`:
+        self.assertTrue(restack(1, 0, 0))
+        # already focused:
+        self.assertFalse(restack(1, 0, 0, focused=True))
+        # above or below a specific window, or below all the others:
+        self.assertFalse(restack(1, 0, 2))
+        self.assertFalse(restack(1, 1, 2))
+        self.assertFalse(restack(1, 1, 0))
+        # turned off:
+        with patch.object(manager_module, "RESTACK_PRESENT", False):
+            self.assertFalse(restack(1, 0, 0))
+
     @unittest.skipUnless(WIN32, "win32 only")
     def test_win32_window_stacking(self):
         from xpra.platform.win32 import constants as win32con

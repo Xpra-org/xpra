@@ -37,6 +37,10 @@ OPENGL_REINIT_WINDOWS = envbool("XPRA_OPENGL_REINIT_WINDOWS", True)
 SHOW_DELAY: int = envint("XPRA_SHOW_DELAY", -1)
 OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 OSX_EVENT_LISTENER = envbool("XPRA_OSX_EVENT_LISTENER", True)
+# the server asks us to restack a window above all others when an application activates it,
+# ie: with `_NET_ACTIVE_WINDOW` - clients without restack support get a `raise-window` instead,
+# so present the window the same way: de-iconify it, raise it and give it the focus
+RESTACK_PRESENT = envbool("XPRA_RESTACK_PRESENT", True)
 
 DEFAULT_SERVER_WINDOW_STATES: Final[Sequence[str]] = (
     "iconified", "fullscreen", "above", "below",
@@ -66,6 +70,14 @@ def log_windows_info(windows: tuple) -> None:
     if trays:
         msg += f", {trays} tray"
     log.info(msg)
+
+
+def present_window(window) -> bool:
+    if window.has_toplevel_focus():
+        log("window already has top level focus")
+        return False
+    window.present()
+    return True
 
 
 class WindowManagerClient(StubClientSubsystem):
@@ -654,11 +666,7 @@ class WindowManagerClient(StubClientSubsystem):
         wid = packet.get_wid()
         window = self.get_window(wid)
         log(f"going to raise window {wid:#x} - {window}")
-        if window:
-            if window.has_toplevel_focus():
-                log("window already has top level focus")
-                return
-            window.present()
+        if window and present_window(window):
             self.window_stacking_changed()
 
     def _process_restack(self, packet: Packet) -> None:
@@ -672,6 +680,9 @@ class WindowManagerClient(StubClientSubsystem):
             wid, window, ["below", "above"][above], other_window)
         if window:
             window.restack(other_window, above)
+            if RESTACK_PRESENT and above and not other_wid:
+                focuslog("presenting restacked window %#x", wid)
+                present_window(window)
             self.window_stacking_changed()
 
     def _process_destroy(self, packet: Packet) -> None:
