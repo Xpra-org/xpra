@@ -6,7 +6,7 @@
 import time
 import threading
 from time import monotonic
-from threading import Event
+from threading import Event, Lock
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
@@ -45,6 +45,8 @@ class UIThreadWatcher:
         scheduled to run.
         Beware that the `alive` and `fail` callbacks run from the polling thread,
         only the `resume` callbacks are run from the UI thread.
+        The `fail` and `resume` callbacks are serialized, so that the `resume` callbacks
+        cannot run whilst the `fail` callbacks are still being processed.
     """
 
     def __init__(self, polling_timeout: int, max_delta: int, announce_timeout: float):
@@ -70,6 +72,11 @@ class UIThreadWatcher:
         # bumped by every `start`, so that the polling thread of a previous run
         # can tell that it has been superseded and must not touch the new run's state:
         self.generation: int = 0
+        # held whilst `ui_blocked` changes and the matching `fail` or `resume` callbacks run,
+        # otherwise the UI thread could wake up and run the `resume` callbacks
+        # before the `fail` callbacks have been processed (ie: `dump_ui_thread_frames` is slow),
+        # and whatever the `fail` callbacks pause would then never be resumed:
+        self.state_lock = Lock()
         self.reset_state()
 
     def reset_state(self) -> None:
@@ -148,13 +155,14 @@ class UIThreadWatcher:
             elapsed = 0
         log("ui_thread_wakeup(%s) elapsed=%.2fms", scheduled_at, 1000 * elapsed)
         self.last_ui_thread_time = monotonic()
-        # UI thread was blocked?
-        if self.ui_blocked:
-            if self.announced_blocked:
-                self.show_message("UI thread is running again, resuming")
-                self.announced_blocked = False
-            self.ui_blocked = False
-            run_callbacks(self.resume_callbacks)
+        with self.state_lock:
+            # UI thread was blocked?
+            if self.ui_blocked:
+                if self.announced_blocked:
+                    self.show_message("UI thread is running again, resuming")
+                    self.announced_blocked = False
+                self.ui_blocked = False
+                run_callbacks(self.resume_callbacks)
         self.ui_wakeup_timer = 0
         return False
 
@@ -168,9 +176,10 @@ class UIThreadWatcher:
                         delta * 1000, self.max_delta, self.ui_blocked)
                 if delta > self.max_delta / 1000.0:
                     # UI thread is (still?) blocked:
-                    if not self.ui_blocked:
-                        self.ui_blocked = True
-                        run_callbacks(self.fail_callbacks)
+                    with self.state_lock:
+                        if not self.ui_blocked:
+                            self.ui_blocked = True
+                            run_callbacks(self.fail_callbacks)
                     if not self.announced_blocked and delta > self.announce_timeout:
                         self.announced_blocked = True
                         self.show_message("UI thread is now blocked")
@@ -197,7 +206,8 @@ class UIThreadWatcher:
                     # the UI thread was very likely frozen with us,
                     # so force run resume (even if we never fired the fail callbacks),
                     # from the UI thread - where the callbacks belong:
-                    self.ui_blocked = True
+                    with self.state_lock:
+                        self.ui_blocked = True
                     self.tick()
                     GLib.idle_add(self.ui_thread_wakeup)
         log("poll_ui_loop(%i) ended", generation)
