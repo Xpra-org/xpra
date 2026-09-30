@@ -7,6 +7,7 @@
 import ctypes
 from threading import Event
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -43,7 +44,7 @@ class AudioDeviceMonitor:
         self.timer = 0
         self.changed = Event()
         self.device_id = None
-        self.on_change = None
+        self.on_change = noop
 
     def get_default_output(self) -> int | None:
         device = ctypes.c_uint32()
@@ -88,7 +89,7 @@ class AudioDeviceMonitor:
         status = coreaudio.AudioObjectAddPropertyListener(
             SYSTEM_OBJECT, ctypes.byref(DEFAULT_OUTPUT), notify, None)
         if status:
-            self.on_change = None
+            self.on_change = noop
             raise OSError("AudioObjectAddPropertyListener failed: %s" % status)
         self.listener = notify
         self.timer = GLib.timeout_add(self.POLL_INTERVAL_MS, self.poll)
@@ -116,7 +117,7 @@ class AudioDeviceMonitor:
         if self.timer:
             GLib.source_remove(self.timer)
             self.timer = 0
-        self.on_change = None
+        self.on_change = noop
         self.changed.clear()
         if self.listener:
             try:
