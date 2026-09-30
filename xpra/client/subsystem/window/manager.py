@@ -771,6 +771,13 @@ class WindowManagerClient(StubClientSubsystem):
 
     def pause_windows(self, *args) -> None:
         log("pause_windows%s", args)
+        # the UI thread watcher fires `pause` from its polling thread,
+        # so this callback is deferred to the UI thread, where it can end up
+        # running after the `unpause` - and then the windows would stay paused:
+        power = self.get_subsystem("power")
+        if power and not power.paused:
+            log("pause_windows%s ignored: no longer paused", args)
+            return
         self.refresh_slowly()
 
     def refresh_slowly(self) -> None:

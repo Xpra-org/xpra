@@ -51,6 +51,24 @@ class WindowManagerTest(ClientMixinTest):
         )
         self.assertEqual(resize_counters, [0, 0])
 
+    def test_pause_windows_once_unpaused(self):
+        # the `pause` signal fired by the UI thread watcher's polling thread
+        # is deferred to the UI thread, where it may only run after the `unpause`:
+        from types import SimpleNamespace
+        from xpra.client.subsystem.window.manager import WindowManagerClient
+
+        def pause_windows(power) -> int:
+            refreshes = []
+            manager = AdHocStruct()
+            manager.get_subsystem = lambda _name: power
+            manager.refresh_slowly = lambda: refreshes.append(True)
+            WindowManagerClient.pause_windows(manager)
+            return len(refreshes)
+
+        self.assertEqual(pause_windows(SimpleNamespace(paused=True)), 1)
+        self.assertEqual(pause_windows(SimpleNamespace(paused=False)), 0, "unpaused already")
+        self.assertEqual(pause_windows(None), 1, "no power subsystem to check with")
+
     def test_restack_above_presents_the_window(self):
         from xpra.client.subsystem.window import manager as manager_module
         from xpra.client.subsystem.window.manager import WindowManagerClient
