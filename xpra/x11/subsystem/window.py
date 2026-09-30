@@ -785,6 +785,7 @@ class SeamlessWindowServer(WindowServer):
             # the user must have un-minimized it - put it back out of the way:
             sharinglog("ignoring map of hidden window %#x from %s", wid, ss)
             if update := getattr(ss, "update_window_visibility", None):
+                # noinspection calling-non-callable
                 update(wid, window, force=True)
             return
         self._window_mapped_at(proto, wid, window, (x, y, w, h))

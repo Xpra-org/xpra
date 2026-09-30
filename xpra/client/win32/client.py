@@ -8,7 +8,7 @@ import win32con
 from typing import Any
 from ctypes import byref
 from ctypes.wintypes import POINT
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitValue
@@ -155,12 +155,13 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             hcursor = self.hcursors.get_hcursor(cursor_data, xscale, yscale)
         cur = self.get_subsystem("cursor")
         for window in windows:
-            set_cursor = getattr(window, "set_cursor", None)
+            set_cursor: Callable | None = getattr(window, "set_cursor", None)
             if not set_cursor:
                 continue
             # so the `cursor` subsystem can re-apply it, ie: when the scaling changes:
             if cur:
                 cur._cursors[window] = cursor_data
+            # noinspection calling-non-callable
             set_cursor(hcursor)
         self.hcursors.free_unused(getattr(window, "hcursor", 0) for window in self.get_windows())
 

@@ -432,8 +432,9 @@ class GTKMenuHelper(MenuHelper):
     def get_image(self, icon_name, size=None):
         # loading an icon is pure toolkit work, so do it here if the client
         # does not provide its own (the Gtk-free backends never do):
-        get_image = getattr(self.client, "get_image", None)
+        get_image: Callable | None = getattr(self.client, "get_image", None)
         if get_image:
+            # noinspection calling-non-callable
             return get_image(icon_name, size)
         with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):
             from xpra.gtk.pixbuf import get_icon_pixbuf

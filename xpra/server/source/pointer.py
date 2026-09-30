@@ -103,6 +103,7 @@ class PointerConnection(StubClientConnection, PointerSource):
         # so it must be translated to this client's area of the virtual display
         # (`rx`, `ry` are relative to the window and need no adjustment):
         if to_client_position := getattr(self, "to_client_position", None):
+            # noinspection calling-non-callable
             x, y = to_client_position(x, y)
         if self.mouse_last_position != (x, y) or self.mouse_last_relative_position != (rx, ry):
             self.mouse_last_position = (x, y)

@@ -179,7 +179,7 @@ def get_command_args(opts, uid: int, gid: int, option_types: dict[str, Any],
                 # those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
                 args.append(f"{argname}" + ",".join(str(v) for v in ov))
         elif ftype is bool:
-            args.append(f"{argname}" + ["no", "yes"][int(ov)])
+            args.append(f"{argname}" + ["no", "yes"][int(bool(ov))])
         elif ftype in (int, float, str):
             args.append(f"{argname}{ov}")
         else:

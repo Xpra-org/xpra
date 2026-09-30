@@ -156,7 +156,8 @@ def print_nested_dict(d: Mapping, prefix: str = "", lchar: str = "*", pad: int =
             fmt = vformat
             if isinstance(vformat, dict):
                 fmt = vformat.get(k)
-            if fmt is not None:
+            if callable(fmt):
+                # noinspection calling-non-callable
                 return nonl(fmt(v))
         if isinstance(k, str):
             try:

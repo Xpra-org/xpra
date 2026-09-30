@@ -5,7 +5,7 @@
 
 import os
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 
 from xpra.os_util import WIN32
 from xpra.net.common import BACKWARDS_COMPATIBLE
@@ -81,9 +81,12 @@ class MMAP_Connection(StubClientConnection):
         self.mmap_dirs = mmap_sub.dirs
         self.mmap_files = mmap_sub.files
         self.mmap_min_size = mmap_sub.min_size
+        self.peer_uid = -1
         conn = getattr(protocol, "_conn", None)
-        get_peer_uid = getattr(conn, "get_peer_uid", None)
-        self.peer_uid = get_peer_uid() if get_peer_uid else -1
+        get_peer_uid: Callable | None = getattr(conn, "get_peer_uid", None)
+        if get_peer_uid:
+            # noinspection calling-non-callable
+            self.peer_uid = get_peer_uid()
         # the paths given on the command line are trusted,
         # otherwise we can only accept the standard locations:
         self.allowed_dirs = self.mmap_dirs or get_default_mmap_dirs(self.peer_uid)

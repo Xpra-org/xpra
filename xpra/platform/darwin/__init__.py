@@ -171,7 +171,7 @@ def is_app_bundle() -> bool:
     bundle_id = bundle.bundleIdentifier()
     info = dict(bundle.infoDictionary() or {})
     app = ""
-    path = bundle_url
+    path = str(bundle_url)
     while path and path != "/":
         if path.endswith(".app"):
             app = os.path.splitext(os.path.basename(path))[0]
