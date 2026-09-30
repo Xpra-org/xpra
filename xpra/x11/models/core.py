@@ -668,7 +668,7 @@ class CoreX11WindowModel(WindowModelStub):
             ignore_errors = True
         return prop_get(self.xid, key, ptype, ignore_errors=bool(ignore_errors), raise_xerrors=raise_xerrors)
 
-    def array_get(self, key, ptype, ignore_errors: bool | None = None, raise_xerrors=False) -> object:
+    def array_get(self, key, ptype, ignore_errors: bool | None = None, raise_xerrors=False) -> Sequence | None:
         return array_get(self.xid, key, ptype, ignore_errors, raise_xerrors)
 
     def prop_del(self, key: str) -> None:

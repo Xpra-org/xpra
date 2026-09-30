@@ -14,6 +14,7 @@ The conversions for plain python types is found in prop_conv.py
 """
 
 import struct
+from collections.abc import Sequence
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, PROP_TYPES, PROP_SIZES
 from xpra.x11.bindings.window import X11WindowBindings, PropertyError
@@ -77,7 +78,7 @@ def array_set(xid: int, key: str, etype: str, value) -> None:
     raw_prop_set(xid, key, dtype, dformat, data)
 
 
-def array_get(xid: int, key: str, etype: str, ignore_errors: bool = False, raise_xerrors: bool = False) -> object:
+def array_get(xid: int, key: str, etype: str, ignore_errors: bool = False, raise_xerrors: bool = False) -> Sequence | None:
     # ie: 0x4000, "_NET_WM_PID", "u32"
     type_atom = PROP_TYPES[etype][1]  # ie: "CARDINAL"
     buffer_size = PROP_SIZES.get(etype, 65536)
