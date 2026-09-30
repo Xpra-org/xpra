@@ -22,7 +22,7 @@ class PowerEventClient(StubClientSubsystem):
     """
     Adds power events callbacks
     """
-    __slots__ = ("_platform_watcher", "paused", "suspended", "ui_watcher")
+    __slots__ = ("_platform_watcher", "paused", "platform_paused", "suspended", "ui_watcher")
     PREFIX = "power"
     __signals__: list[str] = ["suspend", "resume", "pause", "unpause"]
 
@@ -31,6 +31,8 @@ class PowerEventClient(StubClientSubsystem):
         self.ui_watcher = None
         self.suspended = 0.0
         self.paused = False
+        # the platform told us the UI thread is about to be starved (ie: macos native menus):
+        self.platform_paused = False
         # extra, platform-specific suspend/resume signal sources feeding the
         # same `suspend()`/`resume()` below:
         self._platform_watcher = None
@@ -46,8 +48,8 @@ class PowerEventClient(StubClientSubsystem):
         # some platforms can tell us that the UI thread is about to be starved
         # (ie: macos native menus), which is much more reliable and immediate
         # than having the UI thread watcher detect it after the fact:
-        add_handler("pause", self.ui_pause)
-        add_handler("unpause", self.ui_unpause)
+        add_handler("pause", self.platform_pause)
+        add_handler("unpause", self.platform_unpause)
         if FAKE_SUSPEND_RESUME:
             def fake_suspend() -> bool:
                 self.suspend()
@@ -81,8 +83,8 @@ class PowerEventClient(StubClientSubsystem):
         from xpra.platform.events import remove_handler
         remove_handler("suspend", self.suspend)
         remove_handler("resume", self.resume)
-        remove_handler("pause", self.ui_pause)
-        remove_handler("unpause", self.ui_unpause)
+        remove_handler("pause", self.platform_pause)
+        remove_handler("unpause", self.platform_unpause)
         if uw := self.ui_watcher:
             self.ui_watcher = None
             # the watcher is a process-wide singleton which outlives this client,
@@ -104,6 +106,14 @@ class PowerEventClient(StubClientSubsystem):
         if uiw := self.ui_watcher:
             uiw.tick()
 
+    def platform_pause(self, *args):
+        self.platform_paused = True
+        self.ui_pause(*args)
+
+    def platform_unpause(self, *args):
+        self.platform_paused = False
+        self.ui_unpause(*args)
+
     def ui_pause(self, *args):
         # this can be triggered both by the platform events
         # and by the UI thread watcher noticing the same stall later on,
@@ -122,7 +132,9 @@ class PowerEventClient(StubClientSubsystem):
         self.emit("unpause")
 
     def ui_message(self, message: str) -> None:
-        if self.suspended or self.paused:
+        # the UI thread watcher is expected to notice the stalls we have already been told about,
+        # but when it is the one pausing, its messages are the only trace of the stall:
+        if self.suspended or self.platform_paused:
             log(message)
         else:
             log.info(message)
