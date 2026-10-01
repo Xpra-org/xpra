@@ -148,6 +148,9 @@ class VideoContextCleanTest(unittest.TestCase):
         encoder = Mock()
         encoder.is_closed.return_value = False
         encoder.get_type.return_value = "test"
+        encoder.get_encoding.return_value = "h264"
+        encoder.get_width.return_value = 64
+        encoder.get_height.return_value = 64
         encoder.flush.return_value = b"data", {}
         source._video_encoder = encoder
         source.b_frame_flush_data = encoder, None, 1, 0, 0, None

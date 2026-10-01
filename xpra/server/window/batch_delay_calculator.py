@@ -93,8 +93,8 @@ def update_batch_delay(batch, factors: list[tuple[str, dict, float, float]], min
     decay = max(1, logp(current_delay / batch.min_delay) / 5.0)
     max_delay = batch.max_delay
     delays: tuple[tuple[float, int]]
-    for delays, d_weight in ((batch.last_delays, 0.25), (batch.last_actual_delays, 0.75)):
-        delays = tuple(delays or ())
+    for records, d_weight in ((batch.last_delays, 0.25), (batch.last_actual_delays, 0.75)):
+        delays = tuple(records or ())
         # get the weighted average
         # older values matter less, we decay them according to how much we batch already
         # (older values matter more when we batch a lot)

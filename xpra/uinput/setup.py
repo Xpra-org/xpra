@@ -201,6 +201,16 @@ def create_input_devices(uinput_uuid: str, uid: int) -> dict[str, Any]:
     return create_uinput_devices(uinput_uuid, uid)
 
 
+def get_udev_data_path(device_path: str) -> str:
+    device_stat = os.stat(device_path)
+    return f"/run/udev/data/c{os.major(device_stat.st_rdev)}:{os.minor(device_stat.st_rdev)}"
+
+
+def read_udev_data(device_path: str) -> bytes:
+    with open(get_udev_data_path(device_path), "rb") as data_file:
+        return data_file.read()
+
+
 def wait_for_input_devices(devices: dict[str, Any], timeout: float = 3) -> bool:
     """Wait for udev to classify virtual devices before Xorg enumerates them."""
     expected_properties = {
@@ -220,10 +230,7 @@ def wait_for_input_devices(devices: dict[str, Any], timeout: float = 3) -> bool:
     while pending and monotonic() < deadline:
         for device_path, (device_type, expected) in tuple(pending.items()):
             try:
-                device_stat = os.stat(device_path)
-                udev_data = f"/run/udev/data/c{os.major(device_stat.st_rdev)}:{os.minor(device_stat.st_rdev)}"
-                with open(udev_data, "rb") as data_file:
-                    properties = data_file.read()
+                properties = read_udev_data(device_path)
                 if expected in properties.splitlines():
                     log("udev classified %s device %s", device_type, device_path)
                     pending.pop(device_path)
