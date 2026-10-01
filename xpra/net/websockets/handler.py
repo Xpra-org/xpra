@@ -51,7 +51,8 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         if ver not in SUPPORT_HyBi_PROTOCOLS:
             raise ValueError(f"Unsupported protocol version {ver}")
 
-        protocols = self.headers.get("Sec-WebSocket-Protocol", "").split(",")
+        #browsers separate the protocols with ", ":
+        protocols = [protocol.strip() for protocol in self.headers.get("Sec-WebSocket-Protocol", "").split(",")]
         if "binary" not in protocols:
             raise ValueError("client does not support 'binary' protocol")
 
