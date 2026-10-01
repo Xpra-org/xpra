@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 if [ -z "${REPO_ARCH_PATH}" ]; then
 	REPO_ARCH_PATH="`pwd`/../repo"
 fi
@@ -24,5 +26,6 @@ else
   debuild -us -uc -b -Zxz
 fi
 ls -la ../xserver-xorg-video-dummy*deb
+"${SCRIPT_DIR}/verify-debs.sh" ../xserver-xorg-video-dummy*deb || exit 1
 mv ../xserver-xorg-video-dummy*deb ../xserver-xorg-video-dummy*changes "$REPO_ARCH_PATH"
 popd
