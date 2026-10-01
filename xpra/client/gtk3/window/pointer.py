@@ -290,8 +290,7 @@ class PointerWindow(GtkStubWindow):
             norm_y = norm_scroll(event.delta_y)
             self._client.wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
             return True
-        pointer_sub = self.get_subsystem("pointer")
-        if SKIP_DUPLICATE_SCROLL_EVENTS and pointer_sub and pointer_sub.wheel_smooth and event.get_pointer_emulated():
+        if SKIP_DUPLICATE_SCROLL_EVENTS and self._client.wheel_smooth and event.get_pointer_emulated():
             log("ignoring emulated scroll event: direction=%i", event.direction)
             return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
