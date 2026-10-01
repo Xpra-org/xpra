@@ -5,12 +5,15 @@
 # later version. See the file COPYING for details.
 
 import mmap
+import tempfile
 import unittest
 
 from xpra.os_util import WIN32
+from xpra.net import mmap_pipe
 from xpra.net.mmap_pipe import (
     MmapPointerError,
     int_from_buffer, mmap_read, mmap_write, validate_chunks,
+    init_server_mmap,
     )
 
 from unit.test_util import silence_error
@@ -69,6 +72,21 @@ class MmapPipeTest(unittest.TestCase):
         chunks, _free = mmap_write(area, SIZE, b"data")
         self.assertEqual(chunks, [(8, 4)])
 
+    @unittest.skipIf(WIN32, "posix only")
+    def test_server_mmap_size(self):
+        with tempfile.NamedTemporaryFile(prefix="xpra-mmap-test") as f:
+            f.truncate(SIZE)
+            f.flush()
+            # mapping more than the file holds is refused:
+            with silence_error(mmap_pipe):
+                area, size = init_server_mmap(f.name, SIZE*2)
+            self.assertIsNone(area)
+            self.assertEqual(size, 0)
+            # zero maps the whole file, and we get the real size:
+            area, size = init_server_mmap(f.name, 0)
+            self.assertEqual(size, SIZE)
+            self.assertEqual(len(area), SIZE)
+            area.close()
 
 
 @unittest.skipIf(WIN32, "posix only")
