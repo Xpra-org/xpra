@@ -2056,7 +2056,9 @@ cdef class Encoder:
             #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
         elif self.codec_name=="H265":
             config.encodeCodecConfig.hevcConfig.chromaFormatIDC = chromaFormatIDC
-            #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
+            # assign the level so that a preset cannot leave one behind,
+            # the encoder works out what it needs:
+            config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_AUTOSELECT
             config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
             config.encodeCodecConfig.hevcConfig.enableIntraRefresh = INTRA_REFRESH
             #config.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2*int(self.bufferFmt==NV_ENC_BUFFER_FORMAT_ARGB10)
