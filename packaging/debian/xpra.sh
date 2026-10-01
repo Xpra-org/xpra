@@ -91,6 +91,7 @@ else
 		debuild -us -uc -b
 	fi
 	ls -la ../xpra*deb
+	"${SCRIPT_DIR}/verify-debs.sh" ../xpra*deb || exit 1
 	cp ../xpra*deb ../xpra*changes "$REPO_ARCH_PATH"
 fi
 popd
