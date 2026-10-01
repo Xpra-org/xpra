@@ -1150,7 +1150,15 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 sock = ssl_wrap_socket(sock, **ssl_options)
             except ValueError as e:
                 raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
-            sock = ssl_handshake(sock)
+            #the socket is now in blocking mode,
+            #don't wait forever for a server that never completes the handshake:
+            ssl_sock = sock
+            previous_timeout = ssl_sock.gettimeout()
+            ssl_sock.settimeout(SOCKET_TIMEOUT)
+            try:
+                sock = ssl_handshake(ssl_sock)
+            finally:
+                ssl_sock.settimeout(previous_timeout)
             assert sock, f"failed to wrap socket {sock}"
             conn._socket = sock
             conn.timeout = SOCKET_TIMEOUT
