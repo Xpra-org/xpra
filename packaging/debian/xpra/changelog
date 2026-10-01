@@ -1,7 +1,48 @@
 xpra (6.5.5-1) UNRELEASED; urgency=low
-  * TODO
+  * 🔧 Platforms, build and packaging:
+    Debian dropped clang-19
+    verify deb packages before copying to the repo
+  * macOS notarization and build fixes:
+    missing entry point and helper and command path for light builds
+    codesign for light builds
+    notarization + missing script
+  * Major:
+    drag-and-drop can get wedged and stop working
+    scroll event regression introduced in 6.5.4
+  * 🖧 Network:
+    don't block forever on a websocket upgrade that never completes
+    don't wait forever for the client's TLS handshake to complete
+    don't let SSL connections wait past their deadline
+    don't leak the client socket when the tcp connection setup fails
+    don't busy-loop when the server closes the connection during the websocket upgrade
+    limit the time clients have to send their http request
+    stop reading the websocket upgrade response at the end of its headers
+    check the http status of the websocket upgrade response
+    don't send an http error after the websocket upgrade response
+    accept websocket subprotocol lists with spaces
+    apply a timeout to every TLS handshake
+    fail the SSL handshake when the peer closes the connection
+    close the ssl connection when the server side handshake fails
+    don't confuse peek vs ssl peek data
+    return the peeked data to the http request reader
+    fix default HTTP headers directory for WebSocket errors
+  * 📋 Clipboard:
+    avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images
+  * Minor:
+    apply the new DPI before resizing the display
+    don't leave `_NET_ACTIVE_WINDOW` pointing at a window that is gone
+    avoid repeated pointer position updates when the pointer is unchanged
+    uinput device matching
+    track windows reusing a group leader - so we don't remove it
+    don't hold on to an encoder that has been replaced or closed
+    prevent UI thread watcher race conditions
+    missing lz4 flag could cause errors
+  * 💄 Cosmetic:
+    Gtk clipboard logs errors on timeouts
+    geometry debug logging can cause errors
+    restack debug labels are inverted
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 01 Oct 2026 15:50:39 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 01 Oct 2026 19:03:26 +0700
 
 xpra (6.5.4-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:

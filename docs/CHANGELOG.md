@@ -1,7 +1,48 @@
 # Changelog
 
 ## [6.5.5] 2026-10-01
-* TODO
+* 🔧 Platforms, build and packaging:
+  * [Debian dropped clang-19](https://github.com/Xpra-org/xpra/commit/24ef1341455d09e480aa8a2d1870ad606ac8c31f)
+  * [verify deb packages before copying to the repo](https://github.com/Xpra-org/xpra/commit/118b9c5765face2402f6b902c7143ace59c3b5e7)
+* macOS notarization and build fixes:
+  * [missing entry point](https://github.com/Xpra-org/xpra/commit/697c9fb59cbe3bcd1e19e3c656838389484841d3) [and helper](https://github.com/Xpra-org/xpra/commit/537466d0776ac556a16b2afab9a95ada6dacf5b0) [and command path for light builds](https://github.com/Xpra-org/xpra/commit/efe215e50a203fb9d83e0c027d52eb306d2f26f8)
+  * [codesign for light builds](https://github.com/Xpra-org/xpra/commit/65b29c29b5f93cf9711ad2fe93ff263ec233f359)
+  * [notarization](https://github.com/Xpra-org/xpra/commit/4828df4b5cfdcfe86cf04de1c44bbdf46983d02b) [+ missing script](https://github.com/Xpra-org/xpra/commit/c714a73f7cbe6f85a570f41a08d2c74b8bbe1834)
+* Major:
+  * [drag-and-drop can get wedged and stop working](https://github.com/Xpra-org/xpra/commit/8a44a186c700bbd83848c61bc98e35883dc5325d)
+  * [scroll event regression introduced in 6.5.4](https://github.com/Xpra-org/xpra/commit/478e7aecb1d2fcf4c2e1817a12fd0a672a1a4060)
+* 🖧 Network:
+  * [don't block forever on a websocket upgrade that never completes](https://github.com/Xpra-org/xpra/commit/7d8ffbcb2c9d25b4c6f75252e44195e98aa65afb)
+  * [don't wait forever for the client's TLS handshake to complete](https://github.com/Xpra-org/xpra/commit/a4a28e57ce05702e5f9bcb609ee89b13b050bf81)
+  * [don't let SSL connections wait past their deadline](https://github.com/Xpra-org/xpra/commit/7735d2ff0ae973f835564d18060be636920b4d0d)
+  * [don't leak the client socket when the tcp connection setup fails](https://github.com/Xpra-org/xpra/commit/77665ec347c50875a3060971048b083a76e7ac15)
+  * [don't busy-loop when the server closes the connection during the websocket upgrade](https://github.com/Xpra-org/xpra/commit/df8cd0e4cac64484c7ec31efbd4e449b1183894a)
+  * [limit the time clients have to send their http request](https://github.com/Xpra-org/xpra/commit/63cc34cc2c76856d6a3eba3a4eacb975dff00812)
+  * [stop reading the websocket upgrade response at the end of its headers](https://github.com/Xpra-org/xpra/commit/d44b02e2d381396232c43fab455e0fd747904fc2)
+  * [check the http status of the websocket upgrade response](https://github.com/Xpra-org/xpra/commit/33e041f5ef9dc53d77fe409432bf268ca8e386d2)
+  * [don't send an http error after the websocket upgrade response](https://github.com/Xpra-org/xpra/commit/550d562e00964e79f7bc1ec1cb79ed34675c743e)
+  * [accept websocket subprotocol lists with spaces](https://github.com/Xpra-org/xpra/commit/da0937ea27aa5da88f280444aea877db3ad4e2f7)
+  * [apply a timeout to every TLS handshake](https://github.com/Xpra-org/xpra/commit/8c7deeec336c48cd368cc999dcf3e99c1e1b3e3e)
+  * [fail the SSL handshake when the peer closes the connection](https://github.com/Xpra-org/xpra/commit/87d8af6136605fdd0b1ea8876c48fd01c9c153e2)
+  * [close the ssl connection when the server side handshake fails](https://github.com/Xpra-org/xpra/commit/3ac843c21fb4125ab4f80c21ea4dca607dc7439c)
+  * [don't confuse peek vs ssl peek data](https://github.com/Xpra-org/xpra/commit/26e2c306f706689c8a7ca3fc8318e6fe28c49df3)
+  * [return the peeked data to the http request reader](https://github.com/Xpra-org/xpra/commit/058eb74dd817af298fac61528de7f7357cd5100e)
+  * [fix default HTTP headers directory for WebSocket errors](https://github.com/Xpra-org/xpra/commit/926dd54a709dc816c423f3a077e7c179e9c53cb9)
+* 📋 Clipboard:
+  * [avoid unnecessary macOS JPEG targets](https://github.com/snyh/xpra/commit/f03b19c9b745) [and safely convert transparent clipboard images](https://github.com/Xpra-org/xpra/commit/dd2fa23362ac001f6423ce90a78b1025a726ac70)
+* Minor:
+  * [apply the new DPI before resizing the display](https://github.com/Xpra-org/xpra/commit/6c7ecab30de3db2598105007b8ba795ceeb12fdf)
+  * [don't leave `_NET_ACTIVE_WINDOW` pointing at a window that is gone](https://github.com/Xpra-org/xpra/commit/8d15e1033e8edd3962692288c7abd4dbccc43927)
+  * [avoid repeated pointer position updates when the pointer is unchanged](https://github.com/snyh/xpra/commit/9796f5f672c7)
+  * [uinput device matching](https://github.com/Xpra-org/xpra/commit/f378179d903cbe616470dec091f6d6b45bd6708e)
+  * [track windows reusing a group leader - so we don't remove it](https://github.com/Xpra-org/xpra/commit/b049bec0abae588c237c7b6671c92019e336f5b4)
+  * [don't hold on to an encoder that has been replaced or closed](https://github.com/Xpra-org/xpra/commit/e6282551f2af516e041c69025c5306b4952bd271)
+  * [prevent UI thread watcher race conditions](https://github.com/Xpra-org/xpra/commit/51db034cb289a0459a994cc528b119922d8abe5e)
+  * [missing lz4 flag could cause errors](https://github.com/Xpra-org/xpra/commit/6427153b9238b940806d73a71bd9513d6e914aac)
+* 💄 Cosmetic:
+  * [Gtk clipboard logs errors on timeouts](https://github.com/Xpra-org/xpra/commit/5fcc434208a2c2ed433f520700cd0e21825b8556)
+  * [geometry debug logging can cause errors](https://github.com/Xpra-org/xpra/commit/29ffb97f43a17615ec5b5d399ae4f4bb8c28eec4)
+  * [restack debug labels are inverted](https://github.com/Xpra-org/xpra/commit/e4de2dcbde67001b41fd6f06817c1352cf907e31)
 
 ## [6.5.4] 2026-09-27
 * 🔧 Platforms, build and packaging:
@@ -85,7 +126,6 @@
   * [NVENC streams fail to decode due to invalid `csc` attribute](https://github.com/Xpra-org/xpra/commit/89331c43c2360d58f2db486987a4d98e8439d322)
   * [use NVENC SDKv13 paths](https://github.com/Xpra-org/xpra/commit/1c16e5a108fc72861ec10622234883778b2fe633)
 * Minor:
-  * [avoid repeated pointer position updates when the pointer is unchanged](https://github.com/snyh/xpra/commit/9796f5f672c7)
   * [X11 events can stop being routed after an unmatched filter cleanup](https://github.com/Xpra-org/xpra/commit/23f81b0c5119e4c2c619e67a1cc20558ee972ae9) [and leave the filter unusable](https://github.com/Xpra-org/xpra/commit/91bf9a9025c52ed862025eacfd09c10153484783)
   * [window-icon timers survive after their window is removed](https://github.com/Xpra-org/xpra/commit/fb0388fe68b8e917f09d8a7fdd3081101d59296e) [or raise warnings after firing](https://github.com/Xpra-org/xpra/commit/9409e7158bfdc66d45a937690a8ec7f2560934e2)
   * [missing `content-types` attributes](https://github.com/Xpra-org/xpra/commit/b4c153ca338741d827e30f36281b084d7323716c)
@@ -115,7 +155,6 @@
   * [MS Windows Num-Lock state](https://github.com/Xpra-org/xpra/commit/831659bf7ac484f44ee700d16e380ee90b2a0365)
   * [MS Windows missing modifiers](https://github.com/Xpra-org/xpra/commit/d02f25096925f57b6f6fb60b97b1d691fd8dadf9)
 * 📋 Clipboard:
-  * [avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images](https://github.com/snyh/xpra/commit/f03b19c9b745)
   * [clipboard requests waiting during a client reset complete instead of timing out](https://github.com/Xpra-org/xpra/commit/bff0639c236a7d5a70ab49ced33963bac3a7d7b4)
   * [simultaneous large and small clipboard transfers no longer mix their contents or time out](https://github.com/Xpra-org/xpra/commit/e0fa31834f937dde201144685cfafbec7eb88cfb)
   * [an unowned X11 selection no longer triggers misleading errors or needless server queries](https://github.com/Xpra-org/xpra/commit/b8ef0a0fe2c1ebdd63268a41700f6ff2195494be)
