@@ -633,7 +633,7 @@ def shellsub(s : str, subs=None) -> str:
     return s
 
 
-def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
+def osexpand(s : str, actual_username="", uid=-1, gid=-1, subs=None) -> str:
     if not s:
         return s
     def expanduser(s):
@@ -647,13 +647,18 @@ def osexpand(s : str, actual_username="", uid=0, gid=0, subs=None) -> str:
         "HOME"  : expanduser("~/"),
         })
     if os.name=="posix":
+        #zero is a valid uid: only a negative value (or None) means "not specified"
+        if uid is None or uid<0:
+            uid = os.geteuid()
+        if gid is None or gid<0:
+            gid = os.getegid()
         d.update({
-            "UID"   : uid or os.geteuid(),
-            "GID"   : gid or os.getegid(),
+            "UID"   : uid,
+            "GID"   : gid,
             })
         if not OSX:
             from xpra.platform.posix.paths import get_runtime_dir
-            rd = get_runtime_dir(uid or os.geteuid())
+            rd = get_runtime_dir(uid)
             if rd and "XDG_RUNTIME_DIR" not in os.environ:
                 d["XDG_RUNTIME_DIR"] = rd
     if actual_username:
