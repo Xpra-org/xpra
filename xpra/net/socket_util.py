@@ -1058,10 +1058,10 @@ def ssl_handshake(ssl_sock, timeout:float=SSL_HANDSHAKE_TIMEOUT):
         ssllog("do_handshake", exc_info=True)
         log_ssl_info(ssl_sock)
         import ssl
-        SSLEOFError = getattr(ssl, "SSLEOFError", None)
-        if SSLEOFError and isinstance(e, SSLEOFError):
-            return None
         status = ExitCode.SSL_FAILURE
+        if isinstance(e, (ssl.SSLEOFError, ConnectionError)):
+            #the handshake did not complete, so the socket is unusable:
+            raise InitExit(status, "the connection was closed during the SSL handshake") from None
         #`socket.timeout` is only an alias of `TimeoutError` from Python 3.10 onwards:
         if isinstance(e, (TimeoutError, socket.timeout)):
             raise InitExit(status, f"SSL handshake timed out after {timeout} seconds") from None
