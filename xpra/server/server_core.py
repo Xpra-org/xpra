@@ -25,7 +25,7 @@ from xpra.version_util import (
     )
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.server.server_util import write_pidfile, rm_pidfile
-from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS, InitExit
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PacketType
 from xpra.net.socket_util import (
     mdns_publish, peek_connection, socket_fast_read,
@@ -1173,6 +1173,13 @@ class ServerCore:
             log("close_connection()", exc_info=True)
 
     def handle_new_connection(self, conn, socket_info, socket_options) -> None:
+        try:
+            self.do_handle_new_connection(conn, socket_info, socket_options)
+        except InitExit as e:
+            netlog("handle_new_connection%s failed: %s", (conn, socket_info, socket_options), e, exc_info=True)
+            self.force_close_connection(conn)
+
+    def do_handle_new_connection(self, conn, socket_info, socket_options) -> None:
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
