@@ -1,3 +1,8 @@
+xpra (6.5.5-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 01 Oct 2026 15:50:39 +0700
+
 xpra (6.5.4-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
     `libyuv` not detected without pkgconfig file + fixup

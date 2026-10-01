@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.5.5] 2026-10-01
+* TODO
+
 ## [6.5.4] 2026-09-27
 * 🔧 Platforms, build and packaging:
   * [`libyuv` not detected without pkgconfig file](https://github.com/Xpra-org/xpra/commit/975e1346a82242943192c6de8d5f151f3b2061d9) + [fixup](https://github.com/Xpra-org/xpra/commit/922b6ef5b9ddf3281b1660696e33bde2f8c1c54c)
