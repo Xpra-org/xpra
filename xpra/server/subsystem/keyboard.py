@@ -509,6 +509,10 @@ class KeyboardManager(StubSubsystem):
     def set_keymap(self, server_source, force=False) -> None:
         log("set_keymap(%s, %s)", server_source, force)
 
+    def set_default_keymap(self, server_source) -> None:
+        log("set_default_keymap(%s)", server_source)
+        server_source.set_default_keymap()
+
     def init_packet_handlers(self) -> None:
         if BACKWARDS_COMPATIBLE:
             self.add_packets(

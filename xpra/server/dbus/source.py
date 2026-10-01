@@ -145,7 +145,8 @@ class DBUS_Source(dbus.service.Object):
     @dbus.service.method(INTERFACE, in_signature='')
     def SetDefaultKeymap(self):
         self.log(".SetDefaultKeymap()")
-        self.source.set_default_keymap()
+        if keyboard := self.source.server.get_subsystem("keyboard"):
+            keyboard.set_default_keymap(self.source)
 
     @dbus.service.method(INTERFACE, in_signature='')
     def Suspend(self):

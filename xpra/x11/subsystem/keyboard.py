@@ -355,3 +355,8 @@ class X11KeyboardManager(KeyboardManager):
         # setxkbmap resets X11 autorepeat to defaults, so re-apply:
         if self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
             self.set_keyboard_repeat(self.key_repeat_delay, self.key_repeat_interval)
+
+    def set_default_keymap(self, server_source) -> None:
+        super().set_default_keymap(server_source)
+        # `clean_keyboard_state` has reset the layout group:
+        self.current_keyboard_group = -1
