@@ -1233,8 +1233,7 @@ class ServerCore:
             if not ssl_conn:
                 return
             if envbool("XPRA_SSL_EARLY_HANDSHAKE", True):
-                from xpra.net.socket_util import ssl_handshake
-                ssl_handshake(ssl_conn._socket)
+                self.ssl_handshake(ssl_conn)
             if socktype=="wss":
                 http = True
             else:
@@ -1343,6 +1342,16 @@ class ServerCore:
         if socktype=="tcp" and not peek_data and self._rfb_upgrade>0:
             t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
+
+    def ssl_handshake(self, ssl_conn) -> None:
+        from xpra.net.socket_util import ssl_handshake
+        try:
+            ssl_handshake(ssl_conn._socket)
+        except BaseException:
+            #the original socket has been detached by the ssl wrapper,
+            #so closing the original connection would not close anything:
+            self.force_close_connection(ssl_conn)
+            raise
 
     def get_ssl_socket_options(self, socket_options) -> Dict[str,Any]:
         ssllog("get_ssl_socket_options(%s)", socket_options)
@@ -1544,8 +1553,7 @@ class ServerCore:
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl", socket_options=socket_options)
             conn.socktype_wrapped = socktype
             if envbool("XPRA_SSL_EARLY_HANDSHAKE", True):
-                from xpra.net.socket_util import ssl_handshake
-                ssl_handshake(conn._socket)
+                self.ssl_handshake(conn)
             #Clear the pre-upgrade encrypted peek data: after wrapping, only
             #decrypted bytes peeked from `conn` may be passed on.
             peek_data = b""
