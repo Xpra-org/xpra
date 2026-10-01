@@ -8,9 +8,10 @@
 import os
 import unittest
 
-from xpra.os_util import nomodule_context, WIN32
+from xpra.os_util import nomodule_context, WIN32, POSIX
 from xpra.scripts.parsing import (
     parse_ssh_option, get_ssh_args, get_ssh_proxy_args, parse_remote_display,
+    normalize_display_name,
     )
 
 class TestParsing(unittest.TestCase):
@@ -73,6 +74,20 @@ class TestParsing(unittest.TestCase):
         t("somedisplay?proxy=:22")
         t("somedisplay?proxy=:@host:22")
         t("somedisplay?proxy=:password@host:22")
+
+    @unittest.skipUnless(POSIX, "POSIX only")
+    def test_display_number(self):
+        self.assertEqual(normalize_display_name("10"), ":10")
+        # with a screen number:
+        self.assertEqual(normalize_display_name("10.0"), ":10.0")
+
+    @unittest.skipUnless(POSIX, "POSIX only")
+    def test_session_name_starting_with_digit(self):
+        # only fully numeric names are display numbers,
+        # anything else must be left alone so that it can be looked up
+        # as a session name - see `find_session_by_name`:
+        for name in ("2nd", "2nd session", "10ok"):
+            self.assertEqual(normalize_display_name(name), name)
 
 
 def main():
