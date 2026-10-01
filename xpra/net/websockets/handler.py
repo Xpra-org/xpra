@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 from base64 import b64decode
-from binascii import Error as Base64Error
 from collections.abc import Callable, Sequence
 
 from xpra.util.env import envbool
@@ -105,7 +104,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         # RFC 6455 section 4.2.1: a base64 encoded 16 byte value
         try:
             valid = len(b64decode(key, validate=True)) == 16
-        except (Base64Error, ValueError):
+        except ValueError:
             valid = False
         if not valid:
             raise UpgradeError("invalid Sec-WebSocket-Key header")

@@ -168,7 +168,7 @@ class HostKeyManager:
                     matched = asyncssh.import_known_hosts(line.decode("utf8")).match(
                         host, addr, port if port != 22 else None
                     )
-                except (UnicodeDecodeError, ValueError):
+                except ValueError:
                     pass
                 else:
                     if any(old_key.get_algorithm() == algorithm for old_key in matched[0]):

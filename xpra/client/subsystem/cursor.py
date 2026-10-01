@@ -120,9 +120,8 @@ class CursorClient(StubClientSubsystem):
         }.items():
             if min(size) > 0:
                 cursor_caps[name] = size
-        if BACKWARDS_COMPATIBLE:
-            if logical_default_size > 0:
-                cursor_caps["size"] = logical_default_size
+        if BACKWARDS_COMPATIBLE and logical_default_size > 0:
+            cursor_caps["size"] = logical_default_size
         caps: dict[str, Any] = {CursorClient.PREFIX: cursor_caps}
         if BACKWARDS_COMPATIBLE:
             caps["cursors"] = self.client_supports
