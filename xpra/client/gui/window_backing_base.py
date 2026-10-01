@@ -884,7 +884,13 @@ class WindowBackingBase:
             see _mmap_send() in server.py for details """
         assert self.mmap_enabled
         from xpra.net.mmap_pipe import mmap_read
-        data, free_cb = mmap_read(self.mmap, *img_data)
+        try:
+            data, free_cb = mmap_read(self.mmap, *img_data)
+        except ValueError as e:
+            #the chunks come from the server and they are not valid:
+            log("mmap_read(%s, %s)", self.mmap, img_data, exc_info=True)
+            fire_paint_callbacks(callbacks, False, f"invalid mmap data: {e}")
+            return
         callbacks.append(free_cb)
         rgb_format = options.strget("rgb_format", "RGB")
         #Note: BGR(A) is only handled by gl_window_backing
