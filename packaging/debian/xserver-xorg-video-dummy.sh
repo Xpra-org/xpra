@@ -48,5 +48,6 @@ else
   debuild -us -uc -b
 fi
 ls -la ../xserver-xorg-video-dummy*deb
+"${SCRIPT_DIR}/verify-debs.sh" ../xserver-xorg-video-dummy*deb || exit 1
 mv ../xserver-xorg-video-dummy*deb ../xserver-xorg-video-dummy*changes "$REPO_ARCH_PATH"
 popd
