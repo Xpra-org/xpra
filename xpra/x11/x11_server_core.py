@@ -119,7 +119,8 @@ class X11ServerCore(GTKServerBase):
         self.randr_exact_size = False
         self.fake_xinerama = "no"      #only enabled in seamless server
         self.current_xinerama_config = None
-        self.current_keyboard_group = 0
+        #the layout group we last set, or -1 when unknown:
+        self.current_keyboard_group = -1
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
         super().__init__()
@@ -146,7 +147,8 @@ class X11ServerCore(GTKServerBase):
         self.fake_xinerama = "no"      #only enabled in seamless server
         self.current_xinerama_config = None
         #x11 keyboard bits:
-        self.current_keyboard_group = 0
+        #the layout group we last set, or -1 when unknown:
+        self.current_keyboard_group = -1
 
 
     def x11_init(self) -> None:
@@ -306,6 +308,7 @@ class X11ServerCore(GTKServerBase):
             cleanup_fakeXinerama()
         with xlog:
             clean_keyboard_state()
+        self.current_keyboard_group = -1
         #prop_del does its own xsync:
         self.clean_x11_properties()
         super().do_cleanup()
@@ -514,6 +517,8 @@ class X11ServerCore(GTKServerBase):
         with xsync:
             server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)    #pylint: disable=access-member-before-definition
             self.keyboard_config = server_source.keyboard_config
+        #the keymap may have been replaced and the layout group reset:
+        self.current_keyboard_group = -1
         # setxkbmap resets X11 autorepeat to defaults, so re-apply:
         if self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
             self.set_keyboard_repeat((self.key_repeat_delay, self.key_repeat_interval))
@@ -534,6 +539,8 @@ class X11ServerCore(GTKServerBase):
         #this will take care of any remaining ones we are not aware of:
         #(there should not be any - but we want to be certain)
         clean_keyboard_state()
+        #`clean_keyboard_state` has reset the layout group behind our back:
+        self.current_keyboard_group = -1
 
     # noinspection PyMethodMayBeStatic
     def get_cursor_image(self):
