@@ -20,5 +20,7 @@ def get_default_keyfiles() -> List[str]:
     dkf = os.environ.get("XPRA_SSH_DEFAULT_KEYFILES", None)
     if dkf is not None:
         return [x for x in dkf.split(os.pathsep) if x]
-    return [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in ("id_ed25519", "id_ecdsa", "id_rsa", "id_dsa")]
+    #the default order matches the one used by openssh in `fill_default_options`:
+    keyfiles = ("id_rsa", "id_ecdsa", "id_ecdsa_sk", "id_ed25519", "id_ed25519_sk", "id_dsa")
+    return [osexpand(os.path.join("~/", ".ssh", keyfile)) for keyfile in keyfiles]
 
