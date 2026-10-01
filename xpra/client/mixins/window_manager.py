@@ -1573,13 +1573,21 @@ class WindowClient(StubClientMixin):
                 area = self.mmap
                 if coding=="mmap" and area:
                     assert self.mmap_enabled
-                    from xpra.net.mmap_pipe import int_from_buffer
-                    #we need to ack the data to free the space!
-                    data_start = int_from_buffer(area, 0)
-                    offset, length = data[-1]
-                    data_start.value = offset+length
-                    #clear the mmap area via idle_add so any pending draw requests
-                    #will get a chance to run first (preserving the order)
+                    from xpra.net.mmap_pipe import int_from_buffer, validate_chunks
+                    try:
+                        #the chunks come from the server, so they must be validated
+                        #before we can move the shared pointer:
+                        validate_chunks(area, data)
+                    except ValueError as e:
+                        log.error("Error: invalid mmap chunks in draw packet for window %i", wid)
+                        log.error(" %s", e)
+                    else:
+                        #we need to ack the data to free the space!
+                        data_start = int_from_buffer(area, 0)
+                        offset, length = data[-1]
+                        data_start.value = offset+length
+                        #clear the mmap area via idle_add so any pending draw requests
+                        #will get a chance to run first (preserving the order)
                 self.send_damage_sequence(wid, packet_sequence, width, height, WINDOW_NOT_FOUND, "window not found")
             self.idle_add(draw_cleanup)
             return
