@@ -150,5 +150,8 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             pass
         got_contents(target, 0, None)
 
+    def got_contents(self, target:str, dtype:str="", dformat:int=0, data=None) -> None:
+        log("got_contents(%s, %s, %s, %s)", target, dtype, dformat, ellipsizer(data))
+
 
 GObject.type_register(GTKClipboardProxy)
