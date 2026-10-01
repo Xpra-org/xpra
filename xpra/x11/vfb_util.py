@@ -136,7 +136,6 @@ def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid, uid:int, gid:in
         f.write(f"""Section "InputClass"
 Identifier "{identifier}"
 MatchProduct "{product_name}"
-MatchUSBID "ffff:ffff"
 MatchIs{upper_dev_type} "True"
 Driver "libinput"
 Option "AccelProfile" "flat"
