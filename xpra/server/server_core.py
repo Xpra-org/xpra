@@ -1536,6 +1536,7 @@ class ServerCore:
             if ssl_mode in FALSE_OPTIONS:
                 conn_err("ssl upgrades are not enabled")
                 return False, None, None
+            ssl_peek_data = peek_data
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
             sock = self._ssl_wrap_socket(socktype, sock, socket_options)
             if sock is None:
@@ -1545,7 +1546,9 @@ class ServerCore:
             if envbool("XPRA_SSL_EARLY_HANDSHAKE", True):
                 from xpra.net.socket_util import ssl_handshake
                 ssl_handshake(conn._socket)
-            #we cannot peek on SSL sockets, just clear the unencrypted data:
+            #Clear the pre-upgrade encrypted peek data: after wrapping, only
+            #decrypted bytes peeked from `conn` may be passed on.
+            peek_data = b""
             http = False
             if ssl_mode=="tcp":
                 http = False
@@ -1553,7 +1556,7 @@ class ServerCore:
                 http = True
             elif ssl_mode=="auto" or ssl_mode in TRUE_OPTIONS:
                 #use the header to guess:
-                if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
+                if line1.find(b"HTTP/")>0 or ssl_peek_data.find(b"\x08http/1.1")>0:
                     http = True
                 else:
                     conn.enable_peek()
