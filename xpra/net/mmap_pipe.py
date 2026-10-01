@@ -52,6 +52,22 @@ def xpra_group() -> int:
     return 0
 
 
+def get_mmap_dir() -> str:
+    """
+        The directory where clients create their mmap files,
+        with the variables expanded.
+    """
+    from xpra.platform.paths import get_mmap_dir as get_platform_mmap_dir
+    mmap_dir = get_platform_mmap_dir()
+    subs = os.environ.copy()
+    subs.update({
+        "UID"               : str(getuid()),
+        "GID"               : str(getgid()),
+        "PID"               : str(os.getpid()),
+        })
+    return shellsub(mmap_dir, subs)
+
+
 def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*1024, filename:str="") -> Tuple[bool, bool, Any, int, Any, str]:
     """
         Initializes a mmap area, writes the token in it and returns:
@@ -107,15 +123,7 @@ def init_client_mmap(mmap_group=None, socket_filename:str="", size:int=128*1024*
             else:
                 validate_size(mmap_size)
                 import tempfile
-                from xpra.platform.paths import get_mmap_dir
                 mmap_dir = get_mmap_dir()
-                subs = os.environ.copy()
-                subs.update({
-                    "UID"               : str(getuid()),
-                    "GID"               : str(getgid()),
-                    "PID"               : str(os.getpid()),
-                    })
-                mmap_dir = shellsub(mmap_dir, subs)
                 if mmap_dir and not os.path.exists(mmap_dir):
                     os.mkdir(mmap_dir, 0o700)
                 if not mmap_dir or not os.path.exists(mmap_dir):
@@ -230,25 +238,32 @@ def read_mmap_token(mmap_area, index:int, count:int=DEFAULT_TOKEN_BYTES) -> int:
     return v
 
 
-def init_server_mmap(mmap_filename:str, mmap_size:int=0) -> Tuple[Optional[Any],int]:
+def init_server_mmap(mmap_filename:str, mmap_size:int=0, follow_symlinks:bool=False) -> Tuple[Optional[Any],int]:
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.
         Returns the mmap object and its size: (mmap, size)
+        `follow_symlinks` should only be enabled for paths chosen by the administrator
+        via the `mmap` option, which may legitimately be a symbolic link.
     """
     mmap_area = None
     try:
         import mmap
         if not WIN32:
             try:
-                f = open(mmap_filename, "r+b")
+                #O_NOFOLLOW: never follow a symbolic link planted in the mmap directory,
+                #so a client cannot redirect the server onto some other file:
+                flags = os.O_RDWR
+                if not follow_symlinks:
+                    flags |= os.O_NOFOLLOW
+                fd = os.open(mmap_filename, flags)
             except Exception as e:
                 log.error(f"Error: cannot access mmap file {mmap_filename!r}:")
                 log.estr(e)
                 log.error(" see mmap-group option?")
                 return None, 0
             try:
-                actual_mmap_size = os.fstat(f.fileno()).st_size
+                actual_mmap_size = os.fstat(fd).st_size
                 if mmap_size>actual_mmap_size:
                     #we would be mapping pages that aren't backed by the file,
                     #and accessing those would raise `SIGBUS`:
@@ -258,9 +273,9 @@ def init_server_mmap(mmap_filename:str, mmap_size:int=0) -> Tuple[Optional[Any],
                 if mmap_size and actual_mmap_size!=mmap_size:
                     log.warn("Warning: expected mmap file '%s' of size %i but got %i",
                              mmap_filename, mmap_size, actual_mmap_size)
-                mmap_area = mmap.mmap(f.fileno(), mmap_size)
+                mmap_area = mmap.mmap(fd, mmap_size)
             finally:
-                f.close()
+                os.close(fd)
             #`mmap_size` may be zero, in which case the whole file is mapped:
             #only the length we have actually mapped can be trusted
             return mmap_area, len(mmap_area)

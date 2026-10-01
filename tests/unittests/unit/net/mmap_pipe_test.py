@@ -4,22 +4,26 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import mmap
+import shutil
 import tempfile
 import unittest
 
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, OSEnvContext
+from xpra.util import typedict
 from xpra.net import mmap_pipe
 from xpra.net.mmap_pipe import (
     MmapPointerError,
     int_from_buffer, mmap_read, mmap_write, validate_chunks,
-    init_server_mmap,
+    read_mmap_token, write_mmap_token, init_server_mmap,
     )
 
-from unit.test_util import silence_error
+from unit.test_util import silence_error, silence_info
 
 
 SIZE = 4096
+MIN_SIZE = 64*1024*1024
 
 
 class MmapPipeTest(unittest.TestCase):
@@ -73,6 +77,24 @@ class MmapPipeTest(unittest.TestCase):
         self.assertEqual(chunks, [(8, 4)])
 
     @unittest.skipIf(WIN32, "posix only")
+    def test_server_mmap_symlink(self):
+        with tempfile.NamedTemporaryFile(prefix="xpra-mmap-test") as f:
+            f.truncate(SIZE)
+            f.flush()
+            link = f.name+"-link"
+            os.symlink(f.name, link)
+            try:
+                with silence_error(mmap_pipe):
+                    area, size = init_server_mmap(link, SIZE)
+                self.assertIsNone(area)
+                self.assertEqual(size, 0)
+                area, size = init_server_mmap(link, SIZE, follow_symlinks=True)
+                self.assertEqual(size, SIZE)
+                area.close()
+            finally:
+                os.unlink(link)
+
+    @unittest.skipIf(WIN32, "posix only")
     def test_server_mmap_size(self):
         with tempfile.NamedTemporaryFile(prefix="xpra-mmap-test") as f:
             f.truncate(SIZE)
@@ -91,6 +113,78 @@ class MmapPipeTest(unittest.TestCase):
 
 @unittest.skipIf(WIN32, "posix only")
 class MmapConnectionTest(unittest.TestCase):
+
+    def setUp(self):
+        self.mmap_dir = tempfile.mkdtemp(prefix="xpra-mmap-dir-")
+        self.other_dir = tempfile.mkdtemp(prefix="xpra-other-dir-")
+
+    def tearDown(self):
+        shutil.rmtree(self.mmap_dir)
+        shutil.rmtree(self.other_dir)
+
+    def make_file(self, dirname:str, token:int=0x1234, index:int=512) -> str:
+        filename = os.path.join(dirname, "xpra.test.mmap")
+        with open(filename, "wb") as f:
+            f.truncate(MIN_SIZE)
+        with open(filename, "r+b") as f:
+            area = mmap.mmap(f.fileno(), MIN_SIZE)
+            write_mmap_token(area, token, index)
+            area.close()
+        return filename
+
+    def parse(self, filename:str, server_mmap_filename=None):
+        from xpra.server.source import mmap as mmap_source
+        c = mmap_source.MMAP_Connection()
+        c.supports_mmap = True
+        c.mmap_filename = server_mmap_filename
+        c.min_mmap_size = MIN_SIZE
+        c.init_state()
+        with OSEnvContext():
+            os.environ["XPRA_MMAP_DIR"] = self.mmap_dir
+            with silence_info(mmap_source):
+                c.parse_client_caps(typedict({
+                    "mmap" : {
+                        "file"          : filename,
+                        "size"          : MIN_SIZE,
+                        "token"         : 0x1234,
+                        "token_index"   : 512,
+                        },
+                    }))
+        return c
+
+    def test_same_dir(self):
+        c = self.parse(self.make_file(self.mmap_dir))
+        self.assertEqual(c.mmap_size, MIN_SIZE)
+        self.assertNotEqual(read_mmap_token(c.mmap, c.mmap_client_token_index), 0x1234)
+        c.cleanup()
+
+    def test_outside_dir(self):
+        # the client cannot make the server open a file outside its mmap directory:
+        filename = self.make_file(self.other_dir)
+        c = self.parse(filename)
+        self.assertEqual(c.mmap_size, 0)
+        self.assertIsNone(c.mmap)
+        # and the file has not been touched:
+        with open(filename, "rb") as f:
+            area = mmap.mmap(f.fileno(), MIN_SIZE, access=mmap.ACCESS_READ)
+            self.assertEqual(area[:512], b"\0"*512)
+            area.close()
+
+    def test_symlink_in_dir(self):
+        target = self.make_file(self.other_dir)
+        os.symlink(target, os.path.join(self.mmap_dir, os.path.basename(target)))
+        with silence_error(mmap_pipe):
+            c = self.parse(target)
+        self.assertEqual(c.mmap_size, 0)
+
+    def test_server_path(self):
+        # the administrator can point us anywhere, including through a symlink:
+        target = self.make_file(self.other_dir)
+        link = os.path.join(self.other_dir, "link.mmap")
+        os.symlink(target, link)
+        c = self.parse("/some/client/path", link)
+        self.assertEqual(c.mmap_size, MIN_SIZE)
+        c.cleanup()
 
     def test_mmap_failure(self):
         from xpra.server.source import mmap as mmap_source

@@ -74,6 +74,10 @@ class MMAP_Connection(StubSourceMixin):
         log("client supplied mmap_file=%s", mmap_filename)
         mmap_token = c.intget(f"{prefix}token")
         log(f"mmap supported={self.supports_mmap}, token={mmap_token:x}")
+        #only a file chosen by the administrator via the `mmap` option
+        #may be a symbolic link (ie: a virtio-shmem device),
+        #a client-named file must never be reached through a symlink:
+        follow_symlinks = False
         if self.mmap_filename:
             if os.path.isdir(self.mmap_filename):
                 #use the client's filename, but at the server path:
@@ -82,6 +86,15 @@ class MMAP_Connection(StubSourceMixin):
             else:
                 log(f"using global server specified mmap file path: {self.mmap_filename!r}")
                 mmap_filename = self.mmap_filename
+                follow_symlinks = True
+        elif not WIN32:
+            #no server override: the client only gets to name a file by basename,
+            #inside the server's own mmap directory - never an arbitrary path,
+            #so it cannot trick the server into opening (and stamping a token into)
+            #some unrelated file that the server user happens to own:
+            from xpra.net.mmap_pipe import get_mmap_dir
+            mmap_filename = os.path.join(get_mmap_dir(), os.path.basename(mmap_filename))
+            log(f"using mmap file {mmap_filename!r} from the server's mmap directory")
         if not self.supports_mmap:
             log("client enabled mmap but mmap mode is not supported")
         elif WIN32 and mmap_filename.startswith("/"):
@@ -95,7 +108,7 @@ class MMAP_Connection(StubSourceMixin):
                 write_mmap_token,
                 DEFAULT_TOKEN_BYTES,
                 )
-            self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
+            self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size, follow_symlinks)
             log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
                 self.mmap, self.mmap_size, self.min_mmap_size, mmap_filename)
             if self.mmap_size>0 and self.mmap is not None:
