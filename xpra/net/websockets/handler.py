@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Sequence
 
 from xpra.util import envbool, is_valid_hostname
 from xpra.net.websockets.common import make_websocket_accept_hash
@@ -26,7 +26,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
 
     def __init__(self, sock, addr, new_websocket_client,
                  web_root="/usr/share/xpra/www/",
-                 http_headers_dir="/etc/xpra/http-headers",
+                 http_headers_dirs:Sequence[str]=("/etc/xpra/http-headers",),
                  script_paths=None,
                  redirect_https=False,
                  username=AUTH_USERNAME, password=AUTH_PASSWORD,
@@ -35,7 +35,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
         self.redirect_https = redirect_https
         super().__init__(sock, addr,
-                         web_root, http_headers_dir, script_paths,
+                         web_root, http_headers_dirs, script_paths,
                          username, password)
 
     def handle_websocket(self) -> None:
