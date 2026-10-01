@@ -7,9 +7,13 @@
 import mmap
 import unittest
 
+from xpra.os_util import WIN32
 from xpra.net.mmap_pipe import (
+    MmapPointerError,
     int_from_buffer, mmap_read, mmap_write, validate_chunks,
     )
+
+from unit.test_util import silence_error
 
 
 SIZE = 4096
@@ -51,6 +55,36 @@ class MmapPipeTest(unittest.TestCase):
                 mmap_read(area, *chunks)
         validate_chunks(area, ((8, SIZE-8), ))
 
+    def test_invalid_pointers(self):
+        for pos in (0, 4):
+            for value in (1, 7, SIZE+1, 2**32-1):
+                area = self.area()
+                int_from_buffer(area, pos).value = value
+                with self.assertRaises(MmapPointerError):
+                    mmap_write(area, SIZE, b"data")
+        # the pointers can point at the very end of the area:
+        area = self.area()
+        int_from_buffer(area, 0).value = SIZE
+        int_from_buffer(area, 4).value = SIZE
+        chunks, _free = mmap_write(area, SIZE, b"data")
+        self.assertEqual(chunks, [(8, 4)])
+
+
+
+@unittest.skipIf(WIN32, "posix only")
+class MmapConnectionTest(unittest.TestCase):
+
+    def test_mmap_failure(self):
+        from xpra.server.source import mmap as mmap_source
+        c = mmap_source.MMAP_Connection()
+        c.init_state()
+        calls = []
+        c.idle_add = lambda *args: calls.append(args)
+        c.disconnect = None
+        with silence_error(mmap_source):
+            c.mmap_failure("test")
+            c.mmap_failure("test again")
+        self.assertEqual(len(calls), 1)
 
 
 def main():

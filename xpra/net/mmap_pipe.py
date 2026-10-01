@@ -20,6 +20,14 @@ log = Logger("mmap")
 MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
 
 
+class MmapPointerError(ValueError):
+    """
+    The peer has stored an invalid pointer in the shared control header.
+    This should never happen with a well behaved peer,
+    so we should stop talking to it.
+    """
+
+
 """
 Utility functions for communicating via mmap
 """
@@ -262,6 +270,20 @@ def int_from_buffer(mmap_area, pos:int) -> c_uint32:
     return c_uint32.from_buffer(mmap_area, pos)      #@UndefinedVariable
 
 
+def read_pointer(mmap_area, mmap_size:int, pos:int) -> int:
+    """
+        Reads one of the two pointers from the control header.
+        `data_start` is updated by the reader and `data_end` by the writer,
+        both live in the shared area so the peer can store anything in there.
+        (a zero value means that nothing has been read or written yet)
+    """
+    value = int(int_from_buffer(mmap_area, pos).value)
+    if value and not 8<=value<=mmap_size:
+        name = "data_start" if pos==0 else "data_end"
+        raise MmapPointerError(f"invalid mmap {name} pointer: {value}, area size is {mmap_size}")
+    return max(8, value)
+
+
 def validate_chunks(mmap_area, descr_data) -> None:
     """
         The chunks are supplied by the peer, so we must ensure that they point
@@ -312,6 +334,7 @@ def mmap_write(mmap_area, mmap_size:int, data):
         Sends 'data' to the client via the mmap shared memory region,
         returns the chunks of the mmap area used (or None if it failed)
         and the mmap area's free memory.
+        Raises `MmapPointerError` if the client has corrupted the control header.
     """
     #This is best explained using diagrams:
     #mmap_area=[&S&E-------------data-------------]
@@ -322,10 +345,9 @@ def mmap_write(mmap_area, mmap_size:int, data):
     # '+' is for data we have written
     # '*' is for data we have just written in this call
     # E and S show the location pointed to by data_start/data_end
-    mmap_data_start : c_uint32 = int_from_buffer(mmap_area, 0)
     mmap_data_end : c_uint32 = int_from_buffer(mmap_area, 4)
-    start = max(8, mmap_data_start.value)
-    end = max(8, mmap_data_end.value)
+    start = read_pointer(mmap_area, mmap_size, 0)
+    end = read_pointer(mmap_area, mmap_size, 4)
     l = len(data)
     log("mmap: start=%i, end=%i, size of data to write=%i", start, end, l)
     if end<start:

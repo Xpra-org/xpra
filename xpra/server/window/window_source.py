@@ -16,7 +16,7 @@ from typing import Callable, Dict, List, Tuple, Iterable, ContextManager, Any, O
 
 from xpra.os_util import bytestostr, POSIX, OSX, DummyContextManager
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
-from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
+from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND, noop
 from xpra.server.window.windowicon_source import WindowIconSource
 from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
@@ -183,6 +183,8 @@ class WindowSource(WindowIconSource):
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
+        #called with an error message if the client corrupts the mmap area:
+        self.mmap_failure : Callable[[str], None] = noop
 
         self.init_vars()
 
@@ -2794,7 +2796,8 @@ class WindowSource(WindowIconSource):
 
     def mmap_encode(self, coding : str, image : ImageWrapper, _options) -> Tuple:
         assert coding=="mmap"
-        assert self._mmap and self._mmap_size>0
+        if not self._mmap or self._mmap_size<=0:
+            return ()
         #prepare the pixels in a format accepted by the client:
         pf = image.get_pixel_format()
         if pf not in self.rgb_formats:
@@ -2808,7 +2811,16 @@ class WindowSource(WindowIconSource):
         data = image.get_pixels()
         if not data:
             raise RuntimeError(f"failed to get pixels from {image}")
-        mmap_data, mmap_free_size = self.mmap_write(self._mmap, self._mmap_size, data)
+        from xpra.net.mmap_pipe import MmapPointerError
+        try:
+            mmap_data, mmap_free_size = self.mmap_write(self._mmap, self._mmap_size, data)
+        except MmapPointerError as e:
+            log("mmap_write(..)", exc_info=True)
+            #stop using the mmap area, the connection will be closed:
+            self._mmap = None
+            self._mmap_size = 0
+            self.mmap_failure(str(e))
+            return ()
         #elapsed = monotonic()-start+0.000000001 #make sure never zero!
         #log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
         #    len(data), 1000*elapsed)

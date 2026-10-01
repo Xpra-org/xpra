@@ -7,7 +7,7 @@
 from random import randint
 from typing import Dict, Any
 
-from xpra.util import typedict
+from xpra.util import typedict, ConnectionMessage
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 from xpra.log import Logger
@@ -43,6 +43,7 @@ class MMAP_Connection(StubSourceMixin):
         self.mmap_client_token_index = 512
         self.mmap_client_token_bytes = 0
         self.mmap_client_namespace = False
+        self.mmap_failed = False
 
     def cleanup(self) -> None:
         mmap = self.mmap
@@ -135,6 +136,19 @@ class MMAP_Connection(StubSourceMixin):
         if self.mmap_size>0:
             from xpra.simple_stats import std_unit
             log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
+
+    def mmap_failure(self, message:str) -> None:
+        """
+            The client has corrupted the control header of its mmap area,
+            it is not using it correctly so we can't talk to it.
+            (this is called from the encode thread)
+        """
+        if self.mmap_failed:
+            return
+        self.mmap_failed = True
+        log.error("Error: %s", message)
+        log.error(" the client is not using the mmap area correctly, disconnecting it")
+        self.idle_add(self.disconnect, ConnectionMessage.PROTOCOL_ERROR, "invalid mmap area")
 
     def get_caps(self) -> Dict[str,Any]:
         sep = "." if self.mmap_client_namespace else "_"

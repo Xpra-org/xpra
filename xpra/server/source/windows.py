@@ -590,6 +590,9 @@ class WindowsMixin(StubSourceMixin):
                               self.default_encoding_options,
                               mmap, mmap_size, bandwidth_limit, self.jitter)
             ws.init_encoders()
+            mmap_failure = getattr(self, "mmap_failure", None)
+            if mmap_failure:
+                ws.mmap_failure = mmap_failure
             self.window_sources[wid] = ws
             if len(self.window_sources)>1:
                 #re-distribute bandwidth:
