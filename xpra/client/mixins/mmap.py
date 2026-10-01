@@ -80,6 +80,13 @@ class MmapClient(StubClientMixin):
             mmap_token = iget("token")
             mmap_token_index = iget("token_index", 0)
             mmap_token_bytes = iget("token_bytes", DEFAULT_TOKEN_BYTES)
+            if not mmap_token:
+                #without a token, we can't verify that the server is really using our mmap area,
+                #and the server will be sending us mmap data regardless:
+                log.error("Error: the server did not supply an mmap token")
+                self.mmap_enabled = False
+                self.quit(ExitCode.MMAP_TOKEN_FAILURE)
+                return False
             try:
                 token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
             except ValueError as e:
