@@ -425,7 +425,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         uris = selection.get_uris()
         draglog("drag_got_data_cb selection: data type=%s, format=%s, length=%s, target=%s, text=%s, uris=%s",
                 dtype, fmt, l, target, text, uris)
+        #the context must always be finished, even when we don't use the data,
+        #otherwise the source keeps the drag open and subsequent drops never reach us:
         if not uris:
+            context.finish(False, False, time)
             return
         filelist = []
         for uri in uris:
@@ -443,6 +446,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 continue
             filelist.append(abspath)
         draglog("drag_got_data_cb: will try to upload: %s", csv(filelist))
+        if not filelist:
+            context.finish(False, False, time)
+            return
         pending = set(filelist)
         def file_done(filename):
             if not pending:
@@ -462,13 +468,27 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def drag_process_file(self, filename:str, file_done_cb:Callable):
         def got_file_info(gfile, result, arg=None):
             draglog("got_file_info(%s, %s, %s)", gfile, result, arg)
-            file_info = gfile.query_info_finish(result)
+            try:
+                file_info = gfile.query_info_finish(result)
+            except Exception as e:
+                draglog("query_info_finish(%s)", result, exc_info=True)
+                draglog.error("Error: failed to query '%s':", filename)
+                draglog.estr(e)
+                file_done_cb(filename)
+                return
             basename = gfile.get_basename()
             ctype = file_info.get_content_type()
             size = file_info.get_size()
             draglog("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
             def got_file_data(gfile, result, user_data=None):
-                _, data, entity = gfile.load_contents_finish(result)
+                try:
+                    _, data, entity = gfile.load_contents_finish(result)
+                except Exception as e:
+                    draglog("load_contents_finish(%s)", result, exc_info=True)
+                    draglog.error("Error: failed to read '%s':", filename)
+                    draglog.estr(e)
+                    file_done_cb(filename)
+                    return
                 filesize = len(data)
                 draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
                 file_done_cb(filename)
