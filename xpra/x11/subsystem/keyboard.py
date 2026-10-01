@@ -159,7 +159,8 @@ class X11KeyboardServer(KeyboardServer):
         self.xkb = False
         self.input_method = "keep"
         self.ibus_layouts: dict[str, Any] = {}
-        self.current_keyboard_group = 0
+        # the layout group we last set, or -1 when unknown:
+        self.current_keyboard_group = -1
 
     def init(self, opts) -> None:
         super().init(opts)
@@ -246,6 +247,12 @@ class X11KeyboardServer(KeyboardServer):
             from xpra.x11.xkbhelper import clean_keyboard_state
             with xswallow:
                 clean_keyboard_state()
+        self.current_keyboard_group = -1
+
+    def clear_keys_pressed(self, *args) -> None:
+        super().clear_keys_pressed(*args)
+        # `clean_keyboard_state` has reset the layout group behind our back:
+        self.current_keyboard_group = -1
 
     def late_cleanup(self, stop=True) -> None:
         if not stop or not IBUS:
@@ -350,6 +357,8 @@ class X11KeyboardServer(KeyboardServer):
             # pylint: disable=access-member-before-definition
             server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
             self.keyboard_config = server_source.keyboard_config
+        # the keymap may have been replaced and the layout group reset:
+        self.current_keyboard_group = -1
         # setxkbmap resets X11 autorepeat to defaults, so re-apply:
         if self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
             self.set_keyboard_repeat(self.key_repeat_delay, self.key_repeat_interval)
