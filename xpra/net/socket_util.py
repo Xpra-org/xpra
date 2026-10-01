@@ -34,6 +34,7 @@ PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 UNIXDOMAIN_PEEK_TIMEOUT_MS = envint("XPRA_UNIX_DOMAIN_PEEK_TIMEOUT_MS", 100)
 SOCKET_PEEK_TIMEOUT_MS = envint("XPRA_SOCKET_PEEK_TIMEOUT_MS", UNIXDOMAIN_PEEK_TIMEOUT_MS)
 PEEK_SIZE = envint("XPRA_PEEK_SIZE", 8192)
+SSL_HANDSHAKE_TIMEOUT = envint("XPRA_SSL_HANDSHAKE_TIMEOUT", 20)
 
 SOCKET_DIR_MODE = num = int(os.environ.get("XPRA_SOCKET_DIR_MODE", "775"), 8)
 SOCKET_DIR_GROUP = os.environ.get("XPRA_SOCKET_DIR_GROUP", GROUP)
@@ -1042,9 +1043,13 @@ class SSLVerifyFailure(InitExit):
         self.verify_code = verify_code
         self.ssl_sock = ssl_sock
 
-def ssl_handshake(ssl_sock):
+def ssl_handshake(ssl_sock, timeout:float=SSL_HANDSHAKE_TIMEOUT):
     from xpra.log import Logger
     ssllog = Logger("ssl")
+    #the socket is usually in blocking mode (see `do_wrap_socket`),
+    #don't wait forever for a peer that never completes the handshake:
+    previous_timeout = ssl_sock.gettimeout()
+    ssl_sock.settimeout(timeout)
     try:
         ssl_sock.do_handshake(True)
         ssllog.info("SSL handshake complete, %s", ssl_sock.version())
@@ -1057,6 +1062,9 @@ def ssl_handshake(ssl_sock):
         if SSLEOFError and isinstance(e, SSLEOFError):
             return None
         status = ExitCode.SSL_FAILURE
+        #`socket.timeout` is only an alias of `TimeoutError` from Python 3.10 onwards:
+        if isinstance(e, (TimeoutError, socket.timeout)):
+            raise InitExit(status, f"SSL handshake timed out after {timeout} seconds") from None
         SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
         if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
             verify_code = getattr(e, "verify_code", 0)
@@ -1069,6 +1077,11 @@ def ssl_handshake(ssl_sock):
             ssllog("host failed SSL verification: %s", msg)
             raise SSLVerifyFailure(status, msg, verify_code, ssl_sock) from None
         raise InitExit(status, f"SSL handshake failed: {e}") from None
+    finally:
+        try:
+            ssl_sock.settimeout(previous_timeout)
+        except OSError:
+            ssllog("failed to restore the socket timeout", exc_info=True)
     return ssl_sock
 
 def get_ssl_verify_mode(verify_mode_str:str):
