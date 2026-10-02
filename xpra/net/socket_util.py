@@ -1046,10 +1046,34 @@ SSL_VERIFY_CODES : Dict[int,str] = {
     }
 
 class SSLVerifyFailure(InitExit):
-    def __init__(self, status, msg, verify_code, ssl_sock):
+    def __init__(self, status, msg, verify_code, cert_data=""):
         super().__init__(status, msg)
         self.verify_code = verify_code
-        self.ssl_sock = ssl_sock
+        #the PEM certificate that failed verification, if we could get it:
+        self.cert_data = cert_data
+
+def get_peer_cert_data(ssl_sock) -> str:
+    """
+    The PEM certificate the peer presented, even if the handshake failed to verify it.
+    This requires Python 3.13 or later, `getpeercert()` refuses incomplete handshakes.
+    """
+    get_unverified_chain = getattr(ssl_sock, "get_unverified_chain", None)
+    if not get_unverified_chain:
+        return ""
+    try:
+        chain = get_unverified_chain()
+        if not chain:
+            return ""
+        cert = chain[0]
+        if isinstance(cert, bytes):
+            import ssl
+            return ssl.DER_cert_to_PEM_cert(cert)
+        #Python 3.13.0 returns `_ssl.Certificate` objects:
+        return cert.public_bytes()
+    except (OSError, ValueError, AttributeError):
+        from xpra.log import Logger
+        Logger("ssl")("get_unverified_chain()", exc_info=True)
+        return ""
 
 def ssl_handshake(ssl_sock, timeout:float=SSL_HANDSHAKE_TIMEOUT):
     from xpra.log import Logger
@@ -1083,7 +1107,7 @@ def ssl_handshake(ssl_sock, timeout:float=SSL_HANDSHAKE_TIMEOUT):
                 msg = str(e)
             status = ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE
             ssllog("host failed SSL verification: %s", msg)
-            raise SSLVerifyFailure(status, msg, verify_code, ssl_sock) from None
+            raise SSLVerifyFailure(status, msg, verify_code, get_peer_cert_data(ssl_sock)) from None
         raise InitExit(status, f"SSL handshake failed: {e}") from None
     finally:
         try:
@@ -1271,90 +1295,103 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
     return ssl_sock
 
 
-def ssl_retry(e, ssl_ca_certs) -> Optional[Dict[str,Any]]:
+def get_cert_fingerprint(cert_data:str) -> str:
+    import ssl
+    from hashlib import sha256
+    try:
+        digest = sha256(ssl.PEM_cert_to_DER_cert(cert_data)).hexdigest().upper()
+    except ValueError:
+        return ""
+    return ":".join(digest[i:i+2] for i in range(0, len(digest), 2))
+
+def ssl_retry(e, display_desc:Dict[str,Any]) -> Dict[str,Any]:
+    """
+    Ask the user whether to accept the certificate that failed verification.
+    Returns the ssl options to change before connecting again, if any.
+    The socket is gone by the time we get here,
+    so we use the connection target from `display_desc` and the certificate recorded in `e`.
+    """
     SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
     from xpra.log import Logger
     ssllog = Logger("ssl")
-    ssllog("ssl_retry(%s, %s) SSL_RETRY=%s", e, ssl_ca_certs, SSL_RETRY)
+    ssllog("ssl_retry(%s, %s) SSL_RETRY=%s", e, display_desc, SSL_RETRY)
     if not SSL_RETRY:
-        return None
+        return {}
     if not isinstance(e, SSLVerifyFailure):
-        return None
+        return {}
     # we may be able to ask the user if he wants to accept this certificate
     verify_code = e.verify_code
-    ssl_sock = e.ssl_sock
-    msg = str(e)
-    del e
-    addr = ssl_sock.getpeername()[:2]
-    port = addr[-1]
-    server_hostname = ssl_sock.server_hostname
-    ssllog("ssl_retry: peername=%s, server_hostname=%s", addr, server_hostname)
     if verify_code not in (
         SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_WRONG_HOST,
         SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH,
         ):
         ssllog("ssl_retry: %s not handled here", SSL_VERIFY_CODES.get(verify_code, verify_code))
-        return None
-    if not server_hostname:
-        ssllog("ssl_retry: no server hostname")
-        return None
-    ssllog("ssl_retry: server_hostname=%s, ssl verify_code=%s (%i)",
-           server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code), verify_code)
+        return {}
+    host = display_desc.get("host", "")
+    port = display_desc.get("port", 0)
+    ssl_options = display_desc.get("ssl-options") or {}
+    #the same host and port that `get_ssl_options` loads the saved options from:
+    server_hostname = ssl_options.get("server-hostname") or host
+    if not server_hostname or not port:
+        ssllog("ssl_retry: unknown target %r, port %r", server_hostname, port)
+        return {}
+    ssllog("ssl_retry: server_hostname=%s, port=%s, ssl verify_code=%s (%i)",
+           server_hostname, port, SSL_VERIFY_CODES.get(verify_code, verify_code), verify_code)
     def confirm(*args):
         from xpra.scripts import pinentry_wrapper
         r = pinentry_wrapper.confirm(*args)
         ssllog("run_pinentry_confirm(..) returned %r", r)
         return r
-    options = load_ssl_options(server_hostname, port)
+    msg = str(e)
+    title = "SSL Certificate Verification Failure"
     #self-signed cert:
     if verify_code==SSL_VERIFY_SELF_SIGNED:
-        if ssl_ca_certs not in ("", "default"):
-            ssllog("self-signed cert does not match %r", ssl_ca_certs)
-            return None
+        ca_certs = ssl_options.get("ca-certs", "default")
+        if ca_certs not in ("", "default"):
+            ssllog("self-signed cert does not match %r", ca_certs)
+            return {}
         #perhaps we already have the certificate for this hostname
         CERT_FILENAME = "cert.pem"
         cert_file = find_ssl_config_file(server_hostname, port, CERT_FILENAME)
         if cert_file:
             ssllog("retrying with %r", cert_file)
-            options["ca-certs"] = cert_file
-            return options
-        #download the certificate data
-        import ssl
-        try:
-            cert_data = ssl.get_server_certificate(addr)
-        except ssl.SSLError:
-            cert_data = None
+            return {"ca-certs" : cert_file}
+        cert_data = e.cert_data
         if not cert_data:
-            ssllog.warn("Warning: failed to get server certificate from %s", addr)
-            return None
-        ssllog("downloaded ssl cert data for %s: %s", addr, ellipsizer(cert_data))
+            #older Python versions can't give us the certificate that failed, download it:
+            import ssl
+            try:
+                cert_data = ssl.get_server_certificate((host, port))
+            except (OSError, ssl.SSLError):
+                ssllog("get_server_certificate%s", (host, port), exc_info=True)
+                cert_data = ""
+            if not cert_data:
+                ssllog.warn("Warning: failed to get server certificate from %s:%s", host, port)
+                return {}
+            ssllog("downloaded ssl cert data for %s:%s: %s", host, port, ellipsizer(cert_data))
         #ask the user if he wants to accept this certificate:
-        title = "SSL Certificate Verification Failure"
-        prompt = "Do you want to accept this certificate?"
-        if not confirm((msg, ), title, prompt):
-            return None
+        fingerprint = get_cert_fingerprint(cert_data)
+        lines = (msg, f"SHA256 fingerprint: {fingerprint}") if fingerprint else (msg, )
+        if not confirm(lines, title, "Do you want to accept this certificate?"):
+            return {}
         filename = save_ssl_config_file(server_hostname, port,
                                         CERT_FILENAME, "certificate", cert_data.encode("latin1"))
         if not filename:
             ssllog.warn("Warning: failed to save certificate data")
-            return None
-        options["ca-certs"] = filename
-        save_ssl_options(server_hostname, port, options)
-        return options
-    if verify_code in (SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH):
+            return {}
+        mods = {"ca-certs" : filename}
+    else:
         #ask the user if he wants to skip verifying the host
-        title = "SSL Certificate Verification Failure"
-        prompt = "Do you want to connect anyway?"
-        r = confirm((msg,), title, prompt)
-        ssllog("run_pinentry_confirm(..) returned %r", r)
-        if r:
-            ssllog.info(title)
-            ssllog.info(" user chose to connect anyway")
-            ssllog.info(" retrying without checking the hostname")
-            options["check-hostname"] = False
-            save_ssl_options(server_hostname, port, options)
-            return options
-    return None
+        if not confirm((msg,), title, "Do you want to connect anyway?"):
+            return {}
+        ssllog.info(title)
+        ssllog.info(" user chose to connect anyway")
+        ssllog.info(" retrying without checking the hostname")
+        mods = {"check-hostname" : False}
+    options = load_ssl_options(server_hostname, port)
+    options.update(mods)
+    save_ssl_options(server_hostname, port, options)
+    return mods
 
 def load_ssl_options(server_hostname:str, port:int) -> Dict[str,Any]:
     from xpra.log import Logger

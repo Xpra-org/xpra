@@ -1391,6 +1391,22 @@ def win32_reconnect(script_file: str, cmdline) -> ExitCode:
     return ExitCode.OK
 
 
+def apply_ssl_retry(e:InitExit, display_desc:Dict[str,Any]) -> bool:
+    """
+    If `e` is an SSL verification failure that the user chooses to override,
+    update the ssl options in `display_desc` and return True so the caller connects again.
+    Each retry must change the options, so we can't keep retrying with the same ones.
+    """
+    from xpra.net.socket_util import ssl_retry
+    mods = ssl_retry(e, display_desc)
+    ssl_options = display_desc.setdefault("ssl-options", {})
+    Logger("ssl")("ssl_retry(%s, %s)=%s", e, ssl_options, mods)
+    if not mods or all(ssl_options.get(k)==v for k, v in mods.items()):
+        return False
+    ssl_options.update(mods)
+    return True
+
+
 def connect_to_server(app, display_desc:Dict[str,Any], opts) -> None:
     #on win32, we must run the main loop
     #before we can call connect()
@@ -1416,15 +1432,10 @@ def connect_to_server(app, display_desc:Dict[str,Any], opts) -> None:
             werr("failed to connect:", f" {e}")
             GLib.idle_add(app.quit, ExitCode.OK)
         except InitExit as e:
-            from xpra.net.socket_util import ssl_retry
-            ssllog = Logger("ssl")
-            mods = ssl_retry(e, opts.ssl_ca_certs)
-            ssllog("do_setup_connection() ssl_retry(%s, %s)=%s", e, opts.ssl_ca_certs, mods)
-            if mods:
-                display_desc.setdefault("ssl-options", {}).update(mods)
+            if apply_ssl_retry(e, display_desc):
                 do_setup_connection()
                 return
-            ssllog("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            Logger("ssl")("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("Warning: failed to connect:", f" {e}")
             GLib.idle_add(app.quit, e.status)
         except InitException as e:
@@ -2167,11 +2178,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
                 app.show_progress(80, "connecting to server")
                 break
             except InitExit as e:
-                from xpra.net.socket_util import ssl_retry
-                mods = ssl_retry(e, opts.ssl_ca_certs)
-                if mods:
-                    for k, v in mods.items():
-                        setattr(opts, f"ssl_{k}", v)
+                if apply_ssl_retry(e, params):
                     continue
                 raise
     except Exception as e:
