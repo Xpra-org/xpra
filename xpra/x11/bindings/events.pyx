@@ -389,7 +389,7 @@ cdef parse_xevent(Display *d, XEvent *e):
 
     cdef int etype = e.type
     global x_event_type_names, x_event_signals
-    event_type = x_event_type_names.get(etype, etype)
+    event_type = x_event_type_names.get(etype, str(etype))
     if e.xany.send_event and etype not in (ClientMessage, UnmapNotify):
         log("parse_xevent ignoring %s send_event", event_type)
         return None
