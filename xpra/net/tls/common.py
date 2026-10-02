@@ -28,10 +28,11 @@ SSL_VERIFY_CODES: dict[int, str] = {
 
 
 class SSLVerifyFailure(InitExit):
-    def __init__(self, status, msg, verify_code, ssl_sock):
+    def __init__(self, status, msg, verify_code, cert_data=""):
         super().__init__(status, msg)
         self.verify_code = verify_code
-        self.ssl_sock = ssl_sock
+        # the PEM certificate that failed verification, if we could get it:
+        self.cert_data = cert_data
 
 
 KEY_FILENAME = "key.pem"
