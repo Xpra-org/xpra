@@ -2263,7 +2263,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if self._client.readonly:
                 # change size-constraints first,
                 # so the resize can be honoured:
-                sc = typedict(force_size_constraint(w, h))
+                sc = typedict(self._force_size_constraint(w, h))
                 self._metadata.update(sc)
                 self.set_metadata(sc)
             Gtk.Window.resize(self, w, h)
