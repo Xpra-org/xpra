@@ -1169,10 +1169,17 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 #without a deadline, the socket timeouts are retried for as long as the connection is active,
                 #so a server that never responds would block us forever:
                 conn.deadline = monotonic() + MAX_WRITE_TIME + MAX_READ_TIME
+                previous_timeout = sock.gettimeout()
                 try:
+                    if dtype=="wss":
+                        #unlike the plain TCP socket, the TLS socket is blocking after the handshake
+                        #(except on win32): keep each SSL read or write within the deadline
+                        sock.settimeout(0.1)
                     client_upgrade(conn.read, conn.write, host, port, display_path)
                 finally:
                     conn.deadline = 0
+                    if dtype=="wss":
+                        sock.settimeout(previous_timeout)
         conn.target = get_host_target_string(display_desc)
         return conn
     raise InitException(f"unsupported display type: {dtype}")
