@@ -114,6 +114,7 @@ REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 0)
 REFRESH_MAXIMIZED = envbool("XPRA_REFRESH_MAXIMIZED", True)
 UNICODE_KEYNAMES = envbool("XPRA_UNICODE_KEYNAMES", False)
 SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
+SKIP_DUPLICATE_SCROLL_EVENTS = envbool("XPRA_SKIP_DUPLICATE_SCROLL_EVENTS", True)
 ICONIFY_LATENCY = envint("XPRA_ICONIFY_LATENCY", 150)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
@@ -2520,6 +2521,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             pointer = self.get_pointer_data(event)
             device_id = -1
             self._client.wheel_event(device_id, self.wid, event.delta_x, -event.delta_y, pointer)
+            return
+        if SKIP_DUPLICATE_SCROLL_EVENTS and self._client.wheel_smooth and event.get_pointer_emulated():
+            mouselog("ignoring emulated scroll event: direction=%i", event.direction)
             return
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s",
