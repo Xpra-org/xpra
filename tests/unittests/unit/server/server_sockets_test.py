@@ -115,7 +115,7 @@ class ServerSocketsTest(ServerTestUtil):
                     return
                 err_msg = f"version client failed to connect using {args}, returned {estr(r)}"
                 log.error(err_msg)
-                log.error(f" server was started on {display=} with {server_args}")
+                log.error(f" server was started on display={display!r} with {server_args}")
                 raise Exception(err_msg)
         #try to connect
         cmd = ["connect-test", uri] + [x.replace("$DISPLAY_NO", str(display_no)) for x in client_args]

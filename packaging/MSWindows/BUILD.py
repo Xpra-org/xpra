@@ -175,7 +175,7 @@ def find_command(name: str, env_name: str, *paths) -> str:
     print(f"{name!r} not found")
     print(f" (you can set the {env_name!r} environment variable to point to it)")
     print(f" tried %PATH%={os.environ.get('PATH')}")
-    print(f" tried {paths=}")
+    print(f" tried paths={paths!r}")
     raise RuntimeError(f"{name!r} not found")
 
 
@@ -236,7 +236,7 @@ def check_signtool() -> None:
         signtool = find_vs_command("signtool.exe")
         if not signtool:
             raise RuntimeError("signtool not found")
-    debug(f"{signtool=}")
+    debug(f"signtool={signtool!r}")
     if signtool.lower() != "./signtool.exe":
         copyfile(signtool, "./signtool.exe")
 
