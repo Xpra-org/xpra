@@ -993,7 +993,7 @@ def retry_socket_connect(options):
         sock = socket_connect(host, port, timeout=timeout)
         if sock:
             return sock
-        if monotonic()-start>=timeout:
+        if not options.get("retry", True) or monotonic()-start>=timeout:
             break
         if retry==0:
             werr(f"failed to connect to {host}:{port}, retrying for {timeout} seconds")

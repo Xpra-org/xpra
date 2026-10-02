@@ -1304,6 +1304,38 @@ def get_cert_fingerprint(cert_data:str) -> str:
         return ""
     return ":".join(digest[i:i+2] for i in range(0, len(digest), 2))
 
+def get_server_certificate(display_desc:Dict[str,Any], server_hostname:str) -> str:
+    """
+    Download the server's certificate without verifying it.
+    Unlike `ssl.get_server_certificate`, this connects the same way the client does,
+    so a `proxy-host` is honoured: the destination may only be reachable through it,
+    and we must not resolve it locally or connect to it directly.
+    """
+    import ssl
+    from xpra.scripts.main import retry_socket_connect
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    #the server was reachable a moment ago, don't keep retrying if it isn't anymore:
+    options = dict(display_desc, retry=False)
+    try:
+        sock = retry_socket_connect(options)
+    except (OSError, ValueError, InitExit, InitException):
+        ssllog("retry_socket_connect(%s)", options, exc_info=True)
+        return ""
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        sock.settimeout(SSL_HANDSHAKE_TIMEOUT)
+        with context.wrap_socket(sock, server_hostname=server_hostname) as ssl_sock:
+            der = ssl_sock.getpeercert(binary_form=True)
+        return ssl.DER_cert_to_PEM_cert(der) if der else ""
+    except (OSError, ValueError, ssl.SSLError):
+        ssllog("get_server_certificate(%s, %s)", display_desc, server_hostname, exc_info=True)
+        return ""
+    finally:
+        sock.close()
+
 def ssl_retry(e, display_desc:Dict[str,Any]) -> Dict[str,Any]:
     """
     Ask the user whether to accept the certificate that failed verification.
@@ -1359,12 +1391,7 @@ def ssl_retry(e, display_desc:Dict[str,Any]) -> Dict[str,Any]:
         cert_data = e.cert_data
         if not cert_data:
             #older Python versions can't give us the certificate that failed, download it:
-            import ssl
-            try:
-                cert_data = ssl.get_server_certificate((host, port))
-            except (OSError, ssl.SSLError):
-                ssllog("get_server_certificate%s", (host, port), exc_info=True)
-                cert_data = ""
+            cert_data = get_server_certificate(display_desc, server_hostname)
             if not cert_data:
                 ssllog.warn("Warning: failed to get server certificate from %s:%s", host, port)
                 return {}

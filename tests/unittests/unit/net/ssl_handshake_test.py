@@ -15,8 +15,10 @@ from threading import Thread
 from unittest.mock import patch
 from time import monotonic
 
-from xpra.net.socket_util import ssl_handshake, ssl_retry, SSLVerifyFailure, SSL_VERIFY_SELF_SIGNED
-from xpra.scripts.config import InitExit
+from xpra.net.socket_util import (
+    ssl_handshake, ssl_retry, get_server_certificate, SSLVerifyFailure, SSL_VERIFY_SELF_SIGNED,
+)
+from xpra.scripts.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
 
 
@@ -96,10 +98,38 @@ class TestSSLHandshakeTimeout(unittest.TestCase):
 OPENSSL = shutil.which("openssl")
 
 
+class TestServerCertificateDownload(unittest.TestCase):
+
+    def test_connection_failure_does_not_retry(self) -> None:
+        display_desc = {"type": "ssl", "host": "127.0.0.1", "port": 10000, "timeout": 20}
+        with patch("xpra.net.socket_util.socket_connect", return_value=None) as connect:
+            with patch("xpra.scripts.main.time.sleep", side_effect=AssertionError("must not retry")):
+                self.assertEqual(get_server_certificate(display_desc, "localhost"), "")
+        connect.assert_called_once_with("127.0.0.1", 10000, timeout=20)
+        self.assertNotIn("retry", display_desc)
+
+    def test_resolution_failure(self) -> None:
+        display_desc = {"type": "ssl", "host": "unreachable.invalid", "port": 10000}
+        # In 5.1, socket_connect raises InitException when getaddrinfo fails:
+        with patch("xpra.net.socket_util.socket_connect", side_effect=InitException("cannot get address")):
+            self.assertEqual(get_server_certificate(display_desc, "localhost"), "")
+
+    def test_handshake_timeout(self) -> None:
+        sock, peer = socket.socketpair()
+        self.addCleanup(sock.close)
+        self.addCleanup(peer.close)
+        display_desc = {"type": "ssl", "host": "127.0.0.1", "port": 10000}
+        # A peer that never answers must not hang the certificate download:
+        with patch("xpra.scripts.main.retry_socket_connect", return_value=sock):
+            with patch("xpra.net.socket_util.SSL_HANDSHAKE_TIMEOUT", 0.1):
+                start = monotonic()
+                self.assertEqual(get_server_certificate(display_desc, "localhost"), "")
+                self.assertLess(monotonic() - start, 5)
+        self.assertEqual(sock.fileno(), -1)
+
+
 @unittest.skipUnless(OPENSSL, "openssl is required to generate a test certificate")
-# Python 3.6 has no `SSLCertVerificationError`, so verification failures can't be identified:
-@unittest.skipUnless(hasattr(ssl, "SSLCertVerificationError"), "Python 3.7 or later is required")
-class TestSSLVerifyFailure(unittest.TestCase):
+class SSLServerTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -137,6 +167,8 @@ class TestSSLVerifyFailure(unittest.TestCase):
         self.listener.settimeout(10)
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         server_context.load_cert_chain(self.cert, self.key)
+        self.server_names = []
+        server_context.set_servername_callback(lambda conn, name, context: self.server_names.append(name))
 
         def serve() -> None:
             while True:
@@ -154,10 +186,39 @@ class TestSSLVerifyFailure(unittest.TestCase):
         Thread(target=serve, daemon=True).start()
         self.port = self.listener.getsockname()[1]
         self.display_desc = {
+            "type": "ssl",
             "host": "127.0.0.1",
             "port": self.port,
             "ssl-options": {"server-hostname": "localhost", "ca-certs": "default"},
         }
+
+
+class TestServerCertificate(SSLServerTestCase):
+
+    def check_certificate(self, display_desc: dict) -> None:
+        with patch("ssl.get_server_certificate", side_effect=AssertionError("must not bypass the connection path")):
+            cert_data = get_server_certificate(display_desc, "localhost")
+        with open(self.cert, encoding="latin1") as f:
+            self.assertEqual(ssl.PEM_cert_to_DER_cert(cert_data), ssl.PEM_cert_to_DER_cert(f.read()))
+        self.assertEqual(self.server_names, ["localhost"])
+
+    def test_download(self) -> None:
+        self.check_certificate(self.display_desc)
+
+    def test_download_via_proxy(self) -> None:
+        display_desc = dict(self.display_desc, host="unreachable.invalid", **{"proxy-host": "127.0.0.1"})
+
+        def proxy_connect(options: dict) -> socket.socket:
+            self.assertEqual((options["host"], options["port"]), ("unreachable.invalid", self.port))
+            return socket.create_connection(("127.0.0.1", self.port), timeout=5)
+        with patch("xpra.scripts.main.proxy_connect", side_effect=proxy_connect) as pc:
+            self.check_certificate(display_desc)
+        pc.assert_called_once()
+
+
+# Python 3.6 has no `SSLCertVerificationError`, so verification failures can't be identified:
+@unittest.skipUnless(hasattr(ssl, "SSLCertVerificationError"), "Python 3.7 or later is required")
+class TestSSLVerifyFailure(SSLServerTestCase):
 
     def handshake(self, ca_certs: str = "") -> None:
         sock = socket.create_connection(("127.0.0.1", self.port), timeout=5)
@@ -196,6 +257,33 @@ class TestSSLVerifyFailure(unittest.TestCase):
             self.assertEqual(self.der(f.read()), self.der(server_cert))
         # the accepted certificate is enough to connect:
         self.handshake(mods["ca-certs"])
+
+    def check_download(self, display_desc: dict) -> None:
+        e = self.verify_failure()
+        # what older Python versions give us, which have no `get_unverified_chain()`:
+        e.cert_data = ""
+        with patch("ssl.get_server_certificate", side_effect=AssertionError("must not bypass the connection path")):
+            mods = ssl_retry(e, display_desc)
+        self.assertEqual(self.server_names, ["localhost", "localhost"])
+        with open(self.cert, encoding="latin1") as f:
+            server_cert = f.read()
+        with open(mods["ca-certs"], encoding="latin1") as f:
+            self.assertEqual(self.der(f.read()), self.der(server_cert))
+
+    def test_retry_download(self) -> None:
+        self.check_download(self.display_desc)
+
+    def test_retry_download_via_proxy(self) -> None:
+        # the destination is only reachable through the proxy:
+        display_desc = dict(self.display_desc, host="unreachable.invalid", **{"proxy-host": "127.0.0.1"})
+        port = self.port
+
+        def proxy_connect(options: dict) -> socket.socket:
+            self.assertEqual((options["host"], options["port"]), ("unreachable.invalid", port))
+            return socket.create_connection(("127.0.0.1", port), timeout=5)
+        with patch("xpra.scripts.main.proxy_connect", side_effect=proxy_connect) as pc:
+            self.check_download(display_desc)
+        pc.assert_called_once()
 
     def test_retry_only_with_new_options(self) -> None:
         from xpra.scripts.main import apply_ssl_retry
