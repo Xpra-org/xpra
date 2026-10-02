@@ -235,7 +235,7 @@ def socket_fast_read(conn, timeout=1) -> bytes:
                 conn._socket.settimeout(0.01)
                 data = conn.read(1)
                 return data or b""
-            except TimeoutError:
+            except (TimeoutError, socket.timeout):
                 log = get_network_logger()
                 log("socket_fast_read(%s) timeout", conn)
                 continue
