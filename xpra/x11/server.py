@@ -24,11 +24,11 @@ from xpra.server import server_features, EXITING_CODE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
-from xpra.x11.gtk_x11.prop import prop_set
+from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.selection import AlreadyOwned
 from xpra.x11.gtk3.gdk_bindings import add_event_receiver, get_pywindow
-from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
+from xpra.x11.bindings.window import X11WindowBindings, constants #@UnresolvedImport
 from xpra.x11.bindings.keyboard import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.randr import RandRBindings  #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase
@@ -49,6 +49,7 @@ mouselog = Logger("x11", "mouse")
 screenlog = Logger("x11", "screen")
 
 X11Window = X11WindowBindings()
+XNone = constants["XNone"]
 X11Keyboard = X11KeyboardBindings()
 X11RandR = RandRBindings()
 
@@ -753,6 +754,13 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def _lost_window(self, window, wm_exiting=False) -> None:
+        wid = self._window_to_id[window]
+        if self._has_focus==wid:
+            #this will call clear_keys_pressed() if the server is an InputServer:
+            self.reset_focus()
+            self._has_focus = 0
+        if not wm_exiting:
+            self.restore_active_window(window)
         wid = self._remove_window(window)
         self.cancel_configure_damage(wid)
         if self._exit_with_windows and len(self._id_to_window)==0:
@@ -760,6 +768,17 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self.clean_quit()
         elif not wm_exiting:
             self.repaint_root_overlay()
+
+    def restore_active_window(self, window) -> None:
+        """Restore the root active window when its window goes away."""
+        with xswallow:
+            root_xid = X11Window.get_root_xid()
+            if prop_get(root_xid, "_NET_ACTIVE_WINDOW", "u32", ignore_errors=True)!=window.xid:
+                return
+            focused = self._id_to_window.get(self._has_focus)
+            xid = focused.xid if focused else XNone
+            focuslog("restore_active_window(%s) giving it back to %#x", window, xid)
+            prop_set(root_xid, "_NET_ACTIVE_WINDOW", "u32", xid)
 
     def _contents_changed(self, window, event) -> None:
         if window.is_OR() or window.is_tray() or window.get_property("shown"):
