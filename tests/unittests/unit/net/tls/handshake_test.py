@@ -153,6 +153,7 @@ class TestSSLVerifyFailure(unittest.TestCase):
         Thread(target=serve, daemon=True).start()
         self.port = self.listener.getsockname()[1]
         self.display_desc = {
+            "type": "ssl",
             "host": "127.0.0.1",
             "port": self.port,
             "ssl-options": {"server-hostname": "localhost", "ca-certs": "default"},
@@ -195,6 +196,32 @@ class TestSSLVerifyFailure(unittest.TestCase):
             self.assertEqual(self.der(f.read()), self.der(server_cert))
         # the accepted certificate is enough to connect:
         self.handshake(mods["ca-certs"])
+
+    def check_download(self, display_desc: dict) -> None:
+        e = self.verify_failure()
+        # what older Python versions give us, which have no `get_unverified_chain()`:
+        e.cert_data = ""
+        with patch("ssl.get_server_certificate", side_effect=AssertionError("must not bypass the connection path")):
+            mods = ssl_retry(e, display_desc)
+        with open(self.cert, encoding="latin1") as f:
+            server_cert = f.read()
+        with open(mods["ca-certs"], encoding="latin1") as f:
+            self.assertEqual(self.der(f.read()), self.der(server_cert))
+
+    def test_retry_download(self) -> None:
+        self.check_download(self.display_desc)
+
+    def test_retry_download_via_proxy(self) -> None:
+        # the destination is only reachable through the proxy:
+        display_desc = dict(self.display_desc, host="unreachable.invalid", **{"proxy-host": "127.0.0.1"})
+        port = self.port
+
+        def proxy_connect(options: dict) -> socket.socket:
+            self.assertEqual((options["host"], options["port"]), ("unreachable.invalid", port))
+            return socket.create_connection(("127.0.0.1", port), timeout=5)
+        with patch("xpra.net.connect.proxy_connect", side_effect=proxy_connect) as pc:
+            self.check_download(display_desc)
+        pc.assert_called_once()
 
     def test_retry_only_with_new_options(self) -> None:
         from xpra.scripts.main import apply_ssl_retry
