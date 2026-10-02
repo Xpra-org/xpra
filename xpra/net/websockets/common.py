@@ -106,7 +106,15 @@ def read_server_upgrade(read:Callable):
         if not data:
             raise ConnectionClosedException("the server closed the connection during the websocket upgrade")
         response += data
-    return parse_response_header(response)
+    headers = parse_response_header(response)
+    status = response.split(b"\r\n", 1)[0].decode("latin1")
+    parts = status.split(" ", 2)
+    if len(parts)<2 or not parts[0].startswith("HTTP/"):
+        raise ValueError(f"invalid http response: {status!r}")
+    # authentication failures are reported by `verify_response_headers`:
+    if parts[1]!="101" and "www-authenticate" not in headers:
+        raise ValueError(f"websocket upgrade failed: {status!r}")
+    return headers
 
 def parse_response_header(response:bytes):
     #parse response:
