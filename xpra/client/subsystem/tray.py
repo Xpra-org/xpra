@@ -136,6 +136,9 @@ class TrayClient(StubClientSubsystem):
                               xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
         log("setup_xpra_tray(%s)=%s (%s)", tray_icon_filename, tray, type(tray))
         if tray:
+            if mh:
+                mh.when_ready(tray.menu_ready)
+
             def reset_tray_title() -> None:
                 tray.set_tooltip(self.get_tray_title())
 

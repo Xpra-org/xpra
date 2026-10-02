@@ -84,6 +84,7 @@ class FakeApplication(FakeClient):
                                        self.xpra_tray_mouseover, self.xpra_tray_exit)
             except Exception as e:
                 log.warn("failed to create tray %s: %s", tray_class, e)
+        self.menu_helper.when_ready(self.tray.menu_ready)
         self._subsystems["tray"] = self.tray
         self.tray.set_tooltip("Test System Tray")
 

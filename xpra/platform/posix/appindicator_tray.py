@@ -66,9 +66,13 @@ class AppindicatorTray(TrayBase):
             self.set_icon_from_file(filename)
         if not self._has_icon:
             self.tray_widget.set_label("Xpra", "")
-        if self.menu:
-            self.tray_widget.set_menu(self.menu)
         self.show()
+
+    def menu_ready(self) -> None:
+        # appindicator ignores the changes made to the menu after `set_menu()`, see #3956 and #5056
+        log("menu_ready() menu=%s", self.menu)
+        if self.menu and self.tray_widget:
+            self.tray_widget.set_menu(self.menu)
 
     def get_geometry(self):
         # no way to tell :(
@@ -168,6 +172,7 @@ def main() -> None:  # pragma: no cover
         menu.append(item)
         menu.show_all()
         a = AppindicatorTray(None, None, menu, "test", icon_filename="xpra.png", exit_cb=Gtk.main_quit)
+        a.menu_ready()
         a.show()
         register_os_signals(Gtk.main_quit)
         gtk_main()

@@ -180,20 +180,41 @@ class TrayMenuTest(unittest.TestCase):
                 pass
 
         helper = object.__new__(tray_menu.GTKTrayMenu)
+        helper.pending_later = 0
+        helper.ready_callbacks = []
         helper.menu_deactivated = lambda *_args: None
         items = [BuildItem("one"), BuildItem("two")]
-        helper.get_menu_item_factories = lambda: tuple(lambda item=item: item for item in items)
+        populated = []
+
+        def make_two():
+            # like the submenus, populated using another `later` call:
+            helper.later(lambda: populated.append("two"))
+            return items[1]
+
+        helper.get_menu_item_factories = lambda: (lambda: items[0], make_two)
         fake_gtk = SimpleNamespace(Menu=BuildMenu)
-        fake_glib = SimpleNamespace(idle_add=lambda callback: callbacks.append(callback) or len(callbacks))
+        fake_glib = SimpleNamespace(timeout_add=lambda _delay, callback: callbacks.append(callback) or len(callbacks))
+        ready = []
         with patch.object(tray_menu, "Gtk", fake_gtk), patch.object(tray_menu, "GLib", fake_glib):
             menu = helper.setup_menu()
-        self.assertEqual(menu.get_children(), [])
-        self.assertEqual(len(callbacks), 1)
-        self.assertTrue(callbacks[0]())
-        self.assertEqual([x.get_label() for x in menu.get_children()], ["one"])
-        self.assertTrue(callbacks[0]())
-        self.assertEqual([x.get_label() for x in menu.get_children()], ["one", "two"])
-        self.assertFalse(callbacks[0]())
+            helper.when_ready(lambda: ready.append(True))
+            self.assertEqual(menu.get_children(), [])
+            self.assertEqual(len(callbacks), 1)
+            build = callbacks[0]
+            self.assertTrue(build())
+            self.assertEqual([x.get_label() for x in menu.get_children()], ["one"])
+            self.assertTrue(build())
+            self.assertEqual([x.get_label() for x in menu.get_children()], ["one", "two"])
+            self.assertEqual(len(callbacks), 2)
+            self.assertFalse(build())
+            # the submenu has not been populated yet:
+            self.assertEqual(ready, [])
+            self.assertFalse(callbacks[1]())
+            self.assertEqual(populated, ["two"])
+            self.assertEqual(ready, [True])
+            # once ready, callbacks fire immediately:
+            helper.when_ready(lambda: ready.append(False))
+            self.assertEqual(ready, [True, False])
 
     def test_speaker_menu_sink_selection(self):
         audio = FakeAudio(speaker_enabled=True)

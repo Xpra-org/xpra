@@ -56,6 +56,11 @@ class TrayBase:
         The MacOS dock overrides this method.
         """
 
+    def menu_ready(self) -> None:
+        """
+        This is called once the menu has been fully populated.
+        """
+
     def show(self) -> None:
         raise NotImplementedError
 

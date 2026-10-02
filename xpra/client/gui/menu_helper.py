@@ -52,6 +52,10 @@ class MenuHelper:
     def setup_menu(self):
         raise NotImplementedError()
 
+    def when_ready(self, cb: Callable[[], None]) -> None:
+        """ call `cb` once the menu has been fully populated """
+        cb()
+
     def cleanup(self) -> None:
         self.close_menu()
 

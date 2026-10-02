@@ -151,11 +151,44 @@ def _hide_window(win) -> None:
     win.freeze()
 
 
-def later(fn: Callable[[], None], delay=100):
-    GLib.timeout_add(delay, fn)
-
-
 class GTKTrayMenu(GTKMenuHelper):
+
+    def __init__(self, client=None):
+        super().__init__(client)
+        self.pending_later = 0
+        self.ready_callbacks: list[Callable[[], None]] = []
+
+    def later(self, fn: Callable[[], bool | None], delay=100) -> None:
+        """
+        Run `fn` from the main loop, it may return True to be called again.
+        We keep track of the pending ones so that we know when the menu is fully populated,
+        see `when_ready`.
+        """
+        self.pending_later += 1
+
+        def run() -> bool:
+            repeat = False
+            try:
+                repeat = bool(fn())
+            except Exception:
+                log.error("Error populating the tray menu using %s:", fn, exc_info=True)
+            if not repeat:
+                self.pending_later -= 1
+                if not self.pending_later:
+                    callbacks = self.ready_callbacks
+                    self.ready_callbacks = []
+                    log("menu ready, calling %s", callbacks)
+                    for cb in callbacks:
+                        cb()
+            return repeat
+
+        GLib.timeout_add(delay, run)
+
+    def when_ready(self, cb: Callable[[], None]) -> None:
+        if self.pending_later:
+            self.ready_callbacks.append(cb)
+        else:
+            cb()
 
     def get_subsystem(self, subsystem: str):
         """ look up a client subsystem (delegates to the owning client) """
@@ -186,7 +219,8 @@ class GTKTrayMenu(GTKMenuHelper):
             # these create large submenus and register many idle callbacks.
             return True
 
-        GLib.idle_add(add_menu_item)
+        # use a tiny delay rather than idle_add, so we don't starve the main loop:
+        self.later(add_menu_item, 1)
         return menu
 
     def do_setup_menu(self, items: Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]) -> Gtk.Menu:
@@ -264,7 +298,7 @@ class GTKTrayMenu(GTKMenuHelper):
             add(self.make_docsmenuitem())
             add(self.make_html5menuitem())
             menu.show_all()
-        later(populate_infomenu)
+        self.later(populate_infomenu)
         info_menu_item.show_all()
         return info_menu_item
 
@@ -275,7 +309,7 @@ class GTKTrayMenu(GTKMenuHelper):
         def populate_featuresmenu() -> None:
             self.append_featuresmenuitems(menu)
             menu.show_all()
-        later(populate_featuresmenu)
+        self.later(populate_featuresmenu)
         features_menu_item.set_submenu(menu)
         features_menu_item.show_all()
         return features_menu_item
@@ -701,7 +735,7 @@ class GTKTrayMenu(GTKMenuHelper):
             menu.append(self.make_qualitymenuitem())
             menu.append(self.make_speedmenuitem())
             menu.show_all()
-        later(populate_picturemenu)
+        self.later(populate_picturemenu)
         picture_menu_item.set_submenu(menu)
         picture_menu_item.show_all()
         return picture_menu_item
@@ -1021,7 +1055,7 @@ class GTKTrayMenu(GTKMenuHelper):
             menu.append(self.make_microphonemenuitem())
             menu.append(self.make_avsyncmenuitem())
             menu.show_all()
-        later(populate_audiomenu)
+        self.later(populate_audiomenu)
         audio_menu_item.show_all()
         return audio_menu_item
 
@@ -1374,7 +1408,7 @@ class GTKTrayMenu(GTKMenuHelper):
             menu.show_all()
             menu.ignore_events = False
 
-        later(populate_webcam_menu)
+        self.later(populate_webcam_menu)
 
         def video_devices_changed(added=None, device=None) -> None:
             if added is not None and device:
@@ -1430,7 +1464,7 @@ class GTKTrayMenu(GTKMenuHelper):
             if KEYBOARD_CAD:
                 menu.append(self.make_cadmenuitem())
             menu.show_all()
-        later(populate_keyboardmenu)
+        self.later(populate_keyboardmenu)
         keyboard_menu_item.show_all()
         return keyboard_menu_item
 
@@ -1724,7 +1758,7 @@ class GTKTrayMenu(GTKMenuHelper):
             menu.append(self.make_refreshmenuitem())
             menu.append(self.make_reinitmenuitem())
             menu.show_all()
-        later(populate_windowsmenu)
+        self.later(populate_windowsmenu)
         windows_menu_item.show_all()
         return windows_menu_item
 
@@ -1822,7 +1856,7 @@ class GTKTrayMenu(GTKMenuHelper):
             if SHOW_SHUTDOWN:
                 menu.append(self.make_shutdownmenuitem())
             menu.show_all()
-        later(populate_servermenu)
+        self.later(populate_servermenu)
         server_menu_item.show_all()
         return server_menu_item
 
@@ -2050,7 +2084,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
                 cat_menu.append(app_menu_item)
             cat_menu.show_all()
-        later(populate_category_menu, 1000)
+        self.later(populate_category_menu, 1000)
         return category_menu_item
 
     def start_menuitem(self, title: str, icondata=b"") -> Gtk.ImageMenuItem:
