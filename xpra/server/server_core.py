@@ -1331,11 +1331,17 @@ class ServerCore:
             # try to read from this socket,
             # so short-lived probes don't go through the whole protocol instantiation
             pre = socket_fast_read(conn)
-            if not pre:
+            if pre is None:
+                # still connected, just nothing to read yet:
+                # clients can take a while to send their `hello` packet
+                # (see `socket_fast_read`), so carry on without a pre-read
+                netlog("%s connection has not sent anything yet", socktype)
+            elif not pre:
                 netlog("closing %s connection: no data", socktype)
                 self.force_close_connection(conn)
                 return
-            pre_read = [pre]
+            else:
+                pre_read = [pre]
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
         proto = self.make_protocol(socktype, conn, socket_options, pre_read=pre_read)
