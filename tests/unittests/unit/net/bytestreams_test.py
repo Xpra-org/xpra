@@ -276,6 +276,16 @@ class TestSSLSocketConnection(unittest.TestCase):
         with self.assertRaises(ConnectionClosedException):
             conn.can_retry(e)
 
+    def test_can_retry_empty_args(self):
+        # exceptions raised without arguments must not be masked by an `IndexError`:
+        conn = self._make_conn()
+        for e in (OSError(), ConnectionResetError(), TimeoutError(), Exception()):
+            assert not e.args
+            if isinstance(e, TimeoutError):
+                assert conn.can_retry(e)
+            else:
+                assert conn.can_retry(e) is False, type(e)
+
     # read ---
 
     def test_read_no_pending(self):

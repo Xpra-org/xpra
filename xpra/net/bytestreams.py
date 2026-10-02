@@ -68,7 +68,9 @@ def can_retry(e) -> bool | str:
     if isinstance(e, BrokenPipeError):
         raise ConnectionClosedException(e) from None
     if isinstance(e, OSError):
-        code = e.args[0]
+        # exceptions can be raised without any arguments,
+        # these are re-raised as-is instead of being masked by an `IndexError`:
+        code = e.args[0] if e.args else None
         abort = ABORT.get(code, code)
         if abort is not None:
             err = getattr(e, "errno", None)
@@ -627,7 +629,7 @@ class SSLSocketConnection(SocketConnection):
                 log("SSL library error, message: %r", reason)
                 return False
             log("SSL library exception: %s, reason=%r", e, reason)
-        message = e.args[0]
+        message = e.args[0] if e.args else ""
         if message in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
             log("SSL timeout will be retried, messsage: %r", message)
             return True
