@@ -1,7 +1,10 @@
 # Changelog
 
-## [5.1.7] 2026-09-27
+## [5.1.7] 2026-10-02
 * Platforms, build and packaging:
+  * [verify deb packages before copying to the repo](https://github.com/Xpra-org/xpra/commit/3c2cdc90c4189798404d6938891b88578eaa16c7)
+  * [stop building DEBs on any failure](https://github.com/Xpra-org/xpra/commit/0ccc067461763958f886df14bb18d0f24b8e8774)
+  * [Fedora 45 package list](https://github.com/Xpra-org/xpra/commit/657e131701d1ad9a383821d1a1460835c78606ed)
   * [MSYS2 builds no longer require obsolete Soup and croco dependencies](https://github.com/Xpra-org/xpra/commit/00c12bf42cd6cb48a6d2e6202e34bd6e859a3706)
   * [almalinux build failures](https://github.com/Xpra-org/xpra/commit/e371556e6710cb19b02f215af7f4754313d59f00) [and rockylinux](https://github.com/Xpra-org/xpra/commit/dc839d9bc7bdd46b7161b37f89d98263b2405a1f)
   * [missing default build list](https://github.com/Xpra-org/xpra/commit/403e684f0cb731c01e2799ac4c335110268c0605) - [unused arm64 list](https://github.com/Xpra-org/xpra/commit/ebdcf11bb30609e541c5b47a7dded68affce2d12)
@@ -12,6 +15,8 @@
   * [googlesource downloads are not reliable](https://github.com/Xpra-org/xpra/commit/8eca03acb642b27e47d372b73e2393355fc947a5)
   * [macOS: always enable logging to file when spawned from the GUI](https://github.com/Xpra-org/xpra/commit/f78b14b5e9bedd9a214600fb906e3d6efec57a00)
 * Encodings:
+  * [nvenc: set hevc level](https://github.com/Xpra-org/xpra/commit/2f14b20e7c950f071c63ae6def7cb025ef20a823)
+  * [nvenc: only advertise YUV444 output when the device supports it for h264 / h265](https://github.com/Xpra-org/xpra/commit/1ec2e7ede52b75d737f956547e40dd69036c225b)
   * [ARGB conversions reported the wrong bytes-per-pixel value](https://github.com/Xpra-org/xpra/commit/ebc12cc5f198dd85df6c36655037b12154494803)
   * [damage cancellation could free images while they were still being encoded](https://github.com/Xpra-org/xpra/commit/b8293340957ff401f06833f42779f2c19941fa46)
   * [concurrent damage could start multiple encode threads](https://github.com/Xpra-org/xpra/commit/ea08e44ac490654dc2b0fd06c9417ca88f553f63)
@@ -29,9 +34,20 @@
   * [`mmap` uses unavailable API calls](https://github.com/Xpra-org/xpra/commit/88d977f6cc0a985f5f106e76926e6e717dced548)
   * [clipboard memory handle bugs](https://github.com/Xpra-org/xpra/commit/ccb0ed1fca55d1440711c8440ed211e22bed9176)
 * Mmap:
+  * [confine client-named files to the server mmap directory and reject symlinks](https://github.com/Xpra-org/xpra/commit/1b7083ae4790882cbcab7ce0f0799e42b877c5f3)
+  * [use the actual mmap area size](https://github.com/Xpra-org/xpra/commit/24dc52eaf80dd446c86af8600929a8aaefd8bf2f)
+  * [validate control header pointers and disconnect clients that corrupt them](https://github.com/Xpra-org/xpra/commit/0326bc21f986f60cc684186a5d39953557975b04)
+  * [validate chunks supplied by the peer](https://github.com/Xpra-org/xpra/commit/deca6f067a5793668b680e11ebbb7edd1d943958)
+  * [validate chunks before freeing data for a window that is gone](https://github.com/Xpra-org/xpra/commit/04b6c0ae21ecb729f693d938f48c504bca04a5e4)
+  * [reject missing server mmap tokens](https://github.com/Xpra-org/xpra/commit/3bef31354ce9485d7733b9661db4ff9530ebb891)
   * [limit is actually 4GB](https://github.com/Xpra-org/xpra/commit/0377ba073f3ead0b6d69505e74c9faee2504f8ba)
   * [validate the token location and size](https://github.com/Xpra-org/xpra/commit/ddec4ce4fcef68ba4a3f395a916007838b53ff4e)
 * Major:
+  * [keyboard layout group could be wrong after a keymap or keyboard state reset](https://github.com/Xpra-org/xpra/commit/a85da624603ce72a6d9adec935cd845fc29f5268)
+  * [drag-and-drop can get wedged and stop working](https://github.com/Xpra-org/xpra/commit/0d25acfcd80e56e6561f5e5d96e41514ca10079d)
+  * [Gtk clients fail to restack a window above or below another window](https://github.com/Xpra-org/xpra/commit/69f4ec9fcd05607c028868b91fe0310011cae4ee)
+  * [don't reconfigure monitors unless required](https://github.com/Xpra-org/xpra/commit/4e35a64a5a7c14482f4d8e81772ec3d20d1bca84)
+  * [resizing desktop sessions has no effect on Xvfb displays](https://github.com/Xpra-org/xpra/commit/1d3600ea0b86b651ea0b6904fa9b732586d78a9a)
   * [X11 error callbacks could use Python state without holding the GIL](https://github.com/Xpra-org/xpra/commit/4bbef138154edee5524173be2cc5df6fe9e971d9)
   * [X11 events could stop being routed after unmatched filter cleanup](https://github.com/Xpra-org/xpra/commit/23f81b0c5119e4c2c619e67a1cc20558ee972ae9) [or shared filter use](https://github.com/Xpra-org/xpra/commit/91bf9a9025c52ed862025eacfd09c10153484783)
   * [handle duplicated mode attribute in session files](https://github.com/Xpra-org/xpra/commit/d8ac8e684c21689b7c43e2c230d06dc7c535f543)
@@ -42,6 +58,30 @@
   * [macOS client crash with audio enabled](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8) [or speaker state changes](https://github.com/Xpra-org/xpra/commit/06ff3beccd197d88e72e5e52eb852db74e52a1f8)
   * [nvenc: choose a profile matching the chroma format](https://github.com/Xpra-org/xpra/commit/68767858b81bed6d3c6342048850ea57e50183ec)
   * [remove `AES-CFB`](https://github.com/Xpra-org/xpra/commit/9ffaa01629804cdbc27133f225fa6b14b2e7d950)
+* Network:
+  * [don't mask exceptions raised without arguments](https://github.com/Xpra-org/xpra/commit/b3b0d2f57c56e2d3d4ae64b2f9e240fe1e817f4d)
+  * [don't block forever on a websocket upgrade that never completes](https://github.com/Xpra-org/xpra/commit/2b3704a59917051b7236802593e560e06959ec59)
+  * [don't leak the client socket when the tcp connection setup fails](https://github.com/Xpra-org/xpra/commit/93466b3cf85f79e4277b7ade8b538208463dfb6d)
+  * [don't busy-loop when the server closes the connection during the websocket upgrade](https://github.com/Xpra-org/xpra/commit/96c3b5cd4795e890a58dd0dc7e2d098684060c40)
+  * [limit the time clients have to send their http request headers](https://github.com/Xpra-org/xpra/commit/d42a2a2657284f2cf92f1fae4c418ff8df1469e1)
+  * [stop reading the websocket upgrade response at the end of its headers](https://github.com/Xpra-org/xpra/commit/7aeb9ccbcddfc22ba4d7544239136c7c02ccadd7)
+  * [check the http status of the websocket upgrade response](https://github.com/Xpra-org/xpra/commit/4b8f19a746a866a619526d3213fcbdbc7bf8850f)
+  * [don't send an http error after the websocket upgrade response](https://github.com/Xpra-org/xpra/commit/f9ad43c16a4ec8370a255afe334a55c90dde3325)
+  * [accept websocket subprotocol lists with spaces](https://github.com/Xpra-org/xpra/commit/d2e0a9bd44c31484bb2560581cfdf241bf6db2f0)
+  * [fix default HTTP headers directory for WebSocket errors](https://github.com/Xpra-org/xpra/commit/083582bf25b049ba76201f4d45fde1c0d40710bf)
+  * [don't drop clients that are slow to send their first packet](https://github.com/Xpra-org/xpra/commit/b29e54dde8c411f82a5a57ad2d0b625331563360)
+  * [socket fast read timeout handling on older Python](https://github.com/Xpra-org/xpra/commit/b1983adde9f3960beebe7d0e177b5abae062f487)
+  * [paramiko: try ssh keys in the same order as openssh](https://github.com/Xpra-org/xpra/commit/e8676a54869a79cadf539162886f80ad20f5a220)
+* SSL:
+  * [fix SSL upgrade verification overrides](https://github.com/Xpra-org/xpra/commit/e9f05871ab034b1bf58500172b7fce9561e9ac27)
+  * [don't wait forever for the client's TLS handshake to complete](https://github.com/Xpra-org/xpra/commit/67f79437bd543ff7406ee187aed40e16622770d5)
+  * [don't let SSL connections wait past their deadline](https://github.com/Xpra-org/xpra/commit/86ba0f9acc72dd270a3579725e479231803666a6)
+  * [apply a timeout to every TLS handshake](https://github.com/Xpra-org/xpra/commit/aa4fd151d3ae4d089e701fa46c6db3b481ef5427)
+  * [fail the SSL handshake when the peer closes the connection](https://github.com/Xpra-org/xpra/commit/a9d1ee4cba0e491ffef954239997a089da1579a7)
+  * [close the ssl connection when the server side handshake fails](https://github.com/Xpra-org/xpra/commit/45b65b61dfd27bea1f67a9bb1ff74d050887ae35)
+  * [don't leave failed SSL connections dangling](https://github.com/Xpra-org/xpra/commit/82fd7732ac578683851947adb840fd1dc38de51d)
+  * [don't pass encrypted peek data to the protocol after an SSL upgrade](https://github.com/Xpra-org/xpra/commit/98b524ee254669ae4920650764728906dd44a5ff)
+  * [silence macOS legacy SSL warnings](https://github.com/Xpra-org/xpra/commit/a1cfa47710b50ef57db447f7b9d08ce76c49ad89)
 * Notifications:
   * [dbus retry loop](https://github.com/Xpra-org/xpra/commit/06447a5f67d9ba3a0dedad1f435b1f86cc90d4ed)
   * [forget notifications closed by the client](https://github.com/Xpra-org/xpra/commit/307c20b7d8b8321b5aa33f1c146a95538f43a2ae)
@@ -49,6 +89,7 @@
   * [try the next notifier backend when one fails](https://github.com/Xpra-org/xpra/commit/cc1dde1226dcab2fc64c4021370a09977e5be36f)
   * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/d329fc942cd9475f67bdce1c13280dac98d1d9a5)
 * Clipboard:
+  * [simultaneous large and small clipboard transfers no longer mix their contents or time out](https://github.com/Xpra-org/xpra/commit/91634100f1bbc07ba875464081148b692c24998f)
   * [clipboard requests could be left unanswered when a client reset](https://github.com/Xpra-org/xpra/commit/bff0639c236a7d5a70ab49ced33963bac3a7d7b4)
   * [raw atoms cause connection to drop](https://github.com/Xpra-org/xpra/commit/87b6b68166283fd583b2edea29a9900dfe27e23f)
   * [blinking for every pending transfer is excessive](https://github.com/Xpra-org/xpra/commit/fc3fa9099ba82168bee3afa5275a746ee1285fe8)
@@ -61,6 +102,15 @@
   * [discard alpha padding in RGBX uploads](https://github.com/Xpra-org/xpra/commit/8b18363e5b798464b53690aa6c0ff92f6f936494)
   * [include unit test](https://github.com/Xpra-org/xpra/commit/ded0b142584bd3af0ab2f2c737afc52d64cce106)
 * Minor:
+  * [apply the new DPI before resizing the display](https://github.com/Xpra-org/xpra/commit/ac2f46c037a456b8713da3abdb8ec7035d788212)
+  * [don't leave `_NET_ACTIVE_WINDOW` pointing at a window that is gone](https://github.com/Xpra-org/xpra/commit/4cff546dfe0f4933c5637d212decab9a9285194c)
+  * [uinput device matching](https://github.com/Xpra-org/xpra/commit/75d1b1ee611721e4a455e24f9a079851ed857abf)
+  * [don't hold on to an encoder that has been replaced or closed](https://github.com/Xpra-org/xpra/commit/25d2998d8018ddb07eb93af364e58c7d240ffe69)
+  * [prevent UI thread watcher race conditions](https://github.com/Xpra-org/xpra/commit/95565d1d497cfef2b7cd579b87be19a5a2ccf118)
+  * [window-icon timers could raise warnings after firing](https://github.com/Xpra-org/xpra/commit/54adc2e24c61efa8d4ede201b9539365b63b1cfc)
+  * [VPX bitrate and RandR refresh rates were truncated by Cython integer division](https://github.com/Xpra-org/xpra/commit/f0ba66cc7adbfbab155b6699a1705fc453903346)
+  * [zero is a valid uid / gid](https://github.com/Xpra-org/xpra/commit/54d79f73e3c37f9041fce633b552587e5d464529)
+  * [allow lookup of session names starting with a digit](https://github.com/Xpra-org/xpra/commit/fa7811f242718bb55f3412e2e9a723767a770f47)
   * [X11 diagnostics queried invalid window ID zero](https://github.com/Xpra-org/xpra/commit/b8ef0a0fe2c1ebdd63268a41700f6ff2195494be)
   * [stale partial refresh regions could be replayed after a full repaint](https://github.com/Xpra-org/xpra/commit/8e142a5b00707a0447936090e7bfb3038d5c908b)
   * [popup windows could prevent regular modal windows from regaining their modal state](https://github.com/Xpra-org/xpra/commit/aefa64cb2042170dc1ffe5044998f8d746fd39f9)
@@ -81,8 +131,10 @@
   * [drop audio `removesilence` since it never worked properly](https://github.com/Xpra-org/xpra/commit/1d42adab7d4c19808044a7d17c3bc2bf866ff1a1)
   * [cursor logging errors](https://github.com/Xpra-org/xpra/commit/129c36fd113671f1d6c0bf0437a81a0e12e8f9a8)
 * Cosmetic:
+  * [Gtk clipboard replies and timeouts could raise errors](https://github.com/Xpra-org/xpra/commit/3eb7a16577db66803e0bcbd97e9176cdc2588b08)
+  * [Gtk clients can send duplicate scroll events](https://github.com/Xpra-org/xpra/commit/033f48d776a5fd094e401e82d97fa84522c7a0e5)
+  * [cleanup pam config](https://github.com/Xpra-org/xpra/commit/a0a0b3021b38f46068767c492106281bd0f9079b)
   * [keyboard option parsing type mismatch](https://github.com/Xpra-org/xpra/commit/e1e7155d2f5b228a6d9195999c03655f0e6c1857)
-  * [silence macOS legacy SSL warnings](https://github.com/Xpra-org/xpra/commit/a1cfa47710b50ef57db447f7b9d08ce76c49ad89)
   * [consistent attribute initialization](https://github.com/Xpra-org/xpra/commit/765f3d0414e80c674a7c5060f4991f6a9d060aa8)
   * [remove unavailable test commands](https://github.com/Xpra-org/xpra/commit/d4e6364916d51ac5346f09c4f0716f00270e230e)
   * [fix ignored test](https://github.com/Xpra-org/xpra/commit/0d26fafe2a6818691925ed8ced4908c388143eea)
