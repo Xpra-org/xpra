@@ -967,15 +967,16 @@ def proxy_connect(options):
         }.get(ptype, socks.SOCKS5)
     if not proxy_type:
         raise InitExit(ExitCode.UNSUPPORTED, f"unsupported proxy type {ptype!r}")
-    host = to.strget("proxy-host")
-    port = to.intget("proxy-port", 1080)
+    proxy_host = to.strget("proxy-host")
+    proxy_port = to.intget("proxy-port", 1080)
     rdns = to.boolget("proxy-rdns", True)
     username = options.get("proxy-username")
     password = options.get("proxy-password")
     timeout = options.get("timeout", 20)
     sock = socks.socksocket()
-    sock.set_proxy(proxy_type, host, port, rdns, username, password)
+    sock.set_proxy(proxy_type, proxy_host, proxy_port, rdns, username, password)
     sock.settimeout(timeout)
+    #the destination, which the proxy connects to for us:
     sock.connect((options["host"], options["port"]))
     return sock
 
