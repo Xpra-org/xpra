@@ -1137,51 +1137,64 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
         sock = retry_socket_connect(display_desc)
-        # use non-blocking until the connection is finalized
-        sock.settimeout(0.1)
-        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name,
-                                dtype, socket_options=display_desc)
+        try:
+            # use non-blocking until the connection is finalized
+            sock.settimeout(0.1)
+            conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name,
+                                    dtype, socket_options=display_desc)
 
-        if dtype in ("ssl", "wss"):
-            from xpra.net.socket_util import ssl_wrap_socket, ssl_handshake
-            #convert option names to function arguments:
-            ssl_options = dict((k.replace("-", "_"), v) for k, v in display_desc.get("ssl-options", {}).items())
-            try:
-                sock = ssl_wrap_socket(sock, **ssl_options)
-            except ValueError as e:
-                raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
-            sock = ssl_handshake(sock, SOCKET_TIMEOUT)
-            assert sock, f"failed to wrap socket {sock}"
-            conn._socket = sock
-            conn.timeout = SOCKET_TIMEOUT
-
-        #wrap in a websocket:
-        if dtype in ("ws", "wss"):
-            host = display_desc["host"]
-            port = display_desc.get("port", 0)
-            #do the websocket upgrade and switch to binary
-            try:
-                from xpra.net.websockets.common import client_upgrade, MAX_READ_TIME, MAX_WRITE_TIME
-            except ImportError as e:    # pragma: no cover
-                raise InitExit(ExitCode.UNSUPPORTED, f"cannot handle websocket connection: {e}") from None
-            else:
-                display_path = display_desc_to_display_path(display_desc)
-                #without a deadline, the socket timeouts are retried for as long as the connection is active,
-                #so a server that never responds would block us forever:
-                conn.deadline = monotonic() + MAX_WRITE_TIME + MAX_READ_TIME
-                previous_timeout = sock.gettimeout()
+            if dtype in ("ssl", "wss"):
+                from xpra.net.socket_util import ssl_wrap_socket, ssl_handshake
+                #convert option names to function arguments:
+                ssl_options = dict((k.replace("-", "_"), v) for k, v in display_desc.get("ssl-options", {}).items())
+                raw_sock = sock
                 try:
-                    if dtype=="wss":
-                        #unlike the plain TCP socket, the TLS socket is blocking after the handshake
-                        #(except on win32): keep each SSL read or write within the deadline
-                        sock.settimeout(0.1)
-                    client_upgrade(conn.read, conn.write, host, port, display_path)
-                finally:
-                    conn.deadline = 0
-                    if dtype=="wss":
-                        sock.settimeout(previous_timeout)
-        conn.target = get_host_target_string(display_desc)
-        return conn
+                    sock = ssl_wrap_socket(sock, **ssl_options)
+                except ValueError as e:
+                    raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
+                if not sock:
+                    raw_sock.close()
+                    raise RuntimeError(f"failed to wrap socket {raw_sock} as {dtype!r}")
+                sock = ssl_handshake(sock, SOCKET_TIMEOUT)
+                conn._socket = sock
+                conn.timeout = SOCKET_TIMEOUT
+
+            #wrap in a websocket:
+            if dtype in ("ws", "wss"):
+                host = display_desc["host"]
+                port = display_desc.get("port", 0)
+                #do the websocket upgrade and switch to binary
+                try:
+                    from xpra.net.websockets.common import client_upgrade, MAX_READ_TIME, MAX_WRITE_TIME
+                except ImportError as e:    # pragma: no cover
+                    raise InitExit(ExitCode.UNSUPPORTED, f"cannot handle websocket connection: {e}") from None
+                else:
+                    display_path = display_desc_to_display_path(display_desc)
+                    #without a deadline, the socket timeouts are retried for as long as the connection is active,
+                    #so a server that never responds would block us forever:
+                    conn.deadline = monotonic() + MAX_WRITE_TIME + MAX_READ_TIME
+                    previous_timeout = sock.gettimeout()
+                    try:
+                        if dtype=="wss":
+                            #unlike the plain TCP socket, the TLS socket is blocking after the handshake
+                            #(except on win32): keep each SSL read or write within the deadline
+                            sock.settimeout(0.1)
+                        client_upgrade(conn.read, conn.write, host, port, display_path)
+                    finally:
+                        conn.deadline = 0
+                        if dtype=="wss":
+                            sock.settimeout(previous_timeout)
+            conn.target = get_host_target_string(display_desc)
+            return conn
+        except BaseException:
+            #don't leak the socket when connection setup fails;
+            #`sock` is the wrapped SSL socket if wrapping succeeded.
+            if sock:
+                try:
+                    sock.close()
+                except OSError as e:
+                    Logger("network").debug("failed to close %s: %s", sock, e)
+            raise
     raise InitException(f"unsupported display type: {dtype}")
 
 
