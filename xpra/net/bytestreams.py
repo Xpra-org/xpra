@@ -68,7 +68,9 @@ def can_retry(e) -> Union[bool,str]:
     if isinstance(e, OSError):
         if isinstance(e, CAN_RETRY_EXCEPTIONS):
             return str(e)
-        code = e.args[0]
+        #exceptions can be raised without any arguments,
+        #these are re-raised as-is instead of being masked by an `IndexError`:
+        code = e.args[0] if e.args else None
         abort = ABORT.get(code, code)
         if abort is not None:
             err = getattr(e, "errno", None)
@@ -614,7 +616,7 @@ class SSLSocketConnection(SocketConnection):
             reason = getattr(e, "reason", None)
             if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):
                 return False
-        message = e.args[0]
+        message = e.args[0] if e.args else ""
         if message in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
             return True
         code = getattr(e, "code", None)
