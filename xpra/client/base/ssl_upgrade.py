@@ -41,8 +41,8 @@ class SSLUpgrade(StubClientSubsystem):
         from xpra.net.tls.socket import ssl_handshake, ssl_wrap_socket
         from xpra.net.tls.file import get_ssl_attributes
         overrides = {
-            "verify_mode": "none",
-            "check_hostname": "no",
+            "server-verify-mode": "none",
+            "check-hostname": False,
         }
         overrides.update(conn.options.get("ssl-options", {}))
         ssl_options = get_ssl_attributes(None, False, overrides)
