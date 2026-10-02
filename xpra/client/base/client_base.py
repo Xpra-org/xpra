@@ -778,12 +778,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         log.info(f"upgrading {conn} to {new_socktype}")
         self.send("ssl-upgrade", {})
         from xpra.net.socket_util import ssl_wrap_socket, get_ssl_attributes, ssl_handshake
+        from xpra.scripts.config import dict_to_config, get_defaults
         overrides = {
-            "verify_mode" : "none",
-            "check_hostname" : "no",
+            "server-verify-mode" : "none",
+            "check-hostname" : False,
         }
         overrides.update(conn.options.get("ssl-options", {}))
-        ssl_options = get_ssl_attributes(None, False, overrides)
+        ssl_options = get_ssl_attributes(dict_to_config(get_defaults()), False, overrides)
         kwargs = dict((k.replace("-", "_"), v) for k, v in ssl_options.items())
         # wait for the 'ssl-upgrade' packet to be sent...
         # this should be done by watching the IO and formatting threads instead
