@@ -1138,7 +1138,7 @@ def get_defaults():
                     "proxy-video-encoders" : ["none"],
                     "video-encoders"    : ["all", "-gstreamer", "-ffmpeg"],
                     "csc-modules"       : ["all"],
-                    "video-decoders"    : ["all"],
+                    "video-decoders"    : ["all", "-gstreamer"],
                     "speaker-codec"     : [],
                     "microphone-codec"  : [],
                     "compressors"       : ["all"],

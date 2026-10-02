@@ -35,7 +35,7 @@ csc-modules = all
 # video-decoders = avcodec2, vpx
 # video-decoders = none
 # video-decoders = all
-video-decoders = all
+video-decoders = all,-gstreamer
 
 # Automatic video downscaling:
 # video-scaling = 0		#same as off
