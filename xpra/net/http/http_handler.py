@@ -3,9 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import io
 import os
 import glob
+import socket
 import posixpath
+from time import monotonic
 import mimetypes
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
@@ -14,7 +17,7 @@ from typing import Dict, Tuple, Any, Iterable
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.net.http.directory_listing import list_directory
 from xpra.net.bytestreams import pretty_socket
-from xpra.util import envbool, std, csv, AdHocStruct, repr_ellipsized, obsc
+from xpra.util import envbool, envint, std, csv, AdHocStruct, repr_ellipsized, obsc
 from xpra.platform.paths import get_desktop_background_paths
 from xpra.log import Logger
 
@@ -26,6 +29,8 @@ DIRECTORY_LISTING = envbool("XPRA_HTTP_DIRECTORY_LISTING", False)
 AUTH_REALM = os.environ.get("XPRA_HTTP_AUTH_REALM", "Xpra")
 AUTH_USERNAME = os.environ.get("XPRA_HTTP_AUTH_USERNAME", "")
 AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD", "")
+#how long clients have to send the request line and headers:
+REQUEST_TIMEOUT = envint("XPRA_HTTP_REQUEST_TIMEOUT", 10)
 
 EXTENSION_TO_MIMETYPE = {
     ".wasm" : "application/wasm",
@@ -207,6 +212,42 @@ def load_path(headers:Dict[str,Any], path:str) -> Tuple[int,Dict[str,Any],bytes]
         return 200, extra_headers, content
 
 
+class RequestReader(io.RawIOBase):
+    """
+    Reads from the socket, but only until the deadline:
+    the socket timeout only applies to each read,
+    so a client sending its request slowly enough could hold on to the connection forever.
+    """
+
+    def __init__(self, sock, timeout:float):
+        self.sock = sock
+        self.sock_timeout = sock.gettimeout()
+        self.deadline = monotonic() + timeout
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, buf) -> int:
+        if self.deadline:
+            remaining = self.deadline - monotonic()
+            if remaining<=0:
+                #(`socket.timeout` is only an alias of `TimeoutError` from Python 3.10 onwards,
+                # and this is what `BaseHTTPRequestHandler` handles)
+                raise socket.timeout("the http request is incomplete")
+            timeout = self.sock_timeout
+            self.sock.settimeout(remaining if timeout is None else min(timeout, remaining))
+        #use `recv` and not `recv_into`: `SocketPeekWrapper` must return the peeked data first
+        data = self.sock.recv(len(buf))
+        size = len(data)
+        buf[:size] = data
+        return size
+
+    def clear_deadline(self) -> None:
+        if self.deadline:
+            self.deadline = 0
+            self.sock.settimeout(self.sock_timeout)
+
+
 class HTTPRequestHandler(BaseHTTPRequestHandler):
     """
     Xpra's builtin HTTP server.
@@ -236,6 +277,20 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.directory_listing = DIRECTORY_LISTING
         self.extra_headers : Dict[str,Any] = {}
         super().__init__(sock, addr, server)
+
+    def setup(self) -> None:
+        super().setup()
+        self.rfile.close()
+        self.rfile = io.BufferedReader(RequestReader(self.connection, REQUEST_TIMEOUT))
+
+    def parse_request(self) -> bool:
+        try:
+            return super().parse_request()
+        finally:
+            #the headers have been read, the body is not subject to the request deadline:
+            raw = getattr(self.rfile, "raw", None)
+            if isinstance(raw, RequestReader):
+                raw.clear_deadline()
 
 
     def log_error(self, fmt, *args) -> None:  #pylint: disable=arguments-differ

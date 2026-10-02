@@ -4,9 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import io
 import socket
 import unittest
 from threading import Thread
+from time import monotonic, sleep
 from unittest.mock import patch
 
 from xpra.net.websockets import handler
@@ -42,9 +44,9 @@ def status(response : bytes):
 class ServerSocket:
     """ runs the real request handler on one end of a socket pair """
 
-    def __init__(self, new_websocket_client=None):
+    def __init__(self, new_websocket_client=None, timeout:float=5.0):
         self.client, self.server = socket.socketpair()
-        self.server.settimeout(5)
+        self.server.settimeout(timeout)
         self.client.settimeout(5)
         self.upgraded = []
         self.new_websocket_client = new_websocket_client or self.upgraded.append
@@ -74,10 +76,27 @@ class ServerSocket:
         self.server.close()
 
 
+class TestRequestReader(unittest.TestCase):
+
+    def test_request_reader_sees_peeked_data(self):
+        # the http request handler must see the data that was peeked before the upgrade,
+        # ie: for tcp sockets upgraded to ssl, the decrypted data is consumed by the peek:
+        from xpra.net.bytestreams import SocketPeekWrapper
+        from xpra.net.http.http_handler import RequestReader
+        client, server = socket.socketpair()
+        self.addCleanup(client.close)
+        self.addCleanup(server.close)
+        server.settimeout(1)
+        wrapper = SocketPeekWrapper(server, b"GET / HTTP/1.1\r\n\r\n")
+        rfile = io.BufferedReader(RequestReader(wrapper, 10))
+        self.assertEqual(rfile.readline(), b"GET / HTTP/1.1\r\n")
+        self.assertEqual(rfile.readline(), b"\r\n")
+
+
 class TestWebSocketUpgrade(unittest.TestCase):
 
-    def server(self, *args) -> ServerSocket:
-        server = ServerSocket(*args)
+    def server(self, *args, **kwargs) -> ServerSocket:
+        server = ServerSocket(*args, **kwargs)
         self.addCleanup(server.close)
         return server
 
@@ -86,6 +105,33 @@ class TestWebSocketUpgrade(unittest.TestCase):
         response = server.request(upgrade_request())
         self.assertEqual(status(response), [b"HTTP/1.1 101 Switching Protocols"])
         self.assertEqual(len(server.upgraded), 1)
+
+    def test_slow_request(self):
+        # sending the request one byte at a time must not keep the handler forever,
+        # even if each byte arrives well within the socket timeout:
+        from xpra.net.http import http_handler
+        with patch.object(http_handler, "REQUEST_TIMEOUT", 1):
+            server = self.server(timeout=5)
+            start = monotonic()
+            try:
+                for c in upgrade_request():
+                    server.client.send(bytes([c]))
+                    sleep(0.2)
+                    if not server.thread.is_alive():
+                        break
+            except OSError:
+                pass
+            server.thread.join(5)
+        self.assertFalse(server.thread.is_alive())
+        self.assertLess(monotonic() - start, 3)
+        self.assertEqual(server.upgraded, [])
+
+    def test_request_timeout_is_not_the_socket_timeout(self):
+        # the deadline only applies to the request, not to the websocket connection:
+        timeouts = []
+        server = self.server(lambda wsh: timeouts.append(wsh.connection.gettimeout()), timeout=5)
+        server.request(upgrade_request())
+        self.assertEqual(timeouts, [5])
 
     def test_protocol_list(self):
         for protocols in (b"binary, chat", b"chat, binary", b"chat,binary", b"chat , binary "):
