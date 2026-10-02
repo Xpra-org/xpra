@@ -16,7 +16,7 @@ class X11ClipboardTest(X11ClipboardTestUtil):
     @classmethod
     def setUpClass(cls):
         super(X11ClipboardTest, cls).setUpClass()
-        X11ClipboardTest.default_xpra_args += ["--speaker=no", "--microphone=no", "-d clipboard"]
+        X11ClipboardTest.default_xpra_args += ["--speaker=no", "--microphone=no", "-d", "clipboard"]
 
     def test_copy(self):
         self.do_test_copy()
