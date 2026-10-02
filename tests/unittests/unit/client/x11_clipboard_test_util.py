@@ -35,17 +35,19 @@ class X11ClipboardTestUtil(X11ClientTestUtil):
     def copy_and_verify(self, display1, display2, synced=True, wait=1, selection="clipboard"):
         log("copy_and_verify%s", (display1, display2, synced, wait, selection))
         value = get_hex_uuid()
-        self.set_clipboard_value(display1, value)
+        self.set_clipboard_value(display1, value, selection)
         #wait for synchronization to occur:
         time.sleep(wait)
-        new_value = self.get_clipboard_value(display2)
+        new_value = self.get_clipboard_value(display2, selection)
         if synced:
             assert new_value==value, "clipboard contents for %s do not match, expected '%s' but got '%s'" % (selection, value, new_value)
         else:
             assert new_value!=value, "clipboard contents for %s match but synchronization was not expected: value='%s'" % (selection, value)
         if SANITY_CHECKS and display2!=display1:
             #verify that the value has not changed on the original display:
-            new_value = self.get_clipboard_value(display1)
+            new_value = self.get_clipboard_value(display1, selection)
+            assert new_value==value, "clipboard contents for %s changed on the display we copied from, expected '%s' but got '%s'" % (
+                selection, value, new_value)
         return value
 
     def do_test_copy_selection(self, selection="clipboard", direction="both"):
