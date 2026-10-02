@@ -12,6 +12,7 @@ from urllib.parse import quote
 from typing import Dict, Callable, Any
 
 from xpra.os_util import strtobytes, bytestostr
+from xpra.net.common import ConnectionClosedException
 from xpra.log import Logger
 
 log = Logger("websocket")
@@ -99,7 +100,10 @@ def read_server_upgrade(read:Callable):
     def hasheader(k):
         return k in parse_response_header(response)
     while monotonic()-now<MAX_READ_TIME and not (hasheader("sec-websocket-protocol") or hasheader("www-authenticate")):
-        response += read(READ_CHUNK_SIZE)
+        data = read(READ_CHUNK_SIZE)
+        if not data:
+            raise ConnectionClosedException("the server closed the connection during the websocket upgrade")
+        response += data
     return parse_response_header(response)
 
 def parse_response_header(response:bytes):
