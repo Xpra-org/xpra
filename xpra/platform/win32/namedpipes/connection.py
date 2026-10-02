@@ -121,7 +121,7 @@ class NamedPipeConnection(Connection):
         self.write_overlapped.union.Pointer = None
 
     def can_retry(self, e) -> bool | str:
-        code = e.args[0]
+        code = e.args[0] if e.args else None
         if code == errno.WSAEWOULDBLOCK:  # @UndefinedVariable pylint: disable=no-member
             return "WSAEWOULDBLOCK"
         # convert those to a connection closed:

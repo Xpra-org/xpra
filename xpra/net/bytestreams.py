@@ -71,7 +71,9 @@ def can_retry(e) -> bool | str:
     if isinstance(e, BrokenPipeError):
         raise ConnectionClosedException(e) from None
     if isinstance(e, OSError):
-        code = e.args[0]
+        # exceptions can be raised without any arguments,
+        # these are re-raised as-is instead of being masked by an `IndexError`:
+        code = e.args[0] if e.args else None
         abort = ABORT.get(code, code)
         if abort is not None:
             err = getattr(e, "errno", None)
