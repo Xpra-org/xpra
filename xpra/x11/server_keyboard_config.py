@@ -468,7 +468,8 @@ class KeyboardConfig(KeyboardConfigBase):
                 for m in mappings:      #ie: (37, 'Control_L'), (105, 'Control_R')
                     if len(m)==2:
                         keynames.append(m[1])   #ie: 'Control_L'
-                self.keynames_for_mod[modifier] = set(keynames)
+                #a list and not a set: this is sent to the clients
+                self.keynames_for_mod[modifier] = list(dict.fromkeys(keynames))
             self.compute_modifier_keynames()
             self.compute_client_modifier_keycodes()
             log("set_default_keymap: keynames_for_mod=%s", self.keynames_for_mod)
