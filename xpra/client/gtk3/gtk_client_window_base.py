@@ -7,6 +7,7 @@
 
 import math
 import os.path
+import warnings
 from time import monotonic
 from urllib.parse import unquote
 from typing import Set, List, Tuple, Dict, Callable, Optional, Union
@@ -1896,7 +1897,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #the values we get are bogus!
         #x, y = x_root, y_root
         #use the current position instead:
-        with IgnoreWarningsContext():
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
             p = self.get_root_window().get_pointer()[-3:]
         x, y, mask = p
         if MOVERESIZE_GUESS_BUTTON and button <= 0 and direction not in (
@@ -1908,8 +1910,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     button = bval
                     log(f"guessed button=%i", button)
                     break
-        p = self.get_root_window().get_pointer()[-3:-1]
-        x, y = p[0], p[1]
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_X11(x, y, direction, button, source_indication)
             return
