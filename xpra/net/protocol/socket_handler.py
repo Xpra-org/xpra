@@ -127,6 +127,25 @@ def install_parse_thread_seccomp(socktype: str) -> None:
         sclog.error("Error installing parse thread seccomp filter", exc_info=True)
 
 
+def prepare_parse_thread_seccomp(conn) -> None:
+    # runs on the main thread, before the parse thread is started:
+    # look up now what the parse thread would otherwise look up lazily,
+    # from files that its seccomp filter does not allow it to open
+    if getattr(conn, "socktype", "") not in SOCKET_TYPES:
+        return
+    try:
+        from xpra.seccomp import parse as seccomp_parse
+    except ImportError:
+        return
+    if not seccomp_parse.is_enabled():
+        return
+    sclog = Logger("seccomp")
+    # `/proc/net/tcp{,6}` for network sockets, cached by the connection:
+    if get_peer_uid := getattr(conn, "get_peer_uid", None):
+        with sclog.trap_error("Error looking up the peer uid of %s", conn):
+            sclog("peer uid=%i", get_peer_uid())
+
+
 class SocketProtocol:
     """
         This class handles sending and receiving packets,
@@ -477,6 +496,7 @@ class SocketProtocol:
             # idempotent: only start the parse thread if it isn't running already
             # (start() may be called more than once - ie: by both the caller and the client's `run()`)
             if not self._closed and rpt and not rpt.is_alive():
+                prepare_parse_thread_seccomp(self._conn)
                 rpt.start()
 
         self.idle_add(start_network_parse_thread)

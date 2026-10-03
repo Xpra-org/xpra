@@ -18,6 +18,8 @@ log = Logger("seccomp")
 ACTION_ENV = "XPRA_SECCOMP_DECODE_ACTION"
 
 # permissive baseline shared with the network parse and rfb filters.
+# `pause` is needed by any daemon thread that is still running when the interpreter exits:
+# CPython (3.14+) parks it forever in `PyThread_hang_thread()`, which loops on `pause()`.
 # those threads dispatch many packet handlers (hello, audio, encodings, ...)
 # with a large lazy-import surface, so they keep the ability to open files -
 # see `xpra/seccomp/parse.py` and `xpra/seccomp/rfb.py`:
@@ -69,6 +71,7 @@ BASE_SYSCALLS: tuple[str, ...] = (
     "newfstatat",
     "open",
     "openat",
+    "pause",
     "poll",
     "ppoll",
     "pread64",

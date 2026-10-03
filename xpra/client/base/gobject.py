@@ -8,6 +8,7 @@ from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.util.env import SilenceWarningsContext
 from xpra.util.glib_scheduler import GLibScheduler
+from xpra.util.thread import is_main_thread
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -49,6 +50,12 @@ class GObjectClientAdapter(GObject.GObject, GLibScheduler):
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code
+        if not is_main_thread():
+            # ie: a command client quitting from its `hello` handler, on the network parse thread:
+            # `cleanup` closes the connection and reaps child processes (`waitpid`),
+            # which the seccomp filter on that thread forbids (see `docs/Usage/Seccomp.md`)
+            GLib.idle_add(self.quit, exit_code)
+            return
         self.exit_loop()
         # if for some reason cleanup() hangs, maybe this will fire...
         GLib.timeout_add(4 * 1000, self.exit)

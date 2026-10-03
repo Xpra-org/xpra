@@ -23,14 +23,20 @@ ENABLED = envbool("XPRA_SECCOMP_PARSE", envbool("XPRA_SECCOMP", False))
 
 # syscalls the socket-reading threads need on top of the decode baseline:
 # * `recvfrom` - what `socket.recv_into` maps to on x86_64
-# * `getsockname` / `getsockopt` - read-only socket introspection used when
+# * `sendto` - what `socket.send` maps to on x86_64, for replies written from this thread
+#   (`sendmsg` is already in the baseline, and creating or connecting sockets is not allowed)
+# * `setsockopt` - the `hello` handler sets `TCP_NODELAY` on the connection
+# * `getsockname` / `getsockopt` / `getpeername` - read-only socket introspection used when
 #   gathering connection info (peer credentials, unix socket path, ...)
 # * `sysinfo` - read-only system statistics, used by `os.getloadavg()` in the
 #   server-side ping handler (which stays on the parse thread):
 SOCKET_SYSCALLS: tuple[str, ...] = (
     "recvfrom",
+    "sendto",
     "getsockname",
     "getsockopt",
+    "setsockopt",
+    "getpeername",
     "sysinfo",
 )
 

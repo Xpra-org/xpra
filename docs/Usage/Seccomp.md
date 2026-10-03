@@ -237,6 +237,9 @@ with `main_thread=True` so it is dispatched on the GLib main loop (which predate
 the parse thread's filter). This is how the `challenge` handler stays unsandboxed:
 auth backends may `fork`/`exec` a helper (kerberos/gss/exec/u2f/pinentry) or read
 files, so `_process_challenge` runs on the main thread.
+For the same reason, a client that quits from a packet handler (ie: a command client
+like `xpra version` quitting from its `hello` handler) hops to the main thread before
+running its cleanup, which closes the connection and reaps child processes.
 
 **Signals.** A signal sent to the process (`SIGCHLD` when a subprocess exits,
 `SIGINT`, ...) is delivered to any thread that does not block it, and the C-level
