@@ -1041,6 +1041,7 @@ SSL_VERIFY_EXPIRED = 10
 SSL_VERIFY_WRONG_HOST = 20
 SSL_VERIFY_SELF_SIGNED = 18
 SSL_VERIFY_UNTRUSTED_ROOT = 19
+SSL_VERIFY_AKID_SKID_MISMATCH = 30
 SSL_VERIFY_IP_MISMATCH = 64
 SSL_VERIFY_HOSTNAME_MISMATCH = 62
 SSL_VERIFY_CODES : Dict[int,str] = {
@@ -1048,6 +1049,7 @@ SSL_VERIFY_CODES : Dict[int,str] = {
     SSL_VERIFY_WRONG_HOST       : "wrong host",
     SSL_VERIFY_SELF_SIGNED      : "self-signed",
     SSL_VERIFY_UNTRUSTED_ROOT   : "untrusted-root",
+    SSL_VERIFY_AKID_SKID_MISMATCH : "authority and subject key identifier mismatch",
     SSL_VERIFY_IP_MISMATCH      : "ip-mismatch",
     SSL_VERIFY_HOSTNAME_MISMATCH: "hostname-mismatch",
     }
@@ -1390,6 +1392,11 @@ def ssl_retry(e, display_desc:Dict[str,Any]) -> Dict[str,Any]:
         return {}
     # we may be able to ask the user if he wants to accept this certificate
     verify_code = e.verify_code
+    ssl_options = display_desc.get("ssl-options") or {}
+    if verify_code==SSL_VERIFY_AKID_SKID_MISMATCH and ssl_options.get("ca-certs", "default") not in ("", "default"):
+        #when the certificate we trust has the same subject as the server's new self-signed one,
+        #ie: the server has re-generated its certificate, OpenSSL 3.0 reports this instead:
+        verify_code = SSL_VERIFY_SELF_SIGNED
     if verify_code not in (
         SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_WRONG_HOST,
         SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH,
@@ -1398,7 +1405,6 @@ def ssl_retry(e, display_desc:Dict[str,Any]) -> Dict[str,Any]:
         return {}
     host = display_desc.get("host", "")
     port = display_desc.get("port", 0)
-    ssl_options = display_desc.get("ssl-options") or {}
     #the same host and port that `get_ssl_options` loads the saved options from:
     server_hostname = ssl_options.get("server-hostname") or host
     if not server_hostname or not port:

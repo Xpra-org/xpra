@@ -17,7 +17,7 @@ from time import monotonic
 
 from xpra.net.socket_util import (
     ssl_handshake, ssl_retry, get_server_certificate, warn_certificate_changed,
-    SSLVerifyFailure, SSL_VERIFY_SELF_SIGNED,
+    SSLVerifyFailure, SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_AKID_SKID_MISMATCH,
 )
 from xpra.scripts.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
@@ -337,6 +337,19 @@ class TestSSLVerifyFailure(SSLServerTestCase):
         ssl_retry(self.verify_failure(), self.display_desc)
         self.change_certificate()
         self.check_changed(dict(self.display_desc["ssl-options"]))
+
+    def test_changed_certificate_key_identifier_mismatch(self) -> None:
+        # what OpenSSL 3.0 reports when the certificate we accepted has the same subject as the new one:
+        mods = ssl_retry(self.verify_failure(), self.display_desc)
+        display_desc = dict(self.display_desc, **{"ssl-options": dict(self.display_desc["ssl-options"], **mods)})
+        e = SSLVerifyFailure(ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE, "test", SSL_VERIFY_AKID_SKID_MISMATCH)
+        with patch("xpra.scripts.pinentry_wrapper.confirm") as confirm:
+            with patch("xpra.net.socket_util.warn_certificate_changed", wraps=warn_certificate_changed) as warn:
+                self.assertEqual(ssl_retry(e, display_desc), {})
+        confirm.assert_not_called()
+        warn.assert_called_once()
+        # without a certificate of our own, this is not ours to handle:
+        self.assertEqual(ssl_retry(e, self.display_desc), {})
 
     def test_changed_certificate_unrecorded(self) -> None:
         # what older Python versions give us, which have no `get_unverified_chain()`:
