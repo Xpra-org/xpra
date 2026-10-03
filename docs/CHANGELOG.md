@@ -1,9 +1,10 @@
 # Changelog
 
-## [6.5.5] 2026-10-01
+## [6.5.5] 2026-10-03
 * 🔧 Platforms, build and packaging:
   * [Debian dropped clang-19](https://github.com/Xpra-org/xpra/commit/24ef1341455d09e480aa8a2d1870ad606ac8c31f)
   * [verify deb packages before copying to the repo](https://github.com/Xpra-org/xpra/commit/118b9c5765face2402f6b902c7143ace59c3b5e7)
+  * [remove `openat2` qemu workarounds](https://github.com/Xpra-org/xpra/commit/faabc0ad06d78c68ee8b1986d67d1ad6e0133229)
 * macOS notarization and build fixes:
   * [missing entry point](https://github.com/Xpra-org/xpra/commit/697c9fb59cbe3bcd1e19e3c656838389484841d3) [and helper](https://github.com/Xpra-org/xpra/commit/537466d0776ac556a16b2afab9a95ada6dacf5b0) [and command path for light builds](https://github.com/Xpra-org/xpra/commit/efe215e50a203fb9d83e0c027d52eb306d2f26f8)
   * [codesign for light builds](https://github.com/Xpra-org/xpra/commit/65b29c29b5f93cf9711ad2fe93ff263ec233f359)
@@ -11,10 +12,22 @@
 * Major:
   * [drag-and-drop can get wedged and stop working](https://github.com/Xpra-org/xpra/commit/8a44a186c700bbd83848c61bc98e35883dc5325d)
   * [scroll event regression introduced in 6.5.4](https://github.com/Xpra-org/xpra/commit/478e7aecb1d2fcf4c2e1817a12fd0a672a1a4060)
-* 🖧 Network:
-  * [don't block forever on a websocket upgrade that never completes](https://github.com/Xpra-org/xpra/commit/7d8ffbcb2c9d25b4c6f75252e44195e98aa65afb)
+  * [keyboard layout group sticks](https://github.com/Xpra-org/xpra/commit/27072b9e6ce0cc486c95364c6c362a696fdb8368)
+* SSL:
+  * [ssl upgrade must override defaults](https://github.com/Xpra-org/xpra/commit/332f7a26a2a4700a30153737f8a2536e5823ecbf)
+  * [ssl upgrade failed](https://github.com/Xpra-org/xpra/commit/df2d7168e3b0fadd842d35483c4dea09b1b962c3)
+  * [ssl retry needs a brand new socket](https://github.com/Xpra-org/xpra/commit/f7fc8ca0f1684761066acd3ea3375b417de2d129)
+  * [download ssl certificate using the same connection path](https://github.com/Xpra-org/xpra/commit/55ca70c77e0672652c634f1a29decb58c8f7b94a), [same configuration options](https://github.com/Xpra-org/xpra/commit/83b33204cb76b3d960f7f361d4713114270a5f0e)
+  * [warn when the certificate no longer matches the one accepted previously](https://github.com/Xpra-org/xpra/commit/e9b5881420f487a79a73df3ad191416dc3f9fc0b)
   * [don't wait forever for the client's TLS handshake to complete](https://github.com/Xpra-org/xpra/commit/a4a28e57ce05702e5f9bcb609ee89b13b050bf81)
   * [don't let SSL connections wait past their deadline](https://github.com/Xpra-org/xpra/commit/7735d2ff0ae973f835564d18060be636920b4d0d)
+  * [apply a timeout to every TLS handshake](https://github.com/Xpra-org/xpra/commit/8c7deeec336c48cd368cc999dcf3e99c1e1b3e3e)
+  * [fail the SSL handshake when the peer closes the connection](https://github.com/Xpra-org/xpra/commit/87d8af6136605fdd0b1ea8876c48fd01c9c153e2)
+  * [close the ssl connection when the server side handshake fails](https://github.com/Xpra-org/xpra/commit/3ac843c21fb4125ab4f80c21ea4dca607dc7439c)
+  * [don't confuse peek vs ssl peek data](https://github.com/Xpra-org/xpra/commit/26e2c306f706689c8a7ca3fc8318e6fe28c49df3)
+* 🖧 Network:
+  * [exceptions may not have arguments](https://github.com/Xpra-org/xpra/commit/3595721814bf2a9d2fbab8fb8ec4f957a7cb1687)
+  * [don't block forever on a websocket upgrade that never completes](https://github.com/Xpra-org/xpra/commit/7d8ffbcb2c9d25b4c6f75252e44195e98aa65afb)
   * [don't leak the client socket when the tcp connection setup fails](https://github.com/Xpra-org/xpra/commit/77665ec347c50875a3060971048b083a76e7ac15)
   * [don't busy-loop when the server closes the connection during the websocket upgrade](https://github.com/Xpra-org/xpra/commit/df8cd0e4cac64484c7ec31efbd4e449b1183894a)
   * [limit the time clients have to send their http request](https://github.com/Xpra-org/xpra/commit/63cc34cc2c76856d6a3eba3a4eacb975dff00812)
@@ -22,14 +35,18 @@
   * [check the http status of the websocket upgrade response](https://github.com/Xpra-org/xpra/commit/33e041f5ef9dc53d77fe409432bf268ca8e386d2)
   * [don't send an http error after the websocket upgrade response](https://github.com/Xpra-org/xpra/commit/550d562e00964e79f7bc1ec1cb79ed34675c743e)
   * [accept websocket subprotocol lists with spaces](https://github.com/Xpra-org/xpra/commit/da0937ea27aa5da88f280444aea877db3ad4e2f7)
-  * [apply a timeout to every TLS handshake](https://github.com/Xpra-org/xpra/commit/8c7deeec336c48cd368cc999dcf3e99c1e1b3e3e)
-  * [fail the SSL handshake when the peer closes the connection](https://github.com/Xpra-org/xpra/commit/87d8af6136605fdd0b1ea8876c48fd01c9c153e2)
-  * [close the ssl connection when the server side handshake fails](https://github.com/Xpra-org/xpra/commit/3ac843c21fb4125ab4f80c21ea4dca607dc7439c)
-  * [don't confuse peek vs ssl peek data](https://github.com/Xpra-org/xpra/commit/26e2c306f706689c8a7ca3fc8318e6fe28c49df3)
   * [return the peeked data to the http request reader](https://github.com/Xpra-org/xpra/commit/058eb74dd817af298fac61528de7f7357cd5100e)
   * [fix default HTTP headers directory for WebSocket errors](https://github.com/Xpra-org/xpra/commit/926dd54a709dc816c423f3a077e7c179e9c53cb9)
+  * [proxied connections failed](https://github.com/Xpra-org/xpra/commit/5d025b257e183a0535ef2b0853ff40e4d585ee1b)
+  * [socket leaks when the proxy connection fails](https://github.com/Xpra-org/xpra/commit/25c7bb50fa6b0e245e8dfadb1383df6f7b9596c3)
 * 📋 Clipboard:
+  * [fail the requests waiting on an incremental transfer which times out](https://github.com/Xpra-org/xpra/commit/a276f0a7b3d8608b30f3b5d230b8b638429013d5)
+  * [give incremental transfers longer than `CONVERT_TIMEOUT` to complete](https://github.com/Xpra-org/xpra/commit/7a2c5555960f2aa7e8ec4c9b558c00bdc90bec2e)
   * [avoid unnecessary macOS JPEG targets](https://github.com/snyh/xpra/commit/f03b19c9b745) [and safely convert transparent clipboard images](https://github.com/Xpra-org/xpra/commit/dd2fa23362ac001f6423ce90a78b1025a726ac70)
+  * [test must wait for synchronization to occur](https://github.com/Xpra-org/xpra/commit/01ffb65d9e304e30ef886b6787be4b5aed0537a5)
+  * [test all selections](https://github.com/Xpra-org/xpra/commit/6d6c73d011a8e9432571fad3e01598d53dd2e312)
+  * [detailed test errors](https://github.com/Xpra-org/xpra/commit/02a509f76440bdfb19dae2651cde1da7363dabf5)
+  * [honour debugging flag in tests](https://github.com/Xpra-org/xpra/commit/51b0e55076a6d3b204cdaabd4d0f9bee88585779)
 * Minor:
   * [apply the new DPI before resizing the display](https://github.com/Xpra-org/xpra/commit/6c7ecab30de3db2598105007b8ba795ceeb12fdf)
   * [don't leave `_NET_ACTIVE_WINDOW` pointing at a window that is gone](https://github.com/Xpra-org/xpra/commit/8d15e1033e8edd3962692288c7abd4dbccc43927)
@@ -39,10 +56,14 @@
   * [don't hold on to an encoder that has been replaced or closed](https://github.com/Xpra-org/xpra/commit/e6282551f2af516e041c69025c5306b4952bd271)
   * [prevent UI thread watcher race conditions](https://github.com/Xpra-org/xpra/commit/51db034cb289a0459a994cc528b119922d8abe5e)
   * [missing lz4 flag could cause errors](https://github.com/Xpra-org/xpra/commit/6427153b9238b940806d73a71bd9513d6e914aac)
+  * [out of bounds access when comparing monitor configurations](https://github.com/Xpra-org/xpra/commit/e961a8158809538e63c637d00c03847e2dd27725)
 * 💄 Cosmetic:
   * [Gtk clipboard logs errors on timeouts](https://github.com/Xpra-org/xpra/commit/5fcc434208a2c2ed433f520700cd0e21825b8556)
   * [geometry debug logging can cause errors](https://github.com/Xpra-org/xpra/commit/29ffb97f43a17615ec5b5d399ae4f4bb8c28eec4)
   * [restack debug labels are inverted](https://github.com/Xpra-org/xpra/commit/e4de2dcbde67001b41fd6f06817c1352cf907e31)
+  * [indentation](https://github.com/Xpra-org/xpra/commit/395feb8924916e9cddb9a2ed59bb27dd650393a4)
+  * [share the refresh-rate convertion](https://github.com/Xpra-org/xpra/commit/a311a7e9c4e0e3d8baf83c7cc27e50325983bed6)
+  * [document limitations of cert data authenticity with older Python versions](https://github.com/Xpra-org/xpra/commit/116b361b38db11800889b0fb7f3328ba43ab656c)
 
 ## [6.5.4] 2026-09-27
 * 🔧 Platforms, build and packaging:

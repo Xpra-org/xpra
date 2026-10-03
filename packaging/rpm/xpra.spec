@@ -1111,10 +1111,11 @@ fi
 
 
 %changelog
-* Thu Oct 01 2026 Antoine Martin <antoine@xpra.org> 6.5.5-10
+* Sat Oct 03 2026 Antoine Martin <antoine@xpra.org> 6.5.5-10
 - 🔧 Platforms, build and packaging:
    Debian dropped clang-19
    verify deb packages before copying to the repo
+   remove `openat2` qemu workarounds
 - macOS notarization and build fixes:
    missing entry point and helper and command path for light builds
    codesign for light builds
@@ -1122,10 +1123,22 @@ fi
 - Major:
    drag-and-drop can get wedged and stop working
    scroll event regression introduced in 6.5.4
-- 🖧 Network:
-   don't block forever on a websocket upgrade that never completes
+   keyboard layout group sticks
+- SSL:
+   ssl upgrade must override defaults
+   ssl upgrade failed
+   ssl retry needs a brand new socket
+   download ssl certificate using the same connection path, same configuration options
+   warn when the certificate no longer matches the one accepted previously
    don't wait forever for the client's TLS handshake to complete
    don't let SSL connections wait past their deadline
+   apply a timeout to every TLS handshake
+   fail the SSL handshake when the peer closes the connection
+   close the ssl connection when the server side handshake fails
+   don't confuse peek vs ssl peek data
+- 🖧 Network:
+   exceptions may not have arguments
+   don't block forever on a websocket upgrade that never completes
    don't leak the client socket when the tcp connection setup fails
    don't busy-loop when the server closes the connection during the websocket upgrade
    limit the time clients have to send their http request
@@ -1133,14 +1146,18 @@ fi
    check the http status of the websocket upgrade response
    don't send an http error after the websocket upgrade response
    accept websocket subprotocol lists with spaces
-   apply a timeout to every TLS handshake
-   fail the SSL handshake when the peer closes the connection
-   close the ssl connection when the server side handshake fails
-   don't confuse peek vs ssl peek data
    return the peeked data to the http request reader
    fix default HTTP headers directory for WebSocket errors
+   proxied connections failed
+   socket leaks when the proxy connection fails
 - 📋 Clipboard:
+   fail the requests waiting on an incremental transfer which times out
+   give incremental transfers longer than `CONVERT_TIMEOUT` to complete
    avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images
+   test must wait for synchronization to occur
+   test all selections
+   detailed test errors
+   honour debugging flag in tests
 - Minor:
    apply the new DPI before resizing the display
    don't leave `_NET_ACTIVE_WINDOW` pointing at a window that is gone
@@ -1150,10 +1167,14 @@ fi
    don't hold on to an encoder that has been replaced or closed
    prevent UI thread watcher race conditions
    missing lz4 flag could cause errors
+   out of bounds access when comparing monitor configurations
 - 💄 Cosmetic:
    Gtk clipboard logs errors on timeouts
    geometry debug logging can cause errors
    restack debug labels are inverted
+   indentation
+   share the refresh-rate convertion
+   document limitations of cert data authenticity with older Python versions
 * Sun Sep 27 2026 Antoine Martin <antoine@xpra.org> 6.5.4-10
 - 🔧 Platforms, build and packaging:
    `libyuv` not detected without pkgconfig file + fixup
