@@ -40,10 +40,9 @@ class SSLUpgradeClient(StubClientMixin):
         self.send("ssl-upgrade", {})
         from xpra.net.tls.socket import ssl_handshake, ssl_wrap_socket
         from xpra.net.tls.file import get_ssl_attributes
-        overrides = {
-            "server-verify-mode": "none",
-            "check-hostname": False,
-        }
+        from xpra.net.tls.common import SSL_UPGRADE_DEFAULTS
+        # the "ssl-options" from `get_ssl_options` already default to `SSL_UPGRADE_DEFAULTS`:
+        overrides = dict(SSL_UPGRADE_DEFAULTS)
         overrides.update(conn.options.get("ssl-options", {}))
         ssl_options = get_ssl_attributes(None, False, overrides)
         kwargs = {k.replace("-", "_"): v for k, v in ssl_options.items()}
