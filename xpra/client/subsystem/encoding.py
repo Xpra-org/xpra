@@ -26,6 +26,13 @@ from xpra.util.thread import start_thread
 
 log = Logger("client", "encoding")
 
+# the hardware decoders disabled under seccomp, which would load their libraries on the decode thread:
+SECCOMP_HARDWARE_DECODERS: dict[str, str] = {
+    "nvdec": "xpra.codecs.nvidia.nvdec.decoder",
+    "nvjpeg": "xpra.codecs.nvidia.nvjpeg.decoder",
+    "vpl": "xpra.codecs.vpl.decoder",
+}
+
 CODEC_LOAD_TIMEOUT = envint("XPRA_CODEC_LOAD_TIMEOUT", 30)
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
@@ -203,6 +210,23 @@ class Encodings(StubClientSubsystem):
             self.do_load_all_codecs()
             self._codecs_loaded.set()
 
+    def log_seccomp_hardware_decoders(self) -> None:
+        # tell users which of their hardware decoders the seccomp filters are disabling:
+        from importlib.util import find_spec
+        disabled = []
+        for name, module in SECCOMP_HARDWARE_DECODERS.items():
+            if f"no-{name}" in self.video_decoders:
+                # already excluded by the user
+                continue
+            try:
+                if find_spec(module):
+                    disabled.append(name)
+            except ImportError:
+                pass
+        if disabled:
+            log.info("hardware decoders disabled by seccomp: %s", csv(disabled))
+            log.info(" use '--seccomp=no' to enable them")
+
     def do_load_all_codecs(self) -> None:
         log("load_all_codecs()")
         ae = self.allowed_encodings
@@ -213,6 +237,8 @@ class Encodings(StubClientSubsystem):
         except ImportError:
             video_decoders = tuple(self.video_decoders)
             allow_hardware_jpeg = True
+        if not allow_hardware_jpeg:
+            self.log_seccomp_hardware_decoders()
         if {"png", "webp", "jpeg"}.intersection(ae):
             load_codec("dec_pillow")
         if "jpeg" in ae:

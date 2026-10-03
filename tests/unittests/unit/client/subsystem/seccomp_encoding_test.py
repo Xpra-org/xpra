@@ -27,6 +27,8 @@ class EncodingSeccompTest(unittest.TestCase):
             csc_modules=(),
         )
         client.filter_video_decoder_options = lambda: ("all", "no-nvdec", "no-vpl")
+        logged = []
+        client.log_seccomp_hardware_decoders = lambda: logged.append(True)
         with patch.object(encoding, "load_codec") as load_codec, \
              patch.object(encoding, "getVideoHelper", return_value=helper), \
              patch("xpra.seccomp.is_enabled", return_value=True):
@@ -39,6 +41,8 @@ class EncodingSeccompTest(unittest.TestCase):
         self.assertIn("dec_jph", loaded)
         self.assertNotIn("dec_nvjpeg", loaded)
         self.assertNotIn("nvdec", loaded)
+        # users are told that their hardware decoders are disabled:
+        self.assertEqual(logged, [True])
 
     def test_filter_video_decoder_options(self):
         client = SimpleNamespace(video_decoders=("all", "no-vpl"))
