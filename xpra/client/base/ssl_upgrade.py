@@ -65,6 +65,12 @@ class SSLUpgrade(StubClientSubsystem):
             # noinspection PyUnreachableCode
             return
         ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
+        if not ssl_sock:
+            # `None` means the server closed the connection during the TLS setup:
+            log.error("Error: the connection was closed during the ssl upgrade")
+            conn.close()
+            self.quit(ExitCode.SSL_FAILURE)
+            return
         ssl_handshake(ssl_sock)
         log("ssl handshake complete")
         from xpra.net.tls.connection import SSLSocketConnection
