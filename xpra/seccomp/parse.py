@@ -40,7 +40,7 @@ SOCKET_SYSCALLS: tuple[str, ...] = (
 # `start-command`, control - see `docs/Usage/Seccomp.md`), so the parse filter now drops
 # file access too, just like the decode filter: the decode baseline plus the socket syscalls.
 # Caveat: a handler that lazily imports a module for the first time on this thread would
-# still hit `openat`. The default action is `errno` (non-fatal) for exactly this reason -
+# still hit `openat`. `--seccomp=default` uses `errno` (non-fatal) for exactly this reason -
 # validate a deployment with `XPRA_SECCOMP_PARSE_ACTION=log` before switching to `strict`.
 PARSE_SYSCALLS: tuple[str, ...] = DECODE_SYSCALLS + SOCKET_SYSCALLS
 

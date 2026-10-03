@@ -25,9 +25,10 @@ untrusted input:
 
 | Filter | Thread | What it processes |
 |---|---|---|
-| `decode` | picture decoding | compressed image and video frames, window icons, cursors |
+| `decode` | picture decoding | compressed image and video frames, window icons, cursors, notification icons |
 | `parse` | network read | raw socket bytes: decrypt → decompress → decode packets |
 | `rfb` | VNC client read | RFB / VNC framebuffer updates (when connecting to a VNC server) |
+| `menu` | server menu loading | XDG menu data, desktop files and their icons (read-only file access) |
 
 Each filter only affects the thread it is installed on - the rest of xpra keeps
 running normally. The same filters are available whether xpra is running as a
@@ -98,13 +99,16 @@ is not on its allow-list:
 
 </div>
 
-* **File transfers and URL opening.** When a *fatal* action is used (`strict`,
-  `kill`, `kill_process`), receiving a file or an [`open-url`](../Features/File-Transfers.md)
-  request on a sandboxed network thread will kill the process, because those
-  handlers legitimately open files or launch commands. If you enable strict
-  filtering, also disable those features (`--file-transfer=no --open-url=no`) or
-  keep them on a non-fatal action. With `--seccomp=default` (`errno`) the transfer
-  simply fails instead.
+* **Default action.** Naming a filter without an action (ie: `--seccomp=parse`), or
+  setting `XPRA_SECCOMP_*=1` without the matching `*_ACTION` variable, uses the
+  *fatal* `kill_process` action. Only `--seccomp=default` is non-fatal.
+
+* **Debugging features that are unsafe under a fatal `parse` filter.** File transfers,
+  printing and [`open-url`](../Features/File-Transfers.md) are safe: their disk I/O and
+  subprocesses run on threads that are not sandboxed. But these still run on the network thread:
+  `--shell=yes` (which grants arbitrary code execution anyway), `XPRA_SAVE_PRINT_JOBS`, and
+  `XPRA_FILE_IO_THREAD=0` (which moves file transfers back onto the network thread).
+  Do not combine any of them with `--seccomp=strict`.
 
 * **Debug image dumping** writes to disk from the decoding thread, so it is
   automatically turned off (with a warning) whenever seccomp is enabled - this covers
@@ -273,8 +277,8 @@ the menu policy.
   moved off the parse thread (file transfers and printing to the file worker thread;
   `open-url`, `start-command` and `control-request` to the main thread - see the
   handler audit below). The residual risk is a handler that lazily imports a module
-  for the *first time* on the parse thread (an `openat`); the parse action defaults
-  to `errno` (non-fatal) for this reason, so validate a deployment with
+  for the *first time* on the parse thread (an `openat`). This is why `--seccomp=default`
+  uses the non-fatal `errno` action, and why a deployment should be validated with
   `XPRA_SECCOMP_PARSE_ACTION=log` and pre-compiled bytecode before using `strict`.
 * the **rfb** allow-list (`RFB_SYSCALLS`) still keeps the full `BASE_SYSCALLS`
   (including `open`/`openat`) plus `SOCKET_SYSCALLS`. Its inline handlers have not
