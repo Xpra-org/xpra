@@ -545,8 +545,81 @@ XPRA_TEST_SECCOMP=strict python3 setup.py unittests
 (`tests/unittests/unit/server_test_util.py`), so the test runner itself is not
 filtered. With `strict`, a blocked syscall kills the process with `SIGSYS`, and the
 test failure says so. The `seccomp` leg of the GitHub `test.yml` workflow does
-exactly this. To identify the syscall, re-run the failing command by hand under
-`strace -f -Z` with `--seccomp=default`: the call shows up as failing with `EPERM`.
+exactly this.
+
+
+<div class="docs-section-heading" markdown="1">
+
+## Finding a blocked syscall
+
+</div>
+
+A process killed by a filter exits with code 159 (`-31` from Python's `subprocess`:
+`SIGSYS`, "Bad system call"), and nothing says which syscall was blocked: with
+`kill_process` there is no signal for `strace` to report, the kernel audit log needs
+root, and core dumps are usually not kept. These development notes describe what does work.
+
+**Re-run with the `errno` action.** The blocked call then fails instead of killing the
+process, and `strace -Z` (only show failing syscalls) shows it as `EPERM`:
+
+```shell
+strace -f -qq -Z -o trace.log xpra version :100 --seccomp=default
+grep EPERM trace.log
+```
+
+Most `EPERM`s in a server trace have nothing to do with seccomp and can be ignored:
+`SO_RCVBUFFORCE` / `SO_SNDBUFFORCE`, `FUTEX_UNLOCK_PI`, `setpgid`, `mount`,
+`setresuid`, and `openat` with `O_NOATIME` (from helper processes like
+`xdg-desktop-portal`). The remaining ones are usually all made by the same thread.
+
+**Find the filter.** Enable one filter at a time to see which one kills the process:
+`--seccomp=parse`, `--seccomp=decode`, `--seccomp=menu`, `--seccomp=rfb`
+(or `XPRA_TEST_SECCOMP=parse` etc. for the tests).
+
+**Get the stack.** `strace -k` prints a stack trace for each traced call, and `-P`
+limits tracing to the calls that use a given path:
+
+```shell
+strace -f -qq -k -e trace=openat -e status=failed -o trace.log xpra start ... --seccomp=default
+strace -f -qq -k -P /proc/net/tcp -o trace.log xpra start ...
+```
+
+With `-Z`, `strace` may print a pointer instead of the path. If the pointer is the
+same on every run, it points to a constant string in a library: the low 12 bits of
+the address survive address space randomization, so they can be matched against
+the offsets of the strings in that library. This is how the glibc `get_nprocs()` read
+was identified (see the *glibc malloc caveat* above):
+
+```python
+import re
+data = open("/usr/lib64/libc.so.6", "rb").read()
+for m in re.finditer(rb"/(proc|sys)/[ -~]{3,80}\x00", data):
+    if m.start() & 0xfff in (0x140, 0xadf):
+        print(hex(m.start()), m.group())
+```
+
+Pointers that change from run to run usually point to the Python heap: the call comes
+from Python code, ie: an `open()` - look for files read lazily by the code that runs
+on that thread.
+
+**Inside the tests.** `XPRA_COMMAND` replaces the xpra command the tests run, so a
+wrapper script can run every server, client and command under `strace`. Name the
+script `python3`, otherwise the tests prepend `python3` to it, and remove `XPRA_COMMAND`
+from its environment, otherwise the processes started by the server are traced twice:
+
+```shell
+#!/bin/sh
+exec env -u XPRA_COMMAND strace -f -qq -Z -o /tmp/trace.$$ /usr/bin/python3 /usr/bin/xpra "$@"
+```
+
+```shell
+XPRA_COMMAND=/path/to/python3 XPRA_TEST_SECCOMP=default \
+    python3 tests/unittests/unit/server/server_sockets_test.py ServerSocketsTest.test_tcp_socket
+```
+
+**Expect races.** Some blocked calls come from code that runs on whichever thread gets
+there first (glibc's lazy reads, first-time imports), so a test may only fail some of
+the time: run it in a loop until the call shows up in the trace.
 
 
 <div class="docs-section-heading" markdown="1">
