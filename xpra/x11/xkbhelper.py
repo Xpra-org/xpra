@@ -880,6 +880,32 @@ def map_missing_modifiers(keynames_for_mod: dict[str, Iterable]):
         X11Keyboard.set_xmodmap(xmodmap_changes)
 
 
+def map_missing_keysyms(gtk_mappings: Iterable[tuple[Any, str, int, int, int]]) -> None:
+    """
+    Add the keysyms found in the client's keymap but missing from the server's keymap,
+    each one on a free keycode, so that we are still able to send them.
+    ie: a Windows French keyboard has a `dead_tilde`, the X11 `fr` layout does not.
+    """
+    X11Keyboard = X11KeyboardBindings()
+    x11_keycodes = X11Keyboard.get_keycode_mappings()
+    server_keysyms = set(keysym for keysyms in x11_keycodes.values() for keysym in keysyms)
+    missing: list[str] = []
+    for _, name, _, _, _ in gtk_mappings:
+        keysym = canonical_keysym(name)
+        if keysym not in server_keysyms and keysym not in missing and X11Keyboard.parse_keysym(keysym) not in (0, 0xffffff):
+            missing.append(keysym)
+    if not missing:
+        return
+    min_keycode, max_keycode = X11Keyboard.get_minmax_keycodes()
+    free_keycodes = [x for x in range(min_keycode, max_keycode + 1) if x not in x11_keycodes]
+    if len(missing) > len(free_keycodes):
+        log.warn("Warning: keymap is full, cannot add keysyms %s", csv(missing[len(free_keycodes):]))
+    xmodmap_changes = [("keycode", keycode, [keysym]) for keycode, keysym in zip(free_keycodes, missing)]
+    log("map_missing_keysyms(..) adding %s", xmodmap_changes)
+    if xmodmap_changes:
+        X11Keyboard.set_xmodmap(xmodmap_changes)
+
+
 def grok_modifier_map(meanings: dict) -> dict[str, int]:
     """
     Return a dict mapping modifier names to corresponding X modifier bitmasks.
