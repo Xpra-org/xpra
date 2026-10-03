@@ -1574,7 +1574,11 @@ def proxy_connect(options):
     sock.set_proxy(proxy_type, proxy_host, proxy_port, rdns, username, password)
     sock.settimeout(timeout)
     #the destination, which the proxy connects to for us:
-    sock.connect((options["host"], options["port"]))
+    try:
+        sock.connect((options["host"], options["port"]))
+    except BaseException:
+        sock.close()
+        raise
     return sock
 
 def retry_socket_connect(options):
