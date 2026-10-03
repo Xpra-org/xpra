@@ -17,7 +17,7 @@ except ImportError:
 class TestProxyConnect(unittest.TestCase):
 
     def test_destination(self) -> None:
-        from xpra.scripts.main import proxy_connect
+        from xpra.net.socket_util import proxy_connect
         with patch("socks.socksocket") as socksocket:
             proxy_connect({
                 "type": "tcp", "host": "server.example", "port": 10000,

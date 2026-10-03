@@ -53,6 +53,7 @@ from xpra.scripts.config import (
     make_defaults_struct, parse_bool, has_audio_support, name_to_field,
     )
 from xpra.net.common import DEFAULT_PORTS
+from xpra.net.socket_util import proxy_connect, retry_socket_connect
 from xpra.log import is_debug_enabled, Logger, get_debug_args
 assert callable(error), "used by modules importing this function from here"
 
@@ -950,57 +951,6 @@ def connect_or_fail(display_desc, opts):
         Logger("network").debug(f"failed to connect to {display_desc}", exc_info=True)
         einfo = str(e) or type(e)
         raise InitExit(ExitCode.CONNECTION_FAILED, f"connection failed: {einfo}") from None
-
-def proxy_connect(options):
-    #if is_debug_enabled("proxy"):
-    #log = logging.getLogger(__name__)
-    try:
-        import socks
-    except ImportError as e:
-        raise ValueError(f"cannot connect via a proxy: {e}") from None
-    to = typedict(options)
-    ptype = to.strget("proxy-type")
-    proxy_type = {
-        "SOCKS5"    : socks.SOCKS5,
-        "SOCKS4"    : socks.SOCKS4,
-        "HTTP"      : socks.HTTP,
-        }.get(ptype, socks.SOCKS5)
-    if not proxy_type:
-        raise InitExit(ExitCode.UNSUPPORTED, f"unsupported proxy type {ptype!r}")
-    proxy_host = to.strget("proxy-host")
-    proxy_port = to.intget("proxy-port", 1080)
-    rdns = to.boolget("proxy-rdns", True)
-    username = options.get("proxy-username")
-    password = options.get("proxy-password")
-    timeout = options.get("timeout", 20)
-    sock = socks.socksocket()
-    sock.set_proxy(proxy_type, proxy_host, proxy_port, rdns, username, password)
-    sock.settimeout(timeout)
-    #the destination, which the proxy connects to for us:
-    sock.connect((options["host"], options["port"]))
-    return sock
-
-def retry_socket_connect(options):
-    host = options["host"]
-    port = options["port"]
-    if "proxy-host" in options:
-        return proxy_connect(options)
-    from xpra.net.socket_util import socket_connect
-    start = monotonic()
-    retry = 0
-    timeout = options.get("timeout", 20)
-    while True:
-        sock = socket_connect(host, port, timeout=timeout)
-        if sock:
-            return sock
-        if not options.get("retry", True) or monotonic()-start>=timeout:
-            break
-        if retry==0:
-            werr(f"failed to connect to {host}:{port}, retrying for {timeout} seconds")
-        retry += 1
-        time.sleep(1)
-    dtype = options["type"]
-    raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {dtype} socket {host}:{port}")
 
 def get_host_target_string(display_desc, port_key="port", prefix="") -> str:
     dtype = display_desc["type"]

@@ -120,7 +120,7 @@ class TestServerCertificateDownload(unittest.TestCase):
         self.addCleanup(peer.close)
         display_desc = {"type": "ssl", "host": "127.0.0.1", "port": 10000}
         # A peer that never answers must not hang the certificate download:
-        with patch("xpra.scripts.main.retry_socket_connect", return_value=sock):
+        with patch("xpra.net.socket_util.retry_socket_connect", return_value=sock):
             with patch("xpra.net.socket_util.SSL_HANDSHAKE_TIMEOUT", 0.1):
                 start = monotonic()
                 self.assertEqual(get_server_certificate(display_desc, "localhost"), "")
@@ -211,7 +211,7 @@ class TestServerCertificate(SSLServerTestCase):
         def proxy_connect(options: dict) -> socket.socket:
             self.assertEqual((options["host"], options["port"]), ("unreachable.invalid", self.port))
             return socket.create_connection(("127.0.0.1", self.port), timeout=5)
-        with patch("xpra.scripts.main.proxy_connect", side_effect=proxy_connect) as pc:
+        with patch("xpra.net.socket_util.proxy_connect", side_effect=proxy_connect) as pc:
             self.check_certificate(display_desc)
         pc.assert_called_once()
 
@@ -281,7 +281,7 @@ class TestSSLVerifyFailure(SSLServerTestCase):
         def proxy_connect(options: dict) -> socket.socket:
             self.assertEqual((options["host"], options["port"]), ("unreachable.invalid", port))
             return socket.create_connection(("127.0.0.1", port), timeout=5)
-        with patch("xpra.scripts.main.proxy_connect", side_effect=proxy_connect) as pc:
+        with patch("xpra.net.socket_util.proxy_connect", side_effect=proxy_connect) as pc:
             self.check_download(display_desc)
         pc.assert_called_once()
 
