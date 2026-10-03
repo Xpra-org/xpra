@@ -16,7 +16,8 @@ from unittest.mock import patch
 from time import monotonic
 
 from xpra.net.socket_util import (
-    ssl_handshake, ssl_retry, get_server_certificate, SSLVerifyFailure, SSL_VERIFY_SELF_SIGNED,
+    ssl_handshake, ssl_retry, get_server_certificate, warn_certificate_changed,
+    SSLVerifyFailure, SSL_VERIFY_SELF_SIGNED,
 )
 from xpra.scripts.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
@@ -136,15 +137,19 @@ class SSLServerTestCase(unittest.TestCase):
         cls.tmpdir = tempfile.mkdtemp(prefix="xpra-ssl-verify-")
         cls.cert = os.path.join(cls.tmpdir, "cert.pem")
         cls.key = os.path.join(cls.tmpdir, "key.pem")
-        cmd = [
-            OPENSSL, "req", "-new", "-x509", "-days", "1", "-nodes",
-            "-newkey", "rsa:2048", "-keyout", cls.key, "-out", cls.cert,
-            "-subj", "/CN=localhost",
-        ]
-        r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-        if r.returncode != 0 or not os.path.exists(cls.cert):
-            shutil.rmtree(cls.tmpdir, ignore_errors=True)
-            raise unittest.SkipTest(f"failed to generate a test certificate: {r.stderr.decode('utf8', 'replace')}")
+        # the certificate the server switches to:
+        cls.new_cert = os.path.join(cls.tmpdir, "new-cert.pem")
+        cls.new_key = os.path.join(cls.tmpdir, "new-key.pem")
+        for cert, key in ((cls.cert, cls.key), (cls.new_cert, cls.new_key)):
+            cmd = [
+                OPENSSL, "req", "-new", "-x509", "-days", "1", "-nodes",
+                "-newkey", "rsa:2048", "-keyout", key, "-out", cert,
+                "-subj", "/CN=localhost",
+            ]
+            r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            if r.returncode != 0 or not os.path.exists(cert):
+                shutil.rmtree(cls.tmpdir, ignore_errors=True)
+                raise unittest.SkipTest(f"failed to generate a test certificate: {r.stderr.decode('utf8', 'replace')}")
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -294,6 +299,53 @@ class TestSSLVerifyFailure(SSLServerTestCase):
         self.server_context.maximum_version = ssl.TLSVersion.TLSv1_2
         ssl_options = dict(self.display_desc["ssl-options"], cert=self.cert, key=self.key)
         self.check_download(dict(self.display_desc, **{"ssl-options": ssl_options}))
+
+    def change_certificate(self) -> None:
+        self.server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        self.server_context.load_cert_chain(self.new_cert, self.new_key)
+
+    def check_changed(self, ssl_options: dict) -> None:
+        from xpra.scripts.main import apply_ssl_retry
+        display_desc = dict(self.display_desc, **{"ssl-options": ssl_options})
+        with patch("xpra.scripts.pinentry_wrapper.confirm") as confirm:
+            with patch("xpra.net.socket_util.warn_certificate_changed", wraps=warn_certificate_changed) as warn:
+                # connect the way the client does, retrying for as long as `apply_ssl_retry` says we should:
+                for _ in range(5):
+                    ca_certs = display_desc["ssl-options"]["ca-certs"]
+                    with self.assertRaises(SSLVerifyFailure) as cm:
+                        self.handshake("" if ca_certs == "default" else ca_certs)
+                    if not apply_ssl_retry(cm.exception, display_desc):
+                        break
+                else:
+                    self.fail("the retries never stopped")
+        # we must not offer to replace the certificate we accepted, but we must say why we stopped:
+        confirm.assert_not_called()
+        warn.assert_called_once()
+
+    def test_changed_certificate(self) -> None:
+        mods = ssl_retry(self.verify_failure(), self.display_desc)
+        with open(mods["ca-certs"], "rb") as f:
+            saved = f.read()
+        self.change_certificate()
+        # the client loads the saved options, which use the certificate we accepted:
+        self.check_changed(dict(self.display_desc["ssl-options"], **mods))
+        with open(mods["ca-certs"], "rb") as f:
+            self.assertEqual(f.read(), saved)
+
+    def test_changed_certificate_without_saved_options(self) -> None:
+        # only the certificate is found, ie: the options file was removed:
+        ssl_retry(self.verify_failure(), self.display_desc)
+        self.change_certificate()
+        self.check_changed(dict(self.display_desc["ssl-options"]))
+
+    def test_changed_certificate_unrecorded(self) -> None:
+        # what older Python versions give us, which have no `get_unverified_chain()`:
+        with patch("xpra.net.socket_util.get_peer_cert_data", return_value=""):
+            self.test_changed_certificate()
+
+    def test_changed_certificate_unrecorded_without_saved_options(self) -> None:
+        with patch("xpra.net.socket_util.get_peer_cert_data", return_value=""):
+            self.test_changed_certificate_without_saved_options()
 
     def test_retry_only_with_new_options(self) -> None:
         from xpra.scripts.main import apply_ssl_retry
