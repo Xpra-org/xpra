@@ -800,14 +800,21 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log.error("Error: failed to terminate network threads for ssl upgrade")
             self.quit(ExitCode.INTERNAL_ERROR)
             return
-        ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
-        if not ssl_sock:
-            # `None` means the server closed the connection during the TLS setup:
-            ssllog.error("Error: the connection was closed during the ssl upgrade")
-            conn.close()
-            self.quit(ExitCode.SSL_FAILURE)
+        ssl_sock = None
+        try:
+            ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
+            if not ssl_sock:
+                # `None` means the server closed the connection during the TLS setup:
+                raise InitExit(ExitCode.SSL_FAILURE, "the connection was closed")
+            ssl_sock = ssl_handshake(ssl_sock)
+        except Exception as e:
+            ssllog("ssl_upgrade(%s)", ssl_attrs, exc_info=True)
+            ssllog.error("Error: ssl upgrade failed")
+            ssllog.estr(e)
+            # once wrapped, the ssl socket owns the file descriptor:
+            (ssl_sock or conn).close()
+            self.quit(e.status if isinstance(e, InitExit) else ExitCode.SSL_FAILURE)
             return
-        ssl_sock = ssl_handshake(ssl_sock)
         authlog("ssl handshake complete")
         from xpra.net.bytestreams import SSLSocketConnection
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, new_socktype)
