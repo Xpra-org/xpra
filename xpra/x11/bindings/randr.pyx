@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import struct
 from typing import Dict, List, Tuple
 
@@ -34,6 +35,10 @@ GAMMA = envbool("XPRA_RANDR_GAMMA", False)
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
 assert MAX_NEW_MODES>=2
 SKIP_UNCHANGED = envbool("XPRA_RANDR_SKIP_UNCHANGED", True)
+# the output names chosen by virtual X11 servers: Xvfb, the dummy driver and Xwayland.
+# unlike monitor names, which we set from the client's own monitor names,
+# output names are chosen by the X11 server and cannot be changed:
+VFB_OUTPUT_NAME = re.compile(r"screen|DUMMY\d+|XWAYLAND\d+")
 
 
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
@@ -514,6 +519,35 @@ cdef dict get_output_properties(Display *display, RROutput output):
     return properties
 
 
+cdef bint is_vfb(Display *display):
+    """
+    Virtual displays can be given any resolution,
+    but adding modes to a real GPU output would try to drive the monitor with made up timings.
+    """
+    cdef Window window = XDefaultRootWindow(display)
+    cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(display, window)
+    if rsc==NULL:
+        log("is_vfb() cannot access screen resources")
+        return False
+    cdef XRROutputInfo *oi
+    names = []
+    try:
+        for i in range(rsc.noutput):
+            oi = XRRGetOutputInfo(display, rsc, rsc.outputs[i])
+            if oi==NULL:
+                log(f"is_vfb() output {i} not found")
+                return False
+            try:
+                names.append(s(oi.name[:oi.nameLen]))
+            finally:
+                XRRFreeOutputInfo(oi)
+    finally:
+        XRRFreeScreenResources(rsc)
+    vfb = bool(names) and all(VFB_OUTPUT_NAME.fullmatch(name) for name in names)
+    log(f"is_vfb() output names={names}: {vfb}")
+    return vfb
+
+
 cdef dict get_all_screen_properties(Display *display):
     cdef Window window = XDefaultRootWindow(display)
     cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(display, window)
@@ -542,6 +576,7 @@ cdef dict get_all_screen_properties(Display *display):
     finally:
         XRRFreeScreenResources(rsc)
     props["monitors"] = monitor_properties(display)
+    props["vfb"] = is_vfb(display)
     return props
 
 
@@ -1105,6 +1140,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeMonitors(monitors)
         return True
+
+    def is_vfb(self) -> bool:
+        self.context_check("is_vfb")
+        return is_vfb(self.display)
 
     def get_monitor_properties(self) -> Dict[str, Any]:
         self.context_check("get_monitor_properties")

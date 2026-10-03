@@ -51,6 +51,7 @@ class RandrTest(ServerTestUtil):
                 if not randr.has_randr():
                     log.warn("no RandR support!")
                     return
+                assert randr.is_vfb(), "a virtual display was not recognized as such"
                 log("randr version: %s", randr.get_version())
                 log("screen sizes: %s", randr.get_xrr_screen_sizes())
                 log("screen count: %s", randr.get_screen_count())
@@ -149,6 +150,9 @@ class RandrTest(ServerTestUtil):
                                "different physical dimensions must be applied")
                 assert_current(False, same_config(single, {1: {'name': 'DP-1', 'geometry': (1600, 0, 1280, 1024)}}),
                                "adding a monitor must be applied")
+
+                # renaming the monitors does not change the output names:
+                assert randr.is_vfb(), "configuring the monitors must not change the outputs"
 
                 if dummy16:
                     dual = same_config(single, {

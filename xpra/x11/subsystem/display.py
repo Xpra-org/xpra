@@ -268,6 +268,10 @@ class X11DisplayManager(DisplayManager):
                     # xwayland?
                     self.randr = False
                     self.randr_exact_size = False
+            if self.randr_exact_size and not RandR.is_vfb():
+                # never add modes to the outputs of a real GPU:
+                log("not a virtual display, limiting resolutions to the existing modes")
+                self.randr_exact_size = False
             log(f"randr enabled: {self.randr}, exact size={self.randr_exact_size}")
             if not self.randr:
                 log.warn("Warning: no X11 RandR support on %r", os.environ.get("DISPLAY", ""))
