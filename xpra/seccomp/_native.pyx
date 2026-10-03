@@ -29,6 +29,7 @@ cdef extern from "seccomp.h":
     int seccomp_rule_add_array(scmp_filter_ctx ctx, uint32_t action, int syscall,
                                unsigned int arg_cnt, const scmp_arg_cmp *arg_array)
     int seccomp_syscall_resolve_name(const char *name)
+    int __NR_SCMP_ERROR
 
 cdef extern from "sys/prctl.h":
     int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5)
@@ -76,7 +77,11 @@ def install_filter(syscalls, str action="kill_thread", masked_rules=()) -> None:
         for name in syscalls:
             syscall_name = str(name).encode("ascii")
             nr = seccomp_syscall_resolve_name(PyBytes_AsString(syscall_name))
-            if nr < 0:
+            # syscalls that do not exist on this architecture resolve to negative "pseudo" numbers
+            # (ie: `open` on aarch64): libseccomp ignores them, or rewrites them for multiplexed
+            # syscalls (ie: `socketcall` on ppc64 and s390x), so pass them through.
+            # Only an unknown name is an error:
+            if nr == __NR_SCMP_ERROR:
                 raise RuntimeError(f"unknown seccomp syscall {name!r}")
             r = seccomp_rule_add(ctx, 0x7FFF0000, nr, 0)
             if r != 0:
@@ -84,7 +89,7 @@ def install_filter(syscalls, str action="kill_thread", masked_rules=()) -> None:
         for name, arg_index, mask, value in masked_rules:
             syscall_name = str(name).encode("ascii")
             nr = seccomp_syscall_resolve_name(PyBytes_AsString(syscall_name))
-            if nr < 0:
+            if nr == __NR_SCMP_ERROR:
                 raise RuntimeError(f"unknown seccomp syscall {name!r}")
             comparison.arg = arg_index
             comparison.op = SCMP_CMP_MASKED_EQ

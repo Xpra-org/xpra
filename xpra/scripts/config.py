@@ -1072,7 +1072,6 @@ def get_default_start_env() -> Sequence[str]:
 
 def get_default_seccomp() -> str:
     # the filters are only enabled by default where they have been tested:
-    # libseccomp has no `open`, `stat`, `poll`... on aarch64 and riscv64 (see `xpra/seccomp/draw.py`)
     import platform
     if sys.platform.startswith("linux") and platform.machine() == "x86_64":
         return "default"

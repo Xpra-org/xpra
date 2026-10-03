@@ -225,6 +225,24 @@ class SeccompTest(unittest.TestCase):
         self.assertEqual(output.count("seccomp filter of the 'sandboxed' thread"), 1, output)
         self.assertEqual(output.count("seccomp filter of the"), 1, output)
 
+    def test_pseudo_syscalls(self):
+        # syscalls that do not exist on this architecture resolve to negative "pseudo" numbers,
+        # which libseccomp handles itself: `open`, `stat`, `poll`... on aarch64 and riscv64,
+        # here the 32-bit only `socketcall` and `_llseek` - only unknown names are errors
+        code = textwrap.dedent("""
+            from xpra.seccomp import _native
+            from xpra.seccomp.draw import DECODE_SYSCALLS
+            _native.install_filter(DECODE_SYSCALLS + ("socketcall", "_llseek"), "errno")
+            try:
+                _native.install_filter(("not-a-syscall", ), "errno")
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError("unknown syscall name accepted")
+        """)
+        proc = subprocess.run((sys.executable, "-c", code), capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
     def test_parse_blocks_file_syscalls(self):
         # every file/exec packet handler now runs off the parse thread, so the parse
         # filter drops file access too (see docs/Usage/Seccomp.md):
