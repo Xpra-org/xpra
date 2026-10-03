@@ -8,6 +8,7 @@ from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode
+from xpra.scripts.config import InitExit
 from xpra.log import Logger
 
 log = Logger("ssl")
@@ -63,14 +64,21 @@ class SSLUpgradeClient(StubClientMixin):
             self.quit(ExitCode.INTERNAL_ERROR)
             # noinspection PyUnreachableCode
             return
-        ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
-        if not ssl_sock:
-            # `None` means the server closed the connection during the TLS setup:
-            log.error("Error: the connection was closed during the ssl upgrade")
-            conn.close()
-            self.quit(ExitCode.SSL_FAILURE)
+        ssl_sock = None
+        try:
+            ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
+            if not ssl_sock:
+                # `None` means the server closed the connection during the TLS setup:
+                raise InitExit(ExitCode.SSL_FAILURE, "the connection was closed")
+            ssl_handshake(ssl_sock)
+        except Exception as e:
+            log("ssl_upgrade(%s)", ssl_attrs, exc_info=True)
+            log.error("Error: ssl upgrade failed")
+            log.estr(e)
+            # once wrapped, the ssl socket owns the file descriptor:
+            (ssl_sock or conn).close()
+            self.quit(e.status if isinstance(e, InitExit) else ExitCode.SSL_FAILURE)
             return
-        ssl_handshake(ssl_sock)
         log("ssl handshake complete")
         from xpra.net.bytestreams import SSLSocketConnection
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, new_socktype)
