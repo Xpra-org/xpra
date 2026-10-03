@@ -5,7 +5,9 @@
 
 from xpra.util.debug import CPUINFO, DETECT_MEMLEAKS, DETECT_FDLEAKS
 from xpra.util.parsing import str_to_bool
+from xpra.os_util import LINUX
 
+landlock = LINUX
 debug = DETECT_MEMLEAKS or DETECT_FDLEAKS or CPUINFO
 watcher = True
 power = True
@@ -73,6 +75,7 @@ def set_server_features(opts, mode: str) -> None:
 
     # turn off some server subsystem:
     from xpra.server import features
+    features.landlock = LINUX and b(opts.landlock or "no")
     features.http = opts.http and impcheck("net.http")
     features.control = str_to_bool(opts.control, True) and impcheck("net.control")
     features.mmap = b(opts.mmap) and impcheck("net.mmap")
@@ -162,6 +165,7 @@ def enforce_server_features() -> None:
     from xpra.util.pysystem import enforce_features, may_block_numpy
     from xpra.server import features
     enforce_features(features, {
+        "landlock": "xpra.server.subsystem.landlock",
         "debug": "xpra.server.subsystem.debug",
         "power": "xpra.server.subsystem.power",
         "suspend": "xpra.server.subsystem.suspend",

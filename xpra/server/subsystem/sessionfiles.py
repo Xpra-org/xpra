@@ -33,6 +33,8 @@ SERVER_SAVE_SKIP_OPTIONS: tuple[str, ...] = (
 SERVER_LOAD_SKIP_OPTIONS: tuple[str, ...] = (
     "systemd-run",
     "daemon",
+    # Use confinement settings from the current invocation.
+    "landlock",
     "start",
     "start-child",
     "start-after-connect",

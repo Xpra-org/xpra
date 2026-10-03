@@ -111,7 +111,7 @@ def get_default_mmap_dirs(peer_uid: int = -1) -> tuple[str, ...]:
         log(f"get_default_mmap_dirs: no mmap directory: {e}")
         mmap_dir = ""
     if mmap_dir:
-        if mmap_dir != tempfile.gettempdir():
+        if mmap_dir != tempfile.gettempdir() or mmap_dir == os.environ.get("XPRA_LANDLOCK_TMP_DIR"):
             dirs.append(mmap_dir)
         else:
             # `do_get_mmap_dir` falls back to the temporary directory

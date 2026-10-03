@@ -691,6 +691,7 @@ OPTION_TYPES: dict[str, Any] = {
     "printing"          : str,
     "headerbar"         : str,
     "seccomp"           : str,
+    "landlock"          : str,
     "challenge-handlers": list,
     # ssl options:
     "ssl"               : str,
@@ -1078,6 +1079,28 @@ def get_default_seccomp() -> str:
     return ""
 
 
+def parse_landlock_option(value: str | bool) -> str:
+    mode = str(value or "no").strip().lower()
+    if mode in FALSE_OPTIONS:
+        mode = "no"
+    elif mode in TRUE_OPTIONS:
+        mode = "default"
+    if mode not in ("no", "default", "strict"):
+        raise InitException(f"invalid landlock option {value!r}, must be 'no', 'default' or 'strict'")
+    return mode
+
+
+def get_default_landlock() -> str:
+    # Validate after loading configuration and command line overrides, which
+    # may replace an invalid environment default.
+    value = os.environ.get("XPRA_LANDLOCK", "no").strip().lower()
+    if value in TRUE_OPTIONS:
+        return "default"
+    if not value or value in FALSE_OPTIONS:
+        return "no"
+    return value
+
+
 def get_defaults() -> dict[str, Any]:
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
@@ -1188,6 +1211,7 @@ def get_defaults() -> dict[str, Any]:
         "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
         "debug"             : "",
         "seccomp"           : get_default_seccomp(),
+        "landlock"          : get_default_landlock(),
         "input-method"      : "auto",
         "audio-source"      : "",
         "audio-sink"        : "auto",
@@ -1753,6 +1777,7 @@ def abs_paths(options) -> None:
 
 
 def fixup_options(options) -> None:
+    options.landlock = parse_landlock_option(options.landlock)
     fixup_encodings(options)
     fixup_pings(options)
     fixup_compression(options)

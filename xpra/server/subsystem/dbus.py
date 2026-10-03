@@ -117,7 +117,7 @@ class DbusManager(StubSubsystem):
     def setup(self) -> None:
         if self.enabled:
             # with Landlock, `init_dbus_env` has already been called before `setup`
-            # (see `enforce_server_landlock`), so the bus runs outside the Landlock domain:
+            # by the LandLock subsystem, so the bus runs outside the Landlock domain:
             if not self.env:
                 self.init_dbus_env()
             # save the properties here rather than in `init_dbus_env`:

@@ -16,7 +16,7 @@ from typing import Any
 from xpra.common import SizedBuffer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.client import XpraClientBase
 from xpra.log import Logger
@@ -82,6 +82,10 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
 
     def init(self, opts) -> None:
         XpraClientBase.init(self, opts)
+
+    def run(self) -> ExitValue:
+        XpraClientBase.run(self)
+        return GObjectClientAdapter.run(self)
 
     def make_protocol(self, conn):
         proto = super().make_protocol(conn)

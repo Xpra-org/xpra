@@ -72,6 +72,8 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         return protocol
 
     def run(self) -> ExitValue:
+        XpraClientBase.run(self)
+
         def start_protocol() -> None:
             # protocol may be None in "listen" mode
             if protocol := self._protocol:
@@ -664,6 +666,15 @@ class RunClient(CommandConnectClient):
     def __init__(self, opts, command: Sequence[str]):
         super().__init__(opts)
         self.command = command
+
+    def run(self) -> ExitValue:
+        if self.display_desc.get("proxy_command") == ["_proxy_run"]:
+            # SSH runs the command without an Xpra protocol or a main loop.
+            XpraClientBase.run(self)
+            from xpra.scripts.picker import connect_or_fail
+            connect_or_fail(self.display_desc)
+            return ExitCode.OK
+        return super().run()
 
     def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")

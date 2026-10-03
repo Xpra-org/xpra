@@ -9,7 +9,41 @@ import shutil
 import tempfile
 import unittest
 
-from xpra.scripts.config import read_xpra_conf, fixup_keyboard
+from unittest.mock import patch
+
+from xpra.scripts.config import (
+    read_xpra_conf, fixup_keyboard, fixup_options, get_default_landlock, dict_to_validated_config,
+)
+from xpra.util.parsing import FALSE_OPTIONS, TRUE_OPTIONS
+
+
+class LandlockConfigTest(unittest.TestCase):
+
+    def test_environment_aliases(self):
+        for values, expected in ((FALSE_OPTIONS, "no"), (TRUE_OPTIONS, "default"),
+                                 (("default",), "default"), (("strict",), "strict"), (("",), "no")):
+            for value in values:
+                with self.subTest(value=value), patch.dict(os.environ, {"XPRA_LANDLOCK": str(value).upper()}):
+                    self.assertEqual(get_default_landlock(), expected)
+
+    def test_configuration_aliases(self):
+        for values, expected in ((FALSE_OPTIONS, "no"), (TRUE_OPTIONS, "default"),
+                                 (("default",), "default"), (("strict",), "strict")):
+            for value in values:
+                with self.subTest(value=value):
+                    options = dict_to_validated_config({"landlock": str(value).upper()})
+                    fixup_options(options)
+                    self.assertEqual(options.landlock, expected)
+
+    def test_configuration_overrides_environment(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {"XPRA_LANDLOCK": "strict"}), \
+             patch("xpra.scripts.config.GLOBAL_DEFAULTS", None):
+            with open(os.path.join(directory, "xpra.conf"), "w", encoding="utf8") as config:
+                config.write("landlock = OFF\n")
+            options = dict_to_validated_config(read_xpra_conf(directory))
+            fixup_options(options)
+            self.assertEqual(options.landlock, "no")
 
 
 class ReadConfTest(unittest.TestCase):

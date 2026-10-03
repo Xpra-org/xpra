@@ -21,9 +21,29 @@ from xpra.scripts.parsing import (
 from xpra.scripts.args import get_start_server_args
 from xpra.scripts.config import fixup_clipboard, get_defaults, InitException
 from xpra.util.objects import AdHocStruct
+from xpra.util.parsing import FALSE_OPTIONS, TRUE_OPTIONS
 
 
 class TestParsing(unittest.TestCase):
+
+    def test_landlock_modes(self):
+        for values, expected in ((FALSE_OPTIONS, "no"), (TRUE_OPTIONS, "default"),
+                                 (("default",), "default"), (("strict",), "strict")):
+            for value in values:
+                for text in (str(value), str(value).upper()):
+                    for args in ([f"--landlock={text}"], ["--landlock", text]):
+                        with self.subTest(args=args):
+                            options, _ = parse_cmdline(["xpra", "attach", *args])
+                            self.assertEqual(options.landlock, expected)
+        for value in ("auto", "unknown"):
+            with self.assertRaises((SystemExit, InitException)):
+                parse_cmdline(["xpra", "attach", f"--landlock={value}"])
+
+    def test_landlock_command_line_overrides_environment(self):
+        with patch.dict(os.environ, {"XPRA_LANDLOCK": "STRICT"}), \
+             patch("xpra.scripts.config.GLOBAL_DEFAULTS", None):
+            options, _ = parse_cmdline(["xpra", "attach", "--landlock=OFF"])
+        self.assertEqual(options.landlock, "no")
 
     def test_menu_cache_usage(self):
         commands = {usage.split(" ", 1)[0] for usage in get_usage()}

@@ -457,31 +457,6 @@ def harden_server_process() -> None:
         raise InitException(f"failed to harden the server process: {e}") from None
 
 
-def enforce_server_landlock(app=None) -> None:
-    if not LINUX:
-        return
-    # The session bus creates its own socket and needs write access to devices
-    # such as /dev/null.  Start it outside the domain, then confine the server
-    # before the remaining subsystems are set up.
-    if app is not None and envbool("XPRA_LANDLOCK", False):
-        dbus = app.get_subsystem("dbus")
-        if dbus and dbus.enabled:
-            dbus.init_dbus_env()
-    write_paths = [os.environ.get("XPRA_SESSION_DIR", "")]
-    if envbool("XPRA_LANDLOCK", False):
-        try:
-            from xpra.platform.posix.menu_helper import prepare_menu_icon_cache_dir
-            write_paths.append(prepare_menu_icon_cache_dir())
-        except (ImportError, OSError) as e:
-            warn("Warning: unable to prepare the menu icon cache for Landlock")
-            warn(f" {e}")
-    from xpra.platform.posix.security import enforce_landlock
-    try:
-        enforce_landlock(tuple(write_paths), allow_socket_creation=False)
-    except (ImportError, OSError) as e:
-        raise InitException(f"failed to restrict the server process with Landlock: {e}") from None
-
-
 def do_run_server(script_file: str, cmdline: list[str], opts,
                   extra_args: list[str], full_mode: str, defaults) -> ExitValue:
     if opts.encoding == "help" or "help" in opts.encodings:
@@ -713,7 +688,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         process.setup()
         # setup_display() binds the wayland socket and emits "display-name"
         # (renaming the session dir), but does NOT start the backend yet -
-        # the backend is started in WaylandSeamlessServer.setup(), after
+        # the backend is started in WaylandManager.setup(), after
         # init_subsystems() has connected the display/window subsystems:
         vfb_result = wm.setup_display(progress)
     elif (OSX or WIN32) and opts.backend != "x11":
@@ -755,7 +730,6 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         app.init(opts)
         progress(60, "creating local sockets")
         app.init_local_sockets(opts, display_name, clobber)
-        enforce_server_landlock(app)
         progress(90, "finalizing")
         app.setup()
         init_virtual_devices(app, vfb_result.devices)

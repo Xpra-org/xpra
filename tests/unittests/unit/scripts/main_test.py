@@ -13,7 +13,7 @@ import tempfile
 import unittest
 from io import BytesIO
 from subprocess import Popen, DEVNULL, PIPE, run
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.os_util import getuid, POSIX, OSX
@@ -29,13 +29,16 @@ from xpra.scripts.main import (
     handle_client_encoding_option, normalize_client_encoding_option,
     isdisplaytype,
     check_display,
-    enforce_client_landlock,
+    make_client, do_run_client,
+    connect_to_server,
+    configure_landlock,
     make_progress_process,
     _monitors_args,
 )
 from xpra.scripts.picker import find_session_by_name
 from xpra.scripts.args import find_mode_pos, strip_attach_extra_positional_args
 from xpra.net.connect import connect_to, get_host_target_string
+from xpra.util.parsing import FALSE_OPTIONS, TRUE_OPTIONS
 
 
 def _get_test_socket_dir():
@@ -101,15 +104,95 @@ class TestMain(unittest.TestCase):
             process.terminate()
             assert stop_event.stopped
 
-    def test_enforce_client_landlock(self):
-        enforce_landlock = Mock()
-        security_module = ModuleType("xpra.platform.posix.security")
-        security_module.enforce_landlock = enforce_landlock
-        opts = SimpleNamespace(download_path="/downloads")
-        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
-             patch("xpra.scripts.main.LINUX", True):
-            enforce_client_landlock(opts)
-        enforce_landlock.assert_called_once_with(("/downloads", ), allow_socket_creation=True)
+    def test_landlock_mode_overrides_environment(self):
+        with patch.dict(os.environ, {"XPRA_LANDLOCK": "strict"}):
+            self.assertEqual(configure_landlock("no"), "no")
+            self.assertEqual(os.environ["XPRA_LANDLOCK"], "no")
+            self.assertEqual(configure_landlock("default"), "default")
+            with self.assertRaises(InitException):
+                configure_landlock("auto")
+
+    def test_landlock_aliases_are_canonicalized_for_helpers(self):
+        for values, expected in ((FALSE_OPTIONS, "no"), (TRUE_OPTIONS, "default"),
+                                 (("default",), "default"), (("strict",), "strict")):
+            for value in values:
+                with self.subTest(value=value), patch.dict(os.environ):
+                    self.assertEqual(configure_landlock(str(value).upper()), expected)
+                    self.assertEqual(os.environ["XPRA_LANDLOCK"], expected)
+
+    def test_landlock_unsupported_backends(self):
+        for backend in ("qt", "pyglet", "tk"):
+            opts = SimpleNamespace(landlock="strict", backend=backend)
+            with self.subTest(backend=backend), patch("xpra.scripts.main.LINUX", True), \
+                 self.assertRaisesRegex(InitExit, "does not support Landlock") as raised:
+                make_client(opts)
+            self.assertEqual(raised.exception.status, ExitCode.UNSUPPORTED)
+
+    def test_landlock_connection_is_deferred_until_run(self):
+        desc = {"type": "tcp"}
+        app = SimpleNamespace()
+        opts = SimpleNamespace(backend="gtk", display=":100")
+        glib = SimpleNamespace(idle_add=Mock())
+        with patch("xpra.scripts.main.gi_import", return_value=glib), \
+             patch("xpra.scripts.main.connect_or_fail") as connect:
+            connect_to_server(app, desc, opts)
+        self.assertIs(app.display_desc, desc)
+        connect.assert_not_called()
+        glib.idle_add.assert_called_once()
+
+    def test_remote_start_connects_after_run_hooks(self):
+        from xpra.scripts.config import make_defaults_struct
+        from xpra.scripts.main import run_remote_server
+        opts = make_defaults_struct()
+        opts.attach = False
+        opts.reconnect = False
+        opts.backend = "gtk"
+        desc = {"type": "tcp", "host": "localhost", "port": 12345}
+        events = []
+        queued = []
+        app = SimpleNamespace(get_subsystem=lambda name: None, cleanup=Mock())
+        app.make_protocol = lambda conn: SimpleNamespace(start=lambda: events.append("protocol"))
+
+        def run():
+            events.append("run")
+            queued.pop(0)()
+            return ExitCode.OK
+
+        app.run = run
+        glib = SimpleNamespace(idle_add=lambda fn, *args: queued.append(lambda: fn(*args)))
+        with patch("xpra.scripts.main.parse_display_name", return_value=desc), \
+             patch("xpra.client.base.command.RequestStartClient", return_value=app), \
+             patch("xpra.scripts.main.gi_import", return_value=glib), \
+             patch("xpra.util.thread.start_thread", side_effect=lambda fn, *a, **kw: fn()), \
+             patch("xpra.scripts.main.connect_or_fail", side_effect=lambda target: events.append("connect") or object()):
+            result = run_remote_server("xpra", [], opts, ["tcp://localhost:12345/"], "desktop", make_defaults_struct())
+        self.assertEqual(result, ExitCode.OK)
+        self.assertIs(app.display_desc, desc)
+        self.assertEqual(events, ["run", "connect", "protocol"])
+        app.cleanup.assert_called_once_with()
+
+    def test_run_failure_still_cleans_up(self):
+        error = InitExit(ExitCode.FAILURE, "Landlock unavailable")
+        app = SimpleNamespace(run=Mock(side_effect=error), cleanup=Mock())
+        with self.assertRaises(InitExit) as raised:
+            do_run_client(app)
+        self.assertIs(raised.exception, error)
+        app.cleanup.assert_called_once_with()
+
+    def test_ssh_run_uses_subsystem_lifecycle(self):
+        from xpra.client.base.command import RunClient
+        from xpra.client.base.client import XpraClientBase
+        app = RunClient.__new__(RunClient)
+        app.display_desc = {"type": "ssh", "proxy_command": ["_proxy_run"]}
+        events = []
+        with patch.object(XpraClientBase, "run", side_effect=lambda *a: events.append("run")), \
+             patch("xpra.scripts.picker.connect_or_fail", side_effect=lambda desc: events.append("connect")):
+            self.assertEqual(app.run(), ExitCode.OK)
+        self.assertEqual(events, ["run", "connect"])
+        with patch.object(XpraClientBase, "run", side_effect=InitExit(ExitCode.FAILURE, "Landlock unavailable")), \
+             patch("xpra.scripts.picker.connect_or_fail") as connect, self.assertRaises(InitExit):
+            app.run()
+        connect.assert_not_called()
 
     def test_nox(self):
         with OSEnvContext():

@@ -1228,6 +1228,27 @@ This option is only relevant for seamless servers.
 \fB\-\-exit\-with\-client\fP=\fIyes\fP|\fIno\fP
 The server will terminate when the last client disconnects.
 .TP
+\fB\-\-landlock\fP=\fIno\fP|\fIdefault\fP|\fIstrict\fP
+Confine client and server filesystem access with Linux Landlock.
+The default is \fIno\fP, unless \fBXPRA_LANDLOCK\fP selects a mode.
+\fIdefault\fP allows broad system and user reads and restricts writes to
+download or session directories, temporary storage and application caches.
+\fIstrict\fP also restricts reads to required resources, authentication files
+and Xpra configuration. It uses private temporary storage inside the client's
+dedicated download directory or the server's session directory. A download
+directory which falls back to /tmp must be replaced using the
+\fIdownload-path\fP configuration setting.
+Both enabled modes require Landlock ABI 9 or newer and fail startup on Linux
+if confinement cannot be installed. The option has no effect elsewhere.
+Qt, Pyglet and Tk clients do not support Landlock and require
+\fB\-\-landlock=no\fP.
+Children inherit the policy, which can limit applications, uploads, printing
+and commands that open downloaded files. Network ports are not restricted.
+Command line settings override configuration, which overrides
+\fBXPRA_LANDLOCK\fP. Values are case insensitive. Boolean values yes, true,
+1 and on select default; no, false, 0 and off select no.
+Enabling no cannot remove an inherited Landlock policy.
+.TP
 \fB\-\-seccomp\fP=\fIMODE\fP
 Restrict the syscalls available to the threads that handle untrusted data,
 using Linux seccomp filters (Linux only, no effect elsewhere).

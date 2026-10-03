@@ -83,6 +83,8 @@ def do_get_icon_dir() -> str:
 
 
 def do_get_mmap_dir() -> str:
+    if private_tmp := os.environ.get("XPRA_LANDLOCK_TMP_DIR", ""):
+        return private_tmp
     return _get_xpra_runtime_dir() or tempfile.gettempdir()
 
 

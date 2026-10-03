@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.net.common import FULL_INFO
+from xpra.os_util import LINUX
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 
@@ -47,6 +48,7 @@ server_info = True
 server_events = True
 challenge = True
 info = True
+landlock = LINUX
 
 
 def set_client_features(opts) -> None:
@@ -109,6 +111,7 @@ def set_client_features(opts) -> None:
     features.server_events = envbool("XPRA_SERVER_EVENTS", True)
     features.challenge = b(opts.challenge_handlers) and csv(opts.challenge_handlers) != "none"
     features.info = FULL_INFO > 0
+    features.landlock = LINUX and b(opts.landlock or "no")
 
     if impwarn:
         import sys
@@ -159,5 +162,6 @@ def enforce_client_features() -> None:
         "encryption": "xpra.client.base.aes",
         "server_info": "xpra.client.base.server_info",
         "server_events": "xpra.client.base.events",
+        "landlock": "xpra.client.subsystem.landlock",
     })
     may_block_numpy()

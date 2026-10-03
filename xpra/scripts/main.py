@@ -46,7 +46,7 @@ from xpra.scripts.config import (
     CLIENT_OPTIONS,
     START_COMMAND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS,
     InitException, InitInfo, InitExit,
-    fixup_options,
+    fixup_options, parse_landlock_option,
     find_docs_path, find_html5_path,
     get_defaults,
     make_defaults_struct, has_audio_support,
@@ -409,6 +409,18 @@ def configure_seccomp(value: str) -> None:
         os.environ.setdefault(name, val)
 
 
+def configure_landlock(value: str) -> str:
+    value = parse_landlock_option(value)
+    # CLI and configuration take precedence over the legacy environment switch.
+    # Helpers and reconnects inherit the resolved mode.
+    os.environ["XPRA_LANDLOCK"] = value
+    if value == "strict" and LINUX:
+        # dconf otherwise tries to create shared desktop state in the runtime
+        # directory, including during GTK theme and menu initialization.
+        os.environ.setdefault("GSETTINGS_BACKEND", "memory")
+    return value
+
+
 def configure_env(env_str) -> None:
     if env_str:
         env = parse_env(env_str)
@@ -613,6 +625,7 @@ def run_mode(script_file: str, cmdline: list[str], options, args: list[str], ful
         return systemd_run_wrap(mode, argv, options.systemd_run_args, user=getuid() != 0)
     configure_env(options.env)
     configure_seccomp(getattr(options, "seccomp", ""))
+    options.landlock = configure_landlock(options.landlock)
     configure_logging(options, mode)
     if mode not in NO_NETWORK_SUBCOMMANDS:
         configure_network(options)
@@ -939,7 +952,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         app = WebcamClient(display_desc)
         app.init(options)
         connect_to_server(app, display_desc, options)
-        return do_run_client(app, options)
+        return do_run_client(app)
     if mode == "keyboard":
         from xpra.platform import keyboard
         return keyboard.main(cmdline)
@@ -1198,7 +1211,7 @@ def run_client(script_file, cmdline: list[str], opts, extra_args: list[str], mod
             Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
         return ExitCode.OK
     app = get_client_app(cmdline, opts, extra_args, mode)
-    r = do_run_client(app, opts)
+    r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % exit_str(r))
         return exec_reconnect(script_file, cmdline)
@@ -1284,6 +1297,9 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
     log = Logger("network")
     backend = opts.backend or "gtk"
     log("connect_to_server(%s, %s, ..) backend=%s", app, display_desc, backend)
+    # Subsystem run hooks need the target before the deferred connection starts.
+    app.display = opts.display
+    app.display_desc = display_desc
 
     def direct_call(fn: Callable, *args) -> None:
         fn(*args)
@@ -1320,8 +1336,6 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
             if challenge:
                 challenge.username = display_desc.get("username", "")
                 challenge.password = display_desc.get("password", "")
-            app.display = opts.display
-            app.display_desc = display_desc
             protocol = app.make_protocol(conn)
             protocol.start()
         except InitInfo as e:
@@ -1346,17 +1360,6 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
     call(setup_connection)
 
 
-# `run` mode may have to return a fake client "App" object with two methods:
-class FakeClientApp:
-    @staticmethod
-    def run():
-        return ExitCode.OK
-
-    @staticmethod
-    def cleanup():
-        """ this fake client does not need to cleanup anything """
-
-
 def basic_client_features():
     from xpra.client.base import features
     features.bandwidth = features.progress = features.file = features.printer = features.control = False
@@ -1366,6 +1369,8 @@ def basic_client_features():
 
 def get_client_app(cmdline: list[str], opts, extra_args: list[str], mode: str):
     app, extra_args, run_args = create_client_app(opts, extra_args, mode)
+    if mode == "listen":
+        return app
     return connect_client_app(app, cmdline, opts, extra_args, mode, run_args)
 
 
@@ -1512,8 +1517,7 @@ def connect_client_app(app, cmdline: list[str], opts, extra_args: list[str], mod
                 # forward the backend to the remote `_proxy_run` subcommand so that it can honour it:
                 display_desc["display_as_args"].append(f"--backend={opts.backend}")
             display_desc["display_as_args"] += run_args
-            connect_or_fail(display_desc)
-            return FakeClientApp()
+            app.display_desc = display_desc
         else:
             connect_to_server(app, display_desc, opts)
     except ValueError as e:
@@ -1541,6 +1545,11 @@ def get_client_gui_app(opts, request_mode: str, extra_args: Sequence[str], mode:
     may_show_progress(app, 30, "client configuration")
     try:
         opts.encoding = normalize_client_encoding_option(opts.encoding)
+        if mode == "listen":
+            listener = app.get_subsystem("listener")
+            if listener is None:
+                raise InitExit(ExitCode.COMPONENT_MISSING, "listen mode requires the client listener subsystem")
+            listener.listen_mode = True
         app.init(opts)
 
         def handshake_complete(*_args) -> None:
@@ -1640,25 +1649,10 @@ def handle_client_encoding_option(app, encoding: str) -> str:
 def enable_listen_mode(app, opts):
     may_show_progress(app, 80, "listening for incoming connections")
     from xpra.net.socket_util import (
-        setup_local_sockets, peek_connection,
-        parse_bind_options, create_sockets, add_listen_socket, accept_connection,
-        SocketListener, close_sockets,
+        peek_connection, accept_connection, SocketListener,
     )
     from xpra.log import Logger
-    bind_options = parse_bind_options(opts)
-    sockets: list[SocketListener] = create_sockets(bind_options)
-    # we don't have a display,
-    # so we can't automatically create sockets:
-    if "auto" in opts.bind:
-        opts.bind.remove("auto")
-    if opts.bind:
-        from xpra.platform.info import get_username
-        local_sockets = setup_local_sockets(opts.bind,
-                                            opts.socket_dirs, "",
-                                            "", False,
-                                            opts.mmap_group, opts.socket_permissions,
-                                            get_username(), getuid(), getgid())
-        sockets.update(local_sockets)
+    listener = app.get_subsystem("listener")
 
     def new_connection(listener: SocketListener) -> bool:
         from xpra.util.thread import start_thread
@@ -1672,12 +1666,13 @@ def enable_listen_mode(app, opts):
     def handle_new_connection(conn) -> None:
         # see if this is a redirection:
         netlog = Logger("network")
-        line1 = peek_connection(conn)[1]
+        line1 = peek_connection(conn).split(b"\n", 1)[0]
         netlog.debug(f"handle_new_connection({conn}) line1={line1!r}")
         if line1:
             uri = bytestostr(line1)
             for socktype in SOCKET_TYPES:
                 if uri.startswith(f"{socktype}://"):
+                    conn.close()
                     run_socket_cleanups()
                     netlog.info(f"connecting to {uri}")
                     display_desc = pick_display(opts, [uri, ])
@@ -1692,10 +1687,9 @@ def enable_listen_mode(app, opts):
         run_socket_cleanups()
 
     def run_socket_cleanups() -> None:
-        close_sockets(sockets)
+        listener.cleanup_sockets()
 
-    for listener in sockets:
-        add_listen_socket(listener, None, new_connection)
+    listener.connection_handler = new_connection
     # listen mode is special,
     # don't fall through to connect_to_server!
     may_show_progress(app, 90, "ready")
@@ -1900,6 +1894,8 @@ def make_client(opts):
     BACKENDS = ("qt", "gtk", "pyglet", "tk", "terminal", "win32", "auto") + ("native", ) * int(WIN32)
     if backend == "help":
         raise InitInfo("xpra clients support the following gui backends:\n * %s" % "\n * ".join(BACKENDS))
+    if LINUX and backend in ("qt", "pyglet", "tk") and (opts.landlock or "no") != "no":
+        raise InitExit(ExitCode.UNSUPPORTED, f"the {backend} client does not support Landlock; use --landlock=no")
     if backend == "qt":
         no_gi_gtk_modules()
         try:
@@ -1996,20 +1992,8 @@ def make_client(opts):
     return app
 
 
-def enforce_client_landlock(opts) -> None:
-    if not LINUX:
-        return
-    from xpra.platform.posix.security import enforce_landlock
+def do_run_client(app) -> ExitValue:
     try:
-        enforce_landlock((opts.download_path, ), allow_socket_creation=True)
-    except (ImportError, OSError) as e:
-        raise InitException(f"failed to restrict the client process with Landlock: {e}") from None
-
-
-def do_run_client(app, opts=None) -> ExitValue:
-    try:
-        if opts is not None:
-            enforce_client_landlock(opts)
         return app.run()
     except KeyboardInterrupt:
         return -signal.SIGINT
@@ -2157,7 +2141,7 @@ def start_server_via_proxy(cmdline, options, args, mode: str) -> ExitValue | Non
             from xpra.net.constants import SYSTEM_PROXY_SOCKET
             args = [SYSTEM_PROXY_SOCKET]
         app = get_client_app(cmdline, options, args, "request-%s" % mode)
-        r = do_run_client(app, options)
+        r = do_run_client(app)
         # OK or got a signal:
         NO_RETRY: list[int] = [int(ExitCode.OK)] + list(range(128, 128 + 16))
         # TODO: honour "--attach=yes"
@@ -2288,24 +2272,12 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
             app.after_handshake(handshake_complete)
         may_show_progress(app, 60, "starting server")
 
-        while True:
-            try:
-                conn = connect_or_fail(params)
-                protocol = app.make_protocol(conn)
-                # start the protocol now: `protocol.start()` is idempotent, so this is safe
-                # even for the command clients which also start it from their own `run()` method:
-                protocol.start()
-                may_show_progress(app, 80, "connecting to server")
-                break
-            except InitExit as e:
-                if apply_ssl_retry(e, params):
-                    continue
-                raise
+        connect_to_server(app, params, opts)
     except Exception as e:
         if app:
             may_show_progress(app, 100, "failure", e)
         raise
-    r = do_run_client(app, opts)
+    r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % exit_str(r))
         args = list(cmdline)

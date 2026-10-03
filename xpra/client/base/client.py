@@ -129,6 +129,8 @@ class XpraClientBase(PacketDispatcher):
             try:
                 # noinspection calling-non-callable
                 fn(*args)
+            except InitExit:
+                raise
             except Exception:
                 sublog.warn(f"Error: in {sub}.{method}", exc_info=True)
 
@@ -140,6 +142,8 @@ class XpraClientBase(PacketDispatcher):
             try:
                 # noinspection calling-non-callable
                 d = fn(*args)
+            except InitExit:
+                raise
             except Exception:
                 sublog.warn(f"Error: in {sub}.{method}", exc_info=True)
                 continue
@@ -487,6 +491,7 @@ class XpraClientBase(PacketDispatcher):
             p.close()
         stop_asyncio_loop()
         reaper_cleanup()
+        self._dispatch_fire("late_cleanup")
         log("cleanup done")
 
     def quit(self, exit_code: ExitValue = 0) -> None:

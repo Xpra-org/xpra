@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import patch
 
 from xpra.platform.posix import security
+from xpra.scripts.config import make_defaults_struct
 
 
 class FakeCall:
@@ -32,6 +33,87 @@ class FakeLibC:
 
 
 class PosixSecurityTest(unittest.TestCase):
+
+    def test_strict_rejects_broad_directories(self):
+        for path in ("/", os.path.expanduser("~"), os.path.dirname(os.path.expanduser("~")), "/tmp", "/var/tmp", "/dev/shm"):
+            with self.subTest(path=path), self.assertRaisesRegex(ValueError, "dedicated directory"):
+                security.check_landlock_directory(path)
+        with tempfile.TemporaryDirectory() as directory:
+            link = os.path.join(directory, "escape")
+            os.symlink("/tmp", link)
+            with self.assertRaises(ValueError):
+                security.check_landlock_directory(link)
+
+    def test_strict_read_roots(self):
+        from xpra.platform.posix.landlock import canonical_paths
+        paths = canonical_paths(security.get_strict_landlock_read_paths())
+        for path in canonical_paths((os.path.expanduser("~"), os.getcwd(), "/tmp", "/var", "/run", "/dev", "/proc")):
+            self.assertNotIn(path, paths)
+
+    def test_strict_required_auth_file(self):
+        opts = make_defaults_struct()
+        with tempfile.TemporaryDirectory() as directory, \
+             patch("xpra.platform.posix.landlock.restrict_paths") as restrict, \
+             self.assertRaisesRegex(FileNotFoundError, "required Landlock resource"):
+            opts.ssl_cert = os.path.join(directory, "missing")
+            required = security.get_landlock_auth_paths(opts)
+            security.enforce_landlock("strict", (directory,), read_paths=required, required_paths=required,
+                                      allow_socket_creation=False)
+        restrict.assert_not_called()
+
+    def test_no_policy(self):
+        with patch("xpra.platform.posix.landlock.restrict_paths") as restrict:
+            self.assertEqual(security.enforce_landlock("no", allow_socket_creation=False), 0)
+        restrict.assert_not_called()
+
+    def test_private_temporary_directory(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ), \
+             patch.object(tempfile, "tempdir", tempfile.tempdir):
+            os.environ.pop("XPRA_LANDLOCK_TMP_DIR", None)
+            path, owner = security.prepare_landlock_temp_dir(directory)
+            self.assertEqual(owner, os.getpid())
+            self.assertEqual(os.stat(path).st_mode & 0o777, 0o700)
+            self.assertEqual(security.prepare_landlock_temp_dir(directory), (path, owner))
+            self.assertEqual(tempfile.gettempdir(), path)
+            os.environ["XPRA_LANDLOCK_TMP_OWNER"] = str(owner + 1)
+            self.assertEqual(security.prepare_landlock_temp_dir(directory), (path, owner + 1))
+
+    def test_private_temp_cleanup_preserves_parent_storage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            owned = os.path.join(directory, "owned")
+            parent = os.path.join(directory, "parent")
+            os.mkdir(owned)
+            os.mkdir(parent)
+            security.cleanup_landlock_temp_dir(owned, os.getpid())
+            security.cleanup_landlock_temp_dir(parent, os.getpid() + 1)
+            self.assertFalse(os.path.exists(owned))
+            self.assertTrue(os.path.exists(parent))
+
+    def test_private_temp_cleanup_allows_reconnect(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ), \
+             patch.object(tempfile, "tempdir", tempfile.tempdir):
+            os.environ.pop("XPRA_LANDLOCK_TMP_DIR", None)
+            path, owner = security.prepare_landlock_temp_dir(directory)
+            security.cleanup_landlock_temp_dir(path, owner)
+            self.assertFalse(os.path.exists(path))
+            self.assertNotIn("XPRA_LANDLOCK_TMP_DIR", os.environ)
+            self.assertNotIn("XPRA_LANDLOCK_TMP_OWNER", os.environ)
+            self.assertIsNone(tempfile.tempdir)
+            replacement, replacement_owner = security.prepare_landlock_temp_dir(directory)
+            self.assertNotEqual(replacement, path)
+            self.assertTrue(os.path.isdir(replacement))
+            security.cleanup_landlock_temp_dir(replacement, replacement_owner)
+
+    def test_forked_helper_preserves_parent_storage(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ), \
+             patch.object(tempfile, "tempdir", tempfile.tempdir):
+            os.environ.pop("XPRA_LANDLOCK_TMP_DIR", None)
+            path, owner = security.prepare_landlock_temp_dir(directory)
+            with patch.object(security.os, "getpid", return_value=os.getpid() + 1):
+                security.cleanup_landlock_temp_dir(path, owner)
+            self.assertTrue(os.path.isdir(path))
+            self.assertEqual(os.environ["XPRA_LANDLOCK_TMP_DIR"], path)
+            security.cleanup_landlock_temp_dir(path, owner)
 
     def test_disable_ptrace(self):
         libc = FakeLibC()

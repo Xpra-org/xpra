@@ -127,6 +127,9 @@ class StubClientSubsystem(SubsystemPacketHandlers, SignalEmitter):
         Free up any resources.
         """
 
+    def late_cleanup(self) -> None:
+        """Free shared resources after subsystem and connection cleanup."""
+
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         """
         Send a packet to the server, via the owning client.

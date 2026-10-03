@@ -104,15 +104,6 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         log("wayland compositor event loop fd=%i", fd)
         self.wayland_fd_source = GLib.unix_fd_add_full(GLib.PRIORITY_DEFAULT, fd, conditions, self.wayland_io_callback)
 
-    def setup(self) -> None:
-        # the socket was bound earlier by WaylandManager.setup_display; the
-        # display/window subsystems were just connected by init_subsystems.
-        # Now start the backend so its initial `new-output` event reaches them.
-        if wm := self.get_subsystem("wayland"):
-            wm.bind_display()      # idempotent fallback
-            wm.start_display()
-        super().setup()
-
     def do_run(self) -> None:
         log("WaylandSeamlessServer.do_run()")
         self.start_wayland_event_source()

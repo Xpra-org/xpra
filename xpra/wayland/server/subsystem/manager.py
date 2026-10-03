@@ -45,7 +45,7 @@ class WaylandManager(StubSubsystem):
 
     def setup_display(self, progress: Callable) -> VFBStartResult:
         # bind the wayland display socket *only* (no backend start yet). The
-        # backend is started later from `WaylandSeamlessServer.setup()`, after
+        # backend is started later from this subsystem's `setup()`, after
         # `init_subsystems()` has connected the display/window subsystems to
         # the compositor - otherwise the initial `new-output` event would fire
         # with no Python listener attached and be lost.
@@ -56,6 +56,12 @@ class WaylandManager(StubSubsystem):
         # XvfbManager (consumed by session-files via the "display-name" signal):
         self.emit("display-name", socket_name)
         return VFBStartResult(None, 0, {}, socket_name, (), int(self.displayfd or 0))
+
+    def setup(self) -> None:
+        # LandLock.setup runs first. The display/window subsystems have already
+        # connected to the compositor during init_subsystems, before setup.
+        self.bind_display()
+        self.start_display()
 
     def bind_display(self) -> str:
         # idempotent: the compositor's wl_display_add_socket_auto() picks the

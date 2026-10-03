@@ -220,6 +220,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
     def run(self) -> ExitValue:
         if not os.path.exists(self.record_directory):
             os.mkdir(self.record_directory, 0o755)
+        XpraClientBase.run(self)
         return super().run()
 
     def cleanup(self):

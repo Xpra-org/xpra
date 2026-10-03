@@ -6,6 +6,7 @@
 
 import os
 import unittest
+from unittest.mock import patch
 
 from xpra.client.base import features
 from xpra.client.base.features import set_client_features
@@ -13,6 +14,21 @@ from xpra.scripts.config import make_defaults_struct
 
 
 class ClientFeaturesTest(unittest.TestCase):
+
+    def test_landlock_feature(self):
+        saved = {name: value for name, value in vars(features).items() if isinstance(value, bool)}
+        try:
+            with patch.dict(os.environ, {"XPRA_ENFORCE_FEATURES": "0"}):
+                for linux, mode, expected in ((True, "no", False), (True, "default", True),
+                                              (True, "strict", True), (False, "strict", False)):
+                    with self.subTest(linux=linux, mode=mode), patch.object(features, "LINUX", linux):
+                        opts = make_defaults_struct()
+                        opts.landlock = mode
+                        set_client_features(opts)
+                        self.assertEqual(features.landlock, expected)
+        finally:
+            for name, value in saved.items():
+                setattr(features, name, value)
 
     def test_windowless_client_has_no_window_or_encoding_subsystems(self):
         # Regression test for #5031: --windows=no must leave the pointer

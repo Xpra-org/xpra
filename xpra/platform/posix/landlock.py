@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import errno
 import os
+import stat
 import sys
 from collections.abc import Iterable
 from enum import IntFlag
@@ -78,11 +79,12 @@ def is_available() -> bool:
 
 
 def canonical_paths(paths: Iterable[str]) -> tuple[str, ...]:
+    from xpra.util.env import osexpand
     canonical: list[str] = []
     for path in paths:
         if not path:
             continue
-        expanded = os.path.expandvars(os.path.expanduser(path))
+        expanded = osexpand(path)
         real_path = os.path.realpath(os.path.abspath(expanded))
         if real_path not in canonical:
             canonical.append(real_path)
@@ -91,11 +93,14 @@ def canonical_paths(paths: Iterable[str]) -> tuple[str, ...]:
 
 def restrict_paths(read_paths: Iterable[str] = (), write_paths: Iterable[str] = (), *,
                    device_paths: Iterable[str] = (),
+                   socket_paths: Iterable[str] = (), socket_dirs: Iterable[str] = (),
+                   cleanup_dirs: Iterable[str] = (),
+                   required_paths: Iterable[str] = (), read_access: FSAccess = READ_ACCESS,
                    allow_socket_creation: bool = True, sync_threads: bool = False) -> int:
     """
     Restrict the calling thread, and optionally all process threads, to path rules.
 
-    Paths in ``write_paths`` also receive read access. Missing paths are ignored:
+    Paths in ``write_paths`` also receive read access. Missing optional paths are ignored:
     Landlock can only attach rules to existing filesystem objects.
 
     ``device_paths`` may be opened for reading and writing and used with ioctl,
@@ -104,13 +109,13 @@ def restrict_paths(read_paths: Iterable[str] = (), write_paths: Iterable[str] = 
     native = _get_native()
     abi = int(native.get_abi_version())
     if sync_threads and abi < 9:
-        raise OSError(errno.EOPNOTSUPP, f"Landlock ABI 9 is required for thread synchronization (found ABI {abi})")
+        raise OSError(errno.EOPNOTSUPP, f"Xpra requires Landlock ABI 9 for process-wide filesystem and Unix socket confinement (found ABI {abi})")
     supported = access_for_abi(abi)
     if not supported:
         raise OSError(errno.EOPNOTSUPP, f"unsupported Landlock ABI {abi}")
 
-    ro_access = READ_ACCESS & supported
-    rw_access = (READ_ACCESS | WRITE_ACCESS) & supported
+    ro_access = read_access & supported
+    rw_access = (read_access | WRITE_ACCESS) & supported
     if allow_socket_creation:
         rw_access |= FSAccess.MAKE_SOCK & supported
 
@@ -121,19 +126,40 @@ def restrict_paths(read_paths: Iterable[str] = (), write_paths: Iterable[str] = 
         rules[path] = rules.get(path, FSAccess(0)) | rw_access
     for path in canonical_paths(device_paths):
         rules[path] = rules.get(path, FSAccess(0)) | (DEVICE_ACCESS & supported)
+    for path in canonical_paths(socket_paths):
+        rules[path] = rules.get(path, FSAccess(0)) | ((FSAccess.READ_DIR | FSAccess.RESOLVE_UNIX) & supported)
+    socket_access = FSAccess.READ_DIR | FSAccess.RESOLVE_UNIX | FSAccess.REMOVE_FILE
+    if allow_socket_creation:
+        socket_access |= FSAccess.MAKE_SOCK
+    for path in canonical_paths(socket_dirs):
+        rules[path] = rules.get(path, FSAccess(0)) | (socket_access & supported)
+    for path in canonical_paths(cleanup_dirs):
+        rules[path] = rules.get(path, FSAccess(0)) | ((FSAccess.READ_DIR | FSAccess.REMOVE_DIR) & supported)
+    required = canonical_paths(required_paths)
 
     ruleset_fd = native.create_ruleset(int(ALL_FS_ACCESS & supported))
     try:
         for path, access in rules.items():
-            if not os.path.exists(path):
+            try:
+                path_fd = os.open(path, os.O_PATH | os.O_CLOEXEC | os.O_NOFOLLOW)
+            except FileNotFoundError:
+                if path in required:
+                    raise FileNotFoundError(errno.ENOENT, "required Landlock path does not exist", path) from None
                 log("Landlock path does not exist: %r", path)
                 continue
-            if not os.path.isdir(path):
-                log("Landlock path is not a directory: %r", path)
-                continue
-            path_fd = os.open(path, os.O_PATH | os.O_CLOEXEC)
             try:
-                native.add_path_rule(ruleset_fd, path_fd, int(access))
+                mode = os.fstat(path_fd).st_mode
+                if stat.S_ISREG(mode):
+                    access &= FSAccess.EXECUTE | FSAccess.READ_FILE | FSAccess.WRITE_FILE | FSAccess.TRUNCATE
+                elif stat.S_ISSOCK(mode):
+                    access &= FSAccess.RESOLVE_UNIX
+                elif stat.S_ISCHR(mode) or stat.S_ISBLK(mode):
+                    access &= FSAccess.READ_FILE | FSAccess.WRITE_FILE | FSAccess.IOCTL_DEV
+                elif not stat.S_ISDIR(mode):
+                    raise OSError(errno.EINVAL, "unsupported Landlock path type", path)
+                log("Landlock grant %s: %s", path, access.name)
+                if access:
+                    native.add_path_rule(ruleset_fd, path_fd, int(access))
             finally:
                 os.close(path_fd)
         native.restrict_self(ruleset_fd, sync_threads)

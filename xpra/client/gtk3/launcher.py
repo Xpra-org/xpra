@@ -862,6 +862,7 @@ class ApplicationWindow:
         may_show_progress(self.client, 40, "loading user interface")
         self.client.init_ui(self.config)
         self.client.load()
+        self.client.display_desc = display_desc
         challenge = self.client.get_subsystem("challenge")
         if challenge:
             challenge.username = display_desc.get("username")
@@ -871,6 +872,10 @@ class ApplicationWindow:
 
         self.client.after_handshake(handshake_complete)
         self.set_info_text("Connecting...")
+        # The launcher already owns the GTK main loop; start the client's
+        # subsystems before scheduling its transport connection.
+        from xpra.client.gui.ui_client_base import UIXpraClient
+        UIXpraClient.run(self.client)
         start_thread(self.do_connect_builtin, "connect", daemon=True, args=(display_desc,))
 
     def ssh_failed(self, message) -> None:

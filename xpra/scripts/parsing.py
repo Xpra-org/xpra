@@ -1951,6 +1951,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="gstreamer", default=defaults.gstreamer,
                      help="Enable GStreamer audio support."
                           " Default: '%default'.")
+    group.add_option("--landlock", action="store",
+                     dest="landlock", default=defaults.landlock, metavar="MODE",
+                     help="Restrict client and server filesystem access with Linux Landlock"
+                          " (Linux only, no effect elsewhere). Values: 'no', 'default' (broad reads),"
+                          " 'strict' (required resources and dedicated writable directories)."
+                          " Values are case insensitive; boolean values select 'no' or 'default'."
+                          " Both enabled modes require Landlock ABI 9 or newer. Default: '%default'.")
     group.add_option("--seccomp", action="store",
                      dest="seccomp", default=defaults.seccomp, metavar="MODE",
                      help="Restrict the syscalls available to the threads that handle untrusted data,"

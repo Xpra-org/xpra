@@ -12,6 +12,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import xpra
 from xpra.platform.posix import landlock
 
 
@@ -84,6 +85,147 @@ class LandlockTest(unittest.TestCase):
             landlock.restrict_paths(("/", ), sync_threads=True)
         self.assertEqual(raised.exception.errno, errno.EOPNOTSUPP)
 
+    def test_file_and_socket_rules(self):
+        import socket
+        native = FakeNative()
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(landlock, "_get_native", return_value=native), socket.socket(socket.AF_UNIX) as sock:
+            filename = os.path.join(directory, "cert")
+            with open(filename, "w", encoding="utf8") as file:
+                file.write("certificate")
+            address = os.path.join(directory, "agent")
+            sock.bind(address)
+            landlock.restrict_paths((filename,), socket_paths=(address,))
+        rules = dict(native.rules)
+        self.assertEqual(rules[filename], landlock.FSAccess.EXECUTE | landlock.FSAccess.READ_FILE)
+        self.assertEqual(rules[address], landlock.FSAccess.RESOLVE_UNIX)
+
+    def test_missing_required_file(self):
+        native = FakeNative()
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(landlock, "_get_native", return_value=native), self.assertRaises(FileNotFoundError):
+            filename = os.path.join(directory, "missing")
+            landlock.restrict_paths((filename,), required_paths=(filename,))
+        self.assertIsNone(native.sync_threads)
+
+    def run_native(self, script, *args, env=None):
+        if not landlock.is_available() or landlock.get_abi_version() < 9:
+            self.skipTest("Landlock ABI 9 native module is not available")
+        subprocess.run((sys.executable, "-c", script, *args), check=True,
+                       env={**os.environ, "PYTHONPATH": os.path.dirname(os.path.dirname(xpra.__file__)), **(env or {})})
+
+    def test_strict_policy_threads_helpers_and_symlinks(self):
+        script = r'''
+import os, subprocess, sys, tempfile, threading
+from types import SimpleNamespace
+from xpra.client.subsystem.landlock import LandLock
+from xpra.common import noop
+from xpra.platform.paths import get_mmap_dir
+from xpra.scripts.config import make_defaults_struct
+home, downloads, credential = sys.argv[1:]
+secret = os.path.join(home, "secret")
+ready = threading.Event()
+results = []
+def denied(path, mode):
+    try:
+        with open(path, mode):
+            pass
+    except PermissionError:
+        return
+    raise AssertionError("unexpected access to " + path)
+def check():
+    ready.wait()
+    try:
+        denied(secret, "r")
+        denied(os.path.join(downloads, "escape"), "r")
+        denied(os.path.join(home, "write"), "w")
+        with open(credential) as file:
+            assert file.read() == "certificate"
+        with tempfile.TemporaryFile() as file:
+            file.write(b"allowed")
+        results.append(True)
+    except BaseException as error:
+        results.append(error)
+old = threading.Thread(target=check)
+old.start()
+opts = make_defaults_struct()
+opts.ssl_cert = credential
+opts.landlock = "strict"
+opts.download_path = downloads
+client = SimpleNamespace(idle_add=noop, timeout_add=noop, source_remove=noop, subsystems={}, display_desc={})
+landlock = LandLock(client)
+landlock.init(opts)
+landlock.run()
+assert get_mmap_dir() == tempfile.gettempdir()
+assert os.stat(tempfile.gettempdir()).st_mode & 0o777 == 0o700
+ready.set()
+new = threading.Thread(target=check)
+new.start()
+old.join()
+new.join()
+assert results == [True, True], results
+denied("/tmp/xpra-landlock-shared-write-" + str(os.getpid()), "w")
+result = subprocess.run([sys.executable, "-c", "import sys; open(sys.argv[1])", secret],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+assert result.returncode != 0 and b"PermissionError" in result.stderr, result.stderr
+with open(os.path.join(downloads, "received"), "w") as file:
+    file.write("download")
+private_temp = tempfile.gettempdir()
+landlock.late_cleanup()
+assert not os.path.exists(private_temp)
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            home = os.path.join(directory, "home")
+            downloads = os.path.join(home, "Downloads")
+            os.makedirs(downloads)
+            secret = os.path.join(home, "secret")
+            credential = os.path.join(home, "cert")
+            for filename, data in ((secret, "private"), (credential, "certificate")):
+                with open(filename, "w", encoding="utf8") as file:
+                    file.write(data)
+            os.symlink(secret, os.path.join(downloads, "escape"))
+            self.run_native(script, home, downloads, credential, env={"HOME": home})
+            self.assertCountEqual(os.listdir(downloads), ["escape", "received"])
+
+    def test_strict_socket_resolution_and_cleanup(self):
+        script = r'''
+import os, socket, sys
+from xpra.platform.posix.security import cleanup_landlock_temp_dir, enforce_landlock, prepare_landlock_temp_dir
+root = sys.argv[1]
+downloads = os.path.join(root, "downloads")
+listeners = os.path.join(root, "listeners")
+allowed = os.path.join(listeners, "allowed")
+denied = os.path.join(root, "denied")
+servers = []
+for address in (allowed, denied):
+    server = socket.socket(socket.AF_UNIX)
+    server.bind(address)
+    server.listen()
+    servers.append(server)
+temp_dir, temp_owner = prepare_landlock_temp_dir(downloads)
+enforce_landlock("strict", (downloads,), socket_dirs=(listeners,), temp_dir=temp_dir, allow_socket_creation=False)
+client = socket.socket(socket.AF_UNIX)
+client.connect(allowed)
+try:
+    socket.socket(socket.AF_UNIX).connect(denied)
+except PermissionError:
+    pass
+else:
+    raise AssertionError("unexpected socket resolution")
+try:
+    socket.socket(socket.AF_UNIX).bind(os.path.join(downloads, "new"))
+except PermissionError:
+    pass
+else:
+    raise AssertionError("unexpected socket creation")
+os.unlink(allowed)
+cleanup_landlock_temp_dir(temp_dir, temp_owner)
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            os.mkdir(os.path.join(directory, "downloads"))
+            os.mkdir(os.path.join(directory, "listeners"))
+            self.run_native(script, directory)
+
     def test_native_policy(self):
         if not landlock.is_available() or landlock.get_abi_version() < 9:
             self.skipTest("Landlock ABI 9 native module is not available")
@@ -120,7 +262,7 @@ else:
                 subprocess.run(
                     (sys.executable, "-c", script, allowed, denied, make_socket),
                     check=True,
-                    env={**os.environ, "PYTHONPATH": os.getcwd()},
+                    env={**os.environ, "PYTHONPATH": os.path.dirname(os.path.dirname(xpra.__file__))},
                 )
 
 

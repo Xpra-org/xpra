@@ -1,18 +1,51 @@
 # Landlock filesystem confinement
 
-Xpra has an experimental Linux-only Landlock policy which confines filesystem
-access for the whole client or server process. It is disabled by default.
-
-Enable it for one process with:
+Xpra has experimental Linux-only Landlock policies for the whole client or
+server process. Confinement is disabled by default.
 
 ```shell
-XPRA_LANDLOCK=1 xpra attach :100
+xpra attach :100 --landlock=default
+xpra start :100 --landlock=strict
 ```
 
-Landlock ABI 9 or newer is required. Xpra uses ABI 9 thread synchronization so
-that the policy applies to threads which were created during initialization as
-well as threads created later. If Landlock was explicitly enabled and cannot be
-installed, startup fails rather than continuing with incomplete confinement.
+| `--landlock=` | Filesystem policy |
+|---|---|
+| `no` | Do not install an Xpra Landlock policy. |
+| `default` | Broad system and user reads; writes limited to application directories. |
+| `strict` | Reads limited to required resources; writes limited to dedicated application directories. |
+
+The option also works as `landlock = MODE` in configuration. Command line
+settings override configuration, which overrides `XPRA_LANDLOCK`. Values are
+case insensitive in all three sources. `no`, `false`, `0` and `off` select `no`;
+`yes`, `true`, `1` and `on` select `default`. Helpers and reconnects inherit the resolved mode.
+Server upgrades use the current Landlock option rather than reloading the
+previous server's saved mode.
+Selecting `no` cannot remove restrictions inherited from a parent process.
+
+Both enabled modes require Landlock ABI 9 or newer and fail startup on Linux if
+confinement cannot be installed. The option has no effect on other platforms.
+Thread synchronization, introduced in ABI 8, confines existing initialization
+threads as well as future threads. ABI 9 adds pathname Unix-socket resolution
+restrictions. Xpra requires both facilities.
+
+The client `LandLock` subsystem parses its options in `init()`. The listener
+subsystem creates its sockets in `load()`, before confinement. LandLock installs
+the policy in `run()`, before the main loop starts connection work, including
+remote starts and listen mode. Its `setup_connection()` hook also ensures that
+confinement is installed before Xpra protocol processing. Failed enforcement
+raises `InitExit` and aborts startup; repeated hooks do not install additional
+policy layers. Both LandLock subsystems report the mode, enforcement state, ABI
+and private temporary directory through `get_info()`.
+
+Qt, Pyglet and Tk clients do not support Landlock and require `--landlock=no`.
+They connect synchronously and do not use the client subsystem lifecycle.
+
+The server `LandLock` subsystem installs its policy in `setup()`, before the
+remaining subsystems and listeners start. It prepares session D-Bus before
+confinement. Both client and server subsystems remove their owned private
+temporary directories during lifecycle cleanup, including failed enforcement.
+Each subsystem stores its temporary path and owner PID; cleanup only removes
+storage owned by the current process.
 
 <div class="docs-section-heading" markdown="1">
 
@@ -20,23 +53,58 @@ installed, startup fails rather than continuing with incomplete confinement.
 
 </div>
 
-Both policies allow reads from standard system roots, the active Python
-installation, the current directory, `HOME`, and the XDG configuration, data,
-cache, state and runtime directories.
+`default` allows reads from standard system roots, the active Python installation,
+the current directory, `HOME`, and the XDG configuration, data, cache, state and
+runtime directories. It does **not** protect unrelated home files from being read.
+Clients can write to their configured download directory and temporary directories.
+Servers can write to their session, menu-icon cache and temporary directories.
 
-The client may write only to its configured download directory and temporary
-directories. It may create pathname Unix sockets only below those writable
-directories. In particular, the normal client listener below
-`XDG_RUNTIME_DIR` is expected to fail while the initial policy is being tested.
+`strict` removes blanket access to `HOME`, the current directory, arbitrary Python
+search paths and entire user XDG directories. It allows system code and resources,
+the actual Python runtime and Xpra package, Xpra configuration, fonts/themes,
+desktop configuration, and individual authentication files. Explicitly configured
+certificate, key and password files must exist before startup. For SSH, default
+identity files, known-hosts files and host-configured identities are readable;
+the rest of the SSH directory remains outside the policy.
 
-The server may write only to `XPRA_SESSION_DIR` and temporary directories.
-Pathname Unix socket creation is denied after the server has created its network,
-display and session sockets and launched its session D-Bus. Existing sockets
-remain usable.
+Strict writes are limited to the client's download directory or the server's
+session and menu-icon cache directories, plus explicitly configured mmap resources.
+Grants for `/`, the whole home directory, `/tmp`, `/var/tmp` or `/dev/shm` are
+rejected. Configure a dedicated download directory before using strict if your
+normal download directory falls back to `/tmp`, for example in `xpra.conf`:
 
-Both policies grant device access below `/dev/dri` and `/dev/accel`. This allows
-graphics APIs and hardware codecs to open render nodes read/write and use
-`ioctl`, without granting permission to create, remove or rename device nodes.
+```ini
+download-path = ~/Downloads
+landlock = strict
+```
+
+Required writable directories are prepared before enforcement. Private temporary
+storage is created with mode `0700` inside the download/session directory, and
+temporary files and automatically allocated mmap files use it. It is reused on
+exec and removed during normal client/server cleanup; helpers do not remove their parent's
+temporary files. An abrupt termination may leave it behind.
+Reconnect after cleanup creates fresh private temporary storage.
+
+Client listener sockets, including listen-mode sockets, are created before confinement. Separate directory rules
+permit socket lookup and cleanup without granting general file writes. In strict
+mode, new pathname sockets are denied afterward. Server display, network and
+session sockets and session D-Bus are also created before enforcement.
+Strict grants socket lookup for Xpra connections, the display, session/system D-Bus,
+PulseAudio and SSH agents using their known paths, rather than broad runtime roots.
+
+Both modes allow graphics devices below `/dev/dri` and `/dev/accel`, and standard
+devices such as `/dev/null`, `/dev/urandom` and pseudo-terminals. Device entries cannot be created,
+removed or renamed. Strict permits the process's own procfs directory and public
+kernel and graphics-driver version files.
+Unless explicitly configured otherwise, strict uses the in-memory GSettings
+backend so desktop settings do not require shared dconf writes. Directory rules
+also permit removing the emptied server session directory.
+
+For local mmap connections involving strict confinement, configure the same
+dedicated shared directory explicitly on both peers, for example
+`--mmap=/run/user/1000/xpra/mmap`. Create it before startup so it is recognized as
+a directory. Automatic private mmap storage is not accessible to another confined
+process; without a shared location, negotiation can fall back to network encoding.
 
 <div class="docs-section-heading" markdown="1">
 
@@ -44,23 +112,23 @@ graphics APIs and hardware codecs to open render nodes read/write and use
 
 </div>
 
-Landlock restrictions are inherited across `fork` and `exec`. Applications and
-helpers started after confinement therefore receive the same policy. This
-currently includes late server commands, audio helpers, printing helpers and
-commands used to open downloaded files or URLs.
+Restrictions are inherited across `fork` and `exec`. Applications and helpers
+started after confinement receive the same policy, including late server
+commands, audio and printing helpers, and commands used to open files or URLs.
+Strict mode can limit uploads, credential updates, desktop helpers and applications
+which need other paths. There is no file-access broker or runtime permission prompt.
+File descriptors opened before confinement retain their existing access.
 
-The socket restriction uses `LANDLOCK_ACCESS_FS_MAKE_SOCK`. It denies creation
-of pathname Unix sockets, not the general `socket()` system call, TCP or UDP
-sockets, or abstract Unix sockets. Network-port and IPC-scope restrictions are
-not enabled.
+Landlock denies disallowed operations; `strict` does not kill the process like
+`--seccomp=strict`. Filesystem rules govern pathname Unix sockets, not the general
+`socket()` syscall, TCP/UDP ports or abstract Unix sockets. Network-port and
+IPC-scope restrictions are not enabled. Landlock can be combined with seccomp.
 
-Denied operations normally fail with `EACCES`. On kernels with Landlock audit
-support, additional details may be available through the system audit log or
-kernel journal. A file-focused trace can identify the denied operation and path:
+Add `-d landlock` to log the selected mode, ABI and filesystem grants. Denials
+normally produce `EACCES`; audit details may be available in the system audit log
+or kernel journal. A trace can identify the denied operation and path:
 
 ```shell
-strace -f -e trace=%file -o /tmp/xpra-landlock.strace env XPRA_LANDLOCK=1 xpra start :100
+strace -f -e trace=%file,network -o /tmp/xpra-landlock.strace xpra attach :100 --landlock=strict
 rg 'EACCES|EPERM' /tmp/xpra-landlock.strace
 ```
-
-Add `network` to the trace expression when investigating socket failures.

@@ -128,6 +128,10 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.process import ProcessServer
     from xpra.server import features
     classes: list[type] = []
+    if features.landlock:
+        # Confine before the remaining subsystems and listeners start.
+        from xpra.server.subsystem.landlock import LandLock
+        classes.append(LandLock)
     # IDServer must come before any subsystem that reads the server uuid.
     # SessionFilesServer must come before any subsystem that appends to
     # its `session_files` list during init().
@@ -451,6 +455,8 @@ class ServerCore(GLibServer):
             try:
                 # noinspection calling-non-callable
                 fn(*args)
+            except InitExit:
+                raise
             except Exception:
                 log.warn(f"Error: in {sub}.{method}", exc_info=True)
 
@@ -462,6 +468,8 @@ class ServerCore(GLibServer):
                 # noinspection calling-non-callable
                 d = fn(*args)
                 log("dispatch-merge: %s()=%s", fn, d)
+            except InitExit:
+                raise
             except Exception:
                 log.warn(f"Error: in {sub}.{method}", exc_info=True)
                 continue

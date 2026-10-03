@@ -14,12 +14,11 @@ import unittest
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
-from xpra.scripts.config import InitException
+from xpra.scripts.config import InitException, make_defaults_struct
 from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
     add_desktop_greeter,
-    enforce_server_landlock,
     harden_server_process,
     has_child_arg,
     init_virtual_devices,
@@ -34,6 +33,19 @@ from xpra.server.subsystem.process import create_runtime_dir, setup_pam_session,
 
 
 class TestMain(unittest.TestCase):
+
+    def test_upgrade_uses_current_landlock_option(self):
+        from xpra.server.subsystem.sessionfiles import apply_config
+        for previous in ("no", "default", "strict"):
+            for current in ("no", "default", "strict"):
+                for args in ([], [f"--landlock={current}"], ["--landlock", current]):
+                    with self.subTest(previous=previous, current=current, args=args):
+                        opts = make_defaults_struct()
+                        opts.mode = "upgrade-seamless"
+                        opts.landlock = current
+                        apply_config(opts, {"landlock": previous, "session-name": "saved-session"}, args)
+                        self.assertEqual(opts.landlock, current)
+                        self.assertEqual(opts.session_name, "saved-session")
 
     def test_create_runtime_dir_concurrently(self):
         uid, gid = os.getuid(), os.getgid()
@@ -89,36 +101,6 @@ class TestMain(unittest.TestCase):
              patch("xpra.scripts.server.LINUX", False):
             harden_server_process()
         harden_process.assert_called_once_with()
-
-    def test_enforce_server_landlock(self):
-        enforce_landlock = Mock()
-        security_module = ModuleType("xpra.platform.posix.security")
-        security_module.enforce_landlock = enforce_landlock
-        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
-             patch.dict(os.environ, {"XPRA_LANDLOCK": "0", "XPRA_SESSION_DIR": "/session"}, clear=False), \
-             patch("xpra.scripts.server.LINUX", True):
-            enforce_server_landlock()
-        enforce_landlock.assert_called_once_with(("/session", ), allow_socket_creation=False)
-
-    def test_enforce_server_landlock_starts_dbus_first(self):
-        events = []
-        enforce_landlock = Mock(side_effect=lambda *args, **kwargs: events.append("landlock"))
-        security_module = ModuleType("xpra.platform.posix.security")
-        security_module.enforce_landlock = enforce_landlock
-        menu_helper_module = ModuleType("xpra.platform.posix.menu_helper")
-        menu_helper_module.prepare_menu_icon_cache_dir = lambda: events.append("cache") or "/cache"
-        dbus = SimpleNamespace(enabled=True, init_dbus_env=lambda: events.append("dbus"))
-        app = SimpleNamespace(get_subsystem=lambda name: dbus if name == "dbus" else None)
-        modules = {
-            "xpra.platform.posix.security": security_module,
-            "xpra.platform.posix.menu_helper": menu_helper_module,
-        }
-        with patch.dict(sys.modules, modules), \
-             patch.dict(os.environ, {"XPRA_LANDLOCK": "1", "XPRA_SESSION_DIR": "/session"}, clear=False), \
-             patch("xpra.scripts.server.LINUX", True):
-            enforce_server_landlock(app)
-        self.assertEqual(events, ["dbus", "cache", "landlock"])
-        enforce_landlock.assert_called_once_with(("/session", "/cache"), allow_socket_creation=False)
 
     def test_splash_enabled(self):
         assert is_splash_enabled("foo", False, False, ":10") is False, "splash should not be enabled for splash=False"

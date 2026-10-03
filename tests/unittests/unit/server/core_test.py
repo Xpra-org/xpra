@@ -11,10 +11,46 @@ from unittest.mock import Mock, patch
 
 from xpra.net.common import Packet
 from xpra.net.socket_util import SocketListener
+from xpra.scripts.config import InitExit
 from xpra.server.core import ServerCore
 
 
 class TestServerCore(unittest.TestCase):
+
+    def test_fatal_subsystem_errors_propagate(self):
+        for merge in (False, True):
+            with self.subTest(merge=merge):
+                server = ServerCore.__new__(ServerCore)
+                error = InitExit(1, "startup failed")
+                following = Mock()
+                server.subsystems = {
+                    "failing": SimpleNamespace(setup=Mock(side_effect=error), get_info=Mock(side_effect=error)),
+                    "following": SimpleNamespace(setup=following, get_info=following),
+                }
+                with self.assertRaises(InitExit) as raised:
+                    if merge:
+                        server._dispatch_merge("get_info")
+                    else:
+                        server._dispatch_fire("setup")
+                self.assertIs(raised.exception, error)
+                following.assert_not_called()
+
+    def test_other_subsystem_errors_warn_and_continue(self):
+        for merge in (False, True):
+            with self.subTest(merge=merge):
+                server = ServerCore.__new__(ServerCore)
+                following = Mock(return_value={"ready": True})
+                server.subsystems = {
+                    "failing": SimpleNamespace(setup=Mock(side_effect=ValueError), get_info=Mock(side_effect=ValueError)),
+                    "following": SimpleNamespace(setup=following, get_info=following),
+                }
+                with patch("xpra.server.core.log") as log:
+                    if merge:
+                        self.assertEqual(server._dispatch_merge("get_info"), {"ready": True})
+                    else:
+                        server._dispatch_fire("setup")
+                following.assert_called_once_with()
+                log.warn.assert_called_once()
 
     def test_handle_invalid_packet_from_detached_protocol(self):
         server = SimpleNamespace(

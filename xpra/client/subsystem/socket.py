@@ -48,7 +48,7 @@ class NetworkListener(StubClientSubsystem):
     """
     __slots__ = (
         "_close_timers", "_potential_protocols", "bind_options", "client_socket_dirs", "local_bind",
-        "mmap_group", "socket_permissions", "sockets",
+        "mmap_group", "socket_permissions", "sockets", "listen_mode", "connection_handler",
     )
     PREFIX = "listener"
 
@@ -62,11 +62,13 @@ class NetworkListener(StubClientSubsystem):
         self.client_socket_dirs = ()
         self.mmap_group = ""
         self.socket_permissions = ""
+        self.listen_mode = False
+        self.connection_handler = self._new_connection
 
     def init(self, opts) -> None:
         self.bind_options = parse_bind_options(opts)
-        self.local_bind = opts.bind
-        self.client_socket_dirs = opts.client_socket_dirs
+        self.local_bind = [bind for bind in opts.bind if bind != "auto"] if self.listen_mode else opts.bind
+        self.client_socket_dirs = opts.socket_dirs if self.listen_mode else opts.client_socket_dirs
         self.mmap_group = opts.mmap_group
         self.socket_permissions = opts.socket_permissions
 
@@ -89,10 +91,9 @@ class NetworkListener(StubClientSubsystem):
 
     def setup_sockets(self) -> None:
         sleep(2)
-        self.create_sockets()
         self.start_listen_sockets()
 
-    def create_sockets(self) -> None:
+    def load(self) -> None:
         self.sockets = create_sockets(self.bind_options)
         log(f"setup_sockets() bind={self.local_bind}, client_socket_dirs={self.client_socket_dirs}")
         try:
@@ -112,6 +113,11 @@ class NetworkListener(StubClientSubsystem):
         else:
             self.sockets += local_sockets
 
+    def get_info(self) -> dict[str, Any]:
+        return {NetworkListener.PREFIX: {
+            "sockets": tuple(str(sock) for sock in self.sockets), "listen-mode": self.listen_mode,
+        }}
+
     def start_listen_sockets(self) -> None:
         for listener in self.sockets:
             log("start_listen_sockets() will add %s socket %s (%s)", listener.socktype, listener.socket, listener.address)
@@ -119,7 +125,7 @@ class NetworkListener(StubClientSubsystem):
 
     def add_listen_socket(self, sock: SocketListener) -> None:
         log("add_listen_socket address=%s", sock.address)
-        add_listen_socket(sock, None, self._new_connection)
+        add_listen_socket(sock, None, self.connection_handler)
 
     def _new_connection(self, listener: SocketListener) -> bool:
         """
