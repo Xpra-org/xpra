@@ -11,7 +11,9 @@ This is a defence-in-depth measure: it does not replace [authentication](Authent
 or [encryption](../Network/Encryption.md), it limits the *damage* a successful
 exploit of one of those threads could do.
 
-**Linux only** (it has no effect on other platforms) and **disabled by default**.
+**Linux only** (it has no effect on other platforms). It is **enabled by default on
+x86_64**, with the non-fatal `errno` action (`--seccomp=default`), and disabled by default
+on the other architectures, where the filters have not been tested.
 
 
 <div class="docs-section-heading" markdown="1">
@@ -44,13 +46,13 @@ client, a server or a [proxy](Proxy-Server.md).
 Use the `--seccomp` command line option:
 
 ```shell
-xpra attach ssl://HOST:PORT/ --seccomp=default
+xpra attach ssl://HOST:PORT/ --seccomp=strict
 ```
 
 | `--seccomp=` | Effect |
 |---|---|
-| `no` | *(default)* no filtering |
-| `default` | enable all four filters with a **non-fatal** action: a blocked syscall fails with a permission error instead of killing anything |
+| `no` | no filtering *(default on architectures other than x86_64)* |
+| `default` | *(default on x86_64)* enable all four filters with a **non-fatal** action: a blocked syscall fails with a permission error instead of killing anything |
 | `strict` | enable all four filters with a **fatal** action: a blocked syscall kills the whole process |
 | a list | enable only the listed threads, ie `decode`, `parse`, `rfb`, `menu` |
 
@@ -68,9 +70,17 @@ xpra attach ... --seccomp=decode,parse
 xpra attach ... --seccomp=decode:kill,parse:errno
 ```
 
-The recommended approach is to start with `--seccomp=default` (nothing is killed,
-violations simply fail) to confirm your normal workflow is unaffected, and only
-then switch to `--seccomp=strict` for full enforcement.
+The recommended approach is to confirm that your normal workflow is unaffected with
+`--seccomp=default` (nothing is killed, violations simply fail), and only then switch
+to `--seccomp=strict` for full enforcement.
+
+When a filter blocks a system call with the non-fatal action, the feature that needed it
+fails, and xpra logs a warning naming the thread the first time it happens:
+```
+Warning: the seccomp filter of the 'parse' thread has probably blocked a system call
+ some features may not work, use '--seccomp=no' to disable the filters
+```
+Please report it, so that it can be fixed.
 
 
 <div class="docs-section-heading" markdown="1">
@@ -113,6 +123,12 @@ is not on its allow-list:
 * **Debug image dumping** writes to disk from the decoding thread, so it is
   automatically turned off (with a warning) whenever seccomp is enabled - this covers
   `XPRA_SAVE_TO_FILE` (frames), `XPRA_SAVE_WINDOW_ICONS` and `XPRA_SAVE_CURSORS`.
+
+* **Hardware decoders** - `nvdec`, `nvjpeg` and `vpl` - are disabled when the `decode`
+  filter is enabled, because they load their libraries on the decoding thread.
+  The client says so when it starts:
+  `hardware decoders disabled by seccomp: nvdec, vpl`.
+  Use `--seccomp=no` (or a list without `decode`) to use them.
 
 * **Codec self-test** must stay enabled (it is, by default). Xpra pre-loads and
   pre-warms every decoder at startup *before* the sandbox is installed; running
