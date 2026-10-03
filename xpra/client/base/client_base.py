@@ -801,6 +801,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.quit(ExitCode.INTERNAL_ERROR)
             return
         ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
+        if not ssl_sock:
+            # `None` means the server closed the connection during the TLS setup:
+            ssllog.error("Error: the connection was closed during the ssl upgrade")
+            conn.close()
+            self.quit(ExitCode.SSL_FAILURE)
+            return
         ssl_sock = ssl_handshake(ssl_sock)
         authlog("ssl handshake complete")
         from xpra.net.bytestreams import SSLSocketConnection
