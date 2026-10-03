@@ -703,16 +703,20 @@ class KeyboardConfig(KeyboardConfigBase):
                 match = lowercase.get(keyname, "")
                 if match:
                     keycode = self.keycode_translation.get(match, -1)
-        # noinspection PyChainedComparisons
-        if keycode < 0 and keyval > 0:
-            # last resort, find using the keyval:
-            if group_mapping := self.keyval_mappings.get(keyval, {}):
+        # Last resort for unknown names and aliases that have lost their XKB level:
+        alias = canonical_keysym(keyname) != keyname
+        if (keycode < 0 or alias) and keyval > 0:
+            # An X11 client sends the native keysym name.  A client using an
+            # alias can be connected while another component updates the XKB
+            # map, so query the current map for its level and group.
+            mappings = get_keyval_mappings() if alias else self.keyval_mappings
+            if group_mapping := mappings.get(keyval, {}):
                 # this keyval was found!
                 # try to preserve the group:
                 entries = group_mapping.get(group, ())
                 if not entries:
                     # this keysym is not available in the client's group,
-                    # use the lowest group that does have it:
+                    # use the lowest group which has this keysym,
                     # (the keycode is usually the same in every group,
                     # so what we are really choosing here is the group to switch to)
                     for kgroup in sorted(group_mapping):
