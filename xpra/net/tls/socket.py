@@ -320,7 +320,10 @@ def ssl_retry(e, display_desc: dict[str, Any]) -> dict[str, Any]:
             return {"ca-certs": cert_file}
         cert_data = e.cert_data
         if not cert_data:
-            # older Python versions can't give us the certificate that failed, download it:
+            # older Python versions can't give us the certificate that failed, download it.
+            # This connects by hostname again, so it may reach a different peer (ie: round-robin DNS),
+            # that's fine: the certificate we show the fingerprint of is the one we save and trust,
+            # and the retry is verified against it, whichever peer it reaches:
             cert_data = get_server_certificate(display_desc, server_hostname)
             if not cert_data:
                 log.warn("Warning: failed to get server certificate from %s:%s", host, port)
