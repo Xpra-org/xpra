@@ -421,5 +421,9 @@ def proxy_connect(options: dict):
     sock.set_proxy(proxy_type, proxy_host, proxy_port, rdns, username, password)
     sock.settimeout(timeout)
     # the destination, which the proxy connects to for us:
-    sock.connect((to.strget("host"), to.intget("port")))
+    try:
+        sock.connect((to.strget("host"), to.intget("port")))
+    except BaseException:
+        sock.close()
+        raise
     return sock
