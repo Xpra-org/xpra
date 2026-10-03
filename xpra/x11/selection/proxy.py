@@ -535,6 +535,10 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         GLib.source_remove(timer)
         log.warn("Warning: %s selection request for '%s' timed out", self._selection, target)
         log.warn(" request %i", request_id)
+        self.no_contents(target, got_contents)
+
+    @staticmethod
+    def no_contents(target: str, got_contents: ClipboardCallback) -> None:
         if target == "TARGETS":
             got_contents("ATOM", 32, b"")
         else:
@@ -627,6 +631,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         incr = self.incr_transfers.pop(atom, None)
         if incr:
             incr.timer = 0
+        # the data is never going to arrive, so don't leave the requests waiting for it:
+        target = atom.split("-", 1)[1]
+        for timer, got_contents in self.local_requests.pop(target, {}).values():
+            GLib.source_remove(timer)
+            self.no_contents(target, got_contents)
 
 
 GObject.type_register(ClipboardProxy)
