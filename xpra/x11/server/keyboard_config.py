@@ -20,7 +20,7 @@ from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.x11.xkbhelper import (
     do_set_keymap, set_all_keycodes, set_keycode_translation,
     get_modifiers_from_meanings, get_modifiers_from_keycodes,
-    clear_modifiers, set_modifiers, map_missing_modifiers,
+    clear_modifiers, set_modifiers, map_missing_modifiers, map_missing_keysyms,
     clean_keyboard_state, get_keycode_mappings, get_keyval_mappings, canonical_keysym,
     DEBUG_KEYSYMS, grok_modifier_map,
 )
@@ -445,6 +445,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     # (used by non X11 clients like osx,win32 or HTML5)
                     # (do not merge with the previous translation table:
                     # `do_set_keymap` has just replaced the keymap it was built from)
+                    map_missing_keysyms(self.keycodes)
                     self.keycode_translation = set_keycode_translation(self.x11_keycodes, self.keycodes)
                 else:
                     self.keycode_translation = {}

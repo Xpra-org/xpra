@@ -292,8 +292,9 @@ class TestX11Keyboard(ServerTestUtil):
             log("%r=%s, modifiers=%s, keysyms=%s, level=%i", keysym, keycode, modifiers, keysyms, level)
             return keysyms[level] if len(keysyms) > level else ""
 
-        # `fr(oss)` has `dead_tilde` on the `AltGr` level of a key:
-        for variant in ("oss", ):
+        # `fr(oss)` has `dead_tilde` on the `AltGr` level of a key,
+        # the plain `fr` layout does not have it at all:
+        for variant in ("oss", ""):
             config = KeyboardConfig()
             config.query_struct = {}
             config.layout = "fr"
