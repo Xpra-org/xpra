@@ -968,6 +968,13 @@ SSL_ATTRIBUTES = (
     "options", "ciphers",
     )
 
+#connections that are upgraded to ssl opportunistically ("tcp" to "ssl", "ws" to "wss")
+#don't verify the server unless the user asks for it explicitly:
+SSL_UPGRADE_DEFAULTS : Dict[str,Any] = {
+    "server-verify-mode" : "none",
+    "check-hostname" : False,
+    }
+
 def get_ssl_attributes(opts, server_side:bool=True, overrides:Optional[dict]=None) -> Dict[str,Any]:
     args = {
         "server-side"   : server_side,

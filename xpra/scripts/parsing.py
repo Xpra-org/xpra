@@ -561,7 +561,11 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
         add_query()
         if opts.ssl.lower() not in FALSE_OPTIONS:
             # always parse ssl options so we can auto-upgrade:
-            desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
+            defaults = None
+            if protocol not in ("ssl", "wss", "quic"):
+                from xpra.net.socket_util import SSL_UPGRADE_DEFAULTS
+                defaults = SSL_UPGRADE_DEFAULTS
+            desc["ssl-options"] = get_ssl_options(desc, opts, cmdline, defaults)
         if protocol in ("ssl", "wss", "quic"):
             alt_scheme = "https"
         else:
@@ -596,7 +600,7 @@ def parse_display_name(error_cb, opts, display_name:str, cmdline=(), find_sessio
     assert False
 
 
-def get_ssl_options(desc, opts, cmdline) -> Dict[str,Any]:
+def get_ssl_options(desc, opts, cmdline, defaults:Optional[Dict[str,Any]]=None) -> Dict[str,Any]:
     port = desc["port"]
     ssl_host = opts.ssl_server_hostname or desc["host"]
     from xpra.net.socket_util import get_ssl_attributes, load_ssl_options
@@ -610,7 +614,9 @@ def get_ssl_options(desc, opts, cmdline) -> Dict[str,Any]:
             any(c.startswith(f"--{x}=") for c in cmdline)
         )
         if incmdline or k not in ssl_options:
-            ssl_options[k] = v
+            #`defaults` replace the config values, but not the ones given explicitly:
+            explicit = incmdline or desc.get(k) is not None
+            ssl_options[k] = v if explicit else (defaults or {}).get(k, v)
     #ensure the hostname is always defined and use `host` if `server_hostname` is not set:
     ssl_options["server-hostname"] = ssl_host
     #this is used by the launcher to disable strict host key checking:
