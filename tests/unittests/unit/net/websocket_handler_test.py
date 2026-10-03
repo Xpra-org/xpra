@@ -92,6 +92,15 @@ class TestRequestReader(unittest.TestCase):
         self.assertEqual(rfile.readline(), b"GET / HTTP/1.1\r\n")
         self.assertEqual(rfile.readline(), b"\r\n")
 
+    def test_request_timeout_not_logged_as_error(self):
+        # before Python 3.10, `socket.timeout` is not a `TimeoutError`,
+        # and that's what `BaseHTTPRequestHandler` passes to `log_error` when the deadline expires:
+        from xpra.net.http import http_handler
+        with patch.object(http_handler, "log") as log:
+            http_handler.HTTPRequestHandler.log_error(None, "Request timed out: %r", socket.timeout("test"))
+        log.error.assert_not_called()
+        log.assert_called_once()
+
 
 class TestWebSocketUpgrade(unittest.TestCase):
 
