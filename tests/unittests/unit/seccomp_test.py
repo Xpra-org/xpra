@@ -157,6 +157,40 @@ class SeccompTest(unittest.TestCase):
                 proc = subprocess.run((sys.executable, "-c", code), capture_output=True, text=True)
                 self.assertEqual(proc.returncode, 0, f"{name} policy: {proc.returncode=}, {proc.stderr}")
 
+    def test_malloc_arenas_in_sandboxed_threads(self):
+        # once there are more than 8 malloc arenas, the first thread to need a new one makes
+        # glibc compute the arena limit, by reading `/sys/devices/system/cpu/online`:
+        # this used to randomly kill the server under `--seccomp=strict`.
+        # Threads started from a filtered thread inherit its filter, and here they are the
+        # ones contending for arenas:
+        code = textwrap.dedent("""
+            import threading
+
+            from xpra.seccomp import install_filter
+            from xpra.seccomp.draw import DECODE_SYSCALLS
+
+            def work(barrier):
+                barrier.wait()
+                for _ in range(200):
+                    chunks = [bytearray(256 * 1024) for _ in range(4)]
+                    del chunks
+
+            def sandboxed():
+                install_filter(DECODE_SYSCALLS, "kill_process")
+                barrier = threading.Barrier(64)
+                threads = [threading.Thread(target=work, args=(barrier, )) for _ in range(64)]
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join()
+
+            thread = threading.Thread(target=sandboxed)
+            thread.start()
+            thread.join()
+        """)
+        proc = subprocess.run((sys.executable, "-c", code), capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, f"{proc.returncode=}, {proc.stderr}")
+
     def test_parse_blocks_file_syscalls(self):
         # every file/exec packet handler now runs off the parse thread, so the parse
         # filter drops file access too (see docs/Usage/Seccomp.md):

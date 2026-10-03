@@ -180,6 +180,7 @@ precedence over the option**:
 | `XPRA_SECCOMP_RFB_ACTION` | action for the VNC client filter |
 | `XPRA_SECCOMP_MENU_ACTION` | action for the menu loading filter |
 | `XPRA_MALLOC_PREWARM` | work around a glibc `openat` at thread exit (on by default - see the *glibc malloc caveat* in the technical details below) |
+| `XPRA_MALLOC_ARENA_MAX` | work around a glibc `openat` when creating a new malloc arena (on by default - see the *glibc malloc caveat* below) |
 
 Each `*_ACTION` accepts `errno`, `kill`, `kill_thread`, `kill_process`, `log` or
 `allow` (default: `kill_process`).
@@ -322,18 +323,24 @@ This is why the pre-warm above matters, and why the debug file-dumps
 `xpra/client/subsystem/cursor.py`) are disabled under seccomp.
 
 **glibc malloc caveat:** not every `openat` comes from xpra's own code. glibc reads
-`/proc/sys/vm/overcommit_memory` - and caches the answer for the whole process - the
-first time it trims a thread's malloc arena, and it does that when a thread *exits*
-(`__malloc_arena_thread_freeres` → `_int_free_maybe_trim` → `heap_trim` →
-`shrink_heap` → `check_may_shrink_heap`). If the first thread to reach that point is a
-filtered one, the read is blocked and the process is killed - not while decoding, but at
-shutdown, when the decode thread exits. It went unnoticed because the codec self-test
-allocates enough on the decode thread, before the filter, to trigger the read by luck.
-`prewarm_malloc_arena()` (`xpra/client/subsystem/decode.py`) now provokes it
-deterministically from a throwaway thread while the decode thread is still unfiltered.
-It only runs when a filter is actually going to be installed, and `XPRA_MALLOC_PREWARM=0`
-turns it off (at the risk of that `SIGSYS` at shutdown) should it ever misbehave on a
-different libc.
+some files lazily - and caches the answer for the whole process - from whichever thread
+gets there first. If that is a filtered thread, the read is blocked and the process is
+killed. `xpra/seccomp/glibc.py` gets both reads out of the way, once per process, from
+`install_filter()` - before the first filter is installed:
+
+* `/proc/sys/vm/overcommit_memory` is read the first time glibc trims a thread's malloc
+  arena, and it does that when a thread *exits* (`__malloc_arena_thread_freeres` →
+  `_int_free_maybe_trim` → `heap_trim` → `shrink_heap` → `check_may_shrink_heap`).
+  For the client's decode thread, that is at shutdown; the network parse thread exits
+  on every disconnection. `prewarm_malloc_arena()` provokes the read from a throwaway
+  thread. `XPRA_MALLOC_PREWARM=0` turns it off, at the risk of that `SIGSYS`.
+* `/sys/devices/system/cpu/online` (and `/proc/stat` if that fails) is read by
+  `get_nprocs()` when glibc first computes the malloc arena limit: that is when a thread
+  needs a new arena once there are more than 8 of them (`tcache_init` → `arena_get2`),
+  so which thread gets there first depends on lock contention - this one randomly killed
+  the server. `set_arena_max()` sets `M_ARENA_MAX` with `mallopt()` to the value glibc
+  would have computed (8 arenas per core on 64-bit), so glibc never needs to read those
+  files. `XPRA_MALLOC_ARENA_MAX=0` turns it off.
 
 <div class="docs-section-heading" markdown="1">
 

@@ -47,5 +47,7 @@ def block_async_signals() -> None:
 def install_filter(syscalls: tuple[str, ...], action: str, masked_rules=()) -> None:
     # every filter must be installed through this function, on the thread it applies to:
     from xpra.seccomp import _native
+    from xpra.seccomp.glibc import prepare
+    prepare()
     block_async_signals()
     _native.install_filter(syscalls, action, masked_rules)

@@ -11,56 +11,13 @@ from collections.abc import Callable
 
 from xpra.os_util import LINUX
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.util.env import envbool, envint
-from xpra.util.thread import make_thread, start_thread
+from xpra.util.thread import make_thread
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
 log = Logger("client", "decode")
 
 WorkItem = tuple[Callable, tuple]
-
-# see `prewarm_malloc_arena`:
-PREWARM: bool = envbool("XPRA_MALLOC_PREWARM", True)
-PREWARM_CHUNK: int = envint("XPRA_MALLOC_PREWARM_CHUNK", 128 * 1024)
-PREWARM_COUNT: int = envint("XPRA_MALLOC_PREWARM_COUNT", 64)
-PREWARM_TIMEOUT: int = envint("XPRA_MALLOC_PREWARM_TIMEOUT", 10)
-
-
-def prewarm_malloc_arena() -> None:
-    """
-    glibc reads `/proc/sys/vm/overcommit_memory` - and caches the answer for the whole
-    process - the first time it trims a thread's malloc arena. That happens when a thread
-    *exits*: `__malloc_arena_thread_freeres` -> `_int_free_maybe_trim` -> `heap_trim` ->
-    `shrink_heap` -> `check_may_shrink_heap`. If the first thread to get there is a
-    filtered one, the `openat` is blocked and the process is killed - not while decoding,
-    but at shutdown, when the decode thread finally exits.
-    So provoke that read here, from a throwaway thread, while we are still unfiltered.
-    (harmless on a libc that does not do this - it is just some allocation churn)
-
-    It has to be a thread *exit*: there is no cheaper way in, and both of the obvious
-    shortcuts have been tried and do not work.
-    * `check_may_shrink_heap` (and `heap_trim` / `shrink_heap`) are `static` in glibc:
-      they are not in the dynamic symbol table, so `ctypes` cannot call them.
-    * `malloc_trim(0)` *is* exported, but `mtrim()` consolidates, `madvise`s the free
-      chunks and then calls `systrim()` - the main-arena/`sbrk` trim. It never reaches
-      `heap_trim`, so it never reads the file. Neither does a plain large `malloc`/`free`
-      (nothing left at the top of the heap to shrink). Only the arena teardown does.
-
-    Only worth doing when a filter is actually going to be installed, and it can be turned
-    off with `XPRA_MALLOC_PREWARM=0` - at the risk of that `SIGSYS` at shutdown.
-    """
-    if not PREWARM:
-        log("prewarm_malloc_arena() disabled")
-        return
-
-    def churn() -> None:
-        chunks = [bytes(PREWARM_CHUNK) for _ in range(PREWARM_COUNT)]
-        chunks.clear()
-
-    log("prewarm_malloc_arena() %i x %i bytes", PREWARM_COUNT, PREWARM_CHUNK)
-    thread = start_thread(churn, "malloc-prewarm", daemon=True)
-    thread.join(PREWARM_TIMEOUT)
 
 
 class Decode(StubClientSubsystem):
@@ -143,20 +100,6 @@ class Decode(StubClientSubsystem):
                 continue
             with log.trap_error("Error preloading %s", subsystem):
                 subsystem.preload_decode()
-        # last: it only matters if we are about to install a filter,
-        # and it wants the allocations above to have happened already
-        if self.seccomp_enabled():
-            with log.trap_error("Error pre-warming the malloc arena"):
-                prewarm_malloc_arena()
-
-    @staticmethod
-    def seccomp_enabled() -> bool:
-        # the same gate `install_thread` below uses, asked ahead of time:
-        try:
-            from xpra.seccomp import is_enabled
-        except ImportError:
-            return False
-        return is_enabled()
 
     @staticmethod
     def install_seccomp() -> None:
