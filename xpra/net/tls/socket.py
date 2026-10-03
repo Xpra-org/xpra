@@ -235,6 +235,30 @@ def get_cert_fingerprint(cert_data: str) -> str:
     return ":".join(digest[i:i + 2] for i in range(0, len(digest), 2))
 
 
+def get_cert_file_fingerprint(filename: str) -> str:
+    try:
+        with open(filename, encoding="latin1") as f:
+            return get_cert_fingerprint(f.read())
+    except OSError:
+        get_ssl_logger()("failed to read %r", filename, exc_info=True)
+        return ""
+
+
+def warn_certificate_changed(cert_file: str, cert_data: str) -> None:
+    """
+    Like ssh does when a host key changes, we don't offer to accept the new certificate:
+    the server may have been re-configured, or the connection may have been intercepted.
+    """
+    log = get_ssl_logger()
+    log.warn("Warning: the server's certificate does not match the one accepted previously")
+    log.warn(" previous certificate: %r", cert_file)
+    log.warn(" previous SHA256 fingerprint: %s", get_cert_file_fingerprint(cert_file) or "unknown")
+    log.warn(" new SHA256 fingerprint: %s", get_cert_fingerprint(cert_data) or "unknown")
+    log.warn(" if the server's certificate has been changed legitimately,")
+    # the saved options refer to this certificate, so remove both:
+    log.warn(" delete %r and connect again", os.path.dirname(cert_file))
+
+
 def get_server_certificate(display_desc: dict[str, Any], server_hostname: str) -> str:
     """
     Download the server's certificate without verifying it.
@@ -317,12 +341,22 @@ def ssl_retry(e, display_desc: dict[str, Any]) -> dict[str, Any]:
     # self-signed cert:
     if verify_code == SSL_VERIFY_SELF_SIGNED:
         ca_certs = ssl_options.get("ca-certs", "default")
-        if ca_certs not in ("", "default"):
-            log("self-signed cert does not match %r", ca_certs)
-            return {}
         # perhaps we already have the certificate for this hostname
         cert_file = find_ssl_config_file(server_hostname, port, CERT_FILENAME)
+        # older Python versions can't tell us which certificate failed, assume it has changed:
+        changed = bool(cert_file) and (not e.cert_data or get_cert_fingerprint(e.cert_data) != get_cert_file_fingerprint(cert_file))
+        if ca_certs not in ("", "default"):
+            if changed and os.path.abspath(ca_certs) == cert_file:
+                # we have connected with the certificate we saved, and it no longer matches:
+                warn_certificate_changed(cert_file, e.cert_data)
+            else:
+                log("self-signed cert does not match %r", ca_certs)
+            return {}
         if cert_file:
+            if e.cert_data and changed:
+                # don't retry with a certificate we already know won't match:
+                warn_certificate_changed(cert_file, e.cert_data)
+                return {}
             log("retrying with %r", cert_file)
             return {"ca-certs": cert_file}
         cert_data = e.cert_data
