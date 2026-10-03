@@ -141,11 +141,12 @@ class ScreenDesktopModel(DesktopModelBase):
             else:
                 with xsync:
                     have_size = (rw, rh) in RandR.get_xrr_screen_sizes()
-                if not have_size:
+                if not have_size and self.resize_exact:
                     # the mode must exist before it can be set: this isn't specific
                     # to the dummy driver, a real Xvfb needs it too (as long as it was
                     # started with enough headroom in its maximum size) - but not all
-                    # drivers support adding modes on the fly, so don't treat failure as fatal:
+                    # drivers support adding modes on the fly, so don't treat failure as fatal.
+                    # `resize_exact` is never set for real GPU outputs:
                     with xswallow:
                         RandR.add_screen_size(rw, rh)
                 with xsync:
