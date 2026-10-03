@@ -18,6 +18,9 @@ jobs:
     #   before it can be made required.
     # * `no-backwards-compatibility`: `XPRA_BACKWARDS_COMPATIBLE=0`, exercising
     #   the code paths that will remain once the legacy ones are removed
+    # * `seccomp`: every xpra server / client / command started by the tests runs
+    #   with `--seccomp=strict`, so a blocked syscall kills it and fails the test.
+    #   Non-blocking for now, see `docs/Usage/Seccomp.md`.
     strategy:
       fail-fast: false
       matrix:
@@ -25,14 +28,21 @@ jobs:
           - name: "baseline"
             cythonize: "without"
             compat: "1"
+            seccomp: ""
           - name: "cythonize_more"
             cythonize: "with"
             compat: "1"
+            seccomp: ""
           - name: "no-backwards-compatibility"
             cythonize: "without"
             compat: "0"
+            seccomp: ""
+          - name: "seccomp"
+            cythonize: "without"
+            compat: "1"
+            seccomp: "strict"
     name: "unittest (${{ matrix.name }})"
-    continue-on-error: ${{ matrix.cythonize == 'with' }}
+    continue-on-error: ${{ matrix.cythonize == 'with' || matrix.seccomp != '' }}
     steps:
     - uses: actions/checkout@v7
 
@@ -81,6 +91,8 @@ jobs:
         CYTHONIZE_MORE: ${{ matrix.cythonize }}
         # build the optional terminal client so its tests run:
         XPRA_BACKWARDS_COMPATIBLE: ${{ matrix.compat }}
+        # honoured by tests/unittests/unit/server_test_util.py: adds `--seccomp=...` to every xpra command
+        XPRA_TEST_SECCOMP: ${{ matrix.seccomp }}
       run: >
         python3 setup.py unittests
         --skip-fail unit.client.splash_test

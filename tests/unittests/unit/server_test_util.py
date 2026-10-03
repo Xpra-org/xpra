@@ -22,6 +22,8 @@ log = Logger("test")
 SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
 STOP_WAIT_TIMEOUT = envint("XPRA_STOP_WAIT_TIMEOUT", 20)
 CLEAN_SOCKETS_TIMEOUT = envint("XPRA_TEST_CLEAN_SOCKETS_TIMEOUT", 15)
+# run every xpra command with `--seccomp=MODE`, ie: `strict` to catch blocked syscalls:
+TEST_SECCOMP = os.environ.get("XPRA_TEST_SECCOMP", "")
 
 
 def log_gap(N=10) -> None:
@@ -56,6 +58,8 @@ class ServerTestUtil(ProcessTestUtil):
             cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no"]
             for x in cls.dotxpra._sockdirs:
                 cls.default_xpra_args += ["--socket-dirs=%s" % x]
+        if TEST_SECCOMP:
+            cls.default_xpra_args.append(f"--seccomp={TEST_SECCOMP}")
         cls.existing_displays = cls.displays()
         # a previous run may have left sockets behind:
         # remove them now, so that the `xpra list` in `setUp`
@@ -176,6 +180,8 @@ class ServerTestUtil(ProcessTestUtil):
                 break
             time.sleep(1)
         if r != 0:
+            if server_proc.poll() is not None:
+                self.show_proc_error(server_proc, "server terminated")
             self.show_proc_error(version, "version check failed for %s, returned %s" % (
                 display, exit_str(r)))
         return server_proc

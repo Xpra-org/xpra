@@ -529,6 +529,28 @@ work inline on the parse thread instead (the previous behaviour).
 
 <div class="docs-section-heading" markdown="1">
 
+## Testing
+
+</div>
+
+`tests/unittests/unit/seccomp_test.py` checks the policies themselves.
+To find out what a real session needs, the integration tests can be run with every
+xpra server, client and command they start sandboxed:
+
+```shell
+XPRA_TEST_SECCOMP=strict python3 setup.py unittests
+```
+
+`XPRA_TEST_SECCOMP` is added as `--seccomp=VALUE` to the xpra command line
+(`tests/unittests/unit/server_test_util.py`), so the test runner itself is not
+filtered. With `strict`, a blocked syscall kills the process with `SIGSYS`, and the
+test failure says so. The `seccomp` leg of the GitHub `test.yml` workflow does
+exactly this. To identify the syscall, re-run the failing command by hand under
+`strace -f -Z` with `--seccomp=default`: the call shows up as failing with `EPERM`.
+
+
+<div class="docs-section-heading" markdown="1">
+
 ## Future work
 
 </div>

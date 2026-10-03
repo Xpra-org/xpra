@@ -6,6 +6,7 @@
 
 import os
 import shutil
+import signal
 import sys
 import time
 import tempfile
@@ -67,7 +68,11 @@ def show_proc_error(proc, msg) -> NoReturn:
     if not proc:
         raise Exception("command failed to start: %s" % msg)
     log.warn("%s failed:", proc.command)
-    log.warn("returncode=%s", proc.poll())
+    returncode = proc.poll()
+    log.warn("returncode=%s", returncode)
+    sigsys = getattr(signal, "SIGSYS", 0)
+    if sigsys and returncode in (-sigsys, 128 + sigsys):
+        msg += " (killed by SIGSYS: a seccomp filter blocked a system call, see docs/Usage/Seccomp.md)"
     # include the subprocess output in the exception itself:
     # `log.warn` output ends up detached from the traceback in the test logs,
     # so the captured stdout/stderr would otherwise be effectively hidden
