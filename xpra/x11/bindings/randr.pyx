@@ -118,18 +118,26 @@ def dpi96(v) -> int:
     return round(v * 25.4 / 96)
 
 
+def vrefresh_hz_exact(vrefresh):
+    """
+    convert a refresh rate to Hz, without rounding.
+    The value may be given in Hz or in mHz, and defaults to `DEFAULT_REFRESH_RATE`.
+    """
+    if vrefresh <= 0:
+        vrefresh = DEFAULT_REFRESH_RATE
+    if vrefresh >= 1000:
+        # the value is in mHz:
+        return vrefresh / 1000
+    return vrefresh
+
+
 def vrefresh_hz(vrefresh) -> int:
     """
     round a refresh rate to the nearest integer Hz.
     Clients report jittery values which we don't want to mistake
     for monitor configuration changes: 59951 and 59952 mHz are both 60Hz.
     """
-    if vrefresh <= 0:
-        vrefresh = DEFAULT_REFRESH_RATE
-    if vrefresh >= 1000:
-        # the value is in mHz:
-        vrefresh = vrefresh / 1000
-    return round(vrefresh)
+    return round(vrefresh_hz_exact(vrefresh))
 
 def get_rotations(Rotation v):
     rotations = []
@@ -1303,20 +1311,13 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         continue
                     noutput = 1
                     mode = 0
-                    vrefresh = 0
                     hz = 60.0
                     x, y, width, height = 0, 0, 1024, 768
                     if m:
                         if m.get("primary", False):
                             primary = i
                         x, y, width, height = m["geometry"]
-                        vrefresh = m.get("refresh-rate", 0)
-                        if vrefresh <= 0:
-                            vrefresh = DEFAULT_REFRESH_RATE
-                        if vrefresh < 1000:
-                            hz = vrefresh
-                        else:
-                            hz = vrefresh / 1000
+                        hz = vrefresh_hz_exact(m.get("refresh-rate", 0))
                         hzstr = str(hz)
                         if hzstr.find(".") > 0:
                             hzstr = hzstr.rstrip("0").rstrip(".")
