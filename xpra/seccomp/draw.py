@@ -85,6 +85,7 @@ BASE_SYSCALLS: tuple[str, ...] = (
     "rseq",
     "rt_sigaction",
     "rt_sigprocmask",
+    "rt_sigreturn",
     "sched_getaffinity",
     "sched_yield",
     "select",
@@ -133,10 +134,10 @@ DECODE_SYSCALLS: tuple[str, ...] = tuple(s for s in BASE_SYSCALLS if s not in FI
 def install_thread() -> bool:
     if not is_enabled():
         return False
-    from xpra.seccomp import _native
+    from xpra.seccomp import install_filter
     action = get_action()
     log("installing decode thread seccomp policy with action=%s", action)
-    _native.install_filter(DECODE_SYSCALLS, action)
+    install_filter(DECODE_SYSCALLS, action)
     return True
 
 

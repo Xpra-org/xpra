@@ -238,6 +238,15 @@ the parse thread's filter). This is how the `challenge` handler stays unsandboxe
 auth backends may `fork`/`exec` a helper (kerberos/gss/exec/u2f/pinentry) or read
 files, so `_process_challenge` runs on the main thread.
 
+**Signals.** A signal sent to the process (`SIGCHLD` when a subprocess exits,
+`SIGINT`, ...) is delivered to any thread that does not block it, and the C-level
+Python signal handler then runs on that thread: it writes to the signal wakeup fd,
+which a filter may not allow. So every filter is installed through
+`xpra.seccomp.install_filter()`, which first blocks all the asynchronous signals on
+that thread (the faults raised by the thread itself, `SIGSEGV` and friends, stay
+unblocked). Python only runs its signal handlers on the main thread anyway.
+Before this, `--seccomp=strict` killed the server as soon as a subprocess exited.
+
 The server also starts its shared background worker during `ServerCore.init()`,
 before subsystem setup. Menu loading posts completion callbacks to this worker;
 creating it lazily from the filtered menu thread would make unrelated work inherit

@@ -77,10 +77,10 @@ def is_enabled() -> bool:
 def install_thread() -> bool:
     if not is_enabled():
         return False
-    from xpra.seccomp import _native
+    from xpra.seccomp import install_filter
     action = get_action()
     log("installing menu loading thread seccomp policy with action=%s", action)
-    _native.install_filter(MENU_SYSCALLS, action, MENU_MASKED_RULES)
+    install_filter(MENU_SYSCALLS, action, MENU_MASKED_RULES)
     return True
 
 

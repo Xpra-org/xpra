@@ -48,6 +48,7 @@ class SeccompTest(unittest.TestCase):
 
     def test_install_menu_thread_uses_masked_rules(self):
         with patch.object(seccomp_menu, "is_enabled", return_value=True), \
+             patch("xpra.seccomp.block_async_signals"), \
              patch("xpra.seccomp._native.install_filter") as install_filter:
             self.assertTrue(seccomp_menu.install_thread())
         install_filter.assert_called_once_with(
@@ -107,6 +108,54 @@ class SeccompTest(unittest.TestCase):
             denied(lambda: threading.Thread(target=lambda: None).start())
         """)
         subprocess.run((sys.executable, "-c", code), check=True)
+
+    def test_signals_not_delivered_to_sandboxed_threads(self):
+        # a process-directed signal can be delivered to any thread that does not block it,
+        # and returning from its handler needs syscalls (`write` to the wakeup fd, `rt_sigreturn`)
+        # that a filtered thread may not make - which killed the server under `--seccomp=strict`
+        # as soon as a subprocess exited. The main thread blocks the signal here, so that the
+        # sandboxed thread would be the only candidate for it:
+        policies = {
+            "decode": ("xpra.seccomp.draw", "DECODE_SYSCALLS", "()"),
+            "parse": ("xpra.seccomp.parse", "PARSE_SYSCALLS", "()"),
+            "rfb": ("xpra.seccomp.rfb", "RFB_SYSCALLS", "()"),
+            "menu": ("xpra.seccomp.menu", "MENU_SYSCALLS", "MENU_MASKED_RULES"),
+        }
+        for name, (module, syscalls, rules) in policies.items():
+            code = textwrap.dedent(f"""
+                import os
+                import signal
+                import threading
+                import time
+
+                from xpra.seccomp import install_filter
+                from {module} import *
+
+                signal.signal(signal.SIGUSR1, lambda *_args: None)
+                rfd, wfd = os.pipe()
+                os.set_blocking(wfd, False)
+                signal.set_wakeup_fd(wfd)
+                ready = threading.Event()
+                done = threading.Event()
+
+                def sandboxed():
+                    install_filter({syscalls}, "kill_process", {rules})
+                    ready.set()
+                    done.wait()
+
+                thread = threading.Thread(target=sandboxed)
+                thread.start()
+                ready.wait()
+                signal.pthread_sigmask(signal.SIG_BLOCK, {{signal.SIGUSR1}})
+                os.kill(os.getpid(), signal.SIGUSR1)
+                time.sleep(0.2)
+                assert signal.SIGUSR1 in signal.sigpending()
+                done.set()
+                thread.join()
+            """)
+            with self.subTest(policy=name):
+                proc = subprocess.run((sys.executable, "-c", code), capture_output=True, text=True)
+                self.assertEqual(proc.returncode, 0, f"{name} policy: {proc.returncode=}, {proc.stderr}")
 
     def test_parse_blocks_file_syscalls(self):
         # every file/exec packet handler now runs off the parse thread, so the parse
