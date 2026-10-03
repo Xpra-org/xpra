@@ -260,6 +260,7 @@ class TestSSLVerifyFailure(unittest.TestCase):
         # we must not offer to replace the certificate we accepted, but we must say why we stopped:
         confirm.assert_not_called()
         warn.assert_called_once()
+        self.assertIn("does not match the one accepted previously", str(cm.exception))
 
     def test_changed_certificate(self) -> None:
         mods = ssl_retry(self.verify_failure(), self.display_desc)

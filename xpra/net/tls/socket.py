@@ -244,12 +244,14 @@ def get_cert_file_fingerprint(filename: str) -> str:
         return ""
 
 
-def warn_certificate_changed(cert_file: str, cert_data: str) -> None:
+def warn_certificate_changed(e: InitExit, cert_file: str, cert_data: str) -> None:
     """
     Like ssh does when a host key changes, we don't offer to accept the new certificate:
     the server may have been re-configured, or the connection may have been intercepted.
+    The log is not visible to everyone, so we also explain it in the error that the user is shown.
     """
     log = get_ssl_logger()
+    e.args = (f"the server's certificate does not match the one accepted previously: {e}", )
     log.warn("Warning: the server's certificate does not match the one accepted previously")
     log.warn(" previous certificate: %r", cert_file)
     log.warn(" previous SHA256 fingerprint: %s", get_cert_file_fingerprint(cert_file) or "unknown")
@@ -348,14 +350,14 @@ def ssl_retry(e, display_desc: dict[str, Any]) -> dict[str, Any]:
         if ca_certs not in ("", "default"):
             if changed and os.path.abspath(ca_certs) == cert_file:
                 # we have connected with the certificate we saved, and it no longer matches:
-                warn_certificate_changed(cert_file, e.cert_data)
+                warn_certificate_changed(e, cert_file, e.cert_data)
             else:
                 log("self-signed cert does not match %r", ca_certs)
             return {}
         if cert_file:
             if e.cert_data and changed:
                 # don't retry with a certificate we already know won't match:
-                warn_certificate_changed(cert_file, e.cert_data)
+                warn_certificate_changed(e, cert_file, e.cert_data)
                 return {}
             log("retrying with %r", cert_file)
             return {"ca-certs": cert_file}
