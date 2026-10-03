@@ -560,8 +560,11 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         # parse ssl options when ssl is mandatory for this protocol,
         # or when the connection may be auto-upgraded to ssl;
         # avoid importing the ssl libraries otherwise:
-        if protocol in ("ssl", "wss", "quic") or str(opts.ssl_upgrade).lower() not in FALSE_OPTIONS:
+        if protocol in ("ssl", "wss", "quic"):
             desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
+        elif str(opts.ssl_upgrade).lower() not in FALSE_OPTIONS:
+            from xpra.net.tls.common import SSL_UPGRADE_DEFAULTS
+            desc["ssl-options"] = get_ssl_options(desc, opts, cmdline, SSL_UPGRADE_DEFAULTS)
         if protocol in ("ssl", "wss", "quic"):
             alt_scheme = "https"
         else:
@@ -623,7 +626,7 @@ def parse_display_name(opts, display_name: str, cmdline=(),
     raise InitExit(ExitCode.UNSUPPORTED, f"unknown protocol {protocol!r} for display name: {display_name!r}")
 
 
-def get_ssl_options(desc, opts, cmdline) -> dict[str, Any]:
+def get_ssl_options(desc, opts, cmdline, defaults: dict[str, Any] | None = None) -> dict[str, Any]:
     try:
         from xpra.net.tls.file import get_ssl_attributes
         from xpra.net.tls.file import load_ssl_options
@@ -638,7 +641,9 @@ def get_ssl_options(desc, opts, cmdline) -> dict[str, Any]:
         x = f"ssl-{k}"
         incmdline = (f"--{x}" in cmdline or f"--no-{x}" in cmdline or any(c.startswith(f"--{x}=") for c in cmdline))
         if incmdline or k not in ssl_options:
-            ssl_options[k] = v
+            # `defaults` replace the config values, but not the ones given explicitly:
+            explicit = incmdline or desc.get(k) is not None
+            ssl_options[k] = v if explicit else (defaults or {}).get(k, v)
     # ensure the hostname is always defined and use `host` if `server_hostname` is not set:
     ssl_options["server-hostname"] = ssl_host
     # this is used by the launcher to disable strict host key checking:

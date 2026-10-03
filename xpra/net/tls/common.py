@@ -5,7 +5,7 @@
 
 import sys
 from time import monotonic
-from typing import Sequence, NoReturn
+from typing import Any, Sequence, NoReturn
 
 from xpra.common import noerr
 from xpra.exit_codes import ExitCode, ExitValue
@@ -45,6 +45,13 @@ SSL_ATTRIBUTES: Sequence[str] = (
     "check-hostname", "server-hostname",
     "options", "ciphers",
 )
+
+# connections that are upgraded to ssl opportunistically ("tcp" to "ssl", "ws" to "wss")
+# don't verify the server unless the user asks for it explicitly:
+SSL_UPGRADE_DEFAULTS: dict[str, Any] = {
+    "server-verify-mode": "none",
+    "check-hostname": False,
+}
 
 logger = None
 
