@@ -29,6 +29,8 @@ GLib = gi_import("GLib")
 log = Logger("x11", "clipboard")
 
 CONVERT_TIMEOUT = env_timeout("CONVERT", 100)
+# once the owner has started an incremental transfer, the whole of it must complete within:
+INCR_TIMEOUT = env_timeout("INCR", 1000, max_time=60000)
 
 X11Window = X11WindowBindings()
 CurrentTime: Final[int] = constants["CurrentTime"]
@@ -535,6 +537,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         GLib.source_remove(timer)
         log.warn("Warning: %s selection request for '%s' timed out", self._selection, target)
         log.warn(" request %i", request_id)
+        if target not in self.local_requests:
+            # nobody is waiting for the rest of the data:
+            self.cancel_incr_transfer(f"{self._selection}-{target}")
         self.no_contents(target, got_contents)
 
     @staticmethod
@@ -543,6 +548,14 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             got_contents("ATOM", 32, b"")
         else:
             got_contents("", 0, b"")
+
+    def extend_request_timers(self, target: str, timeout: int) -> None:
+        # the owner has answered, `CONVERT_TIMEOUT` is too short for the data to follow:
+        target_requests = self.local_requests.get(target, {})
+        for request_id, (timer, got_contents) in tuple(target_requests.items()):
+            GLib.source_remove(timer)
+            timer = GLib.timeout_add(timeout, self.timeout_get_contents, target, request_id)
+            target_requests[request_id] = (timer, got_contents)
 
     def do_property_notify(self, event) -> None:
         log("do_property_notify(%s)", event)
@@ -569,6 +582,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     log("incremental clipboard data of size %s on %r", size, atom)
                     self.incr_transfers[atom] = IncrTransfer(size)
                     self.reschedule_incr_timer(atom)
+                    self.extend_request_timers(target, INCR_TIMEOUT)
                     X11Window.XDeleteProperty(self.xid, atom)
                     return
                 if incr is not None:
