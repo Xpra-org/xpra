@@ -706,9 +706,8 @@ class KeyboardConfig(KeyboardConfigBase):
         # Last resort for unknown names and aliases that have lost their XKB level:
         alias = canonical_keysym(keyname) != keyname
         if (keycode < 0 or alias) and keyval > 0:
-            # An X11 client sends the native keysym name.  A client using an
-            # alias can be connected while another component updates the XKB
-            # map, so query the current map for its level and group.
+            # An X11 client sends the native keysym name. Resolve an alias
+            # against the current XKB map so that its level is retained.
             mappings = get_keyval_mappings() if alias else self.keyval_mappings
             if group_mapping := mappings.get(keyval, {}):
                 # this keyval was found!
