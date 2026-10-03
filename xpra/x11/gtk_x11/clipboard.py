@@ -8,7 +8,7 @@ import struct
 from typing import List, Dict, Tuple, Iterable, Callable, Any
 from gi.repository import GLib, GObject, Gdk  # @UnresolvedImport
 
-from xpra.util import envbool
+from xpra.util import envbool, envint
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -50,6 +50,11 @@ sizeof_long = struct.calcsize(b'@L')
 MAX_DATA_SIZE : int = 4*1024*1024
 
 RECLAIM = envbool("XPRA_CLIPBOARD_RECLAIM", True)
+#once the owner has started an incremental transfer, the whole of it must complete within:
+INCR_TIMEOUT = envint("XPRA_CLIPBOARD_INCR_TIMEOUT", 1000)
+if not 0<INCR_TIMEOUT<=60000:
+    log.warn("Warning: invalid value for 'XPRA_CLIPBOARD_INCR_TIMEOUT'")
+    INCR_TIMEOUT = max(0, min(60000, INCR_TIMEOUT))
 
 BLACKLISTED_CLIPBOARD_CLIENTS: List[str] = os.environ.get(
     "XPRA_BLACKLISTED_CLIPBOARD_CLIENTS",
@@ -540,6 +545,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         GLib.source_remove(timer)
         log.warn("Warning: %s selection request for '%s' timed out", self._selection, target)
         log.warn(" request %i", request_id)
+        if target not in self.local_requests:
+            #nobody is waiting for the rest of the data:
+            self.cancel_incr_transfer(f"{self._selection}-{target}")
         self.no_contents(target, got_contents)
 
     @staticmethod
@@ -548,6 +556,14 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             got_contents("ATOM", 32, b"")
         else:
             got_contents(None, None, None)
+
+    def extend_request_timers(self, target:str, timeout:int) -> None:
+        #the owner has answered, `CONVERT_TIMEOUT` is too short for the data to follow:
+        target_requests = self.local_requests.get(target, {})
+        for request_id, (timer, got_contents) in tuple(target_requests.items()):
+            GLib.source_remove(timer)
+            timer = GLib.timeout_add(timeout, self.timeout_get_contents, target, request_id)
+            target_requests[request_id] = (timer, got_contents)
 
     def do_property_notify(self, event) -> None:
         log("do_property_notify(%s)", event)
@@ -577,6 +593,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     log("incremental clipboard data of size %s on %r", size, atom)
                     self.incr_transfers[atom] = IncrTransfer(size)
                     self.reschedule_incr_timer(atom)
+                    self.extend_request_timers(target, INCR_TIMEOUT)
                     X11Window.XDeleteProperty(self.xid, atom)
                     return
                 if incr is not None:
