@@ -125,7 +125,7 @@ class TestSSLVerifyFailure(unittest.TestCase):
 
     def setUp(self) -> None:
         # don't touch the user's ssl host config, and accept the certificate without a dialog:
-        hosts_dir = os.path.join(tempfile.mkdtemp(prefix="xpra-ssl-hosts-"), "ssl", "hosts")
+        self.hosts_dir = hosts_dir = os.path.join(tempfile.mkdtemp(prefix="xpra-ssl-hosts-"), "ssl", "hosts")
         self.addCleanup(shutil.rmtree, os.path.dirname(os.path.dirname(hosts_dir)), True)
         env = patch.dict(os.environ, {"XPRA_SSL_HOSTS_CONFIG_DIRS": hosts_dir})
         env.start()
@@ -138,8 +138,7 @@ class TestSSLVerifyFailure(unittest.TestCase):
         self.listener.bind(("127.0.0.1", 0))
         self.listener.listen(5)
         self.listener.settimeout(10)
-        self.server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        self.server_context.load_cert_chain(self.cert, self.key)
+        self.use_certificate(self.cert, self.key)
 
         def serve() -> None:
             while True:
@@ -237,46 +236,66 @@ class TestSSLVerifyFailure(unittest.TestCase):
         ssl_options = dict(self.display_desc["ssl-options"], cert=self.cert, key=self.key)
         self.check_download(dict(self.display_desc, **{"ssl-options": ssl_options}))
 
-    def change_certificate(self) -> None:
+    def use_certificate(self, cert: str, key: str) -> None:
         self.server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        self.server_context.load_cert_chain(self.new_cert, self.new_key)
+        self.server_context.load_cert_chain(cert, key)
 
-    def check_changed(self, ssl_options: dict) -> None:
+    def check_changed(self, ssl_options: dict, accept: bool) -> None:
         from xpra.scripts.main import apply_ssl_retry
         display_desc = dict(self.display_desc, **{"ssl-options": ssl_options})
         with (
-            patch("xpra.scripts.pinentry.confirm") as confirm,
+            patch("xpra.scripts.pinentry.confirm", return_value=accept) as confirm,
             patch("xpra.net.tls.socket.warn_certificate_changed", wraps=warn_certificate_changed) as warn,
         ):
             # connect the way the client does, retrying for as long as `apply_ssl_retry` says we should:
             for _ in range(5):
                 ca_certs = display_desc["ssl-options"]["ca-certs"]
-                with self.assertRaises(SSLVerifyFailure) as cm:
+                try:
                     self.handshake("" if ca_certs == "default" else ca_certs)
-                if not apply_ssl_retry(cm.exception, display_desc):
+                    connected = True
                     break
+                except SSLVerifyFailure as e:
+                    error = e
+                    if not apply_ssl_retry(e, display_desc):
+                        connected = False
+                        break
             else:
                 self.fail("the retries never stopped")
-        # we must not offer to replace the certificate we accepted, but we must say why we stopped:
-        confirm.assert_not_called()
+        # the user is asked once, and the warning is logged once:
+        confirm.assert_called_once()
+        self.assertIn("replace", confirm.call_args.args[2])
         warn.assert_called_once()
-        self.assertIn("does not match the one accepted previously", str(cm.exception))
+        self.assertEqual(connected, accept)
+        with open(self.new_cert if accept else self.cert, encoding="latin1") as f:
+            expected = self.der(f.read())
+        with open(self.saved_cert, encoding="latin1") as f:
+            self.assertEqual(self.der(f.read()), expected)
+        if not accept:
+            # the error tells the user why we stopped:
+            self.assertIn("does not match the one accepted previously", str(error))
+
+    def accept_and_change(self) -> dict:
+        # start from scratch: nothing saved, and the server uses its original certificate:
+        shutil.rmtree(self.hosts_dir, ignore_errors=True)
+        self.use_certificate(self.cert, self.key)
+        mods = ssl_retry(self.verify_failure(), self.display_desc)
+        self.saved_cert = mods["ca-certs"]
+        self.use_certificate(self.new_cert, self.new_key)
+        return mods
 
     def test_changed_certificate(self) -> None:
-        mods = ssl_retry(self.verify_failure(), self.display_desc)
-        with open(mods["ca-certs"], "rb") as f:
-            saved = f.read()
-        self.change_certificate()
-        # the client loads the saved options, which use the certificate we accepted:
-        self.check_changed(dict(self.display_desc["ssl-options"], **mods))
-        with open(mods["ca-certs"], "rb") as f:
-            self.assertEqual(f.read(), saved)
+        for accept in (False, True):
+            with self.subTest(accept=accept):
+                mods = self.accept_and_change()
+                # the client loads the saved options, which use the certificate we accepted:
+                self.check_changed(dict(self.display_desc["ssl-options"], **mods), accept)
 
     def test_changed_certificate_without_saved_options(self) -> None:
-        # only the certificate is found, ie: the options file was removed:
-        ssl_retry(self.verify_failure(), self.display_desc)
-        self.change_certificate()
-        self.check_changed(dict(self.display_desc["ssl-options"]))
+        for accept in (False, True):
+            with self.subTest(accept=accept):
+                # only the certificate is found, ie: the options file was removed:
+                self.accept_and_change()
+                self.check_changed(dict(self.display_desc["ssl-options"]), accept)
 
     def test_changed_certificate_unrecorded(self) -> None:
         # what older Python versions give us, which have no `get_unverified_chain()`:

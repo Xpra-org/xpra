@@ -1253,13 +1253,19 @@ def apply_ssl_retry(e: InitExit, display_desc: dict[str, Any]) -> bool:
     """
     If `e` is an SSL verification failure that the user chooses to override,
     update the ssl options in `display_desc` and return True so the caller connects again.
-    Each retry must change the options, so we can't keep retrying with the same ones.
+    Each retry must change the options or the certificate they use, so we can't keep retrying with the same ones.
     """
     from xpra.net.tls.socket import ssl_retry
+
+    def ca_certs_data() -> bytes:
+        return load_binary_file(display_desc.get("ssl-options", {}).get("ca-certs", ""))
+
+    # the certificate we connected with may be replaced:
+    data = ca_certs_data()
     mods = ssl_retry(e, display_desc)
     ssl_options = display_desc.setdefault("ssl-options", {})
     Logger("ssl")("ssl_retry(%s, %s)=%s", e, ssl_options, mods)
-    if not mods or all(ssl_options.get(k) == v for k, v in mods.items()):
+    if not mods or (all(ssl_options.get(k) == v for k, v in mods.items()) and ca_certs_data() == data):
         return False
     ssl_options.update(mods)
     return True

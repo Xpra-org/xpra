@@ -246,9 +246,9 @@ def get_cert_file_fingerprint(filename: str) -> str:
 
 def warn_certificate_changed(e: InitExit, cert_file: str, cert_data: str) -> None:
     """
-    Like ssh does when a host key changes, we don't offer to accept the new certificate:
-    the server may have been re-configured, or the connection may have been intercepted.
-    The log is not visible to everyone, so we also explain it in the error that the user is shown.
+    The server may have been re-configured, or the connection may have been intercepted.
+    The log is not visible to everyone, so we also explain it in the error that the user is shown,
+    in case they don't replace the certificate.
     """
     log = get_ssl_logger()
     e.args = (f"the server's certificate does not match the one accepted previously: {e}", )
@@ -343,22 +343,14 @@ def ssl_retry(e, display_desc: dict[str, Any]) -> dict[str, Any]:
     # self-signed cert:
     if verify_code == SSL_VERIFY_SELF_SIGNED:
         ca_certs = ssl_options.get("ca-certs", "default")
+        default_ca_certs = ca_certs in ("", "default")
         # perhaps we already have the certificate for this hostname
         cert_file = find_ssl_config_file(server_hostname, port, CERT_FILENAME)
-        # older Python versions can't tell us which certificate failed, assume it has changed:
-        changed = bool(cert_file) and (not e.cert_data or get_cert_fingerprint(e.cert_data) != get_cert_file_fingerprint(cert_file))
-        if ca_certs not in ("", "default"):
-            if changed and os.path.abspath(ca_certs) == cert_file:
-                # we have connected with the certificate we saved, and it no longer matches:
-                warn_certificate_changed(e, cert_file, e.cert_data)
-            else:
-                log("self-signed cert does not match %r", ca_certs)
+        if not default_ca_certs and not (cert_file and os.path.abspath(ca_certs) == cert_file):
+            log("self-signed cert does not match %r", ca_certs)
             return {}
-        if cert_file:
-            if e.cert_data and changed:
-                # don't retry with a certificate we already know won't match:
-                warn_certificate_changed(e, cert_file, e.cert_data)
-                return {}
+        if cert_file and default_ca_certs and not e.cert_data:
+            # we can't tell if it is the certificate that failed, so try it:
             log("retrying with %r", cert_file)
             return {"ca-certs": cert_file}
         cert_data = e.cert_data
@@ -372,10 +364,28 @@ def ssl_retry(e, display_desc: dict[str, Any]) -> dict[str, Any]:
                 log.warn("Warning: failed to get server certificate from %s:%s", host, port)
                 return {}
             log("downloaded ssl cert data for %s:%s: %s", host, port, Ellipsizer(cert_data))
-        # ask the user if he wants to accept this certificate:
         fingerprint = get_cert_fingerprint(cert_data)
+        # ask the user if he wants to accept this certificate:
         lines = (msg, f"SHA256 fingerprint: {fingerprint}") if fingerprint else (msg, )
-        if not confirm(lines, title, "Do you want to accept this certificate?"):
+        prompt = "Do you want to accept this certificate?"
+        if cert_file:
+            previous_fingerprint = get_cert_file_fingerprint(cert_file)
+            if fingerprint == previous_fingerprint:
+                if default_ca_certs:
+                    log("retrying with %r", cert_file)
+                    return {"ca-certs": cert_file}
+                log("the certificate matches %r, the verification failed for another reason", cert_file)
+                return {}
+            warn_certificate_changed(e, cert_file, cert_data)
+            title = "SSL Certificate Changed"
+            lines = (
+                "The server's certificate does not match the one accepted previously.",
+                "The server may have been re-configured, or the connection may have been intercepted.",
+                f"Previous SHA256 fingerprint: {previous_fingerprint or 'unknown'}",
+                f"New SHA256 fingerprint: {fingerprint or 'unknown'}",
+            )
+            prompt = "Do you want to replace the certificate accepted previously?"
+        if not confirm(lines, title, prompt):
             return {}
         filename = save_ssl_config_file(server_hostname, port,
                                         CERT_FILENAME, "certificate", cert_data.encode("latin1"))
