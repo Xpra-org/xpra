@@ -95,7 +95,7 @@ class Decode(StubClientSubsystem):
             log("preload() loading codecs from the decode thread")
             with log.trap_error("Error loading codecs from the decode thread"):
                 encoding.load_all_codecs()
-        for subsystem in tuple(getattr(self.client, "subsystems", {}).values()):
+        for subsystem in tuple(self.client.subsystems.values()):
             if subsystem is self:
                 continue
             with log.trap_error("Error preloading %s", subsystem):

@@ -131,7 +131,7 @@ def prepare_parse_thread_seccomp(conn) -> None:
     # runs on the main thread, before the parse thread is started:
     # look up now what the parse thread would otherwise look up lazily,
     # from files that its seccomp filter does not allow it to open
-    if getattr(conn, "socktype", "") not in SOCKET_TYPES:
+    if conn.socktype not in SOCKET_TYPES:
         return
     try:
         from xpra.seccomp import parse as seccomp_parse
@@ -141,9 +141,8 @@ def prepare_parse_thread_seccomp(conn) -> None:
         return
     sclog = Logger("seccomp")
     # `/proc/net/tcp{,6}` for network sockets, cached by the connection:
-    if get_peer_uid := getattr(conn, "get_peer_uid", None):
-        with sclog.trap_error("Error looking up the peer uid of %s", conn):
-            sclog("peer uid=%i", get_peer_uid())
+    with sclog.trap_error("Error looking up the peer uid of %s", conn):
+        sclog("peer uid=%i", conn.get_peer_uid())
 
 
 class SocketProtocol:
@@ -1019,7 +1018,7 @@ class SocketProtocol:
 
     def _read_parse_thread_loop(self) -> None:
         log("read_parse_thread_loop starting")
-        install_parse_thread_seccomp(getattr(self._conn, "socktype", ""))
+        install_parse_thread_seccomp(self._conn.socktype)
         try:
             self.do_read_parse_thread_loop()
         except Exception as e:

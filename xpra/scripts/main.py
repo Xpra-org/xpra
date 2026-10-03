@@ -624,7 +624,7 @@ def run_mode(script_file: str, cmdline: list[str], options, args: list[str], ful
                 argv.insert(0, arg)
         return systemd_run_wrap(mode, argv, options.systemd_run_args, user=getuid() != 0)
     configure_env(options.env)
-    configure_seccomp(getattr(options, "seccomp", ""))
+    configure_seccomp(options.seccomp)
     options.landlock = configure_landlock(options.landlock)
     configure_logging(options, mode)
     if mode not in NO_NETWORK_SUBCOMMANDS:

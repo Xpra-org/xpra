@@ -59,14 +59,19 @@ def install_filter(syscalls: tuple[str, ...], action: str, masked_rules=()) -> N
         log.exception_hooks.append(warn_blocked)
 
 
-thread_state = local()
+class ThreadState(local):
+    # set once a filter is installed on the thread:
+    filtered = False
+
+
+thread_state = ThreadState()
 warned_threads: set[str] = set()
 
 
 def warn_blocked(exc: BaseException) -> None:
     # the `errno` action makes a blocked syscall fail with `EPERM` instead of killing the process:
     # the feature that needed it is now broken, so make sure that this does not go unnoticed
-    if not getattr(thread_state, "filtered", False):
+    if not thread_state.filtered:
         return
     if not isinstance(exc, PermissionError) or exc.errno != EPERM:
         return
