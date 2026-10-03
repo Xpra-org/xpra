@@ -1128,7 +1128,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     if crtc_info.noutput==0 or crtc_info.mode==0:
                         #this crtc is disabled
                         continue
-                    if crtc_info.noutput!=1 or crtc_info.outputs[0]!=rsc.outputs[i]:
+                    if crtc_info.noutput!=1 or i>=rsc.noutput or crtc_info.outputs[0]!=rsc.outputs[i]:
                         #`set_crtc_config` always drives output `i` with crtc `i`
                         return {}
                     hz = 0
