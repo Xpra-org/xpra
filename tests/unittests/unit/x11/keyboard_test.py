@@ -401,10 +401,6 @@ class TestX11Keyboard(ServerTestUtil):
             (0xffea, "Alt_R", 165, 0, 0),
         )
         config.set_keymap()
-        # The map can change after the config is initialized (for example when
-        # a desktop startup script applies xmodmap).  An alias must use the
-        # current XKB mapping instead of this stale cache.
-        config.keyval_mappings = {}
         modifiers = []
         keycode, group = config.get_keycode(50, "dead_perispomeni", True,
                                             modifiers, tilde, "", 0)
