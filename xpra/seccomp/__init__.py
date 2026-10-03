@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import sys
+from errno import EPERM
+from threading import local, current_thread
 
 from xpra.util.env import envbool
 
@@ -51,3 +53,29 @@ def install_filter(syscalls: tuple[str, ...], action: str, masked_rules=()) -> N
     prepare()
     block_async_signals()
     _native.install_filter(syscalls, action, masked_rules)
+    thread_state.filtered = True
+    from xpra import log
+    if warn_blocked not in log.exception_hooks:
+        log.exception_hooks.append(warn_blocked)
+
+
+thread_state = local()
+warned_threads: set[str] = set()
+
+
+def warn_blocked(exc: BaseException) -> None:
+    # the `errno` action makes a blocked syscall fail with `EPERM` instead of killing the process:
+    # the feature that needed it is now broken, so make sure that this does not go unnoticed
+    if not getattr(thread_state, "filtered", False):
+        return
+    if not isinstance(exc, PermissionError) or exc.errno != EPERM:
+        return
+    name = current_thread().name
+    if name in warned_threads:
+        return
+    warned_threads.add(name)
+    from xpra.log import Logger
+    log = Logger("seccomp")
+    log.warn("Warning: the seccomp filter of the %r thread has probably blocked a system call", name)
+    log.warn(" some features may not work, use '--seccomp=no' to disable the filters")
+    log.warn(" see https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Seccomp.md")

@@ -191,6 +191,40 @@ class SeccompTest(unittest.TestCase):
         proc = subprocess.run((sys.executable, "-c", code), capture_output=True, text=True)
         self.assertEqual(proc.returncode, 0, f"{proc.returncode=}, {proc.stderr}")
 
+    def test_warn_when_blocked(self):
+        # with the `errno` action, a blocked syscall raises `PermissionError`:
+        # logging it from a filtered thread must also log a warning, once per thread
+        code = textwrap.dedent("""
+            import threading
+
+            from xpra.log import Logger
+            from xpra.seccomp import install_filter
+            from xpra.seccomp.draw import DECODE_SYSCALLS
+
+            log = Logger("util")
+            try:
+                raise PermissionError(1, "not from seccomp")
+            except PermissionError:
+                log.error("unfiltered thread error", exc_info=True)
+
+            def sandboxed():
+                install_filter(DECODE_SYSCALLS, "errno")
+                for _ in range(2):
+                    try:
+                        open("/etc/hosts", encoding="utf8")
+                    except PermissionError:
+                        log.error("blocked open", exc_info=True)
+
+            thread = threading.Thread(target=sandboxed, name="sandboxed")
+            thread.start()
+            thread.join()
+        """)
+        proc = subprocess.run((sys.executable, "-c", code), capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        output = proc.stdout + proc.stderr
+        self.assertEqual(output.count("seccomp filter of the 'sandboxed' thread"), 1, output)
+        self.assertEqual(output.count("seccomp filter of the"), 1, output)
+
     def test_parse_blocks_file_syscalls(self):
         # every file/exec packet handler now runs off the parse thread, so the parse
         # filter drops file access too (see docs/Usage/Seccomp.md):

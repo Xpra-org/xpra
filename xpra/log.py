@@ -180,6 +180,10 @@ def inject_debug_logging(cmdline: list[str]) -> None:
 # only that it happens.
 global_logging_handler: Callable = standard_logging
 
+# called with the exception of every log message that has one (`exc_info`),
+# ie: `xpra.seccomp` uses this to point out the errors caused by its filters:
+exception_hooks: list[Callable[[BaseException], None]] = []
+
 
 def set_global_logging_handler(h: Callable) -> Callable:
     assert callable(h)
@@ -575,6 +579,8 @@ class Logger:
         self.level_override = logging.CRITICAL if enable else 0
 
     def log(self, level: int, msg: str, *args, **kwargs) -> None:
+        if exception_hooks and (exc_info := kwargs.get("exc_info")):
+            run_exception_hooks(exc_info)
         level_override = self.level_override or level
         if level_override <= self.min_level:
             if any(exp.match(msg) for exp in debug_expressions):
@@ -642,6 +648,19 @@ class Logger:
 
     def trap_error(self, message: str, *args) -> AbstractContextManager:
         return ErrorTrapper(self, message, args)
+
+
+def run_exception_hooks(exc_info) -> None:
+    if exc_info is True:
+        exc_info = sys.exc_info()
+    exc = exc_info[1] if isinstance(exc_info, tuple) else exc_info
+    if not isinstance(exc, BaseException):
+        return
+    for hook in tuple(exception_hooks):
+        try:
+            hook(exc)
+        except Exception:
+            pass
 
 
 class ErrorTrapper(AbstractContextManager):
