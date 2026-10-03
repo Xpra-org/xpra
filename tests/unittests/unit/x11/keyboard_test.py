@@ -379,6 +379,42 @@ class TestX11Keyboard(ServerTestUtil):
             for attr, value in expected.items():
                 assert getattr(config, attr) == value, f"keys_changed() is not idempotent for {attr!r}"
 
+    def test_dead_keys_from_windows(self):
+        from xpra.x11.xkbhelper import do_set_keymap, get_keyval_mappings, canonical_keysym
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        from xpra.x11.bindings.keyboard import X11KeyboardBindings
+        binding = X11KeyboardBindings()
+        tilde = binding.parse_keysym("dead_tilde")
+        self.assertEqual(canonical_keysym("dead_perispomeni"), "dead_tilde")
+        # `fr(oss)` maps dead_tilde to the AltGr level of keycode 34.
+        # The Windows client calls the same keysym dead_perispomeni.
+        do_set_keymap("fr", "oss", "", {})
+        config = KeyboardConfig()
+        config.layout = "fr"
+        config.variant = "oss"
+        config.query_struct = {}
+        config.keycodes = (
+            (tilde, "dead_perispomeni", 50, 0, 3),
+            (0xffe1, "Shift_L", 16, 0, 0),
+            (0xffe3, "Control_L", 17, 0, 0),
+            (0xffe9, "Alt_L", 18, 0, 0),
+            (0xffea, "Alt_R", 165, 0, 0),
+        )
+        config.set_keymap()
+        # The map can change after the config is initialized (for example when
+        # a desktop startup script applies xmodmap).  An alias must use the
+        # current XKB mapping instead of this stale cache.
+        config.keyval_mappings = {}
+        modifiers = []
+        keycode, group = config.get_keycode(50, "dead_perispomeni", True,
+                                            modifiers, tilde, "", 0)
+        mode = any(set(config.keynames_for_mod.get(mod, ())) &
+                   {"ISO_Level3_Shift", "Mode_switch"} for mod in modifiers)
+        level = int("shift" in modifiers) + 2 * int(mode)
+        self.assertIn((keycode, level), get_keyval_mappings()[tilde][group])
+        released = config.get_keycode(50, "dead_perispomeni", False, [], tilde, "", 0)
+        self.assertEqual(released, (keycode, group))
+
 
 def main():
     # can only work with an X11 server
