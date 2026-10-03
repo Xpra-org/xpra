@@ -7,7 +7,7 @@ jobs:
     # `ubuntu-26.04` is still a public preview image, so it can be slow to
     # get scheduled and some of its tooling may be unstable:
     # https://github.com/actions/runner-images/issues/14226
-    runs-on: ubuntu-26.04
+    runs-on: ${{ matrix.runner }}
     # Explicit list of legs (rather than a full matrix product) so that each
     # variation is only tested once, against the interpreted baseline build:
     # * `baseline`: interpreted, backwards compatible - the required baseline
@@ -21,23 +21,34 @@ jobs:
     # * `seccomp`: every xpra server / client / command started by the tests runs
     #   with `--seccomp=strict`, so a blocked syscall kills it and fails the test.
     #   Non-blocking for now, see `docs/Usage/Seccomp.md`.
+    # * `seccomp-arm64`: the same, on arm64 - where the filters are not enabled by default
+    #   until they have been validated there (see `get_default_seccomp` in `xpra/scripts/config.py`)
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: "baseline"
+            runner: "ubuntu-26.04"
             cythonize: "without"
             compat: "1"
             seccomp: ""
           - name: "cythonize_more"
+            runner: "ubuntu-26.04"
             cythonize: "with"
             compat: "1"
             seccomp: ""
           - name: "no-backwards-compatibility"
+            runner: "ubuntu-26.04"
             cythonize: "without"
             compat: "0"
             seccomp: ""
           - name: "seccomp"
+            runner: "ubuntu-26.04"
+            cythonize: "without"
+            compat: "1"
+            seccomp: "strict"
+          - name: "seccomp-arm64"
+            runner: "ubuntu-26.04-arm"
             cythonize: "without"
             compat: "1"
             seccomp: "strict"
