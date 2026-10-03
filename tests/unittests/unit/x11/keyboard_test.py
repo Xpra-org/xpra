@@ -275,6 +275,48 @@ class TestX11Keyboard(ServerTestUtil):
                 f"the client name {cname!r} resolved to keycode {keycode}, " \
                 f"but the server name {keyname!r} resolves to {expected}"
 
+    def test_aliased_dead_key(self):
+        # see #5057: a Windows French keyboard sends `AltGr+2` as `dead_perispomeni`,
+        # which is another name for `dead_tilde`
+        from xpra.x11.xkbhelper import get_keycode_mappings
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+
+        def keysym_produced(config, keysym: str, client_keycode: int, modifiers: list[str]) -> str:
+            config.pressed_translation = {}
+            keycode, group = config.get_keycode(client_keycode, keysym, True, modifiers, 0xfe53, "", 0)
+            keysyms = get_keycode_mappings().get(keycode, ())
+            level = int("shift" in modifiers) + 4 * group
+            for mod in modifiers:
+                if set(config.keynames_for_mod.get(mod, ())) & {"ISO_Level3_Shift", "Mode_switch"}:
+                    level += 2
+            log("%r=%s, modifiers=%s, keysyms=%s, level=%i", keysym, keycode, modifiers, keysyms, level)
+            return keysyms[level] if len(keysyms) > level else ""
+
+        # `fr(oss)` has `dead_tilde` on the `AltGr` level of a key:
+        for variant in ("oss", ):
+            config = KeyboardConfig()
+            config.query_struct = {}
+            config.layout = "fr"
+            config.variant = variant
+            # the client's level for the dead key does not match the server's,
+            # so the translation table only has a level-less entry for `dead_perispomeni`:
+            config.keycodes = (
+                (0xe9, "eacute", 49, 0, 0), (0xfe53, "dead_perispomeni", 50, 0, 0),
+                (0xff55, "Page_Up", 33, 0, 0),
+                (0xffe1, "Shift_L", 16, 0, 0), (0xffe3, "Control_L", 17, 0, 0),
+                (0xffe9, "Alt_L", 18, 0, 0), (0xffea, "Alt_R", 165, 0, 0),
+            )
+            config.set_keymap()
+            if not any("eacute" in keysyms for keysyms in get_keycode_mappings().values()):
+                raise unittest.SkipTest("no French keymap available")
+            produced = keysym_produced(config, "dead_perispomeni", 50, [])
+            assert produced == "dead_tilde", f"fr({variant}): expected 'dead_tilde' but the server would produce {produced!r}"
+            # the alias must not lose the modifiers of single level keys:
+            modifiers = ["shift"]
+            config.pressed_translation = {}
+            config.get_keycode(33, "Page_Up", True, modifiers, 0xff55, "", 0)
+            assert modifiers == ["shift"], f"fr({variant}): 'shift' was not preserved for 'Page_Up': {modifiers}"
+
     def test_native_keycode_keysym_mismatch(self):
         # A native client keymap can become stale, or omit the key event's keysym.
         # Do not send its numeric keycode if it produces a different server keysym.
