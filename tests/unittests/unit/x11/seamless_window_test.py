@@ -6,7 +6,7 @@
 
 import importlib.util
 import unittest
-from contextlib import nullcontext
+from contextlib import suppress
 from unittest.mock import Mock, patch
 
 from xpra.os_util import OSX, POSIX
@@ -59,7 +59,7 @@ class SeamlessWindowTest(unittest.TestCase):
         def set_active(_xid, _name, _type, xid):
             active[0] = xid
 
-        with patch.object(server_module, "xswallow", nullcontext()), \
+        with patch.object(server_module, "xswallow", suppress()), \
                 patch.object(server_module, "prop_get", return_value=active[0]) as get_active, \
                 patch.object(server_module, "prop_set", side_effect=set_active) as set_active_mock:
             # the active window goes away, give it back to the window which has the focus:
