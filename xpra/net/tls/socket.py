@@ -253,14 +253,21 @@ def get_server_certificate(display_desc: dict[str, Any], server_hostname: str) -
         log("retry_socket_connect(%s)", options, exc_info=True)
         return ""
     try:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
+        # use the same protocol, ciphers, options and client certificate as the connection that failed,
+        # or the server may refuse a handshake it would otherwise accept, but don't verify anything:
+        ssl_options = {k.replace("-", "_"): v for k, v in (display_desc.get("ssl-options") or {}).items()}
+        ssl_options.update({
+            "server_side": False,
+            "server_verify_mode": "none",
+            "check_hostname": False,
+            "server_hostname": server_hostname,
+        })
+        context = get_ssl_wrap_socket_context(**ssl_options)[0]
         sock.settimeout(SSL_HANDSHAKE_TIMEOUT)
         with context.wrap_socket(sock, server_hostname=server_hostname) as ssl_sock:
             der = ssl_sock.getpeercert(binary_form=True)
         return ssl.DER_cert_to_PEM_cert(der) if der else ""
-    except (OSError, ValueError, ssl.SSLError):
+    except (OSError, ValueError, TypeError, ssl.SSLError, InitException):
         log("get_server_certificate(%s, %s)", display_desc, server_hostname, exc_info=True)
         return ""
     finally:

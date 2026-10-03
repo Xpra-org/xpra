@@ -134,8 +134,8 @@ class TestSSLVerifyFailure(unittest.TestCase):
         self.listener.bind(("127.0.0.1", 0))
         self.listener.listen(5)
         self.listener.settimeout(10)
-        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        server_context.load_cert_chain(self.cert, self.key)
+        self.server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        self.server_context.load_cert_chain(self.cert, self.key)
 
         def serve() -> None:
             while True:
@@ -144,7 +144,7 @@ class TestSSLVerifyFailure(unittest.TestCase):
                 except OSError:
                     return
                 try:
-                    with server_context.wrap_socket(conn, server_side=True) as ssl_conn:
+                    with self.server_context.wrap_socket(conn, server_side=True) as ssl_conn:
                         ssl_conn.recv(1)
                 except (OSError, ssl.SSLError):
                     pass
@@ -222,6 +222,16 @@ class TestSSLVerifyFailure(unittest.TestCase):
         with patch("xpra.net.connect.proxy_connect", side_effect=proxy_connect) as pc:
             self.check_download(display_desc)
         pc.assert_called_once()
+
+    def test_retry_download_with_client_certificate(self) -> None:
+        # the server only accepts clients that present a certificate,
+        # so the download must use the configured one:
+        self.server_context.verify_mode = ssl.CERT_REQUIRED
+        self.server_context.load_verify_locations(cafile=self.cert)
+        # with TLS 1.3, the client completes its handshake before the server rejects it:
+        self.server_context.maximum_version = ssl.TLSVersion.TLSv1_2
+        ssl_options = dict(self.display_desc["ssl-options"], cert=self.cert, key=self.key)
+        self.check_download(dict(self.display_desc, **{"ssl-options": ssl_options}))
 
     def test_retry_only_with_new_options(self) -> None:
         from xpra.scripts.main import apply_ssl_retry
