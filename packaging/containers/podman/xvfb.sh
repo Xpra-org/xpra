@@ -36,6 +36,8 @@ run apk update
 run apk add su-exec
 
 run adduser -D -H -u "${TARGET_UID}" "${TARGET_USER}"
+# the X11 socket directory, usually shared with other containers using a volume:
+run mkdir -m 1777 /tmp/.X11-unix
 
 
 if [ "${XDUMMY}" == "1" ]; then

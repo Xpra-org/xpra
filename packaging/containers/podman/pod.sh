@@ -35,14 +35,11 @@ if ! podman volume exists "$RUN_VOLUME"; then
   # or "--opt device=tmpfs"
   podman volume create "$RUN_VOLUME"
 fi
-TMP_VOLUME="tmp"
-if ! podman volume exists "$TMP_VOLUME"; then
-  # rootless containers can't use ro,nodev,noexec
-  # or "--opt device=tmpfs"
-  podman volume create --opt device=tmpfs --opt type=tmpfs --opt o=size=128M,nodev,noexec "$TMP_VOLUME"
-  mkdir .X11-unix
-  chmod 1777 .X11-unix
-  tar -cv .X11-unix | podman volume import tmp -
+# only the X11 socket directory is shared, each container keeps its own private '/tmp'.
+# the volume is populated from the 'xvfb' image, which creates '/tmp/.X11-unix' with mode 1777:
+X11_VOLUME="x11"
+if ! podman volume exists "$X11_VOLUME"; then
+  podman volume create "$X11_VOLUME"
 fi
 
 POD_NAME="xpra"
@@ -73,8 +70,8 @@ podman run -dt \
   --network "$PUBLIC_NET" \
   -p ${PORT}:${PORT}/tcp \
   -p ${PORT}:${PORT}/udp \
-  --read-only \
-  --volume ${TMP_VOLUME}:/tmp:rw \
+  --read-only --read-only-tmpfs=true \
+  --volume ${X11_VOLUME}:/tmp/.X11-unix:rw \
   --security-opt label=type:container_runtime_t \
   xvfb
 
