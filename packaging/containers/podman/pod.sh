@@ -29,20 +29,22 @@ if ! podman network exists "$PUBLIC_NET"; then
   podman network create "$PUBLIC_NET"
 fi
 
+# remove any previous instance of the pod,
+# so that we can start with empty volumes, without stale sockets or files from a previous session:
+POD_NAME="xpra"
+podman pod rm --force --ignore "$POD_NAME"
+
+# rootless containers can't use ro,nodev,noexec
+# or "--opt device=tmpfs"
 RUN_VOLUME="run"
-if ! podman volume exists "$RUN_VOLUME"; then
-  # rootless containers can't use ro,nodev,noexec
-  # or "--opt device=tmpfs"
-  podman volume create "$RUN_VOLUME"
-fi
 # only the X11 socket directory is shared, each container keeps its own private '/tmp'.
 # the volume is populated from the 'xvfb' image, which creates '/tmp/.X11-unix' with mode 1777:
 X11_VOLUME="x11"
-if ! podman volume exists "$X11_VOLUME"; then
-  podman volume create "$X11_VOLUME"
-fi
+for volume in "$RUN_VOLUME" "$X11_VOLUME"; do
+  podman volume rm --force "$volume"
+  podman volume create "$volume"
+done
 
-POD_NAME="xpra"
 if ! podman pod exists "$POD_NAME"; then
   podman pod create \
     --name ${POD_NAME} \
