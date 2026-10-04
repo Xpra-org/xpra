@@ -2,14 +2,16 @@
 
 FROM alpine:latest
 
+ARG HTML5_VERSION=20
+
 RUN apk update && \
     apk add --no-cache xpra xterm && \
     mkdir /usr/share/xpra/www && \
     cd /usr/share/xpra/www && \
-    wget https://xpra.org/src/xpra-html5-20.tar.xz && \
-    html5_dir="$(tar -Jtf xpra-html5-20.tar.xz | sed -n '1s|/.*|/html5|p')" && \
-    tar -Jxf xpra-html5-20.tar.xz "$html5_dir" --strip-components=2 && \
-    rm -f xpra-html5-20.tar.xz
+    wget https://xpra.org/src/xpra-html5-${HTML5_VERSION}.tar.xz && \
+    html5_dir="$(tar -Jtf xpra-html5-${HTML5_VERSION}.tar.xz | sed -n '1s|/.*|/html5|p')" && \
+    tar -Jxf xpra-html5-${HTML5_VERSION}.tar.xz "$html5_dir" --strip-components=2 && \
+    rm -f xpra-html5-${HTML5_VERSION}.tar.xz
 
 EXPOSE 10000
 
