@@ -6,9 +6,10 @@ RUN apk update && \
     apk add --no-cache xpra xterm && \
     mkdir /usr/share/xpra/www && \
     cd /usr/share/xpra/www && \
-    wget https://xpra.org/src/xpra-html5-17.1.tar.xz && \
-    tar -Jxf xpra-html5-17.1.tar.xz xpra-html5-17.1/html5 --strip-components=2 && \
-    rm -f xpra-html5-17.1.tar.xz
+    wget https://xpra.org/src/xpra-html5-20.tar.xz && \
+    html5_dir="$(tar -Jtf xpra-html5-20.tar.xz | sed -n '1s|/.*|/html5|p')" && \
+    tar -Jxf xpra-html5-20.tar.xz "$html5_dir" --strip-components=2 && \
+    rm -f xpra-html5-20.tar.xz
 
 EXPOSE 10000
 
