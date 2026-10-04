@@ -44,7 +44,9 @@ class EncodeClient(HelloRequestClient):
         super().__init__(options)
         self.client_type = "encoder"
         self.filenames = list(filenames)
-        self.add_packets("encode-response", "encoding-set")
+        # this handler writes files, which the parse thread's seccomp filter does not allow:
+        self.add_packets("encode-response", main_thread=True)
+        self.add_packets("encoding-set")
         self.add_legacy_alias("encodings", "encoding-set")
         self.decompress = decompress
         self.encoding_options = {}
@@ -123,7 +125,8 @@ class EncodeClient(HelloRequestClient):
     def do_command(self, caps: typedict) -> None:
         log(f"{caps=}")
         self._protocol.large_packets.append("encode")
-        self.send_encode()
+        # we're called from the `hello` handler on the parse thread:
+        self.idle_add(self.send_encode)
 
     def send_encode(self) -> None:
         filename = self.filenames.pop(0)
