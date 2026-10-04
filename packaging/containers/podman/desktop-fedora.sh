@@ -100,11 +100,11 @@ else
     install xterm
   fi
 
-  run deluser --quiet "${TARGET_USER}" || true
+  run userdel -r "${TARGET_USER}" || true
   run groupdel "${TARGET_GROUP}" || true
-  run rm -fr /home/ubuntu "/home/${TARGET_USER}"
+  run rm -fr "/home/${TARGET_USER}"
   run groupadd -r -g "${TARGET_GID}" "${TARGET_GROUP}"
-  run adduser -uid "${TARGET_UID}" -gid "${TARGET_GID}" --disabled-password --comment "no-comment" --shell /bin/bash "${TARGET_USER}"
+  run useradd -m -u "${TARGET_UID}" -g "${TARGET_GID}" --shell /bin/bash "${TARGET_USER}"
   run usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
   run sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
   run chown -R "${TARGET_UID}:${TARGET_GID}" "/home/${TARGET_USER}"
