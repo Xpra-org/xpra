@@ -6,7 +6,7 @@
 * a shell
 
 
-## [xvfb](./podman/xvfb.sh) image
+## [xvfb](./xvfb.sh) image
 
 This container is typically used as part of a pod as it only provides an X11 virtual framebuffer. \
 It is based on [alpinelinux](https://alpinelinux.org/) to keep things "_small, simple and secure_".
@@ -57,7 +57,7 @@ This image takes up 1GB of disk space.
 The biggest cost by far are the media libraries: GStreamer, pulseaudio and the video codecs. \
 To remove them, run the script with:
 ```shell
-AUDIO=0 CODECS=0 ./xvfb.sh
+AUDIO=0 CODECS=0 ./xpra.sh
 ```
 </details>
 
