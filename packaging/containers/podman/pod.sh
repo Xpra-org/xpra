@@ -80,6 +80,8 @@ podman run -dt \
   --pod ${POD_NAME} \
   --replace \
   --name xpra \
+  --env USE_DISPLAY=yes \
+  --env XPRA_VFB_WAIT=30 \
   --uts container:xvfb \
   --ipc container:xvfb \
   --cgroupns container:xvfb \

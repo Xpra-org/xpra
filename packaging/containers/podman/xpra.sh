@@ -108,13 +108,15 @@ run sh -c "chmod 644 /etc/xpra/ssl/*.pem"
 # (`buildah run` does not use a shell, so we need one to expand the globs)
 run sh -c "rm -fr /var/cache/*dnf* /var/log/dnf*.log* /var/log/README /var/yp /var/preserve /var/opt /var/nis /var/log/journal /var/log/private /var/local /var/lib/systemd /var/lib/selinux/tmp /var/games /var/kerberos /var/db"
 
-# to only use the display from the 'xvfb' container
-# set `--use-display=yes`:
 if [ "${SEAMLESS}" == "1" ]; then
   MODE="seamless"
 else
   MODE="desktop"
 fi
-# only use socket directories in '/run', the home directory may not be writable (ie: `--read-only`):
-buildah config --entrypoint "/usr/bin/xpra ${MODE} --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=auto --socket-dirs=/run/user/${TARGET_UID}/xpra --socket-dirs=/run/xpra --dbus=no --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
+# only use socket directories in '/run', the home directory may not be writable (ie: `--read-only`).
+# the entrypoint runs in a shell, so `USE_DISPLAY` can be overriden when starting the container,
+# ie: `--env USE_DISPLAY=yes` to only use the display from the 'xvfb' container,
+# with `--env XPRA_VFB_WAIT=30` to wait up to 30 seconds for it to become available:
+buildah config --env USE_DISPLAY=auto $CONTAINER
+buildah config --entrypoint "/usr/bin/xpra ${MODE} --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=\${USE_DISPLAY} --socket-dirs=/run/user/${TARGET_UID}/xpra --socket-dirs=/run/xpra --dbus=no --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
