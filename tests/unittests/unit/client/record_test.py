@@ -294,6 +294,38 @@ class RecordClientTest(unittest.TestCase):
             indexes = [record["index"] for record in self.events(wid)]
             self.assertEqual(indexes, list(range(len(indexes))), f"gap in the events of window {wid:#x}")
 
+    def test_notifications_are_recorded(self):
+        with silence_warn(record_module):
+            self.process("notification-show", "", 42, "Xpra", 0, "", "Recording denied", "line 1\nline 2", 10000, (), (), {})
+        record = self.last_event(0, "notification")
+        self.assertEqual(record["nid"], 42)
+        self.assertEqual(record["summary"], "Recording denied")
+        self.assertEqual(record["body"], "line 1\nline 2")
+        self.process("notification-close", 42)
+        self.assertEqual(self.last_event(0, "notification-close")["nid"], 42)
+        if BACKWARDS_COMPATIBLE:
+            self.assertIsNotNone(self.find_handler("notify_show"))
+            self.assertIsNotNone(self.find_handler("notify_close"))
+
+    def test_notifications_before_startup_complete(self):
+        # the server can send notifications before `startup-complete`:
+        tmpdir = tempfile.mkdtemp(prefix="xpra-record-test")
+        self.addCleanup(shutil.rmtree, tmpdir, True)
+        self.tmpdir = tmpdir
+        client = self.client = RecordClient(make_defaults_struct())
+        client.record_directory = tmpdir
+        client.timeout_add = lambda *args: 0
+        client.init_authenticated_packet_handlers()
+        with silence_warn(record_module):
+            self.process("notification-show", "", 1, "Xpra", 0, "", "Recording denied", "", 10000, (), (), {})
+        self.process("startup-complete")
+        # the desktop window is only created once:
+        self.assertEqual(self.event_types(0), ["new", "notification"])
+
+    def test_hello_requests_notifications(self):
+        caps = typedict(self.client.make_hello())
+        self.assertTrue(caps.boolget("notification"))
+
     def test_grab_packets_are_registered(self):
         for packet_type in ("window-grab", "window-ungrab"):
             self.assertIsNotNone(self.find_handler(packet_type))

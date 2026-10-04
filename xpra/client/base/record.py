@@ -255,24 +255,36 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
                 "pointer": {"record": True},
                 "clipboard": {"record": True},
                 "display": {"record": True},
+                # notifications are recorded too:
+                "notification": True,
             })
             if BACKWARDS_COMPATIBLE:
                 # older servers read these from the plural namespace:
                 caps["windows"] = window_caps
+                caps["notifications"] = {"enabled": True}
         return caps
 
     def _process_startup_complete(self, _packet: Packet) -> None:
         self.refresh_timer = self.timeout_add(REFRESH * 1000, self.request_refresh)
-        # create the "desktop" window:
-        geom = NO_GEOMETRY
+        self.get_desktop_window()
+
+    def get_desktop_window(self) -> WindowModel:
+        """
+        The "desktop" window records the session-wide events.
+        It is created on demand because some of these events
+        can arrive before `startup-complete`, ie: notifications.
+        """
         wid = 0
+        if window := self.get_window(wid):
+            return window
         directory = os.path.join(self.record_directory, "%x" % wid)
         if not os.path.exists(directory):
             os.mkdir(directory, 0o755)
-        window = WindowModel(wid, geom, False, directory, self.start)
+        window = WindowModel(wid, NO_GEOMETRY, False, directory, self.start)
         window.stacking = self.stacking
         window.record("new", stacking=self.stacking)
         self._id_to_window[wid] = window
+        return window
 
     def print_server_info(self, c: typedict) -> None:
         log.info("recording from:")
@@ -509,6 +521,24 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if x != 0 or y != 0 or (width, height) != window.geometry[2:4] or options.get("quality", 100) != 100:
             self.refresh_needed.add(wid)
 
+    def _process_notification_show(self, packet: Packet) -> None:
+        nid = packet.get_u64(2)
+        app_name = packet.get_str(3)
+        replaces_nid = packet.get_u64(4)
+        summary = packet.get_str(6)
+        body = packet.get_str(7)
+        expire_timeout = packet.get_i64(8)
+        # ie: "Recording denied"
+        log.warn("Warning: %s", summary)
+        for line in body.splitlines():
+            log.warn(" %s", line)
+        self.get_desktop_window().record("notification", nid=nid, app_name=app_name, replaces_nid=replaces_nid,
+                                         summary=summary, body=body, expire_timeout=expire_timeout)
+
+    def _process_notification_close(self, packet: Packet) -> None:
+        nid = packet.get_u64(1)
+        self.get_desktop_window().record("notification-close", nid=nid)
+
     def _process_window_eos(self, packet: Packet) -> None:
         """ safe to ignore - we don't have streams to replay """
 
@@ -525,7 +555,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
     def _process_clipboard_record(self, packet: Packet) -> None:
         # example packet:
         # 'clipboard-record', 'client', 'clipboard-contents', 6, 'CLIPBOARD', 'UTF8_STRING', 8, 'bytes', b'foo', 0
-        window = self.get_window(0)
+        window = self.get_desktop_window()
         subpacket_type = packet.get_str(2)
         record = list(packet[1:])
         kwargs: dict[str, Any] = {
@@ -678,5 +708,9 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             "pointer-motion",
             "pointer-wheel",
             "clipboard-record",
+            "notification-show",
+            "notification-close",
             main_thread=True,
         )
+        self.add_legacy_alias("notify_show", "notification-show")
+        self.add_legacy_alias("notify_close", "notification-close")

@@ -162,6 +162,20 @@ class WindowReplayTest(unittest.TestCase):
         self.assertEqual(window_replay.client.focused, 1)
         window_replay.window.present.assert_called_once()
 
+    def test_notification_events_are_logged(self) -> None:
+        window_replay = self.make_window_replay()
+        logged = []
+        window_replay.client.notable_event_cb = lambda etype, msg: logged.append((etype, msg))
+        window_replay.do_process_event(typedict({"event": "notification", "nid": 42,
+                                                 "summary": "Recording denied", "body": "line 1\nline 2"}))
+        window_replay.do_process_event(typedict({"event": "notification", "nid": 43, "summary": "no body"}))
+        window_replay.do_process_event(typedict({"event": "notification-close", "nid": 42}))
+        self.assertEqual(logged, [
+            ("notification", "Recording denied: line 1 line 2"),
+            ("notification", "no body"),
+            ("notification-close", "closed notification 0x2a"),
+        ])
+
     def test_stacking_event(self) -> None:
         replay = Replay(make_defaults_struct())
         windows = {}

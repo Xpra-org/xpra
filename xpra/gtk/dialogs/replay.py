@@ -428,7 +428,7 @@ class InputStateView(Gtk.DrawingArea):
 
 
 class EventLog(Gtk.ScrolledWindow):
-    """Scrollable log of non-visual events (keyboard, clipboard, pointer buttons)."""
+    """Scrollable log of non-visual events (keyboard, clipboard, pointer buttons, notifications)."""
 
     MAX_LINES = 100
 
@@ -437,6 +437,7 @@ class EventLog(Gtk.ScrolledWindow):
         "key": "#1a7fd4",  # blue
         "pointer": "#c03828",  # red
         "clipboard": "#b07800",  # dark amber
+        "notification": "#2a8a3a",  # green
     }
     DEFAULT_COLOR = "#606060"
 

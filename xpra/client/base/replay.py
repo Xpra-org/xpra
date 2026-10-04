@@ -337,6 +337,13 @@ class WindowReplay:
             self.window.restack(other_window, above)
         elif etype == "bell":
             event_info("bell")
+        elif etype == "notification":
+            summary = event.strget("summary", "")
+            # the event log shows one line per event:
+            body = " ".join(event.strget("body", "").splitlines())
+            event_info(f"{summary}: {body}" if body else summary)
+        elif etype == "notification-close":
+            event_info("closed notification %#x" % event.intget("nid", 0))
         elif etype == "metadata":
             metadata = typedict(event.dictget("metadata"))
             log("metadata: %s", metadata)
