@@ -8,6 +8,7 @@ ARG USER_GROUPS=audio,pulse,video
 ARG UID=1000
 ARG GID=1000
 ARG PORT=10000
+ARG AUTH_PORT=14500
 ARG MODE=seamless
 
 RUN dnf install -y --setopt=install_weak_deps=False wget
@@ -18,19 +19,27 @@ RUN dnf install -y xpra xpra-audio-server && \
     for group in $(echo ${USER_GROUPS} | tr , ' '); do \
         if getent group ${group} > /dev/null; then usermod -aG ${group} ${USERNAME}; fi; \
     done && \
+    chmod 644 /etc/xpra/ssl/*.pem && \
     mkdir -m 755 -p /var/lib/dbus && \
     dbus-uuidgen > /var/lib/dbus/machine-id
 
 ENV UID=$UID
 ENV GID=$GID
 ENV PORT=$PORT
+ENV AUTH_PORT=$AUTH_PORT
 ENV MODE=$MODE
 
-EXPOSE ${PORT}
+# "PORT" only listens on the container's loopback interface,
+# so it is only reachable from inside the container, its pod, or with `--network=host`:
+EXPOSE ${AUTH_PORT}
 
-CMD exec xpra "$MODE" --uid "$UID" --gid "$GID" "--bind-tcp=0.0.0.0:$PORT" "--bind-quic=0.0.0.0:$PORT" --start=xterm --no-daemon
+# "AUTH_PORT" requires the password from the `XPRA_PASSWORD` environment variable:
+CMD exec xpra "$MODE" --uid "$UID" --gid "$GID" \
+    "--bind-tcp=127.0.0.1:$PORT" "--bind-quic=127.0.0.1:$PORT" \
+    "--bind-tcp=0.0.0.0:$AUTH_PORT,auth=env" "--bind-quic=0.0.0.0:$AUTH_PORT,auth=env" \
+    --start=xterm --no-daemon
 
 # run this container using:
-#podman run --publish 10000:10000/tcp --publish 10000:10000/udp xpra-safer
+#podman run --env XPRA_PASSWORD=thepassword --publish 14500:14500/tcp --publish 14500:14500/udp xpra-safer
 # access it using your browser:
-#xdg-open http://127.0.0.1:10000/
+#xdg-open http://127.0.0.1:14500/
