@@ -7,7 +7,7 @@
 set -e
 
 DISTRO="${DISTRO:-fedora}"
-RELEASE="${RELEASE:-42}"
+RELEASE="${RELEASE:-latest}"
 IMAGE_NAME="xpra"
 CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
 CLEAN="${CLEAN:-1}"
@@ -52,8 +52,10 @@ else
   if [ "${CLEAN}" == "1" ]; then
     buildah rm $CONTAINER || true
     buildah rmi -f $IMAGE_NAME || true
-    buildah from --name $CONTAINER $DISTRO:$RELEASE
+    buildah from --pull=newer --name $CONTAINER $DISTRO:$RELEASE
   fi
+  # the distribution's major version number, ie: "latest" -> "44"
+  VERSION_ID=$(run sh -c '. /etc/os-release;echo ${VERSION_ID%%.*}')
   if [ "${DISTRO}" == "fedora" ]; then
     RPMFUSION_DIR="fedora"
     REPO_DIR="Fedora"
@@ -64,13 +66,13 @@ else
     run dnf config-manager --set-enabled crb
     RPMFUSION_DIR="el"
     REPO_DIR="${DISTRO}"
-    if [ "${RELEASE%%.*}" -ge 10 ]; then
+    if [ "${VERSION_ID}" -ge 10 ]; then
       EXTRA_PACKAGES="python3-uvloop python3-aioquic"
     else
       EXTRA_PACKAGES=""
     fi
   fi
-  install -y "https://download1.rpmfusion.org/free/${RPMFUSION_DIR}/rpmfusion-free-release-${RELEASE}.noarch.rpm"
+  install -y "https://download1.rpmfusion.org/free/${RPMFUSION_DIR}/rpmfusion-free-release-${VERSION_ID}.noarch.rpm"
   run dnf update -y
   install -y wget "--setopt=install_weak_deps=False"
   run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/${REPO_DIR}/${REPO}.repo"

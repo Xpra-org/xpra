@@ -7,7 +7,7 @@
 set -e
 
 DISTRO="${DISTRO:-fedora}"
-RELEASE="${RELEASE:-42}"
+RELEASE="${RELEASE:-latest}"
 IMAGE_NAME="${IMAGE_NAME:-apps}"
 CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
 CLEAN="${CLEAN:-1}"
@@ -55,7 +55,7 @@ else
   if [ "${CLEAN}" == "1" ]; then
     buildah rm $CONTAINER || true
     buildah rmi -f $IMAGE_NAME || true
-    buildah from --name $CONTAINER $DISTRO:$RELEASE
+    buildah from --pull=newer --name $CONTAINER $DISTRO:$RELEASE
   fi
   run dnf update -y
 
@@ -64,7 +64,9 @@ else
   # add xpra repo:
   install wget
   run dnf config-manager setopt fedora-cisco-openh264.enabled=1
-  install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${RELEASE}.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${RELEASE}.noarch.rpm
+  # the distribution's major version number, ie: "latest" -> "44"
+  VERSION_ID=$(run sh -c '. /etc/os-release;echo ${VERSION_ID%%.*}')
+  install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${VERSION_ID}.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${VERSION_ID}.noarch.rpm
   run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
 
   if [ "${FIREFOX}" == "1" ]; then
