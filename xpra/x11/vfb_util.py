@@ -108,11 +108,12 @@ def valid_xauth(filename: str, uid: int = getuid(), gid: int = getgid()) -> str:
     return filename
 
 
-def get_xauthority_path(display_name: str) -> str:
+def get_xauthority_path(display_name: str, uid: int = getuid(), gid: int = getgid(), username: str = "") -> str:
     # pylint: disable=import-outside-toplevel
     from xpra.platform.paths import get_xpra_runtime_dir
-    expanded_home = os.path.expanduser("~")
-    has_home = os.path.exists(expanded_home) and is_writable(expanded_home, getuid(), getgid())
+    # when running as root with `--uid`, the file must be usable by the target user:
+    expanded_home = os.path.expanduser(f"~{username}")
+    has_home = os.path.exists(expanded_home) and is_writable(expanded_home, uid, gid)
     if PRIVATE_XAUTH or (not has_home and os.environ.get("XDG_RUNTIME_DIR")):
         d = get_xpra_runtime_dir()
         if XAUTH_PER_DISPLAY:
@@ -120,7 +121,7 @@ def get_xauthority_path(display_name: str) -> str:
         else:
             filename = "Xauthority"
     else:
-        if has_home and is_writable(expanded_home, getuid(), getgid()):
+        if has_home:
             d = expanded_home
         else:
             d = os.environ.get("TMPDIR", "/tmp")

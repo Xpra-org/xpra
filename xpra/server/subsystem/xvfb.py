@@ -307,7 +307,7 @@ class XvfbManager(StubSubsystem):
                         xauthority = filename
                         xauth_time = stat_info.st_mtime
         if not valid_xauth(xauthority, self.uid, self.gid):
-            xauthority = get_xauthority_path(display_name)
+            xauthority = get_xauthority_path(display_name, self.uid, self.gid, self.username)
             xauthority = osexpand(xauthority, actual_username=self.username, uid=self.uid, gid=self.gid)
         assert xauthority
         if not os.path.exists(xauthority):
