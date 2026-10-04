@@ -48,6 +48,7 @@ done
 if ! podman pod exists "$POD_NAME"; then
   podman pod create \
     --name ${POD_NAME} \
+    --restart on-failure \
     --memory 4g \
     --shm-size=1g \
     --uts=private
