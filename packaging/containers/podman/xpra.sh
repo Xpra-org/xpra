@@ -20,7 +20,12 @@ CODECS="${CODECS:-1}"
 TOOLS="${TOOLS:-0}"
 TARGET_USER="${TARGET_USER:-xpra-user}"
 TARGET_PASSWORD="${TARGET_PASSWORD:-thepassword}"
-TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video,xpra}"
+# the "pulse" group only exists when pulseaudio is installed:
+if [ "${AUDIO}" == "1" ]; then
+  TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video,xpra}"
+else
+  TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,video,xpra}"
+fi
 TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
 DEBUG="${DEBUG:-none}"
