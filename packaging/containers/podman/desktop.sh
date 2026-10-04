@@ -139,8 +139,9 @@ fi
 # default DE commands:
 # ie: "mate" -> "mate-"
 # overriden for "lxde" -> "lx" for "lxsession" and "lxpanel"
+# "all" installs every desktop environment and starts LXDE
 DE_COMMAND_PREFIX="${DESKTOP}-"
-if [ "${DESKTOP}" == "lxde" ]; then
+if [ "${DESKTOP}" == "lxde" ] || [ "${DESKTOP}" == "all" ]; then
   DE_COMMAND_PREFIX="lx"
 fi
 
