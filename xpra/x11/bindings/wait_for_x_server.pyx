@@ -19,14 +19,14 @@ def wait_for_x_server(display_name: str = "", int timeout = 10) -> None:
     if display_name:
         bstr = display_name.encode("latin1")
         name = bstr
-    t = 100
+    # start with short delays, then back off up to one second:
+    t = 10
     cdef double start = monotonic()
     while (monotonic() - start) < timeout:
         d = XOpenDisplay(name)
         if d is not NULL:
             XCloseDisplay(d)
             return
-        if t>0:
-            sleep(t/1000)
-            t = t//2
+        sleep(t/1000)
+        t = min(t*2, 1000)
     raise RuntimeError(f"could not connect to X server on display {display_name!r} after {timeout} seconds")
