@@ -121,8 +121,7 @@ podman network inspect "$PUBLIC_NET" | grep -iE '"Name":|"Subnet":|"Gateway":'
 echo
 
 echo "Waiting for port ${PORT}"
-curl --version >& /dev/null
-if [ $? -eq 0 ]; then
+if curl --version >& /dev/null; then
   while ! curl --output /dev/null --silent --head --fail http://127.0.0.1:$PORT; do
     sleep 1 && echo -n .
   done
