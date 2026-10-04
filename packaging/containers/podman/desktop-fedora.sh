@@ -65,7 +65,7 @@ else
   fi
 
   if [ "${XPRA}" == "1" ]; then
-    install xpra-server xpra-client-gtk3 xserver-xorg-video-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5
+    install xpra-server xpra-client-gtk3 xorg-x11-drv-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5
   fi
 
   if [ "${TOOLS}" == "1" ]; then
