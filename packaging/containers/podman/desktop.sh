@@ -145,9 +145,9 @@ if [ "${DESKTOP}" == "lxde" ]; then
 fi
 
 if [ "${SEAMLESS}" == "1" ]; then
-  DE_COMMAND="${DE_COMMAND_PREFIX}-panel"
+  DE_COMMAND="${DE_COMMAND_PREFIX}panel"
 else
-  DE_COMMAND="${DE_COMMAND_PREFIX}-session"
+  DE_COMMAND="${DE_COMMAND_PREFIX}session"
 fi
 
 # known issues:
