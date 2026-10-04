@@ -14,9 +14,11 @@ ARG MODE=seamless
 RUN dnf install -y --setopt=install_weak_deps=False wget
 ADD https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/xpra-beta.repo /etc/yum.repos.d/
 RUN dnf install -y xpra xpra-audio-server && \
-    groupadd -r -g ${GID} ${USERNAME} && \
+    groupadd -r -g ${GID} ${GROUP} && \
     adduser -u ${UID} -g ${GID} --shell /bin/bash ${USERNAME} && \
-    usermod -aG ${USER_GROUPS} ${USERNAME} && \
+    for group in $(echo ${USER_GROUPS} | tr , ' '); do \
+        if getent group ${group} > /dev/null; then usermod -aG ${group} ${USERNAME}; fi; \
+    done && \
     echo "${USERNAME}:${PASSWORD}" | chpasswd && \
     mkdir -m 755 -p /var/lib/dbus && \
     dbus-uuidgen > /var/lib/dbus/machine-id
