@@ -1,9 +1,7 @@
 xpra (7.0-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
-    untranslated keyboard
     new macOS event API
     new macOS screen capture backend
-    MS Windows DXGI screen capture
     setup scripts for pycuda
     automatic RPM package scripts
     MS Windows session lock prevented OpenGL acceleration
@@ -11,11 +9,11 @@ xpra (7.0-1) UNRELEASED; urgency=low
     new kitty terminal rendering backend
     macOS notarization
   * 🖧 Network:
+    zero copy network reception
     optional AsyncSSH client backend
     proxy registration
     automatic session proxying
     simplified mDNS for multiple addresses
-    zero copy network reception
     use `TCP_INFO` to drive batch delay
     `asyncio` loop exit fix
     longer session connection timeout for ssh sessions
@@ -29,16 +27,14 @@ xpra (7.0-1) UNRELEASED; urgency=low
   * 🛡️ Security:
     `seccomp` hardening
     `landlock` support
+    process level protections: prevent ptrace / core dumps
     honour encodings restrictions in all subsystems
-    codec harderning
+    codec hardening
     http digest authentication
     `scram` authentication
     http origin validation
     rate-limit authentication requests
-    process level protections: prevent ptrace / core dumps
     mmap tightening
-  * 📋 Clipboard:
-    avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images
   * 🌈 Encodings:
     explicit image wrapper locking
     `zstd` stream compression
@@ -48,6 +44,7 @@ xpra (7.0-1) UNRELEASED; urgency=low
     `openjph` codecs
     macOS `VideoToolbox` encoder and decoder
     MSWindows `MediaFoundation` encoder
+    MS Windows `DXGI` screen capture
     `AMF` encoder tuning
     native MS Windows DirectShow webcam backend
     native macOS CoreMedia webcam backend
@@ -64,12 +61,13 @@ xpra (7.0-1) UNRELEASED; urgency=low
     suspend + resume handling
     remove deprecated presets
   * 📋 Clipboard:
-    macOS and MS Windows clients `PRIMARY` synchronization
     rate limiting
-    support for URIs on MS Windows
     send multiple formats per message
-    macOS support for more images, PDF, etc
     loop detection
+    macOS and MS Windows clients `PRIMARY` synchronization
+    avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images
+    support for URIs on MS Windows
+    macOS support for more images, PDF, etc
   * 🔊 Audio:
     available signal
     keepalive
@@ -78,31 +76,32 @@ xpra (7.0-1) UNRELEASED; urgency=low
     follow changes to the system audio device on macOS
     use loopback for MS Windows shadow server audio capture
   * ✨ Features:
+    untranslated keyboard
     `sharing=combine`: give each client its own area of the virtual display
+    `expand` server for MS Windows
+    attention request forwarding
+    `gsettings` synchronization
+    native `pipewire` frame capture
+    Wayland scaled subsurfaces
+    synchronize window stacking order
+    better VNC client support including rate control
+    basic bash shell completion
+    localized menus and dialogs
     full size cursors on MS Windows
     macOS global menu no longer causes sticky refresh issues
     avoid repeated pointer position updates when the pointer is unchanged
     prevent stale focus and mapped state after server-requested minimization
-    attention request forwarding
-    native `pipewire` frame capture
-    gsettings synchronization
     virtual monitors for MS Windows shadow servers
-    localized menus and dialogs
-    `expand` server for MS Windows
     fully modular subsystems, also for client
-    synchronize window stacking order
     GTK-free shadow servers
-    better VNC client support including rate control
-    basic bash shell completion
     do not map new windows whilst the MS Windows client session is locked
-    Wayland scaled subsurfaces
     monitor relative coordinates
     per-client readonly sessions
     client-server "loopback" tests
     improved test coverage
     stricter type annotations
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 04 Oct 2026 14:51:58 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 04 Oct 2026 19:25:57 +0700
 
 xpra (6.5-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
