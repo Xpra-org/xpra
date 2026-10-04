@@ -14,13 +14,13 @@ export SEAMLESS=1
 
 # ensure that the containers we need exist:
 if ! buildah inspect -t image xvfb &> /dev/null; then
-  sh ./xvfb.sh
+  bash ./xvfb.sh
 fi
 if ! buildah inspect -t image xpra &> /dev/null; then
-  sh ./xpra.sh
+  bash ./xpra.sh
 fi
 if ! buildah inspect -t image apps &> /dev/null; then
-  sh ./desktop.sh
+  bash ./desktop.sh
 fi
 
 # Create public network (standard podman bridge with internet access)
