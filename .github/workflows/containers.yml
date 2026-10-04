@@ -51,6 +51,17 @@ jobs:
             http://127.0.0.1:10000/
           test "$(sudo podman inspect --format '{{.State.Running}}' xpra-ci)" = true
 
+      - name: Check HTML5 assets
+        timeout-minutes: 1
+        run: |
+          for asset in index.html js/Client.js css/client.css; do
+            echo "Checking HTML5 asset ${asset}"
+            curl --fail --silent --show-error --max-time 10 \
+              --output "${RUNNER_TEMP}/xpra-html5-asset" \
+              "http://127.0.0.1:10000/${asset}"
+            test -s "${RUNNER_TEMP}/xpra-html5-asset"
+          done
+
       - name: Check TCP and WebSocket sessions
         timeout-minutes: 3
         run: |
