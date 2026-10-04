@@ -54,12 +54,27 @@ else
     buildah rmi -f $IMAGE_NAME || true
     buildah from --name $CONTAINER $DISTRO:$RELEASE
   fi
-  install -y "https://download1.rpmfusion.org/free/${DISTRO}/rpmfusion-free-release-${RELEASE}.noarch.rpm"
+  if [ "${DISTRO}" == "fedora" ]; then
+    RPMFUSION_DIR="fedora"
+    REPO_DIR="Fedora"
+    EXTRA_PACKAGES="python3-uvloop python3-aioquic python3-zeroconf"
+  else
+    # almalinux, rockylinux: dependencies come from EPEL and CRB
+    install -y epel-release dnf-plugins-core
+    run dnf config-manager --set-enabled crb
+    RPMFUSION_DIR="el"
+    REPO_DIR="${DISTRO}"
+    if [ "${RELEASE%%.*}" -ge 10 ]; then
+      EXTRA_PACKAGES="python3-uvloop python3-aioquic"
+    else
+      EXTRA_PACKAGES=""
+    fi
+  fi
+  install -y "https://download1.rpmfusion.org/free/${RPMFUSION_DIR}/rpmfusion-free-release-${RELEASE}.noarch.rpm"
   run dnf update -y
   install -y wget "--setopt=install_weak_deps=False"
-  run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
-  install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-uvloop python3-aioquic python3-pyxdg python3-zeroconf dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
-  # EL10: system-backgrounds system-logos
+  run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/${REPO_DIR}/${REPO}.repo"
+  install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-pyxdg ${EXTRA_PACKAGES} dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
   if [ "${AUDIO}" == "1" ]; then
     install -y xpra-audio-server
   fi
