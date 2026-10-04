@@ -60,7 +60,8 @@ else
   if [ "${DISTRO}" == "fedora" ]; then
     RPMFUSION_DIR="fedora"
     REPO_DIR="Fedora"
-    EXTRA_PACKAGES="python3-uvloop python3-aioquic python3-zeroconf"
+    # python3-uvloop is no longer available as of Fedora 44:
+    EXTRA_PACKAGES="python3-aioquic python3-zeroconf"
   else
     # almalinux, rockylinux: dependencies come from EPEL and CRB
     install -y epel-release dnf-plugins-core
