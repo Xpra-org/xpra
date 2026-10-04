@@ -104,9 +104,6 @@ else
   if [ "${DESKTOP}" == "mate" ] || [ "${DESKTOP}" == "all" ]; then
     install mate-session-manager mate-panel marco mate-control-center
   fi
-  if [ "${DESKTOP}" == "deepin" ] || [ "${DESKTOP}" == "all" ]; then
-    install deepin-menu
-  fi
   if [ "${DESKTOP}" == "budgie" ] || [ "${DESKTOP}" == "all" ]; then
     install budgie-desktop budgie-session budgie-control-center
   fi
@@ -151,8 +148,6 @@ fi
 
 if [ "${DESKTOP}" == "xfce4" ]; then
   echo "${DESKTOP} known issue: panel keeps moving"
-elif [ "${DESKTOP}" == "deepin" ]; then
-  DE_COMMAND="deepin-menu"    # no session manager in Ubuntu?
 elif [ "${DESKTOP}" == "cinnamon" ] || [ "${DESKTOP}" == "enlightenment" ]; then
   if [ "${SEAMLESS}" == "1" ]; then
     echo "no seamless mode with ${DESKTOP}"

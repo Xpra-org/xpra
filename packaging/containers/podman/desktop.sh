@@ -110,9 +110,6 @@ else
   if [ "${DESKTOP}" == "mate" ] || [ "${DESKTOP}" == "all" ]; then
     install mate-desktop mate-desktop-environment mate-control-center mate-hud mate-media
   fi
-  if [ "${DESKTOP}" == "deepin" ] || [ "${DESKTOP}" == "all" ]; then
-    install deepin-calculator deepin-image-viewer deepin-menu deepin-music deepin-notifications deepin-terminal
-  fi
   if [ "${DESKTOP}" == "budgie" ] || [ "${DESKTOP}" == "all" ]; then
     install budgie-desktop budgie-desktop-environment budgie-desktop-view budgie-previews budgie-session budgie-control-center
   fi
@@ -161,8 +158,6 @@ fi
 
 if [ "${DESKTOP}" == "xfce4" ]; then
   echo "${DESKTOP} known issue: panel keeps moving"
-elif [ "${DESKTOP}" == "deepin" ]; then
-  DE_COMMAND="deepin-menu"    # no session manager in Ubuntu?
 elif [ "${DESKTOP}" == "cinnamon" ] || [ "${DESKTOP}" == "enlightenment" ]; then
   if [ "${SEAMLESS}" == "1" ]; then
     echo "no seamless mode with ${DESKTOP}"
