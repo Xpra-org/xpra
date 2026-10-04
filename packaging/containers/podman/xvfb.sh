@@ -59,11 +59,12 @@ fi
 if [ "${TRIM}" == "1" ]; then
   # trim down unused directories:
   run rm -fr /media /mnt /opt /srv /usr/local /usr/share/apk /usr/share/aclocal /usr/share/man /usr/share/util-macros
-  run rm -fr /etc/apk /etc/crontabs /etc/logrotate.d /etc/network /etc/nsswitch.conf /etc/periodic /etc/profile* /etc/ssl* /etc/udhcpc /etc/opt
+  # (use a shell inside the container to expand the globs, not the host's)
+  run sh -c "rm -fr /etc/apk /etc/crontabs /etc/logrotate.d /etc/network /etc/nsswitch.conf /etc/periodic /etc/profile* /etc/ssl* /etc/udhcpc /etc/opt"
   # extra OpenGL drivers:
   # run rm -fr /usr/share/util-macros /usr/lib/gallium-pipe/pipe_crocus.so /usr/lib/gallium-pipe/pipe_i915.so /usr/lib/gallium-pipe/pipe_iris.so /usr/lib/gallium-pipe/pipe_nouveau.so /usr/lib/gallium-pipe/pipe_r300.so /usr/lib/gallium-pipe/pipe_r600.so /usr/lib/gallium-pipe/pipe_radeonsi.so /usr/lib/gallium-pipe/pipe_vmwgfx.so
   # remove the ability to install more packages:
-  run rm -fr /lib/apk /var/*
+  run sh -c "rm -fr /lib/apk /var/*"
   # ideally:
   # run apk remove busybox
 fi
