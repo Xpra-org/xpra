@@ -51,6 +51,29 @@ jobs:
             http://127.0.0.1:10000/
           test "$(sudo podman inspect --format '{{.State.Running}}' xpra-ci)" = true
 
+      - name: Check TCP and WebSocket sessions
+        timeout-minutes: 3
+        run: |
+          for scheme in tcp ws; do
+            info_file="session-${scheme}.txt"
+            ready=false
+            for attempt in {1..10}; do
+              if sudo podman run --rm --network host xpra-ci \
+                timeout 5 xpra info "${scheme}://127.0.0.1:10000/" > "$info_file" \
+                && grep -Eq '^windows\.[0-9]+\.title=xterm$' "$info_file"; then
+                ready=true
+                break
+              fi
+              sleep 2
+            done
+            if [ "$ready" != true ]; then
+              cat "$info_file"
+              echo "Xpra session or xterm window unavailable over ${scheme}" >&2
+              exit 1
+            fi
+            echo "Xpra session and xterm window confirmed over ${scheme}"
+          done
+
       - name: Container logs
         if: always()
         run: |
