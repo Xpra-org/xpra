@@ -1,7 +1,5 @@
+# prefer the packages from Mozilla over the distribution ones,
+# ie: Ubuntu's firefox package which installs the snap
 Package: *
-Pin: release o=LP-PPA-mozillateam
-Pin-Priority: 1001
-
-Package: firefox
-Pin: version 1:1snap*
-Pin-Priority: -1
+Pin: origin packages.mozilla.org
+Pin-Priority: 1000

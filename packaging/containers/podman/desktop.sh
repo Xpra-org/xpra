@@ -70,9 +70,11 @@ else
   run apt-get update
 
   if [ "${FIREFOX}" == "1" ]; then
+    # use Mozilla's repository, not a snap:
+    run wget -O "/usr/share/keyrings/packages.mozilla.org.asc" "https://packages.mozilla.org/apt/repo-signing-key.gpg"
+    copy "../fs/etc/apt/sources.list.d/mozilla.sources" "/etc/apt/sources.list.d/"
     copy "../fs/etc/apt/preferences.d/mozilla-firefox" "/etc/apt/preferences.d/"
-    install software-properties-common
-    run add-apt-repository -y ppa:mozillateam/ppa
+    run apt-get update
     install firefox
   fi
 
