@@ -35,7 +35,7 @@ buildah from --name $CONTAINER $DISTRO
 run apk update
 run apk add su-exec
 
-run adduser -D -H -u "${TARGET_UID}" "TARGET_USER"
+run adduser -D -H -u "${TARGET_UID}" "${TARGET_USER}"
 
 
 if [ "${XDUMMY}" == "1" ]; then
