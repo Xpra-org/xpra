@@ -37,7 +37,16 @@ def is_option_allowed(server_source, option: str, subsystem: str, default: str) 
 
 def is_recording_allowed(server_source, subsystem: str) -> bool:
     """ recording the events of the other clients is denied unless the `record` socket option allows it """
-    return is_option_allowed(server_source, "record", subsystem, "no")
+    if is_option_allowed(server_source, "record", subsystem, "no"):
+        return True
+    # tell the client, otherwise it just ends up recording nothing:
+    # (the `notification` connection subsystem may not be enabled)
+    if notify_client := getattr(server_source, "notify_client", None):
+        from xpra.constants import NotificationID
+        notify_client(NotificationID.RECORD, "Recording denied",
+                      f"this connection is not allowed to record {subsystem!r} events,\n"
+                      "the server's `record` socket option controls this")
+    return False
 
 
 def is_sync_allowed(server_source, subsystem: str) -> bool:

@@ -37,6 +37,8 @@ class NotificationConnection(StubClientConnection):
     def init_state(self) -> None:
         self.send_notifications: bool = False
         self.notification_callbacks: dict[int, Callable] = {}
+        # notifications sent before the hello, ie: while parsing the client capabilities:
+        self.pending_notifications: list[tuple] = []
         self.hello_sent = 0.0
 
     def parse_client_caps(self, c: typedict) -> None:
@@ -89,11 +91,21 @@ class NotificationConnection(StubClientConnection):
             return False
         if user_callback:
             self.notification_callbacks[nid] = user_callback
+        # Warning: actions and hints are send last because they were added later (in version 2.3)
+        packet = (NOTIFICATION_SHOW, dbus_id, nid, app_name, replaces_nid, app_icon,
+                  summary, body, expire_timeout, icon or (), tuple(actions), hints)
         if self.hello_sent:
-            # Warning: actions and hints are send last because they were added later (in version 2.3)
-            self.send_async(NOTIFICATION_SHOW, dbus_id, nid, app_name, replaces_nid, app_icon,
-                            summary, body, expire_timeout, icon or (), tuple(actions), hints)
+            self.send_async(*packet)
+        else:
+            self.pending_notifications.append(packet)
         return True
+
+    def send_pending_notifications(self) -> None:
+        pending = self.pending_notifications
+        self.pending_notifications = []
+        log("send_pending_notifications() %i pending", len(pending))
+        for packet in pending:
+            self.send_async(*packet)
 
     def notify_close(self, nid: int | NotificationID) -> None:
         if not self.send_notifications or self.suspended or not self.hello_sent:
