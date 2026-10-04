@@ -1071,11 +1071,9 @@ def get_default_start_env() -> Sequence[str]:
 
 
 def get_default_seccomp() -> str:
-    # the filters are only enabled by default where they have been tested:
-    import platform
-    if sys.platform.startswith("linux") and platform.machine() == "x86_64":
+    if sys.platform.startswith("linux"):
         return "default"
-    return ""
+    return "no"
 
 
 def parse_landlock_option(value: str | bool) -> str:
