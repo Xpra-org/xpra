@@ -1,0 +1,63 @@
+name: Containers
+
+on:
+  push:
+    paths:
+      - "packaging/containers/**"
+      - ".github/workflows/containers.yml"
+  pull_request:
+    paths:
+      - "packaging/containers/**"
+      - ".github/workflows/containers.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check shell syntax
+        run: |
+          for script in packaging/containers/podman/*.sh; do
+            bash -n "$script"
+          done
+
+      # Start with the smallest image, using its published Xpra package.
+      - name: Build minimal image
+        run: >
+          sudo podman build --pull=always --tag xpra-ci
+          --file packaging/containers/docker/minimal/Dockerfile
+          packaging/containers/docker/minimal
+
+      - name: Check Xpra command
+        run: sudo podman run --rm xpra-ci xpra --version
+
+      - name: Start container
+        run: >
+          sudo podman run --detach --name xpra-ci
+          --publish 127.0.0.1:10000:10000/tcp xpra-ci
+
+      - name: Check HTTP server
+        timeout-minutes: 3
+        run: |
+          curl --fail --silent --show-error --output /dev/null \
+            --retry 30 --retry-delay 2 --retry-all-errors \
+            --retry-max-time 120 --max-time 5 \
+            http://127.0.0.1:10000/
+          test "$(sudo podman inspect --format '{{.State.Running}}' xpra-ci)" = true
+
+      - name: Container logs
+        if: always()
+        run: |
+          if sudo podman container exists xpra-ci; then
+            sudo podman logs xpra-ci
+          fi
+
+      - name: Clean up
+        if: always()
+        run: sudo podman rm --force --ignore xpra-ci

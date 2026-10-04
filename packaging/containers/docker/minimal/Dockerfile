@@ -4,8 +4,11 @@ FROM alpine:latest
 
 ARG HTML5_VERSION=20
 
+ENV XDG_RUNTIME_DIR=/run/user/0
+
 RUN apk update && \
-    apk add --no-cache xpra xterm && \
+    apk add --no-cache xpra xterm dbus && \
+    mkdir -p -m 700 "$XDG_RUNTIME_DIR" && \
     mkdir /usr/share/xpra/www && \
     cd /usr/share/xpra/www && \
     wget https://xpra.org/src/xpra-html5-${HTML5_VERSION}.tar.xz && \
