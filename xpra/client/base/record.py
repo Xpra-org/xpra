@@ -638,10 +638,12 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
 
     def init_authenticated_packet_handlers(self) -> None:
         super().init_authenticated_packet_handlers()
+        # all the handlers record events to files, which the parse thread's seccomp filter does not allow,
+        # running them all on the main thread also preserves the order of the events:
         self.add_packets("startup-complete", "encoding-set", main_thread=True)
         self.add_legacy_alias("encodings", "encoding-set")
         if BACKWARDS_COMPATIBLE:
-            self.add_packets("new-override-redirect")
+            self.add_packets("new-override-redirect", main_thread=True)
             self.add_legacy_alias("raise-window", "window-raise")
             self.add_legacy_alias("new-window", "window-create")
             self.add_legacy_alias("restack-window", "window-restack")
@@ -676,4 +678,5 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             "pointer-motion",
             "pointer-wheel",
             "clipboard-record",
+            main_thread=True,
         )
