@@ -18,6 +18,7 @@ PORT="${PORT:-10000}"
 AUDIO="${AUDIO:-1}"
 CODECS="${CODECS:-1}"
 TOOLS="${TOOLS:-0}"
+TRIM="${TRIM:-0}"
 TARGET_USER="${TARGET_USER:-xpra-user}"
 TARGET_PASSWORD="${TARGET_PASSWORD:-thepassword}"
 # the "pulse" group only exists when pulseaudio is installed:
@@ -88,7 +89,6 @@ else
     install -y strace xterm xclip net-tools lsof xpra-client socat mesa-demos xdpyinfo VirtualGL pavucontrol --setopt=install_weak_deps=False
   fi
 
-  run groupdel "${TARGET_GROUP}" || true
   run userdel -r "${TARGET_USER}" || true
   run groupadd -r -g "${TARGET_GID}" "${TARGET_USER}"
   run adduser -u "${TARGET_UID}" -g "${TARGET_GID}" --shell /bin/bash "${TARGET_USER}"
