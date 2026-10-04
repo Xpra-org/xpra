@@ -28,9 +28,14 @@ class X11Init(StubSubsystem):
             raise RuntimeError("fake x11 init error")
         from xpra.x11.bindings.display_source import get_display_ptr, init_display_source
         if not get_display_ptr():
+            # the display may still be starting, ie: `--use-display=yes` with an X11 server in another container,
+            # the delay can be changed using `XPRA_VFB_WAIT`:
+            from xpra.x11.vfb_util import VFB_WAIT
+            from xpra.x11.bindings.wait_for_x_server import wait_for_x_server
             try:
+                wait_for_x_server(self.display, VFB_WAIT)
                 init_display_source()
-            except ValueError as e:
+            except (RuntimeError, ValueError) as e:
                 from xpra.scripts.config import InitExit
                 from xpra.exit_codes import ExitCode
                 raise InitExit(ExitCode.VFB_ERROR, str(e)) from None
