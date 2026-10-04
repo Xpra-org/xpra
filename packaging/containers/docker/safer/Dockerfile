@@ -3,7 +3,6 @@
 FROM fedora:latest
 
 ARG USERNAME=xpra-user
-ARG PASSWORD=default
 ARG GROUP=xpra-group
 ARG USER_GROUPS=audio,pulse,video
 ARG UID=1000
@@ -19,7 +18,6 @@ RUN dnf install -y xpra xpra-audio-server && \
     for group in $(echo ${USER_GROUPS} | tr , ' '); do \
         if getent group ${group} > /dev/null; then usermod -aG ${group} ${USERNAME}; fi; \
     done && \
-    echo "${USERNAME}:${PASSWORD}" | chpasswd && \
     mkdir -m 755 -p /var/lib/dbus && \
     dbus-uuidgen > /var/lib/dbus/machine-id
 
