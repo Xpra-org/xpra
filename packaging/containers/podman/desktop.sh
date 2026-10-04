@@ -117,7 +117,7 @@ else
     install budgie-desktop budgie-desktop-environment budgie-desktop-view budgie-previews budgie-session budgie-control-center
   fi
   if [ "${DESKTOP}" == "cinnamon" ] || [ "${DESKTOP}" == "all" ]; then
-    install cinnamon-desktop-environment nemo cinnamon-session
+    install cinnamon-desktop-environment nemo cinnamon-session xterm
   fi
   if [ "${DESKTOP}" == "enlightenment" ] || [ "${DESKTOP}" == "all" ]; then
     install enlightenment eterm terminology xterm
@@ -163,11 +163,11 @@ if [ "${DESKTOP}" == "xfce4" ]; then
   echo "${DESKTOP} known issue: panel keeps moving"
 elif [ "${DESKTOP}" == "deepin" ]; then
   DE_COMMAND="deepin-menu"    # no session manager in Ubuntu?
-elif [ "${DESKTOP}" == "enlightenment" ]; then
+elif [ "${DESKTOP}" == "cinnamon" ] || [ "${DESKTOP}" == "enlightenment" ]; then
   if [ "${SEAMLESS}" == "1" ]; then
     echo "no seamless mode with ${DESKTOP}"
     DE_COMMAND="xterm"
-  else
+  elif [ "${DESKTOP}" == "enlightenment" ]; then
     DE_COMMAND="enlightenment"
   fi
 elif [ "${DESKTOP}" == "xterm" ]; then
