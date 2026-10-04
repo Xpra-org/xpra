@@ -268,7 +268,8 @@ def start_dbus() -> None:
     SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", ROOT)
     SYSTEM_DBUS_TIMEOUT = envint("XPRA_SYSTEM_DBUS_TIMEOUT", 5)
     MACHINE_ID: Final[str] = "/var/lib/dbus/machine-id"
-    if SYSTEM_DBUS and not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
+    # only wait for an existing socket, there is no point in waiting for one that does not exist yet:
+    if SYSTEM_DBUS and not (os.path.exists(SYSTEM_DBUS_SOCKET) and wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT)):
         if not os.path.exists(MACHINE_ID):
             try:
                 trymkdir("/var/lib")
@@ -293,7 +294,7 @@ def start_cupsd() -> None:
     SYSTEM_CUPS = envbool("XPRA_SYSTEM_CUPS", ROOT)
     SYSTEM_CUPS_TIMEOUT = envint("XPRA_SYSTEM_CUPS_TIMEOUT", 5)
     SYSTEM_CUPS_SOCKET = "/run/cups/cups.sock"
-    if SYSTEM_CUPS and not wait_for_socket(SYSTEM_CUPS_SOCKET, SYSTEM_CUPS_TIMEOUT):
+    if SYSTEM_CUPS and not (os.path.exists(SYSTEM_CUPS_SOCKET) and wait_for_socket(SYSTEM_CUPS_SOCKET, SYSTEM_CUPS_TIMEOUT)):
         trymkdir("/run/cups")
         cupsd = which("cupsd")
         if not cupsd:
