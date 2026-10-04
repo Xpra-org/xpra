@@ -28,6 +28,9 @@ TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
 TIMEZONE="${TIMEZONE:-Europe/London}"
 DESKTOP="${DESKTOP:-lxde}"
+if [ "${DESKTOP}" == "xfce" ]; then
+  DESKTOP="xfce4"
+fi
 # LANG="${LANG:-C}"
 
 run () {
@@ -115,7 +118,7 @@ else
     install cinnamon-desktop-environment nemo cinnamon-session
   fi
   if [ "${DESKTOP}" == "enlightenment" ] || [ "${DESKTOP}" == "all" ]; then
-    install enlightenment eterm terminology
+    install enlightenment eterm terminology xterm
   fi
   if [ "${DESKTOP}" == "xterm" ] || [ "${DESKTOP}" == "all" ]; then
     install xterm

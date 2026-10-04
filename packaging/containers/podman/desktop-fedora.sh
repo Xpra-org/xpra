@@ -14,10 +14,12 @@ CLEAN="${CLEAN:-1}"
 REPO="${REPO:-xpra-beta}"
 TRIM="${TRIM:-1}"
 XDISPLAY="${XDISPLAY:-:10}"
+SEAMLESS="${SEAMLESS:-1}"
 TOOLS="${TOOLS:-0}"
 FILE_MANAGER="${FILE_MANAGER:-nemo}"
 XPRA="${XPRA:-0}"
-APPS="${APPS:-libreoffice lxterminal vlc gimp firefox}"
+APPS="${APPS:-libreoffice lxterminal vlc gimp}"
+FIREFOX="${FIREFOX:-1}"
 TARGET_USER="${TARGET_USER:-desktop-user}"
 TARGET_GROUP="${TARGET_GROUP:-desktop-user}"
 TARGET_PASSWORD="${TARGET_PASSWORD:-thepassword}"
@@ -26,6 +28,9 @@ TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
 TIMEZONE="${TIMEZONE:-Europe/London}"
 DESKTOP="${DESKTOP:-lxde}"
+if [ "${DESKTOP}" == "xfce" ]; then
+  DESKTOP="xfce4"
+fi
 # LANG="${LANG:-C}"
 
 run () {
@@ -38,9 +43,9 @@ copy () {
 
 install () {
   if [ "${TRIM}" == "1" ]; then
-    buildah run $CONTAINER dnf install -y --setopt=install_weak_deps=False "$@"
+    run dnf install -y --setopt=install_weak_deps=False "$@"
   else
-    buildah run $CONTAINER dnf install -y "$@"
+    run dnf install -y "$@"
   fi
 }
 
@@ -54,11 +59,13 @@ else
   fi
   run dnf update -y
 
+  run ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
+
   # add xpra repo:
   install wget
   run dnf config-manager setopt fedora-cisco-openh264.enabled=1
   install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${RELEASE}.noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${RELEASE}.noarch.rpm
-  run wget -O /etc/yum.repos.d/xpra.repo https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo
+  run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
 
   if [ "${FIREFOX}" == "1" ]; then
     install firefox
@@ -69,10 +76,12 @@ else
   fi
 
   if [ "${TOOLS}" == "1" ]; then
+    # add some applications:
     install xterm strace net-tools iputils
-    install glx-utils
-    install VirtualGL
-    install xprop xrandr xdpyinfo xdriinfo xwininfo
+    # toys useful for testing video encoders:
+    install glx-utils VirtualGL
+    # xrandr, xdpyinfo etc:
+    install xprop xrandr xdpyinfo xdriinfo xwininfo vulkan-tools
   fi
 
   install pulseaudio pavucontrol
@@ -80,23 +89,32 @@ else
   install $APPS
 
   # install desktop environment last,
-  if [ "${DESKTOP}" == "xfce" ] || [ "${DESKTOP}" == "all" ]; then
-    install @xfce-desktop-environment
-  elif [ "${DESKTOP}" == "lxde" ] || [ "${DESKTOP}" == "all" ]; then
-    install @lxde-desktop
-  elif [ "${DESKTOP}" == "lxqt" ] || [ "${DESKTOP}" == "all" ]; then
-    install @lxqt-desktop
-  elif [ "${DESKTOP}" == "mate" ] || [ "${DESKTOP}" == "all" ]; then
-    install @mate-desktop
-  elif [ "${DESKTOP}" == "deepin" ] || [ "${DESKTOP}" == "all" ]; then
-    install @deepin-desktop
-  elif [ "${DESKTOP}" == "budgie" ] || [ "${DESKTOP}" == "all" ]; then
-    install @budgie-desktop
-  elif [ "${DESKTOP}" == "cinnamon" ] || [ "${DESKTOP}" == "all" ]; then
-    install @cinnamon-desktop
-  elif [ "${DESKTOP}" == "enlightenment" ] || [ "${DESKTOP}" == "all" ]; then
-    install @enlightenment-desktop
-  elif [ "${DESKTOP}" == "xterm" ] || [ "${DESKTOP}" == "all" ]; then
+  # so we can find the applications installed when creating the cache
+  if [ "${DESKTOP}" == "xfce4" ] || [ "${DESKTOP}" == "all" ]; then
+    install xfce4-session xfce4-panel xfwm4 xfdesktop xfce4-settings
+  fi
+  if [ "${DESKTOP}" == "lxde" ] || [ "${DESKTOP}" == "all" ]; then
+    install lxsession lxpanel openbox lxappearance
+  fi
+  if [ "${DESKTOP}" == "lxqt" ] || [ "${DESKTOP}" == "all" ]; then
+    install lxqt-session lxqt-panel openbox lxqt-config
+  fi
+  if [ "${DESKTOP}" == "mate" ] || [ "${DESKTOP}" == "all" ]; then
+    install mate-session-manager mate-panel marco mate-control-center
+  fi
+  if [ "${DESKTOP}" == "deepin" ] || [ "${DESKTOP}" == "all" ]; then
+    install deepin-menu
+  fi
+  if [ "${DESKTOP}" == "budgie" ] || [ "${DESKTOP}" == "all" ]; then
+    install budgie-desktop budgie-session budgie-control-center
+  fi
+  if [ "${DESKTOP}" == "cinnamon" ] || [ "${DESKTOP}" == "all" ]; then
+    install cinnamon cinnamon-session
+  fi
+  if [ "${DESKTOP}" == "enlightenment" ] || [ "${DESKTOP}" == "all" ]; then
+    install enlightenment terminology xterm
+  fi
+  if [ "${DESKTOP}" == "xterm" ] || [ "${DESKTOP}" == "all" ]; then
     install xterm
   fi
 
@@ -111,23 +129,36 @@ else
   run sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env mkdir -p Documents Downloads Music Pictures Videos Network"
 fi
 
-if [ "${DESKTOP}" == "xfce" ]; then
-  DE_COMMAND="xfce4-session"
-elif [ "${DESKTOP}" == "lxde" ]; then
-  DE_COMMAND="lxsession"
-elif [ "${DESKTOP}" == "lxqt" ]; then
-  DE_COMMAND="lxqt-session"
-elif [ "${DESKTOP}" == "mate" ]; then
-  DE_COMMAND="mate-session"
+# default DE commands:
+# ie: "mate" -> "mate-"
+# overriden for "lxde" -> "lx" for "lxsession" and "lxpanel"
+# "all" installs every desktop environment and starts LXDE
+DE_COMMAND_PREFIX="${DESKTOP}-"
+if [ "${DESKTOP}" == "lxde" ] || [ "${DESKTOP}" == "all" ]; then
+  DE_COMMAND_PREFIX="lx"
+fi
+
+if [ "${SEAMLESS}" == "1" ]; then
+  DE_COMMAND="${DE_COMMAND_PREFIX}panel"
+else
+  DE_COMMAND="${DE_COMMAND_PREFIX}session"
+fi
+
+# known issues:
+# * xfce4-panel keeps moving!
+
+if [ "${DESKTOP}" == "xfce4" ]; then
+  echo "${DESKTOP} known issue: panel keeps moving"
 elif [ "${DESKTOP}" == "deepin" ]; then
   DE_COMMAND="deepin-menu"    # no session manager in Ubuntu?
-elif [ "${DESKTOP}" == "budgie" ]; then
-  DE_COMMAND="budgie-session"
-elif [ "${DESKTOP}" == "cinnamon" ]; then
-  DE_COMMAND="cinnamon-session"
 elif [ "${DESKTOP}" == "enlightenment" ]; then
-  DE_COMMAND="enlightenment"
-else
+  if [ "${SEAMLESS}" == "1" ]; then
+    echo "no seamless mode with ${DESKTOP}"
+    DE_COMMAND="xterm"
+  else
+    DE_COMMAND="enlightenment"
+  fi
+elif [ "${DESKTOP}" == "xterm" ]; then
   DE_COMMAND="xterm"
 fi
 
