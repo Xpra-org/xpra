@@ -1,21 +1,6 @@
 # Changelog
 
-## [7.0] 2026-08-27
-* 🔧 Platforms, build and packaging:
-* 🖧 Network:
-  * [optional AsyncSSH client backend](https://github.com/Xpra-org/xpra/commit/fd89a3dc5589ede85884d747b878a52bd41780f1)
-* 🌈 Encodings:
-  * [explicit image wrapper locking](https://github.com/Xpra-org/xpra/issues/5024)
-* 📋 Clipboard:
-  * [avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images](https://github.com/snyh/xpra/commit/f03b19c9b745)
-* ✨ Features:
-  * [`sharing=combine`: give each client its own area of the virtual display](https://github.com/Xpra-org/xpra/issues/1369)
-  * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)
-  * [avoid repeated pointer position updates when the pointer is unchanged](https://github.com/snyh/xpra/commit/9796f5f672c7)
-  * [prevent stale focus and mapped state after server-requested minimization](https://github.com/snyh/xpra/commit/c70414f3fbc9)
-
-
-## [6.6] 2026-07-14
+## [7.0] 2026-10-04
 * 🔧 Platforms, build and packaging:
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
@@ -26,7 +11,9 @@
   * [MS Windows session lock prevented OpenGL acceleration](https://github.com/Xpra-org/xpra/issues/1138)
   * [stable, native MS Windows client backend](https://github.com/Xpra-org/xpra/issues/921)
   * [new kitty terminal rendering backend](https://github.com/Xpra-org/xpra/pull/5012)
+  * [macOS notarization](https://github.com/Xpra-org/xpra/issues/2441)
 * 🖧 Network:
+  * [optional AsyncSSH client backend](https://github.com/Xpra-org/xpra/commit/fd89a3dc5589ede85884d747b878a52bd41780f1)
   * [proxy registration](https://github.com/Xpra-org/xpra/issues/2125)
   * [automatic session proxying](https://github.com/Xpra-org/xpra/issues/4902)
   * [simplified mDNS for multiple addresses](https://github.com/Xpra-org/xpra/issues/3045)
@@ -42,7 +29,8 @@
   * [document current protocol](https://github.com/Xpra-org/xpra/issues/4999)
   * [protocol versioning](https://github.com/Xpra-org/xpra/issues/5015)
 * 🛡️ Security:
-  * [`seccomp` hardening of image parsing](https://github.com/Xpra-org/xpra/issues/622)
+  * [`seccomp` hardening](https://github.com/Xpra-org/xpra/issues/622)
+  * [`landlock` support](https://github.com/Xpra-org/xpra/issues/4960)
   * [honour encodings restrictions in all subsystems](https://github.com/Xpra-org/xpra/issues/4943)
   * [codec harderning](https://github.com/Xpra-org/xpra/issues/4967)
   * [http digest authentication](https://github.com/Xpra-org/xpra/issues/4914)
@@ -51,13 +39,18 @@
   * [rate-limit authentication requests](https://github.com/Xpra-org/xpra/issues/4959)
   * [process level protections: prevent ptrace / core dumps](https://github.com/Xpra-org/xpra/issues/4958)
   * [mmap tightening](https://github.com/Xpra-org/xpra/issues/4987)
+* 📋 Clipboard:
+  * [avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images](https://github.com/snyh/xpra/commit/f03b19c9b745)
 * 🌈 Encodings:
+  * [explicit image wrapper locking](https://github.com/Xpra-org/xpra/issues/5024)
   * [`zstd` stream compression](https://github.com/Xpra-org/xpra/issues/4946)
   * [`oneVPL` codecs](https://github.com/Xpra-org/xpra/pull/4886)
   * [`libde265` encoder](https://github.com/Xpra-org/xpra/issues/4464)
   * [`libva` encoder](https://github.com/Xpra-org/xpra/issues/4628) [and decoder](https://github.com/Xpra-org/xpra/issues/4907)
-  * [`nvdec` `h264` video decoding](https://github.com/Xpra-org/xpra/issues/3703)
+  * [`openjph` codecs](https://github.com/Xpra-org/xpra/issues/4929)
   * [macOS `VideoToolbox` encoder](https://github.com/Xpra-org/xpra/issues/4908) [and decoder](https://github.com/Xpra-org/xpra/issues/4930)
+  * [MSWindows `MediaFoundation` encoder](https://github.com/Xpra-org/xpra/issues/4916)
+  * [`AMF` encoder tuning](https://github.com/Xpra-org/xpra/issues/4520)
   * [native MS Windows DirectShow webcam backend](https://github.com/Xpra-org/xpra/issues/3336)
   * [native macOS CoreMedia webcam backend](https://github.com/Xpra-org/xpra/issues/1231)
   * [`YUV422` support with `vp9`](https://github.com/Xpra-org/xpra/issues/4928)
@@ -65,6 +58,13 @@
   * [colorspace synchronization in video bitstream](https://github.com/Xpra-org/xpra/issues/4926)
   * [paint YUV420P10](https://github.com/Xpra-org/xpra/issues/4993)
   * [convert SVG icons to PNG](https://github.com/Xpra-org/xpra/issues/3199)
+  * [remove GStreamer video codecs](https://github.com/Xpra-org/xpra/issues/4936)
+* NVENC / CUDA:
+  * [arm64 support on MSWindows](https://github.com/Xpra-org/xpra/issues/5040)
+  * [`nvdec` `h264` video decoding](https://github.com/Xpra-org/xpra/issues/3703)
+  * [split colorspace selection from encoder](https://github.com/Xpra-org/xpra/issues/2050)
+  * [suspend + resume handling](https://github.com/Xpra-org/xpra/issues/538)
+  * [remove deprecated presets](https://github.com/Xpra-org/xpra/issues/3873)
 * 📋 Clipboard:
   * [macOS and MS Windows clients `PRIMARY` synchronization](https://github.com/Xpra-org/xpra/issues/2985)
   * [rate limiting](https://github.com/Xpra-org/xpra/issues/2404)
@@ -75,10 +75,18 @@
 * 🔊 Audio:
   * [available signal](https://github.com/Xpra-org/xpra/issues/2325)
   * [keepalive](https://github.com/Xpra-org/xpra/issues/4913)
+  * [`audio-sink=pipewire`](https://github.com/Xpra-org/xpra/issues/4545)
   * [sink and device options in system tray, saved](https://github.com/Xpra-org/xpra/issues/2003)
+  * [follow changes to the system audio device on macOS](https://github.com/Xpra-org/xpra/issues/5049)
+  * [use loopback for MS Windows shadow server audio capture](https://github.com/Xpra-org/xpra/issues/1205)
 * ✨ Features:
+  * [`sharing=combine`: give each client its own area of the virtual display](https://github.com/Xpra-org/xpra/issues/1369)
+  * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)
+  * [macOS global menu no longer causes sticky refresh issues](https://github.com/Xpra-org/xpra/issues/4978)
+  * [avoid repeated pointer position updates when the pointer is unchanged](https://github.com/snyh/xpra/commit/9796f5f672c7)
+  * [prevent stale focus and mapped state after server-requested minimization](https://github.com/snyh/xpra/commit/c70414f3fbc9)
+  * [attention request forwarding](https://github.com/Xpra-org/xpra/issues/5041)
   * [native `pipewire` frame capture](https://github.com/Xpra-org/xpra/issues/4937)
-  * [remove GStreamer video codecs](https://github.com/Xpra-org/xpra/issues/4936)
   * [gsettings synchronization](https://github.com/Xpra-org/xpra/issues/3683)
   * [virtual monitors for MS Windows shadow servers](https://github.com/Xpra-org/xpra/issues/4909)
   * [localized menus and dialogs](https://github.com/Xpra-org/xpra/issues/4934)
@@ -88,6 +96,7 @@
   * [GTK-free shadow servers](https://github.com/Xpra-org/xpra/issues/4654)
   * [better VNC client support](https://github.com/Xpra-org/xpra/issues/3256) [including rate control](https://github.com/Xpra-org/xpra/issues/1949)
   * [basic bash shell completion](https://github.com/Xpra-org/xpra/issues/2375)
+  * [do not map new windows whilst the MS Windows client session is locked](https://github.com/Xpra-org/xpra/issues/1138)
   * [Wayland scaled subsurfaces](https://github.com/Xpra-org/xpra/issues/4878)
   * [monitor relative coordinates](https://github.com/Xpra-org/xpra/issues/4971)
   * [per-client readonly sessions](https://github.com/Xpra-org/xpra/issues/3468)

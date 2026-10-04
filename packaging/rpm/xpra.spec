@@ -1148,10 +1148,110 @@ fi
 
 
 %changelog
-* Thu Aug 27 2026 Antoine Martin <antoine@xpra.org> 7.0-10
-- TODO
-* Thu May 14 2026 Antoine Martin <antoine@xpra.org> 6.6-10
-- TODO
+* Sun Oct 04 2026 Antoine Martin <antoine@xpra.org> 7.0-10
+- 🔧 Platforms, build and packaging:
+   untranslated keyboard
+   new macOS event API
+   new macOS screen capture backend
+   MS Windows DXGI screen capture
+   setup scripts for pycuda
+   automatic RPM package scripts
+   MS Windows session lock prevented OpenGL acceleration
+   stable, native MS Windows client backend
+   new kitty terminal rendering backend
+   macOS notarization
+- 🖧 Network:
+   optional AsyncSSH client backend
+   proxy registration
+   automatic session proxying
+   simplified mDNS for multiple addresses
+   zero copy network reception
+   use `TCP_INFO` to drive batch delay
+   `asyncio` loop exit fix
+   longer session connection timeout for ssh sessions
+   serialized SSL socket access
+   `ProxyJump` support with paramiko ssh backend
+   support remote UNC named-pipe URLs
+   much improved RFB support
+   prefixed packets
+   document current protocol
+   protocol versioning
+- 🛡️ Security:
+   `seccomp` hardening
+   `landlock` support
+   honour encodings restrictions in all subsystems
+   codec harderning
+   http digest authentication
+   `scram` authentication
+   http origin validation
+   rate-limit authentication requests
+   process level protections: prevent ptrace / core dumps
+   mmap tightening
+- 📋 Clipboard:
+   avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images
+- 🌈 Encodings:
+   explicit image wrapper locking
+   `zstd` stream compression
+   `oneVPL` codecs
+   `libde265` encoder
+   `libva` encoder and decoder
+   `openjph` codecs
+   macOS `VideoToolbox` encoder and decoder
+   MSWindows `MediaFoundation` encoder
+   `AMF` encoder tuning
+   native MS Windows DirectShow webcam backend
+   native macOS CoreMedia webcam backend
+   `YUV422` support with `vp9`
+   tune encoders using window content-type
+   colorspace synchronization in video bitstream
+   paint YUV420P10
+   convert SVG icons to PNG
+   remove GStreamer video codecs
+- NVENC / CUDA:
+   arm64 support on MSWindows
+   `nvdec` `h264` video decoding
+   split colorspace selection from encoder
+   suspend + resume handling
+   remove deprecated presets
+- 📋 Clipboard:
+   macOS and MS Windows clients `PRIMARY` synchronization
+   rate limiting
+   support for URIs on MS Windows
+   send multiple formats per message
+   macOS support for more images, PDF, etc
+   loop detection
+- 🔊 Audio:
+   available signal
+   keepalive
+   `audio-sink=pipewire`
+   sink and device options in system tray, saved
+   follow changes to the system audio device on macOS
+   use loopback for MS Windows shadow server audio capture
+- ✨ Features:
+   `sharing=combine`: give each client its own area of the virtual display
+   full size cursors on MS Windows
+   macOS global menu no longer causes sticky refresh issues
+   avoid repeated pointer position updates when the pointer is unchanged
+   prevent stale focus and mapped state after server-requested minimization
+   attention request forwarding
+   native `pipewire` frame capture
+   gsettings synchronization
+   virtual monitors for MS Windows shadow servers
+   localized menus and dialogs
+   `expand` server for MS Windows
+   fully modular subsystems, also for client
+   synchronize window stacking order
+   GTK-free shadow servers
+   better VNC client support including rate control
+   basic bash shell completion
+   do not map new windows whilst the MS Windows client session is locked
+   Wayland scaled subsurfaces
+   monitor relative coordinates
+   per-client readonly sessions
+   client-server "loopback" tests
+   improved test coverage
+   stricter type annotations
+
 * Wed May 06 2026 Antoine Martin <antoine@xpra.org> 6.5-10
 - Platforms, build and packaging:
    use `wasapi2` on MS Windows
