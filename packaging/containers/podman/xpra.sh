@@ -101,6 +101,12 @@ else
   # the base image ships an empty placeholder file, which 'dbus-uuidgen --ensure' rejects:
   run sh -c "test -s /etc/machine-id || rm -f /etc/machine-id"
   run dbus-uuidgen --ensure=/etc/machine-id
+
+  # in a pod, the shared '/run' volume is populated from this image,
+  # so the user's runtime directory already exists when the other containers start,
+  # even before xpra has created it: ie: for the session bus started by the 'apps' container
+  run mkdir -p -m 0700 "/run/user/${TARGET_UID}"
+  run chown "${TARGET_UID}:${TARGET_GID}" "/run/user/${TARGET_UID}"
 fi
 
 # just use the system-wide ssl certificate:
