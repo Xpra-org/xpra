@@ -166,6 +166,7 @@ fi
 WAIT_FOR_DISPLAY="for i in \$(seq 300); do test -S /tmp/.X11-unix/X${XDISPLAY#:} && break; sleep 0.1; done;"
 # xpra starts pulseaudio after connecting to the display, its socket is in the shared '/run' volume:
 WAIT_FOR_PULSEAUDIO="for i in \$(seq $((PULSEAUDIO_WAIT*10))); do test -S /run/user/${TARGET_UID}/pulse/native && break; sleep 0.1; done;"
+# there is no accessibility bus in the pod, 'NO_AT_BRIDGE' stops GTK applications from looking for one.
 # ugly syntax for arrays of strings with shell variables:
-buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"${WAIT_FOR_DISPLAY} ${WAIT_FOR_PULSEAUDIO} XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} exec ${DE_COMMAND}\" ]" $CONTAINER
+buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"${WAIT_FOR_DISPLAY} ${WAIT_FOR_PULSEAUDIO} XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} NO_AT_BRIDGE=1 exec ${DE_COMMAND}\" ]" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
