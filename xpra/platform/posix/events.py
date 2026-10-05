@@ -87,7 +87,9 @@ def add_bus_handler(get_bus: Callable, callback: Callable, signal: str, iface: s
         bus = get_bus()
     except Exception as e:
         log("add_bus_handler%s", (get_bus, callback, signal, iface, bus_name), exc_info=True)
-        log.warn(f"Warning: no bus for {signal!r}: {e}")
+        # a bus that does not exist is not an error, ie: no system bus in a container
+        if getattr(e, "get_dbus_name", str)() not in ("org.freedesktop.DBus.Error.FileNotFound", "org.freedesktop.DBus.Error.NoServer"):
+            log.warn(f"Warning: no bus for {signal!r}: {e}")
         return None
     if not bus:
         return None
