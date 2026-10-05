@@ -26,6 +26,8 @@ TARGET_PASSWORD="${TARGET_PASSWORD:-thepassword}"
 TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video}"
 TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
+# how long to wait for the pulseaudio server started by xpra, in seconds (0 to disable):
+PULSEAUDIO_WAIT="${PULSEAUDIO_WAIT:-10}"
 TIMEZONE="${TIMEZONE:-Europe/London}"
 DESKTOP="${DESKTOP:-lxde}"
 if [ "${DESKTOP}" == "xfce" ]; then
@@ -172,6 +174,8 @@ fi
 # the display may be provided by another container which is still starting,
 # so wait up to 30 seconds for its socket:
 WAIT_FOR_DISPLAY="for i in \$(seq 300); do test -S /tmp/.X11-unix/X${XDISPLAY#:} && break; sleep 0.1; done;"
+# xpra starts pulseaudio after connecting to the display, its socket is in the shared '/run' volume:
+WAIT_FOR_PULSEAUDIO="for i in \$(seq $((PULSEAUDIO_WAIT*10))); do test -S /run/user/${TARGET_UID}/pulse/native && break; sleep 0.1; done;"
 # ugly syntax for arrays of strings with shell variables:
-buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"${WAIT_FOR_DISPLAY} XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} exec ${DE_COMMAND}\" ]" $CONTAINER
+buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"${WAIT_FOR_DISPLAY} ${WAIT_FOR_PULSEAUDIO} XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} exec ${DE_COMMAND}\" ]" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
