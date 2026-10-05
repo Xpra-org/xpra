@@ -39,6 +39,9 @@ from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 SYSTEM_DBUS_SOCKET = "/run/dbus/system_bus_socket"
+# how long to retry a system socket which refuses connections before treating it as stale,
+# long enough for a daemon that is starting to call `listen()` after `bind()`:
+STALE_SOCKET_TIMEOUT = 0.1
 
 # the display backends that the non-shadow servers can use:
 SERVER_BACKENDS: dict[str, str] = {
@@ -327,7 +330,7 @@ def start_dbus() -> None:
     SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", ROOT)
     SYSTEM_DBUS_TIMEOUT = envint("XPRA_SYSTEM_DBUS_TIMEOUT", 5)
     # only wait for an existing socket, there is no point in waiting for one that does not exist yet:
-    if SYSTEM_DBUS and not (os.path.exists(SYSTEM_DBUS_SOCKET) and wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT)):
+    if SYSTEM_DBUS and not (os.path.exists(SYSTEM_DBUS_SOCKET) and wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT, STALE_SOCKET_TIMEOUT)):
         ensure_machine_id()
         trymkdir("/run/dbus")
         clean_stale_system_dbus_pidfile()
@@ -355,7 +358,7 @@ def start_cupsd() -> None:
     SYSTEM_CUPS = envbool("XPRA_SYSTEM_CUPS", ROOT)
     SYSTEM_CUPS_TIMEOUT = envint("XPRA_SYSTEM_CUPS_TIMEOUT", 5)
     SYSTEM_CUPS_SOCKET = "/run/cups/cups.sock"
-    if SYSTEM_CUPS and not (os.path.exists(SYSTEM_CUPS_SOCKET) and wait_for_socket(SYSTEM_CUPS_SOCKET, SYSTEM_CUPS_TIMEOUT)):
+    if SYSTEM_CUPS and not (os.path.exists(SYSTEM_CUPS_SOCKET) and wait_for_socket(SYSTEM_CUPS_SOCKET, SYSTEM_CUPS_TIMEOUT, STALE_SOCKET_TIMEOUT)):
         trymkdir("/run/cups")
         cupsd = which("cupsd")
         if not cupsd:

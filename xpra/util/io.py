@@ -67,12 +67,18 @@ def is_socket(sockpath: str, check_uid: int = -1) -> bool:
     return True
 
 
-def wait_for_socket(sockpath: str, timeout=1) -> bool:
+def wait_for_socket(sockpath: str, timeout=1, refused_timeout: float = 0) -> bool:
+    """
+    `refused_timeout`: give up sooner on a socket that refuses connections,
+    which means that nothing is listening on it:
+    either the server has not called `listen()` yet, or the socket is stale.
+    """
     assert POSIX, f"wait_for_socket cannot be used on {sys.platform!r}"
     import socket
     sock: socket.socket | None = None
     from time import monotonic, sleep
     now = monotonic()
+    refused = 0.0
     wait = timeout / 10 if not os.path.exists(sockpath) else 0
     while monotonic() - now < timeout:
         sleep(wait)
@@ -86,6 +92,13 @@ def wait_for_socket(sockpath: str, timeout=1) -> bool:
         except PermissionError:
             get_util_logger().debug(f"wait_for_socket({sockpath!r}, {timeout})", exc_info=True)
             return False
+        except ConnectionRefusedError:
+            get_util_logger().debug(f"wait_for_socket({sockpath!r}, {timeout})", exc_info=True)
+            if refused_timeout > 0:
+                refused = refused or monotonic()
+                if monotonic() - refused >= refused_timeout:
+                    return False
+                wait = min(wait, refused_timeout / 5)
         except OSError:
             get_util_logger().debug(f"wait_for_socket({sockpath!r}, {timeout})", exc_info=True)
         finally:
