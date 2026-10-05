@@ -250,7 +250,7 @@ def request_exit(uri: str) -> bool:
         p.wait()
     except OSError as e:
         stderr_print("Error: failed to 'exit' the server to upgrade")
-        stderr_print(f" {e}\n")
+        stderr_print(f" {e}")
         return False
     return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
@@ -311,9 +311,9 @@ def start_dbus() -> None:
             error(" use `XPRA_SYSTEM_DBUS=0` to skip it")
             return
         if not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
-            warn("dbus-daemon failed to start\n")
+            warn("dbus-daemon failed to start")
         else:
-            warn("started system dbus daemon\n")
+            warn("started system dbus daemon")
 
 
 def start_cupsd() -> None:
@@ -329,9 +329,9 @@ def start_cupsd() -> None:
         else:
             Popen([cupsd]).wait()
             if not wait_for_socket(SYSTEM_CUPS_SOCKET, SYSTEM_CUPS_TIMEOUT):
-                warn("cupsd failed to start\n")
+                warn("cupsd failed to start")
             else:
-                warn("started system cupsd daemon\n")
+                warn("started system cupsd daemon")
 
 
 @dataclass
@@ -522,7 +522,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         cwd = os.getcwd()
     except OSError:
         cwd = os.path.expanduser("~")
-        warn(f"current working directory does not exist, using {cwd!r}\n")
+        warn(f"current working directory does not exist, using {cwd!r}")
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
     from xpra.server.runner_script import xpra_runner_shell_script, xpra_env_shell_script
