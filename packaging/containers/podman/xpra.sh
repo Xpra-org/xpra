@@ -124,7 +124,10 @@ fi
 # only use socket directories in '/run', the home directory may not be writable (ie: `--read-only`).
 # the entrypoint runs in a shell, so `USE_DISPLAY` can be overriden when starting the container,
 # ie: `--env USE_DISPLAY=yes` to only use the display from the 'xvfb' container,
-# with `--env XPRA_VFB_WAIT=30` to wait up to 30 seconds for it to become available:
+# with `--env XPRA_VFB_WAIT=30` to wait up to 30 seconds for it to become available.
+# likewise, `--env DBUS=wait` connects to a session bus started by another container
+# at '/run/user/${TARGET_UID}/bus', instead of running without dbus:
 buildah config --env USE_DISPLAY=auto $CONTAINER
-buildah config --entrypoint "/usr/bin/xpra ${MODE} --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=\${USE_DISPLAY} --socket-dirs=/run/user/${TARGET_UID}/xpra --socket-dirs=/run/xpra --dbus=no --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
+buildah config --env DBUS=no $CONTAINER
+buildah config --entrypoint "/usr/bin/xpra ${MODE} --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=\${USE_DISPLAY} --socket-dirs=/run/user/${TARGET_UID}/xpra --socket-dirs=/run/xpra --dbus=\${DBUS} --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME

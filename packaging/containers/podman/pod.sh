@@ -79,6 +79,7 @@ podman run -dt \
   xvfb
 
 # Start xpra
+# xpra uses the session bus started by the 'apps' container,
 # nothing in the pod needs a system bus, so xpra must not start one (as root) in the xpra container:
 podman run -dt \
   --pod ${POD_NAME} \
@@ -86,6 +87,7 @@ podman run -dt \
   --name xpra \
   --env USE_DISPLAY=yes \
   --env XPRA_VFB_WAIT=30 \
+  --env DBUS=wait \
   --env XPRA_SYSTEM_DBUS=0 \
   --uts container:xvfb \
   --ipc container:xvfb \
