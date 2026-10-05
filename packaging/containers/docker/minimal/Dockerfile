@@ -7,7 +7,7 @@ ARG HTML5_VERSION=20
 ENV XDG_RUNTIME_DIR=/run/user/0
 
 RUN apk update && \
-    apk add --no-cache xpra xterm dbus && \
+    apk add --no-cache xpra xterm dbus dbus-x11 && \
     mkdir -p -m 700 "$XDG_RUNTIME_DIR" && \
     mkdir /usr/share/xpra/www && \
     cd /usr/share/xpra/www && \
