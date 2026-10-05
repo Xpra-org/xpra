@@ -89,6 +89,9 @@ else
   if [ "${TOOLS}" == "1" ]; then
     install -y strace xterm xclip net-tools lsof xpra-client socat mesa-demos xdpyinfo VirtualGL pavucontrol --setopt=install_weak_deps=False
   fi
+  # the package scripts only cache the SVG menu icons available when xpra is installed,
+  # cache them again now that everything is installed, the home directory may not be writable at runtime:
+  run xpra menu-cache
 
   run userdel -r "${TARGET_USER}" || true
   run groupadd -r -g "${TARGET_GID}" "${TARGET_USER}"
