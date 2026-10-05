@@ -105,6 +105,13 @@ def is_writable(path: str, uid: int, gid: int) -> bool:
         get_util_logger().debug(f"is_writable({path}) path cannot be accessed: {e}")
         # socket cannot be accessed
         return False
+    # the permission bits are irrelevant on a read-only filesystem (ie: a read-only container):
+    if hasattr(os, "statvfs"):
+        try:
+            if os.statvfs(path).f_flag & os.ST_RDONLY:
+                return False
+        except OSError as e:
+            get_util_logger().debug(f"is_writable({path}) statvfs failed: {e}")
     mode = s.st_mode
     if s.st_uid == uid and mode & stat.S_IWUSR:
         # uid has write access
