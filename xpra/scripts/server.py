@@ -15,7 +15,7 @@ from typing import Final
 from collections.abc import Callable
 from subprocess import Popen
 
-from xpra.util.io import warn, wait_for_socket, which
+from xpra.util.io import warn, error, wait_for_socket, which
 from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_bool_or
 from xpra.scripts.parsing import MODE_ALIAS
 from xpra.scripts.main import nox, parse_env
@@ -297,7 +297,19 @@ def start_dbus() -> None:
     if SYSTEM_DBUS and not (os.path.exists(SYSTEM_DBUS_SOCKET) and wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT)):
         ensure_machine_id()
         trymkdir("/run/dbus")
-        Popen(["dbus-daemon", "--system", "--fork"]).wait()
+        dbus_daemon = which("dbus-daemon")
+        if not dbus_daemon:
+            error("Error: unable to start the system dbus daemon")
+            error(" `dbus-daemon` command not found")
+            error(" install dbus, or use `XPRA_SYSTEM_DBUS=0` to skip it")
+            return
+        try:
+            Popen([dbus_daemon, "--system", "--fork"]).wait()
+        except OSError as e:
+            error("Error: failed to start the system dbus daemon")
+            error(f" {e}")
+            error(" use `XPRA_SYSTEM_DBUS=0` to skip it")
+            return
         if not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
             warn("dbus-daemon failed to start\n")
         else:
