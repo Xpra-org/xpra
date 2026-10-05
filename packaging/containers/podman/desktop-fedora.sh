@@ -171,9 +171,16 @@ fi
 # the display may be provided by another container which is still starting,
 # so wait up to 30 seconds for its socket:
 WAIT_FOR_DISPLAY="for i in \$(seq 300); do test -S /tmp/.X11-unix/X${XDISPLAY#:} && break; sleep 0.1; done;"
-# xpra starts pulseaudio after connecting to the display, its socket is in the shared '/run' volume:
-WAIT_FOR_PULSEAUDIO="for i in \$(seq $((PULSEAUDIO_WAIT*10))); do test -S /run/user/${TARGET_UID}/pulse/native && break; sleep 0.1; done;"
+# the session bus runs in this container, so that dbus activation starts services here,
+# and xpra connects to it using '--dbus=wait', its socket is in the shared '/run' volume.
+# the environment is exported first so that services started by the bus also inherit it.
 # there is no accessibility bus in the pod, 'NO_AT_BRIDGE' stops GTK applications from looking for one.
+SESSION_BUS="unix:path=/run/user/${TARGET_UID}/bus"
+SESSION_ENV="export XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} DBUS_SESSION_BUS_ADDRESS=${SESSION_BUS} NO_AT_BRIDGE=1;"
+START_SESSION_BUS="dbus-daemon --session --address=${SESSION_BUS} --fork;"
+# xpra only starts pulseaudio once it has found the session bus,
+# so the bus must be started before waiting for the pulseaudio socket:
+WAIT_FOR_PULSEAUDIO="for i in \$(seq $((PULSEAUDIO_WAIT*10))); do test -S /run/user/${TARGET_UID}/pulse/native && break; sleep 0.1; done;"
 # ugly syntax for arrays of strings with shell variables:
-buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"${WAIT_FOR_DISPLAY} ${WAIT_FOR_PULSEAUDIO} XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} NO_AT_BRIDGE=1 exec ${DE_COMMAND}\" ]" $CONTAINER
+buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"${SESSION_ENV} ${WAIT_FOR_DISPLAY} ${START_SESSION_BUS} ${WAIT_FOR_PULSEAUDIO} exec ${DE_COMMAND}\" ]" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
