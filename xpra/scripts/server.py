@@ -289,6 +289,39 @@ def ensure_machine_id() -> None:
             warn(f"unable to create {filename!r}: {e}")
 
 
+def get_system_dbus_pidfile() -> str:
+    # ie: "/run/dbus/pid" or "/run/dbus/dbus.pid", the last one defined wins:
+    import re
+    from xpra.util.io import load_binary_file
+    pidfile = ""
+    for conf in ("/usr/share/dbus-1/system.conf", "/etc/dbus-1/system.conf", "/etc/dbus-1/system-local.conf"):
+        data = load_binary_file(conf).decode("utf8", errors="ignore")
+        for match in re.finditer(r"<pidfile>\s*([^<]+?)\s*</pidfile>", data):
+            pidfile = match.group(1)
+    return pidfile
+
+
+def clean_stale_system_dbus_pidfile() -> None:
+    # `dbus-daemon` refuses to start if its pidfile exists,
+    # ie: left behind on a persistent `/run` volume after a container restart:
+    pidfile = get_system_dbus_pidfile()
+    if not pidfile or not os.path.exists(pidfile):
+        return
+    from xpra.util.pid import load_pid
+    from xpra.util.io import load_binary_file
+    pid = load_pid(pidfile)
+    # pids are reused when the container restarts with a new pid namespace,
+    # so verify that this is still a `dbus-daemon` process:
+    if pid and load_binary_file(f"/proc/{pid}/comm").strip() == b"dbus-daemon":
+        warn(f"Warning: the system dbus-daemon is still running with pid {pid}, but its socket is not responding")
+        return
+    try:
+        os.unlink(pidfile)
+        warn(f"removed stale system dbus-daemon pidfile {pidfile!r}")
+    except OSError as e:
+        warn(f"Warning: failed to remove stale pidfile {pidfile!r}: {e}")
+
+
 def start_dbus() -> None:
     ROOT: bool = POSIX and getuid() == 0
     SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", ROOT)
@@ -297,6 +330,7 @@ def start_dbus() -> None:
     if SYSTEM_DBUS and not (os.path.exists(SYSTEM_DBUS_SOCKET) and wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT)):
         ensure_machine_id()
         trymkdir("/run/dbus")
+        clean_stale_system_dbus_pidfile()
         dbus_daemon = which("dbus-daemon")
         if not dbus_daemon:
             error("Error: unable to start the system dbus daemon")
