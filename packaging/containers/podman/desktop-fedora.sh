@@ -88,6 +88,13 @@ else
     install xprop xrandr xdpyinfo xdriinfo xwininfo vulkan-tools
   fi
 
+  # Fedora defaults to 'dbus-broker', which needs systemd to start a session bus:
+  install dbus-daemon dbus-tools
+  # dbus falls back to '/etc/machine-id' when '/var/lib/dbus/machine-id' does not exist,
+  # the base image ships an empty placeholder file, which 'dbus-uuidgen --ensure' rejects:
+  run sh -c "test -s /etc/machine-id || rm -f /etc/machine-id"
+  run dbus-uuidgen --ensure=/etc/machine-id
+
   install pulseaudio pavucontrol
   install "${FILE_MANAGER}"
   install $APPS
