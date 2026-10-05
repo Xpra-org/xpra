@@ -101,7 +101,6 @@ else
   # the base image ships an empty placeholder file, which 'dbus-uuidgen --ensure' rejects:
   run sh -c "test -s /etc/machine-id || rm -f /etc/machine-id"
   run dbus-uuidgen --ensure=/etc/machine-id
-  copy "../fs/etc/dbus-1/system.d/allow-all.conf" /etc/dbus-1/system.d/
 fi
 
 # just use the system-wide ssl certificate:
