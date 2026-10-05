@@ -736,12 +736,21 @@ def _menu_icon_files(data: Any) -> set[str]:
 
 
 def prepare_menu_icon_cache_dir() -> str:
+    """Create the menu icon cache directory, returns an empty string if it is not writable, ie: read-only home"""
     cache_dir = get_menu_icon_cache_dir()
     mode = 0o755 if os.geteuid() == 0 else 0o700
     existed = os.path.isdir(cache_dir)
-    os.makedirs(cache_dir, mode=mode, exist_ok=True)
-    if not existed:
-        os.chmod(cache_dir, mode)
+    try:
+        os.makedirs(cache_dir, mode=mode, exist_ok=True)
+        if not existed:
+            os.chmod(cache_dir, mode)
+    except OSError as e:
+        log("prepare_menu_icon_cache_dir()", exc_info=True)
+        log(f"cannot create menu icon cache directory {cache_dir!r}: {e}")
+        return ""
+    if not os.access(cache_dir, os.W_OK):
+        log(f"menu icon cache directory {cache_dir!r} is not writable")
+        return ""
     return cache_dir
 
 
@@ -766,6 +775,9 @@ def _write_cached_png(filename: str, png_data: bytes) -> None:
 def cache_menu_icons() -> int:
     """Load XDG application and desktop-session menus and cache their SVG icons as PNG."""
     cache_dir = prepare_menu_icon_cache_dir()
+    if not cache_dir:
+        log.info("menu icon cache directory %r is not writable", get_menu_icon_cache_dir())
+        return 0
     menu_data = load_menu(True)
     session_data = load_desktop_sessions()
     filenames = _menu_icon_files(menu_data)

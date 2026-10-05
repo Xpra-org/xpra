@@ -158,6 +158,22 @@ class TestMenuIconCache(unittest.TestCase):
                  patch.object(menu_helper.icon_util, "svg_to_png", return_value=PNG_DATA):
                 assert menu_helper.cache_menu_icons() == 1
 
+    def test_cache_menu_icons_read_only(self):
+        from xpra.platform.posix import menu_helper
+        if os.geteuid() == 0:
+            self.skipTest("root can write to read-only directories")
+        with tempfile.TemporaryDirectory() as home:
+            os.chmod(home, 0o500)
+            try:
+                for cache_dir in (os.path.join(home, ".cache", "xpra", "menu-icons"), home):
+                    with patch.object(menu_helper, "get_menu_icon_cache_dir", return_value=cache_dir), \
+                         patch.object(menu_helper, "load_menu") as load_menu:
+                        assert menu_helper.prepare_menu_icon_cache_dir() == ""
+                        assert menu_helper.cache_menu_icons() == 0
+                        load_menu.assert_not_called()
+            finally:
+                os.chmod(home, 0o700)
+
 
 def main():
     unittest.main()
