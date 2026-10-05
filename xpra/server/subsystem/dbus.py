@@ -126,7 +126,11 @@ class DbusManager(StubSubsystem):
             if features.x11 and self.env:
                 save_dbus_x11_properties(self.env)
             if self.control:
-                self.init_dbus_server()
+                from xpra.dbus.common import find_session_bus_address, DBUS_AUTOLAUNCH
+                if find_session_bus_address() or DBUS_AUTOLAUNCH:
+                    self.init_dbus_server()
+                else:
+                    log.info("no dbus session bus, the dbus control interface is not available")
 
     def init_dbus_env(self) -> None:
         log("init_dbus_env()")

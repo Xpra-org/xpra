@@ -51,9 +51,13 @@ def get_user_bus_address() -> str:
     return ""
 
 
+def find_session_bus_address() -> str:
+    return os.environ.get("DBUS_SESSION_BUS_ADDRESS", "") or get_user_bus_address()
+
+
 def init_session_bus(private=False):
     global _session_bus, _session_bus_address
-    address = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "") or get_user_bus_address()
+    address = find_session_bus_address()
     if _session_bus and not private and address == _session_bus_address:
         return _session_bus
     loop_init()
