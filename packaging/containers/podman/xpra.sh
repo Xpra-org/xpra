@@ -97,7 +97,10 @@ else
   run sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
 
   # dbus setup
-  run sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/lib/dbus/machine-id"
+  # dbus falls back to '/etc/machine-id' when '/var/lib/dbus/machine-id' does not exist,
+  # the base image ships an empty placeholder file, which 'dbus-uuidgen --ensure' rejects:
+  run sh -c "test -s /etc/machine-id || rm -f /etc/machine-id"
+  run dbus-uuidgen --ensure=/etc/machine-id
   copy "../fs/etc/dbus-1/system.d/allow-all.conf" /etc/dbus-1/system.d/
 fi
 

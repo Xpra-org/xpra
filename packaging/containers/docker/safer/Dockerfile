@@ -20,8 +20,8 @@ RUN dnf install -y xpra xpra-audio-server && \
         if getent group ${group} > /dev/null; then usermod -aG ${group} ${USERNAME}; fi; \
     done && \
     chmod 644 /etc/xpra/ssl/*.pem && \
-    mkdir -m 755 -p /var/lib/dbus && \
-    dbus-uuidgen > /var/lib/dbus/machine-id
+    { test -s /etc/machine-id || rm -f /etc/machine-id; } && \
+    dbus-uuidgen --ensure=/etc/machine-id
 
 ENV UID=$UID
 ENV GID=$GID
