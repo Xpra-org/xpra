@@ -100,10 +100,13 @@ podman run -dt \
   xpra
 
 # Start app container running the desktop environment applications:
+# `--init` reaps the orphaned processes, ie: services started by the session bus,
+# the desktop environment command does not do it
 podman run -dt \
   --pod ${POD_NAME} \
   --replace \
   --name apps \
+  --init \
   --uts container:xvfb \
   --ipc container:xvfb \
   --cgroupns container:xvfb \
