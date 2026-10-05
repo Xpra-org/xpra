@@ -4,6 +4,12 @@
 # later version. See the file COPYING for details.
 
 import os
+import stat
+
+from xpra.util.env import envbool
+
+# without a session bus address, libdbus would autolaunch a new bus that nothing will ever stop:
+DBUS_AUTOLAUNCH = envbool("XPRA_DBUS_AUTOLAUNCH", False)
 
 _loop: object | None = None
 
@@ -31,13 +37,30 @@ def get_session_bus_address() -> str:
     return _session_bus_address
 
 
+def get_user_bus_address() -> str:
+    # the default location used by systemd and others, ie: `/run/user/1000/bus`:
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", "")
+    if not runtime_dir:
+        return ""
+    path = os.path.join(runtime_dir, "bus")
+    try:
+        if stat.S_ISSOCK(os.stat(path).st_mode):
+            return f"unix:path={path}"
+    except OSError:
+        pass
+    return ""
+
+
 def init_session_bus(private=False):
     global _session_bus, _session_bus_address
-    address = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
+    address = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "") or get_user_bus_address()
     if _session_bus and not private and address == _session_bus_address:
         return _session_bus
     loop_init()
     import dbus
+    if not address and not DBUS_AUTOLAUNCH:
+        raise dbus.exceptions.DBusException("no session bus address and autolaunch is disabled",
+                                            name="org.freedesktop.DBus.Error.NoServer")
     if address:
         # connect to this address explicitly:
         # `dbus.SessionBus()` returns a connection to the bus we connected to first,
