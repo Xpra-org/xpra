@@ -410,7 +410,7 @@ def has_child_arg(opts) -> bool:
 
 
 def sanitize_dbus_env(dbus: str) -> None:
-    if str(dbus).lower() == "keep":
+    if str(dbus).lower() in ("keep", "wait"):
         return
     # remove anything pointing to dbus from the current env
     # (so we only detect a dbus instance started by pam,

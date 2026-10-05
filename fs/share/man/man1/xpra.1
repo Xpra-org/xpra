@@ -861,11 +861,16 @@ The default value is 1024 which is the standard value for privileged ports.
 \fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
 Enable or disable the publication of new sessions via mDNS.
 .TP
-\fB\-\-dbus\fP=\fIyes\fP|\fIno\fP|\fIkeep\fP
+\fB\-\-dbus\fP=\fIyes\fP|\fIno\fP|\fIkeep\fP|\fIwait\fP
 Enable or disable all dbus related functionality including
 \fBdbus-launch\fP, \fBdbus-control\fP and any feature that
 might use dbus. Use \fBkeep\fP to preserve existing \fIDBUS_*\fP
 environment variables.
+Use \fBwait\fP to wait for a session bus started by someone else
+instead of launching one, ie: from another container.
+The bus is found using \fIDBUS_SESSION_BUS_ADDRESS\fP
+or at \fI$XDG_RUNTIME_DIR/bus\fP, \fIXPRA_DBUS_WAIT\fP sets the timeout
+in seconds (default: 30).
 .TP
 \fB\-\-dbus\-launch\fP=\fICOMMAND\fP|\fIno\fP
 Start the session within a dbus-launch context, you can specify

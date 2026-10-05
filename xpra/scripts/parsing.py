@@ -1258,11 +1258,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                           " tcp://[user[:password]@]host:port/?session-name=NAME."
                           " May be specified multiple times to register with multiple proxies.")
     legacy_bool_parse("dbus")
-    group.add_option("--dbus", action="store", metavar="yes|no|keep",
+    group.add_option("--dbus", action="store", metavar="yes|no|keep|wait",
                      dest="dbus", default=defaults.dbus,
                      help="Enable or disable all dbus related functionality,"
                           " `dbus-launch`, `dbus-control` and any feature that might use dbus."
                           " Use 'keep' to preserve existing DBUS_* environment variables."
+                          " Use 'wait' to wait for an existing session bus instead of launching one:"
+                          " 'DBUS_SESSION_BUS_ADDRESS' or '$XDG_RUNTIME_DIR/bus'."
                           " Default: %s." % nonedefault(defaults.dbus))
     group.add_option("--dbus-launch", action="store",
                      dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,

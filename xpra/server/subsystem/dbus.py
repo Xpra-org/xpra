@@ -10,12 +10,16 @@ from collections.abc import Callable
 
 from xpra.server import features
 from xpra.util.pid import load_pid
+from xpra.util.env import envint
 from xpra.util.parsing import str_to_bool
 from xpra.scripts.session import load_session_file
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("dbus")
+
+# how long `--dbus=wait` waits for the session bus, in seconds:
+DBUS_WAIT = envint("XPRA_DBUS_WAIT", 30)
 
 
 def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
@@ -97,7 +101,7 @@ class DbusManager(StubSubsystem):
     """
     Mixin for servers that have a dbus server associated with them
     """
-    __slots__ = ("control", "enabled", "env", "launch", "pid", "service")
+    __slots__ = ("control", "enabled", "env", "launch", "pid", "service", "wait")
     PREFIX = "dbus"
 
     def __init__(self, server=None):
@@ -108,9 +112,12 @@ class DbusManager(StubSubsystem):
         self.env: dict[str, str] = {}
         self.control: bool = False
         self.service = None
+        self.wait = False
 
     def init(self, opts) -> None:
         self.enabled = str_to_bool(opts.dbus)
+        # use a session bus started by someone else, don't launch one:
+        self.wait = str(opts.dbus).lower() == "wait"
         self.launch = opts.dbus_launch
         self.control = opts.dbus_control
 
@@ -134,14 +141,20 @@ class DbusManager(StubSubsystem):
 
     def init_dbus_env(self) -> None:
         log("init_dbus_env()")
-        display_name = os.environ.get("DISPLAY", "")
-        self.pid, self.env = reload_dbus_attributes(display_name)
-        if self.pid and self.env:
-            return
+        if not self.wait:
+            display_name = os.environ.get("DISPLAY", "")
+            self.pid, self.env = reload_dbus_attributes(display_name)
+            if self.pid and self.env:
+                return
         try:
-            from xpra.server.dbus.start import start_dbus
+            from xpra.server.dbus.start import start_dbus, wait_for_dbus
         except ImportError as e:
             log("dbus components are not installed: %s", e)
+            return
+        if self.wait:
+            # we don't own this bus: no pid and no session files, so we never stop it
+            self.env = wait_for_dbus(DBUS_WAIT)
+            os.environ.update(self.env)
             return
         self.pid, self.env = start_dbus(self.launch)
         if not self.env:
@@ -198,11 +211,9 @@ class DbusManager(StubSubsystem):
         return None
 
     def get_info(self, _proto) -> dict[str, Any]:
-        if not self.pid or not self.env:
+        if not self.env:
             return {}
-        return {
-            DbusManager.PREFIX: {
-                "pid": self.pid,
-                "env": self.env,
-            }
-        }
+        info: dict[str, Any] = {"env": self.env}
+        if self.pid:
+            info["pid"] = self.pid
+        return {DbusManager.PREFIX: info}
