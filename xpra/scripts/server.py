@@ -22,7 +22,7 @@ from xpra.scripts.session import (
     get_session_dir, make_session_dir, session_file_path,
     load_session_file, save_session_file
 )
-from xpra.util.io import info, warn, wait_for_socket, which
+from xpra.util.io import info, warn, error, wait_for_socket, which
 from xpra.util.parsing import parse_str_dict, FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, str_to_bool, parse_bool_or, \
     parse_resolutions, get_refresh_rate_for_value
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
@@ -519,7 +519,19 @@ def start_dbus() -> None:
             except OSError as e:
                 warn(f"unable to create machine_id: {e}\n")
         trymkdir("/run/dbus")
-        Popen(["dbus-daemon", "--system", "--fork"]).wait()
+        dbus_daemon = which("dbus-daemon")
+        if not dbus_daemon:
+            error("Error: unable to start the system dbus daemon")
+            error(" `dbus-daemon` command not found")
+            error(" install dbus, or use `XPRA_SYSTEM_DBUS=0` to skip it")
+            return
+        try:
+            Popen([dbus_daemon, "--system", "--fork"]).wait()
+        except OSError as e:
+            error("Error: failed to start the system dbus daemon")
+            error(f" {e}")
+            error(" use `XPRA_SYSTEM_DBUS=0` to skip it")
+            return
         if not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
             warn("dbus-daemon failed to start\n")
         else:
