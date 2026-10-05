@@ -4,7 +4,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import stat
+import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from xpra import os_util
 
 from xpra.os_util import (
     strtobytes, bytestostr, memoryview_to_bytes, hexstr,
@@ -17,6 +24,48 @@ from xpra.os_util import (
     is_unity, is_gnome, is_kde,
     livefds,
     )
+
+
+@unittest.skipUnless(hasattr(os, "statvfs"), "statvfs is required")
+class TestIsWritable(unittest.TestCase):
+
+    def test_read_only_filesystem(self):
+        file_stat = SimpleNamespace(st_uid=1000, st_gid=100, st_mode=stat.S_IWUSR | stat.S_IWGRP)
+        with patch.object(os_util, "getuid", return_value=1000):
+            with patch.object(os_util, "os", wraps=os) as filesystem:
+                filesystem.W_OK = os.W_OK
+                filesystem.ST_RDONLY = os.ST_RDONLY
+                filesystem.access.return_value = True
+                filesystem.stat.return_value = file_stat
+                filesystem.statvfs.return_value = SimpleNamespace(f_flag=os.ST_RDONLY)
+                for uid, gid in ((0, 0), (1000, 100), (2000, 100)):
+                    with self.subTest(uid=uid, gid=gid):
+                        self.assertFalse(os_util.is_writable("/read-only", uid, gid))
+
+    def test_writable_filesystem(self):
+        with tempfile.TemporaryDirectory() as path:
+            os.chmod(path, 0o770)
+            uid, gid = os.getuid(), os.getgid()
+            self.assertTrue(os_util.is_writable(path, uid, gid))
+            self.assertTrue(os_util.is_writable(path, 0, 0))
+            self.assertTrue(os_util.is_writable(path, uid + 1, gid))
+            self.assertFalse(os_util.is_writable(path, uid + 1, gid + 1))
+            os.chmod(path, 0o550)
+            self.assertFalse(os_util.is_writable(path, uid + 1, gid))
+
+    def test_statvfs_failure(self):
+        with tempfile.TemporaryDirectory() as path:
+            with patch.object(os_util.os, "statvfs", side_effect=OSError("statvfs failed")):
+                self.assertTrue(os_util.is_writable(path, os.getuid(), os.getgid()))
+                self.assertFalse(os_util.is_writable(path, os.getuid() + 1, os.getgid() + 1))
+
+    def test_statvfs_unavailable(self):
+        with tempfile.TemporaryDirectory() as path:
+            with patch.object(os_util, "os", wraps=os) as platform_os:
+                del platform_os.statvfs
+                platform_os.W_OK = os.W_OK
+                self.assertTrue(os_util.is_writable(path, os.getuid(), os.getgid()))
+                self.assertFalse(os_util.is_writable(path, os.getuid() + 1, os.getgid() + 1))
 
 
 class TestOSUtil(unittest.TestCase):

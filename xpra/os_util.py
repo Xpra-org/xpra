@@ -1005,6 +1005,13 @@ def is_socket(sockpath:str, check_uid:Optional[int]=None) -> bool:
     return True
 
 def is_writable(path : str, uid:int=getuid(), gid:int=getgid()) -> bool:
+    # the permission bits are irrelevant on a read-only filesystem (ie: a read-only container):
+    if hasattr(os, "statvfs"):
+        try:
+            if os.statvfs(path).f_flag & os.ST_RDONLY:
+                return False
+        except OSError as e:
+            get_util_logger().debug(f"is_writable({path}) statvfs failed: {e}")
     if uid==0:
         return True
     if uid == getuid() and os.access(path, os.W_OK):
