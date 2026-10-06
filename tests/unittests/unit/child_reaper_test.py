@@ -9,6 +9,7 @@ import time
 import logging
 import unittest
 import subprocess
+from unittest.mock import Mock, patch
 
 from xpra.util.env import OSEnvContext
 from xpra.util import child_reaper
@@ -16,6 +17,39 @@ from xpra.util.child_reaper import get_child_reaper, reaper_cleanup, log
 
 
 class TestChildReaper(unittest.TestCase):
+
+    def test_exit_callbacks(self):
+        for already_exited in (False, True):
+            for ignore in (False, True):
+                for forget in (False, True):
+                    with self.subTest(already_exited=already_exited, ignore=ignore, forget=forget):
+                        cr = child_reaper.ChildReaper.__new__(child_reaper.ChildReaper)
+                        quit_callback = Mock()
+                        cr._quit = quit_callback
+                        cr._proc_info = []
+                        proc = Mock(pid=12345)
+                        proc.poll.return_value = 7 if already_exited else None
+                        callback = Mock()
+                        with patch.object(child_reaper.GLib, "idle_add") as idle_add:
+                            info = cr.add_process(proc, "test", ["test"], ignore, forget, callback)
+                            if not already_exited:
+                                self.assertFalse(info.dead)
+                                idle_add.assert_not_called()
+                                proc.poll.return_value = 7
+                                cr.poll()
+                            self.assertTrue(info.dead)
+                            self.assertEqual(info.returncode, 7)
+                            self.assertIsNone(info.process)
+                            self.assertIsNone(info.callback)
+                            self.assertEqual(info in cr._proc_info, not forget)
+                            idle_add.assert_called_once_with(callback, proc)
+                            cr.poll()
+                            cr.add_dead_pid(proc.pid)
+                            cr.add_dead_process(info)
+                            idle_add.assert_called_once_with(callback, proc)
+                            idle_add.call_args.args[0](proc)
+                            callback.assert_called_once_with(proc)
+                            self.assertEqual(quit_callback.call_count, int(not ignore and not forget))
 
     def test_childreaper(self):
         for polling in (True, False):
