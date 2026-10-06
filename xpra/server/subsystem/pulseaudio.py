@@ -317,7 +317,16 @@ class PulseaudioServer(StubSubsystem):
         #    Note: speaker is the source and microphone the sink,
         #    because things are reversed on the server.
         os.environ.update(PULSE_DEVICE_DEFAULTS)
-        self.configure_pulse_dirs()
+        try:
+            self.configure_pulse_dirs()
+        except OSError as e:
+            # ie: `PermissionError` with `--landlock=strict`
+            log("configure_pulse_dirs()", exc_info=True)
+            log.warn("Warning: cannot create the pulseaudio directories")
+            log.warn(" %s", e)
+            log.warn(" pulseaudio not started")
+            self.clean_pulseaudio_private_dir()
+            return
 
         if self.command == "auto":
             cmd = get_default_pulseaudio_command(self.server_socket)

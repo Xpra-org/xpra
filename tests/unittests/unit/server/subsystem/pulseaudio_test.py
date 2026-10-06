@@ -4,7 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import unittest
+from unittest.mock import patch
 
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.server.subsystem.pulseaudio import PulseaudioServer, get_default_pulseaudio_command
@@ -49,6 +51,21 @@ class TestPulseaudioServerGetChildEnv(unittest.TestCase):
             if key not in base_env:
                 assert key not in child_env, \
                     f"{key} must not be added to child process environment"
+
+
+class TestPulseaudioServerDirs(unittest.TestCase):
+
+    def test_cannot_create_dirs(self):
+        # ie: `--landlock=strict` denies creating the pulseaudio directories:
+        server = PulseaudioServer()
+        server.command = "pulseaudio"
+        with patch("xpra.server.subsystem.pulseaudio.load_pid", return_value=0), \
+             patch.dict(os.environ), \
+             patch.object(PulseaudioServer, "configure_pulse_dirs", side_effect=PermissionError(13, "Permission denied")), \
+             patch("xpra.server.subsystem.pulseaudio.Popen") as popen:
+            server.do_init_pulseaudio()
+        popen.assert_not_called()
+        self.assertIsNone(server.proc)
 
 
 def main():
