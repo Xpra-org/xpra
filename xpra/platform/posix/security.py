@@ -198,7 +198,11 @@ def get_landlock_auth_paths(opts) -> tuple[str, ...]:
 
 def get_landlock_mmap_paths(mmap: str) -> tuple[str, ...]:
     """Return writable resources for explicitly configured shared mmap paths."""
-    from xpra.net.mmap.common import split_paths
+    try:
+        from xpra.net.mmap.common import split_paths
+    except ImportError:
+        # the mmap feature is disabled, ie: `--minimal=yes`
+        return ()
     paths = []
     for path in split_paths(mmap):
         if os.path.isabs(path):

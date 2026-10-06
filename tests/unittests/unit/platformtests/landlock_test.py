@@ -108,6 +108,12 @@ class LandlockTest(unittest.TestCase):
             landlock.restrict_paths((filename,), required_paths=(filename,))
         self.assertIsNone(native.sync_threads)
 
+    def test_mmap_paths_without_mmap_feature(self):
+        from xpra.platform.posix.security import get_landlock_mmap_paths
+        # `enforce_features` blocks the mmap modules when the feature is disabled, ie: `--minimal=yes`:
+        with patch.dict(sys.modules, {"xpra.net.mmap": None, "xpra.net.mmap.common": None}):
+            self.assertEqual(get_landlock_mmap_paths("/run/user/1000/xpra/mmap"), ())
+
     def run_native(self, script, *args, env=None):
         if not landlock.is_available() or landlock.get_abi_version() < 9:
             self.skipTest("Landlock ABI 9 native module is not available")
