@@ -554,6 +554,8 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     runner = mode == "runner"
     use_display = shadowing or expanding or parse_bool_or("use-display", opts.use_display)
 
+    # the runner does not have a display, the commands it starts use the one from its environment:
+    runner_display = os.environ.get("DISPLAY", "") if runner else ""
     desktop_display = nox()
     try:
         cwd = os.getcwd()
@@ -623,6 +625,8 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         use_display = request_upgrade_display(display_name, session) or use_display
 
     protected_env = {}
+    if runner_display:
+        protected_env["DISPLAY"] = runner_display
 
     if str_to_bool(opts.dbus):
         start_dbus()

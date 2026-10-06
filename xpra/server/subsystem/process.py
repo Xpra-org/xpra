@@ -229,7 +229,11 @@ class ProcessServer(StubSubsystem):
                 os.environ["XDG_SESSION_TYPE"] = "x11"
             if starting != "desktop":
                 os.environ["XDG_CURRENT_DESKTOP"] = self.wm_name
-        if display_name[0] != "S":
+        if display_name.startswith("runner-"):
+            # the runner does not have a display,
+            # the commands it starts use the one from its environment (if any):
+            pass
+        elif display_name[0] != "S":
             os.environ["DISPLAY"] = display_name
             if POSIX:
                 os.environ["CKCON_X11_DISPLAY"] = display_name
