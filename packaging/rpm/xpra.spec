@@ -326,6 +326,8 @@ Group:				Networking
 Provides:			xpra-client-gtk3
 Requires:			xpra-client = %{version}-%{release}
 Requires:			gtk3
+# the Gtk typelibs need the cairo typelib, which nothing else pulls in since glib 2.80:
+Requires:			gobject-introspection
 Requires:           		python3-cairo
 Recommends:			xpra-codecs = %{version}-%{release}
 Recommends:			xpra-x11 = %{version}-%{release}
@@ -416,6 +418,8 @@ Recommends:			dbus-x11
 Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
 Recommends:			librsvg2
+# the Rsvg typelib needs the cairo typelib, which nothing else pulls in since glib 2.80:
+Requires:			gobject-introspection
 Recommends:			ibus
 Recommends:			python3-pyxdg
 Recommends:			xdg-menu
