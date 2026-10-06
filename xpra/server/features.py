@@ -29,6 +29,7 @@ ssh = True
 keyboard = True
 pointer = True
 command = True
+menu = True
 gstreamer = True
 x11 = True
 wayland = True
@@ -89,6 +90,8 @@ def set_server_features(opts, mode: str) -> None:
         # turn off all relevant features:
         opts.start_new_commands = mode == "runner"
         features.command = mode == "runner"
+        # the runner only executes commands, it does not provide a start menu:
+        features.menu = False
         features.notification = features.webcam = features.clipboard = False
         features.gstreamer = features.x11 = features.wayland = features.pulseaudio = features.audio = features.av_sync = False
         features.file = features.printer = features.mdns = False
@@ -111,6 +114,7 @@ def set_server_features(opts, mode: str) -> None:
             x11 = False
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
+        features.menu = features.command
         features.mdns = opts.mdns and impcheck("net.mdns")
         features.notification = (features.dbus or WIN32 or OSX) and opts.notifications and impcheck("notification")
         features.webcam = b(opts.webcam) and impcheck("codecs") and impcheck("webcam")
@@ -173,6 +177,7 @@ def enforce_server_features() -> None:
         "control": "xpra.net.control",
         "mdns": "xpra.net.mdns,xpra.xpra.server.subsystem.mdns",
         "command": "xpra.server.subsystem.child_command",
+        "menu": "xpra.server.subsystem.menu,xpra.server.source.menu",
         "notification": "xpra.notification,xpra.server.subsystem.notification,xpra.server.source.notification",
         "webcam": "xpra.webcam,xpra.server.subsystem.webcam,xpra.server.source.webcam",
         "clipboard": "xpra.clipboard,xpra.server.subsystem.clipboard,xpra.server.source.clipboard",

@@ -20,6 +20,7 @@ def get_server_base_class() -> type:
     features.audio = features.pulseaudio = False
     features.encoding = features.cursor = features.window = False
     features.command = True
+    features.menu = False
 
     from xpra.server.base import ServerBase
     return ServerBase

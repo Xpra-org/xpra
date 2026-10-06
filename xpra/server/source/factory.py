@@ -75,7 +75,7 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.gsettings:
         from xpra.server.source.gsettings import GSettingsConnection
         mixins.append(GSettingsConnection)
-    if features.command:
+    if features.menu:
         from xpra.server.source.menu import MenuConnection
         mixins.append(MenuConnection)
     if features.control:

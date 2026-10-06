@@ -112,7 +112,7 @@ class ServerBase(ServerCore):
         # encryption is configured on a given socket.
         from xpra.server.subsystem.encryption import EncryptionServer
         classes.append(EncryptionServer)
-        if features.command:
+        if features.menu:
             from xpra.server.subsystem.menu import MenuServer
             classes.append(MenuServer)
         if features.logging:
