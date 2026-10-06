@@ -202,7 +202,9 @@ For example:
 
 ### Containers - VM
 Using containers or virtual machines is a very popular way of deploying xpra, both offer a strong extra security layer which can also be used to restrict access to system resources - though this limited access to the underlying hardware also restricts hardware acceleration options.\
-As a good starting point, the xpra repository includes some [container scripts](https://github.com/Xpra-org/xpra/tree/master/packaging/containers).
+As a good starting point, the xpra repository includes some [container scripts](https://github.com/Xpra-org/xpra/blob/master/packaging/containers/README.md). \
+The [secure pod](https://github.com/Xpra-org/xpra/tree/master/packaging/containers/podman/secure) runs an application which may be hostile in its own container: no network access, no shared memory, session bus, audio, clipboard or menus,
+the X11 display is the only resource it shares with the X server and the xpra server, which runs with `--minimal=yes` and password authentication.
 
 </details>
 

@@ -300,6 +300,7 @@ Go deeper into client options, performance, deployment, and troubleshooting.
 - [Apache proxy](Apache-Proxy.md) and [Nginx proxy](Nginx-Proxy.md)
 - [Windows Subsystem for Linux](WSL.md)
 - [Xdummy](Xdummy.md) — use the alternative virtual framebuffer
+- [Containers](https://github.com/Xpra-org/xpra/blob/master/packaging/containers/README.md) — ready-to-run Docker and podman setups
 
 </section>
 </div>

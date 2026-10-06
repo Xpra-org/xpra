@@ -8,6 +8,9 @@ Distribution packages are usually [outdated and full of vulnerabilities](https:/
 
 For a general overview, please first read [security considerations](./docs/Usage/Security.md) as it pervades the architecture of the software.
 
+To isolate applications which may be hostile, see the [secure pod](https://github.com/Xpra-org/xpra/tree/master/packaging/containers/podman/secure):
+the application runs in its own container, which only shares the X11 display with the X server and the xpra server.
+
 
 ## Reporting a Vulnerability
 
