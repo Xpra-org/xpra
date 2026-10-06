@@ -350,7 +350,7 @@ def enforce_landlock(mode: str, write_paths=(), *, read_paths=(), socket_paths=(
         for path in write_paths + temp_paths:
             if not os.path.isfile(path):
                 os.makedirs(path, mode=0o700, exist_ok=True)
-    Logger("landlock")("installing %s Landlock policy", mode)
+    Logger("landlock").info("installing %s Landlock policy", mode)
     return restrict_paths(
         read_paths, write_paths + temp_paths,
         device_paths=get_landlock_device_paths() + ("/dev/null", "/dev/zero", "/dev/random", "/dev/urandom"),
