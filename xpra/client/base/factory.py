@@ -10,7 +10,7 @@ def get_client_subsystems() -> tuple[type, ...]:
     from xpra.client.base.clientid import ClientID
     subsystems: list[type] = []
     if features.landlock:
-        from xpra.client.subsystem.landlock import LandLock
+        from xpra.client.base.landlock import LandLock
         subsystems.append(LandLock)
     subsystems += [Network, ClientID]
     if features.info:

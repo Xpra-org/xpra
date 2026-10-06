@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 from xpra.client.base import features
 from xpra.client.base.client import XpraClientBase
 from xpra.client.base.factory import get_client_subsystems
-from xpra.client.subsystem.landlock import LandLock
+from xpra.client.base.landlock import LandLock
 from xpra.exit_codes import ExitCode
 from xpra.scripts.config import InitExit, make_defaults_struct
 
@@ -51,7 +51,7 @@ class LandLockTest(unittest.TestCase):
     def test_default_policy(self):
         _client, landlock, opts = self.make_landlock()
         security = self.mock_security()
-        with patch.dict(os.environ), patch("xpra.client.subsystem.landlock.LINUX", True), \
+        with patch.dict(os.environ), patch("xpra.client.base.landlock.LINUX", True), \
              patch.dict(sys.modules, {security.__name__: security}):
             landlock.run()
             self.assertTrue(landlock.enforced)
@@ -71,7 +71,7 @@ class LandLockTest(unittest.TestCase):
         sockets = [SimpleNamespace(socktype="socket", address="/controls/client")]
         security = self.mock_security()
         security.enforce_landlock.side_effect = lambda *a, **kw: events.append("landlock") or 9
-        with patch.dict(os.environ), patch("xpra.client.subsystem.landlock.LINUX", True), \
+        with patch.dict(os.environ), patch("xpra.client.base.landlock.LINUX", True), \
              patch.dict(sys.modules, {security.__name__: security}), \
              patch("xpra.client.subsystem.socket.create_sockets", return_value=[]), \
              patch("xpra.client.subsystem.socket.setup_local_sockets", side_effect=lambda *a, **kw: events.append("sockets") or sockets), \
@@ -108,7 +108,7 @@ class LandLockTest(unittest.TestCase):
         with patch("xpra.client.subsystem.socket.create_sockets", return_value=sockets), \
              patch("xpra.client.subsystem.socket.setup_local_sockets", return_value=[]), \
              patch("xpra.client.subsystem.socket.start_thread"), \
-             patch("xpra.client.subsystem.landlock.LINUX", True), patch.dict(os.environ), \
+             patch("xpra.client.base.landlock.LINUX", True), patch.dict(os.environ), \
              patch.dict(sys.modules, {security.__name__: security}):
             client.load()
             enable_listen_mode(client, opts)
@@ -150,7 +150,7 @@ class LandLockTest(unittest.TestCase):
         opts.download_path = "/changed/downloads"
         opts.mmap = "/changed/mmap"
         security = self.mock_security()
-        with patch.dict(os.environ), patch("xpra.client.subsystem.landlock.LINUX", True), \
+        with patch.dict(os.environ), patch("xpra.client.base.landlock.LINUX", True), \
              patch.dict(sys.modules, {security.__name__: security}):
             client.run()
         args, kwargs = security.enforce_landlock.call_args
@@ -162,7 +162,7 @@ class LandLockTest(unittest.TestCase):
         for linux, mode in ((True, "no"), (False, "default"), (False, "strict")):
             _client, landlock, _opts = self.make_landlock(mode)
             security = self.mock_security()
-            with patch("xpra.client.subsystem.landlock.LINUX", linux), \
+            with patch("xpra.client.base.landlock.LINUX", linux), \
                  patch.dict(sys.modules, {security.__name__: security}):
                 landlock.run()
             security.enforce_landlock.assert_not_called()
@@ -173,7 +173,7 @@ class LandLockTest(unittest.TestCase):
             client, landlock, _opts = self.make_landlock(mode)
             security = self.mock_security()
             security.enforce_landlock.side_effect = OSError("unavailable")
-            with patch("xpra.client.subsystem.landlock.LINUX", True), \
+            with patch("xpra.client.base.landlock.LINUX", True), \
                  patch.dict(sys.modules, {security.__name__: security}), \
                  self.assertRaisesRegex(InitExit, "failed to restrict the client") as raised:
                 client.run()
@@ -189,7 +189,7 @@ class LandLockTest(unittest.TestCase):
         client, _landlock, opts = self.make_landlock()
         peer_init = Mock()
         client.subsystems["peer"] = SimpleNamespace(init=peer_init)
-        with patch("xpra.client.subsystem.landlock.LINUX", True), \
+        with patch("xpra.client.base.landlock.LINUX", True), \
              patch("xpra.platform.posix.security.get_landlock_auth_paths", side_effect=ImportError("missing dependency")), \
              self.assertRaisesRegex(InitExit, "failed to initialize client Landlock"):
             client._dispatch_fire("init", opts)
@@ -200,7 +200,7 @@ class LandLockTest(unittest.TestCase):
         client, landlock, _opts = self.make_landlock("strict")
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ), \
              patch.object(tempfile, "tempdir", tempfile.tempdir), \
-             patch("xpra.client.subsystem.landlock.LINUX", True), \
+             patch("xpra.client.base.landlock.LINUX", True), \
              patch("xpra.client.base.client.reaper_cleanup"), patch("xpra.client.base.client.stop_asyncio_loop"):
             os.environ.pop("XPRA_LANDLOCK_TMP_DIR", None)
             landlock.temp_dir, landlock.temp_dir_owner = security.prepare_landlock_temp_dir(directory)
@@ -243,7 +243,7 @@ class LandLockTest(unittest.TestCase):
         desc = {"type": "socket", "socket_path": "/server/socket"}
         security = self.mock_security()
         security.get_connection_landlock_auth_paths.return_value = (("/known-hosts",), ("/cert",))
-        with patch.dict(os.environ), patch("xpra.client.subsystem.landlock.LINUX", True), \
+        with patch.dict(os.environ), patch("xpra.client.base.landlock.LINUX", True), \
              patch.dict(sys.modules, {security.__name__: security}), \
              patch("xpra.scripts.picker.get_sockpath", return_value="/server/socket"):
             client.display_desc = desc
@@ -258,7 +258,7 @@ class LandLockTest(unittest.TestCase):
         client, landlock, _opts = self.make_landlock("strict")
         security = self.mock_security()
         error = InitExit(ExitCode.SERVER_NOT_FOUND, "server socket not found")
-        with patch("xpra.client.subsystem.landlock.LINUX", True), \
+        with patch("xpra.client.base.landlock.LINUX", True), \
              patch.dict(sys.modules, {security.__name__: security}), \
              patch("xpra.scripts.picker.get_sockpath", side_effect=error), self.assertRaises(InitExit) as raised:
             client.display_desc = {"type": "socket"}

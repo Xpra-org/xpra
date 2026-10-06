@@ -162,6 +162,6 @@ def enforce_client_features() -> None:
         "encryption": "xpra.client.base.aes",
         "server_info": "xpra.client.base.server_info",
         "server_events": "xpra.client.base.events",
-        "landlock": "xpra.client.subsystem.landlock",
+        "landlock": "xpra.client.base.landlock",
     })
     may_block_numpy()
