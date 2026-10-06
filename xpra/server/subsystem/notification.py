@@ -67,7 +67,8 @@ class NotificationForwarder(StubSubsystem):
 
     def send_initial_data(self, ss) -> None:
         # the notifications queued before the hello was sent:
-        ss.send_pending_notifications()
+        if isinstance(ss, NotificationConnection):
+            ss.send_pending_notifications()
 
     def init_notification_forwarder(self) -> None:
         log("init_notification_forwarder() enabled=%s", self.enabled)

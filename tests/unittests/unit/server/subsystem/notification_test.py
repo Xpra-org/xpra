@@ -47,6 +47,18 @@ class NotificationForwarderMixinTest(ServerMixinTest):
                     import signal
                     os.kill(dbus_pid, signal.SIGINT)
 
+    def test_initial_data_without_notifications(self):
+        from xpra.server.subsystem.notification import NotificationForwarder
+        from xpra.server.source.notification import NotificationConnection
+        # clients with notifications disabled do not have the `NotificationConnection` mixin:
+        NotificationForwarder.send_initial_data(None, object())
+        sent = []
+        ss = NotificationConnection.__new__(NotificationConnection)
+        ss.send_pending_notifications = lambda: sent.append(True)
+        NotificationForwarder.send_initial_data(None, ss)
+        self.assertEqual(sent, [True])
+
+
 def main():
     if WIN32 or OSX:
         print("skipping test on %s" % sys.platform)
