@@ -902,8 +902,9 @@ def map_missing_keysyms(gtk_mappings: Iterable[tuple[Any, str, int, int, int]]) 
         log.warn("Warning: keymap is full, cannot add keysyms %s", csv(missing[len(free_keycodes):]))
     xmodmap_changes = [("keycode", keycode, [keysym]) for keycode, keysym in zip(free_keycodes, missing)]
     log("map_missing_keysyms(..) adding %s", xmodmap_changes)
-    if xmodmap_changes:
-        X11Keyboard.set_xmodmap(xmodmap_changes)
+    # Batched updates clear unspecified keycodes between the first and last.
+    for change in xmodmap_changes:
+        X11Keyboard.set_xmodmap([change])
 
 
 def grok_modifier_map(meanings: dict) -> dict[str, int]:
