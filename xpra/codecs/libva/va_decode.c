@@ -394,6 +394,17 @@ static int try_device(const char *device) {
                             g_error, sizeof(g_error)))
         return 0;
 
+    /* nvidia-vaapi-driver only wraps NVDEC, which the nvdec codec uses directly,
+       and it fails our decoder self-tests anyway: look for another adapter instead */
+    if (strncmp(vendor, "VA-API NVDEC driver", 19) == 0 && !getenv("XPRA_LIBVA_NVDEC")) {
+        snprintf(g_error, sizeof(g_error), "%.160s skipped, use nvdec instead", vendor);
+        libva_log("libva decode: %s", g_error);
+        vaTerminate(display);
+        if (fd >= 0)
+            close(fd);
+        return 0;
+    }
+
     status = vaQueryConfigProfiles(display, profiles, &nprofiles);
     if (status != VA_STATUS_SUCCESS) {
         snprintf(g_error, sizeof(g_error), "vaQueryConfigProfiles failed: %s (%d)",
