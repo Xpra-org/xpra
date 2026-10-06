@@ -764,6 +764,37 @@ def should_rebuild(src_file: str, bin_file: str) -> str:
     return ""
 
 
+CUDA_KERNELS = (
+    "XRGB_to_NV12", "XRGB_to_NV12_box", "XRGB_to_YUV444",
+    "BGRX_to_NV12", "BGRX_to_NV12_box", "BGRX_to_YUV444",
+    "BGRX_to_RGB", "RGBX_to_RGB", "RGBA_to_RGBAP", "BGRA_to_RGBAP",
+)
+
+
+def find_nvcc() -> str:
+    # same search locations as `fs/bin/build_cuda_kernels.py`:
+    nvcc = shutil.which("nvcc")
+    if nvcc:
+        return nvcc
+    for pattern in ("/usr/local/cuda/bin", "/opt/cuda/bin", "/usr/local/cuda*/bin", "/opt/cuda*/bin"):
+        for bindir in glob(pattern):
+            nvcc = os.path.join(bindir, "nvcc")
+            if os.path.exists(nvcc):
+                return nvcc
+    return ""
+
+
+def build_cuda_kernels(kernels: Sequence[str]) -> None:
+    # add cwd to PYTHONPATH:
+    env = os.environ.copy()
+    paths = env.pop("PYTHONPATH", "").split(os.pathsep)+[os.getcwd()]
+    env["PYTHONPATH"] = os.pathsep.join(paths)
+    r = subprocess.Popen(["./fs/bin/build_cuda_kernels.py"]+list(kernels), env=env).wait()
+    if r!=0:
+        print(f"failed to rebuild the cuda kernels {kernels}")
+        sys.exit(1)
+
+
 def convert_doc(fsrc: str, fdst: str, fmt="html", force=False) -> None:
     bsrc = os.path.basename(fsrc)
     bdst = os.path.basename(fdst)
@@ -2398,6 +2429,14 @@ if "clean" in sys.argv or "sdist" in sys.argv:
     clean()
     if "sdist" in sys.argv:
         add_build_info("src")
+        # the fatbin files are not in git, make sure the source archive includes them:
+        missing = [kernel for kernel in CUDA_KERNELS if not os.path.exists(f"fs/share/xpra/cuda/{kernel}.fatbin")]
+        if missing:
+            if find_nvcc():
+                print(f"* building the missing cuda kernels: {missing}")
+                build_cuda_kernels(missing)
+            else:
+                warn(f"`nvcc` not found, the source archive will be missing the cuda kernels: {missing}")
     # take shortcut to skip cython/pkgconfig steps:
     setup(**setup_options)
     sys.exit(0)
@@ -3595,11 +3634,7 @@ toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia")
 toggle_packages(nvidia_ENABLED, "xpra.codecs.nvidia.cuda")
 CUDA_BIN = f"{share_xpra}/cuda"
 if cuda_kernels_ENABLED:
-    kernels = (
-        "XRGB_to_NV12", "XRGB_to_NV12_box", "XRGB_to_YUV444",
-        "BGRX_to_NV12", "BGRX_to_NV12_box", "BGRX_to_YUV444",
-        "BGRX_to_RGB", "RGBX_to_RGB", "RGBA_to_RGBAP", "BGRA_to_RGBAP",
-    )
+    kernels = CUDA_KERNELS
     rebuild = []
     if cuda_rebuild_ENABLED is True:
         rebuild = list(kernels)
@@ -3613,14 +3648,7 @@ if cuda_kernels_ENABLED:
                 print(f"* rebuilding {kernel}: {reason}")
                 rebuild.append(kernel)
     if rebuild:
-        # add cwd to PYTHONPATH:
-        env = os.environ.copy()
-        paths = env.pop("PYTHONPATH", "").split(os.pathsep)+[os.getcwd()]
-        env["PYTHONPATH"] = os.pathsep.join(paths)
-        r = subprocess.Popen(["./fs/bin/build_cuda_kernels.py"]+rebuild, env=env).wait()
-        if r!=0:
-            print(f"failed to rebuild the cuda kernels {rebuild}")
-            sys.exit(1)
+        build_cuda_kernels(rebuild)
     if cuda_kernels_ENABLED:
         add_data_files(CUDA_BIN, [f"fs/share/xpra/cuda/{x}.fatbin" for x in kernels])
     if WIN32 and (nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvenc_ENABLED or nvdec_ENABLED):
