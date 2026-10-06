@@ -73,7 +73,7 @@ fi
 
 if [ "${XDUMMY}" == "1" ]; then
   run mkdir "/etc/X11"
-  copy "../../../fs/etc/xpra/xorg.conf" "/etc/X11"
+  copy "../../../../fs/etc/xpra/xorg.conf" "/etc/X11"
   # the setuid wrapper only allows console users to start the X server, we don't need it:
   run rm -f /usr/libexec/Xorg.wrap
   XVFB_COMMAND="/usr/libexec/Xorg -novtswitch -logfile /tmp/Xorg.log -config /etc/X11/xorg.conf +extension Composite +extension GLX +extension RANDR +extension RENDER -extension DOUBLE-BUFFER -nolisten tcp -noreset -ac $XDISPLAY"

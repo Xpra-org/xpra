@@ -23,7 +23,7 @@ jobs:
 
       - name: Check shell syntax
         run: |
-          for script in packaging/containers/podman/*.sh; do
+          for script in packaging/containers/podman/*/*.sh; do
             bash -n "$script"
           done
 

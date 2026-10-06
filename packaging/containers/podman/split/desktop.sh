@@ -62,7 +62,7 @@ else
   fi
   run apt-get update
 
-  copy "../fs/etc/default/keyboard" "../fs/etc/default/locale" "/etc/default/"
+  copy "../../fs/etc/default/keyboard" "../../fs/etc/default/locale" "/etc/default/"
   run sh -c "echo $TIMEZONE > /etc/timezone;ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
 
   # add xpra repo:
@@ -74,8 +74,8 @@ else
   if [ "${FIREFOX}" == "1" ]; then
     # use Mozilla's repository, not a snap:
     run wget -O "/usr/share/keyrings/packages.mozilla.org.asc" "https://packages.mozilla.org/apt/repo-signing-key.gpg"
-    copy "../fs/etc/apt/sources.list.d/mozilla.sources" "/etc/apt/sources.list.d/"
-    copy "../fs/etc/apt/preferences.d/mozilla-firefox" "/etc/apt/preferences.d/"
+    copy "../../fs/etc/apt/sources.list.d/mozilla.sources" "/etc/apt/sources.list.d/"
+    copy "../../fs/etc/apt/preferences.d/mozilla-firefox" "/etc/apt/preferences.d/"
     run apt-get update
     install firefox
   fi
