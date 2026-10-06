@@ -90,7 +90,7 @@ done
 # xpra uses the session bus started by the 'apps' container,
 # nothing in the pod needs a system bus, so xpra must not start one (as root) in the xpra container:
 # the applications are installed in the 'apps' container, so xpra starts them there using the 'xpra runner',
-# the OpenGL probe would also go through the runner, so skip it:
+# the OpenGL probe also goes through the runner, so it tests OpenGL in the 'apps' container:
 podman run -dt \
   --pod ${POD_NAME} \
   --replace \
@@ -100,7 +100,6 @@ podman run -dt \
   --env DBUS=wait \
   --env XPRA_SYSTEM_DBUS=0 \
   --env "EXEC_WRAPPER=xpra run socket:///run/user/1000/runner/socket --" \
-  --env OPENGL=noprobe \
   --uts container:xvfb \
   --ipc container:xvfb \
   --cgroupns container:xvfb \

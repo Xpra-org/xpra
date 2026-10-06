@@ -8,6 +8,7 @@ from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
+from xpra.util.env import envint
 from xpra.util.thread import start_thread
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
@@ -16,6 +17,9 @@ from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
 log = Logger("opengl")
+
+# how long `xpra run` waits for the probe when it is used as exec wrapper, in milliseconds:
+OPENGL_PROBE_RUN_WAIT_TIME = envint("XPRA_OPENGL_PROBE_RUN_WAIT_TIME", 30000)
 
 
 def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
@@ -60,7 +64,7 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
                 log.info("No OpenGL information available")
         else:
             error = bytestostr(err).strip("\n\r")
-            for x in str(err).splitlines():
+            for x in error.splitlines():
                 if x.startswith("RuntimeError: "):
                     error = x.removeprefix("RuntimeError: ")
                     break
@@ -131,15 +135,24 @@ class OpenGLInfo(StubSubsystem):
         so the wrapper is honoured here too. The environment is gathered
         from the server's `get_child_env`, which on `ServerBase` aggregates
         contributions from every subsystem.
+        When a wrapper is used, the probe may run in a different environment,
+        ie: `xpra run` to another container, which reports the probe's output
+        and exit code as long as it waits long enough for it.
         """
-        err = probe_opengl_module()
-        if err:
-            return err
         from xpra.platform.paths import get_xpra_command
-        cmd = get_xpra_command() + ["opengl", "--opengl=force"]
+        probe_cmd = get_xpra_command() + ["opengl", "--opengl=force"]
         cmd_helper = self.get_subsystem("command") or self
-        cmd = cmd_helper.get_full_child_command(cmd)
-        return run_opengl_probe(cmd, self.server.get_child_env(), self.display)
+        cmd = cmd_helper.get_full_child_command(probe_cmd)
+        env = self.server.get_child_env()
+        if cmd == probe_cmd:
+            err = probe_opengl_module()
+            if err:
+                return err
+        else:
+            # the exec wrapper may run the probe somewhere else, ie: `xpra run` in another container,
+            # so the modules we have here are irrelevant, and `xpra run` must wait for the result:
+            env["XPRA_RUN_WAIT_TIME"] = str(OPENGL_PROBE_RUN_WAIT_TIME)
+        return run_opengl_probe(cmd, env, self.display)
 
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}

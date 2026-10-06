@@ -136,7 +136,7 @@ fi
 # at '/run/user/${TARGET_UID}/bus', instead of running without dbus.
 # `--env EXEC_WRAPPER=...` starts the commands using a wrapper,
 # ie: `xpra run socket:///run/user/${TARGET_UID}/runner/socket --` to start them in the container running the 'xpra runner',
-# and `--env OPENGL=noprobe` skips the OpenGL probe, which also goes through the wrapper.
+# the OpenGL probe also goes through the wrapper, `--env OPENGL=noprobe` skips it.
 # the session bus may be owned by another container, so do not expose the xpra server's control interface on it (`--dbus-control=no`),
 # which would let any process connected to the bus start commands or change the server settings:
 buildah config --env USE_DISPLAY=auto $CONTAINER

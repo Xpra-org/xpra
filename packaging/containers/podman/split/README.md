@@ -169,7 +169,7 @@ sequenceDiagram
     xpra->>run: start 'xpra run socket:///run/user/1000/runner/socket -- command'
     run->>runner: 'run' request with the command and its arguments
     runner->>app: start the command
-    runner->>run: process id
+    runner->>run: process id, output and exit code<br/>(waits up to 5 seconds for the command to exit)
     run->>xpra: exit
     app->>xpra: create windows on display :10
     xpra->>client: forward the windows
@@ -180,18 +180,21 @@ the `start` and `start-child` options, the commands started when a client connec
 the start menu, `xpra control :10 start ...` and the other requests to start new commands. \
 It does not apply to the services which xpra starts for itself and which must run in the `xpra` container:
 pulseaudio, the input method (`ibus`) and, in the [xpra-apps](../xpra-apps/) pod, the X server. \
-The OpenGL probe would also go through the wrapper, and probe the `apps` container instead of the `xpra` container,
-so it is skipped (`--opengl=noprobe`).
+The OpenGL probe also goes through the wrapper, so it tests OpenGL in the `apps` container, where the applications use it. \
+`xpra run` waits for the probe to complete and returns its output and exit code to the xpra server,
+which reports the result as usual.
 
 The commands run with the environment of the runner, which is the one set by the `apps` container's entrypoint:
 `DISPLAY=:10`, `XAUTHORITY`, `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` for the session bus. \
 The environment of the xpra server, including `--start-env`, is not passed on.
 
 The [xpra](./xpra.sh) image installs `xpra-client` for the `xpra run` command,
-and the [apps](./desktop.sh) image only installs the `xpra-server` package for the runner, without any of the packages it recommends. \
+and the [apps](./desktop.sh) image installs the `xpra-server` package for the runner, without any of the packages it recommends,
+plus the packages needed to run the OpenGL probe: `xpra-client-gtk3`, `xpra-x11`, PyOpenGL and the mesa drivers. \
+To build an `apps` image without the OpenGL probe packages, use `OPENGL=0`, and add `--env OPENGL=noprobe` to the xpra container in the [pod](./pod.sh) script. \
 To build an `apps` image without the runner, use `RUNNER=0`:
 the xpra server can then only start the applications installed in the `xpra` image,
-and the `EXEC_WRAPPER` and `OPENGL` variables must be removed from the [pod](./pod.sh) script.
+and the `EXEC_WRAPPER` variable must be removed from the [pod](./pod.sh) script.
 
 ### Security
 
@@ -204,5 +207,5 @@ which would otherwise let any process connected to the bus start commands or cha
 
 ### Limitations
 
-`xpra run` exits as soon as the runner has started the command, so xpra cannot track the processes:
+`xpra run` exits when the command does, or after 5 seconds while the command keeps running in the `apps` container, so xpra cannot track the processes:
 `start-child`, `exit-with-children` and the per-client window filtering of commands that are not shared do not work.

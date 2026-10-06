@@ -21,6 +21,8 @@ XPRA="${XPRA:-0}"
 # the xpra server runs in another container,
 # and uses the 'xpra runner' running in this container to start the applications here:
 RUNNER="${RUNNER:-1}"
+# the xpra server probes OpenGL using the runner, which needs the packages for running `xpra opengl` in this container:
+OPENGL="${OPENGL:-1}"
 APPS="${APPS:-libreoffice lxterminal vlc gimp}"
 FIREFOX="${FIREFOX:-1}"
 TARGET_USER="${TARGET_USER:-desktop-user}"
@@ -132,6 +134,10 @@ else
   if [ "${RUNNER}" == "1" ]; then
     # the runner only needs the 'xpra-server' package, without any of the packages it recommends:
     run apt-get install -y --no-install-recommends xpra-server
+    if [ "${OPENGL}" == "1" ]; then
+      # the xpra server runs its OpenGL probe here, through the runner:
+      run apt-get install -y --no-install-recommends xpra-client-gtk3 xpra-x11 python3-opengl libgl1-mesa-dri
+    fi
   fi
   if [ "${XPRA}" == "1" ] || [ "${RUNNER}" == "1" ]; then
     # the xpra server loads the menus and their icons from this image,
