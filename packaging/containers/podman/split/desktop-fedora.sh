@@ -18,6 +18,9 @@ SEAMLESS="${SEAMLESS:-1}"
 TOOLS="${TOOLS:-0}"
 FILE_MANAGER="${FILE_MANAGER:-nemo}"
 XPRA="${XPRA:-0}"
+# the xpra server runs in another container,
+# and uses the 'xpra runner' running in this container to start the applications here:
+RUNNER="${RUNNER:-1}"
 APPS="${APPS:-libreoffice lxterminal vlc gimp}"
 FIREFOX="${FIREFOX:-1}"
 TARGET_USER="${TARGET_USER:-desktop-user}"
@@ -126,6 +129,18 @@ else
     install xterm
   fi
 
+  if [ "${RUNNER}" == "1" ]; then
+    # the runner only needs the 'xpra-server' package, without any of the packages it recommends:
+    run dnf install -y --setopt=install_weak_deps=False xpra-server
+  fi
+  if [ "${XPRA}" == "1" ] || [ "${RUNNER}" == "1" ]; then
+    # the xpra server loads the menus and their icons from this image,
+    # which cannot be modified at runtime, so cache the SVG icons as PNG now,
+    # in the global cache directory: '/var/cache/xpra/menu-icons'
+    install python3-pyxdg librsvg2
+    run xpra menu-cache
+  fi
+
   run userdel -r "${TARGET_USER}" || true
   run groupdel "${TARGET_GROUP}" || true
   run rm -fr "/home/${TARGET_USER}"
@@ -182,6 +197,14 @@ START_SESSION_BUS="dbus-daemon --session --address=${SESSION_BUS} --fork;"
 # xpra only starts pulseaudio once it has found the session bus,
 # so the bus must be started before waiting for the pulseaudio socket:
 WAIT_FOR_PULSEAUDIO="for i in \$(seq $((PULSEAUDIO_WAIT*10))); do test -S /run/user/${TARGET_UID}/pulse/native && break; sleep 0.1; done;"
+# the runner starts the commands it receives from the xpra server in this container, with this environment,
+# its socket is in a directory of the shared '/run' volume which only the target user can access,
+# and it does not bind any other socket:
+START_RUNNER=""
+if [ "${RUNNER}" == "1" ]; then
+  RUNNER_DIR="/run/user/${TARGET_UID}/runner"
+  START_RUNNER="mkdir -m 0700 -p ${RUNNER_DIR}; xpra runner --no-daemon --bind=${RUNNER_DIR}/socket --socket-dirs=${RUNNER_DIR} --sessions-dir=${RUNNER_DIR} --dbus=wait --dbus-control=no --ssh-upgrade=no &"
+fi
 # ugly syntax for arrays of strings with shell variables:
-buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"${SESSION_ENV} ${WAIT_FOR_DISPLAY} ${START_SESSION_BUS} ${WAIT_FOR_PULSEAUDIO} exec ${DE_COMMAND}\" ]" $CONTAINER
+buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"${SESSION_ENV} ${WAIT_FOR_DISPLAY} ${START_SESSION_BUS} ${START_RUNNER} ${WAIT_FOR_PULSEAUDIO} exec ${DE_COMMAND}\" ]" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
