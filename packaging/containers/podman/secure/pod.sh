@@ -119,7 +119,7 @@ podman run -dt \
 # re-enable the ones which are only used between the xpra server and its clients:
 # the HTML5 client, cursors, the mouse wheel and the video encoders.
 # xpra runs as the target user, it does not need any capabilities,
-# its sockets are in a private tmpfs, where it also needs a writable copy of the X11 cookie:
+# its sockets are in a private tmpfs, and it uses the read-only X11 cookie:
 if [ "${CLIPBOARD}" == "none" ]; then
   CLIPBOARD_ARGS=("--clipboard=no")
 else
@@ -143,11 +143,11 @@ podman run -dt \
   --secret "${PASSWORD_SECRET},target=/run/secrets/xpra-password,mode=0400,uid=1000" \
   --tmpfs /run/user/1000:rw,mode=0700,U \
   --env XDG_RUNTIME_DIR=/run/user/1000 \
-  --env XAUTHORITY=/run/user/1000/Xauthority \
+  --env XAUTHORITY=/run/secrets/xauthority \
   --env XPRA_VFB_WAIT=30 \
   --env XPRA_POWER_EVENTS=0 \
   --volume "${X11_VOLUME}:/tmp/.X11-unix:rw,z" \
-  --entrypoint '["/bin/sh", "-c", "install -m 0600 /run/secrets/xauthority $XAUTHORITY && exec /usr/bin/xpra \"$@\"", "xpra"]' \
+  --entrypoint '["/usr/bin/xpra"]' \
   xpra \
   seamless "${XDISPLAY}" --use-display=yes --no-daemon \
   --minimal=yes \
