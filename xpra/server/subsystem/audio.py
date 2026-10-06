@@ -35,7 +35,7 @@ class AudioServer(StubSubsystem):
     Mixin for servers that handle audio forwarding.
     """
     __slots__ = (
-        "av_sync", "level", "meter", "meter_start_timer", "meter_state", "meter_stop",
+        "av_sync", "level", "meter", "meter_error_timer", "meter_start_timer", "meter_state", "meter_stop",
         "microphone_allowed", "microphone_codecs", "properties", "signal_candidate",
         "signal_state", "signal_timer", "source_plugin", "speaker_allowed", "speaker_codecs",
         "supports_microphone", "supports_speaker",
@@ -60,6 +60,7 @@ class AudioServer(StubSubsystem):
         self.level: dict[str, Any] = {}
         self.meter: Any = None
         self.meter_start_timer = 0
+        self.meter_error_timer = 0
         # `meter_state` only ever reports what the meter pipeline last said
         # (the subprocess pushes its own state strings, "stopped" included),
         # so it cannot also answer "may we still start a meter?":
@@ -255,6 +256,7 @@ class AudioServer(StubSubsystem):
                 self.signal_state = False
 
     def meter_error(self, meter, message: str) -> None:
+        log("meter_error(%s, %r)", meter, message)
         if meter == self.meter:
             self.meter = None
             self.meter_state = "error"
@@ -262,8 +264,21 @@ class AudioServer(StubSubsystem):
             self.cancel_signal_timer()
             self.signal_candidate = None
             self.signal_state = False
-            log.warn("Warning: PulseAudio level meter error: %s", message)
             self.stop_meter_process(meter)
+            # on shutdown (ie: Ctrl-C), pulseaudio may die before we get to `cleanup`,
+            # so only report the error if `cleanup` does not cancel this timer first:
+            self.cancel_meter_error_timer()
+            self.meter_error_timer = self.timeout_add(1000, self.warn_meter_error, message)
+
+    def warn_meter_error(self, message: str) -> None:
+        self.meter_error_timer = 0
+        if not self.meter_stopped():
+            log.warn("Warning: PulseAudio level meter error: %s", message)
+
+    def cancel_meter_error_timer(self) -> None:
+        if timer := self.meter_error_timer:
+            self.meter_error_timer = 0
+            self.source_remove(timer)
 
     def meter_exit(self, meter, *_args) -> None:
         if meter != self.meter:
@@ -281,6 +296,7 @@ class AudioServer(StubSubsystem):
         if timer := self.meter_start_timer:
             self.meter_start_timer = 0
             self.source_remove(timer)
+        self.cancel_meter_error_timer()
         meter = self.meter
         self.meter = None
         if meter:

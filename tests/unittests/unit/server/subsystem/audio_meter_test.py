@@ -179,6 +179,23 @@ class TestAudioServerMeter(unittest.TestCase):
         assert "level" not in info
         assert self.server.meter is None
         assert meter.cleaned
+        # the warning is deferred, so that `cleanup` can suppress it:
+        timer = self.server.meter_error_timer
+        assert timer
+        with patch("xpra.server.subsystem.audio.log") as log:
+            self.owner.fire_timer(timer)
+        log.warn.assert_called_once()
+        assert not self.server.meter_error_timer
+
+    def test_error_during_shutdown_is_silent(self):
+        meter = FakeMeter()
+        self.server.meter = meter
+        self.server.meter_error(meter, "Disconnected")
+        timer = self.server.meter_error_timer
+        assert timer in self.owner.timers
+        self.server.cleanup_meter()
+        assert not self.server.meter_error_timer
+        assert timer not in self.owner.timers
 
     def test_start_failure_cleans_meter(self):
         class FailingMeter(FakeMeter):
