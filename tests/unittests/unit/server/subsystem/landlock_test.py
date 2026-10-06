@@ -16,6 +16,7 @@ from xpra.scripts.config import InitException, InitExit, make_defaults_struct
 from xpra.server import features
 from xpra.server.core import ServerCore, get_instance_subsystem_classes
 from xpra.server.subsystem.landlock import LandLock
+from xpra.server.subsystem.pulseaudio import PulseaudioServer
 
 
 class LandLockTest(unittest.TestCase):
@@ -89,8 +90,34 @@ class LandLockTest(unittest.TestCase):
         self.assertEqual(landlock.get_info(None)["landlock"]["abi"], 9)
         modules["xpra.platform.posix.security"].enforce_landlock.assert_called_once_with(
             "strict", ("/sessions/100", "/cache"), read_paths=(), required_paths=(),
-            socket_dirs=["/sockets"], cleanup_dirs=("/sessions",), temp_dir="/private", allow_socket_creation=False,
+            socket_paths=(), socket_dirs=["/sockets"], cleanup_dirs=("/sessions",), temp_dir="/private",
+            allow_socket_creation=False,
         )
+
+    def test_pulseaudio_starts_before_confinement(self):
+        server, landlock, opts = self.make_landlock()
+        events = []
+        modules = self.mock_modules(events)
+        pulseaudio = PulseaudioServer(server)
+        pulseaudio.enabled = True
+        pulseaudio.command = "pulseaudio"
+
+        def init_pulseaudio():
+            events.append("pulseaudio")
+            pulseaudio.initialized = True
+            pulseaudio.server_dir = "/run/user/1000/pulse"
+        server.subsystems["pulseaudio"] = pulseaudio
+        with patch("xpra.server.subsystem.landlock.LINUX", True), patch.dict(sys.modules, modules), \
+             patch.dict(os.environ, {"XPRA_SESSION_DIR": "/sessions/100"}), \
+             patch.object(PulseaudioServer, "init_pulseaudio", side_effect=init_pulseaudio), \
+             patch("xpra.server.subsystem.pulseaudio.start_thread") as start_thread:
+            server.setup()
+        self.assertEqual(events, ["pulseaudio", "cache", "landlock"])
+        # the socket does not exist yet, so the rule is attached to its directory:
+        _, kwargs = modules["xpra.platform.posix.security"].enforce_landlock.call_args
+        self.assertEqual(kwargs["socket_paths"], ("/run/user/1000/pulse", ))
+        # already started, so the pulseaudio subsystem's own setup does not start it again:
+        start_thread.assert_not_called()
 
     def test_options_are_parsed_during_init(self):
         server, landlock, opts = self.make_landlock()

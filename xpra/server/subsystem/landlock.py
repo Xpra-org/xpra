@@ -47,6 +47,14 @@ class LandLock(StubSubsystem):
             if dbus := self.get_subsystem("dbus"):
                 if dbus.enabled and not dbus.env:
                     dbus.init_dbus_env()
+            # pulseaudio would inherit the policy and fail to create its directories and socket,
+            # so start it now (synchronously: the policy also applies to the existing threads):
+            socket_paths: tuple[str, ...] = ()
+            if pulseaudio := self.get_subsystem("pulseaudio"):
+                pulseaudio.init_pulseaudio()
+                if pulseaudio.server_dir:
+                    # its socket may not exist yet, and Landlock rules can only be attached to existing paths:
+                    socket_paths = (pulseaudio.server_dir, )
             from xpra.platform.posix.menu_helper import prepare_menu_icon_cache_dir
             from xpra.platform.posix.security import enforce_landlock
             session_dir = os.environ.get("XPRA_SESSION_DIR", "")
@@ -58,7 +66,8 @@ class LandLock(StubSubsystem):
                 from xpra.platform.posix.security import prepare_landlock_temp_dir
                 self.temp_dir, self.temp_dir_owner = prepare_landlock_temp_dir(session_dir)
             self.abi = enforce_landlock(self.mode, write_paths, read_paths=auth_paths, required_paths=auth_paths,
-                                        socket_dirs=socket_dirs, cleanup_dirs=(os.path.dirname(session_dir),),
+                                        socket_paths=socket_paths, socket_dirs=socket_dirs,
+                                        cleanup_dirs=(os.path.dirname(session_dir),),
                                         temp_dir=self.temp_dir, allow_socket_creation=False)
             self.enforced = True
         except (ImportError, OSError, ValueError, InitException) as e:

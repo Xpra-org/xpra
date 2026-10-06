@@ -161,7 +161,7 @@ class PulseaudioServer(StubSubsystem):
     Handles starting and configuring pulseaudio
     """
     __slots__ = (
-        "command", "configure_commands", "enabled", "init_done", "pid", "private_dir", "proc",
+        "command", "configure_commands", "enabled", "init_done", "initialized", "pid", "private_dir", "proc",
         "server_dir", "server_socket", "started_at",
     )
     PREFIX = "pulseaudio"
@@ -170,6 +170,7 @@ class PulseaudioServer(StubSubsystem):
         StubSubsystem.__init__(self, server)
         self.init_done = Event()
         self.init_done.set()
+        self.initialized = False
         self.enabled: bool | None = False
         self.command = ""
         self.configure_commands = ()
@@ -192,6 +193,9 @@ class PulseaudioServer(StubSubsystem):
             self.configure_commands = tuple(x.strip() for x in opts.pulseaudio_configure_commands if x.strip())
 
     def setup(self) -> None:
+        if self.initialized:
+            # already started, ie: before the Landlock policy was applied
+            return
         # initialize pulseaudio in a separate thread
         self.init_done.clear()
         start_thread(self.init_pulseaudio, "init-pulseaudio", True)
@@ -251,6 +255,7 @@ class PulseaudioServer(StubSubsystem):
         log("configure_pulse_dirs() pulse_dir=%s, socket=%s", self.server_dir, self.server_socket)
 
     def init_pulseaudio(self) -> None:
+        self.initialized = True
         try:
             log("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%r",
                 enabled_or_auto(self.enabled), self.command)

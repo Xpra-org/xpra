@@ -42,8 +42,9 @@ Qt, Pyglet and Tk clients do not support Landlock and require `--landlock=no`.
 They connect synchronously and do not use the client subsystem lifecycle.
 
 The server `LandLock` subsystem installs its policy in `setup()`, before the
-remaining subsystems and listeners start. It prepares session D-Bus before
-confinement. Both client and server subsystems remove their owned private
+remaining subsystems and listeners start. It prepares session D-Bus and starts
+the PulseAudio server before confinement, so PulseAudio itself is not confined.
+Both client and server subsystems remove their owned private
 temporary directories during lifecycle cleanup, including failed enforcement.
 Each subsystem stores its temporary path and owner PID; cleanup only removes
 storage owned by the current process.
@@ -92,6 +93,8 @@ mode, new pathname sockets are denied afterward. Server display, network and
 session sockets and session D-Bus are also created before enforcement.
 Strict grants socket lookup for Xpra connections, the display, session/system D-Bus,
 PulseAudio and SSH agents using their known paths, rather than broad runtime roots.
+The PulseAudio server started by Xpra is granted socket lookup in its whole directory,
+because its socket does not exist yet when the policy is installed.
 
 Both modes allow graphics devices below `/dev/dri` and `/dev/accel`, and standard
 devices such as `/dev/null`, `/dev/urandom` and pseudo-terminals. Device entries cannot be created,
