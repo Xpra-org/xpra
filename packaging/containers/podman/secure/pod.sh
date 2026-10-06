@@ -155,7 +155,7 @@ podman run -dt \
   --socket-dirs=/run/user/1000/xpra \
   --websocket-upgrade=yes --cursors=yes --mousewheel=on --video=yes --encodings=all \
   "${CLIPBOARD_ARGS[@]}" \
-  --border=red,5 \
+  --border=red,5 --seccomp=strict --landlock=strict \
   --exit-with-windows=yes
 
 # Start the application:

@@ -37,7 +37,7 @@ EXPOSE ${AUTH_PORT}
 CMD exec xpra "$MODE" --uid "$UID" --gid "$GID" \
     "--bind-tcp=127.0.0.1:$PORT" "--bind-quic=127.0.0.1:$PORT" \
     "--bind-tcp=0.0.0.0:$AUTH_PORT,auth=env" "--bind-quic=0.0.0.0:$AUTH_PORT,auth=env" \
-    --border=red,5 --start=xterm --no-daemon
+    --border=red,5 --seccomp=strict --landlock=strict --start=xterm --no-daemon
 
 # run this container using:
 #podman run --env XPRA_PASSWORD=thepassword --publish 14500:14500/tcp --publish 14500:14500/udp xpra-safer
