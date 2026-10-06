@@ -401,6 +401,8 @@ Summary:			GTK3 xpra client
 Provides:           %{package_prefix}-client-gtk3
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			gtk3
+# the Gtk typelibs need the cairo typelib, which nothing else pulls in since glib 2.80:
+Requires:			gobject-introspection
 Requires:           %{py3rpmname}-cairo
 Requires(post):     coreutils
 Requires(postun):   gtk-update-icon-cache
@@ -562,6 +564,8 @@ Recommends:			%{py3rpmname}-cups
 Recommends:			dbus-x11
 Recommends:			%{py3rpmname}-setproctitle
 Recommends:			librsvg2
+# the Rsvg typelib needs the cairo typelib, which nothing else pulls in since glib 2.80:
+Requires:			gobject-introspection
 Recommends:			ibus
 Recommends:			%{py3rpmname}-pyxdg
 Recommends:         %{py3rpmname}-watchdog
