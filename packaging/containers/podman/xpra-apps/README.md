@@ -35,8 +35,8 @@ flowchart LR
     apps -- "session bus" --> run
     run -- "session bus" --> xpra
     run -- "X11 cookie, pulseaudio" --> apps
-    apps -- "runner socket" --> run
-    run -- "commands to start" --> xpra
+    xpra -- "xpra run ... -- command" --> run
+    run -- "runner socket:<br/>start the command" --> apps
     menus -- "image mounts" --> xpra
 ```
 
@@ -52,8 +52,8 @@ Shared resources:
 | X11 authorization | `xpra` | `apps` | unlike the `xvfb` container, xpra starts the X server with `-auth`, the applications use the cookie from `/run/user/1000/xpra/Xauthority-10` |
 | session bus | `apps` | `xpra` | runs in `apps` so that dbus activation starts services where the applications are installed, xpra connects to it with `--dbus=wait` |
 | system bus | none | | xpra does not start one (`XPRA_SYSTEM_DBUS=0`), nothing in the pod needs it |
-| runner socket | `apps` | `xpra` | the `xpra runner` started in `apps` listens on `/run/user/1000/runner/socket`, in a directory which only uid `1000` can access, and xpra starts all the commands through it (`--exec-wrapper`) so that they run where the applications are installed, the OpenGL probe would also go through it, so it is skipped (`--opengl=noprobe`) |
-| menus and icons | `apps` image | `xpra` | mounted read-only (`--mount type=image`) at the same locations: the menu definitions, the `.desktop` files, the icons, and the SVG icons cached as PNG when the image is built, in `/var/cache/xpra/menu-icons` |
+| runner socket | `apps` | `xpra` | the `xpra runner` started in `apps` listens on `/run/user/1000/runner/socket`, in a directory which only uid `1000` can access, xpra uses it to start the applications in `apps`, see [starting applications](#starting-applications) |
+| menus and icons | `apps` image | `xpra` | mounted read-only (`--mount type=image`) at the same locations: the menu definitions, the `.desktop` files, the icons, and the SVG icons cached as PNG when the image is built, in `/var/cache/xpra/menu-icons`, see [menus](#menus) |
 | pulseaudio | `xpra` | `apps` | started by xpra once the session bus is available, the applications use the socket at `/run/user/1000/pulse/native` |
 
 The containers start in parallel, so each one waits for the resources it needs:
@@ -73,6 +73,72 @@ sequenceDiagram
     xpra->>xpra: accept connections on port 10000
 ```
 
-Known limitations:
-* xpra starts the commands using `xpra run`, which exits as soon as the runner has started the command, so xpra cannot track the processes: `start-child`, `exit-with-children` and the per-client window filtering of commands that are not shared do not work
-* the session bus runs in the `apps` container: if this container is restarted, xpra loses its connection to the bus
+## Starting applications
+
+The applications are only installed in the `apps` image, the `xpra` image does not contain any. \
+xpra still provides the start menu, and starts the applications in the `apps` container when they are requested.
+
+### Menus
+
+The xpra server loads the menu definitions, the `.desktop` files and the icons from the `apps` image,
+which the [pod](./pod.sh) script mounts read-only in the `xpra` container at the same locations (`--mount type=image`):
+`/etc/xdg/menus`, `/usr/share/applications`, `/usr/share/desktop-directories`, `/usr/share/icons` and `/usr/share/pixmaps`. \
+xpra converts the SVG icons to PNG before sending them to the clients, but it cannot write to these mounts,
+so [desktop.sh](../split/desktop.sh) runs `xpra menu-cache` when it builds the image: the converted icons are saved in `/var/cache/xpra/menu-icons`, which is mounted too. \
+The mounts come from the image and not from the running `apps` container:
+applications installed in the container at runtime do not show up in the menu, add them to the image instead.
+
+### Commands
+
+The `apps` container runs an `xpra runner`: an xpra server which only starts commands, without any display, menu, control channel or network socket. \
+It listens on `/run/user/1000/runner/socket`, in the shared `/run` volume, and the xpra server is started with
+`--exec-wrapper="xpra run socket:///run/user/1000/runner/socket --"`, so the runner executes every command xpra starts:
+
+```mermaid
+sequenceDiagram
+    participant client as browser / xpra client
+    participant xpra
+    participant run as xpra: xpra run
+    participant runner as apps: xpra runner
+    participant app as apps: application
+    client->>xpra: start a menu entry
+    xpra->>run: start 'xpra run socket:///run/user/1000/runner/socket -- command'
+    run->>runner: 'run' request with the command and its arguments
+    runner->>app: start the command
+    runner->>run: process id
+    run->>xpra: exit
+    app->>xpra: create windows on display :10
+    xpra->>client: forward the windows
+```
+
+The wrapper applies to all the commands that xpra starts:
+the `start` and `start-child` options, the commands started when a client connects or when the last client exits,
+the start menu, `xpra control :10 start ...` and the other requests to start new commands. \
+It does not apply to the services which xpra starts for itself and which must run in the `xpra` container:
+pulseaudio, the input method (`ibus`) and, the X server. \
+The OpenGL probe would also go through the wrapper, and probe the `apps` container instead of the `xpra` container,
+so it is skipped (`--opengl=noprobe`).
+
+The commands run with the environment of the runner, which is the one set by the `apps` container's entrypoint:
+`DISPLAY=:10`, `XAUTHORITY`, `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` for the session bus. \
+The environment of the xpra server, including `--start-env`, is not passed on.
+
+The [xpra](../split/xpra.sh) image installs `xpra-client` for the `xpra run` command,
+and the [apps](../split/desktop.sh) image only installs the `xpra-server` package for the runner, without any of the packages it recommends. \
+To build an `apps` image without the runner, use `RUNNER=0`:
+the xpra server can then only start the applications installed in the `xpra` image,
+and the `EXEC_WRAPPER` and `OPENGL` variables must be removed from the [pod](./pod.sh) script.
+
+### Security
+
+Anything which can connect to the runner socket can start any command as uid `1000` in the `apps` container. \
+The socket is in a directory which only uid `1000` can access, and the processes of both containers already run as uid `1000`. \
+The runner does not listen on any network socket, and does not accept socket upgrades (`--ssh-upgrade=no`) or control commands. \
+The xpra server's own `start-new-commands` option still decides whether its clients are allowed to start commands.
+
+### Limitations
+
+`xpra run` exits as soon as the runner has started the command, so xpra cannot track the processes:
+`start-child`, `exit-with-children` and the per-client window filtering of commands that are not shared do not work.
+
+Known limitation: the session bus runs in the `apps` container: if this container is restarted, xpra loses its connection to the bus.
