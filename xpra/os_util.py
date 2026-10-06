@@ -187,7 +187,9 @@ def get_int_uuid() -> int:
     return uuid.uuid4().int
 
 
-MAX_UUID_LENGTH = 128
+# the html5 client's uuids can be longer than 128 characters,
+# but they must still fit in a filename (`NAME_MAX`):
+MAX_UUID_LENGTH = 255
 UUID_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.")
 # names reserved for the ssh agent control symlinks (`ssh/agent` and `ssh/agent.default`):
 # a client-supplied uuid must never collide with these, or it could clobber them,

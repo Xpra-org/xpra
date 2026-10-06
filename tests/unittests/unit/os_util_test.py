@@ -59,7 +59,7 @@ class TestOSUtil(unittest.TestCase):
 
     def test_valid_uuid(self):
         # what our own clients and the html5 / rust clients may send:
-        for uuid in (get_hex_uuid(), get_user_uuid(), "a"*64, "0", "my-laptop", "my_laptop", "v1.2"):
+        for uuid in (get_hex_uuid(), get_user_uuid(), "a"*64, "a"*232, "0", "my-laptop", "my_laptop", "v1.2"):
             assert valid_uuid(uuid), f"{uuid!r} should be valid"
         for uuid in (
             "",                             # no uuid at all
