@@ -179,8 +179,9 @@ WAIT_FOR_DISPLAY="for i in \$(seq 300); do test -S /tmp/.X11-unix/X${XDISPLAY#:}
 # and xpra connects to it using '--dbus=wait', its socket is in the shared '/run' volume.
 # the environment is exported first so that services started by the bus also inherit it.
 # there is no accessibility bus in the pod, 'NO_AT_BRIDGE' stops GTK applications from looking for one.
+# when xpra starts the X server, it requires the authorization cookie, which xpra saves in the shared '/run' volume:
 SESSION_BUS="unix:path=/run/user/${TARGET_UID}/bus"
-SESSION_ENV="export XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} DBUS_SESSION_BUS_ADDRESS=${SESSION_BUS} NO_AT_BRIDGE=1;"
+SESSION_ENV="export XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} XAUTHORITY=/run/user/${TARGET_UID}/xpra/Xauthority-${XDISPLAY#:} DBUS_SESSION_BUS_ADDRESS=${SESSION_BUS} NO_AT_BRIDGE=1;"
 START_SESSION_BUS="dbus-daemon --session --address=${SESSION_BUS} --fork;"
 # xpra only starts pulseaudio once it has found the session bus,
 # so the bus must be started before waiting for the pulseaudio socket:
