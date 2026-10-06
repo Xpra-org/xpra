@@ -134,7 +134,9 @@ and the `EXEC_WRAPPER` and `OPENGL` variables must be removed from the [pod](./p
 Anything which can connect to the runner socket can start any command as uid `1000` in the `apps` container. \
 The socket is in a directory which only uid `1000` can access, and the processes of both containers already run as uid `1000`. \
 The runner does not listen on any network socket, and does not accept socket upgrades (`--ssh-upgrade=no`) or control commands. \
-The xpra server's own `start-new-commands` option still decides whether its clients are allowed to start commands.
+The xpra server's own `start-new-commands` option still decides whether its clients are allowed to start commands. \
+The session bus is owned by the `apps` container, so the xpra server does not expose its control interface there (`--dbus-control=no`),
+which would otherwise let any process connected to the bus start commands or change the server settings.
 
 ### Limitations
 

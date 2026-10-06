@@ -136,10 +136,12 @@ fi
 # at '/run/user/${TARGET_UID}/bus', instead of running without dbus.
 # `--env EXEC_WRAPPER=...` starts the commands using a wrapper,
 # ie: `xpra run socket:///run/user/${TARGET_UID}/runner/socket --` to start them in the container running the 'xpra runner',
-# and `--env OPENGL=noprobe` skips the OpenGL probe, which also goes through the wrapper:
+# and `--env OPENGL=noprobe` skips the OpenGL probe, which also goes through the wrapper.
+# the session bus may be owned by another container, so do not expose the xpra server's control interface on it (`--dbus-control=no`),
+# which would let any process connected to the bus start commands or change the server settings:
 buildah config --env USE_DISPLAY=auto $CONTAINER
 buildah config --env DBUS=no $CONTAINER
 buildah config --env EXEC_WRAPPER= $CONTAINER
 buildah config --env OPENGL=probe $CONTAINER
-buildah config --entrypoint "/usr/bin/xpra ${MODE} --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=\${USE_DISPLAY} --socket-dirs=/run/user/${TARGET_UID}/xpra --socket-dirs=/run/xpra --dbus=\${DBUS} \"--exec-wrapper=\${EXEC_WRAPPER}\" --opengl=\${OPENGL} --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
+buildah config --entrypoint "/usr/bin/xpra ${MODE} --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=\${USE_DISPLAY} --socket-dirs=/run/user/${TARGET_UID}/xpra --socket-dirs=/run/xpra --dbus=\${DBUS} --dbus-control=no \"--exec-wrapper=\${EXEC_WRAPPER}\" --opengl=\${OPENGL} --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
