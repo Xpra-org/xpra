@@ -349,6 +349,42 @@ class TestMain(unittest.TestCase):
                 assert xauthority == xauth_file.name
                 assert os.environ["XAUTHORITY"] == xauth_file.name
 
+    @unittest.skipIf(os.getuid() == 0, "root can write to read-only files")
+    def test_setup_xauthority_read_only(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        written = []
+        session_files = SimpleNamespace(write_session_file=lambda *args: written.append(args))
+        xvfb = XvfbManager(SimpleNamespace(subsystems={"session-files": session_files}))
+        xvfb.uid = os.getuid()
+        xvfb.gid = os.getgid()
+        xvfb.username = "test"
+        with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:
+            os.chmod(xauth_file.name, 0o444)
+            with patch.dict(os.environ, {"XPRA_SESSION_DIR": session_dir, "XAUTHORITY": xauth_file.name}, clear=False):
+                # ie: `--use-display=yes`, the file is only read:
+                xauthority = xvfb.setup_xauthority(":42", False, writable=False)
+                assert xauthority == xauth_file.name
+                assert os.environ["XAUTHORITY"] == xauth_file.name
+                assert os.stat(xauth_file.name).st_mode & 0o777 == 0o444
+                assert written == [("xauthority", xauth_file.name)]
+
+    @unittest.skipIf(os.getuid() == 0, "root can write to read-only files")
+    def test_setup_xauthority_read_only_ignored_when_writing(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        session_files = SimpleNamespace(write_session_file=lambda *_args: None)
+        xvfb = XvfbManager(SimpleNamespace(subsystems={"session-files": session_files}))
+        xvfb.uid = os.getuid()
+        xvfb.gid = os.getgid()
+        xvfb.username = "test"
+        with tempfile.TemporaryDirectory() as session_dir, tempfile.NamedTemporaryFile() as xauth_file:
+            os.chmod(xauth_file.name, 0o444)
+            default_path = os.path.join(session_dir, "Xauthority")
+            with patch.dict(os.environ, {"XPRA_SESSION_DIR": session_dir, "XAUTHORITY": xauth_file.name}, clear=False), \
+                    patch("xpra.x11.vfb_util.get_xauthority_path", return_value=default_path):
+                xauthority = xvfb.setup_xauthority(":42", False, writable=True)
+                assert xauthority == default_path
+                assert os.path.exists(default_path)
+
     def test_start_server_vfb_noop_for_proxy(self):
         from xpra.server.subsystem.xvfb import XvfbManager
         xvfb = XvfbManager(SimpleNamespace(subsystems={}))

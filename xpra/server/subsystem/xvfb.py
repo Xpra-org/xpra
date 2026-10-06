@@ -104,7 +104,10 @@ class XvfbManager(StubSubsystem):
         session_files = self.get_subsystem("session-files")
         assert session_files
         if POSIX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and "wayland" not in display_name:
-            xauthority = self.setup_xauthority(display_name, shadowing)
+            # cookies are only added when starting a display, or when an existing display cannot be accessed,
+            # otherwise a read-only file is enough: ie: `--use-display=yes` with a cookie provided by a container:
+            writable = start_vfb or use_display is None or upgrading
+            xauthority = self.setup_xauthority(display_name, shadowing, writable)
             start_vfb, xauth_data, use_display = self.resolve_x11_display(
                 display_name, xauthority, xauth_data, start_vfb, use_display,
                 upgrading, shadowing, proxying, encoder, pam, progress,
@@ -266,12 +269,12 @@ class XvfbManager(StubSubsystem):
         if self.xvfb_pidfile:
             os.unlink(self.xvfb_pidfile)
 
-    def setup_xauthority(self, display_name: str, shadowing: bool) -> str:
+    def setup_xauthority(self, display_name: str, shadowing: bool, writable: bool = True) -> str:
         from xpra.x11.vfb_util import get_xauthority_path, valid_xauth
         session_files = self.get_subsystem("session-files")
         assert session_files
         root = POSIX and getuid() == 0
-        xauthority = valid_xauth((load_session_file("xauthority")).decode(), self.uid, self.gid)
+        xauthority = valid_xauth((load_session_file("xauthority")).decode(), self.uid, self.gid, writable)
         if xauthority:
             os.environ["XAUTHORITY"] = xauthority
             return xauthority
@@ -280,7 +283,7 @@ class XvfbManager(StubSubsystem):
             # Re-using this value is not always safe, but users expect commands
             # such as `DISPLAY=:10 xterm` to work in most cases.
             xauthority = os.environ.get("XAUTHORITY", "")
-        if shadowing and not valid_xauth(xauthority, self.uid, self.gid):
+        if shadowing and not valid_xauth(xauthority, self.uid, self.gid, writable):
             # Look for xauth files in magic directories, see ticket #3917.
             xauth_time = 0.0
             candidates = (
@@ -306,7 +309,7 @@ class XvfbManager(StubSubsystem):
                     if xauth_time == 0.0 or stat_info.st_mtime > xauth_time:
                         xauthority = filename
                         xauth_time = stat_info.st_mtime
-        if not valid_xauth(xauthority, self.uid, self.gid):
+        if not valid_xauth(xauthority, self.uid, self.gid, writable):
             xauthority = get_xauthority_path(display_name, self.uid, self.gid, self.username)
             xauthority = osexpand(xauthority, actual_username=self.username, uid=self.uid, gid=self.gid)
         assert xauthority
@@ -319,7 +322,7 @@ class XvfbManager(StubSubsystem):
                 os.fchmod(xauth_file.fileno(), 0o640)
                 if root and (self.uid != 0 or self.gid != 0):
                     os.fchown(xauth_file.fileno(), self.uid, self.gid)
-        elif not is_writable(xauthority, self.uid, self.gid) and not root:
+        elif writable and not is_writable(xauthority, self.uid, self.gid) and not root:
             log(f"chmoding XAUTHORITY file {xauthority!r}")
             os.chmod(xauthority, 0o640)
         session_files.write_session_file("xauthority", xauthority)

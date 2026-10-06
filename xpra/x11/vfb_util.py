@@ -96,12 +96,12 @@ EndSection
     return conf_file
 
 
-def valid_xauth(filename: str, uid: int = getuid(), gid: int = getgid()) -> str:
+def valid_xauth(filename: str, uid: int = getuid(), gid: int = getgid(), writable: bool = True) -> str:
     if not filename:
         return ""
     if not os.path.exists(filename):
         return ""
-    if not is_writable(filename, uid, gid):
+    if writable and not is_writable(filename, uid, gid):
         log = get_vfb_logger()
         log.info(f"ignoring non-writable XAUTHORITY={filename!r}")
         return ""

@@ -28,6 +28,14 @@ class TestVfbUtil(unittest.TestCase):
             # result is either the path (writable) or "" (not writable)
             assert result in (tf.name, "")
 
+    @unittest.skipIf(os.getuid() == 0, "root can write to read-only files")
+    def test_valid_xauth_read_only(self):
+        from xpra.x11.vfb_util import valid_xauth
+        with tempfile.NamedTemporaryFile() as tf:
+            os.chmod(tf.name, 0o444)
+            assert valid_xauth(tf.name) == ""
+            assert valid_xauth(tf.name, writable=False) == tf.name
+
     # get_xauthority_path
     def test_get_xauthority_path_private_runtime_dir(self):
         from xpra.util.env import OSEnvContext
