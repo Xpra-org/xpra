@@ -38,7 +38,7 @@ class RunnerServerTest(ProcessTestUtil):
                     "PYTHONPATH": ROOT, "XPRA_BACKWARDS_COMPATIBLE": str(int(compatible)),
                     "XPRA_USE_PROCESS_POLLING": str(int(compatible)),
                 })
-                command = [sys.executable, os.path.join(ROOT, "fs", "bin", "xpra")]
+                command = self.get_xpra_cmd()
                 sockpath = os.path.join(directory, "runner.sock")
                 server = self.run_command(command + [
                     "runner", f"--bind={sockpath}", f"--socket-dirs={directory}",
