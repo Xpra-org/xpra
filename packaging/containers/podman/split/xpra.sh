@@ -110,6 +110,9 @@ else
   # even before xpra has created it: ie: for the session bus started by the 'apps' container
   run mkdir -p -m 0700 "/run/user/${TARGET_UID}"
   run chown "${TARGET_UID}:${TARGET_GID}" "/run/user/${TARGET_UID}"
+  # when xpra starts the X server, the X11 socket directory may be shared with other containers using a volume,
+  # which is populated from this image, so it must be writable by the X server running as the target user:
+  run mkdir -m 1777 /tmp/.X11-unix
 fi
 
 # just use the system-wide ssl certificate:
