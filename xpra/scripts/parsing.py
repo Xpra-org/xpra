@@ -683,7 +683,7 @@ def parse_ssh_option(ssh_setting: str) -> list[str]:
 # `fnmatch` patterns are used so that whole families (ie: `list-*`, `*-info`) are covered,
 # even for modes that don't support the ssh transport yet:
 NO_SSH_AGENT_MODES = (
-    "run",
+    "run", "exec", "_proxy_run", "_proxy_exec",
     "stop", "exit",
     "list", "list-*",
     "request-*",
@@ -868,6 +868,8 @@ def get_usage() -> list[str]:
             "exit [DISPLAY]",
             "screenshot filename [DISPLAY]",
             "control DISPLAY command [arg1] [arg2]..",
+            "run [DISPLAY] command [arg1] [arg2]..",
+            "exec [DISPLAY] command [arg1] [arg2]..",
             "print DISPLAY filename",
             "shell [DISPLAY]",
             "send-file",

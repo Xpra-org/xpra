@@ -141,7 +141,7 @@ STDOUT_SUBCOMMANDS = (
 CLIENT_SUBCOMMANDS = (
     "attach", "listen", "detach",
     "screenshot", "icon", "version", "info", "id",
-    "control", "run", "_monitor", "shell", "print",
+    "control", "run", "exec", "_monitor", "shell", "print",
     "qrcode",
     "show-menu", "show-about", "show-session-info",
     "connect-test",
@@ -739,10 +739,10 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
 
     if mode in SERVER_SUBCOMMANDS:
         return run_server(script_file, cmdline, options, args, full_mode, defaults)
-    if mode == "run" and args and args[0].startswith(":"):
+    if mode in ("run", "exec") and args and args[0].startswith(":"):
         # for local displays, run via "_proxy_run"
         # which will use plain-X11 connections if needed:
-        return run_proxy_run(options, script_file, cmdline, args)
+        return run_proxy_run(options, script_file, cmdline, args, mode)
     if mode in CLIENT_SUBCOMMANDS or mode.startswith("request-"):
         return run_client(script_file, cmdline, options, args, mode)
     if mode in ("stop", "exit"):
@@ -855,9 +855,9 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         return 0
     if mode == "html5":
         return run_html5()
-    if mode == "_proxy_run":
+    if mode in ("_proxy_run", "_proxy_exec"):
         nox()
-        return run_proxy_run(options, script_file, cmdline, args)
+        return run_proxy_run(options, script_file, cmdline, args, "exec" if mode == "_proxy_exec" else "run")
     if mode == "_proxy" or mode.startswith("_proxy_"):
         nox()
         return run_proxy(options, script_file, cmdline, args, mode, defaults)
@@ -1447,13 +1447,13 @@ def create_client_app(opts, extra_args: list[str], mode: str):
             raise InitExit(ExitCode.ARGUMENT_MISMATCH, "not enough arguments for 'control' mode, try 'help'")
         extra_args, args = split_display_arg(extra_args)
         app = ControlXpraClient(opts, args)
-    elif mode == "run":
+    elif mode in ("run", "exec"):
         basic()
         from xpra.client.base.command import RunClient
         if len(extra_args) < 1:
-            raise InitExit(ExitCode.ARGUMENT_MISMATCH, "not enough arguments for 'run' mode, you must specify the command to execute")
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, f"not enough arguments for '{mode}' mode, you must specify the command to execute")
         extra_args, run_args = split_display_arg(extra_args)
-        app = RunClient(opts, run_args)
+        app = RunClient(opts, run_args, mode)
     elif mode == "print":
         basic()
         from xpra.client.base.command import PrintClient
@@ -1508,11 +1508,17 @@ def connect_client_app(app, cmdline: list[str], opts, extra_args: list[str], mod
                 if not OSX:
                     set_proc_title(" ".join(obsc_cmdline))
         # use a custom proxy command for run mode:
-        if mode == "run" and display_desc.get("type", "") == "ssh":
+        if mode in ("run", "exec") and display_desc.get("type", "") == "ssh":
             # when using the ssh transport,
             # don't try to connect to a server using the xpra protocol which may not exist,
             # the ssh command will do what is needed by calling `_proxy_run`:
             display_desc["proxy_command"] = ["_proxy_run"]
+            if mode == "exec":
+                from xpra.net.common import BACKWARDS_COMPATIBLE
+                if BACKWARDS_COMPATIBLE:
+                    display_desc["display_as_args"].append("--env=XPRA_RUN_WAIT_TIME=0")
+                else:
+                    display_desc["proxy_command"] = ["_proxy_exec"]
             if opts.backend and opts.backend.lower() != "auto":
                 # forward the backend to the remote `_proxy_run` subcommand so that it can honour it:
                 display_desc["display_as_args"].append(f"--backend={opts.backend}")
@@ -2563,7 +2569,7 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
     return proc, socket_path, display
 
 
-def run_proxy_run(options, script_file: str, cmdline: list[str], args: list[str]) -> ExitValue:
+def run_proxy_run(options, script_file: str, cmdline: list[str], args: list[str], mode: str = "run") -> ExitValue:
     display_args, cmd_args = split_display_arg(args)
     # print(f"{display_args=} {cmd_args=}")
 
@@ -2595,7 +2601,7 @@ def run_proxy_run(options, script_file: str, cmdline: list[str], args: list[str]
     # now let's decide how to run the command on this display:
     if is_live(display):
         # found a live xpra socket, use the `xpra run` client:
-        return run_client(script_file, cmdline, options, args, "run")
+        return run_client(script_file, cmdline, options, args, mode)
 
     env = os.environ.copy()
     env["DISPLAY"] = display

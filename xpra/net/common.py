@@ -421,6 +421,9 @@ def is_request_allowed(proto, request="info", default=True) -> bool:
     except AttributeError:
         return default
     r = str_to_bool(req_option, default)
+    if request == "exec":
+        # The immediate-launch alias must not bypass existing run restrictions.
+        r = r and str_to_bool(options.get("run", default), default)
     get_logger().debug(f"is_request_allowed%s={r}", (proto, request, default))
     return r
 

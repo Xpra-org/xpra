@@ -288,7 +288,8 @@ answers with `hello` and closes after delivering the result.
 | `screenshot` | none | `display-screenshot` |
 | `icon` | none | `display-icon` |
 | `command` | `command_request:list<str>` | control-command response hello |
-| `run` | `run:list<str>` | process launch result in `run_response` |
+| `run` | `run:list<str>`, `run-wait-time:int?` | command result in `run_response` |
+| `exec` | `run:list<str>` | immediate process launch result in `run_response` |
 | `print` | `print:list` | submit file data as a print job |
 | `encode` | `encoding:map` | stateless encoder service |
 | `detach` | none | disconnect attached clients as authorized |
@@ -298,6 +299,23 @@ answers with `hello` and closes after delivering the result.
 
 Authorization is profile-specific. A server MUST NOT grant a request merely
 because its name is recognized. Unknown requests MUST be rejected.
+
+For `run`, `run-wait-time` is a nonnegative wait in milliseconds. An omitted,
+invalid, or negative value selects the legacy immediate-launch behavior.
+The client defaults to `XPRA_RUN_WAIT_TIME=5000`. A positive wait captures
+stdout and stderr and returns when the command exits or the wait expires.
+`run_response` contains `pid`, binary `stdout` and `stderr`, boolean
+`stdout-truncated` and `stderr-truncated`, and `returncode` if the process
+has exited. Each stream retains at most its first 1 MiB (less if required
+by the configured packet size). Request or launch errors use `code` and
+`message`. A successful immediate launch returns only `pid`.
+
+At the deadline, the client receives one output snapshot and disconnects.
+The command continues running, with subsequent output drained and discarded
+by the server. Stdin is not forwarded. The `exec` profile forces zero wait
+and is subject to both `exec` and existing `run` connection restrictions.
+Compatibility-disabled clients use `exec`; compatibility-enabled clients
+send `run` with `run-wait-time=0` instead.
 
 The encoder service is selected by connecting to an encoder server and uses the
 same handshake followed by the `encode` and `context-*` packets in Section 8.11.

@@ -663,12 +663,26 @@ class RunClient(CommandConnectClient):
     Requests the server to start a command
     """
 
-    def __init__(self, opts, command: Sequence[str]):
+    def __init__(self, opts, command: Sequence[str], mode: str = "run"):
         super().__init__(opts)
         self.command = command
+        self.exec_mode = mode == "exec"
+        self.wait_time = 0 if self.exec_mode else max(0, envint("XPRA_RUN_WAIT_TIME", 5000))
+        self.COMMAND_TIMEOUT = (self.wait_time + 999) // 1000 + 1
+
+    def make_protocol(self, conn):
+        protocol = super().make_protocol(conn)
+        protocol.max_packet_size = MAX_PACKET_SIZE
+        return protocol
+
+    def schedule_verify_connected(self) -> None:
+        conn = getattr(self._protocol, "_conn", None)
+        if conn:
+            delay = round((conn.timeout + conn.connection_delay) * 1000) + self.wait_time + 1000
+            self.verify_connected_timer = self.timeout_add(delay, self.verify_connected)
 
     def run(self) -> ExitValue:
-        if self.display_desc.get("proxy_command") == ["_proxy_run"]:
+        if self.display_desc.get("proxy_command") in (["_proxy_run"], ["_proxy_exec"]):
             # SSH runs the command without an Xpra protocol or a main loop.
             XpraClientBase.run(self)
             from xpra.scripts.picker import connect_or_fail
@@ -691,15 +705,38 @@ class RunClient(CommandConnectClient):
             log.warn("server returned error code %s: %s", code, exit_str(code))
             self.warn_and_quit(ExitCode.REMOTE_ERROR, " %s" % message)
             return
-        sys.stdout.write(f"command started with pid {pid}\n")
-        self.quit(ExitCode.OK)
+        for name, stream in (("stdout", sys.stdout), ("stderr", sys.stderr)):
+            if data := cr.bytesget(name):
+                output = getattr(stream, "buffer", None)
+                if output is not None:
+                    output.write(data)
+                    output.flush()
+                else:
+                    stream.write(data.decode("utf-8", "replace"))
+                    stream.flush()
+        pid_stream = sys.stdout if self.exec_mode or not self.wait_time else sys.stderr
+        pid_stream.write(f"command started with pid {pid}\n")
+        pid_stream.flush()
+        for name in ("stdout", "stderr"):
+            if cr.boolget(f"{name}-truncated"):
+                errwrite(f"command {name} was truncated")
+        returncode = cr.intget("returncode") if not self.exec_mode else 0
+        self.quit(returncode if returncode >= 0 else 128 - returncode)
+
+    def run_request(self) -> dict[str, Any]:
+        return {
+            "request": "exec" if self.exec_mode and not BACKWARDS_COMPATIBLE else "run",
+            "run": tuple(self.command),
+            "run-wait-time": self.wait_time,
+        }
+
+    def make_hello_base(self) -> dict[str, Any]:
+        return super().make_hello_base() | self.run_request()
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = super().make_hello()
         log("make_hello() adding run request '%s' to %s", self.command, capabilities)
-        capabilities["run"] = tuple(self.command)
-        capabilities["request"] = "run"
-        return capabilities
+        return capabilities | self.run_request()
 
 
 class PrintClient(SendCommandConnectClient):

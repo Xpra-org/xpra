@@ -40,6 +40,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
 .HP
+\fBxpra\fP \fBrun\fP | \fBexec\fP [CONNECTIONSTRING] \fIcommand\fP [\fIarguments..\fP]
+.HP
 \fBxpra\fP \fBdisplays\fP \fI[:DISPLAY]\fP
 .HP
 \fBxpra\fP \fBclean-displays\fP \fI[:DISPLAY]\fP
@@ -75,6 +77,20 @@ xpra \- viewer for remote, persistent X applications
 .PD
 .\" --------------------------------------------------------------------
 .SH DESCRIPTION
+.SS Command execution
+\fBrun\fP starts a command on the server and waits up to
+\fBXPRA_RUN_WAIT_TIME\fP milliseconds (5000 by default) for it to finish.
+Captured stdout and stderr are written to the matching client streams;
+the PID is reported on stderr. If the command finishes, its exit status
+is returned. Otherwise, the client returns success with the output captured
+so far, and the command continues running. Later output is drained and
+discarded by the server. Capture is limited to the first 1 MiB per stream,
+with a notice when truncated. Stdin is not forwarded.
+.PP
+\fBexec\fP starts the command and returns its PID on stdout immediately,
+without capturing output. Plain-display fallback and SSH transport retain
+their existing launch behavior.
+.SS Overview
 Xpra is a tool which allows you to run X programs \(em usually on a
 remote host \(em and then direct their display to your local machine,
 disconnect from these programs, and reconnect from the same or another

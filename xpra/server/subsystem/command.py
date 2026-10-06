@@ -9,7 +9,7 @@ import shlex
 import signal
 import os.path
 from time import monotonic
-from subprocess import Popen
+from subprocess import Popen, PIPE
 from typing import Any
 from collections.abc import Callable, Sequence
 
@@ -18,7 +18,7 @@ from xpra.common import noop
 from xpra.os_util import OSX, WIN32
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.util.env import envint, source_env
+from xpra.util.env import envint, envbool, source_env
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.system import stop_proc, is_child_alive
 from xpra.util.thread import start_thread
@@ -157,7 +157,7 @@ class ChildCommandServer(StubSubsystem):
         "start_child_late_commands", "start_child_on_connect", "start_child_on_disconnect",
         "start_child_on_last_client_exit", "start_commands", "start_env", "start_late_commands",
         "start_new_commands", "start_on_connect", "start_on_disconnect",
-        "start_on_last_client_exit", "terminate_children",
+        "start_on_last_client_exit", "terminate_children", "_run_requests", "_run_poll_timer",
     )
     toggle_features = ("start-new-commands",)
     """
@@ -194,6 +194,8 @@ class ChildCommandServer(StubSubsystem):
         self.terminate_children: bool = False
         self.children_started: list[ProcInfo] = []
         self.reaper_exit: Callable = self.reaper_exit_check
+        self._run_requests: set = set()
+        self._run_poll_timer = 0
 
         def server_is_running(*args) -> None:
             log("server_is_running%s", args)
@@ -224,6 +226,7 @@ class ChildCommandServer(StubSubsystem):
     def setup(self) -> None:
         start_thread(self.threaded_command_setup, "threaded-command-setup", daemon=True)
         self.server.hello_request_handlers["run"] = self._handle_hello_request_run
+        self.server.hello_request_handlers["exec"] = self._handle_hello_request_exec
         self.server.connect("last-client-exited", self.exec_on_last_client_exit)
         self.server.connect("client-exited", self.remove_client)
         self.add_command_control_commands()
@@ -251,6 +254,17 @@ class ChildCommandServer(StubSubsystem):
     def cleanup(self) -> None:
         # during cleanup, just ignore the reaper exit callback:
         self.reaper_exit = noop
+        if self._run_poll_timer:
+            self.source_remove(self._run_poll_timer)
+            self._run_poll_timer = 0
+        for request in tuple(self._run_requests):
+            request.cleanup()
+        self._run_requests.clear()
+
+    def cleanup_protocol(self, proto) -> None:
+        for request in tuple(self._run_requests):
+            if request.proto is proto:
+                request.disconnect()
 
     def late_cleanup(self, stop=True) -> None:
         if self.terminate_children and stop:
@@ -436,6 +450,19 @@ class ChildCommandServer(StubSubsystem):
                 mdns.mdns_update()
 
     def _handle_hello_request_run(self, proto, caps: typedict) -> bool:
+        return self._handle_hello_command(proto, caps, max(0, caps.intget("run-wait-time")))
+
+    def _handle_hello_request_exec(self, proto, caps: typedict) -> bool:
+        return self._handle_hello_command(proto, caps, 0)
+
+    def _poll_run_commands(self) -> bool:
+        if not self._run_requests:
+            self._run_poll_timer = 0
+            return False
+        get_child_reaper().poll()
+        return True
+
+    def _handle_hello_command(self, proto, caps: typedict, wait_time: int) -> bool:
         command = caps.strtupleget("run")
         if not command:
             response = {
@@ -445,13 +472,25 @@ class ChildCommandServer(StubSubsystem):
         else:
             name = command[0]
             ss = self.get_server_source(proto)
-            proc = self.start_command(name, command, ignore=True, source=ss)
+            request = None
+            kwargs = {}
+            if wait_time:
+                from xpra.server.command_output import RunCommand
+                request = RunCommand(self, proto)
+                kwargs = {"stdout": PIPE, "stderr": PIPE, "bufsize": 0, "callback": request.exited}
+            proc = self.start_command(name, command, ignore=True, source=ss, **kwargs)
             if not proc:
                 response = {
                     "code": ExitCode.COMPONENT_MISSING,
                     "message": "failed to run the command specified",
                 }
             else:
+                if request:
+                    self.server.cancel_verify_connection_accepted(proto)
+                    request.start(proc, wait_time)
+                    if (WIN32 or envbool("XPRA_USE_PROCESS_POLLING")) and not self._run_poll_timer:
+                        self._run_poll_timer = self.timeout_add(10, self._poll_run_commands)
+                    return True
                 response = {
                     "pid": proc.pid,
                 }
