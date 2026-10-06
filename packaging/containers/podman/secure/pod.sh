@@ -155,6 +155,7 @@ podman run -dt \
   --socket-dirs=/run/user/1000/xpra \
   --websocket-upgrade=yes --cursors=yes --mousewheel=on --video=yes --encodings=all \
   "${CLIPBOARD_ARGS[@]}" \
+  --border=red,5 \
   --exit-with-windows=yes
 
 # Start the application:
@@ -194,5 +195,5 @@ fi
 
 URL="http://127.0.0.1:${PORT}/?password=${PASSWORD}"
 echo "Connect using: ${URL}"
-echo " or: xpra attach tcp://:${PASSWORD}@127.0.0.1:${PORT}/ --border=red,5"
+echo " or: xpra attach tcp://:${PASSWORD}@127.0.0.1:${PORT}/"
 xdg-open "${URL}"

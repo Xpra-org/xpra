@@ -1004,7 +1004,6 @@ def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, lis
         defaults.modal_windows = "no"
         defaults.desktop_scaling = "no"
         defaults.desktop_fullscreen = "no"
-        defaults.border = "no"
         defaults.tray = "no"
         # Keyboard:
         defaults.key_shortcut = ["none"]

@@ -106,7 +106,7 @@ These are some of the ways a hostile application can still affect the session:
   a vulnerability there could be exploited from the application.
   The X server runs in a container without any network access, but it can still reach xpra through X11 and the shared memory segments.
 * the application controls its window titles and contents, it can impersonate other windows, ie: a password prompt.
-  The `xpra attach --border=red,5` option draws a border around the windows of this session to make them easy to identify.
+  The server uses `--border=red,5` to draw a border around the windows of this session to make them easy to identify.
 * with `APP_NETWORK=1`, the application can connect to the host, but not to the xpra port when it is only published on `127.0.0.1`.
 * the containers share the host's kernel.
 
