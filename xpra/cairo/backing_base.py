@@ -492,6 +492,8 @@ class CairoBackingBase(WindowBackingBase):
 
     def cairo_draw_alert(self, context) -> None:
         if not self.alert_state:
+            # no alert, just the regular border:
+            self.cairo_draw_border(context, self.border)
             return
         if "shade" in ALERT_MODE:
             self.draw_alert_shade(context)
