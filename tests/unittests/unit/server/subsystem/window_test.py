@@ -147,6 +147,7 @@ class WebcamMixinTest(ServerMixinTest):
     def test_windowserver(self):
         from xpra.server.subsystem.window import WindowServer
         opts = AdHocStruct()
+        opts.border = ""
         opts.min_size = "10x10"
         opts.max_size = "16384x8192"
 
