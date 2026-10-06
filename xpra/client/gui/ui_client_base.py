@@ -95,6 +95,7 @@ class UIXpraClient(XpraClientBase):
         self.title: str = ""
         self.session_name: str = ""
         self.server_session_name: str = ""
+        self.server_border: str = ""
 
         # features:
         self.readonly: bool = False
@@ -429,7 +430,7 @@ class UIXpraClient(XpraClientBase):
                 "start-new-commands", "client-shutdown", "webcam",
                 "bandwidth-limit", "clipboard-limits",
                 "menu", "monitors",
-                "ibus-layouts",
+                "ibus-layouts", "border",
         ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
             if setting == "readonly" and value:

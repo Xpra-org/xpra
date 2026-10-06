@@ -20,6 +20,14 @@ class WindowBorder:
     def toggle(self) -> None:
         self.shown = not self.shown
 
+    def update(self, other: "WindowBorder") -> None:
+        self.shown = other.shown
+        self.red = other.red
+        self.green = other.green
+        self.blue = other.blue
+        self.alpha = other.alpha
+        self.size = other.size
+
     def clone(self) -> Self:
         return WindowBorder(self.shown, self.red, self.green, self.blue, self.alpha, self.size)
 

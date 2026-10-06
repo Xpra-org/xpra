@@ -35,7 +35,7 @@ class WindowServer(StubSubsystem):
     Mixin for servers that forward windows.
     """
     __slots__ = (
-        "_counter", "_id_to_window", "_max_window_id", "_window_to_id", "client_properties",
+        "_counter", "_id_to_window", "_max_window_id", "_window_to_id", "border", "client_properties",
         "window_filters", "window_max_size", "window_min_size",
     )
     PREFIX = "window"
@@ -47,6 +47,8 @@ class WindowServer(StubSubsystem):
         self._window_to_id: dict[Any, int] = {}
         self._id_to_window: dict[int, Any] = {}
         self._counter = 0
+        # the default border for the clients that don't specify one:
+        self.border = ""
         self.window_filters = []
         self.window_min_size = 0, 0
         self.window_max_size = 2 ** 15 - 1, 2 ** 15 - 1
@@ -79,6 +81,7 @@ class WindowServer(StubSubsystem):
             except Exception:
                 return default_value
 
+        self.border = opts.border or ""
         self.window_min_size = parse_window_size(opts.min_size, (0, 0))
         self.window_max_size = parse_window_size(opts.max_size, (2 ** 15 - 1, 2 ** 15 - 1))
 
@@ -104,6 +107,7 @@ class WindowServer(StubSubsystem):
         ac("focus", "give focus to the window id", validation=[int])
         ac("map", "maps the window id", validation=[int])
         ac("unmap", "unmaps the window id", validation=[int])
+        ac("border", "set the default window border for clients, ie: 'red,10' or 'auto,5:off'", min_args=1, max_args=1)
         ac("show-all-windows", "make all the windows visible", max_args=0)
         ac("suspend", "suspend screen updates", max_args=0)
         ac("resume", "resume screen updates", max_args=0)
@@ -167,6 +171,7 @@ class WindowServer(StubSubsystem):
     def get_server_features(self, _source) -> dict[str, Any]:
         return {
             "windows": True,
+            "border": self.border,
         }
 
     def get_info(self, _proto) -> dict[str, Any]:
@@ -176,6 +181,7 @@ class WindowServer(StubSubsystem):
             "window": {
                 "count": count,
                 "filters": filter_info,
+                "border": self.border,
             }
         }
 
@@ -744,6 +750,12 @@ class WindowServer(StubSubsystem):
             raise ValueError(f"argument should have been an int, but found {type(wid)}")
         self._focus(None, wid, None)
         return f"gave focus to window {wid:#x}"
+
+    def control_command_border(self, border: str) -> str:
+        self.border = border
+        log.info(f"changed default window border: {border!r}")
+        self.server.setting_changed("border", border)
+        return f"default window border set to {border!r}"
 
     def control_command_show_all_windows(self) -> str:
         self.show_all_windows()

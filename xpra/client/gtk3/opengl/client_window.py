@@ -62,15 +62,17 @@ class GLClientWindowBase(ClientWindow):
                     log.warn("Warning: cannot remove %s", glarea, exc_info=True)
 
     def magic_key(self, *args) -> None:
-        b = self._backing
         if self.border:
             self.border.toggle()
-            if b:
-                with b.gl_context() as ctx:
-                    b.gl_init(ctx)
-                    b.present_fbo(ctx, 0, 0, *b.size)
-                self.repaint(0, 0, *self._size)
-        log("gl magic_key%s border=%s, backing=%s", args, self.border, b)
+            self.redraw_border()
+        log("gl magic_key%s border=%s, backing=%s", args, self.border, self._backing)
+
+    def redraw_border(self) -> None:
+        if b := self._backing:
+            with b.gl_context() as ctx:
+                b.gl_init(ctx)
+                b.present_fbo(ctx, 0, 0, *b.size)
+            self.repaint(0, 0, *self._size)
 
     def do_map_event(self, event) -> None:
         log("GL do_map_event(%s)", event)

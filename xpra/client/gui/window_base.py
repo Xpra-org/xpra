@@ -839,7 +839,10 @@ class ClientWindowBase(ClientWidgetBase):
         if b := self.border:
             b.toggle()
             log("magic_key%s border=%s", args, b)
-            self.repaint(0, 0, *self._size)
+            self.redraw_border()
+
+    def redraw_border(self) -> None:
+        self.repaint(0, 0, *self._size)
 
     def repaint(self, x: int, y: int, w: int, h: int):
         # self.queue_draw_area(0, 0, *self._size)

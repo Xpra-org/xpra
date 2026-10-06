@@ -6,7 +6,10 @@
 import sys
 from collections import namedtuple
 
+from xpra.common import noop
 from xpra.client.gui.window_border import WindowBorder
+from xpra.scripts.config import DEFAULT_BORDER
+from xpra.util.objects import typedict
 from xpra.util.env import first_time
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -96,24 +99,51 @@ class WindowBorderClient(StubClientSubsystem):
     """
     Adds support for the window border:
     parse it or generate it from the connection info.
+    Clients using the default border let the server choose it.
     """
     __slots__ = ()
-    SLOT_NAMES = ("border", "border_str")
+    SLOT_NAMES = ("border", "border_str", "border_from_server")
 
     def __init__(self):
         self.border = WindowBorder(False)
         self.border_str = "no"
+        self.border_from_server = False
 
     def init(self, opts) -> None:
         self.border_str = opts.border
+        self.border_from_server = opts.border == DEFAULT_BORDER
         if opts.border:
             self.border = parse_border(self.border_str)
 
     def setup_connection(self, conn) -> None:
+        # now that we have display_desc, parse the border again:
+        self.set_border(self.border_str)
+
+    def parse_server_capabilities(self, c: typedict) -> bool:
+        if self.border_from_server:
+            if server_border := c.strget("border"):
+                self.set_border(server_border)
+            # weak dependency injection on ui client:
+            onchange = getattr(self.client, "on_server_setting_changed", noop)
+
+            def border_changed(_setting, value) -> None:
+                self.set_border(str(value))
+            onchange("border", border_changed)
+        return True
+
+    def set_border(self, border_str: str) -> None:
         display_name = getattr(self.client, "display_desc", {}).get("display_name", "")
-        if display_name:
-            # now that we have display_desc, parse the border again:
-            self.border = parse_border(self.border_str, display_name)
+        if not display_name and border_str == self.border_str:
+            return
+        log("set_border(%r) display_name=%r", border_str, display_name)
+        self.border_str = border_str
+        self.border = parse_border(border_str, display_name)
+        # update the existing windows:
+        for window in tuple(getattr(self, "_id_to_window", {}).values()):
+            # the backing shares the window's border object, so update it in place:
+            if window.border:
+                window.border.update(self.border)
+                getattr(window, "redraw_border", noop)()
 
     def get_border(self):
         if self.border:

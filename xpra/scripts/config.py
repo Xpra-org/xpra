@@ -51,6 +51,8 @@ DEFAULT_XPRA_CONF_FILENAME: str = os.environ.get("XPRA_CONF_FILENAME", 'xpra.con
 DEFAULT_NET_WM_NAME: str = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
 DEFAULT_POSTSCRIPT_PRINTER: str = ""
+# clients using this border let the server choose it:
+DEFAULT_BORDER: str = "auto,5:off"
 if POSIX:
     DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
 DEFAULT_PULSEAUDIO = None   # auto
@@ -1191,7 +1193,7 @@ def get_defaults() -> dict[str, Any]:
         "sessions-dir"      : get_sessions_dir(),
         "log-dir"           : "auto",
         "log-file"          : "server.log",
-        "border"            : "auto,5:off",
+        "border"            : DEFAULT_BORDER,
         "window-close"      : "auto",
         "min-size"          : "",
         "max-size"          : "",
