@@ -78,7 +78,8 @@ else
   run dnf update -y
   install -y wget "--setopt=install_weak_deps=False"
   run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/${REPO_DIR}/${REPO}.repo"
-  install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-pyxdg ${EXTRA_PACKAGES} dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
+  # `xpra-client` provides `xpra run`, which can be used as exec wrapper to start the commands in another container:
+  install -y xpra-filesystem xpra-server xpra-client xpra-x11 xpra-html5 python3-pyxdg ${EXTRA_PACKAGES} dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
   if [ "${AUDIO}" == "1" ]; then
     install -y xpra-audio-server
   fi
@@ -132,8 +133,13 @@ fi
 # ie: `--env USE_DISPLAY=yes` to only use the display from the 'xvfb' container,
 # with `--env XPRA_VFB_WAIT=30` to wait up to 30 seconds for it to become available.
 # likewise, `--env DBUS=wait` connects to a session bus started by another container
-# at '/run/user/${TARGET_UID}/bus', instead of running without dbus:
+# at '/run/user/${TARGET_UID}/bus', instead of running without dbus.
+# `--env EXEC_WRAPPER=...` starts the commands using a wrapper,
+# ie: `xpra run socket:///run/user/${TARGET_UID}/runner/socket --` to start them in the container running the 'xpra runner',
+# and `--env OPENGL=noprobe` skips the OpenGL probe, which also goes through the wrapper:
 buildah config --env USE_DISPLAY=auto $CONTAINER
 buildah config --env DBUS=no $CONTAINER
-buildah config --entrypoint "/usr/bin/xpra ${MODE} --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=\${USE_DISPLAY} --socket-dirs=/run/user/${TARGET_UID}/xpra --socket-dirs=/run/xpra --dbus=\${DBUS} --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
+buildah config --env EXEC_WRAPPER= $CONTAINER
+buildah config --env OPENGL=probe $CONTAINER
+buildah config --entrypoint "/usr/bin/xpra ${MODE} --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=\${USE_DISPLAY} --socket-dirs=/run/user/${TARGET_UID}/xpra --socket-dirs=/run/xpra --dbus=\${DBUS} \"--exec-wrapper=\${EXEC_WRAPPER}\" --opengl=\${OPENGL} --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
