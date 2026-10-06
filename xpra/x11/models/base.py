@@ -719,7 +719,7 @@ class BaseWindowModel(CoreX11WindowModel):
             workspace = int(event.data[0])
             # query the workspace count on the root window
             # since we cannot access Wm from here…
-            from xpra.x11.common import get_number_of_desktops
+            from xpra.x11.xroot_props import get_number_of_desktops
             ndesktops = get_number_of_desktops()
             workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s",
                          workspacestr(workspace), ndesktops)
