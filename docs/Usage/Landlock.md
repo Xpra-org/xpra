@@ -15,9 +15,10 @@ xpra start :100 --landlock=strict
 | `strict` | Reads limited to required resources; writes limited to dedicated application directories. |
 
 The option also works as `landlock = MODE` in configuration. Command line
-settings override configuration, which overrides `XPRA_LANDLOCK`. Values are
-case insensitive in all three sources. `no`, `false`, `0` and `off` select `no`;
-`yes`, `true`, `1` and `on` select `default`. Helpers and reconnects inherit the resolved mode.
+settings override configuration. Values are case insensitive.
+`no`, `false`, `0` and `off` select `no`; `yes`, `true`, `1` and `on` select `default`.
+The mode is not exported to the environment: the commands started by the server inherit
+the Landlock policy itself, but xpra commands run from the session do not try to install their own.
 Server upgrades use the current Landlock option rather than reloading the
 previous server's saved mode.
 Selecting `no` cannot remove restrictions inherited from a parent process.

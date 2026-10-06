@@ -39,11 +39,13 @@ class TestParsing(unittest.TestCase):
             with self.assertRaises((SystemExit, InitException)):
                 parse_cmdline(["xpra", "attach", f"--landlock={value}"])
 
-    def test_landlock_command_line_overrides_environment(self):
+    def test_landlock_ignores_environment(self):
         with patch.dict(os.environ, {"XPRA_LANDLOCK": "STRICT"}), \
              patch("xpra.scripts.config.GLOBAL_DEFAULTS", None):
             options, _ = parse_cmdline(["xpra", "attach", "--landlock=OFF"])
-        self.assertEqual(options.landlock, "no")
+            self.assertEqual(options.landlock, "no")
+            options, _ = parse_cmdline(["xpra", "attach"])
+            self.assertEqual(options.landlock, "no")
 
     def test_menu_cache_usage(self):
         commands = {usage.split(" ", 1)[0] for usage in get_usage()}

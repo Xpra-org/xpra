@@ -411,9 +411,6 @@ def configure_seccomp(value: str) -> None:
 
 def configure_landlock(value: str) -> str:
     value = parse_landlock_option(value)
-    # CLI and configuration take precedence over the legacy environment switch.
-    # Helpers and reconnects inherit the resolved mode.
-    os.environ["XPRA_LANDLOCK"] = value
     if value == "strict" and LINUX:
         # dconf otherwise tries to create shared desktop state in the runtime
         # directory, including during GTK theme and menu initialization.

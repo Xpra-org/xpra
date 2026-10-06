@@ -1089,17 +1089,6 @@ def parse_landlock_option(value: str | bool) -> str:
     return mode
 
 
-def get_default_landlock() -> str:
-    # Validate after loading configuration and command line overrides, which
-    # may replace an invalid environment default.
-    value = os.environ.get("XPRA_LANDLOCK", "no").strip().lower()
-    if value in TRUE_OPTIONS:
-        return "default"
-    if not value or value in FALSE_OPTIONS:
-        return "no"
-    return value
-
-
 def get_defaults() -> dict[str, Any]:
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
@@ -1210,7 +1199,7 @@ def get_defaults() -> dict[str, Any]:
         "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
         "debug"             : "",
         "seccomp"           : get_default_seccomp(),
-        "landlock"          : get_default_landlock(),
+        "landlock"          : "no",
         "input-method"      : "auto",
         "audio-source"      : "",
         "audio-sink"        : "auto",

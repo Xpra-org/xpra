@@ -104,21 +104,16 @@ class TestMain(unittest.TestCase):
             process.terminate()
             assert stop_event.stopped
 
-    def test_landlock_mode_overrides_environment(self):
-        with patch.dict(os.environ, {"XPRA_LANDLOCK": "strict"}):
-            self.assertEqual(configure_landlock("no"), "no")
-            self.assertEqual(os.environ["XPRA_LANDLOCK"], "no")
-            self.assertEqual(configure_landlock("default"), "default")
-            with self.assertRaises(InitException):
-                configure_landlock("auto")
-
-    def test_landlock_aliases_are_canonicalized_for_helpers(self):
+    def test_landlock_mode(self):
+        with self.assertRaises(InitException):
+            configure_landlock("auto")
         for values, expected in ((FALSE_OPTIONS, "no"), (TRUE_OPTIONS, "default"),
                                  (("default",), "default"), (("strict",), "strict")):
             for value in values:
                 with self.subTest(value=value), patch.dict(os.environ):
                     self.assertEqual(configure_landlock(str(value).upper()), expected)
-                    self.assertEqual(os.environ["XPRA_LANDLOCK"], expected)
+                    # the commands started from the session must not inherit the mode:
+                    self.assertNotIn("XPRA_LANDLOCK", os.environ)
 
     def test_landlock_unsupported_backends(self):
         for backend in ("qt", "pyglet", "tk"):

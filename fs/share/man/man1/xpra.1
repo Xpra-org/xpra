@@ -1251,7 +1251,7 @@ The server will terminate when the last client disconnects.
 .TP
 \fB\-\-landlock\fP=\fIno\fP|\fIdefault\fP|\fIstrict\fP
 Confine client and server filesystem access with Linux Landlock.
-The default is \fIno\fP, unless \fBXPRA_LANDLOCK\fP selects a mode.
+The default is \fIno\fP.
 \fIdefault\fP allows broad system and user reads and restricts writes to
 download or session directories, temporary storage and application caches.
 \fIstrict\fP also restricts reads to required resources, authentication files
@@ -1265,8 +1265,7 @@ Qt, Pyglet and Tk clients do not support Landlock and require
 \fB\-\-landlock=no\fP.
 Children inherit the policy, which can limit applications, uploads, printing
 and commands that open downloaded files. Network ports are not restricted.
-Command line settings override configuration, which overrides
-\fBXPRA_LANDLOCK\fP. Values are case insensitive. Boolean values yes, true,
+Command line settings override configuration. Values are case insensitive. Boolean values yes, true,
 1 and on select default; no, false, 0 and off select no.
 Enabling no cannot remove an inherited Landlock policy.
 .TP
