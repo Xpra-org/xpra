@@ -49,10 +49,20 @@ podman pod create \
   --shm-size=1g \
   --uts=private
 
+# the xpra server loads the application menus and their icons from the 'apps' image,
+# mounted read-only at the same locations, so that the menus show the applications installed there,
+# the 'apps' image also provides the SVG icons cached as PNG:
+MENU_MOUNTS=()
+for dir in /etc/xdg/menus /usr/share/applications /usr/share/desktop-directories /usr/share/icons /usr/share/pixmaps /var/cache/xpra/menu-icons; do
+  MENU_MOUNTS+=(--mount "type=image,source=apps,destination=${dir},subpath=${dir}")
+done
+
 # Start xpra, which also starts the X server,
 # and exposes ipc to the other container for XShm.
 # xpra uses the session bus started by the 'apps' container,
 # nothing in the pod needs a system bus, so xpra must not start one (as root) in the xpra container:
+# the applications are installed in the 'apps' container, so xpra starts them there using the 'xpra runner',
+# the OpenGL probe would also go through the runner, so skip it:
 podman run -dt \
   --pod ${POD_NAME} \
   --replace \
@@ -61,6 +71,8 @@ podman run -dt \
   --env USE_DISPLAY=no \
   --env DBUS=wait \
   --env XPRA_SYSTEM_DBUS=0 \
+  --env "EXEC_WRAPPER=xpra run socket:///run/user/1000/runner/socket --" \
+  --env OPENGL=noprobe \
   --uts private \
   --ipc shareable \
   --cgroupns private \
@@ -71,6 +83,7 @@ podman run -dt \
   --volume ${X11_VOLUME}:/tmp/.X11-unix:rw \
   --security-opt label=type:container_runtime_t \
   --read-only --read-only-tmpfs=true \
+  "${MENU_MOUNTS[@]}" \
   xpra
 
 # Start app container running the desktop environment applications:

@@ -77,11 +77,12 @@ flowchart LR
     subgraph pod["pod 'xpra': --memory 4g, --shm-size=1g"]
         subgraph ns["namespaces owned by 'xvfb': network, ipc + shared memory, uts, cgroup"]
             xvfb["<b>xvfb</b> (alpine, read-only)<br/>X server on :10<br/>-nolisten tcp"]
-            xpra["<b>xpra</b> (fedora, read-only)<br/>xpra seamless :10<br/>--use-display=yes --dbus=wait<br/>pulseaudio"]
-            apps["<b>apps</b> (ubuntu, --init)<br/>dbus-daemon --session<br/>lxpanel and applications"]
+            xpra["<b>xpra</b> (fedora, read-only)<br/>xpra seamless :10<br/>--use-display=yes --dbus=wait<br/>--exec-wrapper='xpra run ...'<br/>pulseaudio"]
+            apps["<b>apps</b> (ubuntu, --init)<br/>dbus-daemon --session<br/>xpra runner<br/>lxpanel and applications"]
         end
+        menus[("'apps' image, read-only<br/>menus, icons, cached icons")]
         x11[("volume 'x11'<br/>/tmp/.X11-unix/X10")]
-        run[("volume 'run' at /run<br/>user/1000/bus<br/>user/1000/pulse/native<br/>user/1000/xpra, xpra")]
+        run[("volume 'run' at /run<br/>user/1000/bus<br/>user/1000/pulse/native<br/>user/1000/runner/socket<br/>user/1000/xpra, xpra")]
     end
 
     client -- "port 10000<br/>tcp + quic" --> xpra
@@ -92,6 +93,9 @@ flowchart LR
     xpra -- "pulseaudio socket" --> run
     run -- "session bus" --> xpra
     run -- "pulseaudio" --> apps
+    apps -- "runner socket" --> run
+    run -- "commands to start" --> xpra
+    menus -- "image mounts" --> xpra
 ```
 
 Shared resources:
@@ -105,6 +109,8 @@ Shared resources:
 | `run` volume | `xpra` | `apps` (`--volumes-from`) | populated from the `xpra` image, which pre-creates `/run/user/1000`, it contains the session bus, the pulseaudio socket and the xpra sockets |
 | session bus | `apps` | `xpra` | runs in `apps` so that dbus activation starts services where the applications are installed, xpra connects to it with `--dbus=wait` |
 | system bus | none | | xpra does not start one (`XPRA_SYSTEM_DBUS=0`), nothing in the pod needs it |
+| runner socket | `apps` | `xpra` | the `xpra runner` started in `apps` listens on `/run/user/1000/runner/socket`, in a directory which only uid `1000` can access, and xpra starts all the commands through it (`--exec-wrapper`) so that they run where the applications are installed, the OpenGL probe would also go through it, so it is skipped (`--opengl=noprobe`) |
+| menus and icons | `apps` image | `xpra` | mounted read-only (`--mount type=image`) at the same locations: the menu definitions, the `.desktop` files, the icons, and the SVG icons cached as PNG when the image is built, in `/var/cache/xpra/menu-icons` |
 | pulseaudio | `xpra` | `apps` | started by xpra once the session bus is available, the applications use the socket at `/run/user/1000/pulse/native` |
 
 The containers start in parallel, so each one waits for the resources it needs:
@@ -118,6 +124,7 @@ sequenceDiagram
     xpra->>xvfb: wait for /tmp/.X11-unix/X10 (XPRA_VFB_WAIT=30)
     apps->>xvfb: wait for /tmp/.X11-unix/X10 (up to 30s)
     apps->>apps: start the session bus at /run/user/1000/bus
+    apps->>apps: start the xpra runner at /run/user/1000/runner/socket
     xpra->>apps: wait for the session bus (--dbus=wait)
     xpra->>xpra: start pulseaudio at /run/user/1000/pulse/native
     apps->>xpra: wait for the pulseaudio socket (PULSEAUDIO_WAIT=10)
@@ -125,4 +132,4 @@ sequenceDiagram
     xpra->>xpra: accept connections on port 10000
 ```
 
-Known limitation: the xpra server loads the application menus from its own container, so the menus do not show the applications installed in the `apps` container.
+Known limitation: xpra starts the commands using `xpra run`, which exits as soon as the runner has started the command, so xpra cannot track the processes: `start-child`, `exit-with-children` and the per-client window filtering of commands that are not shared do not work.
