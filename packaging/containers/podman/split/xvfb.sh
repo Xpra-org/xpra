@@ -71,14 +71,22 @@ if [ "${TRIM}" == "1" ]; then
   # run apk remove busybox
 fi
 
+# the entrypoint runs in a shell, so these can be overriden when starting the container:
+# `--env XAUTH=/path/to/Xauthority` enables access control using the cookies from this file, instead of allowing all clients (`-ac`),
+# and `--env XARGS=...` adds more arguments to the X server command line, ie: `-nolisten local`
+X_ACCESS="\${XAUTH:+-auth} \${XAUTH:--ac}"
+X_ARGS="\${XARGS}"
+buildah config --env XAUTH= $CONTAINER
+buildah config --env XARGS= $CONTAINER
+
 if [ "${XDUMMY}" == "1" ]; then
   run mkdir "/etc/X11"
   copy "../../../../fs/etc/xpra/xorg.conf" "/etc/X11"
   # the setuid wrapper only allows console users to start the X server, we don't need it:
   run rm -f /usr/libexec/Xorg.wrap
-  XVFB_COMMAND="/usr/libexec/Xorg -novtswitch -logfile /tmp/Xorg.log -config /etc/X11/xorg.conf +extension Composite +extension GLX +extension RANDR +extension RENDER -extension DOUBLE-BUFFER -nolisten tcp -noreset -ac $XDISPLAY"
+  XVFB_COMMAND="/usr/libexec/Xorg -novtswitch -logfile /tmp/Xorg.log -config /etc/X11/xorg.conf +extension Composite +extension GLX +extension RANDR +extension RENDER -extension DOUBLE-BUFFER -nolisten tcp -noreset ${X_ACCESS} ${X_ARGS} $XDISPLAY"
 else
-  XVFB_COMMAND="/usr/bin/Xvfb -ac -noreset +extension GLX +extension Composite +extension RANDR +extension Render -extension DOUBLE-BUFFER -nolisten tcp -ac $XDISPLAY"
+  XVFB_COMMAND="/usr/bin/Xvfb -noreset +extension GLX +extension Composite +extension RANDR +extension Render -extension DOUBLE-BUFFER -nolisten tcp ${X_ACCESS} ${X_ARGS} $XDISPLAY"
 fi
 ENTRYPOINT="su-exec ${TARGET_USER} ${XVFB_COMMAND}"
 buildah config --entrypoint "${ENTRYPOINT}" $CONTAINER

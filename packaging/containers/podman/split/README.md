@@ -16,6 +16,9 @@ so that they can enable `XShm` for performance.
 
 [xvfb.sh](./xvfb.sh) will create a container named `xvfb`,
 ready to start the virtual framebuffer on the display number specified.
+By default, the X server accepts all the clients which can connect to its socket (`-ac`),
+`--env XAUTH=/path/to/Xauthority` enables access control using the cookies from this file instead,
+and `--env XARGS=...` adds more arguments to the X server command line, see the [secure](../secure/) pod.
 </details>
 
 <details>
