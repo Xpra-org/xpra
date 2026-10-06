@@ -1,10 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2026 Netflix, Inc.
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import asyncio
+import os
 from collections.abc import Callable
+from typing import Any
 
 from aioquic.asyncio import QuicConnectionProtocol
 from aioquic.asyncio.server import QuicServer
@@ -185,7 +188,8 @@ class HttpServerProtocol(QuicConnectionProtocol):
                                   transmit=self.transmit)
 
 
-async def do_listen(sock, xpra_server, cert: str, key: str | None, retry: bool):
+async def do_listen(sock, xpra_server, cert: str, key: str | None, retry: bool
+                    ) -> tuple[tuple[Any, Any], QuicConfiguration, Any] | None:
     log(f"do_listen({sock}, {xpra_server}, {cert}, {key}, {retry})")
 
     def create_protocol(*args, **kwargs):
@@ -220,10 +224,84 @@ async def do_listen(sock, xpra_server, cert: str, key: str | None, retry: bool):
         loop = asyncio.get_event_loop()
         r = await loop.create_datagram_endpoint(create_server, sock=sock)
         log(f"create_datagram_endpoint({create_server}, {sock})={r}")
-        return r
+        return r, configuration, session_ticket_store
     except Exception:
         log.error(f"Error: listening on {sock}", exc_info=True)
         raise
+
+
+def validate_certificate_files(cert: str, key: str) -> tuple[Any, Any, Any]:
+    """
+    Load the certificate and key from disk into a throwaway QuicConfiguration
+    and check they are a matching pair, so a corrupt or half-written file can
+    never be applied to a live configuration.
+
+    The SPKI comparison is the actual key-match check: aioquic does not
+    cross-check, and its load_cert_chain() assigns the certificate before
+    reading the key file, so loading straight into the live configuration
+    could leave it with a mismatched pair on a mid-failure.
+
+    Returns (certificate, certificate_chain, private_key); raises ValueError.
+    """
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+    scratch = QuicConfiguration(is_client=False)
+    try:
+        scratch.load_cert_chain(cert, key)
+    except Exception as e:
+        raise ValueError(f"failed to load {cert!r} / {key!r}: {e}") from e
+    cert_spki = scratch.certificate.public_key().public_bytes(
+        Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+    key_spki = scratch.private_key.public_key().public_bytes(
+        Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+    if cert_spki != key_spki:
+        raise ValueError(f"SSL private key {key!r} does not match certificate {cert!r}")
+    return scratch.certificate, scratch.certificate_chain, scratch.private_key
+
+
+def apply_quic_certificate(configuration: QuicConfiguration,
+                           certificate, certificate_chain, private_key,
+                           ticket_store, loop, cert: str,
+                           timeout: float = 10) -> str:
+    """
+    Swap a validated certificate/key into a live QuicConfiguration, on the
+    listener's asyncio loop: connection initialization reads the same three
+    attributes on that loop, so running the swap there prevents a concurrent
+    connection from pairing a new certificate with an old key.
+
+    Also clears the session ticket store: resumed handshakes skip
+    certificate verification entirely, so tickets minted under the old
+    certificate would otherwise bypass the renewed one.
+
+    If the loop does not confirm the swap within `timeout` seconds, this
+    raises ValueError; the swap itself still applies whenever the loop
+    eventually runs it (the material was validated), and the error message
+    says so — this is specified behavior, not a race: a cancellation gate
+    would itself race the callback.
+
+    Raises ValueError if the loop is dead or does not confirm in time.
+    """
+    from threading import Event
+    done = Event()
+
+    def swap() -> None:
+        configuration.certificate = certificate
+        configuration.certificate_chain = certificate_chain
+        configuration.private_key = private_key
+        if ticket_store:
+            ticket_store.clear()
+        done.set()
+
+    try:
+        loop.call_soon_threadsafe(swap)
+    except RuntimeError as e:
+        raise ValueError(f"cannot reload {cert!r}: listener loop is closed") from e
+    if not done.wait(timeout=timeout):
+        raise ValueError(
+            f"cannot reload {cert!r}: listener loop did not confirm the swap"
+            f" within {timeout}s (it may still be applied)")
+    expiry = getattr(certificate, "not_valid_after_utc", None) \
+        or certificate.not_valid_after
+    return f"reloaded {cert!r} (notAfter {expiry})"
 
 
 def listen_quic(sock, xpra_server, socket_options: dict) -> Callable[[], None]:
@@ -238,14 +316,25 @@ def listen_quic(sock, xpra_server, socket_options: dict) -> Callable[[], None]:
         raise InitExit(ExitCode.SSL_FAILURE, "missing ssl certificate")
     if not key:
         raise InitExit(ExitCode.SSL_FAILURE, "missing ssl key")
+    # register absolute paths: the process subsystem may chdir later, and a
+    # relative --ssl-cert would then resolve elsewhere at reload time
+    cert = os.path.abspath(cert)
+    key = os.path.abspath(key)
     retry = socket_options.get("retry", False)
     t = get_threaded_loop()
     endpoint = None
+    configuration: QuicConfiguration | None = None
+    ticket_store = None
+    registered = False
     closing = False
 
     def close_endpoint() -> None:
-        nonlocal endpoint, closing
+        nonlocal endpoint, configuration, registered, closing
         closing = True
+        if registered and configuration:
+            xpra_server.remove_quic_configuration(configuration)
+            registered = False
+            configuration = None
         if not endpoint:
             return
         transport, protocol = endpoint
@@ -257,10 +346,17 @@ def listen_quic(sock, xpra_server, socket_options: dict) -> Callable[[], None]:
             transport.close()
 
     async def start_listener() -> None:
-        nonlocal endpoint
-        endpoint = await do_listen(sock, xpra_server, cert, key, retry)
+        nonlocal endpoint, configuration, ticket_store, registered
+        r = await do_listen(sock, xpra_server, cert, key, retry)
+        if r is None:
+            return
+        endpoint, configuration, ticket_store = r
         if closing:
+            # cleanup already ran: close the fresh endpoint, never register
             close_endpoint()
+            return
+        xpra_server.add_quic_configuration(cert, key, configuration, ticket_store, t.loop)
+        registered = True
 
     def cleanup() -> None:
         t.call(close_endpoint)
