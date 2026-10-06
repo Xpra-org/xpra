@@ -12,8 +12,17 @@ or [encryption](../Network/Encryption.md), it limits the *damage* a successful
 exploit of one of those threads could do.
 
 **Linux only** (it has no effect on other platforms). It is **enabled by default on
-x86_64**, with the non-fatal `errno` action (`--seccomp=default`), and disabled by default
-on the other architectures, where the filters have not been tested.
+all Linux architectures**, with the non-fatal `errno` action (`--seccomp=default`).
+Filtering requires Xpra's native seccomp module, built with `libseccomp`.
+
+Compared with an external tool that applies a single seccomp policy at process
+launch, Xpra can take command line options and configuration into account, and
+drop syscall permissions after each thread's required initialization. For example,
+it can load and self-test decoders before blocking file access, or complete the
+VNC handshake before filtering the RFB thread. Each thread then gets a policy
+suited to its job, while other threads can still perform tasks such as file
+transfers and starting commands. A filter applied at launch must also allow the
+syscalls needed for startup, file transfers and starting commands.
 
 
 <div class="docs-section-heading" markdown="1">
@@ -51,8 +60,8 @@ xpra attach ssl://HOST:PORT/ --seccomp=strict
 
 | `--seccomp=` | Effect |
 |---|---|
-| `no` | no filtering *(default on architectures other than x86_64)* |
-| `default` | *(default on x86_64)* enable all four filters with a **non-fatal** action: a blocked syscall fails with a permission error instead of killing anything |
+| `no` | no filtering *(default on non-Linux platforms)* |
+| `default` | *(default on all Linux architectures)* enable all four filters with a **non-fatal** action: a blocked syscall fails with a permission error instead of killing anything |
 | `strict` | enable all four filters with a **fatal** action: a blocked syscall kills the whole process |
 | a list | enable only the listed threads, ie `decode`, `parse`, `rfb`, `menu` |
 
