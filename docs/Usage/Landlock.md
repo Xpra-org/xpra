@@ -46,7 +46,8 @@ remaining subsystems and listeners start.
 All the server subsystems' `early_setup()` methods are called before that,
 which is where the session D-Bus, the PulseAudio server and the input method daemon (`ibus-daemon`)
 are started, so these are not confined.
-Subsystems declare the paths they need once confined with `get_landlock_paths()`.
+Subsystems declare the paths they need once confined with `get_landlock_paths()`,
+ie: the menu subsystem's icon cache directory.
 Both client and server subsystems remove their owned private
 temporary directories during lifecycle cleanup, including failed enforcement.
 Each subsystem stores its temporary path and owner PID; cleanup only removes
@@ -62,7 +63,8 @@ storage owned by the current process.
 the current directory, `HOME`, and the XDG configuration, data, cache, state and
 runtime directories. It does **not** protect unrelated home files from being read.
 Clients can write to their configured download directory and temporary directories.
-Servers can write to their session, menu-icon cache and temporary directories.
+Servers can write to their session and temporary directories,
+and to the menu-icon cache directory when the start menu is enabled.
 
 `strict` removes blanket access to `HOME`, the current directory, arbitrary Python
 search paths and entire user XDG directories. It allows system code and resources,
@@ -73,7 +75,8 @@ identity files, known-hosts files and host-configured identities are readable;
 the rest of the SSH directory remains outside the policy.
 
 Strict writes are limited to the client's download directory or the server's
-session and menu-icon cache directories, plus explicitly configured mmap resources.
+session and menu-icon cache directories (the latter only when the start menu is enabled),
+plus explicitly configured mmap resources.
 Grants for `/`, the whole home directory, `/tmp`, `/var/tmp` or `/dev/shm` are
 rejected. Configure a dedicated download directory before using strict if your
 normal download directory falls back to `/tmp`, for example in `xpra.conf`:

@@ -45,23 +45,23 @@ class LandLock(StubSubsystem):
         try:
             # the external processes (dbus, pulseaudio, ibus, etc) have already been started
             # by the `early_setup` calls, outside the Landlock domain.
+            session_dir = os.environ.get("XPRA_SESSION_DIR", "")
+            write_paths: list[str] = [session_dir]
             read_paths: list[str] = []
             socket_paths: list[str] = []
             for subsystem in self.server.subsystems.values():
                 paths = subsystem.get_landlock_paths()
+                write_paths += paths.get("write", ())
                 read_paths += paths.get("read", ())
                 socket_paths += paths.get("socket", ())
-            from xpra.platform.posix.menu_helper import prepare_menu_icon_cache_dir
             from xpra.platform.posix.security import enforce_landlock
-            session_dir = os.environ.get("XPRA_SESSION_DIR", "")
-            write_paths = (session_dir, prepare_menu_icon_cache_dir()) + self.mmap_paths
             socket_dirs = [os.path.dirname(sock.address) for sock in self.server.sockets
                            if sock.socktype == "socket" and not sock.address.startswith("@")]
             auth_paths = self.auth_paths + self.get_auth_paths()
             if self.mode == "strict":
                 from xpra.platform.posix.security import prepare_landlock_temp_dir
                 self.temp_dir, self.temp_dir_owner = prepare_landlock_temp_dir(session_dir)
-            self.abi = enforce_landlock(self.mode, write_paths, read_paths=auth_paths + tuple(read_paths),
+            self.abi = enforce_landlock(self.mode, tuple(write_paths) + self.mmap_paths, read_paths=auth_paths + tuple(read_paths),
                                         required_paths=auth_paths,
                                         socket_paths=tuple(socket_paths), socket_dirs=socket_dirs,
                                         cleanup_dirs=(os.path.dirname(session_dir),),

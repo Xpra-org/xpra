@@ -16,6 +16,7 @@ from xpra.scripts.config import InitException, InitExit, make_defaults_struct
 from xpra.server import features
 from xpra.server.core import ServerCore, get_instance_subsystem_classes
 from xpra.server.subsystem.landlock import LandLock
+from xpra.server.subsystem.menu import MenuServer
 from xpra.server.subsystem.pulseaudio import PulseaudioServer
 from xpra.server.subsystem.stub import StubSubsystem
 
@@ -49,9 +50,7 @@ class LandLockTest(unittest.TestCase):
         security.enforce_landlock = Mock(side_effect=lambda *a, **kw: events.append("landlock") or 9)
         security.prepare_landlock_temp_dir = Mock(return_value=("/private", os.getpid()))
         security.cleanup_landlock_temp_dir = Mock()
-        menu_helper = ModuleType("xpra.platform.posix.menu_helper")
-        menu_helper.prepare_menu_icon_cache_dir = lambda: events.append("cache") or "/cache"
-        return {security.__name__: security, menu_helper.__name__: menu_helper}
+        return {security.__name__: security}
 
     def test_factory_feature_and_order(self):
         for enabled in (False, True):
@@ -93,11 +92,11 @@ class LandLockTest(unittest.TestCase):
             server.setup()
             landlock.setup()
         # all the `early_setup` calls come before the policy, and all the other `setup` calls after it:
-        self.assertEqual(events, ["dbus", "peer-early", "cache", "landlock", "dbus-setup", "peer", "listen"])
+        self.assertEqual(events, ["dbus", "peer-early", "landlock", "dbus-setup", "peer", "listen"])
         self.assertTrue(landlock.enforced)
         self.assertEqual(landlock.get_info(None)["landlock"]["abi"], 9)
         modules["xpra.platform.posix.security"].enforce_landlock.assert_called_once_with(
-            "strict", ("/sessions/100", "/cache"), read_paths=(), required_paths=(),
+            "strict", ("/sessions/100", ), read_paths=(), required_paths=(),
             socket_paths=(), socket_dirs=["/sockets"], cleanup_dirs=("/sessions",), temp_dir="/private",
             allow_socket_creation=False,
         )
@@ -116,7 +115,7 @@ class LandLockTest(unittest.TestCase):
              patch.dict(os.environ, {"XPRA_SESSION_DIR": "/sessions/100"}), \
              patch.object(PulseaudioServer, "init_pulseaudio", side_effect=init_pulseaudio):
             server.setup()
-        self.assertEqual(events, ["pulseaudio", "cache", "landlock"])
+        self.assertEqual(events, ["pulseaudio", "landlock"])
         # the socket does not exist yet, so the rule is attached to its directory:
         _, kwargs = modules["xpra.platform.posix.security"].enforce_landlock.call_args
         self.assertEqual(kwargs["socket_paths"], ("/run/user/1000/pulse", ))
@@ -137,6 +136,22 @@ class LandLockTest(unittest.TestCase):
         self.assertEqual(kwargs["read_paths"], ("/home/user/.config/ibus/bus", ))
         self.assertEqual(kwargs["socket_paths"], ("/home/user/.cache/ibus", "/run/pulse"))
 
+    def test_menu_icon_cache(self):
+        for enabled in (False, True):
+            server, landlock, opts = self.make_landlock()
+            modules = self.mock_modules([])
+            menu = MenuServer(server)
+            menu.provider = Mock() if enabled else None
+            server.subsystems["menu"] = menu
+            with self.subTest(enabled=enabled), patch("xpra.server.subsystem.landlock.LINUX", True), \
+                 patch.dict(sys.modules, modules), patch.dict(os.environ, {"XPRA_SESSION_DIR": "/sessions/100"}), \
+                 patch("xpra.platform.posix.menu_helper.prepare_menu_icon_cache_dir", return_value="/cache") as prepare:
+                landlock.setup()
+                args, _kwargs = modules["xpra.platform.posix.security"].enforce_landlock.call_args
+                # only created and writable when the menu is enabled:
+                self.assertEqual(args[1], ("/sessions/100", "/cache") if enabled else ("/sessions/100", ))
+                self.assertEqual(prepare.called, enabled)
+
     def test_options_are_parsed_during_init(self):
         server, landlock, opts = self.make_landlock()
         opts.ssl_cert = "/credentials/cert"
@@ -149,7 +164,7 @@ class LandLockTest(unittest.TestCase):
              patch.dict(os.environ, {"XPRA_SESSION_DIR": "/sessions/100"}):
             server.setup()
         args, kwargs = modules["xpra.platform.posix.security"].enforce_landlock.call_args
-        self.assertEqual(args, ("strict", ("/sessions/100", "/cache", "/shared")))
+        self.assertEqual(args, ("strict", ("/sessions/100", "/shared")))
         self.assertEqual(kwargs["required_paths"], ("/credentials/cert",))
 
     def test_auth_files(self):
@@ -173,7 +188,7 @@ class LandLockTest(unittest.TestCase):
         server.subsystems["display"] = make_subsystem(server, setup=lambda: events.append("display"))
         with patch("xpra.server.subsystem.landlock.LINUX", True), patch.dict(sys.modules, modules):
             server.setup()
-        self.assertEqual(events, ["cache", "landlock", "backend", "display"])
+        self.assertEqual(events, ["landlock", "backend", "display"])
         self.assertTrue(wayland.started)
 
     def test_disabled_or_non_linux(self):
@@ -254,8 +269,7 @@ class LandLockTest(unittest.TestCase):
         server, landlock, _opts = self.make_landlock()
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ), \
              patch.object(tempfile, "tempdir", tempfile.tempdir), \
-             patch("xpra.server.subsystem.landlock.LINUX", True), \
-             patch("xpra.platform.posix.menu_helper.prepare_menu_icon_cache_dir", return_value=directory):
+             patch("xpra.server.subsystem.landlock.LINUX", True):
             os.environ.pop("XPRA_LANDLOCK_TMP_DIR", None)
             os.environ["XPRA_SESSION_DIR"] = directory
             paths = []

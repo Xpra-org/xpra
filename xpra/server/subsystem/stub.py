@@ -119,7 +119,7 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
     def get_landlock_paths(self) -> dict[str, Sequence[str]]:
         """
         The paths this subsystem needs to access once the server is confined,
-        ie: `{"read": [...], "socket": [...]}`, see `enforce_landlock`.
+        ie: `{"write": [...], "read": [...], "socket": [...]}`, see `enforce_landlock`.
         Landlock rules can only be attached to existing paths, so create them here if needed.
         """
         return {}

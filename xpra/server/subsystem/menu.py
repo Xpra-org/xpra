@@ -5,7 +5,7 @@
 
 from typing import Any
 from time import monotonic
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.env import envint
@@ -61,6 +61,16 @@ class MenuServer(StubSubsystem):
     def setup(self) -> None:
         if self.provider:
             start_thread(self._threaded_menu_setup, "menu-setup", daemon=True)
+
+    def get_landlock_paths(self) -> dict[str, Sequence[str]]:
+        if not self.provider:
+            return {}
+        # the `menu-cache` subprocess is started after confinement,
+        # so the directory must exist before then:
+        from xpra.platform.posix.menu_helper import prepare_menu_icon_cache_dir
+        if cache_dir := prepare_menu_icon_cache_dir():
+            return {"write": (cache_dir, )}
+        return {}
 
     def _threaded_menu_setup(self) -> None:
         self.provider.setup()
