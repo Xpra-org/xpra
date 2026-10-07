@@ -43,7 +43,8 @@ They connect synchronously and do not use the client subsystem lifecycle.
 
 The server `LandLock` subsystem installs its policy in `setup()`, before the
 remaining subsystems and listeners start. It prepares session D-Bus and starts
-the PulseAudio server before confinement, so PulseAudio itself is not confined.
+the PulseAudio server and the input method daemon (`ibus-daemon`) before confinement,
+so these are not confined.
 Both client and server subsystems remove their owned private
 temporary directories during lifecycle cleanup, including failed enforcement.
 Each subsystem stores its temporary path and owner PID; cleanup only removes
@@ -95,6 +96,7 @@ Strict grants socket lookup for Xpra connections, the display, session/system D-
 PulseAudio and SSH agents using their known paths, rather than broad runtime roots.
 The PulseAudio server started by Xpra is granted socket lookup in its whole directory,
 because its socket does not exist yet when the policy is installed.
+Likewise for the `ibus` socket directory, and the directory containing its address files is readable.
 
 Both modes allow graphics devices below `/dev/dri` and `/dev/accel`, and standard
 devices such as `/dev/null`, `/dev/urandom` and pseudo-terminals. Device entries cannot be created,

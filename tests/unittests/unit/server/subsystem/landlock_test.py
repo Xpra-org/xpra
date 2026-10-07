@@ -119,6 +119,25 @@ class LandLockTest(unittest.TestCase):
         # already started, so the pulseaudio subsystem's own setup does not start it again:
         start_thread.assert_not_called()
 
+    def test_ibus_starts_before_confinement(self):
+        server, landlock, opts = self.make_landlock()
+        events = []
+        modules = self.mock_modules(events)
+
+        def start_input_method(late=True):
+            events.append(f"ibus late={late}")
+        server.subsystems["keyboard"] = SimpleNamespace(input_method="ibus", start_input_method=start_input_method)
+        dirs = ("/home/user/.config/ibus/bus", "/home/user/.cache/ibus")
+        with patch("xpra.server.subsystem.landlock.LINUX", True), patch.dict(sys.modules, modules), \
+             patch.dict(os.environ, {"XPRA_SESSION_DIR": "/sessions/100"}), \
+             patch("xpra.x11.subsystem.keyboard.get_ibus_dirs", return_value=dirs):
+            landlock.setup()
+        self.assertEqual(events, ["ibus late=False", "cache", "landlock"])
+        # the policy allows reading its address and connecting to its socket:
+        _, kwargs = modules["xpra.platform.posix.security"].enforce_landlock.call_args
+        self.assertEqual(kwargs["read_paths"], ("/home/user/.config/ibus/bus", ))
+        self.assertEqual(kwargs["socket_paths"], ("/home/user/.cache/ibus", ))
+
     def test_options_are_parsed_during_init(self):
         server, landlock, opts = self.make_landlock()
         opts.ssl_cert = "/credentials/cert"

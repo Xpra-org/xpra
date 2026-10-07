@@ -79,7 +79,20 @@ def ibus_pid_file() -> str:
     return os.path.join(session_dir, "ibus-daemon.pid")
 
 
-def may_start_ibus(env: dict[str, str], scheduler: Scheduler):
+def get_ibus_dirs() -> tuple[str, str]:
+    """
+    Returns the directory containing the ibus address files,
+    and the one containing its socket - creating them if needed.
+    """
+    config_dir = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    cache_dir = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
+    dirs = os.path.join(config_dir, "ibus", "bus"), os.path.join(cache_dir, "ibus")
+    for path in dirs:
+        os.makedirs(path, mode=0o700, exist_ok=True)
+    return dirs
+
+
+def may_start_ibus(env: dict[str, str], scheduler: Scheduler, late=True):
     # maybe we are inheriting one from a dead session?
     daemonizer = find_libexec_command("daemonizer")
     pidfile = ibus_pid_file()
@@ -101,8 +114,7 @@ def may_start_ibus(env: dict[str, str], scheduler: Scheduler):
             # don't trust the pidfile value from now on:
             pidfile = ""
 
-    # start it late:
-    def late_start():
+    def start():
         command = shlex.split(IBUS_DAEMON_COMMAND)
         ibuslog(f"starting ibus: {IBUS_DAEMON_COMMAND!r}")
         if daemonizer:
@@ -143,17 +155,21 @@ def may_start_ibus(env: dict[str, str], scheduler: Scheduler):
             get_child_reaper().add_process(proc, "ibus-daemon", command,
                                            ignore=True, forget=False)
 
-    scheduler.idle_add(late_start)
+    if late:
+        scheduler.idle_add(start)
+    else:
+        start()
 
 
 class X11KeyboardManager(KeyboardManager):
-    __slots__ = ("current_keyboard_group", "ibus_layouts", "input_method", "xkb")
+    __slots__ = ("current_keyboard_group", "ibus_layouts", "input_method", "input_method_started", "xkb")
     BACKEND = "x11"
 
     def __init__(self, server=None):
         KeyboardManager.__init__(self, server)
         self.xkb = False
         self.input_method = "keep"
+        self.input_method_started = False
         self.ibus_layouts: dict[str, Any] = {}
         # the layout group we last set, or -1 when unknown:
         self.current_keyboard_group = -1
@@ -201,14 +217,7 @@ class X11KeyboardManager(KeyboardManager):
                     log.error("Error: keyboard and mouse disabled without XTest support")
                 elif not X11Keyboard.hasXkb():
                     log.error("Error: limited keyboard support without XKB")
-            self.input_method = configure_imsettings_env(self.input_method)
-            if self.input_method == "ibus":
-                if IBUS:
-                    env = self.server.get_child_env()
-                    may_start_ibus(env, self)
-                else:
-                    log.warn("Warning: ibus is disabled, but input-method uses it")
-                    log.warn(" either use another input method or start the daemon manually")
+            self.start_input_method()
 
         super().setup()
 
@@ -217,6 +226,20 @@ class X11KeyboardManager(KeyboardManager):
             # wait for ibus to be ready to query the layouts:
             from xpra.keyboard.ibus import with_ibus_ready
             with_ibus_ready(self.query_ibus_layouts)
+
+    def start_input_method(self, late=True) -> None:
+        if self.input_method_started:
+            # already started, ie: before the Landlock policy was applied
+            return
+        self.input_method_started = True
+        self.input_method = configure_imsettings_env(self.input_method)
+        if self.input_method == "ibus":
+            if IBUS:
+                env = self.server.get_child_env()
+                may_start_ibus(env, self, late)
+            else:
+                log.warn("Warning: ibus is disabled, but input-method uses it")
+                log.warn(" either use another input method or start the daemon manually")
 
     def make_keyboard_device(self):
         if self.xkb:
