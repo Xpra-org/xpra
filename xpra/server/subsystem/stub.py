@@ -5,7 +5,7 @@
 
 import shlex
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.net.constants import ConnectionMessage
 from xpra.net.dispatch import SubsystemPacketHandlers
@@ -105,10 +105,24 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
         Initialize state attributes.
         """
 
+    def early_setup(self) -> None:
+        """
+        Called on all subsystems before any `setup()`, and before the server process is confined:
+        start the external processes here, since they would otherwise inherit the Landlock policy.
+        """
+
     def setup(self) -> None:
         """
         After initialization, prepare to run.
         """
+
+    def get_landlock_paths(self) -> dict[str, Sequence[str]]:
+        """
+        The paths this subsystem needs to access once the server is confined,
+        ie: `{"read": [...], "socket": [...]}`, see `enforce_landlock`.
+        Landlock rules can only be attached to existing paths, so create them here if needed.
+        """
+        return {}
 
     def cleanup(self) -> None:
         """

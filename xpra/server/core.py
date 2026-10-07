@@ -271,6 +271,9 @@ class ServerCore(GLibServer):
         log("ssl-upgrade(%s, %s)=%s", opts.ssl, opts.ssl_upgrade, self.ssl_upgrade)
 
     def setup(self) -> None:
+        # the `landlock` subsystem comes first, so its `setup` confines the server
+        # after all the `early_setup` calls and before any other `setup`:
+        self._dispatch_fire("early_setup")
         self._dispatch_fire("setup")
         self.start_listen_sockets()
         self.init_packet_handlers()

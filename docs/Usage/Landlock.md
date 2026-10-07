@@ -42,9 +42,11 @@ Qt, Pyglet and Tk clients do not support Landlock and require `--landlock=no`.
 They connect synchronously and do not use the client subsystem lifecycle.
 
 The server `LandLock` subsystem installs its policy in `setup()`, before the
-remaining subsystems and listeners start. It prepares session D-Bus and starts
-the PulseAudio server and the input method daemon (`ibus-daemon`) before confinement,
-so these are not confined.
+remaining subsystems and listeners start.
+All the server subsystems' `early_setup()` methods are called before that,
+which is where the session D-Bus, the PulseAudio server and the input method daemon (`ibus-daemon`)
+are started, so these are not confined.
+Subsystems declare the paths they need once confined with `get_landlock_paths()`.
 Both client and server subsystems remove their owned private
 temporary directories during lifecycle cleanup, including failed enforcement.
 Each subsystem stores its temporary path and owner PID; cleanup only removes

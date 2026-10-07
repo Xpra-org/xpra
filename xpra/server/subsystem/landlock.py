@@ -43,29 +43,14 @@ class LandLock(StubSubsystem):
         if not LINUX or self.mode == "no" or self.enforced:
             return
         try:
-            # The session bus must create its socket before confinement.
-            if dbus := self.get_subsystem("dbus"):
-                if dbus.enabled and not dbus.env:
-                    dbus.init_dbus_env()
-            # pulseaudio would inherit the policy and fail to create its directories and socket,
-            # so start it now (synchronously: the policy also applies to the existing threads):
-            socket_paths: tuple[str, ...] = ()
-            if pulseaudio := self.get_subsystem("pulseaudio"):
-                pulseaudio.init_pulseaudio()
-                if pulseaudio.server_dir:
-                    # its socket may not exist yet, and Landlock rules can only be attached to existing paths:
-                    socket_paths = (pulseaudio.server_dir, )
-            # same for the input method daemon (ibus), which needs to write to the home directory:
-            read_paths: tuple[str, ...] = ()
-            keyboard = self.get_subsystem("keyboard")
-            if start_input_method := getattr(keyboard, "start_input_method", None):
-                start_input_method(late=False)
-                if keyboard.input_method == "ibus":
-                    # so that we can read its address and connect to its socket:
-                    from xpra.x11.subsystem.keyboard import get_ibus_dirs
-                    bus_dir, socket_dir = get_ibus_dirs()
-                    read_paths += (bus_dir, )
-                    socket_paths += (socket_dir, )
+            # the external processes (dbus, pulseaudio, ibus, etc) have already been started
+            # by the `early_setup` calls, outside the Landlock domain.
+            read_paths: list[str] = []
+            socket_paths: list[str] = []
+            for subsystem in self.server.subsystems.values():
+                paths = subsystem.get_landlock_paths()
+                read_paths += paths.get("read", ())
+                socket_paths += paths.get("socket", ())
             from xpra.platform.posix.menu_helper import prepare_menu_icon_cache_dir
             from xpra.platform.posix.security import enforce_landlock
             session_dir = os.environ.get("XPRA_SESSION_DIR", "")
@@ -76,9 +61,9 @@ class LandLock(StubSubsystem):
             if self.mode == "strict":
                 from xpra.platform.posix.security import prepare_landlock_temp_dir
                 self.temp_dir, self.temp_dir_owner = prepare_landlock_temp_dir(session_dir)
-            self.abi = enforce_landlock(self.mode, write_paths, read_paths=auth_paths + read_paths,
+            self.abi = enforce_landlock(self.mode, write_paths, read_paths=auth_paths + tuple(read_paths),
                                         required_paths=auth_paths,
-                                        socket_paths=socket_paths, socket_dirs=socket_dirs,
+                                        socket_paths=tuple(socket_paths), socket_dirs=socket_dirs,
                                         cleanup_dirs=(os.path.dirname(session_dir),),
                                         temp_dir=self.temp_dir, allow_socket_creation=False)
             self.enforced = True

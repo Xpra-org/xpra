@@ -20,7 +20,6 @@ from xpra.util.env import envbool, osexpand
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import csv
 from xpra.util.system import is_X11, is_child_alive, stop_proc
-from xpra.util.thread import start_thread
 from xpra.scripts.parsing import enabled_or_auto
 from xpra.scripts.session import clean_session_files, session_file_path, pidexists
 from xpra.server import features
@@ -161,7 +160,7 @@ class PulseaudioServer(StubSubsystem):
     Handles starting and configuring pulseaudio
     """
     __slots__ = (
-        "command", "configure_commands", "enabled", "init_done", "initialized", "pid", "private_dir", "proc",
+        "command", "configure_commands", "enabled", "init_done", "pid", "private_dir", "proc",
         "server_dir", "server_socket", "started_at",
     )
     PREFIX = "pulseaudio"
@@ -170,7 +169,6 @@ class PulseaudioServer(StubSubsystem):
         StubSubsystem.__init__(self, server)
         self.init_done = Event()
         self.init_done.set()
-        self.initialized = False
         self.enabled: bool | None = False
         self.command = ""
         self.configure_commands = ()
@@ -192,13 +190,17 @@ class PulseaudioServer(StubSubsystem):
         else:
             self.configure_commands = tuple(x.strip() for x in opts.pulseaudio_configure_commands if x.strip())
 
-    def setup(self) -> None:
-        if self.initialized:
-            # already started, ie: before the Landlock policy was applied
-            return
-        # initialize pulseaudio in a separate thread
-        self.init_done.clear()
-        start_thread(self.init_pulseaudio, "init-pulseaudio", True)
+    def early_setup(self) -> None:
+        # start pulseaudio synchronously, before the server is confined:
+        # it would inherit the Landlock policy and fail to create its directories and socket
+        # (and Landlock also applies the policy to the existing threads)
+        self.init_pulseaudio()
+
+    def get_landlock_paths(self) -> dict[str, Sequence[str]]:
+        if not self.server_dir:
+            return {}
+        # its socket may not exist yet, and Landlock rules can only be attached to existing paths:
+        return {"socket": (self.server_dir, )}
 
     def late_cleanup(self, stop=True) -> None:
         if stop:
@@ -255,7 +257,6 @@ class PulseaudioServer(StubSubsystem):
         log("configure_pulse_dirs() pulse_dir=%s, socket=%s", self.server_dir, self.server_socket)
 
     def init_pulseaudio(self) -> None:
-        self.initialized = True
         try:
             log("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%r",
                 enabled_or_auto(self.enabled), self.command)

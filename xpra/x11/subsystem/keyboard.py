@@ -6,6 +6,7 @@
 import os
 import shlex
 from typing import Any
+from collections.abc import Sequence
 from time import monotonic
 from subprocess import Popen
 
@@ -92,7 +93,7 @@ def get_ibus_dirs() -> tuple[str, str]:
     return dirs
 
 
-def may_start_ibus(env: dict[str, str], scheduler: Scheduler, late=True):
+def may_start_ibus(env: dict[str, str], scheduler: Scheduler):
     # maybe we are inheriting one from a dead session?
     daemonizer = find_libexec_command("daemonizer")
     pidfile = ibus_pid_file()
@@ -155,21 +156,17 @@ def may_start_ibus(env: dict[str, str], scheduler: Scheduler, late=True):
             get_child_reaper().add_process(proc, "ibus-daemon", command,
                                            ignore=True, forget=False)
 
-    if late:
-        scheduler.idle_add(start)
-    else:
-        start()
+    start()
 
 
 class X11KeyboardManager(KeyboardManager):
-    __slots__ = ("current_keyboard_group", "ibus_layouts", "input_method", "input_method_started", "xkb")
+    __slots__ = ("current_keyboard_group", "ibus_layouts", "input_method", "xkb")
     BACKEND = "x11"
 
     def __init__(self, server=None):
         KeyboardManager.__init__(self, server)
         self.xkb = False
         self.input_method = "keep"
-        self.input_method_started = False
         self.ibus_layouts: dict[str, Any] = {}
         # the layout group we last set, or -1 when unknown:
         self.current_keyboard_group = -1
@@ -217,7 +214,6 @@ class X11KeyboardManager(KeyboardManager):
                     log.error("Error: keyboard and mouse disabled without XTest support")
                 elif not X11Keyboard.hasXkb():
                     log.error("Error: limited keyboard support without XKB")
-            self.start_input_method()
 
         super().setup()
 
@@ -227,19 +223,24 @@ class X11KeyboardManager(KeyboardManager):
             from xpra.keyboard.ibus import with_ibus_ready
             with_ibus_ready(self.query_ibus_layouts)
 
-    def start_input_method(self, late=True) -> None:
-        if self.input_method_started:
-            # already started, ie: before the Landlock policy was applied
-            return
-        self.input_method_started = True
+    def early_setup(self) -> None:
+        # start the input method daemon before the server is confined,
+        # since it needs to write to the home directory:
         self.input_method = configure_imsettings_env(self.input_method)
         if self.input_method == "ibus":
             if IBUS:
                 env = self.server.get_child_env()
-                may_start_ibus(env, self, late)
+                may_start_ibus(env, self)
             else:
                 log.warn("Warning: ibus is disabled, but input-method uses it")
                 log.warn(" either use another input method or start the daemon manually")
+
+    def get_landlock_paths(self) -> dict[str, Sequence[str]]:
+        if self.input_method != "ibus":
+            return {}
+        # so that we can read its address and connect to its socket:
+        bus_dir, socket_dir = get_ibus_dirs()
+        return {"read": (bus_dir, ), "socket": (socket_dir, )}
 
     def make_keyboard_device(self):
         if self.xkb:

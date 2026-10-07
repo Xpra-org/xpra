@@ -24,37 +24,43 @@ class TestIBusStart(unittest.TestCase):
             for path in dirs:
                 assert os.path.isdir(path)
 
-    def test_may_start_ibus_late(self):
+    def test_may_start_ibus(self):
         from xpra.x11.subsystem import keyboard
-        for late in (True, False):
-            scheduler = Mock()
-            with self.subTest(late=late), tempfile.TemporaryDirectory() as tmpdir, \
-                    patch.dict(os.environ, {"XPRA_SESSION_DIR": tmpdir}), \
-                    patch.object(keyboard, "find_libexec_command", return_value=""), \
-                    patch.object(keyboard, "Popen") as popen, \
-                    patch("xpra.util.child_reaper.get_child_reaper"):
-                keyboard.may_start_ibus({}, scheduler, late)
-                if late:
-                    # started from the main loop:
-                    popen.assert_not_called()
-                    scheduler.idle_add.assert_called_once()
-                else:
-                    popen.assert_called_once()
-                    scheduler.idle_add.assert_not_called()
+        scheduler = Mock()
+        with tempfile.TemporaryDirectory() as tmpdir, \
+                patch.dict(os.environ, {"XPRA_SESSION_DIR": tmpdir}), \
+                patch.object(keyboard, "find_libexec_command", return_value=""), \
+                patch.object(keyboard, "Popen") as popen, \
+                patch("xpra.util.child_reaper.get_child_reaper"):
+            keyboard.may_start_ibus({}, scheduler)
+        # started immediately, not from the main loop: the server may be confined by then
+        popen.assert_called_once()
+        scheduler.idle_add.assert_not_called()
 
-    def test_start_input_method_once(self):
+    @staticmethod
+    def make_manager(input_method="ibus"):
         from xpra.x11.subsystem import keyboard
         manager = keyboard.X11KeyboardManager.__new__(keyboard.X11KeyboardManager)
-        manager.input_method = "ibus"
-        manager.input_method_started = False
+        manager.input_method = input_method
         manager.server = SimpleNamespace(get_child_env=dict)
+        return manager
+
+    def test_early_setup(self):
+        from xpra.x11.subsystem import keyboard
+        manager = self.make_manager()
         with patch.object(keyboard, "configure_imsettings_env", return_value="ibus"), \
                 patch.object(keyboard, "IBUS", True), \
                 patch.object(keyboard, "may_start_ibus") as may_start_ibus:
-            manager.start_input_method(late=False)
-            # ie: called again from the keyboard subsystem's `setup()`:
-            manager.start_input_method()
-        may_start_ibus.assert_called_once_with({}, manager, False)
+            manager.early_setup()
+        may_start_ibus.assert_called_once_with({}, manager)
+
+    def test_landlock_paths(self):
+        from xpra.x11.subsystem import keyboard
+        self.assertEqual(self.make_manager("xim").get_landlock_paths(), {})
+        dirs = ("/home/user/.config/ibus/bus", "/home/user/.cache/ibus")
+        with patch.object(keyboard, "get_ibus_dirs", return_value=dirs):
+            paths = self.make_manager().get_landlock_paths()
+        self.assertEqual(paths, {"read": (dirs[0], ), "socket": (dirs[1], )})
 
 
 def main():

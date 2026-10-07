@@ -17,6 +17,13 @@ from xpra.server import features
 from xpra.server.core import ServerCore, get_instance_subsystem_classes
 from xpra.server.subsystem.landlock import LandLock
 from xpra.server.subsystem.pulseaudio import PulseaudioServer
+from xpra.server.subsystem.stub import StubSubsystem
+
+
+def make_subsystem(server, **attrs):
+    # a subsystem with the stub's default methods, except for the ones given:
+    namespace = {k: staticmethod(v) if callable(v) else v for k, v in attrs.items()}
+    return type("TestSubsystem", (StubSubsystem, ), namespace)(server)
 
 
 class LandLockTest(unittest.TestCase):
@@ -71,10 +78,10 @@ class LandLockTest(unittest.TestCase):
         server, landlock, opts = self.make_landlock()
         events = []
         modules = self.mock_modules(events)
-        server.subsystems["dbus"] = SimpleNamespace(
-            enabled=True, env={}, init_dbus_env=lambda: events.append("dbus"), setup=lambda: events.append("dbus-setup"),
-        )
-        server.subsystems["peer"] = SimpleNamespace(setup=lambda: events.append("peer"))
+        server.subsystems["dbus"] = make_subsystem(server, early_setup=lambda: events.append("dbus"),
+                                                   setup=lambda: events.append("dbus-setup"))
+        server.subsystems["peer"] = make_subsystem(server, early_setup=lambda: events.append("peer-early"),
+                                                   setup=lambda: events.append("peer"))
         server.sockets = [
             SimpleNamespace(socktype="socket", address="/sockets/xpra", options={}),
             SimpleNamespace(socktype="socket", address="@abstract", options={}),
@@ -85,7 +92,8 @@ class LandLockTest(unittest.TestCase):
              patch.dict(os.environ, {"XPRA_SESSION_DIR": "/sessions/100"}):
             server.setup()
             landlock.setup()
-        self.assertEqual(events, ["dbus", "cache", "landlock", "dbus-setup", "peer", "listen"])
+        # all the `early_setup` calls come before the policy, and all the other `setup` calls after it:
+        self.assertEqual(events, ["dbus", "peer-early", "cache", "landlock", "dbus-setup", "peer", "listen"])
         self.assertTrue(landlock.enforced)
         self.assertEqual(landlock.get_info(None)["landlock"]["abi"], 9)
         modules["xpra.platform.posix.security"].enforce_landlock.assert_called_once_with(
@@ -99,44 +107,35 @@ class LandLockTest(unittest.TestCase):
         events = []
         modules = self.mock_modules(events)
         pulseaudio = PulseaudioServer(server)
-        pulseaudio.enabled = True
-        pulseaudio.command = "pulseaudio"
 
         def init_pulseaudio():
             events.append("pulseaudio")
-            pulseaudio.initialized = True
             pulseaudio.server_dir = "/run/user/1000/pulse"
         server.subsystems["pulseaudio"] = pulseaudio
         with patch("xpra.server.subsystem.landlock.LINUX", True), patch.dict(sys.modules, modules), \
              patch.dict(os.environ, {"XPRA_SESSION_DIR": "/sessions/100"}), \
-             patch.object(PulseaudioServer, "init_pulseaudio", side_effect=init_pulseaudio), \
-             patch("xpra.server.subsystem.pulseaudio.start_thread") as start_thread:
+             patch.object(PulseaudioServer, "init_pulseaudio", side_effect=init_pulseaudio):
             server.setup()
         self.assertEqual(events, ["pulseaudio", "cache", "landlock"])
         # the socket does not exist yet, so the rule is attached to its directory:
         _, kwargs = modules["xpra.platform.posix.security"].enforce_landlock.call_args
         self.assertEqual(kwargs["socket_paths"], ("/run/user/1000/pulse", ))
-        # already started, so the pulseaudio subsystem's own setup does not start it again:
-        start_thread.assert_not_called()
 
-    def test_ibus_starts_before_confinement(self):
+    def test_subsystem_paths(self):
         server, landlock, opts = self.make_landlock()
         events = []
         modules = self.mock_modules(events)
-
-        def start_input_method(late=True):
-            events.append(f"ibus late={late}")
-        server.subsystems["keyboard"] = SimpleNamespace(input_method="ibus", start_input_method=start_input_method)
-        dirs = ("/home/user/.config/ibus/bus", "/home/user/.cache/ibus")
+        server.subsystems["keyboard"] = make_subsystem(server, get_landlock_paths=lambda: {
+            "read": ("/home/user/.config/ibus/bus", ),
+            "socket": ("/home/user/.cache/ibus", ),
+        })
+        server.subsystems["pulseaudio"] = make_subsystem(server, get_landlock_paths=lambda: {"socket": ("/run/pulse", )})
         with patch("xpra.server.subsystem.landlock.LINUX", True), patch.dict(sys.modules, modules), \
-             patch.dict(os.environ, {"XPRA_SESSION_DIR": "/sessions/100"}), \
-             patch("xpra.x11.subsystem.keyboard.get_ibus_dirs", return_value=dirs):
+             patch.dict(os.environ, {"XPRA_SESSION_DIR": "/sessions/100"}):
             landlock.setup()
-        self.assertEqual(events, ["ibus late=False", "cache", "landlock"])
-        # the policy allows reading its address and connecting to its socket:
         _, kwargs = modules["xpra.platform.posix.security"].enforce_landlock.call_args
         self.assertEqual(kwargs["read_paths"], ("/home/user/.config/ibus/bus", ))
-        self.assertEqual(kwargs["socket_paths"], ("/home/user/.cache/ibus", ))
+        self.assertEqual(kwargs["socket_paths"], ("/home/user/.cache/ibus", "/run/pulse"))
 
     def test_options_are_parsed_during_init(self):
         server, landlock, opts = self.make_landlock()
@@ -155,7 +154,7 @@ class LandLockTest(unittest.TestCase):
 
     def test_auth_files(self):
         server, landlock, _opts = self.make_landlock()
-        server.subsystems["auth"] = SimpleNamespace(auth_classes={
+        server.subsystems["auth"] = make_subsystem(server, auth_classes={
             "tcp": (("file", None, None, {"filename": "password", "exec_cwd": "/credentials"}),),
         })
         server.sockets = [SimpleNamespace(options={"ssh-host-key": "/keys/host", "ssl-key": "/keys/tls"})]
@@ -171,7 +170,7 @@ class LandLockTest(unittest.TestCase):
         wayland.socket_name = "wayland-0"
         wayland.compositor = SimpleNamespace(start_backend=lambda: events.append("backend"))
         server.subsystems["wayland"] = wayland
-        server.subsystems["display"] = SimpleNamespace(setup=lambda: events.append("display"))
+        server.subsystems["display"] = make_subsystem(server, setup=lambda: events.append("display"))
         with patch("xpra.server.subsystem.landlock.LINUX", True), patch.dict(sys.modules, modules):
             server.setup()
         self.assertEqual(events, ["cache", "landlock", "backend", "display"])
@@ -194,7 +193,7 @@ class LandLockTest(unittest.TestCase):
         for mode in ("default", "strict"):
             server, landlock, _opts = self.make_landlock(mode)
             peer_setup = Mock()
-            server.subsystems["peer"] = SimpleNamespace(setup=peer_setup)
+            server.subsystems["peer"] = make_subsystem(server, setup=peer_setup)
             modules = self.mock_modules([])
             security = modules["xpra.platform.posix.security"]
             security.enforce_landlock.side_effect = OSError("unavailable")
@@ -214,7 +213,7 @@ class LandLockTest(unittest.TestCase):
     def test_initialization_failure_aborts_startup(self):
         server, _landlock, opts = self.make_landlock()
         peer_init = Mock()
-        server.subsystems["peer"] = SimpleNamespace(init=peer_init)
+        server.subsystems["peer"] = make_subsystem(server, init=peer_init)
         with patch("xpra.server.subsystem.landlock.LINUX", True), \
              patch("xpra.platform.posix.security.get_landlock_auth_paths", side_effect=ImportError("missing dependency")), \
              self.assertRaisesRegex(InitExit, "failed to initialize server Landlock"):
@@ -243,8 +242,8 @@ class LandLockTest(unittest.TestCase):
                 os.rmdir(session_dir)
                 events.append("session")
 
-            server.subsystems["session-files"] = SimpleNamespace(cleanup=lambda: None, late_cleanup=remove_session)
-            server.subsystems["peer"] = SimpleNamespace(cleanup=release, late_cleanup=lambda _stop: None)
+            server.subsystems["session-files"] = make_subsystem(server, cleanup=lambda: None, late_cleanup=remove_session)
+            server.subsystems["peer"] = make_subsystem(server, cleanup=release, late_cleanup=lambda _stop: None)
             server._dispatch_fire("cleanup", reverse=True)
             server._dispatch_fire("late_cleanup", True, reverse=True)
             self.assertEqual(events, ["peer", "session"])
