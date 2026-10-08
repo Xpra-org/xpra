@@ -1154,8 +1154,24 @@ def rec_sbom() -> None:
     copyfile(BUILD_INFO, f"{LIB_DIR}/{BUILD_INFO}")
 
 
+def find_win_python() -> str:
+    # SETUP_SBOM.sh installs the global interpreter into "Python", not "PythonXXX":
+    python_exe = f"{PROGRAMFILES}\\Python\\python.exe"
+    if os.path.exists(python_exe):
+        return python_exe
+    # otherwise, use the most recent "Python3NN" installation:
+    versions = {}
+    for python_exe in glob(f"{PROGRAMFILES}\\Python3*\\python.exe"):
+        m = re.search(r"Python3(\d+)[\\/]python\.exe$", python_exe, re.IGNORECASE)
+        if m:
+            versions[int(m.group(1))] = python_exe
+    if versions:
+        return versions[max(versions)]
+    raise RuntimeError(f"could not find python.exe in {PROGRAMFILES!r}")
+
+
 def export_sbom() -> None:
-    WIN_PYTHON = "C:\\Program Files\\Python312\\python.exe"
+    WIN_PYTHON = find_win_python()
     SBOM_SCRIPT = "packaging\\MSWindows\\cyclonedx_sbom.py"
     output = f"{DIST}/{SBOM_JSON}"
     delfile(output)
