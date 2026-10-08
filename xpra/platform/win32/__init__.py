@@ -332,10 +332,6 @@ def do_init():
     if FIX_UNICODE_OUT:
         fix_unicode_out()
 
-    if not REDIRECT_OUTPUT:
-        #figure out if we want to wait for input at the end:
-        set_wait_for_input()
-
     def datadir() -> str:
         from xpra.platform.win32.paths import get_appdata_dir
         appdatadir = get_appdata_dir(False)
@@ -348,6 +344,11 @@ def do_init():
             sys.dont_write_bytecode = True
         if not os.environ.get("PYTHONPYCACHEPREFIX"):
             sys.pycache_prefix = os.path.join(datadir(), "pycache-%i.%i" % (sys.version_info[:2]))
+
+    if not REDIRECT_OUTPUT:
+        #figure out if we want to wait for input at the end:
+        set_wait_for_input()
+        return
 
     if envbool("XPRA_LOG_TO_FILE", True):
         log_filename = os.environ.get("XPRA_LOG_FILENAME")
