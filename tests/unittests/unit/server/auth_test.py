@@ -409,6 +409,55 @@ class TestAuth(unittest.TestCase):
         exec_cmd("/bin/true", True)
         exec_cmd("/bin/false", False)
 
+    @unittest.skipUnless(POSIX and hasattr(os, "waitid"), "requires POSIX waitid for synchronization")
+    def test_exec_reaper_fallback(self) -> None:
+        import shlex
+        from subprocess import PIPE, Popen
+        from unittest.mock import Mock, patch
+        from xpra.util import child_reaper
+
+        module = self.a("exec")
+
+        class AuthPopen(Popen):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, stdin=PIPE, **kwargs)
+
+            def __exit__(self, *args):
+                # Also let the child exit if registration was skipped.
+                self.stdin.close()
+                return super().__exit__(*args)
+
+        for returncode in (0, 7):
+            with self.subTest(returncode=returncode):
+                with patch.object(child_reaper.GLib, "timeout_add"):
+                    reaper = child_reaper.ChildReaper()
+                code = f"import sys; sys.stdin.buffer.read(1); sys.exit({returncode})"
+                command = shlex.join((sys.executable, "-c", code))
+                auth = self._init_auth("exec", command=command, timeout=2, **{"verify-username": "no"})
+
+                def register(proc, *args, **kwargs):
+                    info = reaper.add_process(proc, *args, **kwargs)
+                    proc.stdin.close()
+                    os.waitid(os.P_PID, proc.pid, os.WEXITED | os.WNOWAIT)
+                    # Consume the exit before the authentication context calls wait().
+                    reaper.reap()
+                    return info
+
+                registration = Mock(side_effect=register)
+                with patch.object(module, "OSX", True, create=True), \
+                        patch.object(module, "Popen", AuthPopen), \
+                        patch.object(module, "get_child_reaper", return_value=Mock(add_process=registration)), \
+                        patch.object(child_reaper, "hasattr", create=True, return_value=False), \
+                        patch.object(module.GLib, "timeout_add", return_value=11), \
+                        patch.object(module.GLib, "source_remove") as source_remove, \
+                        patch.object(module.GLib, "idle_add", side_effect=lambda cb, *args: cb(*args)):
+                    self.assertEqual(self.capsauth(auth), returncode == 0)
+                registration.assert_called_once()
+                self.assertEqual(auth.proc.returncode, returncode)
+                self.assertEqual(auth.timer, 0)
+                self.assertFalse(auth.timeout_event)
+                source_remove.assert_called_once_with(11)
+
     def test_keycloak(self) -> None:
         try:
             self._init_auth("keycloak")

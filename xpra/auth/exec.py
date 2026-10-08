@@ -12,7 +12,7 @@ from xpra.auth.common import get_auth_exec_env
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, alnum, bytestostr
 from xpra.util.env import envint, shellsub, first_time
-from xpra.os_util import OSX, gi_import, WIN32
+from xpra.os_util import gi_import, WIN32
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.util.child_reaper import get_child_reaper
 from xpra.auth.sys_auth_base import SysAuthenticator, log
@@ -105,11 +105,7 @@ class Authenticator(SysAuthenticator):
                 # if required, make sure we kill the command when it times out:
                 if self.timeout > 0:
                     self.timer = GLib.timeout_add(self.timeout * 1000, self.command_timedout)
-                    if not OSX:
-                        # python on macos may set a 0 returncode when we use poll()
-                        # so we cannot use the ChildReaper on macos,
-                        # and we can't cancel the timer
-                        get_child_reaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
+                    get_child_reaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
         except OSError as e:
             log(f"error running {cmd!r}", exc_info=True)
             log.error("Error: cannot run exec authentication module command")
