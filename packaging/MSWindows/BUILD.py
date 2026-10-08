@@ -179,19 +179,6 @@ def find_command(name: str, env_name: str, *paths) -> str:
     raise RuntimeError(f"{name!r} not found")
 
 
-def search_command(wholename: str, *dirs: str) -> str:
-    debug(f"searching for {wholename!r} in {dirs}")
-    for dirname in dirs:
-        if not os.path.exists(dirname):
-            continue
-        cmd = ["find", dirname, "-wholename", wholename]
-        r, output = getstatusoutput(cmd)
-        debug(f"getstatusoutput({cmd})={r}, {output}")
-        if r == 0:
-            return output.splitlines()[0]
-    raise RuntimeError(f"{wholename!r} not found in {dirs}")
-
-
 def find_java() -> str:
     try:
         return _find_command("java", "JAVA")
@@ -222,23 +209,18 @@ def check_html5() -> None:
 
 def check_signtool() -> None:
     step("locating `signtool`")
-    try:
-        signtool = find_command("signtool", "SIGNTOOL",
-                                "./signtool.exe",
-                                f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe"
-                                f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe"
-                                f"{PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
-                                f"{PROGRAMFILES_X86}\\Windows Kits\\10\\App Certification Kit\\signtool.exe")
-    except RuntimeError:
-        signtool = ""
+    if os.path.exists("./signtool.exe"):
+        return
+    signtool = _find_command("signtool", "SIGNTOOL",
+                             f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe",
+                             f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe",
+                             f"{PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe",
+                             f"{PROGRAMFILES_X86}\\Windows Kits\\10\\App Certification Kit\\signtool.exe")
     if not signtool:
-        # try the hard (slow) way:
-        signtool = find_vs_command("signtool.exe")
-        if not signtool:
-            raise RuntimeError("signtool not found")
-    debug(f"signtool={signtool!r}")
-    if signtool.lower() != "./signtool.exe":
-        copyfile(signtool, "./signtool.exe")
+        # search the versioned Windows SDK directories:
+        signtool = find_windowskit_command("signtool")
+    debug(f"{signtool=}")
+    copyfile(signtool, "./signtool.exe")
 
 
 def show_tail(filename: str) -> None:
@@ -324,6 +306,10 @@ def clean() -> None:
 
 
 def find_windowskit_command(name="mc") -> str:
+    debug(f"find_windowskit_command({name!r})")
+    cwd_cmd = os.path.abspath(f"./{name}.exe")
+    if os.path.exists(cwd_cmd):
+        return cwd_cmd
     # the proper way would be to run vsvars64.bat
     # but we only want to locate 3 commands,
     # so we find them "by hand":
@@ -338,15 +324,25 @@ def find_windowskit_command(name="mc") -> str:
 
 
 def find_vs_command(name="link") -> str:
-    debug(f"find_vs_command({name})")
-    dirs = []
-    for prog_dir in (PROGRAMFILES, PROGRAMFILES_X86):
-        for VSV in (14.0, 17.0, 19.0, 2019):
-            vsdir = f"{prog_dir}\\Microsoft Visual Studio\\{VSV}"
-            if os.path.exists(vsdir):
-                dirs.append(f"{vsdir}\\VC\\bin")
-                dirs.append(f"{vsdir}\\BuildTools\\VC\\Tools\\MSVC")
-    return search_command(f"*/x64/{name}.exe", *dirs)
+    debug(f"find_vs_command({name!r})")
+    cwd_cmd = os.path.abspath(f"./{name}.exe")
+    if os.path.exists(cwd_cmd):
+        return cwd_cmd
+    # let `vswhere` locate the latest Visual Studio installation with the C++ tools:
+    vswhere = f"{PROGRAMFILES_X86}\\Microsoft Visual Studio\\Installer\\vswhere.exe"
+    if not os.path.exists(vswhere):
+        raise RuntimeError(f"`vswhere` not found at {vswhere!r}, install Visual Studio using `SETUP_EXTRAS.sh`")
+    cmd = [
+        vswhere, "-latest", "-products", "*",
+        "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+        "-find", f"VC\\Tools\\MSVC\\**\\bin\\Hostx64\\x64\\{name}.exe",
+    ]
+    paths = check_output(cmd, text=True).splitlines()
+    debug(f"{cmd}={paths}")
+    if not paths:
+        raise RuntimeError(f"{name!r} not found using {vswhere!r}")
+    # if there is more than one MSVC toolset, use the newest one:
+    return sorted(paths)[-1]
 
 
 def build_service() -> None:
