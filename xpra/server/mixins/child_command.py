@@ -280,11 +280,12 @@ class ChildCommandServer(StubServerMixin):
             cmd_str = " ".join(bytestostr(x) for x in real_cmd)
             # pylint: disable=consider-using-with
             proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, **kwargs)
+            if not ignore:
+                #count it first: add_process may fire the exit-with-children callback:
+                self.children_count += 1
             procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             cmd_info = real_cmd[0] if real_cmd[0]=="ibus-daemon" else cmd_str
             log.info(f"started command `{cmd_info}` with pid {proc.pid}")
-            if not ignore:
-                self.children_count += 1
             self.children_started.append(procinfo)
             return proc
         except (OSError, ValueError) as e:

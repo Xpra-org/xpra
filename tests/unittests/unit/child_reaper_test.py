@@ -5,10 +5,13 @@
 # later version. See the file COPYING for details.
 
 import os
+import signal
 import time
 import logging
 import unittest
 import subprocess
+import sys
+from unittest.mock import patch
 
 from xpra.os_util import OSEnvContext
 from xpra import child_reaper
@@ -16,6 +19,31 @@ from xpra.child_reaper import getChildReaper, reaper_cleanup, log
 
 
 class TestChildReaper(unittest.TestCase):
+
+    @unittest.skipUnless(hasattr(os, "waitid"), "os.waitid is not available")
+    def test_reaped_exit_status(self):
+        commands = (
+            ("import sys; sys.stdin.read(1); sys.exit(0)", 0),
+            ("import sys; sys.stdin.read(1); sys.exit(7)", 7),
+            ("import os, signal, sys; sys.stdin.read(1); os.kill(os.getpid(), signal.SIGTERM)", -signal.SIGTERM),
+        )
+        for command, expected in commands:
+            with self.subTest(returncode=expected):
+                with patch.object(child_reaper.signal, "signal"), patch.object(child_reaper.GLib, "timeout_add"):
+                    cr = child_reaper.ChildReaper()
+                with subprocess.Popen([sys.executable, "-c", command], stdin=subprocess.PIPE) as proc:
+                    procinfo = cr.add_process(proc, "exit status", command, True)
+                    # Keep the child alive until it has been registered.
+                    proc.stdin.write(b"x")
+                    proc.stdin.flush()
+                    os.waitid(os.P_PID, proc.pid, os.WEXITED | os.WNOWAIT)
+                    # Simulate Popen.wait() holding its lock in another thread.
+                    with proc._waitpid_lock:
+                        cr.reap()
+                    self.assertEqual(proc.wait(), 0)
+                    self.assertTrue(procinfo.dead)
+                    self.assertEqual(procinfo.returncode, expected)
+                cr.cleanup()
 
     def test_childreaper(self):
         for polling in (True, False):
