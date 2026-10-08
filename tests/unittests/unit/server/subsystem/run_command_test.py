@@ -41,9 +41,8 @@ class Protocol:
 
 class RunCommandTest(unittest.TestCase):
     def setUp(self):
-        self.reaper = ChildReaper.__new__(ChildReaper)
-        self.reaper._quit = None
-        self.reaper._proc_info = []
+        with patch("xpra.util.child_reaper.GLib.timeout_add"):
+            self.reaper = ChildReaper()
         self.addCleanup(patch.stopall)
         patch("xpra.util.child_reaper.singleton", self.reaper).start()
         self.processes = []

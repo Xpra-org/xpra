@@ -381,22 +381,25 @@ class ChildCommandServer(StubSubsystem):
             cmd_str = " ".join(real_cmd)
             # pylint: disable=consider-using-with
             proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, **kwargs)
+            if not ignore:
+                # count it first, `add_process` may fire the exit-with-children callback:
+                self.children_count += 1
             procinfo = get_child_reaper().add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             is_ibus_daemon = real_cmd[0].endswith("daemonizer") and "ibus-daemon" in real_cmd
             cmd_info = "ibus-daemon" if is_ibus_daemon else cmd_str
             log.info(f"started command `{cmd_info}` with pid {proc.pid}")
-            if not ignore:
-                self.children_count += 1
             self.children_started.append(procinfo)
             session_dir = os.environ.get("XPRA_SESSION_DIR", "")
-            if session_dir and not procinfo.dead:
+            if session_dir:
                 pidname = name.split(" ")[0]
                 if pidname.find(os.sep) >= 0:
                     pidname = pidname.split(os.sep)[-1]
                 pidfile = os.path.join(session_dir, f"{pidname}.pid")
-                if not os.path.exists(pidfile):
-                    procinfo.pidfile = pidfile
-                    procinfo.pidinode = write_pid(pidfile, procinfo.pid)
+                # hold the lock so the reaper cannot miss the pidfile if the process dies now:
+                with procinfo.lock:
+                    if not procinfo.dead and not os.path.exists(pidfile):
+                        procinfo.pidfile = pidfile
+                        procinfo.pidinode = write_pid(pidfile, procinfo.pid)
                 log(f"pidfile({name})={pidfile}, inode={procinfo.pidinode}, pid={procinfo.pid}")
             return proc
         except (OSError, ValueError) as e:
