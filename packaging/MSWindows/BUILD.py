@@ -1227,10 +1227,17 @@ def rec_sbom() -> None:
 
 def find_win_python() -> str:
     # SETUP_SBOM.sh installs the global interpreter into "Python", not "PythonXXX":
-    for subdir in ("Python", "Python311"):
-        python_exe = f"{PROGRAMFILES}\\{subdir}\\python.exe"
-        if os.path.exists(python_exe):
-            return python_exe
+    python_exe = f"{PROGRAMFILES}\\Python\\python.exe"
+    if os.path.exists(python_exe):
+        return python_exe
+    # otherwise, use the most recent "Python3NN" installation:
+    versions = {}
+    for python_exe in glob(f"{PROGRAMFILES}\\Python3*\\python.exe"):
+        m = re.search(r"Python3(\d+)[\\/]python\.exe$", python_exe, re.IGNORECASE)
+        if m:
+            versions[int(m.group(1))] = python_exe
+    if versions:
+        return versions[max(versions)]
     raise RuntimeError(f"could not find python.exe in {PROGRAMFILES!r}")
 
 
