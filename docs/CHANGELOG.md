@@ -1,7 +1,11 @@
 # Changelog
 
-## [5.1.7] 2026-10-02
+## [5.1.7] 2026-10-08
 * Platforms, build and packaging:
+  * [RPM packages could lack the cairo typelib required by Gtk and Rsvg](https://github.com/Xpra-org/xpra/commit/885b5bf346a76fbb34c16c291ef191bc74008717)
+  * [MS Windows SBOM generation failed when Python was installed outside `Python312`](https://github.com/Xpra-org/xpra/commit/b02833ffac97a4a3e88ddb32db553b0b2ec425b9)
+  * [MS Windows builds and server socket tests failed to parse on Python 3.6 / 3.7](https://github.com/Xpra-org/xpra/commit/2bd57d2750ea8d6adb6ea5a2b1a0f976f432d2e2)
+  * [X11 window tests failed to import on Python 3.6](https://github.com/Xpra-org/xpra/commit/22c1d4f812d0b8760bfd20fc5f18e5b490222e03)
   * [verify deb packages before copying to the repo](https://github.com/Xpra-org/xpra/commit/3c2cdc90c4189798404d6938891b88578eaa16c7)
   * [stop building DEBs on any failure](https://github.com/Xpra-org/xpra/commit/0ccc067461763958f886df14bb18d0f24b8e8774)
   * [Fedora 45 package list](https://github.com/Xpra-org/xpra/commit/657e131701d1ad9a383821d1a1460835c78606ed)
@@ -15,6 +19,7 @@
   * [googlesource downloads are not reliable](https://github.com/Xpra-org/xpra/commit/8eca03acb642b27e47d372b73e2393355fc947a5)
   * [macOS: always enable logging to file when spawned from the GUI](https://github.com/Xpra-org/xpra/commit/f78b14b5e9bedd9a214600fb906e3d6efec57a00)
 * Encodings:
+  * [unreliable GStreamer video decoders were enabled by default](https://github.com/Xpra-org/xpra/commit/57f2b5b43ccd360316535c910b1e479b15d4749b)
   * [nvenc: set hevc level](https://github.com/Xpra-org/xpra/commit/2f14b20e7c950f071c63ae6def7cb025ef20a823)
   * [nvenc: only advertise YUV444 output when the device supports it for h264 / h265](https://github.com/Xpra-org/xpra/commit/1ec2e7ede52b75d737f956547e40dd69036c225b)
   * [ARGB conversions reported the wrong bytes-per-pixel value](https://github.com/Xpra-org/xpra/commit/ebc12cc5f198dd85df6c36655037b12154494803)
@@ -28,6 +33,7 @@
   * [prefer BGRX / BGRA by default](https://github.com/Xpra-org/xpra/commit/ef94cda09a1fb27ba8f5340b22331a1958f98e9c)
   * [cairo: discard alpha from 32-bit data when needed](https://github.com/Xpra-org/xpra/commit/dcd74737010a7adbc8d3b38d04956a52f6b8217c)
 * MS Windows:
+  * [console commands redirected their output to a log file](https://github.com/Xpra-org/xpra/commit/fd694b9509c9c685f37a407a3434e54b8f3a8bff)
   * [object leak querying desktop name](https://github.com/Xpra-org/xpra/commit/893a8ca8b5974bf7938dae26530a8f03a1d42b43)
   * [object leak querying cursors](https://github.com/Xpra-org/xpra/commit/af3000c0ac4bb3915cd0b40041aa4368b9f05b38)
   * [avoid using comtypes](https://github.com/Xpra-org/xpra/commit/f8f139dbd141f603e51f313ad2435f0ea24e5048)
@@ -43,6 +49,7 @@
   * [limit is actually 4GB](https://github.com/Xpra-org/xpra/commit/0377ba073f3ead0b6d69505e74c9faee2504f8ba)
   * [validate the token location and size](https://github.com/Xpra-org/xpra/commit/ddec4ce4fcef68ba4a3f395a916007838b53ff4e)
 * Major:
+  * [clients failed to connect to shadow servers because the server's hello packet could not be encoded](https://github.com/Xpra-org/xpra/commit/50ae567c93b9156fcfe70e8bdb9e2195d375e008)
   * [keyboard layout group could be wrong after a keymap or keyboard state reset](https://github.com/Xpra-org/xpra/commit/a85da624603ce72a6d9adec935cd845fc29f5268)
   * [drag-and-drop can get wedged and stop working](https://github.com/Xpra-org/xpra/commit/0d25acfcd80e56e6561f5e5d96e41514ca10079d)
   * [Gtk clients fail to restack a window above or below another window](https://github.com/Xpra-org/xpra/commit/69f4ec9fcd05607c028868b91fe0310011cae4ee)
@@ -59,6 +66,7 @@
   * [nvenc: choose a profile matching the chroma format](https://github.com/Xpra-org/xpra/commit/68767858b81bed6d3c6342048850ea57e50183ec)
   * [remove `AES-CFB`](https://github.com/Xpra-org/xpra/commit/9ffaa01629804cdbc27133f225fa6b14b2e7d950)
 * Network:
+  * [socket leaks when the proxy connection fails](https://github.com/Xpra-org/xpra/commit/4bc22532d3860039ba7be6f7f67e129e9bbc1cc9)
   * [don't mask exceptions raised without arguments](https://github.com/Xpra-org/xpra/commit/b3b0d2f57c56e2d3d4ae64b2f9e240fe1e817f4d)
   * [don't block forever on a websocket upgrade that never completes](https://github.com/Xpra-org/xpra/commit/2b3704a59917051b7236802593e560e06959ec59)
   * [don't leak the client socket when the tcp connection setup fails](https://github.com/Xpra-org/xpra/commit/93466b3cf85f79e4277b7ade8b538208463dfb6d)
@@ -73,6 +81,12 @@
   * [socket fast read timeout handling on older Python](https://github.com/Xpra-org/xpra/commit/b1983adde9f3960beebe7d0e177b5abae062f487)
   * [paramiko: try ssh keys in the same order as openssh](https://github.com/Xpra-org/xpra/commit/e8676a54869a79cadf539162886f80ad20f5a220)
 * SSL:
+  * [ssl upgrade must override defaults](https://github.com/Xpra-org/xpra/commit/d9d0bd47ab5ba6d9249a786dcf765733a639e9a8)
+  * [clients could remain stuck after an SSL upgrade failed](https://github.com/Xpra-org/xpra/commit/357e80d99a241e2447f2aa209ec3687f035ccc68) [or the server closed the connection during the upgrade](https://github.com/Xpra-org/xpra/commit/fef346766767091186836ead62cfc546a52e74e6)
+  * [ssl retry needs a brand new socket](https://github.com/Xpra-org/xpra/commit/74164597ae2ef45298cd73b1efb41f5792767c1a)
+  * [download ssl certificate using the same connection path](https://github.com/Xpra-org/xpra/commit/d955f011a097b68c8e1433b7a21954a2bd451caf), [same configuration options](https://github.com/Xpra-org/xpra/commit/c11b8fbeeb75e144120f68693176e499563b387e)
+  * [warn when the certificate no longer matches the one accepted previously](https://github.com/Xpra-org/xpra/commit/c04b2519b91e0c2f103e1cdd1662223942bc9d35)
+  * [changed self-signed certificates were not reported with OpenSSL 3.0](https://github.com/Xpra-org/xpra/commit/5a4a3217652fc8c5f179a166a5d032bb2cd07d46)
   * [fix SSL upgrade verification overrides](https://github.com/Xpra-org/xpra/commit/e9f05871ab034b1bf58500172b7fce9561e9ac27)
   * [don't wait forever for the client's TLS handshake to complete](https://github.com/Xpra-org/xpra/commit/67f79437bd543ff7406ee187aed40e16622770d5)
   * [don't let SSL connections wait past their deadline](https://github.com/Xpra-org/xpra/commit/86ba0f9acc72dd270a3579725e479231803666a6)
@@ -89,6 +103,12 @@
   * [try the next notifier backend when one fails](https://github.com/Xpra-org/xpra/commit/cc1dde1226dcab2fc64c4021370a09977e5be36f)
   * [skip notification warnings during cleanup](https://github.com/Xpra-org/xpra/commit/d329fc942cd9475f67bdce1c13280dac98d1d9a5)
 * Clipboard:
+  * [fail the requests waiting on an incremental transfer which times out](https://github.com/Xpra-org/xpra/commit/f2b1cf44557e2a1501a3877af3c93c4deeafa766)
+  * [give incremental transfers longer than `CONVERT_TIMEOUT` to complete](https://github.com/Xpra-org/xpra/commit/02b6c10a73fc48603cec146e99a8843b12182b50)
+  * [test must wait for synchronization to occur](https://github.com/Xpra-org/xpra/commit/1606dd16f427008aaddfe8730c353184ebb5953d)
+  * [test all selections](https://github.com/Xpra-org/xpra/commit/fbc302218e9ac7f64ac88c6a37408a3b54f504cc)
+  * [detailed test errors](https://github.com/Xpra-org/xpra/commit/7fe7bb8368bcc0a35a150e50a3fee059bb6e38e6)
+  * [honour debugging flag in tests](https://github.com/Xpra-org/xpra/commit/d468dc5bf694b15f54db7c5dc78fa4f335bea9de)
   * [simultaneous large and small clipboard transfers no longer mix their contents or time out](https://github.com/Xpra-org/xpra/commit/91634100f1bbc07ba875464081148b692c24998f)
   * [clipboard requests could be left unanswered when a client reset](https://github.com/Xpra-org/xpra/commit/bff0639c236a7d5a70ab49ced33963bac3a7d7b4)
   * [raw atoms cause connection to drop](https://github.com/Xpra-org/xpra/commit/87b6b68166283fd583b2edea29a9900dfe27e23f)
@@ -102,6 +122,12 @@
   * [discard alpha padding in RGBX uploads](https://github.com/Xpra-org/xpra/commit/8b18363e5b798464b53690aa6c0ff92f6f936494)
   * [include unit test](https://github.com/Xpra-org/xpra/commit/ded0b142584bd3af0ab2f2c737afc52d64cce106)
 * Minor:
+  * [busy loop while waiting for the X11 server to start](https://github.com/Xpra-org/xpra/commit/0801a107c3225f9d750619772168cc361f57344e)
+  * [PulseAudio failed to start in read-only containers](https://github.com/Xpra-org/xpra/commit/cfb538c87eb230eed6646f5db22341e9f5f0a75f)
+  * [read-only Gtk clients failed to resize windows](https://github.com/Xpra-org/xpra/commit/c7d55647e234785c5c034e0e96a488cbc5973e91)
+  * [Gtk window move and resize requests failed with an undefined warning handler](https://github.com/Xpra-org/xpra/commit/20543b7411d6c6a4af0c885d47f1c608f14edf21)
+  * [unknown X11 event names caused errors with Cython 3.3](https://github.com/Xpra-org/xpra/commit/524aa7b59fabbab4f1a8b45988226cfc67d888be)
+  * [out of bounds access when comparing monitor configurations](https://github.com/Xpra-org/xpra/commit/dd9dac409447f404c181a7f8ba1876c12ec0bc93)
   * [apply the new DPI before resizing the display](https://github.com/Xpra-org/xpra/commit/ac2f46c037a456b8713da3abdb8ec7035d788212)
   * [don't leave `_NET_ACTIVE_WINDOW` pointing at a window that is gone](https://github.com/Xpra-org/xpra/commit/4cff546dfe0f4933c5637d212decab9a9285194c)
   * [uinput device matching](https://github.com/Xpra-org/xpra/commit/75d1b1ee611721e4a455e24f9a079851ed857abf)
@@ -131,6 +157,11 @@
   * [drop audio `removesilence` since it never worked properly](https://github.com/Xpra-org/xpra/commit/1d42adab7d4c19808044a7d17c3bc2bf866ff1a1)
   * [cursor logging errors](https://github.com/Xpra-org/xpra/commit/129c36fd113671f1d6c0bf0437a81a0e12e8f9a8)
 * Cosmetic:
+  * [HTTP request timeouts were logged as errors before Python 3.10](https://github.com/Xpra-org/xpra/commit/2de4e753fe141e2d4cff8b540f30ac80d32f4393)
+  * [proxy destination regression test](https://github.com/Xpra-org/xpra/commit/1799a358e7291123be57f2d96a8eca160e9bf1b3)
+  * [indentation](https://github.com/Xpra-org/xpra/commit/508c80c7852e5f7f96d843ad7378df263f7074a1)
+  * [share the refresh-rate conversion](https://github.com/Xpra-org/xpra/commit/e2bc692bc5c99c3064a2913b119172d0760936f9)
+  * [document limitations of cert data authenticity with older Python versions](https://github.com/Xpra-org/xpra/commit/20b4f8f88adc6fe0f9a92fd1f89b719984d86732)
   * [Gtk clipboard replies and timeouts could raise errors](https://github.com/Xpra-org/xpra/commit/3eb7a16577db66803e0bcbd97e9176cdc2588b08)
   * [Gtk clients can send duplicate scroll events](https://github.com/Xpra-org/xpra/commit/033f48d776a5fd094e401e82d97fa84522c7a0e5)
   * [cleanup pam config](https://github.com/Xpra-org/xpra/commit/a0a0b3021b38f46068767c492106281bd0f9079b)
