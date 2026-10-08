@@ -5,6 +5,7 @@
 
 import os
 import shlex
+from threading import Event
 from subprocess import Popen
 from collections.abc import Sequence
 
@@ -46,6 +47,8 @@ class Authenticator(SysAuthenticator):
         self.display = kwargs.pop("display", "auto")
         self.timer = 0
         self.proc = None
+        self.procinfo = None
+        self.ended = Event()
         self.timeout_event = False
         if not self.command:
             self.command = [get_default_auth_dialog(), ]
@@ -93,6 +96,7 @@ class Authenticator(SysAuthenticator):
         env = get_exec_env(self.display)
         log("authenticate(..) env=%s", env)
         # [self.command, info, str(self.timeout)]
+        self.ended.clear()
         try:
             with Popen(cmd, env=env) as proc:
                 self.proc = proc
@@ -100,11 +104,11 @@ class Authenticator(SysAuthenticator):
                 # if required, make sure we kill the command when it times out:
                 if self.timeout > 0:
                     self.timer = GLib.timeout_add(self.timeout * 1000, self.command_timedout)
-                    if not OSX:
-                        # python on macos may set a 0 returncode when we use poll()
-                        # so we cannot use the ChildReaper on macos,
-                        # and we can't cancel the timer
-                        get_child_reaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
+                if not OSX:
+                    # python on macos may set a 0 returncode when we use poll()
+                    # so we cannot use the ChildReaper on macos,
+                    # and we can't cancel the timer
+                    self.procinfo = get_child_reaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
         except OSError as e:
             log(f"error running {cmd!r}", exc_info=True)
             log.error("Error: cannot run exec authentication module command")
@@ -112,6 +116,12 @@ class Authenticator(SysAuthenticator):
             log.estr(e)
             return False
         v = proc.returncode
+        procinfo = self.procinfo
+        if procinfo:
+            # the child reaper may have collected the exit status before `Popen.wait()` could,
+            # and `Popen` then reports 0, so also check the value recorded by the reaper:
+            self.ended.wait(1)
+            v = procinfo.returncode or v
         log(f"authenticate(..) returncode({cmd})={v}")
         if self.timeout_event:
             return False
@@ -120,6 +130,7 @@ class Authenticator(SysAuthenticator):
     def command_ended(self, *args) -> None:
         t = self.timer
         log(f"exec auth.command_ended{args} timer={t}")
+        self.ended.set()
         if t:
             self.timer = 0
             GLib.source_remove(t)

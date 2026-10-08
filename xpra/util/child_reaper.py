@@ -193,7 +193,7 @@ class ChildReaper:
                 return proc_info
         return None
 
-    def add_dead_pid(self, pid: int) -> None:
+    def add_dead_pid(self, pid: int, returncode: int | None = None) -> None:
         # find the procinfo for this pid:
         matches = [procinfo for procinfo in self._proc_info if procinfo.pid == pid and not procinfo.dead]
         log("add_dead_pid(%s) matches=%s", pid, matches)
@@ -201,14 +201,15 @@ class ChildReaper:
             # not one of ours? odd.
             return
         for procinfo in matches:
-            self.add_dead_process(procinfo)
+            self.add_dead_process(procinfo, returncode)
 
-    def add_dead_process(self, procinfo: ProcInfo) -> None:
+    def add_dead_process(self, procinfo: ProcInfo, returncode: int | None = None) -> None:
         log("add_dead_process(%s)", procinfo)
         process = procinfo.process
         if procinfo.dead or not process:
             return
-        procinfo.returncode = process.poll()
+        # once we have reaped the pid ourselves, `process.poll()` can no longer get the real exit status
+        procinfo.returncode = process.poll() if returncode is None else returncode
         procinfo.dead = procinfo.returncode is not None
         cb = procinfo.callback
         log("add_dead_process returncode=%s, dead=%s, callback=%s", procinfo.returncode, procinfo.dead, cb)
@@ -243,13 +244,13 @@ class ChildReaper:
         while POSIX:
             log("reap() calling os.waitpid%s", (-1, "WNOHANG"))
             try:
-                pid = os.waitpid(-1, os.WNOHANG)[0]
+                pid, status = os.waitpid(-1, os.WNOHANG)
             except OSError:
                 break
             log("reap() waitpid=%s", pid)
             if pid == 0:
                 break
-            self.add_dead_pid(pid)
+            self.add_dead_pid(pid, os.waitstatus_to_exitcode(status))
 
     def get_info(self) -> dict[Any, Any]:
         iv = tuple(self._proc_info)

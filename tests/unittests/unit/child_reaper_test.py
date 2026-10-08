@@ -82,6 +82,23 @@ class TestChildReaper(unittest.TestCase):
         # nothing for an invalid pid:
         assert cr.get_proc_info(-1) is None
 
+    @unittest.skipUnless(hasattr(os, "waitid"), "os.waitid is not available")
+    def test_reaped_exit_status(self):
+        child_reaper.singleton = None
+        cr = get_child_reaper()
+        proc = subprocess.Popen(["sh", "-c", "sleep 0.2; exit 7"])
+        procinfo = cr.add_process(proc, "exit 7", "exit 7", True, False, None)
+        # wait for the child to exit, without collecting its exit status:
+        os.waitid(os.P_PID, proc.pid, os.WEXITED | os.WNOWAIT)
+        # simulate a `proc.wait()` in another thread, which holds the lock while waiting:
+        with proc._waitpid_lock:
+            cr.reap()
+        # the reaper has collected the exit status, so `Popen` can only report 0:
+        assert proc.wait() == 0
+        assert procinfo.dead
+        assert procinfo.returncode == 7, f"expected returncode 7 but got {procinfo.returncode}"
+        reaper_cleanup()
+
 
 def main():
     from xpra.os_util import WIN32
