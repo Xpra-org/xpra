@@ -440,7 +440,7 @@ class TestAuth(unittest.TestCase):
                     proc.stdin.close()
                     os.waitid(os.P_PID, proc.pid, os.WEXITED | os.WNOWAIT)
                     # Consume the exit before the authentication context calls wait().
-                    reaper.reap()
+                    reaper.check()
                     return info
 
                 registration = Mock(side_effect=register)

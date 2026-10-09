@@ -68,7 +68,7 @@ class PidPopen:
     def __init__(self, pid: int):
         self.pid = pid
         self.returncode: int | None = None
-        # same name as in `Popen`, so `ChildReaper` can hold it while reaping:
+        # same name as in `Popen`, so `is_pending()` can see that it is being reaped:
         self._waitpid_lock = Lock()
 
     def poll(self) -> int | None:
@@ -167,8 +167,8 @@ class ChildReaper:
         else:
             if not HAS_WAITID:
                 log.warn("Warning: `os.waitid` is not available with this Python %s build", sys.version.split(" ", 1)[0])
-                log.warn(" child processes can only be reaped using a slower and less reliable fallback")
-                log.warn(" which may lose the exit status of other subprocesses")
+                log.warn(" only the registered child processes will be reaped,")
+                log.warn(" any other child process may be left as a zombie")
                 log.warn(" please upgrade to Python 3.13 or later")
             # Check once after the mainloop is running, just in case the exit
             # conditions are satisfied before we even enter the main loop.
@@ -331,7 +331,9 @@ class ChildReaper:
         if not POSIX:
             return
         if not HAS_WAITID:
-            self._reap_all()
+            # we can't find dead children without reaping them,
+            # and their owner would then record a returncode of 0,
+            # so we only reap registered processes, via `poll()`:
             return
         while True:
             try:
@@ -345,53 +347,6 @@ class ChildReaper:
             if not self._reap_pid(info.si_pid):
                 self._schedule_retry()
                 return
-
-    def _reap_all(self) -> None:
-        # Without `waitid`, we can't find dead children without reaping them,
-        # and their `Popen` object would then see `ECHILD` and record a returncode of 0.
-        # So we hold the `Popen` locks of all the registered processes
-        # until we have saved their exit status.
-        # (there is nothing we can do for the ones that are not registered)
-        # Keep registration out of the gap between taking the snapshot and reaping.
-        if not self._proc_lock.acquire(False):
-            self._schedule_retry()
-            return
-        locks = []
-        reaped: list[int] = []
-        retry = False
-        try:
-            procinfos = tuple(self._proc_info)
-            for procinfo in procinfos:
-                lock = getattr(procinfo.process, "_waitpid_lock", None)
-                if procinfo.dead or not lock:
-                    continue
-                if not lock.acquire(False):
-                    # another thread is waiting for this process:
-                    retry = True
-                    break
-                locks.append(lock)
-            while not retry:
-                try:
-                    pid, status = os.waitpid(-1, os.WNOHANG)
-                except ChildProcessError:
-                    break
-                if not pid:
-                    break
-                returncode = os.waitstatus_to_exitcode(status)
-                for procinfo in procinfos:
-                    process = procinfo.process
-                    if procinfo.pid == pid and process and process.returncode is None:
-                        process.returncode = returncode
-                reaped.append(pid)
-        finally:
-            for lock in locks:
-                lock.release()
-            self._proc_lock.release()
-        if retry:
-            self._schedule_retry()
-        for pid in reaped:
-            log("reap() waitpid=%s", pid)
-            self.add_dead_pid(pid)
 
     def _schedule_retry(self) -> None:
         if not self._retry:

@@ -235,104 +235,17 @@ class TestChildReaper(unittest.TestCase):
                     self.assertEqual(info.returncode, 7)
                     idle_add.assert_called_once_with(callback, proc)
 
-    @unittest.skipUnless(child_reaper.POSIX, "requires POSIX")
-    def test_fallback_concurrent_poll(self):
-        # without `waitid`, another thread polls the process
-        # after `waitpid(-1)` has reaped it, but before we have saved its exit status:
+    @unittest.skipUnless(hasattr(os, "waitid"), "requires waitid")
+    def test_fallback_unregistered_child(self):
+        # without `waitid`, we must not reap the children we don't know about:
         cr = self.new_reaper()
-        cmd = [sys.executable, "-c", "import sys; sys.stdin.buffer.read(1); sys.exit(7)"]
-        with subprocess.Popen(cmd, stdin=subprocess.PIPE) as proc:
-            info = cr.add_process(proc, "test", "test", ignore=True)
-            real_poll = proc.poll
-            polls = []
-
-            def exit_after_poll():
-                if polls:
-                    return real_poll()
-                polls.append(real_poll())
-                proc.stdin.close()
-                self.wait_for_exit(proc)
-                return polls[0]
-
-            real_waitpid = os.waitpid
-            other_polls = []
-
-            def waitpid(pid, options):
-                result = real_waitpid(pid, options)
-                if pid == -1 and result[0] == proc.pid:
-                    thread = threading.Thread(target=lambda: other_polls.append(proc.poll()))
-                    thread.start()
-                    thread.join()
-                return result
-
-            with patch.object(proc, "poll", side_effect=exit_after_poll), \
-                    patch.object(child_reaper, "HAS_WAITID", False), \
-                    patch.object(child_reaper.os, "waitpid", side_effect=waitpid), \
-                    patch.object(child_reaper.GLib, "idle_add"):
+        with subprocess.Popen(["false"]) as proc:
+            self.wait_for_exit(proc)
+            with patch.object(child_reaper, "HAS_WAITID", False), \
+                    patch.object(child_reaper.os, "waitpid", wraps=os.waitpid) as waitpid:
                 cr.check()
-            self.assertEqual(other_polls, [None])
-            self.assertTrue(info.dead)
-            self.assertEqual(info.returncode, 7)
-            self.assertEqual(proc.wait(), 7)
-
-    @unittest.skipUnless(child_reaper.POSIX, "requires POSIX")
-    def test_fallback_busy_process(self):
-        # without `waitid`, we must not reap anything while another thread is waiting for a registered process:
-        cr = self.new_reaper()
-        process = Mock(pid=os.getpid(), returncode=None)
-        process.poll.return_value = None
-        process._waitpid_lock = threading.Lock()
-        cr.add_process(process, "test", "test", ignore=True)
-        with process._waitpid_lock, patch.object(child_reaper, "HAS_WAITID", False), \
-                patch.object(child_reaper.os, "waitpid") as waitpid, \
-                patch.object(child_reaper.GLib, "timeout_add", return_value=1) as timeout_add:
-            cr.reap()
-        waitpid.assert_not_called()
-        timeout_add.assert_called_once()
-
-    @unittest.skipUnless(hasattr(os, "waitid"), "requires waitid for synchronization")
-    def test_fallback_during_registration(self):
-        cr = self.new_reaper()
-        entered, release = threading.Event(), threading.Event()
-        errors, infos = [], []
-
-        class RegisteringList(list):
-            def append(self, info):
-                entered.set()
-                if not release.wait(timeout=5):
-                    raise TimeoutError("registration was not released")
-                super().append(info)
-
-        cr._proc_info = RegisteringList()
-        cmd = [sys.executable, "-c", "import sys; sys.stdin.buffer.read(1); sys.exit(7)"]
-        with subprocess.Popen(cmd, stdin=subprocess.PIPE) as proc:
-            def register():
-                try:
-                    infos.append(cr.add_process(proc, "test", cmd, ignore=True))
-                except BaseException as e:
-                    errors.append(e)
-
-            thread = threading.Thread(target=register, daemon=True)
-            thread.start()
-            try:
-                self.assertTrue(entered.wait(timeout=5))
-                proc.stdin.close()
-                self.wait_for_exit(proc)
-                with patch.object(child_reaper, "HAS_WAITID", False), \
-                        patch.object(child_reaper.os, "waitpid", wraps=os.waitpid) as waitpid, \
-                        patch.object(child_reaper.GLib, "timeout_add", return_value=1) as timeout_add:
-                    cr.reap()
-                    waitpid.assert_not_called()
-                    timeout_add.assert_called_once()
-            finally:
-                release.set()
-                thread.join(timeout=5)
-            self.assertFalse(thread.is_alive())
-            if errors:
-                raise errors[0]
-            self.assertTrue(infos[0].dead)
-            self.assertEqual(infos[0].returncode, 7)
-            self.assertEqual(proc.wait(), 7)
+            waitpid.assert_not_called()
+            self.assertEqual(proc.wait(), 1)
 
     @unittest.skipUnless(hasattr(os, "waitid"), "requires waitid")
     def test_waiter_during_pending_check(self):
