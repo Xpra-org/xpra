@@ -40,3 +40,6 @@ class SessionTicketStore:
 
     def pop(self, label: bytes) -> SessionTicket | None:
         return self.tickets.pop(label, None)
+
+    def clear(self) -> None:
+        self.tickets.clear()
