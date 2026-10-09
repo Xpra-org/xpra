@@ -447,7 +447,7 @@ class TestAuth(unittest.TestCase):
                 with patch.object(module, "OSX", True, create=True), \
                         patch.object(module, "Popen", AuthPopen), \
                         patch.object(module, "get_child_reaper", return_value=Mock(add_process=registration)), \
-                        patch.object(child_reaper, "hasattr", create=True, return_value=False), \
+                        patch.object(child_reaper, "HAS_WAITID", False), \
                         patch.object(module.GLib, "timeout_add", return_value=11), \
                         patch.object(module.GLib, "source_remove") as source_remove, \
                         patch.object(module.GLib, "idle_add", side_effect=lambda cb, *args: cb(*args)):

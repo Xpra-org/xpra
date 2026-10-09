@@ -11,6 +11,7 @@
 
 import os
 import signal
+import sys
 from time import monotonic
 from threading import Lock
 from typing import Any
@@ -30,6 +31,8 @@ sequence = AtomicInteger()
 # for its owner to collect its exit status:
 UNKNOWN_CHILD_DELAY = envint("XPRA_UNKNOWN_CHILD_DELAY", 5)
 REAP_RETRY_DELAY = envint("XPRA_REAP_RETRY_DELAY", 1)
+# ie: macos with python < 3.13 does not have `waitid`
+HAS_WAITID = hasattr(os, "waitid")
 
 
 def pid_exists(pid: int) -> bool:
@@ -162,6 +165,11 @@ class ChildReaper:
             log("using process polling every %s seconds", POLL_DELAY)
             GLib.timeout_add(POLL_DELAY * 1000, self.check)
         else:
+            if not HAS_WAITID:
+                log.warn("Warning: `os.waitid` is not available with this Python %s build", sys.version.split(" ", 1)[0])
+                log.warn(" child processes can only be reaped using a slower and less reliable fallback")
+                log.warn(" which may lose the exit status of other subprocesses")
+                log.warn(" please upgrade to Python 3.13 or later")
             # Check once after the mainloop is running, just in case the exit
             # conditions are satisfied before we even enter the main loop.
             # (Programming with unix the signal API sure is annoying.)
@@ -322,8 +330,7 @@ class ChildReaper:
         # reap all our dead children, including the ones that are not registered
         if not POSIX:
             return
-        if not hasattr(os, "waitid"):
-            # ie: macos with python < 3.13
+        if not HAS_WAITID:
             self._reap_all()
             return
         while True:

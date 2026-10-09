@@ -131,7 +131,7 @@ class TestChildReaper(unittest.TestCase):
                 return polls[0]
 
             with patch.object(proc, "poll", side_effect=exit_after_poll), \
-                    patch.object(child_reaper, "hasattr", create=True, return_value=False), \
+                    patch.object(child_reaper, "HAS_WAITID", False), \
                     patch.object(child_reaper.GLib, "idle_add"):
                 cr.check()
             self.assertEqual(polls, [None])
@@ -266,7 +266,7 @@ class TestChildReaper(unittest.TestCase):
                 return result
 
             with patch.object(proc, "poll", side_effect=exit_after_poll), \
-                    patch.object(child_reaper, "hasattr", create=True, return_value=False), \
+                    patch.object(child_reaper, "HAS_WAITID", False), \
                     patch.object(child_reaper.os, "waitpid", side_effect=waitpid), \
                     patch.object(child_reaper.GLib, "idle_add"):
                 cr.check()
@@ -283,7 +283,7 @@ class TestChildReaper(unittest.TestCase):
         process.poll.return_value = None
         process._waitpid_lock = threading.Lock()
         cr.add_process(process, "test", "test", ignore=True)
-        with process._waitpid_lock, patch.object(child_reaper, "hasattr", create=True, return_value=False), \
+        with process._waitpid_lock, patch.object(child_reaper, "HAS_WAITID", False), \
                 patch.object(child_reaper.os, "waitpid") as waitpid, \
                 patch.object(child_reaper.GLib, "timeout_add", return_value=1) as timeout_add:
             cr.reap()
@@ -318,7 +318,7 @@ class TestChildReaper(unittest.TestCase):
                 self.assertTrue(entered.wait(timeout=5))
                 proc.stdin.close()
                 self.wait_for_exit(proc)
-                with patch.object(child_reaper, "hasattr", create=True, return_value=False), \
+                with patch.object(child_reaper, "HAS_WAITID", False), \
                         patch.object(child_reaper.os, "waitpid", wraps=os.waitpid) as waitpid, \
                         patch.object(child_reaper.GLib, "timeout_add", return_value=1) as timeout_add:
                     cr.reap()
