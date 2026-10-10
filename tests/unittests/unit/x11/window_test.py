@@ -16,7 +16,7 @@ from unit.server_test_util import ServerTestUtil
 
 
 class FocusStub:
-    """ the minimum amount of server state that `SeamlessWindowServer._focus` needs """
+    """ the minimum amount of server state needed to focus and lose windows """
 
     def __init__(self, wm=None, windows: dict | None = None):
         self.last_raised = 0
@@ -24,6 +24,7 @@ class FocusStub:
         self._focus_history = deque(maxlen=10)
         self._wm = wm
         self.windows = windows or {}
+        self.window_movers = {}
 
     def get_window(self, wid: int):
         return self.windows.get(wid)
@@ -42,11 +43,15 @@ class FocusStub:
         from xpra.x11.subsystem.window import SeamlessWindowServer
         self.restore_active_window = lambda w: SeamlessWindowServer.restore_active_window(self, w)
         self.reset_focus = lambda: self.focus(0)
-        self._remove_window = lambda w: self.windows.pop(self.get_wid(w))
         self.cancel_configure_damage = lambda wid: None
         self.repaint_root_overlay = lambda: None
         self._exit_with_windows = False
         SeamlessWindowServer._lost_window(self, window)
+
+    def _remove_window(self, window) -> int:
+        wid = self.get_wid(window)
+        self.windows.pop(wid)
+        return wid
 
     def get_wid(self, window) -> int:
         return next(wid for wid, w in self.windows.items() if w is window)
