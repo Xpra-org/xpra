@@ -19,7 +19,7 @@ from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
-from xpra.util.thread import check_main_thread
+from xpra.util.thread import check_main_thread, is_main_thread
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.mmap.common import MmapPointerError
 from xpra.net.packet_type import WINDOW_DRAW
@@ -1275,7 +1275,12 @@ class WindowSource(WindowIconSource):
             # A delayed region has not reached send_delayed_regions(), which
             # normally acknowledges it before extraction.  Tell the window
             # now so a Wayland client is not left throttled forever.
-            self.window.acknowledge_changes()
+            # Disconnect cleanup may run in the network thread, but acknowledging
+            # damage accesses the display. Keep the window alive until it runs.
+            if is_main_thread():
+                self.window.acknowledge_changes()
+            else:
+                GLib.idle_add(self.window.acknowledge_changes)
 
     def cancel_expire_timer(self) -> None:
         if et := self.expire_timer:
