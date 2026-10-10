@@ -845,10 +845,9 @@ class ServerBase(ServerBaseClass):
         self.server_event("connection-lost", source.uuid)
         remaining_sources = tuple(self._server_sources.values())
         if self.ui_driver==source.uuid:
-            if len(remaining_sources)==1:
-                self.set_ui_driver(remaining_sources[0])
-            else:
-                self.set_ui_driver(None)
+            #cleanup may run in the network thread, but session driver handlers
+            #may access the display (eg: the clipboard emits selection tokens):
+            self.idle_add(self.replace_ui_driver, source.uuid)
         if SSH_AGENT_DISPATCH:
             try:
                 from xpra.net.ssh.agent import set_ssh_agent, clean_agent_socket
@@ -867,6 +866,18 @@ class ServerBase(ServerBaseClass):
         has_client = len(remaining_sources)>0
         if not has_client:
             self.idle_add(self.last_client_exited)
+
+    def replace_ui_driver(self, uuid: str) -> None:
+        """Hand the session over to the remaining client if there is only one."""
+        if self.ui_driver!=uuid:
+            log("replace_ui_driver(%s) another client has taken over: %s", uuid, self.ui_driver)
+            return
+        remaining_sources = tuple(self._server_sources.values())
+        if any(ss.uuid==uuid for ss in remaining_sources):
+            #the same client has already reconnected:
+            log("replace_ui_driver(%s) client has reconnected", uuid)
+            return
+        self.set_ui_driver(remaining_sources[0] if len(remaining_sources)==1 else None)
 
     def last_client_exited(self) -> None:
         #must run from the UI thread (modifies focus and keys)
