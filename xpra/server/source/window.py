@@ -359,6 +359,15 @@ class WindowsConnection(StubClientConnection):
         ox, oy = self.get_window_origin()
         return x - ox, y - oy
 
+    def follows_window_positions(self) -> bool:
+        """
+        Should this client be told when another client moves a window?
+        Either because it asked for it (`sync-position`),
+        or because it shares the virtual display with the other clients (`sharing=combine`),
+        and the window may be moving in or out of its own area.
+        """
+        return self.window_sync_position or getattr(self, "display_area", None) is not None
+
     def is_window_visible(self, window, geometry: Sequence[int] = ()) -> bool:
         """ does this window intersect this client's area of the virtual display? """
         area = getattr(self, "display_area", None)

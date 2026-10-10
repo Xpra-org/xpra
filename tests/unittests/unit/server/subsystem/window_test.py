@@ -41,10 +41,15 @@ class WebcamMixinTest(ServerMixinTest):
         window_server.is_readonly = lambda _proto: False
         window_server.get_window = Mock(return_value=window)
         window_server.do_process_window_configure = Mock()
+        # the legacy packet has no monitor information, the geometry must still be resolved:
+        window_server.resolve_monitor_geometry = Mock(return_value=(1922, 3, 4, 5))
+        proto = object()
         packet = Packet("configure-window", 1, 2, 3, 4, 5, {}, -1)
-        window_server._process_configure_window(object(), packet)
+        window_server._process_configure_window(proto, packet)
         config = window_server.do_process_window_configure.call_args.args[2]
         self.assertEqual(config.intget("resize-counter"), -1)
+        window_server.resolve_monitor_geometry.assert_called_once_with(proto, (2, 3, 4, 5), typedict())
+        self.assertEqual(config.inttupleget("geometry"), (1922, 3, 4, 5))
 
     def test_x11_window_stacking_filter(self):
         from xpra.x11.subsystem.window import SeamlessWindowServer
@@ -81,9 +86,10 @@ class WebcamMixinTest(ServerMixinTest):
         from xpra.x11.subsystem.window import SeamlessWindowServer
         source = AdHocStruct()
         source.get_monitor_position = lambda index, position: (100, 1250) if (index, position) == (0, (100, 50)) else None
+        source.get_display_origin = lambda: (0, 0)
         server = AdHocStruct()
         server.get_server_source = lambda _proto: source
-        geometry = SeamlessWindowServer.resolve_monitor_geometry(
+        geometry =SeamlessWindowServer.resolve_monitor_geometry(
             server, object(), (32000, 50, 800, 600),
             typedict({"index": 0, "position": (100, 50)}),
         )
@@ -93,6 +99,12 @@ class WebcamMixinTest(ServerMixinTest):
             typedict({"index": 99, "position": (100, 50)}),
         )
         self.assertEqual(fallback, (10, 20, 800, 600))
+        # `sharing=combine`: without usable monitor information,
+        # the position is still relative to the client's area of the display:
+        source.get_display_origin = lambda: (1920, 0)
+        for monitor in ({}, {"index": 99, "position": (100, 50)}):
+            geometry = SeamlessWindowServer.resolve_monitor_geometry(server, object(), (-220, 200, 800, 600), typedict(monitor))
+            self.assertEqual(geometry, (1700, 200, 800, 600))
 
     def test_hidden_window_guard(self):
         # `sharing=combine`: the inbound packet handlers ignore the windows

@@ -378,7 +378,7 @@ class SeamlessWindowServer(WindowServer):
                 geomlog("size_notify_clients: we have received a new client resize since")
                 geomlog(" last-configure-events: system=%s, %s=%s", last_lcce, ss, lcce)
                 return
-            sync_position = not client_driven or lcce == last_lcce or ss.window_sync_position
+            sync_position = not client_driven or lcce == last_lcce or ss.follows_window_positions()
             geomlog("size_notify_clients: sending to %s, sync-position=%s", ss, sync_position)
             if sync_position:
                 ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
@@ -691,15 +691,18 @@ class SeamlessWindowServer(WindowServer):
         return WindowServer.get_window_geometry(window)
 
     def resolve_monitor_geometry(self, proto, geometry: Sequence[int], monitor: typedict) -> tuple[int, ...]:
-        if not monitor or not (ss := self.get_server_source(proto)) or not hasattr(ss, "get_monitor_position"):
+        if not (ss := self.get_server_source(proto)) or not hasattr(ss, "get_monitor_position"):
             return tuple(geometry)
-        index = monitor.intget("index", -1)
-        position = monitor.inttupleget("position")
-        if index < 0 or len(position) != 2:
-            return tuple(geometry)
-        resolved = ss.get_monitor_position(index, position)
+        index = monitor.intget("index", -1) if monitor else -1
+        position = monitor.inttupleget("position") if monitor else ()
+        resolved = ss.get_monitor_position(index, position) if index >= 0 and len(position) == 2 else None
         if not resolved:
-            return tuple(geometry)
+            # no usable monitor information (ie: legacy `configure-window` packets),
+            # the position is still relative to this client's area of the display (`sharing=combine`):
+            ox, oy = ss.get_display_origin()
+            if ox or oy:
+                geomlog("translated client position %s by its display origin %s", geometry[:2], (ox, oy))
+            return geometry[0] + ox, geometry[1] + oy, geometry[2], geometry[3]
         x, y = resolved
         geomlog("resolved client monitor %i position %s to %s", index, position, resolved)
         return x, y, geometry[2], geometry[3]
@@ -777,9 +780,8 @@ class SeamlessWindowServer(WindowServer):
         if window.is_OR():
             windowlog.warn("Warning: received map event on OR window %s", wid)
             return
-        if len(packet) >= 9:
-            monitor = typedict(packet.get_dict(8))
-            x, y, w, h = self.resolve_monitor_geometry(proto, (x, y, w, h), monitor)
+        monitor = typedict(packet.get_dict(8) if len(packet) >= 9 else {})
+        x, y, w, h = self.resolve_monitor_geometry(proto, (x, y, w, h), monitor)
         geomlog("client %s mapped window %#x - %s, at: %s", ss, wid, window, (x, y, w, h))
         if is_window_hidden(ss, window):
             # `sharing=combine`: this window does not belong on this client's area,
@@ -931,7 +933,7 @@ class SeamlessWindowServer(WindowServer):
                     for s in self.window_sources():
                         if s == ss:
                             continue
-                        if s.window_sync_position:
+                        if s.follows_window_positions():
                             # this client also wants to follow the window position:
                             s.move_resize_window(wid, window, nx, ny, nw, nh, resize_counter=counter)
                         elif resized and SHARING_SYNC_SIZE:

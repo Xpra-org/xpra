@@ -566,7 +566,7 @@ class WindowServer(StubSubsystem):
         h = packet.get_u16(5)
         skip_geometry = (len(packet) >= 10 and packet.get_bool(9)) or window.is_OR()
         if not skip_geometry:
-            config["geometry"] = (x, y, w, h)
+            config["geometry"] = self.resolve_monitor_geometry(proto, (x, y, w, h), typedict())
         if len(packet) >= 8:
             # Legacy clients have historically used -1 as the sentinel for
             # a resize notification without a counter.

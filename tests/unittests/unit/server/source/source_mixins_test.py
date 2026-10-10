@@ -429,9 +429,12 @@ class SourceMixinsTest(unittest.TestCase):
         self.assertEqual(source.to_client_position(5000, 200), (5000, 200))
         self.assertFalse(source.update_window_visibility(1, outside))
         self.assertEqual(packets, [])
+        self.assertFalse(source.follows_window_positions())
 
         source.display_area = rectangle(4480, 0, 2560, 1440)
         self.assertEqual(source.to_client_position(5000, 200), (520, 200))
+        # windows moved by other clients may be moving in or out of this area:
+        self.assertTrue(source.follows_window_positions())
         self.assertFalse(source.update_window_visibility(1, inside))
         self.assertEqual(packets, [], "a visible window needs no metadata update")
         self.assertTrue(source.update_window_visibility(2, outside))
