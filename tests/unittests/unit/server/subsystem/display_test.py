@@ -214,6 +214,34 @@ class SharingLayoutTest(unittest.TestCase):
                 dm.init(opts)
                 self.assertEqual(dm.sharing_layout, "")
 
+    def test_combine_skips_absolute_clients(self):
+        # a client that does not send monitor relative coordinates cannot be given an area,
+        # it is left out of the combined layout and sees the whole display instead:
+        from unittest.mock import patch
+        try:
+            from xpra.x11.subsystem import display
+        except ImportError as e:
+            raise unittest.SkipTest(f"x11 display subsystem is not available: {e}") from None
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.subsystems = {}
+        dm = stubbable(display.X11DisplayManager)(server)
+
+        def source(counter: int, monitor_relative: bool, w: int, h: int) -> AdHocStruct:
+            ss = AdHocStruct()
+            ss.counter = counter
+            ss.uuid = f"uuid{counter}"
+            ss.monitor_relative = monitor_relative
+            ss.desktop_size = (w, h)
+            ss.get_normalized_monitor_definitions = lambda: {0: {"geometry": (0, 0, w, h)}}
+            return ss
+
+        sources = [source(1, True, 1920, 1080), source(2, False, 2560, 1440), source(3, True, 1280, 1024)]
+        with patch.object(dm, "get_sources_by_type", return_value=sources):
+            combined, layouts = dm.get_client_monitor_layouts()
+        self.assertEqual([ss.counter for ss in combined], [1, 3])
+        self.assertEqual([layout[0]["geometry"] for layout in layouts], [(0, 0, 1920, 1080), (0, 0, 1280, 1024)])
+
 
 def main():
     unittest.main()

@@ -241,6 +241,9 @@ class DisplayClient(StubClientSubsystem):
         monitors = adjust_monitor_refresh_rate(self.refresh_rate, self.get_monitors_info())
         self._monitor_layout = MonitorLayout(monitors)
         caps["monitors"] = monitors
+        # we attach a `monitor` descriptor to our window and pointer packets,
+        # so the server can map our positions onto its own area for `sharing=combine`:
+        caps["monitor-relative"] = True
         caps.update(self.get_screen_caps())
         caps["dpi"] = self.get_dpi_caps()
         caps["screen-scaling"] = self.get_scaling_caps()

@@ -647,12 +647,9 @@ class X11DisplayManager(DisplayManager):
     # `sharing=combine`: give each client its own area of the virtual display
 
     def verify_sharing_layout(self) -> None:
-        """ `sharing=combine` needs a display we can re-configure with RandR 1.6,
-            and clients that send us monitor relative coordinates """
+        """ `sharing=combine` needs a display we can re-configure with RandR 1.6
+            (the clients that cannot use it are checked as they connect, see `get_client_monitor_layouts`) """
         if not self.sharing_layout:
-            return
-        if BACKWARDS_COMPATIBLE:
-            self.disable_sharing_layout("it requires `XPRA_BACKWARDS_COMPATIBLE=0`")
             return
         if not self.mirror_client_layout:
             self.disable_sharing_layout("this session uses a fixed virtual display")
@@ -693,14 +690,22 @@ class X11DisplayManager(DisplayManager):
         self.send_updated_screen_size()
 
     def get_client_monitor_layouts(self) -> tuple[list, list[dict[int, Any]]]:
-        """ the monitor definitions of each display client, with their own (0, 0) origin """
+        """ the monitor definitions of each display client, with their own (0, 0) origin,
+            skipping the clients that cannot be given an area of their own """
         sources: list = []
         layouts: list[dict[int, Any]] = []
         for ss in self.get_sources_by_type(DisplayConnection):
+            if not ss.monitor_relative:
+                # we would not be able to map the absolute positions it sends back onto its area,
+                # so it is not given one and sees the whole display instead:
+                if first_time(f"sharing-not-monitor-relative-{ss.uuid}"):
+                    sharinglog.warn("Warning: client %i does not send monitor relative coordinates", ss.counter)
+                    sharinglog.warn(" it will see the whole display instead of an area of its own")
+                continue
             mdef = ss.get_normalized_monitor_definitions()
             if not mdef:
                 # a client that does not tell us about its monitors
-                # (ie: the html5 client) still gets an area matching its display:
+                # still gets an area matching its display:
                 w, h = ss.desktop_size
                 if w <= 0 or h <= 0:
                     sharinglog("no monitors and no desktop size for %s", ss)

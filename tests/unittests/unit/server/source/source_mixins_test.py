@@ -587,6 +587,13 @@ class SourceMixinsTest(unittest.TestCase):
             source.set_display_area(None)
             self.assertEqual(source.get_monitor_position(0, (100, 50)), (100, 50))
             self.assertNotIn("area", source.get_info())
+            # only clients that send monitor relative coordinates can be given an area,
+            # which is assumed when we don't support older clients:
+            from xpra.util.objects import typedict
+            self.assertEqual(source.monitor_relative, not BACKWARDS_COMPATIBLE)
+            source.parse_client_caps(typedict({"display": {"monitors": {}, "monitor-relative": True}}))
+            self.assertTrue(source.monitor_relative)
+            self.assertTrue(source.get_info().get("monitor-relative"))
 
         caps = None if BACKWARDS_COMPATIBLE else {"display": {"monitors": {}}}
         self._test_mixin_class(DisplayConnection, client_caps=caps, test_fn=check_monitor_layout)

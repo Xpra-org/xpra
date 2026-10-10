@@ -32,6 +32,7 @@ This can be used to reduce the amount of pixels needed to cover a monitor.
 | `screen_sizes`          | list of screens             | Geometry of all screens, scaled         |
 | `screen_sizes.unscaled` | list of screens             | Unscaled geometry of all screens        |
 | `monitors`              | list of monitors            | Geometry of all monitors                |
+| `monitor-relative`      | boolean                     | The client attaches `monitor` descriptors to its window and pointer packets |
 | `dpi`                   | dictionary                  | DPI configuration                       |
 
 
@@ -57,12 +58,16 @@ the server translates between the two coordinate spaces:
   attached to its `window-map`, `window-configure` and pointer packets, which is
   offset by that same origin
 
-This is why `combine` requires `XPRA_BACKWARDS_COMPATIBLE=0`: without those monitor
-relative coordinates, the absolute positions sent by two different clients would be
-indistinguishable and could not be mapped back onto the combined display.
-It also requires a seamless server whose virtual display can be re-configured with
+Only the clients that advertise the `monitor-relative` display capability are given an area:
+without those monitor relative coordinates, the absolute positions sent by a client could
+not be mapped back onto the combined display.
+The other clients (ie: older versions) are left out of the combined layout and see the whole display,
+as they would with `sharing=yes`.
+With `XPRA_BACKWARDS_COMPATIBLE=0`, the server assumes that every client sends them.
+
+`combine` also requires a seamless server whose virtual display can be re-configured with
 RandR 1.6 (the `dummy` driver with 16 outputs).
-When any of those requirements is not met, the server warns and shares the display
+When that requirement is not met, the server warns and shares the display
 as it would with `sharing=yes`.
 
 Every window is still sent to every client, so that moving one from one user's screen

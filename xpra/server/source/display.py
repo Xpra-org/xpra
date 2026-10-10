@@ -52,6 +52,9 @@ class DisplayConnection(StubClientConnection):
         self.screen_sizes: list = []
         self.monitors: dict[int, Any] = {}
         self.monitor_layout = MonitorLayout()
+        # does this client attach a `monitor` descriptor to its window and pointer packets?
+        # (required for `sharing=combine`, assumed when we don't support older clients)
+        self.monitor_relative = not BACKWARDS_COMPATIBLE
         # the area of the server's virtual display that belongs to this client,
         # only used by `sharing=combine` - `None` means the whole display:
         self.display_area: rectangle | None = None
@@ -70,6 +73,7 @@ class DisplayConnection(StubClientConnection):
             "desktop_names": self.desktop_names,
             "opengl": self.opengl_props,
             "monitors": self.monitors,
+            "monitor-relative": self.monitor_relative,
             "screens": len(self.screen_sizes),
             "screen": get_screen_info(self.screen_sizes),
         }
@@ -111,6 +115,7 @@ class DisplayConnection(StubClientConnection):
         self.desktop_fullscreen = c.boolget("desktop-fullscreen")
         self.set_screen_sizes(c.tupleget("screen_sizes"))
         self.set_monitors(c.dictget("monitors"))
+        self.monitor_relative = c.boolget("monitor-relative", not BACKWARDS_COMPATIBLE)
         desktop_names = tuple(str(x) for x in c.tupleget("desktop.names"))
         self.set_desktops(c.intget("desktops", 1), desktop_names)
         self.show_desktop_allowed = c.boolget("show-desktop")

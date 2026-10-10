@@ -1912,10 +1912,11 @@ and one that is moved onto another client's area moves from one user's screen
 to the next without being re-created.
 This value can be combined with the \fIsync\fP values above, and requires a
 seamless server whose virtual display supports RandR 1.6
-(the \fIdummy\fP driver with 16 outputs), with \fBXPRA_BACKWARDS_COMPATIBLE=0\fP
-so that the clients send monitor relative coordinates.
-If any of those requirements is not met, the server logs a warning and
+(the \fIdummy\fP driver with 16 outputs).
+If that requirement is not met, the server logs a warning and
 falls back to behaving as \fIyes\fP.
+Clients that do not send monitor relative coordinates (ie: older versions)
+are not given an area of their own and see the whole combined display instead.
 To allow sharing to work with unix domain sockets (either using local
 connections or via ssh), you should create at least one socket in a group
 accessible directory. On Posix with a default configuration, being a
