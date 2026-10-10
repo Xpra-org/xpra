@@ -95,6 +95,9 @@ CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
 REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 0)
 REFRESH_MAXIMIZED = envbool("XPRA_REFRESH_MAXIMIZED", True)
 ICONIFY_LATENCY = envint("XPRA_ICONIFY_LATENCY", 150)
+# how long to wait for the window manager to honour a deiconify request,
+# before re-mapping the window instead (ie: muffin ignores them):
+DEICONIFY_TIMEOUT = envint("XPRA_DEICONIFY_TIMEOUT", 250)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
@@ -257,6 +260,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._follow_configure = None
         self.window_state_timer: int = 0
         self.send_iconify_timer: int = 0
+        self.deiconify_timer: int = 0
+        self._remapping = False
         self._server_iconify_pending = False
         self.remove_pointer_overlay_timer: int = 0
         self.show_pointer_overlay_timer: int = 0
@@ -688,14 +693,42 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         Gtk.Window.deiconify(self)
 
     def set_iconic(self, iconified: bool) -> None:
+        self.cancel_deiconify_timer()
         if not iconified:
             self._server_iconify_pending = False
             self.cancel_send_iconifiy_timer()
+            if self._iconified and DEICONIFY_TIMEOUT > 0:
+                self.deiconify_timer = self.timeout_add(DEICONIFY_TIMEOUT, self.verify_deiconified)
         elif not self._iconified:
             # The base method updates _iconified before GTK confirms it.
             # Keep that event so we can release focus and notify the server.
             self._server_iconify_pending = True
         ClientWindowBase.set_iconic(self, iconified)
+
+    def cancel_deiconify_timer(self) -> None:
+        if dt := self.deiconify_timer:
+            self.deiconify_timer = 0
+            self.source_remove(dt)
+
+    def verify_deiconified(self) -> None:
+        """
+        Some window managers ignore deiconify requests (ie: muffin),
+        because the iconified window is still mapped.
+        Withdrawing the window and mapping it again works with all of them.
+        """
+        self.deiconify_timer = 0
+        gdkwin = self.get_window()
+        if self._iconified or not gdkwin or not (gdkwin.get_state() & Gdk.WindowState.ICONIFIED):
+            return
+        statelog("window %#x is still iconified, re-mapping it", self.wid)
+        # this is not an unmap the server needs to know about:
+        self._remapping = True
+        # don't steal the focus, this is not a new window:
+        focus_on_map = self.get_focus_on_map()
+        self.set_focus_on_map(False)
+        gdkwin.withdraw()
+        gdkwin.show()
+        self.set_focus_on_map(focus_on_map)
 
     def window_state_updated(self, widget, event) -> None:
         statelog("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s",
@@ -1346,6 +1379,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def do_map_event(self, event) -> None:
         log("%s.do_map_event(%s) OR=%s", self, event, self._override_redirect)
         Gtk.Window.do_map_event(self, event)
+        self._remapping = False
         if not self._override_redirect:
             # we can get a map event for an iconified window on win32:
             if self._iconified:
@@ -1727,6 +1761,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._server_iconify_pending = False
         self.cancel_window_state_timer()
         self.cancel_send_iconifiy_timer()
+        self.cancel_deiconify_timer()
         self.cancel_moveresize_timer()
         self.cancel_follow_handler()
         self.on_realize_cb = {}
@@ -1740,6 +1775,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.cancel_follow_handler()
         eventslog("do_unmap_event(%s)", event)
         self._unfocus()
+        if self._remapping:
+            eventslog("unmap caused by re-mapping the window, not telling the server")
+            return
         if not self._override_redirect:
             self.send(WINDOW_UNMAP, self.wid, False)
 
