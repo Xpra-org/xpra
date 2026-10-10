@@ -101,6 +101,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.audio_send = False
         self.audio_level = False
         self.audio_signal = False
+        self.hello_sent = 0.0
         self.init_audio_keepalive_state()
         self.audio_fade_timer = 0
         self.new_stream_timers: dict[Popen, int] = {}
@@ -222,11 +223,13 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         return audio_caps
 
     def send_audio_level(self, level: dict) -> None:
-        if self.audio_level:
+        # `audio_level` is set while parsing the client's hello,
+        # but the client only registers a handler once it receives ours:
+        if self.audio_level and self.hello_sent:
             self.send_async(AUDIO_LEVEL_PACKET, level)
 
     def send_audio_signal(self, signal: bool) -> None:
-        if self.audio_signal:
+        if self.audio_signal and self.hello_sent:
             self.send_async(AUDIO_SIGNAL_PACKET, signal)
 
     def audio_loop_check(self, mode: str = "speaker") -> bool:
