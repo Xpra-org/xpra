@@ -93,10 +93,13 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     from xpra.codecs.argb.argb import premultiply_argb
     rgba = memoryview_to_bytes(premultiply_argb(pixels))
     img = make_image_surface(Format.ARGB32, "RGBA", rgba, cw, ch, cw * 4)
+    # don't leak the translation and operator to whatever is painted next (ie: the border):
+    context.save()
     context.translate(x, y)
     context.set_source_surface(img, 0, 0)
     context.set_operator(Operator.OVER)
     context.paint_with_alpha(alpha)
+    context.restore()
 
 
 def get_scaling_filter(content_types: Sequence[str], sx: float, sy: float):
