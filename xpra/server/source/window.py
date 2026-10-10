@@ -480,6 +480,10 @@ class WindowsConnection(StubClientConnection):
             sharinglog("forcing %s=True for hidden window %s", propname, window)
             return {propname: True}
         metadata = make_window_metadata(window, propname, skip_defaults=skip_defaults)
+        pos = metadata.get("requested-position")
+        if pos and len(pos) == 2:
+            # this is a position on the virtual display, just like the window's geometry:
+            metadata["requested-position"] = self.to_client_position(*pos)
         if getattr(self, "effective_readonly", lambda: self.readonly)():
             metalog("overriding size-constraints for readonly mode")
             size = window.get_dimensions()

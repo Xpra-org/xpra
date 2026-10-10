@@ -408,14 +408,17 @@ class SourceMixinsTest(unittest.TestCase):
                 return False
 
             def get_property(self, prop):
-                return {"iconic": False, "skip-taskbar": False, "skip-pager": True}.get(prop)
+                return {
+                    "iconic": False, "skip-taskbar": False, "skip-pager": True,
+                    "requested-position": self.geometry[:2],
+                }.get(prop)
 
         source = WindowsConnection()
         WindowsConnection.__init__(source)
         source.init_state()
         source.hello_sent = True
         source.window_enabled = True
-        source.window_metadata_supported = HIDDEN_METADATA
+        source.window_metadata_supported = tuple(HIDDEN_METADATA) + ("requested-position", )
         source.get_server_geometry = lambda window: window.geometry
         packets = []
         source.send = lambda *packet: packets.append(packet)
@@ -437,6 +440,8 @@ class SourceMixinsTest(unittest.TestCase):
         # the override is applied to the metadata sent with the window itself:
         self.assertEqual(source._make_metadata(outside, "iconic", skip_defaults=True), {"iconic": True})
         self.assertEqual(source._make_metadata(inside, "iconic", skip_defaults=True), {})
+        # the position requested by the application is relative to the area, like the geometry:
+        self.assertEqual(source._make_metadata(inside, "requested-position"), {"requested-position": (520, 200)})
         # moving it back into the area restores the real values:
         packets.clear()
         outside.geometry = (4600, 200, 800, 600)
