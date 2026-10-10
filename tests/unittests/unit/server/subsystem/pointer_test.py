@@ -302,6 +302,57 @@ class PointerPipelineTest(unittest.TestCase):
             ("click", 2, False, {}),
         ))
 
+    def test_only_the_ui_driver_moves_the_pointer(self):
+        from xpra.net.common import Packet
+        from xpra.util.rectangle import rectangle
+        m = self.make_manager()
+        sources = {}
+
+        def source(uuid: str):
+            ss = AdHocStruct()
+            ss.uuid = uuid
+            ss.update_mouse = None
+            ss.user_event = lambda *_args: None
+            ss.display_area = None
+            proto = object()
+            sources[proto] = ss
+            return proto, ss
+
+        driver_proto, driver = source("driver")
+        other_proto, other = source("other")
+        m.server.get_server_source = sources.get
+        m.server.ui_driver = driver.uuid
+        self.assertTrue(m.may_move_pointer(driver))
+
+        def motion(proto, seq: int) -> None:
+            m.calls.clear()
+            m._process_motion(proto, Packet("pointer-motion", -1, seq, 1, (10, 20), {}))
+
+        # when sharing the same display, the other clients must not fight over the pointer:
+        self.assertFalse(m.may_move_pointer(other))
+        motion(other_proto, 1)
+        self.assertEqual(m.calls, [])
+        motion(driver_proto, 2)
+        self.assertIn(("move", 1, (10, 20)), m.calls)
+        # `sharing=combine`: a client with an area of its own can move the pointer within it,
+        # without becoming the ui driver:
+        other.display_area = rectangle(1920, 0, 1280, 1024)
+        self.assertTrue(m.may_move_pointer(other))
+        motion(other_proto, 3)
+        self.assertIn(("move", 1, (10, 20)), m.calls)
+        self.assertEqual(m.server.ui_driver, driver.uuid)
+        # but not while the ui driver is dragging something:
+        m.buttons_pressed = {-1: {1}}
+        self.assertFalse(m.may_move_pointer(other))
+        self.assertTrue(m.may_move_pointer(driver))
+        motion(other_proto, 4)
+        self.assertEqual(m.calls, [])
+        # without a ui driver, anyone can move it:
+        m.buttons_pressed = {}
+        other.display_area = None
+        m.server.ui_driver = None
+        self.assertTrue(m.may_move_pointer(other))
+
 
 def main():
     unittest.main()

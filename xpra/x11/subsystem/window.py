@@ -883,7 +883,8 @@ class SeamlessWindowServer(WindowServer):
             geomlog("window %i at %s for %s", wid, geometry, proto)
             self._window_mapped_at(proto, wid, window, geometry)
 
-        if "pointer" in config and is_ui_driver and features.pointer and not self.is_readonly(proto):
+        pointer = self.get_subsystem("pointer")
+        if "pointer" in config and pointer and pointer.may_move_pointer(ss) and features.pointer and not self.is_readonly(proto):
             pointer_data = typedict(config.dictget("pointer"))
             pointerlog("configure pointer data: %s", pointer_data)
             pwid = pointer_data.intget("wid", 0)
@@ -892,8 +893,7 @@ class SeamlessWindowServer(WindowServer):
             props = pointer_data.dictget("properties")
             if pwid == wid and window.is_OR():
                 pwid = 0
-            pointer = self.get_subsystem("pointer")
-            if pointer and pointer.process_mouse_common(proto, device_id, pwid, position, props):
+            if pointer.process_mouse_common(proto, device_id, pwid, position, props):
                 if self._has_focus == pwid and "modifiers" in pointer_data:
                     modifiers = pointer_data.strtupleget("modifiers")
                     pointer._update_modifiers(proto, pwid, modifiers)

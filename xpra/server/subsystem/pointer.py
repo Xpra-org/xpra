@@ -347,6 +347,20 @@ class PointerManager(StubSubsystem):
             props["buttons"] = 6
         self.process_pointer_button(proto, device_id, wid, button, pressed, pointer, props)
 
+    def may_move_pointer(self, ss) -> bool:
+        """ only the client driving the session can move the pointer,
+            unless it has an area of the display of its own (`sharing=combine`) """
+        ui_driver = self.server.ui_driver
+        if not ui_driver or ui_driver == ss.uuid:
+            return True
+        if getattr(ss, "display_area", None) is None:
+            return False
+        if self.buttons_pressed:
+            # don't move the pointer away from the ui driver while it is dragging:
+            log("not moving the pointer for %s: buttons %s are pressed", ss, self.buttons_pressed)
+            return False
+        return True
+
     def _motion_signaled(self, model, event) -> None:
         log("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
         # find the window model for this gdk window:
@@ -619,7 +633,7 @@ class PointerManager(StubSubsystem):
         pointer = pdata[:2]
         ss.mouse_last_relative_position = self.get_pointer_window_position(pdata, props) or (-1, -1)
         ss.mouse_last_position = pointer
-        if self.server.ui_driver and self.server.ui_driver != ss.uuid:
+        if not self.may_move_pointer(ss):
             return
         ss.user_event("pointer")
         self.last_mouse_user = ss.uuid
@@ -644,7 +658,7 @@ class PointerManager(StubSubsystem):
         pointer = pdata[:2]
         ss.mouse_last_relative_position = pdata[2:4] if len(pdata) >= 4 else (-1, -1)
         ss.mouse_last_position = pointer
-        if self.server.ui_driver and self.server.ui_driver != ss.uuid:
+        if not self.may_move_pointer(ss):
             return
         ss.user_event("pointer-position")
         self.last_mouse_user = ss.uuid
