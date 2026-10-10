@@ -17,6 +17,7 @@ from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.util.objects import typedict
 from xpra.platform.win32.constants import FLASHW_ALL, FLASHW_TIMERNOFG, FLASHW_STOP
+from xpra.platform.win32.gui import _apply_title_bar_theme
 from xpra.platform.win32.common import (
     GetModuleHandleA,
     WNDPROC, WNDCLASSEX, RegisterClassExW, UnregisterClassW,
@@ -358,9 +359,14 @@ class ClientWindow(GObject.GObject):
         if not self.is_OR() and not self.metadata.boolget("set-initial-position", False):
             x = win32con.CW_USEDEFAULT
             y = win32con.CW_USEDEFAULT
-        return CreateWindowExW(dwexstyle, self.class_atom, title, style,
+        hwnd = CreateWindowExW(dwexstyle, self.class_atom, title, style,
                                x, y, w, h,
                                0, 0, self.module_handle, None)
+        try:
+            _apply_title_bar_theme(hwnd or 0)
+        except Exception:
+            log("_apply_title_bar_theme(%#x)", hwnd or 0, exc_info=True)
+        return hwnd
 
     def wnd_proc_cb(self, hwnd: int, msg: int, wparam: int, lparam) -> int:
         msg_str = WM_MESSAGES.get(msg, str(msg))
