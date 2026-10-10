@@ -49,6 +49,8 @@ def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_
     alpha = max(0.0, (5.0-elapsed)/5.0)
     log("cairo_paint_pointer_overlay%s drawing pointer with cairo, alpha=%s",
         (context, x, y, start_time), alpha)
+    #don't leak the translation and operator to subsequent painting (eg: the border):
+    context.save()
     context.translate(x, y)
     context.rectangle(0, 0, cw, ch)
     argb = unpremultiply_argb(pixels)
@@ -57,6 +59,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_
     context.set_operator(OPERATOR_OVER)
     Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
     context.paint_with_alpha(alpha)
+    context.restore()
 
 
 class CairoBackingBase(WindowBackingBase):

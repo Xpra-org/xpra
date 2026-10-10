@@ -4,11 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import unittest
+from time import monotonic
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from cairo import FORMAT_ARGB32, FORMAT_RGB24
+from cairo import Context, ImageSurface, FORMAT_ARGB32, FORMAT_RGB24, OPERATOR_SOURCE
 
-from xpra.client.gtk3.cairo_backing_base import CairoBackingBase
+from xpra.client.gtk3.cairo_backing_base import CairoBackingBase, cairo_paint_pointer_overlay
 from xpra.util import typedict
 
 
@@ -48,6 +52,25 @@ class TestPaintRgb32(unittest.TestCase):
             fmt, alpha = self.paint_format(rgb_format, alpha=False)
             assert fmt == FORMAT_RGB24, f"{rgb_format} should be painted as RGB24, not {fmt}"
             assert alpha is False
+
+
+class TestCairoPaintPointerOverlay(unittest.TestCase):
+
+    def test_preserves_context_state(self):
+        pixels = b"\x80\x40\x20\xff" * (16 * 16)
+        cursor_data = [None, None, None, 16, 16, 2, 3, None, pixels]
+        context = Context(ImageSurface(FORMAT_ARGB32, 200, 200))
+        context.translate(3, 4)
+        context.set_operator(OPERATOR_SOURCE)
+        matrix = context.get_matrix()
+        source = context.get_source().get_rgba()
+        # Pixel conversion is independent of the context state being tested.
+        argb = SimpleNamespace(unpremultiply_argb=lambda data: data)
+        with patch.dict(sys.modules, {"xpra.codecs.argb.argb": argb}):
+            cairo_paint_pointer_overlay(context, cursor_data, 20, 30, monotonic())
+        self.assertEqual(context.get_matrix(), matrix)
+        self.assertEqual(context.get_operator(), OPERATOR_SOURCE)
+        self.assertEqual(context.get_source().get_rgba(), source)
 
 
 if __name__ == "__main__":
