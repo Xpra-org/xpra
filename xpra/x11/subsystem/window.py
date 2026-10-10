@@ -138,7 +138,7 @@ class SeamlessWindowServer(WindowServer):
     """
     __slots__ = (
         "_exit_with_windows", "_focus_history", "_has_focus", "_has_grab", "_wm",
-        "configure_damage_timers", "last_raised", "snc_timer", "wm_name",
+        "configure_damage_timers", "last_raised", "snc_timer", "wm_name", "window_movers",
     )
 
     def __init__(self, server=None):
@@ -151,6 +151,8 @@ class SeamlessWindowServer(WindowServer):
         self.last_raised = 0
         self._exit_with_windows = False
         self.configure_damage_timers: dict[int, int] = {}
+        # the client that last moved or resized each window, and when:
+        self.window_movers: dict[int, tuple[str, float]] = {}
         self.snc_timer = 0
 
     def init(self, opts) -> None:
@@ -556,6 +558,7 @@ class SeamlessWindowServer(WindowServer):
             self.restore_active_window(window)
         wid = self._remove_window(window)
         self.cancel_configure_damage(wid)
+        self.window_movers.pop(wid, None)
         if self._exit_with_windows and not self.models():
             log.info("no more windows to manage, exiting")
             self.server.clean_quit()
@@ -912,6 +915,13 @@ class SeamlessWindowServer(WindowServer):
             state = config.dictget("state")
             self._set_window_state(wid, window, state)
 
+        if geometry and self.is_moved_by_another_client(ss, wid):
+            # this client is following the window as another client moves it,
+            # so this is just an echo of the position we sent it,
+            # which may not be exact (ie: window frame adjustments) - and would be sent back:
+            sharinglog("ignoring geometry %s for window %#x from %s: another client is moving it", geometry, wid, ss)
+            geometry = ()
+
         if geometry and not window.is_OR() and not self.is_readonly(proto):
             damage = not window.get_property("shown")
 
@@ -924,6 +934,7 @@ class SeamlessWindowServer(WindowServer):
             ncg = window.get_property("client-geometry") or ()
             if ocg != ncg:
                 ss.window_configure_time = monotonic()
+                self.window_movers[wid] = ss.uuid, ss.window_configure_time
                 self.repaint_root_overlay()
                 damage = True
                 if len(ncg) == 4:
@@ -940,6 +951,12 @@ class SeamlessWindowServer(WindowServer):
                             s.resize_window(wid, window, nw, nh, resize_counter=counter)
             if damage:
                 self.schedule_configure_damage(wid)
+
+    def is_moved_by_another_client(self, ss, wid: int) -> bool:
+        if not ss.follows_window_positions():
+            return False
+        uuid, when = self.window_movers.get(wid, ("", 0.0))
+        return bool(uuid) and uuid != ss.uuid and monotonic() - when < CLIENT_CONFIGURE_TIMEOUT
 
     def schedule_configure_damage(self, wid: int, delay=CONFIGURE_DAMAGE_RATE) -> None:
         if self.configure_damage_timers.get(wid):

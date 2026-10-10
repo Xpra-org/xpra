@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from time import monotonic
 from unittest.mock import Mock, patch
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
@@ -105,6 +106,30 @@ class WebcamMixinTest(ServerMixinTest):
         for monitor in ({}, {"index": 99, "position": (100, 50)}):
             geometry = SeamlessWindowServer.resolve_monitor_geometry(server, object(), (-220, 200, 800, 600), typedict(monitor))
             self.assertEqual(geometry, (1700, 200, 800, 600))
+
+    def test_moved_by_another_client(self):
+        # a client following the window as another client moves it only echoes the position back,
+        # applying it would make the clients fight over the window position
+        from xpra.x11.subsystem.window import SeamlessWindowServer, CLIENT_CONFIGURE_TIMEOUT
+
+        def source(uuid: str, follows=True):
+            ss = AdHocStruct()
+            ss.uuid = uuid
+            ss.follows_window_positions = lambda: follows
+            return ss
+
+        manager = SeamlessWindowServer(AdHocStruct())
+        mover, follower = source("mover"), source("follower")
+        self.assertFalse(manager.is_moved_by_another_client(follower, 1))
+        manager.window_movers[1] = "mover", monotonic()
+        self.assertTrue(manager.is_moved_by_another_client(follower, 1))
+        self.assertFalse(manager.is_moved_by_another_client(mover, 1))
+        self.assertFalse(manager.is_moved_by_another_client(follower, 2))
+        # clients that are not sent the new positions are not echoing them:
+        self.assertFalse(manager.is_moved_by_another_client(source("other", False), 1))
+        # once the other client has stopped moving it, this client can move it again:
+        manager.window_movers[1] = "mover", monotonic() - CLIENT_CONFIGURE_TIMEOUT - 1
+        self.assertFalse(manager.is_moved_by_another_client(follower, 1))
 
     def test_hidden_window_guard(self):
         # `sharing=combine`: the inbound packet handlers ignore the windows
