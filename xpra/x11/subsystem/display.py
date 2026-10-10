@@ -423,18 +423,20 @@ class X11DisplayManager(DisplayManager):
             client_size = ss.desktop_size
             if client_size != (0, 0):
                 w, h = client_size
-                size = "%ix%i" % (w, h)
                 max_w = max(max_w, w)
                 max_h = max(max_h, h)
                 if w > 0:
                     min_w = min(min_w, w)
                 if h > 0:
                     min_h = min(min_h, h)
-                client_sizes[ss.uuid] = size
+                client_sizes[ss] = client_size
         if len(client_sizes) > 1:
-            log.info("screen used by %i clients:", len(client_sizes))
-            for uuid, size in client_sizes.items():
-                log.info("* %s: %s", uuid, size)
+            log.info("screen used by %i clients, mirrored:", len(client_sizes))
+            for ss, (w, h) in client_sizes.items():
+                nmonitors = len(ss.get_monitor_definitions() or {})
+                log.info("* client %i: %ix%i with %i monitor%s, uuid %s",
+                         ss.counter, w, h, nmonitors, "s" * (nmonitors != 1), ss.uuid)
+            log.info(" using the largest width and height: %ix%i", max_w, max_h)
         log("current server resolution is %ix%i", root_w, root_h)
         log("maximum client resolution is %ix%i", max_w, max_h)
         log("minimum client resolution is %ix%i", min_w, min_h)
@@ -735,6 +737,7 @@ class X11DisplayManager(DisplayManager):
             sharinglog("no monitors to combine")
             self.clear_display_areas()
             return {}
+        self.log_combined_layout(sources, layouts, areas, mdef, vertical)
         with xsync:
             crtcs = randr.get_crtc_count()
         if len(mdef) > crtcs:
@@ -750,6 +753,23 @@ class X11DisplayManager(DisplayManager):
                 return {}
         self.assign_display_areas(sources, areas)
         return mdef
+
+    @staticmethod
+    def log_combined_layout(sources: Sequence, layouts: Sequence, areas: Sequence, mdef: dict[int, Any], vertical: bool) -> None:
+        """ show how the combined display is calculated from the display of each client """
+        nclients = len(sources)
+        # a single client gets the whole display, there is nothing to explain:
+        log_fn = log.info if nclients > 1 else sharinglog
+        log_fn("screen used by %i client%s, combined %s:",
+               nclients, "s" * (nclients != 1), "vertically" if vertical else "horizontally")
+        for ss, monitors, (x, y, w, h) in zip(sources, layouts, areas):
+            log_fn("* client %i: %ix%i with %i monitor%s, placed at %i,%i",
+                   ss.counter, w, h, len(monitors), "s" * (len(monitors) != 1), x, y)
+        w, h = monitors_bounding_box(mdef)
+        how = "the tallest height and the sum of the widths"
+        if vertical:
+            how = "the widest width and the sum of the heights"
+        log_fn(" using %s: %ix%i with %i monitor%s", how, w, h, len(mdef), "s" * (len(mdef) != 1))
 
     def clear_display_areas(self) -> None:
         self.assign_display_areas()
