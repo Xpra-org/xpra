@@ -136,6 +136,39 @@ class ClientSessionTest(unittest.TestCase):
         self.assertNotIn(proto1, self.session.sources)
         self.assertEqual(self.server.cleaned, [source1])
 
+    def test_ui_driver_handover(self) -> None:
+        # cleaning up a source runs in the network thread,
+        # so the ui driver must be handed over from the main thread:
+        server_events = []
+        self.server.server_event = lambda *args: server_events.append(args)
+        sources = {object(): FakeConnection(None, None, None, None) for _ in range(2)}
+        source1, source2 = sources.values()
+        source1.uuid, source2.uuid = "one", "two"
+        source1.counter, source2.counter = 1, 2
+        self.session.sources.update(sources)
+        self.session.set_ui_driver(source1)
+        self.server.emitted.clear()
+
+        proto1 = next(iter(sources))
+        self.session.sources.pop(proto1)
+        self.session.do_cleanup_source(source1)
+        self.assertEqual(self.server.emitted, [("client-exited", (source1,))])
+        self.assertEqual(self.server.idle_calls, [(self.session.replace_ui_driver, "one")])
+        self.session.replace_ui_driver("one")
+        self.assertEqual(self.session.ui_driver, "two")
+        self.assertEqual(self.server.emitted[-1], ("new-ui-driver", (source2,)))
+
+        # another client took over before the handover ran:
+        self.session.set_ui_driver(source1)
+        self.session.sources[proto1] = source1
+        self.session.set_ui_driver(source2)
+        self.session.replace_ui_driver("one")
+        self.assertEqual(self.session.ui_driver, "two")
+        # the same client reconnected before the handover ran:
+        self.session.set_ui_driver(source1)
+        self.session.replace_ui_driver("one")
+        self.assertEqual(self.session.ui_driver, "one")
+
 
 def main():
     unittest.main()
