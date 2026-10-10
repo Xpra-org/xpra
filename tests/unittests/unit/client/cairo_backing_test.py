@@ -176,14 +176,19 @@ class TestCairoPaintPointerOverlay(unittest.TestCase):
         from unittest.mock import patch
         from xpra.cairo.backing_base import cairo_paint_pointer_overlay
         from time import monotonic
-        from cairo import ImageSurface, Format
+        from cairo import ImageSurface, Format, Operator
         cw, ch = 16, 16
         pixels = b"\x80\x40\x20\xFF" * (cw * ch)
         cursor_data = [None, None, None, cw, ch, 2, 3, None, pixels]
         ctx = self._ctx(200, 200)
+        ctx.translate(3, 4)
+        ctx.set_operator(Operator.SOURCE)
+        matrix = ctx.get_matrix()
         fake_surface = ImageSurface(Format.ARGB32, cw, ch)
         with patch("xpra.cairo.backing_base.make_image_surface", return_value=fake_surface):
             cairo_paint_pointer_overlay(ctx, cursor_data, 20, 30, monotonic())
+        self.assertEqual(ctx.get_matrix(), matrix)
+        self.assertEqual(ctx.get_operator(), Operator.SOURCE)
 
 
 # ---------------------------------------------------------------------------
