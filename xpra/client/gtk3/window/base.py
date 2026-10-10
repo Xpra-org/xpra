@@ -1725,6 +1725,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         ay = y - (oy - ry)
         geomlog("window origin=%ix%i, root origin=%ix%i, actual position=%ix%i", ox, oy, rx, ry, ax, ay)
         # validate against edge of screen (ensure window is shown):
+        # note: some window managers apply their own, stricter constraints to application-initiated moves,
+        # ie: muffin and mutter shove the window fully onscreen - even with `_NET_MOVERESIZE_WINDOW`
+        # and a pager source indication, only user-initiated moves are allowed to leave a window partially offscreen,
+        # so with `sharing=combine`, a window overlapping this client's area may end up at the edge of the screen instead
         if CLAMP_WINDOW_TO_SCREEN:
             display = self._client.get_subsystem("display")
             mw, mh = display.get_root_size() if display else (0, 0)
