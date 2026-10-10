@@ -286,6 +286,36 @@ class TrayMenuTest(unittest.TestCase):
         self.assertEqual(audio.calls, ["start"])
         self.assertTrue(items[0].get_active())
 
+    def test_send_keys_menu(self):
+        from xpra.client.gtk3 import tray_menu
+
+        sent = []
+        keyboard = SimpleNamespace(send_key_sequence=sent.append)
+        helper = object.__new__(tray_menu.GTKTrayMenu)
+        helper.client = SimpleNamespace(readonly=False, get_subsystem=lambda name: keyboard if name == "keyboard" else None)
+
+        def menuitem(title, _icon_name="", _tooltip="", cb=None):
+            item = FakeMenuItem(title)
+            item.connect("activate", lambda *_args: cb())
+            return item
+
+        helper.menuitem = menuitem
+        fake_gtk = SimpleNamespace(Menu=FakeMenu, SeparatorMenuItem=FakeMenuItem)
+        with patch.object(tray_menu, "Gtk", fake_gtk):
+            cab = helper.make_cabmenuitem()
+            send = helper.make_sendkeysmenuitem()
+        self.assertEqual(cab.get_label(), "Send Control-Alt-Backspace")
+        cab.activate()
+        self.assertEqual(sent, [("Control_L", "Alt_L", "BackSpace")])
+        items = send.get_submenu().get_children()
+        labels = [x.get_label() for x in items]
+        self.assertEqual(labels[:13], [f"Control-Alt-F{i}" for i in range(1, 13)] + [""])
+        self.assertIn("Alt-Tab", labels)
+        sent.clear()
+        items[6].activate()
+        items[labels.index("Alt-Tab")].activate()
+        self.assertEqual(sent, [("Control_L", "Alt_L", "F7"), ("Alt_L", "Tab")])
+
 
 def main():
     unittest.main()

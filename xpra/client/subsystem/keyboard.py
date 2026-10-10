@@ -237,9 +237,6 @@ class KeyboardClient(StubClientSubsystem):
             if mod in modifiers:
                 modifiers.remove(mod)
 
-    def send_control_alt_delete(self) -> None:
-        self.send_key_sequence(("Control_L", "Alt_L", "Delete"))
-
     def mask_to_names(self, mask) -> list[str]:
         if self.helper is None:
             return []

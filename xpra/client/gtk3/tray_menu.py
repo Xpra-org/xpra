@@ -69,6 +69,25 @@ FULL_LAYOUT_LIST = envbool("XPRA_FULL_LAYOUT_LIST", True)
 NEW_MONITOR_RESOLUTIONS = os.environ.get("XPRA_NEW_MONITOR_RESOLUTIONS",
                                          "640x480,1024x768,1600x1200,FHD,4K").split(",")
 
+# key combinations which are normally intercepted by the local OS, desktop environment or window manager,
+# so the user cannot type them into a remote session:
+SEND_KEY_SEQUENCES: Sequence[tuple[str, Sequence[str]]] = tuple(
+    (f"Control-Alt-F{i}", ("Control_L", "Alt_L", f"F{i}")) for i in range(1, 13)
+) + (
+    ("", ()),
+    ("Alt-Tab", ("Alt_L", "Tab")),
+    ("Alt-Shift-Tab", ("Alt_L", "Shift_L", "Tab")),
+    ("Alt-Escape", ("Alt_L", "Escape")),
+    ("Alt-Space", ("Alt_L", "space")),
+    ("Alt-F2", ("Alt_L", "F2")),
+    ("Alt-F4", ("Alt_L", "F4")),
+    ("Control-Escape", ("Control_L", "Escape")),
+    ("Control-Shift-Escape", ("Control_L", "Shift_L", "Escape")),
+    ("Super", ("Super_L", )),
+    ("Print", ("Print", )),
+    ("Alt-Print", ("Alt_L", "Print")),
+)
+
 
 def start_menu_checksum(menu_data: dict) -> str:
     h = hashlib.sha256()
@@ -668,17 +687,37 @@ class GTKTrayMenu(GTKMenuHelper):
         return self.menuitem(_("View Shortcuts"), tooltip=_("Show all active keyboard shortcuts"),
                              cb=self.client.show_shortcuts)
 
-    def make_cadmenuitem(self) -> Gtk.ImageMenuItem:
-        def send_cad() -> None:
+    def make_keysequencemenuitem(self, combo: str, keynames: Sequence[str], title="", icon_name="") -> Gtk.ImageMenuItem:
+        def send_keys() -> None:
             keyboard = self.get_subsystem("keyboard")
             if keyboard:
-                keyboard.send_control_alt_delete()
+                keyboard.send_key_sequence(keynames)
 
-        cad = self.menuitem(_("Send Control-Alt-Delete"), "keyboard.png", cb=send_cad)
-        sens_tooltip(cad, not self.client.readonly,
-                     _("Send the Control-Alt-Delete key sequence to the server"),
+        item = self.menuitem(title or combo, icon_name, cb=send_keys)
+        sens_tooltip(item, not self.client.readonly,
+                     _("Send the %s key sequence to the server") % combo,
                      _("Connection is read-only"))
-        return cad
+        return item
+
+    def make_cadmenuitem(self) -> Gtk.ImageMenuItem:
+        return self.make_keysequencemenuitem("Control-Alt-Delete", ("Control_L", "Alt_L", "Delete"),
+                                             _("Send Control-Alt-Delete"), "keyboard.png")
+
+    def make_cabmenuitem(self) -> Gtk.ImageMenuItem:
+        return self.make_keysequencemenuitem("Control-Alt-Backspace", ("Control_L", "Alt_L", "BackSpace"),
+                                             _("Send Control-Alt-Backspace"), "keyboard.png")
+
+    def make_sendkeysmenuitem(self) -> Gtk.ImageMenuItem:
+        send = self.menuitem(_("Send"), "keyboard.png", _("Send key combinations which are intercepted locally"))
+        menu = Gtk.Menu()
+        for title, keynames in SEND_KEY_SEQUENCES:
+            if not keynames:
+                menu.append(Gtk.SeparatorMenuItem())
+                continue
+            menu.append(self.make_keysequencemenuitem(title, keynames))
+        send.set_submenu(menu)
+        set_sensitive(send, not self.client.readonly)
+        return send
 
     def make_openglmenuitem(self) -> Gtk.ImageMenuItem:
         gl = checkitem(_("OpenGL"))
@@ -1463,6 +1502,8 @@ class GTKTrayMenu(GTKMenuHelper):
             menu.append(self.make_layoutsmenuitem())
             if KEYBOARD_CAD:
                 menu.append(self.make_cadmenuitem())
+                menu.append(self.make_cabmenuitem())
+                menu.append(self.make_sendkeysmenuitem())
             menu.show_all()
         self.later(populate_keyboardmenu)
         keyboard_menu_item.show_all()
