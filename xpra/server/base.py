@@ -308,9 +308,6 @@ class ServerBase(ServerBaseClass):
             log.warn(f" in the Xpra server session {server_uuid!r}")
         return True
 
-    def update_all_server_settings(self, reset: bool = False) -> None:
-        pass  # may be overridden in subclasses (ie: x11 server)
-
     ######################################################################
     # hello:
     def get_server_features(self, server_source=None) -> dict[str, Any]:
