@@ -1,10 +1,11 @@
 # Changelog
 
-## [6.5.5] 2026-10-03
+## [6.5.5] 2026-10-11
 * 🔧 Platforms, build and packaging:
   * [Debian dropped clang-19](https://github.com/Xpra-org/xpra/commit/24ef1341455d09e480aa8a2d1870ad606ac8c31f)
   * [verify deb packages before copying to the repo](https://github.com/Xpra-org/xpra/commit/118b9c5765face2402f6b902c7143ace59c3b5e7)
   * [remove `openat2` qemu workarounds](https://github.com/Xpra-org/xpra/commit/faabc0ad06d78c68ee8b1986d67d1ad6e0133229)
+  * [missing RPM dependencies for cairo](https://github.com/Xpra-org/xpra/commit/8d6e87d430a613b8c3b00b629f87b800f43168cd)
 * macOS notarization and build fixes:
   * [missing entry point](https://github.com/Xpra-org/xpra/commit/697c9fb59cbe3bcd1e19e3c656838389484841d3) [and helper](https://github.com/Xpra-org/xpra/commit/537466d0776ac556a16b2afab9a95ada6dacf5b0) [and command path for light builds](https://github.com/Xpra-org/xpra/commit/efe215e50a203fb9d83e0c027d52eb306d2f26f8)
   * [codesign for light builds](https://github.com/Xpra-org/xpra/commit/65b29c29b5f93cf9711ad2fe93ff263ec233f359)
@@ -12,7 +13,18 @@
 * Major:
   * [drag-and-drop can get wedged and stop working](https://github.com/Xpra-org/xpra/commit/8a44a186c700bbd83848c61bc98e35883dc5325d)
   * [scroll event regression introduced in 6.5.4](https://github.com/Xpra-org/xpra/commit/478e7aecb1d2fcf4c2e1817a12fd0a672a1a4060)
+  * [don't let the child reaper turn a failed exec auth into a success](https://github.com/Xpra-org/xpra/commit/f8a235474a23f10aebc713c48bff37125c825ec6)
+  * [don't crash if `dbus-deamon` cannot be started](https://github.com/Xpra-org/xpra/commit/885ffb55ac24bcb61b5c30dfb17ebf7e6bf6e6ba)
+  * [don't load X11 bindings under Wayland](https://github.com/Xpra-org/xpra/commit/a3e15b03d19d575783a6b0637c3330108d3f4d69)
+  * [session sharing can cause threading issues](https://github.com/Xpra-org/xpra/commit/f62938bac97797d56b0dea1437956cd28e8c8a3b)
+  * [acknowledge pending window damage correctly on connection cleanup](https://github.com/Xpra-org/xpra/commit/b371196308d65dc2acd04c9337b2047609db36a5)
+  * [workaround window managers that don't deiconify windows](https://github.com/Xpra-org/xpra/commit/37f3094f8fb3cee938ee243970f872ddf94bb0b9)
+  * [desktop scaling misplaces relative windows](https://github.com/Xpra-org/xpra/commit/bab9c00bd7c1fc3c3497493efe9ae6ce267aad8d)
+  * [XSETTINGS / DPI fix](https://github.com/Xpra-org/xpra/commit/4550fa29f754283cd48fe04153585290edebe051)
+* Keyboard:
   * [keyboard layout group sticks](https://github.com/Xpra-org/xpra/commit/27072b9e6ce0cc486c95364c6c362a696fdb8368)
+  * [aliased key name levels](https://github.com/Xpra-org/xpra/commit/cb467eb0b3a9c038184090d7f6e2c9c807080300)
+  * [map missing keysyms](https://github.com/Xpra-org/xpra/commit/ebfee420cf9260b8b17a1656ec14f51bbed0d89e) [without removing others](https://github.com/Xpra-org/xpra/commit/fb8374d1da3d0af0af6a61eaa6d4bf18c8a5a879)
 * SSL:
   * [ssl upgrade must override defaults](https://github.com/Xpra-org/xpra/commit/332f7a26a2a4700a30153737f8a2536e5823ecbf)
   * [ssl upgrade failed](https://github.com/Xpra-org/xpra/commit/df2d7168e3b0fadd842d35483c4dea09b1b962c3)
@@ -25,6 +37,8 @@
   * [fail the SSL handshake when the peer closes the connection](https://github.com/Xpra-org/xpra/commit/87d8af6136605fdd0b1ea8876c48fd01c9c153e2)
   * [close the ssl connection when the server side handshake fails](https://github.com/Xpra-org/xpra/commit/3ac843c21fb4125ab4f80c21ea4dca607dc7439c)
   * [don't confuse peek vs ssl peek data](https://github.com/Xpra-org/xpra/commit/26e2c306f706689c8a7ca3fc8318e6fe28c49df3)
+  * [handle connection closure during the client SSL upgrade](https://github.com/Xpra-org/xpra/commit/d6ea044f2fa0fc1cb9f385026c80d6469b941c00)
+  * [exit cleanly when the client SSL upgrade fails](https://github.com/Xpra-org/xpra/commit/e9ca6a33dc383774b6b6afb9ff173027eb6903e1)
 * 🖧 Network:
   * [exceptions may not have arguments](https://github.com/Xpra-org/xpra/commit/3595721814bf2a9d2fbab8fb8ec4f957a7cb1687)
   * [don't block forever on a websocket upgrade that never completes](https://github.com/Xpra-org/xpra/commit/7d8ffbcb2c9d25b4c6f75252e44195e98aa65afb)
@@ -39,6 +53,7 @@
   * [fix default HTTP headers directory for WebSocket errors](https://github.com/Xpra-org/xpra/commit/926dd54a709dc816c423f3a077e7c179e9c53cb9)
   * [proxied connections failed](https://github.com/Xpra-org/xpra/commit/5d025b257e183a0535ef2b0853ff40e4d585ee1b)
   * [socket leaks when the proxy connection fails](https://github.com/Xpra-org/xpra/commit/25c7bb50fa6b0e245e8dfadb1383df6f7b9596c3)
+  * [don't forward the ssh agent on MS Windows](https://github.com/Xpra-org/xpra/commit/098088d7ef067caa9d5ebefc2616c454f3c2b98b)
 * 📋 Clipboard:
   * [fail the requests waiting on an incremental transfer which times out](https://github.com/Xpra-org/xpra/commit/a276f0a7b3d8608b30f3b5d230b8b638429013d5)
   * [give incremental transfers longer than `CONVERT_TIMEOUT` to complete](https://github.com/Xpra-org/xpra/commit/7a2c5555960f2aa7e8ec4c9b558c00bdc90bec2e)
@@ -47,6 +62,8 @@
   * [test all selections](https://github.com/Xpra-org/xpra/commit/6d6c73d011a8e9432571fad3e01598d53dd2e312)
   * [detailed test errors](https://github.com/Xpra-org/xpra/commit/02a509f76440bdfb19dae2651cde1da7363dabf5)
   * [honour debugging flag in tests](https://github.com/Xpra-org/xpra/commit/51b0e55076a6d3b204cdaabd4d0f9bee88585779)
+  * [the gtk client can use the X11 bindings when running on an X11 display](https://github.com/Xpra-org/xpra/commit/d0611589990fa906ecc2fae489a12f576552404f)
+  * [the GTK clipboard must always be greedy](https://github.com/Xpra-org/xpra/commit/37e52ba9ce9df209c9e75b7f66d92922e4db2b52)
 * Minor:
   * [apply the new DPI before resizing the display](https://github.com/Xpra-org/xpra/commit/6c7ecab30de3db2598105007b8ba795ceeb12fdf)
   * [don't leave `_NET_ACTIVE_WINDOW` pointing at a window that is gone](https://github.com/Xpra-org/xpra/commit/8d15e1033e8edd3962692288c7abd4dbccc43927)
@@ -57,6 +74,13 @@
   * [prevent UI thread watcher race conditions](https://github.com/Xpra-org/xpra/commit/51db034cb289a0459a994cc528b119922d8abe5e)
   * [missing lz4 flag could cause errors](https://github.com/Xpra-org/xpra/commit/6427153b9238b940806d73a71bd9513d6e914aac)
   * [out of bounds access when comparing monitor configurations](https://github.com/Xpra-org/xpra/commit/e961a8158809538e63c637d00c03847e2dd27725)
+  * [don't add resolutions to real GPUs](https://github.com/Xpra-org/xpra/commit/eef258311579c34f90b5bc7e82f5216b8fb7e8f1)
+  * [don't create a second dbus machine-id](https://github.com/Xpra-org/xpra/commit/e2af6496fe5bdc2404404d033cf645a29efb4b73)
+  * [a read-only filesystem is not writable](https://github.com/Xpra-org/xpra/commit/24546e340150f84477f2cfd3b812e92f547fb3ea)
+  * [don't busy wait for X11 server](https://github.com/Xpra-org/xpra/commit/2e100eb21d93331d5ae5d47ee5881237e41bd4fa)
+  * [server window model not updating workspace value](https://github.com/Xpra-org/xpra/commit/b9429ae3882cb2326cd81f0a373f9907e307e89b)
+  * [missing window border when window is in alert state](https://github.com/Xpra-org/xpra/commit/2343928c84d976d877b601a3915213ff48cf8d89)
+  * [border painted at an offset when sharing the session](https://github.com/Xpra-org/xpra/commit/6506090c2c5f097aac9af8e266b9d93a7c6e4e3a)
 * 💄 Cosmetic:
   * [Gtk clipboard logs errors on timeouts](https://github.com/Xpra-org/xpra/commit/5fcc434208a2c2ed433f520700cd0e21825b8556)
   * [geometry debug logging can cause errors](https://github.com/Xpra-org/xpra/commit/29ffb97f43a17615ec5b5d399ae4f4bb8c28eec4)
@@ -64,6 +88,7 @@
   * [indentation](https://github.com/Xpra-org/xpra/commit/395feb8924916e9cddb9a2ed59bb27dd650393a4)
   * [share the refresh-rate convertion](https://github.com/Xpra-org/xpra/commit/a311a7e9c4e0e3d8baf83c7cc27e50325983bed6)
   * [document limitations of cert data authenticity with older Python versions](https://github.com/Xpra-org/xpra/commit/116b361b38db11800889b0fb7f3328ba43ab656c)
+  * [don't warn about power events when there is no system bus](https://github.com/Xpra-org/xpra/commit/30770564fa96312cd2619cb34e9f7d1ce7750f05)
 
 ## [6.5.4] 2026-09-27
 * 🔧 Platforms, build and packaging:
