@@ -28,9 +28,9 @@ SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 # keep the XSETTINGS of the last client when it disconnects (ie: so that applications which follow `Xft/DPI`,
 # like Chrome, do not re-layout to their startup DPI and back every time a client reconnects):
 RESET_ON_LAST_CLIENT = envbool("XPRA_XSETTINGS_RESET_ON_LAST_CLIENT", True)
-# set to 0 to not write the default (often empty) settings first: the new values are written afterwards,
+# don't write the default (often empty) settings first: the new values are written afterwards,
 # and two property changes make clients that follow XSETTINGS apply both (ie: Chrome re-layouts twice)
-RESET_BEFORE_UPDATE = envbool("XPRA_XSETTINGS_RESET_BEFORE_UPDATE", True)
+RESET_BEFORE_UPDATE = envbool("XPRA_XSETTINGS_RESET_BEFORE_UPDATE", False)
 
 
 def _get_antialias_hintstyle(antialias: typedict) -> str:
