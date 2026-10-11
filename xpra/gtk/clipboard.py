@@ -14,7 +14,6 @@ from xpra.os_util import gi_import
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envint
 from xpra.log import Logger
-from xpra.util.system import is_Wayland
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -29,7 +28,9 @@ class GTK_Clipboard(ClipboardTimeoutHelper):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.local_greedy |= is_Wayland()
+        # `got_token` can only take ownership of a selection by setting its contents,
+        # so we need the peer to send them with the token - whatever the display backend:
+        self.local_greedy = True
 
     def __repr__(self):
         return "GTK_Clipboard"
