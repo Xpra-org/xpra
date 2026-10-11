@@ -14,6 +14,7 @@ background query threads are patched out and a mock sink is used).
 """
 
 import unittest
+from time import monotonic
 from unittest.mock import patch, MagicMock
 
 from xpra.util.objects import AdHocStruct, typedict
@@ -106,6 +107,13 @@ class AudioLoopbackTest(LoopbackTest):
         self.assertNotIn((AUDIO_SIGNAL_PACKET, True), self.s2c)
 
         client.send("audio-capabilities", {"level": True, "signal": True})
+        # still nothing until our hello has been sent, the client has no handlers yet:
+        source.send_audio_level(level)
+        source.send_audio_signal(True)
+        self.assertNotIn((AUDIO_LEVEL_PACKET, level), self.s2c)
+        self.assertNotIn((AUDIO_SIGNAL_PACKET, True), self.s2c)
+
+        source.hello_sent = monotonic()
         source.send_audio_level(level)
         source.send_audio_signal(True)
         self.assertIn((AUDIO_LEVEL_PACKET, level), self.s2c)
