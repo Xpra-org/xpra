@@ -7,8 +7,8 @@ import os
 from typing import Any
 
 from xpra.net.common import Packet
-from xpra.common import noop
 from xpra.server.common import get_sources_by_type
+from xpra.server.source.display import DisplayConnection
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr, strtobytes
 from xpra.util.parsing import str_to_bool
@@ -26,6 +26,12 @@ BLOCKLISTED_XSETTINGS: list[str] = os.environ.get(
     "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule"
 ).split(",")
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
+# keep the XSETTINGS of the last client when it disconnects (ie: so that applications which follow `Xft/DPI`,
+# like Chrome, do not re-layout to their startup DPI and back every time a client reconnects):
+RESET_ON_LAST_CLIENT = envbool("XPRA_XSETTINGS_RESET_ON_LAST_CLIENT", True)
+# don't write the default (often empty) settings first: the new values are written afterwards,
+# and two property changes make clients that follow XSETTINGS apply both (ie: Chrome re-layouts twice)
+RESET_BEFORE_UPDATE = envbool("XPRA_XSETTINGS_RESET_BEFORE_UPDATE", False)
 
 
 def _get_antialias_hintstyle(antialias: typedict) -> str:
@@ -68,7 +74,8 @@ class XSettingsServer(StubServerMixin):
             self.init_all_server_settings()
 
     def last_client_exited(self) -> None:
-        self.reset_settings()
+        if RESET_ON_LAST_CLIENT:
+            self.reset_settings()
 
     def get_caps(self, _source) -> dict[str, Any]:
         return {}
@@ -113,8 +120,9 @@ class XSettingsServer(StubServerMixin):
             }, reset=True, dpi=self.default_dpi, cursor_size=24)
 
     def add_new_client(self, ss, c: typedict) -> None:
-        share_count = getattr(self, "get_ui_sharing_count", noop)(ss) or 0
-        self.update_all_server_settings(share_count == 0)  # if we're not sharing, reset all the settings
+        # if we're not sharing, reset all the settings:
+        share_count = len(get_sources_by_type(self, DisplayConnection, ss))
+        self.update_all_server_settings(share_count == 0)
 
     def update_all_server_settings(self, reset=False) -> None:
         self.update_server_settings(
@@ -143,7 +151,8 @@ class XSettingsServer(StubServerMixin):
             return
         if reset:
             # FIXME: preserve serial? (what happens when we change values which had the same serial?)
-            self.reset_settings()
+            if RESET_BEFORE_UPDATE:
+                self.reset_settings()
             self._settings = {}
             if self._default_xsettings:
                 # try to parse default xsettings into a dict:
