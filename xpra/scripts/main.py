@@ -1893,12 +1893,20 @@ def harden_client_process() -> None:
     # the launcher can create more than one client in the same process,
     # the process only needs to be hardened once:
     global client_hardened
-    if not WIN32 or client_hardened:
+    if client_hardened:
         return
-    client_hardened = True
-    # best effort: the mitigation policies log their own warnings and never raise
-    from xpra.platform.win32.security import harden_process
-    harden_process()
+    if WIN32:
+        client_hardened = True
+        # best effort: the mitigation policies log their own warnings and never raise
+        from xpra.platform.win32.security import harden_process
+        harden_process()
+    elif OSX:
+        client_hardened = True
+        from xpra.platform.darwin.security import harden_process
+        try:
+            harden_process()
+        except OSError as e:
+            warn(f"Warning: failed to harden the client process: {e}")
 
 
 def make_client(opts):
