@@ -25,6 +25,7 @@ from xpra.net.bytestreams import SOCKET_TIMEOUT
 from xpra.exit_codes import ExitCode
 from xpra.util.io import stderr_print, umask_context
 from xpra.common import noerr
+from xpra.os_util import WIN32
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, envfloat, first_time
 from xpra.log import Logger
@@ -61,8 +62,10 @@ EXEC_STDERR_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDERR_TIMEOUT", 0)
 MSYS_DEFAULT_PATH = os.environ.get("XPRA_MSYS_DEFAULT_PATH", "/mingw64/bin/xpra")
 CYGWIN_DEFAULT_PATH = os.environ.get("XPRA_CYGWIN_DEFAULT_PATH", "/cygdrive/c/Program Files/Xpra/Xpra_cmd.exe")
 DEFAULT_WIN32_INSTALL_PATH = "C:\\Program Files\\Xpra"
-WIN_OPENSSH_AGENT = envbool("XPRA_WIN_OPENSSH_AGENT", False)
-WIN_OPENSSH_AGENT_MODULE = "win_openssh.OpenSSHAgentConnection"
+# paramiko's `AgentProxyThread` cannot relay agent requests on MS Windows:
+# the pageant and openssh agent connections have no `fileno`, and it uses `fcntl` and `select`,
+# so the remote agent requests would just hang, see #4353
+WIN32_AGENT_FORWARDING = envbool("XPRA_SSH_WIN32_AGENT_FORWARDING", False)
 
 PARAMIKO_SESSION_LOST = "No existing session"
 
@@ -1071,11 +1074,9 @@ class ChannelRunFactory:
             raise InitExit(ExitCode.SSH_FAILURE, f"failed to open SSH session: {e}") from None
         agent_option = str(self.paramiko_config.get("agent", SSH_AGENT)) or "no"
         log(f"paramiko {agent_option=}")
-        if agent_option.lower() in TRUE_OPTIONS:
-            if not WIN_OPENSSH_AGENT and WIN_OPENSSH_AGENT_MODULE not in sys.modules:
-                log(f"preventing {WIN_OPENSSH_AGENT_MODULE!r} from loading")
-                # noinspection PyTypeChecker
-                sys.modules[WIN_OPENSSH_AGENT_MODULE] = None
+        if agent_option.lower() in TRUE_OPTIONS and WIN32 and not WIN32_AGENT_FORWARDING:
+            log.info("paramiko SSH agent forwarding is not supported on MS Windows")
+        elif agent_option.lower() in TRUE_OPTIONS:
             log.info("paramiko SSH agent forwarding enabled")
             from paramiko.agent import AgentRequestHandler
             AgentRequestHandler(chan)
