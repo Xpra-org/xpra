@@ -9,7 +9,7 @@ from __future__ import annotations
 import sys
 from ctypes import (  # @UnresolvedImport
     WinDLL, Structure, POINTER, byref, sizeof, cast, get_last_error, create_unicode_buffer,
-    create_string_buffer, c_int, c_int64, c_size_t, c_uint32, c_uint64,
+    create_string_buffer, c_int, c_uint32,
 )
 from ctypes.wintypes import BOOL, DWORD, HANDLE, LPVOID, LPCWSTR, LPWSTR, LONG
 
@@ -46,15 +46,9 @@ LOGON_PRIVILEGES: frozenset[str] = frozenset({
     "SeImpersonatePrivilege",
 })
 
-JobObjectBasicUIRestrictions = 4
-JobObjectExtendedLimitInformation = 9
-JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK = 0x00001000
-JOB_OBJECT_UILIMIT_DISPLAYSETTINGS = 0x00000010
-JOB_OBJECT_UILIMIT_DESKTOP = 0x00000040
-JOB_OBJECT_UILIMIT_EXITWINDOWS = 0x00000080
-# only APIs which xpra never calls: `CreateDesktop`, `SwitchDesktop`, `ChangeDisplaySettings` and `ExitWindows`.
-# The clipboard, global atoms, `SystemParametersInfo` and foreign USER handles are all in use.
-JOB_UI_LIMITS = JOB_OBJECT_UILIMIT_DESKTOP | JOB_OBJECT_UILIMIT_DISPLAYSETTINGS | JOB_OBJECT_UILIMIT_EXITWINDOWS
+# There is no job object with UI restrictions:
+# any `JOB_OBJECT_UILIMIT_*` flag, even an unrelated one like `JOB_OBJECT_UILIMIT_EXITWINDOWS`,
+# makes `GetClipboardData` return `NULL` for data owned by processes outside the job.
 
 
 # noinspection PyTypeChecker
@@ -100,44 +94,6 @@ def token_privileges_struct(count: int):
     return TOKEN_PRIVILEGES
 
 
-class JOBOBJECT_BASIC_UI_RESTRICTIONS(Structure):
-    _fields_ = [
-        ("UIRestrictionsClass", DWORD),
-    ]
-
-
-class JOBOBJECT_BASIC_LIMIT_INFORMATION(Structure):
-    _fields_ = [
-        ("PerProcessUserTimeLimit", c_int64),
-        ("PerJobUserTimeLimit", c_int64),
-        ("LimitFlags", DWORD),
-        ("MinimumWorkingSetSize", c_size_t),
-        ("MaximumWorkingSetSize", c_size_t),
-        ("ActiveProcessLimit", DWORD),
-        ("Affinity", c_size_t),
-        ("PriorityClass", DWORD),
-        ("SchedulingClass", DWORD),
-    ]
-
-
-class IO_COUNTERS(Structure):
-    _fields_ = [(name, c_uint64) for name in (
-        "ReadOperationCount", "WriteOperationCount", "OtherOperationCount",
-        "ReadTransferCount", "WriteTransferCount", "OtherTransferCount",
-    )]
-
-
-class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(Structure):
-    _fields_ = [
-        ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
-        ("IoInfo", IO_COUNTERS),
-        ("ProcessMemoryLimit", c_size_t),
-        ("JobMemoryLimit", c_size_t),
-        ("PeakProcessMemoryUsed", c_size_t),
-        ("PeakJobMemoryUsed", c_size_t),
-    ]
-
-
 kernel32 = WinDLL("kernel32", use_last_error=True)
 advapi32 = WinDLL("advapi32", use_last_error=True)
 
@@ -148,18 +104,6 @@ GetCurrentProcess.restype = HANDLE
 CloseHandle = kernel32.CloseHandle
 CloseHandle.argtypes = [HANDLE]
 CloseHandle.restype = BOOL
-
-CreateJobObjectW = kernel32.CreateJobObjectW
-CreateJobObjectW.argtypes = [LPVOID, LPCWSTR]
-CreateJobObjectW.restype = HANDLE
-
-SetInformationJobObject = kernel32.SetInformationJobObject
-SetInformationJobObject.argtypes = [HANDLE, c_int, LPVOID, DWORD]
-SetInformationJobObject.restype = BOOL
-
-AssignProcessToJobObject = kernel32.AssignProcessToJobObject
-AssignProcessToJobObject.argtypes = [HANDLE, HANDLE]
-AssignProcessToJobObject.restype = BOOL
 
 OpenProcessToken = advapi32.OpenProcessToken
 OpenProcessToken.argtypes = [HANDLE, DWORD, POINTER(HANDLE)]
@@ -298,40 +242,10 @@ def remove_privileges(keep: frozenset[str] = KEEP_PRIVILEGES) -> list[str]:
         CloseHandle(token)
 
 
-def restrict_job(ui_limits: int = JOB_UI_LIMITS) -> bool:
-    """
-    Assign this process to a new job object which prevents it from using the `ui_limits` APIs.
-
-    A process cannot leave a job, so the restrictions are permanent.
-    Child processes silently break away from the job:
-    the commands started by the server are the user's applications,
-    and they must not inherit these restrictions.
-    """
-    job = CreateJobObjectW(None, None)
-    if not job:
-        log.warn("Warning: failed to create a job object")
-        log.warn(" error %i", get_last_error())
-        return False
-    limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
-    limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK
-    ui = JOBOBJECT_BASIC_UI_RESTRICTIONS(ui_limits)
-    if not SetInformationJobObject(job, JobObjectExtendedLimitInformation, byref(limits), sizeof(limits)) \
-            or not SetInformationJobObject(job, JobObjectBasicUIRestrictions, byref(ui), sizeof(ui)) \
-            or not AssignProcessToJobObject(job, GetCurrentProcess()):
-        log.warn("Warning: failed to restrict the process with a job object")
-        log.warn(" error %i", get_last_error())
-        CloseHandle(job)
-        return False
-    # the job handle is not closed: the job lives for as long as this process anyway
-    log("process assigned to a job object with UI limits %#x", ui_limits)
-    return True
-
-
 def harden_process() -> None:
     """Apply Xpra's process mitigation policies. Failures are not fatal."""
     restrict_dll_directories()
     restrict_image_loads()
     remove_privileges()
-    restrict_job()
     if envbool("XPRA_WIN32_DISABLE_EXTENSION_POINTS", False):
         disable_extension_points()

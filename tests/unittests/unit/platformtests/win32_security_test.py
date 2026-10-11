@@ -18,33 +18,48 @@ WIN32 = sys.platform.startswith("win")
 
 # runs in the hardened subprocess, prints a json dict:
 HARDENED = """
-import json, subprocess, sys
-from ctypes import byref, sizeof
+import json
+from ctypes import byref
 from ctypes.wintypes import HANDLE
 from xpra.platform.win32 import security as s
 removed = s.remove_privileges()
-job = s.restrict_job()
 token = HANDLE()
 assert s.OpenProcessToken(s.GetCurrentProcess(), s.TOKEN_QUERY, byref(token))
 privileges = s.get_token_privileges(token)
 remaining = [s.get_privilege_name(p.Luid) for p in privileges.Privileges]
-child = subprocess.run([sys.executable, "-c", sys.argv[1]], capture_output=True, text=True, check=True)
 print(json.dumps({
     "removed": removed,
     "remaining": remaining,
-    "job": job,
-    "child-ui-limits": int(child.stdout),
 }))
 """
 
-# prints the UI restrictions of the job this process belongs to, if any:
-UI_LIMITS = """
-from ctypes import WinDLL, byref, sizeof
-from ctypes.wintypes import DWORD
+# reads the clipboard text, without modifying the clipboard:
+READ_CLIPBOARD = """
+import sys
+from ctypes import WinDLL, c_void_p, c_wchar_p, cast
+from ctypes.wintypes import BOOL, HANDLE, HWND, UINT
+if sys.argv[1:] == ["harden"]:
+    from xpra.platform.win32.security import harden_process
+    harden_process()
+user32 = WinDLL("user32")
 kernel32 = WinDLL("kernel32")
-limits = DWORD(0)
-kernel32.QueryInformationJobObject(None, 4, byref(limits), sizeof(limits), None)
-print(limits.value)
+user32.OpenClipboard.argtypes = [HWND]
+user32.OpenClipboard.restype = BOOL
+user32.GetClipboardData.argtypes = [UINT]
+user32.GetClipboardData.restype = HANDLE
+kernel32.GlobalLock.argtypes = [HANDLE]
+kernel32.GlobalLock.restype = c_void_p
+kernel32.GlobalUnlock.argtypes = [HANDLE]
+text = None
+if user32.OpenClipboard(None):
+    try:
+        data = user32.GetClipboardData(13)  # CF_UNICODETEXT
+        if data:
+            text = cast(kernel32.GlobalLock(data), c_wchar_p).value
+            kernel32.GlobalUnlock(data)
+    finally:
+        user32.CloseClipboard()
+print(len(text) if text is not None else -1)
 """
 
 
@@ -58,25 +73,20 @@ def run_python(*args) -> str:
 @unittest.skipUnless(WIN32, "win32 only")
 class Win32SecurityTest(unittest.TestCase):
 
-    def test_harden(self):
+    def test_remove_privileges(self):
         from xpra.platform.win32.security import KEEP_PRIVILEGES, LOGON_PRIVILEGES
-        parent_limits = int(run_python(UI_LIMITS))
-        result = json.loads(run_python(HARDENED, UI_LIMITS))
+        result = json.loads(run_python(HARDENED))
         keep = KEEP_PRIVILEGES
         if "SeTcbPrivilege" in result["remaining"]:
             keep |= LOGON_PRIVILEGES
         self.assertTrue(set(result["remaining"]) <= keep, f"unexpected privileges: {result['remaining']}")
         self.assertIn("SeChangeNotifyPrivilege", result["remaining"])
         self.assertFalse(set(result["removed"]) & set(result["remaining"]))
-        self.assertTrue(result["job"])
-        # child processes must not inherit our job restrictions:
-        self.assertEqual(result["child-ui-limits"], parent_limits)
 
-    def test_ui_limits(self):
-        from xpra.platform.win32.security import JOB_UI_LIMITS
-        code = "from xpra.platform.win32.security import restrict_job; assert restrict_job()\n" + UI_LIMITS
-        limits = int(run_python(code))
-        self.assertEqual(limits & JOB_UI_LIMITS, JOB_UI_LIMITS)
+    def test_clipboard_access(self):
+        # the clipboard data owned by other processes must remain readable:
+        # (a job object with UI restrictions breaks this)
+        self.assertEqual(run_python(READ_CLIPBOARD, "harden"), run_python(READ_CLIPBOARD))
 
     def test_harden_process(self):
         # the whole sequence, including the opt-in policy, must not fail or crash:
