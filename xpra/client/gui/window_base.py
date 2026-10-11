@@ -8,7 +8,7 @@
 import os
 import re
 from typing import Any, Final
-from collections.abc import Callable, MutableSequence
+from collections.abc import Callable, MutableSequence, Sequence
 
 from xpra.os_util import OSX, WIN32
 from xpra.client.gui.widget_base import ClientWidgetBase
@@ -377,6 +377,13 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_metadata(metadata)
         except RuntimeError:
             metalog.warn("failed to set window metadata to '%s'", metadata, exc_info=True)
+        # the initial value is resolved when the window is created,
+        # only an update means that the server has moved the window relative to its parent:
+        if "relative-position" in metadata:
+            self.apply_relative_position(metadata.inttupleget("relative-position"))
+
+    def apply_relative_position(self, rel_pos: Sequence[int]) -> None:
+        """ the windows that can follow their parent override this """
 
     def _get_window_title(self, metadata: typedict) -> str:
         try:

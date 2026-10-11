@@ -1489,6 +1489,24 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         log("update_relative_position() relative position of %s from %s is %s, follow position=%s",
             self._pos, fpos, rel_pos, self._follow_position)
 
+    def apply_relative_position(self, rel_pos: Sequence[int]) -> None:
+        # the server has moved this window relative to its parent (ie: a Wayland `xdg_popup` reposition),
+        # resolve it against where the parent is on our side, just like when the window was created,
+        # so this also works for nested popups: the parent's position already includes its own offset
+        parent = self._client.find_window(self._metadata, "parent")
+        ppos: tuple[int, int] | None = getattr(parent, "_pos", None)
+        geomlog("apply_relative_position(%s) parent=%s, parent position=%s", rel_pos, parent, ppos)
+        if len(rel_pos) != 2 or not ppos:
+            return
+        px, py = parent.sp(*rel_pos)
+        x, y = ppos[0] + px, ppos[1] + py
+        if self._follow is parent:
+            self._follow_position = tuple(rel_pos)
+            # don't recalculate the follow position from the configure event this move causes:
+            self._follow_configure = monotonic(), (x, y)
+        if self.get_position() != (x, y):
+            self.move(x, y)
+
     def may_send_client_properties(self) -> None:
         # if there are client properties the server should know about,
         # we currently have no other way to send them to the server:
