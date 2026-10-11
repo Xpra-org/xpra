@@ -265,6 +265,33 @@ def start_fake_win32_agent() -> list[int]:
     return requests
 
 
+SSH_AGENT_FAILURE_REPLY = bytes([0, 0, 0, 1, 5])
+NO_IDENTITIES_REPLY = bytes([0, 0, 0, 5, 12, 0, 0, 0, 0])
+
+
+class FakePageantConnection:
+    """
+    Behaves like `paramiko.win_pageant.PageantConnection`:
+    `send` processes the whole query and returns `None`, `recv` reads the buffered response.
+    """
+
+    def __init__(self):
+        self.requests: list[bytes] = []
+        self.response = b""
+        self.lost = False
+
+    def send(self, data: bytes) -> None:
+        self.requests.append(data[4:])
+        self.response = b"" if self.lost else NO_IDENTITIES_REPLY
+
+    def recv(self, n: int) -> bytes:
+        data, self.response = self.response[:n], self.response[n:]
+        return data
+
+    def close(self) -> None:
+        pass
+
+
 class AgentForwardingServer:
     """
     An in-process paramiko ssh server, which records agent forwarding requests
@@ -347,11 +374,14 @@ class TestAgentForwarding(unittest.TestCase):
     def tearDown(self):
         self.server.close()
 
-    def open_channel(self, agent: str):
-        from xpra.net.ssh.paramiko.client import ChannelRunFactory
-        crf = ChannelRunFactory(self.server.client_transport, ["_proxy_start"], ["xpra"], [], [":100"],
-                                {"agent": agent})
-        with patch.object(ChannelRunFactory, "get_xpra_command", return_value="xpra _proxy_start :100"):
+    def open_channel(self, agent: str, override: bool = True):
+        from xpra.net.ssh.paramiko import client
+        crf = client.ChannelRunFactory(self.server.client_transport, ["_proxy_start"], ["xpra"], [], [":100"],
+                                       {"agent": agent})
+        with (
+            patch.object(client.ChannelRunFactory, "get_xpra_command", return_value="xpra _proxy_start :100"),
+            patch.object(client, "AGENT_OVERRIDE", override),
+        ):
             chan = crf.open()
         assert self.server.exec_event.wait(10)
         assert self.server.exec_command == b"xpra _proxy_start :100"
@@ -361,16 +391,51 @@ class TestAgentForwarding(unittest.TestCase):
         self.open_channel("no")
         assert not self.server.agent_forwarding_requested
 
-    @unittest.skipIf(os.name == "nt", "agent forwarding is not supported on MS Windows")
+    def test_agent_override_default(self):
+        from xpra.net.ssh.paramiko import client
+        assert client.AGENT_OVERRIDE == (os.name == "nt")
+
     def test_agent_enabled(self):
         self.open_channel("yes")
         assert self.server.agent_forwarding_requested
 
+    def test_agent_override_disabled(self):
+        with patch("paramiko.agent.AgentRequestHandler") as handler:
+            self.open_channel("yes", override=False)
+        handler.assert_called_once()
+
+    def test_no_local_agent(self):
+        with patch("xpra.net.ssh.paramiko.agent.get_agent_connection", return_value=None):
+            self.open_channel("yes")
+            assert self.server.query_forwarded_agent(5) == SSH_AGENT_FAILURE_REPLY
+            # the channel is still usable:
+            assert self.server.query_forwarded_agent(5) == SSH_AGENT_FAILURE_REPLY
+
+    def test_pageant_style_agent(self):
+        agent = FakePageantConnection()
+        with patch("xpra.net.ssh.paramiko.agent.get_agent_connection", return_value=agent):
+            self.open_channel("yes")
+            assert self.server.query_forwarded_agent(5) == NO_IDENTITIES_REPLY
+        assert agent.requests == [bytes([11])]
+
+    def test_lost_local_agent(self):
+        agent = FakePageantConnection()
+        agent.lost = True
+        with patch("xpra.net.ssh.paramiko.agent.get_agent_connection", return_value=agent):
+            self.open_channel("yes")
+            assert self.server.query_forwarded_agent(5) == SSH_AGENT_FAILURE_REPLY
+
     @unittest.skipUnless(os.name == "nt", "MS Windows only")
-    def test_agent_not_forwarded_on_win32(self):
-        # see #4353: forwarding would make remote agent requests hang
+    def test_win32_openssh_agent_forwarding(self):
+        # the fix for #4353: the forwarded agent request gets a reply
+        requests = start_fake_win32_agent()
         self.open_channel("yes")
-        assert not self.server.agent_forwarding_requested
+        reply = self.server.query_forwarded_agent(5)
+        # IDENTITIES_ANSWER, from either the fake agent or a real one:
+        assert reply[4:5] == bytes([12]), f"unexpected reply {reply!r}"
+        if requests:
+            assert reply == NO_IDENTITIES_REPLY
+            assert requests == [11]
 
     @unittest.skipUnless(os.name == "nt", "MS Windows only")
     def test_paramiko_win32_agent_forwarding_hangs(self):
@@ -378,7 +443,7 @@ class TestAgentForwarding(unittest.TestCase):
         Reproducer for #4353, this is a paramiko bug:
         the local agent can be reached directly, but not through `AgentRequestHandler`.
         If this test starts failing, paramiko has been fixed
-        and `XPRA_SSH_WIN32_AGENT_FORWARDING` can be enabled by default.
+        and `XPRA_SSH_AGENT_OVERRIDE` may no longer be needed.
         """
         import threading
         from paramiko.agent import Agent, AgentRequestHandler
@@ -402,6 +467,48 @@ class TestAgentForwarding(unittest.TestCase):
             proxy._conn = None
         proxies.clear()
         assert reply == b"", "paramiko forwarded the agent request"
+
+
+@unittest.skipUnless(HAVE_PARAMIKO, "paramiko not available")
+class TestAgentRelay(unittest.TestCase):
+
+    def test_recv_message_chunked(self):
+        from xpra.net.ssh.paramiko.agent import recv_message
+        data = bytearray(NO_IDENTITIES_REPLY)
+
+        def recv(n: int) -> bytes:
+            chunk = bytes(data[:min(n, 2)])
+            del data[:len(chunk)]
+            return chunk
+        assert recv_message(recv) == NO_IDENTITIES_REPLY
+
+    def test_recv_message_truncated(self):
+        from xpra.net.ssh.paramiko.agent import recv_message
+        data = bytearray(NO_IDENTITIES_REPLY[:-1])
+
+        def recv(n: int) -> bytes:
+            chunk = bytes(data[:n])
+            del data[:n]
+            return chunk
+        assert recv_message(recv) == b""
+
+    def test_recv_message_too_large(self):
+        import struct
+        from xpra.net.ssh.paramiko.agent import recv_message, MAX_MESSAGE_SIZE
+        header = struct.pack(">I", MAX_MESSAGE_SIZE + 1)
+        with self.assertRaises(ValueError):
+            recv_message(lambda n: header[:n])
+
+    def test_send_all_partial_writes(self):
+        from xpra.net.ssh.paramiko.agent import send_all
+        written = []
+
+        class Pipe:
+            def send(self, data):
+                written.append(data[:3])
+                return len(written[-1])
+        send_all(Pipe(), NO_IDENTITIES_REPLY)
+        assert b"".join(written) == NO_IDENTITIES_REPLY
 
 
 def main():
