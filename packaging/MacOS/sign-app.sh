@@ -37,6 +37,14 @@ echo "team id: ${TEAM_ID:-none}"
 # the entitlements are needed even with a Developer ID certificate,
 # ie: python's ctypes callbacks require 'allow-unsigned-executable-memory' with the hardened runtime:
 ENTITLEMENTS_FILE="${MACOS_SCRIPT_DIR}/entitlements.plist"
+if [ -n "${TEAM_ID}" ]; then
+  # all the libraries we load are signed with the same Team ID,
+  # so we can keep library validation enabled - ad-hoc signatures have no Team ID and cannot:
+  TEAM_ENTITLEMENTS_FILE="$(mktemp -d -t xpra-entitlements)/entitlements.plist"
+  cp "${ENTITLEMENTS_FILE}" "${TEAM_ENTITLEMENTS_FILE}"
+  /usr/libexec/PlistBuddy -c "Delete :com.apple.security.cs.disable-library-validation" "${TEAM_ENTITLEMENTS_FILE}"
+  ENTITLEMENTS_FILE="${TEAM_ENTITLEMENTS_FILE}"
+fi
 export ENTITLEMENTS_FILE
 
 # for libraries and executables:
