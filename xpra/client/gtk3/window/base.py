@@ -1472,7 +1472,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # until we see the event we caused by calling move(),
             # or if we timeout (for safety - some platforms may skip events?),
             # don't update the relative position
-            if monotonic() - event_time > 0.1 or fc == event_pos:
+            if monotonic() - event_time > 0.1 or (x, y) == event_pos:
                 # next time we will allow the update:
                 self._follow_configure = None
             return
