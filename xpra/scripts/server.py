@@ -513,9 +513,12 @@ def harden_server_process() -> None:
         from xpra.platform.win32.security import harden_process as win32_harden_process
         win32_harden_process()
         return
-    if not LINUX:
+    if OSX:
+        from xpra.platform.darwin.security import harden_process
+    elif LINUX:
+        from xpra.platform.posix.security import harden_process
+    else:
         return
-    from xpra.platform.posix.security import harden_process
     try:
         harden_process()
     except OSError as e:
