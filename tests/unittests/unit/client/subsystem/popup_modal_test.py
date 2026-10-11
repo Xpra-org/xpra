@@ -141,6 +141,25 @@ class PopupModalTest(unittest.TestCase):
         self.assertIs(self.manager.get_window(3), parent)
         self.assertEqual(self.manager._window_to_id[popup], 7)
 
+    def test_relative_geometry_is_only_scaled_once(self):
+        def double(v):
+            return v * 2
+
+        def double_pos(x, y):
+            return x * 2, y * 2
+
+        self.manager.sx = double
+        self.manager.sy = double
+        parent = self.register_window(3)
+        parent.sp = double_pos
+        # the parent position is in client coordinates, only the offset is scaled:
+        popup = self.create_popup(7, parent=3, **{"relative-position": (12, 23)})
+        self.assertEqual(popup._pos, (124, 246))
+        # a nested popup is relative to the first popup:
+        popup.sp = double_pos
+        submenu = self.create_popup(8, parent=7, **{"relative-position": (5, 6)})
+        self.assertEqual(submenu._pos, (134, 258))
+
     def test_real_duplicate_id_is_still_rejected(self):
         existing = self.register_window(3)
         with self.assertRaisesRegex(ValueError, "we already have a window 0x3"):

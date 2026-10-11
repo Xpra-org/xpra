@@ -206,19 +206,20 @@ class WindowManagerClient(StubClientMixin):
         if w < 1 or w >= 32768 or h < 1 or h >= 32768:
             log.error("Error: window %#x dimensions %ix%i are invalid", wid, w, h)
             w, h = 1, 1
+        # scaled position of window:
+        wx = self.sx(x)
+        wy = self.sy(y)
         rel_pos = metadata.inttupleget("relative-position")
         parent = metadata.intget("parent")
         geomlog("relative-position=%s (parent=%s)", rel_pos, parent)
         if parent and rel_pos:
             if pwin := self._id_to_window.get(parent):
-                # apply scaling to relative position:
+                # the parent's position is already in client coordinates,
+                # so only the relative position needs scaling:
                 p_pos = pwin.sp(*rel_pos)
-                x = pwin._pos[0] + p_pos[0]
-                y = pwin._pos[1] + p_pos[1]
-                geomlog("relative position(%s)=%s", rel_pos, (x, y))
-        # scaled dimensions of window:
-        wx = self.sx(x)
-        wy = self.sy(y)
+                wx = pwin._pos[0] + p_pos[0]
+                wy = pwin._pos[1] + p_pos[1]
+                geomlog("relative position(%s)=%s", rel_pos, (wx, wy))
         ww = max(1, self.sx(w))
         wh = max(1, self.sy(h))
         # backing size, same as original (server-side):
