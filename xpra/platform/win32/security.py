@@ -7,8 +7,11 @@
 from __future__ import annotations
 
 import sys
-from ctypes import WinDLL, Structure, byref, sizeof, get_last_error, c_uint32  # @UnresolvedImport
-from ctypes.wintypes import BOOL, DWORD, HANDLE, LPVOID
+from ctypes import (  # @UnresolvedImport
+    WinDLL, Structure, POINTER, byref, sizeof, cast, get_last_error, create_unicode_buffer,
+    create_string_buffer, c_int, c_int64, c_size_t, c_uint32, c_uint64,
+)
+from ctypes.wintypes import BOOL, DWORD, HANDLE, LPVOID, LPCWSTR, LPWSTR, LONG
 
 from xpra.log import Logger
 from xpra.util.env import envbool
@@ -23,6 +26,35 @@ ProcessImageLoadPolicy = 10
 # `DEFAULT_DIRS` is the application directory, `System32` and any directory
 # added with `AddDllDirectory`. It excludes the current directory and `PATH`.
 LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000
+
+TOKEN_QUERY = 0x0008
+TOKEN_ADJUST_PRIVILEGES = 0x0020
+TokenPrivileges = 3
+SE_PRIVILEGE_REMOVED = 0x00000004
+ERROR_INSUFFICIENT_BUFFER = 122
+ERROR_NOT_ALL_ASSIGNED = 1300
+
+# `SeChangeNotifyPrivilege` is "bypass traverse checking":
+# without it, every path lookup would need list access on each parent directory.
+KEEP_PRIVILEGES: frozenset[str] = frozenset({"SeChangeNotifyPrivilege"})
+# only kept by processes that already hold `SeTcbPrivilege`, ie: the proxy server running as `SYSTEM`,
+# which needs them to log users on with `LsaLogonUser` and start their processes with `CreateProcessAsUser`:
+LOGON_PRIVILEGES: frozenset[str] = frozenset({
+    "SeTcbPrivilege",
+    "SeAssignPrimaryTokenPrivilege",
+    "SeIncreaseQuotaPrivilege",
+    "SeImpersonatePrivilege",
+})
+
+JobObjectBasicUIRestrictions = 4
+JobObjectExtendedLimitInformation = 9
+JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK = 0x00001000
+JOB_OBJECT_UILIMIT_DISPLAYSETTINGS = 0x00000010
+JOB_OBJECT_UILIMIT_DESKTOP = 0x00000040
+JOB_OBJECT_UILIMIT_EXITWINDOWS = 0x00000080
+# only APIs which xpra never calls: `CreateDesktop`, `SwitchDesktop`, `ChangeDisplaySettings` and `ExitWindows`.
+# The clipboard, global atoms, `SystemParametersInfo` and foreign USER handles are all in use.
+JOB_UI_LIMITS = JOB_OBJECT_UILIMIT_DESKTOP | JOB_OBJECT_UILIMIT_DISPLAYSETTINGS | JOB_OBJECT_UILIMIT_EXITWINDOWS
 
 
 # noinspection PyTypeChecker
@@ -45,7 +77,105 @@ class PROCESS_MITIGATION_EXTENSION_POINT_DISABLE_POLICY(Structure):
     ]
 
 
+class LUID(Structure):
+    _fields_ = [
+        ("LowPart", DWORD),
+        ("HighPart", LONG),
+    ]
+
+
+class LUID_AND_ATTRIBUTES(Structure):
+    _fields_ = [
+        ("Luid", LUID),
+        ("Attributes", DWORD),
+    ]
+
+
+def token_privileges_struct(count: int):
+    class TOKEN_PRIVILEGES(Structure):
+        _fields_ = [
+            ("PrivilegeCount", DWORD),
+            ("Privileges", LUID_AND_ATTRIBUTES * count),
+        ]
+    return TOKEN_PRIVILEGES
+
+
+class JOBOBJECT_BASIC_UI_RESTRICTIONS(Structure):
+    _fields_ = [
+        ("UIRestrictionsClass", DWORD),
+    ]
+
+
+class JOBOBJECT_BASIC_LIMIT_INFORMATION(Structure):
+    _fields_ = [
+        ("PerProcessUserTimeLimit", c_int64),
+        ("PerJobUserTimeLimit", c_int64),
+        ("LimitFlags", DWORD),
+        ("MinimumWorkingSetSize", c_size_t),
+        ("MaximumWorkingSetSize", c_size_t),
+        ("ActiveProcessLimit", DWORD),
+        ("Affinity", c_size_t),
+        ("PriorityClass", DWORD),
+        ("SchedulingClass", DWORD),
+    ]
+
+
+class IO_COUNTERS(Structure):
+    _fields_ = [(name, c_uint64) for name in (
+        "ReadOperationCount", "WriteOperationCount", "OtherOperationCount",
+        "ReadTransferCount", "WriteTransferCount", "OtherTransferCount",
+    )]
+
+
+class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(Structure):
+    _fields_ = [
+        ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+        ("IoInfo", IO_COUNTERS),
+        ("ProcessMemoryLimit", c_size_t),
+        ("JobMemoryLimit", c_size_t),
+        ("PeakProcessMemoryUsed", c_size_t),
+        ("PeakJobMemoryUsed", c_size_t),
+    ]
+
+
 kernel32 = WinDLL("kernel32", use_last_error=True)
+advapi32 = WinDLL("advapi32", use_last_error=True)
+
+GetCurrentProcess = kernel32.GetCurrentProcess
+GetCurrentProcess.argtypes = []
+GetCurrentProcess.restype = HANDLE
+
+CloseHandle = kernel32.CloseHandle
+CloseHandle.argtypes = [HANDLE]
+CloseHandle.restype = BOOL
+
+CreateJobObjectW = kernel32.CreateJobObjectW
+CreateJobObjectW.argtypes = [LPVOID, LPCWSTR]
+CreateJobObjectW.restype = HANDLE
+
+SetInformationJobObject = kernel32.SetInformationJobObject
+SetInformationJobObject.argtypes = [HANDLE, c_int, LPVOID, DWORD]
+SetInformationJobObject.restype = BOOL
+
+AssignProcessToJobObject = kernel32.AssignProcessToJobObject
+AssignProcessToJobObject.argtypes = [HANDLE, HANDLE]
+AssignProcessToJobObject.restype = BOOL
+
+OpenProcessToken = advapi32.OpenProcessToken
+OpenProcessToken.argtypes = [HANDLE, DWORD, POINTER(HANDLE)]
+OpenProcessToken.restype = BOOL
+
+GetTokenInformation = advapi32.GetTokenInformation
+GetTokenInformation.argtypes = [HANDLE, c_int, LPVOID, DWORD, POINTER(DWORD)]
+GetTokenInformation.restype = BOOL
+
+AdjustTokenPrivileges = advapi32.AdjustTokenPrivileges
+AdjustTokenPrivileges.argtypes = [HANDLE, BOOL, LPVOID, DWORD, LPVOID, LPVOID]
+AdjustTokenPrivileges.restype = BOOL
+
+LookupPrivilegeNameW = advapi32.LookupPrivilegeNameW
+LookupPrivilegeNameW.argtypes = [LPCWSTR, POINTER(LUID), LPWSTR, POINTER(DWORD)]
+LookupPrivilegeNameW.restype = BOOL
 
 SetProcessMitigationPolicy = kernel32.SetProcessMitigationPolicy
 SetProcessMitigationPolicy.argtypes = [DWORD, LPVOID, HANDLE]
@@ -105,9 +235,103 @@ def restrict_dll_directories() -> bool:
     return True
 
 
+def get_privilege_name(luid: LUID) -> str:
+    size = DWORD(64)
+    buf = create_unicode_buffer(size.value)
+    if not LookupPrivilegeNameW(None, byref(luid), buf, byref(size)):
+        return ""
+    return buf.value
+
+
+def get_token_privileges(token: HANDLE):
+    size = DWORD(0)
+    GetTokenInformation(token, TokenPrivileges, None, 0, byref(size))
+    if not size.value:
+        raise OSError(get_last_error(), "GetTokenInformation(TokenPrivileges) failed")
+    buf = create_string_buffer(size.value)
+    if not GetTokenInformation(token, TokenPrivileges, buf, size, byref(size)):
+        raise OSError(get_last_error(), "GetTokenInformation(TokenPrivileges) failed")
+    count = cast(buf, POINTER(DWORD)).contents.value
+    return cast(buf, POINTER(token_privileges_struct(count))).contents
+
+
+def remove_privileges(keep: frozenset[str] = KEEP_PRIVILEGES) -> list[str]:
+    """
+    Permanently remove every privilege not in `keep` from the process token.
+
+    Removed privileges cannot be added back, not even by this process.
+    Returns the names of the privileges removed.
+    """
+    token = HANDLE()
+    if not OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, byref(token)):
+        log.warn("Warning: failed to open the process token")
+        log.warn(" error %i", get_last_error())
+        return []
+    try:
+        try:
+            privileges = get_token_privileges(token)
+        except OSError as e:
+            log.warn("Warning: failed to query the process privileges")
+            log.warn(" %s", e)
+            return []
+        names = [get_privilege_name(p.Luid) for p in privileges.Privileges]
+        if "SeTcbPrivilege" in names:
+            keep = keep | LOGON_PRIVILEGES
+        indexes = [i for i, name in enumerate(names) if name and name not in keep]
+        if not indexes:
+            log("no privileges to remove, kept %s", names)
+            return []
+        removed = [names[i] for i in indexes]
+        changes = token_privileges_struct(len(indexes))()
+        changes.PrivilegeCount = len(indexes)
+        for j, i in enumerate(indexes):
+            changes.Privileges[j].Luid = privileges.Privileges[i].Luid
+            changes.Privileges[j].Attributes = SE_PRIVILEGE_REMOVED
+        if not AdjustTokenPrivileges(token, False, byref(changes), 0, None, None) \
+                or get_last_error() == ERROR_NOT_ALL_ASSIGNED:
+            log.warn("Warning: failed to remove the process privileges")
+            log.warn(" error %i", get_last_error())
+            return []
+        log("removed privileges %s, kept %s", removed, [name for name in names if name not in removed])
+        return removed
+    finally:
+        CloseHandle(token)
+
+
+def restrict_job(ui_limits: int = JOB_UI_LIMITS) -> bool:
+    """
+    Assign this process to a new job object which prevents it from using the `ui_limits` APIs.
+
+    A process cannot leave a job, so the restrictions are permanent.
+    Child processes silently break away from the job:
+    the commands started by the server are the user's applications,
+    and they must not inherit these restrictions.
+    """
+    job = CreateJobObjectW(None, None)
+    if not job:
+        log.warn("Warning: failed to create a job object")
+        log.warn(" error %i", get_last_error())
+        return False
+    limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+    limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK
+    ui = JOBOBJECT_BASIC_UI_RESTRICTIONS(ui_limits)
+    if not SetInformationJobObject(job, JobObjectExtendedLimitInformation, byref(limits), sizeof(limits)) \
+            or not SetInformationJobObject(job, JobObjectBasicUIRestrictions, byref(ui), sizeof(ui)) \
+            or not AssignProcessToJobObject(job, GetCurrentProcess()):
+        log.warn("Warning: failed to restrict the process with a job object")
+        log.warn(" error %i", get_last_error())
+        CloseHandle(job)
+        return False
+    # the job handle is not closed: the job lives for as long as this process anyway
+    log("process assigned to a job object with UI limits %#x", ui_limits)
+    return True
+
+
 def harden_process() -> None:
     """Apply Xpra's process mitigation policies. Failures are not fatal."""
     restrict_dll_directories()
     restrict_image_loads()
+    remove_privileges()
+    restrict_job()
     if envbool("XPRA_WIN32_DISABLE_EXTENSION_POINTS", False):
         disable_extension_points()
