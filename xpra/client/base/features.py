@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.net.common import FULL_INFO
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
@@ -49,7 +51,7 @@ info = True
 
 
 def set_client_features(opts) -> None:
-    from xpra.os_util import WIN32, OSX
+    from xpra.os_util import POSIX, WIN32, OSX
     from importlib.util import find_spec
     from xpra.util.parsing import FALSE_OPTIONS, OFF_OPTIONS, str_to_bool
 
@@ -78,7 +80,9 @@ def set_client_features(opts) -> None:
     features.window = opts.windows
     features.cursor = opts.windows and opts.cursors
     features.gstreamer = opts.gstreamer
-    features.x11 = opts.backend in ("x11", "auto") and icheck("xpra.x11", not (WIN32 or OSX))
+    # the gtk client can also use the X11 bindings, but only when it is running on an X11 display:
+    gtk_x11 = opts.backend == "gtk" and POSIX and not (OSX or WIN32) and bool(os.environ.get("DISPLAY"))
+    features.x11 = (opts.backend in ("x11", "auto") or gtk_x11) and icheck("xpra.x11", not (WIN32 or OSX))
     features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and icheck("xpra.audio")
     features.webcam = bo(opts.webcam) and icheck("xpra.codecs") and icheck("xpra.webcam")
     features.clipboard = b(opts.clipboard) and icheck("xpra.clipboard")
