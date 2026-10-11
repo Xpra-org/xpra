@@ -123,6 +123,33 @@ class TestMain(unittest.TestCase):
                 make_client(opts)
             self.assertEqual(raised.exception.status, ExitCode.UNSUPPORTED)
 
+    def test_harden_client_process(self):
+        from types import ModuleType
+        from xpra.scripts import main
+        harden_process = Mock()
+        security_module = ModuleType("xpra.platform.win32.security")
+        security_module.harden_process = harden_process
+        with patch.dict(sys.modules, {"xpra.platform.win32.security": security_module}), \
+             patch("xpra.scripts.main.client_hardened", False):
+            with patch("xpra.scripts.main.WIN32", False):
+                main.harden_client_process()
+            harden_process.assert_not_called()
+            with patch("xpra.scripts.main.WIN32", True):
+                main.harden_client_process()
+                # only once per process:
+                main.harden_client_process()
+            harden_process.assert_called_once_with()
+
+    def test_make_client_hardens_before_backend(self):
+        calls = []
+        opts = SimpleNamespace(landlock="no", backend="qt")
+        with patch("xpra.scripts.main.harden_client_process", lambda: calls.append("harden")), \
+             patch("xpra.scripts.main.no_gi_gtk_modules", lambda: calls.append("backend")), \
+             patch.dict(sys.modules, {"xpra.client.qt6.client": None}), \
+             self.assertRaises(InitExit):
+            make_client(opts)
+        self.assertEqual(calls, ["harden", "backend"])
+
     def test_landlock_connection_is_deferred_until_run(self):
         desc = {"type": "tcp"}
         app = SimpleNamespace()
