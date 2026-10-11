@@ -59,6 +59,10 @@ EXEC_STDERR_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDERR_TIMEOUT", 0)
 MSYS_DEFAULT_PATH = os.environ.get("XPRA_MSYS_DEFAULT_PATH", "/mingw64/bin/xpra")
 CYGWIN_DEFAULT_PATH = os.environ.get("XPRA_CYGWIN_DEFAULT_PATH", "/cygdrive/c/Program Files/Xpra/Xpra_cmd.exe")
 DEFAULT_WIN32_INSTALL_PATH = "C:\\Program Files\\Xpra"
+#paramiko's AgentProxyThread cannot relay agent requests on MS Windows:
+#the pageant and openssh connections have no fileno, and it uses fcntl and select,
+#so remote agent requests would hang, see #4353.
+WIN32_AGENT_FORWARDING = envbool("XPRA_SSH_WIN32_AGENT_FORWARDING", False)
 
 PARAMIKO_SESSION_LOST = "No existing session"
 
@@ -947,7 +951,9 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
         else:
             agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
             log(f"paramiko agent_option={agent_option}")
-            if agent_option.lower() in TRUE_OPTIONS:
+            if agent_option.lower() in TRUE_OPTIONS and WIN32 and not WIN32_AGENT_FORWARDING:
+                log.info("paramiko SSH agent forwarding is not supported on MS Windows")
+            elif agent_option.lower() in TRUE_OPTIONS:
                 log.info("paramiko SSH agent forwarding enabled")
                 from paramiko.agent import AgentRequestHandler
                 AgentRequestHandler(chan)
