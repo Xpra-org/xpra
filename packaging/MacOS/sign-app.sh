@@ -34,8 +34,7 @@ fi
 
 TEAM_ID=$(get_team_id "$CODESIGN_KEYNAME")
 echo "team id: ${TEAM_ID:-none}"
-# the entitlements are needed even with a Developer ID certificate,
-# ie: python's ctypes callbacks require 'allow-unsigned-executable-memory' with the hardened runtime:
+# the entitlements are needed even with a Developer ID certificate, ie: for webcam and audio capture:
 ENTITLEMENTS_FILE="${MACOS_SCRIPT_DIR}/entitlements.plist"
 if [ -n "${TEAM_ID}" ]; then
   # all the libraries we load are signed with the same Team ID,

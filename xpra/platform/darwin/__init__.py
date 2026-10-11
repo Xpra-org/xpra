@@ -115,6 +115,9 @@ def setup_app_bundle_env() -> None:
         "PANGO_SYSCONFDIR": f"{bundle_etc}",
         "GSETTINGS_SCHEMA_DIR": f"{bundle_share}/glib-2.0/schemas/",
     })
+    # the hardened runtime does not allow 'unsigned-executable-memory',
+    # so gstreamer's orc cannot generate code at runtime and aborts unless we use its backup C code:
+    os.environ.setdefault("ORC_CODE", "backup")
     x11_dir = f"{bundle_frameworks}/X11"
     if os.path.exists(x11_dir) and os.path.isdir(x11_dir):
         def addpath(key: str, path: str) -> None:
