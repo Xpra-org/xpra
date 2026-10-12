@@ -22,6 +22,7 @@ from xpra.x11.xkbhelper import (
     get_modifiers_from_meanings, get_modifiers_from_keycodes,
     clear_modifiers, set_modifiers, map_missing_modifiers, map_missing_keysyms,
     clean_keyboard_state, get_keycode_mappings, get_keyval_mappings, canonical_keysym,
+    get_free_keycodes, is_usable_keysym,
     DEBUG_KEYSYMS, grok_modifier_map,
 )
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -103,6 +104,8 @@ class KeyboardConfig(KeyboardConfigBase):
         self.modifier_client_keycodes: dict[str, list] = {}
         self.keycode_mappings: dict[int, list[str]] = {}
         self.keyval_mappings = {}
+        # keycodes mapped by `allocate_keycode`, least recently used first:
+        self.dynamic_keycodes: dict[int, str] = {}
 
         self.backend = ""
         self.backend_engine = ""
@@ -421,6 +424,7 @@ class KeyboardConfig(KeyboardConfigBase):
         with xlog:
             clean_keyboard_state()
             do_set_keymap(self.layout, self.variant, self.options, self.query_struct)
+        self.dynamic_keycodes = {}
         log("set_keymap: query_struct=%r", self.query_struct)
         with xlog:
             # first clear all existing modifiers:
@@ -594,7 +598,44 @@ class KeyboardConfig(KeyboardConfigBase):
         if keycode < 0 and canonical != keyname:
             kmlog(keyname, "do_get_keycode: trying the client's keysym name %r", keyname)
             keycode, rgroup = self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
+        if keycode < 0 and pressed and self.allocate_keycode(canonical) >= 0:
+            keycode, rgroup = self.find_matching_keycode(client_keycode, canonical, pressed, modifiers, keyval, keystr, group)
+        if keycode in self.dynamic_keycodes:
+            # mark it as recently used:
+            self.dynamic_keycodes[keycode] = self.dynamic_keycodes.pop(keycode)
         return keycode, rgroup
+
+    def allocate_keycode(self, keyname: str) -> int:
+        """
+        Map a keysym which is missing from the keymap to a free keycode,
+        or to the least recently used of the keycodes we have already allocated.
+        ie: a macOS client has many more keysyms than there are free keycodes,
+        so `map_missing_keysyms` cannot add all of them up front.
+        """
+        if self.raw or self.query_struct or not is_usable_keysym(X11Keyboard.parse_keysym(keyname)):
+            return -1
+        with xlog:
+            free_keycodes = get_free_keycodes()
+            if free_keycodes:
+                keycode = free_keycodes[0]
+            else:
+                # never re-use a key that is still pressed, or its release would send the wrong keysym:
+                reusable = [keycode for keycode in self.dynamic_keycodes if keycode not in self.keys_pressed]
+                if not reusable:
+                    log.warn("Warning: keymap is full, cannot add keysym %r", keyname)
+                    return -1
+                keycode = reusable[0]
+            log("allocate_keycode(%r) using keycode %i, replacing %r", keyname, keycode, self.dynamic_keycodes.get(keycode))
+            self.dynamic_keycodes.pop(keycode, None)
+            self.dynamic_keycodes[keycode] = keyname
+            # `map_all_keynames` only adds entries, remove the ones for the keysym we are replacing:
+            for key, value in tuple(self.keycode_translation.items()):
+                if value == keycode:
+                    del self.keycode_translation[key]
+            X11Keyboard.set_xmodmap([("keycode", keycode, [keyname])])
+            self.keys_changed()
+            return keycode
+        return -1
 
     def find_matching_keycode(self, client_keycode: int, keyname: str,
                               pressed: bool, modifiers: list[str], keyval: int, keystr: str, group: int) -> tuple[int, int]:

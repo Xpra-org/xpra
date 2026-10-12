@@ -342,6 +342,55 @@ class TestX11Keyboard(ServerTestUtil):
         assert keycode in main, f"('period', 1) mapped to {keycode}, expected one of {main} and not the keypad {keypad}"
         assert config.keycode_translation.get("KP_Delete") in keypad
 
+    def test_keymap_full(self):
+        # a macOS client has many more keysyms missing from the server keymap than there are free keycodes,
+        # and some keysyms we cannot use at all: control characters and undefined values
+        from xpra.x11.xkbhelper import get_keycode_mappings, get_free_keycodes, canonical_keysym, SPARE_KEYCODES
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        missing = (
+            "trademark", "EuroSign", "sterling", "cent", "infinity", "notequal", "ordfeminine", "periodcentered",
+            "paragraph", "doubledagger", "endash", "emdash", "degree", "masculine", "oslash", "Oslash",
+            "leftsinglequotemark", "rightsinglequotemark", "leftdoublequotemark", "rightdoublequotemark",
+            "Greek_pi", "notsign", "Ograve", "Ocircumflex", "ae", "AE", "ellipsis", "Uacute", "guillemotleft",
+            "guillemotright", "lessthanequal", "greaterthanequal", "macron", "division", "questiondown", "mu",
+            "U+2044", "U+2039", "U+203A", "U+FB01", "U+FB02", "U+220F", "U+2206", "U+F8FF",
+        )
+        unusable = ("U+0010", "U+0005", "0x1", "0x9dbf910")
+        config = KeyboardConfig()
+        config.query_struct = {}
+        config.layout = "us"
+        config.keycodes = tuple((0, keysym, 100 + i, 0, 2) for i, keysym in enumerate(missing + unusable)) + (
+            (0xffe1, "Shift_L", 56, 0, 0), (0xffe3, "Control_L", 59, 0, 0), (0xffe9, "Alt_L", 58, 0, 0),
+        )
+        config.set_keymap()
+        mappings = get_keycode_mappings()
+        if not any("a" in keysyms for keysyms in mappings.values()):
+            raise unittest.SkipTest("no US keymap available")
+        mapped = set(keysym for keysyms in mappings.values() for keysym in keysyms)
+        for keysym in unusable:
+            assert keysym not in mapped, f"unusable keysym {keysym!r} was added to the keymap"
+        assert len(get_free_keycodes()) == SPARE_KEYCODES, f"expected {SPARE_KEYCODES} spare keycodes, got {get_free_keycodes()}"
+        overflow = [keysym for keysym in missing if canonical_keysym(keysym) not in mapped]
+        assert len(overflow) > SPARE_KEYCODES, f"not enough keysyms to fill the keymap: {overflow}"
+
+        def press(keysym: str) -> int:
+            config.pressed_translation = {}
+            keycode = config.get_keycode(100 + missing.index(keysym), keysym, True, [], 0, "", 0)[0]
+            assert keycode >= 0, f"no keycode for {keysym!r}"
+            keysyms = get_keycode_mappings().get(keycode, ())
+            assert canonical_keysym(keysym) in keysyms, f"{keysym!r} sent using keycode {keycode} which has {keysyms}"
+            return keycode
+
+        # hold the first one down while the others re-use the spare keycodes:
+        held = press(overflow[0])
+        config.keys_pressed[held] = overflow[0]
+        for keysym in overflow[1:]:
+            assert press(keysym) != held, f"{keysym!r} re-used the keycode of the key still pressed"
+        # the keysyms we have replaced can be mapped again:
+        del config.keys_pressed[held]
+        for keysym in overflow:
+            press(keysym)
+
     def test_native_keycode_keysym_mismatch(self):
         # A native client keymap can become stale, or omit the key event's keysym.
         # Do not send its numeric keycode if it produces a different server keysym.
@@ -387,8 +436,9 @@ class TestX11Keyboard(ServerTestUtil):
 
         def get_keycode(keysym: str) -> int:
             config.pressed_translation = {}
-            # `keyval` is left at zero to avoid the keyval fallback:
-            return config.get_keycode(0, keysym, True, [], 0, "", 0)[0]
+            # `keyval` is left at zero to avoid the keyval fallback,
+            # and the key is released so that missing keysyms are not allocated a keycode:
+            return config.get_keycode(0, keysym, False, [], 0, "", 0)[0]
 
         assert get_keycode("adiaeresis") < 0, "'adiaeresis' should not be reachable with a 'us' layout"
         # something else changes the keymap from within the session:
