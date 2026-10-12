@@ -61,7 +61,6 @@ Build-Depends: debhelper (>= 8)
 #resolute:              ,libxkbcommon-dev
 #resolute:              ,libpixman-1-dev
 #resolute:              ,libwayland-bin
-#stonking:              ,libwlroots-0.19-dev
 #stonking:              ,wayland-protocols
 #stonking:              ,libxkbcommon-dev
 #stonking:              ,libpixman-1-dev
