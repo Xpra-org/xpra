@@ -514,16 +514,26 @@ class KeyboardConfig(KeyboardConfigBase):
     def map_all_keynames(self) -> None:
         log("map_all_keynames()")
         keycode_to_keynames = get_keycode_mappings()
-        default_for_keyname: dict[str, tuple[str | int, int]] = {}
-        for keycode, keynames in keycode_to_keynames.items():
+        default_for_keyname: dict[str, tuple[str | int, int, bool]] = {}
+
+        def is_keypad(keynames) -> bool:
+            # the keypad keysyms are the `0xff80` to `0xffbd` range, and their names all start with `KP_`:
+            return bool(keynames) and str(keynames[0]).startswith("KP_")
+
+        # process the keypad keys first, so that the main keys override them
+        # when a keysym is found at the same level on both:
+        # ie: `fr(oss)` has `period` on the `Shift` level of `KP_Delete`, as well as on the main keyboard
+        # (`sorted` is stable, so the other keycodes remain in keycode order)
+        for keycode, keynames in sorted(keycode_to_keynames.items(), key=lambda item: not is_keypad(item[1])):
+            keypad = is_keypad(keynames)
             for i, keyname in enumerate(keynames):
                 self.keycode_translation[(keyname, i)] = keycode
                 if keyname in DEBUG_KEYSYMS:
                     log.info("set_default_keymap: %s=%s", (keyname, i), keycode)
                 kd = default_for_keyname.get(keyname)
-                # prefer keycodes that have the lowest level+mode:
-                if kd is None or kd[1] > i:
-                    default_for_keyname[keyname] = (keycode, i)
+                # prefer keycodes that have the lowest level+mode, then the main keyboard:
+                if kd is None or (i, keypad) < (kd[1], kd[2]):
+                    default_for_keyname[keyname] = (keycode, i, keypad)
         for keyname, kd in default_for_keyname.items():
             keycode = kd[0]
             if not self.keycode_translation.get(keyname):

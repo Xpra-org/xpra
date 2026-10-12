@@ -318,6 +318,26 @@ class TestX11Keyboard(ServerTestUtil):
             config.get_keycode(33, "Page_Up", True, modifiers, 0xff55, "", 0)
             assert modifiers == ["shift"], f"fr({variant}): 'shift' was not preserved for 'Page_Up': {modifiers}"
 
+    def test_keypad_duplicate_keysym(self):
+        # see #5057: `fr(oss)` has `period` on the `Shift` level of both `<AB08>` and `<KPDL>`,
+        # `Shift+;` must not be sent as `Shift+KP_Delete`
+        from xpra.x11.xkbhelper import do_set_keymap, get_keycode_mappings
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        do_set_keymap("fr", "oss", "", {})
+        mappings = get_keycode_mappings()
+        main = [keycode for keycode, keysyms in mappings.items()
+                if len(keysyms) > 1 and keysyms[1] == "period" and not keysyms[0].startswith("KP_")]
+        keypad = [keycode for keycode, keysyms in mappings.items()
+                  if len(keysyms) > 1 and keysyms[1] == "period" and keysyms[0].startswith("KP_")]
+        if not main or not keypad:
+            raise unittest.SkipTest("no French oss keymap available")
+        config = KeyboardConfig()
+        config.keycode_translation = {}
+        config.map_all_keynames()
+        keycode = config.keycode_translation.get(("period", 1))
+        assert keycode in main, f"('period', 1) mapped to {keycode}, expected one of {main} and not the keypad {keypad}"
+        assert config.keycode_translation.get("KP_Delete") in keypad
+
     def test_native_keycode_keysym_mismatch(self):
         # A native client keymap can become stale, or omit the key event's keysym.
         # Do not send its numeric keycode if it produces a different server keysym.
