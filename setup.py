@@ -445,7 +445,10 @@ def has_header_file(name, isdir=False) -> bool:
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 wayland_client_ENABLED = not WIN32 and not OSX and pkg_config_exists("wayland-client")
-wayland_server_ENABLED = not WIN32 and not OSX and pkg_config_exists("wlroots-0.19") and pkg_config_exists("wayland-server")
+WLROOTS_PKG_CONFIG = os.environ.get("XPRA_WLROOTS_PKG_CONFIG")
+if not WLROOTS_PKG_CONFIG:
+    WLROOTS_PKG_CONFIG = "wlroots-0.20" if pkg_config_exists("wlroots-0.20") else "wlroots-0.19"
+wayland_server_ENABLED = not WIN32 and not OSX and pkg_config_exists(WLROOTS_PKG_CONFIG) and pkg_config_exists("wayland-server")
 xinput_ENABLED = x11_ENABLED
 # uinput is Linux specific, but it is not X11 specific:
 # it is used for the virtual pointer (X11 only) and the virtual joystick (any backend)
@@ -3860,18 +3863,18 @@ if wayland_server_ENABLED:
         print("generating %r" % header_path)
         subprocess.run(["wayland-scanner", "server-header", xml_path, header_path])
     wlr_args = ["-DWLR_USE_UNSTABLE", "-I./xpra/wayland/server/"]
-    ace("xpra.wayland.server.events", "wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.display", "wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.output", "wlroots-0.19,libdrm,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.pointer","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.keyboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.clipboard","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.wayland_surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.cursor","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.subsurface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.popup","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.surface","wlroots-0.19,wayland-server", extra_compile_args=wlr_args)
-    ace("xpra.wayland.server.compositor", "wlroots-0.19,libdrm,wayland-server,pixman-1", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.events", f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.display", f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.output", f"{WLROOTS_PKG_CONFIG},libdrm,wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.pointer",f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.keyboard",f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.clipboard",f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.wayland_surface",f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.cursor",f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.subsurface",f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.popup",f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.surface",f"{WLROOTS_PKG_CONFIG},wayland-server", extra_compile_args=wlr_args)
+    ace("xpra.wayland.server.compositor", f"{WLROOTS_PKG_CONFIG},libdrm,wayland-server,pixman-1", extra_compile_args=wlr_args)
 
 if cythonize_more_ENABLED:
     def ax(base):

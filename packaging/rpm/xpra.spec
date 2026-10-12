@@ -20,6 +20,12 @@ autoprov: no
 %endif
 %if 0%{?fedora}
 %global wayland 1
+# Fedora 44 moved wlroots 0.19 to the `wlroots0.19` compat package:
+%if 0%{?fedora} >= 44
+%global wlroots_version 0.20
+%else
+%global wlroots_version 0.19
+%endif
 %endif
 
 #on RHEL, there is only one python>=3.10 build at present,
@@ -646,8 +652,9 @@ Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Requires:			%{package_prefix}-wayland = %{version}-%{release}
-Requires:           wlroots-0.19
-BuildRequires:		pkgconfig(wlroots-0.19)
+# the package name differs between Fedora versions, the soname does not:
+Requires:           libwlroots-%{wlroots_version}.so()(64bit)
+BuildRequires:		pkgconfig(wlroots-%{wlroots_version})
 BuildRequires:		wayland-devel
 BuildRequires:      libxkbcommon-devel
 BuildRequires:		wayland-protocols-devel
@@ -675,6 +682,9 @@ pushd xpra-%{version}
 rm -rf build install
 # set pkg_config_path for xpra video libs:
 export BUILD_TYPE="RPM"
+%if 0%{?wayland}
+export XPRA_WLROOTS_PKG_CONFIG="wlroots-%{wlroots_version}"
+%endif
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{python3} setup.py build \
 	-j %{nthreads} \
 	%{build_args} \
@@ -700,6 +710,9 @@ popd
 rm -rf $RPM_BUILD_ROOT
 pushd xpra-%{version}
 export BUILD_TYPE="RPM"
+%if 0%{?wayland}
+export XPRA_WLROOTS_PKG_CONFIG="wlroots-%{wlroots_version}"
+%endif
 %{python3} setup.py install \
 	%{build_args} \
 	--prefix /usr --skip-build --root %{buildroot}

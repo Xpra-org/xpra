@@ -72,8 +72,13 @@ Build-Depends: debhelper (>= 8)
               ,libxxhash-dev
               ,libqrencode-dev
               ,libwayland-dev
-# wayland compositor backend (xpra-server-wayland), only where wlroots 0.19 is available:
-#sid:              ,libwlroots-0.19-dev
+# wayland compositor backend (xpra-server-wayland), only where wlroots 0.19 or 0.20 is available:
+#forky:              ,libwlroots-0.20-dev
+#forky:              ,wayland-protocols
+#forky:              ,libxkbcommon-dev
+#forky:              ,libpixman-1-dev
+#forky:              ,libwayland-bin
+#sid:              ,libwlroots-0.20-dev
 #sid:              ,wayland-protocols
 #sid:              ,libxkbcommon-dev
 #sid:              ,libpixman-1-dev
@@ -83,7 +88,7 @@ Build-Depends: debhelper (>= 8)
 #resolute:              ,libxkbcommon-dev
 #resolute:              ,libpixman-1-dev
 #resolute:              ,libwayland-bin
-#stonking:              ,libwlroots-0.19-dev
+#stonking:              ,libwlroots-0.20-dev
 #stonking:              ,wayland-protocols
 #stonking:              ,libxkbcommon-dev
 #stonking:              ,libpixman-1-dev

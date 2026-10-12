@@ -78,6 +78,7 @@ from xpra.wayland.server.wlroots cimport (
     WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB, WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
     WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR,
     WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ, WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG,
+    WLR_VERSION_MAJOR, WLR_VERSION_MINOR,
     WP_COLOR_MANAGER_V1_PRIMARIES_SRGB, WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3,
     WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3, WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
     wlr_content_type_manager_v1, wlr_content_type_manager_v1_create,
@@ -351,6 +352,9 @@ cdef class WaylandCompositor(ListenerObject):
         # ever have to read to the named values advertised below,
         # and those are exactly the ones `xpra.wayland.server.colourspace` maps
         # to the H.273 code points we send to the xpra client as window metadata.
+        # wlroots 0.20 implements version 2 of the protocol, which deprecates the ambiguous `srgb`
+        # transfer function: it aborts if we advertise it, and uses `compound_power_2_4` instead.
+        cdef bint v2 = WLR_VERSION_MAJOR > 0 or WLR_VERSION_MINOR >= 20
         cdef wlr_color_manager_v1_options options
         cdef wp_color_manager_v1_render_intent[1] render_intents = [
             WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL,
@@ -368,6 +372,9 @@ cdef class WaylandCompositor(ListenerObject):
             WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3,
             WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
         ]
+        if v2:
+            # `compound_power_2_4`, as a wire value since older wayland-protocols headers do not define it:
+            transfer_functions[0] = <wp_color_manager_v1_transfer_function> 14
         memset(&options, 0, sizeof(wlr_color_manager_v1_options))
         options.features.parametric = True
         options.render_intents = render_intents
@@ -376,7 +383,7 @@ cdef class WaylandCompositor(ListenerObject):
         options.transfer_functions_len = 5
         options.primaries = primaries
         options.primaries_len = 4
-        self.color_manager = wlr_color_manager_v1_create(self.display_ptr, 1, &options)
+        self.color_manager = wlr_color_manager_v1_create(self.display_ptr, 2 if v2 else 1, &options)
         if not self.color_manager:
             log.warn("Warning: unable to create the colour management manager")
             log.warn(" all surfaces will be assumed to be sRGB")

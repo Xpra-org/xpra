@@ -48,6 +48,7 @@ TRANSFER_FUNCTIONS: Final[dict[int, TransferFunction]] = {
     11: TransferFunction.PQ,            # st2084_pq
     12: TransferFunction.ST428,         # st428
     13: TransferFunction.HLG,           # hlg
+    14: TransferFunction.SRGB,          # compound_power_2_4: replaces `srgb` in version 2
 }
 
 

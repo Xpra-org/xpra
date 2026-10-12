@@ -299,6 +299,11 @@ cdef extern from "wayland-client.h":
     int wl_display_get_fd(wl_display *display)
 
 
+cdef extern from "wlr/version.h":
+    int WLR_VERSION_MAJOR
+    int WLR_VERSION_MINOR
+
+
 cdef extern from "wlr/util/box.h":
     cdef struct wlr_box:
         int x
