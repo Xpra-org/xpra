@@ -3843,12 +3843,14 @@ toggle_packages(wayland_client_ENABLED, "xpra.wayland.client")
 tace(wayland_client_ENABLED, "xpra.wayland.client.wait_for_display", "wayland-client")
 # wayland protocol headers we generate with `wayland-scanner`:
 # `wlr/types/wlr_color_management_v1.h` includes the colour management one,
+# and with wlroots 0.19, `wlr/types/wlr_ext_image_copy_capture_v1.h` includes the image copy capture one,
 # which wlroots generates for itself but does not install.
 # {header filename: protocol xml path relative to the wayland-protocols data dir}
 WAYLAND_PROTOCOL_HEADERS = {
     "xdg-shell-protocol.h": "stable/xdg-shell/xdg-shell.xml",
     "color-management-v1-protocol.h": "staging/color-management/color-management-v1.xml",
     "content-type-v1-protocol.h": "staging/content-type/content-type-v1.xml",
+    "ext-image-copy-capture-v1-protocol.h": "staging/ext-image-copy-capture/ext-image-copy-capture-v1.xml",
 }
 if wayland_server_ENABLED:
     toggle_packages(wayland_server_ENABLED, "xpra.wayland.server", "xpra.wayland.server.models", "xpra.wayland.server.subsystem")
