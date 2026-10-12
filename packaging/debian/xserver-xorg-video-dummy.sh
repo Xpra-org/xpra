@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 if [ -z "${REPO_ARCH_PATH}" ]; then
 	REPO_ARCH_PATH="`pwd`/../repo"
 fi

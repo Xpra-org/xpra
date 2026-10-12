@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 eval `dpkg-architecture -s`
 
 if [ -z "${REPO_ARCH_PATH}" ]; then
