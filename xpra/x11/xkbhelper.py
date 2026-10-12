@@ -12,7 +12,7 @@ from xpra.common import noop
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, MODIFIER_MAP
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, csv, bytestostr, Ellipsizer
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.x11.error import xsync, xlog
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
@@ -880,11 +880,44 @@ def map_missing_modifiers(keynames_for_mod: dict[str, Iterable]):
         X11Keyboard.set_xmodmap(xmodmap_changes)
 
 
+# free keycodes left alone by `map_missing_keysyms`,
+# so that `allocate_keycode` can still map the keysyms which did not fit:
+SPARE_KEYCODES = envint("XPRA_SPARE_KEYCODES", 4)
+
+
+def is_usable_keysym(keysym: int) -> bool:
+    """
+    Can this keysym value produce something when it is added to the keymap?
+    Some clients use control characters or undefined values for keys they cannot name,
+    ie: macOS sends `U+0010` for the function keys, and raw values like `0x9dbf910`.
+    """
+    if keysym < 0x20 or 0x7f <= keysym < 0xa0:
+        # control characters
+        return False
+    if keysym <= 0xffff:
+        # legacy keysyms
+        return True
+    if 0x1000100 <= keysym <= 0x110ffff:
+        # unicode keysyms, without the C1 control characters
+        return not 0x100007f <= keysym < 0x10000a0
+    # vendor keysyms:
+    return 0x10000000 <= keysym <= 0x1fffffff
+
+
+def get_free_keycodes() -> list[int]:
+    X11Keyboard = X11KeyboardBindings()
+    x11_keycodes = X11Keyboard.get_keycode_mappings()
+    min_keycode, max_keycode = X11Keyboard.get_minmax_keycodes()
+    return [x for x in range(min_keycode, max_keycode + 1) if x not in x11_keycodes]
+
+
 def map_missing_keysyms(gtk_mappings: Iterable[tuple[Any, str, int, int, int]]) -> None:
     """
     Add the keysyms found in the client's keymap but missing from the server's keymap,
     each one on a free keycode, so that we are still able to send them.
     ie: a Windows French keyboard has a `dead_tilde`, the X11 `fr` layout does not.
+    There are usually very few free keycodes, so we keep `SPARE_KEYCODES` of them
+    for the keysyms that do not fit: they are mapped on demand by `allocate_keycode`.
     """
     X11Keyboard = X11KeyboardBindings()
     x11_keycodes = X11Keyboard.get_keycode_mappings()
@@ -892,15 +925,16 @@ def map_missing_keysyms(gtk_mappings: Iterable[tuple[Any, str, int, int, int]]) 
     missing: list[str] = []
     for _, name, _, _, _ in gtk_mappings:
         keysym = canonical_keysym(name)
-        if keysym not in server_keysyms and keysym not in missing and X11Keyboard.parse_keysym(keysym) not in (0, 0xffffff):
+        if keysym not in server_keysyms and keysym not in missing and is_usable_keysym(X11Keyboard.parse_keysym(keysym)):
             missing.append(keysym)
     if not missing:
         return
-    min_keycode, max_keycode = X11Keyboard.get_minmax_keycodes()
-    free_keycodes = [x for x in range(min_keycode, max_keycode + 1) if x not in x11_keycodes]
-    if len(missing) > len(free_keycodes):
-        log.warn("Warning: keymap is full, cannot add keysyms %s", csv(missing[len(free_keycodes):]))
-    xmodmap_changes = [("keycode", keycode, [keysym]) for keycode, keysym in zip(free_keycodes, missing)]
+    free_keycodes = get_free_keycodes()
+    available = max(0, len(free_keycodes) - SPARE_KEYCODES)
+    if len(missing) > available:
+        log("map_missing_keysyms(..) only %i free keycodes, %s will be mapped on demand",
+            available, csv(missing[available:]))
+    xmodmap_changes = [("keycode", keycode, [keysym]) for keycode, keysym in zip(free_keycodes[:available], missing)]
     log("map_missing_keysyms(..) adding %s", xmodmap_changes)
     # Batched updates clear unspecified keycodes between the first and last.
     for change in xmodmap_changes:
