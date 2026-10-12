@@ -548,7 +548,9 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef KeySym keysym = XStringToKeysym(s)
         if keysym==NoSymbol:
             if s.startswith(b"U+"):
-                s = b"0x"+s[2:]
+                # clients may name unicode keysyms `U+20AC`, X11 uses `U20AC`:
+                # (which also maps latin-1 to the legacy keysyms, and rejects control characters)
+                return XStringToKeysym(b"U" + s[2:])
             if s.lower().startswith(b"0x"):
                 return int(s, 16)
             if len(s)>0:
