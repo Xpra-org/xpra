@@ -21,7 +21,7 @@ fi
 rm -f xserver-xorg-video-dummy-build-deps*
 
 if [ `arch` == "aarch64" ]; then
-  debuild -us -uc -b --no-lintian
+  debuild --no-lintian -us -uc -b
 else
   debuild -us -uc -b
 fi
