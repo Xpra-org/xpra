@@ -711,6 +711,26 @@ cdef extern from "wlr/types/wlr_content_type_v1.h":
                                                             wlr_surface *surface) nogil
 
 
+cdef extern from "wlr/types/wlr_ext_image_capture_source_v1.h":
+    cdef struct wlr_ext_output_image_capture_source_manager_v1:
+        pass
+    wlr_ext_output_image_capture_source_manager_v1 *wlr_ext_output_image_capture_source_manager_v1_create(
+        wl_display *display, uint32_t version)
+
+
+cdef extern from "wlr/types/wlr_ext_image_copy_capture_v1.h":
+    cdef struct wlr_ext_image_copy_capture_manager_v1:
+        pass
+    wlr_ext_image_copy_capture_manager_v1 *wlr_ext_image_copy_capture_manager_v1_create(
+        wl_display *display, uint32_t version)
+
+
+cdef extern from "wlr/types/wlr_screencopy_v1.h":
+    cdef struct wlr_screencopy_manager_v1:
+        pass
+    wlr_screencopy_manager_v1 *wlr_screencopy_manager_v1_create(wl_display *display)
+
+
 cdef extern from "wlr/types/wlr_input_device.h":
     cdef enum wlr_input_device_type:
         WLR_INPUT_DEVICE_KEYBOARD

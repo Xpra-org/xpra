@@ -12,6 +12,7 @@ from collections.abc import Callable
 
 from xpra.log import Logger
 from xpra.server import features
+from xpra.util.env import envbool
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 
@@ -82,6 +83,9 @@ from xpra.wayland.server.wlroots cimport (
     WP_COLOR_MANAGER_V1_PRIMARIES_SRGB, WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3,
     WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3, WP_COLOR_MANAGER_V1_PRIMARIES_BT2020,
     wlr_content_type_manager_v1, wlr_content_type_manager_v1_create,
+    wlr_ext_output_image_capture_source_manager_v1, wlr_ext_output_image_capture_source_manager_v1_create,
+    wlr_ext_image_copy_capture_manager_v1, wlr_ext_image_copy_capture_manager_v1_create,
+    wlr_screencopy_manager_v1, wlr_screencopy_manager_v1_create,
 )
 from xpra.wayland.server.pointer_protocols cimport (
     wlr_relative_pointer_manager_v1, wlr_relative_pointer_manager_v1_create,
@@ -90,6 +94,8 @@ from xpra.wayland.server.pointer_protocols cimport (
 
 
 log = Logger("wayland")
+
+IMAGE_CAPTURE = envbool("XPRA_WAYLAND_IMAGE_CAPTURE", True)
 
 
 def get_gpu_mode() -> str:
@@ -152,6 +158,9 @@ cdef class WaylandCompositor(ListenerObject):
     cdef wlr_data_control_manager_v1 *data_control_manager
     cdef wlr_color_manager_v1 *color_manager
     cdef wlr_content_type_manager_v1 *content_type_manager
+    cdef wlr_ext_output_image_capture_source_manager_v1 *output_capture_source_manager
+    cdef wlr_ext_image_copy_capture_manager_v1 *image_copy_capture_manager
+    cdef wlr_screencopy_manager_v1 *screencopy_manager
     cdef wlr_relative_pointer_manager_v1 *relative_pointer_manager
     cdef wlr_pointer_constraints_v1 *pointer_constraints
     cdef wlr_xdg_activation_v1 *activation_manager
@@ -282,6 +291,7 @@ cdef class WaylandCompositor(ListenerObject):
 
         self.create_color_manager()
         self.create_content_type_manager()
+        self.create_image_capture_managers()
 
         self.relative_pointer_manager = wlr_relative_pointer_manager_v1_create(self.display_ptr)
         if not self.relative_pointer_manager:
@@ -393,6 +403,24 @@ cdef class WaylandCompositor(ListenerObject):
         self.content_type_manager = wlr_content_type_manager_v1_create(self.display_ptr, 1)
         if not self.content_type_manager:
             log.warn("Warning: unable to create the content type manager")
+
+    cdef void create_image_capture_managers(self):
+        # `ext_image_copy_capture_manager_v1` + `ext_output_image_capture_source_manager_v1`:
+        # let clients running in the session capture the outputs (eg: `grim`, `xdg-desktop-portal-wlr`)
+        # the frames are copied when our headless outputs commit, which wlroots requests on demand.
+        # `zwlr_screencopy_manager_v1` is the deprecated predecessor, still the only one some tools use (eg: `wf-recorder`)
+        if not IMAGE_CAPTURE:
+            return
+        self.screencopy_manager = wlr_screencopy_manager_v1_create(self.display_ptr)
+        if not self.screencopy_manager:
+            log.warn("Warning: unable to create the screencopy manager")
+        self.image_copy_capture_manager = wlr_ext_image_copy_capture_manager_v1_create(self.display_ptr, 1)
+        if not self.image_copy_capture_manager:
+            log.warn("Warning: unable to create the image copy capture manager")
+            return
+        self.output_capture_source_manager = wlr_ext_output_image_capture_source_manager_v1_create(self.display_ptr, 1)
+        if not self.output_capture_source_manager:
+            log.warn("Warning: unable to create the output image capture source manager")
 
     cdef wlr_renderer *create_renderer(self) except NULL:
         cdef wlr_renderer *renderer = NULL
