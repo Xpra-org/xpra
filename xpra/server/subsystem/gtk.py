@@ -36,6 +36,11 @@ def inject_gtk_window_icon_lookup() -> None:
         return
     get_default_window_icon_fallback = windowicon.do_get_default_window_icon
     windowicon.get_default_window_icon = get_default_window_icon
+    # the first lookup loads the icon themes from disk,
+    # do it now rather than when the first window is mapped:
+    Gtk = gi_import("Gtk")
+    if it := Gtk.IconTheme.get_default():  # pylint: disable=no-member
+        it.has_icon("xpra")
 
 
 def get_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str, bytes] | None:
