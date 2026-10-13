@@ -4,8 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import unittest
 from unittest.mock import patch
+
+OSX = sys.platform == "darwin"
 
 
 class FakeClient:
@@ -47,6 +50,7 @@ class FakeMenuBar:
         pass
 
 
+@unittest.skipUnless(OSX, "the macOS menu is only available on macOS")
 class DarwinMenuTest(unittest.TestCase):
 
     def setUp(self) -> None:
