@@ -285,6 +285,7 @@ def configure_logging(options, mode: str) -> None:
             "_audio_record", "_audio_play", "_audio_meter",
             "stop", "print", "showconfig", "configure", "sbom",
             "otp",
+            "menu-cache",
             "_dialog", "_pass",
             "pinentry",
             "opengl",
