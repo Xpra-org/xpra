@@ -423,7 +423,8 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "opacity" in metadata:
             opacity = metadata.intget("opacity", -1)
-            opacity = 1 if opacity < 0 else min(1, opacity // 0xffffffff)
+            # older servers may send sign-extended 32-bit values:
+            opacity = 1 if opacity < 0 else min(1, (opacity & 0xffffffff) / 0xffffffff)
             ignorewarnings(self.set_opacity, opacity)
 
         if "content-types" in metadata:

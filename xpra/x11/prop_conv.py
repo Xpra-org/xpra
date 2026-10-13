@@ -290,7 +290,14 @@ def _to_long(v: int) -> bytes:
 
 
 def _from_long(v: bytes) -> int:
-    return struct.unpack(b"@L", v)[0]
+    # Xlib returns 32-bit values as sign-extended longs,
+    # so values with the top bit set would come out as huge 64-bit numbers:
+    return struct.unpack(b"@L", v)[0] & 0xffffffff
+
+
+def _from_integer(v: bytes) -> int:
+    # INTEGER is signed, and the sign-extended long already holds its value:
+    return struct.unpack(b"@l", v)[0]
 
 
 def _to_state(v: int) -> bytes:
@@ -313,7 +320,7 @@ PROP_TYPES: dict[str, tuple[type, str, int, Callable[[Any], bytes], Callable[[by
     "u8": (int, "CARDINAL", 8, _to_u8, _from_u8, b""),
     "u16": (int, "CARDINAL", 16, _to_u16, _from_u16, b""),
     "u32": (int, "CARDINAL", 32, _to_long, _from_long, b""),
-    "integer": (int, "INTEGER", 32, _to_long, _from_long, b""),
+    "integer": (int, "INTEGER", 32, _to_long, _from_integer, b""),
     "strut": (NetWMStrut, "CARDINAL", 32, unsupported, NetWMStrut, None),
     "strut-partial": (NetWMStrut, "CARDINAL", 32, unsupported, NetWMStrut, None),
     "motif-hints": (MotifWMHints, "_MOTIF_WM_HINTS", 32, unsupported, MotifWMHints, None),
