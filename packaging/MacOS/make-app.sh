@@ -621,6 +621,8 @@ find "${PYDIR}/" "${FRAMEWORKS_DIR}/lib-dynload/" -name "*.so" -print0 | while I
     codesign --remove-signature "${file}"
     change_prefix "${file}" "${old_rpath}" "${new_rpath}"
     change_prefix "${file}" "${JHBUILD_PREFIX}/lib" "${new_rpath}"
+    # the X11 bindings link against XQuartz, which we bundle in Frameworks/X11/lib:
+    change_prefix "${file}" "/opt/X11/lib/" "@rpath/X11/lib/"
     # Get all dylib dependencies
     otool -L "${file}" | grep -E "@executable_path.*\.dylib" | awk '{print $1}' | while read dep; do
       # Extract just the library name
@@ -707,6 +709,15 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 fi
 echo "  removed:${RMP}"
 echo "  kept:${KMP}"
+
+echo "- remove absolute rpaths"
+# rpaths left over from the build trees (jhbuild, pyenv):
+# all the load commands are relative by now, so these are never needed
+find "${CONTENTS_DIR}" -type f \( -name "*.so" -o -name "*.dylib" \) -print0 | while IFS='' read -r -d $'\0' file; do
+  otool -l "${file}" 2>/dev/null | awk '/cmd LC_RPATH/{getline; getline; print $2}' | grep -v '^@' | while read -r rpath; do
+    install_name_tool -delete_rpath "${rpath}" "${file}"
+  done
+done
 
 
 echo "*******************************************************************************"
