@@ -69,6 +69,11 @@ class ServerBase(ServerCore):
             # (ie: the user's desktop session bus) - see `init_session_bus`
             from xpra.server.subsystem.dbus import DbusManager
             classes.append(DbusManager)
+        # SharingServer must come before any subsystem whose `parse_hello` looks at the other clients
+        # (ie: display sizing, keyboard): it may reject the new connection,
+        # or disconnect older ones (ie: from the same uuid) which must not be taken into account:
+        from xpra.server.subsystem.sharing import SharingServer
+        classes.append(SharingServer)
         if features.ping:
             from xpra.server.subsystem.ping import PingServer
             classes.append(PingServer)
@@ -177,8 +182,6 @@ class ServerBase(ServerCore):
         if features.x11 and features.systray:
             from xpra.x11.subsystem.systray import SystemTrayServer
             classes.append(SystemTrayServer)
-        from xpra.server.subsystem.sharing import SharingServer
-        classes.append(SharingServer)
         from xpra.server.subsystem.client_session import ClientSessionServer
         classes.append(ClientSessionServer)
         from xpra.server.subsystem.settings import SettingsServer
