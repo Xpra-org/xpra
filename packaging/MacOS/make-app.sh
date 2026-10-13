@@ -78,7 +78,7 @@ function log_error() {
 echo "*******************************************************************************"
 echo "Cleaning"
 echo "- log directory"
-rm -f "${LOG_DIR}/"*.log
+rm -f "${LOG_DIR}/"*.log "${LOG_DIR}/"actool*
 rmdir "${LOG_DIR}" 2> /dev/null
 mkdir "${LOG_DIR}" || exit 1
 echo "- jhbuild files and directories"
