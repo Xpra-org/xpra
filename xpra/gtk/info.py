@@ -196,13 +196,24 @@ def get_rectangle_info(rect: Gdk.Rectangle) -> dict[str, int]:
     return info
 
 
+def get_monitor_refresh_rate(monitor: Gdk.Monitor) -> int:
+    """
+    The monitor's refresh rate in mHz, as documented by `GdkMonitor`.
+    GTK's quartz backend reports it in Hz instead (ie: 60), so convert it.
+    """
+    rate = monitor.get_refresh_rate()
+    if 0 < rate < 1000:
+        rate *= 1000
+    return rate
+
+
 def get_average_monitor_refresh_rate() -> int:
     rates = {}
     display = Gdk.Display.get_default()
     for m in range(display.get_n_monitors()):
         monitor = display.get_monitor(m)
-        log(f"monitor {m} ({monitor.get_model()}) refresh-rate={monitor.get_refresh_rate()}")
-        rates[m] = monitor.get_refresh_rate()
+        rates[m] = get_monitor_refresh_rate(monitor)
+        log(f"monitor {m} ({monitor.get_model()}) refresh-rate={rates[m]}")
     rate = -1
     if rates:
         rate = round(min(rates.values()) / 1000)
@@ -223,6 +234,8 @@ def get_monitor_info(monitor: Gdk.Monitor) -> dict[str, Any]:
         if hasattr(monitor, f"get_{x}"):
             fn: Callable = getattr(monitor, f"get_{x}")
             info[x] = int(fn())
+    if "refresh_rate" in info:
+        info["refresh_rate"] = get_monitor_refresh_rate(monitor)
     workarea = monitor.get_workarea()
     info["workarea"] = get_rectangle_info(workarea)
     subpixel = monitor.get_subpixel_layout()
@@ -276,6 +289,8 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
                     round(value.width / xscale),
                     round(value.height / yscale),
                 )
+            elif attr == "refresh-rate":
+                value = get_monitor_refresh_rate(monitor)
             elif attr == "width-mm":
                 value = round(value / xscale)
             elif attr == "height-mm":
