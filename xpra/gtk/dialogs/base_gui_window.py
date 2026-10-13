@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import signal
 import subprocess
 from typing import Iterable
@@ -14,7 +15,7 @@ from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.dialogs.util import hb_button, nearest_icon_size
 from xpra.gtk.dialogs.common_style import add_style_class, load_common_style
-from xpra.os_util import gi_import, WIN32
+from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.env import IgnoreWarningsContext
 from xpra.exit_codes import exit_str
 from xpra.common import noop
@@ -318,6 +319,12 @@ class BaseGUIWindow(Gtk.Window):
         cmd = get_xpra_command()
         cmd.append(subcommand)
         cmd += list(args)
+        if OSX:
+            # replace this process rather than spawning a child:
+            # the Dock only knows about the process that macOS launched,
+            # so a child would show up as a second instance (and dock icon)
+            self.replace_process(cmd)
+            return
         try:
             proc = exec_command(cmd)
         except OSError:
@@ -338,6 +345,20 @@ class BaseGUIWindow(Gtk.Window):
             # but on macos we can get file descriptor errors
             # if we exit immediately after we spawn the `attach` command
             GLib.timeout_add(2000, may_exit)
+
+    def replace_process(self, cmd: list[str]) -> None:
+        log("replace_process(%s)", cmd)
+        os.environ["XPRA_WAIT_FOR_INPUT"] = "0"
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.flush()
+            except OSError:
+                pass
+        try:
+            os.execvp(cmd[0], cmd)
+        except OSError:
+            log.error("Error running command: %s", cmd, exc_info=True)
+            self.show()
 
     def may_notify(self, nid: NotificationID, summary: str, body: str) -> None:
         log.info(summary)
