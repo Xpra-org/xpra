@@ -3311,6 +3311,10 @@ else:
     if OSX and "py2app" in sys.argv:
         import py2app    #@UnresolvedImport
         assert py2app is not None
+        # on arm64, py2app always ad-hoc signs the bundle, and there is no option to turn this off:
+        # this is wasted effort since make-app.sh modifies the binaries and sign-app.sh signs everything
+        from py2app import build_app
+        build_app.codesign_adhoc = lambda bundle: None
 
         # don't use py_modules or scripts with `py2app`, and no cython:
         del setup_options["py_modules"]
