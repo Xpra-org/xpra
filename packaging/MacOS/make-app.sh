@@ -377,6 +377,16 @@ echo "**************************************************************************
 echo "Add components"
 echo "- icon"
 cp "${MACOS_SCRIPT_DIR}/"*.icns "${RSCDIR}/"
+# macOS 26+ icon (Assets.car), the .icns above remains the fallback:
+if xcrun --find actool >& /dev/null; then
+       ACTOOL_LOG="${LOG_DIR}/actool.log"
+       xcrun actool "${MACOS_SCRIPT_DIR}/AppIcon.icon" --compile "${RSCDIR}" \
+               --app-icon AppIcon --platform macosx --minimum-deployment-target 12.0 \
+               --output-partial-info-plist "${LOG_DIR}/actool-partial.plist" >& "${ACTOOL_LOG}"
+       log_error "actool" "${ACTOOL_LOG}"
+else
+       echo "  actool not found, skipping AppIcon.icon"
+fi
 #the build / install step should have placed them here:
 echo "- config files"
 rsync -rplt "${XPRA_SRC_DIR}/build/etc/xpra" "${RSCDIR}/etc/"

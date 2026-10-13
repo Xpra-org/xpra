@@ -14,6 +14,8 @@
 	<string>%VERSION%-r%REVISION% (c) 2012-2026 https://xpra.org/</string>
 	<key>CFBundleIconFile</key>
 	<string>xpra.icns</string>
+       <key>CFBundleIconName</key>
+       <string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>org.xpra.xpra</string>
 	<key>CFBundleInfoDictionaryVersion</key>
