@@ -34,9 +34,16 @@ fi
 
 TEAM_ID=$(get_team_id "$CODESIGN_KEYNAME")
 echo "team id: ${TEAM_ID:-none}"
-# the entitlements are needed even with a Developer ID certificate,
-# ie: python's ctypes callbacks require 'allow-unsigned-executable-memory' with the hardened runtime:
+# the entitlements are needed even with a Developer ID certificate, ie: for webcam and audio capture:
 ENTITLEMENTS_FILE="${MACOS_SCRIPT_DIR}/entitlements.plist"
+if [ -n "${TEAM_ID}" ]; then
+  # all the libraries we load are signed with the same Team ID,
+  # so we can keep library validation enabled - ad-hoc signatures have no Team ID and cannot:
+  TEAM_ENTITLEMENTS_FILE="$(mktemp -d -t xpra-entitlements)/entitlements.plist"
+  cp "${ENTITLEMENTS_FILE}" "${TEAM_ENTITLEMENTS_FILE}"
+  /usr/libexec/PlistBuddy -c "Delete :com.apple.security.cs.disable-library-validation" "${TEAM_ENTITLEMENTS_FILE}"
+  ENTITLEMENTS_FILE="${TEAM_ENTITLEMENTS_FILE}"
+fi
 export ENTITLEMENTS_FILE
 
 # for libraries and executables:
@@ -99,7 +106,7 @@ xattr -l "${APP_DIR}"
 # Verify just the bundle seal, then deep verification (checks all components)
 echo "  signature"
 codesign --verify --verbose=1 "${APP_DIR}" && codesign --verify --deep --strict --verbose=1 "${APP_DIR}"
-echo "  gatekeeper"
+echo "  gatekeeper (rejected as 'Unnotarized Developer ID' until notarize.sh runs)"
 spctl --status
 spctl --assess -vvv --type execute "${APP_DIR}"
 

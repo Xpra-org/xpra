@@ -19,7 +19,6 @@ GIR_SOURCE_DIR="${JHBUILD_PREFIX}/share/gir-1.0"
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER="${STRIP_GSTREAMER:=$STRIP_DEFAULT}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_GSTREAMER}"
-GSTREAMER_VIDEO="${GSTREAMER_VIDEO:=0}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_TESTS="${STRIP_TESTS:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
@@ -41,11 +40,6 @@ if [ -z "${DO_X11}" ]; then
 fi
 
 BUILDNO="${BUILDNO:="0"}"
-if [ "${GSTREAMER_VIDEO}" == "1" ]; then
-	BUILD_ARGS="${BUILD_ARGS} --with-gstreamer_video"
-else
-	BUILD_ARGS="${BUILD_ARGS} --without-gstreamer_video"
-fi
 APP_NAME="Xpra"
 if [ "${LIGHT}" == "1" ]; then
   APP_NAME="Xpra-Light"
@@ -84,7 +78,7 @@ function log_error() {
 echo "*******************************************************************************"
 echo "Cleaning"
 echo "- log directory"
-rm -f "${LOG_DIR}/"*.log
+rm -f "${LOG_DIR}/"*.log "${LOG_DIR}/"actool*
 rmdir "${LOG_DIR}" 2> /dev/null
 mkdir "${LOG_DIR}" || exit 1
 echo "- jhbuild files and directories"
@@ -252,10 +246,6 @@ if [ "${LIGHT}" == "1" ]; then
 		rm -fr "${PYDIR}/xpra/$x"
 	done
 fi
-if [ "${GSTREAMER_VIDEO}" == "0" ]; then
-	echo "- remove gstreamer video codec"
-	rm -fr "${PYDIR}/xpra/codecs/gstreamer"
-fi
 
 for module in "AVFoundation" "gi" "cffi" "OpenGL" "OpenGL_accelerate" "zeroconf"; do
   echo "- ${module}"
@@ -387,6 +377,16 @@ echo "**************************************************************************
 echo "Add components"
 echo "- icon"
 cp "${MACOS_SCRIPT_DIR}/"*.icns "${RSCDIR}/"
+# macOS 26+ icon (Assets.car), the .icns above remains the fallback:
+if xcrun --find actool >& /dev/null; then
+       ACTOOL_LOG="${LOG_DIR}/actool.log"
+       xcrun actool "${MACOS_SCRIPT_DIR}/AppIcon.icon" --compile "${RSCDIR}" \
+               --app-icon AppIcon --platform macosx --minimum-deployment-target 12.0 \
+               --output-partial-info-plist "${LOG_DIR}/actool-partial.plist" >& "${ACTOOL_LOG}"
+       log_error "actool" "${ACTOOL_LOG}"
+else
+       echo "  actool not found, skipping AppIcon.icon"
+fi
 #the build / install step should have placed them here:
 echo "- config files"
 rsync -rplt "${XPRA_SRC_DIR}/build/etc/xpra" "${RSCDIR}/etc/"
@@ -423,10 +423,10 @@ if [ "${DO_X11}" == "1" ]; then
 	rm -f "${FRAMEWORKS_DIR}/X11/lib/libXt.7.dylib"
 	mkdir "${FRAMEWORKS_DIR}/X11/lib/dri"
 	cp "/opt/X11/lib/dri/"* "${FRAMEWORKS_DIR}/X11/lib/dri/"
-	# Strip XQuartz's Apple Developer ID signatures upfront. install_name_tool
-	# invalidates signatures anyway, and sign-app.sh re-signs everything; doing
-	# it here once means the per-binary fixup loops below don't have to.
-	find "${FRAMEWORKS_DIR}/X11" -type f -exec codesign --remove-signature {} + 2>/dev/null || true
+       # Don't 'codesign --remove-signature' the XQuartz files: it leaves a hole at the
+       # end of __LINKEDIT and install_name_tool then refuses to touch them with:
+       # "link edit information does not fill the __LINKEDIT segment".
+       # install_name_tool invalidates the signatures instead, and sign-app.sh re-signs them.
 fi
 
 echo "- gobject-introspection"
@@ -495,7 +495,7 @@ function set_loader_id() {
   dylib="$1"
   leaf=$(otool -D "${dylib}" | tail -n +2 | head -n 1)
   leaf=$(basename "${leaf:-${dylib}}")
-  install_name_tool -id "@loader_path/${leaf}" "${dylib}"
+  install_name_tool -id "@loader_path/${leaf}" "${dylib}" 2> >(grep -v "will invalidate the code signature" >&2)
 }
 
 # The name to reference a bundled dylib by: the leaf of its install name.
@@ -525,7 +525,7 @@ function change_prefix() {
     if [[ $lib_path == *"$old_prefix"* ]]; then
       # Replace the prefix
       new_path="${lib_path/$old_prefix/$new_prefix}"
-      install_name_tool -change "$lib_path" "$new_path" "$filename"
+      install_name_tool -change "$lib_path" "$new_path" "$filename" 2> >(grep -v "will invalidate the code signature" >&2)
     fi
   done
 }
@@ -621,6 +621,8 @@ find "${PYDIR}/" "${FRAMEWORKS_DIR}/lib-dynload/" -name "*.so" -print0 | while I
     codesign --remove-signature "${file}"
     change_prefix "${file}" "${old_rpath}" "${new_rpath}"
     change_prefix "${file}" "${JHBUILD_PREFIX}/lib" "${new_rpath}"
+    # the X11 bindings link against XQuartz, which we bundle in Frameworks/X11/lib:
+    change_prefix "${file}" "/opt/X11/lib/" "@rpath/X11/lib/"
     # Get all dylib dependencies
     otool -L "${file}" | grep -E "@executable_path.*\.dylib" | awk '{print $1}' | while read dep; do
       # Extract just the library name
@@ -708,6 +710,15 @@ fi
 echo "  removed:${RMP}"
 echo "  kept:${KMP}"
 
+echo "- remove absolute rpaths"
+# rpaths left over from the build trees (jhbuild, pyenv):
+# all the load commands are relative by now, so these are never needed
+find "${CONTENTS_DIR}" -type f \( -name "*.so" -o -name "*.dylib" \) -print0 | while IFS='' read -r -d $'\0' file; do
+  otool -l "${file}" 2>/dev/null | awk '/cmd LC_RPATH/{getline; getline; print $2}' | grep -v '^@' | while read -r rpath; do
+    install_name_tool -delete_rpath "${rpath}" "${file}"
+  done
+done
+
 
 echo "*******************************************************************************"
 echo "Adding Xpra_NoDock app bundle"
@@ -731,3 +742,9 @@ sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${SUB_PLIST}"
 sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${SUB_PLIST}"
 sed -i '' -e "s+%ARCH%+$ARCH+g" "${SUB_PLIST}"
 plutil -replace CFBundleExecutable -string "${APP_NAME}" "${SUB_PLIST}"
+
+
+echo "*******************************************************************************"
+echo "Checking the bundle for Homebrew or other external dependencies"
+"${MACOS_SCRIPT_DIR}/check-app.sh" "${APP_DIR}" || exit 1
+
