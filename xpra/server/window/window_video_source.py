@@ -420,23 +420,32 @@ class WindowVideoSource(WindowSource):
         log("wvs.update_encoding_selection(%s, %s, %s) full_csc_modes=%s", encoding, exclude, init, self.full_csc_modes)
         if exclude is None:
             exclude = []
+        # a client that does not supply csc modes for any encoding does not handle video at all,
+        # so there is no need to warn about each encoding:
+        client_video = any(self.full_csc_modes.strtupleget(x) for x in self.video_encodings)
+        common_video = []
         for x in self.video_encodings:
             if x not in self.core_encodings:
                 log("video encoding %s not in core encodings", x)
                 exclude.append(x)
                 continue
             csc_modes = self.full_csc_modes.strtupleget(x)
-            if (not csc_modes or x not in self.core_encodings) and first_time(f"nocsc-{x}-{self.wid}"):
+            if not csc_modes and not init:
                 exclude.append(x)
-                msg_args = ("Warning: client does not support any csc modes with %s on window %i", x, self.wid)
-                if x=="jpega" and not self.supports_transparency:
-                    log(f"skipping {x} since client does not support transparency")
-                elif not init and first_time(f"no-csc-{x}-{self.wid}"):
-                    log.warn(*msg_args)
-                else:
-                    log(*msg_args)
-                log(" csc modes=%", self.full_csc_modes)
-        self.common_video_encodings = preforder(set(self.video_encodings) & set(self.core_encodings))
+                if first_time(f"nocsc-{x}-{self.wid}"):
+                    msg_args = ("Warning: client does not support any csc modes with %s on window %i", x, self.wid)
+                    if x=="jpega" and not self.supports_transparency:
+                        log(f"skipping {x} since client does not support transparency")
+                    elif client_video:
+                        log.warn(*msg_args)
+                    else:
+                        log(*msg_args)
+                    log(" csc modes=%s", self.full_csc_modes)
+                continue
+            # when `init` is set, the per-window csc data has not arrived yet:
+            # do_set_client_properties() will re-run update_encoding_selection() once it does
+            common_video.append(x)
+        self.common_video_encodings = preforder(common_video)
         log("update_encoding_options: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
         super().update_encoding_selection(encoding, exclude, init)
@@ -1726,6 +1735,9 @@ class WindowVideoSource(WindowSource):
         w = width & self.width_mask
         h = height & self.height_mask
         scores = self.get_video_pipeline_options(encodings, w, h, src_format)
+        if not scores and not any(self.full_csc_modes.strtupleget(enc) for enc in encodings):
+            videolog("client does not support any csc modes for %s", csv(encodings))
+            return False
         return self.setup_pipeline(scores, width, height, src_format)
 
     def do_check_pipeline(self, encodings : Tuple[str,...], width : int, height : int, src_format : str):
