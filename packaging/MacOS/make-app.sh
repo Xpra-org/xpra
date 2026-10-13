@@ -423,10 +423,10 @@ if [ "${DO_X11}" == "1" ]; then
 	rm -f "${FRAMEWORKS_DIR}/X11/lib/libXt.7.dylib"
 	mkdir "${FRAMEWORKS_DIR}/X11/lib/dri"
 	cp "/opt/X11/lib/dri/"* "${FRAMEWORKS_DIR}/X11/lib/dri/"
-	# Strip XQuartz's Apple Developer ID signatures upfront. install_name_tool
-	# invalidates signatures anyway, and sign-app.sh re-signs everything; doing
-	# it here once means the per-binary fixup loops below don't have to.
-	find "${FRAMEWORKS_DIR}/X11" -type f -exec codesign --remove-signature {} + 2>/dev/null || true
+       # Don't 'codesign --remove-signature' the XQuartz files: it leaves a hole at the
+       # end of __LINKEDIT and install_name_tool then refuses to touch them with:
+       # "link edit information does not fill the __LINKEDIT segment".
+       # install_name_tool invalidates the signatures instead, and sign-app.sh re-signs them.
 fi
 
 echo "- gobject-introspection"
@@ -495,7 +495,7 @@ function set_loader_id() {
   dylib="$1"
   leaf=$(otool -D "${dylib}" | tail -n +2 | head -n 1)
   leaf=$(basename "${leaf:-${dylib}}")
-  install_name_tool -id "@loader_path/${leaf}" "${dylib}"
+  install_name_tool -id "@loader_path/${leaf}" "${dylib}" 2> >(grep -v "will invalidate the code signature" >&2)
 }
 
 # The name to reference a bundled dylib by: the leaf of its install name.
@@ -525,7 +525,7 @@ function change_prefix() {
     if [[ $lib_path == *"$old_prefix"* ]]; then
       # Replace the prefix
       new_path="${lib_path/$old_prefix/$new_prefix}"
-      install_name_tool -change "$lib_path" "$new_path" "$filename"
+      install_name_tool -change "$lib_path" "$new_path" "$filename" 2> >(grep -v "will invalidate the code signature" >&2)
     fi
   done
 }
