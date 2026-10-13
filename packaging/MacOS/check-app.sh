@@ -13,12 +13,12 @@ if [ ! -d "${APP_DIR}" ]; then
 fi
 
 # `/usr/local/Cellar` and `/usr/local/opt` are the Intel Homebrew prefixes:
-FORBIDDEN_RE='/opt/homebrew|/usr/local/Cellar|/usr/local/opt/|/opt/local/'
+# and `/pyenv/versions/` is the interpreter running jhbuild, nothing should be built against it:
+FORBIDDEN_RE='/opt/homebrew|/usr/local/Cellar|/usr/local/opt/|/opt/local/|/pyenv/versions/'
 # the only absolute locations a load command or rpath may point to:
 ALLOWED_RE='^(@rpath/|@loader_path/|@executable_path/|/usr/lib/|/System/Library/)'
 
 ERRORS=0
-WARNINGS=0
 
 echo "*******************************************************************************"
 echo "Checking ${APP_DIR}"
@@ -40,12 +40,12 @@ while IFS= read -r -d $'\0' f; do
 			ERRORS=$((ERRORS+1))
 		fi
 	done
-	# a stale rpath is only searched after the bundled ones,
-	# (forbidden prefixes are caught by the string check below)
+       # make-app.sh removes the jhbuild prefix rpath,
+       # any other absolute rpath comes from a foreign build tree:
 	for p in $rpaths; do
 		if ! [[ "$p" =~ $ALLOWED_RE ]]; then
-			echo "  warning: ${f#"${APP_DIR}/"} has rpath $p"
-			WARNINGS=$((WARNINGS+1))
+                       echo "  error: ${f#"${APP_DIR}/"} has rpath $p"
+                       ERRORS=$((ERRORS+1))
 		fi
 	done
 done < <(find "${APP_DIR}" -type f -print0)
@@ -60,9 +60,6 @@ if [ -n "${MATCHES}" ]; then
 	done <<< "${MATCHES}"
 fi
 
-if [ "${WARNINGS}" != "0" ]; then
-	echo "found ${WARNINGS} warning(s)"
-fi
 if [ "${ERRORS}" != "0" ]; then
 	echo "found ${ERRORS} problem(s) in ${APP_DIR}"
 	exit 1
