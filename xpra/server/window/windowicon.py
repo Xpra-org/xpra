@@ -55,7 +55,7 @@ def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, byt
                         NEAREST = Image.Resampling.NEAREST
                     except AttributeError:
                         NEAREST = Image.NEAREST
-                    img = img.resize((w, h), NEAREST)
+                    img = img.resize((size, size), NEAREST)
                 data = to_png(img)
                 img.close()
                 return size, size, "png", data
