@@ -431,7 +431,9 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("strut", value)
 
     def _handle_opacity_change(self) -> None:
-        opacity = self.prop_get("_NET_WM_WINDOW_OPACITY", "u32", True) or -1
+        opacity = self.prop_get("_NET_WM_WINDOW_OPACITY", "u32", True)
+        if opacity is None:
+            opacity = -1
         metalog("_NET_WM_WINDOW_OPACITY=%s", opacity)
         self._updateprop("opacity", opacity)
 
