@@ -435,7 +435,8 @@ class ClientWindowBase(ClientWidgetBase):
             if opacity<0:
                 opacity = 1
             else:
-                opacity = min(1, opacity//0xffffffff)
+                # older servers may send sign-extended 32-bit values:
+                opacity = min(1, (opacity & 0xffffffff) / 0xffffffff)
             #requires gtk>=2.12!
             if hasattr(self, "set_opacity"):
                 self.set_opacity(opacity)
