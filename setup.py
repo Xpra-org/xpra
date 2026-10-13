@@ -2350,7 +2350,7 @@ def build_xpra_conf(install_dir: str) -> None:
         'mousewheel'            : "on",
         'printing'              : bstr(printing_ENABLED),
         'dbus_control'          : bstr(dbus_ENABLED),
-        'mmap'                  : "auto",
+        'mmap'                  : ["auto", "no"][OSX or WIN32],
         'opengl'                : "no" if OSX else "probe",
         'headerbar'             : ["auto", "no"][OSX or WIN32],
     }
