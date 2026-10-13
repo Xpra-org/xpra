@@ -230,7 +230,8 @@ class TestAgentForwarding(unittest.TestCase):
         assert self.server.exec_event.wait(10)
         assert self.server.agent_forwarding_requested
         # paramiko's `AgentProxyThread` raises "Unable to connect to SSH agent" in its thread:
-        with patch.object(threading, "excepthook"):
+        # threading.excepthook was added in Python 3.8.
+        with patch.object(threading, "excepthook", create=True):
             reply = self.server.query_forwarded_agent()
         # paramiko closes the agent connections again from `__del__`, which raises `EBADF`:
         proxies = handler._AgentRequestHandler__clientProxys

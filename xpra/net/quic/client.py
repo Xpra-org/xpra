@@ -239,9 +239,8 @@ def quic_connect(host : str, port : int, path : str,
         from xpra.scripts.main import CONNECT_TIMEOUT
         import asyncio
         try:
-            async with asyncio.timeout(CONNECT_TIMEOUT):
-                await protocol.wait_connected()
-                conn = protocol.open(host, port, path)
+            await asyncio.wait_for(protocol.wait_connected(), CONNECT_TIMEOUT)
+            conn = protocol.open(host, port, path)
             log(f"websocket connection {conn}")
             return conn
         except asyncio.TimeoutError:

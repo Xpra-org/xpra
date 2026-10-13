@@ -207,8 +207,9 @@ def get_platform_name():
                     "-Command",
                     "$OutputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; (Get-CimInstance Win32_OperatingSystem).Caption | Out-String",
                  ],
-                 capture_output=True,
-                 text=True,
+                 stdout=PIPE,
+                 stderr=PIPE,
+                 universal_newlines=True,
                  encoding="utf-8",
             ).stdout.strip()
             return out
