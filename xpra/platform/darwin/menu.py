@@ -83,11 +83,18 @@ class OSXMenuHelper(GTKTrayMenu):
         self._clipboard_change_pending = False
 
     def set_client(self, client) -> None:
+        # MenuHelper.__init__ calls set_client before menu_bar exists:
+        if getattr(self, "menu_bar", None) and self.full and client is not getattr(self, "client", None):
+            self.remove_all_menus()
         super().set_client(client)
         # if we call add_about before the main loop is ready,
         # things don't work...
         if client and SHOW_ABOUT_XPRA:
             self.after_handshake(self.add_about)
+
+    def cleanup(self) -> None:
+        self.remove_all_menus()
+        super().cleanup()
 
     def show_menu(self, button: int, time) -> None:
         # does not mean anything on OSX since the menu is controlled by the OS
@@ -116,6 +123,9 @@ class OSXMenuHelper(GTKTrayMenu):
                     x.hide()
         self.menus = {}
         self.full = False
+        self.numlock_menuitem = None
+        self.window_menu = None
+        self.window_menu_item = None
 
     def add_top_level_menu(self, label: str, submenu) -> None:
         """ Adds the item to the app-menu or to the top bar,

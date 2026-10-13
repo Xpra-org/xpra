@@ -90,7 +90,9 @@ class OSXTray(TrayBase):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=".*invalid cast from 'GtkMenuBar'")
             self.macapp.set_menu_bar(self.menu)
-        mh.add_full_menu()
+            mh.add_full_menu()
+            # gtk-osx only publishes items that exist at set_menu_bar time:
+            self.macapp.set_menu_bar(self.menu)
         log("OSXTray.set_global_menu() done")
 
     def set_dock_menu(self) -> None:
