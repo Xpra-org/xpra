@@ -15,6 +15,7 @@ from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, envfloat
 from xpra.audio.audio_pipeline import AudioPipeline
+from xpra.audio.common import PULSEAUDIO_DISCONNECTED
 from xpra.util.gobject import n_arg_signal
 from xpra.gstreamer.common import normv, has_plugins, plugin_str, GST_FLOW_OK, \
     get_default_appsink_attributes, get_element_str
@@ -250,6 +251,13 @@ class AudioSource(AudioPipeline):
             )
             info["src"]["type"] = self.src_type
         return info
+
+    def handle_error(self, error, details: str) -> None:
+        if error and error.message == PULSEAUDIO_DISCONNECTED:
+            # the server reports this one, unless it is shutting down:
+            log("pulseaudio disconnected: %s", details)
+            return
+        super().handle_error(error, details)
 
     def do_parse_element_message(self, _message, name, props=None) -> None:
         if name == "cutter" and props:

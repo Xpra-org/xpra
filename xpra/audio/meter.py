@@ -7,7 +7,7 @@
 import math
 from time import monotonic
 
-from xpra.audio.common import SILENCE_FLOOR_DB
+from xpra.audio.common import SILENCE_FLOOR_DB, PULSEAUDIO_DISCONNECTED
 from xpra.gstreamer.common import get_element_str, plugin_str
 from xpra.gstreamer.pipeline import Pipeline
 from xpra.util.env import envint
@@ -28,10 +28,9 @@ BUFFER_TIME = envint("XPRA_AUDIO_METER_BUFFER_TIME", 0)
 # the only consequence is that some levels are calculated from fewer samples:
 IGNORED_WARNINGS = ("Can't record audio fast enough", )
 
-# PulseAudio receives the server's terminal signal directly and may exit before
-# this subprocess processes its cleanup request.  The pipeline still follows
-# the normal error path; only this expected diagnostic is suppressed here.
-IGNORED_ERRORS = ("Disconnected: Connection terminated", )
+# the pipeline still follows the normal error path,
+# only this expected diagnostic is suppressed here:
+IGNORED_ERRORS = (PULSEAUDIO_DISCONNECTED, )
 
 
 def get_source_channels(device: str) -> int:

@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from xpra.audio import src as audio_src
 from xpra.gstreamer.common import import_gst, has_plugins
+from xpra.gstreamer.pipeline import Pipeline
 
 
 def _elements(channels: int, src_type="pulsesrc") -> list[str]:
@@ -132,6 +133,21 @@ class TestCutterRuns(unittest.TestCase):
             above = self._run(channels)
             assert above, f"cutter posted no messages ({channels} channels)"
             assert False in above, f"cutter never detected any silence ({channels} channels): {above}"
+
+
+class TestSourceErrors(unittest.TestCase):
+
+    def test_pulseaudio_disconnect_error_is_left_to_the_server(self):
+        class FakeError:
+            def __init__(self, message):
+                self.message = message
+
+        source = audio_src.AudioSource.__new__(audio_src.AudioSource)
+        with patch.object(Pipeline, "handle_error") as handle_error:
+            source.handle_error(FakeError("Disconnected: Connection terminated"), "details")
+            handle_error.assert_not_called()
+            source.handle_error(FakeError("some other problem"), "details")
+            handle_error.assert_called_once()
 
 
 def main():

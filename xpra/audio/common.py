@@ -55,6 +55,10 @@ AUDIO_KEEPALIVE_INTERVAL = envint("XPRA_AUDIO_KEEPALIVE_INTERVAL", 5)
 AUDIO_KEEPALIVE_TIMEOUT = envint("XPRA_AUDIO_KEEPALIVE_TIMEOUT", 10)
 SILENCE_FLOOR_DB = -120.0
 
+# PulseAudio receives the server's terminal signal directly (ie: Ctrl-C) and may exit
+# before our audio subprocesses process their cleanup request:
+PULSEAUDIO_DISCONNECTED = "Disconnected: Connection terminated"
+
 
 # used for parsing codec names specified on the command line:
 def audio_option_or_all(name: str, options: Sequence[str], all_values: Iterable[str]) -> Sequence[str]:

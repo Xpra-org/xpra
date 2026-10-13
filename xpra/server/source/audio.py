@@ -11,7 +11,7 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.audio.common import (
-    AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET, AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET,
+    AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET, AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET, PULSEAUDIO_DISCONNECTED,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.net.compression import Compressed
@@ -104,6 +104,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.hello_sent = 0.0
         self.init_audio_keepalive_state()
         self.audio_fade_timer = 0
+        self.audio_source_error_timer = 0
         self.new_stream_timers: dict[Popen, int] = {}
         self.wants_audio_capabilities = False            # flag indicating that the client wants 'audio-capabilities'
 
@@ -139,6 +140,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         log("%s.cleanup()", self)
         self.cancel_audio_fade_timer()
         self.cancel_audio_keepalive_timers()
+        self.cancel_audio_source_error_timer()
         self.stop_sending_audio()
         self.stop_receiving_audio()
         self.stop_new_stream_notifications()
@@ -340,9 +342,25 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
                 self.send_eos(codec)
 
     def audio_source_error(self, source, message: str) -> None:
-        # this should be printed to stderr by the audio process already
-        if source == self.audio_source:
-            log("audio capture error: %s", message)
+        if source != self.audio_source:
+            return
+        log("audio capture error: %s", message)
+        if PULSEAUDIO_DISCONNECTED not in message:
+            # this should be printed to stderr by the audio process already
+            return
+        # on shutdown (ie: Ctrl-C), pulseaudio may die before we get to `cleanup`,
+        # so only report the error if `cleanup` does not cancel this timer first:
+        self.cancel_audio_source_error_timer()
+        self.audio_source_error_timer = GLib.timeout_add(1000, self.warn_audio_source_error, message)
+
+    def warn_audio_source_error(self, message: str) -> None:
+        self.audio_source_error_timer = 0
+        log.warn("Warning: audio capture error: %s", message)
+
+    def cancel_audio_source_error_timer(self) -> None:
+        if timer := self.audio_source_error_timer:
+            self.audio_source_error_timer = 0
+            GLib.source_remove(timer)
 
     def audio_source_exit(self, source, *args) -> None:
         log("audio_source_exit(%s, %s)", source, args)
