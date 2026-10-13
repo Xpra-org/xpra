@@ -68,8 +68,8 @@ class OSXMenuHelper(GTKTrayMenu):
     """
 
     def __init__(self, client=None):
-        super().__init__(client)
-        log("OSXMenuHelper(%s)", client)
+        # MenuHelper.__init__ calls set_client, so initialize the menu state first.
+        self.client = None
         self.menu_bar = None
         self.hidden_window = None
         self.menus = {}  # all the "top-level" menu items we manage
@@ -79,12 +79,12 @@ class OSXMenuHelper(GTKTrayMenu):
         self.window_menu_item = None
         self.numlock_menuitem = None
         self.full = False
-        self.set_client(client)
         self._clipboard_change_pending = False
+        super().__init__(client)
+        log("OSXMenuHelper(%s)", client)
 
     def set_client(self, client) -> None:
-        # MenuHelper.__init__ calls set_client before menu_bar exists:
-        if getattr(self, "menu_bar", None) and self.full and client is not getattr(self, "client", None):
+        if self.full and client is not self.client:
             self.remove_all_menus()
         super().set_client(client)
         # if we call add_about before the main loop is ready,

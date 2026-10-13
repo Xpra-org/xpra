@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import patch
 
 
 class FakeClient:
@@ -48,16 +49,47 @@ class FakeMenuBar:
 
 class DarwinMenuTest(unittest.TestCase):
 
-    def test_reconnect_repopulates_menus(self):
+    def setUp(self) -> None:
+        icon_size_patcher = patch("xpra.client.gui.menu_helper.get_icon_size", return_value=16)
+        icon_size_patcher.start()
+        self.addCleanup(icon_size_patcher.stop)
+
+    @staticmethod
+    def make_helper():
         from xpra.platform.darwin import menu
-        helper = object.__new__(menu.OSXMenuHelper)
-        helper.client = FakeClient()
+        helper = menu.OSXMenuHelper(FakeClient())
         helper.menu_bar = FakeMenuBar()
-        helper.menus = {}
-        helper.full = False
-        helper.menu_shown = False
         helper.menuitem = lambda label, *_args, **_kwargs: FakeMenuItem(label)
         helper.get_extra_menus = lambda: [("Info", object()), ("Features", object()), ("Clipboard", object())]
+        return helper
+
+    def test_initialization_without_client(self):
+        from xpra.platform.darwin import menu
+        helper = menu.OSXMenuHelper()
+        helper.add_full_menu()
+        helper.cleanup()
+        self.assertIsNone(helper.client)
+        self.assertFalse(helper.full)
+
+    def test_client_change_repopulates_menus(self):
+        helper = self.make_helper()
+        helper.add_full_menu()
+        old_items = helper.menu_bar.get_children()
+        helper.set_client(helper.client)
+        self.assertTrue(helper.full)
+        self.assertEqual(helper.menu_bar.get_children(), old_items)
+        client = FakeClient()
+        helper.set_client(client)
+        self.assertIs(helper.client, client)
+        self.assertFalse(helper.full)
+        self.assertEqual(helper.menu_bar.get_children(), [])
+        helper.add_full_menu()
+        items = helper.menu_bar.get_children()
+        self.assertEqual([item.label for item in items], ["Clipboard", "Features", "Info"])
+        self.assertTrue(all(item not in old_items for item in items))
+
+    def test_reconnect_repopulates_menus(self):
+        helper = self.make_helper()
         helper.add_full_menu()
         self.assertTrue(helper.full)
         helper.cleanup()
