@@ -80,11 +80,17 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self._clipboard_change_pending = False
 
     def set_client(self, client) -> None:
+        if self.full and client is not self.client:
+            self.remove_all_menus()
         self.client = client
         #if we call add_about before the main loop is ready,
         #things don't work...
         if client and SHOW_ABOUT_XPRA:
             client.after_handshake(self.add_about)
+
+    def cleanup(self) -> None:
+        self.remove_all_menus()
+        super().cleanup()
 
     def show_menu(self, button:int, time) -> None:
         #does not mean anything on OSX since the menu is controlled by the OS
@@ -113,6 +119,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
                     x.hide()
         self.menus = {}
         self.full = False
+        self.numlock_menuitem = None
+        self.window_menu = None
+        self.window_menu_item = None
 
 
     def add_top_level_menu(self, label:str, submenu) -> None:
