@@ -106,7 +106,7 @@ xattr -l "${APP_DIR}"
 # Verify just the bundle seal, then deep verification (checks all components)
 echo "  signature"
 codesign --verify --verbose=1 "${APP_DIR}" && codesign --verify --deep --strict --verbose=1 "${APP_DIR}"
-echo "  gatekeeper"
+echo "  gatekeeper (rejected as 'Unnotarized Developer ID' until notarize.sh runs)"
 spctl --status
 spctl --assess -vvv --type execute "${APP_DIR}"
 
