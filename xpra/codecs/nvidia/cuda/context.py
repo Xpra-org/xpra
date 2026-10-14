@@ -61,21 +61,15 @@ def record_device_success(device_id: int) -> None:
 
 
 def device_info(d) -> str:
-    if not d:
-        return "None"
-    return f"{d.name()} @ {d.pci_bus_id()}"
+    return f"{d.name()} @ {d.pci_bus_id()}" if d else "None"
 
 
 def pci_bus_id(d) -> str:
-    if not d:
-        return "None"
-    return d.pci_bus_id()
+    return d.pci_bus_id() if d else "None"
 
 
 def device_name(d) -> str:
-    if not d:
-        return "None"
-    return d.name()
+    return d.name() if d else "None"
 
 
 def compute_capability(d) -> int:
