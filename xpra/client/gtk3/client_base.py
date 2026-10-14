@@ -759,7 +759,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         from xpra.gtk.dialogs.show_shortcuts import ShortcutInfo
         kh = self.keyboard_helper
         assert kh, "no keyboard helper"
-        dialog = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
+        dialog = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts, kh.get_modifier_names())
         dialog.show_all()
         self.sub_dialogs["shortcuts"] = dialog
 
