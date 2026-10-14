@@ -23,6 +23,7 @@ from xpra.common import noop
 from xpra.constants import XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.icon_util import image_to_ICONINFO
+from xpra.platform.win32.events import NIN_BALLOONSHOW, NIN_BALLOONHIDE, NIN_BALLOONTIMEOUT, NIN_BALLOONUSERCLICK
 from xpra.platform.win32.common import (
     GUID, WNDCLASSEX, WNDPROC,
     GetSystemMetrics,
@@ -152,6 +153,9 @@ NIF_FLAGS = {
     NIF_SHOWTIP: "SHOWTIP",
 }
 
+# balloon events, received in `lparam` of the tray callback message:
+BALLOON_EVENTS = (NIN_BALLOONSHOW, NIN_BALLOONHIDE, NIN_BALLOONTIMEOUT, NIN_BALLOONUSERCLICK)
+
 # found here:
 # http://msdn.microsoft.com/en-us/library/windows/desktop/ff468877(v=vs.85).aspx
 WM_XBUTTONDOWN = 0x020B
@@ -194,6 +198,8 @@ class win32NotifyIcon:
         self.click_callback = click_callback
         self.exit_callback = exit_callback
         self.command_callback = command_callback
+        # called with the `NIN_BALLOON*` event:
+        self.balloon_callback: Callable[[int], None] = noop
         self.reset_function: tuple[Callable, Sequence[Any]] | None = None
         self.image_cache: dict[str, Any] = {}
         # Create the Window.
@@ -429,6 +435,11 @@ class win32NotifyIcon:
         self.destroy()
 
     def OnTaskbarNotify(self, hwnd: int, msg: int, wparam: int, lparam: int) -> int:
+        if lparam in BALLOON_EVENTS:
+            cb = self.balloon_callback
+            log("OnTaskbarNotify%s balloon event, callback=%s", (hwnd, msg, wparam, lparam), cb)
+            cb(lparam)
+            return 1
         if lparam == win32con.WM_MOUSEMOVE:
             cb = self.move_callback
             bm = [(hwnd, int(msg), int(wparam), int(lparam))]

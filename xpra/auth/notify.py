@@ -4,51 +4,37 @@
 # later version. See the file COPYING for details.
 
 """
-Asks the current user(s) of the session to allow or deny the connection,
-using a dbus notification with actions.
-In shadow mode, the notification is shown on the desktop being shadowed.
-In seamless mode, the notification service on the session bus is our own forwarder,
-so the request is shown by the clients currently connected (if they have notifications enabled).
+Asks the current user(s) of the session to allow or deny the connection.
+The request is shown using a platform specific backend:
+* MS Windows: a balloon notification on the system tray icon, which opens a confirmation dialog when clicked
+* other platforms: a dbus notification with "Allow" and "Deny" actions
 """
 
 import threading
-from collections.abc import Sequence
-from itertools import count
+from collections.abc import Callable
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, WIN32
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std
 from xpra.util.thread import is_main_thread
 from xpra.auth.sys_auth_base import SysAuthenticator, log
-from xpra.notification.dbus_backend import DBUSNotifier
 
 GLib = gi_import("GLib")
 
 TIMEOUT = 30
-ALLOW = "allow"
-DENY = "deny"
-URGENCY_CRITICAL = 2
-
-nid_counter = count(1)
 
 
-class AuthNotifier(DBUSNotifier):
-    """
-    The regular dbus notifier refuses to forward notifications to xpra's own notification forwarder,
-    because this would loop when forwarding client notifications.
-    Here, forwarding the request to the connected clients is exactly what we want.
-    """
-
-    def loop_check(self, server_info: Sequence[str]) -> None:
-        """ the xpra notification forwarder is a valid target """
-
-    def dbus_check(self, dbus_id: str) -> bool:
-        return True
+def make_request(summary: str, body: str, timeout: int, callback: Callable[[bool], None]):
+    if WIN32:
+        from xpra.platform.win32.auth_request import TrayRequest
+        return TrayRequest(summary, body, timeout, callback)
+    from xpra.dbus.auth_request import DBusRequest
+    return DBusRequest(summary, body, timeout, callback)
 
 
 class Authenticator(SysAuthenticator):
 
-    __slots__ = ("connection_str", "event", "nid", "notifier", "result", "timeout")
+    __slots__ = ("connection_str", "event", "request", "result", "timeout")
 
     def __init__(self, **kwargs):
         log(f"notify.Authenticator({kwargs})")
@@ -60,8 +46,7 @@ class Authenticator(SysAuthenticator):
         super().__init__(**kwargs)
         self.event = threading.Event()
         self.result = False
-        self.nid = 0
-        self.notifier = None
+        self.request = None
 
     def requires_challenge(self) -> bool:
         return False
@@ -84,57 +69,35 @@ class Authenticator(SysAuthenticator):
         return self.result
 
     def show_request(self) -> None:
-        try:
-            self.notifier = AuthNotifier(self.closed, self.action)
-        except Exception as e:
-            log("AuthNotifier()", exc_info=True)
-            log.error("Error: notify authentication cannot access the notification service")
-            log.estr(e)
-            self.event.set()
-            return
-        if not self.notifier.handles_actions:
-            log.error("Error: the notification service does not support actions,")
-            log.error(" notify authentication cannot be used")
-            self.close_request()
-            self.event.set()
-            return
-        self.nid = next(nid_counter)
         summary = "Connection request"
         body = f"from {self.connection_str}"
         if self.username:
             body += f"\nas user {std(self.username)!r}"
-        actions = (ALLOW, "Allow", DENY, "Deny")
-        hints = {"urgency": URGENCY_CRITICAL}
-        log("show_request() nid=%i, body=%r", self.nid, body)
-        self.notifier.show_notify("", None, self.nid, "Xpra", 0, "",
-                                  summary, body, actions, hints, self.timeout * 1000, None)
-
-    def action(self, nid: int, action: str) -> None:
-        log("action(%i, %r) expected nid=%i", nid, action, self.nid)
-        if nid != self.nid:
+        try:
+            self.request = make_request(summary, body, self.timeout, self.answer)
+        except Exception as e:
+            log("make_request%s", (summary, body, self.timeout, self.answer), exc_info=True)
+            log.error("Error: notify authentication cannot request access")
+            log.estr(e)
+            self.event.set()
             return
-        self.result = action == ALLOW
-        self.nid = 0
-        self.event.set()
-        GLib.idle_add(self.close_request)
+        log("show_request() request=%s", self.request)
 
-    def closed(self, nid: int, reason: int, reason_str: str) -> None:
-        log("closed(%i, %i, %r) expected nid=%i", nid, reason, reason_str, self.nid)
-        if nid != self.nid:
+    def answer(self, result: bool) -> None:
+        log("answer(%s) request=%s", result, self.request)
+        if not self.request:
+            # closed already
             return
-        self.nid = 0
+        self.result = result
         self.event.set()
         GLib.idle_add(self.close_request)
 
     def close_request(self) -> None:
-        notifier = self.notifier
-        log("close_request() notifier=%s, nid=%i", notifier, self.nid)
-        if not notifier:
-            return
-        self.notifier = None
-        self.nid = 0
-        # closes the request if it is still showing:
-        notifier.cleanup()
+        request = self.request
+        log("close_request() request=%s", request)
+        if request:
+            self.request = None
+            request.close()
 
     def cleanup(self) -> None:
         if is_main_thread():

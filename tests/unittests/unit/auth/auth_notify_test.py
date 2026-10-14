@@ -16,9 +16,9 @@ GLib = gi_import("GLib")
 
 try:
     from xpra.auth import notify
-except ImportError as e:
-    notify = None
-    import_error = str(e)
+    from xpra.dbus import auth_request
+except ImportError:
+    notify = auth_request = None
 
 
 def make_notifier_class(handles_actions=True, response=None):
@@ -46,7 +46,7 @@ def make_notifier_class(handles_actions=True, response=None):
     return FakeNotifier, shown, closed
 
 
-@unittest.skipIf(notify is None, "dbus notifications are not available")
+@unittest.skipIf(auth_request is None, "dbus notifications are not available")
 class TestNotifyAuthenticator(unittest.TestCase):
 
     def run_auth(self, timeout=5, **kwargs):
@@ -62,7 +62,7 @@ class TestNotifyAuthenticator(unittest.TestCase):
             result.append(auth.authenticate(typedict()))
             GLib.idle_add(loop.quit)
 
-        with patch("xpra.auth.notify.AuthNotifier", notifier_class):
+        with patch("xpra.dbus.auth_request.AuthNotifier", notifier_class):
             start_thread(authenticate, "test-notify-auth", daemon=True)
             GLib.timeout_add((timeout + 5) * 1000, loop.quit)
             loop.run()
@@ -105,7 +105,7 @@ class TestNotifyAuthenticator(unittest.TestCase):
         notifier_class, shown, _ = make_notifier_class(response="allow")
         connection = SimpleNamespace(remote=("10.0.0.1", 12345), options={})
         auth = notify.Authenticator(connection=connection)
-        with patch("xpra.auth.notify.AuthNotifier", notifier_class):
+        with patch("xpra.dbus.auth_request.AuthNotifier", notifier_class):
             assert auth.authenticate(typedict()) is False
         assert not shown
 

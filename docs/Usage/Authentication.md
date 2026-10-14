@@ -79,7 +79,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [fido2](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/fido2.py)                         | [FIDO Alliance](https://en.wikipedia.org/wiki/FIDO_Alliance)                            | [#1789](https://github.com/Xpra-org/xpra/issues/4516)                               |
 | [otp](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otp.py)                             | One Time Password                                                                       | [pyotp](https://github.com/pyauth/pyotp)                                            |
 | [otpscreen](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otpscreen.py)                 | Generates a one-time secret and shows it in a local GUI dialog for the user to type     | local secondary-channel confirmation (distinct from `otp`)                          |
-| [notify](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/notify.py)                       | Asks the current user(s) of the session to allow the connection, using a notification   | shadow servers: the desktop user, seamless servers: the connected clients            |
+| [notify](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/notify.py)                       | Asks the current user(s) of the session to allow the connection, using a notification   | shadow servers: the desktop user, seamless servers: the connected clients, MS Windows: tray balloon |
 | [http-header](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/http_header.py)             | validate websocket http headers                                                         | [#4438](https://github.com/Xpra-org/xpra/issues/4438)                               |
 </details>
 
@@ -98,10 +98,14 @@ Beware when mixing environment variables and password files as the latter may co
 
 The `otpscreen` module accepts the following options: `mode` (`digits`, `alpha` or `alphanumeric`, default `digits`), `count` (number of characters in the generated secret, default `6`), `timeout` (how long the dialog stays up, in seconds, default `120`), and `display` (which display to open the dialog on, default `auto` which reuses the server's saved `DISPLAY` / `WAYLAND_DISPLAY`).
 
-The `notify` module sends a notification with `Allow` and `Deny` actions to the notification service on the server's session bus, and waits for an answer.
+The `notify` module asks the current user(s) of the session to allow the connection, and waits for an answer.
+On Linux and other dbus platforms, it sends a notification with `Allow` and `Deny` actions to the notification service on the server's session bus.
 With shadow servers, this is the notification service of the desktop being shadowed, so the user sitting in front of it is asked.
 With seamless servers, this is the server's own notification forwarder, so the request is shown by the clients currently connected (if they have notifications enabled).
-The connection is rejected if the request is denied or dismissed, if nobody answers within `timeout` seconds (default `30`), or if the notification service does not support actions.
+The connection is rejected if the request is denied or dismissed, or if the notification service does not support actions.
+On MS Windows, the request is shown as a balloon notification on the server's system tray icon, and clicking it opens a confirmation dialog.
+The connection is rejected if there is no system tray icon to attach the notification to, if another request is already pending, or if the dialog is answered `No`.
+On all platforms, the connection is also rejected if nobody answers within `timeout` seconds (default `30`).
 </details>
 
 <details markdown="1">
