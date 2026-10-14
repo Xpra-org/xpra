@@ -7,6 +7,7 @@ import sys
 import time
 import os.path
 from subprocess import Popen, PIPE
+from urllib.parse import urlencode
 from collections.abc import Callable
 
 from xpra.util.glib import register_os_signals
@@ -88,9 +89,13 @@ def link_btn(link: str, text="", icon_name="question.png"):
     return btn
 
 
+MODE_NESTED_SSH = "SSH -> SSH"
+
+
 def get_default_port(mode):
     return {
         "SSH": 22,
+        MODE_NESTED_SSH: 22,
     }.get(mode, 14500)
 
 
@@ -158,7 +163,7 @@ class StartSession(Gtk.Window):
         options_box.pack_start(xal(self.address_box), True, True)
         self.mode_combo = sf(Gtk.ComboBoxText())
         self.address_box.pack_start(xal(self.mode_combo), False)
-        for mode in ("SSH", "TCP", "SSL", "WS", "WSS", "QUIC"):
+        for mode in ("SSH", MODE_NESTED_SSH, "TCP", "SSL", "WS", "WSS", "QUIC"):
             self.mode_combo.append_text(mode)
         self.mode_combo.set_active(0)
         self.mode_combo.connect("changed", self.mode_changed)
@@ -180,6 +185,46 @@ class StartSession(Gtk.Window):
         self.port_entry.set_placeholder_text(_("Port"))
         self.port_entry.set_max_length(5)
         self.address_box.pack_start(xal(self.port_entry, 0), False)
+
+        # ssh -> ssh: the proxy host to connect through
+        self.proxy_box = Gtk.VBox(homogeneous=False, spacing=10)
+        options_box.pack_start(self.proxy_box, True, True)
+        hbox = Gtk.HBox(homogeneous=False, spacing=0)
+        self.proxy_box.pack_start(xal(hbox), True, True)
+        hbox.pack_start(l("Proxy: "), False)
+        self.proxy_username_entry = sf(Gtk.Entry())
+        self.proxy_username_entry.set_width_chars(12)
+        self.proxy_username_entry.set_placeholder_text(_("Username"))
+        self.proxy_username_entry.set_max_length(255)
+        hbox.pack_start(xal(self.proxy_username_entry), False)
+        hbox.pack_start(l("@"), False)
+        self.proxy_host_entry = sf(Gtk.Entry())
+        self.proxy_host_entry.set_width_chars(24)
+        self.proxy_host_entry.set_placeholder_text(_("Proxy hostname or IP address"))
+        self.proxy_host_entry.set_max_length(255)
+        hbox.pack_start(xal(self.proxy_host_entry), False)
+        hbox.pack_start(label(":"), False)
+        self.proxy_port_entry = sf(Gtk.Entry())
+        self.proxy_port_entry.set_text("22")
+        self.proxy_port_entry.set_width_chars(5)
+        self.proxy_port_entry.set_placeholder_text(_("Port"))
+        self.proxy_port_entry.set_max_length(5)
+        hbox.pack_start(xal(self.proxy_port_entry, 0), False)
+        hbox = Gtk.HBox(homogeneous=False, spacing=10)
+        self.proxy_box.pack_start(xal(hbox), True, True)
+        self.proxy_password_entry = sf(Gtk.Entry())
+        self.proxy_password_entry.set_width_chars(16)
+        self.proxy_password_entry.set_placeholder_text(_("Proxy password"))
+        self.proxy_password_entry.set_tooltip_text(_("optional"))
+        self.proxy_password_entry.set_max_length(255)
+        self.proxy_password_entry.set_visibility(False)
+        hbox.pack_start(self.proxy_password_entry, False)
+        self.proxy_key_entry = sf(Gtk.Entry())
+        self.proxy_key_entry.set_width_chars(24)
+        self.proxy_key_entry.set_placeholder_text(_("Proxy private key path"))
+        self.proxy_key_entry.set_tooltip_text(_("optional"))
+        self.proxy_key_entry.set_max_length(4096)
+        hbox.pack_start(self.proxy_key_entry, False)
 
         self.display_box = Gtk.HBox(homogeneous=True, spacing=20)
         options_box.pack_start(self.display_box, False, True, 20)
@@ -280,6 +325,7 @@ class StartSession(Gtk.Window):
 
         vbox.show_all()
         self.display_combo.hide()
+        self.proxy_box.hide()
         self.add(vbox)
         # load encodings in the background:
         self.load_codecs_thread = start_thread(self.load_codecs, "load-codecs", daemon=True)
@@ -417,6 +463,7 @@ class StartSession(Gtk.Window):
             self.address_box.hide()
         else:
             self.address_box.show_all()
+        self.show_proxy_box()
         if shadow_mode:
             # only option we show is the optional display input
             self.entry_box.hide()
@@ -538,8 +585,16 @@ class StartSession(Gtk.Window):
         log("mode_changed(%s)", args)
         mode = self.mode_combo.get_active_text()
         self.port_entry.set_text(str(get_default_port(mode)))
+        self.show_proxy_box()
         if not (self.shadow_btn.get_active() and self.localhost_btn.get_active()):
             self.no_display_combo()
+
+    def show_proxy_box(self) -> None:
+        nested = not self.localhost_btn.get_active() and self.mode_combo.get_active_text() == MODE_NESTED_SSH
+        if nested:
+            self.proxy_box.show_all()
+        else:
+            self.proxy_box.hide()
 
     def session_toggled(self, *args) -> None:
         localhost = self.localhost_btn.get_active()
@@ -661,8 +716,9 @@ class StartSession(Gtk.Window):
         if localhost:
             uri = ":" + display if display else ""
         else:
-            mode = self.mode_combo.get_active_text().lower()
-            uri = f"{mode}://"
+            mode = self.mode_combo.get_active_text()
+            scheme = "ssh" if mode == MODE_NESTED_SSH else mode.lower()
+            uri = f"{scheme}://"
             if username := self.username_entry.get_text():
                 uri += f"{username}@"
             if host := self.host_entry.get_text():
@@ -676,9 +732,30 @@ class StartSession(Gtk.Window):
             uri += "/"
             if display:
                 uri += display
+            if mode == MODE_NESTED_SSH:
+                uri += self.get_proxy_query()
         if uri:
             cmd.append(uri)
         return cmd
+
+    def get_proxy_query(self) -> str:
+        proxy = {}
+        if host := self.proxy_host_entry.get_text():
+            proxy["proxy_host"] = host
+        try:
+            port = int(self.proxy_port_entry.get_text())
+        except ValueError:
+            port = 0
+        if port and port != 22:
+            proxy["proxy_port"] = port
+        for k, entry in {
+            "proxy_username": self.proxy_username_entry,
+            "proxy_password": self.proxy_password_entry,
+            "proxy_key": self.proxy_key_entry,
+        }.items():
+            if value := entry.get_text():
+                proxy[k] = value
+        return "?" + urlencode(proxy) if proxy else ""
 
 
 class SessionOptions(Gtk.Window):
