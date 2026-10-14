@@ -125,7 +125,8 @@ class AppDelegate(NSObject):
                 pid = window['kCGWindowOwnerPID']
                 if pid == ourpid:
                     num = window['kCGWindowNumber']
-                    name = window['kCGWindowName']
+                    # optional: missing without the screen recording permission
+                    name = window.get('kCGWindowName', "")
                     our_windows[num] = name
             workspacelog("workspace change - our windows on screen: %s", our_windows)
             if our_windows:
