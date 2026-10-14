@@ -816,6 +816,12 @@ DestroyMenu.argtypes = [HMENU]
 AppendMenuW = user32.AppendMenuW
 AppendMenuW.restype = BOOL
 AppendMenuW.argtypes = [HMENU, UINT, UINT, LPCWSTR]
+GetSystemMenu = user32.GetSystemMenu
+GetSystemMenu.restype = HMENU
+GetSystemMenu.argtypes = [HWND, BOOL]
+CheckMenuItem = user32.CheckMenuItem
+CheckMenuItem.restype = DWORD
+CheckMenuItem.argtypes = [HMENU, UINT, UINT]
 
 # clipboard functions:
 

@@ -6,8 +6,10 @@
 import win32con
 
 from xpra.os_util import gi_import
+from xpra.util.objects import typedict
 from xpra.platform.win32.common import SendMessageW
 from xpra.platform.win32.gui import pointer_grab, pointer_ungrab
+from xpra.client.win32.system_menu import popup_menu
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -62,17 +64,30 @@ class ShortcutTarget:
         """
 
     def show_window_menu(self, *_args) -> None:
-        # show the native system menu, as `Alt`+`Space` would,
+        # show the native system menu, which includes xpra's items, as `Alt`+`Space` would
         # (from the main loop since this runs from the window procedure handling the key):
-        hwnd = self.window.hwnd
+        window = self.window
+        hwnd = window.hwnd
         log("show_window_menu() hwnd=%#x", hwnd)
         if not hwnd:
             return
 
         def show_system_menu() -> bool:
-            SendMessageW(hwnd, win32con.WM_SYSCOMMAND, win32con.SC_KEYMENU, ord(" "))
+            if window.has_system_menu():
+                SendMessageW(hwnd, win32con.WM_SYSCOMMAND, win32con.SC_KEYMENU, ord(" "))
+            elif action := popup_menu(hwnd, window.can_show_border(), window.get_menu_states()):
+                # undecorated windows don't have a system menu, so we only show xpra's items:
+                getattr(self, action)()
             return False
         GLib.idle_add(show_system_menu)
+
+    def toggle_above(self, *_args) -> None:
+        window = self.window
+        above = not window._above
+        log("toggle_above() above=%s", above)
+        window.set_metadata(typedict({"above": above}))
+        window.state_updates["above"] = above
+        self.client.send_configure(window)
 
     def show_window_info(self, *_args) -> None:
         from xpra.client.win32.gtk import is_loaded

@@ -262,6 +262,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         window.connect("mouse-click", self.window_mouse_clicked_event)
         window.connect("wheel", self.window_wheel_event)
         window.connect("key", self.window_key_event)
+        window.connect("menu-action", self.window_menu_action)
         window.create()
 
     def window_mapped_event(self, window) -> None:
@@ -395,6 +396,11 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         if not vertical:
             button += 4
         self.wheel_delta = self.get_subsystem("pointer").send_wheel_delta(device_id, window.wid, button, abs(wheel_delta), pointer=pos, props=props)
+
+    def window_menu_action(self, window, action: str) -> None:
+        # one of xpra's window menu items, which are implemented as shortcut actions:
+        log("window_menu_action(%s, %r)", window, action)
+        getattr(ShortcutTarget(self, window), action)()
 
     def key_handled_as_shortcut(self, window, keyname: str, pressed: bool, mods: Sequence[str]) -> bool:
         kb = self.get_subsystem("keyboard")

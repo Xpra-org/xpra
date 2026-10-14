@@ -43,6 +43,7 @@ from xpra.keyboard.keysyms import keysym_name
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
 from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
+from xpra.client.win32.system_menu import add_system_menu_items, get_command_action, update_checks
 from xpra.log import Logger
 
 log = Logger("client", "window")
@@ -160,6 +161,8 @@ class ClientWindow(GObject.GObject):
         "mouse-click": n_arg_signal(6),
         "wheel": n_arg_signal(5),
         "key": n_arg_signal(6),
+        # one of xpra's window menu items was selected, with the shortcut action name:
+        "menu-action": n_arg_signal(1),
         "closed": no_arg_signal,
     }
 
@@ -277,6 +280,8 @@ class ClientWindow(GObject.GObject):
         triggered by the geometry changes the metadata may cause.
         """
         self.update_client_properties()
+        if not self.is_OR():
+            add_system_menu_items(self.hwnd, self.can_show_border())
         self.emit("mapped")
 
     def update_client_properties(self) -> None:
@@ -377,6 +382,13 @@ class ClientWindow(GObject.GObject):
         msg_str = WM_MESSAGES.get(msg, str(msg))
         log("wnd_proc_cb(%i, %s, %i, %#x)", hwnd, msg_str, wparam, lparam)
         try:
+            if msg == win32con.WM_SYSCOMMAND and (action := get_command_action(wparam)):
+                self.emit("menu-action", action)
+                return 0
+            if msg == win32con.WM_INITMENUPOPUP and (lparam >> 16) & 0xffff:
+                # the system menu is about to be shown, update our checkboxes:
+                # (and let `DefWindowProc` update the standard items)
+                update_checks(wparam, self.get_menu_states())
             if msg == win32con.WM_GETMINMAXINFO and lparam:
                 self.apply_size_constraints(lparam)
                 return 0
@@ -800,6 +812,25 @@ class ClientWindow(GObject.GObject):
             "pixel-depth": self.pixel_depth,
             "has-alpha": self.alpha,
             "attributes": attributes,
+        }
+
+    def has_system_menu(self) -> bool:
+        return bool(self.style & win32con.WS_SYSMENU)
+
+    def can_show_border(self) -> bool:
+        # only the OpenGL backing renders the border:
+        return self.border is not None and bool(getattr(self, "is_GL", lambda: False)())
+
+    def get_menu_states(self) -> dict[str, bool]:
+        # the state of the checkbox items of xpra's window menu:
+        kb = self.client.get_subsystem("keyboard") if self.client else None
+        wm = self.client.get_subsystem("window") if self.client else None
+        return {
+            "fullscreen": self.fullscreen,
+            "above": self._above,
+            "keyboard-grab": bool(kb and kb.grabbed),
+            "pointer-grab": bool(wm and wm.pointer_grabbed == self.wid),
+            "border": bool(self.border and self.border.shown),
         }
 
     def get_window_info(self) -> dict[str, Any]:
