@@ -7,7 +7,8 @@
 from typing import Any, Final
 import ctypes
 from ctypes.wintypes import HANDLE
-from ctypes import create_string_buffer, byref
+from ctypes import create_string_buffer, create_unicode_buffer, byref
+from functools import cache
 from ctypes.wintypes import DWORD, BYTE
 from collections.abc import Callable, Sequence
 
@@ -16,7 +17,7 @@ from xpra.platform.win32.common import (
     ActivateKeyboardLayout,
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
-    GetWindowThreadProcessId,
+    GetWindowThreadProcessId, LCIDToLocaleName,
     GetKeyboardState, SetKeyboardState, MapVirtualKeyW, keybd_event,
     SystemParametersInfoA, VkKeyScanW,
 )
@@ -93,14 +94,76 @@ def get_layout_name_value() -> int:
     return 0
 
 
+KEYBOARD_LAYOUTS_KEY = "SYSTEM\\CurrentControlSet\\Control\\Keyboard Layouts"
+
+
 def get_layout_text(klid: int) -> str:
     try:
         from winreg import HKEY_LOCAL_MACHINE, OpenKey, QueryValueEx  # pylint: disable=import-outside-toplevel
-        with OpenKey(HKEY_LOCAL_MACHINE, f"SYSTEM\\CurrentControlSet\\Control\\Keyboard Layouts\\{klid:08x}") as key:
+        with OpenKey(HKEY_LOCAL_MACHINE, f"{KEYBOARD_LAYOUTS_KEY}\\{klid:08x}") as key:
             return str(QueryValueEx(key, "Layout Text")[0])
     except OSError:
         log("get_layout_text(%#x)", klid, exc_info=True)
         return ""
+
+
+@cache
+def find_layout_id(layout_id: int) -> int:
+    """ find the layout identifier whose registry "Layout Id" matches """
+    try:
+        from winreg import HKEY_LOCAL_MACHINE, OpenKey, QueryValueEx, EnumKey  # pylint: disable=import-outside-toplevel
+        with OpenKey(HKEY_LOCAL_MACHINE, KEYBOARD_LAYOUTS_KEY) as layouts:
+            i = 0
+            while True:
+                try:
+                    subkey = EnumKey(layouts, i)
+                except OSError:
+                    break
+                i += 1
+                try:
+                    with OpenKey(layouts, subkey) as key:
+                        if int(QueryValueEx(key, "Layout Id")[0], 16) == layout_id:
+                            return int(subkey, 16)
+                except (OSError, ValueError):
+                    continue
+    except OSError:
+        log("find_layout_id(%#x)", layout_id, exc_info=True)
+    return 0
+
+
+def get_hkl_klid(hkl: int) -> int:
+    """ the keyboard layout identifier of an input locale handle """
+    hkl &= 0xffffffff
+    device = hkl >> 16
+    if device & 0xf000 == 0xe000:
+        # IME: the handle is the layout identifier
+        return hkl
+    if device & 0xf000 == 0xf000:
+        # a layout variant, which is identified by its "Layout Id":
+        return find_layout_id(device & 0xfff)
+    return device or (hkl & 0xffff)
+
+
+def get_locale_name(langid: int) -> str:
+    buf = create_unicode_buffer(85)
+    if LCIDToLocaleName(langid, buf, 85, 0):
+        return buf.value
+    return ""
+
+
+def get_hkl_info(hkl: int) -> dict[str, Any]:
+    hkl &= 0xffffffff
+    langid = hkl & 0xffff
+    info: dict[str, Any] = {"hkl": hkl, "language": langid}
+    if locale := get_locale_name(langid):
+        info["locale"] = locale
+    if hkl >> 28 == 0xe:
+        info["ime"] = True
+    if klid := get_hkl_klid(hkl):
+        info["code"] = klid
+        if name := get_layout_text(klid) or WIN32_KEYBOARDS.get(klid, ("", "", ""))[2]:
+            info["name"] = name
+    return info
 
 
 def get_window_layout() -> int:
@@ -400,6 +463,16 @@ class Keyboard(KeyboardBase):
         name = get_layout_text(klid) or WIN32_KEYBOARDS.get(klid, ("", "", ""))[2]
         if name:
             native["name"] = name
+        try:
+            hkl = get_window_layout()
+            if hkl:
+                hkl_info = get_hkl_info(hkl)
+                for k in ("hkl", "language", "locale", "ime"):
+                    if k in hkl_info:
+                        native[k] = hkl_info[k]
+            native["layouts"] = [get_hkl_info(hkl) for hkl in _GetKeyboardLayoutList()]
+        except Exception:
+            log("get_native_layout()", exc_info=True)
         return native
 
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
