@@ -104,9 +104,15 @@ class PowerEventClient(StubClientMixin):
 
     def resume(self, *args) -> None:
         log("resume(%s)", args)
+        if not self.suspended:
+            # happens on macos with every workspace change, including the ones caused by
+            # a window going fullscreen: the "resume" handlers would re-initialize the opengl
+            # windows, which would go fullscreen again, causing another workspace change..
+            log("not suspended, ignoring resume")
+            return
         self.ui_thread_tick()
         self.emit("resume")
-        elapsed = max(0.0, time() - self.suspended) if self.suspended else 0.0
+        elapsed = max(0.0, time() - self.suspended)
         self.suspended = 0.0
         if BACKWARDS_COMPATIBLE:
             self.send("resume", True, tuple(self._id_to_window.keys()))
