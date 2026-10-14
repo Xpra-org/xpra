@@ -127,24 +127,28 @@ def do_set_keymap(layout: str, variant: str, options, query_struct) -> None:
 
 
 def safe_setxkbmap(rules: str, model: str, layout: str, variant: str, options: str):
-    # (we execute the options separately in case that fails..)
+    # (we execute the options and variant separately in case that fails..)
     X11Keyboard = X11KeyboardBindings()
-    try:
-        if X11Keyboard.setxkbmap(rules, model, layout, variant, options):
-            return True
-    except Exception:
-        log("safe_setxkbmap%s", (rules, model, layout, variant, options), exc_info=True)
-        log.warn("Warning: failed to set exact keymap,")
-        log.warn(f" {rules=}, {model=}, {layout=}, {variant=}, {options=}")
+    attempts = [(variant, options)]
     if options:
         # try again with no options:
+        attempts.append((variant, ""))
+    if variant:
+        # the server may not know this variant:
+        attempts.append(("", ""))
+    for i, (v, o) in enumerate(attempts):
+        if i > 0:
+            log.warn(" retrying with variant=%r, options=%r", v, o)
         try:
-            X11Keyboard.setxkbmap(rules, model, layout, variant, "")
-            return True
+            if X11Keyboard.setxkbmap(rules, model, layout, v, o):
+                return True
         except Exception:
-            log("setxkbmap", exc_info=True)
-            log.error("Error: failed to set exact keymap")
-            log.error(" even without applying any options..")
+            log("safe_setxkbmap%s", (rules, model, layout, v, o), exc_info=True)
+        if i == 0:
+            log.warn("Warning: failed to set exact keymap,")
+            log.warn(f" {rules=}, {model=}, {layout=}, {variant=}, {options=}")
+    if len(attempts) > 1:
+        log.error("Error: failed to set the keymap for layout %r", layout)
     return False
 
 ################################################################################
