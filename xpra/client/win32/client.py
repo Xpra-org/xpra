@@ -21,6 +21,7 @@ from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.win32.gtk import is_loaded as gtk_is_loaded, load_gtk
 from xpra.client.win32.cursor import Win32Cursors
+from xpra.client.win32.shortcuts import ShortcutTarget
 from xpra.client.win32.subsystem.display import Win32DisplayClient
 from xpra.platform.gui import get_xdpi, get_ydpi
 from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
@@ -82,27 +83,6 @@ def get_native_modifiers() -> dict[str, list[str]]:
         if GetKeyState(vk) & 0x0001:
             toggled.append(VK_NAMES.get(vk, f"VK_{vk:#04x}"))
     return {"held": held, "toggled": toggled}
-
-
-class ShortcutTarget:
-    """
-    The keyboard shortcut actions are looked up on the window,
-    but the native windows don't implement them (unlike the GTK ones),
-    so fall back to the client's methods, ie: `show_menu`, `quit`, `show_shortcuts`
-    """
-
-    def __init__(self, client, window):
-        self.client = client
-        self.window = window
-
-    def __repr__(self):
-        return f"ShortcutTarget({self.window})"
-
-    def __getattr__(self, name: str):
-        for obj in (self.window, self.client):
-            if hasattr(obj, name):
-                return getattr(obj, name)
-        raise AttributeError(f"no shortcut action {name!r} for {self.window}")
 
 
 class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
