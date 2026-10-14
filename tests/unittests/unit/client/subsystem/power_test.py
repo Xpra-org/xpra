@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from xpra.client.subsystem import power as power_module
 from xpra.client.subsystem.power import PowerEventClient
@@ -16,7 +16,7 @@ class PowerEventClientTest(unittest.TestCase):
     def setUp(self):
         self.power = PowerEventClient()
         self.signals: list[str] = []
-        for signal in ("pause", "unpause"):
+        for signal in ("pause", "unpause", "suspend", "resume"):
             self.power.connect(signal, lambda _power, s=signal: self.signals.append(s))
 
     def test_pause_unpause(self):
@@ -40,6 +40,22 @@ class PowerEventClientTest(unittest.TestCase):
         self.assertFalse(power.platform_paused)
         self.assertFalse(power.paused)
         self.assertEqual(self.signals, ["pause", "unpause"])
+
+    def test_suspend_resume(self):
+        power = self.power
+        power.client = client = MagicMock()
+        send = client.send
+        # ie: macos switching workspace without suspending first
+        power.resume()
+        self.assertEqual(self.signals, [], "resume without suspend should be ignored")
+        send.assert_not_called()
+        power.suspend()
+        self.assertTrue(power.suspended)
+        power.resume()
+        self.assertFalse(power.suspended)
+        power.resume()
+        self.assertEqual(self.signals, ["suspend", "resume"])
+        self.assertEqual(send.call_count, 2)
 
     def ui_message_level(self) -> str:
         with patch.object(power_module, "log") as log:
