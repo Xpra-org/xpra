@@ -6,7 +6,7 @@
 import sys
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, WIN32
 from xpra.util.str_fn import sorted_nicely
 from xpra.util.thread import check_main_thread
 from xpra.gtk.window import add_close_accel
@@ -33,9 +33,30 @@ def lal(text: str, font="", *style_classes: str) -> Gtk.Alignment:
     return align
 
 
+def get_modifier_labels(modifier_names: dict[str, str]) -> dict[str, str]:
+    """
+    maps the internal modifier names (ie: "mod1") to the name of the key the user presses (ie: "Alt"),
+    `modifier_names` is the reverse mapping, as returned by `get_modifier_names()`
+    """
+    labels: dict[str, str] = {}
+    for key_name, mod_name in modifier_names.items():
+        # the first key name found wins, ie: "alt" over "meta" for "mod1":
+        if mod_name in labels:
+            continue
+        if key_name == "altgr":
+            text = "AltGr"
+        elif key_name == "super" and WIN32:
+            text = "Win"
+        else:
+            text = key_name.capitalize()
+        labels[mod_name] = text
+    return labels
+
+
 class ShortcutInfo(Gtk.Window):
 
-    def __init__(self, shortcut_modifiers: Sequence[str], shortcuts: dict[str, Sequence]):
+    def __init__(self, shortcut_modifiers: Sequence[str], shortcuts: dict[str, Sequence],
+                 modifier_names: dict[str, str] | None = None):
         check_main_thread()
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         style_window(self, "shortcuts-dialog")
@@ -51,26 +72,35 @@ class ShortcutInfo(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.is_closed = False
         vbox = Gtk.VBox()
-        vbox.set_spacing(10)
+        vbox.set_spacing(4)
         style_body(vbox)
         icon = get_icon_pixbuf("keyboard.png")
         if icon:
             self.set_icon(icon)
 
-        def vlabel(text, font="", padding=0, *style_classes):
-            vbox.pack_start(lal(text, font, *style_classes), True, True, padding)
+        if modifier_names is None:
+            from xpra.client.gui.keyboard_shortcuts_parser import get_modifier_names
+            modifier_names = get_modifier_names({})
+        mod_labels = get_modifier_labels(modifier_names)
 
-        vlabel("Keyboard shortcuts", "", 10, "xpra-dialog-title")
-        vlabel("Prefix: %s" % ("+".join(shortcut_modifiers)), "", 0, "xpra-subtitle")
+        def mod_label(name: str) -> str:
+            # `name` is either a key name (ie: "meta") or an internal modifier name (ie: "mod1"):
+            mod_name = modifier_names.get(name.lower(), name)
+            return mod_labels.get(mod_name, name)
+
+        def vlabel(text, font="", padding=0, *style_classes):
+            vbox.pack_start(lal(text, font, *style_classes), False, False, padding)
+
+        vlabel("Keyboard shortcuts", "", 4, "xpra-dialog-title")
+        vlabel("Prefix: %s" % ("+".join(mod_label(x) for x in shortcut_modifiers)), "", 0, "xpra-subtitle")
         # each key may have multiple shortcuts, count them all:
         total = 0
         for keyname in shortcuts:
             total += len(shortcuts[keyname])
-        vlabel("%i Shortcuts:" % (total,), "", 10, "xpra-heading")
+        vlabel("%i Shortcuts:" % (total,), "", 4, "xpra-heading")
 
         grid = Gtk.Grid()
-        grid.set_row_homogeneous(True)
-        grid.set_column_homogeneous(True)
+        grid.set_column_spacing(10)
         add_style_class(grid, "xpra-card", "xpra-table")
 
         row = 0
@@ -78,13 +108,12 @@ class ShortcutInfo(Gtk.Window):
         def attach(s: str, x=0, font="") -> None:
             align = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
             lbl = label(s, font=font)
-            add_style_class(lbl, "xpra-cell")
             if row == 0:
-                add_style_class(lbl, "xpra-heading")
+                add_style_class(lbl, "xpra-cell", "xpra-heading")
             lbl.set_margin_start(5)
-            lbl.set_margin_top(2)
+            lbl.set_margin_top(1)
             lbl.set_margin_end(5)
-            lbl.set_margin_bottom(2)
+            lbl.set_margin_bottom(1)
             align.add(lbl)
             grid.attach(align, x, row, 1, 1)
 
@@ -97,7 +126,7 @@ class ShortcutInfo(Gtk.Window):
                 modifiers, action, args = shortcut
                 if args:
                     action += "(%s)" % args
-                keys = "+".join(list(modifiers) + [keyname])
+                keys = "+".join([mod_label(x) for x in modifiers] + [keyname])
                 attach(keys, 0)
                 attach(action, 1)
                 row += 1
@@ -140,7 +169,7 @@ def main(_args):
         modifiers = parse_shortcut_modifiers(shortcut_modifiers, modifier_names, swap_keys)
         shortcuts = parse_shortcuts(key_shortcuts, modifiers, modifier_names=modifier_names)
 
-        w = ShortcutInfo(modifiers, shortcuts)
+        w = ShortcutInfo(modifiers, shortcuts, modifier_names)
         w.connect('delete_event', Gtk.main_quit)
 
         quit_on_signals("Keyboard-Shortcuts")

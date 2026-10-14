@@ -404,7 +404,7 @@ class GTKDialogClient(StubClientSubsystem):
         keyboard = self.get_subsystem("keyboard")
         kh = keyboard.helper if keyboard else None
         assert kh, "no keyboard helper"
-        dialog = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
+        dialog = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts, kh.get_modifier_names())
         dialog.show_all()
         self.sub_dialogs["shortcuts"] = dialog
 
