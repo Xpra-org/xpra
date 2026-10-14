@@ -88,6 +88,9 @@ BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
 MOVERESIZE_GUESS_BUTTON = envbool("XPRA_MOVERESIZE_GUESS_BUTTON", True)
 MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX and not OSX)
 MOVERESIZE_GDK = envbool("XPRA_MOVERESIZE_GDK", True)
+# marks the buttons of a moveresize as not recorded yet,
+# compared by identity since an empty list (no buttons pressed) is a valid value:
+BUTTONS_NOT_RECORDED: list[int] = [-1]
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".") >= 0
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
 REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 0)
@@ -198,7 +201,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.remove_pointer_overlay_timer: int = 0
         self.show_pointer_overlay_timer: int = 0
         self.moveresize_timer: int = 0
-        self.moveresize_event: tuple[int, int, int, int, tuple[int], int, int, int, int] | tuple = ()
+        self.moveresize_event: tuple[int, int, int, int, list[int], int, int, int, int] | tuple = ()
         self.moveresize_data: tuple[tuple, tuple] | tuple = ()
         # only set this initially:
         # (so the server can't make us kill just any pid!)
@@ -1052,7 +1055,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         dirstr = MOVERESIZE_DIRECTION_STRING.get(direction, direction)
         buttons = mask_buttons(event.state)
         geomlog("motion_moveresize(%s) direction=%s, buttons=%s", event, dirstr, buttons)
-        if not start_buttons:
+        if start_buttons is BUTTONS_NOT_RECORDED:
             # first time around, store the buttons
             start_buttons = buttons
             self.moveresize_event = (x_root, y_root, direction, button, start_buttons, wx, wy, ww, wh)
@@ -1225,7 +1228,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # use window coordinates (which include decorations)
             wx, wy = self.get_window().get_root_origin()
             ww, wh = self.get_size()
-            self.moveresize_event = (x_root, y_root, direction, button, (), wx, wy, ww, wh)
+            self.moveresize_event = (x_root, y_root, direction, button, BUTTONS_NOT_RECORDED, wx, wy, ww, wh)
         poll = getattr(self, "start_button_polling", noop)
         poll()
 
