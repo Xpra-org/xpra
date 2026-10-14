@@ -1054,11 +1054,12 @@ def detect_xdummy_setup(install_dir=None):
     return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
 
-def build_xpra_conf(install_dir):
+def build_xpra_conf(install_dir, runtime_dir=""):
     # pylint: disable=import-outside-toplevel
-    #generates an actual config file from the template
-    xvfb_command = detect_xorg_setup(install_dir)
-    xdummy_command = detect_xdummy_setup(install_dir)
+    # Write the files to install_dir, but use runtime paths without the --root staging directory.
+    runtime_dir = runtime_dir or install_dir
+    xvfb_command = detect_xorg_setup(runtime_dir)
+    xdummy_command = detect_xdummy_setup(runtime_dir)
     fake_xinerama = "no"
     if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
         from xpra.x11.fakeXinerama import find_libfakeXinerama
@@ -1071,8 +1072,8 @@ def build_xpra_conf(install_dir):
     default_start_env = "\n".join(f"start-env = {x}" for x in DEFAULT_START_ENV)
     default_env = "\n".join(f"env = {x}" for x in DEFAULT_ENV)
     source = "\n".join(f"source = {x}" for x in SOURCE)
-    conf_dir = get_conf_dir(install_dir)
-    print(f"get_conf_dir({install_dir})={conf_dir}")
+    conf_dir = get_conf_dir(runtime_dir)
+    print(f"get_conf_dir({runtime_dir})={conf_dir}")
     from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
@@ -1855,20 +1856,17 @@ else:
             else:
                 install_data.run(self)
             print(f"install_data_override.run() install_dir={install_dir}")
-            root_prefix = None
-            for x in sys.argv:
-                if x.startswith("--prefix="):
-                    root_prefix = x[len("--prefix="):]
-            if not root_prefix:
-                root_prefix = install_dir.rstrip("/")
+            # install_dir already includes --root and --prefix, however they were specified.
+            root_prefix = install_dir.rstrip("/")
             if root_prefix.endswith("/usr"):
                 #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
                 root_prefix = root_prefix[:-4]
-            for x in sys.argv:
-                if x.startswith("--root="):
-                    root_prefix = x[len("--root="):]
             print(f"install_data_override.run() root_prefix={root_prefix}")
-            build_xpra_conf(root_prefix)
+            runtime_prefix = root_prefix
+            root = (self.root or "").rstrip("/")
+            if root and (runtime_prefix == root or runtime_prefix.startswith(root + "/")):
+                runtime_prefix = runtime_prefix[len(root):]
+            build_xpra_conf(root_prefix or "/", runtime_prefix or "/")
 
             def copytodir(src, dst_dir, dst_name=None, chmod=0o644, subs=None):
                 #print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))

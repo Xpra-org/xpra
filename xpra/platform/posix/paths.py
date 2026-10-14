@@ -91,7 +91,7 @@ def do_get_system_conf_dirs():
         if prefix.endswith(".local"):
             idir= os.path.join(prefix, "xpra")          #ie: ~/.local/xpra
         else:
-            idir= os.path.join(prefix, "/etc/xpra/")    #ie: /someinstallpath/etc/xpra
+            idir= os.path.join(prefix, "etc", "xpra")    #ie: /someinstallpath/etc/xpra
         if idir not in dirs:
             dirs.append(idir)
     return dirs
