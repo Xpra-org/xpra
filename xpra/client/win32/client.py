@@ -81,6 +81,27 @@ def get_native_modifiers() -> dict[str, list[str]]:
     return {"held": held, "toggled": toggled}
 
 
+class ShortcutTarget:
+    """
+    The keyboard shortcut actions are looked up on the window,
+    but the native windows don't implement them (unlike the GTK ones),
+    so fall back to the client's methods, ie: `show_menu`, `quit`, `show_shortcuts`
+    """
+
+    def __init__(self, client, window):
+        self.client = client
+        self.window = window
+
+    def __repr__(self):
+        return f"ShortcutTarget({self.window})"
+
+    def __getattr__(self, name: str):
+        for obj in (self.window, self.client):
+            if hasattr(obj, name):
+                return getattr(obj, name)
+        raise AttributeError(f"no shortcut action {name!r} for {self.window}")
+
+
 class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     __gsignals__ = {}
@@ -385,9 +406,21 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             button += 4
         self.wheel_delta = self.get_subsystem("pointer").send_wheel_delta(device_id, window.wid, button, abs(wheel_delta), pointer=pos, props=props)
 
+    def key_handled_as_shortcut(self, window, keyname: str, pressed: bool, mods: Sequence[str]) -> bool:
+        kb = self.get_subsystem("keyboard")
+        kh = kb.helper if kb else None
+        if not kh:
+            return False
+        # only the modifiers that are held down,
+        # so `Num_Lock` or `Scroll_Lock` being on does not prevent a match:
+        held = [mod for mod in mods if mod in ("shift", "control", "mod1")]
+        return kh.key_handled_as_shortcut(ShortcutTarget(self, window), keyname, held, pressed)
+
     def window_key_event(self, window, keyname: str, pressed: bool, vk_code: int, string: str, scancode: int, extended: bool) -> None:
         keylog("window_key_event(%s, %r, %s, %i, %r, %i, %s)", window, keyname, pressed, vk_code, string, scancode, extended)
         mods = get_modifiers()
+        if self.key_handled_as_shortcut(window, keyname, pressed, mods):
+            return
         if BACKWARDS_COMPATIBLE:
             keyval = scancode
             keycode = vk_code
