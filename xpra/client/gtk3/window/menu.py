@@ -21,6 +21,7 @@ Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
 NUDGE_TIMEOUT = 0.5
+UNFULLSCREEN_TIMEOUT = 1000
 RESIZE_TOOLTIP = "Resize the window from the edge closest to the pointer"
 MOVE_TOOLTIP = "Move the window with the pointer"
 
@@ -185,12 +186,22 @@ class WindowMenuHelper(GTKMenuHelper):
             gdkwin = self.window.get_window()
             if not gdkwin:
                 return
+            # use the geometry before leaving fullscreen to choose the edge,
+            # that's the one the user was pointing at:
             frame = gdkwin.get_frame_extents()
             pointer = gdkwin.get_display().get_default_seat().get_pointer()
-            screen, x, y = pointer.get_position()
+            x, y = pointer.get_position()[1:]
             direction = get_resize_direction(x, y, frame.x, frame.y, frame.width, frame.height)
             log("initiate_resize() pointer=%s, frame=%s, direction=%s",
                 (x, y), (frame.x, frame.y, frame.width, frame.height), direction)
+            self.when_not_fullscreen(lambda: do_initiate_resize(direction))
+
+        def do_initiate_resize(direction: MoveResize) -> None:
+            gdkwin = self.window.get_window()
+            if not gdkwin:
+                return
+            pointer = gdkwin.get_display().get_default_seat().get_pointer()
+            screen, x, y = pointer.get_position()
             from xpra.client.gtk3.window import base
             if base.MOVERESIZE_X11 and base.HAS_X11_BINDINGS:
                 # metacity derived window managers (ie: muffin) end edge resizes straight away
@@ -199,10 +210,12 @@ class WindowMenuHelper(GTKMenuHelper):
                 # and the direction of the first motion picks the edges to resize from
                 self.window.initiate_moveresize(x, y, MoveResize.SIZE_KEYBOARD, 0, 1)
                 col, row = next(k for k, v in RESIZE_GRID.items() if v == direction)
-                cx, cy = frame.x + frame.width // 2, frame.y + frame.height // 2
                 start = monotonic()
 
                 def nudge_pointer() -> bool:
+                    # the frame may still be changing if we just left fullscreen:
+                    frame = gdkwin.get_frame_extents()
+                    cx, cy = frame.x + frame.width // 2, frame.y + frame.height // 2
                     px, py = pointer.get_position()[1:]
                     if (abs(px - cx) > 1 or abs(py - cy) > 1) and monotonic() - start < NUDGE_TIMEOUT:
                         # not warped yet
@@ -235,29 +248,65 @@ class WindowMenuHelper(GTKMenuHelper):
                 self.window.initiate_moveresize(x, y, MoveResize.MOVE, int(base.MOVERESIZE_GDK), 1)
 
         self.initiate_move_menuitem = self.menuitem("Move", "forward.png", MOVE_TOOLTIP,
-                                                    cb=self.after_menu(initiate_move))
+                                                    cb=self.after_menu(lambda: self.when_not_fullscreen(initiate_move)))
         return self.initiate_move_menuitem
 
+    def when_not_fullscreen(self, fn: Callable[[], None]) -> None:
+        # window managers won't move or resize fullscreen windows,
+        # so leave fullscreen first and wait for the state change:
+        gdkwin = self.window.get_window()
+        if not gdkwin or not gdkwin.get_state() & Gdk.WindowState.FULLSCREEN:
+            fn()
+            return
+        handler = timer = 0
+
+        def done() -> None:
+            nonlocal handler, timer
+            if handler:
+                self.window.disconnect(handler)
+                handler = 0
+            if timer:
+                GLib.source_remove(timer)
+                timer = 0
+
+        def state_changed(_widget, event) -> None:
+            if not event.new_window_state & Gdk.WindowState.FULLSCREEN:
+                log("when_not_fullscreen(%s) left fullscreen", fn)
+                done()
+                GLib.idle_add(fn)
+
+        def timed_out() -> bool:
+            nonlocal timer
+            timer = 0
+            log.warn("Warning: the window did not leave fullscreen, cannot move or resize it")
+            done()
+            return False
+
+        handler = self.window.connect("window-state-event", state_changed)
+        timer = GLib.timeout_add(UNFULLSCREEN_TIMEOUT, timed_out)
+        self.window.unfullscreen()
+
     def update_moveresize_menuitems(self) -> None:
-        # the window manager won't move or resize maximized or fullscreen windows,
-        # (we could unmaximize or unfullscreen them first instead)
+        # window managers will unmaximize a window to move it, but won't resize it,
+        # (we could unmaximize it first instead),
+        # fullscreen windows are taken out of fullscreen first, see `when_not_fullscreen`
         gdkwin = self.window.get_window()
         state = gdkwin.get_state() if gdkwin else Gdk.WindowState(0)
-        reason = ""
-        if not gdkwin:
-            reason = "the window is not mapped"
-        elif state & Gdk.WindowState.FULLSCREEN:
-            reason = "the window is fullscreen"
-        elif state & Gdk.WindowState.MAXIMIZED:
-            reason = "the window is maximized"
         sc = self.window.size_constraints
         minw, minh = sc.intpair("minimum-size")
         maxw, maxh = sc.intpair("maximum-size")
         fixed = 0 < maxw <= minw and 0 < maxh <= minh
         log("update_moveresize_menuitems() state=%s, size-constraints=%s, fixed=%s", state, sc, fixed)
+        move_reason = resize_reason = ""
+        if not gdkwin:
+            move_reason = resize_reason = "the window is not mapped"
+        elif state & Gdk.WindowState.MAXIMIZED:
+            resize_reason = "the window is maximized"
+        elif fixed:
+            resize_reason = "the window has a fixed size"
         for item, tooltip, unavailable in (
-                (self.initiate_move_menuitem, MOVE_TOOLTIP, reason),
-                (self.initiate_resize_menuitem, RESIZE_TOOLTIP, reason or ("the window has a fixed size" if fixed else "")),
+                (self.initiate_move_menuitem, MOVE_TOOLTIP, move_reason),
+                (self.initiate_resize_menuitem, RESIZE_TOOLTIP, resize_reason),
         ):
             self.set_sensitive(item, not unavailable)
             item.set_tooltip_text(f"Unavailable: {unavailable}" if unavailable else tooltip)
