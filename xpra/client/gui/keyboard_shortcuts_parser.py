@@ -6,8 +6,8 @@
 import os
 from collections.abc import Sequence
 
-from xpra.util.str_fn import csv, print_nested_dict
-from xpra.os_util import POSIX, OSX
+from xpra.util.str_fn import csv
+from xpra.os_util import POSIX, OSX, WIN32
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.log import Logger
@@ -38,6 +38,38 @@ def get_modifier_names(mod_meanings: dict[str, str]) -> dict[str, str]:
             modifier_names["ctrl"] = mod_name
     log("parse_shortcuts: modifier names=%s", modifier_names)
     return modifier_names
+
+
+def get_modifier_labels(modifier_names: dict[str, str]) -> dict[str, str]:
+    """
+    maps the internal modifier names (ie: "mod1") to the name of the key the user presses (ie: "Alt"),
+    `modifier_names` is the reverse mapping, as returned by `get_modifier_names()`
+    """
+    labels: dict[str, str] = {}
+    for key_name, mod_name in modifier_names.items():
+        # the first key name found wins, ie: "alt" over "meta" for "mod1":
+        if mod_name in labels:
+            continue
+        if key_name == "altgr":
+            text = "AltGr"
+        elif key_name == "super" and WIN32:
+            text = "Win"
+        else:
+            text = key_name.capitalize()
+        labels[mod_name] = text
+    return labels
+
+
+def shortcut_keys_str(keyname: str, modifiers: Sequence[str], mod_labels: dict[str, str]) -> str:
+    # ie: "Alt+Shift+F1"
+    return "+".join([mod_labels.get(mod, mod) for mod in modifiers] + [keyname])
+
+
+def shortcut_action_str(action: str, args: Sequence) -> str:
+    # ie: "show_menu" or "scaleup(2)"
+    if args:
+        return "%s(%s)" % (action, csv(args))
+    return action
 
 
 def parse_shortcut_modifiers(s: str, modifier_names: dict[str, str], swap_keys: bool = False) -> list[str]:
@@ -181,5 +213,10 @@ def parse_shortcuts(strs: Sequence[str],
         shortcuts[keyname] = key_shortcuts
         log("shortcut(%s)=%s", s, csv((modifiers, action, args)))
     log("parse_shortcuts(%s)=%s", strs, shortcuts)
-    print_nested_dict(shortcuts, print_fn=log)
+    if log.is_debug_enabled():
+        # show the keys the user presses, ie: "Alt" rather than "mod1":
+        mod_labels = get_modifier_labels(modifier_names)
+        for keyname, key_shortcuts in shortcuts.items():
+            for modifiers, action, args in key_shortcuts:
+                log("* %-32s: %s", shortcut_keys_str(keyname, modifiers, mod_labels), shortcut_action_str(action, args))
     return shortcuts

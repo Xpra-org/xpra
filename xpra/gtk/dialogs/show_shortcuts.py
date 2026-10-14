@@ -6,9 +6,12 @@
 import sys
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import, WIN32
+from xpra.os_util import gi_import
 from xpra.util.str_fn import sorted_nicely
 from xpra.util.thread import check_main_thread
+from xpra.client.gui.keyboard_shortcuts_parser import (
+    get_modifier_names, get_modifier_labels, shortcut_keys_str, shortcut_action_str,
+)
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -31,26 +34,6 @@ def lal(text: str, font="", *style_classes: str) -> Gtk.Alignment:
     add_style_class(lbl, *style_classes)
     align.add(lbl)
     return align
-
-
-def get_modifier_labels(modifier_names: dict[str, str]) -> dict[str, str]:
-    """
-    maps the internal modifier names (ie: "mod1") to the name of the key the user presses (ie: "Alt"),
-    `modifier_names` is the reverse mapping, as returned by `get_modifier_names()`
-    """
-    labels: dict[str, str] = {}
-    for key_name, mod_name in modifier_names.items():
-        # the first key name found wins, ie: "alt" over "meta" for "mod1":
-        if mod_name in labels:
-            continue
-        if key_name == "altgr":
-            text = "AltGr"
-        elif key_name == "super" and WIN32:
-            text = "Win"
-        else:
-            text = key_name.capitalize()
-        labels[mod_name] = text
-    return labels
 
 
 class ShortcutInfo(Gtk.Window):
@@ -79,7 +62,6 @@ class ShortcutInfo(Gtk.Window):
             self.set_icon(icon)
 
         if modifier_names is None:
-            from xpra.client.gui.keyboard_shortcuts_parser import get_modifier_names
             modifier_names = get_modifier_names({})
         mod_labels = get_modifier_labels(modifier_names)
 
@@ -124,11 +106,8 @@ class ShortcutInfo(Gtk.Window):
             key_shortcuts = shortcuts[keyname]
             for shortcut in key_shortcuts:
                 modifiers, action, args = shortcut
-                if args:
-                    action += "(%s)" % args
-                keys = "+".join([mod_label(x) for x in modifiers] + [keyname])
-                attach(keys, 0)
-                attach(action, 1)
+                attach(shortcut_keys_str(keyname, modifiers, mod_labels), 0)
+                attach(shortcut_action_str(action, args), 1)
                 row += 1
         vbox.pack_start(grid, False, True, 0)
         self.add(vbox)
@@ -139,7 +118,7 @@ def main(_args):
     from xpra.platform.gui import force_focus
     from xpra.platform.keyboard import Keyboard
     from xpra.util.system import is_X11
-    from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
+    from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts
     from xpra.scripts.config import read_xpra_defaults
     from xpra.util.parsing import TRUE_OPTIONS
     with program_context("Keyboard-Shortcuts", "Keyboard Shortcuts"):
