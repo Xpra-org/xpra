@@ -7,6 +7,7 @@
 # pylint: disable=import-outside-toplevel
 
 import os.path
+import re
 import shlex
 import sys
 import site
@@ -39,9 +40,16 @@ def do_get_install_prefix() -> str:
     if __file__.startswith(base):
         return base
     if sys.argv:
-        p = sys.argv[0].find("/bin/xpra")
+        # resolve symlinks, ie: "/usr/local/bin/xpra" -> "/opt/xpra/bin/xpra"
+        argv0 = os.path.realpath(sys.argv[0])
+        p = argv0.find("/bin/xpra")
         if p > 0:
-            return sys.argv[0][:p]
+            return argv0[:p]
+    # ie: "/opt/xpra/lib/python3.14/site-packages/xpra/platform/posix/paths.py" -> "/opt/xpra"
+    # (also works with "python3 -m xpra")
+    m = re.match(r"^(/.*)/lib(?:64)?/python3[^/]*/(?:site|dist)-packages/xpra/", __file__)
+    if m:
+        return m.group(1)
     return sys.prefix
 
 
