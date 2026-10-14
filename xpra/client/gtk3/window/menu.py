@@ -3,13 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Sequence
+from time import monotonic
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.client.gtk3.menu_helper import GTKMenuHelper, gen_non_none_menu_items
 from xpra.gtk.widget import checkitem
-from xpra.constants import RESOLUTION_ALIASES
+from xpra.constants import RESOLUTION_ALIASES, MoveResize
 from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 
@@ -17,10 +18,42 @@ log = Logger("gtk", "menu")
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
+GLib = gi_import("GLib")
+
+NUDGE_TIMEOUT = 0.5
+RESIZE_TOOLTIP = "Resize the window from the edge closest to the pointer"
+MOVE_TOOLTIP = "Move the window with the pointer"
+
+# the window is split in a 3x3 grid, the cell the pointer is in picks the edge(s) to resize from:
+RESIZE_GRID: dict[tuple[int, int], MoveResize] = {
+    (0, 0): MoveResize.SIZE_TOPLEFT,
+    (1, 0): MoveResize.SIZE_TOP,
+    (2, 0): MoveResize.SIZE_TOPRIGHT,
+    (0, 1): MoveResize.SIZE_LEFT,
+    (2, 1): MoveResize.SIZE_RIGHT,
+    (0, 2): MoveResize.SIZE_BOTTOMLEFT,
+    (1, 2): MoveResize.SIZE_BOTTOM,
+    (2, 2): MoveResize.SIZE_BOTTOMRIGHT,
+}
 
 
 def ticked_icon(state: bool) -> str:
     return "ticked.png" if state else "unticked.png"
+
+
+def get_resize_direction(x: int, y: int, wx: int, wy: int, ww: int, wh: int) -> MoveResize:
+    col = min(2, max(0, (x - wx) * 3 // max(1, ww)))
+    row = min(2, max(0, (y - wy) * 3 // max(1, wh)))
+    if (direction := RESIZE_GRID.get((col, row))) is not None:
+        return direction
+    # in the middle: use the closest edge
+    distances = {
+        MoveResize.SIZE_LEFT: x - wx,
+        MoveResize.SIZE_RIGHT: wx + ww - x,
+        MoveResize.SIZE_TOP: y - wy,
+        MoveResize.SIZE_BOTTOM: wy + wh - y,
+    }
+    return min(distances, key=distances.get)
 
 
 class WindowMenuHelper(GTKMenuHelper):
@@ -38,6 +71,8 @@ class WindowMenuHelper(GTKMenuHelper):
             #    menu.append(self.make_openglmenuitem())
             self.make_minimizemenuitem,
             self.make_maximizemenuitem,
+            self.make_initiateresizemenuitem,
+            self.make_initiatemovemenuitem,
             self.make_fullscreenmenuitem,
             self.make_resizemenuitem,
             self.make_abovenmenuitem,
@@ -144,6 +179,99 @@ class WindowMenuHelper(GTKMenuHelper):
         resize = self.menuitem("Resize", "scaling.png")
         resize.set_submenu(sizemenu)
         return resize
+
+    def make_initiateresizemenuitem(self) -> Gtk.ImageMenuItem:
+        def initiate_resize() -> None:
+            gdkwin = self.window.get_window()
+            if not gdkwin:
+                return
+            frame = gdkwin.get_frame_extents()
+            pointer = gdkwin.get_display().get_default_seat().get_pointer()
+            screen, x, y = pointer.get_position()
+            direction = get_resize_direction(x, y, frame.x, frame.y, frame.width, frame.height)
+            log("initiate_resize() pointer=%s, frame=%s, direction=%s",
+                (x, y), (frame.x, frame.y, frame.width, frame.height), direction)
+            from xpra.client.gtk3.window import base
+            if base.MOVERESIZE_X11 and base.HAS_X11_BINDINGS:
+                # metacity derived window managers (ie: muffin) end edge resizes straight away
+                # if the button is not held down, but keyboard resizes also follow the pointer:
+                # the window manager warps it to the centre of the window,
+                # and the direction of the first motion picks the edges to resize from
+                self.window.initiate_moveresize(x, y, MoveResize.SIZE_KEYBOARD, 0, 1)
+                col, row = next(k for k, v in RESIZE_GRID.items() if v == direction)
+                cx, cy = frame.x + frame.width // 2, frame.y + frame.height // 2
+                start = monotonic()
+
+                def nudge_pointer() -> bool:
+                    px, py = pointer.get_position()[1:]
+                    if (abs(px - cx) > 1 or abs(py - cy) > 1) and monotonic() - start < NUDGE_TIMEOUT:
+                        # not warped yet
+                        return True
+                    log("nudge_pointer() from %s by %s", (px, py), (col - 1, row - 1))
+                    pointer.warp(screen, px + col - 1, py + row - 1)
+                    return False
+
+                GLib.timeout_add(20, nudge_pointer)
+            else:
+                # our own implementation needs button=0 to wait for the click:
+                self.window.initiate_moveresize(x, y, direction, int(base.MOVERESIZE_GDK), 1)
+
+        self.initiate_resize_menuitem = self.menuitem("Resize", "scaling.png", RESIZE_TOOLTIP,
+                                                      cb=self.after_menu(initiate_resize))
+        return self.initiate_resize_menuitem
+
+    def make_initiatemovemenuitem(self) -> Gtk.ImageMenuItem:
+        def initiate_move() -> None:
+            gdkwin = self.window.get_window()
+            if not gdkwin:
+                return
+            x, y = gdkwin.get_display().get_default_seat().get_pointer().get_position()[1:]
+            from xpra.client.gtk3.window import base
+            log("initiate_move() pointer=%s", (x, y))
+            if base.MOVERESIZE_X11 and base.HAS_X11_BINDINGS:
+                # same as resizing: a keyboard move follows the pointer without a button held down
+                self.window.initiate_moveresize(x, y, MoveResize.MOVE_KEYBOARD, 0, 1)
+            else:
+                self.window.initiate_moveresize(x, y, MoveResize.MOVE, int(base.MOVERESIZE_GDK), 1)
+
+        self.initiate_move_menuitem = self.menuitem("Move", "forward.png", MOVE_TOOLTIP,
+                                                    cb=self.after_menu(initiate_move))
+        return self.initiate_move_menuitem
+
+    def update_moveresize_menuitems(self) -> None:
+        # the window manager won't move or resize maximized or fullscreen windows,
+        # (we could unmaximize or unfullscreen them first instead)
+        gdkwin = self.window.get_window()
+        state = gdkwin.get_state() if gdkwin else Gdk.WindowState(0)
+        reason = ""
+        if not gdkwin:
+            reason = "the window is not mapped"
+        elif state & Gdk.WindowState.FULLSCREEN:
+            reason = "the window is fullscreen"
+        elif state & Gdk.WindowState.MAXIMIZED:
+            reason = "the window is maximized"
+        sc = self.window.size_constraints
+        minw, minh = sc.intpair("minimum-size")
+        maxw, maxh = sc.intpair("maximum-size")
+        fixed = 0 < maxw <= minw and 0 < maxh <= minh
+        log("update_moveresize_menuitems() state=%s, size-constraints=%s, fixed=%s", state, sc, fixed)
+        for item, tooltip, unavailable in (
+                (self.initiate_move_menuitem, MOVE_TOOLTIP, reason),
+                (self.initiate_resize_menuitem, RESIZE_TOOLTIP, reason or ("the window has a fixed size" if fixed else "")),
+        ):
+            self.set_sensitive(item, not unavailable)
+            item.set_tooltip_text(f"Unavailable: {unavailable}" if unavailable else tooltip)
+
+    def do_show_menu(self, button: int, time) -> None:
+        self.update_moveresize_menuitems()
+        super().do_show_menu(button, time)
+
+    @staticmethod
+    def after_menu(fn: Callable[[], None]) -> Callable[[], None]:
+        def cb() -> None:
+            # wait for the menu to release its grab:
+            GLib.idle_add(fn)
+        return cb
 
     def make_fullscreenmenuitem(self) -> Gtk.ImageMenuItem:
         def fullscreen(*args) -> None:
