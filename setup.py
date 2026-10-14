@@ -2274,11 +2274,14 @@ def convert_templates(install_dir: str, subs: "dict[str, str]", subdirs: "Sequen
             f_out.write(config_data)
 
 
-def build_xpra_conf(install_dir: str) -> None:
+def build_xpra_conf(install_dir: str, runtime_dir="") -> None:
     # pylint: disable=import-outside-toplevel
-    # generates an actual config file from the template
-    xvfb_command = detect_xorg_setup(install_dir)
-    xdummy_command = detect_xdummy_setup(install_dir)
+    # generates an actual config file from the template,
+    # the files are written to `install_dir`,
+    # but the paths in their contents use `runtime_dir` (ie: without the `--root` staging directory)
+    runtime_dir = runtime_dir or install_dir
+    xvfb_command = detect_xorg_setup(runtime_dir)
+    xdummy_command = detect_xdummy_setup(runtime_dir)
 
     def bstr(b) -> str:
         if b is None:
@@ -2286,8 +2289,8 @@ def build_xpra_conf(install_dir: str) -> None:
         return "yes" if int(b) else "no"
     SOURCE = ("/etc/profile",) if POSIX else ()
     source = "\n".join(f"source = {x}" for x in SOURCE)
-    conf_dir = get_conf_dir(install_dir)
-    print(f"get_conf_dir({install_dir})={conf_dir}")
+    conf_dir = get_conf_dir(runtime_dir)
+    print(f"get_conf_dir({runtime_dir})={conf_dir}")
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
         wrap_cmd_str, unexpand,
@@ -3095,21 +3098,22 @@ else:
             return install_dir
 
         def _get_root_prefix(self) -> str:
-            root_prefix = ""
-            for x in sys.argv:
-                if x.startswith("--root="):
-                    return x[len("--root="):]
-                if x.startswith("--prefix="):
-                    root_prefix = x[len("--prefix="):]
-            if not root_prefix:
-                install_dir = self._get_install_dir()
-                root_prefix = install_dir.rstrip("/")
+            # `install_dir` already includes both `--root` and `--prefix`,
+            # however they were specified (ie: "--root X" or "--root=X")
+            root_prefix = self._get_install_dir().rstrip("/")
             if root_prefix.endswith("/usr"):
                 # ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
                 root_prefix = root_prefix[:-4]
             if verbose_ENABLED:
                 print(f"  root_prefix={root_prefix!r}")
             return root_prefix
+
+        def _strip_root(self, path: str) -> str:
+            # the path as seen at runtime, without the `--root` staging directory:
+            root = (self.root or "").rstrip("/")
+            if root and path.startswith(root):
+                path = path[len(root):]
+            return path or "/"
 
         def copytodir(self, src: str, dst_dir: str, dst_name="", chmod=0o644, subs: "dict | None"=None) -> None:
             # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
@@ -3163,7 +3167,7 @@ else:
             if nvfbc_ENABLED:
                 addconf("nvfbc.keys")
 
-            build_xpra_conf(self.actual_root_prefix)
+            build_xpra_conf(self.actual_root_prefix, self._strip_root(self.actual_root_prefix))
 
             if x11_ENABLED:
                 # install xpra_Xdummy if we need it:
