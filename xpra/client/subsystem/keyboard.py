@@ -81,6 +81,8 @@ class KeyboardClient(StubClientSubsystem):
         if self.helper and self.helper.keyboard:
             log("%s.swap_keys=%s", self.helper.keyboard, opts.swap_keys)
             self.helper.keyboard.swap_keys = opts.swap_keys
+            # the default shortcut modifiers depend on swap-keys:
+            self.helper.parse_shortcuts()
 
     def run(self) -> None:
         if WIN32:

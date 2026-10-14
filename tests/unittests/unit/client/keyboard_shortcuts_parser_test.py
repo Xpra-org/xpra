@@ -23,8 +23,12 @@ class KeyboardShortcutsParserTest(unittest.TestCase):
         self.assertNotIn("caps_lock", names)
         self.assertEqual(parser.parse_shortcut_modifiers("none", MODIFIERS), [])
         self.assertEqual(parser.parse_shortcut_modifiers("ctrl+shift", MODIFIERS), ["ctrl", "shift"])
-        with patch.object(parser, "POSIX", True), patch.dict(os.environ, {"XDG_CURRENT_DESKTOP": "GNOME"}):
+        with patch.object(parser, "OSX", False), patch.object(parser, "POSIX", True), \
+                patch.dict(os.environ, {"XDG_CURRENT_DESKTOP": "GNOME"}):
             self.assertEqual(parser.parse_shortcut_modifiers("auto", MODIFIERS), ["control", "shift"])
+        with patch.object(parser, "OSX", True):
+            self.assertEqual(parser.parse_shortcut_modifiers("auto", MODIFIERS, True), ["control", "shift"])
+            self.assertEqual(parser.parse_shortcut_modifiers("auto", MODIFIERS, False), ["meta", "shift"])
         self.assertTrue(parser.parse_shortcut_modifiers("invalid", MODIFIERS))
 
     def test_parse_args(self):

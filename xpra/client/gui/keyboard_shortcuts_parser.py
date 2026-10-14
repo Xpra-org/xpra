@@ -7,7 +7,7 @@ import os
 from collections.abc import Sequence
 
 from xpra.util.str_fn import csv, print_nested_dict
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, OSX
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.log import Logger
@@ -40,14 +40,18 @@ def get_modifier_names(mod_meanings: dict[str, str]) -> dict[str, str]:
     return modifier_names
 
 
-def parse_shortcut_modifiers(s: str, modifier_names: dict[str, str]) -> list[str]:
+def parse_shortcut_modifiers(s: str, modifier_names: dict[str, str], swap_keys: bool = False) -> list[str]:
     # figure out the default shortcut modifiers
     # accept "," or "+" as delimiter:
     shortcut_modifiers = s.lower().replace(",", "+").split("+")
 
     def mod_defaults() -> list[str]:
         mods = ["meta", "shift"]
-        if POSIX:
+        if OSX:
+            # use the Command key, which is reported as "control" when swapping keys:
+            if swap_keys:
+                mods = ["control", "shift"]
+        elif POSIX:
             # gnome intercepts too many of the Alt+Shift shortcuts,
             # so use control with gnome:
             if os.environ.get("XDG_CURRENT_DESKTOP") == "GNOME":

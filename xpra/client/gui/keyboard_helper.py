@@ -132,7 +132,8 @@ class KeyboardHelper:
 
     def parse_shortcuts(self) -> dict[str, list]:
         modifier_names = self.get_modifier_names()
-        self.shortcut_modifiers = parse_shortcut_modifiers(self.shortcut_modifiers_str, modifier_names)
+        swap_keys = getattr(self.keyboard, "swap_keys", False)
+        self.shortcut_modifiers = parse_shortcut_modifiers(self.shortcut_modifiers_str, modifier_names, swap_keys)
         self.key_shortcuts = parse_shortcuts(self.key_shortcuts_strs, self.shortcut_modifiers, modifier_names)
         return self.key_shortcuts
 

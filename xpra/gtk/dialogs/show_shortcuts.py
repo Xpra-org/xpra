@@ -112,6 +112,7 @@ def main(_args):
     from xpra.util.system import is_X11
     from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
     from xpra.scripts.config import read_xpra_defaults
+    from xpra.util.parsing import TRUE_OPTIONS
     with program_context("Keyboard-Shortcuts", "Keyboard Shortcuts"):
         if is_X11():
             try:
@@ -133,7 +134,10 @@ def main(_args):
         conf = read_xpra_defaults()
         key_shortcuts = conf["key-shortcut"]
         shortcut_modifiers = conf["shortcut-modifiers"]
-        modifiers = parse_shortcut_modifiers(shortcut_modifiers, modifier_names)
+        swap_keys = getattr(keyboard, "swap_keys", False)
+        if "swap-keys" in conf:
+            swap_keys = str(conf["swap-keys"]).lower() in TRUE_OPTIONS
+        modifiers = parse_shortcut_modifiers(shortcut_modifiers, modifier_names, swap_keys)
         shortcuts = parse_shortcuts(key_shortcuts, modifiers, modifier_names=modifier_names)
 
         w = ShortcutInfo(modifiers, shortcuts)
