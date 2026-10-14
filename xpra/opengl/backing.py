@@ -300,6 +300,8 @@ class GLWindowBackingBase(WindowBackingBase):
         self.gl_setup = False
         self.debug_setup = False
         self.border: WindowBorder = WindowBorder(shown=False)
+        # device pixels per render unit, and per backing pixel (set when presenting):
+        self.present_scale = 1.0, 1.0, 1.0
         self.paint_screen = False
         self.offscreen_fbo = None
         self.tmp_fbo = None
@@ -906,8 +908,10 @@ class GLWindowBackingBase(WindowBackingBase):
         # (ie: the GTK backend renders to its own buffer…)
         bw, bh = self.size
         ww, wh = self.render_size
-        xscale = ww / bw * context.get_scale_factor()
-        yscale = wh / bh * context.get_scale_factor()
+        scale_factor = context.get_scale_factor()
+        xscale = ww / bw * scale_factor
+        yscale = wh / bh * scale_factor
+        self.present_scale = scale_factor, xscale, yscale
         scaling = xscale != 1 or yscale != 1
         if self.is_double_buffered() or scaling:
             # refresh the whole window:
@@ -980,7 +984,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         # Keep the remote pointer above all the other overlays.
         if self.pointer_overlay:
-            self.draw_pointer(xscale, yscale)
+            self.draw_pointer(ww / bw, wh / bh)
 
         # Show the backbuffer on screen
         glFlush()
@@ -1174,11 +1178,17 @@ class GLWindowBackingBase(WindowBackingBase):
     def combine_texture(self, program_name: str, x: int, y: int, w: int, h: int, texture_map: dict, uniforms: dict) -> None:
         log("combine_texture%s", (program_name, x, y, w, h, texture_map))
         # paint this texture
-
-        wh = self.render_size[1]
+        # `x`, `y`, `w` and `h` are in render coordinates,
+        # convert them to device pixels:
+        scale_factor, xscale, yscale = self.present_scale
+        wh = round(self.render_size[1] * scale_factor)
+        dx = round(x * scale_factor)
+        dy = round(y * scale_factor)
+        dw = round(w * scale_factor)
+        dh = round(h * scale_factor)
         target = GL_TEXTURE_RECTANGLE
         # the region we're updating (reversed):
-        with TemporaryViewport(x, wh - y - h, w, h):
+        with TemporaryViewport(dx, wh - dy - dh, dw, dh):
             program = self.programs[program_name]
             glUseProgram(program)
             index = 0
@@ -1201,7 +1211,12 @@ class GLWindowBackingBase(WindowBackingBase):
                     raise TypeError(f"Unsupported type {type(value)}")
 
             viewport_pos = glGetUniformLocation(program, "viewport_pos")
-            glUniform2f(viewport_pos, x, y)
+            glUniform2f(viewport_pos, dx, dy)
+            viewport_size = glGetUniformLocation(program, "viewport_size")
+            glUniform2f(viewport_size, dw, dh)
+            dst_scaling = glGetUniformLocation(program, "dst_scaling")
+            if dst_scaling >= 0:
+                glUniform2f(dst_scaling, xscale, yscale)
 
             position = 0
             pos_buffer = self.set_vao(position)

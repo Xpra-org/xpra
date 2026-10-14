@@ -266,13 +266,15 @@ OVERLAY_SHADER = f"""
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
 uniform vec2 viewport_pos;
+uniform vec2 viewport_size;
 uniform sampler2DRect rgba;
 layout(location = 0) out vec4 frag_color;
 
 void main()
 {{
-    vec2 pos = gl_FragCoord.xy-viewport_pos.xy;
-    frag_color = texture(rgba, mod(pos, textureSize(rgba)));
+    // stretch the texture over the viewport:
+    vec2 pos = (gl_FragCoord.xy - viewport_pos.xy) / viewport_size * textureSize(rgba);
+    frag_color = texture(rgba, pos);
 }}
 """
 
@@ -280,6 +282,8 @@ BLEND_SHADER = f"""
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
 uniform vec2 viewport_pos;
+uniform vec2 viewport_size;
+uniform vec2 dst_scaling = vec2(1.0, 1.0);
 uniform sampler2DRect rgba;
 uniform sampler2DRect dst;
 uniform float weight = 0.5;
@@ -287,9 +291,12 @@ layout(location = 0) out vec4 frag_color;
 
 void main()
 {{
-    vec2 tex_pos = gl_FragCoord.xy - viewport_pos.xy;
-    vec4 tex_color = texture(rgba, mod(tex_pos, textureSize(rgba)));
-    vec2 dst_pos = vec2(gl_FragCoord.x, textureSize(dst).y - gl_FragCoord.y);
+    // stretch the texture over the viewport:
+    vec2 tex_pos = (gl_FragCoord.xy - viewport_pos.xy) / viewport_size * textureSize(rgba);
+    vec4 tex_color = texture(rgba, tex_pos);
+    // device pixels to backing pixels:
+    vec2 fbo_pos = gl_FragCoord.xy / dst_scaling;
+    vec2 dst_pos = vec2(fbo_pos.x, textureSize(dst).y - fbo_pos.y);
     vec4 dst_color = texture(dst, dst_pos);
 
     float w = weight;
