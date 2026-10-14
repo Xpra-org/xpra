@@ -93,6 +93,7 @@ MOVERESIZE_GDK = envbool("XPRA_MOVERESIZE_GDK", True)
 # marks the buttons of a moveresize as not recorded yet,
 # compared by identity since an empty list (no buttons pressed) is a valid value:
 BUTTONS_NOT_RECORDED: list[int] = [-1]
+MOVERESIZE_POLLING_DELAY = envint("XPRA_MOVERESIZE_POLLING_DELAY", 20)
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".") >= 0
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
 REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 0)
@@ -269,6 +270,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.remove_pointer_overlay_timer: int = 0
         self.show_pointer_overlay_timer: int = 0
         self.moveresize_timer: int = 0
+        self.moveresize_polling_timer: int = 0
+        # the buttons whose release we must not forward, because their press ended a moveresize:
+        self.moveresize_swallow: set[int] = set()
         self.moveresize_event: tuple[int, int, int, int, list[int], int, int, int, int] | tuple = ()
         self.moveresize_data: tuple[tuple, tuple] | tuple = ()
         self.moveresize_cursor: str = ""
@@ -315,7 +319,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
         def motion(_w, event) -> bool:
             if self.moveresize_event:
-                self.motion_moveresize(event)
+                self.motion_moveresize(event.x_root, event.y_root, event.state)
             # must return False so the other handlers will run
             # ie: the `PointerWindow` also uses this signal
             return False
@@ -1171,11 +1175,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         else:
             self.fullscreen()
 
-    def motion_moveresize(self, event) -> None:
+    def motion_moveresize(self, x: float, y: float, state: int | Gdk.ModifierType) -> None:
         x_root, y_root, direction, button, start_buttons, wx, wy, ww, wh = self.moveresize_event
         dirstr = MOVERESIZE_DIRECTION_STRING.get(direction, direction)
-        buttons = mask_buttons(event.state)
-        geomlog("motion_moveresize(%s) direction=%s, buttons=%s", event, dirstr, buttons)
+        buttons = mask_buttons(state)
+        geomlog("motion_moveresize(%s, %s, %s) direction=%s, buttons=%s", x, y, state, dirstr, buttons)
         if start_buttons is BUTTONS_NOT_RECORDED:
             # first time around, store the buttons
             start_buttons = buttons
@@ -1183,15 +1187,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if (button > 0 and button not in buttons) or (button == 0 and start_buttons != buttons):
             geomlog("%s for window button %i is no longer pressed (buttons=%s) cancelling moveresize",
                     dirstr, button, buttons)
-            self.moveresize_event = ()
-            self.cancel_moveresize_timer()
-            self.cancel_moveresize_cursor()
-            # flush any pending resize so the final size is applied
-            if self.moveresize_data:
-                self.do_moveresize()
+            self.end_moveresize()
         else:
-            x = event.x_root
-            y = event.y_root
             dx = x - x_root
             dy = y - y_root
             # clamp resizing using size hints,
@@ -1229,6 +1226,78 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self.moveresize_data = data
                 if not self.moveresize_timer:
                     self.moveresize_timer = self.timeout_add(20, self.do_moveresize)
+
+    def end_moveresize(self) -> None:
+        self.moveresize_event = ()
+        self.cancel_moveresize_timer()
+        self.cancel_moveresize_polling()
+        self.cancel_moveresize_cursor()
+        # flush any pending resize so the final size is applied
+        if self.moveresize_data:
+            self.do_moveresize()
+
+    def initiate_pointer_moveresize(self, direction: int) -> None:
+        """
+        move or resize the window with the pointer until the next click, without a button held down.
+        Used by the window menu, since window managers and GDK may require a button:
+        on macOS, GDK only tracks its drags whilst the left button is pressed.
+        """
+        gdkwin = self.get_window()
+        if not gdkwin:
+            return
+        with IgnoreWarningsContext():
+            x, y, mask = self.get_root_window().get_pointer()[-3:]
+        wx, wy = gdkwin.get_root_origin()
+        ww, wh = self.get_size()
+        geomlog("initiate_pointer_moveresize(%s) pointer=%s, window=%s",
+                MOVERESIZE_DIRECTION_STRING.get(direction, direction), (x, y), (wx, wy, ww, wh))
+        self.moveresize_event = (x, y, direction, 0, mask_buttons(mask), wx, wy, ww, wh)
+        self.set_moveresize_cursor(direction)
+        # we don't get motion events once the pointer leaves the window, so poll it:
+        self.cancel_moveresize_polling()
+        self.moveresize_polling_timer = self.timeout_add(MOVERESIZE_POLLING_DELAY, self.poll_moveresize)
+
+    def poll_moveresize(self) -> bool:
+        if not self.moveresize_event:
+            self.moveresize_polling_timer = 0
+            return False
+        with IgnoreWarningsContext():
+            x, y, mask = self.get_root_window().get_pointer()[-3:]
+        if mask_buttons(mask) != self.moveresize_event[4] and self.is_pointer_over(x, y):
+            # leave it to `moveresize_click` so the click does not get forwarded to the server
+            return True
+        self.motion_moveresize(x, y, mask)
+        if not self.moveresize_event:
+            self.moveresize_polling_timer = 0
+            return False
+        return True
+
+    def is_pointer_over(self, x: int, y: int) -> bool:
+        gdkwin = self.get_window()
+        if not gdkwin:
+            return False
+        ox, oy = gdkwin.get_origin()[-2:]
+        return ox <= x < ox + gdkwin.get_width() and oy <= y < oy + gdkwin.get_height()
+
+    def moveresize_click(self, button: int, depressed: bool) -> bool:
+        """
+        a click ends the moveresize started by `initiate_pointer_moveresize`,
+        returns True if the button event must not be forwarded to the server
+        """
+        if depressed and self.moveresize_polling_timer and self.moveresize_event and button <= 3:
+            geomlog("moveresize_click(%i, %s) ending moveresize", button, depressed)
+            self.end_moveresize()
+            self.moveresize_swallow.add(button)
+            return True
+        if not depressed and button in self.moveresize_swallow:
+            self.moveresize_swallow.discard(button)
+            return True
+        return False
+
+    def cancel_moveresize_polling(self) -> None:
+        if mrp := self.moveresize_polling_timer:
+            self.moveresize_polling_timer = 0
+            self.source_remove(mrp)
 
     def cancel_moveresize_timer(self) -> None:
         if mrt := self.moveresize_timer:
@@ -1327,6 +1396,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.moveresize_event = ()
             self.moveresize_data = ()
             self.cancel_moveresize_timer()
+            self.cancel_moveresize_polling()
             self.cancel_moveresize_cursor()
         elif MOVERESIZE_GDK:
             if direction in (MoveResize.MOVE, MoveResize.MOVE_KEYBOARD):
@@ -1788,6 +1858,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.cancel_send_iconifiy_timer()
         self.cancel_deiconify_timer()
         self.cancel_moveresize_timer()
+        self.cancel_moveresize_polling()
         self.cancel_follow_handler()
         self.on_realize_cb = {}
 
@@ -1833,6 +1904,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 # cancel move resize if there is one:
                 self.moveresize_event = ()
                 self.cancel_moveresize_timer()
+                self.cancel_moveresize_polling()
                 return True
         # let the event propagate to the next handler
         return False

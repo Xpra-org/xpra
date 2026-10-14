@@ -226,8 +226,8 @@ class WindowMenuHelper(GTKMenuHelper):
 
                 GLib.timeout_add(20, nudge_pointer)
             else:
-                # our own implementation needs button=0 to wait for the click:
-                self.window.initiate_moveresize(x, y, direction, int(base.MOVERESIZE_GDK), 1)
+                # GDK drags need a button held down (ie: on macOS), so follow the pointer ourselves:
+                self.window.initiate_pointer_moveresize(direction)
 
         self.initiate_resize_menuitem = self.menuitem("Resize", "scaling.png", RESIZE_TOOLTIP,
                                                       cb=self.after_menu(initiate_resize))
@@ -245,7 +245,7 @@ class WindowMenuHelper(GTKMenuHelper):
                 # same as resizing: a keyboard move follows the pointer without a button held down
                 self.window.initiate_moveresize(x, y, MoveResize.MOVE_KEYBOARD, 0, 1)
             else:
-                self.window.initiate_moveresize(x, y, MoveResize.MOVE, int(base.MOVERESIZE_GDK), 1)
+                self.window.initiate_pointer_moveresize(MoveResize.MOVE)
 
         self.initiate_move_menuitem = self.menuitem("Move", "forward.png", MOVE_TOOLTIP,
                                                     cb=self.after_menu(lambda: self.when_not_fullscreen(initiate_move)))

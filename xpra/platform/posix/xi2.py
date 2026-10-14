@@ -116,7 +116,7 @@ class XI2_Window:
         window = self.window
         if window.moveresize_event:
             xinputlog("do_xi_motion(%s, %s) handling as a moveresize event on window %s", event, device, window)
-            window.motion_moveresize(event)
+            window.motion_moveresize(event.x_root, event.y_root, event.state)
             self._do_motion_notify_event(event)
             return
         client = window._client

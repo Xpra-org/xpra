@@ -307,6 +307,10 @@ class PointerWindow(GtkStubWindow):
         return button
 
     def _button_action(self, button: int, event, depressed: bool, props=None) -> None:
+        # weak dependency on `GTKClientWindowBase`:
+        moveresize_click = getattr(self, "moveresize_click", None)
+        if moveresize_click and moveresize_click(button, depressed):
+            return
         # button events are sent by the `pointer` subsystem, which may be disabled:
         pointer = self.get_subsystem("pointer")
         if not pointer or self._client.readonly or self._client.server_readonly or not pointer.server_pointer:
