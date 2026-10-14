@@ -331,7 +331,7 @@ class Keyboard(KeyboardBase):
                 kbdef = WIN32_KEYBOARDS.get(val, ())
                 log("get_layout_spec() WIN32_KEYBOARDS[%#x]=%s", val, kbdef)
                 if kbdef:
-                    _layout, _descr = kbdef
+                    _layout, _variant, _descr = kbdef
                     if _layout == "??":
                         log.warn("Warning: the X11 codename for %#x is not known", val)
                         log.warn(" only identified as '%s'", _descr)
@@ -341,6 +341,7 @@ class Keyboard(KeyboardBase):
                         layouts_defs[_layout] = ival
                     if not layout:
                         layout = _layout
+                        variant = _variant
                         descr = _descr
                         layout_code = ival
                         break
@@ -372,12 +373,13 @@ class Keyboard(KeyboardBase):
             layout = layouts[0]
             layout_code = layouts_defs.get(layout, 0)
 
-        if layout and self.last_layout_message != layout:
+        xkb = f"{layout}({variant})" if variant else layout
+        if layout and self.last_layout_message != xkb:
             if descr:
-                log.info(f"keyboard layout {descr!r} : {layout!r} ({layout_code:#x})")
+                log.info(f"keyboard layout {descr!r} : {xkb!r} ({layout_code:#x})")
             else:
                 log.info(f"keyboard layout {layout!r} ({layout_code:#x})")
-            self.last_layout_message = layout
+            self.last_layout_message = xkb
         return model, layout, layouts, variant, list(variants), options
 
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
