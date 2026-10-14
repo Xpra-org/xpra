@@ -98,6 +98,10 @@ class KeyboardBase:
     def get_layout_spec(self) -> tuple[str, str, Sequence[str], str, Sequence[str], str]:
         return "", "", (), "", (), ""
 
+    def get_native_layout(self) -> dict[str, Any]:
+        """ the platform's own identifiers for the current layout, which may not map to X11 """
+        return {}
+
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
         return None
 

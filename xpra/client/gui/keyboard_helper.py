@@ -113,6 +113,7 @@ class KeyboardHelper:
         self.backend_name = ""
         self.query = ""
         self.query_struct: dict[str, Any] = {}
+        self.native: dict[str, Any] = {}
         self.layout_groups = LAYOUT_GROUPS
         self.raw = False
 
@@ -322,6 +323,8 @@ class KeyboardHelper:
         self.model, self.layout, self.layouts, self.variant, self.variants, self.options = self.get_layout_spec()
         self.query_struct = self.get_keymap_spec()
         log(f"query_xkbmap() query_struct={self.query_struct}")
+        self.native = self.keyboard.get_native_layout()
+        log(f"query_xkbmap() native={self.native}")
         lastkeycodes = self.keycodes
         self.keycodes = self.get_full_keymap()
         show_compare_keycodes(lastkeycodes, self.keycodes)
@@ -396,6 +399,8 @@ class KeyboardHelper:
             "x11-keycodes": self.x11_keycodes,
         }.items():
             hashadd(name, x)
+        if self.native:
+            hashadd("native", sorted(self.native.items()))
         if self.query_struct:
             # flatten the dict in a predicatable order:
             for k in sorted(self.query_struct.keys()):
@@ -412,7 +417,7 @@ class KeyboardHelper:
                 "layout", "layouts", "variant", "variants", "options",
                 "raw", "layout_groups",
                 "sync",
-                "query_struct", "mod_meanings",
+                "query_struct", "native", "mod_meanings",
                 "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes",
         ):
             if x in skip:

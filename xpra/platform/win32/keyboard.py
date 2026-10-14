@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Final
+from typing import Any, Final
 import ctypes
 from ctypes.wintypes import HANDLE
 from ctypes import create_string_buffer, byref
@@ -91,6 +91,16 @@ def get_layout_name_value() -> int:
         except ValueError:
             log.warn("Warning: failed to parse keyboard layout code '%s'", bytestostr(name_buf.value))
     return 0
+
+
+def get_layout_text(klid: int) -> str:
+    try:
+        from winreg import HKEY_LOCAL_MACHINE, OpenKey, QueryValueEx  # pylint: disable=import-outside-toplevel
+        with OpenKey(HKEY_LOCAL_MACHINE, f"SYSTEM\\CurrentControlSet\\Control\\Keyboard Layouts\\{klid:08x}") as key:
+            return str(QueryValueEx(key, "Layout Text")[0])
+    except OSError:
+        log("get_layout_text(%#x)", klid, exc_info=True)
+        return ""
 
 
 def get_window_layout() -> int:
@@ -381,6 +391,16 @@ class Keyboard(KeyboardBase):
                 log.info(f"keyboard layout {layout!r} ({layout_code:#x})")
             self.last_layout_message = xkb
         return model, layout, layouts, variant, list(variants), options
+
+    def get_native_layout(self) -> dict[str, Any]:
+        klid = get_layout_name_value()
+        if not klid:
+            return {}
+        native: dict[str, Any] = {"platform": "win32", "code": klid}
+        name = get_layout_text(klid) or WIN32_KEYBOARDS.get(klid, ("", "", ""))[2]
+        if name:
+            native["name"] = name
+        return native
 
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
         try:
