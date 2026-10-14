@@ -11,11 +11,13 @@ from ctypes.wintypes import HWND, BYTE, HICON, HDC, POINT
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
+from xpra.client.gui.window.info import geom_str, hsc, get_backing_info
 from xpra.client.win32.gdi_backing import GDIBacking
 from xpra.os_util import gi_import
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.util.objects import typedict
+from xpra.util.str_fn import csv
 from xpra.platform.win32.constants import FLASHW_ALL, FLASHW_TIMERNOFG, FLASHW_STOP
 from xpra.platform.win32.gui import _apply_title_bar_theme
 from xpra.platform.win32.common import (
@@ -799,6 +801,30 @@ class ClientWindow(GObject.GObject):
             "has-alpha": self.alpha,
             "attributes": attributes,
         }
+
+    def get_window_info(self) -> dict[str, Any]:
+        # the data shown by the "Window Information" dialog:
+        info = self.get_info()
+        state = [a for a in info["attributes"] if a != "focused"]
+        window_info: dict[str, Any] = {
+            "wid": str(self.wid),
+            "title": self.metadata.strget("title", ""),
+            "override-redirect": self.is_OR(),
+            "state": csv(state) or "none",
+            "focused": "focused" in info["attributes"],
+            "pixel-depth": str(self.pixel_depth or 24),
+            "alpha": bool(self.alpha),
+            "opengl": bool(getattr(self, "is_GL", lambda: False)()),
+            "geometry": geom_str((self.x, self.y, self.width, self.height)),
+            "max-size": csv(self.max_window_size or ()),
+            "size-constraints": hsc(self.size_constraints),
+        }
+        rect = RECT()
+        if self.hwnd and GetWindowRect(self.hwnd, byref(rect)):
+            outer = (rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
+            window_info["outer-geometry"] = geom_str(outer)
+        window_info.update(get_backing_info(self.backing))
+        return window_info
 
     def set_attention_requested(self, attention: bool) -> None:
         if attention == self.attention_requested:

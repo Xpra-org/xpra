@@ -15,6 +15,24 @@ GLib = gi_import("GLib")
 log = Logger("keyboard")
 
 
+def set_clipboard_text(hwnd: int, text: str) -> bool:
+    from xpra.platform.win32.common import OpenClipboard, EmptyClipboard, SetClipboardData, CloseClipboard
+    from xpra.platform.win32.ctypes_clipboard import alloc_global, free_clipboard_handle
+    if not OpenClipboard(hwnd):
+        log("OpenClipboard(%#x) failed", hwnd)
+        return False
+    try:
+        if not EmptyClipboard():
+            return False
+        handle = alloc_global((text + "\0").encode("utf-16-le"))
+        if SetClipboardData(win32con.CF_UNICODETEXT, handle):
+            return True
+        free_clipboard_handle(win32con.CF_UNICODETEXT, handle)
+        return False
+    finally:
+        CloseClipboard()
+
+
 class ShortcutTarget:
     """
     The keyboard shortcut actions are looked up on the window,
@@ -55,6 +73,22 @@ class ShortcutTarget:
             SendMessageW(hwnd, win32con.WM_SYSCOMMAND, win32con.SC_KEYMENU, ord(" "))
             return False
         GLib.idle_add(show_system_menu)
+
+    def show_window_info(self, *_args) -> None:
+        from xpra.client.win32.gtk import is_loaded
+        if is_loaded():
+            from xpra.client.gtk3.window.window_info import WindowInfo
+            wi = WindowInfo(self.window)
+            wi.show()
+            return
+        # without GTK, there is no dialog: log the information and copy it to the clipboard
+        from xpra.client.gui.window.info import window_info_text
+        text = window_info_text(self.window.get_window_info())
+        log.info("window information for window %i:", self.window.wid)
+        for line in text.splitlines():
+            log.info(" %s", line)
+        if set_clipboard_text(self.window.hwnd, text):
+            log.info(" (copied to the clipboard)")
 
     def toggle_fullscreen(self, *_args) -> None:
         window = self.window
