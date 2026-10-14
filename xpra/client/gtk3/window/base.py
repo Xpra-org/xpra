@@ -345,6 +345,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:
         raise NotImplementedError()
 
+    def get_window_info(self) -> dict[str, Any]:
+        # the data shown by the "Window Information" dialog:
+        from xpra.client.gtk3.window.window_info import get_gtk_window_info
+        return get_gtk_window_info(self)
+
     def init_max_window_size(self) -> None:
         """ used by GL windows to enforce a hard limit on window sizes """
         saved_mws = self.max_window_size
