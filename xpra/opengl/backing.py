@@ -899,23 +899,24 @@ class GLWindowBackingBase(WindowBackingBase):
         if SAVE_BUFFERS:
             self.save_fbo()
 
-        # viewport for clearing the whole window:
+        # viewport for clearing the whole window,
+        # the offsets and render size are in window units, not backing pixels:
         left, top, right, bottom = self.offsets
         if left or top or right or bottom or xscale or yscale:
             alpha = 0.0 if self._alpha_enabled else 1.0
-            glViewport(0, 0, int((left + ww + right) * xscale), int((top + wh + bottom) * yscale))
+            glViewport(0, 0, int((left + ww + right) * scale_factor), int((top + wh + bottom) * scale_factor))
             glClearColor(0.0, 0.0, 0.0, alpha)
             glClear(GL_COLOR_BUFFER_BIT)
 
         # from now on, take the offsets and scaling into account:
-        viewport = int(left * xscale), int(top * yscale), int(ww * xscale), int(wh * yscale)
+        viewport = int(left * scale_factor), int(top * scale_factor), int(ww * scale_factor), int(wh * scale_factor)
         log(f"viewport for render-size={self.render_size} and offsets={self.offsets} with {xscale=} / {yscale=}: {viewport}")
         glViewport(*viewport)
 
         # Draw FBO texture on screen
         upscaling = xscale > 1 and yscale > 1
         if upscaling and OPENGL_SCALING_FILTER not in ("bilinear", "nearest") and "upscale" in self.programs:
-            self._present_fbo_catmull_rom(xscale, yscale, left, top)
+            self._present_fbo_catmull_rom(xscale, yscale, left * scale_factor, top * scale_factor)
         else:
             sampling = GL_LINEAR if scaling else GL_NEAREST
             if OPENGL_SCALING_FILTER == "nearest":
@@ -965,7 +966,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         log("%s.do_present_fbo() done", self)
 
-    def _present_fbo_catmull_rom(self, xscale: float, yscale: float, left: int, top: int) -> None:
+    def _present_fbo_catmull_rom(self, xscale: float, yscale: float, left: float, top: float) -> None:
         target = GL_TEXTURE_RECTANGLE
         program = self.programs["upscale"]
         glUseProgram(program)
@@ -977,8 +978,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glUniform1i(glGetUniformLocation(program, "fbo"), 0)
 
-        glUniform2f(glGetUniformLocation(program, "viewport_pos"),
-                    left * xscale, top * yscale)
+        # `left` and `top` are already in device pixels:
+        glUniform2f(glGetUniformLocation(program, "viewport_pos"), left, top)
         glUniform2f(glGetUniformLocation(program, "scaling"), xscale, yscale)
         glUniform1i(glGetUniformLocation(program, "use_sigmoid"), 1)
         glUniform1f(glGetUniformLocation(program, "ar_strength"), 0.8)
