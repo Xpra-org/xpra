@@ -44,7 +44,10 @@ BELL_MAP: dict[str, int] = {
 }
 
 
-def get_modifiers() -> list[str]:
+def get_modifiers(scroll_lock_modifier: str = "") -> list[str]:
+    """
+    `scroll_lock_modifier` is the modifier `Scroll_Lock` is mapped to by the server, if any
+    """
     modifiers = []
     if GetKeyState(win32con.VK_SHIFT) & 0x8000:
         modifiers.append("shift")
@@ -64,8 +67,8 @@ def get_modifiers() -> list[str]:
         modifiers.append("lock")  # Caps Lock
     if GetKeyState(win32con.VK_NUMLOCK) & 0x0001:
         modifiers.append("mod2")  # Num Lock
-    if GetKeyState(win32con.VK_SCROLL) & 0x0001:
-        modifiers.append("mod3")  # Scroll Lock
+    if scroll_lock_modifier and GetKeyState(win32con.VK_SCROLL) & 0x0001:
+        modifiers.append(scroll_lock_modifier)
     return modifiers
 
 
@@ -156,7 +159,14 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         return "Win32"
 
     def get_current_modifiers(self) -> Sequence[str]:
-        return get_modifiers()
+        return self.get_modifiers()
+
+    def get_modifiers(self) -> list[str]:
+        # only send `Scroll_Lock` if the server has mapped it to a modifier:
+        kb = self.get_subsystem("keyboard")
+        kh = kb.helper if kb else None
+        scroll_lock_modifier = kh.keyboard.modifier_keys.get("Scroll_Lock", "") if kh else ""
+        return get_modifiers(scroll_lock_modifier)
 
     def get_mouse_position(self) -> tuple:
         pos = POINT()
@@ -382,7 +392,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     def window_mouse_moved_event(self, window, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
         log("window_mouse_moved_event(%s, %i, %i, %s, %s)", window, x, y, vk, buttons)
         device_id = -1
-        modifiers = get_modifiers()
+        modifiers = self.get_modifiers()
         props = {}
         pos = self._pointer_data(window, x, y)
         self.get_subsystem("pointer").send_mouse_position(device_id, window.wid, pos, modifiers=modifiers, buttons=buttons, props=props)
@@ -390,7 +400,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     def window_mouse_clicked_event(self, window, button, pressed, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
         log("window_mouse_clicked_event(%s, %i, %s, %i, %i, %s, %s)", window, button, pressed, x, y, vk, buttons)
         device_id = -1
-        modifiers = get_modifiers()
+        modifiers = self.get_modifiers()
         props = {}
         pos = self._pointer_data(window, x, y)
         self.get_subsystem("pointer").send_button(device_id, window.wid, button, pressed, pos, modifiers=modifiers, buttons=buttons, props=props)
@@ -418,7 +428,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def window_key_event(self, window, keyname: str, pressed: bool, vk_code: int, string: str, scancode: int, extended: bool) -> None:
         keylog("window_key_event(%s, %r, %s, %i, %r, %i, %s)", window, keyname, pressed, vk_code, string, scancode, extended)
-        mods = get_modifiers()
+        mods = self.get_modifiers()
         if self.key_handled_as_shortcut(window, keyname, pressed, mods):
             return
         if BACKWARDS_COMPATIBLE:
