@@ -79,6 +79,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [fido2](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/fido2.py)                         | [FIDO Alliance](https://en.wikipedia.org/wiki/FIDO_Alliance)                            | [#1789](https://github.com/Xpra-org/xpra/issues/4516)                               |
 | [otp](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otp.py)                             | One Time Password                                                                       | [pyotp](https://github.com/pyauth/pyotp)                                            |
 | [otpscreen](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otpscreen.py)                 | Generates a one-time secret and shows it in a local GUI dialog for the user to type     | local secondary-channel confirmation (distinct from `otp`)                          |
+| [notify](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/notify.py)                       | Asks the current user(s) of the session to allow the connection, using a notification   | shadow servers: the desktop user, seamless servers: the connected clients            |
 | [http-header](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/http_header.py)             | validate websocket http headers                                                         | [#4438](https://github.com/Xpra-org/xpra/issues/4438)                               |
 </details>
 
@@ -91,10 +92,16 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 * `xpra seamless --bind-tcp=0.0.0.0:10000,auth=file(filename=/path/to/mypasswordfile.txt)`
 * `xpra seamless --bind-tcp=0.0.0.0:10000,auth=sqlite(filename=/path/to/userlist.sdb)`
 * `xpra seamless --bind-tcp=0.0.0.0:10000,auth=otpscreen(mode=alphanumeric,count=8,timeout=60)`
+* `xpra shadow --bind-tcp=0.0.0.0:10000,auth=notify(timeout=20)`
 
 Beware when mixing environment variables and password files as the latter may contain a trailing newline character whereas the former often do not.
 
 The `otpscreen` module accepts the following options: `mode` (`digits`, `alpha` or `alphanumeric`, default `digits`), `count` (number of characters in the generated secret, default `6`), `timeout` (how long the dialog stays up, in seconds, default `120`), and `display` (which display to open the dialog on, default `auto` which reuses the server's saved `DISPLAY` / `WAYLAND_DISPLAY`).
+
+The `notify` module sends a notification with `Allow` and `Deny` actions to the notification service on the server's session bus, and waits for an answer.
+With shadow servers, this is the notification service of the desktop being shadowed, so the user sitting in front of it is asked.
+With seamless servers, this is the server's own notification forwarder, so the request is shown by the clients currently connected (if they have notifications enabled).
+The connection is rejected if the request is denied or dismissed, if nobody answers within `timeout` seconds (default `30`), or if the notification service does not support actions.
 </details>
 
 <details markdown="1">
@@ -239,7 +246,7 @@ Today, that lookup is bundled into the authentication module via the `get_sessio
 
 The proxy server iterates over the protocol's authenticator chain after the challenge passes and uses the first non-empty result (see [`xpra/server/proxy/server.py`](https://github.com/Xpra-org/xpra/blob/master/xpra/server/proxy/server.py)).
 
-The default implementation in `SysAuthenticatorBase.get_sessions()` performs a `DotXpra` socket-directory scan for the authenticated `uid`, listing every live xpra socket owned by the user. **Most modules use this default** (`pam`, `ldap`, `ldap3`, `password`, `peercred`, `keycloak`, `kerberos-*`, `gss`, `u2f`, `fido2`, `otp`, `otpscreen`, `capability`, `env`, `exec`, `hosts`, `http-header`, `allow`, `none`, `win32`, `file`).
+The default implementation in `SysAuthenticatorBase.get_sessions()` performs a `DotXpra` socket-directory scan for the authenticated `uid`, listing every live xpra socket owned by the user. **Most modules use this default** (`pam`, `ldap`, `ldap3`, `password`, `peercred`, `keycloak`, `kerberos-*`, `gss`, `u2f`, `fido2`, `otp`, `otpscreen`, `notify`, `capability`, `env`, `exec`, `hosts`, `http-header`, `allow`, `none`, `win32`, `file`).
 
 Three families override it to return data they already store per user:
 
