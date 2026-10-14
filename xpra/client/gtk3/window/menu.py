@@ -274,11 +274,30 @@ class WindowMenuHelper(GTKMenuHelper):
         return cb
 
     def make_fullscreenmenuitem(self) -> Gtk.ImageMenuItem:
+        def is_fullscreen() -> bool:
+            gdkwin = self.window.get_window()
+            return bool(gdkwin and gdkwin.get_state() & Gdk.WindowState.FULLSCREEN)
+
         def fullscreen(*args) -> None:
             log("fullscreen%s", args)
-            self.window.fullscreen()
+            if is_fullscreen():
+                self.window.unfullscreen()
+            else:
+                self.window.fullscreen()
 
-        return self.menuitem("Fullscreen", "scaling.png", cb=fullscreen)
+        def get_label(fullscreen) -> str:
+            return "Unfullscreen" if fullscreen else "Fullscreen"
+
+        self.fullscreen_menuitem = self.menuitem(get_label(is_fullscreen()), "scaling.png", cb=fullscreen)
+
+        def window_state_updated(widget, event) -> None:
+            if event.changed_mask & Gdk.WindowState.FULLSCREEN:
+                lbl = get_label(event.new_window_state & Gdk.WindowState.FULLSCREEN)
+                log("state_changed%s fullscreen label=%r", (widget, event), lbl)
+                self.fullscreen_menuitem.set_label(lbl)
+
+        self.window.connect("window-state-event", window_state_updated)
+        return self.fullscreen_menuitem
 
     def _set_ticked(self, item, state: bool) -> None:
         icon_name = ticked_icon(state)
