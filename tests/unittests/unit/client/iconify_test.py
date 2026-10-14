@@ -45,7 +45,7 @@ class Window:
         self.gdk_window.get_state.return_value = Gdk.WindowState.ICONIFIED
         self.focus_on_map = True
         for name in ("iconify", "deiconify", "_unfocus", "send", "emit", "process_map_event",
-                     "cancel_window_state_timer", "cancel_moveresize_timer", "cancel_follow_handler",
+                     "cancel_window_state_timer", "cancel_moveresize_timer", "cancel_moveresize_polling", "cancel_follow_handler",
                      "set_attention_requested"):
             setattr(self, name, Mock())
 
