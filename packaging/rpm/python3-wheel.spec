@@ -17,8 +17,8 @@ exit
 
 %global pypi_name wheel
 Name:           %{py3rpmname}-%{pypi_name}
-Release:        4%{?dist}
-Version:        0.47.0
+Release:        1%{?dist}
+Version:        0.48.0
 Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
 Requires:       %{py3rpmname}
@@ -42,7 +42,7 @@ It has two different roles:
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "cc72bd1009ba0cf63922e28f94d9d83b920aa2bb28f798a31d0691b02fa3c9b3" ]; then
+if [ "${sha256}" != "94800765601e9171bf5d58d066e640662842bcedcbab982b2c90787a2c987322" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -50,6 +50,26 @@ fi
 # centos9's old setuptools cannot parse the PEP 639 SPDX license string,
 # convert it to the legacy table form which both old and new setuptools accept:
 sed -i 's/^license = "MIT"$/license = {text = "MIT"}/' pyproject.toml
+# flit_core 4 no longer generates a setup.py in the sdist,
+# re-create the one flit 3 used to generate:
+cat > setup.py << EOF
+from setuptools import setup
+
+setup(name='wheel',
+      version='%{version}',
+      description='Command line tool for manipulating wheel files',
+      author_email='Daniel Holth <dholth@fastmail.fm>',
+      packages=['wheel', 'wheel._commands'],
+      package_data={'': ['*']},
+      package_dir={'': 'src'},
+      install_requires=['packaging >= 24.0'],
+      entry_points={
+          'console_scripts': ['wheel = wheel._commands:main'],
+          'distutils.commands': ['bdist_wheel = wheel.bdist_wheel:bdist_wheel'],
+      },
+      python_requires='>=3.9',
+     )
+EOF
 
 
 %build
@@ -89,6 +109,9 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 
 
 %changelog
+* Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 0.48.0-1
+- new upstream release, re-create the setup.py flit no longer ships
+
 * Tue Jun 09 2026 Antoine Martin <antoine@xpra.org> - 0.47.0-4
 - build 'packaging' as a separate package (python3-packaging) instead of bundling it
 - drop stale bundled(packaging) Provides and ASL/BSD license clause: wheel does not
