@@ -21,7 +21,7 @@ exit
 
 %global pypi_name packaging
 Name:           %{py3rpmname}-%{pypi_name}
-Version:        26.2
+Version:        26.3
 Release:        1%{?dist}
 Summary:        Core utilities for Python packages
 License:        ASL 2.0 or BSD
@@ -47,7 +47,7 @@ wheel is built for the matching python interpreter.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ff452ff5a3e828ce110190feff1178bb1f2ea2281fa2075aadb987c2fb221661" ]; then
+if [ "${sha256}" != "94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -87,5 +87,8 @@ EOF
 
 
 %changelog
+* Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 26.3-1
+- new upstream release
+
 * Tue Jun 09 2026 Antoine Martin <antoine@xpra.org> - 26.2-1
 - initial packaging for xpra (split out of python3-wheel)
