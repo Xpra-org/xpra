@@ -13,7 +13,7 @@
 %endif
 
 Name:    pybind11
-Version: 3.0.4
+Version: 3.1.0
 Release: 1%{?dist}
 Summary: Seamless operability between C++11 and Python
 License: BSD-3-Clause
@@ -51,16 +51,22 @@ C++ code.
 This package contains the Python 3 files.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "ef712655692a2e9bf7bb7874c022564a45f91d847ddee987e720cd9e28849665" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q
 %patch 1 -p1 -b .hpath
 
 %build
 mkdir %{py3rpmname}
 %cmake -B %{py3rpmname} -DCMAKE_BUILD_TYPE=Debug -DPYTHON_EXECUTABLE=%{_bindir}/%{python3} -DPYBIND11_INSTALL=TRUE -DUSE_PYTHON_INCLUDE_DIR=FALSE -DPYBIND11_TEST=OFF
-%make_build -C %{py3rpmname}
+# newer cmake rpm macros default to the Ninja generator, so don't assume make:
+cmake --build %{py3rpmname} %{?_smp_mflags}
 
 %install
-%make_install -C %{py3rpmname}
+DESTDIR=%{buildroot} cmake --install %{py3rpmname}
 mkdir -p %{buildroot}%{python3_sitearch}
 cp -r pybind11 %{buildroot}%{python3_sitearch}/
 mkdir -p %{buildroot}%{_bindir}
@@ -83,6 +89,10 @@ chmod +x %{buildroot}%{_bindir}/pybind11-config
 %{python3_sitearch}/%{name}/
 
 %changelog
+* Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 3.1.0-1
+- new upstream release, verify the source checksum
+- build with cmake directly, as the cmake macros may use Ninja
+
 * Fri May 08 2026 Antoine Martin <antoine@xpra.org> - 3.0.4-1
 - new upstream release
 
