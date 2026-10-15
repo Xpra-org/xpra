@@ -20,11 +20,12 @@ from xpra.util.gobject import no_arg_signal
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.win32.gtk import is_loaded as gtk_is_loaded, load_gtk
+from xpra.client.win32.altgr import has_altgr
 from xpra.client.win32.cursor import Win32Cursors
 from xpra.client.win32.shortcuts import ShortcutTarget
 from xpra.client.win32.subsystem.display import Win32DisplayClient
 from xpra.platform.gui import get_xdpi, get_ydpi
-from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, ClientToScreen
+from xpra.platform.win32.common import GetCursorPos, MessageBeep, GetKeyState, GetKeyboardLayout, ClientToScreen
 from xpra.platform.win32.dpi import physical_point
 from xpra.platform.win32.gui import pointer_grab, pointer_ungrab
 from xpra.platform.win32.keyboard import VK_NAMES, NATIVE_HELD_VKS, NATIVE_TOGGLED_VKS
@@ -45,9 +46,10 @@ BELL_MAP: dict[str, int] = {
 }
 
 
-def get_modifiers(scroll_lock_modifier: str = "") -> list[str]:
+def get_modifiers(scroll_lock_modifier: str = "", altgr_modifier: str = "") -> list[str]:
     """
     `scroll_lock_modifier` is the modifier `Scroll_Lock` is mapped to by the server, if any
+    `altgr_modifier` is the modifier `ISO_Level3_Shift` is mapped to by the server, if any
     """
     modifiers = []
     if GetKeyState(win32con.VK_SHIFT) & 0x8000:
@@ -57,8 +59,13 @@ def get_modifiers(scroll_lock_modifier: str = "") -> list[str]:
     # (see `keysym_name` in `xpra.client.win32.window`),
     # so don't forward those two as modifiers or the server
     # would turn ie: `AltGr`+`q` into `Control`+`Alt`+`@`
-    altgr = GetKeyState(win32con.VK_RMENU) & 0x8000
-    if not altgr:
+    # (the right `Alt` key is only `AltGr` on the layouts that have one, see `xpra.client.win32.altgr`)
+    altgr = GetKeyState(win32con.VK_RMENU) & 0x8000 and has_altgr(GetKeyboardLayout(0) or 0)
+    if altgr:
+        # `AltGr` is sent as `ISO_Level3_Shift`, keep its modifier set on the server:
+        if altgr_modifier:
+            modifiers.append(altgr_modifier)
+    else:
         if GetKeyState(win32con.VK_CONTROL) & 0x8000:
             modifiers.append("control")
         if GetKeyState(win32con.VK_MENU) & 0x8000:
@@ -145,8 +152,10 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         # only send `Scroll_Lock` if the server has mapped it to a modifier:
         kb = self.get_subsystem("keyboard")
         kh = kb.helper if kb else None
-        scroll_lock_modifier = kh.keyboard.modifier_keys.get("Scroll_Lock", "") if kh else ""
-        return get_modifiers(scroll_lock_modifier)
+        modifier_keys = kh.keyboard.modifier_keys if kh else {}
+        scroll_lock_modifier = modifier_keys.get("Scroll_Lock", "")
+        altgr_modifier = modifier_keys.get("ISO_Level3_Shift", "")
+        return get_modifiers(scroll_lock_modifier, altgr_modifier)
 
     def get_mouse_position(self) -> tuple:
         pos = POINT()
