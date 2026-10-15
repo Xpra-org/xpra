@@ -12,7 +12,7 @@
 
 Name:           %{py3rpmname}-pylsqpack
 Version:        1.0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        pylsqpack is a wrapper around the ls-qpack library
 Group:          Development/Languages
 License:        MIT
@@ -25,6 +25,9 @@ BuildRequires:  %{py3rpmname}-setuptools
 BuildRequires:  %{py3rpmname}-wheel
 BuildRequires:  gcc
 Requires:       %{py3rpmname}
+# vendor/ls-qpack (lsqpack.h LSQPACK_*_VERSION), xxhash is unversioned:
+Provides:       bundled(ls-qpack) = 2.7.0
+Provides:       bundled(xxhash)
 
 %description
 It provides Python Decoder and Encoder objects
@@ -62,6 +65,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 1.0.0-2
+- declare the bundled ls-qpack and xxhash
+
 * Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 1.0.0-1
 - new upstream release
 
