@@ -3,7 +3,7 @@
 @@ -7,7 +7,7 @@
  description = "An implementation of QUIC and HTTP/3"
  readme = "README.rst"
- requires-python = ">=3.10"
+ requires-python = ">=3.11"
 -license = "BSD-3-Clause"
 +license = {text = "BSD-3-Clause"}
  authors = [
