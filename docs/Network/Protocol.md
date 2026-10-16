@@ -299,7 +299,7 @@ answers with `hello` and closes after delivering the result.
 | `command` | `command_request:list<str>` | control-command response hello |
 | `run` | `run:list<str>`, `run-wait-time:int?` | command result in `run_response` |
 | `exec` | `run:list<str>` | immediate process launch result in `run_response` |
-| `print` | `print:list` | submit file data as a print job |
+| `print` | `print:map` with `size:u64` | `printer` hello, then the client sends `printer-file` |
 | `encode` | `encoding:map` | stateless encoder service |
 | `detach` | none | disconnect attached clients as authorized |
 | `exit` | none | terminate the server process as authorized |
@@ -308,6 +308,14 @@ answers with `hello` and closes after delivering the result.
 
 Authorization is profile-specific. A server MUST NOT grant a request merely
 because its name is recognized. Unknown requests MUST be rejected.
+
+A `print` request only announces the size of the file, which would not fit in
+the hello packet. If the server accepts the job, it raises its packet size limit
+to fit a file of that size and replies with `printer: {"ready": true}`. The client
+then sends a single `printer-file` packet, and the server closes the connection
+with `done` once the job has been handled, or with an error message otherwise.
+A refused request is answered with `printer: {"code": u8, "info": str}`
+followed by `done`.
 
 For `run`, `run-wait-time` is a nonnegative wait in milliseconds. An omitted,
 invalid, or negative value selects the legacy immediate-launch behavior.
@@ -567,7 +575,8 @@ is codec-backend metadata and is optional.
 
 File packets may flow in either direction when the corresponding `file`
 capability permits it. `printer-devices` and `printer-file` flow from client to
-server.
+server. `printer-file` is only accepted on a `print` request connection
+(Section 5.4).
 
 | Packet | Arguments |
 |---|---|

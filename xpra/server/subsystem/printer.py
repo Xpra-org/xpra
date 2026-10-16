@@ -8,11 +8,12 @@
 
 import os.path
 from typing import Any
+from weakref import WeakSet
 from collections.abc import Sequence
 
 from xpra.exit_codes import ExitCode
 from xpra.server.source.file import FileConnection
-from xpra.util.stats import to_std_unit
+from xpra.util.stats import to_std_unit, std_unit
 from xpra.os_util import WIN32, POSIX
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.auth.auth_helper import AuthDef
@@ -27,6 +28,8 @@ from xpra.util.thread import start_thread
 log = Logger("printing")
 
 SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
+# room for the other `printer-file` packet arguments (filename, title, options, etc):
+PRINT_PACKET_OVERHEAD = 64 * 1024
 
 
 def _save_print_job(filename, file_data) -> None:
@@ -47,7 +50,7 @@ class PrinterServer(StubSubsystem):
     """
     __slots__ = (
         "add_printer_options", "file_transfer", "lpadmin", "lpinfo", "pdf_printer",
-        "postscript_printer",
+        "postscript_printer", "print_requests",
     )
     PREFIX = "printer"
 
@@ -62,6 +65,8 @@ class PrinterServer(StubSubsystem):
         # copy. Source classes look it up via the subsystem (see
         # source/printer.py).
         self.file_transfer = FileTransferAttributes()
+        # the connections which have made a `print` request and may now send us the `printer-file`:
+        self.print_requests: WeakSet = WeakSet()
         self.server.hello_request_handlers["print"] = self._handle_hello_request_print
 
     def init(self, opts) -> None:
@@ -153,25 +158,53 @@ class PrinterServer(StubSubsystem):
         log("init_printing() printing=%s", printing)
 
     def _handle_hello_request_print(self, proto, caps: typedict) -> bool:
-        print_packet = caps.tupleget("print")
-        if not print_packet:
-            raise RuntimeError("print data is missing!")
-        code, message = self.do_print_file(Packet(*print_packet))
+        """
+        The file itself follows in a `printer-file` packet, once we have replied:
+        it would not fit in the hello packet (see `MODERN_INITIAL_PACKET_SIZE`).
+        """
+        size = typedict(caps.dictget("print")).intget("size")
+        code, message = self.check_print_request(proto, size)
+        if code != ExitCode.OK:
+            self.send_print_hello(proto, {"code": int(code), "info": message})
+            self.server.send_disconnect(proto, ConnectionMessage.DONE)
+            return True
+        # make room for the file:
+        proto.max_packet_size = max(proto.max_packet_size, size + PRINT_PACKET_OVERHEAD)
+        self.print_requests.add(proto)
+        self.send_print_hello(proto, {"ready": True})
+        return True
+
+    def check_print_request(self, proto, size: int) -> tuple[ExitCode, str]:
+        if not self.file_transfer.printing:
+            return ExitCode.UNSUPPORTED, "printing is not enabled"
+        if size <= 0:
+            return ExitCode.PACKET_FAILURE, "invalid file size"
+        limit = self.file_transfer.file_size_limit
+        if (limit and size > limit) or size + PRINT_PACKET_OVERHEAD > proto.abs_max_packet_size:
+            return ExitCode.FILE_TOO_BIG, "the file is too large: %sB" % std_unit(size)
+        return ExitCode.OK, ""
+
+    @staticmethod
+    def send_print_hello(proto, printer: dict[str, Any]) -> None:
         # minimal hello:
         from xpra.net.packet_encoding import get_packet_encoding_caps
         hello = get_packet_encoding_caps()
-        hello[PrinterServer.PREFIX] ={
-            "code": int(code),
-            "info": message,
-        }
+        hello[PrinterServer.PREFIX] = printer
         proto.send_now(Packet("hello", hello))
-        self.server.send_disconnect(proto, ConnectionMessage.DONE)
-        return True
 
-    def _process_file(self, _proto, packet: Packet) -> None:
+    def _process_file(self, proto, packet: Packet) -> None:
+        # this connection has no client source: it only made a `print` request
+        if proto not in self.print_requests:
+            log.warn("Warning: unexpected 'printer-file' packet from %s", proto)
+            self.server.send_disconnect(proto, ConnectionMessage.PROTOCOL_ERROR, "unexpected 'printer-file' packet")
+            return
+        self.print_requests.discard(proto)
         code, message = self.do_print_file(packet)
         if code != ExitCode.OK:
             log.warn(message)
+            self.server.send_disconnect(proto, ConnectionMessage.SERVER_ERROR, message)
+            return
+        self.server.send_disconnect(proto, ConnectionMessage.DONE, message)
 
     def do_print_file(self, packet: Packet) -> tuple[ExitCode, str]:
         # ie: from the xpraforwarder we call this command:
@@ -276,4 +309,6 @@ class PrinterServer(StubSubsystem):
             # `printer-devices` configures virtual printers (spawns `lpadmin`), so it
             # runs on the main thread rather than inline on the network parse thread:
             self.add_packets("printer-devices", main_thread=True)
-            self.add_packets("printer-file")
+            # sent by `xpra print` connections, which have no client source,
+            # so this cannot be one of our subsystem's (authenticated) packet handlers:
+            self.server._default_packet_handlers["printer-file"] = self._process_file

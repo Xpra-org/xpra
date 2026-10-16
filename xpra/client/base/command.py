@@ -735,6 +735,7 @@ class PrintClient(SendCommandConnectClient):
         super().__init__(opts)
         self.client_type = "Python/GObject/Print"
         self.filename = command[0]
+        self.file_sent = False
         # print command arguments:
         # filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
         self.command = command[1:]
@@ -772,19 +773,37 @@ class PrintClient(SendCommandConnectClient):
 
     def do_command(self, caps: typedict) -> None:
         printer = typedict(caps.dictget("printer"))
-        info = printer.strget("info", "unknown")
-        code = printer.intget("code", ExitCode.FAILURE)
-        if code != 0:
-            self.warn_and_quit(code, f"print request failed: {info!r}")
+        if not printer.boolget("ready"):
+            info = printer.strget("info", "unknown")
+            code = printer.intget("code", ExitCode.FAILURE)
+            self.warn_and_quit(code or ExitCode.FAILURE, f"print request failed: {info!r}")
             return
-        log.info("print request has been handled: %s", info)
-        self.quit(ExitCode.OK)
-        return
+        # the server is now ready to receive the file, which would not fit in the hello packet,
+        # we don't compress it (this should run locally most of the time anyway):
+        from xpra.net.compression import Compressed  # pylint: disable=import-outside-toplevel
+        blob = Compressed("print", self.file_data)
+        self.send("printer-file", self.filename, blob, *self.command)
+        self.file_sent = True
+        log("print: sending %s as %s for printing", self.filename, blob)
+        # the server disconnects us once the file has been handled
+
+    def _process_connection_close(self, packet: Packet) -> None:
+        if self.exit_code is not None or not self.file_sent:
+            super()._process_connection_close(packet)
+            return
+        info = tuple(str(x) for x in packet[1:])
+        message = info[1] if len(info) > 1 else info[0]
+        if info[0] == ConnectionMessage.DONE.value:
+            log.info("print request has been handled: %s", message)
+            self.quit(ExitCode.OK)
+        else:
+            self.warn_and_quit(ExitCode.FAILURE, f"print request failed: {message!r}")
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = super().make_hello()
         capabilities["request"] = "print"
-        capabilities["print"] = ["print", self.filename, self.file_data] + list(self.command)
+        # the file follows in a `printer-file` packet, once the server is ready for it:
+        capabilities["print"] = {"size": len(self.file_data)}
         return capabilities
 
 
