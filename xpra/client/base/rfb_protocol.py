@@ -16,8 +16,8 @@ from xpra.net.rfb.const import (
     RFBEncoding, RFBClientMessage, RFBServerMessage, RFBAuth, RFBVeNCrypt,
     CLIENT_INIT, PIXEL_FORMAT, AUTH_STR, VENCRYPT_STR, SERVER_PACKET_TYPE_STR, ENCODING_STR, RFB_KEYS,
 )
-from xpra.util.objects import Scheduler
-from xpra.util.str_fn import csv, repr_ellipsized, hexstr
+from xpra.util.objects import Scheduler, typedict
+from xpra.util.str_fn import csv, repr_ellipsized, hexstr, bytestostr
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")
@@ -77,11 +77,11 @@ class RFBClientProtocol(RFBProtocol):
         self.zlib_streams: list = [None, None, None, None]
         # translate xpra packets into rfb packets:
         self._rfb_converters: dict[str, Callable] = {
-            "pointer-position": self.send_pointer_position,
-            "button-action": self.send_button_action,
-            "key-action": self.send_key_action,
-            "configure-window": self.track_window,
-            "clipboard-token": self.send_clipboard_token,
+            "pointer-motion": self.send_pointer_motion,
+            "pointer-button": self.send_pointer_button,
+            "keyboard-event": self.send_keyboard_event,
+            "window-configure": self.track_window,
+            "clipboard-data": self.send_clipboard_data,
         }
         self.send_lock = RLock()
         super().__init__(conn, process_packet_cb, scheduler=scheduler)
@@ -103,38 +103,40 @@ class RFBClientProtocol(RFBProtocol):
         finally:
             self.send_lock.release()
 
-    def send_pointer_position(self, packet) -> None:
-        log("send_pointer_position(%s)", packet)
-        # ['pointer-position', 1, (3348, 582), ['mod2'], []]
-        if not check_wid(packet[1]):
+    def send_pointer_motion(self, packet) -> None:
+        log("send_pointer_motion(%s)", packet)
+        # ["pointer-motion", device_id, seq, wid, (x, y), {"modifiers": [..], "buttons": [..], ..}]
+        if not check_wid(packet[3]):
             return
-        x, y = packet[2][:2]
-        buttons = packet[4]
+        x, y = packet[4][:2]
+        props = typedict(packet[5] if len(packet) >= 6 else {})
         button_mask = 0
-        for i in range(8):
-            if i + 1 in buttons:
-                button_mask |= 2 ** i
+        for button in props.inttupleget("buttons"):
+            if 1 <= button <= 8:
+                button_mask |= 2 ** (button - 1)
         self.do_send_pointer_event(button_mask, x, y)
 
-    def send_button_action(self, packet) -> None:
-        log("send_button_action(%s)", packet)
-        if not check_wid(packet[1]):
+    def send_pointer_button(self, packet) -> None:
+        log("send_pointer_button(%s)", packet)
+        # ["pointer-button", device_id, seq, wid, button, pressed, (x, y), {"modifiers": [..], "buttons": [..], ..}]
+        if not check_wid(packet[3]):
             return
-        # ["button-action", wid, button, pressed, (x, y), modifiers, buttons]
-        # ['button-action', 1, 1, False, (2768, 257), ['mod2'], [1]]
-        button = packet.get_u8(2)
-        pressed = packet.get_bool(3)
-        x, y = packet.get_ints(4)[:2]
+        button = int(packet[4])
+        pressed = bool(packet[5])
+        x, y = packet[6][:2]
+        props = typedict(packet[7] if len(packet) >= 8 else {})
         button_mask = 0
-        if len(packet) >= 7:
-            # the full set of currently pressed buttons is authoritative:
-            buttons = packet.get_ints(6)
-            for i in range(8):
-                if i + 1 in buttons:
-                    button_mask |= 2 ** i
-        elif pressed:
-            # no button list: derive from this button (RFB bit 0 == button 1):
-            button_mask |= 2 ** (button - 1)
+        # the other buttons currently held down:
+        for b in props.inttupleget("buttons"):
+            if 1 <= b <= 8:
+                button_mask |= 2 ** (b - 1)
+        # then this button's new state (RFB bit 0 == button 1),
+        # the list does not include it for wheel clicks:
+        if 1 <= button <= 8:
+            if pressed:
+                button_mask |= 2 ** (button - 1)
+            else:
+                button_mask &= ~(2 ** (button - 1))
         self.do_send_pointer_event(button_mask, x, y)
 
     def do_send_pointer_event(self, button_mask, x, y) -> None:
@@ -142,11 +144,11 @@ class RFBClientProtocol(RFBProtocol):
         wx, wy = self.position
         self.send_struct(b"!BBHH", RFBClientMessage.PointerEvent, button_mask, x - wx, y - wy)
 
-    def send_key_action(self, packet) -> None:
-        log("send_key_action(%s)", packet)
+    def send_keyboard_event(self, packet) -> None:
+        log("send_keyboard_event(%s)", packet)
         if not check_wid(packet[1]):
             return
-        # ["key-action", "wid", "keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"]
+        # ["keyboard-event", wid, keyname, pressed, {"modifiers": .., "keyval": .., "string": .., ..}]
         keyname = packet[2]
         if len(keyname) == 1:
             keysym = ord(keyname[0])
@@ -158,18 +160,19 @@ class RFBClientProtocol(RFBProtocol):
         pressed = packet[3]
         self.send_struct(b"!BBHI", RFBClientMessage.KeyEvent, pressed, 0, keysym)
 
-    def send_clipboard_token(self, packet) -> None:
-        # ["clipboard-token", selection, targets, target, dtype, dformat, wire-encoding, wire-data, claim, greedy]
-        if len(packet) < 8:
+    def send_clipboard_data(self, packet) -> None:
+        # ["clipboard-data", selection, {"data": {target: (dtype, dformat, wire-encoding, wire-data)}, ..}]
+        items = typedict(packet[2] if len(packet) >= 3 else {}).dictget("data")
+        if not items:
             # a bare token (just claiming the selection) carries no data to forward
             return
-        target = packet[3]
-        dformat = packet[5]
-        wire_encoding = packet[6]
-        wire_data = packet[7]
-        if target not in TEXT_TARGETS or dformat != 8 or wire_encoding != "bytes":
-            log("ignoring non-text clipboard token (target=%s, format=%s, encoding=%s)",
-                target, dformat, wire_encoding)
+        for target, item in items.items():
+            target = bytestostr(target)
+            if target in TEXT_TARGETS and len(item) >= 4 and item[1] == 8 and bytestostr(item[2]) == "bytes":
+                wire_data = item[3]
+                break
+        else:
+            log("ignoring non-text clipboard data (targets=%s)", tuple(items.keys()))
             return
         # large values are wrapped in a Compressible, which exposes the bytes as `.data`:
         if not isinstance(wire_data, (bytes, bytearray, memoryview)):
@@ -179,7 +182,7 @@ class RFBClientProtocol(RFBProtocol):
             text = wire_data.decode("utf8")
         except UnicodeDecodeError:
             text = wire_data.decode("latin1")
-        log("clipboard token -> ClientCutText (%i characters)", len(text))
+        log("clipboard data -> ClientCutText (%i characters)", len(text))
         self.send_client_cut_text(text)
 
     def send_client_cut_text(self, text: str) -> None:
@@ -192,9 +195,12 @@ class RFBClientProtocol(RFBProtocol):
         log("track_window(%s)", packet)
         if not check_wid(packet[1]):
             return
-        self.position = packet[2], packet[3]
+        # ["window-configure", wid, {"geometry": (x, y, w, h), ..}]
+        geometry = typedict(packet[2]).inttupleget("geometry")
+        if len(geometry) < 2:
+            return
+        self.position = geometry[0], geometry[1]
         log("window offset: %s", self.position)
-        # ["configure-window", self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
 
     def _parse_protocol_handshake(self, packet) -> int:
         # the server announces its version, e.g. b'RFB 003.008\n';
@@ -517,7 +523,11 @@ class RFBClientProtocol(RFBProtocol):
         # simulate hello:
         self._process_packet_cb(self, Packet("hello", {
             "session-name": session_name,
-            "desktop_size": (w, h),
+            "display": {
+                "desktop_size": (w, h),
+                "actual_desktop_size": (w, h),
+                "max_desktop_size": (w, h),
+            },
             "protocol": "rfb",
             # advertise a (text-only) clipboard so the client forwards local
             # clipboard changes to us, which we relay as RFB ClientCutText:
@@ -531,6 +541,9 @@ class RFBClientProtocol(RFBProtocol):
             },
             # we render the cursor locally from the RFB Cursor pseudo-encoding:
             "cursor": {"enabled": True},
+            # RFB only has wheel buttons: make the client send wheel motion
+            # as button 4 / 5 / 6 / 7 clicks, which we can forward:
+            "wheel.emulation": False,
         }))
         # simulate an xpra window packet:
         metadata = {
@@ -544,7 +557,7 @@ class RFBClientProtocol(RFBProtocol):
             "content-types": ("desktop",),
         }
         client_properties = {}
-        self._process_packet_cb(self, Packet("new-window", WID, 0, 0, w, h, metadata, client_properties))
+        self._process_packet_cb(self, Packet("window-create", WID, 0, 0, w, h, metadata, client_properties))
         # from here on this thread only parses (untrusted) framebuffer updates,
         # so it is safe to lock it down with a seccomp filter:
         install_rfb_read_thread_seccomp()
@@ -625,16 +638,20 @@ class RFBClientProtocol(RFBProtocol):
 
     def set_client_clipboard(self, text: str) -> None:
         # deliver the server's clipboard to the local clipboard by synthesizing an
-        # incoming clipboard token that carries the text inline (as utf8 bytes);
+        # incoming `clipboard-data` packet that carries the text inline (as utf8 bytes);
         # the dispatcher routes this UI packet to the main thread for us:
         data = text.encode("utf8")
-        token = Packet("clipboard-token", "CLIPBOARD", ("UTF8_STRING", ),
-                       "UTF8_STRING", "UTF8_STRING", 8, "bytes", data, True, False)
+        token = Packet("clipboard-data", "CLIPBOARD", {
+            "targets": ("UTF8_STRING", ),
+            "data": {"UTF8_STRING": ("UTF8_STRING", 8, "bytes", data)},
+            "claim": True,
+            "greedy": False,
+        })
         self._process_packet_cb(self, token)
 
     def _parse_bell(self, _packet) -> int:
         log("bell")
-        self._process_packet_cb(self, Packet("bell", WID, 0, 100, 0, 0, 0, 0, ""))
+        self._process_packet_cb(self, Packet("window-bell", WID, 0, 100, 0, 0, 0, 0, ""))
         return 1
 
     def _parse_set_colourmap(self, packet) -> int:
@@ -686,7 +703,7 @@ class RFBClientProtocol(RFBProtocol):
             return -1
         log("raw screen update: %s", (x, y, w, h))
         pixels = body[:size]
-        draw = Packet("draw", WID, x, y, w, h, "rgb32", pixels, 0, w * 4, {"rgb_format": RGB_FORMAT})
+        draw = Packet("window-draw", WID, x, y, w, h, "rgb32", pixels, 0, w * 4, {"rgb_format": RGB_FORMAT})
         self._process_packet_cb(self, draw)
         return size
 
@@ -808,7 +825,7 @@ class RFBClientProtocol(RFBProtocol):
         self._tight_reset_streams(reset)
         jpeg_data = bytes(body[start:start + length])
         log("tight jpeg update: %i bytes for %s", length, (x, y, w, h))
-        draw = Packet("draw", WID, x, y, w, h, "jpeg", jpeg_data, 0, 0, {})
+        draw = Packet("window-draw", WID, x, y, w, h, "jpeg", jpeg_data, 0, 0, {})
         self._process_packet_cb(self, draw)
         return start + length
 
@@ -848,7 +865,7 @@ class RFBClientProtocol(RFBProtocol):
 
     def _draw_rgb(self, x, y, w, h, rgb) -> None:
         # tight pixel data is in R,G,B order, 3 bytes per pixel:
-        draw = Packet("draw", WID, x, y, w, h, "rgb24", rgb, 0, w * 3, {"rgb_format": "RGB"})
+        draw = Packet("window-draw", WID, x, y, w, h, "rgb24", rgb, 0, w * 3, {"rgb_format": "RGB"})
         self._process_packet_cb(self, draw)
 
     def _tight_reset_streams(self, reset: int) -> None:

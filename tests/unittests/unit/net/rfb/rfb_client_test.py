@@ -104,7 +104,7 @@ class TestRFBClient(unittest.TestCase):
         consumed = self._feed_rect(proto, px, RFBEncoding.RAW, 2, 1)
         self.assertEqual(consumed, 12 + 8)
         draw = proto.emitted[0]
-        self.assertEqual(draw[0], "draw")
+        self.assertEqual(draw[0], "window-draw")
         self.assertEqual(draw[6], "rgb32")
         self.assertEqual(bytes(draw[7]), px)
         self.assertEqual(draw[9], 2 * 4)               # rowstride
@@ -226,7 +226,7 @@ class TestRFBClient(unittest.TestCase):
         proto = self._proto()
         consumed = proto._parse_rfb_packet(struct.pack(b"!B", RFBServerMessage.BELL))
         self.assertEqual(consumed, 1)
-        self.assertEqual(proto.emitted[0][0], "bell")
+        self.assertEqual(proto.emitted[0][0], "window-bell")
         # invalid() would have scheduled idle/timeout callbacks to tear the connection down:
         self.assertEqual(proto.idle_calls, [])
         self.assertEqual(proto.timeout_calls, [])
@@ -256,41 +256,44 @@ class TestRFBClient(unittest.TestCase):
         self.assertEqual(msg[0], RFBClientMessage.ClientCutText)
         self.assertEqual(self._client_cut_text(msg), b"hi\nthere")
 
-    def test_clipboard_token_text(self):
+    @staticmethod
+    def _clipboard_data(target: str, data, dformat=8, wire_encoding="bytes") -> list:
+        return ["clipboard-data", "CLIPBOARD", {
+            "targets": (target, ),
+            "data": {target: (target, dformat, wire_encoding, data)},
+            "claim": True,
+            "greedy": True,
+        }]
+
+    def test_clipboard_data_text(self):
         proto = self._proto()
-        token = ["clipboard-token", "CLIPBOARD", ["UTF8_STRING"], "UTF8_STRING",
-                 "UTF8_STRING", 8, "bytes", "héllo".encode("utf8"), True, True]
-        proto.send_clipboard_token(token)
+        proto.send_clipboard_data(self._clipboard_data("UTF8_STRING", "héllo".encode("utf8")))
         self.assertEqual(self._client_cut_text(proto.sent[0]), "héllo".encode("latin1"))
 
-    def test_clipboard_token_non_text_ignored(self):
+    def test_clipboard_data_non_text_ignored(self):
         proto = self._proto()
         for target in ("image/png", "application/octet-stream"):
             proto.sent.clear()
-            token = ["clipboard-token", "CLIPBOARD", [target], target, target, 8, "bytes", b"\x89PNG", True, True]
-            proto.send_clipboard_token(token)
+            proto.send_clipboard_data(self._clipboard_data(target, b"\x89PNG"))
             self.assertEqual(proto.sent, [])
 
-    def test_clipboard_token_bare_ignored(self):
+    def test_clipboard_data_bare_ignored(self):
         proto = self._proto()
-        proto.send_clipboard_token(["clipboard-token", "CLIPBOARD"])
+        proto.send_clipboard_data(["clipboard-data", "CLIPBOARD", {"claim": True}])
         self.assertEqual(proto.sent, [])
 
-    def test_clipboard_token_compressible(self):
+    def test_clipboard_data_compressible(self):
         proto = self._proto()
         big = "A" * 5000
         comp = Compressible("clipboard: UTF8_STRING / 8", big.encode("utf8"))
-        token = ["clipboard-token", "CLIPBOARD", ["UTF8_STRING"], "UTF8_STRING",
-                 "UTF8_STRING", 8, "bytes", comp, True, True]
-        proto.send_clipboard_token(token)
+        proto.send_clipboard_data(self._clipboard_data("UTF8_STRING", comp))
         self.assertEqual(self._client_cut_text(proto.sent[0]), big.encode("latin1"))
 
     def test_all_text_targets_accepted(self):
         proto = self._proto()
         for target in TEXT_TARGETS:
             proto.sent.clear()
-            token = ["clipboard-token", "CLIPBOARD", [target], target, target, 8, "bytes", b"abc", True, True]
-            proto.send_clipboard_token(token)
+            proto.send_clipboard_data(self._clipboard_data(target, b"abc"))
             self.assertEqual(len(proto.sent), 1, f"text target {target!r} should be relayed")
 
     def test_server_cut_text_to_clipboard(self):
@@ -299,14 +302,16 @@ class TestRFBClient(unittest.TestCase):
         msg = struct.pack(b"!BBBBI", 3, 0, 0, 0, len(data)) + data
         consumed = proto._parse_server_cut_text(msg)
         self.assertEqual(consumed, len(msg))
-        token = proto.emitted[0]
-        self.assertEqual(token[0], "clipboard-token")
-        self.assertEqual(token[1], "CLIPBOARD")
-        self.assertIn(token[3], TEXT_TARGETS)
-        self.assertEqual(token[5], 8)
-        self.assertEqual(token[6], "bytes")
-        self.assertTrue(token[8] is True)
-        self.assertEqual(token[7].decode("utf8"), "héllo world")
+        packet = proto.emitted[0]
+        self.assertEqual(packet[0], "clipboard-data")
+        self.assertEqual(packet[1], "CLIPBOARD")
+        options = packet[2]
+        self.assertTrue(options["claim"] is True)
+        ((target, (dtype, dformat, wire_encoding, data)), ) = options["data"].items()
+        self.assertIn(target, TEXT_TARGETS)
+        self.assertEqual(dformat, 8)
+        self.assertEqual(wire_encoding, "bytes")
+        self.assertEqual(data.decode("utf8"), "héllo world")
 
     def test_server_cut_text_partial_waits(self):
         proto = self._proto()
@@ -379,34 +384,53 @@ class TestRFBClient(unittest.TestCase):
 
     # -- input --------------------------------------------------------------
 
-    def test_pointer_position(self):
+    def test_pointer_motion(self):
         proto = self._proto()
-        proto.send_pointer_position(["pointer-position", 1, (30, 40), [], [1, 3]])
+        proto.send_pointer_motion(["pointer-motion", -1, 0, 1, (30, 40), {"modifiers": [], "buttons": [1, 3]}])
         mtype, mask, x, y = struct.unpack(b"!BBHH", proto.sent[0])
         self.assertEqual(mtype, RFBClientMessage.PointerEvent)
         self.assertEqual((x, y), (30, 40))
         self.assertEqual(mask, 0b101)   # buttons 1 and 3 -> bits 0 and 2
 
-    def test_button_action_no_offbyone(self):
+    def test_pointer_button_no_offbyone(self):
         proto = self._proto()
         # left button (1) press, no buttons list -> bit 0 only
-        proto.send_button_action(Packet("button-action", 1, 1, True, (5, 6)))
+        proto.send_pointer_button(Packet("pointer-button", -1, 0, 1, 1, True, (5, 6), {}))
         self.assertEqual(struct.unpack(b"!BBHH", proto.sent[0])[1], 0b1)
         # right button (3) with buttons list -> bit 2
         proto.sent.clear()
-        proto.send_button_action(Packet("button-action", 1, 3, True, (5, 6), [], [3]))
+        proto.send_pointer_button(Packet("pointer-button", -1, 0, 1, 3, True, (5, 6), {"buttons": [3]}))
         self.assertEqual(struct.unpack(b"!BBHH", proto.sent[0])[1], 0b100)
+        # wheel click (button 5), which is not in the buttons list -> bit 4
+        proto.sent.clear()
+        proto.send_pointer_button(Packet("pointer-button", -1, 0, 1, 5, True, (5, 6), {"buttons": []}))
+        self.assertEqual(struct.unpack(b"!BBHH", proto.sent[0])[1], 0b10000)
+        # other buttons held down are kept
+        proto.sent.clear()
+        proto.send_pointer_button(Packet("pointer-button", -1, 0, 1, 5, True, (5, 6), {"buttons": [1]}))
+        self.assertEqual(struct.unpack(b"!BBHH", proto.sent[0])[1], 0b10001)
+        # release with an empty buttons list -> no bits
+        proto.sent.clear()
+        proto.send_pointer_button(Packet("pointer-button", -1, 0, 1, 3, False, (5, 6), {"buttons": []}))
+        self.assertEqual(struct.unpack(b"!BBHH", proto.sent[0])[1], 0)
 
-    def test_key_action(self):
+    def test_track_window(self):
         proto = self._proto()
-        proto.send_key_action(["key-action", 1, "a", True, [], 0, "a", 38, 0])
+        proto.track_window(["window-configure", 1, {"geometry": (100, 50, 64, 64)}])
+        self.assertEqual(proto.position, (100, 50))
+        proto.send_pointer_motion(["pointer-motion", -1, 0, 1, (130, 90), {}])
+        self.assertEqual(struct.unpack(b"!BBHH", proto.sent[0])[2:], (30, 40))
+
+    def test_keyboard_event(self):
+        proto = self._proto()
+        proto.send_keyboard_event(["keyboard-event", 1, "a", True, {"keyval": 0, "string": "a", "keycode": 38}])
         mtype, pressed, _pad, keysym = struct.unpack(b"!BBHI", proto.sent[0])
         self.assertEqual(mtype, RFBClientMessage.KeyEvent)
         self.assertEqual(pressed, 1)
         self.assertEqual(keysym, ord("a"))
         # unknown key name -> nothing sent
         proto.sent.clear()
-        proto.send_key_action(["key-action", 1, "NoSuchKey", True, [], 0, "", 0, 0])
+        proto.send_keyboard_event(["keyboard-event", 1, "NoSuchKey", True, {}])
         self.assertEqual(proto.sent, [])
 
     # -- security handshake -------------------------------------------------
