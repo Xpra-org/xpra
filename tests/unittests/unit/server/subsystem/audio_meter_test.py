@@ -161,8 +161,8 @@ class TestAudioServerMeter(unittest.TestCase):
             "time": 1234,
             "interval": AUDIO_LEVEL_INTERVAL,
             "unit": "dBFS",
-            "rms": [-20.0, -21.0],
-            "peak": [-3.0, -4.0],
+            "rms": [-20, -21],
+            "peak": [-3, -4],
         }
         self.server.meter_level(meter, sample)
         info = self.server.get_info(None)["audio"]
@@ -216,7 +216,7 @@ class TestAudioServerMeter(unittest.TestCase):
         self.server.meter = meter
 
         silence = {"peak": [SILENCE_FLOOR_DB], "rms": [SILENCE_FLOOR_DB]}
-        active = {"peak": [-30.0], "rms": [-50.0]}
+        active = {"peak": [-30], "rms": [-50]}
 
         self.server.meter_level(meter, silence)
         assert self.server.signal_timer == 0

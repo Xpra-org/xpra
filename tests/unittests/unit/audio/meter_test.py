@@ -18,9 +18,11 @@ from xpra.gstreamer.pipeline import Pipeline
 class TestAudioLevelMeter(unittest.TestCase):
 
     def test_normalize_levels(self):
-        assert normalize_levels((-12.54, float("-inf"), -200)) == [
-            -12.5, SILENCE_FLOOR_DB, SILENCE_FLOOR_DB,
+        levels = normalize_levels((-12.54, -12.4, -120.0, float("-inf"), float("inf"), float("nan"), -200))
+        assert levels == [
+            -13, -12, SILENCE_FLOOR_DB, SILENCE_FLOOR_DB, SILENCE_FLOOR_DB, SILENCE_FLOOR_DB, SILENCE_FLOOR_DB,
         ]
+        assert all(isinstance(level, int) for level in levels)
 
     def test_level_message(self):
         if not has_plugins("pulsesrc", "level", "fakesink"):
@@ -42,8 +44,9 @@ class TestAudioLevelMeter(unittest.TestCase):
             sample = meter.info["level"]
             assert sample["interval"] == 250
             assert sample["unit"] == "dBFS"
-            assert sample["rms"] == [-20.0, -21.0]
-            assert sample["peak"] == [-3.0, SILENCE_FLOOR_DB]
+            assert sample["rms"] == [-20, -21]
+            assert sample["peak"] == [-3, SILENCE_FLOOR_DB]
+            assert all(isinstance(level, int) for key in ("rms", "peak") for level in sample[key])
             assert isinstance(sample["time"], int)
             assert len(emitted) == 1
 
@@ -55,7 +58,7 @@ class TestAudioLevelMeter(unittest.TestCase):
             assert len(emitted) == 1
 
             meter.do_parse_element_message(None, "level", {
-                "rms": (-20.2, -21.0),
+                "rms": (-20.6, -21.0),
                 "peak": (-3.0, float("-inf")),
             })
             assert len(emitted) == 2
@@ -66,6 +69,7 @@ class TestAudioLevelMeter(unittest.TestCase):
             assert len(emitted) == 3
             assert emitted[-1][1]["rms"] == [SILENCE_FLOOR_DB] * 2
             assert emitted[-1][1]["peak"] == [SILENCE_FLOOR_DB] * 2
+            assert all(isinstance(level, int) for key in ("rms", "peak") for level in emitted[-1][1][key])
         finally:
             meter.cleanup()
 

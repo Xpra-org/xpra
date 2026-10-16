@@ -16,8 +16,6 @@ from xpra.log import Logger
 
 log = Logger("audio", "gstreamer")
 
-LEVEL_PRECISION = 1
-
 # the meter only needs one sample batch per `interval`,
 # so we can use a much larger latency than the default (10ms)
 # and a large ring buffer, which makes overruns much less likely:
@@ -42,14 +40,14 @@ def get_source_channels(device: str) -> int:
         return 0
 
 
-def normalize_levels(values) -> list[float]:
-    """Convert GStreamer's value array to finite, serializable dBFS values."""
+def normalize_levels(values) -> list[int]:
+    """Convert GStreamer's value array to integer dBFS values."""
     levels = []
     for value in values or ():
         level = float(value)
         if not math.isfinite(level) or level < SILENCE_FLOOR_DB:
             level = SILENCE_FLOOR_DB
-        levels.append(round(level, LEVEL_PRECISION))
+        levels.append(round(level))
     return levels
 
 
@@ -61,7 +59,7 @@ class AudioLevelMeter(Pipeline):
         super().__init__()
         self.device = device
         self.interval = interval
-        self.last_level: tuple[tuple[float, ...], tuple[float, ...]] | None = None
+        self.last_level: tuple[tuple[int, ...], tuple[int, ...]] | None = None
         self.overruns = 0
         # in microseconds:
         latency_time = (LATENCY_TIME or interval) * 1000
