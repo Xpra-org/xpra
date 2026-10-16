@@ -171,7 +171,7 @@ class TestRFBVeNCrypt(unittest.TestCase):
             ptype = str(packet[0])
             log("client received RFB packet: %s", ptype)
             packets.append(ptype)
-            if ptype in ("new-window", "connection-lost", "invalid"):
+            if ptype in ("window-create", "connection-lost", "invalid"):
                 done.set()
 
         proto = RFBClientProtocol(conn, process_packet, scheduler=ImmediateScheduler())
@@ -186,7 +186,7 @@ class TestRFBVeNCrypt(unittest.TestCase):
             self.assertTrue(done.wait(CONNECT_TIMEOUT),
                             "timed out before completing the RFB handshake, packets=%s\nXvnc log:\n%s" % (
                                 packets, self._read_xvnc_log()))
-            self.assertIn("new-window", packets,
+            self.assertIn("window-create", packets,
                           "handshake did not reach ServerInit, packets=%s\nXvnc log:\n%s" % (
                               packets, self._read_xvnc_log()))
             # the connection must now be running over TLS (the VeNCrypt upgrade happened):
