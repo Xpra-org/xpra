@@ -1599,6 +1599,8 @@ class ServerCore(GLibServer):
             # (maybe the client used an encoding it claims not to support?)
             self.disconnect_client(proto, ConnectionMessage.PROTOCOL_ERROR, "failed to negotiate a packet encoder")
             return
+        # before we send anything (including hello request replies):
+        proto.set_peer_protocol_version(c.inttupleget("protocol-version"), True)
 
         log("process_hello: capabilities=%s", capabilities)
         request = c.strget("request")

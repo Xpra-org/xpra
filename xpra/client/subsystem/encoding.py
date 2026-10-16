@@ -480,7 +480,7 @@ class Encodings(StubClientSubsystem):
         self.send(packet_type, self.encoding)
 
     def send_encoding_option(self, option: str, value: int) -> None:
-        if BACKWARDS_COMPATIBLE:
+        if self.legacy_server():
             self.send(option, value)
         else:
             self.send(f"{Encodings.PREFIX}-options", {option: value})

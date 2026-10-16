@@ -94,7 +94,7 @@ class NotificationClient(StubClientSubsystem):
             notifier = None
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.server = ("notifications" if BACKWARDS_COMPATIBLE else "notification") in c
+        self.server = "notification" in c or (BACKWARDS_COMPATIBLE and "notifications" in c)
         self.enabled = self.client_supports
         return True
 

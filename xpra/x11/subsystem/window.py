@@ -539,10 +539,15 @@ class SeamlessWindowServer(WindowServer):
 
     def _send_new_tray_window_packet(self, wid: int, window) -> None:
         if BACKWARDS_COMPATIBLE:
-            # old clients expect a dedicated `new-tray` packet:
             ww, wh = window.get_dimensions()
+            x, y, w, h = window.get_property("geometry")
             for ss in self.window_sources():
-                ss.new_tray(wid, window, ww, wh)
+                if ss.legacy_client():
+                    # old clients expect a dedicated `new-tray` packet:
+                    ss.new_tray(wid, window, ww, wh)
+                else:
+                    wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
+                    ss.new_window(WINDOW_CREATE, wid, window, x, y, w, h, wprops)
         else:
             # trays are just `window-create` packets carrying `tray=True` in their metadata:
             self._do_send_new_window_packet(WINDOW_CREATE, window, window.get_property("geometry"))

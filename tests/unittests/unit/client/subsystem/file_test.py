@@ -6,6 +6,7 @@
 
 from unittest.mock import patch
 
+from xpra.net.packet_type import FILE_REQUEST
 from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.file_transfer import FileTransferHandler, RequestedFile
 from xpra.util.objects import AdHocStruct, typedict
@@ -72,11 +73,11 @@ class FileClientTest(ClientMixinTest):
 
         send_id = client.send_request_file("server.log", True)
         # the request carries a client-generated send-id used to match the response:
-        self.assertEqual(self.packets[-1], ("file-request", "server.log", True, send_id))
+        self.assertEqual(self.packets[-1], (FILE_REQUEST, "server.log", True, send_id))
         self.assertEqual(client.files_requested[send_id], RequestedFile("server.log", True))
 
         send_id = client.send_request_file("${XPRA_SERVER_LOG}", True, "*.log")
-        self.assertEqual(self.packets[-1], ("file-request", "${XPRA_SERVER_LOG}", True, send_id))
+        self.assertEqual(self.packets[-1], (FILE_REQUEST, "${XPRA_SERVER_LOG}", True, send_id))
         self.assertEqual(client.files_requested[send_id], RequestedFile("${XPRA_SERVER_LOG}", True, "*.log"))
 
     def test_request_file_capability_nesting_and_legacy_fallback(self):

@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import patch
 
 from xpra.util.objects import AdHocStruct
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
@@ -32,9 +33,8 @@ class PointerClientTest(ClientMixinTest):
         display.get_monitor_relative_position = lambda _position: (2, 10, 20)
         display.get_server_position = lambda position: (position[0] + 1920, position[1] + 1200)
         self.subsystems = {"display": display}
-        old_compat = pointer.BACKWARDS_COMPATIBLE
-        pointer.BACKWARDS_COMPATIBLE = False
-        try:
+        # modern servers get the window relative position in the properties only:
+        with patch.object(type(self.mixin), "legacy_server", lambda _self: False):
             self.assertEqual(
                 self.mixin.split_pointer_position((100, 200, 5, 6)),
                 (
@@ -56,10 +56,8 @@ class PointerClientTest(ClientMixinTest):
                     },
                 ),
             )
-        finally:
-            pointer.BACKWARDS_COMPATIBLE = old_compat
-        pointer.BACKWARDS_COMPATIBLE = True
-        try:
+        # legacy servers also get it in the position tuple:
+        with patch.object(type(self.mixin), "legacy_server", lambda _self: True):
             self.assertEqual(
                 self.mixin.split_pointer_position((100, 200, 5, 6)),
                 (
@@ -71,8 +69,6 @@ class PointerClientTest(ClientMixinTest):
                     },
                 ),
             )
-        finally:
-            pointer.BACKWARDS_COMPATIBLE = old_compat
         self.glib.timeout_add(5000, self.stop)
         self.main_loop.run()
 

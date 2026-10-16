@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Callable
 from xpra.util.objects import typedict
 from xpra.util.signal_emitter import SignalEmitter
-from xpra.net.common import PacketElement
+from xpra.net.common import PacketElement, legacy_peer
 
 
 def is_option_allowed(server_source, option: str, subsystem: str, default: str) -> bool:
@@ -96,6 +96,11 @@ class StubClientConnection(SignalEmitter):
         Initialize setting inherited from the server or connection.
         """
         self.server = server
+
+    def legacy_client(self) -> bool:
+        """ should we use the legacy packets and capabilities with this client? """
+        protocol = getattr(self, "protocol", None)
+        return legacy_peer(getattr(protocol, "peer_protocol_version", ()))
 
     def cleanup(self) -> None:
         """

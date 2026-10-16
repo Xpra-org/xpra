@@ -452,7 +452,10 @@ class FileTransferHandler(FileTransferAttributes):
         self.dump_remote_file_caps()
 
     def parse_printer_caps(self, c: typedict) -> None:
-        fc = typedict(c.dictget("file" if BACKWARDS_COMPATIBLE else "printer"))
+        fc = typedict(c.dictget("printer"))
+        if not fc and BACKWARDS_COMPATIBLE:
+            # older versions used the `file` namespace:
+            fc = typedict(c.dictget("file"))
         self.remote_printing = fc.boolget("printing")
         self.remote_printing_ask = fc.boolget("printing-ask")
 

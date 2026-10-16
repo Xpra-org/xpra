@@ -73,6 +73,11 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
     """
     PREFIX = "clipboard"
 
+    @staticmethod
+    def legacy_peer() -> bool:
+        """ replaced by the owner, which knows which peer we are talking to """
+        return BACKWARDS_COMPATIBLE
+
     def __init__(self, send_packet_cb: Callable, progress_cb: Callable = noop, **kwargs):
         d = typedict(kwargs)
         self.send: Callable = send_packet_cb
@@ -310,7 +315,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         remote = self.local_to_remote(proxy._selection)
         targets = token_data.get("targets", ())
         raw_items = token_data.get("data", {})
-        if BACKWARDS_COMPATIBLE:
+        if self.legacy_peer():
             packet: list[Any] = ["clipboard-token", remote]
             if targets or raw_items:
                 packet.append(targets)

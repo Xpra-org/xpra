@@ -29,7 +29,7 @@ from xpra.common import (
     force_size_constraint, noop,
 )
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
-from xpra.net.common import PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import PacketElement
 from xpra.client.gui.window_base import ClientWindowBase, NOT_REQUESTED
 from xpra.client.gtk3.window.common import (
     use_x11_bindings, is_awt, is_popup, mask_buttons,
@@ -1657,11 +1657,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not self._fullscreen and not self._maximized:
             sw, sh = self.snap_to_server_grid(sw, sh, nearest=sw != w or sh != h)
 
-        if BACKWARDS_COMPATIBLE:
+        if self._client.legacy_server():
             packet: list[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
             pwid = self.wid
             if self.is_OR():
-                pwid = -1 if BACKWARDS_COMPATIBLE else 0
+                pwid = -1
             packet.append(pwid)
             if hasattr(self, "get_mouse_position"):
                 packet.append(self.get_mouse_position())

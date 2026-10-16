@@ -72,6 +72,7 @@ class KeyboardClient(StubClientSubsystem):
                                             opts.shortcut_modifiers,
                                             opts.key_shortcut,
                                             opts.keyboard_raw, **kwargs)
+            self.helper.legacy_server = self.legacy_server
             if DELAY_KEYBOARD_DATA and not self.client.readonly:
                 self.client.after_handshake(self.helper.send_config)
         except ImportError as e:

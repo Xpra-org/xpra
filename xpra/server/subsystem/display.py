@@ -213,7 +213,7 @@ class DisplayManager(StubSubsystem):
 
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = self.get_display_caps(source)
-        if BACKWARDS_COMPATIBLE:
+        if source.legacy_client() if source else BACKWARDS_COMPATIBLE:
             # legacy: use top level attributes:
             caps["display"] = caps.get("name", "")
             return caps

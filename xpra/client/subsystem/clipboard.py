@@ -186,6 +186,7 @@ class ClipboardClient(StubClientSubsystem):
         self.clipboard_helper = ch
         self.clipboard_enabled = ch is not None
         if ch:
+            ch.legacy_peer = self.legacy_server
             # reset the tray notification whenever the clipboard is toggled
             # (only start watching after the handshake to avoid loops):
             self.client.after_handshake(self.watch_clipboard_toggled)

@@ -52,6 +52,11 @@ def show_compare_keycodes(oldkc: Sequence[KEYCODE_DEF], newkc: Sequence[KEYCODE_
 
 class KeyboardHelper:
 
+    @staticmethod
+    def legacy_server() -> bool:
+        """ replaced by the keyboard subsystem, which knows which server we are talking to """
+        return BACKWARDS_COMPATIBLE
+
     def __init__(self, net_send: Callable, keyboard_sync: bool = True,
                  shortcut_modifiers: str = "auto", key_shortcuts: Sequence = (),
                  raw: bool = False, backend: str = "", model: str = "", layout: str = "", layouts: Sequence = (),
@@ -256,7 +261,7 @@ class KeyboardHelper:
     def send_key_action(self, wid: int, key_event: KeyEvent) -> None:
         log("send_key_action(%#x, %s)", wid, key_event)
         self.debug_key_event(wid, key_event)
-        if BACKWARDS_COMPATIBLE:
+        if self.legacy_server():
             packet = ["key-action", wid]
             for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
                 packet.append(getattr(key_event, x))
@@ -358,7 +363,7 @@ class KeyboardHelper:
     def send_config(self) -> None:
         # this is the initial configuration, it must always be applied:
         # (the server has been waiting for it, see `DELAY_KEYBOARD_DATA`)
-        if BACKWARDS_COMPATIBLE:
+        if self.legacy_server():
             if self.layout:
                 self.send_layout()
             if not self.backend:

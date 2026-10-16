@@ -42,7 +42,7 @@ class NotificationConnection(StubClientConnection):
         self.hello_sent = 0.0
 
     def parse_client_caps(self, c: typedict) -> None:
-        if not BACKWARDS_COMPATIBLE:
+        if "notification" in c or not BACKWARDS_COMPATIBLE:
             self.send_notifications = c.boolget("notification")
         else:
             v = c.get("notifications")

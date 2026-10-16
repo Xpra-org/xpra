@@ -497,6 +497,9 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         # mmap can send a tuple, otherwise it's a buffer, see #4496:
         if BACKWARDS_COMPATIBLE:
             data = packet[7]
+        elif coding in ("mmap", "scroll") and not isinstance(packet[7], (bytes, bytearray, memoryview)):
+            # backwards compatible servers duplicate the `chunks` / `scroll` options here:
+            data = b""
         else:
             data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)

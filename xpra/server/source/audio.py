@@ -201,7 +201,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
             # the server does not register any audio packet handlers in this case,
             # so don't ask the client to send us `audio-capabilities`:
             return {}
-        if not BACKWARDS_COMPATIBLE:
+        if not self.legacy_client():
             # tell the client to send us a packet when it is ready:
             return {AudioConnection.PREFIX: {"async": True}}
         return {AudioConnection.PREFIX: self.get_audio_caps()}

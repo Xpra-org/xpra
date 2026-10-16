@@ -129,10 +129,14 @@ class ClientTray(ClientWidgetBase):
             sx, sy, sw, sh = display.crect(x, y, w, h) if display else (x, y, w, h)
             log("%s.reconfigure(%s) sending configure for geometry=%s : %s",
                 self, force_send_configure, geometry, (sx, sy, sw, sh, client_properties))
-            self._client.send(WINDOW_CONFIGURE, self.wid, {
-                "geometry": (sx, sy, sw, sh),
-                "properties": client_properties,
-            })
+            if self._client.legacy_server():
+                # servers older than v6.5 don't handle `window-configure`:
+                self._client.send("configure-window", self.wid, sx, sy, sw, sh, client_properties)
+            else:
+                self._client.send(WINDOW_CONFIGURE, self.wid, {
+                    "geometry": (sx, sy, sw, sh),
+                    "properties": client_properties,
+                })
         if self._size != (w, h):
             self.new_backing(w, h)
 

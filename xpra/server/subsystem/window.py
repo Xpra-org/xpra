@@ -649,7 +649,7 @@ class WindowServer(StubSubsystem):
             if window.is_tray():
                 # code more or less duplicated from _send_new_tray_window_packet:
                 if ss.system_tray:
-                    if BACKWARDS_COMPATIBLE:
+                    if ss.legacy_client():
                         # old clients expect a dedicated `new-tray` packet:
                         ss.new_tray(wid, window, w, h)
                     else:

@@ -19,7 +19,7 @@ from xpra.net.constants import ConnectionMessage
 from xpra.net.common import (
     Packet, PacketElement,
     disconnect_is_an_error,
-    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
+    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE, legacy_peer,
 )
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
@@ -403,7 +403,9 @@ class XpraClientBase(PacketDispatcher):
         # legacy servers expect the display name in this top level attribute,
         # but it is also the namespace used by the display subsystem's capabilities,
         # so only send it to the servers that need it - the others use `session.display`:
-        if self.display and BACKWARDS_COMPATIBLE:
+        # (never replace the `display` capabilities namespace with it:
+        # modern servers would then ignore all of our display capabilities)
+        if self.display and BACKWARDS_COMPATIBLE and "display" not in capabilities:
             capabilities["display"] = self.display
         session = self.get_session_caps()
         if session:
@@ -447,6 +449,10 @@ class XpraClientBase(PacketDispatcher):
         if BACKWARDS_COMPATIBLE:
             capabilities.setdefault("keyboard", False)
         return capabilities
+
+    def legacy_server(self) -> bool:
+        """ should we use the legacy packets and capabilities with the server? """
+        return legacy_peer(getattr(self._protocol, "peer_protocol_version", ()))
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         packet = Packet(packet_type, *parts)
@@ -738,3 +744,12 @@ class XpraClientBase(PacketDispatcher):
 
     def process_packet(self, proto, packet) -> None:
         self.dispatch_packet(proto, packet, True)
+
+    def handle_invalid_packet(self, proto, packet: Packet) -> None:
+        if BACKWARDS_COMPATIBLE and not self.connection_established:
+            # older servers can send packets before their `hello`,
+            # ie: v5.1.x sends `window-metadata` for windows that are mapped while we connect,
+            # we don't have the handlers for those yet and we don't need them:
+            netlog("dropped %r packet received before the server's hello", packet.get_type())
+            return
+        super().handle_invalid_packet(proto, packet)

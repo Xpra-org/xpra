@@ -9,7 +9,7 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.compression import Compressed
-from xpra.net.common import PacketElement
+from xpra.net.common import PacketElement, legacy_peer
 from xpra.net.dispatch import SubsystemPacketHandlers
 from xpra.util.signal_emitter import SignalEmitter
 
@@ -129,6 +129,11 @@ class StubClientSubsystem(SubsystemPacketHandlers, SignalEmitter):
 
     def late_cleanup(self) -> None:
         """Free shared resources after subsystem and connection cleanup."""
+
+    def legacy_server(self) -> bool:
+        """ should we use the legacy packets and capabilities with the server? """
+        protocol = getattr(self.client, "_protocol", None)
+        return legacy_peer(getattr(protocol, "peer_protocol_version", ()))
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         """

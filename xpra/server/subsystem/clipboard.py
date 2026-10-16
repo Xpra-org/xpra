@@ -140,6 +140,7 @@ class ClipboardManager(StubSubsystem):
         }
         # noinspection calling-non-callable
         self.helper = clipboard_class(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
+        self.helper.legacy_peer = self.legacy_client
         self.helper.init_proxies_claim()
         self.selections = get_local_selections()
         self.enabled = True
@@ -185,6 +186,11 @@ class ClipboardManager(StubSubsystem):
             log("client records clipboard, does not own it")
             return False
         return True
+
+    def legacy_client(self) -> bool:
+        """ should we use the legacy clipboard packets with the client that owns the clipboard? """
+        client = self.client
+        return client.legacy_client() if client else BACKWARDS_COMPATIBLE
 
     def set_clipboard_source(self, ss) -> None:
         if not self.can_source_own_clipboard(ss):

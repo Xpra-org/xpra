@@ -7,7 +7,7 @@
 from typing import Any
 from collections.abc import Sequence, Callable
 
-from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import BACKWARDS_COMPATIBLE, legacy_peer
 from xpra.net.packet_type import CURSOR_DATA, CURSOR_DEFAULT
 from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection
@@ -70,7 +70,9 @@ class CursorsConnection(StubClientConnection):
         if isinstance(cursor, dict):
             dcursor = typedict(cursor)
             self.cursor_encodings = dcursor.strtupleget("encodings")
-            self.cursor_backwards_compatible = dcursor.boolget("backwards-compatible", True)
+            # modern clients don't send this flag:
+            legacy = legacy_peer(c.inttupleget("protocol-version"))
+            self.cursor_backwards_compatible = dcursor.boolget("backwards-compatible", legacy)
             default_cursor_size = dcursor.inttupleget("default", (0, 0))
             self.cursor_size = max(0, default_cursor_size[0], default_cursor_size[1])
         if self.cursor_backwards_compatible:

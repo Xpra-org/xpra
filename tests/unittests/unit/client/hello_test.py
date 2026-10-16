@@ -24,14 +24,16 @@ class HelloTest(unittest.TestCase):
         caps = client._add_common_hello({"display": dict(display_caps)})
         # the display name is always available in the `session` namespace:
         self.assertEqual(caps["session"]["display"], ":10")
-        if BACKWARDS_COMPATIBLE:
-            self.assertEqual(caps["display"], ":10")
-        else:
-            self.assertEqual(caps["display"], display_caps)
+        # and the capabilities namespace is never replaced:
+        self.assertEqual(caps["display"], display_caps)
+        # legacy servers still get the display name when there is no namespace:
+        caps = client._add_common_hello({})
+        self.assertEqual(caps.get("display"), ":10" if BACKWARDS_COMPATIBLE else None)
 
     def test_legacy_server(self):
-        # servers running in backwards compatible mode accept peers older than `MIN_PROTOCOL_VERSION`,
-        # and send packets and capabilities which clients using `XPRA_BACKWARDS_COMPATIBLE=0` cannot handle
+        # servers older than v7 running in backwards compatible mode accept peers older than `MIN_PROTOCOL_VERSION`,
+        # and send packets and capabilities which clients using `XPRA_BACKWARDS_COMPATIBLE=0` cannot handle,
+        # v7 servers switch to the modern ones for us
         from xpra.client.gui import ui_client_base
         from xpra.client.gui.ui_client_base import UIXpraClient
         from xpra.exit_codes import ExitCode
@@ -40,13 +42,16 @@ class HelloTest(unittest.TestCase):
         client._protocol = AdHocStruct()
         client._protocol.TYPE = "xpra"
         client.warn_and_quit = lambda exit_code, _message: quit_codes.append(exit_code)
-        legacy_caps = typedict({"protocol-version": (5, 1), "display": ":1"})
-        with (
-            patch.object(ui_client_base, "BACKWARDS_COMPATIBLE", False),
-            patch.object(ui_client_base, "MIN_PROTOCOL_VERSION", (6, 6)),
-        ):
+        legacy_caps = typedict({"protocol-version": (5, 1), "display": ":1", "version": "6.5.5"})
+        with patch.object(ui_client_base, "BACKWARDS_COMPATIBLE", False):
             self.assertFalse(UIXpraClient.parse_server_capabilities(client, legacy_caps))
             self.assertEqual(quit_codes, [ExitCode.INCOMPATIBLE_VERSION])
+            # a v7 server in backwards compatible mode is fine:
+            quit_codes.clear()
+            v7_caps = typedict({"protocol-version": (5, 1), "version": "7.0"})
+            with patch.object(ui_client_base.XpraClientBase, "parse_server_capabilities", return_value=False):
+                self.assertFalse(UIXpraClient.parse_server_capabilities(client, v7_caps))
+            self.assertEqual(quit_codes, [])
             # the xpra protocol version is irrelevant for VNC servers:
             client._protocol.TYPE = "rfb"
             quit_codes.clear()

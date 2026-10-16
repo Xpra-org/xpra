@@ -49,7 +49,7 @@ class PointerConnection(StubClientConnection, PointerSource):
         self.pointer_sync = sync and is_sync_allowed(self, "pointer")
         log(f"parse_client_caps(..) {pointer=}")
         dc = typedict(pointer.dictget("double_click"))
-        if not BACKWARDS_COMPATIBLE:
+        if dc or "initial-position" in pointer or not BACKWARDS_COMPATIBLE:
             self.double_click_time = dc.intget("time", -1)
             self.double_click_distance = dc.intpair("distance", (-1, -1))
             self.mouse_last_position = pointer.intpair("initial-position")

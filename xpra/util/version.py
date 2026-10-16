@@ -111,7 +111,8 @@ def protocol_compat_check(remote_protocol_version) -> str:
     The peer exposes the minimum version it is willing to talk to
     as its "protocol-version" capability,
     verify that this version is recent enough to satisfy it.
-    This capability is only optional in `BACKWARDS_COMPATIBLE` mode.
+    Peers that don't expose it are older than `DEFAULT_PROTOCOL_VERSION`,
+    which we always satisfy.
     Returns an error message, or an empty string if we are compatible.
     """
     if not CHECK_PROTOCOL_VERSION:
@@ -119,13 +120,8 @@ def protocol_compat_check(remote_protocol_version) -> str:
         return ""
     from xpra.net.common import BACKWARDS_COMPATIBLE
     if not remote_protocol_version:
-        if BACKWARDS_COMPATIBLE:
-            # not specified: nothing to check
-            log("no minimum protocol version specified by the remote end")
-            return ""
-        msg = "the remote end does not expose its minimum protocol version"
-        log(msg)
-        return msg
+        log("no minimum protocol version specified by the remote end")
+        return ""
     try:
         rv = parse_version(remote_protocol_version)
     except ValueError:

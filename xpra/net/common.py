@@ -27,7 +27,23 @@ LOG_HELLO: bool = envbool("XPRA_LOG_HELLO", False)
 BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
 # the minimum protocol version we are willing to accept from the peer,
 # exposed as the "protocol-version" capability so that the peer can bail out early:
-MIN_PROTOCOL_VERSION: tuple[int, ...] = (5, 1) if BACKWARDS_COMPATIBLE else (6, 6)
+MIN_PROTOCOL_VERSION: tuple[int, ...] = (5, 1) if BACKWARDS_COMPATIBLE else (7, 0)
+# peers that don't expose their minimum protocol version are older than this:
+DEFAULT_PROTOCOL_VERSION: tuple[int, ...] = (5, 1)
+# peers that only accept this protocol version (or later) only use the modern packets and capabilities:
+MODERN_PROTOCOL_VERSION: tuple[int, ...] = (7, 0)
+
+
+def legacy_peer(protocol_version: Sequence[int]) -> bool:
+    """
+    Should we use the legacy packets and capabilities with this peer?
+    `protocol_version` is the minimum version the peer is willing to accept.
+    """
+    if not BACKWARDS_COMPATIBLE:
+        return False
+    return tuple(protocol_version or DEFAULT_PROTOCOL_VERSION) < MODERN_PROTOCOL_VERSION
+
+
 FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO >= 0
 

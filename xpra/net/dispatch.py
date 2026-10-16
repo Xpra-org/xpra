@@ -8,6 +8,7 @@ from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.net.common import may_log_packet, Packet, PacketHandlerType, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import get_legacy_packet_types
 from xpra.log import Logger
 from xpra.util.str_fn import repr_ellipsized
 
@@ -264,11 +265,28 @@ class PacketDispatcher:
                 call_handler(False)
                 return
 
+            if BACKWARDS_COMPATIBLE and ptype == packet_type:
+                # peers that use the modern names send them to us,
+                # but we may have registered the handler using the legacy name:
+                for legacy in get_legacy_packet_types(packet_type):
+                    if self.has_packet_handler(legacy, authenticated):
+                        log("using the legacy packet type %r for %r", legacy, packet_type)
+                        self.dispatch_packet(proto, Packet(legacy, *packet[1:]), authenticated)
+                        return
             self.handle_invalid_packet(proto, packet)
         except (RuntimeError, AssertionError):
             log.error(f"Error processing a {packet_type!r} packet")
             log.error(f" received from {proto}:")
             log.error(f" using {handler}", exc_info=True)
+
+    def has_packet_handler(self, packet_type: str, authenticated=False) -> bool:
+        if packet_type in self._default_ui_packet_handlers or packet_type in self._default_packet_handlers:
+            return True
+        if not authenticated:
+            return False
+        if packet_type in self._authenticated_ui_packet_handlers or packet_type in self._authenticated_packet_handlers:
+            return True
+        return find_packet_handler(self.subsystems, packet_type) is not None
 
     def call_packet_handler(self, main: bool, handler: PacketHandlerType, proto, packet: Packet) -> None:
         args = self.packet_handler_args(proto, packet)

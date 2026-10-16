@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import OSX
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE, legacy_peer
 from xpra.net.packet_type import POINTER_MOTION, POINTER_BUTTON, POINTER_WHEEL
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
@@ -196,7 +196,7 @@ class PointerClient(StubClientSubsystem):
 
     def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
         pos, position_props = self.split_pointer_position(pos)
-        if "pointer" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
+        if not self.legacy_server() or "pointer" in self.get_server_packet_types():
             # v5 packet type, most attributes are optional:
             attrs = dict(props or {})
             attrs.update(position_props)
@@ -266,7 +266,7 @@ class PointerClient(StubClientSubsystem):
             server_buttons.append(b)
         self.button_state[button] = pressed
         pointer, position_props = self.split_pointer_position(pointer)
-        if "pointer-button" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
+        if not self.legacy_server() or "pointer-button" in self.get_server_packet_types():
             props = dict(props or {})
             props.update(position_props)
             if modifiers is not None:
@@ -420,8 +420,8 @@ class PointerClient(StubClientSubsystem):
         # the others emulate it with button events - on their side if they can
         # (`wheel.emulation`), on ours if they are too old to, see `send_wheel_delta`:
         self.server_precise_wheel = c.boolget("wheel.precise", False)
-        self.server_wheel_motion = self.server_precise_wheel or c.boolget("wheel.emulation",
-                                                                          not BACKWARDS_COMPATIBLE)
+        modern = not legacy_peer(c.inttupleget("protocol-version"))
+        self.server_wheel_motion = self.server_precise_wheel or c.boolget("wheel.emulation", modern)
         return True
 
     def split_pointer_position(self, position) -> tuple[tuple[int, ...], dict]:
@@ -453,7 +453,7 @@ class PointerClient(StubClientSubsystem):
                 "position": (x, y),
             }
         server_position = display.get_server_position(raw_position) if display else raw_position
-        if BACKWARDS_COMPATIBLE:
+        if self.legacy_server():
             return server_position + values[2:], props
         return server_position, props
 

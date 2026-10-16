@@ -42,7 +42,7 @@ class CommandClientTest(unittest.TestCase):
                      patch.object(CommandConnectClient, "make_hello", return_value={"full": True}):
                     client = RunClient(make_defaults_struct(), ["echo", "hello"], mode)
                     for hello in (client.make_hello_base(), client.make_hello()):
-                        self.assertEqual(hello["request"], "exec" if mode == "exec" and not compatible else "run")
+                        self.assertEqual(hello["request"], mode)
                         self.assertEqual(hello["run-wait-time"], 1234 if mode == "run" else 0)
                         self.assertEqual(hello["run"], ("echo", "hello"))
 

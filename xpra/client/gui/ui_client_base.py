@@ -17,7 +17,8 @@ from xpra.common import noerr, may_notify_client
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
 from xpra.net.common import (
-    Packet, PacketElement, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION,
+    Packet, PacketElement, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE,
+    DEFAULT_PROTOCOL_VERSION, MODERN_PROTOCOL_VERSION,
 )
 from xpra.net.packet_type import (
     CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK,
@@ -25,6 +26,7 @@ from xpra.net.packet_type import (
 )
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
+from xpra.util.version import parse_version
 from xpra.util.parsing import parse_sharing
 from xpra.util.system import get_run_info
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized
@@ -357,13 +359,14 @@ class UIXpraClient(XpraClientBase):
     ######################################################################
     # connection setup:
     def parse_server_capabilities(self, c: typedict) -> bool:
-        # A server running in backwards compatible mode accepts peers older than
+        # A server older than v7 running in backwards compatible mode accepts peers older than
         # our `MIN_PROTOCOL_VERSION`, and sends every client the legacy packet
         # names and capabilities layout they need (for example, a `display`
         # name string rather than the `display` capabilities namespace).
-        min_version = c.inttupleget("protocol-version")
+        # (v7 servers switch to the modern ones for clients like us)
+        min_version = c.inttupleget("protocol-version") or DEFAULT_PROTOCOL_VERSION
         if not BACKWARDS_COMPATIBLE and self._protocol.TYPE != "rfb" and (
-                not min_version or min_version < MIN_PROTOCOL_VERSION):
+                min_version < MODERN_PROTOCOL_VERSION and parse_version(c.strget("version"))[:1] < (7, )):
             self.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION,
                                "the server is running in backwards compatible mode,"
                                " which is not supported by clients using `XPRA_BACKWARDS_COMPATIBLE=0`")
@@ -478,7 +481,7 @@ class UIXpraClient(XpraClientBase):
     # features:
     def send_setting_change(self, setting: str, value: PacketElement) -> None:
         """ ask the server to change a setting (mirror of `ClientConnection.send_setting_change`) """
-        if "setting-change" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
+        if not self.legacy_server() or "setting-change" in self.get_server_packet_types():
             self.send("setting-change", setting, value)
             return
         legacy = LEGACY_SETTING_PACKETS.get(setting, "")

@@ -113,6 +113,7 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         # * we don't care about sending anything back after hello
         log("server_capabilities: %s", Ellipsizer(caps))
         log("protocol state: %s", self._protocol.save_state())
+        self._protocol.set_peer_protocol_version(caps.inttupleget("protocol-version"), False)
         self.init_authenticated_packet_handlers()
         self.cancel_command_timeout()
         self.do_command(caps)
@@ -193,9 +194,13 @@ class AbstractImageXpraClient(HelloRequestClient):
         return protocol
 
     def hello_request(self) -> dict[str, Any]:
-        return {
+        req: dict[str, Any] = {
             "request": self.image_request,
         }
+        if BACKWARDS_COMPATIBLE and self.image_request == "screenshot":
+            # v5.1.x servers only honour this flag:
+            req["screenshot_request"] = True
+        return req
 
     def do_command(self, caps: typedict) -> None:
         raise NotImplementedError()
@@ -725,7 +730,8 @@ class RunClient(CommandConnectClient):
 
     def run_request(self) -> dict[str, Any]:
         return {
-            "request": "exec" if self.exec_mode and not BACKWARDS_COMPATIBLE else "run",
+            # (servers that don't support "exec" will refuse it rather than run the command differently)
+            "request": "exec" if self.exec_mode else "run",
             "run": tuple(self.command),
             "run-wait-time": self.wait_time,
         }
@@ -830,7 +836,7 @@ class ExitXpraClient(HelloRequestClient):
 
     def do_command(self, caps: typedict) -> None:
         reason = os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT.value)
-        if BACKWARDS_COMPATIBLE:
+        if self.legacy_server():
             self.idle_add(self.send, EXIT_SERVER, reason)
         else:
             # exit is requested via a `shutdown-server` packet with the exit flag set:

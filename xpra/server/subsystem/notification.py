@@ -59,11 +59,12 @@ class NotificationForwarder(StubSubsystem):
         return {NotificationForwarder.CAPS_KEY: self.forwarder.get_info()}
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
-        return {
-            NotificationForwarder.CAPS_KEY: {
-                "enabled": self.enabled,
-            },
-        }
+        caps = {"enabled": self.enabled}
+        features: dict[str, Any] = {NotificationForwarder.PREFIX: caps}
+        if BACKWARDS_COMPATIBLE:
+            # legacy clients use the plural form:
+            features["notifications"] = caps
+        return features
 
     def send_initial_data(self, ss) -> None:
         # the notifications queued before the hello was sent:

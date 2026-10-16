@@ -64,7 +64,7 @@ class WindowDraw(StubClientSubsystem):
 
     def send_draw_ack(self, wid: int, width: int, height: int, packet_sequence: int,
                       decode_time: int, message="") -> None:
-        if WINDOW_ACK in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
+        if not self.legacy_server() or WINDOW_ACK in self.get_server_packet_types():
             args = (WINDOW_ACK, wid, width, height, packet_sequence, decode_time, message)
         else:
             # the legacy ack packet starts with the `packet_sequence`:
@@ -89,6 +89,10 @@ class WindowDraw(StubClientSubsystem):
         if BACKWARDS_COMPATIBLE:
             # mmap can send a tuple, otherwise it's a buffer, see #4496:
             data = packet[7]
+        elif coding in ("mmap", "scroll") and not isinstance(packet[7], (bytes, bytearray, memoryview)):
+            # backwards compatible servers duplicate the `chunks` / `scroll` options here,
+            # we only use the options:
+            data = b""
         else:
             data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)

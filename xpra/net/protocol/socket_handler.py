@@ -19,7 +19,7 @@ from typing import Any
 from collections.abc import Callable, Iterable, Sequence, Mapping
 
 from xpra.exit_codes import ExitCode
-from xpra.net.packet_type import CONNECTION_CLOSE, CONNECTION_LOST, INVALID, GIBBERISH
+from xpra.net.packet_type import CONNECTION_CLOSE, CONNECTION_LOST, INVALID, GIBBERISH, get_packet_type_upgrades
 from xpra.util.objects import typedict, Scheduler
 from xpra.util.str_fn import (
     csv, hexstr, nicestr,
@@ -36,7 +36,7 @@ from xpra.net.protocol.header import (
 )
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet, no_packet,
-    Packet, NetPacketType, PacketElement, BACKWARDS_COMPATIBLE,
+    Packet, NetPacketType, PacketElement, BACKWARDS_COMPATIBLE, DEFAULT_PROTOCOL_VERSION, legacy_peer,
 )
 from xpra.net.constants import MAX_PACKET_SIZE, SOCKET_TYPES
 from xpra.net.bytestreams import ABORT
@@ -193,6 +193,10 @@ class SocketProtocol:
         self.output_stats: dict[str, int] = {}
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
+        # the minimum protocol version the peer accepts, set once we have its `hello`,
+        # and the packet type renames this implies (see `set_peer_protocol_version`):
+        self.peer_protocol_version: tuple[int, ...] = DEFAULT_PROTOCOL_VERSION
+        self.packet_type_renames: dict[str, str] = {}
         # initial value which may get increased by client/server after handshake:
         self.max_packet_size = MAX_PACKET_SIZE if BACKWARDS_COMPATIBLE else min(MAX_PACKET_SIZE, MODERN_INITIAL_PACKET_SIZE)
         self.abs_max_packet_size = 256 * 1024 * 1024
@@ -438,6 +442,17 @@ class SocketProtocol:
         if not BACKWARDS_COMPATIBLE:
             self.max_packet_size = max(self.max_packet_size, MAX_PACKET_SIZE)
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
+
+    def set_peer_protocol_version(self, protocol_version: Sequence[int], server: bool) -> None:
+        """
+        Peers that only accept modern versions also expect the modern packet type names,
+        and we use the legacy names when we are backwards compatible:
+        rename the packets we send to them.
+        """
+        self.peer_protocol_version = tuple(protocol_version or DEFAULT_PROTOCOL_VERSION)
+        modern = BACKWARDS_COMPATIBLE and not legacy_peer(self.peer_protocol_version)
+        self.packet_type_renames = get_packet_type_upgrades(server) if modern else {}
+        log("set_peer_protocol_version(%s, %s) renames=%s", protocol_version, server, self.packet_type_renames)
 
     def get_info(self) -> dict[str, Any]:
         shm = self._source_has_more
@@ -717,6 +732,8 @@ class SocketProtocol:
         packets: list[NetPacketType] = []
         packet = list(packet_in)
         packet_type = str(packet[0])
+        if rename := self.packet_type_renames.get(packet_type):
+            packet[0] = packet_type = rename
         log(f"encode({packet_type}, ...)")
         inlined_size = 0
         for i, item in enumerate(packet):

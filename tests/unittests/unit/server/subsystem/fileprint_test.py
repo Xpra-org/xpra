@@ -10,6 +10,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from xpra.net.packet_type import FILE_DATA_RESPONSE
 from xpra.net.common import Packet
 from xpra.net.control.common import ControlError
 from xpra.util.objects import AdHocStruct
@@ -193,7 +194,7 @@ class FileServerBehaviorTest(unittest.TestCase):
                 )
             notify.assert_not_called()
         source.send_file.assert_not_called()
-        source.send.assert_called_once_with("file-data-response", "log-request", 0)
+        source.send.assert_called_once_with(FILE_DATA_RESPONSE, "log-request", 0)
 
     def test_request_file_size_limits(self):
         source = self.make_source()

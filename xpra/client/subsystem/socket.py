@@ -193,6 +193,7 @@ class NetworkListener(StubClientSubsystem):
         if packet_type == "hello":
             caps = typedict(packet.get_dict(1))
             proto.parse_remote_caps(caps)
+            proto.set_peer_protocol_version(caps.inttupleget("protocol-version"), True)
             proto.enable_compressor_from_caps(caps)
             proto.enable_encoder_from_caps(caps)
             request = caps.strget("request")
