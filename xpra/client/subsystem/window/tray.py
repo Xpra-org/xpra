@@ -104,14 +104,11 @@ class WindowTray(StubClientSubsystem):
             tray = self.get_window(wid)
             log("tray_click(%s, %s, %s) tray=%s", button, pressed, event_time, tray)
             if tray:
-                x = y = -1
                 if pointer := self.get_subsystem("pointer"):
-                    x, y = pointer.get_mouse_position()
-                keyboard = self.get_subsystem("keyboard")
-                modifiers = keyboard.get_current_modifiers() if keyboard else ()
-                button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
-                log("button_packet=%s", button_packet)
-                self.get_subsystem("pointer").send_positional(*button_packet)
+                    keyboard = self.get_subsystem("keyboard")
+                    modifiers = keyboard.get_current_modifiers() if keyboard else ()
+                    buttons = (button, ) if pressed else ()
+                    pointer.send_button(-1, wid, button, pressed, pointer.get_mouse_position(), modifiers, buttons, {})
                 tray.reconfigure()
 
         def tray_mouseover(x, y):
