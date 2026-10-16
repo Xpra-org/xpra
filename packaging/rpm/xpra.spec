@@ -1165,16 +1165,20 @@ fi
 
 
 %changelog
-* Sun Oct 04 2026 Antoine Martin <antoine@xpra.org> 7.0-10
+* Fri Oct 16 2026 Antoine Martin <antoine@xpra.org> 7.0-10
 - 🔧 Platforms, build and packaging:
    new macOS event API
    new macOS screen capture backend
    setup scripts for pycuda
    automatic RPM package scripts
    MS Windows session lock prevented OpenGL acceleration
+   MS Windows OpenGL module
    stable, native MS Windows client backend
    new kitty terminal rendering backend
    macOS notarization
+   podman pods: `xpra-apps`, AlmaLinux and RockyLinux
+   podman 'secure' pod, seccomp and landlock in containers
+   openh264 as a private library
 - 🖧 Network:
    zero copy network reception
    optional AsyncSSH client backend
@@ -1191,6 +1195,12 @@ fi
    prefixed packets
    document current protocol
    protocol versioning
+   easier `vsock` connections, endpoints exposed via mDNS
+   attach to sessions by name
+   `attach-urls` option
+   start sessions via ssh to ssh
+   paramiko ssh agent forwarding handler
+   basic RDP handling
 - 🛡️ Security:
    `seccomp` hardening
    `landlock` support
@@ -1202,6 +1212,10 @@ fi
    http origin validation
    rate-limit authentication requests
    mmap tightening
+   `OAuth` authentication
+   `notify` authentication
+   macOS and MS Windows process hardening
+   file transfer hardening
 - 🌈 Encodings:
    explicit image wrapper locking
    `zstd` stream compression
@@ -1221,12 +1235,20 @@ fi
    paint YUV420P10
    convert SVG icons to PNG
    remove GStreamer video codecs
+   `dav1d` AV1 decoder, including 10-bit
+   10-bit support for `aom` and `vp9`
+   `openh264` threading and quality / speed tuning
+   re-enable `scroll` encoding
+   match more x264 tunes to content-types
+   lossless grayscale `avif`
+   remove opencv webcam backend
 - NVENC / CUDA:
    arm64 support on MSWindows
    `nvdec` `h264` video decoding
    split colorspace selection from encoder
    suspend + resume handling
    remove deprecated presets
+   NV12 box scaling filter
 - 📋 Clipboard:
    rate limiting
    send multiple formats per message
@@ -1235,6 +1257,8 @@ fi
    avoid unnecessary macOS JPEG targets and safely convert transparent clipboard images
    support for URIs on MS Windows
    macOS support for more images, PDF, etc
+   WebP, BMP, RTF and structured UTF-8 formats
+   `CF_HTML` support on MS Windows
 - 🔊 Audio:
    available signal
    keepalive
@@ -1242,30 +1266,65 @@ fi
    sink and device options in system tray, saved
    follow changes to the system audio device on macOS
    use loopback for MS Windows shadow server audio capture
-- ✨ Features:
+- *️⃣ Keyboard:
    untranslated keyboard
+   keymap handling improvements and on-demand keysym mapping
+   correct MS Windows keyboard layout mapping
+   MS Windows native client: keyboard shortcuts, system menu, grabs, dark title bar
+   tray menu entries for key combinations intercepted locally
+- Wayland:
+   `dmabuf` image wrapper and GPU support for applications
+   scaled subsurfaces
+   per-window and per-monitor colourspace metadata
+   Wayland clients can capture the outputs
+   `wlroots` 0.20 support
+   proper cursor support
+   install the client's keymap, including every client's layout
+   expose content types, opaque regions and client PIDs
+   normalized scroll events
+   popups follow their parent when it is repositioned
+   bell forwarding via `xdg-system-bell`
+   window shapes
+   frame callback pacing, video encodings for opaque buffers
+   native clipboard support
+   automatic display assignment, GTK-free Wayland servers
+   `xpra-server-wayland` packages for Ubuntu Resolute and Debian Sid, package split
+- ✨ Features:
    `sharing=combine`: give each client its own area of the virtual display
+   `sharing=sync` and focus synchronization
    `expand` server for MS Windows
+   virtual monitors for MS Windows shadow servers
+   `shadow-device` using parsec virtual displays
    attention request forwarding
    `gsettings` synchronization
    native `pipewire` frame capture
-   Wayland scaled subsurfaces
    synchronize window stacking order
    better VNC client support including rate control
    basic bash shell completion
    localized menus and dialogs
-   full size cursors on MS Windows
-   macOS global menu no longer causes sticky refresh issues
-   avoid repeated pointer position updates when the pointer is unchanged
-   prevent stale focus and mapped state after server-requested minimization
-   virtual monitors for MS Windows shadow servers
    fully modular subsystems, also for client
    GTK-free shadow servers
-   do not map new windows whilst the MS Windows client session is locked
    monitor relative coordinates
    per-client readonly sessions
+   `dbus=wait` and `dbus=keep` options
+   replace dbus notifications
+   `mmap` option accepts a list of paths
+   `_GTK_WORKAREAS`
+   full size cursors on MS Windows
+   macOS shadow cursor, RFB cursor
+- Fixes:
+   avoid repeated pointer position updates when the pointer is unchanged
+   prevent stale focus and mapped state after server-requested minimization
+   ordered `conf.d` files
+   do not map new windows whilst the MS Windows client session is locked
+   macOS global menu no longer causes sticky refresh issues
+- Testing:
    client-server "loopback" tests
    improved test coverage
+   codec benchmarks and signal-to-noise tests
+   container smoke tests
+   client pixel and window integration tests
+   Wayland client integration tests
    stricter type annotations
 
 * Wed May 06 2026 Antoine Martin <antoine@xpra.org> 6.5-10
