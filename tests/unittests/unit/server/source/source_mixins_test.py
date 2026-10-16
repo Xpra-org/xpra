@@ -548,6 +548,11 @@ class SourceMixinsTest(unittest.TestCase):
         from xpra.server.source.display import DisplayConnection
         from xpra.net.packet_type import DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
 
+        assert DisplayConnection.is_needed(typedict({"display": {"desktop_size": (640, 480)}}))
+        # v7 command clients may send the display name instead, they don't have a display:
+        assert not DisplayConnection.is_needed(typedict({"display": ":10"}))
+        assert not DisplayConnection.is_needed(typedict())
+
         expected_packet_type = "display-show-desktop"
         self.assertEqual(DISPLAY_SHOW_DESKTOP, expected_packet_type)
         expected_resize_packet_type = "display-resized"

@@ -30,9 +30,9 @@ class DisplayConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        if isinstance(caps.get(DisplayConnection.PREFIX), (str, dict)):
-            return True
-        return False
+        # v7 command clients (ie: `xpra top :N`) may send the display name as a string,
+        # they don't have a display:
+        return isinstance(caps.get(DisplayConnection.PREFIX), dict)
 
     def cleanup(self) -> None:
         self.init_state()
@@ -86,16 +86,11 @@ class DisplayConnection(StubClientConnection):
         return not self.display_record
 
     def parse_client_caps(self, c: typedict) -> None:
-        if isinstance(c.get("display"), str):
-            # we can't use a string for anything
-            log.info("legacy `display` caps not supported")
-            return
-        else:
-            display_caps = c.dictget("display")
-            if not display_caps:
-                raise ValueError("missing display capabilities")
-            self.resize_events = typedict(display_caps).boolget("resize-events", True)
-            c = typedict(display_caps or c)
+        display_caps = c.dictget("display")
+        if not display_caps:
+            raise ValueError("missing display capabilities")
+        c = typedict(display_caps)
+        self.resize_events = c.boolget("resize-events", True)
         self.vrefresh = c.intget("refresh-rate", -1)
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size != (0, 0):
