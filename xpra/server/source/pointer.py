@@ -42,7 +42,9 @@ class PointerConnection(StubClientConnection, PointerSource):
 
     def parse_client_caps(self, c: typedict) -> None:
         pointer = typedict(c.dictget("pointer"))
-        # `record` is the legacy name for `sync`:
+        # `sync` and `record` are independent requests, but recording the pointer events
+        # needs the other clients' pointer events, so `record` implies `sync` unless set explicitly
+        # (just like `record` implies `sync-position` and `sync-focus` for windows):
         sync = pointer.boolget("sync", pointer.boolget("record", False))
         self.pointer_sync = sync and is_sync_allowed(self, "pointer")
         log(f"parse_client_caps(..) {pointer=}")
