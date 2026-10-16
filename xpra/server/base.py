@@ -12,8 +12,7 @@ from typing import Any
 from xpra.server.common import get_sources_by_type
 from xpra.server.core import ServerCore, SIGNALS as CORE_SIGNALS
 from xpra.server.source.events import EventConnection
-from xpra.common import noop
-from xpra.net.common import PacketElement, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import PacketElement, FULL_INFO
 from xpra.util.objects import merge_dicts
 from xpra.util.str_fn import Ellipsizer
 from xpra.os_util import POSIX
@@ -430,10 +429,3 @@ class ServerBase(ServerCore):
         # ServerCore.init_packet_handlers registers core handlers and dispatches
         # `init_packet_handlers` to all subsystems:
         super().init_packet_handlers()
-        if BACKWARDS_COMPATIBLE:
-            # no need for main thread:
-            self.add_packet_handler("set_deflate", noop)  # removed in v6
-            if "xsettings" not in self.subsystems:
-                # `server-settings` is handled by the `xsettings` subsystem when it is present,
-                # servers without it can safely ignore this legacy packet:
-                self.add_packet_handler("server-settings", noop)

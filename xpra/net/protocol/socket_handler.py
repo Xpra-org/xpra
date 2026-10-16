@@ -193,16 +193,15 @@ class SocketProtocol:
         self.output_stats: dict[str, int] = {}
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
-        # initial value which may get increased by client/server after handshake:
+        # initial value which is increased once we have parsed the peer's `hello`,
+        # v7 clients running in backwards compatible mode send a bigger `hello` (we don't know who we are talking to yet):
         self.max_packet_size = MAX_PACKET_SIZE if BACKWARDS_COMPATIBLE else min(MAX_PACKET_SIZE, MODERN_INITIAL_PACKET_SIZE)
         self.abs_max_packet_size = 256 * 1024 * 1024
         self.large_packets = [
             "hello", "window-metadata", "audio-data", "notification-show", "setting-change",
             "shell-reply", "display-configure",
-            "encodings", "info-response",
+            "encoding-set", "info-response",
         ]
-        if BACKWARDS_COMPATIBLE:
-            self.large_packets += ["sound-data", "notify_show", "configure-display"]
         self._log_stats = None  # None here means auto-detect
         if "XPRA_LOG_SOCKET_STATS" in os.environ:
             self._log_stats = envbool("XPRA_LOG_SOCKET_STATS")
@@ -435,8 +434,7 @@ class SocketProtocol:
         ) if x is not None)
 
     def parse_remote_caps(self, _caps: typedict) -> None:
-        if not BACKWARDS_COMPATIBLE:
-            self.max_packet_size = max(self.max_packet_size, MAX_PACKET_SIZE)
+        self.max_packet_size = max(self.max_packet_size, MAX_PACKET_SIZE)
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
 
     def get_info(self) -> dict[str, Any]:
@@ -650,7 +648,7 @@ class SocketProtocol:
         log(f"enable_encoder_from_caps(..) options={options}, encoders from caps={encoders}")
         self.chunks = caps.boolget("chunks", True)
         for e in options:
-            if e in encoders or (BACKWARDS_COMPATIBLE and caps.boolget(e)):
+            if e in encoders:
                 self.enable_encoder(e)
                 return True
             log(f"client does not support {e}")
@@ -681,7 +679,7 @@ class SocketProtocol:
         for c in opts:  # ie: ["lz4", "none"]
             if c == "none":
                 continue
-            if c in compressors or (BACKWARDS_COMPATIBLE and caps.boolget(c)):
+            if c in compressors:
                 self.enable_compressor(c)
                 return
             log(f"client does not support {c}")
@@ -951,7 +949,7 @@ class SocketProtocol:
                 if not n:
                     return None
                 data += buf[:n]
-                max_data_size = 4*1024*1024 if BACKWARDS_COMPATIBLE else 256*1024
+                max_data_size = 256*1024
                 pos = find_xpra_header(data, max_data_size=max_data_size)
                 eventlog("waiting for xpra header: pos=%i (len=%i max=%i data=%s)",
                          pos, len(data), self.abs_max_packet_size, Ellipsizer(data))
@@ -1064,7 +1062,7 @@ class SocketProtocol:
         _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
 
         if error := validate_packet_header(protocol_flags, compression_level, packet_index,
-                                           modern=not BACKWARDS_COMPATIBLE):
+                                           modern=True):
             self.invalid_header(self, header, f"invalid packet header: {error}")
             return None
 
@@ -1098,25 +1096,9 @@ class SocketProtocol:
             raise ValueError(f"invalid payload size {payload_size} for header {header!r}")
 
         if payload_size > self.max_packet_size:
-            if not BACKWARDS_COMPATIBLE:
-                msg = f"packet size requested is {payload_size} but maximum allowed is {self.max_packet_size}"
-                self.invalid_header(self, header, msg)
-                return None
-            # this packet is seemingly too big, but check again from the main UI thread
-            # this gives 'set_max_packet_size' a chance to run from "hello"
-
-            def check_packet_size(size_to_check: int, packet_header) -> bool:
-                if self._closed:
-                    return False
-                eventlog("check_packet_size(%#x, %s) max=%#x",
-                         size_to_check, hexstr(packet_header), self.max_packet_size)
-                if size_to_check > self.max_packet_size:
-                    err_msg = f"packet size requested is {size_to_check}"
-                    err_msg += f" but maximum allowed is {self.max_packet_size}"
-                    self.invalid(err_msg, packet_header)
-                return False
-
-            self.timeout_add(1000, check_packet_size, payload_size, header)
+            msg = f"packet size requested is {payload_size} but maximum allowed is {self.max_packet_size}"
+            self.invalid_header(self, header, msg)
+            return None
         return PacketReadInfo(protocol_flags, compression_level, packet_index,
                               data_size, padding_size, payload_size)
 

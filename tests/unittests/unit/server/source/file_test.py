@@ -6,8 +6,6 @@
 
 import unittest
 from types import SimpleNamespace
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.source.file import FileConnection
 from xpra.util.objects import typedict
@@ -20,7 +18,7 @@ class FileConnectionTest(unittest.TestCase):
         self.assertTrue(FileConnection.is_needed(typedict({"file": {}})))
         self.assertEqual(
             FileConnection.is_needed(typedict({"file-transfer": True})),
-            BACKWARDS_COMPATIBLE,
+            False,
         )
         self.assertFalse(FileConnection.is_needed(typedict({"file-transfer": False})))
 
@@ -68,30 +66,6 @@ class FileConnectionTest(unittest.TestCase):
         info = connection.get_info()
         self.assertIn("file-transfers", info)
         self.assertEqual(info["file-transfers"]["remote"]["file-size-limit"], 12345)
-
-    @unittest.skipUnless(BACKWARDS_COMPATIBLE, "legacy capabilities disabled")
-    def test_legacy_flat_capabilities(self):
-        connection = FileConnection()
-        connection.parse_client_caps(typedict({
-            "file-transfer": True,
-            "file-transfer-ask": True,
-            "file-size-limit": 9876,
-            "file-chunks": 2048,
-            "open-files": True,
-            "open-files-ask": True,
-            "open-url": True,
-            "open-url-ask": True,
-            "file-ask-timeout": 120,
-        }))
-        self.assertTrue(connection.remote_file_transfer)
-        self.assertTrue(connection.remote_file_transfer_ask)
-        self.assertEqual(connection.remote_file_size_limit, 9876)
-        self.assertEqual(connection.remote_file_chunks, 2048)
-        self.assertTrue(connection.remote_open_files)
-        self.assertTrue(connection.remote_open_files_ask)
-        self.assertTrue(connection.remote_open_url)
-        self.assertTrue(connection.remote_open_url_ask)
-        self.assertEqual(connection.remote_file_ask_timeout, 120)
 
 
 if __name__ == "__main__":

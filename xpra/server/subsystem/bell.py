@@ -59,4 +59,3 @@ class BellServer(StubSubsystem):
     def init_packet_handlers(self) -> None:
         if self.bell:
             self.add_packets("bell-set", main_thread=True)
-            self.add_legacy_alias("set-bell", "bell-set")

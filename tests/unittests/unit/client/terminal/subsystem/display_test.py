@@ -117,8 +117,8 @@ class TerminalDisplayClientTest(ClientMixinTest):
         self.init_mixin()
         with silence_info(base_display):
             caps = self.mixin.get_caps()
-        # with BC=0, the display attributes are namespaced under "display":
-        dc = caps["display"] if not base_display.BACKWARDS_COMPATIBLE else caps
+        # the display attributes are namespaced under "display":
+        dc = caps["display"]
         self.assertEqual(dc["desktop_size"], TERMINAL_SIZE)
         self.assertEqual(dc["monitors"][0]["geometry"], (0, 0) + TERMINAL_SIZE)
         self.assertTrue(dc["resize-events"])

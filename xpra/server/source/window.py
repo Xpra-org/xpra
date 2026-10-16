@@ -21,7 +21,6 @@ from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.common import may_notify_client, force_size_constraint
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.constants import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.log import Logger
 
@@ -161,23 +160,12 @@ class WindowsConnection(StubClientConnection):
         return not self.window_record
 
     def parse_client_caps(self, c: typedict) -> None:
-        ui_client = c.boolget("ui_client", True) or not BACKWARDS_COMPATIBLE
         wcaps = typedict(c.dictget("window") or {})
-        if BACKWARDS_COMPATIBLE and not wcaps:
-            legacy = c.get("windows")
-            if isinstance(legacy, dict):
-                # the offscreen recorder used to send its options in the plural namespace:
-                wcaps = typedict(legacy)
-        self.window_enabled = ui_client and wants_windows(c)
+        self.window_enabled = wants_windows(c)
         self.window_grabs = c.boolget("window.grabs")
-        if BACKWARDS_COMPATIBLE and not self.window_grabs:
-            # older clients advertise grabs in the `pointer` namespace:
-            self.window_grabs = c.boolget("pointer.grabs")
         self.window_bell = c.boolget("bell")
         self.system_tray = c.boolget("system_tray")
         default_metadata_supported = DEFAULT_METADATA_SUPPORTED
-        if BACKWARDS_COMPATIBLE:
-            default_metadata_supported += ("content-type", )
         self.window_metadata_supported = c.strtupleget("metadata.supported", default_metadata_supported)
         log("metadata supported=%s", self.window_metadata_supported)
         self.window_frame_sizes = wcaps.dictget("frame_sizes")
@@ -458,7 +446,7 @@ class WindowsConnection(StubClientConnection):
         if not self.can_send_window(window):
             return
         self.update_window_visibility(wid, window, (x, y, w, h))
-        packet_type = "configure-override-redirect" if BACKWARDS_COMPATIBLE else WINDOW_MOVE_RESIZE
+        packet_type = WINDOW_MOVE_RESIZE
         x, y = self.to_client_position(x, y)
         self.send(packet_type, wid, x, y, w, h)
 
@@ -498,15 +486,6 @@ class WindowsConnection(StubClientConnection):
             size = window.get_dimensions()
             metadata["size-constraints"] = force_size_constraint(*size)
         return metadata
-
-    def new_tray(self, wid: int, window, w: int, h: int) -> None:
-        assert window.is_tray()
-        if not self.can_send_window(window):
-            return
-        metadata = {}
-        for propname in list(window.get_property_names()):
-            metadata.update(self._make_metadata(window, propname, skip_defaults=True))
-        self.send_async("new-tray", wid, w, h, metadata)
 
     def new_window(self, packet_type: str, wid: int, window, x: int, y: int, w: int, h: int,
                    client_properties: dict) -> None:

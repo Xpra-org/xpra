@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util.objects import typedict
-from xpra.net.common import PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import PacketElement
 from xpra.net.packet_type import EVENTS
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
@@ -16,8 +16,6 @@ class EventConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        if BACKWARDS_COMPATIBLE and "events" in caps.strtupleget("wants"):
-            return True
         return caps.boolget("events")
 
     def send_server_event(self, event_type: str, *args: PacketElement) -> None:

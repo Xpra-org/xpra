@@ -24,10 +24,16 @@ from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
 
 LOG_HELLO: bool = envbool("XPRA_LOG_HELLO", False)
+# also accept v7 peers, which may use the legacy packets and capabilities with their own older peers:
+# they switch to the modern ones for us, but we still need a few workarounds for them:
+# * a bigger `hello` packet (see `SocketProtocol`)
+# * `mmap` and `scroll` draw packets with the pixel data overloaded (see `WindowDraw`)
 BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
 # the minimum protocol version we are willing to accept from the peer,
 # exposed as the "protocol-version" capability so that the peer can bail out early:
-MIN_PROTOCOL_VERSION: tuple[int, ...] = (5, 1) if BACKWARDS_COMPATIBLE else (6, 6)
+MIN_PROTOCOL_VERSION: tuple[int, ...] = (7, 0) if BACKWARDS_COMPATIBLE else (8, 0)
+# peers that don't expose their minimum protocol version are treated as:
+DEFAULT_PROTOCOL_VERSION: tuple[int, ...] = (7, 0)
 FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO >= 0
 

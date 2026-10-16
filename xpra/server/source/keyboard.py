@@ -6,8 +6,6 @@
 
 from typing import Any
 from collections.abc import Sequence
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import KEYBOARD_RECORD
 from xpra.util.str_fn import Ellipsizer
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed
@@ -28,8 +26,6 @@ class KeyboardConnection(StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         if caps.boolget("keyboard"):
             return True
-        if BACKWARDS_COMPATIBLE:
-            return bool(caps.get("xkbmap_keycodes"))  # legacy clients
         return False
 
     def init_state(self) -> None:
@@ -81,11 +77,6 @@ class KeyboardConnection(StubClientConnection):
         ibuslog(f"send_ibus_layouts(%s) {self.ibus=}", Ellipsizer(ibus_layouts))
         if self.ibus and ibus_layouts:
             self.send_setting_change("ibus-layouts", ibus_layouts)
-
-    def set_layout(self, layout: str, variant: str, options) -> bool:
-        if not self.keyboard_config:
-            return False
-        return self.keyboard_config.set_layout(layout, variant, options)
 
     def keys_changed(self) -> None:
         if kc := self.keyboard_config:

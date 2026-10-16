@@ -12,9 +12,7 @@ Cross-side interaction test: wires the server clipboard subsystem
 Clipboard status (server -> client): the source sends a clipboard-status packet,
 the client decodes it and toggles its clipboard_enabled flag. Only the status
 path is exercised - the actual clipboard data transfer needs a GTK clipboard
-helper, which is out of scope. `BACKWARDS_COMPATIBLE` is forced off so the modern
-`clipboard-status` packet name is used on both sides (the client's status branch
-matches on that literal name).
+helper, which is out of scope.
 """
 
 import unittest
@@ -46,18 +44,9 @@ def _server_opts():
 class ClipboardLoopbackTest(LoopbackTest):
 
     def _connect(self):
-        from xpra.client.subsystem import clipboard as client_clipboard
-        from xpra.server.source import clipboard as source_clipboard
         from xpra.client.subsystem.clipboard import ClipboardClient
         from xpra.server.subsystem.clipboard import ClipboardManager
         from xpra.server.source.clipboard import ClipboardConnection
-        # force the modern packet name so the client status branch matches; these
-        # must stay patched through the test body (the send happens there), so use
-        # start()/addCleanup rather than a `with` block scoped to connect():
-        for target in (client_clipboard, source_clipboard):
-            p = patch.object(target, "BACKWARDS_COMPATIBLE", False)
-            p.start()
-            self.addCleanup(p.stop)
         # client load() would build a real GTK clipboard helper:
         with patch.object(ClipboardClient, "load", lambda self: None):
             return self.connect(ClipboardClient, ClipboardManager, ClipboardConnection,

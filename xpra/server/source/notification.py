@@ -9,7 +9,6 @@ from collections.abc import Sequence, Callable
 from xpra.notification.common import IconData
 from xpra.net.packet_type import NOTIFICATION_SHOW, NOTIFICATION_CLOSE
 from xpra.util.objects import typedict
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.constants import NotificationID
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
@@ -26,12 +25,6 @@ class NotificationConnection(StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         if caps.boolget("notification"):
             return True
-        if BACKWARDS_COMPATIBLE:
-            v = caps.get("notifications")
-            if isinstance(v, bool):
-                return v
-            if isinstance(v, dict):
-                return typedict(v).boolget("enabled", False)
         return False
 
     def init_state(self) -> None:
@@ -42,12 +35,7 @@ class NotificationConnection(StubClientConnection):
         self.hello_sent = 0.0
 
     def parse_client_caps(self, c: typedict) -> None:
-        if not BACKWARDS_COMPATIBLE:
-            self.send_notifications = c.boolget("notification")
-        else:
-            v = c.get("notifications")
-            if isinstance(v, dict):
-                self.send_notifications = typedict(v).boolget("enabled")
+        self.send_notifications = c.boolget("notification")
         log("parse_client_caps(..) notification=%s", self.send_notifications)
 
     def get_info(self) -> dict[str, Any]:

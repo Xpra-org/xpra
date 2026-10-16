@@ -6,7 +6,7 @@
 from typing import Any
 from collections.abc import Callable
 
-from xpra.net.common import BACKWARDS_COMPATIBLE, Packet
+from xpra.net.common import Packet
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -68,13 +68,5 @@ class SettingsServer(StubSubsystem):
         log("client %s toggled readonly=%s", ss, ss.client_readonly)
         self.server.emit("setting-changed", "readonly", ss.effective_readonly(), ss)
 
-    def _process_readonly_toggled(self, proto, packet: Packet) -> None:
-        # legacy packet, superseded by "setting-change":
-        ss = self.get_server_source(proto)
-        if ss:
-            self.set_client_readonly(ss, packet.get_bool(1))
-
     def init_packet_handlers(self) -> None:
         self.add_packets(f"{SettingsServer.PREFIX}-change")
-        if BACKWARDS_COMPATIBLE:
-            self.add_packets("readonly-toggled")

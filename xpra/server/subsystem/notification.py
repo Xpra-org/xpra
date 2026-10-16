@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from xpra.os_util import OSX, POSIX
 from xpra.server.source.notification import NotificationConnection
 from xpra.util.str_fn import Ellipsizer
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
@@ -24,11 +24,10 @@ class NotificationForwarder(StubSubsystem):
     Mixin for servers that forward notifications.
     """
     __slots__ = ("enabled", "forwarder")
-    # the packets are named `notification-*` in both modes, so the prefix has to be
-    # `notification` for them to be routed to this subsystem (see `add_packet_handler`).
-    # Legacy clients still expect the capability and info key to be `notifications`:
+    # the packets are named `notification-*`, so the prefix has to be
+    # `notification` for them to be routed to this subsystem (see `add_packet_handler`):
     PREFIX = "notification"
-    CAPS_KEY = "notifications" if BACKWARDS_COMPATIBLE else PREFIX
+    CAPS_KEY = PREFIX
     toggle_features = ("notifications",)
 
     def __init__(self, server=None):
@@ -201,7 +200,6 @@ class NotificationForwarder(StubSubsystem):
     def init_packet_handlers(self) -> None:
         if self.enabled:
             self.add_packets("notification-close", "notification-action", "notification-status", main_thread=True)
-            self.add_legacy_alias("set-notify", "notification-status")
 
     #########################################
     # Control Commands

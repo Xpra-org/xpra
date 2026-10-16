@@ -11,7 +11,6 @@ from time import monotonic
 from subprocess import Popen
 
 from xpra.common import noop
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server.source.keyboard import KeyboardConnection
 from xpra.util.pid import load_pid, kill_pid
 from xpra.util.env import envbool
@@ -313,13 +312,6 @@ class X11KeyboardManager(KeyboardManager):
         keyboard_config.parse_layout(p)
         log("get_keyboard_config(..)=%s", keyboard_config)
         return keyboard_config
-
-    def set_backend(self, ss, backend: str, name: str) -> None:
-        assert BACKWARDS_COMPATIBLE
-        if hasattr(ss, "backend"):
-            ss.backend = backend
-            ss.backend_engine = name
-            ss.apply_backend()
 
     def set_keyboard_layout_group(self, grp: int) -> None:
         kc = self.config

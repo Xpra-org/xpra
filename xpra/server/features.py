@@ -58,7 +58,6 @@ def set_server_features(opts, mode: str) -> None:
     from xpra.os_util import POSIX, WIN32, OSX
     from xpra.util.env import envbool
     from xpra.util.parsing import FALSE_OPTIONS
-    from xpra.net.common import BACKWARDS_COMPATIBLE
 
     def b(v) -> bool:
         return str(v).lower() not in FALSE_OPTIONS
@@ -136,7 +135,7 @@ def set_server_features(opts, mode: str) -> None:
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb") and mode in ("desktop", "shadow")
         features.rdp = (b(opts.rdp_upgrade) or bool(opts.bind_rdp)) and impcheck("server.rdp")
         features.ssh = b(opts.ssh) and impcheck("net.ssh", "server.ssh") and bool(find_spec("paramiko"))
-        features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
+        features.ping = b(opts.pings)
         features.gsettings = b(opts.gsettings_sync) and impcheck("server.subsystem.gsettings", "server.source.gsettings")
         features.register = bool(opts.register)
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)

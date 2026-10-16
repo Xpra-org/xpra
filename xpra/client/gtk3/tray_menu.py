@@ -14,9 +14,7 @@ from xpra.util.str_fn import Ellipsizer, csv
 from xpra.util.env import envbool, ignorewarnings
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.common import uniq
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.constants import ConnectionMessage
-from xpra.constants import RESOLUTION_ALIASES
 from xpra.client.gtk3.menu_helper import (
     GTKMenuHelper, gen_non_none_menu_items,
     BANDWIDTH_MENU_OPTIONS,
@@ -1764,9 +1762,6 @@ class GTKTrayMenu(GTKMenuHelper):
 
             def add_monitor(mitem, resolution) -> None:
                 log("add_monitor(%s, %s)", mitem, resolution)
-                # older servers may not have all the aliases:
-                if BACKWARDS_COMPATIBLE:
-                    resolution = RESOLUTION_ALIASES.get(resolution, resolution)
                 self.client.send_add_monitor(resolution)
 
             # prefer the resolutions advertised by the server (ie: parsec-vdd
@@ -2081,10 +2076,6 @@ class GTKTrayMenu(GTKMenuHelper):
             start_menu_item.set_submenu(menu)
             start_menu_item.set_tooltip_text(None)
             menu_checksum[0] = new_checksum
-
-        if BACKWARDS_COMPATIBLE:
-            # legacy pre v6.4 name:
-            self.client.on_server_setting_changed("xdg-menu", update_menu_data)
         # v6.4 and later:
         self.client.on_server_setting_changed("menu", update_menu_data)
         # older servers may have supplied as part of the hello handshake:

@@ -18,7 +18,6 @@ from xpra.codecs.constants import (
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 log = Logger("encoder", "mf")
 
@@ -508,7 +507,7 @@ cdef class Encoder:
         client_options: Dict[str, Any] = {
             "frame"     : int(self.frames),
         }
-        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not full_range):
+        if range_changed or (self.frames == 0 and not full_range):
             client_options["full-range"] = bool(full_range)
         if frame.is_keyframe:
             client_options["type"] = "IDR"

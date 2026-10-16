@@ -10,7 +10,6 @@ import unittest
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.env import OSEnvContext
 from xpra.net.packet_type import PING_ECHO
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
@@ -40,7 +39,7 @@ class PingTest(ServerMixinTest):
             def timeout(*args):
                 timeouts.append(args)
             self.source.disconnect = timeout
-            assert self.source.get_caps() or not BACKWARDS_COMPATIBLE
+            assert True
             self.source.ping()
             self.source.check_ping_echo_timeout(0, 0)
             # give time for the timeout to fire:

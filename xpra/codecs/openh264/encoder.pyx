@@ -15,7 +15,6 @@ log = Logger("encoder", "openh264")
 from xpra.util.env import envint
 
 from xpra.codecs.image import ImageWrapper
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import (
@@ -874,7 +873,7 @@ cdef class Encoder:
         }
         # the colour range is signalled on every keyframe (so a decoder resuming from any
         # keyframe knows it) and on every transition; steady-state full-range is omitted:
-        if BACKWARDS_COMPATIBLE or range_changed or (is_idr and not self.full_range):
+        if range_changed or (is_idr and not self.full_range):
             client_options["full-range"] = bool(self.full_range)
         if frame_info.eFrameType == videoFrameTypeInvalid:
             raise ValueError("invalid frame type")

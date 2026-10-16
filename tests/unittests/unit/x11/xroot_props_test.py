@@ -67,16 +67,6 @@ class TestXRootProps(unittest.TestCase):
         ss = FakeSource({0: {"geometry": (0, 0, 1920, 1080)}})
         self.assertEqual(ss.get_client_workareas(), [])
 
-        # legacy `screen_sizes` clients: the per-monitor workarea is at [7:11]
-        from xpra.net.common import BACKWARDS_COMPATIBLE
-        if BACKWARDS_COMPATIBLE:
-            ss = FakeSource({}, ((
-                "screen0", 1920, 1080, 508, 285,
-                (("monitor0", 0, 0, 1920, 1080, 508, 285, 0, 24, 1920, 1056), ),
-                0, 24, 1920, 1056,
-            ), ))
-            self.assertEqual(ss.get_client_workareas(), [(0, 24, 1920, 1056)])
-
 
 def main():
     unittest.main()

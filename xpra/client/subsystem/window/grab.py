@@ -6,7 +6,7 @@
 import os
 from typing import Any
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -97,6 +97,3 @@ class WindowGrab(StubClientSubsystem):
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets("window-grab", "window-ungrab", main_thread=True)
-        if BACKWARDS_COMPATIBLE:
-            self.add_legacy_alias("pointer-grab", "window-grab")
-            self.add_legacy_alias("pointer-ungrab", "window-ungrab")

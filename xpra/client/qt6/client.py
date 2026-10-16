@@ -16,10 +16,10 @@ from PyQt6.QtWidgets import QApplication
 
 from xpra import __version__
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.net.rencodeplus.rencodeplus import dumps, loads
 
-from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_DRAW_ACK
+from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_ACK
 from xpra.net.protocol.header import pack_header, unpack_header, FLAGS_RENCODEPLUS
 
 from xpra.log import Logger
@@ -87,10 +87,6 @@ class Qt6Client:
             "encodings": ("rgb32", "rgb24", "png", "jpeg", "webp"),
             "display": {"refresh-rate": 50},
         }
-        if BACKWARDS_COMPATIBLE:
-            # older servers look for this flag outside the `window` namespace:
-            hello["windows"] = True
-            hello["mouse"] = True
         self.send("hello", hello)
 
     def send(self, packet_type: str, *args) -> None:
@@ -151,10 +147,6 @@ class Qt6Client:
         log("%s", packet)
         self.quit(0)
 
-    def _process_disconnect(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE  # legacy packet name
-        self._process_connection_close(packet)
-
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         netlog.info(f"ignoring setting-change for {setting!r}")
@@ -162,19 +154,11 @@ class Qt6Client:
     def _process_startup_complete(self, _packet: Packet) -> None:
         netlog.info("client is connected")
 
-    def _process_encodings(self, packet: Packet) -> None:
-        log(f"server encodings: {packet.get_strs(1)}")
+    def _process_encoding_set(self, packet: Packet) -> None:
+        log(f"server encodings: {packet.get_dict(1)}")
 
     def _process_window_create(self, packet: Packet):
         self.new_window(packet)
-
-    def _process_new_window(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE  # legacy packet name
-        self.new_window(packet)
-
-    def _process_new_override_redirect(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE  # legacy packet name
-        self.new_window(packet, True)
 
     def new_window(self, packet: Packet, is_or=False) -> None:
         from xpra.client.qt6.window import ClientWindow
@@ -196,10 +180,6 @@ class Qt6Client:
             window.close()
             del self.windows[wid]
 
-    def _process_lost_window(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE  # legacy packet name
-        self._process_window_destroy(packet)
-
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.windows.get(wid):
@@ -210,28 +190,16 @@ class Qt6Client:
             source_indication = packet.get_i8(6)
             window.initiate_moveresize(x_root, y_root, direction, button, source_indication)
 
-    def _process_initiate_moveresize(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE  # legacy packet name
-        self._process_window_initiate_moveresize(packet)
-
     def _process_window_bell(self, packet: Packet) -> None:
         wid = packet.get_wid()
         log(f"bell for window {wid:#x}")
         QApplication.beep()
-
-    def _process_bell(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE  # legacy packet name
-        self._process_window_bell(packet)
 
     def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.windows.get(wid):
             if not window.has_toplevel_focus():
                 window.present()
-
-    def _process_raise_window(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE  # legacy packet name
-        self._process_window_raise(packet)
 
     def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -241,14 +209,6 @@ class Qt6Client:
         if window := self.windows.get(wid):
             other_window = self.windows.get(other_wid)
             window.restack(other_window, above)
-
-    def _process_restack_window(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE  # legacy packet name
-        self._process_window_restack(packet)
-
-    def _process_draw(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE  # legacy packet name
-        self._process_window_draw(packet)
 
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -270,7 +230,7 @@ class Qt6Client:
             message = f"Warning: window {wid:#x} not found"
             log.warn(message)
             decode_time = -1
-        self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
+        self.send(WINDOW_ACK, wid, width, height, packet_sequence, decode_time, message)
 
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()

@@ -17,7 +17,7 @@ from xpra.scripts.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, ABSTRACT_SOCKET_PREFIX, AUTO_ABSTRACT_SOCKET, SocketState
 from xpra.net.bytestreams import set_socket_timeout, SocketConnection, SOCKET_TIMEOUT
-from xpra.net.common import pretty_socket, BACKWARDS_COMPATIBLE
+from xpra.net.common import pretty_socket
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id, gi_import, get_xpra_group,
     WIN32, OSX, POSIX,
@@ -391,7 +391,7 @@ def looks_like_xpra_packet(data: bytes) -> bool:
     if data_size < 8 or data_size >= 256 * 1024 * 1024:
         return False
     if validate_packet_header(protocol_flags, compression_level, packet_index,
-                              modern=not BACKWARDS_COMPATIBLE):
+                              modern=True):
         return False
     # we passed all the checks
     return True

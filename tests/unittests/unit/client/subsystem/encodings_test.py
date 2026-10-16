@@ -8,7 +8,6 @@ import unittest
 
 from xpra.util.objects import AdHocStruct
 from xpra.client.subsystem import encoding
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from unit.test_util import silence_error
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
@@ -34,7 +33,7 @@ class EncodingClientTest(ClientMixinTest):
             "encoding": "",
         })
         m.set_encoding("auto")
-        expected = "encoding" if BACKWARDS_COMPATIBLE else "encoding-set"
+        expected = "encoding-set"
         self.assertEqual(self.packets[-1], (expected, "auto"))
 
         def f(fn, err):
@@ -57,8 +56,7 @@ class EncodingClientTest(ClientMixinTest):
         for q in (-1, 0, 1, 99, 100):
             m.quality = q
             m.send_quality()
-            expected = (("quality", q) if BACKWARDS_COMPATIBLE else
-                        ("encoding-options", {"quality": q}))
+            expected = ("encoding-options", {"quality": q})
             self.assertEqual(self.packets[-1], expected)
         for q in (-2, 101):
             m.quality = q
@@ -67,8 +65,7 @@ class EncodingClientTest(ClientMixinTest):
         for q in (-1, 0, 1, 99, 100):
             m.min_quality = q
             m.send_min_quality()
-            expected = (("min-quality", q) if BACKWARDS_COMPATIBLE else
-                        ("encoding-options", {"min-quality": q}))
+            expected = ("encoding-options", {"min-quality": q})
             self.assertEqual(self.packets[-1], expected)
         for q in (-2, 101):
             m.min_quality = q
@@ -77,8 +74,7 @@ class EncodingClientTest(ClientMixinTest):
         for s in (-1, 0, 1, 99, 100):
             m.speed = s
             m.send_speed()
-            expected = (("speed", s) if BACKWARDS_COMPATIBLE else
-                        ("encoding-options", {"speed": s}))
+            expected = ("encoding-options", {"speed": s})
             self.assertEqual(self.packets[-1], expected)
         for s in (-2, 101):
             m.speed = s
@@ -87,8 +83,7 @@ class EncodingClientTest(ClientMixinTest):
         for s in (-1, 0, 1, 99, 100):
             m.min_speed = s
             m.send_min_speed()
-            expected = (("min-speed", s) if BACKWARDS_COMPATIBLE else
-                        ("encoding-options", {"min-speed": s}))
+            expected = ("encoding-options", {"min-speed": s})
             self.assertEqual(self.packets[-1], expected)
         for s in (-2, 101):
             m.min_speed = s

@@ -15,7 +15,7 @@ from xpra.codecs.video import getVideoHelper
 from xpra.util.parsing import parse_bool_or_int
 from xpra.common import noop
 from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO
 from xpra.net import compression
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -144,21 +144,11 @@ class Encodings(StubClientSubsystem):
         self.csc_modules = opts.csc_modules
         self.video_decoders = opts.video_decoders
 
-    def load(self) -> None:
-        # in backwards-compatible mode the hello carries the full encoding caps, so the
-        # codecs must be loaded before it is built. When a decode thread exists it owns
-        # that loading and `get_caps` waits for it (see `ensure_codecs_loaded`); the
-        # `load` phase runs before the decode thread starts, so only load here when there
-        # is no decode thread to defer to (otherwise we would deadlock waiting for it):
-        if BACKWARDS_COMPATIBLE and not self.has_decode_thread():
-            self.load_all_codecs()
-
     def run(self) -> None:
-        if not BACKWARDS_COMPATIBLE:
-            def load() -> None:
-                self.ensure_codecs_loaded()
-                self.client.after_handshake(self.send_encoding_config)
-            start_thread(load, "encoding-config", daemon=True)
+        def load() -> None:
+            self.ensure_codecs_loaded()
+            self.client.after_handshake(self.send_encoding_config)
+        start_thread(load, "encoding-config", daemon=True)
 
     def has_decode_thread(self) -> bool:
         # the `decode` subsystem is the thread that owns codec initialization
@@ -265,7 +255,6 @@ class Encodings(StubClientSubsystem):
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(f"{Encodings.PREFIX}-set")
-        self.add_legacy_alias("encodings", f"{Encodings.PREFIX}-set")
 
     def _process_set(self, packet: Packet) -> None:
         caps = typedict(packet.get_dict(1))
@@ -285,8 +274,6 @@ class Encodings(StubClientSubsystem):
             "encoding": self.encoding or "auto",
             "video-scaling": self.video_scaling if self.video_scaling is not None else "auto",
         }
-        if BACKWARDS_COMPATIBLE:
-            einfo["cursor"] = self.get_cursor_encodings()
         return {
             "encodings": einfo,
             "server-encodings": self.server_core_encodings,
@@ -298,23 +285,7 @@ class Encodings(StubClientSubsystem):
         self.send("encoding-config", caps)
 
     def get_caps(self) -> dict[str, Any]:
-        if not BACKWARDS_COMPATIBLE:
-            return {"encoding": self.get_encodings_caps()}
-        # the backwards-compatible hello advertises the full encoding caps, so make sure
-        # the codecs are loaded first - waiting for the decode thread when it owns that
-        # (this runs on the main loop, after the decode thread has been started):
-        self.ensure_codecs_loaded()
-        return {
-            "encoding": self.get_encodings_caps(),
-            "cursor.encodings": self.get_cursor_encodings(),
-            "batch": get_batch_caps(),
-            "encodings": {
-                "": self.get_encodings(),
-                "all": self.get_encodings(),
-                "core": self.get_core_encodings(),
-                "packet": True,
-            }
-        }
+        return {"encoding": self.get_encodings_caps()}
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self._parse_server_capabilities(c)
@@ -445,13 +416,6 @@ class Encodings(StubClientSubsystem):
             cenc.append("stream")
         return preforder(cenc)
 
-    def get_cursor_encodings(self) -> list[str]:
-        assert BACKWARDS_COMPATIBLE
-        e = ["raw", "default"]
-        if "png" in self.get_core_encodings():
-            e.append("png")
-        return e
-
     def get_window_icon_encodings(self) -> list[str]:
         e = ["BGRA", "default"]
         if "png" in self.get_core_encodings():
@@ -476,14 +440,11 @@ class Encodings(StubClientSubsystem):
                 log.error(" " + csv(self.server_encodings))
                 return
         self.encoding = encoding
-        packet_type = "encoding" if BACKWARDS_COMPATIBLE else f"{Encodings.PREFIX}-set"
+        packet_type = f"{Encodings.PREFIX}-set"
         self.send(packet_type, self.encoding)
 
     def send_encoding_option(self, option: str, value: int) -> None:
-        if BACKWARDS_COMPATIBLE:
-            self.send(option, value)
-        else:
-            self.send(f"{Encodings.PREFIX}-options", {option: value})
+        self.send(f"{Encodings.PREFIX}-options", {option: value})
 
     def send_quality(self) -> None:
         q = self.quality

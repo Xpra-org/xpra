@@ -86,10 +86,6 @@ class KeyboardConfig(KeyboardConfigBase):
             groups.append((layout, self.variants[i] if i < len(self.variants) else ""))
         return tuple(groups)
 
-    def set_layout(self, layout: str, variant: str, options: str) -> bool:
-        # the legacy `layout-changed` packet does not carry the model
-        return self.update_layout(layout, self.model, variant, options) > 0
-
     def update_layout(self, layout: str, model: str, variant: str, options: str) -> int:
         new = (layout, model, variant, options)
         old = (self.layout, self.model, self.variant, self.options)

@@ -159,16 +159,9 @@ class Win32ClipboardTest(unittest.TestCase):
         self.assertEqual(packets[2],
                          ("clipboard-contents", 3, "CLIPBOARD", "UTF8_STRING", 8, "bytes", b"", 0))
 
-    def use_new_packet_format(self):
-        # only the 6.5+ packet format can carry more than one clipboard format:
-        from xpra.clipboard import core
-        self.addCleanup(setattr, core, "BACKWARDS_COMPATIBLE", core.BACKWARDS_COMPATIBLE)
-        core.BACKWARDS_COMPATIBLE = False
-
     def test_non_greedy_token_does_not_touch_the_clipboard(self):
         # the common case: the peer is not greedy, so it gets a bare token
         # and requests whatever it needs later
-        self.use_new_packet_format()
         helper, packets = self.make_helper()
         proxy = helper._clipboard_proxies["CLIPBOARD"]
         self.assertFalse(proxy._greedy_client)
@@ -187,7 +180,6 @@ class Win32ClipboardTest(unittest.TestCase):
 
     def make_greedy_proxy(self, formats, contents, sequence=(1, 1)):
         from xpra.platform.win32 import ctypes_clipboard
-        self.use_new_packet_format()
         helper, packets = self.make_helper()
         proxy = helper._clipboard_proxies["CLIPBOARD"]
         proxy._greedy_client = True

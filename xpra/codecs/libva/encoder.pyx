@@ -23,7 +23,6 @@ from xpra.codecs.constants import (
 from xpra.codecs.vacommon import config_libva_logging
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict, AtomicInteger
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("encoder", "libva")
@@ -450,7 +449,7 @@ cdef class Encoder:
         client_options = {
             "frame": int(self.frames),
         }
-        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not image_range):
+        if range_changed or (self.frames == 0 and not image_range):
             client_options["full-range"] = bool(image_range)
         frame_type = frame_type_name(frame.frame_type)
         if frame_type:

@@ -155,7 +155,7 @@ class TerminalKeyboardHelperTest(unittest.TestCase):
         helper.process_key_event(1, key_event)
         self.assertEqual(len(packets), 1)
         packet = packets[0]
-        self.assertIn(packet[0], ("key-action", "keyboard-event"))
+        self.assertEqual(packet[0], "keyboard-event")
         self.assertEqual(packet[1], 1)
         self.assertEqual(packet[2], "Return")
 

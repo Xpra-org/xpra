@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.parsing import str_to_bool, parse_sharing
 from xpra.net.constants import ConnectionMessage
 from xpra.log import Logger
@@ -193,8 +193,6 @@ class SharingServer(StubSubsystem):
     def init_packet_handlers(self) -> None:
         # no need for main thread:
         self.add_packets("sharing-toggle", "sharing-lock")
-        if BACKWARDS_COMPATIBLE:
-            self.add_legacy_alias("lock-toggle", "sharing-lock")
 
     #########################################
     # Control Commands

@@ -7,7 +7,7 @@ from typing import Any
 from time import monotonic
 from collections.abc import Callable, Sequence
 
-from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import FULL_INFO
 from xpra.util.env import envint
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import Ellipsizer
@@ -88,14 +88,7 @@ class MenuServer(StubSubsystem):
         return self.provider.get_menu_data()
 
     def get_caps(self, source) -> dict[str, Any]:
-        if not source or not BACKWARDS_COMPATIBLE:
-            return {}
-        wants = getattr(source, "wants", [])
-        if "features" not in wants:
-            return {}
-        return {
-            "xdg-menu": {},
-        }
+        return {}
 
     def send_initial_data(self, ss) -> None:
         if isinstance(ss, MenuConnection):

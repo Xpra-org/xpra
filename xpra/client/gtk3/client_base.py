@@ -15,7 +15,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time, IgnoreWarningsContext, ignorewarnings
 from xpra.os_util import gi_import, WIN32, POSIX
 from xpra.util.system import is_Wayland
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO
 from xpra.common import is_covered_by_opaque_region
 from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
 from xpra.constants import DEFAULT_METADATA_SUPPORTED
@@ -369,8 +369,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                     "skip-taskbar", "skip-pager",
                 ]
                 ms = list(DEFAULT_METADATA_SUPPORTED)
-                if BACKWARDS_COMPATIBLE:
-                    ms.append("content-type")
                 # 4.4:
                 ms += ["parent", "relative-position", "override-redirect"]
             if POSIX:
@@ -522,9 +520,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 return False
             if "content-types" in metadata:
                 content_types = metadata.strtupleget("content-types")
-            elif BACKWARDS_COMPATIBLE:
-                content_type = metadata.strget("content-type")
-                content_types = tuple(x for x in content_type.replace("+", ",").split(",") if x)
             else:
                 content_types = ()
             if "text" in content_types:

@@ -6,7 +6,6 @@
 from typing import Any
 
 from xpra.util.objects import typedict
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
@@ -21,19 +20,15 @@ class MenuConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("menu") or (BACKWARDS_COMPATIBLE and caps.boolget("xdg-menu"))
+        return caps.boolget("menu")
 
     def init_state(self) -> None:
         self.xdg_menu: bool = False
         self.menu: bool = False
 
     def parse_client_caps(self, c: typedict) -> None:
-        if BACKWARDS_COMPATIBLE:
-            self.xdg_menu = c.boolget("xdg-menu", False)
         self.menu = c.boolget("menu", False)
 
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {"menu": self.menu}
-        if BACKWARDS_COMPATIBLE:
-            info["xdg-menu"] = self.xdg_menu
         return info

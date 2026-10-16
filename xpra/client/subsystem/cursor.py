@@ -11,7 +11,7 @@ from importlib.util import find_spec
 from weakref import WeakKeyDictionary
 
 from xpra.common import SizedBuffer
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -104,7 +104,6 @@ class CursorClient(StubClientSubsystem):
             encodings.append("png")
         cursor_caps: dict[str, Any] = {
             "encodings": encodings,
-            "backwards-compatible": BACKWARDS_COMPATIBLE,
         }
         from xpra.platform.gui import get_default_cursor_size, get_max_cursor_size
         default_size = get_default_cursor_size()
@@ -120,11 +119,7 @@ class CursorClient(StubClientSubsystem):
         }.items():
             if min(size) > 0:
                 cursor_caps[name] = size
-        if BACKWARDS_COMPATIBLE and logical_default_size > 0:
-            cursor_caps["size"] = logical_default_size
         caps: dict[str, Any] = {CursorClient.PREFIX: cursor_caps}
-        if BACKWARDS_COMPATIBLE:
-            caps["cursors"] = self.client_supports
         log("cursor caps=%s", caps)
         return caps
 
@@ -133,31 +128,9 @@ class CursorClient(StubClientSubsystem):
         self.server_enabled = bool(cursor)
         if isinstance(cursor, dict):
             self.default_data = typedict(cursor).tupleget("default", ())
-        if BACKWARDS_COMPATIBLE:
-            self.server_enabled |= c.boolget("cursors", True)
         self.enabled = self.server_enabled and self.client_supports
         log("parse_server_capabilities(..) cursor=%s, default=%s", self.enabled, self.default_data)
         return True
-
-    # these handlers only queue the work, but they must stay on the UI thread
-    # (`main_thread=True`): that hop is what orders them against the window packets
-    # (`new-window`, ...) they share the UI thread with - do not "optimize" it away.
-    def _process_cursor(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        if not self.enabled:
-            return
-        if len(packet) == 2:
-            # marker telling us to use the default cursor:
-            self.apply_cursor(packet[1], False)
-            return
-        if len(packet) < 9:
-            raise ValueError(f"invalid cursor packet: only {len(packet)} items")
-        new_cursor = list(packet[1:])
-        if len(new_cursor) >= 12:
-            ssize = new_cursor[10]
-            smax = new_cursor[11]
-            log("server cursor sizes: default=%s, max=%s", ssize, smax)
-        self.add_decode_work(self._decode_cursor, new_cursor)
 
     def _decode_cursor(self, new_cursor: list) -> None:
         """ this runs from the decode thread (see `xpra/client/subsystem/decode.py`) """
@@ -232,8 +205,4 @@ class CursorClient(StubClientSubsystem):
         self.client.set_windows_cursor(client_windows, new_cursor)
 
     def init_authenticated_packet_handlers(self) -> None:
-        # `main_thread=True` is required for ordering, not for the (trivial) handlers:
-        # see `_process_cursor` above
-        if BACKWARDS_COMPATIBLE:
-            self.add_packets("cursor", main_thread=True)
         self.add_packets("cursor-data", "cursor-default", main_thread=True)

@@ -17,7 +17,6 @@ from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.image import ImageWrapper
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.codecs.constants import (
     VideoSpec, get_profile, get_level, get_level_value, get_level_tuple,
     get_x264_quality, get_x264_preset, get_subsampling_divs,
@@ -1142,7 +1141,7 @@ cdef class Encoder:
         }
         # the colour range is signalled on every keyframe (so a decoder resuming from any
         # keyframe knows it) and on every transition; steady-state full-range is omitted:
-        if BACKWARDS_COMPATIBLE or range_changed or (pic_out.b_keyframe and not self.full_range):
+        if range_changed or (pic_out.b_keyframe and not self.full_range):
             client_options["full-range"] = bool(self.full_range)
         if slice_type!="P":
             client_options["type"] = slice_type

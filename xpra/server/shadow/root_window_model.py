@@ -11,7 +11,6 @@ from collections.abc import Sequence
 from xpra.util.system import get_linux_distribution, get_generic_os_name
 from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_icon_filename
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("shadow")
@@ -62,8 +61,6 @@ class CaptureWindowModel:
         ]
         self.dynamic_property_names: list[str] = []
         self.internal_property_names: list[str] = ["content-types"]
-        if BACKWARDS_COMPATIBLE:
-            self.internal_property_names.append("content-type")
         self.signal_listeners: dict[str, list[tuple]] = {}
 
     def __repr__(self):
@@ -173,8 +170,6 @@ class CaptureWindowModel:
             return f"xpra-{osn.lower()}", f"Xpra {osn.replace('-', ' ')}"
         if prop == "icons":
             return get_os_icons()
-        if BACKWARDS_COMPATIBLE and prop == "content-type":
-            return "desktop"
         if prop == "content-types":
             return ("desktop", )
         raise AttributeError(f"invalid property {prop!r}")

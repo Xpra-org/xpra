@@ -71,4 +71,3 @@ class PingServer(StubSubsystem):
         self.add_packets(
             "ping", "ping-echo",
         )
-        self.add_legacy_alias("ping_echo", "ping-echo")

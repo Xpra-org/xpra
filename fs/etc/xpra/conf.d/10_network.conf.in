@@ -31,7 +31,7 @@ socket-permissions = 600
 #sharing = sync-position,sync-focus,sync-pointer
 # 'combine' gives each client its own area of the virtual display,
 # with the clients' monitors placed side by side:
-# (requires a seamless server with RandR 1.6 and XPRA_BACKWARDS_COMPATIBLE=0)
+# (requires a seamless server with RandR 1.6)
 #sharing = combine
 # Leave it up to the client, where it defaults to no
 # and this setting can then be changed from the system tray menu:

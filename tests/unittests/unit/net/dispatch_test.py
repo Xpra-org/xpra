@@ -68,24 +68,23 @@ class DispatchTest(unittest.TestCase):
         dispatcher.remove_packet_handlers("one", "two")
         self.assertEqual(dispatcher.get_info()["packet-handlers"], {"authenticated": [], "ui": []})
 
-    def test_dispatch_routes_and_alias(self):
+    def test_dispatch_routes(self):
         dispatcher = Dispatcher()
         handlers = {name: Mock() for name in ("auth", "ui", "default", "default-ui")}
         dispatcher.add_packet_handler("auth", handlers["auth"])
         dispatcher.add_packet_handler("ui", handlers["ui"], main_thread=True)
         dispatcher._default_packet_handlers["default"] = handlers["default"]
         dispatcher._default_ui_packet_handlers["default-ui"] = handlers["default-ui"]
-        dispatcher.packet_alias["old"] = "auth"
         proto = Mock()
         proto.is_closed.return_value = False
         for name, authenticated, main in (
-                ("old", True, False),
+                ("auth", True, False),
                 ("ui", True, True),
                 ("default", False, False),
                 ("default-ui", False, True),
         ):
             dispatcher.dispatch_packet(proto, Packet(name, 1), authenticated)
-            self.assertEqual(dispatcher.calls[-1], (main, "auth" if name == "old" else name))
+            self.assertEqual(dispatcher.calls[-1], (main, name))
         for handler in handlers.values():
             handler.assert_called_once()
 

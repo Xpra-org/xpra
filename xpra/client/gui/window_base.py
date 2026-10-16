@@ -14,7 +14,7 @@ from xpra.os_util import OSX, WIN32
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window_border import WindowBorder
-from xpra.net.common import PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import PacketElement
 from xpra.common import gravity_str, force_size_constraint
 from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.parsing import scaleup_value, scaledown_value
@@ -367,7 +367,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def update_metadata(self, metadata: typedict) -> None:
         metalog("update_metadata(%s)", metadata)
-        if not BACKWARDS_COMPATIBLE and "content-type" in metadata:
+        if "content-type" in metadata:
             metadata = typedict(metadata)
             metadata.pop("content-type")
         if self._client.readonly:
@@ -429,13 +429,6 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "content-types" in metadata:
             self.content_types = metadata.strtupleget("content-types")
-            if b := self._backing:
-                b.content_types = self.content_types
-        elif BACKWARDS_COMPATIBLE and "content-type" in metadata:
-            content_type = metadata.strget("content-type")
-            self.content_types = tuple(x for x in content_type.replace("+", ",").split(",") if x)
-            self._metadata["content-types"] = self.content_types
-            self._metadata.pop("content-type", None)
             if b := self._backing:
                 b.content_types = self.content_types
 

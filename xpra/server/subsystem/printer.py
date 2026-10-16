@@ -17,7 +17,7 @@ from xpra.os_util import WIN32, POSIX
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.auth.auth_helper import AuthDef
 from xpra.util.objects import typedict
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.net.constants import ConnectionMessage
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubSubsystem
@@ -277,8 +277,3 @@ class PrinterServer(StubSubsystem):
             # runs on the main thread rather than inline on the network parse thread:
             self.add_packets("printer-devices", main_thread=True)
             self.add_packets("printer-file")
-            if BACKWARDS_COMPATIBLE:
-                self.add_legacy_alias("printers", "printer-devices")
-                self.add_legacy_alias("print-devices", "printer-devices")
-                self.add_legacy_alias("print", "printer-file")
-                self.add_legacy_alias("print-file", "printer-file")

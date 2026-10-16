@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from xpra.server.source.pointer import PointerConnection
 from xpra.util.env import envbool, envint
 from xpra.util.objects import typedict
-from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, PacketElement
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -313,7 +313,7 @@ class PointerManager(StubSubsystem):
         wid = packet.get_wid(3)
         button = packet.get_u8(4)
         pressed = packet.get_bool(5)
-        pointer = packet.get_ints(6) if BACKWARDS_COMPATIBLE else packet.get_u16s(6)
+        pointer = packet.get_u16s(6)
         props = packet.get_dict(7)
         if device_id >= 0:
             # highest_seq = self.pointer_sequence.get(device_id, 0)
@@ -321,30 +321,6 @@ class PointerManager(StubSubsystem):
             #    log(f"dropped outdated sequence {seq}, latest is {highest_seq}")
             #    return
             self.pointer_sequence[device_id] = seq
-        self.process_pointer_button(proto, device_id, wid, button, pressed, pointer, props)
-
-    def _process_button_action(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        log("process_button_action(%s, %s)", proto, packet)
-        if self.is_readonly(proto):
-            return
-        ss = self.get_server_source(proto)
-        if not hasattr(ss, "update_mouse"):
-            return
-        ss.user_event("button-action")
-        self.last_mouse_user = ss.uuid
-        self.server.set_ui_driver(ss)
-        wid = packet.get_wid(1)
-        button = packet.get_u8(2)
-        pressed = packet.get_bool(3)
-        pointer = packet.get_ints(4)
-        modifiers = packet.get_strs(5)
-        device_id = 0
-        props: dict[str, Any] = {
-            "modifiers": modifiers,
-        }
-        if len(packet) >= 7:
-            props["buttons"] = 6
         self.process_pointer_button(proto, device_id, wid, button, pressed, pointer, props)
 
     def may_move_pointer(self, ss) -> bool:
@@ -622,7 +598,7 @@ class PointerManager(StubSubsystem):
         device_id = packet.get_i64(1)
         seq = packet.get_u64(2)
         wid = packet.get_wid(3)
-        pdata = packet.get_ints(4) if BACKWARDS_COMPATIBLE else packet.get_u16s(4)
+        pdata = packet.get_u16s(4)
         props = packet.get_dict(5)
         if device_id >= 0:
             highest_seq = self.pointer_sequence.get(device_id, 0)
@@ -643,34 +619,6 @@ class PointerManager(StubSubsystem):
                 self._update_modifiers(proto, wid, modifiers)
         self._maybe_record_drag_scroll(wid, pdata)
 
-    def _process_position(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        log("_process_position(%s, %s) readonly=%s, ui_driver=%s",
-            proto, packet, self.is_readonly(proto), self.server.ui_driver)
-        if self.is_readonly(proto):
-            return
-        ss = self.get_server_source(proto)
-        if not hasattr(ss, "update_mouse"):
-            return
-        wid = packet.get_wid()
-        pdata = packet.get_ints(2)
-        modifiers = packet.get_strs(3)
-        pointer = pdata[:2]
-        ss.mouse_last_relative_position = pdata[2:4] if len(pdata) >= 4 else (-1, -1)
-        ss.mouse_last_position = pointer
-        if not self.may_move_pointer(ss):
-            return
-        ss.user_event("pointer-position")
-        self.last_mouse_user = ss.uuid
-        # the legacy "pointer-position" packet carries no per-device id and no
-        # usable props (those only reach us via the v5 "pointer-motion" packet);
-        # any trailing elements from older clients are ignored:
-        props: dict[str, Any] = {}
-        device_id = -1
-        if self.process_mouse_common(proto, device_id, wid, pdata, props):
-            self._update_modifiers(proto, wid, modifiers)
-        self._maybe_record_drag_scroll(wid, pdata)
-
     def _process_wheel(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -680,7 +628,7 @@ class PointerManager(StubSubsystem):
         wid = packet.get_wid()
         button = packet.get_u8(2)
         distance = packet.get_i64(3)
-        pointer = packet.get_ints(4) if BACKWARDS_COMPATIBLE else packet.get_u16s(4)
+        pointer = packet.get_u16s(4)
         modifiers = packet.get_strs(5)
         # buttons = packet.get_ints(6)
         device_id = -1
@@ -724,11 +672,6 @@ class PointerManager(StubSubsystem):
             ss.record_scroll_event(wid)
 
     def init_packet_handlers(self) -> None:
-        if BACKWARDS_COMPATIBLE:
-            self.add_packets("pointer-position", main_thread=True)  # pre v5
-            self.add_legacy_alias("wheel-motion", "pointer-wheel")
-            self.add_legacy_alias("pointer", "pointer-motion")
-            self.add_packet_handler("button-action", self._process_button_action, True)  # pre v5
         self.add_packets(
             "pointer-button",
             "pointer-motion",

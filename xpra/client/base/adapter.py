@@ -19,6 +19,7 @@ from xpra.net.connect import connect_to
 from xpra.scripts.parsing import parse_display_name
 from xpra.scripts.config import InitExit, make_defaults_struct
 from xpra.net.common import PacketElement, Packet, FULL_INFO
+from xpra.net.packet_type import ENCODING_SET
 from xpra.log import Logger
 
 log = Logger("client")
@@ -102,7 +103,7 @@ class RemoteServerAdapter(baseclass):
     )
     SYSTEM_SOCKET_PATH = ""
     PACKET_TYPES = [
-        "hello", "encodings", "startup-complete",
+        "hello", ENCODING_SET, "startup-complete",
         "setting-change",
         "connection-lost", "connection-close",
     ]
@@ -210,7 +211,7 @@ class RemoteServerAdapter(baseclass):
         protocol.enable_default_encoder()
         protocol.enable_default_compressor()
         protocol._log_stats = False
-        protocol.large_packets += ["encodings", "context-compress", "context-data"]
+        protocol.large_packets += [ENCODING_SET, "context-compress", "context-data"]
         # self.add_packet_handler("setting-change", noop)
         # if conn.timeout > 0:
         #    self.timeout_add((conn.timeout + conn.connection_delay) * 1000, self.verify_connected)

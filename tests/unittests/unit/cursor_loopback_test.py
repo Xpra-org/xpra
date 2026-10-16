@@ -87,9 +87,8 @@ class CursorLoopbackTest(LoopbackTest):
         # the cursor subsystem reaches windows via `get_windows()` (the `window`
         # subsystem), not via an `_id_to_window` of its own:
         client.set_windows_cursor = MagicMock()
-        # server source ready to send a non-legacy cursor-data packet:
+        # server source ready to send a cursor-data packet:
         source.send_cursors = True
-        source.cursor_backwards_compatible = False
         # no network compression layer in the loopback transport:
         source.compressed_wrapper = lambda _kind, data, **_kw: data
 

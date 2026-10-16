@@ -9,8 +9,6 @@ from typing import Any
 from ctypes import byref
 from ctypes.wintypes import POINT
 from collections.abc import Sequence, Callable
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitValue
 from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from xpra.os_util import gi_import
@@ -426,23 +424,17 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         mods = self.get_modifiers()
         if self.key_handled_as_shortcut(window, keyname, pressed, mods):
             return
-        if BACKWARDS_COMPATIBLE:
-            keyval = scancode
-            keycode = vk_code
-            group = 0
-            self.send("key-action", window.wid, keyname, pressed, mods, keyval, string, keycode, group)
-        else:
-            self.send("keyboard-event", window.wid, keyname, pressed, {
-                "modifiers": mods,
-                "native-modifiers": get_native_modifiers(),
-                "string": string,
-                "keyval": scancode,
-                "keycode": vk_code,
-                "scancode": scancode,
-                "vk-code": vk_code,
-                "extended": extended,
-                "backend": "win32",
-            })
+        self.send("keyboard-event", window.wid, keyname, pressed, {
+            "modifiers": mods,
+            "native-modifiers": get_native_modifiers(),
+            "string": string,
+            "keyval": scancode,
+            "keycode": vk_code,
+            "scancode": scancode,
+            "vk-code": vk_code,
+            "extended": extended,
+            "backend": "win32",
+        })
 
     # server event
     @staticmethod

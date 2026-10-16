@@ -13,7 +13,7 @@ from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.os_util import gi_import
-from xpra.net.compression import Compressed, LargeStructure
+from xpra.net.compression import Compressed
 from xpra.codecs.constants import (
     TransientCodecException, get_subsampling,
     RGB_FORMATS, PIXEL_SUBSAMPLING, COMPRESS_FMT_PREFIX,
@@ -27,7 +27,7 @@ from xpra.server.window.compress import (
     DOWNSCALE_THRESHOLD, DOWNSCALE, TEXT_QUALITY,
     LOG_ENCODERS,
 )
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_EOS
 from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
@@ -2232,7 +2232,7 @@ class WindowVideoSource(WindowSource):
             }
             coding = "scroll"
             end = monotonic()
-            bdata = LargeStructure(coding, scrolls) if BACKWARDS_COMPATIBLE else b""
+            bdata = b""
             packet = self.make_draw_packet(x, y, w, h, coding, bdata, 0, client_options, options)
             self.queue_damage_packet(packet, damage_time, process_damage_time, options)
             compresslog(COMPRESS_SCROLL_FMT,

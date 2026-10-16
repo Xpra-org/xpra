@@ -8,7 +8,7 @@ import os
 import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.net.dispatch import find_packet_handler
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.signal_emitter import SignalEmitter
@@ -79,10 +79,6 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
 
     def stop(self) -> None:
         self.glib.timeout_add(1000, self.main_loop.quit)
-
-    def add_legacy_alias(self, legacy_name: str, name: str) -> None:
-        if BACKWARDS_COMPATIBLE:
-            self.legacy_alias[legacy_name] = name
 
     def add_packet_handler(self, packet_type: str, handler=None, main_thread=True) -> None:
         self.packet_handlers[packet_type] = handler

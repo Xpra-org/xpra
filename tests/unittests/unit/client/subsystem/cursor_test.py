@@ -6,8 +6,6 @@
 
 import unittest
 from unittest.mock import patch
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import AdHocStruct
 
 
@@ -30,8 +28,6 @@ class CursorClientTest(unittest.TestCase):
 
         self.assertEqual(caps["default"], (12, 12))
         self.assertEqual(caps["max"], (64, 64))
-        if BACKWARDS_COMPATIBLE:
-            self.assertEqual(caps["size"], 12)
 
 
 if __name__ == '__main__':

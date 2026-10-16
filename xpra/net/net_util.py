@@ -18,7 +18,7 @@ from xpra.os_util import POSIX
 from xpra.util.str_fn import print_nested_dict, csv, bytestostr
 from xpra.util.version import parse_version
 from xpra.net.bytestreams import get_socket_config
-from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION
+from xpra.net.common import FULL_INFO, MIN_PROTOCOL_VERSION
 from xpra.log import Logger, enable_color, consume_verbose_argv
 
 log = Logger("network", "util")
@@ -418,10 +418,6 @@ def get_network_caps(full_info: int = 1) -> dict[str, Any]:
         "compressors": get_enabled_compressors(),
         "encoders": get_enabled_encoders(),
     }
-    if BACKWARDS_COMPATIBLE:
-        from xpra.util.env import envbool
-        FLUSH_HEADER: bool = envbool("XPRA_FLUSH_HEADER", True)
-        caps["flush"] = FLUSH_HEADER
     caps.update(get_compression_caps(full_info))
     caps.update(get_packet_encoding_caps(full_info))
     return caps

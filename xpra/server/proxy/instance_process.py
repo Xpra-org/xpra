@@ -21,7 +21,7 @@ from xpra.net.protocol.factory import get_client_protocol_class, get_server_prot
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE, create_unix_domain_socket, handle_socket_error
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO
 from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, get_machine_id
 from xpra.util.env import osexpand
 from xpra.exit_codes import ExitValue, ExitCode
@@ -323,10 +323,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             return
         if packet_type == "hello":
             caps = typedict(packet.get_dict(1))
-            if BACKWARDS_COMPATIBLE and caps.boolget("challenge"):
-                self.send_disconnect(proto, ConnectionMessage.AUTHENTICATION_ERROR,
-                                     "this socket does not use authentication")
-                return
             request = caps.strget("request")
             if request and self.handle_hello_request(request, proto, caps):
                 return
@@ -369,7 +365,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             return True
         if request == "version":
             version = XPRA_VERSION
-            if caps.boolget("full-version-request", not BACKWARDS_COMPATIBLE) and FULL_INFO:
+            if caps.boolget("full-version-request", True) and FULL_INFO:
                 version = full_version_str()
             proto.send_now(Packet("hello", {"version": version}))
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,

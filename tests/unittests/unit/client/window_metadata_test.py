@@ -7,7 +7,6 @@ import unittest
 from types import SimpleNamespace
 
 from xpra.client.gui.window_base import ClientWindowBase
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 
 
@@ -38,17 +37,15 @@ class WindowMetadataTest(unittest.TestCase):
     def test_legacy_content_type_is_compatibility_only(self):
         window = self.make_window()
         window.set_metadata(typedict({"content-type": "browser+video"}))
-        expected = ("browser", "video") if BACKWARDS_COMPATIBLE else ()
+        expected = ()
         self.assertEqual(window.content_types, expected)
-        if BACKWARDS_COMPATIBLE:
-            self.assertEqual(window._metadata, {"content-types": expected})
 
     def test_legacy_metadata_is_normalized_or_ignored(self):
         window = self.make_window()
         window._client = SimpleNamespace(readonly=False)
         window._size = (100, 100)
         window.update_metadata(typedict({"content-type": "text"}))
-        expected = {"content-types": ("text",)} if BACKWARDS_COMPATIBLE else {}
+        expected = {}
         self.assertEqual(window._metadata, expected)
 
 

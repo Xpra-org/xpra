@@ -16,7 +16,6 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from xpra.util.objects import AdHocStruct
-from xpra.net.common import BACKWARDS_COMPATIBLE
 
 from unit.loopback_util import LoopbackTest
 
@@ -75,12 +74,8 @@ class EncodingLoopbackTest(LoopbackTest):
         client.send_speed()
 
         # both control packets crossed the wire:
-        if BACKWARDS_COMPATIBLE:
-            self.assertIn(("quality", 80), [tuple(p) for p in self.c2s])
-            self.assertIn(("speed", 50), [tuple(p) for p in self.c2s])
-        else:
-            self.assertIn(("encoding-options", {"quality": 80}), [tuple(p) for p in self.c2s])
-            self.assertIn(("encoding-options", {"speed": 50}), [tuple(p) for p in self.c2s])
+        self.assertIn(("encoding-options", {"quality": 80}), [tuple(p) for p in self.c2s])
+        self.assertIn(("encoding-options", {"speed": 50}), [tuple(p) for p in self.c2s])
         # and the server dispatched them to the window source:
         ws.set_quality.assert_called_once_with(80)
         ws.set_speed.assert_called_once_with(50)

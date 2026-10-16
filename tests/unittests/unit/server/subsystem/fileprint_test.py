@@ -55,16 +55,12 @@ class FileServerBehaviorTest(unittest.TestCase):
             self._server_sources = {}
             self.source = None
             self.packet_handlers = {}
-            self.legacy_aliases = {}
 
         def get_server_source(self, _proto):
             return self.source
 
         def add_packet_handler(self, packet_type, handler, _main_thread=False):
             self.packet_handlers[packet_type] = handler
-
-        def add_legacy_alias(self, legacy_name, packet_type):
-            self.legacy_aliases[legacy_name] = packet_type
 
     def setUp(self):
         from xpra.server.subsystem.file import FileServer
@@ -122,12 +118,10 @@ class FileServerBehaviorTest(unittest.TestCase):
             with self.subTest(f"missing source: {server_handler}"):
                 getattr(self.server, server_handler)(object(), packet)
 
-    def test_packet_registration_and_legacy_aliases(self):
+    def test_packet_registration(self):
         self.server.init_packet_handlers()
         # `file-*` packets live on the subsystem, which the server's dispatcher routes to:
         self.assertIn("file-request", self.server.get_packet_types())
-        self.assertEqual(self.owner.legacy_aliases["send-data-request"], "file-data-request")
-        self.assertEqual(self.owner.legacy_aliases["send-data-response"], "file-data-response")
 
     def test_request_file_feature_is_namespaced(self):
         features = self.server.get_server_features(None)

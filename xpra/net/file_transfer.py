@@ -29,7 +29,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.util.parsing import str_to_bool, parse_with_unit
 from xpra.common import SizedBuffer
-from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
 from xpra.log import Logger
@@ -269,11 +269,6 @@ class FileTransferAttributes:
             "open-url-ask": self.open_url_ask,
             "ask-timeout": self.file_ask_timeout,
         }
-        if BACKWARDS_COMPATIBLE:
-            info.update({
-                "printing": self.printing,
-                "printing-ask": self.printing_ask,
-            })
         return info
 
     def get_printer_features(self) -> dict[str, Any]:
@@ -426,18 +421,6 @@ class FileTransferHandler(FileTransferAttributes):
 
     def parse_file_transfer_caps(self, c: typedict) -> None:
         fc = typedict(c.dictget("file"))
-        if not fc and BACKWARDS_COMPATIBLE:
-            fc = typedict({
-                "enabled": c.boolget("file-transfer"),
-                "ask": c.boolget("file-transfer-ask"),
-                "size-limit": c.intget("file-size-limit"),
-                "chunks": c.intget("file-chunks"),
-                "open": c.boolget("open-files"),
-                "open-ask": c.boolget("open-files-ask"),
-                "open-url": c.boolget("open-url"),
-                "open-url-ask": c.boolget("open-url-ask"),
-                "ask-timeout": c.intget("file-ask-timeout", SEND_REQUEST_TIMEOUT),
-            })
         filelog("parse_file_transfer_caps: %s", fc)
         # v5 with "file" namespace:
         self.remote_file_transfer = fc.boolget("enabled")
@@ -452,7 +435,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.dump_remote_file_caps()
 
     def parse_printer_caps(self, c: typedict) -> None:
-        fc = typedict(c.dictget("file" if BACKWARDS_COMPATIBLE else "printer"))
+        fc = typedict(c.dictget("printer"))
         self.remote_printing = fc.boolget("printing")
         self.remote_printing_ask = fc.boolget("printing-ask")
 

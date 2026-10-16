@@ -10,7 +10,7 @@ from collections.abc import Sequence, Callable
 from xpra.server import features
 from xpra.util.str_fn import print_nested_dict, csv
 from xpra.util.objects import typedict, merge_dicts
-from xpra.net.common import LOG_HELLO, BACKWARDS_COMPATIBLE
+from xpra.net.common import LOG_HELLO
 from xpra.log import Logger
 
 log = Logger("subsystems")
@@ -223,13 +223,7 @@ def get_client_connection_class(caps: typedict):
             def wants(v: str) -> None:
                 if v not in self.wants:
                     self.wants.append(v)
-            if BACKWARDS_COMPATIBLE:
-                self.wants = list(c.strtupleget("wants", self.wants))
-                if c.boolget("ui_client"):
-                    for x in ("encodings", "display", "versions", "features"):
-                        wants(x)
-            else:
-                self.wants = []
+            self.wants = []
             if c.boolget("versions"):
                 wants("versions")
             if c.boolget("server-features"):

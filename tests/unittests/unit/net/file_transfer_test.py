@@ -399,20 +399,13 @@ class TestFileTransferHandler(unittest.TestCase):
         fth.cleanup()
 
     def test_parse_printer_caps(self):
-        # parse_printer_caps reads the "file" namespace in legacy mode and "printer" otherwise.
-        # The flag is looked up at call time from the file_transfer module globals, so patch it
-        # there to exercise both modes in-process (the env var is only read once, at import time):
-        for backwards_compatible in (True, False):
-            with self.subTest(backwards_compatible=backwards_compatible), \
-                    patch.object(file_transfer, "BACKWARDS_COMPATIBLE", backwards_compatible):
-                caps_key = "file" if backwards_compatible else "printer"
-                fth = FileTransferHandler()
-                fth.init_attributes()
-                caps = typedict({caps_key: {"printing": True, "printing-ask": True}})
-                fth.parse_printer_caps(caps)
-                self.assertTrue(fth.remote_printing)
-                self.assertTrue(fth.remote_printing_ask)
-                fth.cleanup()
+        fth = FileTransferHandler()
+        fth.init_attributes()
+        caps = typedict({"printer": {"printing": True, "printing-ask": True}})
+        fth.parse_printer_caps(caps)
+        self.assertTrue(fth.remote_printing)
+        self.assertTrue(fth.remote_printing_ask)
+        fth.cleanup()
 
     def test_parse_printer_caps_disabled(self):
         fth = FileTransferHandler()

@@ -75,9 +75,6 @@ Recurring accommodations, with examples:
 - **Background threads / native deps**: patch out codec/audio discovery so the
   test stays hermetic and fast — `AudioClient.load`, `AudioServer.init_audio_options`,
   `Encodings.load`, `EncodingServer.setup`.
-- **Backwards-compat waits/paths**: `audio` patches `BACKWARDS_COMPATIBLE=False`
-  to skip a 5s wait; `cursor` sets `cursor_backwards_compatible=False` to emit the
-  clean `cursor-data` packet instead of the legacy `cursor` one.
 - **No network compression layer**: direct pass-through doesn't unwrap
   `Compressed` objects — use a raw payload and stub `compressed_wrapper` with
   identity if the path compresses (see `cursor`).
@@ -94,9 +91,6 @@ Recurring accommodations, with examples:
   call `send()` — they append to `_ordinary_packets` / `_mouse_position` and flush
   via `have_more()`. The harness drains those queues in `_wire`, so driving e.g.
   `send_mouse_position` still works; nothing special is needed in the test.
-- **Module-level `BACKWARDS_COMPATIBLE`**: when forcing it off to pin a modern
-  packet name, patch it with `start()` + `addCleanup(stop)` (not a `with` scoped to
-  `connect()`) so it stays patched while the test body sends (see `clipboard`).
 - **Server handler is a stub**: some server `_process_*` handlers only log (the
   real work lives elsewhere, e.g. window models) — pick a path with an observable
   effect. The window pair uses the bell path for this reason.

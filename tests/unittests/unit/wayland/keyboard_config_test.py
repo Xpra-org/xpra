@@ -80,14 +80,6 @@ class KeyboardConfigTest(unittest.TestCase):
         # re-sending the same values changes nothing:
         self.assertEqual(kc.parse(typedict({"layout": "fr", "query_struct": {"model": "pc105"}})), 0)
 
-    def test_set_layout(self):
-        # the legacy `layout-changed` packet, which does not carry the model:
-        kc = KeyboardConfig()
-        kc.parse(typedict({"layout": "fr", "query_struct": {"model": "pc105"}}))
-        self.assertTrue(kc.set_layout("gb", "", ""))
-        self.assertEqual((kc.layout, kc.model, kc.variant), ("gb", "pc105", ""))
-        self.assertFalse(kc.set_layout("gb", "", ""))
-
     def test_layout_groups(self):
         kc = KeyboardConfig()
         kc.parse(typedict({"layout": "fr", "variant": "oss", "layouts": ["us", "fr", "de"],

@@ -6,8 +6,6 @@
 
 from typing import Any
 from collections.abc import Callable
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.device_info import (
     get_NM_adapter_type, get_device_value, guess_adapter_type,
     jitter_for_adapter_type, guess_bandwidth_limit,
@@ -58,8 +56,6 @@ class BandwidthClient(StubClientSubsystem):
 
     def get_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {}
-        if BACKWARDS_COMPATIBLE:
-            caps["network-state"] = True
         # get socket speed if we have it:
         protocol = self.client._protocol
         if not protocol:
@@ -104,10 +100,6 @@ class BandwidthClient(StubClientSubsystem):
             else:
                 bandwidth_limit = guess_bandwidth_limit(adapter_type)
         log("bandwidth-limit capability=%s", bandwidth_limit)
-        if BACKWARDS_COMPATIBLE:
-            if bandwidth_limit > 0:
-                caps["bandwidth-limit"] = bandwidth_limit
-            caps["bandwidth-detection"] = self.detection
         caps["bandwidth"] = {
             "limit": bandwidth_limit,
             "detection": self.detection,

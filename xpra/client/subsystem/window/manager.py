@@ -11,7 +11,7 @@ from typing import Any, Final
 from collections.abc import Callable, Sequence
 
 from xpra.platform.gui import get_window_min_size, get_window_max_size, is_session_locked
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, PacketElement
+from xpra.net.common import Packet, PacketElement
 from xpra.net.packet_type import WINDOW_UNMAP, WINDOW_REFRESH, WINDOW_STACKING
 from xpra.client.subsystem.window.grab import should_force_grab
 from xpra.client.subsystem.window.signalwatcher import kill_signalwatcher
@@ -230,9 +230,6 @@ class WindowManagerClient(StubClientSubsystem):
             "window": self.get_window_caps(),
             "auto_refresh_delay": int(self.auto_refresh_delay * 1000),
         }
-        if BACKWARDS_COMPATIBLE:
-            # older servers look for this flag outside the `window` namespace:
-            caps["windows"] = self.windows_enabled
         return caps
 
     def get_window_caps(self) -> dict[str, Any]:
@@ -605,10 +602,6 @@ class WindowManagerClient(StubClientSubsystem):
     def _process_create(self, packet: Packet) -> None:
         return self._process_new_common(packet, False)
 
-    def _process_new_override_redirect(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        return self._process_new_common(packet, True)
-
     def _process_initiate_moveresize(self, packet: Packet) -> None:
         geomlog("%s", packet)
         wid = packet.get_wid()
@@ -879,14 +872,6 @@ class WindowManagerClient(StubClientSubsystem):
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
-        if BACKWARDS_COMPATIBLE:
-            self.add_packets("new-override-redirect", main_thread=True)
-            self.add_legacy_alias("raise-window", "window-raise")
-            self.add_legacy_alias("new-window", "window-create")
-            self.add_legacy_alias("restack-window", "window-restack")
-            self.add_legacy_alias("initiate-moveresize", "window-initiate-moveresize")
-            self.add_legacy_alias("lost-window", "window-destroy")
-            self.add_legacy_alias("configure-override-redirect", "window-move-resize")
         self.add_packets(
             "window-create",
             "window-raise",

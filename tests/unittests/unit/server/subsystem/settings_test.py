@@ -95,9 +95,6 @@ class SettingsTest(unittest.TestCase):
         self.assertFalse(source2.client_readonly)
         # unknown protocols are ignored:
         self.settings._process_change(object(), Packet("setting-change", "readonly", True))
-        # legacy packet:
-        self.settings._process_readonly_toggled(proto2, Packet("readonly-toggled", True))
-        self.assertTrue(source2.client_readonly)
 
 
 def main():

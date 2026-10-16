@@ -15,7 +15,6 @@ from xpra.server.window.metadata import (
     make_window_metadata, _make_window_metadata,
     DEFAULT_VALUES,
 )
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.constants import WORKSPACE_UNSET
 
 
@@ -87,14 +86,10 @@ class TestMakeWindowMetadata(unittest.TestCase):
         self.assertEqual(result, {"content-types": ("browser", "video")})
 
     def test_legacy_content_type_is_compatibility_only(self):
-        self.assertEqual("content-type" in DEFAULT_VALUES, BACKWARDS_COMPATIBLE)
+        self.assertEqual("content-type" in DEFAULT_VALUES, False)
         w = _Window(**{"content-type": "browser+video"})
-        if BACKWARDS_COMPATIBLE:
-            result = make_window_metadata(w, "content-type")
-            self.assertEqual(result, {"content-type": "browser+video"})
-        else:
-            with self.assertRaises(ValueError):
-                _make_window_metadata(w, "content-type")
+        with self.assertRaises(ValueError):
+            _make_window_metadata(w, "content-type")
 
     def test_dict_prop_shape(self):
         shape = {"x": 0, "y": 0}
@@ -139,14 +134,10 @@ class TestMakeWindowMetadata(unittest.TestCase):
     # ------------------------------------------------------------------
 
     def test_group_leader_set(self):
-        from xpra.net.common import BACKWARDS_COMPATIBLE
         w = _Window(**{"group-leader": 42})
         result = make_window_metadata(w, "group-leader")
         self.assertIn("group-leader", result)
         self.assertEqual(result["group-leader"], 42)
-        if BACKWARDS_COMPATIBLE:
-            self.assertIn("group-leader-xid", result)
-            self.assertIn("group-leader-wid", result)
 
     def test_group_leader_absent(self):
         w = _Window(**{"group-leader": None})

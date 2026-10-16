@@ -31,7 +31,6 @@ from xpra.net.socket_util import (
     setup_udp_socket,
 )
 from xpra.scripts.config import InitException
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.protocol.header import FLAGS_RENCODEPLUS
 
 
@@ -112,10 +111,10 @@ class TestLooksLikeXpraPacket(unittest.TestCase):
         header = make_xpra_header(flags=flags, level=0)
         assert looks_like_xpra_packet(header) is False
 
-    def test_rencode_alone_accepted(self):
+    def test_rencode_alone_rejected(self):
         from xpra.net.protocol.header import FLAGS_RENCODE
         header = make_xpra_header(flags=FLAGS_RENCODE, level=0)
-        assert looks_like_xpra_packet(header) is BACKWARDS_COMPATIBLE
+        assert looks_like_xpra_packet(header) is False
 
     def test_yaml_alone_accepted(self):
         from xpra.net.protocol.header import FLAGS_YAML

@@ -33,18 +33,16 @@ class FakeProtocol:
 class CommandClientTest(unittest.TestCase):
 
     def test_run_requests(self):
-        for compatible in (False, True):
-            for mode in ("run", "exec"):
-                with self.subTest(compatible=compatible, mode=mode), \
-                     patch("xpra.client.base.command.BACKWARDS_COMPATIBLE", compatible), \
-                     patch.dict(os.environ, {"XPRA_RUN_WAIT_TIME": "1234"}), \
-                     patch.object(CommandConnectClient, "make_hello_base", return_value={"base": True}), \
-                     patch.object(CommandConnectClient, "make_hello", return_value={"full": True}):
-                    client = RunClient(make_defaults_struct(), ["echo", "hello"], mode)
-                    for hello in (client.make_hello_base(), client.make_hello()):
-                        self.assertEqual(hello["request"], "exec" if mode == "exec" and not compatible else "run")
-                        self.assertEqual(hello["run-wait-time"], 1234 if mode == "run" else 0)
-                        self.assertEqual(hello["run"], ("echo", "hello"))
+        for mode in ("run", "exec"):
+            with self.subTest(mode=mode), \
+                 patch.dict(os.environ, {"XPRA_RUN_WAIT_TIME": "1234"}), \
+                 patch.object(CommandConnectClient, "make_hello_base", return_value={"base": True}), \
+                 patch.object(CommandConnectClient, "make_hello", return_value={"full": True}):
+                client = RunClient(make_defaults_struct(), ["echo", "hello"], mode)
+                for hello in (client.make_hello_base(), client.make_hello()):
+                    self.assertEqual(hello["request"], mode)
+                    self.assertEqual(hello["run-wait-time"], 1234 if mode == "run" else 0)
+                    self.assertEqual(hello["run"], ("echo", "hello"))
 
     def test_run_wait_default_and_zero(self):
         for value, expected in ((None, 5000), ("0", 0), ("-1", 0)):

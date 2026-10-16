@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from xpra.clipboard.common import get_local_selections, ALL_CLIPBOARDS, parse_greedy, parse_want_targets
 from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.log import Logger
@@ -66,8 +66,8 @@ class ClipboardConnection(StubClientConnection):
             self.clipboard_preferred_targets = ccaps.strtupleget("preferred-targets", ())
             self.clipboard_record = ccaps.boolget("record") and is_recording_allowed(self, "clipboard")
         compressors = c.strtupleget("compressors")
-        self.clipboard_lz4 = "lz4" in compressors or (BACKWARDS_COMPATIBLE and c.boolget("lz4"))
-        self.clipboard_brotli = "brotli" in compressors or (BACKWARDS_COMPATIBLE and c.boolget("brotli"))
+        self.clipboard_lz4 = "lz4" in compressors
+        self.clipboard_brotli = "brotli" in compressors
         log("client clipboard: enabled=%s, notifications=%s",
             self.clipboard_enabled, self.clipboard_notifications)
         log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
@@ -91,7 +91,7 @@ class ClipboardConnection(StubClientConnection):
     def send_clipboard_enabled(self, reason: str = "") -> None:
         if not self.hello_sent:
             return
-        packet_type = "set-clipboard-enabled" if BACKWARDS_COMPATIBLE else "clipboard-status"
+        packet_type = "clipboard-status"
         self.send_async(packet_type, self.clipboard_enabled, reason)
 
     def cancel_clipboard_progress_timer(self) -> None:

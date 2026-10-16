@@ -15,7 +15,6 @@ from unittest.mock import patch
 from unit.test_util import LoggerSilencer, silence_error, silence_info
 
 from xpra.util.objects import typedict, AdHocStruct
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import POSIX, OSX
 from xpra.util.io import get_util_logger
 from xpra.util.signal_emitter import SignalEmitter
@@ -549,9 +548,9 @@ class SourceMixinsTest(unittest.TestCase):
         from xpra.server.source.display import DisplayConnection
         from xpra.net.packet_type import DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
 
-        expected_packet_type = "show-desktop" if BACKWARDS_COMPATIBLE else "display-show-desktop"
+        expected_packet_type = "display-show-desktop"
         self.assertEqual(DISPLAY_SHOW_DESKTOP, expected_packet_type)
-        expected_resize_packet_type = "desktop_size" if BACKWARDS_COMPATIBLE else "display-resized"
+        expected_resize_packet_type = "display-resized"
         self.assertEqual(DISPLAY_RESIZED, expected_resize_packet_type)
 
         def check_monitor_layout(_cls, source):
@@ -593,12 +592,12 @@ class SourceMixinsTest(unittest.TestCase):
             # only clients that send monitor relative coordinates can be given an area,
             # which is assumed when we don't support older clients:
             from xpra.util.objects import typedict
-            self.assertEqual(source.monitor_relative, not BACKWARDS_COMPATIBLE)
+            self.assertEqual(source.monitor_relative, True)
             source.parse_client_caps(typedict({"display": {"monitors": {}, "monitor-relative": True}}))
             self.assertTrue(source.monitor_relative)
             self.assertTrue(source.get_info().get("monitor-relative"))
 
-        caps = None if BACKWARDS_COMPATIBLE else {"display": {"monitors": {}}}
+        caps = {"display": {"monitors": {}}}
         self._test_mixin_class(DisplayConnection, client_caps=caps, test_fn=check_monitor_layout)
 
     def test_shell(self):

@@ -11,7 +11,7 @@ from xpra.common import noop
 from xpra.constants import NotificationID
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.notification import get_backends
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.util.env import envbool
@@ -94,7 +94,7 @@ class NotificationClient(StubClientSubsystem):
             notifier = None
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.server = ("notifications" if BACKWARDS_COMPATIBLE else "notification") in c
+        self.server = "notification" in c
         self.enabled = self.client_supports
         return True
 
@@ -103,10 +103,6 @@ class NotificationClient(StubClientSubsystem):
         caps: dict[str, Any] = {
             NotificationClient.PREFIX: enabled,
         }
-        if BACKWARDS_COMPATIBLE:
-            caps["notifications"] = {
-                "enabled": enabled,
-            }
         return caps
 
     def make_notifier(self):
@@ -276,5 +272,3 @@ class NotificationClient(StubClientSubsystem):
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(f"{NotificationClient.PREFIX}-show", f"{NotificationClient.PREFIX}-close", main_thread=True)
-        self.add_legacy_alias("notify_show", f"{NotificationClient.PREFIX}-show")
-        self.add_legacy_alias("notify_close", f"{NotificationClient.PREFIX}-close")

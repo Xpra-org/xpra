@@ -114,9 +114,7 @@ class X11DisplayPropsWatcher:
         return None
 
     def send_xsettings(self, settings: dict) -> None:
-        # sent as the `xsettings` setting of a `setting-change` packet,
-        # older servers get a legacy `server-settings` packet instead
-        # (see `LEGACY_SETTING_PACKETS`)
+        # sent as the `xsettings` setting of a `setting-change` packet:
         self.display.client.send_setting_change("xsettings", settings)
 
     def _handle_xsettings_changed(self, *_args) -> None:

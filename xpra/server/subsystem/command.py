@@ -19,7 +19,7 @@ from xpra.os_util import OSX, WIN32
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, source_env
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.system import stop_proc, is_child_alive
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
@@ -500,10 +500,6 @@ class ChildCommandServer(StubSubsystem):
         proto.send_now(Packet("hello", {"run_response": response}))
         return True
 
-    def _process_start_command(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._process_start(proto, packet)
-
     def _process_start(self, proto, packet: Packet) -> None:
         log(f"start new command: {packet}")
         if not self.start_new_commands:
@@ -561,7 +557,6 @@ class ChildCommandServer(StubSubsystem):
             # starting a new command spawns a subprocess, so run it on the main thread
             # rather than inline on the network parse thread:
             self.add_packets(f"{ChildCommandServer.PREFIX}-start", main_thread=True)
-            self.add_legacy_alias("start-command", f"{ChildCommandServer.PREFIX}-start")
 
     #########################################
     # Control Commands

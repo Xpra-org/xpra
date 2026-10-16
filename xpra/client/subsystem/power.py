@@ -8,7 +8,6 @@ from time import time
 from datetime import timedelta
 
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import WIN32, OSX
 from xpra.util.env import envint
 from xpra.log import Logger
@@ -145,14 +144,8 @@ class PowerEventClient(StubClientSubsystem):
         self.suspended = time()
         self.ui_thread_tick()
         self.emit("suspend")
-        if BACKWARDS_COMPATIBLE:
-            # ("ui" and "window-ids" arguments are optional since v6.3)
-            win = self.get_subsystem("window")
-            wids = tuple(win._id_to_window.keys()) if win else ()
-            self.send("suspend", True, wids)
-        else:
-            # the boolean argument tells the server we are suspending:
-            self.send("suspend", True)
+        # the boolean argument tells the server we are suspending:
+        self.send("suspend", True)
 
     def resume(self, *args) -> None:
         log("resume(%s)", args)
@@ -166,13 +159,8 @@ class PowerEventClient(StubClientSubsystem):
         self.emit("resume")
         elapsed = max(0.0, time() - self.suspended)
         self.suspended = 0.0
-        if BACKWARDS_COMPATIBLE:
-            win = self.get_subsystem("window")
-            wids = tuple(win._id_to_window.keys()) if win else ()
-            self.send("resume", True, wids)
-        else:
-            # a `suspend` packet with a `False` argument means "resume":
-            self.send("suspend", False)
+        # a `suspend` packet with a `False` argument means "resume":
+        self.send("suspend", False)
         if elapsed < 1:
             # not really suspended
             # happens on macos when switching workspace!

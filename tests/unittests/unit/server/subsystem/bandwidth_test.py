@@ -6,8 +6,6 @@
 
 import os
 import unittest
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.env import OSEnvContext
 from unit.test_util import silence_info
@@ -21,9 +19,6 @@ class BandwidthTest(ServerMixinTest):
             os.environ["XPRA_PING_TIMEOUT"] = "1"
             from xpra.server.subsystem.bandwidth import BandwidthManager, MAX_BANDWIDTH_LIMIT
             from xpra.server.source import bandwidth
-            # `network-state` only triggers the subsystem in backwards-compatible mode:
-            if BACKWARDS_COMPATIBLE:
-                assert bandwidth.BandwidthConnection.is_needed(typedict({"network-state": True}))
             assert bandwidth.BandwidthConnection.is_needed(typedict({"bandwidth": True}))
             opts = AdHocStruct()
             opts.bandwidth_limit = "1Gbps"

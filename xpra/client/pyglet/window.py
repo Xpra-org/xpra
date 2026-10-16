@@ -9,8 +9,6 @@ from collections.abc import Sequence
 from pyglet.window import Window, event
 from pyglet.image import ImageData, SolidColorImagePattern
 from pyglet.sprite import Sprite
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import (
     POINTER_MOTION, POINTER_BUTTON,
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE, WINDOW_CLOSE,
@@ -94,17 +92,10 @@ class ClientWindow(Window):
             log.info(f"unknown key {keysym}")
             return
         mods = get_modifiers(modifiers)
-        if BACKWARDS_COMPATIBLE:
-            keyval = 0
-            string = ""
-            keycode = 0
-            group = 0
-            self.client.send("key-action", self.wid, keyname, pressed, mods, keyval, string, keycode, group)
-        else:
-            self.client.send("keyboard-event", self.wid, keyname, pressed, {
-                "modifiers": mods,
-                "backend": "pyglet",
-            })
+        self.client.send("keyboard-event", self.wid, keyname, pressed, {
+            "modifiers": mods,
+            "backend": "pyglet",
+        })
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         device_id = -1

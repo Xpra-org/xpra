@@ -15,7 +15,7 @@ from xpra.audio.common import (
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO
 from xpra.net.compression import Compressed
 from xpra.net.packet_type import CONNECTION_LOST
 from xpra.common import noop, SizedBuffer, may_notify_client
@@ -173,10 +173,6 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         if power := self.get_subsystem("power"):
             power.connect("suspend", self.suspend_audio)
             power.connect("resume", self.resume_audio)
-        if BACKWARDS_COMPATIBLE:
-            self.properties = self.query_audio()
-            self.properties.update(get_pa_info())
-            return
 
         def do_load() -> None:
             # set `self.properties` last when loading is complete:
@@ -271,10 +267,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         caps: dict[str, Any] = {
             "av-sync": self.get_avsync_capabilities(),
         }
-        if BACKWARDS_COMPATIBLE:
-            caps[AudioClient.PREFIX] = self.get_audio_capabilities()
-        else:
-            caps[AudioClient.PREFIX] = {"async": True}
+        caps[AudioClient.PREFIX] = {"async": True}
         return caps
 
     def get_audio_capabilities(self) -> dict[str, Any]:
@@ -835,4 +828,3 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.add_packets(AUDIO_KEEPALIVE_PACKET)
         self.add_packets(AUDIO_LEVEL_PACKET)
         self.add_packets(AUDIO_SIGNAL_PACKET)
-        self.add_legacy_alias("sound-data", f"{AudioClient.PREFIX}-data")

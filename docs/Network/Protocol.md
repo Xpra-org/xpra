@@ -7,7 +7,8 @@ This document specifies the Xpra application protocol implemented by the
 normative implementer specification for the modern protocol only.
 
 Historical packet names, encoders, compressors, capability aliases and packet
-layouts accepted when `XPRA_BACKWARDS_COMPATIBLE=1` are deliberately excluded.
+layouts, which version 7 still uses with its own legacy peers when running with
+`XPRA_BACKWARDS_COMPATIBLE=1`, are deliberately excluded.
 An implementation conforming to this document MUST NOT depend on them.
 
 The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT** and
@@ -243,6 +244,7 @@ govern what the other endpoint may send.
 | Key | Type | Semantics |
 |---|---|---|
 | `version` | `str` | Xpra version; REQUIRED in a normal hello |
+| `protocol-version` | `list<int>` | minimum version accepted by the sender of this hello |
 | `encoders` | `list<str>` | accepted packet encoders; includes `rencodeplus` |
 | `compressors` | `list<str>` | accepted record compressors |
 | `compression_level` | `u8` | requested level; zero disables compression |
@@ -258,6 +260,13 @@ govern what the other endpoint may send.
 `packet-types` is an allow-list when present. A sender SHOULD NOT send an
 optional packet absent from the peer's list. Mandatory handshake packets remain
 valid even when omitted from that list.
+
+`protocol-version` lets the peer bail out early: an implementation MUST
+disconnect if its own version is lower than the value received. A peer that
+omits it is treated as requiring version 7.0. A version 7 peer that exposes a
+`protocol-version` lower than 7.0 also talks to older peers: it switches to the
+packets and capabilities described here once it receives a `protocol-version`
+of 7.0 or later, which conforming implementations MUST therefore expose.
 
 ### 5.3 Authentication and Upgrade Packets
 
@@ -450,7 +459,6 @@ structures advertised in the display capabilities.
 | C -> S | `window-stacking` | `wids:list<u64>` |
 | C -> S | `window-refresh` | `wid:u64`, `options:map` |
 | C -> S | `window-ack` | `wid:u64`, `width:u16`, `height:u16`, `sequence:u64`, `decode_time_us:i32`, `message:str` |
-| C -> S | `window-draw-ack` | `sequence:u64`, `wid:u64`, `width:u16`, `height:u16`, `decode_time_us:i32`, `message:str?` |
 
 Window IDs are allocated by the server and remain valid until `window-destroy`.
 The encoding and options of `window-draw` MUST have been advertised by the

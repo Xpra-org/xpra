@@ -7,7 +7,7 @@
 import unittest
 from time import monotonic
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.net.packet_type import LOGGING_EVENT
 from xpra.util.objects import AdHocStruct
 from xpra.server.source.stub import StubClientConnection
@@ -45,10 +45,6 @@ class InputMixinTest(ServerMixinTest):
         message = log_messages[0]
         assert message[0] == 10
         assert message[1].endswith("hello")
-        if BACKWARDS_COMPATIBLE:
-            # multi-part messages are a legacy shape:
-            # modern clients send a single buffer (see `_process_event`)
-            self.handle_packet(Packet(LOGGING_EVENT, 20, ["multi", "messages"], int(monotonic())))
         # invalid:
         try:
             self.handle_packet(Packet(LOGGING_EVENT, 20, nostr(), int(monotonic())))

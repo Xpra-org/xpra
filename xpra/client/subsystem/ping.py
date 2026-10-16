@@ -11,7 +11,7 @@ from collections.abc import Sequence, Iterable
 
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO
 from xpra.net.packet_type import PING_ECHO
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -77,11 +77,6 @@ class PingClient(StubClientSubsystem):
         caps: dict[str, Any] = {
             "ping": True,
         }
-        if BACKWARDS_COMPATIBLE:
-            caps.update({
-                "network-state": True,
-                "ping-echo-sourceid": True,
-            })
         return caps
 
     def server_ok(self) -> bool:
@@ -89,7 +84,7 @@ class PingClient(StubClientSubsystem):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         if self.pings:
-            self.pings = c.boolget("ping", BACKWARDS_COMPATIBLE)
+            self.pings = c.boolget("ping", False)
             if self.pings:
                 self.client.connect("startup-complete", self.start_sending_pings)
                 if power := self.get_subsystem("power"):
@@ -209,4 +204,3 @@ class PingClient(StubClientSubsystem):
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(*PingClient.PACKET_TYPES)
-        self.add_legacy_alias("ping_echo", "ping-echo")

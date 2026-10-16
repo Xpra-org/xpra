@@ -7,7 +7,6 @@ import os
 from typing import Any
 
 from xpra.os_util import WIN32, gi_import
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
 from xpra.util.thread import is_main_thread
@@ -210,7 +209,7 @@ class MmapClient(StubClientSubsystem):
             return True
         READ_PREFIXES = ("read", )
         # older versions didn't use a prefix:
-        WRITE_PREFIXES = ("write", "") if BACKWARDS_COMPATIBLE else ("write", )
+        WRITE_PREFIXES = ("write", )
         # parse each area
         for prefixes, area in (
             (WRITE_PREFIXES, self.mmap_read_area),
@@ -254,9 +253,6 @@ class MmapClient(StubClientSubsystem):
             return
         # newer versions use the 'chunks' option - see `paint_mmap`:
         chunks = options.tupleget("chunks")
-        if not chunks and BACKWARDS_COMPATIBLE:
-            # older versions overload the pixel data:
-            chunks = tuple(img_data)
         if not chunks:
             log.error("Error: no mmap chunks found in packet")
             return
@@ -291,7 +287,4 @@ class MmapClient(StubClientSubsystem):
         }.items():
             if area:
                 caps[prefix] = area.get_caps()
-        if BACKWARDS_COMPATIBLE and self.mmap_read_area:
-            # duplicate it for legacy unprefixed caps:
-            caps.update(self.mmap_read_area.get_caps())
         return {MmapClient.PREFIX: caps}

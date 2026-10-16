@@ -14,7 +14,7 @@ import uuid
 from typing import Any
 
 from xpra.common import SizedBuffer
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base.gobject import GObjectClientAdapter
@@ -95,9 +95,6 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
     def make_hello(self) -> dict[str, Any]:
         caps = super().make_hello()
         caps["webcam-client"] = {"device": self._device_no}
-        if BACKWARDS_COMPATIBLE:
-            # for older versions, we need to turn this subsystem off explicitly
-            caps["bandwidth"] = False
         return caps
 
     def init_authenticated_packet_handlers(self) -> None:

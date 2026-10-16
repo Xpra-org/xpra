@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import OSX
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, PacketElement
 from xpra.net.packet_type import POINTER_MOTION, POINTER_BUTTON, POINTER_WHEEL
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
@@ -94,7 +94,7 @@ class PointerClient(StubClientSubsystem):
         self.middle_click = True
         self.button_state: dict[int, bool] = {}
         self.server_precise_wheel = False
-        self.server_wheel_motion = not BACKWARDS_COMPATIBLE
+        self.server_wheel_motion = True
         self.wheel_smooth: bool = SMOOTH_SCROLL
         self.wheel_map: dict[int, int] = {}
         self.wheel_deltax: float = 0
@@ -165,15 +165,6 @@ class PointerClient(StubClientSubsystem):
         caps: dict[str, Any] = {
             PointerClient.PREFIX: pointer_caps,
         }
-        if BACKWARDS_COMPATIBLE:
-            # grabs are advertised as `window.grabs` now (see `window/manager.py`),
-            # older servers look for the flag in this namespace:
-            pointer_caps["grabs"] = True
-            caps["mouse"] = {
-                "show": True,  # assumed available in v6
-                "initial-position": initial_position,
-            }
-            caps["double_click"] = double_click
         return caps
 
     def send_positional(self, packet_type: str, *parts: PacketElement) -> None:
@@ -196,22 +187,15 @@ class PointerClient(StubClientSubsystem):
 
     def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
         pos, position_props = self.split_pointer_position(pos)
-        if "pointer" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
-            # v5 packet type, most attributes are optional:
-            attrs = dict(props or {})
-            attrs.update(position_props)
-            if modifiers is not None:
-                attrs["modifiers"] = modifiers
-            if buttons is not None:
-                attrs["buttons"] = buttons
-            seq = self.next_pointer_sequence(device_id)
-            packet = Packet(POINTER_MOTION, device_id, seq, wid, pos, attrs)
-        else:
-            # pre-v5 packet format: no per-device id and no props.
-            # (the legacy code used to append `props.values()` here, but the bare
-            #  values cannot be reconstructed into a props dict server-side, so we
-            #  simply drop them - props only reach the server via the v5 packet.)
-            packet = Packet("pointer-position", wid, pos, modifiers or (), buttons or ())
+        # v5 packet type, most attributes are optional:
+        attrs = dict(props or {})
+        attrs.update(position_props)
+        if modifiers is not None:
+            attrs["modifiers"] = modifiers
+        if buttons is not None:
+            attrs["buttons"] = buttons
+        seq = self.next_pointer_sequence(device_id)
+        packet = Packet(POINTER_MOTION, device_id, seq, wid, pos, attrs)
         if self.position_timer:
             self.position_pending = packet
             return
@@ -266,24 +250,17 @@ class PointerClient(StubClientSubsystem):
             server_buttons.append(b)
         self.button_state[button] = pressed
         pointer, position_props = self.split_pointer_position(pointer)
-        if "pointer-button" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
-            props = dict(props or {})
-            props.update(position_props)
-            if modifiers is not None:
-                props["modifiers"] = modifiers
-            props["buttons"] = server_buttons
-            if server_button != button:
-                props["raw-button"] = button
-            if server_buttons != buttons:
-                props["raw-buttons"] = buttons
-            seq = self.next_pointer_sequence(device_id)
-            packet = [POINTER_BUTTON, device_id, seq, wid, server_button, pressed, pointer, props]
-        else:
-            if server_button == -1:
-                return
-            packet = ["button-action", wid, server_button, pressed, pointer, modifiers, server_buttons]
-            if props:
-                packet += list(props.values())
+        props = dict(props or {})
+        props.update(position_props)
+        if modifiers is not None:
+            props["modifiers"] = modifiers
+        props["buttons"] = server_buttons
+        if server_button != button:
+            props["raw-button"] = button
+        if server_buttons != buttons:
+            props["raw-buttons"] = buttons
+        seq = self.next_pointer_sequence(device_id)
+        packet = [POINTER_BUTTON, device_id, seq, wid, server_button, pressed, pointer, props]
         log("button packet: %s", packet)
         self.send_positional(*packet)
 
@@ -325,7 +302,7 @@ class PointerClient(StubClientSubsystem):
                 log("send_wheel_delta(..) %s", packet)
                 self.send_positional(*packet)
             return 0
-        # BACKWARDS_COMPATIBLE: this server is too old to emulate the wheel itself
+        # this server does not emulate the wheel itself
         # and its pointer device cannot handle precise wheel motion,
         # so we have to use discrete events and send a click for each step:
         steps = round(abs(self.scale_wheel_distance(distance)))
@@ -420,16 +397,14 @@ class PointerClient(StubClientSubsystem):
         # the others emulate it with button events - on their side if they can
         # (`wheel.emulation`), on ours if they are too old to, see `send_wheel_delta`:
         self.server_precise_wheel = c.boolget("wheel.precise", False)
-        self.server_wheel_motion = self.server_precise_wheel or c.boolget("wheel.emulation",
-                                                                          not BACKWARDS_COMPATIBLE)
+        self.server_wheel_motion = self.server_precise_wheel or c.boolget("wheel.emulation", True)
         return True
 
     def split_pointer_position(self, position) -> tuple[tuple[int, ...], dict]:
         """Split pointer coordinates into an absolute pair and readable properties.
 
-        Modern packets keep only ``(absolute_x, absolute_y)`` in their pointer
-        field. Legacy packets retain the full coordinate tuple. Platform
-        coordinate normalization applies to both formats. Window-relative
+        Packets keep only ``(absolute_x, absolute_y)`` in their pointer
+        field, after platform coordinate normalization. Window-relative
         coordinates are stored as ``window-position`` and monitor-relative
         coordinates are stored in a ``monitor`` descriptor containing its
         ``index`` and relative ``position``. The properties also retain the
@@ -453,8 +428,6 @@ class PointerClient(StubClientSubsystem):
                 "position": (x, y),
             }
         server_position = display.get_server_position(raw_position) if display else raw_position
-        if BACKWARDS_COMPATIBLE:
-            return server_position + values[2:], props
         return server_position, props
 
     def init_authenticated_packet_handlers(self) -> None:

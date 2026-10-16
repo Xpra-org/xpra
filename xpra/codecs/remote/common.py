@@ -14,7 +14,6 @@ from xpra.util.objects import typedict, AtomicInteger
 from xpra.scripts.config import InitExit
 from xpra.client.base.adapter import RemoteServerAdapter
 from xpra.codecs.constants import VideoSpec, TransientCodecException
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("remote")
@@ -62,15 +61,9 @@ class RemoteCodecClient(RemoteServerAdapter):
         caps = super().make_hello()
         caps.update({
             "client_type": "encode",
-            "windows": False,
             "keyboard": False,
-            "encodings": ("rgb32", "rgb24"),
             "encoding": {"core": ("rgb32", "rgb24", )},
-            "mouse": False,
-            "network-state": False,  # tell older server that we don't have "ping"
         })
-        if BACKWARDS_COMPATIBLE:
-            caps["wants"] = ("encodings", "video")
         return caps
 
 

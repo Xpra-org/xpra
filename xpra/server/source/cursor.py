@@ -7,7 +7,6 @@
 from typing import Any
 from collections.abc import Sequence, Callable
 
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import CURSOR_DATA, CURSOR_DEFAULT
 from xpra.os_util import gi_import
 from xpra.server.source.stub import StubClientConnection
@@ -33,9 +32,7 @@ class CursorsConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        if caps.boolget("cursor"):
-            return True
-        return BACKWARDS_COMPATIBLE and caps.boolget("cursors")
+        return caps.boolget("cursor")
 
     def __init__(self):
         super().__init__()
@@ -44,7 +41,6 @@ class CursorsConnection(StubClientConnection):
         self.cursor_encodings: Sequence[str] = ()
         self.cursor_size = 0
         self.cursor_timer = 0
-        self.cursor_backwards_compatible = BACKWARDS_COMPATIBLE
         self.last_cursor_sent: tuple = ()
 
     def init_from(self, _protocol, server) -> None:
@@ -70,15 +66,8 @@ class CursorsConnection(StubClientConnection):
         if isinstance(cursor, dict):
             dcursor = typedict(cursor)
             self.cursor_encodings = dcursor.strtupleget("encodings")
-            self.cursor_backwards_compatible = dcursor.boolget("backwards-compatible", True)
             default_cursor_size = dcursor.inttupleget("default", (0, 0))
             self.cursor_size = max(0, default_cursor_size[0], default_cursor_size[1])
-        if self.cursor_backwards_compatible:
-            self.send_cursors |= getattr(self, "window_enabled", False) and c.boolget("cursors")
-            if not self.cursor_encodings:
-                self.cursor_encodings = c.strtupleget("encodings.cursor")
-            if not self.cursor_size:
-                self.cursor_size = c.intget("cursor.size", 0)
         log(f"parse_client_caps(..) cursors={self.send_cursors}, cursor encodings={self.cursor_encodings}")
 
     def get_caps(self) -> dict[str, Any]:
@@ -133,21 +122,12 @@ class CursorsConnection(StubClientConnection):
         encoding, cpixels = self.compress_cursor_pixels(pixels, w, h, serial)
         log("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
             w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
-        if self.cursor_backwards_compatible:
-            cursor_data = list(cursor_data)
-            cursor_data[7] = cpixels
-            args = [encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
-            self.send_more("cursor", *args)
-        else:
-            self.send_more(CURSOR_DATA, encoding, w, h, xhot, yhot, serial, cpixels, name)
+        self.send_more(CURSOR_DATA, encoding, w, h, xhot, yhot, serial, cpixels, name)
 
     def send_empty_cursor(self) -> None:
         log("send_empty_cursor(..)")
         self.last_cursor_sent = ()
-        if self.cursor_backwards_compatible:
-            self.send_more("cursor", "")
-        else:
-            self.send_more(CURSOR_DEFAULT)
+        self.send_more(CURSOR_DEFAULT)
 
     def compress_cursor_pixels(self, pixels, w: int, h: int, serial: int):
         if not pixels:

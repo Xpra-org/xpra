@@ -13,7 +13,7 @@ from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.command import XpraClientBase
 from xpra.exit_codes import ExitValue
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import WINDOW_REFRESH, WINDOW_DRAW_ACK, WINDOW_STACKING
+from xpra.net.packet_type import WINDOW_REFRESH, WINDOW_ACK, WINDOW_STACKING
 from xpra.platform.paths import initial_cwd
 from xpra.util.env import envint
 from xpra.util.objects import typedict
@@ -251,17 +251,13 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
                 "encoding": self.encoding_options,
                 "share": True,
                 "keyboard": {"record": True},
-                "cursor": {"encodings": ("png", ), "backwards-compatible": False},
+                "cursor": {"encodings": ("png", )},
                 "pointer": {"record": True},
                 "clipboard": {"record": True},
                 "display": {"record": True},
                 # notifications are recorded too:
                 "notification": True,
             })
-            if BACKWARDS_COMPATIBLE:
-                # older servers read these from the plural namespace:
-                caps["windows"] = window_caps
-                caps["notifications"] = {"enabled": True}
         return caps
 
     def _process_startup_complete(self, _packet: Packet) -> None:
@@ -344,10 +340,6 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
 
     def _process_window_create(self, packet: Packet) -> None:
         self._process_new_common(packet, False)
-
-    def _process_new_override_redirect(self, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._process_new_common(packet, True)
 
     def _process_new_common(self, packet: Packet, override_redirect: bool):
         wid = packet.get_wid()
@@ -494,9 +486,10 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         width = packet.get_u16(4)
         height = packet.get_u16(5)
         coding = packet.get_str(6)
-        # mmap can send a tuple, otherwise it's a buffer, see #4496:
-        if BACKWARDS_COMPATIBLE:
-            data = packet[7]
+        if BACKWARDS_COMPATIBLE and coding in ("mmap", "scroll") and not isinstance(packet[7], (bytes, bytearray, memoryview)):
+            # v7 servers running in backwards compatible mode also send the `chunks` / `scroll` options here,
+            # we only use the options:
+            data = b""
         else:
             data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)
@@ -517,7 +510,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         window.record("draw", **kwargs)
         decode_time = 0
         message = ""
-        self.send(WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
+        self.send(WINDOW_ACK, wid, width, height, packet_sequence, decode_time, message)
         if x != 0 or y != 0 or (width, height) != window.geometry[2:4] or options.get("quality", 100) != 100:
             self.refresh_needed.add(wid)
 
@@ -671,20 +664,6 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         # all the handlers record events to files, which the parse thread's seccomp filter does not allow,
         # running them all on the main thread also preserves the order of the events:
         self.add_packets("startup-complete", "encoding-set", main_thread=True)
-        self.add_legacy_alias("encodings", "encoding-set")
-        if BACKWARDS_COMPATIBLE:
-            self.add_packets("new-override-redirect", main_thread=True)
-            self.add_legacy_alias("raise-window", "window-raise")
-            self.add_legacy_alias("new-window", "window-create")
-            self.add_legacy_alias("restack-window", "window-restack")
-            self.add_legacy_alias("initiate-moveresize", "window-initiate-moveresize")
-            self.add_legacy_alias("lost-window", "window-destroy")
-            self.add_legacy_alias("configure-override-redirect", "window-move-resize")
-            self.add_legacy_alias("draw", "window-draw")
-            self.add_legacy_alias("bell", "window-bell")
-            self.add_legacy_alias("eos", "window-eos")
-            self.add_legacy_alias("pointer-grab", "window-grab")
-            self.add_legacy_alias("pointer-ungrab", "window-ungrab")
         self.add_packets(
             "window-create",
             "window-raise",
@@ -712,5 +691,3 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             "notification-close",
             main_thread=True,
         )
-        self.add_legacy_alias("notify_show", "notification-show")
-        self.add_legacy_alias("notify_close", "notification-close")

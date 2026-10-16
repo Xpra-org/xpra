@@ -8,7 +8,6 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
-from xpra.net.common import Packet
 from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.server.base import ServerBase
 from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
@@ -118,11 +117,6 @@ class DesktopServerBase(GObject.GObject, ServerBase):
             "states": ["iconified", "focused"],
         })
         return capabilities
-
-    def _process_desktop_size(self, proto, packet: Packet) -> None:
-        """
-        Usually, desktop servers don't need to do anything when the client's geometry changes.
-        """
 
     def make_dbus_server(self):
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server

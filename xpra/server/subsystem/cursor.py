@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.env import first_time
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
@@ -39,8 +39,6 @@ class CursorManager(StubSubsystem):
         caps = typedict(c.dictget("cursor"))
         default_cursor_size = caps.inttupleget("default", (0, 0))
         cursor_size = max(0, default_cursor_size[0], default_cursor_size[1])
-        if not cursor_size and BACKWARDS_COMPATIBLE:
-            cursor_size = c.intget("cursor.size", 0)
         try:
             from xpra.server.source.window import WindowsConnection
         except ImportError:
@@ -79,24 +77,14 @@ class CursorManager(StubSubsystem):
         dsize = self.get_default_cursor_size()
         if min(dsize) > 0:
             sizes["default"] = dsize
-            if BACKWARDS_COMPATIBLE:
-                cursor_caps["default_size"] = round(sum(dsize) / len(dsize))
         max_size = self.get_max_cursor_size()
         if min(max_size) > 0:
             sizes["max"] = max_size
-            if BACKWARDS_COMPATIBLE:
-                cursor_caps["max_size"] = max_size
         if self.default_image:
             ce = getattr(source, "cursor_encodings", ())
             if "default" not in ce:
-                # we have to send it this way
-                # instead of using send_initial_cursors()
-                if BACKWARDS_COMPATIBLE:
-                    cursor_caps["cursor.default"] = self.default_image
                 cursor_caps["default"] = self.default_image
         caps: dict[str, Any] = {"cursor": cursor_caps}
-        if BACKWARDS_COMPATIBLE:
-            caps["cursors"] = self.enabled
         log("cursor caps=%s", caps)
         return caps
 
@@ -131,10 +119,6 @@ class CursorManager(StubSubsystem):
             info.setdefault("sizes", {})[name] = size
         return {CursorManager.PREFIX: info}
 
-    def _process_set_cursors(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._process_set(proto, packet)
-
     def _process_set(self, proto, packet: Packet) -> None:
         assert self.enabled, "cannot toggle send_cursors: the feature is disabled"
         if ss := self.get_server_source(proto):
@@ -163,4 +147,3 @@ class CursorManager(StubSubsystem):
 
     def init_packet_handlers(self) -> None:
         self.add_packets(f"{CursorManager.PREFIX}-set")
-        self.add_legacy_alias("set-cursors", f"{CursorManager.PREFIX}-set")

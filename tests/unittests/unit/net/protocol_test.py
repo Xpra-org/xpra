@@ -18,8 +18,7 @@ from xpra.net.protocol import socket_handler, check
 from xpra.net.packet_type import CONNECTION_LOST, INFO_RESPONSE
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
-from xpra.net.common import Packet
-from xpra.net.common import BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.log import Logger
 
@@ -252,11 +251,12 @@ class ProtocolTest(unittest.TestCase):
         from xpra.util.objects import typedict
 
         proto = self.make_memory_protocol()
-        if BACKWARDS_COMPATIBLE:
-            self.assertEqual(proto.max_packet_size, MAX_PACKET_SIZE)
-            return
 
-        initial_limit = min(MAX_PACKET_SIZE, socket_handler.MODERN_INITIAL_PACKET_SIZE)
+        if BACKWARDS_COMPATIBLE:
+            # v7 clients running in backwards compatible mode send a bigger `hello`:
+            initial_limit = MAX_PACKET_SIZE
+        else:
+            initial_limit = min(MAX_PACKET_SIZE, socket_handler.MODERN_INITIAL_PACKET_SIZE)
         self.assertEqual(proto.max_packet_size, initial_limit)
         header = pack_header(FLAGS_RENCODEPLUS | FLAGS_FLUSH, 0, 0, initial_limit + 1)
         with patch.object(proto, "invalid_header") as invalid_header:

@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from xpra.clipboard.common import ALL_CLIPBOARDS, parse_greedy, parse_want_targets
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.platform.clipboard import get_backend_module
-from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, PacketElement
 from xpra.net import compression
 from xpra.util.env import envbool
 from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS
@@ -252,7 +252,6 @@ class ClipboardClient(StubClientSubsystem):
         self.emit("clipboard-toggled")
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardClient.PREFIX}-status")
         for x in (
             "data", "request",
             "contents", "contents-none",
@@ -260,8 +259,6 @@ class ClipboardClient(StubClientSubsystem):
             "status",
         ):
             self.add_packet_handler(f"{ClipboardClient.PREFIX}-{x}", self._process_packet, True)
-        if BACKWARDS_COMPATIBLE:
-            self.add_packet_handler(f"{ClipboardClient.PREFIX}-token", self._process_packet, True)
 
     def make_clipboard_helper(self):
         """
@@ -313,7 +310,7 @@ class ClipboardClient(StubClientSubsystem):
         log("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s",
             args, self.clipboard_enabled, self.server_clipboard)
         if self.server_clipboard:
-            packet_type = "set-clipboard-enabled" if BACKWARDS_COMPATIBLE else "clipboard-status"
+            packet_type = "clipboard-status"
             self.send_now(packet_type, self.clipboard_enabled)
             if self.clipboard_enabled:
                 ch = self.clipboard_helper

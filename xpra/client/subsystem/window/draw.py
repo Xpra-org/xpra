@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import WINDOW_ACK, WINDOW_DRAW_ACK
+from xpra.net.packet_type import WINDOW_ACK
 from xpra.constants import WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
@@ -64,11 +64,7 @@ class WindowDraw(StubClientSubsystem):
 
     def send_draw_ack(self, wid: int, width: int, height: int, packet_sequence: int,
                       decode_time: int, message="") -> None:
-        if WINDOW_ACK in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
-            args = (WINDOW_ACK, wid, width, height, packet_sequence, decode_time, message)
-        else:
-            # the legacy ack packet starts with the `packet_sequence`:
-            args = (WINDOW_DRAW_ACK, packet_sequence, wid, width, height, decode_time, message)
+        args = (WINDOW_ACK, wid, width, height, packet_sequence, decode_time, message)
         log("sending ack: %s", args)
         self.send_now(*args)
 
@@ -76,7 +72,7 @@ class WindowDraw(StubClientSubsystem):
         """ this runs from the decode thread (see `xpra/client/subsystem/decode.py`) """
         wid = packet.get_wid()
         window = self.get_window(wid)
-        # legacy `eos` packets are rewritten to `window-eos` by the packet alias:
+        # `window-eos` packets are routed here too:
         if packet.get_type() == "window-eos":
             if window:
                 window.eos()
@@ -86,9 +82,10 @@ class WindowDraw(StubClientSubsystem):
         width = packet.get_u16(4)
         height = packet.get_u16(5)
         coding = packet.get_str(6)
-        if BACKWARDS_COMPATIBLE:
-            # mmap can send a tuple, otherwise it's a buffer, see #4496:
-            data = packet[7]
+        if BACKWARDS_COMPATIBLE and coding in ("mmap", "scroll") and not isinstance(packet[7], (bytes, bytearray, memoryview)):
+            # v7 servers running in backwards compatible mode also send the `chunks` / `scroll` options here,
+            # we only use the options:
+            data = b""
         else:
             data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)
@@ -165,9 +162,6 @@ class WindowDraw(StubClientSubsystem):
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
-        if BACKWARDS_COMPATIBLE:
-            self.add_legacy_alias("draw", "window-draw")
-            self.add_legacy_alias("eos", "window-eos")
         # `main_thread=True` is required for ordering, not for the (trivial) handlers:
         # see `_process_draw` above
         self.add_packets("window-draw", "window-eos", main_thread=True)

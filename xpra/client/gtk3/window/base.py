@@ -29,7 +29,7 @@ from xpra.common import (
     force_size_constraint, noop,
 )
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
-from xpra.net.common import PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import PacketElement
 from xpra.client.gui.window_base import ClientWindowBase, NOT_REQUESTED
 from xpra.client.gtk3.window.common import (
     use_x11_bindings, is_awt, is_popup, mask_buttons,
@@ -1657,46 +1657,31 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not self._fullscreen and not self._maximized:
             sw, sh = self.snap_to_server_grid(sw, sh, nearest=sw != w or sh != h)
 
-        if BACKWARDS_COMPATIBLE:
-            packet: list[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
-            pwid = self.wid
-            if self.is_OR():
-                pwid = -1 if BACKWARDS_COMPATIBLE else 0
-            packet.append(pwid)
-            if hasattr(self, "get_mouse_position"):
-                packet.append(self.get_mouse_position())
-            else:
-                packet.append((-1, -1))
-            keyboard = self.get_subsystem("keyboard")
-            packet.append(keyboard.get_current_modifiers() if keyboard else ())
-            self.send("configure-window", *packet)
-            geomlog("%s", packet)
-        else:
-            config: dict[str, PacketElement] = {}
-            if not self._client.readonly:
-                if pointer := self.get_subsystem("pointer"):
-                    position, pointer_props = pointer.split_pointer_position(pointer.get_mouse_position())
-                    pointer_data = {
-                        "wid": self.wid if not self.is_OR() else 0,
-                        "position": position,
-                        # "device-id": -1,
-                    }
-                    if pointer_props:
-                        pointer_data["properties"] = pointer_props
-                    config["pointer"] = pointer_data
-                if keyboard := self.get_subsystem("keyboard"):
-                    config["modifiers"] = keyboard.get_current_modifiers()
-            if props:
-                config["properties"] = props
-            if state:
-                config["state"] = state
-            if not skip_geometry:
-                config["geometry"] = (sx, sy, sw, sh)
-                config["resize-counter"] = self._resize_counter
-                if monitor := self.get_monitor_position(x, y):
-                    config["monitor"] = monitor
-            self.send(WINDOW_CONFIGURE, self.wid, config)
-            geomlog("sending configure for %i: %s", self.wid, config)
+        config: dict[str, PacketElement] = {}
+        if not self._client.readonly:
+            if pointer := self.get_subsystem("pointer"):
+                position, pointer_props = pointer.split_pointer_position(pointer.get_mouse_position())
+                pointer_data = {
+                    "wid": self.wid if not self.is_OR() else 0,
+                    "position": position,
+                    # "device-id": -1,
+                }
+                if pointer_props:
+                    pointer_data["properties"] = pointer_props
+                config["pointer"] = pointer_data
+            if keyboard := self.get_subsystem("keyboard"):
+                config["modifiers"] = keyboard.get_current_modifiers()
+        if props:
+            config["properties"] = props
+        if state:
+            config["state"] = state
+        if not skip_geometry:
+            config["geometry"] = (sx, sy, sw, sh)
+            config["resize-counter"] = self._resize_counter
+            if monitor := self.get_monitor_position(x, y):
+                config["monitor"] = monitor
+        self.send(WINDOW_CONFIGURE, self.wid, config)
+        geomlog("sending configure for %i: %s", self.wid, config)
 
     def _set_backing_size(self, ww: int, wh: int) -> None:
         b = self._backing

@@ -6,8 +6,6 @@
 
 from math import copysign
 from typing import Any
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server.source.stub import StubClientConnection, PointerSource, is_sync_allowed
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -24,7 +22,7 @@ class PointerConnection(StubClientConnection, PointerSource):
     def is_needed(cls, caps: typedict) -> bool:
         if caps.boolget("pointer"):
             return True
-        return BACKWARDS_COMPATIBLE and (caps.boolget("mouse") or caps.boolget("mouse.show"))
+        return False
 
     def init_state(self) -> None:
         self.double_click_time: int = -1
@@ -49,20 +47,9 @@ class PointerConnection(StubClientConnection, PointerSource):
         self.pointer_sync = sync and is_sync_allowed(self, "pointer")
         log(f"parse_client_caps(..) {pointer=}")
         dc = typedict(pointer.dictget("double_click"))
-        if not BACKWARDS_COMPATIBLE:
-            self.double_click_time = dc.intget("time", -1)
-            self.double_click_distance = dc.intpair("distance", (-1, -1))
-            self.mouse_last_position = pointer.intpair("initial-position")
-        else:
-            # try top-level:
-            dc = typedict(c.dictget("double_click"))
-            if dc:
-                self.double_click_time = dc.intget("time", -1)
-                self.double_click_distance = dc.intpair("distance", (-1, -1))
-            else:
-                self.double_click_time = c.intget("double_click.time", -1)
-                self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
-            self.mouse_last_position = c.intpair("mouse.initial-position")
+        self.double_click_time = dc.intget("time", -1)
+        self.double_click_distance = dc.intpair("distance", (-1, -1))
+        self.mouse_last_position = pointer.intpair("initial-position")
         log("parse_client_caps(..) double-click=%s, position=%s",
             (self.double_click_time, self.double_click_distance), self.mouse_last_position)
 

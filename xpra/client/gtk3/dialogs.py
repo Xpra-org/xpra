@@ -13,7 +13,7 @@ from xpra.client.base.stub import StubClientSubsystem
 from xpra.common import noop, may_show_progress, noerr
 from xpra.exit_codes import ExitCode
 from xpra.gtk.widget import FILE_CHOOSER_NATIVE, label
-from xpra.net.common import BACKWARDS_COMPATIBLE, pretty_socket
+from xpra.net.common import pretty_socket
 from xpra.os_util import gi_import, OSX
 from xpra.scripts.config import InitExit
 from xpra.util.child_reaper import get_child_reaper
@@ -372,11 +372,11 @@ class GTKDialogClient(StubClientSubsystem):
             return
 
         def enable(category: str) -> None:
-            packet_type = "command_request" if BACKWARDS_COMPATIBLE else "control-request"
+            packet_type = "control-request"
             self.send(packet_type, "debug", "enable", category)
 
         def disable(category: str) -> None:
-            packet_type = "command_request" if BACKWARDS_COMPATIBLE else "control-request"
+            packet_type = "control-request"
             self.send(packet_type, "debug", "disable", category)
 
         from xpra.gtk.dialogs.debug import DebugConfig

@@ -7,7 +7,7 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.net.dispatch import SubsystemPacketHandlers
 from xpra.util.objects import AdHocStruct
 from unit.test_util import silence_info, stubbable
@@ -79,10 +79,6 @@ class DisplayClientTest(ClientMixinTest):
                 self.aliases = {}
                 self.packet_handlers = {}
 
-            def add_legacy_alias(self, legacy_name, new_name):
-                if BACKWARDS_COMPATIBLE:
-                    self.aliases[legacy_name] = new_name
-
             def add_packets(self, *packet_types, **_kwargs):
                 for packet_type in packet_types:
                     name = self.packet_handler_name(packet_type)
@@ -91,9 +87,9 @@ class DisplayClientTest(ClientMixinTest):
         receiver = Receiver()
         DisplayClient.init_authenticated_packet_handlers(receiver)
         self.assertIn("display-show-desktop", receiver.packet_handlers)
-        resize_packet_type = "desktop_size" if BACKWARDS_COMPATIBLE else "display-resized"
+        resize_packet_type = "display-resized"
         self.assertIn(resize_packet_type, receiver.packet_handlers)
-        self.assertNotIn("display-resized" if BACKWARDS_COMPATIBLE else "desktop_size", receiver.packet_handlers)
+        self.assertNotIn("desktop_size", receiver.packet_handlers)
 
         class Client:
             can_scale = False
@@ -103,10 +99,7 @@ class DisplayClientTest(ClientMixinTest):
         receiver.packet_handlers[resize_packet_type](client, Packet(resize_packet_type, 1024, 768, 3840, 2160))
         self.assertEqual(client.server_actual_desktop_size, (1024, 768))
         self.assertEqual(client.server_max_desktop_size, (3840, 2160))
-        if BACKWARDS_COMPATIBLE:
-            self.assertEqual(receiver.aliases, {"show-desktop": "display-show-desktop"})
-        else:
-            self.assertEqual(receiver.aliases, {})
+        self.assertEqual(receiver.aliases, {})
 
     def test_display(self):
         with DisplayContext():

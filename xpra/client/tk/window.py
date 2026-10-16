@@ -7,8 +7,6 @@
 from io import BytesIO
 from tkinter import Toplevel, Label
 from PIL import Image, ImageTk
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import (
     POINTER_BUTTON, POINTER_MOTION,
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE,
@@ -126,16 +124,12 @@ class ClientWindow(Toplevel):
         keyname = event.keysym
         string = event.char
         keycode = event.keycode
-        if BACKWARDS_COMPATIBLE:
-            keyval = 0
-            group = 0
-            self.client.send("key-action", self.wid, keyname, pressed, mods, keyval, string, keycode, group)
-        else:
-            self.client.send("keyboard-event", self.wid, keyname, pressed, {
-                "string": string,
-                "keycode": keycode,
-                "backend": "tk",
-            })
+        self.client.send("keyboard-event", self.wid, keyname, pressed, {
+            "modifiers": mods,
+            "string": string,
+            "keycode": keycode,
+            "backend": "tk",
+        })
 
     def on_mouse_motion(self, event) -> None:
         log(f"mouse motion: {event!r}")

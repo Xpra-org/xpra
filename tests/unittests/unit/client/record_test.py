@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from xpra.client.base import record as record_module
 from xpra.client.base.record import RecordClient, can_focus
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.scripts.config import make_defaults_struct
 from xpra.util.objects import typedict
 from unit.test_util import silence_warn
@@ -66,7 +66,6 @@ class RecordClientTest(unittest.TestCase):
         registered by `init_authenticated_packet_handlers` are exercised - but call
         it directly: `dispatch_packet` logs handler errors instead of raising them.
         """
-        packet_type = self.client.packet_alias.get(packet_type, packet_type)
         for handlers in (self.client._authenticated_ui_packet_handlers,
                          self.client._authenticated_packet_handlers):
             handler = handlers.get(packet_type)
@@ -303,9 +302,6 @@ class RecordClientTest(unittest.TestCase):
         self.assertEqual(record["body"], "line 1\nline 2")
         self.process("notification-close", 42)
         self.assertEqual(self.last_event(0, "notification-close")["nid"], 42)
-        if BACKWARDS_COMPATIBLE:
-            self.assertIsNotNone(self.find_handler("notify_show"))
-            self.assertIsNotNone(self.find_handler("notify_close"))
 
     def test_notifications_before_startup_complete(self):
         # the server can send notifications before `startup-complete`:
@@ -331,8 +327,7 @@ class RecordClientTest(unittest.TestCase):
             self.assertIsNotNone(self.find_handler(packet_type))
 
     def test_legacy_grab_packet_names(self):
-        if not BACKWARDS_COMPATIBLE:
-            self.skipTest("backwards compatibility is disabled")
+        self.skipTest("backwards compatibility is disabled")
         self.new_window(1)
         self.find_handler("pointer-grab")(Packet("window-grab", 1))
         self.assertEqual(self.client.grabbed, 1)

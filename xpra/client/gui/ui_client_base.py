@@ -17,7 +17,7 @@ from xpra.common import noerr, may_notify_client
 from xpra.net.constants import ConnectionMessage
 from xpra.constants import NotificationID
 from xpra.net.common import (
-    Packet, PacketElement, print_proxy_caps, FULL_INFO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION,
+    Packet, PacketElement, print_proxy_caps, FULL_INFO,
 )
 from xpra.net.packet_type import (
     CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK,
@@ -42,13 +42,6 @@ sharinglog = Logger("sharing")
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
-
-# servers that don't accept the `setting-change` packet from clients
-# expect a dedicated packet type for each setting:
-LEGACY_SETTING_PACKETS: dict[str, str] = {
-    "readonly": "readonly-toggled",
-    "xsettings": "server-settings",
-}
 
 
 class UIXpraClient(XpraClientBase):
@@ -339,8 +332,6 @@ class UIXpraClient(XpraClientBase):
         # composed subsystem generically (base and UI alike - see
         # `get_subsystem_classes`), so only the UI-only extras are added here:
         caps = XpraClientBase.make_hello(self)
-        if BACKWARDS_COMPATIBLE:
-            caps.setdefault("wants", []).append("events")
         caps |= {
             "setting-change": True,
             "server-features": True,
@@ -357,17 +348,8 @@ class UIXpraClient(XpraClientBase):
     ######################################################################
     # connection setup:
     def parse_server_capabilities(self, c: typedict) -> bool:
-        # A server running in backwards compatible mode accepts peers older than
-        # our `MIN_PROTOCOL_VERSION`, and sends every client the legacy packet
-        # names and capabilities layout they need (for example, a `display`
-        # name string rather than the `display` capabilities namespace).
-        min_version = c.inttupleget("protocol-version")
-        if not BACKWARDS_COMPATIBLE and self._protocol.TYPE != "rfb" and (
-                not min_version or min_version < MIN_PROTOCOL_VERSION):
-            self.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION,
-                               "the server is running in backwards compatible mode,"
-                               " which is not supported by clients using `XPRA_BACKWARDS_COMPATIBLE=0`")
-            return False
+        # (servers older than `MIN_PROTOCOL_VERSION` are rejected by `RemoteInfo`,
+        # v7 servers running in backwards compatible mode switch to the modern packets for us)
         if not XpraClientBase.parse_server_capabilities(self, c):
             return False
         self.server_session_name = c.strget("session_name")
@@ -414,9 +396,6 @@ class UIXpraClient(XpraClientBase):
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         value = packet[2]
-        # convert "hello" / "setting" variable names to client variables:
-        if BACKWARDS_COMPATIBLE:
-            setting = {"xdg-menu": "menu"}.get(setting, setting)
         if setting in (
             "clipboard-limits",
         ):
@@ -478,14 +457,7 @@ class UIXpraClient(XpraClientBase):
     # features:
     def send_setting_change(self, setting: str, value: PacketElement) -> None:
         """ ask the server to change a setting (mirror of `ClientConnection.send_setting_change`) """
-        if "setting-change" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
-            self.send("setting-change", setting, value)
-            return
-        legacy = LEGACY_SETTING_PACKETS.get(setting, "")
-        if not legacy:
-            log.warn("Warning: this server does not support changing %r", setting)
-            return
-        self.send(legacy, value)
+        self.send("setting-change", setting, value)
 
     def send_sharing_enabled(self) -> None:
         assert self.server_sharing and self.server_sharing_toggle

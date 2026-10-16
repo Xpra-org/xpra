@@ -8,7 +8,6 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.os_util import WIN32
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.server.source.stub import StubClientConnection
@@ -48,18 +47,7 @@ class MMAP_Connection(StubClientConnection):
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         mmap_caps = typedict(caps.get("mmap") or {})
-        if not BACKWARDS_COMPATIBLE:
-            return bool(mmap_caps)
-        for prefix in ("", "read", "write"):
-            if prefix:
-                area_caps = typedict(mmap_caps.dictget(prefix))
-            else:
-                # older versions supply a single unprefixed area:
-                area_caps = mmap_caps
-            log(f"is_needed(..) caps({prefix!r})={area_caps!r}")
-            if area_caps.intget("size", 0) > 0:
-                return True
-        return False
+        return bool(mmap_caps)
 
     def __init__(self):
         super().__init__()
@@ -235,9 +223,6 @@ class MMAP_Connection(StubClientConnection):
         tdcaps = typedict(mmap_caps)
         read_caps = tdcaps.dictget("write")
         write_caps = tdcaps.dictget("read")
-        if BACKWARDS_COMPATIBLE and not write_caps:
-            # also try the legacy unprefixed lookup for the client's 'read' area:
-            write_caps = mmap_caps
         self.mmap_read_area = self.parse_area_caps("read", read_caps, 1)
         self.mmap_write_area = self.parse_area_caps("write", write_caps, 0)
         log("parse_client_caps() mmap-read=%s, mmap-write=%s", self.mmap_read_area, self.mmap_write_area)
@@ -246,8 +231,6 @@ class MMAP_Connection(StubClientConnection):
         mmap_caps: dict[str, Any] = {}
         READ_PREFIXES = ("read", )
         WRITE_PREFIXES = ("write", )
-        if BACKWARDS_COMPATIBLE:
-            WRITE_PREFIXES = ("write", "")
         for prefixes, area in (
             (READ_PREFIXES, self.mmap_read_area),
             (WRITE_PREFIXES, self.mmap_write_area),

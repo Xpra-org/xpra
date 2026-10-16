@@ -57,11 +57,8 @@ class ClipboardHelper(ClipboardProtocolHelperCore):
 
 
 class ClipboardCoreTest(unittest.TestCase):
-    def make_helper(self, backwards_compatible: bool):
+    def make_helper(self):
         packets = []
-        old_backwards_compatible = core.BACKWARDS_COMPATIBLE
-        core.BACKWARDS_COMPATIBLE = backwards_compatible
-        self.addCleanup(setattr, core, "BACKWARDS_COMPATIBLE", old_backwards_compatible)
         helper = ClipboardHelper.__new__(ClipboardHelper)
         proxy = ClipboardProxy("CLIPBOARD")
         helper.send = lambda *packet: packets.append(packet)
@@ -79,39 +76,8 @@ class ClipboardCoreTest(unittest.TestCase):
         helper.init_packet_handlers()
         return helper, proxy, packets
 
-    def test_legacy_clipboard_token_packet(self):
-        helper, proxy, packets = self.make_helper(True)
-        helper.local_greedy = ("CLIPBOARD",)
-        helper._send_clipboard_token_handler(
-            proxy,
-            {
-                "targets": ("UTF8_STRING",),
-                "data": {"UTF8_STRING": ("STRING", 8, b"hello")},
-            },
-        )
-        self.assertEqual(
-            packets,
-            [("clipboard-token", "CLIPBOARD", ("UTF8_STRING",),
-              "UTF8_STRING", "STRING", 8, "bytes", b"hello", True, True)],
-        )
-        self.assertIn("clipboard-token", helper.get_packet_types())
-
-    def test_legacy_packet_uses_first_data_item(self):
-        helper, proxy, packets = self.make_helper(True)
-        helper._send_clipboard_token_handler(proxy, {
-            "targets": ("UTF8_STRING", "image/png"),
-            "data": {
-                "UTF8_STRING": ("STRING", 8, b"hello"),
-                "image/png": ("image/png", 8, b"PNG"),
-            },
-        })
-        self.assertEqual(packets, [(
-            "clipboard-token", "CLIPBOARD", ("UTF8_STRING", "image/png"),
-            "UTF8_STRING", "STRING", 8, "bytes", b"hello", True, False,
-        )])
-
     def test_modern_clipboard_data_packet(self):
-        helper, proxy, packets = self.make_helper(False)
+        helper, proxy, packets = self.make_helper()
         helper.local_greedy = ("CLIPBOARD",)
         payload = b"hello" * 200
         with patch.object(core, "get_hex_uuid", return_value="origin-1"):
@@ -137,26 +103,26 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertNotIn("clipboard-token", helper.get_packet_types())
 
     def test_modern_packet_defaults(self):
-        helper, proxy, _packets = self.make_helper(False)
+        helper, proxy, _packets = self.make_helper()
         helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {}))
         self.assertEqual(proxy.tokens, [(None, None, True, False)])
 
     def test_modern_packet_preserves_origin(self):
-        helper, proxy, packets = self.make_helper(False)
+        helper, proxy, packets = self.make_helper()
         helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {"origin": "remote-origin"}))
         self.assertEqual(proxy._clipboard_origin, "remote-origin")
         helper._send_clipboard_token_handler(proxy, {"targets": (), "data": {}})
         self.assertEqual(packets[0][2]["origin"], "remote-origin")
 
     def test_modern_packet_drops_returned_origin(self):
-        helper, proxy, _packets = self.make_helper(False)
+        helper, proxy, _packets = self.make_helper()
         helper._clipboard_origins["CLIPBOARD"] = deque(("local-origin",), maxlen=16)
         helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {"origin": "local-origin"}))
         self.assertEqual(proxy.tokens, [])
 
     def test_modern_packet_origin_stops_a_clipboard_cycle(self):
-        sender, sender_proxy, sender_packets = self.make_helper(False)
-        receiver, receiver_proxy, receiver_packets = self.make_helper(False)
+        sender, sender_proxy, sender_packets = self.make_helper()
+        receiver, receiver_proxy, receiver_packets = self.make_helper()
         with patch.object(core, "get_hex_uuid", return_value="cycle-origin"):
             sender._send_clipboard_token_handler(sender_proxy, {"targets": (), "data": {}})
         receiver.process_clipboard_packet(Packet(*sender_packets[0]))
@@ -165,13 +131,13 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertEqual(sender_proxy.tokens, [])
 
     def test_clipboard_origins_are_bounded(self):
-        helper, _proxy, _packets = self.make_helper(False)
+        helper, _proxy, _packets = self.make_helper()
         for i in range(17):
             helper.remember_clipboard_origin("CLIPBOARD", str(i))
         self.assertEqual(tuple(helper._clipboard_origins["CLIPBOARD"]), tuple(str(i) for i in range(1, 17)))
 
     def test_client_reset_clears_clipboard_origins(self):
-        helper, proxy, _packets = self.make_helper(False)
+        helper, proxy, _packets = self.make_helper()
         helper.remember_clipboard_origin("CLIPBOARD", "origin")
         proxy._clipboard_origin = "origin"
         helper.client_reset()
@@ -179,7 +145,7 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertEqual(proxy._clipboard_origin, "")
 
     def test_client_reset_drops_the_token_scheduled_for_the_old_peer(self):
-        helper, proxy, _packets = self.make_helper(False)
+        helper, proxy, _packets = self.make_helper()
         self.addCleanup(proxy.cleanup)
         proxy.schedule_emit_token()
         proxy.schedule_emit_token()
@@ -191,7 +157,7 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertFalse(spin_until(lambda: proxy.emitted > 1))
 
     def test_send_tokens_goes_through_the_scheduler(self):
-        helper, proxy, _packets = self.make_helper(False)
+        helper, proxy, _packets = self.make_helper()
         self.addCleanup(proxy.cleanup)
         proxy.schedule_emit_token()
         proxy.schedule_emit_token()
@@ -207,7 +173,7 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertFalse(proxy._have_token)
 
     def test_modern_packet_omits_empty_targets(self):
-        helper, proxy, packets = self.make_helper(False)
+        helper, proxy, packets = self.make_helper()
         with patch.object(core, "get_hex_uuid", return_value="origin-2"):
             helper._send_clipboard_token_handler(proxy, {"targets": (), "data": {}})
         self.assertEqual(packets, [(
@@ -217,7 +183,7 @@ class ClipboardCoreTest(unittest.TestCase):
         )])
 
     def test_modern_packet_sends_multiple_data_items(self):
-        helper, proxy, packets = self.make_helper(False)
+        helper, proxy, packets = self.make_helper()
         helper._send_clipboard_token_handler(proxy, {
             "targets": ("UTF8_STRING", "image/png"),
             "data": {
@@ -232,7 +198,7 @@ class ClipboardCoreTest(unittest.TestCase):
         })
 
     def test_modern_packet_multiple_targets(self):
-        helper, proxy, _packets = self.make_helper(False)
+        helper, proxy, _packets = self.make_helper()
         helper.process_clipboard_packet(Packet(
             "clipboard-data",
             "CLIPBOARD",
@@ -265,14 +231,14 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertEqual(parse_greedy(typedict({"greedy": True})), tuple(ALL_CLIPBOARDS))
         self.assertEqual(parse_want_targets(typedict({"want_targets": True})), tuple(ALL_CLIPBOARDS))
 
-        helper, _proxy, _packets = self.make_helper(False)
+        helper, _proxy, _packets = self.make_helper()
         helper.local_preferred_targets = ()
         helper.local_want_targets = ()
         helper.local_greedy = ("CLIPBOARD",)
         self.assertEqual(helper.get_caps()["greedy"], ("CLIPBOARD",))
 
     def test_per_selection_greedy(self):
-        helper, clipboard, _packets = self.make_helper(False)
+        helper, clipboard, _packets = self.make_helper()
         primary = ClipboardProxy("PRIMARY")
         helper._clipboard_proxies["PRIMARY"] = primary
         helper.set_greedy_client(("PRIMARY",))
@@ -284,7 +250,7 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertTrue(clipboard._greedy_client)
 
     def test_per_selection_want_targets(self):
-        helper, clipboard, _packets = self.make_helper(False)
+        helper, clipboard, _packets = self.make_helper()
         primary = ClipboardProxy("PRIMARY")
         helper._clipboard_proxies["PRIMARY"] = primary
         helper.set_want_targets_client(("PRIMARY",))
@@ -296,7 +262,7 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertTrue(clipboard._want_targets)
 
     def test_outgoing_greedy_is_per_selection(self):
-        helper, clipboard, packets = self.make_helper(False)
+        helper, clipboard, packets = self.make_helper()
         primary = ClipboardProxy("PRIMARY")
         helper._clipboard_proxies["PRIMARY"] = primary
         helper.local_greedy = ("PRIMARY",)

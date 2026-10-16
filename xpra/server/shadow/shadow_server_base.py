@@ -16,7 +16,6 @@ from xpra.platform.paths import get_icon_dir
 from xpra.server import features
 from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import TransientCodecException, CodecStateException
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
@@ -484,13 +483,6 @@ class ShadowServerBase(ServerBase):
             else:
                 log.warn("This client is running within the Xpra server %s", server_uuid)
         return True
-
-    def _process_desktop_size(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        # just record the screen size info in the source
-        ss = self.get_server_source(proto)
-        if ss and len(packet) >= 4:
-            ss.set_screen_sizes(packet[3])
 
     def make_capture_window_models(self) -> list:
         screenlog("make_capture_window_models() display_options=%s", self.display_options)

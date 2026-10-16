@@ -11,10 +11,10 @@ from time import monotonic
 from xpra.net.constants import ConnectionMessage
 from xpra.server.source.keyboard import KeyboardConnection
 from xpra.util.env import envbool
-from xpra.util.str_fn import Ellipsizer, csv
+from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.common import noerr
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -148,9 +148,6 @@ class KeyboardManager(StubSubsystem):
         }
         if self.BACKEND:
             caps["backend"] = self.BACKEND
-        if BACKWARDS_COMPATIBLE:
-            caps["key_repeat_modifiers"] = True
-            caps["keyboard.fast-switching"] = True
         return caps
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
@@ -195,50 +192,6 @@ class KeyboardManager(StubSubsystem):
         log("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
 
-    def _process_layout_changed(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        log(f"layout-changed: {packet}")
-        if self.is_readonly(proto):
-            return
-        ss = self.get_server_source(proto)
-        if not ss:
-            return
-        layout = packet.get_str(1)
-        variant = packet.get_str(2)
-        options = backend = name = ""
-        if len(packet) >= 4:
-            options = packet.get_str(3)
-        if len(packet) >= 6:
-            backend = packet.get_str(4)
-            name = packet.get_str(5)
-        self.set_backend(ss, backend, name)
-        if ss.set_layout(layout, variant, options):
-            self.set_keymap(ss, force=True)
-
-    def set_backend(self, ss, backend: str, name: str) -> None:
-        """ overriden in X11 keyboard module """
-
-    def _process_keymap_changed(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        if self.is_readonly(proto):
-            return
-        props = typedict(packet.get_dict(1))
-        force = True
-        if len(packet) > 2:
-            force = packet.get_bool(2)
-        ss = self.get_server_source(proto)
-        if ss is None:
-            return
-        log("received new keymap from client: %s", Ellipsizer(packet, limit=200))
-        kc = getattr(ss, "keyboard_config", None)
-        if not kc or not kc.enabled:
-            return
-        if kc.parse_options(props) or force:
-            ss.make_keymask_match([])
-            self.set_keymap(ss, force)
-        if "modifiers" in props:
-            ss.make_keymask_match(props.strtupleget("modifiers"))
-
     def _process_config(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -256,28 +209,6 @@ class KeyboardManager(StubSubsystem):
             self.set_keymap(ss, force)
         if "modifiers" in props:
             ss.make_keymask_match(props.strtupleget("modifiers"))
-
-    def _process_key_action(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        wid = packet.get_wid()
-        keyname = packet.get_str(2)
-        pressed = packet.get_bool(3)
-
-        # `get_keycode` may have to change modifiers to match the key, so we need a mutable list:
-        modifiers = list(packet.get_strs(4))
-        keyval = packet.get_u32(5)
-        keystr = packet.get_str(6)
-        keycode = packet.get_u32(7)
-        group = packet.get_u8(8)
-
-        attrs = {
-            "modifiers": modifiers,
-            "keyval": keyval,
-            "string": keystr,
-            "keycode": keycode,
-            "group": group,
-        }
-        self.do_process_keyboard_event(proto, wid, keyname, pressed, attrs)
 
     def _process_event(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
@@ -349,7 +280,7 @@ class KeyboardManager(StubSubsystem):
                     modifiers: list, is_mod: bool = False, sync: bool = True):
         """
             Does the actual press/unpress for keys
-            Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
+            Either from a packet (_process_event) or timeout (_key_repeat_timeout)
         """
         log("handle_key(%s)", (wid, pressed, name, keyval, keycode, modifiers, is_mod, sync))
         if pressed and wid:
@@ -425,9 +356,6 @@ class KeyboardManager(StubSubsystem):
             keyname, keycode, now, when, delay_ms)
         self._handle_key(wid, False, keyname, keyval, keycode, modifiers, is_mod, True)
         self.keys_timedout[keycode] = now
-
-    def _process_key_repeat(self, _proto, _packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
 
     def _process_sync(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
@@ -514,14 +442,6 @@ class KeyboardManager(StubSubsystem):
         server_source.set_default_keymap()
 
     def init_packet_handlers(self) -> None:
-        if BACKWARDS_COMPATIBLE:
-            self.add_packets(
-                # keyboard:
-                "key-action", "key-repeat", "layout-changed", "keymap-changed",
-                main_thread=True
-            )
-            self.add_packet_handler("set-keyboard-sync-enabled", self._process_sync, True)
-            self.add_packet_handler("keyboard-sync-enabled-status", self._process_sync, True)
 
         self.add_packets(
             "keyboard-event", "keyboard-config", "keyboard-sync",

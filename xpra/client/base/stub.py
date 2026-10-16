@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any
 
 from xpra.util.objects import typedict
@@ -52,10 +52,6 @@ class StubClientSubsystem(SubsystemPacketHandlers, SignalEmitter):
     def get_subsystem(self, name: str):
         """ look up a peer subsystem on the owning client """
         return getattr(self.client, "subsystems", {}).get(name)
-
-    def get_server_packet_types(self) -> Sequence[str]:
-        network = self.get_subsystem("network")
-        return getattr(network, "server_packet_types", ())
 
     def get_window(self, wid: int):
         """ look up a window by id on the `window` subsystem """

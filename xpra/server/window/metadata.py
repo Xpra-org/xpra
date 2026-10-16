@@ -9,7 +9,6 @@ from typing import Any
 
 from xpra.util.io import get_util_logger
 from xpra.util.colourspace import SRGB
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.constants import WORKSPACE_UNSET
 
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
@@ -89,9 +88,6 @@ DEFAULT_VALUES: dict[str, int | str | bool | tuple | dict] = {
     "actions": (),
 }
 
-if BACKWARDS_COMPATIBLE:
-    DEFAULT_VALUES["content-type"] = ""
-
 
 def _make_window_metadata(window, propname: str, skip_defaults=False) -> dict[str, Any]:
     if propname in SKIP_METADATA:
@@ -113,9 +109,5 @@ def _make_window_metadata(window, propname: str, skip_defaults=False) -> dict[st
         if not ref_window:
             return {}
         p: dict[str, Any] = {propname: ref_window}
-        if BACKWARDS_COMPATIBLE:
-            p["%s-xid" % propname] = ref_window
-            if propname == "group-leader":
-                p["%s-wid" % propname] = ref_window
         return p
     raise ValueError(f"unhandled property name: {propname}")

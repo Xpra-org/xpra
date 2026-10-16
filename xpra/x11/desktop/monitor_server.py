@@ -390,7 +390,6 @@ class XpraMonitorServer(DesktopServerBase):
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_packets("display-monitor-configure", main_thread=True)
-        self.add_legacy_alias("configure-monitor", "display-monitor-configure")
 
 
 GObject.type_register(XpraMonitorServer)

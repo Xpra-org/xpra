@@ -8,7 +8,7 @@ import unittest
 from time import monotonic
 from unittest.mock import Mock, patch
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.objects import AdHocStruct, typedict
 from unit.test_util import stubbable
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
@@ -31,26 +31,6 @@ class WebcamMixinTest(ServerMixinTest):
         window_server.window_sources.assert_called_once_with(exclude=origin)
         recorder.send_window_stacking.assert_called_once_with((3, 1, 2))
         regular.send_window_stacking.assert_not_called()
-
-    @unittest.skipUnless(BACKWARDS_COMPATIBLE, "legacy packets disabled")
-    def test_legacy_configure_accepts_negative_resize_counter(self):
-        from xpra.server.subsystem.window import WindowServer
-
-        window_server = stubbable(WindowServer)(self)
-        window = Mock()
-        window.is_OR.return_value = False
-        window_server.is_readonly = lambda _proto: False
-        window_server.get_window = Mock(return_value=window)
-        window_server.do_process_window_configure = Mock()
-        # the legacy packet has no monitor information, the geometry must still be resolved:
-        window_server.resolve_monitor_geometry = Mock(return_value=(1922, 3, 4, 5))
-        proto = object()
-        packet = Packet("configure-window", 1, 2, 3, 4, 5, {}, -1)
-        window_server._process_configure_window(proto, packet)
-        config = window_server.do_process_window_configure.call_args.args[2]
-        self.assertEqual(config.intget("resize-counter"), -1)
-        window_server.resolve_monitor_geometry.assert_called_once_with(proto, (2, 3, 4, 5), typedict())
-        self.assertEqual(config.inttupleget("geometry"), (1922, 3, 4, 5))
 
     def test_x11_window_stacking_filter(self):
         from xpra.x11.subsystem.window import SeamlessWindowServer

@@ -9,7 +9,7 @@ import unittest
 from types import SimpleNamespace
 
 from xpra.common import noop
-from xpra.net.common import BACKWARDS_COMPATIBLE, Packet
+from xpra.net.common import Packet
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from unit.process_test_util import DisplayContext
@@ -166,17 +166,6 @@ class PopupModalTest(unittest.TestCase):
             self.create_popup(3)
         self.assertEqual(self.manager._id_to_window, {3: existing})
         self.assertEqual(self.manager._window_to_id, {existing: 3})
-
-    @unittest.skipUnless(BACKWARDS_COMPATIBLE, "legacy packet compatibility is disabled")
-    def test_legacy_override_redirect_packet(self):
-        parent = self.register_window(3, modal=True)
-        self.manager._process_new_override_redirect(Packet(
-            "new-override-redirect", 4, 10, 20, 120, 80, {},
-        ))
-        popup = self.manager.get_window(4)
-        self.assertIsNotNone(popup)
-        self.assertTrue(popup.is_OR())
-        self.assertFalse(parent.get_modal())
 
     def test_close_restores_the_parent_not_the_closing_popup(self):
         parent = self.register_window(3, modal=True)

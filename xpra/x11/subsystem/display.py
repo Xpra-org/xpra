@@ -16,7 +16,7 @@ from xpra.x11.error import xlog, xsync, xswallow, XError
 from xpra.exit_codes import ExitCode
 from xpra.util.system import is_X11
 from xpra.scripts.config import FALSE_OPTIONS, InitExit
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.common import may_notify_client
 from xpra.constants import MAX_WINDOW_SIZE, NotificationID
 from xpra.util.rectangle import rectangle
@@ -91,8 +91,6 @@ def save_server_mode(session_type: str) -> None:
 
 
 def save_server_version():
-    if BACKWARDS_COMPATIBLE:
-        root_set("XPRA_SERVER", "latin1", XPRA_VERSION)
     root_set("XPRA_SERVER_VERSION", "latin1", XPRA_VERSION)
 
 
@@ -300,8 +298,6 @@ class X11DisplayManager(DisplayManager):
         with xswallow:
             root_del("XPRA_SERVER_PID")
             root_del("XPRA_SERVER_VERSION")
-            if BACKWARDS_COMPATIBLE:
-                root_del("XPRA_SERVER")
             if stop:
                 root_del("XPRA_SERVER_MODE")
                 root_del("_XPRA_RANDR_EXACT_SIZE")
@@ -826,8 +822,7 @@ class X11DisplayManager(DisplayManager):
             return {}
         ss = display_clients[0]
         mdef = ss.get_monitor_definitions()
-        if not BACKWARDS_COMPATIBLE:
-            mdef = ss.get_normalized_monitor_definitions()
+        mdef = ss.get_normalized_monitor_definitions()
         if not mdef:
             return {}
         log(f"monitor definition from client {ss}: {mdef}")
@@ -861,5 +856,3 @@ class X11DisplayManager(DisplayManager):
     def init_packet_handlers(self) -> None:
         DisplayManager.init_packet_handlers(self)
         self.add_packets("display-ungrab", main_thread=True)
-        if BACKWARDS_COMPATIBLE:
-            self.add_legacy_alias("force-ungrab", "display-ungrab")

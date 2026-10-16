@@ -21,16 +21,24 @@ class TestVersionUtilModule(unittest.TestCase):
         self.assertIsNone(version_compat_check(__version__))
         self.assertIsNotNone(version_compat_check("0.1"))
 
+    def test_version_compat_check_minimum(self):
+        from xpra.net.common import BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION
+        self.assertEqual(MIN_PROTOCOL_VERSION, (7, 0) if BACKWARDS_COMPATIBLE else (8, 0))
+        # v6 is too old:
+        self.assertIsNotNone(version_compat_check("6.5.5"))
+        # v7 is only supported in backwards compatible mode:
+        self.assertEqual(version_compat_check("7.0") is None, BACKWARDS_COMPATIBLE)
+
     def test_protocol_compat_check(self):
         from xpra import __version_info__
-        from xpra.net.common import BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION
+        from xpra.net.common import MIN_PROTOCOL_VERSION
         # we are always compatible with ourselves:
         self.assertFalse(protocol_compat_check(__version_info__))
         # we must satisfy the minimum version we expose to our peers:
         self.assertFalse(protocol_compat_check(MIN_PROTOCOL_VERSION))
-        # a missing `protocol-version` is only acceptable in backwards compatible mode:
+        # peers that don't expose a minimum `protocol-version` are older than v7:
         for missing in ("", ()):
-            self.assertEqual(not BACKWARDS_COMPATIBLE, bool(protocol_compat_check(missing)))
+            self.assertFalse(protocol_compat_check(missing))
         # we must honour the minimum version required by the remote end,
         # which is never truncated:
         newer = __version_info__[:-1] + (__version_info__[-1] + 1, )

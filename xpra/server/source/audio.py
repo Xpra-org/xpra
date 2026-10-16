@@ -6,7 +6,6 @@
 import os
 from subprocess import Popen
 from shutil import which
-from time import monotonic, sleep
 from typing import Any
 from collections.abc import Sequence, Callable
 
@@ -17,7 +16,7 @@ from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.net.compression import Compressed
 from xpra.server.source.stub import StubClientConnection
 from xpra.common import SizedBuffer, may_notify_client
-from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import FULL_INFO
 from xpra.constants import NotificationID
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import
 from xpra.util.objects import typedict
@@ -68,8 +67,6 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         audio = caps.get(AudioConnection.PREFIX)
         log("is_needed(..) audio=%s", audio)
-        if BACKWARDS_COMPATIBLE and "audio" in caps.strtupleget("wants"):
-            return True
         if isinstance(audio, dict):
             audio = typedict(audio)
             return any(audio.boolget(key) for key in ("send", "receive", "async", "level", "signal"))
@@ -111,14 +108,6 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
     def init_from(self, _protocol, server) -> None:
         # AudioServer is the standalone subsystem instance:
         audio = server.subsystems["audio"]
-        if BACKWARDS_COMPATIBLE:
-            # synchronous initialization: wait for audio
-            until = monotonic() + 5
-            while not audio.properties and monotonic() < until:
-                log("audio init waiting for audio properties")
-                sleep(0.01)
-            if not audio.properties:
-                log.warn("Warning: timeout waiting for audio initialization")
         self.init_audio_from(audio)
         audio.connect("audio-initialized", self.server_audio_initialized)
 
@@ -201,10 +190,8 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
             # the server does not register any audio packet handlers in this case,
             # so don't ask the client to send us `audio-capabilities`:
             return {}
-        if not BACKWARDS_COMPATIBLE:
-            # tell the client to send us a packet when it is ready:
-            return {AudioConnection.PREFIX: {"async": True}}
-        return {AudioConnection.PREFIX: self.get_audio_caps()}
+        # tell the client to send us a packet when it is ready:
+        return {AudioConnection.PREFIX: {"async": True}}
 
     def get_audio_caps(self) -> dict[str, Any]:
         log("get_audio_caps()")

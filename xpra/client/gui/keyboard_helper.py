@@ -17,7 +17,6 @@ from xpra.util.str_fn import std, csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.os_util import OSX
 from xpra.common import noop
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.log import Logger
 
 log = Logger("keyboard")
@@ -256,15 +255,10 @@ class KeyboardHelper:
     def send_key_action(self, wid: int, key_event: KeyEvent) -> None:
         log("send_key_action(%#x, %s)", wid, key_event)
         self.debug_key_event(wid, key_event)
-        if BACKWARDS_COMPATIBLE:
-            packet = ["key-action", wid]
-            for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
-                packet.append(getattr(key_event, x))
-        else:
-            attrs = {}
-            for x in ("modifiers", "keyval", "string", "keycode", "group"):
-                attrs[x] = getattr(key_event, x)
-            packet = ["keyboard-event", wid, key_event.keyname, key_event.pressed, attrs]
+        attrs = {}
+        for x in ("modifiers", "keyval", "string", "keycode", "group"):
+            attrs[x] = getattr(key_event, x)
+        packet = ["keyboard-event", wid, key_event.keyname, key_event.pressed, attrs]
         self.send(*packet)
 
     def get_layout_spec(self) -> tuple[str, str, Sequence[str], str, Sequence[str], str]:
@@ -356,33 +350,9 @@ class KeyboardHelper:
             self.layout_option or self.layout, self.variant_option or self.variant) if bool(x))
 
     def send_config(self) -> None:
-        # this is the initial configuration, it must always be applied:
-        # (the server has been waiting for it, see `DELAY_KEYBOARD_DATA`)
-        if BACKWARDS_COMPATIBLE:
-            if self.layout:
-                self.send_layout()
-            if not self.backend:
-                self.send_keymap(True)
-            return
         props = self.get_keymap_properties()
         props["force"] = True
         self.send(KEYBOARD_CONFIG, props)
-
-    def send_layout(self) -> None:
-        log("send_layout() layout_option=%r, layout=%r, variant_option=%r, variant=%r, options=%r",
-            self.layout_option, self.layout, self.variant_option, self.variant, self.options)
-        log(f"send_layout() backend={self.backend!r}, backend_name={self.backend_name!r}")
-        self.send("layout-changed",
-                  self.layout_option or self.layout or "",
-                  self.variant_option or self.variant or "",
-                  self.options or "",
-                  self.backend or "",
-                  self.backend_name or "")
-
-    def send_keymap(self, force=False) -> None:
-        log("send_keymap(%s)", force)
-        props = {"keymap": self.get_keymap_properties()}
-        self.send("keymap-changed", props, force)
 
     def update_hash(self) -> None:
         import hashlib

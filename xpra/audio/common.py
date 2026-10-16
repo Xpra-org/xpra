@@ -6,8 +6,6 @@
 
 from typing import Iterable
 from collections.abc import Sequence
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.env import envint
 from xpra.util.str_fn import csv
 from xpra.log import Logger
@@ -46,8 +44,8 @@ MP3_MPEG4 = MP3 + "+" + MPEG4
 MP3_ID3V2 = MP3 + "+" + ID3V2
 
 
-AUDIO_DATA_PACKET = "sound-data" if BACKWARDS_COMPATIBLE else "audio-data"
-AUDIO_CONTROL_PACKET = "sound-control" if BACKWARDS_COMPATIBLE else "audio-control"
+AUDIO_DATA_PACKET = "audio-data"
+AUDIO_CONTROL_PACKET = "audio-control"
 AUDIO_KEEPALIVE_PACKET = "audio-keepalive"
 AUDIO_LEVEL_PACKET = "audio-level"
 AUDIO_SIGNAL_PACKET = "audio-signal"

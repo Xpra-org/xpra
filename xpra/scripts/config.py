@@ -18,7 +18,7 @@ from xpra.util.parsing import (
 from xpra.util.str_fn import csv
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid, is_arm
-from xpra.util.env import osexpand, envbool
+from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
 from xpra.util.system import is_DEB, can_use_fakescreenfps
 
@@ -1418,11 +1418,6 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
         Each option is strongly typed and invalid value are discarded.
         We get the required datatype from OPTION_TYPES
     """
-    # options removed in v6,
-    # don't show warnings when running with older config files:
-    BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
-    OLD_OPTIONS: Sequence[str] = ("fake-xinerama", "dbus-proxy", "proxy-video-encoders") if BACKWARDS_COMPATIBLE else ()
-
     validations = OPTIONS_VALIDATION.copy()
     validations.update(extras_validation)
     option_types = OPTION_TYPES.copy()
@@ -1434,8 +1429,6 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
             continue
         vt = option_types.get(k)
         if vt is None:
-            if k in OLD_OPTIONS:
-                continue
             warn(f"Warning: invalid option: {k!r}")
             continue
         if vt is str:

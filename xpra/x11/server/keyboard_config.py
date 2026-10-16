@@ -393,18 +393,6 @@ class KeyboardConfig(KeyboardConfigBase):
         log("is_modifier(%s) not found", keycode)
         return False
 
-    def set_layout(self, layout: str, variant: str, options: str) -> bool:
-        log("set_layout(%s, %s, %s)", layout, variant, options)
-        if layout == "en":
-            log.warn("Warning: invalid keyboard layout name '%s', using 'us' instead", layout)
-            layout = "us"
-        if layout != self.layout or variant != self.variant or options != self.options:
-            self.layout = layout
-            self.variant = variant
-            self.options = options
-            return True
-        return False
-
     def set_keymap(self, translate_only=False) -> None:
         if not self.enabled:
             return

@@ -16,7 +16,6 @@ from xpra.util.thread import start_thread
 from xpra.util.objects import AtomicInteger, typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.codecs.nvidia.cuda.context import (
     init_all_devices, free_default_device_context,
     get_devices, get_device_name,
@@ -1892,7 +1891,7 @@ cdef class Encoder:
             "frame"     : int(self.frames),
             "pts"       : int(timestamp-self.first_frame_timestamp),
         }
-        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not full_range):
+        if range_changed or (self.frames == 0 and not full_range):
             client_options["full-range"] = full_range
         if self.kernel_name:
             client_options["csc-type"] = f"cuda:{self.kernel_name}"

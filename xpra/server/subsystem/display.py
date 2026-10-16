@@ -7,14 +7,13 @@ import os
 from typing import Any
 
 from xpra.net.constants import ConnectionMessage
-from xpra.net.packet_type import DISPLAY_CONFIGURE
 from xpra.os_util import POSIX, OSX
 from xpra.util.rectangle import rectangle
 
 from xpra.server.source.display import DisplayConnection
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.parsing import get_refresh_rate_for_value, parse_sharing_layout, DEFAULT_REFRESH_RATE
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
@@ -213,10 +212,6 @@ class DisplayManager(StubSubsystem):
 
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = self.get_display_caps(source)
-        if BACKWARDS_COMPATIBLE:
-            # legacy: use top level attributes:
-            caps["display"] = caps.get("name", "")
-            return caps
         return {"display": caps}
 
     def get_display_caps(self, source) -> dict[str, Any]:
@@ -387,40 +382,6 @@ class DisplayManager(StubSubsystem):
             rrate = round(rrate / 1000)
         log("get_client_refresh_rate(%s)=%s (from %s)", ss, rrate, vrefresh)
         return rrate
-
-    def _process_desktop_size(self, proto, packet: Packet) -> None:
-        ss = self.get_server_source(proto)
-        if not ss:
-            return
-        log("new desktop size from %s: %s", proto, packet)
-        assert BACKWARDS_COMPATIBLE
-        root_w = packet.get_u16(1)
-        root_h = packet.get_u16(2)
-        screens = packet[3]
-        ss.set_screen_sizes(screens)
-        if len(packet) <= 4:
-            return
-        ndesktops = packet.get_u8(4)
-        desktop_names = packet.get_strs(5)
-        u_root_w = packet.get_u16(6)
-        u_root_h = packet.get_u16(7)
-        xdpi = packet.get_u16(8)
-        ydpi = packet.get_u16(9)
-        rrate = packet.get_u16(10)
-        monitors = packet.get_dict(11)
-        attrs: dict[str, Any] = {
-            "desktop-size": (root_w, root_h),
-            "desktop-size-unscaled": (u_root_w, u_root_h),
-            "monitors": monitors,
-            "dpi": {"x": xdpi, "y": ydpi},
-        }
-        if ndesktops:
-            attrs["desktops"] = ndesktops
-            attrs["desktop-names"] = desktop_names or ()
-        if rrate:
-            attrs["vrefresh"] = rrate
-        packet = Packet(DISPLAY_CONFIGURE, attrs)
-        self._process_configure(proto, packet)
 
     def set_screen_size(self, width: int, height: int):
         """ subclasses should override this method if they support resizing """
@@ -623,7 +584,3 @@ class DisplayManager(StubSubsystem):
 
     def init_packet_handlers(self) -> None:
         self.add_packets("display-configure", "display-request-screenshot", "display-request-icon", main_thread=True)
-        if BACKWARDS_COMPATIBLE:
-            self.add_legacy_alias("configure-display", "display-configure")
-            self.add_legacy_alias("screenshot", "display-request-screenshot")
-            self.add_packets("desktop_size", main_thread=True)

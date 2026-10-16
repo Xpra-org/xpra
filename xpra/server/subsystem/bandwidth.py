@@ -10,7 +10,7 @@ from xpra.server.subsystem.stub import StubSubsystem
 from xpra.util.objects import typedict
 from xpra.util.parsing import parse_with_unit
 from xpra.util.stats import std_unit
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.env import envint
 from xpra.log import Logger
 
@@ -29,8 +29,6 @@ class BandwidthManager(StubSubsystem):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        if BACKWARDS_COMPATIBLE and caps.boolget("network-state"):
-            return True
         return caps.boolget("bandwidth")
 
     def __init__(self, server=None):
@@ -52,11 +50,6 @@ class BandwidthManager(StubSubsystem):
 
     def get_server_features(self, source=None) -> dict[str, Any]:
         caps = BandwidthManager.get_info(self, source)
-        if BACKWARDS_COMPATIBLE:
-            caps["network"] = {
-                "bandwidth-limit": self.limit or 0,
-                "bandwidth-detection": self.detection
-            }
         return caps
 
     def _process_status(self, proto, packet: Packet) -> None:
@@ -91,5 +84,3 @@ class BandwidthManager(StubSubsystem):
 
     def init_packet_handlers(self) -> None:
         self.add_packets("bandwidth-status", "bandwidth-limit")
-        if BACKWARDS_COMPATIBLE:
-            self.add_legacy_alias("connection-data", "bandwidth-status")

@@ -11,7 +11,7 @@ from time import sleep, monotonic
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import FULL_INFO
 from xpra.net.constants import TCP_SOCKTYPES
 from xpra.net.packet_type import ENCODING_SET
 from xpra.server.common import may_update_bandwidth_limits, wants_windows
@@ -53,8 +53,6 @@ class EncodingsConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        if BACKWARDS_COMPATIBLE and "encoding" in caps:
-            return True
         return bool(caps.dictget("encoding") or caps.strtupleget("encodings")) or wants_windows(caps)
 
     def init_state(self) -> None:
@@ -277,10 +275,7 @@ class EncodingsConnection(StubClientConnection):
         # since v6.3, we can have a "batch" dict in the "encoding" caps
         # rather than having it at the top level:
         batch_caps = c.get("batch", {})
-        if BACKWARDS_COMPATIBLE and not isinstance(c.get("encoding"), dict):
-            enc_caps = {}
-        else:
-            enc_caps = c.dictget("encoding")
+        enc_caps = c.dictget("encoding")
         batch_caps = enc_caps.get("batch", batch_caps)
 
         def batch_value(prop: str, default: int, minv=-1, maxv=-1) -> int:
@@ -320,9 +315,8 @@ class EncodingsConnection(StubClientConnection):
 
     def parse_encoding_caps(self, c: typedict, eopts: typedict) -> None:
         window_requested = wants_windows(c)
-        if not BACKWARDS_COMPATIBLE:
-            # should not be used, so blank it:
-            c = typedict()
+        # should not be used, so blank it:
+        c = typedict()
         self.encoding_options.update(eopts)
         self.encodings = eopts.strtupleget("options") or c.strtupleget("encodings")
         self.core_encodings = eopts.strtupleget("core") or c.strtupleget("encodings.core", self.encodings)

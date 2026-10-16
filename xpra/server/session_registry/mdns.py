@@ -15,8 +15,6 @@ session is selected.
 
 import threading
 from typing import Optional
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
 from xpra.net.session_discovery import (
     SessionEndpoint,
@@ -186,9 +184,6 @@ class Registry(SessionRegistry):
                 add(sd.strget(key))
         # legacy: top-level "session-name", and "display" as a string
         add(client_caps.strget("session-name"))
-        raw = client_caps.get("display")
-        if BACKWARDS_COMPATIBLE and isinstance(raw, str):
-            add(str(raw))
         return hints
 
     @staticmethod

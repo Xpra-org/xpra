@@ -6,8 +6,6 @@
 
 import unittest
 from time import monotonic
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import AdHocStruct, typedict
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
@@ -41,9 +39,6 @@ class EncodingMixinTest(ServerMixinTest):
         }, EncodingsConnection)
         # the modern way to change an encoding option:
         self.handle_packet(("encoding-options", {"quality": 10}))
-        if BACKWARDS_COMPATIBLE:
-            # the legacy scalar packet, superseded by `encoding-options`:
-            self.handle_packet(("quality", 10))
 
     def _setup_encoding(self):
         from xpra.server.subsystem.encoding import EncodingServer
@@ -77,7 +72,7 @@ class EncodingMixinTest(ServerMixinTest):
             self.mixin.reinit_encodings()
         finally:
             enc_mod.is_windows_source = orig
-        expected = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
+        expected = "encoding-set"
         self.assertIn(expected, packets,
                       f"reinit_encodings should send {expected!r} to update client encoding capabilities")
 
@@ -87,7 +82,7 @@ class EncodingMixinTest(ServerMixinTest):
         self.source.hello_sent = monotonic()
         self.mixin.threaded_encoding_done = True
         self.mixin.add_new_client(self.source, typedict())
-        expected = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
+        expected = "encoding-set"
         self.assertIn(expected, packets,
                       f"add_new_client should send {expected!r} when encoding setup is complete")
 
@@ -96,7 +91,7 @@ class EncodingMixinTest(ServerMixinTest):
         packets = self._setup_encoding()
         self.mixin.threaded_encoding_done = False
         self.mixin.add_new_client(self.source, typedict())
-        expected = "encodings" if BACKWARDS_COMPATIBLE else "encoding-set"
+        expected = "encoding-set"
         self.assertNotIn(expected, packets,
                          "add_new_client should not send encoding caps while setup is still running")
 

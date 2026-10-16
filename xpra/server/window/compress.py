@@ -20,7 +20,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.thread import check_main_thread, is_main_thread
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, MmapPointerError
+from xpra.net.common import Packet, MmapPointerError
 from xpra.net.packet_type import WINDOW_DRAW
 from xpra.constants import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.common import is_covered_by_opaque_region
@@ -3059,7 +3059,7 @@ class WindowSource(WindowIconSource):
         # send the list of chunks as both:
         # * 'chunks' metadata for newer versions
         # * overloaded 'img_data' for older versions
-        bdata = mmap_data if BACKWARDS_COMPATIBLE else b""
+        bdata = b""
         return (
             "mmap", bdata, client_options,
             image.get_width(), image.get_height(), image.get_rowstride(), len(pf)*8,

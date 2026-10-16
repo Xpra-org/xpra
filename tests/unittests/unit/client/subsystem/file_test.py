@@ -5,8 +5,6 @@
 # later version. See the file COPYING for details.
 
 from unittest.mock import patch
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.file_transfer import FileTransferHandler, RequestedFile
 from xpra.util.objects import AdHocStruct, typedict
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
@@ -55,13 +53,6 @@ class FileClientTest(ClientMixinTest):
         # `file-*` packets live on the subsystem, which the client's dispatcher routes to:
         registered = set(self.packet_handlers) | set(client.get_packet_types())
         self.assertEqual(registered, expected_packets)
-        if BACKWARDS_COMPATIBLE:
-            self.assertEqual(self.legacy_alias["open-url"], "file-open-url")
-            self.assertEqual(self.legacy_alias["send-file"], "file-send")
-            self.assertEqual(self.legacy_alias["send-data-request"], "file-data-request")
-            self.assertEqual(self.legacy_alias["send-data-response"], "file-data-response")
-            self.assertEqual(self.legacy_alias["send-file-chunk"], "file-send-chunk")
-            self.assertEqual(self.legacy_alias["ack-file-chunk"], "file-ack-chunk")
 
         local_caps = client.get_caps()
         self.assertTrue(local_caps["file"]["enabled"])
@@ -89,25 +80,7 @@ class FileClientTest(ClientMixinTest):
         }))
         self.assertFalse(client.remote_request_file)
 
-        if not BACKWARDS_COMPATIBLE:
-            return
-
-        client.parse_server_capabilities(typedict({
-            "file-transfer": True,
-            "file-transfer-ask": True,
-            "file-size-limit": 9876,
-            "file-chunks": 2048,
-            "open-files": True,
-            "open-url": True,
-            "request-file": True,
-        }))
-        self.assertTrue(client.remote_file_transfer)
-        self.assertTrue(client.remote_file_transfer_ask)
-        self.assertEqual(client.remote_file_size_limit, 9876)
-        self.assertEqual(client.remote_file_chunks, 2048)
-        self.assertTrue(client.remote_open_files)
-        self.assertTrue(client.remote_open_url)
-        self.assertTrue(client.remote_request_file)
+        return
 
     def test_cleanup_delegates_to_transfer_handler(self):
         from xpra.client.base.file import File

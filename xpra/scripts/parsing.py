@@ -8,12 +8,10 @@
 
 # pylint: disable=import-outside-toplevel
 
-import re
 import uuid
 import shlex
 import os.path
 import optparse
-import warnings
 from fnmatch import fnmatch
 from urllib import parse
 from typing import Any, NoReturn
@@ -266,26 +264,6 @@ def normalize_display_name(display_name: str) -> str:
         # then the username and password aren't parsed properly!
         pass
 
-    # Normalize legacy connection strings to the canonical URI form,
-    # ie: "tcp://host:port/".
-    pos = display_name.find(":")
-    # duplicated to avoid import:
-    BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
-    if BACKWARDS_COMPATIBLE:
-        legacy_ssh = re.search(r"^ssh:(\w([\w-]{0,61}\w)?):(\d{1,5})$", display_name)
-        if legacy_ssh:
-            # ie: "ssh:host:display" -> "ssh://host/display"
-            host = legacy_ssh.group(1)
-            display = legacy_ssh.group(3)
-            display_name = f"ssh://{host}/{display}"
-            warnings.warn("Warning: the syntax `ssh:host` will be removed in a future release,"
-                          " use `ssh://host:port/display` instead", DeprecationWarning)
-        elif pos > 0 and len(display_name) > pos + 2 and display_name[pos + 1] != "/":
-            # replace the first ":" with "://"
-            # so we end up with a parsable URI, ie: "tcp://host:port/"
-            display_name = display_name[:pos] + "://" + display_name[pos + 1:]
-            warnings.warn("Warning: the syntax `protocol:host` will be removed in a future release,"
-                          " use `protocol://host` instead", DeprecationWarning)
     # workaround missing [] around IPv6 addresses:
     try:
         netloc = parse.urlparse(display_name).netloc

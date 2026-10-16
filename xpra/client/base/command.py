@@ -11,7 +11,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.packet_type import (
-    PRINT_FILE, INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, EXIT_SERVER, SHUTDOWN_SERVER, PING_ECHO,
+    INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, SHUTDOWN_SERVER, PING_ECHO,
 )
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
@@ -19,7 +19,7 @@ from xpra.util.env import envint, first_time
 from xpra.net.constants import ConnectionMessage, MAX_PACKET_SIZE
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
-from xpra.net.common import Packet, PacketElement, disconnect_is_an_error, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, PacketElement, disconnect_is_an_error
 from xpra.util.stats import std_unit
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.client import XpraClientBase
@@ -49,9 +49,7 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         self.command_timeout = None
         self.last_server_event: Sequence[PacketElement] = ()
         # don't bother with many of these things for one-off commands:
-        SKIP = ["ui_client", "windows", "webcam", "keyboard", "pointer", "network-state"]
-        if BACKWARDS_COMPATIBLE:
-            SKIP.append("mouse")
+        SKIP = ["ui_client", "windows", "webcam", "keyboard", "pointer"]
         for x in SKIP:
             self.hello_extra[x] = False
         # for newer versions, it is easier:
@@ -234,7 +232,6 @@ class ScreenshotXpraClient(AbstractImageXpraClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_legacy_alias("screenshot", "display-screenshot")
         self.add_packets("display-screenshot", main_thread=True)
 
 
@@ -394,9 +391,6 @@ class MonitorXpraClient(SendCommandConnectClient):
 
     def __init__(self, opts):
         super().__init__(opts)
-        if BACKWARDS_COMPATIBLE:
-            for x in ("features", "events", "request"):
-                self.hello_extra.setdefault("wants", []).append(x)
         self.hello_extra["request"] = "event"
 
     def timeout(self, *args) -> None:
@@ -411,7 +405,6 @@ class MonitorXpraClient(SendCommandConnectClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_legacy_alias("server-event", "events")
         self.add_packets("events", "ping")
 
     def _process_ping(self, packet: Packet) -> None:
@@ -609,13 +602,7 @@ class VersionXpraClient(HelloRequestClient):
         req: dict[str, Any] = {
             "request": "version",
         }
-        if BACKWARDS_COMPATIBLE:
-            req["full-version-request"] = True
         return req
-
-    def parse_network_capabilities(self, *_args) -> bool:
-        # don't bother checking anything - this could generate warnings
-        return True
 
     def do_command(self, caps: typedict) -> None:
         v = caps.strget("version")
@@ -725,7 +712,7 @@ class RunClient(CommandConnectClient):
 
     def run_request(self) -> dict[str, Any]:
         return {
-            "request": "exec" if self.exec_mode and not BACKWARDS_COMPATIBLE else "run",
+            "request": "exec" if self.exec_mode else "run",
             "run": tuple(self.command),
             "run-wait-time": self.wait_time,
         }
@@ -785,33 +772,17 @@ class PrintClient(SendCommandConnectClient):
 
     def do_command(self, caps: typedict) -> None:
         printer = typedict(caps.dictget("printer"))
-        if printer or not BACKWARDS_COMPATIBLE:
-            info = printer.strget("info", "unknown")
-            code = printer.intget("code", ExitCode.FAILURE)
-            if code != 0:
-                self.warn_and_quit(code, f"print request failed: {info!r}")
-                return
-            log.info("print request has been handled: %s", info)
-            self.quit(ExitCode.OK)
+        info = printer.strget("info", "unknown")
+        code = printer.intget("code", ExitCode.FAILURE)
+        if code != 0:
+            self.warn_and_quit(code, f"print request failed: {info!r}")
             return
-        assert BACKWARDS_COMPATIBLE
-        # backwards compatible mode, send a separate print packet:
-        printing = caps.boolget("printing")
-        if not printing:
-            self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support printing")
-            return
-        # we don't compress file data
-        # (this should run locally most of the time anyway)
-        from xpra.net.compression import Compressed  # pylint: disable=import-outside-toplevel
-        blob = Compressed("print", self.file_data)
-        self.send(PRINT_FILE, self.filename, blob, *self.command)
-        log("print: sending %s as %s for printing", self.filename, blob)
-        self.idle_add(self.send, CONNECTION_CLOSE, ConnectionMessage.DONE.value, "detaching")
+        log.info("print request has been handled: %s", info)
+        self.quit(ExitCode.OK)
+        return
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = super().make_hello()
-        if BACKWARDS_COMPATIBLE:
-            capabilities.setdefault("wants", []).append("features")
         capabilities["request"] = "print"
         capabilities["print"] = ["print", self.filename, self.file_data] + list(self.command)
         return capabilities
@@ -830,11 +801,8 @@ class ExitXpraClient(HelloRequestClient):
 
     def do_command(self, caps: typedict) -> None:
         reason = os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT.value)
-        if BACKWARDS_COMPATIBLE:
-            self.idle_add(self.send, EXIT_SERVER, reason)
-        else:
-            # exit is requested via a `shutdown-server` packet with the exit flag set:
-            self.idle_add(self.send, SHUTDOWN_SERVER, True, reason)
+        # exit is requested via a `shutdown-server` packet with the exit flag set:
+        self.idle_add(self.send, SHUTDOWN_SERVER, True, reason)
 
 
 class StopXpraClient(HelloRequestClient):

@@ -29,21 +29,19 @@ class RunRoutingTest(unittest.TestCase):
             self.assertFalse(mode_needs_ssh_agent(mode))
 
     def test_ssh_proxy_selection(self):
-        for compatible in (False, True):
-            for mode in ("run", "exec"):
-                opts = make_defaults_struct()
-                opts.backend = "gtk"
-                desc = {"type": "ssh", "display_as_args": [":100"]}
-                client = Mock()
-                with patch("xpra.net.common.BACKWARDS_COMPATIBLE", compatible), \
-                     patch("xpra.scripts.main.do_pick_display", return_value=desc), \
-                     patch("xpra.scripts.main.may_show_progress"), \
-                     patch("xpra.scripts.main.connect_to_server") as connect:
-                    connect_client_app(client, [], opts, ["ssh://host/100"], mode, ["echo", "hi"])
-                self.assertEqual(desc["proxy_command"], ["_proxy_exec"] if mode == "exec" and not compatible else ["_proxy_run"])
-                self.assertEqual("--env=XPRA_RUN_WAIT_TIME=0" in desc["display_as_args"], mode == "exec" and compatible)
-                self.assertEqual(desc["display_as_args"][-2:], ["echo", "hi"])
-                connect.assert_not_called()
+        for mode in ("run", "exec"):
+            opts = make_defaults_struct()
+            opts.backend = "gtk"
+            desc = {"type": "ssh", "display_as_args": [":100"]}
+            client = Mock()
+            with patch("xpra.scripts.main.do_pick_display", return_value=desc), \
+                 patch("xpra.scripts.main.may_show_progress"), \
+                 patch("xpra.scripts.main.connect_to_server") as connect:
+                connect_client_app(client, [], opts, ["ssh://host/100"], mode, ["echo", "hi"])
+            self.assertEqual(desc["proxy_command"], ["_proxy_exec"] if mode == "exec" else ["_proxy_run"])
+            self.assertNotIn("--env=XPRA_RUN_WAIT_TIME=0", desc["display_as_args"])
+            self.assertEqual(desc["display_as_args"][-2:], ["echo", "hi"])
+            connect.assert_not_called()
 
     def test_proxy_exec_lifecycle(self):
         client = RunClient.__new__(RunClient)

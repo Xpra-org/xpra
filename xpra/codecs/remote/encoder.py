@@ -45,7 +45,7 @@ class EncoderClient(RemoteCodecClient):
         self.specs = {}
         self.encodings = ()
 
-    def _process_encodings(self, packet: Packet) -> None:
+    def _process_encoding_set(self, packet: Packet) -> None:
         log(f"{Ellipsizer(packet)!r}")
         specs = typedict(packet.get_dict(1)).dictget("video")
         self.specs = dict((k, v) for k, v in specs.items() if k in ENCODINGS)

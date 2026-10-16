@@ -113,7 +113,7 @@ The reference implementation and the only complete one: a production client pack
 |-------------------------|----------------------------------------------------------------------------------------------------|
 | Transports              | Also Unix sockets, named pipes and vsock; VNC support                                              |
 | Authentication          | Password, prompt, file, URI, SCRAM, Kerberos, GSS, U2F/FIDO2 and others                            |
-| Packet types            | Legacy and 6.5+ names, selected with `XPRA_BACKWARDS_COMPATIBLE`                                   |
+| Packet types            | 6.5+ names                                                                                         |
 | Advanced window state   | Shapes, workspaces, transient relationships, fullscreen, stacking, decorations, constraints, grabs |
 | Picture encodings       | Also `scroll`, and others depending on the codecs installed                                        |
 | Video encodings         | HEVC and others too, depending on decoder availability                                             |

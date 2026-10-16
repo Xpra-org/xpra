@@ -77,5 +77,4 @@ class WindowBell(StubClientSubsystem):
         raise NotImplementedError()
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_legacy_alias("bell", "window-bell")
         self.add_packets("window-bell", main_thread=True)

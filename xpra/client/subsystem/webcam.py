@@ -16,7 +16,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, OSEnvContext
 from xpra.util.thread import start_thread
 from xpra.net import compression
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, MmapPointerError
+from xpra.net.common import Packet, MmapPointerError
 from xpra.exit_codes import ExitCode
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.common import may_notify_client
@@ -115,11 +115,6 @@ class WebcamForwarder(StubClientSubsystem):
             self.server_encodings = cdict.strtupleget("encodings", ("png", "jpeg"))
             self.server_rgb_formats = cdict.strtupleget("rgb-formats", ("BGRX", ))
             self.server_client_mode = cdict.boolget("client_mode", False)
-        elif BACKWARDS_COMPATIBLE:
-            # pre v6 / 5.0.2
-            self.server_enabled = c.boolget("webcam")
-            if self.server_enabled:
-                self.server_encodings = c.strtupleget("webcam.encodings", ("png", "jpeg"))
         log("webcam server support: %s (encodings: %s, rgb-formats=%s, client_mode: %s)",
             self.server_enabled, csv(self.server_encodings), csv(self.server_rgb_formats),
             self.server_client_mode)

@@ -28,5 +28,4 @@ class Events(StubClientSubsystem):
 
     def init_authenticated_packet_handlers(self) -> None:
         # run directly from the network thread:
-        self.add_legacy_alias("server-event", "events")
         self.add_packets("events")

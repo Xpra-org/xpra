@@ -5,7 +5,6 @@
 
 from typing import Any
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.os_util import OSX
 from xpra.util.system import is_Ubuntu
 from xpra.util.objects import typedict, make_instance
@@ -69,18 +68,6 @@ class WindowTray(StubClientSubsystem):
         self._window_to_id[tray] = wid
         return tray
 
-    def _process_new_tray(self, packet: Packet) -> None:
-        # legacy packet: newer servers overload `window-create` with `tray=True` metadata instead
-        assert BACKWARDS_COMPATIBLE
-        self.client._ui_event()
-        wid = packet.get_wid()
-        w = packet.get_u16(2)
-        h = packet.get_u16(3)
-        metadata = typedict()
-        if len(packet) >= 5:
-            metadata = typedict(packet.get_dict(4))
-        self.make_new_tray(wid, w, h, metadata)
-
     def make_system_tray(self, *args):
         """ tray used for application systray forwarding """
         tc = self.client.get_system_tray_classes()
@@ -104,14 +91,11 @@ class WindowTray(StubClientSubsystem):
             tray = self.get_window(wid)
             log("tray_click(%s, %s, %s) tray=%s", button, pressed, event_time, tray)
             if tray:
-                x = y = -1
                 if pointer := self.get_subsystem("pointer"):
-                    x, y = pointer.get_mouse_position()
-                keyboard = self.get_subsystem("keyboard")
-                modifiers = keyboard.get_current_modifiers() if keyboard else ()
-                button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
-                log("button_packet=%s", button_packet)
-                self.get_subsystem("pointer").send_positional(*button_packet)
+                    keyboard = self.get_subsystem("keyboard")
+                    modifiers = keyboard.get_current_modifiers() if keyboard else ()
+                    buttons = (button, ) if pressed else ()
+                    pointer.send_button(-1, wid, button, pressed, pointer.get_mouse_position(), modifiers, buttons, {})
                 tray.reconfigure()
 
         def tray_mouseover(x, y):
@@ -229,9 +213,3 @@ class WindowTray(StubClientSubsystem):
         # this sets the default icon (badly named function!)
         log("set_tray_icon() using default icon")
         tray.set_icon()
-
-    def init_authenticated_packet_handlers(self) -> None:
-        if BACKWARDS_COMPATIBLE:
-            # newer servers send trays as `window-create` packets with `tray=True` metadata,
-            # which are handled by the window manager subsystem:
-            self.add_packets("new-tray", main_thread=True)

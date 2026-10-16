@@ -457,7 +457,7 @@ class H264FullRangeParserTest(unittest.TestCase):
 
 
 class SparseOptionSignallingTest(unittest.TestCase):
-    """ with BACKWARDS_COMPATIBLE off, the colour range is only carried in the client options
+    """ the colour range is only carried in the client options
         on keyframes (so a decoder can resume from any of them) and on range transitions;
         steady-state full-range frames omit it entirely.
         the encoders here use a single keyframe (the first frame) over the few frames tested. """
@@ -480,33 +480,27 @@ class SparseOptionSignallingTest(unittest.TestCase):
                     break
             if not spec:
                 continue
-            # the encoders read BACKWARDS_COMPATIBLE from their own module namespace:
-            saved = enc_mod.BACKWARDS_COMPATIBLE
-            enc_mod.BACKWARDS_COMPATIBLE = False
-            try:
-                for full_range, expected in ((True, 0), (False, 1)):
-                    encoder = spec.codec_class()
-                    encoder.init_context(encoding, w, h, in_cs,
-                                         typedict({"full-range": full_range, "dst-formats": list(spec.output_colorspaces)}))
-                    frames = 0
-                    with_flag = 0
-                    for _ in range(5):
-                        image = make_test_image(in_cs, w, h)
-                        image.set_full_range(full_range)
-                        out = encoder.compress_image(image, typedict())
-                        if not out:
-                            continue
-                        frames += 1
-                        if "full-range" in out[1]:
-                            with_flag += 1
-                    encoder.clean()
-                    self.assertGreaterEqual(frames, 2, f"{enc_name}: need at least 2 frames to test")
-                    self.assertEqual(
-                        with_flag, expected,
-                        f"{enc_name}: with BACKWARDS_COMPATIBLE off and full-range={full_range}, "
-                        f"'full-range' appeared in {with_flag} of {frames} frame(s), expected {expected}")
-            finally:
-                enc_mod.BACKWARDS_COMPATIBLE = saved
+            for full_range, expected in ((True, 0), (False, 1)):
+                encoder = spec.codec_class()
+                encoder.init_context(encoding, w, h, in_cs,
+                                     typedict({"full-range": full_range, "dst-formats": list(spec.output_colorspaces)}))
+                frames = 0
+                with_flag = 0
+                for _ in range(5):
+                    image = make_test_image(in_cs, w, h)
+                    image.set_full_range(full_range)
+                    out = encoder.compress_image(image, typedict())
+                    if not out:
+                        continue
+                    frames += 1
+                    if "full-range" in out[1]:
+                        with_flag += 1
+                encoder.clean()
+                self.assertGreaterEqual(frames, 2, f"{enc_name}: need at least 2 frames to test")
+                self.assertEqual(
+                    with_flag, expected,
+                    f"{enc_name}: with full-range={full_range}, "
+                    f"'full-range' appeared in {with_flag} of {frames} frame(s), expected {expected}")
             tested.append(enc_name)
         print(f"tested sparse full-range signalling with: {sorted_nicely(tested)}")
         if not tested:
@@ -514,7 +508,7 @@ class SparseOptionSignallingTest(unittest.TestCase):
 
 
 class OptionMemoryRoundtripTest(unittest.TestCase):
-    """ with BACKWARDS_COMPATIBLE off the colour range is signalled sparsely;
+    """ the colour range is signalled sparsely;
         decoders must preserve it across frames when the bitstream does not restate it """
 
     # (encoder, encoding, input cs, decoder, output cs):
@@ -561,15 +555,11 @@ class OptionMemoryRoundtripTest(unittest.TestCase):
         label = f"{spec.codec_type}->{dec_mod.get_type()}:{encoding}"
         ok = False
         for full_range in (True, False):
-            saved = enc_mod.BACKWARDS_COMPATIBLE
-            enc_mod.BACKWARDS_COMPATIBLE = False
             try:
                 frames = self._encode(spec, encoding, in_cs, full_range)
             except Exception as e:
                 skipped.append(f"{label} (encode: {e})")
                 return ok
-            finally:
-                enc_mod.BACKWARDS_COMPATIBLE = saved
             if len(frames) < 2:
                 skipped.append(f"{label} (only {len(frames)} frame(s))")
                 return ok
@@ -683,12 +673,7 @@ class BitstreamRangeChangeTest(unittest.TestCase):
                     break
             if not spec:
                 continue
-            saved = enc_mod.BACKWARDS_COMPATIBLE
-            enc_mod.BACKWARDS_COMPATIBLE = False
-            try:
-                frames = self._encode_transition_frames(spec, encoding, in_cs, skipped)
-            finally:
-                enc_mod.BACKWARDS_COMPATIBLE = saved
+            frames = self._encode_transition_frames(spec, encoding, in_cs, skipped)
             if not frames:
                 continue
             expected = [None, False, None, True]

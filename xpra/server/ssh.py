@@ -24,7 +24,7 @@ from xpra.util.system import stop_proc
 from xpra.util.thread import start_thread
 from xpra.util.parsing import str_to_bool
 from xpra.common import SizedBuffer
-from xpra.net.common import BACKWARDS_COMPATIBLE, pretty_socket
+from xpra.net.common import pretty_socket
 from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command, get_app_dir
 from xpra.log import Logger
 
@@ -340,9 +340,6 @@ class SSHServer(paramiko.ServerInterface):
         if cmd == ["command", "-v", "xpra"]:
             return csend(out="xpra\r\n")
         if cmd[0] == "ver" and len(cmd) == 1:
-            if WIN32 and BACKWARDS_COMPATIBLE:
-                # older xpra versions run this command to detect win32:
-                return csend(out="Microsoft Windows")
             return csend(1, err=f"{cmd[0]}: not found\r\n")
         if cmd[0] == "echo" and len(cmd) == 2:
             # echo can be used to detect the platform,

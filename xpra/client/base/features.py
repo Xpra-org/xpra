@@ -101,8 +101,7 @@ def set_client_features(opts) -> None:
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
     features.systray = b(opts.system_tray)
-    from xpra.net.common import BACKWARDS_COMPATIBLE
-    features.ping = BACKWARDS_COMPATIBLE or b(opts.pings)
+    features.ping = b(opts.pings)
     features.gsettings = b(opts.gsettings_sync) and icheck("xpra.client.subsystem.gsettings")
     features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
     features.ssh_agent = envbool("XPRA_SSH_AGENT", True)

@@ -6,7 +6,6 @@
 from typing import Any
 
 from xpra.util.objects import typedict
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub import StubClientConnection
 
@@ -25,7 +24,7 @@ class FileConnection(FileTransferHandler, StubClientConnection):
         # so this mixin is also required whenever `PrinterConnection` is:
         if caps.dictget("printer"):
             return True
-        return bool(BACKWARDS_COMPATIBLE and (caps.boolget("file-transfer") or caps.boolget("printing")))
+        return False
 
     def parse_client_caps(self, c: typedict) -> None:
         FileTransferHandler.parse_file_transfer_caps(self, c)

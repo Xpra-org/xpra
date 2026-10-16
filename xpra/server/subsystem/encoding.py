@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from xpra.server.source.encoding import EncodingsConnection
 from xpra.util.env import envint
 from xpra.os_util import OSX
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO
 from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
 from xpra.util.version import vtrim
@@ -307,41 +307,6 @@ class EncodingServer(StubSubsystem):
         ss.set_encoding(encoding, wids)
         window._refresh_windows(proto, wid_windows, {})
 
-    def _process_quality(self, proto, packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._modify_sq(proto, "quality", packet.get_u8(1))
-
-    def _process_min_quality(self, proto, packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._modify_sq(proto, "min-quality", packet.get_u8(1))
-
-    def _process_max_quality(self, proto, packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._modify_sq(proto, "max-quality", packet.get_u8(1))
-
-    def _process_speed(self, proto, packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._modify_sq(proto, "speed", packet.get_u8(1))
-
-    def _process_min_speed(self, proto, packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._modify_sq(proto, "min-speed", packet.get_u8(1))
-
-    def _process_max_speed(self, proto, packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._modify_sq(proto, "max-speed", packet.get_u8(1))
-
-    def _modify_sq(self, proto, attr: str, value: int) -> None:
-        """ modify speed or quality attributes """
-        ss = self.get_server_source(proto)
-        if not ss:
-            return
-        assert attr in ENCODING_OPTIONS
-        log("Setting %s to %s", attr, value)
-        fn = getattr(ss, "set_%s" % attr.replace("-", "_"))
-        fn(value)
-        self.call_idle_refresh_all_windows(proto)
-
     def call_idle_refresh_all_windows(self, proto) -> None:
         # WindowServer may not be loaded (e.g. proxy server).
         if window := self.get_subsystem("window"):
@@ -365,9 +330,3 @@ class EncodingServer(StubSubsystem):
         self.add_packets(f"{EncodingServer.PREFIX}-set",
                          f"{EncodingServer.PREFIX}-options",
                          f"{EncodingServer.PREFIX}-config")
-        if BACKWARDS_COMPATIBLE:
-            self.add_packets(
-                "quality", "min-quality", "max-quality",
-                "speed", "min-speed", "max-speed",
-            )
-            self.add_legacy_alias("encodings", f"{EncodingServer.PREFIX}-set")

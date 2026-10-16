@@ -94,7 +94,6 @@ class LoggingClient(StubClientSubsystem):
 
     def start_receiving_logging(self) -> None:
         self.add_packets("logging-event")
-        self.add_legacy_alias("logging", "logging-event")
         self.send(LOGGING_CONTROL, "start")
 
     def _process_event(self, packet: Packet) -> None:

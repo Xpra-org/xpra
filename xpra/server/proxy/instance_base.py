@@ -15,9 +15,9 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.packet_type import (
     INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
-    CONNECTION_LOST, CONNECTION_CLOSE, PING_ECHO, POINTER_DEVICES,
+    CONNECTION_LOST, CONNECTION_CLOSE, PING_ECHO, POINTER_DEVICES, KEYBOARD_CONFIG,
 )
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO
 from xpra.net.constants import MAX_PACKET_SIZE, ConnectionMessage
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
 from xpra.util.parsing import str_to_bool, parse_number
@@ -43,8 +43,7 @@ PING_TIMEOUT = max(5, envint("XPRA_PROXY_PING_TIMEOUT", 90))
 CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 
-# draw packets can arrive under the current name or the legacy one:
-DRAW_PACKETS = ("window-draw", "draw") if BACKWARDS_COMPATIBLE else ("window-draw", )
+DRAW_PACKETS = ("window-draw", )
 
 
 def number(k, v) -> int:
@@ -131,15 +130,13 @@ class ProxyInstance:
     def run(self) -> ExitValue:
         # server connection tweaks:
         # packets forwarded to the server (client -> server direction):
-        self.server_protocol.large_packets += [POINTER_DEVICES, "keymap-changed", "server-settings"]
+        self.server_protocol.large_packets += [POINTER_DEVICES, KEYBOARD_CONFIG]
         # packets forwarded to the client (server -> client direction) - draw packets
         # and window icons flow this way, so their large-packet exemption belongs on
         # the client protocol (where they are actually sent):
         self.client_protocol.large_packets += [WINDOW_ICON, INFO_RESPONSE, *DRAW_PACKETS]
         if self.caps.boolget("file-transfer"):
             file_large = [FILE_SEND, FILE_SEND_CHUNK]
-            if BACKWARDS_COMPATIBLE:
-                file_large += ["send-file", "send-file-chunk"]
             self.server_protocol.large_packets += file_large
             self.client_protocol.large_packets += file_large
         self.server_protocol.set_compression_level(int(self.session_options.get("compression_level", 0)))
@@ -307,10 +304,6 @@ class ProxyInstance:
             return
         self.client_has_more = proto.receive_pending
         if packet_type == "hello":
-            if BACKWARDS_COMPATIBLE and not self.client_challenge_packet:
-                log.warn("Warning: invalid hello packet from client")
-                log.warn(" received after initial authentication (dropped)")
-                return
             log("forwarding client hello")
             log(" for challenge packet %s", self.client_challenge_packet)
             # update caps with latest hello caps from client:
@@ -470,28 +463,14 @@ class ProxyInstance:
             info.update(self.get_proxy_info(proto))
         elif packet_type in DRAW_PACKETS:
             size = 0
-            if BACKWARDS_COMPATIBLE:
-                # older servers can have mmap offsets or scroll data sent as `pixel_data`:
-                pixel_data = packet[7]
-                if isinstance(pixel_data, (bytes, bytearray, memoryview)):
-                    size = len(pixel_data)
-            else:
-                pixel_data = packet.get_buffer(7)
-                size = len(pixel_data)
+            pixel_data = packet.get_buffer(7)
+            size = len(pixel_data)
             if size > 1024:
                 packet = self.compressed_marker(packet, 7, "pixel-data")
         elif packet_type == AUDIO_DATA_PACKET:
             if packet[2]:
                 # best if we use raw packets for the actual sound-data chunk:
                 packet = self.compressed_marker(packet, 2, AUDIO_DATA_PACKET)
-        # we do want to reformat cursor packets...
-        # as they will have been uncompressed by the network layer already:
-        elif packet_type == "cursor" and BACKWARDS_COMPATIBLE:
-            # packet = ["cursor", "png", x, y, width, height, xhot, yhot, serial, pixels, name]
-            # or:
-            # packet = ["cursor", ""]
-            if len(packet) >= 8:
-                packet = self._packet_recompress(packet, 9, "cursor")
         elif packet_type == CURSOR_DATA:
             packet = self._packet_recompress(packet, 7, "cursor")
         elif packet_type == WINDOW_ICON:

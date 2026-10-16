@@ -7,11 +7,9 @@ from typing import Any
 from collections.abc import Iterable, Sequence
 
 from xpra.util.env import first_time, envint
-from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
 from xpra.util.rectangle import rectangle
 from xpra.util.screen import get_screen_info, MonitorLayout
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
 from xpra.util.parsing import validated_monitor_data
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed
@@ -34,8 +32,7 @@ class DisplayConnection(StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         if isinstance(caps.get(DisplayConnection.PREFIX), (str, dict)):
             return True
-        # legacy clients flattened display attributes at the top level:
-        return BACKWARDS_COMPATIBLE and any(k in caps for k in ("desktop_size", "screen_sizes", "monitors", "vrefresh", "refresh-rate"))
+        return False
 
     def cleanup(self) -> None:
         self.init_state()
@@ -54,7 +51,7 @@ class DisplayConnection(StubClientConnection):
         self.monitor_layout = MonitorLayout()
         # does this client attach a `monitor` descriptor to its window and pointer packets?
         # (required for `sharing=combine`, assumed when we don't support older clients)
-        self.monitor_relative = not BACKWARDS_COMPATIBLE
+        self.monitor_relative = True
         # the area of the server's virtual display that belongs to this client,
         # only used by `sharing=combine` - `None` means the whole display:
         self.display_area: rectangle | None = None
@@ -91,19 +88,15 @@ class DisplayConnection(StubClientConnection):
     def parse_client_caps(self, c: typedict) -> None:
         if isinstance(c.get("display"), str):
             # we can't use a string for anything
-            if not BACKWARDS_COMPATIBLE:
-                log.info("legacy `display` caps not supported")
-                return
+            log.info("legacy `display` caps not supported")
+            return
         else:
             display_caps = c.dictget("display")
-            if not BACKWARDS_COMPATIBLE and not display_caps:
+            if not display_caps:
                 raise ValueError("missing display capabilities")
             self.resize_events = typedict(display_caps).boolget("resize-events", True)
             c = typedict(display_caps or c)
-        if BACKWARDS_COMPATIBLE:
-            self.vrefresh = c.intget("refresh-rate", c.intget("vrefresh", -1))
-        else:
-            self.vrefresh = c.intget("refresh-rate", -1)
+        self.vrefresh = c.intget("refresh-rate", -1)
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size != (0, 0):
             w, h = self.desktop_size
@@ -115,7 +108,7 @@ class DisplayConnection(StubClientConnection):
         self.desktop_fullscreen = c.boolget("desktop-fullscreen")
         self.set_screen_sizes(c.tupleget("screen_sizes"))
         self.set_monitors(c.dictget("monitors"))
-        self.monitor_relative = c.boolget("monitor-relative", not BACKWARDS_COMPATIBLE)
+        self.monitor_relative = c.boolget("monitor-relative", True)
         desktop_names = tuple(str(x) for x in c.tupleget("desktop.names"))
         self.set_desktops(c.intget("desktops", 1), desktop_names)
         self.show_desktop_allowed = c.boolget("show-desktop")
@@ -224,29 +217,7 @@ class DisplayConnection(StubClientConnection):
             self.send_async(DISPLAY_SHOW_DESKTOP, show)
 
     def get_monitor_definitions(self) -> dict[int, Any] | None:
-        if self.monitors or not BACKWARDS_COMPATIBLE:
-            return self.monitors or {}
-        # no? try to extract it from the legacy "screen_sizes" data:
-        # (ie: pre v4.4 clients)
-        log(f"screen sizes for {self}: {self.screen_sizes}")
-        if not self.screen_sizes or len(self.screen_sizes[0]) <= 6:
-            return None
-        monitors = self.screen_sizes[0][5]
-        mdef = {}
-        for i, m in enumerate(monitors):
-            monitor = {
-                "name": bytestostr(m[0]),
-                # "primary"?
-                # "automatic" : True?
-                "geometry": (round(m[1]), round(m[2]), round(m[3]), round(m[4])),
-                "width-mm": round(m[5]),
-                "height-mm": round(m[6]),
-            }
-            if len(m) >= 11:
-                # the workarea is optional: (work_x, work_y, work_width, work_height)
-                monitor["workarea"] = tuple(round(v) for v in m[7:11])
-            mdef[int(i)] = monitor
-        return mdef
+        return self.monitors or {}
 
     def get_normalized_monitor_definitions(self) -> dict[int, Any] | None:
         monitors = self.get_monitor_definitions()

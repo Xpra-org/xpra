@@ -51,16 +51,11 @@ class AudioLoopbackTest(LoopbackTest):
 
     def _connect(self):
         from xpra.client.subsystem.audio import AudioClient
-        from xpra.server.subsystem import audio as server_audio
-        from xpra.server.source import audio as source_audio
         from xpra.server.subsystem.audio import AudioServer
         from xpra.server.source.audio import AudioConnection
-        # avoid spawning the GStreamer query threads on either side, and skip the
-        # backwards-compatible 5s wait for audio properties in init_from:
+        # avoid spawning the GStreamer query threads on either side:
         with patch.object(AudioServer, "init_audio_options", lambda self: None), \
-             patch.object(AudioClient, "load", lambda self: None), \
-             patch.object(source_audio, "BACKWARDS_COMPATIBLE", False), \
-             patch.object(server_audio, "BACKWARDS_COMPATIBLE", False):
+             patch.object(AudioClient, "load", lambda self: None):
             return self.connect(AudioClient, AudioServer, AudioConnection,
                                 client_opts=_client_opts(), server_opts=_server_opts(),
                                 caps={})

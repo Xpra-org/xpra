@@ -5,10 +5,6 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import patch
-
-from xpra.util.objects import typedict, AdHocStruct
-from xpra.net.common import BACKWARDS_COMPATIBLE
 
 
 class HelloTest(unittest.TestCase):
@@ -24,35 +20,7 @@ class HelloTest(unittest.TestCase):
         caps = client._add_common_hello({"display": dict(display_caps)})
         # the display name is always available in the `session` namespace:
         self.assertEqual(caps["session"]["display"], ":10")
-        if BACKWARDS_COMPATIBLE:
-            self.assertEqual(caps["display"], ":10")
-        else:
-            self.assertEqual(caps["display"], display_caps)
-
-    def test_legacy_server(self):
-        # servers running in backwards compatible mode accept peers older than `MIN_PROTOCOL_VERSION`,
-        # and send packets and capabilities which clients using `XPRA_BACKWARDS_COMPATIBLE=0` cannot handle
-        from xpra.client.gui import ui_client_base
-        from xpra.client.gui.ui_client_base import UIXpraClient
-        from xpra.exit_codes import ExitCode
-        quit_codes = []
-        client = AdHocStruct()
-        client._protocol = AdHocStruct()
-        client._protocol.TYPE = "xpra"
-        client.warn_and_quit = lambda exit_code, _message: quit_codes.append(exit_code)
-        legacy_caps = typedict({"protocol-version": (5, 1), "display": ":1"})
-        with (
-            patch.object(ui_client_base, "BACKWARDS_COMPATIBLE", False),
-            patch.object(ui_client_base, "MIN_PROTOCOL_VERSION", (6, 6)),
-        ):
-            self.assertFalse(UIXpraClient.parse_server_capabilities(client, legacy_caps))
-            self.assertEqual(quit_codes, [ExitCode.INCOMPATIBLE_VERSION])
-            # the xpra protocol version is irrelevant for VNC servers:
-            client._protocol.TYPE = "rfb"
-            quit_codes.clear()
-            with patch.object(ui_client_base.XpraClientBase, "parse_server_capabilities", return_value=False):
-                self.assertFalse(UIXpraClient.parse_server_capabilities(client, legacy_caps))
-            self.assertEqual(quit_codes, [])
+        self.assertEqual(caps["display"], display_caps)
 
     def test_no_display(self):
         from xpra.client.base.client import XpraClientBase

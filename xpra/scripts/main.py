@@ -1018,21 +1018,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         from xpra.gtk.dialogs import toolbox
         return toolbox.main(args)
     if mode == "initenv":
-        # this import must stay local:
-        # `xpra.net.common` freezes `BACKWARDS_COMPATIBLE` (and the packet names derived from it
-        # in `xpra.net.packet_type`) when it is first imported,
-        # so it must not be imported before `configure_env` has applied the `env` option
-        from xpra.net.common import BACKWARDS_COMPATIBLE
-        if not BACKWARDS_COMPATIBLE:
-            raise InitExit(ExitCode.UNSUPPORTED, "initenv is no longer supported")
-        # legacy subcommand should be removed in v7
-        if not POSIX:
-            raise InitExit(ExitCode.UNSUPPORTED, "initenv is not supported on this OS")
-        from xpra.server.runner_script import write_runner_shell_scripts
-        from xpra.server.runner_script import xpra_runner_shell_script
-        script = xpra_runner_shell_script(script_file, os.getcwd())
-        write_runner_shell_scripts(script, False)
-        return ExitCode.OK
+        raise InitExit(ExitCode.UNSUPPORTED, "initenv is no longer supported")
     if mode == "setup-ssl":
         from xpra.net.tls.common import setup_ssl
         return setup_ssl(options, args, cmdline)
@@ -1512,11 +1498,7 @@ def connect_client_app(app, cmdline: list[str], opts, extra_args: list[str], mod
             # the ssh command will do what is needed by calling `_proxy_run`:
             display_desc["proxy_command"] = ["_proxy_run"]
             if mode == "exec":
-                from xpra.net.common import BACKWARDS_COMPATIBLE
-                if BACKWARDS_COMPATIBLE:
-                    display_desc["display_as_args"].append("--env=XPRA_RUN_WAIT_TIME=0")
-                else:
-                    display_desc["proxy_command"] = ["_proxy_exec"]
+                display_desc["proxy_command"] = ["_proxy_exec"]
             if opts.backend and opts.backend.lower() != "auto":
                 # forward the backend to the remote `_proxy_run` subcommand so that it can honour it:
                 display_desc["display_as_args"].append(f"--backend={opts.backend}")

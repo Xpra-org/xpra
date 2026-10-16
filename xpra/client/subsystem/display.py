@@ -15,7 +15,7 @@ from xpra.platform.gui import (
     get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name,
 )
 from xpra.scripts.main import check_display
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO
 from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.common import (
     noop, skipkeys, may_notify_client,
@@ -178,10 +178,7 @@ class DisplayClient(StubClientSubsystem):
     # hello:
     def get_caps(self) -> dict[str, Any]:
         dc = self.get_display_caps()
-        if not BACKWARDS_COMPATIBLE:
-            return {DisplayClient.PREFIX: dc}
-        dc["display"] = dict(dc)
-        return dc
+        return {DisplayClient.PREFIX: dc}
 
     def get_display_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {
@@ -190,8 +187,6 @@ class DisplayClient(StubClientSubsystem):
             "refresh-rate": self.get_vrefresh(),
             "refresh-rate.raw": self.get_raw_vrefresh(),
         }
-        if BACKWARDS_COMPATIBLE:
-            caps["vrefresh"] = self.get_vrefresh()
         if FULL_INFO > 0:
             wm_name = get_wm_name()
             if wm_name:
@@ -220,8 +215,6 @@ class DisplayClient(StubClientSubsystem):
             log.info(" desktop size is %sx%s:", u_root_w, u_root_h)
             log_screen_sizes(u_root_w, u_root_h, ss)
         if self.xscale != 1 or self.yscale != 1:
-            if BACKWARDS_COMPATIBLE:
-                caps["screen_sizes.unscaled"] = ss
             caps["desktop_size.unscaled"] = u_root_w, u_root_h
             if self.log_screen_info:
                 root_w, root_h = self.cp(u_root_w, u_root_h)
@@ -235,9 +228,6 @@ class DisplayClient(StubClientSubsystem):
                 log_screen_sizes(root_w, root_h, sss)
         else:
             sss = ss
-        if BACKWARDS_COMPATIBLE:
-            # legacy per-screen tuples; modern servers use the `monitors` dict instead:
-            caps["screen_sizes"] = sss
         monitors = adjust_monitor_refresh_rate(self.refresh_rate, self.get_monitors_info())
         self._monitor_layout = MonitorLayout(monitors)
         caps["monitors"] = monitors
@@ -315,9 +305,6 @@ class DisplayClient(StubClientSubsystem):
         if isinstance(d, dict):
             c = typedict(d)
             self.server_display = c.strget("name")
-        elif BACKWARDS_COMPATIBLE:
-            c = caps
-            self.server_display = c.strget("display")
         else:
             raise ValueError("missing display capabilities, got %r" % d)
         self.server_desktop_size = c.intpair("desktop_size")
@@ -398,7 +385,7 @@ class DisplayClient(StubClientSubsystem):
                 log.warn(" please see https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Xdummy.md")
 
     def send_icc_data(self) -> None:
-        if SYNC_ICC and (not BACKWARDS_COMPATIBLE or "configure-display" in self.get_server_packet_types()):
+        if SYNC_ICC:
             # it is now safe to send the colorspace data if we have any:
             icc = self.get_icc_info()
             dicc = self.get_display_icc_info()
@@ -471,9 +458,6 @@ class DisplayClient(StubClientSubsystem):
         self.server_actual_desktop_size = root_w, root_h
         if self.can_scale:
             self.may_adjust_scaling()
-
-    def _process_desktop_size(self, packet: Packet) -> None:
-        self._process_resized(packet)
 
     def may_adjust_scaling(self) -> None:
         scalinglog("may_adjust_scaling() server_is_desktop=%s, desktop_fullscreen=%s",
@@ -665,32 +649,31 @@ class DisplayClient(StubClientSubsystem):
         root_w, root_h, sss = screen_settings[:3]
         log.info("sending updated screen size to server: %sx%s", root_w, root_h)
         log_screen_sizes(root_w, root_h, sss)
-        if "configure-display" in self.get_server_packet_types() or not BACKWARDS_COMPATIBLE:
-            root_w, root_h = screen_settings[:2]
-            ndesktops, desktop_names = screen_settings[3:5]
-            u_root_w, u_root_h = screen_settings[5:7]
-            xdpi, ydpi = screen_settings[7:9]
-            rrate, monitors = screen_settings[9:11]
-            attrs = {
-                "desktop-size": (root_w, root_h),
-                "desktop-size-unscaled": (u_root_w, u_root_h),
-                "monitors": monitors,
-                "dpi": {"x": xdpi, "y": ydpi},
+        root_w, root_h = screen_settings[:2]
+        ndesktops, desktop_names = screen_settings[3:5]
+        u_root_w, u_root_h = screen_settings[5:7]
+        xdpi, ydpi = screen_settings[7:9]
+        rrate, monitors = screen_settings[9:11]
+        attrs = {
+            "desktop-size": (root_w, root_h),
+            "desktop-size-unscaled": (u_root_w, u_root_h),
+            "monitors": monitors,
+            "dpi": {"x": xdpi, "y": ydpi},
+        }
+        icc = self.get_icc_info()
+        dicc = self.get_display_icc_info()
+        if icc or dicc:
+            attrs["icc"] = {
+                "global": icc,
+                "display": dicc,
             }
-            icc = self.get_icc_info()
-            dicc = self.get_display_icc_info()
-            if icc or dicc:
-                attrs["icc"] = {
-                    "global": icc,
-                    "display": dicc,
-                }
-            if ndesktops:
-                attrs["desktops"] = ndesktops
-                attrs["desktop-names"] = desktop_names or ()
-            if rrate:
-                attrs["vrefresh"] = rrate
-            log(f"configure-display: {attrs}")
-            self.send(DISPLAY_CONFIGURE, attrs)
+        if ndesktops:
+            attrs["desktops"] = ndesktops
+            attrs["desktop-names"] = desktop_names or ()
+        if rrate:
+            attrs["vrefresh"] = rrate
+        log(f"configure-display: {attrs}")
+        self.send(DISPLAY_CONFIGURE, attrs)
         self._last_screen_settings = screen_settings
         # update the max packet size (may have gone up):
         self.set_max_packet_size()
@@ -816,5 +799,4 @@ class DisplayClient(StubClientSubsystem):
         self.emit("scaling-changed")
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_legacy_alias("show-desktop", "display-show-desktop")
         self.add_packets("display-show-desktop", DISPLAY_RESIZED, main_thread=True)

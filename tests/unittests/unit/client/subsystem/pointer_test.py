@@ -32,47 +32,27 @@ class PointerClientTest(ClientMixinTest):
         display.get_monitor_relative_position = lambda _position: (2, 10, 20)
         display.get_server_position = lambda position: (position[0] + 1920, position[1] + 1200)
         self.subsystems = {"display": display}
-        old_compat = pointer.BACKWARDS_COMPATIBLE
-        pointer.BACKWARDS_COMPATIBLE = False
-        try:
-            self.assertEqual(
-                self.mixin.split_pointer_position((100, 200, 5, 6)),
-                (
-                    (2020, 1400),
-                    {
-                        "raw-position": (100, 200),
-                        "window-position": (5, 6),
-                        "monitor": {"index": 2, "position": (10, 20)},
-                    },
-                ),
-            )
-            self.assertEqual(
-                self.mixin.split_pointer_position((100, 200)),
-                (
-                    (2020, 1400),
-                    {
-                        "raw-position": (100, 200),
-                        "monitor": {"index": 2, "position": (10, 20)},
-                    },
-                ),
-            )
-        finally:
-            pointer.BACKWARDS_COMPATIBLE = old_compat
-        pointer.BACKWARDS_COMPATIBLE = True
-        try:
-            self.assertEqual(
-                self.mixin.split_pointer_position((100, 200, 5, 6)),
-                (
-                    (2020, 1400, 5, 6),
-                    {
-                        "raw-position": (100, 200),
-                        "window-position": (5, 6),
-                        "monitor": {"index": 2, "position": (10, 20)},
-                    },
-                ),
-            )
-        finally:
-            pointer.BACKWARDS_COMPATIBLE = old_compat
+        self.assertEqual(
+            self.mixin.split_pointer_position((100, 200, 5, 6)),
+            (
+                (2020, 1400),
+                {
+                    "raw-position": (100, 200),
+                    "window-position": (5, 6),
+                    "monitor": {"index": 2, "position": (10, 20)},
+                },
+            ),
+        )
+        self.assertEqual(
+            self.mixin.split_pointer_position((100, 200)),
+            (
+                (2020, 1400),
+                {
+                    "raw-position": (100, 200),
+                    "monitor": {"index": 2, "position": (10, 20)},
+                },
+            ),
+        )
         self.glib.timeout_add(5000, self.stop)
         self.main_loop.run()
 

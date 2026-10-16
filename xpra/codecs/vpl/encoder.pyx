@@ -18,7 +18,6 @@ from xpra.codecs.constants import (
     VideoSpec, get_profile, get_level, get_level_value, get_level_tuple, is_screen_content, is_video_content,
 )
 from xpra.codecs.image import ImageWrapper
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.log import Logger
 
@@ -414,7 +413,7 @@ cdef class Encoder:
         if self.delayed:
             self.delayed = max(0, self.delayed - 1)
             client_options["delayed"] = self.delayed
-        if BACKWARDS_COMPATIBLE or self.full_range != full_range or (self.frames == 0 and not full_range):
+        if self.full_range != full_range or (self.frames == 0 and not full_range):
             client_options["full-range"] = full_range
         if self.frames == 0:
             client_options["profile"] = self.profile

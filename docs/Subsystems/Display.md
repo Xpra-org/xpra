@@ -61,9 +61,8 @@ the server translates between the two coordinate spaces:
 Only the clients that advertise the `monitor-relative` display capability are given an area:
 without those monitor relative coordinates, the absolute positions sent by a client could
 not be mapped back onto the combined display.
-The other clients (ie: older versions) are left out of the combined layout and see the whole display,
-as they would with `sharing=yes`.
-With `XPRA_BACKWARDS_COMPATIBLE=0`, the server assumes that every client sends them.
+Clients are assumed to send them unless they advertise `monitor-relative=False`,
+those are left out of the combined layout and see the whole display, as they would with `sharing=yes`.
 
 `combine` also requires a seamless server whose virtual display can be re-configured with
 RandR 1.6 (the `dummy` driver with 16 outputs).

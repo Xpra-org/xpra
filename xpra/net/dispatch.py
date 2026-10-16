@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noop
-from xpra.net.common import may_log_packet, Packet, PacketHandlerType, BACKWARDS_COMPATIBLE
+from xpra.net.common import may_log_packet, Packet, PacketHandlerType
 from xpra.log import Logger
 from xpra.util.str_fn import repr_ellipsized
 
@@ -84,8 +84,8 @@ class SubsystemPacketHandlers:
         The name of the method handling this packet type.
         Packets in this subsystem's namespace drop the redundant `PREFIX`:
         the `bell` subsystem handles `bell-set` with `_process_set`.
-        Packets we do not own - legacy `BACKWARDS_COMPATIBLE` names and unprefixed
-        packet types - keep their full name, and so does a subsystem's bare `PREFIX`
+        Packets we do not own - unprefixed packet types - keep their full name,
+        and so does a subsystem's bare `PREFIX`
         (`ping` -> `_process_ping`), which has nothing left to strip.
         """
         subtype = self.packet_subtype(packet_type) if self.owns_packet(packet_type) else ""
@@ -105,26 +105,23 @@ class SubsystemPacketHandlers:
         Register a single packet handler.
         Packets in this subsystem's namespace (`$PREFIX-$PACKETTYPE`) are kept here and
         found by the owner's dispatcher via `find_packet_handler`.
-        Anything else - legacy `BACKWARDS_COMPATIBLE` names, unprefixed packet types -
-        goes into the owner's flat registry.
+        Anything else - unprefixed packet types - goes into the owner's flat registry.
         """
         if not self.owns_packet(packet_type):
-            if not BACKWARDS_COMPATIBLE:
-                # with BC=0, every packet a subsystem registers should be named
-                # `$PREFIX-$PACKETTYPE` so that it can be routed (see #4972):
-                # the flat registry is only meant to carry the legacy names.
-                # If this fires, either rename the packet, or move its handler to the
-                # subsystem that owns the prefix - do not just silence it.
-                log.warn("Warning: %s registers the %r packet,", type(self).__name__, packet_type)
-                if self.PREFIX:
-                    log.warn(" which is outside its own %r namespace", self.PREFIX)
-                else:
-                    log.warn(" but declares no PREFIX to namespace it with")
-                log.warn(" so it is added to the global packet handler registry")
-                log.warn(" instead of being routed to this subsystem")
-                if self.PREFIX:
-                    log.warn(" rename it to '%s-...', or move it to the subsystem owning its prefix",
-                             self.PREFIX)
+            # every packet a subsystem registers should be named
+            # `$PREFIX-$PACKETTYPE` so that it can be routed (see #4972).
+            # If this fires, either rename the packet, or move its handler to the
+            # subsystem that owns the prefix - do not just silence it.
+            log.warn("Warning: %s registers the %r packet,", type(self).__name__, packet_type)
+            if self.PREFIX:
+                log.warn(" which is outside its own %r namespace", self.PREFIX)
+            else:
+                log.warn(" but declares no PREFIX to namespace it with")
+            log.warn(" so it is added to the global packet handler registry")
+            log.warn(" instead of being routed to this subsystem")
+            if self.PREFIX:
+                log.warn(" rename it to '%s-...', or move it to the subsystem owning its prefix",
+                         self.PREFIX)
             self.get_packet_owner().add_packet_handler(packet_type, handler, main_thread)
             return
         self._packet_handlers[self.packet_subtype(packet_type)] = (handler, main_thread)
@@ -154,10 +151,6 @@ class SubsystemPacketHandlers:
         """ the full packet type names registered by this subsystem """
         return tuple(f"{self.PREFIX}-{subtype}" if subtype else self.PREFIX for subtype in self._packet_handlers)
 
-    def add_legacy_alias(self, legacy_name: str, new_name: str) -> None:
-        """ register a backwards-compat packet name alias on the owning server / client """
-        self.get_packet_owner().add_legacy_alias(legacy_name, new_name)
-
 
 class PacketDispatcher:
 
@@ -166,7 +159,6 @@ class PacketDispatcher:
         self._authenticated_ui_packet_handlers: dict[str, Callable] = {}
         self._default_packet_handlers: dict[str, Callable] = {}
         self._default_ui_packet_handlers: dict[str, Callable] = {}
-        self.packet_alias: dict[str, str] = {}
         # subsystem instances keyed by `PREFIX`: each one owns the handlers
         # for the packet types in its own namespace
         self.subsystems: dict[str, Any] = {}
@@ -224,16 +216,8 @@ class PacketDispatcher:
             handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
             self.add_packet_handler(packet_type, handler, main_thread)
 
-    def add_legacy_alias(self, legacy_name: str, new_name: str) -> None:
-        if BACKWARDS_COMPATIBLE:
-            self.packet_alias[legacy_name] = new_name
-
     def dispatch_packet(self, proto, packet: Packet, authenticated=False) -> None:
-        ptype = packet.get_type()
-        packet_type = self.packet_alias.get(ptype, ptype)
-        if packet_type != ptype:
-            # re-write the packet with the new packet name:
-            packet = Packet(packet_type, *packet[1:])
+        packet_type = packet.get_type()
         handler: Callable = noop
 
         def call_handler(main: bool) -> None:

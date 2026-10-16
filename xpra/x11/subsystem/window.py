@@ -17,7 +17,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
 from xpra.common import noop
 from xpra.constants import WORKSPACE_NAMES
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_CREATE, WINDOW_METADATA
 from xpra.server import features
 from xpra.x11.common import Unmanageable, X11Event, get_pid
@@ -444,7 +444,7 @@ class SeamlessWindowServer(WindowServer):
                 self._add_new_window_common(window)
                 window.call_setup()
                 window.managed_connect("notify::geometry", self._or_window_geometry_changed)
-                packet_type = "new-override-redirect" if BACKWARDS_COMPATIBLE else "window-create"
+                packet_type = "window-create"
                 self._do_send_new_window_packet(packet_type, window, window.get_property("geometry"))
                 self.refresh_window(window)
         except Unmanageable as e:
@@ -538,14 +538,8 @@ class SeamlessWindowServer(WindowServer):
         self._do_send_new_window_packet(WINDOW_CREATE, window, window.get_property("geometry"))
 
     def _send_new_tray_window_packet(self, wid: int, window) -> None:
-        if BACKWARDS_COMPATIBLE:
-            # old clients expect a dedicated `new-tray` packet:
-            ww, wh = window.get_dimensions()
-            for ss in self.window_sources():
-                ss.new_tray(wid, window, ww, wh)
-        else:
-            # trays are just `window-create` packets carrying `tray=True` in their metadata:
-            self._do_send_new_window_packet(WINDOW_CREATE, window, window.get_property("geometry"))
+        # trays are just `window-create` packets carrying `tray=True` in their metadata:
+        self._do_send_new_window_packet(WINDOW_CREATE, window, window.get_property("geometry"))
         self.refresh_window(window)
 
     def _lost_window(self, window, wm_exiting=False) -> None:
@@ -700,7 +694,7 @@ class SeamlessWindowServer(WindowServer):
         position = monitor.inttupleget("position") if monitor else ()
         resolved = ss.get_monitor_position(index, position) if index >= 0 and len(position) == 2 else None
         if not resolved:
-            # no usable monitor information (ie: legacy `configure-window` packets),
+            # no usable monitor information (ie: the client did not send any),
             # the position is still relative to this client's area of the display (`sharing=combine`):
             ox, oy = ss.get_display_origin()
             if ox or oy:

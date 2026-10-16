@@ -9,7 +9,6 @@ from collections.abc import Sequence
 
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.common import noop
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import COMMAND_START
 from xpra.util.parsing import str_to_bool
 from xpra.util.objects import typedict
@@ -55,13 +54,6 @@ class CommandClient(StubClientSubsystem):
             # v6.4:
             "menu": self.start_new_commands,
         }
-        if BACKWARDS_COMPATIBLE:
-            caps.update({
-                # pre-v6.4:
-                "xdg-menu": self.start_new_commands,
-                # legacy flag:
-                "xdg-menu-update": True,
-            })
         return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:

@@ -18,8 +18,6 @@ the proxy server's `register` hello-request handler.
 
 import threading
 from typing import Optional
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.server.session_registry import Session, SessionRegistry
 from xpra.log import Logger
@@ -123,9 +121,6 @@ class Registry(SessionRegistry):
             for key in ("name", "uuid", "display"):
                 add(sd.strget(key))
         add(client_caps.strget("session-name"))
-        raw = client_caps.get("display")
-        if BACKWARDS_COMPATIBLE and isinstance(raw, str):
-            add(str(raw))
         return hints
 
     def _matches(self, session: Session, requested: str) -> bool:

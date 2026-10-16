@@ -18,7 +18,6 @@ from xpra.codecs.constants import (
     get_subsampling_divs, is_screen_content,
 )
 from xpra.codecs.image import ImageWrapper
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.env import envint, envbool
 from xpra.util.objects import AtomicInteger, typedict
@@ -695,7 +694,7 @@ cdef class Encoder:
             data = self.do_compress_image(pic_in, strides, full_range, range_changed)
             # the colour range is signalled on every keyframe (so a decoder resuming from any
             # keyframe knows it) and on every transition; steady-state full-range is omitted:
-            if BACKWARDS_COMPATIBLE or range_changed or (self.last_keyframe and not full_range):
+            if range_changed or (self.last_keyframe and not full_range):
                 client_options["full-range"] = bool(full_range)
             return data, client_options
         finally:

@@ -25,7 +25,7 @@ from xpra.server.glib_server import GLibServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
     is_request_allowed, pretty_socket, has_websocket_handler, HttpResponse, Packet,
-    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION,
+    FULL_INFO, LOG_HELLO, MIN_PROTOCOL_VERSION,
 )
 from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, IP_SOCKTYPES, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
@@ -792,7 +792,6 @@ class ServerCore(GLibServer):
             GIBBERISH: self._process_gibberish,
             INVALID: self._process_invalid,
         }
-        self.add_legacy_alias("disconnect", "connection-close")
         netlog("initializing packet handlers for %s", list(self.subsystems))
         self._dispatch_fire("init_packet_handlers")
 
@@ -1613,7 +1612,7 @@ class ServerCore(GLibServer):
             proto.close()
             return
         # the client may require a more recent server version,
-        # this capability is only optional in `BACKWARDS_COMPATIBLE` mode:
+        # (peers that do not expose it are older than v7, the version check above rejects them)
         perr = protocol_compat_check(c.inttupleget("protocol-version"))
         if perr:
             self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
@@ -1787,9 +1786,6 @@ class ServerCore(GLibServer):
             capabilities["hostname"] = socket.gethostname()
         if source and "packet-types" in source.wants:
             packet_types = []
-            if BACKWARDS_COMPATIBLE:
-                packet_types += list(self.packet_alias.keys())
-                packet_types += list(self.packet_alias.values())
             packet_types += self.get_packet_types()
             packet_types += list(self._default_packet_handlers)
             capabilities["packet-types"] = packet_types

@@ -15,7 +15,7 @@ from collections.abc import Callable
 from xpra.common import noop
 from xpra.net.packet_type import LOGGING_EVENT
 from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger, set_global_logging_handler, get_info as get_log_info
@@ -213,24 +213,13 @@ class LoggingManager(StubSubsystem):
         else:
             log.warn("Warning: unknown logging-control action '%r'", action)
 
-    def _process_logging(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._process_event(proto, packet)
-
     def _process_event(self, proto, packet: Packet) -> None:
         assert self.receive
         ss = self.get_server_source(proto)
         if ss is None:
             return
         level = packet.get_u8(1)
-        if BACKWARDS_COMPATIBLE:
-            msg = packet[2]
-            if isinstance(msg, (tuple, list)):
-                dmsg = " ".join(decode(x) for x in msg)
-            else:
-                dmsg = decode(msg)
-        else:
-            dmsg = decode(packet.get_buffer(2))
+        dmsg = decode(packet.get_buffer(2))
         prefix = "client "
         counter = getattr(ss, "counter", 0)
         if counter > 0:
@@ -254,6 +243,5 @@ class LoggingManager(StubSubsystem):
     def init_packet_handlers(self) -> None:
         if self.receive:
             self.add_packets("logging-event")
-            self.add_legacy_alias("logging", "logging-event")
         if self.send:
             self.add_packets("logging-control")

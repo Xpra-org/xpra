@@ -8,7 +8,7 @@ from typing import Any
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.constants import ConnectionMessage
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO
 from xpra.util.objects import typedict
 from xpra.util.version import XPRA_VERSION, vparts
 
@@ -38,7 +38,7 @@ class VersionServer(StubSubsystem):
         }
 
     def _handle_hello_request_version(self, proto, caps: typedict) -> bool:
-        self.send_version_info(proto, (not BACKWARDS_COMPATIBLE) or caps.boolget("full-version-request", True))
+        self.send_version_info(proto, True)
         return True
 
     def send_version_info(self, proto: SocketProtocol, full: bool = False) -> None:

@@ -12,7 +12,7 @@ from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.server.source.window import WindowsConnection
 from xpra.platform.events import add_handler, remove_handler
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import WINDOW_CREATE
 from xpra.log import Logger
@@ -407,17 +407,6 @@ class WindowServer(StubSubsystem):
                                     y += dy
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
-    def _process_draw_ack(self, proto, packet: Packet) -> None:
-        # the legacy ack packet, also known as `damage-sequence`:
-        # it starts with the `packet_sequence` and the `message` is optional
-        packet_sequence = packet.get_u64(1)
-        wid = packet.get_wid(2)
-        width = packet.get_u16(3)
-        height = packet.get_u16(4)
-        decode_time = packet.get_i32(5)
-        message = packet.get_str(6) if len(packet) >= 7 else ""
-        self.do_process_window_ack(proto, wid, width, height, packet_sequence, decode_time, message)
-
     def _process_ack(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         width = packet.get_u16(2)
@@ -441,10 +430,6 @@ class WindowServer(StubSubsystem):
         for ss in self.window_sources():
             ss.damage(wid, window, x, y, width, height, options)
 
-    def _process_buffer_refresh(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._process_refresh(proto, packet)
-
     def _process_refresh(self, proto, packet: Packet) -> None:
         """ can be used for requesting a refresh, or tuning batch config, or both """
         wid = packet.get_wid()
@@ -455,9 +440,7 @@ class WindowServer(StubSubsystem):
         else:
             options = typedict({})
             client_properties = {}
-        if wid == -1 and BACKWARDS_COMPATIBLE:
-            wid_windows = self._id_to_window
-        elif wid == 0:
+        if wid == 0:
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:
             wid_windows = {wid: self.get_window(wid)}
@@ -545,49 +528,6 @@ class WindowServer(StubSubsystem):
             return
         log.info("_process_window_unmaps, %s)", proto, packet)
 
-    def _process_close_window(self, proto, packet: Packet) -> None:
-        if self.is_readonly(proto):
-            return
-        log.info("_process_close_window(%s, %s)", proto, packet)
-
-    def _process_configure_window(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        if self.is_readonly(proto):
-            return
-        wid = packet.get_wid()
-        window = self.get_window(wid)
-        if not window:
-            geomlog("cannot configure window %#x: not found, already removed?", wid)
-            return
-        config = {}
-        x = packet.get_i16(2)
-        y = packet.get_i16(3)
-        w = packet.get_u16(4)
-        h = packet.get_u16(5)
-        skip_geometry = (len(packet) >= 10 and packet.get_bool(9)) or window.is_OR()
-        if not skip_geometry:
-            config["geometry"] = self.resolve_monitor_geometry(proto, (x, y, w, h), typedict())
-        if len(packet) >= 8:
-            # Legacy clients have historically used -1 as the sentinel for
-            # a resize notification without a counter.
-            config["resize-counter"] = packet.get_i64(7)
-        if len(packet) >= 7:
-            cprops = packet.get_dict(6)
-            if cprops:
-                config["properties"] = cprops
-        if len(packet) >= 9:
-            config["state"] = packet.get_dict(8)
-        if len(packet) >= 13:
-            pwid = packet.get_wid(10)
-            position = packet.get_ints(11)
-            modifiers = packet.get_strs(12)
-            config["pointer"] = {
-                "wid": pwid,
-                "position": position,
-                "modifiers": modifiers,
-            }
-        self.do_process_window_configure(proto, wid, typedict(config))
-
     def _process_configure(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -649,13 +589,9 @@ class WindowServer(StubSubsystem):
             if window.is_tray():
                 # code more or less duplicated from _send_new_tray_window_packet:
                 if ss.system_tray:
-                    if BACKWARDS_COMPATIBLE:
-                        # old clients expect a dedicated `new-tray` packet:
-                        ss.new_tray(wid, window, w, h)
-                    else:
-                        # trays are just `window-create` packets carrying `tray=True` in their metadata:
-                        wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
-                        ss.new_window(WINDOW_CREATE, wid, window, x, y, w, h, wprops)
+                    # trays are just `window-create` packets carrying `tray=True` in their metadata:
+                    wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
+                    ss.new_window(WINDOW_CREATE, wid, window, x, y, w, h, wprops)
                     ss.damage(wid, window, 0, 0, w, h)
                 elif not sharing:
                     # park it outside the visible area
@@ -671,7 +607,7 @@ class WindowServer(StubSubsystem):
                 if not sharing and not window.is_OR():
                     window.hide()
                 wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
-                packet_type = "new-override-redirect" if (window.is_OR() and BACKWARDS_COMPATIBLE) else WINDOW_CREATE
+                packet_type = WINDOW_CREATE
                 ss.new_window(packet_type, wid, window, x, y, w, h, wprops)
                 ss.damage(wid, window, 0, 0, w, h)
 
@@ -718,14 +654,6 @@ class WindowServer(StubSubsystem):
         return -1
 
     def init_packet_handlers(self) -> None:
-        if BACKWARDS_COMPATIBLE:
-            self.add_legacy_alias("map-window", "window-map")
-            self.add_legacy_alias("unmap-window", "window-unmap")
-            self.add_legacy_alias("close-window", "window-close")
-            self.add_legacy_alias("focus", "window-focus")
-            self.add_legacy_alias("damage-sequence", "window-draw-ack")
-            # some packet mangling needed:
-            self.add_packets("buffer-refresh", "configure-window", main_thread=True)
         self.add_packets(
             "window-map",
             "window-unmap",
@@ -736,7 +664,6 @@ class WindowServer(StubSubsystem):
             "window-refresh",
             "window-action",
             "window-ack",
-            "window-draw-ack",
             main_thread=True)
 
     #########################################

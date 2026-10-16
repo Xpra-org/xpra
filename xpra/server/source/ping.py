@@ -11,7 +11,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.system import getloadavg
-from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import FULL_INFO
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import PING_ECHO
 from xpra.server.source.stub import StubClientConnection
@@ -33,8 +33,6 @@ class PingConnection(StubClientConnection):
             return True
         if typedict(caps.dictget("network")).intget("pings") > 0:
             return True
-        if BACKWARDS_COMPATIBLE:
-            return caps.boolget("ping-echo-sourceid")  # legacy clients
         return False
 
     def init_state(self) -> None:
@@ -47,8 +45,6 @@ class PingConnection(StubClientConnection):
         self.cancel_ping_echo_timers()
 
     def get_caps(self) -> dict[str, Any]:
-        if BACKWARDS_COMPATIBLE:
-            return {"ping-echo-sourceid": True}  # legacy flag
         return {}
 
     def get_info(self) -> dict[str, Any]:

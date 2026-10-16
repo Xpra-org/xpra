@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.net import compression
-from xpra.net.common import FULL_INFO, pretty_socket, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION
+from xpra.net.common import FULL_INFO, pretty_socket, MIN_PROTOCOL_VERSION
 from xpra.net.net_util import get_network_caps, get_info
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.objects import typedict
@@ -21,7 +21,7 @@ class Network(StubClientSubsystem):
     """
     Protocol caps
     """
-    __slots__ = ("compression_level", "server_compressors", "server_packet_types")
+    __slots__ = ("compression_level", "server_compressors")
     PREFIX = "network"
 
     def __init__(self, client=None):
@@ -31,17 +31,13 @@ class Network(StubClientSubsystem):
         # populated by `init()`/`parse_server_capabilities()`, but `compressed_wrapper()`
         # may be called earlier (eg: logging during startup), so default them here:
         self.server_compressors: Sequence[str] = ()
-        self.server_packet_types: Sequence[str] = ()
 
     def init(self, opts) -> None:
         self.compression_level = opts.compression_level
         self.server_compressors = []
-        if BACKWARDS_COMPATIBLE:
-            self.server_packet_types = ()
 
     def get_caps(self) -> dict[str, Any]:
         caps = get_network_caps(FULL_INFO)
-        caps["network-state"] = True
         # the minimum version we are willing to talk to:
         caps["protocol-version"] = MIN_PROTOCOL_VERSION
         return caps
@@ -59,9 +55,6 @@ class Network(StubClientSubsystem):
         p.enable_compressor_from_caps(caps)
         p.parse_remote_caps(caps)
         self.server_compressors = caps.strtupleget("compressors")
-        if BACKWARDS_COMPATIBLE:
-            self.server_packet_types = caps.strtupleget("packet-types")
-            log(f"parse_network_capabilities(..) server_packet_types={self.server_packet_types}")
         return True
 
     def get_info(self) -> dict[str, Any]:

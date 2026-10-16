@@ -489,9 +489,8 @@ class TestMain(unittest.TestCase):
             self._test_subcommand("version-info")
 
     def test_net_common_not_imported_early(self):
-        # `xpra.net.common` freezes `BACKWARDS_COMPATIBLE` when it is first imported,
-        # and `xpra.net.packet_type` derives all its packet names from it,
-        # so importing it before `configure_env` has applied the `env` option
+        # `xpra.net.common` freezes `BACKWARDS_COMPATIBLE` (and the `MIN_PROTOCOL_VERSION` derived from it)
+        # when it is first imported, so importing it before `configure_env` has applied the `env` option
         # would silently ignore `env=XPRA_BACKWARDS_COMPATIBLE=0`
         # (from the command line via `--env` or from a configuration file)
         script = "\n".join((
@@ -505,27 +504,6 @@ class TestMain(unittest.TestCase):
         ))
         r = run([sys.executable, "-c", script], stdout=DEVNULL, stderr=PIPE)
         assert r.returncode == 0, f"early import check failed: {r.stderr.decode()}"
-
-    def test_backwards_compatible_env_option(self):
-        if not POSIX:
-            # `initenv` is unsupported on other platforms for unrelated reasons
-            return
-        # `initenv` is refused when backwards compatibility is turned off,
-        # which makes it an observable end-to-end check that `--env` is applied
-        # early enough to reach `xpra.net.common`:
-        proc = self._run_subcommand("--env=XPRA_BACKWARDS_COMPATIBLE=0 initenv")
-        try:
-            assert proc.returncode == ExitCode.UNSUPPORTED, \
-                f"expected {int(ExitCode.UNSUPPORTED)} with backwards compatibility disabled, " \
-                f"got {proc.returncode}{self._subcommand_output(proc)}"
-        finally:
-            self._close_subcommand_output(proc)
-        # and that the check is not vacuous:
-        proc = self._run_subcommand("--env=XPRA_BACKWARDS_COMPATIBLE=1 initenv")
-        try:
-            assert proc.returncode == 0, f"initenv failed with {proc.returncode}{self._subcommand_output(proc)}"
-        finally:
-            self._close_subcommand_output(proc)
 
     def test_encoding_option_loads_the_codecs_on_the_decode_thread(self):
         # `ensure_codecs_loaded()` waits for the decode thread, so the decode subsystem

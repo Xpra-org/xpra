@@ -5,8 +5,6 @@
 
 import socket
 from typing import Any
-
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.system import get_generic_os_name
 from xpra.util.io import load_binary_file
@@ -87,10 +85,6 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         "content-types",
         "set-initial-position",
     ]
-    if BACKWARDS_COMPATIBLE:
-        _property_names.append("content-type")
-    if BACKWARDS_COMPATIBLE:
-        _property_names.append("shadow")
     _dynamic_property_names = ["size-constraints", "title", "icons"]
 
     def __init__(self):
@@ -189,14 +183,10 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             return socket.gethostname()
         if prop == "window-type":
             return ["NORMAL"]
-        if prop == "shadow" and BACKWARDS_COMPATIBLE:
-            return True
         if prop == "desktop":
             return True
         if prop == "class-instance":
             return "xpra-desktop", "Xpra-Desktop"
-        if BACKWARDS_COMPATIBLE and prop == "content-type":
-            return "desktop"
         if prop == "content-types":
             return ("desktop", )
         if prop == "set-initial-position":

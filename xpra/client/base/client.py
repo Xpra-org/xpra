@@ -19,11 +19,13 @@ from xpra.net.constants import ConnectionMessage
 from xpra.net.common import (
     Packet, PacketElement,
     disconnect_is_an_error,
-    FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE,
+    FULL_INFO, LOG_HELLO,
 )
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
-from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER, POINTER_DEVICES
+from xpra.net.packet_type import (
+    CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER, POINTER_DEVICES, KEYBOARD_CONFIG, LOGGING_EVENT,
+)
 from xpra.util.thread import is_main_thread
 from xpra.util.version import get_version_info
 from xpra.net.digest import get_salt
@@ -95,12 +97,6 @@ class XpraClientBase(PacketDispatcher):
         part of this class hierarchy, they are always composed instances)
         """
         return self.subsystems.get(name)
-
-    def get_server_packet_types(self) -> Sequence[str]:
-        """ the packet types the server is willing to receive (see `network` subsystem) """
-        if network := self.get_subsystem("network"):
-            return network.server_packet_types
-        return ()
 
     def add_control_command(self, name: str, control) -> None:
         # delegate to the `control` subsystem (mirror of `ServerCore.add_control_command`),
@@ -313,7 +309,7 @@ class XpraClientBase(PacketDispatcher):
         protocol = protocol_class(conn, self.process_packet, self.next_packet)
         self._protocol = protocol
         if protocol.TYPE != "rfb":
-            for x in ("keymap-changed", "server-settings", "logging", POINTER_DEVICES):
+            for x in (KEYBOARD_CONFIG, LOGGING_EVENT, POINTER_DEVICES):
                 protocol.large_packets.append(x)
             protocol.set_compression_level(1)
             protocol.enable_default_encoder()
@@ -355,8 +351,6 @@ class XpraClientBase(PacketDispatcher):
                 hello["challenge"] = True
             else:
                 hello = self.make_hello()
-            if BACKWARDS_COMPATIBLE:
-                hello.setdefault("wants", []).append("packet-types")
         except InitExit as e:
             log.error("error preparing connection:")
             log.estr(e)
@@ -399,12 +393,6 @@ class XpraClientBase(PacketDispatcher):
         return self._add_common_hello(capabilities)
 
     def _add_common_hello(self, capabilities: dict[str, Any]) -> dict[str, Any]:
-        # shared by `make_hello_base` and `make_hello`:
-        # legacy servers expect the display name in this top level attribute,
-        # but it is also the namespace used by the display subsystem's capabilities,
-        # so only send it to the servers that need it - the others use `session.display`:
-        if self.display and BACKWARDS_COMPATIBLE:
-            capabilities["display"] = self.display
         session = self.get_session_caps()
         if session:
             capabilities["session"] = session
@@ -444,8 +432,6 @@ class XpraClientBase(PacketDispatcher):
         """
         capabilities = self._dispatch_merge("get_caps")
         capabilities = self._add_common_hello(capabilities)
-        if BACKWARDS_COMPATIBLE:
-            capabilities.setdefault("keyboard", False)
         return capabilities
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
@@ -722,7 +708,6 @@ class XpraClientBase(PacketDispatcher):
         self._default_ui_packet_handlers[CONNECTION_LOST] = self._process_connection_lost
         self._default_ui_packet_handlers[GIBBERISH] = self._process_gibberish
         self._default_ui_packet_handlers[INVALID] = self._process_invalid
-        self.add_legacy_alias("disconnect", "connection-close")
         self._dispatch_fire("init_packet_handlers")
 
     def init_authenticated_packet_handlers(self) -> None:

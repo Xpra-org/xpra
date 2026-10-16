@@ -111,30 +111,22 @@ def protocol_compat_check(remote_protocol_version) -> str:
     The peer exposes the minimum version it is willing to talk to
     as its "protocol-version" capability,
     verify that this version is recent enough to satisfy it.
-    This capability is only optional in `BACKWARDS_COMPATIBLE` mode.
+    Peers that don't expose it are treated as requiring `DEFAULT_PROTOCOL_VERSION`,
+    which we always satisfy.
     Returns an error message, or an empty string if we are compatible.
     """
     if not CHECK_PROTOCOL_VERSION:
         log("protocol_compat_check(%s) skipped", remote_protocol_version)
         return ""
-    from xpra.net.common import BACKWARDS_COMPATIBLE
     if not remote_protocol_version:
-        if BACKWARDS_COMPATIBLE:
-            # not specified: nothing to check
-            log("no minimum protocol version specified by the remote end")
-            return ""
-        msg = "the remote end does not expose its minimum protocol version"
-        log(msg)
-        return msg
+        log("no minimum protocol version specified by the remote end")
+        return ""
     try:
         rv = parse_version(remote_protocol_version)
     except ValueError:
         msg = f"failed to parse remote protocol version {remote_protocol_version!r}"
-        if not BACKWARDS_COMPATIBLE:
-            log(msg)
-            return msg
-        warn(f"Warning: {msg}")
-        return ""
+        log(msg)
+        return msg
     rvstr = ".".join(str(part) for part in rv)
     try:
         if XPRA_NUMERIC_VERSION < rv:
@@ -166,15 +158,13 @@ def version_compat_check(remote_version) -> str | None:
     if rv[:2] == XPRA_NUMERIC_VERSION[:2]:
         log(f"identical major.minor in remote version: {rvstr!r}")
         return None
+    from xpra.net.common import MIN_PROTOCOL_VERSION
     try:
-        if rv[0:2] < (3, 0):
+        if rv[0:2] < MIN_PROTOCOL_VERSION:
             # this is the oldest version we support
             msg = f"remote version {rvstr!r} is too old, sorry"
             log(msg)
             return msg
-        if rv[0:2] < (3, 1, 9):
-            warn(f"Warning: remote version {rvstr!r} is outdated and buggy")
-            return None
     except TypeError as e:
         msg = f"invalid remote version {rvstr!r}: {e}"
         log(msg)

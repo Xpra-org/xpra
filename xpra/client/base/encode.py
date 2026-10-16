@@ -10,7 +10,7 @@ from typing import Sequence, Any
 from xpra.client.base.command import HelloRequestClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, MmapPointerError
+from xpra.net.common import Packet, MmapPointerError
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -47,7 +47,6 @@ class EncodeClient(HelloRequestClient):
         # this handler writes files, which the parse thread's seccomp filter does not allow:
         self.add_packets("encode-response", main_thread=True)
         self.add_packets("encoding-set")
-        self.add_legacy_alias("encodings", "encoding-set")
         self.decompress = decompress
         self.encoding_options = {}
         self.encodings = get_encodings()
@@ -117,8 +116,6 @@ class EncodeClient(HelloRequestClient):
         mmap_sub = self.get_subsystem("mmap")
         if mmap_sub:
             hello.update(mmap_sub.get_caps())
-        if BACKWARDS_COMPATIBLE:
-            hello["ui_client"] = True
         log(f"{hello=}")
         return hello
 

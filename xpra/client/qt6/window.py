@@ -9,7 +9,6 @@ from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeyEvent
 from PyQt6.QtWidgets import QMainWindow, QLabel, QSizePolicy
 
 from xpra.constants import MoveResize
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import POINTER_BUTTON, WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE, POINTER_MOTION
 from xpra.client.qt6.keys import key_names
 from xpra.log import Logger
@@ -248,17 +247,13 @@ class ClientWindow(QMainWindow):
         native_modifiers = event.nativeModifiers()
         vk = event.nativeVirtualKey()
         log(f"key: {name!r}, {keyval=}, {keycode=}, {modifiers=} {native_modifiers=}, {vk=}")
-        if BACKWARDS_COMPATIBLE:
-            group = 0
-            self.send("key-action", self.wid, name, pressed, modifiers, keyval, string, keycode, group)
-        else:
-            self.send("keyboard-event", self.wid, name, pressed, {
-                "modifiers": modifiers,
-                "keyval": keyval,
-                "string": string,
-                "keycode": keycode,
-                "backend": "qt",
-            })
+        self.send("keyboard-event", self.wid, name, pressed, {
+            "modifiers": modifiers,
+            "keyval": keyval,
+            "string": string,
+            "keycode": keycode,
+            "backend": "qt",
+        })
 
     def draw(self, x, y, w, h, coding, data, stride) -> None:
         if coding in ("png", "jpeg", "webp"):

@@ -11,7 +11,6 @@ import unittest
 from xpra.util.objects import typedict
 from xpra.os_util import OSX, POSIX
 from xpra.util.io import pollwait, which
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.codecs.image import ImageWrapper
 from unit.server_test_util import ServerTestUtil
 
@@ -100,7 +99,7 @@ class ShadowServerTest(ServerTestUtil):
         assert repr(rwm)
         assert rwm.get_info()
         assert "content-types" in rwm.get_internal_property_names()
-        assert ("content-type" in rwm.get_internal_property_names()) is BACKWARDS_COMPATIBLE
+        assert "content-type" not in rwm.get_internal_property_names()
         rwm.get_default_window_icon(32)
         for prop in ("title", "class-instance", "size-constraints", "icons"):
             rwm.get_property(prop)
@@ -115,8 +114,6 @@ class ShadowServerTest(ServerTestUtil):
             "content-types"       : ("desktop",),
         }.items():
             assert rwm.get_property(prop)==value
-        if BACKWARDS_COMPATIBLE:
-            assert rwm.get_property("content-type") == "desktop"
         rwm.suspend()
         rwm.unmanage(True)
         assert rwm.take_screenshot()

@@ -14,7 +14,7 @@ from xpra.net.constants import ConnectionMessage
 from xpra.server.source.clipboard import ClipboardConnection
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, PacketElement
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
@@ -219,7 +219,7 @@ class ClipboardManager(StubSubsystem):
             return
         self.may_record("server", *packet)
         packet_type = packet.get_type()
-        if packet_type == "clipboard-status" or (BACKWARDS_COMPATIBLE and packet_type == "set-clipboard-enabled"):
+        if packet_type == "clipboard-status":
             self._process_status(proto, packet)
             return
         if self.client != ss:
@@ -291,9 +291,6 @@ class ClipboardManager(StubSubsystem):
                     "status",
             ):
                 self.add_packet_handler(f"{ClipboardManager.PREFIX}-%s" % x, self._process_packet)
-            if BACKWARDS_COMPATIBLE:
-                self.add_packet_handler(f"{ClipboardManager.PREFIX}-token", self._process_packet)
-            self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardManager.PREFIX}-status")
 
     #########################################
     # Control Commands

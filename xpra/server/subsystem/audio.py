@@ -13,7 +13,7 @@ from xpra.audio.common import AUDIO_KEEPALIVE_PACKET, SILENCE_FLOOR_DB
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.util.env import first_time, envbool, envint
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import audio_option
 from xpra.server.source.audio import AudioConnection
@@ -382,10 +382,6 @@ class AudioServer(StubSubsystem):
         log(" microphone: supported=%s, decoders=%s", self.supports_microphone, csv(self.microphone_codecs))
         log(" audio properties=%s", self.properties)
 
-    def _process_sound_control(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._process_control(proto, packet)
-
     def _process_control(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -398,10 +394,6 @@ class AudioServer(StubSubsystem):
             return
         # noinspection calling-non-callable
         audio_control(*packet[1:])
-
-    def _process_sound_data(self, proto, packet: Packet) -> None:
-        assert BACKWARDS_COMPATIBLE
-        self._process_data(proto, packet)
 
     def _process_data(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
@@ -421,8 +413,6 @@ class AudioServer(StubSubsystem):
             self.add_packets(f"{AudioServer.PREFIX}-data")
             self.add_packets(f"{AudioServer.PREFIX}-capabilities", main_thread=True)
             self.add_packets(AUDIO_KEEPALIVE_PACKET)
-            self.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")
-            self.add_legacy_alias("sound-data", f"{AudioServer.PREFIX}-data")
 
     #########################################
     # Control Commands

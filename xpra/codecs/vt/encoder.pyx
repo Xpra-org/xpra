@@ -21,7 +21,6 @@ from xpra.log import Logger
 log = Logger("encoder", "videotoolbox")
 
 from xpra.codecs.image import ImageWrapper
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import (
@@ -668,7 +667,7 @@ cdef class Encoder:
             "frame"         : int(self.frames),
             "csc"           : OUTPUT_COLORSPACE[self.src_format],
         }
-        if BACKWARDS_COMPATIBLE or range_changed or (self.frames == 0 and not self.full_range):
+        if range_changed or (self.frames == 0 and not self.full_range):
             client_options["full-range"] = bool(self.full_range)
         if self.frame_keyframe:
             client_options["type"] = "IDR"

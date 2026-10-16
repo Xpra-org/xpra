@@ -26,7 +26,6 @@ from xpra.scripts.config import (
     fixup_options,
 )
 from xpra.common import noerr
-from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
 from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
@@ -567,13 +566,10 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         warn(f"current working directory does not exist, using {cwd!r}")
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.server.runner_script import xpra_runner_shell_script, xpra_env_shell_script
+    from xpra.server.runner_script import xpra_env_shell_script
     save_env = os.environ.copy()
     save_env.update(parse_env(opts.env))
     env_script = xpra_env_shell_script(opts.socket_dirs, save_env)
-    run_xpra_script = ""
-    if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
-        run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
 
     sanitize_dbus_env(opts.dbus)
     if (upgrading or shadowing) and opts.pulseaudio is None:
@@ -721,12 +717,6 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     session_files.write_config(opts)
     session_files.write_session_file("cmdline", "\n".join(cmdline) + "\n")
     session_files.write_session_file("server.env", env_script)
-    if run_xpra_script:
-        # Write out a shell-script so that we can start our proxy in a clean
-        # environment:
-        assert BACKWARDS_COMPATIBLE
-        from xpra.server.runner_script import write_runner_shell_scripts
-        write_runner_shell_scripts(run_xpra_script)
 
     log_to_file = opts.daemon or envbool("XPRA_LOG_TO_FILE")
     if daemon := app.get_subsystem("daemon"):
