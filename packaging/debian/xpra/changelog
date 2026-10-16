@@ -1,3 +1,8 @@
+xpra (8.0-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 16 Oct 2026 12:30:26 +0700
+
 xpra (7.0-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
     new macOS event API

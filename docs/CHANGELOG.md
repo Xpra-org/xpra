@@ -1,5 +1,8 @@
 # Changelog
 
+## [8.0] 2026-10-16
+* TODO
+
 ## [7.0] 2026-10-16
 * 🔧 Platforms, build and packaging:
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)

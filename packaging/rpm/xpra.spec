@@ -85,7 +85,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			7.0
+Version:			8.0
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1165,6 +1165,8 @@ fi
 
 
 %changelog
+* Fri Oct 16 2026 Antoine Martin <antoine@xpra.org> 8.0-10
+- TODO
 * Fri Oct 16 2026 Antoine Martin <antoine@xpra.org> 7.0-10
 - 🔧 Platforms, build and packaging:
    new macOS event API
