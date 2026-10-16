@@ -51,7 +51,7 @@ AUDIO_LEVEL_PACKET = "audio-level"
 AUDIO_SIGNAL_PACKET = "audio-signal"
 AUDIO_KEEPALIVE_INTERVAL = envint("XPRA_AUDIO_KEEPALIVE_INTERVAL", 5)
 AUDIO_KEEPALIVE_TIMEOUT = envint("XPRA_AUDIO_KEEPALIVE_TIMEOUT", 10)
-SILENCE_FLOOR_DB = -120.0
+SILENCE_FLOOR_DB = -120
 
 # PulseAudio receives the server's terminal signal directly (ie: Ctrl-C) and may exit
 # before our audio subprocesses process their cleanup request:
