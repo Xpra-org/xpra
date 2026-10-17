@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Sequence, Any
+from typing import Any
+from collections.abc import Sequence
 
 from xpra.client.base.command import HelloRequestClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress

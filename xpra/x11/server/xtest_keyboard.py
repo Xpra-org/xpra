@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from xpra.x11.error import xsync, xlog
 from xpra.x11.xkbhelper import clean_keyboard_state

@@ -10,8 +10,8 @@ from math import sqrt, ceil
 from collections import deque
 from dataclasses import dataclass
 from time import monotonic, sleep
-from contextlib import nullcontext
-from typing import ContextManager, Any
+from contextlib import nullcontext, AbstractContextManager
+from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
@@ -132,7 +132,7 @@ LOSSLESS_WINDOW_TYPES = set(os.environ.get(
     "DOCK,TOOLBAR,MENU,UTILITY,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND"
 ).split(","))
 
-ui_context: ContextManager = nullcontext()
+ui_context: AbstractContextManager = nullcontext()
 if POSIX and not OSX and not envbool("XPRA_NOX11", False) and os.environ.get("GDK_BACKEND", "x11") == "x11":
     try:
         from xpra.x11.error import xlog

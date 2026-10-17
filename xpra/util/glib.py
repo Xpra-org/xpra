@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import signal
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.os_util import gi_import, POSIX
 from xpra.util.io import stderr_print, get_util_logger

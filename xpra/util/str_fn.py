@@ -5,8 +5,7 @@
 
 import binascii
 import re
-from typing import Iterable
-from collections.abc import Callable, Mapping
+from collections.abc import Iterable, Callable, Mapping
 
 from xpra.util.env import envbool
 

@@ -13,7 +13,7 @@ import tempfile
 import uuid
 import hmac
 from time import monotonic
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.env import OSEnvContext

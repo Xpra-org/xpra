@@ -5,7 +5,8 @@
 
 import os
 import socket
-from typing import Sequence, Any
+from typing import Any
+from collections.abc import Sequence
 
 from paramiko import PasswordRequiredException, SSHException
 

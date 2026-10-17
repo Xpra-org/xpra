@@ -6,7 +6,8 @@
 import os
 import re
 import struct
-from typing import TypeAlias, Callable, Any, Final, Iterable, Sequence
+from typing import TypeAlias, Any, Final
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.os_util import WIN32, OSX
 from xpra.util.env import envint

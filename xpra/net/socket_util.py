@@ -7,9 +7,9 @@ import os.path
 import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
-from typing import Any, Iterable, Final
+from typing import Any, Final
+from collections.abc import Iterable, Callable, Sequence
 from importlib.util import find_spec
-from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from xpra.common import noerr, SizedBuffer, noop

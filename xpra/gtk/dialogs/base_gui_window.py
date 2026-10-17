@@ -7,8 +7,7 @@ import os
 import sys
 import signal
 import subprocess
-from typing import Iterable
-from collections.abc import Callable
+from collections.abc import Iterable, Callable
 
 from xpra.gtk.window import add_close_accel, add_window_accel
 from xpra.gtk.widget import imagebutton, label

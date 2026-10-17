@@ -5,7 +5,8 @@
 
 import os
 from enum import StrEnum
-from typing import Final, Sequence
+from typing import Final
+from collections.abc import Sequence
 
 from xpra.os_util import LINUX, WIN32
 from xpra.util.env import envint, envbool

@@ -5,7 +5,8 @@
 
 import os
 import struct
-from typing import Sequence, Any, Final
+from typing import Any, Final
+from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.os_util import gi_import

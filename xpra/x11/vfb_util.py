@@ -13,8 +13,8 @@ import glob
 import shlex
 import signal
 from time import monotonic
-from typing import Callable, NoReturn
-from collections.abc import Sequence
+from typing import NoReturn
+from collections.abc import Callable, Sequence
 from subprocess import Popen, PIPE, call
 import os.path
 

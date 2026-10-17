@@ -4,8 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Iterable
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from xpra.util.env import envint
 from xpra.util.str_fn import csv
 from xpra.log import Logger

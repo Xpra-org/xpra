@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
 from xpra.gtk.dialogs.common_style import add_style_class

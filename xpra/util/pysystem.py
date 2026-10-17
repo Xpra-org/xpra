@@ -6,9 +6,9 @@
 import os
 import sys
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from threading import Thread
-from typing import Sequence, Any
+from typing import Any
 
 from xpra.util.io import get_util_logger
 from xpra.util.system import nn

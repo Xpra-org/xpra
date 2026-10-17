@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 from time import sleep
-from typing import Callable
+from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.util.env import envbool, envint

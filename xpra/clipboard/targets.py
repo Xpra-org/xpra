@@ -5,7 +5,7 @@
 
 import os
 import re
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 from xpra.util.str_fn import bytestostr, csv
 from xpra.log import Logger

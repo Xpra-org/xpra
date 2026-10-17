@@ -3,7 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Sequence, Any
+from typing import Any
+from collections.abc import Sequence
 
 from xpra.platform.posix.gui import X11XI2Bindings, X11WindowBindings
 from xpra.util.env import envint

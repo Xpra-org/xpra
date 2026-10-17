@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import struct
-from typing import Sequence, Iterable
+from collections.abc import Sequence, Iterable
 
 from xpra.util.str_fn import repr_ellipsized
 from xpra.x11.error import xsync

@@ -5,7 +5,7 @@
 
 import os
 import shlex
-from typing import Iterable
+from collections.abc import Iterable
 
 from xpra.os_util import gi_import, getuid
 from xpra.util.system import is_distribution_variant

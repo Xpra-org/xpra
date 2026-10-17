@@ -8,7 +8,8 @@ import os
 import re
 import sys
 import signal
-from typing import Any, Sequence, TYPE_CHECKING, NoReturn
+from typing import Any, TYPE_CHECKING, NoReturn
+from collections.abc import Sequence
 
 from xpra.os_util import POSIX, LINUX, OSX, WIN32, force_quit
 

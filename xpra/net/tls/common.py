@@ -5,7 +5,8 @@
 
 import sys
 from time import monotonic
-from typing import Any, Sequence, NoReturn
+from typing import Any, NoReturn
+from collections.abc import Sequence
 
 from xpra.common import noerr
 from xpra.exit_codes import ExitCode, ExitValue

@@ -6,7 +6,8 @@
 
 import os
 import sys
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.util.env import envint, envbool
