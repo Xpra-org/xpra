@@ -6,7 +6,7 @@
 #cython: wraparound=False
 
 import os
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.log import Logger
@@ -372,7 +372,7 @@ cdef extern from "wels/codec_api.h":
     void WelsDestroySVCEncoder(ISVCEncoder* pDecoder) nogil
 
 
-FRAME_TYPES: Dict[int, str] = {
+FRAME_TYPES: dict[int, str] = {
     videoFrameTypeInvalid   : "invalid",
     videoFrameTypeIDR       : "IDR",
     videoFrameTypeI         : "I",
@@ -381,12 +381,12 @@ FRAME_TYPES: Dict[int, str] = {
     videoFrameTypeIPMixed   : "mixed",
 }
 
-COLORSPACES: Dict[str, str] = {
+COLORSPACES: dict[str, str] = {
     "YUV420P"   : "YUV420P",
 }
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     cdef OpenH264Version version
     WelsGetCodecVersionEx(&version)
     return version.uMajor, version.uMinor, version.uRevision
@@ -396,7 +396,7 @@ def get_type() -> str:
     return "openh264"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"         : get_version(),
         "profiles"        : ("constrained-baseline", "main", "high"),
@@ -455,7 +455,7 @@ def get_h264_profile(options: typedict) -> str:
 
 # openh264 stops at level 5.2, and its `ELevelIdc` is a fixed set of constants
 # rather than a plain `level_idc`, so map the levels it does have:
-OPENH264_LEVELS: Dict[int, int] = {
+OPENH264_LEVELS: dict[int, int] = {
     10: LEVEL_1_0,
     11: LEVEL_1_1,
     12: LEVEL_1_2,
@@ -506,7 +506,7 @@ cdef int quality_to_qp(int quality):
 
 # openh264 only offers 3 complexity levels; map our 0..100 speed onto them
 # (higher speed -> lower complexity -> faster but lower quality):
-COMPLEXITY_NAMES: Dict[int, str] = {
+COMPLEXITY_NAMES: dict[int, str] = {
     LOW_COMPLEXITY      : "low",
     MEDIUM_COMPLEXITY   : "medium",
     HIGH_COMPLEXITY     : "high",
@@ -523,7 +523,7 @@ cdef int speed_to_complexity(int speed):
     return HIGH_COMPLEXITY
 
 
-USAGE_TYPE_NAMES: Dict[int, str] = {
+USAGE_TYPE_NAMES: dict[int, str] = {
     #(openh264 calls this one `camera` because that is what it was written for,
     # but it is simply its natural / continuous tone mode)
     CAMERA_VIDEO_REAL_TIME      : "video",
@@ -742,7 +742,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),
@@ -786,7 +786,7 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
-    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         cdef int i
         cdef unsigned int width = image.get_width()
         cdef unsigned int height = image.get_height()

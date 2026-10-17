@@ -36,7 +36,7 @@ log = Logger("wayland", "display")
 cdef bint debug = log.is_debug_enabled()
 
 
-SUBPIXEL_STR: Dict[int, str] = {
+SUBPIXEL_STR: dict[int, str] = {
     WL_OUTPUT_SUBPIXEL_UNKNOWN: "",
     WL_OUTPUT_SUBPIXEL_NONE: "none",
     WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB: "RGB",
@@ -45,7 +45,7 @@ SUBPIXEL_STR: Dict[int, str] = {
     WL_OUTPUT_SUBPIXEL_VERTICAL_BGR: "VBGR",
 }
 
-TRANSFORM_STR: Dict[int, str] = {
+TRANSFORM_STR: dict[int, str] = {
     WL_OUTPUT_TRANSFORM_NORMAL: "",
     WL_OUTPUT_TRANSFORM_90: "90",
     WL_OUTPUT_TRANSFORM_180: "180",
@@ -57,7 +57,7 @@ TRANSFORM_STR: Dict[int, str] = {
 }
 
 
-RENDER_FORMAT_STR: Dict[int, str] = {
+RENDER_FORMAT_STR: dict[int, str] = {
     DRM_FORMAT_BGRX5551: "BGRX5551",
     DRM_FORMAT_ARGB1555: "ARGB1555",
     DRM_FORMAT_ABGR1555: "ABGR1555",

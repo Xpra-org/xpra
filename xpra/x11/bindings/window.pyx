@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import cython
-from typing import Any, Tuple, List, Dict
+from typing import Any
 from xpra.x11.error import XError
 
 from xpra.x11.bindings.xlib cimport (
@@ -117,7 +117,7 @@ cdef extern from "X11/Xlib.h":
     int XUrgencyHint
 
 
-MASKS: Dict[int, str] = {}
+MASKS: dict[int, str] = {}
 for name, constant in constants.items():
     if name.endswith("Mask") and constant>0:
         MASKS[constant] = name[:-4]
@@ -156,7 +156,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def __repr__(self):
         return "X11WindowBindings(%s)" % self.display_name
 
-    def get_root_size(self) -> Tuple[int, int]:
+    def get_root_size(self) -> tuple[int, int]:
         self.context_check("get_root_size")
         cdef int root = self.get_root_xid()
         geom = self.getGeometry(root)
@@ -164,11 +164,11 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             raise RuntimeError("failed to query the size of the root window!")
         return int(geom[2]), int(geom[3])
 
-    def get_all_x11_windows(self) -> List[Window]:
+    def get_all_x11_windows(self) -> list[Window]:
         cdef Window root = XDefaultRootWindow(self.display);
         return self.get_all_children(root)
 
-    def get_all_children(self, Window xid) -> List[Window]:
+    def get_all_children(self, Window xid) -> list[Window]:
         self.context_check("get_all_children")
         cdef Window root = XDefaultRootWindow(self.display)
         cdef Window parent = 0
@@ -189,7 +189,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             windows += self.get_all_children(window)
         return windows
 
-    def get_absolute_position(self, Window xid) -> Tuple[int, int]:
+    def get_absolute_position(self, Window xid) -> tuple[int, int]:
         self.context_check("get_absolute_position")
         cdef Window root = XDefaultRootWindow(self.display)
         cdef int dest_x = 0, dest_y = 0
@@ -230,7 +230,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XUnmapWindow(self.display, xwindow)
         return serial
 
-    def getWindowAttributes(self, Window xwindow) -> Dict[str, Any]:
+    def getWindowAttributes(self, Window xwindow) -> dict[str, Any]:
         self.context_check("getWindowAttributes")
         cdef XWindowAttributes attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
@@ -306,7 +306,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return bool(attrs._class==InputOnly)
 
 
-    def geometry_with_border(self, Window xwindow) -> Tuple[int, int, int, int, int] | None:
+    def geometry_with_border(self, Window xwindow) -> tuple[int, int, int, int, int] | None:
         self.context_check("geometry_with_border")
         cdef XWindowAttributes geom_attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &geom_attrs)
@@ -330,7 +330,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("XSetInputFocus")
         XSetInputFocus(self.display, xwindow, revert_to, time)
 
-    def XGetInputFocus(self) -> Tuple[int, int]:
+    def XGetInputFocus(self) -> tuple[int, int]:
         #context check not needed!
         cdef Window w = 0
         cdef int revert_to = 0
@@ -730,7 +730,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(prop)
         return data
 
-    def GetWindowPropertyType(self, Window xwindow, property, incr=False) -> Tuple[str, int]:
+    def GetWindowPropertyType(self, Window xwindow, property, incr=False) -> tuple[str, int]:
         #as above, but for any property type
         #and returns the type found
         self.context_check("GetWindowPropertyType")
@@ -799,7 +799,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XSetIconSizes(self.display, root, icon_size, 1)
         XFree(icon_size)
 
-    def getGeometry(self, Drawable d) -> Tuple[int, int, int, int, int, int]:
+    def getGeometry(self, Drawable d) -> tuple[int, int, int, int, int, int]:
         self.context_check("getGeometry")
         cdef Window root_return
         cdef int x, y                                           #@pydev dupe
@@ -822,7 +822,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             return 0
         return int(parent)
 
-    def get_children(self, Window xwindow) -> List[Window]:
+    def get_children(self, Window xwindow) -> list[Window]:
         cdef Window root = 0, parent = 0
         cdef Window * children = <Window *> 0
         cdef unsigned int i, nchildren = 0
@@ -839,7 +839,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             XFree(children)
         return pychildren
 
-    def getSizeHints(self, Window xwindow) -> Dict[str,Any]:
+    def getSizeHints(self, Window xwindow) -> dict[str,Any]:
         self.context_check("getSizeHints")
         cdef XSizeHints *size_hints = XAllocSizeHints()
         cdef long supplied_return   #ignored!
@@ -871,7 +871,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(size_hints)
         return hints
 
-    def setSizeHints(self, Window xwindow, hints : Dict[str,Any]) -> None:
+    def setSizeHints(self, Window xwindow, hints : dict[str,Any]) -> None:
         self.context_check("setSizeHints")
         cdef XSizeHints *size_hints = XAllocSizeHints()
         assert size_hints!=NULL
@@ -910,7 +910,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XSetWMNormalHints(self.display, xwindow, size_hints)
         XFree(size_hints)
 
-    def getWMHints(self, Window xwindow) -> Dict[str,Any]:
+    def getWMHints(self, Window xwindow) -> dict[str,Any]:
         self.context_check("getWMHints")
         cdef XWMHints *wm_hints = XGetWMHints(self.display, xwindow)
         if wm_hints==NULL:
@@ -936,7 +936,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(wm_hints)
         return hints
 
-    def XGetWMProtocols(self, Window xwindow) -> Tuple[str]:
+    def XGetWMProtocols(self, Window xwindow) -> tuple[str]:
         self.context_check("XGetWMProtocols")
         cdef Atom *protocols_return
         cdef int count_return

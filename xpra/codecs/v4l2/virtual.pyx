@@ -7,7 +7,7 @@
 #cython: wraparound=False
 
 import os
-from typing import Any, Dict
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.log import Logger
@@ -152,7 +152,7 @@ V4L2_CAP_ASYNCIO                = 0x02000000
 V4L2_CAP_STREAMING              = 0x04000000
 V4L2_CAP_DEVICE_CAPS            = 0x80000000
 
-V4L2_CAPS: Dict[int, str] = {
+V4L2_CAPS: dict[int, str] = {
     V4L2_CAP_VIDEO_CAPTURE         : "VIDEO_CAPTURE",
     V4L2_CAP_VIDEO_CAPTURE_MPLANE  : "VIDEO_CAPTURE_MPLANE",
     V4L2_CAP_VIDEO_OUTPUT          : "VIDEO_OUTPUT",
@@ -193,7 +193,7 @@ FIELD_STR = {
     #V4L2_FIELD_INTERLACED_TB        : "INTERLACED TB",
     #V4L2_FIELD_INTERLACED_BT        : "INTERLACED BT",
 }
-COLORSPACE_STR: Dict[int, str] = {
+COLORSPACE_STR: dict[int, str] = {
     V4L2_COLORSPACE_SRGB            : "SRGB",
     V4L2_COLORSPACE_470_SYSTEM_M    : "470_SYSTEM_M",
     V4L2_COLORSPACE_470_SYSTEM_BG   : "470_SYSTEM_BG",
@@ -205,7 +205,7 @@ COLORSPACE_STR: Dict[int, str] = {
 cdef int V4L2_PIX_FMT_H264 = v4l2_fourcc(b'H', b'2', b'6', b'4')
 cdef int V4L2_PIX_FMT_MPEG4 = v4l2_fourcc(b'M', b'P', b'G', b'4')
 
-FORMAT_STR: Dict[int, str] = {
+FORMAT_STR: dict[int, str] = {
     V4L2_PIX_FMT_GREY           : "GREY",
     V4L2_PIX_FMT_YUV422P        : "YUV422P",
     V4L2_PIX_FMT_YUV420         : "YUV420P",
@@ -223,7 +223,7 @@ FORMAT_STR: Dict[int, str] = {
     V4L2_PIX_FMT_H264           : "H264",
     V4L2_PIX_FMT_MPEG4          : "MPEG4",
 }
-PIX_FMT: Dict[str, int] = {}
+PIX_FMT: dict[str, int] = {}
 for k, v in FORMAT_STR.items():
     PIX_FMT[v] = k
 
@@ -246,7 +246,7 @@ cdef object s(uint8_t* bstring):
         return str(bdata)
 
 
-def query_video_device(device="/dev/video0") -> Dict[str, Any]:
+def query_video_device(device="/dev/video0") -> dict[str, Any]:
     cdef v4l2_capability vid_caps
     try:
         log("v4l2 using device %s", device)
@@ -281,7 +281,7 @@ def get_type() -> str:
     return "v4l2"
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     return {
         "version"   : get_version(),
     }
@@ -394,7 +394,7 @@ cdef class VirtualWebcam:
             self.device = None
             d.close()
 
-    def get_info(self) -> Dict[str,Any]:             #@DuplicatedSignature
+    def get_info(self) -> dict[str,Any]:             #@DuplicatedSignature
         info = get_info()
         info.update({
             "frames"    : int(self.frames),

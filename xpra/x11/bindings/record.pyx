@@ -593,10 +593,10 @@ cdef class RecordBindingsInstance(X11CoreBindingsInstance):
     def __repr__(self):
         return f"RecordBindings({self.display_name})"
 
-    def get_version(self) -> Tuple[int, int]:
+    def get_version(self) -> tuple[int, int]:
         return self.version
 
-    def query_version(self) -> Tuple[int, int]:
+    def query_version(self) -> tuple[int, int]:
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
         cdef int r = XRecordQueryVersion(self.display, &cmajor, &cminor)
         log(f"found XRecord extension version {cmajor}.{cminor}")

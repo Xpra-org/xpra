@@ -24,7 +24,6 @@
 
 #cython: boundscheck=False
 
-from typing import Dict
 from collections.abc import Sequence
 
 from cairo import ImageSurface
@@ -78,7 +77,7 @@ cdef extern from "pycairo/py3cairo.h":
     ctypedef PycairoSurface PycairoImageSurface
 
 
-CAIRO_FORMAT: Dict[cairo_format_t, str] = {
+CAIRO_FORMAT: dict[cairo_format_t, str] = {
     CAIRO_FORMAT_INVALID    : "Invalid",
     CAIRO_FORMAT_ARGB32     : "ARGB32",
     CAIRO_FORMAT_RGB24      : "RGB24",
@@ -110,7 +109,7 @@ cdef inline void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int s
                 dst += dst_stride
 
 
-CAIRO_FORMATS: Dict[cairo_format_t, Sequence[str]] = {
+CAIRO_FORMATS: dict[cairo_format_t, Sequence[str]] = {
     CAIRO_FORMAT_RGB24  : ("RGB", "RGBX", "BGR", "BGRX", "RGBA", "BGRA"),
     CAIRO_FORMAT_ARGB32 : ("BGRX", "BGRA", "RGBA", "RGBX"),
     CAIRO_FORMAT_RGB16_565  : ("BGR565", ),

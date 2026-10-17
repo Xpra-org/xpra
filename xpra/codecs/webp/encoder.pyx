@@ -5,7 +5,7 @@
 
 import os
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t    # pylint: disable=syntax-error
@@ -298,7 +298,7 @@ cdef extern from "webp/encode.h":
     int WebPPictureRescale(WebPPicture* pic, int width, int height) nogil
 
 
-ERROR_TO_NAME: Dict[int, str] = {
+ERROR_TO_NAME: dict[int, str] = {
 #VP8_ENC_OK
     VP8_ENC_ERROR_OUT_OF_MEMORY             : "memory error allocating objects",
     VP8_ENC_ERROR_BITSTREAM_OUT_OF_MEMORY   : "memory error while flushing bits",
@@ -312,7 +312,7 @@ ERROR_TO_NAME: Dict[int, str] = {
     VP8_ENC_ERROR_USER_ABORT                : "abort request by user",
 }
 
-PRESETS: Dict[int, str] = {
+PRESETS: dict[int, str] = {
     WEBP_PRESET_DEFAULT      : "default",
     WEBP_PRESET_PICTURE      : "picture",
     WEBP_PRESET_PHOTO        : "photo",
@@ -320,7 +320,7 @@ PRESETS: Dict[int, str] = {
     WEBP_PRESET_ICON         : "icon",
     WEBP_PRESET_TEXT         : "text",
 }
-PRESET_NAME_TO_CONSTANT: Dict[str, int] = {}
+PRESET_NAME_TO_CONSTANT: dict[str, int] = {}
 for k,v in PRESETS.items():
     PRESET_NAME_TO_CONSTANT[v] = k
 
@@ -329,24 +329,24 @@ for k,v in PRESETS.items():
 SHARP_YUV_TYPES: Sequence[str] = ("text", "lossless")
 
 #screen content is handled separately, see `get_preset` below:
-CONTENT_TYPE_PRESET: Dict[str, int] = {
+CONTENT_TYPE_PRESET: dict[str, int] = {
     "video"     : WEBP_PRESET_PHOTO,
     "picture"   : WEBP_PRESET_PICTURE,
 }
 
-CSP_NAMES: Dict[int, str] = {
+CSP_NAMES: dict[int, str] = {
     WEBP_YUV420         : "YUV420",
     WEBP_YUV420A        : "YUV420A",
     WEBP_CSP_UV_MASK    : "UV_MASK",
 }
 
-IMAGE_HINT: Dict[int, str] = {
+IMAGE_HINT: dict[int, str] = {
     WEBP_HINT_DEFAULT     : "default",
     WEBP_HINT_PICTURE     : "picture",
     WEBP_HINT_PHOTO       : "photo",
     WEBP_HINT_GRAPH       : "graph",
 }
-HINT_NAME_TO_CONSTANT: Dict[str, int] = {}
+HINT_NAME_TO_CONSTANT: dict[str, int] = {}
 for k,v in IMAGE_HINT.items():
     HINT_NAME_TO_CONSTANT[v] = k
 
@@ -363,13 +363,13 @@ def get_encodings() -> Sequence[str]:
     return ("webp", )
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     cdef int version = WebPGetEncoderVersion()
     log("WebPGetEncoderVersion()=%#x", version)
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
@@ -521,7 +521,7 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),
@@ -535,7 +535,7 @@ cdef class Encoder:
         }
         return info
 
-    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> tuple:
         reconfigure = False
         quality = options.get("quality", -1)
         speed = options.get("speed", -1)
@@ -687,7 +687,7 @@ cdef void validate_config(WebPConfig *config):
         raise RuntimeError("invalid webp configuration: %s" % info)
 
 
-def encode(coding: str, image: ImageWrapper, options: typedict) -> Tuple:
+def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple:
     log("webp.encode(%s, %s, %s)", coding, image, options)
     assert coding=="webp"
     pixel_format = image.get_pixel_format()

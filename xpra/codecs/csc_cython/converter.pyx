@@ -9,7 +9,7 @@
 import os
 import sys
 import time
-from typing import Any, Tuple, Dict
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
@@ -77,7 +77,7 @@ def get_CS(in_cs, valid_options) -> Sequence[str]:
     return env_override
 
 
-COLORSPACES: Dict[str, Sequence[str]] = {
+COLORSPACES: dict[str, Sequence[str]] = {
     "BGRX"       : get_CS("BGRX",    ["YUV420P", "YUV420P16", "YUV444P"]),
     "RGBX"       : get_CS("RGBX",    ["YUV420P", "YUV420P16", "YUV444P"]),
     "BGR"        : get_CS("BGR",     ["YUV420P", "YUV420P16", "YUV444P", "BGRX", "RGB"]),
@@ -96,11 +96,11 @@ def get_type() -> str:
     return "cython"
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 4, 2
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"   : get_version(),
     }
@@ -718,7 +718,7 @@ cdef class Converter:
     def is_closed(self) -> bool:
         return self.convert_image_function is None
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = {
                 "frames"    : self.frames,
                 "src_width" : self.src_width,

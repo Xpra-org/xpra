@@ -7,7 +7,7 @@
 #!python
 #cython: boundscheck=False, wraparound=False
 
-from typing import Any, Dict
+from typing import Any
 
 from xpra.log import Logger
 log = Logger("auth")
@@ -94,7 +94,7 @@ cdef extern from "security/pam_appl.h":
     int PAM_SUCCESS             #The user was successfully authenticated
     int PAM_USER_UNKNOWN        #User unknown to authentication service
 
-PAM_ERR_STR: Dict[int, str] = {
+PAM_ERR_STR: dict[int, str] = {
     PAM_ABORT               : "ABORT",
     PAM_AUTH_ERR            : "AUTH_ERR",
     PAM_CRED_INSUFFICIENT   : "CRED_INSUFFICIENT",
@@ -104,7 +104,7 @@ PAM_ERR_STR: Dict[int, str] = {
     PAM_USER_UNKNOWN        : "USER_UNKNOWN",
 }
 
-PAM_ITEMS: Dict[str, int] = {
+PAM_ITEMS: dict[str, int] = {
     "SERVICE"       : PAM_SERVICE,
     "USER"          : PAM_USER,
     "TTY"           : PAM_TTY,
@@ -197,7 +197,7 @@ cdef class pam_session:
             return False
         return True
 
-    def set_env(self, env : Dict[str,Any]) -> None:
+    def set_env(self, env : dict[str,Any]) -> None:
         assert self.pam_handle!=NULL
         cdef int r
         for k,v in env.items():
@@ -209,7 +209,7 @@ cdef class pam_session:
             else:
                 log("pam_putenv: %s", name_value)
 
-    def get_envlist(self) -> Dict[str,str]:
+    def get_envlist(self) -> dict[str,str]:
         assert self.pam_handle!=NULL
         cdef char **envlist = pam_getenvlist(self.pam_handle)
         log("pam_getenvlist: %#x", <uintptr_t> envlist)
@@ -227,7 +227,7 @@ cdef class pam_session:
         log("get_envlist()=%s", env)
         return env
 
-    def set_items(self, items : Dict[str,Any]) -> None:
+    def set_items(self, items : dict[str,Any]) -> None:
         cdef const void* item
         cdef pam_xauth_data xauth_data
         cdef int r

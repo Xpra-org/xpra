@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple
 
 
 cdef extern from "library_types.h":
@@ -67,7 +66,7 @@ def errcheck(int r, fnname="", *args) -> None:
         raise NVJPEG_Exception("%s failed: %s" % (fstr, ERR_STR.get(r, r)))
 
 
-def get_cuda_version() -> Tuple[int, int, int]:
+def get_cuda_version() -> tuple[int, int, int]:
     cdef int major_version, minor_version, patch_level
     r = nvjpegGetProperty(MAJOR_VERSION, &major_version)
     errcheck(r, "nvjpegGetProperty MAJOR_VERSION")
@@ -78,11 +77,11 @@ def get_cuda_version() -> Tuple[int, int, int]:
     return major_version, minor_version, patch_level
 
 
-def get_version() -> Tuple[int, int, int, int]:
+def get_version() -> tuple[int, int, int, int]:
     return NVJPEG_VER_MAJOR, NVJPEG_VER_MINOR, NVJPEG_VER_PATCH, NVJPEG_VER_BUILD
 
 
-ERR_STR: Dict[int, str] = {
+ERR_STR: dict[int, str] = {
     NVJPEG_STATUS_SUCCESS                       : "SUCCESS",
     NVJPEG_STATUS_NOT_INITIALIZED               : "NOT_INITIALIZED",
     NVJPEG_STATUS_INVALID_PARAMETER             : "INVALID_PARAMETER",
@@ -96,7 +95,7 @@ ERR_STR: Dict[int, str] = {
 }
 
 
-CSS_STR: Dict[int, str] = {
+CSS_STR: dict[int, str] = {
     NVJPEG_CSS_444  : "444",
     NVJPEG_CSS_422  : "422",
     NVJPEG_CSS_420  : "420",
@@ -108,14 +107,14 @@ CSS_STR: Dict[int, str] = {
 }
 
 
-ENCODING_STR: Dict[int, str] = {
+ENCODING_STR: dict[int, str] = {
     NVJPEG_ENCODING_UNKNOWN                         : "unknown",
     NVJPEG_ENCODING_BASELINE_DCT                    : "baseline-dct",
     NVJPEG_ENCODING_EXTENDED_SEQUENTIAL_DCT_HUFFMAN : "extended-sequential-dct-huffman",
     NVJPEG_ENCODING_PROGRESSIVE_DCT_HUFFMAN         : "progressive-dct-huffman",
 }
 
-NVJPEG_INPUT_STR: Dict[int, str] = {
+NVJPEG_INPUT_STR: dict[int, str] = {
     NVJPEG_INPUT_RGB    : "RGB",
     NVJPEG_INPUT_BGR    : "BGR",
     NVJPEG_INPUT_RGBI   : "RGBI",
@@ -123,7 +122,7 @@ NVJPEG_INPUT_STR: Dict[int, str] = {
 }
 
 
-NVJPEG_OUTPUT_STR: Dict[int, str] = {
+NVJPEG_OUTPUT_STR: dict[int, str] = {
     NVJPEG_OUTPUT_UNCHANGED : "UNCHANGED",
     NVJPEG_OUTPUT_YUV       : "YUV",
     NVJPEG_OUTPUT_Y         : "Y",

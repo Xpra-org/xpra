@@ -7,7 +7,7 @@
 
 import os
 from time import monotonic
-from typing import Any, Tuple, List, Dict
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.log import Logger
@@ -41,7 +41,7 @@ from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context  # pylint: disab
 from xpra.codecs.debug import get_save_to_file
 SAVE_TO_FILE = get_save_to_file()
 
-VPX_COLOR_SPACES : Dict[int,str] = {
+VPX_COLOR_SPACES : dict[int,str] = {
     VPX_CS_UNKNOWN  : "unknown",
     VPX_CS_BT_601   : "BT601",
     VPX_CS_BT_709   : "BT709",
@@ -52,7 +52,7 @@ VPX_COLOR_SPACES : Dict[int,str] = {
     VPX_CS_SRGB     : "SRGB",
 }
 
-VPX_COLOR_RANGES : Dict[int,str] = {
+VPX_COLOR_RANGES : dict[int,str] = {
     VPX_CR_STUDIO_RANGE : "studio",
     VPX_CR_FULL_RANGE   : " full",
 }
@@ -97,7 +97,7 @@ cdef extern from "vpx/vpx_decoder.h":
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES : Dict[str, Sequence[str]] = {
+COLORSPACES : dict[str, Sequence[str]] = {
     "vp8"   : ("YUV420P", ),
     "vp9"   : ("YUV420P", "YUV422P", "YUV444P", "YUV420P10"),
 }
@@ -112,7 +112,7 @@ def get_version() -> Sequence[int]:
     b = vpx_codec_version_str()
     vstr = b.decode("latin1").lstrip("v")
     log("vpx_codec_version_str()=%s", vstr)
-    vparts : List[int] = []
+    vparts : list[int] = []
     try:
         for x in vstr.split("."):
             vparts.append(int(x))
@@ -129,7 +129,7 @@ def get_encodings() -> Sequence[str]:
     return CODECS
 
 
-def get_min_size(encoding:str) -> Tuple[int, int]:
+def get_min_size(encoding:str) -> tuple[int, int]:
     return 16, 16
 
 
@@ -151,7 +151,7 @@ def get_specs() -> Sequence[VideoSpec]:
     return specs
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     global CODECS
     info = {
         "version"       : get_version(),
@@ -236,7 +236,7 @@ cdef class Decoder:
     def __repr__(self):
         return "vpx.Decoder(%s)" % self.encoding
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
             "type"      : self.get_type(),
             "width"     : self.get_width(),

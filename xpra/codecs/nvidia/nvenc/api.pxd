@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import List
 
 from libc.stdint cimport int8_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t   # pylint: disable=syntax-error
 
@@ -1160,7 +1159,7 @@ cdef uint8_t is_transient_error(NVENCSTATUS r)
 
 cdef str get_caps_name(NV_ENC_CAPS cap)
 
-cdef List[NV_ENC_CAPS] get_all_caps()
+cdef list[NV_ENC_CAPS] get_all_caps()
 
 cdef str get_preset_name(object preset)
 
@@ -1168,7 +1167,7 @@ cdef str get_tuning_name(NV_ENC_TUNING_INFO tuning)
 
 cdef NV_ENC_TUNING_INFO get_tuning_value(object name)
 
-cdef List[int] get_buffer_formats()
+cdef list[int] get_buffer_formats()
 
 cdef str get_buffer_format_name(object buffer_format)
 

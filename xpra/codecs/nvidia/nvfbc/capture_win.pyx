@@ -9,7 +9,7 @@
 import os
 import sys
 from time import monotonic
-from typing import Any, Dict
+from typing import Any
 
 from xpra.os_util import WIN32
 from xpra.util.str_fn import csv
@@ -347,7 +347,7 @@ cdef extern from "NvFBC/nvFBCCuda.h":
         NVFBCCUDARELEASE NvFBCCudaRelease
 
 
-ERRORS: Dict[int, str] = {
+ERRORS: dict[int, str] = {
     NVFBC_SUCCESS                       : "SUCCESS",
     NVFBC_ERROR_GENERIC                 : "GENERIC",
     NVFBC_ERROR_INVALID_PARAM           : "INVALID_PARAM",
@@ -437,7 +437,7 @@ def set_enabled(enabled : bool=True) -> None:
 
 
 
-def get_status(int adapter=0) -> Dict[str, Any]:
+def get_status(int adapter=0) -> dict[str, Any]:
     global NvFBC
     assert NvFBC
     cdef NvFBCStatusEx status
@@ -488,7 +488,7 @@ def set_global_flags(DWORD flags) -> None:
     raiseNvFBC(res, "NvFBC_SetGlobalFlags")
 
 
-def create_context(int width=-1, int height=-1, interface_type=NVFBC_TO_SYS) -> Dict[str, Any]:
+def create_context(int width=-1, int height=-1, interface_type=NVFBC_TO_SYS) -> dict[str, Any]:
     log("create_context(%i, %i, %s)", width, height, {NVFBC_TO_SYS : "SYS", NVFBC_SHARED_CUDA : "CUDA"}.get(interface_type))
     check_status()
     cdef NvFBCCreateParams create
@@ -553,7 +553,7 @@ def get_type() -> str:
     return "nvfbc"
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     info = {
             "type"              : "nvfbc",
             "version"           : get_version(),
@@ -568,7 +568,7 @@ def get_info() -> Dict[str,Any]:
     return info
 
 
-SYS_PIXEL_FORMAT_CONST: Dict[str, int] = {
+SYS_PIXEL_FORMAT_CONST: dict[str, int] = {
     "BGRX"      : NVFBC_TOSYS_ARGB,
     "RGB"       : NVFBC_TOSYS_RGB,
     #"YUV420P"   : NVFBC_TOSYS_YYYYUV420p,
@@ -614,7 +614,7 @@ cdef class NvFBC_SysCapture:
         raiseNvFBC(res, "NvFBCToSysSetUp")
         self.setup = True
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info
@@ -757,7 +757,7 @@ cdef class NvFBC_CUDACapture:
         raiseNvFBC(res, "NvFBCCudaSetup")
         self.setup = True
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info

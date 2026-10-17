@@ -6,7 +6,7 @@
 #cython: wraparound=False
 
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
@@ -34,7 +34,7 @@ cdef extern from "jph_encode.h":
                    char *error, size_t error_size) nogil
 
 
-INPUT_FORMATS: Dict[str, Tuple[int, int, int, int]] = {
+INPUT_FORMATS: dict[str, tuple[int, int, int, int]] = {
     "RGB": (3, 0, 1, 2),
     "BGR": (3, 2, 1, 0),
     "RGBX": (4, 0, 1, 2),
@@ -48,7 +48,7 @@ INPUT_FORMATS: Dict[str, Tuple[int, int, int, int]] = {
 }
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     return jph_version_major(), jph_version_minor(), jph_version_patch()
 
 
@@ -60,7 +60,7 @@ def get_encodings() -> Sequence[str]:
     return ("jph", )
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version": get_version(),
         "encodings": get_encodings(),
@@ -121,7 +121,7 @@ cdef tuple do_encode(object image, object options):
     }, width, height
 
 
-def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
+def encode(coding: str, image: ImageWrapper, options=None) -> tuple:
     assert coding == "jph"
     cdata, client_options, width, height = do_encode(image, typedict(options or {}))
     return "jph", Compressed("jph", memoryview(cdata), False), client_options, width, height, 0, 24

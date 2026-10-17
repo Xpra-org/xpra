@@ -5,7 +5,7 @@
 
 #cython: wraparound=False
 
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 from time import monotonic
 
@@ -76,7 +76,7 @@ cdef extern from "turbojpeg.h":
                     unsigned long *jpegSize, int jpegQual,
                     int flags) nogil
 
-TJPF_VAL: Dict[str, int] = {
+TJPF_VAL: dict[str, int] = {
     "RGB"   : TJPF_RGB,
     "BGR"   : TJPF_BGR,
     "RGBX"  : TJPF_RGBX,
@@ -90,7 +90,7 @@ TJPF_VAL: Dict[str, int] = {
     "ARGB"  : TJPF_ARGB,
     "CMYK"  : TJPF_CMYK,
 }
-TJSAMP_STR: Dict[int, str] = {
+TJSAMP_STR: dict[int, str] = {
     TJSAMP_444  : "444",
     TJSAMP_422  : "422",
     TJSAMP_420  : "420",
@@ -100,7 +100,7 @@ TJSAMP_STR: Dict[int, str] = {
 }
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 2, 0
 
 
@@ -108,7 +108,7 @@ def get_type() -> str:
     return "jpeg"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {"version"   : get_version()}
 
 
@@ -229,7 +229,7 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),
@@ -248,7 +248,7 @@ cdef class Encoder:
             return TJSAMP_GRAY
         return get_subsamp(self.quality, is_screen_content(self.content_types))
 
-    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> tuple:
         quality = options.get("quality", -1)
         if quality>0:
             self.quality = quality
@@ -299,7 +299,7 @@ JPEG_INPUT_FORMATS = ("RGB", "RGBX", "BGRX", "XBGR", "XRGB", )
 JPEGA_INPUT_FORMATS = ("RGBA", "BGRA", "ABGR", "ARGB")
 
 
-def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
+def encode(coding, image: ImageWrapper, options: typedict) -> tuple:
     assert coding in get_encodings()
     rgb_format = image.get_pixel_format()
     if coding == "jpega" and rgb_format.find("A")<0:

@@ -9,7 +9,7 @@
 #cython: wraparound=False
 
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec, EncodingNotSupported
@@ -86,7 +86,7 @@ def cleanup_module() -> None:
     mf_decode_shutdown()
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 1, 0
 
 
@@ -94,14 +94,14 @@ def get_type() -> str:
     return "mf"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version": get_version(),
         "type": "MediaFoundation",
     }
 
 
-CODECS: Dict[str, int] = {
+CODECS: dict[str, int] = {
     "h264": MF_CODEC_H264,
     "h265": MF_CODEC_HEVC,
     "vp9":  MF_CODEC_VP9,
@@ -114,7 +114,7 @@ def get_encodings() -> Sequence[str]:
     return tuple(CODECS.keys())
 
 
-def get_min_size(encoding) -> Tuple[int, int]:
+def get_min_size(encoding) -> tuple[int, int]:
     return 64, 64
 
 
@@ -208,7 +208,7 @@ cdef class Decoder:
         self.colorspace = ""
         self.encoding = ""
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"    : int(self.frames),

@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple
 
 from xpra.x11.error import XError, xsync
 from xpra.x11.common import X11Event
@@ -143,19 +142,19 @@ cdef void add_event_type(int event, str name, str event_name, str child_event_na
     add_x_event_signal(event, (event_name, child_event_name))
 
 
-x_event_signals : Dict[int, Tuple[str, str]] = {}
+x_event_signals : dict[int, tuple[str, str]] = {}
 
 
-def add_x_event_signal(event: int, mapping: Tuple[str, str]) -> None:
+def add_x_event_signal(event: int, mapping: tuple[str, str]) -> None:
     x_event_signals[event] = mapping
 
 
-def get_x_event_signals(event: int) -> Tuple[str, str] | None:
+def get_x_event_signals(event: int) -> tuple[str, str] | None:
     return x_event_signals.get(event)
 
 
-x_event_type_names : Dict[int, str] = {}
-names_to_event_type : Dict[str, int] = {}
+x_event_type_names : dict[int, str] = {}
+names_to_event_type : dict[str, int] = {}
 
 
 add_parser(GenericEvent, parse_GenericEvent)
@@ -187,7 +186,7 @@ def add_x_event_type_name(event: int, name: str) -> None:
     names_to_event_type[name] = event
 
 
-def add_x_event_type_names(event_type_names: Dict[int, str]) -> None:
+def add_x_event_type_names(event_type_names: dict[int, str]) -> None:
     x_event_type_names.update(event_type_names)
     for k,v in event_type_names.items():
         names_to_event_type[v] = k

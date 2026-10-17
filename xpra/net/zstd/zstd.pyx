@@ -5,7 +5,6 @@
 
 # cython: wraparound=False
 
-from typing import Tuple
 
 from libc.stdint cimport uint32_t, uint8_t
 
@@ -95,7 +94,7 @@ cdef inline void raise_zstd_error(size_t result, str what):
     raise ValueError(f"{what}: {name.decode('latin1')}")
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     cdef uint32_t v = ZSTD_versionNumber()
     return v // 10000, (v // 100) % 100, v % 100
 

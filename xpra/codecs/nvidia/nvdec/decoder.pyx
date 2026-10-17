@@ -9,7 +9,7 @@ from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf  # pylint: disable=syntax-error
 
 from weakref import WeakValueDictionary
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 from threading import Event
 
@@ -364,7 +364,7 @@ cdef extern from "cuviddec.h":
     CUresult cuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags)
 
 
-DECODE_STATUS_STR: Dict[int, str] = {
+DECODE_STATUS_STR: dict[int, str] = {
     cuvidDecodeStatus_Invalid       : "invalid",
     cuvidDecodeStatus_InProgress    : "in-progress",
     cuvidDecodeStatus_Success       : "success",
@@ -372,7 +372,7 @@ DECODE_STATUS_STR: Dict[int, str] = {
     cuvidDecodeStatus_Error_Concealed : "error-concealed",
 }
 
-CODEC_NAMES: Dict[int, str] = {
+CODEC_NAMES: dict[int, str] = {
 #    cudaVideoCodec_MPEG1    : "mpeg1",
 #    cudaVideoCodec_MPEG2    : "mpeg2",
     cudaVideoCodec_MPEG4    : "mpeg4",
@@ -387,14 +387,14 @@ CODEC_NAMES: Dict[int, str] = {
     cudaVideoCodec_AV1      : "av1",
 }
 
-CHROMA_NAMES: Dict[int, str] = {
+CHROMA_NAMES: dict[int, str] = {
     cudaVideoChromaFormat_Monochrome    : "monochrome",
     cudaVideoChromaFormat_420           : "420",
     cudaVideoChromaFormat_422           : "422",
     cudaVideoChromaFormat_444           : "444",
 }
 
-SURFACE_NAMES: Dict[int, str] = {
+SURFACE_NAMES: dict[int, str] = {
     cudaVideoSurfaceFormat_NV12     : "NV12",
     cudaVideoSurfaceFormat_P016     : "P016",
     cudaVideoSurfaceFormat_YUV444   : "YUV444P",
@@ -402,7 +402,7 @@ SURFACE_NAMES: Dict[int, str] = {
 }
 
 CODEC_MAP = dict((v,k) for k,v in CODEC_NAMES.items())
-CS_CHROMA: Dict[str, int] = {
+CS_CHROMA: dict[str, int] = {
     "YUV420P" : cudaVideoChromaFormat_420,
     "YUV422P" : cudaVideoChromaFormat_422,
     "YUV444P" : cudaVideoChromaFormat_444,
@@ -420,7 +420,7 @@ def cleanup_module() -> None:
     log("nvdec.cleanup_module()")
 
 
-def get_version() -> Tuple[int]:
+def get_version() -> tuple[int]:
     return (0, )
 
 
@@ -428,16 +428,16 @@ def get_type() -> str:
     return "nvdec"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"   : get_version(),
     }
 
 
-MIN_SIZES: Dict[str, Tuple[int, int]] = {}
+MIN_SIZES: dict[str, tuple[int, int]] = {}
 
 
-def get_min_size(encoding: str) -> Tuple[int, int]:
+def get_min_size(encoding: str) -> tuple[int, int]:
     return MIN_SIZES.get(encoding, (48, 16))
 
 
@@ -716,7 +716,7 @@ cdef class Decoder:
     def __repr__(self):
         return f"nvdec({self.encoding})"
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
             "type"      : self.get_type(),
             "width"     : self.width,

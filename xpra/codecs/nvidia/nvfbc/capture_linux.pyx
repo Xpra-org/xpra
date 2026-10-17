@@ -9,7 +9,7 @@
 import os
 from weakref import WeakSet
 from time import monotonic
-from typing import Any, Dict
+from typing import Any
 
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
@@ -304,7 +304,7 @@ cdef extern from "NvFBC.h":
     ctypedef NVFBCSTATUS (* PNVFBCCREATEINSTANCE)(NVFBC_API_FUNCTION_LIST *pFunctionList)
 
 
-ERRORS: Dict[int, str] = {
+ERRORS: dict[int, str] = {
     NVFBC_SUCCESS               : "SUCCESS",
     NVFBC_ERR_API_VERSION       : "API_VERSION",
     NVFBC_ERR_INTERNAL          : "INTERNAL",
@@ -364,11 +364,11 @@ def unload_library() -> None:
     INIT_DONE = False
 
 
-def get_status() -> Dict:
+def get_status() -> dict:
     return {}
 
 
-def get_context_status(NVFBC_SESSION_HANDLE context) -> Dict[str, Any]:
+def get_context_status(NVFBC_SESSION_HANDLE context) -> dict[str, Any]:
     cdef NVFBC_GET_STATUS_PARAMS status
     memset(&status, 0, sizeof(NVFBC_GET_STATUS_PARAMS))
     status.dwVersion = NVFBC_GET_STATUS_PARAMS_VER
@@ -468,7 +468,7 @@ cdef void destroy_session(NVFBC_SESSION_HANDLE context):
     log("NvFBCDestroyCaptureSession() success")
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return int(NVFBC_VERSION_MAJOR), int(NVFBC_VERSION_MINOR)
 
 
@@ -476,7 +476,7 @@ def get_type() -> str:
     return "nvfbc"
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     info = {
             "type"              : "nvfbc",
             "version"           : get_version(),
@@ -491,7 +491,7 @@ def get_info() -> Dict[str,Any]:
     return info
 
 
-PIXEL_FORMAT_CONST: Dict[str, int] = {
+PIXEL_FORMAT_CONST: dict[str, int] = {
     "XRGB"      : NVFBC_BUFFER_FORMAT_ARGB,
     "BGRX"      : NVFBC_BUFFER_FORMAT_BGRA,
     "RGB"       : NVFBC_BUFFER_FORMAT_RGB,
@@ -540,7 +540,7 @@ cdef class NvFBC_SysCapture:
     def raiseNvFBC(self, NVFBCSTATUS ret, msg):
         raiseNvFBC(self.context, ret, msg)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info
@@ -672,7 +672,7 @@ cdef class NvFBC_CUDACapture:
     def raiseNvFBC(self, NVFBCSTATUS ret, msg):
         raiseNvFBC(self.context, ret, msg)
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info

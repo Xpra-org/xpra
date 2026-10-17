@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict
 from ctypes import CDLL, c_uint64, c_int, c_void_p, byref, POINTER
 
 from xpra.common import noop
@@ -228,7 +227,7 @@ cdef void fill_nv12_surface(AMFSurface *surface, amf_uint8 Y, amf_uint8 U, amf_u
             line[x+1] = V
 
 
-cdef object get_caps(AMFCaps *caps, props: Dict):
+cdef object get_caps(AMFCaps *caps, dict props):
     cdef AMFVariantStruct var
     cdef AMF_RESULT r
 
@@ -257,7 +256,7 @@ cdef object get_caps(AMFCaps *caps, props: Dict):
     cdef AMF_ACCELERATION_TYPE accel = caps.pVtbl.GetAccelerationType(caps)
     pycaps["acceleration"] = ACCEL_TYPE_STR(accel)
 
-    getters: Dict[str, Callable] = {
+    getters: dict[str, Callable] = {
         "number-of-streams": get_int64,
         "max-profile": get_int64,
         "max-tier": get_int64,

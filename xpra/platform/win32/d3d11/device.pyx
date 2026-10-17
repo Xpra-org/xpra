@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any, Dict
+from typing import Any
 
 from xpra.log import Logger
 
@@ -19,7 +19,7 @@ ctypedef long LONG
 ctypedef unsigned int DWORD
 
 
-VENDORS: Dict[int, str] = {
+VENDORS: dict[int, str] = {
     0x1002: "AMD",
     0x1022: "AMD",
     0x1010: "ImgTec",
@@ -501,7 +501,7 @@ cdef extern from "d3d11.h":
         const ID3D11QueryVtbl *lpVtbl
 
 
-FEATURE_LEVELS: Dict[int, str] = {
+FEATURE_LEVELS: dict[int, str] = {
     # D3D_FEATURE_LEVEL_1_0_GENERIC: "1_0_GENERIC",
     # D3D_FEATURE_LEVEL_1_0_CORE: "1_0_CORE",
     D3D_FEATURE_LEVEL_9_1: (9, 1),
@@ -516,7 +516,7 @@ FEATURE_LEVELS: Dict[int, str] = {
     D3D_FEATURE_LEVEL_12_2: (12, 2),
 }
 
-FEATURES: Dict[int, str] = {
+FEATURES: dict[int, str] = {
     D3D11_FEATURE_THREADING: "THREADING",
     D3D11_FEATURE_DOUBLES: "DOUBLES",
     D3D11_FEATURE_FORMAT_SUPPORT: "FORMAT_SUPPORT",
@@ -541,7 +541,7 @@ FEATURES: Dict[int, str] = {
     # D3D11_FEATURE_D3D11_OPTIONS6: "D3D11_OPTIONS6",
 }
 
-DEVICE_FLAGS: Dict[int, str] = {
+DEVICE_FLAGS: dict[int, str] = {
     D3D11_CREATE_DEVICE_SINGLETHREADED: "SINGLETHREADED",
     D3D11_CREATE_DEVICE_DEBUG: "DEBUG",
     D3D11_CREATE_DEVICE_SWITCH_TO_REF: "SWITCH_TO_REF",
@@ -588,7 +588,7 @@ cdef class D3D11DeviceContext:
         cdef ID3D11Resource *r_src = <ID3D11Resource*> src
         self.context.lpVtbl.CopyResource(self.context, r_dst, r_src)
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         assert self.context
         flags = self.context.lpVtbl.GetContextFlags(self.context)
         immediate = bool(self.context.lpVtbl.GetType(self.context) & D3D11_DEVICE_CONTEXT_IMMEDIATE)
@@ -619,7 +619,7 @@ cdef class D3D11Device:
     def __repr__(self):
         return "D3D11Device(%#x)" % <uintptr_t> self.device
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         level = self.device.lpVtbl.GetFeatureLevel(self.device)
         emode = self.device.lpVtbl.GetExceptionMode(self.device)
         # D3D11_CREATE_DEVICE_SINGLETHREADED

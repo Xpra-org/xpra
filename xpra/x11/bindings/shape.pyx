@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple
 
 from xpra.x11.bindings.xlib cimport Display, Window, XRectangle, XEvent, Bool, Status
 from xpra.x11.bindings.display_source cimport get_display
@@ -40,7 +39,7 @@ cdef extern from "X11/extensions/shape.h":
     cdef int ShapeInput
 
 
-SHAPE_KIND: Dict[int, str] = {
+SHAPE_KIND: dict[int, str] = {
     ShapeBounding   : "Bounding",
     ShapeClip       : "Clip",
     ShapeInput      : "ShapeInput",
@@ -101,7 +100,7 @@ cdef class XShapeBindingsInstance(X11CoreBindingsInstance):
         cdef int ShapeNotifyMask = 1
         XShapeSelectInput(self.display, window, ShapeNotifyMask)
 
-    def XShapeQueryExtents(self, Window window) -> Tuple[Tuple, Tuple]:
+    def XShapeQueryExtents(self, Window window) -> tuple[tuple, tuple]:
         self.context_check("XShapeQueryExtents")
         cdef Bool bounding_shaped, clip_shaped
         cdef int x_bounding, y_bounding, x_clip, y_clip
@@ -115,7 +114,7 @@ cdef class XShapeBindingsInstance(X11CoreBindingsInstance):
             (clip_shaped, x_clip, y_clip, w_clip, h_clip)
         )
 
-    def XShapeGetRectangles(self, Window window, int kind) -> List[Tuple[int, int, int, int]]:
+    def XShapeGetRectangles(self, Window window, int kind) -> list[tuple[int, int, int, int]]:
         self.context_check("XShapeGetRectangles")
         cdef int count, ordering
         cdef XRectangle* rect = XShapeGetRectangles(self.display, window, kind, &count, &ordering)

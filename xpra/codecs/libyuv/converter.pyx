@@ -7,7 +7,7 @@
 #cython: wraparound=False
 
 from time import monotonic
-from typing import Any, Tuple, Dict
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.log import Logger
@@ -269,7 +269,7 @@ cdef extern from "libyuv/convert_from.h" namespace "libyuv":
                    int height) nogil
 
 
-FILTER_STR: Dict[FilterMode, str] = {
+FILTER_STR: dict[FilterMode, str] = {
     kFilterNone : "None",
     kFilterBilinear: "Bilinear",
     kFilterBox: "Box",
@@ -305,7 +305,7 @@ def get_type() -> str:
     return "libyuv"
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 1, 0
 
 
@@ -316,7 +316,7 @@ def has_argb_to_j444() -> bool:
 #hardcoded for now:
 MAX_WIDTH = 32768
 MAX_HEIGHT = 32768
-COLORSPACES: Dict[str, Sequence[str]] = {
+COLORSPACES: dict[str, Sequence[str]] = {
     "BGRX" : ("YUV444P", "YUV420P", "NV12"),
     "RGBX" : ("YUV444P", "YUV420P", "NV12"),
     "NV12" : ("RGB", "BGRX", "RGBX", "YUV420P"),
@@ -326,7 +326,7 @@ COLORSPACES: Dict[str, Sequence[str]] = {
 }
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"           : get_version(),
         "ARGBToJ444"        : has_argb_to_j444(),
@@ -577,7 +577,7 @@ cdef class Converter:
             self.scaled_offsets[i]  = self.scaled_buffer_size
             self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info |= {
             "frames"    : int(self.frames),

@@ -24,7 +24,7 @@ cdef class X11ClassHintBindingsInstance(X11CoreBindingsInstance):
         XSetClassHint(self.display, xwindow, classhints)
         XFree(classhints)
 
-    def getClassHint(self, Window xwindow) -> Optional[Tuple[str,str]]:
+    def getClassHint(self, Window xwindow) -> tuple[str, str] | None:
         self.context_check("getClassHint")
         cdef XClassHint *classhints = XAllocClassHint()
         assert classhints!=NULL

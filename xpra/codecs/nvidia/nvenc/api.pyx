@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import binascii
-from typing import Dict
 
 from libc.stdint cimport uint8_t   # pylint: disable=syntax-error
 
@@ -74,7 +73,7 @@ cdef str presetstr(GUID preset):
     return CODEC_PRESETS_GUIDS.get(s, s)
 
 
-NV_ENC_STATUS_TXT: Dict[NVENCSTATUS, str] = {
+NV_ENC_STATUS_TXT: dict[NVENCSTATUS, str] = {
     NV_ENC_SUCCESS : "This indicates that API call returned with no errors.",
     NV_ENC_ERR_NO_ENCODE_DEVICE       : "This indicates that no encode capable devices were detected",
     NV_ENC_ERR_UNSUPPORTED_DEVICE     : "This indicates that devices pass by the client is not supported.",
@@ -178,7 +177,7 @@ OPEN_TRANSIENT_ERROR: Sequence[int] = (
 )
 
 
-CAPS_NAMES: Dict[int, str] = {
+CAPS_NAMES: dict[int, str] = {
     NV_ENC_CAPS_NUM_MAX_BFRAMES             : "NUM_MAX_BFRAMES",
     NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES : "SUPPORTED_RATECONTROL_MODES",
     NV_ENC_CAPS_SUPPORT_FIELD_ENCODING      : "SUPPORT_FIELD_ENCODING",
@@ -258,7 +257,7 @@ PRESET_LOSSLESS         = "D5BFB716-C604-44E7-9BB8-DEA5510FC3AC"
 PRESET_LOSSLESS_HP      = "149998E7-2364-411D-82EF-179888093409"
 
 
-CODEC_PRESETS_GUIDS: Dict[str, str] = {
+CODEC_PRESETS_GUIDS: dict[str, str] = {
     PRESET_STREAMING    : "streaming",
     PRESET_DEFAULT      : "default",
     PRESET_HP_GUID      : "hp",
@@ -279,7 +278,7 @@ CODEC_PRESETS_GUIDS: Dict[str, str] = {
 }
 
 
-TUNING_STR: Dict[int, str] = {
+TUNING_STR: dict[int, str] = {
     NV_ENC_TUNING_INFO_UNDEFINED            : "undefined",
     NV_ENC_TUNING_INFO_HIGH_QUALITY         : "high-quality",
     NV_ENC_TUNING_INFO_LOW_LATENCY          : "low-latency",
@@ -288,7 +287,7 @@ TUNING_STR: Dict[int, str] = {
 }
 
 
-BUFFER_FORMAT: Dict[int, str] = {
+BUFFER_FORMAT: dict[int, str] = {
     NV_ENC_BUFFER_FORMAT_UNDEFINED              : "undefined",
     NV_ENC_BUFFER_FORMAT_NV12                   : "NV12_PL",
     NV_ENC_BUFFER_FORMAT_YV12                   : "YV12_PL",
@@ -307,7 +306,7 @@ BUFFER_FORMAT: Dict[int, str] = {
 }
 
 
-CHROMA_FORMATS: Dict[str, int] = {
+CHROMA_FORMATS: dict[str, int] = {
     "BGRX" : 3,
     "r210" : 3,
     "NV12" : 1,
@@ -316,7 +315,7 @@ CHROMA_FORMATS: Dict[str, int] = {
 
 
 #try to map preset names to a "speed" value:
-PRESET_SPEED: Dict[str, int] = {
+PRESET_SPEED: dict[str, int] = {
     "lossless"      : 0,
     "lossless-hp"   : 30,
     "bd"            : 40,
@@ -330,7 +329,7 @@ PRESET_SPEED: Dict[str, int] = {
 }
 
 
-PRESET_QUALITY: Dict[str, int] = {
+PRESET_QUALITY: dict[str, int] = {
     "lossless"      : 100,
     "lossless-hp"   : 100,
     "bd"            : 80,
@@ -351,7 +350,7 @@ PRESET_QUALITY: Dict[str, int] = {
 }
 
 
-PIC_TYPES: Dict[int, str] = {
+PIC_TYPES: dict[int, str] = {
     NV_ENC_PIC_TYPE_P              : "P",
     NV_ENC_PIC_TYPE_B              : "B",
     NV_ENC_PIC_TYPE_I              : "I",
@@ -381,7 +380,7 @@ cdef str get_caps_name(NV_ENC_CAPS cap):
     return CAPS_NAMES.get(cap) or str(cap)
 
 
-cdef List[NV_ENC_CAPS] get_all_caps():
+cdef list[NV_ENC_CAPS] get_all_caps():
     return list(CAPS_NAMES.keys())
 
 
@@ -401,7 +400,7 @@ cdef NV_ENC_TUNING_INFO get_tuning_value(object name):
     return tuning
 
 
-cdef List[int] get_buffer_formats():
+cdef list[int] get_buffer_formats():
     return list(BUFFER_FORMAT.keys())
 
 

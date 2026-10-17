@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Any
+from typing import Any
 from collections.abc import Sequence
 from time import monotonic
 
@@ -60,7 +60,7 @@ def get_encodings() -> Sequence[str]:
     return "jpeg", "jpega"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     info = {"version"   : get_version()}
     #if default_device:
     #    info["device"] = default_device.get_info()

@@ -7,7 +7,7 @@ import os
 import platform
 from collections import deque
 from time import monotonic
-from typing import Any, Dict, Tuple, List
+from typing import Any
 from threading import Lock
 from collections.abc import Sequence
 
@@ -135,12 +135,12 @@ cdef int BOX_MAX_SPEED = envint("XPRA_NVENC_NV12_BOX_MAX_SPEED", 60)
 device_lock = Lock()
 
 
-YUV444_CODEC_SUPPORT: Dict[str, bool] = {
+YUV444_CODEC_SUPPORT: dict[str, bool] = {
     "h264"  : True,
     "h265"  : True,
     "av1"   : False,
 }
-LOSSLESS_CODEC_SUPPORT: Dict[str, bool] = {
+LOSSLESS_CODEC_SUPPORT: dict[str, bool] = {
     "h264" : True,
     "h265" : True,
     "av1" : False,
@@ -149,14 +149,14 @@ LOSSLESS_CODEC_SUPPORT: Dict[str, bool] = {
 # The NVENC "auto" profile can resolve to a 4:2:0-only profile (ie: HEVC "main"),
 # which then rejects the whole configuration with NV_ENC_ERR_INVALID_PARAM.
 # So when no profile has been requested explicitly, default to a 4:4:4 capable one:
-YUV444_PROFILE: Dict[str, str] = {
+YUV444_PROFILE: dict[str, str] = {
     "h264" : "high-444",
     "h265" : "frext",
 }
 
 
 # so we can warn just once per unknown preset:
-UNKNOWN_PRESETS: List[str] = []
+UNKNOWN_PRESETS: list[str] = []
 
 
 cdef GUID CLIENT_KEY_GUID
@@ -175,7 +175,7 @@ if CLIENT_KEYS_STR:
                 del e
     CLIENT_KEYS_STR = validated
 
-CODEC_GUIDS: Dict[str, str] = {
+CODEC_GUIDS: dict[str, str] = {
     guidstr(NV_ENC_CODEC_H264_GUID)         : "H264",
     guidstr(NV_ENC_CODEC_HEVC_GUID)         : "HEVC",
     guidstr(NV_ENC_CODEC_AV1_GUID)          : "AV1",
@@ -189,7 +189,7 @@ cdef str codecstr(GUID guid):
 LOSSLESS_PRESETS: Sequence[str] = ("lossless", "lossless-hp",)
 
 
-def get_COLORSPACES(encoding: str) -> Dict[str, Sequence[str]]:
+def get_COLORSPACES(encoding: str) -> dict[str, Sequence[str]]:
     global YUV420_ENABLED, YUV444_ENABLED, YUV444_CODEC_SUPPORT
     out_cs = []
     if YUV420_ENABLED:
@@ -315,7 +315,7 @@ def _get_spec(encoding: str, in_cs: str, out_cs: str) -> VideoSpec:
 PRETTY_VERSION = (int(NVENCAPI_MAJOR_VERSION), int(NVENCAPI_MINOR_VERSION))
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return PRETTY_VERSION
 
 
@@ -323,7 +323,7 @@ def get_type() -> str:
     return "nvenc"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     global last_context_failure, context_counter, context_gen_counter
     info = {
         "version"           : PRETTY_VERSION,
@@ -1188,7 +1188,7 @@ cdef class Encoder:
         if self.bitstreamBuffer==NULL:
             raise RuntimeError("bitstream buffer pointer is null")
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         global YUV444_CODEC_SUPPORT, YUV444_ENABLED, LOSSLESS_CODEC_SUPPORT, LOSSLESS_ENABLED
         cdef double pps
         info = get_info()
@@ -1557,7 +1557,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &pic)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image: ImageWrapper, options: typedict, int retry=0) -> Tuple[bytes, Dict]:
+    def compress_image(self, image: ImageWrapper, options: typedict, int retry=0) -> tuple[bytes, dict]:
         options = options or {}
         cuda_device_context = options.get("cuda-device-context")
         if not cuda_device_context:
@@ -1576,7 +1576,7 @@ cdef class Encoder:
             damage = options.get("damage") if self.support_roi else None
             return self.do_compress_image(cuda_context, image, damage)
 
-    cdef Tuple do_compress_image(self, cuda_context, image: ImageWrapper, damage=None):
+    cdef tuple do_compress_image(self, cuda_context, image: ImageWrapper, damage=None):
         assert self.context, "nvenc context is not initialized"
         assert cuda_context, "missing device context"
         cdef unsigned int w = image.get_width()
@@ -1768,7 +1768,7 @@ cdef class Encoder:
         cdef NVENCSTATUS r = self.functionList.nvEncUnmapInputResource(self.context, mappedResource)
         raiseNVENC(r, "unmapping input resource")
 
-    cdef Tuple nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0, full_range=True, damage=None):
+    cdef tuple nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0, full_range=True, damage=None):
         cdef NV_ENC_PIC_PARAMS pic
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         assert input_size>0, "invalid input size %i" % input_size
@@ -2095,7 +2095,7 @@ cdef class Encoder:
             log("query_encoder_caps(%s, %s) %s=%s", codecstr(encode_GUID), caps_type, get_caps_name(caps_type), val)
         return val
 
-    def query_codecs(self, full_query=False) -> Dict[str, Dict]:
+    def query_codecs(self, full_query=False) -> dict[str, dict]:
         cdef uint32_t GUIDCount
         cdef uint32_t GUIDRetCount
         cdef GUID* encode_GUIDs

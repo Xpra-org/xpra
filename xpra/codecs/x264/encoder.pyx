@@ -7,7 +7,7 @@
 
 import os
 from time import monotonic
-from typing import Any, Tuple, Dict
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.log import Logger
@@ -318,19 +318,19 @@ cdef inline int roundup(int n, int m) noexcept nogil:
     return (n + m - 1) & ~(m - 1)
 
 
-ADAPT_TYPES: Dict[int, str] = {
+ADAPT_TYPES: dict[int, str] = {
     X264_B_ADAPT_NONE        : "NONE",
     X264_B_ADAPT_FAST        : "FAST",
     X264_B_ADAPT_TRELLIS     : "TRELLIS",
 }
 
-RC_TYPES: Dict[int, str] = {
+RC_TYPES: dict[int, str] = {
     X264_RC_CQP : "CQP",
     X264_RC_CRF : "CRF",
     X264_RC_ABR : "ABR",
 }
 
-SLICE_TYPES: Dict[int, str] = {
+SLICE_TYPES: dict[int, str] = {
     X264_TYPE_AUTO  : "auto",
     X264_TYPE_IDR   : "IDR",
     X264_TYPE_I     : "I",
@@ -340,7 +340,7 @@ SLICE_TYPES: Dict[int, str] = {
     X264_TYPE_KEYFRAME  : "KEYFRAME",
 }
 
-ME_TYPES: Dict[int, str] = {
+ME_TYPES: dict[int, str] = {
     X264_ME_DIA     : "DIA",
     X264_ME_HEX     : "HEX",
     X264_ME_UMH     : "UMH",
@@ -348,7 +348,7 @@ ME_TYPES: Dict[int, str] = {
     X264_ME_TESA    : "TESA",
 }
 
-NAL_TYPES: Dict[int, str] = {
+NAL_TYPES: dict[int, str] = {
     NAL_UNKNOWN     : "unknown",
     NAL_SLICE       : "slice",
     NAL_SLICE_DPA   : "slice-dpa",
@@ -362,7 +362,7 @@ NAL_TYPES: Dict[int, str] = {
     NAL_FILLER      : "filler",
 }
 
-NAL_PRIORITIES: Dict[int, str] = {
+NAL_PRIORITIES: dict[int, str] = {
     NAL_PRIORITY_DISPOSABLE : "disposable",
     NAL_PRIORITY_LOW        : "low",
     NAL_PRIORITY_HIGH       : "high",
@@ -382,8 +382,8 @@ I444_PROFILES = [PROFILE_HIGH444]
 RGB_PROFILES = [PROFILE_HIGH444]
 
 
-def init_colorspace_formats() -> Dict[str, tuple]:
-    colorspace_formats: Dict[str,tuple] = {
+def init_colorspace_formats() -> dict[str, tuple]:
+    colorspace_formats: dict[str,tuple] = {
         "YUV420P"   : (X264_CSP_I420,    PROFILE_HIGH,          I420_PROFILES),
         "YUV422P"   : (X264_CSP_I422,    PROFILE_HIGH422,       I422_PROFILES),
         "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444,       I444_PROFILES),
@@ -399,11 +399,11 @@ def init_colorspace_formats() -> Dict[str, tuple]:
     return colorspace_formats
 
 
-COLORSPACE_FORMATS: Final[Dict[str, tuple]] = init_colorspace_formats()
+COLORSPACE_FORMATS: Final[dict[str, tuple]] = init_colorspace_formats()
 
 
-def init_colorspaces() -> Dict[str, str]:
-    colorspaces: Dict[str,str] = {
+def init_colorspaces() -> dict[str, str]:
+    colorspaces: dict[str,str] = {
         "YUV420P"   : "YUV420P",
         "YUV422P"   : "YUV422P",
         "YUV444P"   : "YUV444P",
@@ -419,14 +419,14 @@ def init_colorspaces() -> Dict[str, str]:
     return colorspaces
 
 
-COLORSPACES: Final[Dict[str, str]] = init_colorspaces()
+COLORSPACES: Final[dict[str, str]] = init_colorspaces()
 
 
 cdef inline bytes b(value: str):
     return value.encode("latin1")
 
 
-def get_version() -> Tuple[int]:
+def get_version() -> tuple[int]:
     return (X264_BUILD, )
 
 
@@ -437,7 +437,7 @@ def get_type() -> str:
 generation = AtomicInteger()
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     # we're only reading from the globals, so we don't need locking:
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
@@ -483,7 +483,7 @@ def get_specs() -> Sequence[VideoSpec]:
 
 
 # maps a log level to one of our logger functions:
-LOGGERS: Dict[int,Callable] = {
+LOGGERS: dict[int,Callable] = {
    X264_LOG_ERROR   : log.error,
    X264_LOG_WARNING : log.warn,
    X264_LOG_INFO    : log.info,
@@ -491,7 +491,7 @@ LOGGERS: Dict[int,Callable] = {
 }
 
 # maps a log level string to the actual constant:
-X264_LOG_MAP: Dict[str, int] = {
+X264_LOG_MAP: dict[str, int] = {
     "ERROR"    : X264_LOG_ERROR,
     "WARNING"  : X264_LOG_WARNING,
     "WARN"     : X264_LOG_WARNING,
@@ -805,7 +805,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         cdef double pps
         if self.profile is None:
             return {}
@@ -945,7 +945,7 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
-    def compress_image(self, image: ImageWrapper, options=None) -> Tuple[bytes, Dict]:
+    def compress_image(self, image: ImageWrapper, options=None) -> tuple[bytes, dict]:
         cdef x264_picture_t pic_in
         cdef int i
 

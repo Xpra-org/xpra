@@ -5,7 +5,7 @@
 
 from time import monotonic
 from math import ceil
-from typing import Any, Dict, Tuple, List
+from typing import Any
 from collections.abc import Sequence
 
 from libc.stdint cimport uintptr_t
@@ -125,7 +125,7 @@ def get_encodings() -> Sequence[str]:
     return "jpeg", "jpega"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {"version"   : get_version()}
 
 
@@ -140,7 +140,7 @@ def cleanup_module() -> None:
     log("nvjpeg.encoder.cleanup_module()")
 
 
-NVJPEG_INPUT_FORMATS: Dict[str, Sequence[str]] = {
+NVJPEG_INPUT_FORMATS: dict[str, Sequence[str]] = {
     "jpeg"  : ("BGRX", "RGBX", ),
     "jpega"  : ("BGRA", "RGBA", ),
 }
@@ -292,7 +292,7 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),
@@ -303,7 +303,7 @@ cdef class Encoder:
         }
         return info
 
-    def compress_image(self, image, options=None) -> Tuple[bytes, Dict[str, Any]]:
+    def compress_image(self, image, options=None) -> tuple[bytes, dict[str, Any]]:
         options = options or {}
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
@@ -496,13 +496,13 @@ def get_device_context():
     return cuda_context
 
 
-errors: List[str] = []
+errors: list[str] = []
 def get_errors() -> Sequence[str]:
     global errors
     return errors
 
 
-def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
+def encode(coding: str, image: ImageWrapper, options=None) -> tuple:
     if coding not in ("jpeg", "jpega"):
         raise ValueError("invalid encoding: %s" % coding)
     global errors

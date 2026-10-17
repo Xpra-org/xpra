@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Tuple, Dict
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
@@ -39,7 +38,7 @@ cdef extern from *:
     ctypedef unsigned long size_t
 
 
-AVIF_PIXEL_FORMAT: Dict[int, str] = {
+AVIF_PIXEL_FORMAT: dict[int, str] = {
     AVIF_PIXEL_FORMAT_NONE      : "NONE",
     AVIF_PIXEL_FORMAT_YUV444    : "YUV444",
     AVIF_PIXEL_FORMAT_YUV422    : "YUV422",
@@ -47,17 +46,17 @@ AVIF_PIXEL_FORMAT: Dict[int, str] = {
     AVIF_PIXEL_FORMAT_YUV400    : "YUV400",
 }
 
-AVIF_RANGE: Dict[int, str] = {
+AVIF_RANGE: dict[int, str] = {
     AVIF_RANGE_LIMITED  : "LIMITED",
     AVIF_RANGE_FULL     : "FULL",
 }
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     return AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH
 
 
-def get_info() -> Dict:
+def get_info() -> dict:
     return {
         "version"      : get_version(),
         "encodings"    : get_encodings(),

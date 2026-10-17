@@ -7,7 +7,6 @@
 #cython: wraparound=False
 
 import struct
-from typing import Tuple
 
 from xpra.common import SizedBuffer
 from libc.stdint cimport uintptr_t
@@ -38,7 +37,7 @@ cdef extern from "lz4_compat.h":
     int LZ4_decompress_safe(const char* src, char* dst, int compressedSize, int dstCapacity) nogil
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     cdef int v = LZ4_versionNumber()
     return v//10000, (v//100) % 100, v % 100
 

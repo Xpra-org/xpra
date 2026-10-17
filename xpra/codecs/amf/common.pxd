@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict
 
 from libc.stdint cimport uint64_t
 
@@ -30,7 +29,7 @@ cdef uint64_t get_c_version()
 
 cdef void fill_nv12_surface(AMFSurface *surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
 
-cdef object get_caps(AMFCaps *caps, props: Dict)
+cdef object get_caps(AMFCaps *caps, dict props)
 
 cdef object get_io_caps(AMFIOCaps *iocaps)
 

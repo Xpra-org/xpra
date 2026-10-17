@@ -6,7 +6,7 @@
 #cython: wraparound=False
 
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec, ColorRange, check_image_size, MAX_IMAGE_DIMENSION
@@ -101,7 +101,7 @@ cdef extern from "wels/codec_api.h":
                                 unsigned char** ppDst, SBufferInfo* pDstInfo) nogil
         long FlushFrame(unsigned char** ppDst, SBufferInfo* pDstInfo) nogil
 
-ERROR_STR: Dict[int, str] = {
+ERROR_STR: dict[int, str] = {
     dsErrorFree: "no error",
     dsFramePending: "need more throughput to generate a frame output",
     dsRefLost: "layer lost at reference frame with temporal id 0",
@@ -119,7 +119,7 @@ ERROR_STR: Dict[int, str] = {
 }
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     cdef OpenH264Version version
     WelsGetCodecVersionEx(&version)
     return version.uMajor, version.uMinor, version.uRevision
@@ -129,7 +129,7 @@ def get_type() -> str:
     return "openh264"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"   : get_version(),
     }
@@ -139,7 +139,7 @@ def get_encodings() -> Sequence[str]:
     return ("h264", )
 
 
-def get_min_size(encoding) -> Tuple[int, int]:
+def get_min_size(encoding) -> tuple[int, int]:
     return 32, 32
 
 
@@ -226,7 +226,7 @@ cdef class Decoder:
         self.colorspace = ""
         self.delayed = False
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),

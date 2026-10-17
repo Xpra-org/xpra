@@ -14,7 +14,7 @@
 
 import os
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.log import Logger
@@ -105,26 +105,26 @@ cdef extern from "VideoToolbox/VideoToolbox.h":
 # (YUV420P is deliberately not supported: CoreVideo only has a video-range
 # planar 4:2:0 fourcc, so a full-range planar source cannot be signalled to
 # VideoToolbox correctly - use NV12 instead, which has both range variants)
-COLORSPACES: Dict[str, int] = {
+COLORSPACES: dict[str, int] = {
     "NV12"      : 2,
     "BGRX"      : 1,
     "BGRA"      : 1,
 }
 
 # the colorspace the decoder will get for a given input colorspace:
-OUTPUT_COLORSPACE: Dict[str, str] = {
+OUTPUT_COLORSPACE: dict[str, str] = {
     "NV12"      : "NV12",
     "BGRX"      : "YUV420P",
     "BGRA"      : "YUV420P",
 }
 
-CODEC_TYPES: Dict[str, CMVideoCodecType] = {
+CODEC_TYPES: dict[str, CMVideoCodecType] = {
     "h264"  : kCMVideoCodecType_H264,
     "h265"  : kCMVideoCodecType_HEVC,
 }
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 1, 0
 
 
@@ -132,7 +132,7 @@ def get_type() -> str:
     return "vt"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
@@ -198,7 +198,7 @@ SPEED_PRIORITY = 80
 MIN_QP_DELTA = 4
 
 
-def get_qp_range(quality: int, content_types: Sequence[str] = ()) -> Tuple[int, int]:
+def get_qp_range(quality: int, content_types: Sequence[str] = ()) -> tuple[int, int]:
     """the quantizer window to allow for this quality setting and content-type"""
     cdef int shift = get_qp_shift(content_types)
     cdef int pct = min(100, max(0, quality))
@@ -497,7 +497,7 @@ cdef class Encoder:
     def __dealloc__(self):
         self.clean()
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),
@@ -605,7 +605,7 @@ cdef class Encoder:
             CVPixelBufferUnlockBaseAddress(pixbuf, 0)
         return pixbuf
 
-    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         cdef double start = monotonic()
         # VideoToolbox derives the bitstream colour range from the input pixel buffer format,
         # which is fixed when the session is created - so on a range change we update the pixel

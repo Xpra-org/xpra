@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import struct
-from typing import Dict
 from collections import deque
 
 from xpra.util.str_fn import hexstr
@@ -234,7 +233,7 @@ cdef extern from "X11/extensions/XInput2.h":
 DEF MAX_XI_EVENTS = 64
 DEF XI_EVENT_MASK_SIZE = (MAX_XI_EVENTS+7)//8
 
-XI_EVENT_NAMES: Dict[int, str] = {
+XI_EVENT_NAMES: dict[int, str] = {
     XI_DeviceChanged    : "XI_DeviceChanged",
     XI_KeyPress         : "XI_KeyPress",
     XI_KeyRelease       : "XI_KeyRelease",
@@ -261,7 +260,7 @@ XI_EVENT_NAMES: Dict[int, str] = {
     XI_RawTouchEnd      : "XI_RawTouchEnd",
 }
 
-XI_EVENTS: Dict[intr, str] = {
+XI_EVENTS: dict[intr, str] = {
     XI_DeviceChanged    : "device-changed",
     XI_KeyPress         : "key-press",
     XI_KeyRelease       : "key-release",
@@ -288,7 +287,7 @@ XI_EVENTS: Dict[intr, str] = {
     XI_RawTouchEnd      : "raw-touch-end",
 }
 
-XI_USE: Dict[int, str] = {
+XI_USE: dict[int, str] = {
     XIMasterPointer     : "master pointer",
     XIMasterKeyboard    : "master keyboard",
     XISlavePointer      : "slave pointer",
@@ -296,7 +295,7 @@ XI_USE: Dict[int, str] = {
     XIFloatingSlave     : "floating slave",
 }
 
-CLASS_INFO: Dict[int, str] = {
+CLASS_INFO: dict[int, str] = {
     XIButtonClass       : "button",
     XIKeyClass          : "key",
     XIValuatorClass     : "valuator",
@@ -688,7 +687,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 return 0
         return 0
 
-    def find_events(self, event_name: str, windows) -> List[int]:
+    def find_events(self, event_name: str, windows) -> list[int]:
         cdef Window found = 0
         cdef Window window
         matches = []
@@ -701,7 +700,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 break
         return matches
 
-    def get_xi_version(self, int major=2, int minor=2) -> Tuple[int, int]:
+    def get_xi_version(self, int major=2, int minor=2) -> tuple[int, int]:
         self.context_check("get_xi_version")
         return get_xi_version(self.display, major, minor)
 
@@ -736,7 +735,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         xi_select_events(self.display)
         XFlush(self.display)
 
-    def get_devices(self, show_all=True, show_disabled=False) -> Dict[int, Dict[str, Any]]:
+    def get_devices(self, show_all=True, show_disabled=False) -> dict[int, dict[str, Any]]:
         self.context_check("get_devices")
         return get_devices(self.display, show_all, show_disabled)
 

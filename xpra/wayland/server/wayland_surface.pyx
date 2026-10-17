@@ -5,7 +5,6 @@
 
 # cython: language_level=3
 
-from typing import Dict
 from math import ceil, floor
 
 from xpra.log import Logger
@@ -99,7 +98,7 @@ def get_capture_pixel_format(read_format: int, source_format: int | None = None)
 # pointer (the only field common to xdg_surfaces and subsurfaces). Holds a
 # strong reference so wlroots-side listener pointers stay valid until the
 # matching destroy path explicitly removes the entry.
-surfaces: Dict[int, WaylandSurface] = {}
+surfaces: dict[int, WaylandSurface] = {}
 
 
 cdef unsigned long _wid_counter = 0

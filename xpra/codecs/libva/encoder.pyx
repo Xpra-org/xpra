@@ -14,7 +14,7 @@
 
 import os
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import (
@@ -151,7 +151,7 @@ def cleanup_module() -> None:
     libva_encode_shutdown()
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 1, 0
 
 
@@ -159,7 +159,7 @@ def get_type() -> str:
     return "libva"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version": get_version(),
         "type": "libva",
@@ -367,7 +367,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames": int(self.frames),
@@ -386,7 +386,7 @@ cdef class Encoder:
         }
         return info
 
-    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         cdef LibVAEncodedFrame frame
         cdef Py_buffer y_buf
         cdef Py_buffer uv_buf
@@ -464,7 +464,7 @@ cdef class Encoder:
             frame.us_copy, frame.us_submit, frame.us_sync)
         return bdata, client_options
 
-    def flush(self, delayed: int = 0) -> Tuple[bytes, Dict]:
+    def flush(self, delayed: int = 0) -> tuple[bytes, dict]:
         return b"", {}
 
 

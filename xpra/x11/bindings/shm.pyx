@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import List, Tuple
 
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
@@ -127,7 +126,7 @@ cdef class XShmWrapper:
     def __repr__(self):
         return "XShmWrapper(%#x - %ix%i)" % (self.window, self.width, self.height)
 
-    def setup(self) -> Tuple[bool, bool, bool]:
+    def setup(self) -> tuple[bool, bool, bool]:
         #returns:
         # (init_ok, may_retry_this_window, XShm_global_failure)
         self.ref_count = 0
@@ -184,7 +183,7 @@ cdef class XShmWrapper:
     def get_shm_bytes(self) -> int:
         return self.shm_bytes
 
-    def get_size(self) -> Tuple[int, int]:
+    def get_size(self) -> tuple[int, int]:
         return self.width, self.height
 
     def get_image(self, Drawable drawable, int x, int y, int w, int h):
@@ -229,7 +228,7 @@ cdef class XShmWrapper:
         xshmdebug("XShmWrapper.get_image(%#x, %i, %i, %i, %i)=%s (ref_count=%i)", drawable, x, y, w, h, imageWrapper, self.ref_count)
         return imageWrapper
 
-    def read_palette(self) -> List[Tuple[int, int, int]]:
+    def read_palette(self) -> list[tuple[int, int, int]]:
         cdef XWindowAttributes attrs
         cdef XVisualInfo vinfo_template
         cdef int count

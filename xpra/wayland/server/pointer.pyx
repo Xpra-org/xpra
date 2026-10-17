@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Dict, Tuple
 
 from xpra.log import Logger
 
@@ -39,7 +38,7 @@ WHEEL_AXIS_STEP = 15.0
 WHEEL_DISCRETE_STEP = 120
 
 
-BUTTON_MAP: Dict[int, int] = {
+BUTTON_MAP: dict[int, int] = {
     1: BTN_LEFT,
     2: BTN_MIDDLE,
     3: BTN_RIGHT,
@@ -48,7 +47,7 @@ BUTTON_MAP: Dict[int, int] = {
     10: BTN_FORWARD,
     11: BTN_BACK,
 }
-WHEEL_BUTTONS: Dict[int, Tuple[wl_pointer_axis, float]] = {
+WHEEL_BUTTONS: dict[int, tuple[wl_pointer_axis, float]] = {
     4: (WL_POINTER_AXIS_VERTICAL_SCROLL, -WHEEL_AXIS_STEP),
     5: (WL_POINTER_AXIS_VERTICAL_SCROLL, WHEEL_AXIS_STEP),
     6: (WL_POINTER_AXIS_HORIZONTAL_SCROLL, -WHEEL_AXIS_STEP),
@@ -146,7 +145,7 @@ cdef class WaylandPointer(ListenerObject):
     def has_precise_wheel(self) -> bool:
         return True
 
-    def get_position(self) -> Tuple[int, int]:
+    def get_position(self) -> tuple[int, int]:
         return round(self.cursor.x), round(self.cursor.y)
 
     def move_pointer(self, x: int, y: int, props: dict) -> None:

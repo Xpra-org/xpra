@@ -6,7 +6,6 @@
 
 # cython: language_level=3
 
-from typing import Tuple
 
 import os
 from collections import defaultdict
@@ -318,7 +317,7 @@ cdef class WaylandPrimarySelection:
         wlr_seat_set_primary_selection(self.seat, NULL, serial)
         self.flush()
 
-    def source_targets(self, uintptr_t source_ptr) -> Tuple:
+    def source_targets(self, uintptr_t source_ptr) -> tuple:
         cdef wlr_primary_selection_source *source = <wlr_primary_selection_source*> source_ptr
         if source == NULL:
             return ()

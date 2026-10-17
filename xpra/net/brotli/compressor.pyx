@@ -5,7 +5,6 @@
 
 from libc.stdint cimport uint8_t, uint32_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
-from typing import Tuple
 
 from xpra.log import Logger
 log = Logger("brotli")
@@ -67,7 +66,7 @@ cdef extern from "brotli/encode.h":
     BROTLI_BOOL BrotliEncoderHasMoreOutput(BrotliEncoderState* state)
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     cdef uint32_t bv = BrotliEncoderVersion()
     cdef unsigned int major = bv >> 24
     cdef unsigned int minor = (bv >> 12) & 0xFFF

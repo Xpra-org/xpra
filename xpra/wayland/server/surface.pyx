@@ -5,7 +5,6 @@
 
 # cython: language_level=3
 
-from typing import Dict
 
 from xpra.log import Logger
 from xpra.constants import MoveResize
@@ -36,14 +35,14 @@ from xpra.wayland.server.wlroots cimport (
 from xpra.wayland.server.pixman cimport pixman_region32_t, pixman_box32_t, pixman_region32_rectangles
 
 
-EDGES: Dict[int, str] = {
+EDGES: dict[int, str] = {
     WLR_EDGE_TOP: "TOP",
     WLR_EDGE_BOTTOM: "BOTTOM",
     WLR_EDGE_LEFT: "LEFT",
     WLR_EDGE_RIGHT: "RIGHT",
 }
 
-EDGES_MAP: Dict[int, MoveResize] = {
+EDGES_MAP: dict[int, MoveResize] = {
     WLR_EDGE_TOP: MoveResize.SIZE_TOP,
     WLR_EDGE_TOP | WLR_EDGE_LEFT: MoveResize.SIZE_TOPLEFT,
     WLR_EDGE_TOP | WLR_EDGE_RIGHT: MoveResize.SIZE_TOPRIGHT,

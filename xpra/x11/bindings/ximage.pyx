@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Tuple, Dict
 from threading import Lock, RLock
 
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
@@ -99,7 +98,7 @@ cdef extern from "X11/Xlib.h":
                         unsigned int *border_width_return, unsigned int *depth_return)
 
 
-SBFirst: Dict[int, str] = {
+SBFirst: dict[int, str] = {
     MSBFirst : "MSBFirst",
     LSBFirst : "LSBFirst"
 }
@@ -224,7 +223,7 @@ cdef class XImageWrapper:
     def __repr__(self):
         return "XImageWrapper(%s: %i, %i, %i, %i)" % (self.pixel_format, self.x, self.y, self.width, self.height)
 
-    def get_geometry(self) -> Tuple[int, int, int, int, int]:
+    def get_geometry(self) -> tuple[int, int, int, int, int]:
         return self.x, self.y, self.width, self.height, self.depth
 
     def get_target_x(self) -> int:

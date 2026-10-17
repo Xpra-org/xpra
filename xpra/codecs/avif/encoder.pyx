@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Tuple, Dict, Any, Set
+from typing import Any
 from collections.abc import Sequence
 
 from libc.stdint cimport uint8_t, uintptr_t    # pylint: disable=syntax-error
@@ -62,11 +62,11 @@ def get_encodings() -> Sequence[str]:
     return ("avif", )
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     return AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
@@ -74,7 +74,7 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-AVIF_PIXEL_FORMAT: Dict[int, str] = {
+AVIF_PIXEL_FORMAT: dict[int, str] = {
     AVIF_PIXEL_FORMAT_NONE      : "NONE",
     AVIF_PIXEL_FORMAT_YUV444    : "YUV444",
     AVIF_PIXEL_FORMAT_YUV422    : "YUV422",
@@ -82,7 +82,7 @@ AVIF_PIXEL_FORMAT: Dict[int, str] = {
     AVIF_PIXEL_FORMAT_YUV400    : "YUV400",
 }
 
-INPUT_PIXEL_FORMATS: Dict[str, int] = {
+INPUT_PIXEL_FORMATS: dict[str, int] = {
     "RGBX"  : AVIF_RGB_FORMAT_RGBA,
     "RGBA"  : AVIF_RGB_FORMAT_RGBA,
     "BGRX"  : AVIF_RGB_FORMAT_BGRA,
@@ -100,7 +100,7 @@ cdef inline void check(avifResult r, message: str):
         raise RuntimeError("%s : %s" % (message, err))
 
 
-REFUSED: Set[str] = set()
+REFUSED: set[str] = set()
 
 
 cdef void set_option(avifEncoder *encoder, key: str, value: str):
@@ -149,7 +149,7 @@ cdef inline int get_encoder_speed(int speed) noexcept nogil:
     return 6
 
 
-def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
+def encode(coding: str, image: ImageWrapper, options=None) -> tuple:
     assert coding == "avif"
     options = typedict(options or {})
     pixel_format = image.get_pixel_format()

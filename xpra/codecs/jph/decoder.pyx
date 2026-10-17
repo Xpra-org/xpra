@@ -5,7 +5,7 @@
 
 #cython: wraparound=False
 
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
@@ -31,7 +31,7 @@ cdef extern from "jph_decode.h":
                    char *error, size_t error_size) nogil
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     return jph_version_major(), jph_version_minor(), jph_version_patch()
 
 
@@ -43,7 +43,7 @@ def get_encodings() -> Sequence[str]:
     return ("jph", )
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version": get_version(),
         "encodings": get_encodings(),

@@ -5,14 +5,13 @@
 
 #cython: boundscheck=False, wraparound=False, initializedcheck=False, cdivision=True, always_allow_keywords=False
 
-from typing import Dict
 
 # libaom 3.3 as found in Ubuntu 22.04 doesn't define `AOM_IMG_FMT_NV12`,
 # so we just duplicate the definition here instead:
 cdef aom_img_fmt_t AOM_IMG_FMT_NV12 = <aom_img_fmt_t> (AOM_IMG_FMT_PLANAR | 7)
 
 
-FORMAT_STRS: Dict[aom_img_fmt_t, str] = {
+FORMAT_STRS: dict[aom_img_fmt_t, str] = {
     AOM_IMG_FMT_NONE: "None",
     AOM_IMG_FMT_I420: "YUV420P",
     AOM_IMG_FMT_I422: "YUV422P",

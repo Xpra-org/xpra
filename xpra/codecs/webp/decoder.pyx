@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple
 from collections.abc import Sequence
 
 from xpra.log import Logger
@@ -136,7 +135,7 @@ cdef extern from "webp/decode.h":
     void WebPFreeDecBuffer(WebPDecBuffer* buffer)
 
 
-ERROR_TO_NAME: Dict[int, str] = {
+ERROR_TO_NAME: dict[int, str] = {
 #VP8_STATUS_OK
     VP8_STATUS_OUT_OF_MEMORY        : "out of memory",
     VP8_STATUS_INVALID_PARAM        : "invalid parameter",
@@ -148,13 +147,13 @@ ERROR_TO_NAME: Dict[int, str] = {
 }
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     cdef int version = WebPGetDecoderVersion()
     log("WebPGetDecoderVersion()=%#x", version)
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"      : get_version(),
         "encodings"    : get_encodings(),

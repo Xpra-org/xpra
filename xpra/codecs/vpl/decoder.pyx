@@ -10,7 +10,7 @@
 
 from threading import Lock
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
@@ -187,7 +187,7 @@ def cleanup_module() -> None:
     vpl_decode_shutdown()
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 1, 0
 
 
@@ -195,7 +195,7 @@ def get_type() -> str:
     return "vpl"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version": get_version(),
         "type": "vpl",
@@ -206,7 +206,7 @@ def get_encodings() -> Sequence[str]:
     return ("h265", )
 
 
-def get_min_size(encoding) -> Tuple[int, int]:
+def get_min_size(encoding) -> tuple[int, int]:
     return 64, 64
 
 
@@ -378,7 +378,7 @@ cdef class Decoder:
         self.colorspace = ""
         self.encoding = ""
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"    : int(self.frames),

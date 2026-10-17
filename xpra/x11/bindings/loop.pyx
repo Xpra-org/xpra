@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Dict
 
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.events cimport init_x11_events, parse_xevent
@@ -87,7 +86,7 @@ cdef int x11_io_error_handler(Display *display) noexcept with gil:
     return 0
 
 
-last_error: Dict[str, int] = {}
+last_error: dict[str, int] = {}
 
 
 cdef int x11_error_handler(Display *display, XErrorEvent *event) noexcept with gil:

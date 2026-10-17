@@ -5,7 +5,7 @@
 
 #cython: wraparound=False
 
-from typing import Dict, Tuple, Any
+from typing import Any
 
 from xpra.log import Logger
 log = Logger("drm")
@@ -66,11 +66,11 @@ cdef str s(const char *v):
         return str(v[:])
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 4, 4
 
 
-def query() -> Dict[str, Any]:
+def query() -> dict[str, Any]:
     info = {}
     cdef int count = drmGetDevices(NULL, 16)
     if count<0:

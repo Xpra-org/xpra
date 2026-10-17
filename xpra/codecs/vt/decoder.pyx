@@ -17,7 +17,7 @@
 # (CPU) ImageWrapper, like the other xpra video decoders.
 
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.log import Logger
@@ -121,7 +121,7 @@ cdef extern from "VideoToolbox/VideoToolbox.h":
 DEF kCVPixelBufferLock_ReadOnly = 0x00000001
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 1, 0
 
 
@@ -129,7 +129,7 @@ def get_type() -> str:
     return "vt"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
@@ -141,15 +141,15 @@ def get_encodings() -> Sequence[str]:
     return tuple(CODEC_TYPES.keys())
 
 
-def get_min_size(encoding) -> Tuple[int, int]:
+def get_min_size(encoding) -> tuple[int, int]:
     return 16, 16
 
 
 # the input colorspaces we accept (what the encoder produced before encoding).
 # We always output NV12.
-COLORSPACES: Tuple[str, ...] = ("YUV420P", "NV12")
+COLORSPACES: tuple[str, ...] = ("YUV420P", "NV12")
 
-CODEC_TYPES: Dict[str, CMVideoCodecType] = {
+CODEC_TYPES: dict[str, CMVideoCodecType] = {
     "h264"  : kCMVideoCodecType_H264,
     "h265"  : kCMVideoCodecType_HEVC,
 }
@@ -162,7 +162,7 @@ H265_PARAMETER_SETS = (32, 33, 34)      # VPS, SPS, PPS
 
 # the VideoToolbox / CoreMedia OSStatus error codes this decoder can hit,
 # so that log messages name the failure rather than showing a bare integer:
-OSSTATUS_ERRORS: Dict[int, str] = {
+OSSTATUS_ERRORS: dict[int, str] = {
     -12210: "kVTVideoDecoderAuthorizationErr",
     -12900: "kVTPropertyNotSupportedErr",
     -12902: "kVTParameterErr",
@@ -392,7 +392,7 @@ cdef class Decoder:
     def __dealloc__(self):
         self.clean()
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),

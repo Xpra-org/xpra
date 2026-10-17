@@ -6,7 +6,7 @@
 import os
 
 from time import monotonic, sleep
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import (
@@ -87,7 +87,7 @@ DX11 = envbool("XPRA_AMF_DX11", WIN32)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 
 
-AMF_ENCODINGS : Dict[str, str] = {
+AMF_ENCODINGS : dict[str, str] = {
     # AMFVideoEncoderVCE_SVC?
     "h264": "AMFVideoEncoderVCE_AVC",
     "hevc": "AMFVideoEncoder_HEVC",
@@ -97,7 +97,7 @@ AMF_ENCODINGS : Dict[str, str] = {
 START_TIME_PROPERTY = "StartTimeProperty"
 
 
-H264_PROFILE_IDS: Dict[str, int] = {
+H264_PROFILE_IDS: dict[str, int] = {
     "baseline": AMF_VIDEO_ENCODER_PROFILE_BASELINE,
     "constrained-baseline": AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_BASELINE,
     "main": AMF_VIDEO_ENCODER_PROFILE_MAIN,
@@ -118,7 +118,7 @@ def get_h264_profile(options: typedict) -> str:
 # The three encoders expose the same knobs under three different names, so keep the
 # mapping in one place rather than repeating each `SetProperty` call per codec.
 # A knob that is missing from a table simply is not applied for that codec.
-PROPERTIES: Dict[str, Dict[str, str]] = {
+PROPERTIES: dict[str, dict[str, str]] = {
     "h264": {
         "usage": "Usage",
         "profile": "Profile",
@@ -178,19 +178,19 @@ PROPERTIES: Dict[str, Dict[str, str]] = {
 
 # `Usage` is a preset: it configures the whole rate control parameter set in one go.
 # It must be the *first* property we set, since it overwrites anything set before it:
-USAGE: Dict[str, int] = {
+USAGE: dict[str, int] = {
     "h264": AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY,
     "hevc": AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY,
     "av1": AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY,
 }
 
-CONSTANT_QP: Dict[str, int] = {
+CONSTANT_QP: dict[str, int] = {
     "h264": AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CONSTANT_QP,
     "hevc": AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_CONSTANT_QP,
     "av1": AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_CONSTANT_QP,
 }
 
-PEAK_CONSTRAINED_VBR: Dict[str, int] = {
+PEAK_CONSTRAINED_VBR: dict[str, int] = {
     "h264": AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
     "hevc": AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
     "av1": AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
@@ -198,7 +198,7 @@ PEAK_CONSTRAINED_VBR: Dict[str, int] = {
 
 # the enum values are not in the same order for all three codecs
 # (h264 has CBR at 1, hevc and av1 have it at 3):
-RATE_CONTROL_STR: Dict[str, Dict[int, str]] = {
+RATE_CONTROL_STR: dict[str, dict[int, str]] = {
     "h264": {
         0: "constant-qp", 1: "cbr", 2: "peak-constrained-vbr", 3: "latency-constrained-vbr",
         4: "quality-vbr", 5: "high-quality-vbr", 6: "high-quality-cbr",
@@ -285,7 +285,7 @@ def get_encodings() -> Sequence[str]:
     return CODECS
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     info = {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
@@ -326,10 +326,10 @@ def get_specs() -> Sequence[VideoSpec]:
 
 
 # these are the actual caps and are probed during the self-tests:
-CAPS: Dict[str, str] = {}
+CAPS: dict[str, str] = {}
 
 
-ENCODING_CAPS: Dict[str, Dict[str, str]] = {
+ENCODING_CAPS: dict[str, dict[str, str]] = {
     "h264": {
         "max-bitrate" : "MaxBitrate",
         "number-of-streams": "NumOfStreams",
@@ -525,7 +525,7 @@ cdef class Encoder:
             return -1
         return int(var.int64Value)
 
-    def get_caps(self) -> Dict:
+    def get_caps(self) -> dict:
         assert self.encoder
         cdef AMFCaps *caps
         cdef AMF_RESULT r
@@ -689,7 +689,7 @@ cdef class Encoder:
         self.try_property("qp-intra", qp)
         self.try_property("qp-inter", qp)
 
-    def get_tuning_info(self) -> Dict[str, Any]:
+    def get_tuning_info(self) -> dict[str, Any]:
         """ what the encoder ended up with, which is not always what we asked for """
         props = PROPERTIES.get(self.encoding, {})
         info = {}
@@ -712,7 +712,7 @@ cdef class Encoder:
     def __repr__(self):
         return "amf.Encoder(%s)" % self.encoding
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"    : int(self.frames),
@@ -781,7 +781,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         cdef uint8_t *pic_in[2]
         cdef int strides[2]
         assert self.context!=NULL

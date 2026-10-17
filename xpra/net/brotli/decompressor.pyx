@@ -5,7 +5,6 @@
 
 from libc.stdint cimport uint8_t, uint32_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
-from typing import Tuple, Dict
 
 from xpra.net.compression import MAX_DECOMPRESSED_SIZE
 from xpra.log import Logger
@@ -56,7 +55,7 @@ cdef extern from "brotli/decode.h":
     int BrotliDecoderIsFinished(const BrotliDecoderState* state)
 
 
-RESULT_STR : Dict[BrotliDecoderResult, str] = {
+RESULT_STR : dict[BrotliDecoderResult, str] = {
     BROTLI_DECODER_RESULT_ERROR : "error",
     BROTLI_DECODER_RESULT_SUCCESS   : "success",
     BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT : "needs-more-input",
@@ -64,7 +63,7 @@ RESULT_STR : Dict[BrotliDecoderResult, str] = {
 }
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     cdef uint32_t bv = BrotliDecoderVersion()
     cdef unsigned int major = bv >> 24
     cdef unsigned int minor = (bv >> 12) & 0xFFF

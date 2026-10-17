@@ -6,7 +6,7 @@
 #cython: wraparound=False
 
 import weakref
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec, check_image_size, MAX_IMAGE_DIMENSION
@@ -69,7 +69,7 @@ cdef int check(r: aom_codec_err_t) except -1:
         raise RuntimeError(f"AOM codec error: {aom_codec_err_to_string(r).decode('utf-8')}")
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     cdef int version = aom_codec_version()
     return version >> 16, (version >> 8) & 0xFF, version & 0xFF
 
@@ -78,14 +78,14 @@ def get_type() -> str:
     return "aom"
 
 
-def get_info() -> Dict[str, Tuple[int, int, int] | int]:
+def get_info() -> dict[str, tuple[int, int, int] | int]:
     return {
         "version": get_version(),
         "abi": AOM_DECODER_ABI_VERSION,
     }
 
 
-def get_min_size(encoding: str) -> Tuple[int, int]:
+def get_min_size(encoding: str) -> tuple[int, int]:
     return 16, 16
 
 
@@ -185,7 +185,7 @@ cdef class Decoder:
                 log.error("Error destroying codec: %i", r)
             self.codec = NULL
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),

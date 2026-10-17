@@ -7,7 +7,6 @@
 #cython: boundscheck=False, wraparound=False
 
 import struct
-from typing import Tuple, Dict
 
 from xpra.util.env import envbool
 from xpra.util.str_fn import repr_ellipsized, csv
@@ -181,7 +180,7 @@ cdef class ScrollData:
             log(" a2=%s", da(self.a2, l))
             log(" %i matches, distances=%s", matches, dd(self.distances, l*2))
 
-    def get_scroll_values(self, uint16_t min_hits=2) -> Tuple[Dict, Dict]:
+    def get_scroll_values(self, uint16_t min_hits=2) -> tuple[dict, dict]:
         """
             Return two dictionaries that describe how to go from a1 to a2.
             * scrolls dictionary contains scroll definitions
@@ -340,7 +339,7 @@ cdef class ScrollData:
             log("invalidating whole scroll data as only %i of it remains valid", 100*nonzero//rect.height)
             self.free()
 
-    def get_best_match(self) -> Tuple[int, int]:
+    def get_best_match(self) -> tuple[int, int]:
         if self.a1==NULL or self.a2==NULL:
             return 0, 0
         cdef uint16_t max_hits = 0

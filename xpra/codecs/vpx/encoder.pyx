@@ -7,7 +7,7 @@ import os
 import math
 from collections import deque
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.log import Logger
@@ -199,14 +199,14 @@ cdef extern from "vpx/vpx_encoder.h":
     const vpx_codec_cx_pkt_t *vpx_codec_get_cx_data(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
     vpx_codec_err_t vpx_codec_enc_config_set(vpx_codec_ctx_t *ctx, const vpx_codec_enc_cfg_t *cfg)
 
-PACKET_KIND: Dict[int, str] = {
+PACKET_KIND: dict[int, str] = {
     VPX_CODEC_CX_FRAME_PKT   : "CX_FRAME_PKT",
     VPX_CODEC_STATS_PKT      : "STATS_PKT",
     VPX_CODEC_PSNR_PKT       : "PSNR_PKT",
     VPX_CODEC_CUSTOM_PKT     : "CUSTOM_PKT",
 }
 
-COLORSPACES: Dict[str, Sequence[str]] = {
+COLORSPACES: dict[str, Sequence[str]] = {
     "vp8": ("YUV420P", ),
 }
 if VPX_ENCODER_ABI_VERSION>=23 and not OSX:
@@ -225,7 +225,7 @@ def get_version() -> Sequence[int]:
     b = vpx_codec_version_str()
     vstr = b.decode("latin1").lstrip("v")
     log("vpx_codec_version_str()=%s", vstr)
-    vparts : List[int] = []
+    vparts : list[int] = []
     try:
         for x in vstr.split("."):
             vparts.append(int(x))
@@ -245,7 +245,7 @@ def get_encodings() -> Sequence[str]:
 generation = AtomicInteger()
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> dict[str,Any]:
     global CODECS, MAX_SIZE
     b = vpx_codec_build_config()
     info = {
@@ -271,7 +271,7 @@ cdef inline const vpx_codec_iface_t  *make_codec_cx(encoding):
 
 
 #educated guess:
-MAX_SIZE: Dict[str, Tuple[int, int]] = {
+MAX_SIZE: dict[str, tuple[int, int]] = {
     "vp8"   : (8192, 4096),
     "vp9"   : (8192, 4096),
 }
@@ -521,7 +521,7 @@ cdef class Encoder:
     def __repr__(self):
         return "vpx.Encoder(%s)" % self.encoding
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> dict[str,Any]:
         info = get_info()
         info |= {
             "frames"    : int(self.frames),
@@ -603,7 +603,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         cdef int mb_w = 0

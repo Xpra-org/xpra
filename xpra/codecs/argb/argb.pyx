@@ -6,7 +6,6 @@
 
 #cython: boundscheck=False, wraparound=False, initializedcheck=False, cdivision=True, always_allow_keywords=False
 
-from typing import List, Tuple
 from xpra.common import SizedBuffer
 
 from xpra.util.env import first_time
@@ -842,7 +841,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False) -> bool:
     return False
 
 
-def bit_to_rectangles(buf, unsigned int w, unsigned int h) -> List[Tuple[int,int,int,int]]:
+def bit_to_rectangles(buf, unsigned int w, unsigned int h) -> list[tuple[int,int,int,int]]:
     cdef const unsigned char* bits
     with buffer_context(buf) as bc:
         bits = <const unsigned char*> (<uintptr_t> int(bc))
@@ -933,6 +932,6 @@ cdef void show_plane_range(name, plane: SizedBuffer, unsigned int width, unsigne
     log.info("%s plane: min=%s, max=%s", name, minv, maxv)
 
 
-def get_plane_range(plane: SizedBuffer, int width, int stride, int height) -> Tuple[int, int]:
+def get_plane_range(plane: SizedBuffer, int width, int stride, int height) -> tuple[int, int]:
     """ get the min and max values of a plane """
     return plane_range(plane, width, stride, height)

@@ -161,7 +161,7 @@ cdef extern from "X11/Xlib.h":
     int BadImplementation
 
 
-constants: Dict[str, int] = {
+constants: dict[str, int] = {
     "CWX"               : CWX,
     "CWY"               : CWY,
     "CWWidth"           : CWWidth,
@@ -508,7 +508,7 @@ cdef class X11CoreBindingsInstance:
             raise RuntimeError("display is closed")
         return XUngrabPointer(self.display, time)
 
-    def query_pointer(self) -> Tuple[int, int]:
+    def query_pointer(self) -> tuple[int, int]:
         self.context_check("query_pointer")
         cdef Window root_window = XDefaultRootWindow(self.display)
         cdef Window root, child
@@ -530,7 +530,7 @@ cdef class X11CoreBindingsInstance:
                       &root_x, &root_y, &win_x, &win_y, &mask)
         return mask
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         cdef int version = XProtocolVersion(self.display)
         cdef int revision = XProtocolRevision(self.display)
         cdef char *vendor = XServerVendor(self.display)

@@ -37,7 +37,7 @@ cdef extern from "systemd/sd-daemon.h":
     int sd_watchdog_enabled(int unset_environment, uint64_t *usec)
 
 
-def get_sd_listen_sockets() -> Sequence[Tuple[str, Any, Tuple[str, int]]]:
+def get_sd_listen_sockets() -> Sequence[tuple[str, Any, tuple[str, int]]]:
     cdef int fd, i
     cdef int n = sd_listen_fds(0)
     log("sd_listen_fds(0)=%i", n)
@@ -66,7 +66,7 @@ def get_sd_socket_type(fd) -> str:
     return socktype
 
 
-def get_sd_listen_socket(int fd) -> Tuple[str, Any, Tuple[str, int]]:
+def get_sd_listen_socket(int fd) -> tuple[str, Any, tuple[str, int]]:
     #re-wrapping the socket gives us a more proper socket object,
     #so we can then wrap it with ssl
     def fromfd(family, stype, proto=0):

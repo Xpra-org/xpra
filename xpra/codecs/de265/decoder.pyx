@@ -6,7 +6,7 @@
 #cython: wraparound=False
 
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec, check_image_size, MAX_IMAGE_DIMENSION
@@ -95,7 +95,7 @@ cdef inline int check(de265_error err, str action) except -1:
     raise RuntimeError(f"libde265 {action} failed: {error_text(err)}")
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     return (
         de265_get_version_number_major(),
         de265_get_version_number_minor(),
@@ -107,7 +107,7 @@ def get_type() -> str:
     return "de265"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version": get_version(),
         "version-string": de265_get_version().decode("latin1"),
@@ -118,7 +118,7 @@ def get_encodings() -> Sequence[str]:
     return ("h265", )
 
 
-def get_min_size(_encoding: str) -> Tuple[int, int]:
+def get_min_size(_encoding: str) -> tuple[int, int]:
     return 32, 32
 
 
@@ -196,7 +196,7 @@ cdef class Decoder:
         self.height = 0
         self.colorspace = ""
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),

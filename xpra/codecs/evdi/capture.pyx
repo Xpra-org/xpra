@@ -9,7 +9,6 @@ import os
 import select
 import binascii
 from time import monotonic
-from typing import Tuple, List
 from collections.abc import Sequence
 
 from xpra.util.str_fn import strtobytes
@@ -301,7 +300,7 @@ cdef class EvdiDevice:
         log(f"update_ready_handler({buffer_to_be_updated})")
         self.grab_pixels(buffer_to_be_updated)
 
-    def grab_pixels(self, buf_id) -> Tuple:
+    def grab_pixels(self, buf_id) -> tuple:
         if not self.handle:
             raise RuntimeError("no device handle")
         buf = self.buffers.get(buf_id)
@@ -446,7 +445,7 @@ cdef class EvdiDevice:
             if self.buffers and self.export_buffer:
                 self.refresh()
 
-    def refresh(self) -> Tuple | None:
+    def refresh(self) -> tuple | None:
         buf_id = self.export_buffer
         #log(f"refresh() export_buffer={buf_id}")
         if buf_id in (1, 2):
@@ -501,7 +500,7 @@ def test_device(int device) -> bool:
     return True
 
 
-def find_evdi_devices() -> List[str]:
+def find_evdi_devices() -> list[str]:
     import os
     devices = []
     for f in sorted(os.listdir("/dev/dri")):

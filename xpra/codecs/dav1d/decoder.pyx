@@ -6,7 +6,7 @@
 #cython: wraparound=False
 
 import errno
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec, check_image_size, MAX_IMAGE_DIMENSION
@@ -270,7 +270,7 @@ cdef extern from "dav1d/dav1d.h":
 
 
 
-def get_version() -> Tuple[int, int, int]:
+def get_version() -> tuple[int, int, int]:
     return DAV1D_API_VERSION_MAJOR, DAV1D_API_VERSION_MINOR, DAV1D_API_VERSION_PATCH
 
 
@@ -278,7 +278,7 @@ def get_type() -> str:
     return "dav1d"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version"   : get_version(),
     }
@@ -288,7 +288,7 @@ def get_encodings() -> Sequence[str]:
     return ("av1", )
 
 
-def get_min_size(encoding) -> Tuple[int, int]:
+def get_min_size(encoding) -> tuple[int, int]:
     return 32, 32
 
 
@@ -492,7 +492,7 @@ cdef class Decoder:
             dav1d_close(&self.context)
             self.context = NULL
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),

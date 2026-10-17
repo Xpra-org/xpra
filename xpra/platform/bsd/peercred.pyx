@@ -14,7 +14,7 @@ cdef extern from "unistd.h":
     int getpeereid(int s, uid_t *euid, gid_t *egid)
 
 
-def get_peer_cred(sock: int) -> Tuple[int ,int]:
+def get_peer_cred(sock: int) -> tuple[int ,int]:
     """
     Get the effective user and group ID of the peer connected to the given
     socket.

@@ -9,7 +9,7 @@
 #cython: wraparound=False
 
 from time import monotonic
-from typing import Any, Dict, Tuple
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import (
@@ -128,7 +128,7 @@ def cleanup_module() -> None:
     mf_encode_shutdown()
 
 
-def get_version() -> Tuple[int, int]:
+def get_version() -> tuple[int, int]:
     return 1, 0
 
 
@@ -136,7 +136,7 @@ def get_type() -> str:
     return "mf"
 
 
-def get_info() -> Dict[str, Any]:
+def get_info() -> dict[str, Any]:
     return {
         "version": get_version(),
         "type": "MediaFoundation",
@@ -145,7 +145,7 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-CODECS: Dict[str, int] = {
+CODECS: dict[str, int] = {
     "h264": MF_CODEC_H264,
     "h265": MF_CODEC_HEVC,
 }
@@ -181,13 +181,13 @@ def get_encodings() -> Sequence[str]:
 # the format outright, which costs nothing at all: `mf_encoder_create` just
 # moves on to the software encoder. So h265 is only offered from a width well
 # clear of the hole; h264 has no such trouble at any size we have tried.
-MIN_SIZES: Dict[str, Tuple[int, int]] = {
+MIN_SIZES: dict[str, tuple[int, int]] = {
     "h264": (64, 64),
     "h265": (192, 128),
 }
 
 
-def get_min_size(encoding: str) -> Tuple[int, int]:
+def get_min_size(encoding: str) -> tuple[int, int]:
     return MIN_SIZES.get(encoding, (64, 64))
 
 
@@ -222,7 +222,7 @@ def get_content_type(content_types: Sequence[str]) -> int:
     return MF_CONTENT_UNKNOWN
 
 
-CONTENT_TYPE_NAMES: Dict[int, str] = {
+CONTENT_TYPE_NAMES: dict[int, str] = {
     MF_CONTENT_UNKNOWN  : "unknown",
     MF_CONTENT_SCREEN   : "screen",
     MF_CONTENT_VIDEO    : "video",
@@ -386,7 +386,7 @@ cdef class Encoder:
         self.profile = ""
         self.level = 0
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),
@@ -410,11 +410,11 @@ cdef class Encoder:
             info["tuning"] = self.get_tuning_info()
         return info
 
-    def get_tuning_info(self) -> Dict[str, Any]:
+    def get_tuning_info(self) -> dict[str, Any]:
         """ what the MFT actually accepted - anything it refused is left out """
         cdef MFTuningInfo tuning
         mf_encoder_get_tuning_info(self.context, &tuning)
-        info: Dict[str, Any] = {
+        info: dict[str, Any] = {
             "codec-api" : bool(tuning.codec_api),
         }
         rate_control = mf_rate_control_str(tuning.rate_control).decode("latin-1")
@@ -438,7 +438,7 @@ cdef class Encoder:
                 info[name] = value
         return info
 
-    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         cdef MFEncodedFrame frame
         cdef MFEncodeStatus status
 
@@ -504,7 +504,7 @@ cdef class Encoder:
             frame.data_len, width, height, bool(frame.is_keyframe),
             frame.us_input, frame.us_output)
 
-        client_options: Dict[str, Any] = {
+        client_options: dict[str, Any] = {
             "frame"     : int(self.frames),
         }
         if range_changed or (self.frames == 0 and not full_range):
@@ -518,7 +518,7 @@ cdef class Encoder:
         self.frames += 1
         return data, client_options
 
-    def flush(self, unsigned long frame_no) -> Tuple[bytes, Dict]:
+    def flush(self, unsigned long frame_no) -> tuple[bytes, dict]:
         """ ask the encoder for a frame it is still holding (see `mf_encoder_flush`) """
         cdef MFEncodedFrame frame
         cdef MFEncodeStatus status
@@ -530,7 +530,7 @@ cdef class Encoder:
         if status != MF_ENC_OK:
             return b"", {}
         data = bytes(frame.data[:frame.data_len])
-        client_options: Dict[str, Any] = {
+        client_options: dict[str, Any] = {
             "frame"     : int(self.frames),
         }
         if frame.is_keyframe:
