@@ -322,7 +322,7 @@ def do_get_platform_info() -> dict[str, Any]:
         log("do_get_platform_info()", exc_info=True)
         release = "unknown"
     info |= {
-        "": sys.platform,
+        "system": sys.platform,
         "name": platform_name(sys.platform, info.get("linux_distribution") or release),
         "release": platform.release(),
         "sysrelease": release,

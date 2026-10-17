@@ -24,3 +24,6 @@ class PlatformServer(StubSubsystem):
         return {
             PlatformServer.PREFIX: get_platform_info(),
         }
+
+    def get_caps(self, _source) -> dict[str, Any]:
+        return self.get_info(None)
