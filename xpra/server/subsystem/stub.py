@@ -76,10 +76,6 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
             return ss.effective_readonly()
         return False
 
-    def get_packet_owner(self):
-        """ packet registration goes through the owning server (see `SubsystemPacketHandlers`) """
-        return self.server
-
     def setting_changed(self, setting: str, value: Any) -> None:
         """ broadcast a server setting change to all connected clients """
         self.server.setting_changed(setting, value)

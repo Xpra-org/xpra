@@ -188,7 +188,3 @@ class StubClientSubsystem(SubsystemPacketHandlers, SignalEmitter):
         """
         Register the packet types that this subsystem can handle after authentication.
         """
-
-    def get_packet_owner(self):
-        """ packet registration goes through the owning client (see `SubsystemPacketHandlers`) """
-        return self.client

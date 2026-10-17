@@ -45,15 +45,13 @@ class SubsystemPacketHandlers:
     `find_packet_handler` above is the other half of the contract: it is how the
     owning server / client finds these handlers when a packet arrives.
 
-    Shared by both subsystem stubs (`StubSubsystem` and `StubClientSubsystem`) -
-    the only thing that differs between the two sides is which attribute holds the
-    owning server / client, hence `get_packet_owner`. The handler signature differs
-    too (`(proto, packet)` server-side, `(packet)` client-side), but nothing here
-    calls the handlers, so `Callable` is as specific as this class can be.
+    Shared by both subsystem stubs (`StubSubsystem` and `StubClientSubsystem`).
+    The handler signature differs between the two sides (`(proto, packet)` server-side,
+    `(packet)` client-side), but nothing here calls the handlers,
+    so `Callable` is as specific as this class can be.
 
-    `ClipboardProtocolHelperCore` also uses it, without being a subsystem: it owns
-    the whole `clipboard` namespace and dispatches to itself, so it never needs an
-    owner to fall back to (see the note on `get_packet_owner` there).
+    `ClipboardProtocolHelperCore` also uses it, without being a subsystem:
+    it owns the whole `clipboard` namespace and dispatches to itself.
     """
     # this class must stay layout-neutral: `ClipboardProtocolHelperCore` mixes it into
     # classes which also derive from `GObject.GObject`, and a non-empty `__slots__` here
@@ -62,13 +60,6 @@ class SubsystemPacketHandlers:
     __slots__ = ()
     # declared (with its default and the note on what it keys) by the stubs:
     PREFIX: str
-
-    def get_packet_owner(self):
-        """
-        The owning server or client - a `PacketDispatcher` - which holds the flat
-        registry, the legacy alias map, and the `subsystems` this instance is in.
-        """
-        raise NotImplementedError
 
     def owns_packet(self, packet_type: str) -> bool:
         """ is this packet type part of this subsystem's namespace? """
@@ -103,27 +94,13 @@ class SubsystemPacketHandlers:
     def add_packet_handler(self, packet_type: str, handler: Callable, main_thread: bool = False) -> None:
         """
         Register a single packet handler.
-        Packets in this subsystem's namespace (`$PREFIX-$PACKETTYPE`) are kept here and
-        found by the owner's dispatcher via `find_packet_handler`.
-        Anything else - unprefixed packet types - goes into the owner's flat registry.
+        Every packet a subsystem registers must be in its own namespace (`$PREFIX-$PACKETTYPE`)
+        so that the owner's dispatcher can route it here via `find_packet_handler` (see #4972):
+        rename the packet, or move its handler to the subsystem owning its prefix.
         """
         if not self.owns_packet(packet_type):
-            # every packet a subsystem registers should be named
-            # `$PREFIX-$PACKETTYPE` so that it can be routed (see #4972).
-            # If this fires, either rename the packet, or move its handler to the
-            # subsystem that owns the prefix - do not just silence it.
-            log.warn("Warning: %s registers the %r packet,", type(self).__name__, packet_type)
-            if self.PREFIX:
-                log.warn(" which is outside its own %r namespace", self.PREFIX)
-            else:
-                log.warn(" but declares no PREFIX to namespace it with")
-            log.warn(" so it is added to the global packet handler registry")
-            log.warn(" instead of being routed to this subsystem")
-            if self.PREFIX:
-                log.warn(" rename it to '%s-...', or move it to the subsystem owning its prefix",
-                         self.PREFIX)
-            self.get_packet_owner().add_packet_handler(packet_type, handler, main_thread)
-            return
+            raise ValueError(f"{type(self).__name__} cannot register the {packet_type!r} packet:"
+                             f" it is outside its own {self.PREFIX!r} namespace")
         self._packet_handlers[self.packet_subtype(packet_type)] = (handler, main_thread)
 
     def add_packet_handlers(self, defs: dict[str, Callable], main_thread: bool = False) -> None:
@@ -141,11 +118,10 @@ class SubsystemPacketHandlers:
     def remove_packet_handlers(self, *keys: str) -> None:
         """
         Remove packet handlers by their full packet type name.
-        This goes through the owner so that it also clears its flat registry,
-        and it routes back here for the names we own (see `remove_packet_handlers`
-        in `PacketDispatcher`).
         """
-        self.get_packet_owner().remove_packet_handlers(*keys)
+        for packet_type in keys:
+            if self.owns_packet(packet_type):
+                self.remove_packet_handler(self.packet_subtype(packet_type))
 
     def get_packet_types(self) -> tuple[str, ...]:
         """ the full packet type names registered by this subsystem """

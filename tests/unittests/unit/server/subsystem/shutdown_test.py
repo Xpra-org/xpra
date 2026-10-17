@@ -25,16 +25,12 @@ class FakeServer(GLibScheduler):
 
     def __init__(self):
         self.hello_request_handlers = {}
-        self.packet_handlers = {}
         self.cleanup_reasons = []
         self.quit_modes = []
 
     def timeout_add(self, _delay: int, fn, *args) -> int:
         fn(*args)
         return 0
-
-    def add_packet_handler(self, packet_type: str, handler, main_thread=False) -> None:
-        self.packet_handlers[packet_type] = (handler, main_thread)
 
     def cleanup_all_protocols(self, reason="") -> None:
         self.cleanup_reasons.append(reason)
@@ -51,18 +47,16 @@ class ShutdownTest(unittest.TestCase):
         self.shutdown.init_packet_handlers()
 
     def get_handler(self, packet_type: str):
-        # `shutdown-*` packets live on the subsystem itself, which is what the
-        # server's dispatcher routes to, the others land in the server's flat registry:
-        if found := find_packet_handler({self.shutdown.PREFIX: self.shutdown}, packet_type):
-            return found[2]
-        return self.server.packet_handlers[packet_type][0]
+        # `shutdown-*` packets live on the subsystem itself, which is what the server's dispatcher routes to:
+        found = find_packet_handler({self.shutdown.PREFIX: self.shutdown}, packet_type)
+        assert found, f"no handler for {packet_type!r}"
+        return found[2]
 
     def test_handlers_and_features(self) -> None:
         self.assertEqual(set(self.server.hello_request_handlers), {"exit", "stop"})
         # exit requests are folded into `shutdown-server`:
         expected = {SHUTDOWN_SERVER}
-        registered = set(self.server.packet_handlers) | set(self.shutdown.get_packet_types())
-        self.assertEqual(registered, expected)
+        self.assertEqual(set(self.shutdown.get_packet_types()), expected)
         self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": self.shutdown.client_shutdown})
 
     def test_exit_request(self) -> None:

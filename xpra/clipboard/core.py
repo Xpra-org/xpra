@@ -252,11 +252,6 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         for proxy in self._clipboard_proxies.values():
             proxy.set_preferred_targets(preferred_targets)
 
-    def get_packet_owner(self):
-        # `SubsystemPacketHandlers` only needs an owner to fall back to for packet types
-        # outside our own namespace, and every packet we register is a `clipboard-` one.
-        raise NotImplementedError("the clipboard helper only handles its own packet types")
-
     def init_packet_handlers(self) -> None:
         # this is also the only place the registry is created: the helper can be driven
         # standalone, without `__init__` having run (see `unit/clipboard_core_test.py`)
