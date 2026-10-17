@@ -888,7 +888,7 @@ class ServerCore(GLibServer):
             # default to plain text:
             sock.settimeout(1)
             conn.write(packet_data)
-        except IOError as e:
+        except OSError as e:
             netlog("error sending %r: %s", packet_data, e)
         GLib.timeout_add(500, force_close_connection, conn)
 

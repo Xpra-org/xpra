@@ -12,7 +12,6 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum
 from time import monotonic
-from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue, SimpleQueue, Empty, Full
 from typing import Any
@@ -835,7 +834,7 @@ class SocketProtocol:
             if not self._closed:
                 # ConnectionClosedException means the warning has been logged already
                 self._connection_lost(str(e))
-        except (OSError, socket_error) as e:
+        except OSError as e:
             if not self._closed:
                 self._internal_error(f"{name} connection {e} reset", exc_info=e.args[0] not in ABORT)
         except Exception as e:

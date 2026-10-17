@@ -6,7 +6,6 @@
 import os
 import struct
 from time import monotonic
-from socket import error as socket_error
 from typing import Any
 from collections.abc import Callable
 from queue import Queue
@@ -233,7 +232,7 @@ class RFBProtocol:
             if not self._closed:
                 # ConnectionClosedException means the warning has been logged already
                 self._connection_lost(f"{name} connection {self._conn} closed")
-        except (OSError, socket_error) as e:
+        except OSError as e:
             if not self._closed:
                 self._internal_error(f"{name} connection {self._conn} reset", e, exc_info=e.args[0] not in ABORT)
         except Exception as e:

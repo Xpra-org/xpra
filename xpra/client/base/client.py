@@ -228,7 +228,7 @@ class XpraClientBase(PacketDispatcher):
             try:
                 stderr_print()
                 log.info("client got signal %s", SIGNAMES.get(signum, signum))
-            except IOError:
+            except OSError:
                 pass
         self.handle_app_signal(int(signum))
 

@@ -128,7 +128,7 @@ class FileServer(StubSubsystem):
         try:
             stat = os.stat(filename)
             log("os.stat(%s)=%s", filename, stat)
-        except os.error:
+        except OSError:
             log("os.stat(%s)", filename, exc_info=True)
         else:
             file_size = stat.st_size
@@ -212,7 +212,7 @@ class FileServer(StubSubsystem):
         try:
             stat = os.stat(actual_filename)
             filelog("os.stat(%s)=%s", actual_filename, stat)
-        except os.error:
+        except OSError:
             filelog("os.stat(%s)", actual_filename, exc_info=True)
         else:
             checksize(stat.st_size)

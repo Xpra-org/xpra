@@ -32,7 +32,7 @@ class ClientInfo(StubClientSubsystem):
             }
             try:
                 caps["hostname"] = socket.gethostname()
-            except socket.error:
+            except OSError:
                 pass
             vi = self.client.get_version_info()
             caps["build"] = vi

@@ -12,7 +12,6 @@ import time
 from time import monotonic
 import hashlib
 import posixpath
-import socket
 from urllib.parse import unquote
 from urllib.request import parse_http_list, parse_keqv_list
 from http.server import BaseHTTPRequestHandler
@@ -521,8 +520,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if content := self.send_head():
             try:
                 self.wfile.write(content)
-            except (BrokenPipeError, ConnectionResetError, socket.error) as e:
-                # ssl.SSLEOFError is a socket.error
+            except OSError as e:
+                # includes BrokenPipeError, ConnectionResetError and ssl.SSLEOFError
                 log("handle_request() %s", e)
             except TypeError:
                 self.close_connection = True
