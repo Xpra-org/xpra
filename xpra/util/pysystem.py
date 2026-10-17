@@ -63,7 +63,7 @@ def detect_leaks() -> Callable[[], bool]:
         for i, stat in enumerate(top_stats[:20]):
             print()
             print("top %i:" % i)
-            print("{} memory blocks: {:.1f} KiB".format(stat.count, stat.size / 1024))
+            print(f"{stat.count} memory blocks: {stat.size / 1024:.1f} KiB")
             for line in stat.traceback.format():
                 print(line)
         return True

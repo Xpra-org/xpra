@@ -106,9 +106,9 @@ class AGLContext:
         attrs.append(0)
         log(f"AGLContext({alpha}) creating NSOpenGLPixelFormat from {attrs}")
         self.pixel_format = NSOpenGLPixelFormat.alloc().initWithAttributes_(attrs)
-        assert self.pixel_format is not None, "failed to initialize NSOpenGLPixelFormat with {}".format(attrs)
+        assert self.pixel_format is not None, f"failed to initialize NSOpenGLPixelFormat with {attrs}"
         c = NSOpenGLContext.alloc().initWithFormat_shareContext_(self.pixel_format, None)
-        assert c is not None, "failed to initialize NSOpenGLContext with {}".format(self.pixel_format)
+        assert c is not None, f"failed to initialize NSOpenGLContext with {self.pixel_format}"
         self.gl_context = c
 
     def check_support(self, force_enable: bool = False) -> dict[str, Any]:

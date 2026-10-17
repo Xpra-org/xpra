@@ -361,7 +361,7 @@ def main() -> None:
         data = to_pil_encoding(image, "png")
         capture.clean()
         tstr = time.strftime("%H-%M-%S", time.localtime(time.time()))
-        filename = "./Capture-{}-{}.png".format((x, y, w, h), tstr)
+        filename = f"./Capture-{(x, y, w, h)}-{tstr}.png"
         with open(filename, "wb") as f:
             f.write(data)
         print(f"saved {image.get_width()}x{image.get_height()} to {filename!r}")

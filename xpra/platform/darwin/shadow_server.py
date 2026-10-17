@@ -301,7 +301,7 @@ def main() -> None:
         import time
         t = time.time()
         tstr = time.strftime("%H-%M-%S", time.localtime(t))
-        filename = "./Capture-{}-{}.png".format((x, y, w, h), tstr)
+        filename = f"./Capture-{(x, y, w, h)}-{tstr}.png"
         with open(filename, "wb") as f:
             f.write(data)
         print(f"saved to {filename!r}")

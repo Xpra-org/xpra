@@ -707,7 +707,7 @@ class StartSession(Gtk.Window):
                 value = str_to_bool(value)
             if value != default_value:
                 log.info("%s=%s (%s) - not %s (%s)", k, value, type(value), default_value, type(default_value))
-                cmd.append("--{}={}".format(k, value))
+                cmd.append(f"--{k}={value}")
         localhost = self.localhost_btn.get_active()
         if self.display_entry.is_visible():
             display = self.display_entry.get_text().lstrip(":")
@@ -821,7 +821,7 @@ class SessionOptions(Gtk.Window):
         setattr(self, "%s_widget" % fn, widget)
         setattr(self, "%s_widget_type" % fn, widget_type)
         for k, v in kwargs.items():
-            setattr(self, "{}_{}".format(fn, k), v)
+            setattr(self, f"{fn}_{k}", v)
 
     def get_widget(self, fn):
         return getattr(self, "%s_widget" % fn)
@@ -864,7 +864,7 @@ class SessionOptions(Gtk.Window):
         for option, match in options.items():
             btn = Gtk.RadioButton.new_with_label_from_widget(sibling, _(option))
             hbox.add(btn)
-            setattr(self, "{}_{}".format(widget_base_name, option), btn)
+            setattr(self, f"{widget_base_name}_{option}", btn)
             saved_match = match
             matched = value in match or str(value).lower() in match
             btn.set_active(matched)
