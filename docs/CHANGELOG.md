@@ -3,6 +3,7 @@
 ## [7.0.1] Unreleased
 * 🖧 Network:
   * [initial client DPI ignored when only namespaced display capabilities are sent](https://github.com/Xpra-org/xpra/commit/c70c4dec07e1863808262d71197b5af0aa043a7c)
+  * [`encode` clients rejected by servers and proxies for sending an unsupported request](https://github.com/Xpra-org/xpra/commit/68e5ef0af9a8690605fee0bf10c94466fea740ac)
 
 ## [7.0] 2026-10-16
 * 🔧 Platforms, build and packaging:

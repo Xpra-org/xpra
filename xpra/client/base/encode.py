@@ -7,7 +7,7 @@
 import os
 from typing import Sequence, Any
 
-from xpra.client.base.command import HelloRequestClient
+from xpra.client.base.command import SendCommandConnectClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, MmapPointerError
@@ -20,7 +20,7 @@ log = Logger("client", "encoding")
 EXT_ALIASES = {"jpg": "jpeg"}
 
 
-class EncodeClient(HelloRequestClient):
+class EncodeClient(SendCommandConnectClient):
     """
     Sends the file(s) to the server for encoding,
     saves the result in the current working directory
@@ -31,7 +31,7 @@ class EncodeClient(HelloRequestClient):
     def get_subsystem_classes() -> dict[str, type]:
         # `mmap` is a GUI-level subsystem, not part of the base subsystems,
         # but this client wants it composed for performance (see `init`):
-        classes = dict(HelloRequestClient.get_subsystem_classes())
+        classes = dict(SendCommandConnectClient.get_subsystem_classes())
         from xpra.client.base import features
         if features.mmap:
             from xpra.client.subsystem.mmap import MmapClient
@@ -109,18 +109,17 @@ class EncodeClient(HelloRequestClient):
             return
         self.send_encode()
 
-    def hello_request(self) -> dict[str, Any]:
-        hello: dict[str, Any] = {
-            "request": "encode",
-            "encoding": self.encoding_options,
-        }
-        mmap_sub = self.get_subsystem("mmap")
-        if mmap_sub:
-            hello.update(mmap_sub.get_caps())
+    def make_hello(self) -> dict[str, Any]:
+        # Encoding uses a normal client session, with `encode` packets sent after the handshake.
+        hello = super().make_hello()
+        hello["encoding"] = self.encoding_options
         if BACKWARDS_COMPATIBLE:
             hello["ui_client"] = True
         log(f"{hello=}")
         return hello
+
+    def timeout(self, *_args) -> None:
+        self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")
 
     def do_command(self, caps: typedict) -> None:
         log(f"{caps=}")
