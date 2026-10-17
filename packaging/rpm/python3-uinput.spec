@@ -9,7 +9,7 @@ Release:        1%{?dist}
 Summary:        Pythonic API to the Linux uinput kernel module
 License:        GPLv3
 URL:            http://pypi.python.org/pypi/python-uinput/
-Source0:        https://pypi.python.org/packages/source/p/python-uinput/python-uinput-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/p/python-uinput/python-uinput-%{version}.tar.gz
 
 Requires:       python3
 BuildRequires:  gcc
