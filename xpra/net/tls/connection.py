@@ -83,7 +83,7 @@ class SSLSocketConnection(SocketConnection):
             if not readable and not writable:
                 # nothing happened within the timeout: surface it so `until_concludes`
                 # can re-check `is_active` and retry, matching blocking-socket behaviour:
-                raise socket.timeout("timed out")
+                raise TimeoutError("timed out")
         return None
 
     def peek(self, n: int) -> bytes:

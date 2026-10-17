@@ -362,7 +362,7 @@ async def _watch_handshake(protocol: QuicConnectionProtocol, conn, timeout: floa
         await asyncio.wait_for(protocol.wait_connected(), timeout=timeout)
         log("fast-open handshake watcher: connected")
         return
-    except asyncio.TimeoutError:
+    except TimeoutError:
         log("fast-open handshake watcher: timed out")
     except Exception as e:
         log(f"fast-open handshake watcher: wait_connected raised {e!r}")

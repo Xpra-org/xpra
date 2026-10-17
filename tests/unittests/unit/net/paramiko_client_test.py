@@ -347,7 +347,6 @@ class AgentForwardingServer:
         server_transport_ready.wait(10)
 
     def query_forwarded_agent(self, timeout: float = 2) -> bytes:
-        import socket
         import struct
         chan = self.server_transport.open_forward_agent_channel()
         chan.settimeout(timeout)
@@ -355,7 +354,7 @@ class AgentForwardingServer:
         chan.send(struct.pack(">I", 1) + bytes([11]))
         try:
             return chan.recv(4096)
-        except socket.timeout:
+        except TimeoutError:
             return b""
         finally:
             chan.close()

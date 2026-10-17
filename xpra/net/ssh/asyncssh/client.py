@@ -525,7 +525,7 @@ async def do_connect(display_desc: dict[str, Any]):
     except asyncssh.PermissionDenied as e:
         await close_extra_connections()
         raise InitExit(ExitCode.SSH_FAILURE, f"SSH authentication failed for {host!r}: {e}") from None
-    except (asyncio.TimeoutError, TimeoutError):
+    except TimeoutError:
         await close_extra_connections()
         raise InitExit(ExitCode.SSH_FAILURE, f"SSH connection to {host!r} timed out") from None
     except (OSError, asyncssh.Error) as e:

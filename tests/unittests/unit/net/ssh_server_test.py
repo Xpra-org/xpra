@@ -556,7 +556,7 @@ class _SSHTestServer:
         while not self._stop.is_set():
             try:
                 conn, _ = self._sock.accept()
-            except socket.timeout:
+            except TimeoutError:
                 continue
             except OSError:
                 break
@@ -627,7 +627,7 @@ def _exec_cmd(transport: paramiko.Transport, cmd: str) -> tuple[bytes, bytes, in
             if not line:
                 break
             stderr += line
-    except (OSError, socket.timeout):
+    except OSError:
         pass
 
     exit_status = chan.recv_exit_status()
@@ -821,7 +821,7 @@ class TestMakeSSHServerConnection(unittest.TestCase):
         while True:
             try:
                 data = chan.recv(1024)
-            except socket.timeout:
+            except TimeoutError:
                 break
             if not data:
                 break
