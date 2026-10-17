@@ -400,8 +400,17 @@ class ProcessTestUtil(unittest.TestCase):
             xvfb.stdout_file = stdout
             xvfb.stderr_file = stderr
         xvfb.display = display
-        time.sleep(1)
         log("xvfb(%s)=%s" % (cmdstr, xvfb))
-        if pollwait(xvfb, XVFB_TIMEOUT) is not None:
+        # wait for the X11 socket to accept connections,
+        # rather than for the full timeout to elapse:
+        sock_path = os.path.join(X11_SOCKET_DIR, "X%s" % display.lstrip(DISPLAY_PREFIX))
+        start = time.monotonic()
+        while time.monotonic() - start < XVFB_TIMEOUT:
+            if xvfb.poll() is not None:
+                break
+            if stat_display_socket(sock_path):
+                return xvfb
+            time.sleep(0.1)
+        if xvfb.poll() is not None:
             show_proc_error(xvfb, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll()))
-        return xvfb
+        show_proc_error(xvfb, "xvfb command \"%s\" did not create %r after %i seconds" % (cmdstr, sock_path, XVFB_TIMEOUT))

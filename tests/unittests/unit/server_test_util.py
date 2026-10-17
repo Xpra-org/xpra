@@ -146,22 +146,21 @@ class ServerTestUtil(ProcessTestUtil):
             cmd += ["--no-daemon"]
         cmd += list(args)
         server_proc = self.run_xpra(cmd)
-        if pollwait(server_proc, SERVER_TIMEOUT) is not None:
-            self.show_proc_error(server_proc, "server failed to start")
         if display:
-            #wait until the socket shows up:
+            # wait until the socket shows up, bailing out early if the server dies:
             live: list[str] = []
-            for _ in range(20):
+            start = time.monotonic()
+            while time.monotonic() - start < SERVER_TIMEOUT + 20:
+                if server_proc.poll() is not None:
+                    self.show_proc_error(server_proc, "server failed to start")
                 live = self.dotxpra.displays()
                 if display in live:
                     break
-                time.sleep(1)
-            if server_proc.poll() is not None:
-                self.show_proc_error(server_proc, "server terminated")
+                time.sleep(0.2)
             assert display in live, "server display '%s' not found in live displays %s" % (display, live)
-            #then wait a little before using it:
-            time.sleep(5)
-        #query it:
+        elif pollwait(server_proc, SERVER_TIMEOUT) is not None:
+            self.show_proc_error(server_proc, "server failed to start")
+        # query it, the version request is retried until the server is ready:
         version = None
         r = 0
         for _ in range(20):
@@ -176,6 +175,7 @@ class ServerTestUtil(ProcessTestUtil):
                 if r == 1:
                     #re-run it
                     version = None
+                    time.sleep(0.5)
                     continue
                 break
             time.sleep(1)

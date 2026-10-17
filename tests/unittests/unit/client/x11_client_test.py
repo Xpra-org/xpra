@@ -24,19 +24,17 @@ class X11ClientTest(X11ClientTestUtil):
     def do_test_connect(self, disconnect=True, client_args=(), server_args=()):
         display = self.find_free_display()
         log("starting test server on %s", display)
-        server_args = ["--start=xterm"] + list(server_args)
+        server_args = ["--start=xterm", "--windows=yes"] + list(server_args)
         server = self.check_fast_start_server(display, *server_args)
         xvfb1, client1 = self.run_client(display, *client_args)
-        r = pollwait(client1, CLIENT_TIMEOUT)
-        if r is not None:
-            raise RuntimeError(f"client1 with args {client_args} exited with code {exit_str(r)}")
+        self.wait_for_client_window(xvfb1.display, client1, timeout=CLIENT_TIMEOUT)
         xvfb2, client2 = self.run_client(display, *client_args)
-        r = pollwait(client2, CLIENT_TIMEOUT)
-        if r is not None:
-            raise RuntimeError(f"client2 with args {client_args} exited with code {exit_str(r)}")
+        self.wait_for_client_window(xvfb2.display, client2, timeout=CLIENT_TIMEOUT)
         if disconnect:
             # starting a second client should disconnect the first when not sharing
-            assert pollwait(client1, 2) is not None, "the first client should have been disconnected"
+            assert pollwait(client1, 5) is not None, "the first client should have been disconnected"
+        else:
+            assert client1.poll() is None, f"client1 exited with code {exit_str(client1.poll())}"
         # killing the Xvfb should kill the client
         xvfb1.terminate()
         xvfb2.terminate()
@@ -76,9 +74,9 @@ class X11ClientTest(X11ClientTestUtil):
                 for client_depth in (16, 24, 30):
                     client = self.do_run_client(client_display, server_display,
                                                 "--pixel-depth=%i" % client_depth)
-                    r = pollwait(client, 5)
-                    assert r is None, "client has terminated with exit code %i" % r
-                    client.terminate()
+                    self.wait_for_client_window(client_display, client, timeout=CLIENT_TIMEOUT)
+                    # make sure the window is gone before the next client looks for its own:
+                    self.terminate_and_wait(client)
             finally:
                 xvfb.terminate()
 
@@ -87,7 +85,7 @@ class X11ClientTest(X11ClientTestUtil):
             server_display = self.find_free_display()
             log("depth=%i starting test server on %s", server_depth, server_display)
             server = self.check_fast_start_server(server_display,
-                                                  "--start=xterm", "--sync-xvfb=50",
+                                                  "--start=xterm", "--windows=yes", "--sync-xvfb=50",
                                                   "--pixel-depth=%i" % server_depth)
             self._test_client_depth(server_display)
             server.terminate()
@@ -97,10 +95,9 @@ class X11ClientTest(X11ClientTestUtil):
         client = xvfb = server = None
         try:
             display = self.find_free_display()
-            server = self.check_fast_start_server(display, "--file-transfer=yes")
+            server = self.check_fast_start_server(display, "--start=xterm", "--windows=yes", "--file-transfer=yes")
             xvfb, client = self.run_client(display, "--file-transfer=yes")
-            r = pollwait(client, CLIENT_TIMEOUT)
-            assert r is None, f"client terminated unexpectedly with code {exit_str(r)}"
+            self.wait_for_client_window(xvfb.display, client, timeout=CLIENT_TIMEOUT)
             # send a file to this client:
             send_file_command = ["control", display, "send-file", f.name, "0", "*"]
             env = os.environ.copy()
@@ -108,9 +105,11 @@ class X11ClientTest(X11ClientTestUtil):
             env["XPRA_USER_UUID"] = secrets.token_urlsafe(16)
             send_file = self.run_xpra(send_file_command, env=env)
             assert pollwait(send_file, CLIENT_TIMEOUT) == 0, "send-file command returncode is %s" % send_file.poll()
-            time.sleep(1)
             # now verify the file can be found in the download directory
             filename = os.path.join(os.path.expanduser(get_download_dir()), os.path.basename(f.name))
+            start = time.monotonic()
+            while not os.path.exists(filename) and time.monotonic() - start < 10:
+                time.sleep(0.1)
             assert os.path.exists(filename), "cannot find %s" % filename
             readback = load_binary_file(filename)
             assert readback == data, f"file data corrupted, expected {data!r} but got {readback!r}"

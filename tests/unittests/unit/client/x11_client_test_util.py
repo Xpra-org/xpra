@@ -8,6 +8,7 @@ import os
 import time
 
 from xpra.os_util import get_hex_uuid
+from xpra.exit_codes import exit_str
 from xpra.util.env import osexpand, OSEnvContext
 from xpra.util.io import pollwait
 from unit.server_test_util import ServerTestUtil, log
@@ -44,6 +45,21 @@ class X11ClientTestUtil(ServerTestUtil):
         X11ClientTestUtil.uq +=1
         log("starting test client on Xvfb %s", client_display)
         return self.run_xpra(["attach"] + list(args) , env=env)
+
+    def wait_for_client_window(self, client_display, client, title="", timeout=30) -> None:
+        """
+        Wait until the client shows a window from the server on its display:
+        this proves that it connected and painted something,
+        which is a lot faster (and a stronger check) than waiting to see if it stays alive.
+        """
+        try:
+            self.find_client_window(client_display, title=title, timeout=timeout)
+        except AssertionError:
+            if client.poll() is not None:
+                self.show_proc_error(client, f"client exited with code {exit_str(client.poll())}")
+            raise
+        if client.poll() is not None:
+            self.show_proc_error(client, f"client exited with code {exit_str(client.poll())}")
 
     def find_client_window(self, client_display, title="", size=(), min_size=8, timeout=30, interval=0.5):
         """
