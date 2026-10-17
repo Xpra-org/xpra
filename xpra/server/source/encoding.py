@@ -309,8 +309,6 @@ class EncodingsConnection(StubClientConnection):
         dbc.time_unit = batch_value("time_unit", dbc.time_unit, 1)
         dbc.delay = batch_value("delay", delay, dbc.min_delay)
         log("default batch config: %s", dbc)
-        self.vrefresh = c.intget("vrefresh", -1)
-
         evalue = c.get("encoding")
         if isinstance(evalue, dict):
             eopts = typedict(evalue)
