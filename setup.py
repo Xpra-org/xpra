@@ -42,8 +42,8 @@ except ImportError as e:
 
 
 def check_python_version() -> None:
-    if sys.version_info < (3, 10):
-        raise RuntimeError("xpra no longer supports Python versions older than 3.10")
+    if sys.version_info < (3, 12):
+        raise RuntimeError("xpra no longer supports Python versions older than 3.12")
 
 
 WIN32 = sys.platform.startswith("win")
