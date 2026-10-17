@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Final
+from itertools import batched
 from collections.abc import Iterable, Sequence
 
 from xpra.os_util import gi_import
@@ -62,7 +63,7 @@ def split_rects(values: Sequence[int]) -> tuple[tuple[int, int, int, int], ...]:
     # both `_NET_WORKAREA` and `_GTK_WORKAREAS_D#` are flat lists of `(x, y, w, h)` CARDINALs
     if not values or (len(values) % 4) != 0:
         return ()
-    return tuple(tuple(values[i:i + 4]) for i in range(0, len(values), 4))  # type: ignore[misc]
+    return tuple(batched(values, 4))  # type: ignore[arg-type]
 
 
 def set_workarea(x: int, y: int, width: int, height: int) -> None:
