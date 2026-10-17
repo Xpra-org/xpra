@@ -190,23 +190,24 @@ class DisplayManager(StubSubsystem):
         # also, clients may want to override what is in their xsettings..
         # so if the client specifies what it wants to use, we patch the xsettings with it
         # (the actual xsettings part is done in `update_all_server_settings` in the X11 specific subclasses)
+        antialias = {}
+        dpi = xdpi = ydpi = 0
         if display_clients:
             log.info("sharing with %s other client(s)", len(display_clients))
-            self.dpi = 0
-            self.xdpi = 0
-            self.ydpi = 0
-            self.antialias = {}
         else:
-            dpi_caps = c.get("dpi")
-            if isinstance(dpi_caps, int):
-                # legacy mode, ie: html5 client
-                self.dpi = self.xdpi = self.ydpi = int(dpi_caps)
-            else:
-                tdpi = typedict(c.dictget("dpi"))
-                self.dpi = tdpi.intget("", 0)
-                self.xdpi = tdpi.intget("x", self.xdpi)
-                self.ydpi = tdpi.intget("y", self.ydpi)
-            self.antialias = c.dictget("antialias")
+            display_caps = c.get("display")
+            if isinstance(display_caps, dict):
+                dpi_caps = display_caps.get("dpi")
+                if isinstance(dpi_caps, dict):
+                    tdpi = typedict(dpi_caps)
+                    dpi = tdpi.intget("", 0)
+                    xdpi = tdpi.intget("x", self.xdpi)
+                    ydpi = tdpi.intget("y", self.ydpi)
+                antialias = c.dictget("antialias")
+        self.dpi = dpi
+        self.xdpi = xdpi
+        self.ydpi = ydpi
+        self.antialias = antialias
         log("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s",
             self.dpi, self.xdpi, self.ydpi, self.antialias)
 
