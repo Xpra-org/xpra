@@ -17,7 +17,6 @@ the proxy server's `register` hello-request handler.
 """
 
 import threading
-from typing import Optional
 from xpra.util.objects import typedict
 from xpra.server.session_registry import Session, SessionRegistry
 from xpra.log import Logger
@@ -75,7 +74,7 @@ class Registry(SessionRegistry):
             },
         }
 
-    def lookup(self, authenticator, client_caps: Optional[typedict] = None) -> Session | None:
+    def lookup(self, authenticator, client_caps: typedict | None = None) -> Session | None:
         sessions = self.list_sessions()
         if not sessions:
             return None
@@ -94,7 +93,7 @@ class Registry(SessionRegistry):
         return None
 
     @staticmethod
-    def _request_hints(client_caps: Optional[typedict]) -> list[str]:
+    def _request_hints(client_caps: typedict | None) -> list[str]:
         """
         Extract the session identifiers the connecting client wants.
 

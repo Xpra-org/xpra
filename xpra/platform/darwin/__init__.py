@@ -62,7 +62,7 @@ def setup_debug_logging() -> None:
     debug_file = os.path.join(os.path.expanduser("~"), ".xpra", "debug")
     debug_arg = ""
     try:
-        with open(debug_file, "r", encoding="utf-8") as f:
+        with open(debug_file, encoding="utf-8") as f:
             debug_arg = f.read().strip()
     except OSError:
         pass

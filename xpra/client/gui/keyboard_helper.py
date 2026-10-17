@@ -360,7 +360,7 @@ class KeyboardHelper:
 
         def hashadd(name: str, v) -> None:
             log("hashadd(%r, %s)", name, Ellipsizer(v))
-            h.update(f"/%{v}".encode("utf8"))
+            h.update(f"/%{v}".encode())
 
         for name, x in {
             "mod-meanings": self.mod_meanings,

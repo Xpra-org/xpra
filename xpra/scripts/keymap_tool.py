@@ -56,7 +56,7 @@ def get_local_keymap() -> dict[str, Any]:
 
 
 def load_keymap(filename: str) -> dict[str, Any]:
-    with open(filename, "r", encoding="utf8") as f:
+    with open(filename, encoding="utf8") as f:
         keymap = json.load(f)
     if not isinstance(keymap, dict):
         raise ValueError(f"{filename!r} does not contain a keymap dictionary")

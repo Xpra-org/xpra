@@ -190,7 +190,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             return
         redirect = "301 Moved Permanently" if HTTPS_REDIRECT_PERMANENT else "307 Temporary Redirect"
         self.write_byte_strings(
-            f"HTTP/1.1 {redirect}".encode("utf-8"),
+            f"HTTP/1.1 {redirect}".encode(),
             b"Connection: close",
             b"Location: https://%s%s" % (bytes(server_address, "utf-8"), bytes(self.path, "utf-8")),
             b"",

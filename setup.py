@@ -2251,7 +2251,7 @@ def convert_templates(install_dir: str, subs: "dict[str, str]", subdirs: "Sequen
         if not (f.endswith(".in") or f.endswith(".conf") or f.endswith(".txt") or f.endswith(".keys")):
             warn(f"skipped {f!r}")
             continue
-        with open(filename, "r", encoding="latin1") as f_in:
+        with open(filename, encoding="latin1") as f_in:
             template = f_in.read()
         target_file = os.path.join(target_dir, f)
         if target_file.endswith(".in"):

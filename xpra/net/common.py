@@ -326,7 +326,7 @@ def find_proc_net_uid(filename: str, local_key: str, remote_key: str) -> int:
     #      sl  local_address  rem_address   st tx_queue:rx_queue  tr:when   retrnsmt   uid
     log = get_logger()
     try:
-        with open(filename, "r", encoding="latin1") as f:
+        with open(filename, encoding="latin1") as f:
             for line in f:
                 fields = line.split()
                 if len(fields) < 8 or fields[1] != local_key or fields[2] != remote_key:

@@ -156,7 +156,7 @@ class Authenticator(SysAuthenticator):
         request.add_header("Content-Type", "application/x-www-form-urlencoded")
         request.add_header("Accept", "application/json")
         if self.client_id and self.client_secret:
-            auth = f"{self.client_id}:{self.client_secret}".encode("utf-8")
+            auth = f"{self.client_id}:{self.client_secret}".encode()
             request.add_header("Authorization", "Basic " + base64.b64encode(auth).decode("latin1"))
         try:
             with urlopen(request, timeout=OAUTH_TIMEOUT) as response:  # nosec B310

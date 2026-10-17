@@ -104,7 +104,7 @@ def is_VirtualBox() -> bool:
     except (ImportError, OSError):
         pass
     try:
-        with open("\\\\.\\VBoxMiniRdrDN", "r"):
+        with open("\\\\.\\VBoxMiniRdrDN"):
             # "VirtualBox is present (VBoxMiniRdrDN)"
             return True
     except Exception as e:

@@ -14,7 +14,6 @@ session is selected.
 """
 
 import threading
-from typing import Optional
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
 from xpra.net.session_discovery import (
     SessionEndpoint,
@@ -122,7 +121,7 @@ class Registry(SessionRegistry):
             if session is not None
         ]
 
-    def lookup(self, authenticator, client_caps: Optional[typedict] = None) -> Session | None:
+    def lookup(self, authenticator, client_caps: typedict | None = None) -> Session | None:
         groups = self._groups()
         if not groups:
             return None
@@ -164,7 +163,7 @@ class Registry(SessionRegistry):
         return group_session_endpoints(endpoints)
 
     @staticmethod
-    def _request_hints(client_caps: Optional[typedict]) -> list[str]:
+    def _request_hints(client_caps: typedict | None) -> list[str]:
         """
         Identifying hints sent by the client to pick a target session,
         in priority order. Each will be tried against every known group.

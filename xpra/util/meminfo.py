@@ -40,7 +40,7 @@ def _parse_kb_field(value: str) -> int:
 def _read_proc_status(pid: int) -> dict[str, int]:
     out: dict[str, int] = {}
     try:
-        with open(f"/proc/{pid}/status", "r", encoding="utf-8") as f:
+        with open(f"/proc/{pid}/status", encoding="utf-8") as f:
             for line in f:
                 key, _, rest = line.partition(":")
                 if key in PROC_STATUS_KEYS:
@@ -56,7 +56,7 @@ def _read_smaps_rollup(pid: int) -> dict[str, int]:
             "Private_Clean", "Private_Dirty", "Swap")
     out: dict[str, int] = {}
     try:
-        with open(f"/proc/{pid}/smaps_rollup", "r", encoding="utf-8") as f:
+        with open(f"/proc/{pid}/smaps_rollup", encoding="utf-8") as f:
             for line in f:
                 key, _, rest = line.partition(":")
                 if key in keys:
@@ -111,7 +111,7 @@ def get_sysv_shm(pid: int = 0) -> dict[str, int]:
     segments = 0
     total = 0
     try:
-        with open("/proc/sysvipc/shm", "r", encoding="utf-8") as f:
+        with open("/proc/sysvipc/shm", encoding="utf-8") as f:
             header = f.readline().split()
             try:
                 size_idx = header.index("size")

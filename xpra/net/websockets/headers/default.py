@@ -15,5 +15,5 @@ HEADERS = {
 def get_headers(host: str, port: int) -> dict[bytes, bytes]:     # pylint: disable=unused-argument
     headers = HEADERS.copy()
     if host:
-        headers[b"Host"] = f"{host}:{port}".encode("utf8")
+        headers[b"Host"] = f"{host}:{port}".encode()
     return headers

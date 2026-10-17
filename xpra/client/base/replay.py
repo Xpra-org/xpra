@@ -27,7 +27,7 @@ CACHE = True
 
 
 def load_json(path: str) -> dict:
-    with open(path, "r") as f:
+    with open(path) as f:
         data = f.read()
     return json.loads(data)
 
