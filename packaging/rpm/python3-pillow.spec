@@ -15,7 +15,7 @@
 
 
 Name:           %{py3rpmname}-%{srcname}
-Version:        12.3.0
+Version:        13.0.0
 Release:        1%{?dist}
 Summary:        Python image processing library
 
@@ -48,7 +48,7 @@ internal representation, and powerful image processing capabilities.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce" ]; then
+if [ "${sha256}" != "cdcd1ba258178f7356d74170c9a81ba4eab6a5d55748bc402a5a2a6fe6be3510" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -75,6 +75,9 @@ CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
 %exclude %{python3_sitearch}/PIL/__pycache__/ImageQt*
 
 %changelog
+* Sat Oct 17 2026 Antoine Martin <antoine@xpra.org> - 13.0.0-1
+- new upstream release
+
 * Wed Jul 01 2026 Antoine Martin <antoine@xpra.org> - 12.3.0-1
 - new upstream release
 
