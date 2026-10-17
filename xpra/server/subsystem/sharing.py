@@ -51,7 +51,7 @@ class SharingServer(StubSubsystem):
         if self.lock is True:
             log("cannot detach: session is locked")
             self.server.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
-            return False
+            return True
         count = locked = 0
         for p, ss in tuple(self.server._server_sources.items()):
             if p != proto:

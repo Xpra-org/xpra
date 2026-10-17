@@ -1604,7 +1604,9 @@ class ServerCore(GLibServer):
 
         log("process_hello: capabilities=%s", capabilities)
         request = c.strget("request")
-        if request in UNAUTHENTICATED_HELLO_REQUESTS and self.do_handle_hello_request(request, proto, c):
+        if request in UNAUTHENTICATED_HELLO_REQUESTS:
+            # these never proceed to authentication, even if they fail:
+            self.do_handle_hello_request(request, proto, c)
             return
 
         # verify version:
@@ -1723,9 +1725,8 @@ class ServerCore(GLibServer):
         if self._closing:
             self.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
             return True
-        request = c.strget("request")
-        if request and self.handle_hello_request(request, proto, c):
-            return True
+        if request := c.strget("request"):
+            return self.handle_hello_request(request, proto, c)
         if client_session := self.get_subsystem("client-session"):
             return client_session.hello_oked(proto, c, auth_caps)
         return False
@@ -1735,16 +1736,21 @@ class ServerCore(GLibServer):
             msg = f"{request!r} requests are not enabled for this connection"
             log.error(f"Error: {msg}")
             self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
-            return True
+            return False
         return self.do_handle_hello_request(request, proto, caps)
 
     def do_handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
         handler = self.hello_request_handlers.get(request)
         log("do_handle_hello_request(%s, %s, ..) handler=%s", request, proto, handler)
         if not handler:
-            log.error(f"Error: no handler for hello request {request!r}")
+            msg = f"no handler for hello request {request!r}"
+            log.error(f"Error: {msg}")
+            self.send_disconnect(proto, ConnectionMessage.PROTOCOL_ERROR, msg)
             return False
-        return handler(proto, caps)
+        if not handler(proto, caps):
+            self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, f"hello request {request!r} rejected")
+            return False
+        return True
 
     def _handle_hello_request_connect_test(self, proto, caps: typedict) -> bool:
         ctr = caps.strget("connect_test_request")
