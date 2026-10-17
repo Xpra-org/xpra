@@ -336,16 +336,10 @@ class ProxyServer(ServerCore):
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
     def hello_oked(self, proto, c: typedict, auth_caps: dict) -> None:
-        if super().hello_oked(proto, c, auth_caps):
-            # already handled in superclass
+        if super().hello_oked(proto, c, auth_caps) or c.strget("request"):
+            # already handled in superclass, which also rejects the requests we don't support
             return
-
         self.accept_protocol(proto, c)
-
-        if request := c.strget("request"):
-            if not self.handle_hello_request(request, proto, c):
-                self.send_disconnect(proto, f"error: invalid request, {request!r} is not supported by the proxy server")
-            return
         self.proxy_auth(proto, c, auth_caps)
 
     def disconnect_all(self):
