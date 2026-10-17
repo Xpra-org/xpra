@@ -7,10 +7,9 @@
 
 import os
 from time import monotonic
-from typing import Any
+from typing import Any, Self
 from collections.abc import Sequence
 from collections import deque
-from xpra.common import Self
 from xpra.util.parsing import MIN_VREFRESH, MAX_VREFRESH
 from xpra.util.stats import get_list_stats
 from xpra.log import Logger

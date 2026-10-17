@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Protocol, Any, Final, TypeAlias
-from collections.abc import Callable, Sized, Iterable, Sequence, MutableSequence
+from collections.abc import Buffer, Callable, Sized, Iterable, Sequence, MutableSequence
 
 from xpra.constants import NotificationID, Gravity
 
@@ -34,22 +34,8 @@ def valid_content_types(content_types: Iterable[str]) -> tuple[str, ...]:
     return tuple(x for x in content_types if x in CONTENT_TYPES)
 
 
-try:
-    # Python 3.11 and later:
-    from typing import Self
-except ImportError:     # pragma: no cover
-    Self = Any
-
-try:
-    # Python 3.12 and later:
-    from collections.abc import Buffer
-
-    class SizedBuffer(Buffer, Sized, Protocol):
-        pass
-except ImportError:
-    class SizedBuffer(Sized, Protocol):
-        def __buffer__(self):
-            raise NotImplementedError()
+class SizedBuffer(Buffer, Sized, Protocol):
+    pass
 
 
 def gravity_str(v) -> str:

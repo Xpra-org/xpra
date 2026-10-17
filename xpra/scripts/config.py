@@ -7,10 +7,10 @@
 import sys
 import os
 import warnings
-from typing import Any
+from typing import Any, Self
 from collections.abc import Callable, Iterable, Sequence
 
-from xpra.common import noop, Self
+from xpra.common import noop
 from xpra.util.parsing import (
     TRUE_OPTIONS, FALSE_OPTIONS,
     str_to_bool, parse_bool_or, parse_bool_or_number, parse_number,
