@@ -198,12 +198,12 @@ class DisplayManager(StubSubsystem):
             self.ydpi = 0
             self.antialias = {}
         else:
-            dpi_caps = c.get("dpi")
+            dpi_caps = c.get("display.dpi", c.get("dpi"))
             if isinstance(dpi_caps, int):
                 # legacy mode, ie: html5 client
                 self.dpi = self.xdpi = self.ydpi = int(dpi_caps)
             else:
-                tdpi = typedict(c.dictget("dpi"))
+                tdpi = typedict(dpi_caps if isinstance(dpi_caps, dict) else {})
                 self.dpi = tdpi.intget("", 0)
                 self.xdpi = tdpi.intget("x", self.xdpi)
                 self.ydpi = tdpi.intget("y", self.ydpi)

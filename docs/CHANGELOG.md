@@ -1,5 +1,9 @@
 # Changelog
 
+## [7.0.1] Unreleased
+* 🖧 Network:
+  * [initial client DPI ignored when only namespaced display capabilities are sent](https://github.com/Xpra-org/xpra/commit/c70c4dec07e1863808262d71197b5af0aa043a7c)
+
 ## [7.0] 2026-10-16
 * 🔧 Platforms, build and packaging:
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
