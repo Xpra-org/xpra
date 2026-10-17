@@ -206,8 +206,8 @@ def find_background_path(fmt="png") -> str:
         djxl = which("djxl")
         log(f"found jxl: {path!r}, {djxl=}")
         if djxl:
-            from subprocess import run, PIPE
-            result = run([djxl, path, "-", "--output_format", fmt], stdout=PIPE, stderr=PIPE)
+            from subprocess import run
+            result = run([djxl, path, "-", "--output_format", fmt], capture_output=True)
             if result.returncode == 0:
                 img_data = result.stdout
                 with open(filename, "wb") as f:
