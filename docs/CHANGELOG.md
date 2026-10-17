@@ -1,7 +1,12 @@
 # Changelog
 
 ## [8.0] 2026-10-16
-* TODO
+* 🔧 Platforms, build and packaging:
+* 🖧 Network:
+* 🛡️ Security:
+* 🌈 Encodings:
+* ✨ Features:
+  * [remove backwards compatibility](https://github.com/Xpra-org/xpra/issues/4496)
 
 ## [7.0] 2026-10-16
 * 🔧 Platforms, build and packaging:
