@@ -189,32 +189,16 @@ class RunCommandTest(unittest.TestCase):
             proto = SimpleNamespace(_conn=SimpleNamespace(options=options))
             self.assertEqual(is_request_allowed(proto, "exec"), allowed)
 
-    def test_windows_pipe_reader(self):
-        available = [None, 3, "eof", "error"]
-
-        def peek(_handle, _buffer, _size, _read, pending, _left):
-            value = available.pop(0)
-            if isinstance(value, int):
-                pending._obj.value = value
-            return value not in ("eof", "error")
-
-        peek_function = Mock(side_effect=peek)
-        common = SimpleNamespace(kernel32=SimpleNamespace(PeekNamedPipe=peek_function),
-                                 ERROR_BROKEN_PIPE=109, ERROR_PIPE_NOT_CONNECTED=233)
-        with patch("xpra.server.command_output.WIN32", True), \
-             patch.dict(sys.modules, {"msvcrt": SimpleNamespace(get_osfhandle=lambda fd: fd),
-                                      "xpra.platform.win32.common": common}), \
-             patch("ctypes.WinError", side_effect=lambda error: OSError(error), create=True), \
-             patch("ctypes.get_last_error", side_effect=[109, 5], create=True), \
-             patch("os.read", return_value=b"abc") as read:
-            reader = pipe_reader(SimpleNamespace(fileno=lambda: 42))
+    def test_pipe_reader(self):
+        rfd, wfd = os.pipe()
+        with open(rfd, "rb", buffering=0) as rpipe:
+            reader = pipe_reader(rpipe)
             self.assertIsNone(reader())
-            read.assert_not_called()
+            os.write(wfd, b"abc")
             self.assertEqual(reader(), b"abc")
-            read.assert_called_once_with(42, 3)
+            self.assertIsNone(reader())
+            os.close(wfd)
             self.assertEqual(reader(), b"")
-            with self.assertRaises(OSError):
-                reader()
 
 
 if __name__ == "__main__":

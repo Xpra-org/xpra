@@ -12,7 +12,6 @@ tracking, and all request lifecycle callbacks run on the GLib main thread.
 import os
 from threading import Event, Lock
 
-from xpra.os_util import WIN32
 from xpra.net.common import Packet
 from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.util.child_reaper import get_child_reaper
@@ -26,38 +25,15 @@ OUTPUT_LIMIT = min(1024 * 1024, max(0, (MAX_PACKET_SIZE - 4096) // 2))
 
 
 def pipe_reader(pipe):
+    # Since Python 3.12, this also works on Windows pipes:
     fd = pipe.fileno()
-    if not WIN32:
-        os.set_blocking(fd, False)
-
-        def read():
-            try:
-                return os.read(fd, CHUNK_SIZE)
-            except BlockingIOError:
-                return None
-        return read
-
-    # Anonymous Windows pipes cannot be selected, and Python 3.10 does not
-    # support os.set_blocking() on them. Read only the bytes known to be ready.
-    from ctypes import POINTER, WinError, byref, get_last_error
-    from ctypes.wintypes import BOOL, DWORD, HANDLE, LPVOID
-    from msvcrt import get_osfhandle
-    from xpra.platform.win32.common import kernel32, ERROR_BROKEN_PIPE, ERROR_PIPE_NOT_CONNECTED
-    peek = kernel32.PeekNamedPipe
-    peek.argtypes = [HANDLE, LPVOID, DWORD, POINTER(DWORD), POINTER(DWORD), POINTER(DWORD)]
-    peek.restype = BOOL
-    handle = get_osfhandle(fd)
+    os.set_blocking(fd, False)
 
     def read():
-        available = DWORD()
-        if not peek(handle, None, 0, None, byref(available), None):
-            error = get_last_error()
-            if error in (ERROR_BROKEN_PIPE, ERROR_PIPE_NOT_CONNECTED):
-                return b""
-            raise WinError(error)
-        if not available.value:
+        try:
+            return os.read(fd, CHUNK_SIZE)
+        except BlockingIOError:
             return None
-        return os.read(fd, min(CHUNK_SIZE, available.value))
     return read
 
 
