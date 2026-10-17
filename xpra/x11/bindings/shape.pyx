@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 from xpra.x11.bindings.xlib cimport Display, Window, XRectangle, XEvent, Bool, Status
 from xpra.x11.bindings.display_source cimport get_display
