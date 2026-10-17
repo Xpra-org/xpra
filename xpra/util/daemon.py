@@ -106,12 +106,7 @@ def setuidgid(uid: int, gid: int) -> None:
         except KeyError:
             raise ValueError(f"uid {uid} not found") from None
         # set the groups:
-        if hasattr(os, "initgroups"):  # python >= 2.7
-            os.initgroups(username, gid)
-        else:
-            import grp
-            groups = [gr.gr_gid for gr in grp.getgrall() if username in gr.gr_mem]
-            os.setgroups(groups)
+        os.initgroups(username, gid)
     # change uid and gid:
     try:
         if os.getgid() != gid:

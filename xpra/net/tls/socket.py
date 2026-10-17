@@ -94,8 +94,7 @@ def ssl_handshake(ssl_sock, timeout: float = SSL_HANDSHAKE_TIMEOUT) -> None:
             raise InitExit(status, "the connection was closed during the SSL handshake") from None
         if isinstance(e, TimeoutError):
             raise InitExit(status, f"SSL handshake timed out after {timeout} seconds") from None
-        ssl_cert_verification_error = getattr(ssl, "SSLCertVerificationError", None)
-        if ssl_cert_verification_error and isinstance(e, ssl_cert_verification_error):
+        if isinstance(e, ssl.SSLCertVerificationError):
             verify_code = getattr(e, "verify_code", 0)
             log("verify_code=%s", SSL_VERIFY_CODES.get(verify_code, verify_code))
             try:

@@ -2102,8 +2102,7 @@ def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
     if warn_ENABLED:
         addcflags("-Wall")
         addldflags("-Wall")
-        if sys.version_info >= (3, 12):
-            addcflags("-Wno-deprecated-declarations")
+        addcflags("-Wno-deprecated-declarations")
     if strict_ENABLED:
         if not hascflag("-Wno-error"):
             addcflags("-Werror")
@@ -2515,10 +2514,6 @@ if WIN32:
         # with cx_freeze, we don't use py_modules
         del setup_options["py_modules"]
         from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
-        if not hasattr(sys, "base_prefix"):
-            # workaround for broken sqlite hook with python 2.7, see:
-            # https://github.com/anthony-tuininga/cx_Freeze/pull/272
-            sys.base_prefix = sys.prefix
 
         # pass a potentially nested dictionary representing the tree
         # of files and directories we do want to include

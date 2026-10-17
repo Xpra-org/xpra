@@ -436,10 +436,7 @@ cdef class WaylandCompositor(ListenerObject):
                 log.warn("Warning: %s", message)
             else:
                 try:
-                    flags = os.O_RDWR
-                    if hasattr(os, "O_CLOEXEC"):
-                        flags |= os.O_CLOEXEC
-                    drm_fd = os.open(device, flags)
+                    drm_fd = os.open(device, os.O_RDWR | os.O_CLOEXEC)
                     log("opened DRM render node %r: fd=%i", device, drm_fd)
                     renderer = wlr_gles2_renderer_create_with_drm_fd(drm_fd)
                 except OSError as e:
