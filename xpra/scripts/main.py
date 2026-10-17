@@ -1417,7 +1417,8 @@ def create_client_app(opts, extra_args: list[str], mode: str):
             from xpra import __version__
             set_progress_process(app, make_progress_process(opts.session_name or "Xpra Recorder v%s" % __version__))
     elif mode == "_monitor":
-        basic()
+        # this client is only here to receive the server events:
+        basic().server_events = True
         from xpra.client.base.command import MonitorXpraClient
         app = MonitorXpraClient(opts)
     elif mode == "shell":

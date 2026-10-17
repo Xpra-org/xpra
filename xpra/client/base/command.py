@@ -389,10 +389,6 @@ class MonitorXpraClient(SendCommandConnectClient):
         If the server does not support this feature it exits with an error.
     """
 
-    def __init__(self, opts):
-        super().__init__(opts)
-        self.hello_extra["request"] = "event"
-
     def timeout(self, *args) -> None:
         pass
         # self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the info")
