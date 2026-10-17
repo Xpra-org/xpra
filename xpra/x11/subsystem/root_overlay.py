@@ -92,10 +92,9 @@ class RootOverlay(StubSubsystem):
         display_sources = get_sources_by_type(self.server, DisplayConnection)
         if len(display_sources) != 1:
             return
-        ss = display_sources[0]
-        if ss.screen_sizes and len(ss.screen_sizes) == 1:
+        if monitors := display_sources[0].monitors:
             from xpra.x11.server.root_overlay import paint_overlay_monitors
-            paint_overlay_monitors(cr, ss.screen_sizes[0])
+            paint_overlay_monitors(cr, monitors)
 
     def paint_windows(self, cr) -> bool:
         order = {}

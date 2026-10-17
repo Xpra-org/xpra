@@ -47,9 +47,8 @@ class TestXRootProps(unittest.TestCase):
             get_client_workarea = DisplayConnection.get_client_workarea
             get_client_workareas = DisplayConnection.get_client_workareas
 
-            def __init__(self, monitors: dict, screen_sizes=()):
+            def __init__(self, monitors: dict):
                 self.monitors = monitors
-                self.screen_sizes = list(screen_sizes)
                 self.monitor_layout = MonitorLayout(monitors)
 
         # two side by side monitors, only the left one has a bottom panel:

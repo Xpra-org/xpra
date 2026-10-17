@@ -244,33 +244,3 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             # so don't bother showing it:
             continue
         log.info("    " + istr)
-
-
-def get_screen_info(screen_sizes) -> dict[int, dict[str, Any]]:
-    # same format as above
-    if not screen_sizes:
-        return {}
-    info: dict[int, dict[str, Any]] = {}
-    for i, x in enumerate(screen_sizes):
-        if not isinstance(x, (tuple, list)):
-            continue
-        sinfo: dict[str, Any] = info.setdefault(i, {})
-        sinfo["display"] = x[0]
-        if len(x) >= 3:
-            sinfo["size"] = x[1], x[2]
-        if len(x) >= 5:
-            sinfo["size_mm"] = x[3], x[4]
-        if len(x) >= 6:
-            monitors = x[5]
-            for j, monitor in enumerate(monitors):
-                if len(monitor) >= 7:
-                    minfo: dict[str, Any] = sinfo.setdefault("monitor", {}).setdefault(j, {})
-                    for k, v in {
-                        "name": monitor[0],
-                        "geometry": monitor[1:5],
-                        "size_mm": monitor[5:7],
-                    }.items():
-                        minfo[k] = v
-        if len(x) >= 10:
-            sinfo["workarea"] = x[6:10]
-    return info

@@ -4,12 +4,11 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
-from xpra.util.env import first_time, envint
 from xpra.util.objects import typedict
 from xpra.util.rectangle import rectangle
-from xpra.util.screen import get_screen_info, MonitorLayout
+from xpra.util.screen import MonitorLayout
 from xpra.net.packet_type import DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
 from xpra.util.parsing import validated_monitor_data
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed
@@ -17,9 +16,6 @@ from xpra.log import Logger
 
 log = Logger("display")
 sharinglog = Logger("sharing")
-
-MIN_DPI: int = envint("XPRA_MIN_DPI", 10)
-MAX_DPI: int = envint("XPRA_MAX_DPI", 500)
 
 
 class DisplayConnection(StubClientConnection):
@@ -46,7 +42,6 @@ class DisplayConnection(StubClientConnection):
         self.desktop_size_unscaled: tuple[int, int] = (0, 0)
         self.desktop_size_server: tuple[int, int] = (0, 0)
         self.desktop_fullscreen: bool = False
-        self.screen_sizes: list = []
         self.monitors: dict[int, Any] = {}
         self.monitor_layout = MonitorLayout()
         # does this client attach a `monitor` descriptor to its window and pointer packets?
@@ -71,8 +66,6 @@ class DisplayConnection(StubClientConnection):
             "opengl": self.opengl_props,
             "monitors": self.monitors,
             "monitor-relative": self.monitor_relative,
-            "screens": len(self.screen_sizes),
-            "screen": get_screen_info(self.screen_sizes),
         }
         if area := self.display_area:
             info["area"] = (area.x, area.y, area.width, area.height)
@@ -101,7 +94,6 @@ class DisplayConnection(StubClientConnection):
         self.desktop_mode_size = c.intpair("desktop_mode_size")
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.desktop_fullscreen = c.boolget("desktop-fullscreen")
-        self.set_screen_sizes(c.tupleget("screen_sizes"))
         self.set_monitors(c.dictget("monitors"))
         self.monitor_relative = c.boolget("monitor-relative", True)
         desktop_names = tuple(str(x) for x in c.tupleget("desktop.names"))
@@ -145,49 +137,6 @@ class DisplayConnection(StubClientConnection):
         ox, oy = self.get_display_origin()
         return pos[0] + ox, pos[1] + oy
 
-    def set_screen_sizes(self, screen_sizes: Iterable) -> None:
-        log("set_screen_sizes(%s)", screen_sizes)
-        self.screen_sizes = list(screen_sizes)
-
-        # validate dpi / screen size in mm
-        # (ticket 2480: GTK3 on macos can return bogus values)
-
-        def dpi(size_pixels, size_mm) -> int:
-            if size_mm == 0:
-                return 0
-            return round(size_pixels * 25.4 / size_mm)
-
-        for i, screen in enumerate(list(screen_sizes)):
-            if len(screen) < 10:
-                continue
-            sw, sh, wmm, hmm, monitors = screen[1:6]
-            xdpi = dpi(sw, wmm)
-            ydpi = dpi(sh, hmm)
-            if xdpi < MIN_DPI or xdpi > MAX_DPI or ydpi < MIN_DPI or ydpi > MAX_DPI:
-                warn = first_time(f"invalid-screen-size-{wmm}x{hmm}")
-                if warn:
-                    log.warn("Warning: ignoring invalid screen size %ix%i mm", wmm, hmm)
-                if monitors:
-                    # [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
-                    wmm = round(sum(monitor[5] for monitor in monitors))
-                    hmm = round(sum(monitor[6] for monitor in monitors))
-                    xdpi = dpi(sw, wmm)
-                    ydpi = dpi(sh, hmm)
-                if xdpi < MIN_DPI or xdpi > MAX_DPI or ydpi < MIN_DPI or ydpi > MAX_DPI:
-                    # still invalid, generate one from DPI=96
-                    wmm = round(sw * 25.4 / 96)
-                    hmm = round(sh * 25.4 / 96)
-                if warn:
-                    log.warn(" using %ix%i mm", wmm, hmm)
-                screen = list(screen)
-                # make sure values are integers:
-                screen[1] = round(sw)
-                screen[2] = round(sh)
-                screen[3] = wmm
-                screen[4] = hmm
-                self.screen_sizes[i] = tuple(screen)
-        log("client validated screen sizes: %s", self.screen_sizes)
-
     def set_desktops(self, desktops: int, desktop_names) -> None:
         self.desktops = desktops or 1
         self.desktop_names = tuple(str(d) for d in (desktop_names or ()))
@@ -222,26 +171,20 @@ class DisplayConnection(StubClientConnection):
         return layout.normalized_monitors(monitors)
 
     def get_client_workarea(self):
-        """ the usable area of the client's display (excluding panels / taskbars), as a single rectangle.
-            modern clients: the bounding box of the per-monitor workareas (the `monitors` dict);
-            legacy clients: the screen-wide workarea from `screen_sizes`. """
-        from xpra.util.rectangle import rectangle
+        """ the usable area of the client's display (excluding panels / taskbars), as a single rectangle:
+            the bounding box of the per-monitor workareas (the `monitors` dict) """
         rects = []
         for mdef in (self.monitors or {}).values():
             wa = mdef.get("workarea")
             if wa and len(wa) == 4 and wa[2] > 0 and wa[3] > 0:
                 rects.append(wa)
-        if rects:
-            x = min(r[0] for r in rects)
-            y = min(r[1] for r in rects)
-            w = max(r[0] + r[2] for r in rects) - x
-            h = max(r[1] + r[3] for r in rects) - y
-            return rectangle(x, y, w, h)
-        # legacy "screen_sizes" data (pre-monitors clients): one screen-wide workarea
-        for display in self.screen_sizes:
-            if isinstance(display, (list, tuple)) and len(display) >= 10 and display[8] > 0 and display[9] > 0:
-                return rectangle(*display[6:10])
-        return None
+        if not rects:
+            return None
+        x = min(r[0] for r in rects)
+        y = min(r[1] for r in rects)
+        w = max(r[0] + r[2] for r in rects) - x
+        h = max(r[1] + r[3] for r in rects) - y
+        return rectangle(x, y, w, h)
 
     def get_client_workareas(self) -> list[tuple[int, int, int, int]]:
         """ the usable area of each of the client's monitors, in the normalized coordinate space

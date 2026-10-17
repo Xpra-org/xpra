@@ -53,7 +53,7 @@ class EncodingsConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return bool(caps.dictget("encoding") or caps.strtupleget("encodings")) or wants_windows(caps)
+        return bool(caps.dictget("encoding")) or wants_windows(caps)
 
     def init_state(self) -> None:
         # contains default values, some of which may be supplied by the client:
@@ -304,8 +304,6 @@ class EncodingsConnection(StubClientConnection):
         dbc.time_unit = batch_value("time_unit", dbc.time_unit, 1)
         dbc.delay = batch_value("delay", delay, dbc.min_delay)
         log("default batch config: %s", dbc)
-        self.vrefresh = c.intget("vrefresh", -1)
-
         evalue = c.get("encoding")
         if isinstance(evalue, dict):
             eopts = typedict(evalue)
@@ -315,55 +313,20 @@ class EncodingsConnection(StubClientConnection):
 
     def parse_encoding_caps(self, c: typedict, eopts: typedict) -> None:
         window_requested = wants_windows(c)
-        # should not be used, so blank it:
-        c = typedict()
         self.encoding_options.update(eopts)
-        self.encodings = eopts.strtupleget("options") or c.strtupleget("encodings")
-        self.core_encodings = eopts.strtupleget("core") or c.strtupleget("encodings.core", self.encodings)
+        self.encodings = eopts.strtupleget("options")
+        self.core_encodings = eopts.strtupleget("core", self.encodings)
         if not self.core_encodings and window_requested:
             raise ClientException("client failed to specify any supported encodings")
         self.full_csc_modes = eopts.dictget("full_csc_modes")
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
 
-        self.window_icon_encodings = eopts.strtupleget("window-icon") or c.strtupleget("encodings.window-icon")
+        self.window_icon_encodings = eopts.strtupleget("window-icon")
         log("window_icon_encodings=%s", self.window_icon_encodings)
-        self.rgb_formats = eopts.strtupleget("rgb_formats") or c.strtupleget("encodings.rgb_formats")
+        self.rgb_formats = eopts.strtupleget("rgb_formats")
 
         self.set_encoding(eopts.strget("setting") or eopts.strget(""), None)
-        # encoding options (filter):
-        # 1: these properties are special cased here because we
-        # defined their name before the "encoding." prefix convention,
-        # or because we want to pass default values (ie: lz4):
-        for k, ek in {
-            "initial_quality": "initial_quality",
-            "quality": "quality",
-        }.items():
-            if k in c:
-                self.encoding_options[ek] = c.intget(k)
-        for k, ek in {
-            "lz4": "rgb_lz4",
-            "zstd": "rgb_zstd",
-        }.items():
-            if k in c:
-                self.encoding_options[ek] = c.boolget(k)
-        # 2: standardized encoding options:
         self.icons_encoding_options.update(self.encoding_options.pop("icons", None) or {})
-        for k in c.keys():
-            if k.startswith("theme.") or k.startswith("encoding.icons."):
-                self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c.get(k)
-            elif k.startswith("encoding."):
-                stripped_k = k.removeprefix("encoding.")
-                if stripped_k in ("transparency", "rgb_lz4", "rgb_zstd"):
-                    v = c.boolget(k)
-                elif stripped_k in (
-                    "initial_quality", "initial_speed",
-                    "min-quality", "quality",
-                    "min-speed", "speed",
-                ):
-                    v = c.intget(k)
-                else:
-                    v = c.get(k)
-                self.encoding_options[stripped_k] = v
         log("encoding options: %s", self.encoding_options)
         log("icons encoding options: %s", self.icons_encoding_options)
 
@@ -385,7 +348,6 @@ class EncodingsConnection(StubClientConnection):
         log("default encoding options: %s", self.default_encoding_options)
         self.set_min_speed(ms)
         self.set_min_quality(mq)
-        self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         # are we going to need a cuda context?
         if not self.cuda_device_context and self.wants_cuda_device():
             self.allocate_cuda_device_context()

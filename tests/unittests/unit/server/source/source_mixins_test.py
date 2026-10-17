@@ -218,8 +218,7 @@ class SourceMixinsTest(unittest.TestCase):
             "default_min_speed": 10,
         }
         self._test_mixin_class(EncodingsConnection, server_props, {
-            # modern clients send their encodings in the `encoding` namespace;
-            # the flat `encodings.core` cap is ignored with BC=0
+            # clients send their encodings in the `encoding` namespace:
             "encoding": {
                 "core": ("rgb32", "rgb24"),
                 "options": ("rgb32", "rgb24"),

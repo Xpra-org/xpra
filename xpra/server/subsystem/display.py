@@ -12,7 +12,6 @@ from xpra.util.rectangle import rectangle
 
 from xpra.server.source.display import DisplayConnection
 from xpra.util.objects import typedict
-from xpra.util.screen import log_screen_sizes
 from xpra.net.common import Packet
 from xpra.util.parsing import get_refresh_rate_for_value, parse_sharing_layout, DEFAULT_REFRESH_RATE
 from xpra.server.subsystem.stub import StubSubsystem
@@ -290,8 +289,6 @@ class DisplayManager(StubSubsystem):
             try:
                 dw, dh = desktop_size
                 log.info(" client total display size is %sx%s", dw, dh)
-                if ss.screen_sizes:
-                    log_screen_sizes(dw, dh, ss.screen_sizes)
             except Exception:
                 dw, dh = None, None
         best = self.configure_best_screen_size()
@@ -403,7 +400,6 @@ class DisplayManager(StubSubsystem):
         log("client requesting new size: %sx%s", width, height)
         log.info("received updated display dimensions")
         log.info(f"client display size is {width}x{height}")
-        log_screen_sizes(width, height, ss.screen_sizes)
         if self.sharing_layout:
             # this client is only one part of the display: re-do the whole layout
             # (which also re-assigns the areas, since this client's may have changed size)
@@ -436,18 +432,9 @@ class DisplayManager(StubSubsystem):
         if "monitors" in attrs:
             ss.set_monitors(attrs.dictget("monitors"))
         # the DPI must be updated before resizing, since it is used for the display's physical dimensions:
-        dpi = 0
-        dpi_caps = attrs.get("dpi")
-        # unprefixed legacy mode:
-        if isinstance(dpi_caps, int):
-            dpi = int(dpi_caps)
-        dpix = attrs.intget("dpi.x", dpi)
-        dpiy = attrs.intget("dpi.y", dpi)
-        # namespaced caps:
-        if isinstance(dpi_caps, dict):
-            tdpi = typedict(dpi_caps)
-            dpix = tdpi.intget("x", dpix)
-            dpiy = tdpi.intget("y", dpiy)
+        tdpi = typedict(attrs.dictget("dpi"))
+        dpix = tdpi.intget("x")
+        dpiy = tdpi.intget("y")
         dpi_changed = bool(dpix and dpiy and (dpix != self.xdpi or dpiy != self.ydpi))
         if dpi_changed:
             self.xdpi, self.ydpi = dpix, dpiy
@@ -491,7 +478,7 @@ class DisplayManager(StubSubsystem):
             self.server.set_workareas(self.calculate_workareas(maxw, maxh, display_sources))
             return
         for ss in display_sources:
-            # derived from the `monitors` dict (modern clients) or `screen_sizes` (legacy):
+            # derived from the `monitors` dict:
             client_workarea = ss.get_client_workarea()
             log("calculate_workarea() workarea(%s)=%s", ss, client_workarea)
             if not client_workarea:

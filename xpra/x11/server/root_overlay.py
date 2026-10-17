@@ -67,27 +67,24 @@ def release_root_overlay(xid: int) -> None:
         XComposite.XCompositeReleaseOverlayWindow(xid)
 
 
-def paint_overlay_monitors(cr, screen: Sequence) -> None:
-    log("paint_overlay_monitors%s", (cr, screen))
-    if len(screen) < 10:
+def paint_overlay_monitors(cr, monitors: dict[int, dict]) -> None:
+    log("paint_overlay_monitors%s", (cr, monitors))
+    geometries = [g for g in (mdef.get("geometry", ()) for mdef in monitors.values()) if len(g) == 4]
+    if not geometries:
         return
-    display_name, width, height, width_mm, height_mm, monitors, work_x, work_y, work_width, work_height = screen[:10]
-    assert display_name or width_mm or height_mm or True  # just silences pydev warnings
     # paint dark grey background for display dimensions:
+    width = max(x + w for x, _, w, _ in geometries)
+    height = max(y + h for _, y, _, h in geometries)
     fill_rect(cr, (0.2, 0.2, 0.2), 0, 0, width, height)
     fill_rect(cr, (0.2, 0.2, 0.4), 0, 0, width, height)
-    # paint lighter grey background for workspace dimensions:
-    draw_rect(cr, (0.5, 0.5, 0.5), work_x, work_y, work_width, work_height)
-    # paint each monitor with even lighter shades of grey:
-    for m in monitors:
-        if len(m) < 7:
-            continue
-        plug_name, plug_x, plug_y, plug_width, plug_height, plug_width_mm, plug_height_mm = m[:7]
-        assert plug_name or plug_width_mm or plug_height_mm or True  # just silences pydev warnings
-        draw_rect(cr, (0.7, 0.7, 0.7), plug_x, plug_y, plug_width, plug_height)
-        if len(m) >= 10:
-            dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
-            draw_rect(cr, (1, 1, 1), dwork_x, dwork_y, dwork_width, dwork_height)
+    # paint each monitor with lighter shades of grey, and its workarea in white:
+    for mdef in monitors.values():
+        geometry = mdef.get("geometry", ())
+        if len(geometry) == 4:
+            draw_rect(cr, (0.7, 0.7, 0.7), *geometry)
+        workarea = mdef.get("workarea", ())
+        if len(workarea) == 4:
+            draw_rect(cr, (1, 1, 1), *workarea)
 
 
 def paint_root_overlay_windows(cr, windows: Sequence) -> None:

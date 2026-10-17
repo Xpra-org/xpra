@@ -522,34 +522,29 @@ class X11DisplayManager(DisplayManager):
         ydpi = self.ydpi or self.dpi
         log("set_screen_size(%s, %s) xdpi=%s, ydpi=%s",
             desired_w, desired_h, xdpi, ydpi)
-        wmm, hmm = 0, 0
         if xdpi <= 0 or ydpi <= 0:
             # use some sane defaults: either the command line option, or fallback to 96
             # (96 is better than nothing, because we do want to set the dpi
             # to avoid Xdummy setting a crazy dpi from the virtual screen dimensions)
             xdpi = self.default_dpi or 96
             ydpi = self.default_dpi or 96
-            # find the "physical" screen dimensions, so we can calculate the required dpi
+            # calculate the "real" dpi from the physical dimensions of the largest client monitor:
             # (and do this before changing the resolution)
-            client_w, client_h = 0, 0
-            sss = self.get_sources_by_type(DisplayConnection)
-            for ss in sss:
-                screen_sizes = getattr(ss, "screen_sizes", ())
-                for s in screen_sizes:
-                    if len(s) >= 10:
-                        # (display_name, width, height, width_mm, height_mm, monitors,
-                        # work_x, work_y, work_width, work_height)
-                        client_w = max(client_w, s[1])
-                        client_h = max(client_h, s[2])
-                        wmm = max(wmm, s[3])
-                        hmm = max(hmm, s[4])
-            if wmm > 0 and hmm > 0 and client_w > 0 and client_h > 0:
-                # calculate "real" dpi:
-                xdpi = round(client_w * 25.4 / wmm)
-                ydpi = round(client_h * 25.4 / hmm)
-                log("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)",
-                    xdpi, ydpi, client_w, wmm, client_h, hmm)
-        self.set_physical_size(desired_w, desired_h, xdpi, ydpi, wmm, hmm)
+            largest = 0
+            for ss in self.get_sources_by_type(DisplayConnection):
+                for mdef in ss.monitors.values():
+                    geometry = mdef.get("geometry", ())
+                    wmm = mdef.get("width-mm", 0)
+                    hmm = mdef.get("height-mm", 0)
+                    if len(geometry) != 4 or wmm <= 0 or hmm <= 0:
+                        continue
+                    mw, mh = geometry[2:4]
+                    if mw > 0 and mh > 0 and mw * mh > largest:
+                        largest = mw * mh
+                        xdpi = round(mw * 25.4 / wmm)
+                        ydpi = round(mh * 25.4 / hmm)
+                        log("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)", xdpi, ydpi, mw, wmm, mh, hmm)
+        self.set_physical_size(desired_w, desired_h, xdpi, ydpi)
 
         from xpra.x11.bindings.randr import RandRBindings
         # try to find the best screen size to resize to:
