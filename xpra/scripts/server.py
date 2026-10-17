@@ -30,7 +30,7 @@ from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
 from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import POSIX, WIN32, OSX, LINUX, getuid, get_hex_uuid
-from xpra.util.str_fn import nicestr, csv
+from xpra.util.str_fn import csv
 from xpra.util.io import stderr_print
 from xpra.util.env import envbool, envint, osexpand, get_saved_env, get_saved_env_var, OSEnvContext
 from xpra.util.child_reaper import get_child_reaper
@@ -246,7 +246,7 @@ def request_exit(uri: str) -> bool:
     env["XPRA_CONNECT_TIMEOUT"] = "5"
     # don't log disconnect message
     env["XPRA_LOG_DISCONNECT"] = "0"
-    env["XPRA_EXIT_MESSAGE"] = nicestr(ConnectionMessage.SERVER_UPGRADE)
+    env["XPRA_EXIT_MESSAGE"] = str(ConnectionMessage.SERVER_UPGRADE)
     try:
         p = Popen(cmd, env=env)
         p.wait()

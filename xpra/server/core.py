@@ -62,7 +62,7 @@ from xpra.util.objects import merge_dicts
 from xpra.constants import DEFAULT_XDG_DATA_DIRS
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, nicestr, strtobytes, hexstr
+from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, strtobytes, hexstr
 from xpra.util.env import envint, envbool, envfloat, first_time, restore_script_env
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
@@ -1501,7 +1501,7 @@ class ServerCore(GLibServer):
 
     def disconnect_protocol(self, protocol: SocketProtocol, *reasons) -> None:
         netlog("disconnect_protocol(%s, %s)", protocol, reasons)
-        i = nicestr(reasons[0])
+        i = str(reasons[0])
         if len(reasons) > 1:
             i += " (%s)" % csv(reasons[1:])
         proto_info = f" {protocol}"

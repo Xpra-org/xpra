@@ -16,7 +16,7 @@ from xpra.auth.auth_helper import get_auth_module, AuthDef
 from xpra.auth.option import AUTH_OPTION_KEYS
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.util.str_fn import csv, nicestr, hexstr
+from xpra.util.str_fn import csv, hexstr
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -138,7 +138,7 @@ class AuthenticationManager(StubSubsystem):
 
     def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage, authenticator=None) -> None:
         log.warn("Warning: authentication failed")
-        wmsg = nicestr(msg)
+        wmsg = str(msg)
         if authenticator:
             wmsg = f"{authenticator!r}: "+wmsg
         log.warn(f" {wmsg}")

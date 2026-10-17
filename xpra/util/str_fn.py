@@ -5,7 +5,6 @@
 
 import binascii
 import re
-from enum import Enum
 from typing import Iterable
 from collections.abc import Callable, Mapping
 
@@ -186,13 +185,6 @@ def print_nested_dict(d: Mapping, prefix: str = "", lchar: str = "*", pad: int =
                               version_keys=version_keys, hex_keys=hex_keys)
         else:
             sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(indent), vf(k, v)))
-
-
-def nicestr(obj) -> str:
-    """ Python 3.10 and older don't give us a nice string representation for enums """
-    if isinstance(obj, Enum):
-        return str(obj.value)
-    return str(obj)
 
 
 def strtobytes(x) -> bytes:

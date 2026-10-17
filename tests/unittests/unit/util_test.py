@@ -12,7 +12,7 @@ from xpra.util.str_fn import (
     std, alnum, nonl, pver,
     obsc, csv, is_valid_hostname,
     ellipsize, repr_ellipsized, Ellipsizer,
-    decode_str, nicestr,
+    decode_str,
     sort_human, sorted_nicely,
     parse_function_call,
     print_nested_dict,
@@ -403,29 +403,6 @@ class TestDecodeStr(unittest.TestCase):
 
     def test_alternate_encoding(self):
         self.assertEqual(decode_str("hello".encode("ascii"), "ascii"), "hello")
-
-
-class TestNicestr(unittest.TestCase):
-
-    def test_plain_string(self):
-        self.assertEqual(nicestr("hello"), "hello")
-
-    def test_integer(self):
-        self.assertEqual(nicestr(42), "42")
-
-    def test_enum_returns_value(self):
-        from enum import Enum
-
-        class Color(Enum):
-            RED = "red"
-        self.assertEqual(nicestr(Color.RED), "red")
-
-    def test_int_enum(self):
-        from enum import IntEnum
-
-        class Status(IntEnum):
-            OK = 0
-        self.assertEqual(nicestr(Status.OK), "0")
 
 
 class TestSortHuman(unittest.TestCase):

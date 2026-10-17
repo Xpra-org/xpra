@@ -575,8 +575,7 @@ def print_proxy_caps(caps: typedict) -> None:
 
 # convenience method
 def disconnect_is_an_error(reason) -> bool:
-    from xpra.util.str_fn import nicestr
-    rstr = nicestr(reason)
+    rstr = str(reason)
     return rstr.find("error") >= 0 or (rstr.find("timeout") >= 0 and rstr != ConnectionMessage.IDLE_TIMEOUT.value)
 
 

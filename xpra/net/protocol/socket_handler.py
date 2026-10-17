@@ -22,7 +22,7 @@ from xpra.exit_codes import ExitCode
 from xpra.net.packet_type import CONNECTION_CLOSE, CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.util.objects import typedict, Scheduler
 from xpra.util.str_fn import (
-    csv, hexstr, nicestr,
+    csv, hexstr,
     Ellipsizer, repr_ellipsized, strtobytes, memoryview_to_bytes,
 )
 from xpra.util.env import envint, envbool, first_time
@@ -501,7 +501,7 @@ class SocketProtocol:
             self.timeout_add(SEND_INVALID_PACKET * 1000, self.raw_write, SEND_INVALID_PACKET_DATA)
 
     def send_disconnect(self, reasons, done_callback=noop) -> None:
-        packet = [CONNECTION_CLOSE] + [nicestr(x) for x in reasons]
+        packet = [CONNECTION_CLOSE] + [str(x) for x in reasons]
         eventlog("send_disconnect(%r, %r)", reasons, done_callback)
         self.flush_then_close(self.encode, packet, done_callback=done_callback)
 
