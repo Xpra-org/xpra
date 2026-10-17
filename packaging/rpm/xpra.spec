@@ -75,7 +75,7 @@ BuildRequires:		gawk
 Requires:			xpra-html5 >= 5
 Requires:			xpra-common = %{version}-%{release}
 Requires:			xpra-codecs = %{version}-%{release}
-Recommends:			xpra-codecs-extra = %{version}-%{release}
+Recommends:			xpra-codecs-extras = %{version}-%{release}
 Recommends:			xpra-codecs-nvidia = %{version}-%{release}
 Requires:			xpra-client = %{version}-%{release}
 Requires:			xpra-client-gtk3 = %{version}-%{release}
@@ -178,7 +178,7 @@ This package contains the files which are shared between the xpra client and ser
 Summary:			Picture and video codecs for xpra clients and servers.
 Group:				Networking
 Provides:			xpra-codecs
-Suggests:			xpra-codecs-extra
+Suggests:			xpra-codecs-extras
 Suggests:			xpra-codecs-nvidia
 Requires:			xpra-common = %{version}-%{release}
 Requires:			python3-pillow
@@ -329,6 +329,9 @@ Requires:			gtk3
 # the Gtk typelibs need the cairo typelib, which nothing else pulls in since glib 2.80:
 Requires:			gobject-introspection
 Requires:           		python3-cairo
+Requires(post):     coreutils
+Requires(postun):   gtk-update-icon-cache
+Requires(posttrans): gtk-update-icon-cache
 Recommends:			xpra-codecs = %{version}-%{release}
 Recommends:			xpra-x11 = %{version}-%{release}
 Recommends:			pinentry
@@ -409,7 +412,7 @@ Requires:			gtk3
 Recommends:			xpra-x11 = %{version}-%{release}
 Recommends:			xpra-client = %{version}-%{release}
 Recommends:			xpra-codecs = %{version}-%{release}
-Recommends:			xpra-codecs-extra = %{version}-%{release}
+Recommends:			xpra-codecs-extras = %{version}-%{release}
 Recommends:			xpra-codecs-nvidia = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
@@ -440,6 +443,12 @@ BuildRequires:		xorg-x11-server-Xorg
 %if 0%{?fedora}>=39
 # looks like they forgot to expose the pkgconfig?
 BuildRequires:		procps-ng-devel
+%else
+BuildRequires:		pkgconfig(libprocps)
+%endif
+%else
+%if 0%{?el10}
+BuildRequires:		pkgconfig(libproc2)
 %else
 BuildRequires:		pkgconfig(libprocps)
 %endif
@@ -531,7 +540,7 @@ find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
 #(but I can't get distutils to play nice: I want them built, not installed)
 rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 # RHEL stream setuptools bug?
-rm -fr %{RPM_BUILD_ROOT}%{python3_sitearch}/UNKNOWN-*.egg-info
+rm -fr ${RPM_BUILD_ROOT}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %clean
@@ -756,6 +765,8 @@ restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
 restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 %endif
+# Skip service management when installing in a container without systemd.
+if [ -e "/run/systemd/system" ]; then
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -eq 1 ]; then
 	/bin/systemctl enable xpra.socket >/dev/null 2>&1 || :
@@ -769,6 +780,7 @@ if [ -e "/bin/udevadm" ]; then
 fi
 #reload dbus to get our new policy:
 systemctl reload dbus
+fi
 
 %post client
 /usr/bin/update-mime-database &> /dev/null || :
@@ -826,7 +838,7 @@ if [ $1 -eq 0 ] ; then
 	/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 fi
 
-%posttrans common
+%posttrans client-gtk3
 /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 
