@@ -402,7 +402,6 @@ class MonitorXpraClient(SendCommandConnectClient):
         if BACKWARDS_COMPATIBLE:
             for x in ("features", "events", "request"):
                 self.hello_extra.setdefault("wants", []).append(x)
-        self.hello_extra["request"] = "event"
 
     def timeout(self, *args) -> None:
         pass
