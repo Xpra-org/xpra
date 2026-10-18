@@ -4,17 +4,28 @@
 Autoreq: 0
 
 Name:           python3-pytools
-Version:        2022.1.14
-Release:        2%{?dist}
+%if 0%{?el8}
+# Last release supporting Python 3.6.
+Version:        2022.1.12
+%else
+# Last release supporting EL9's Python 3.9.
+Version:        2024.1.14
+%endif
+Release:        1%{?dist}
 Summary:        A collection of tools for python
 Group:          Development/Languages
 License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
-Source0:        https://files.pythonhosted.org/packages/b5/00/b7350b62803926f1d8fbbcaa50e38bcc93354aa73894c13155825eec897f/pytools-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/p/pytools/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python3-pytools = %{version}-%{release}
 BuildArch:      noarch
 Requires:       python3
+Requires:       python3-platformdirs >= 2.2
+Requires:       python3-typing-extensions >= 4
+%if 0%{?el8}
+Requires:       python3-dataclasses >= 0.7
+%endif
 BuildRequires:  python3-devel python3-setuptools
 
 %description
@@ -37,11 +48,31 @@ Small tool functions such as ::
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "41017371610bb2a03685597c5285205e6597c7f177383d95c8b871244b12c14e" ]; then
+%if 0%{?el8}
+if [ "${sha256}" != "4d62875e9a2ab2a24e393a9a8b799492f1a721bffa840af3807bfd42871dd1f4" ]; then
+%else
+if [ "${sha256}" != "39e5bbaf81fa432e688b82dd0980212d18f97b23e51a8c7afe7592249fe40ab1" ]; then
+%endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n pytools-%{version}
+%if !0%{?el8}
+# EL9's setuptools cannot read the newer source's pyproject metadata.
+cat > setup.py << 'EOF'
+from setuptools import find_packages, setup
+
+setup(name="pytools",
+      version="%{version}",
+      description="A collection of tools for Python",
+      license="MIT",
+      packages=find_packages(include=["pytools", "pytools.*"]),
+      package_data={"pytools": ["py.typed"]},
+      python_requires=">=3.8",
+      install_requires=["platformdirs>=2.2",
+                        "typing-extensions>=4; python_version<'3.13'"])
+EOF
+%endif
 
 
 %build
@@ -66,6 +97,12 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Oct 18 2026 Antoine Martin <antoine@xpra.org> - 2024.1.14-1
+- use the last release supporting EL9's Python 3.9
+- retain 2022.1.12 on EL8 for Python 3.6 compatibility
+- support EL9's setuptools and declare the runtime dependencies
+- use the stable PyPI source URL and verify both source checksums
+
 * Wed Feb 22 2023 Antoine Martin <antoine@xpra.org> - 2022.1.14-1
 - new upstream release
 
