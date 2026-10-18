@@ -8,7 +8,7 @@
 
 Name:           libfakeXinerama
 Version:        0.1.0
-Release:        4%{?dist}
+Release:        5%{?dist}
 URL:            https://github.com/Xpra-org/libfakeXinerama
 Summary:        Fake Xinerama library for exposing virtual screens to X11 client applications
 License:        MIT
@@ -42,7 +42,7 @@ fi
 %setup -q
 
 %build
-gcc -O2 -Wall fakeXinerama.c -fPIC -o libfakeXinerama.so.1.0 -shared
+gcc %{optflags} fakeXinerama.c -fPIC -o libfakeXinerama.so.1.0 -shared %{?build_ldflags}
 
 %install
 mkdir -p %{buildroot}%{_libdir}
@@ -54,6 +54,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
+%license LICENSE
 %doc README.TXT
 %{_libdir}/libfakeXinerama.so.1*
 
@@ -62,6 +63,10 @@ rm -rf %{buildroot}
 %postun -p /sbin/ldconfig
 
 %changelog
+* Sun Oct 18 2026 Antoine Martin <antoine@xpra.org> 0.1.0-5
+- use distribution compiler and linker flags
+- include the upstream license file
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> 0.1.0-4
 - verify source checksum
 
