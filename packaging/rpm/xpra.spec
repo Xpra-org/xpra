@@ -207,7 +207,8 @@ Recommends:			%{py3rpmname}-dbus
 Recommends:			%{py3rpmname}-dns
 Recommends:			%{py3rpmname}-asyncssh
 Recommends:			%{py3rpmname}-paramiko
-Suggests:			%{py3rpmname}-pyyaml
+# the rust-xpra client needs yaml:
+Recommends:			%{py3rpmname}-pyyaml
 Suggests:			%{py3rpmname}-kerberos
 Suggests:			%{py3rpmname}-gssapi
 Suggests:			%{py3rpmname}-scramp

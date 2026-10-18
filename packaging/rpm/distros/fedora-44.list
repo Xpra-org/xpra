@@ -39,6 +39,7 @@ python3-pyxdg
 # these are not compatible with freethreading:
 #python3-pylsqpack
 #python3-aioquic
+python3-pyyaml
 python3-pyopengl
 python3-cairo
 python3-gobject
