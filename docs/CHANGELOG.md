@@ -2,6 +2,7 @@
 
 ## [7.0] 2026-10-21
 * 🔧 Platforms, build and packaging:
+  * [recognize OpenBSD in operating system names and platform icons](https://github.com/Xpra-org/xpra/commit/73342171c4401b4666ddbc799fdf43f775663856)
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
   * [new macOS screen capture backend](https://github.com/Xpra-org/xpra/issues/1872)
   * [setup scripts for pycuda](https://github.com/Xpra-org/xpra/issues/2400)

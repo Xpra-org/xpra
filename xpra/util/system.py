@@ -120,6 +120,7 @@ def get_platform_icon_name(platform: str) -> str:
         "darwin": "osx",
         "linux": "linux",
         "freebsd": "freebsd",
+        "openbsd": "openbsd",
     }.items():
         if platform.startswith(p):
             return i
@@ -305,6 +306,7 @@ def get_generic_os_name() -> str:
         "darwin": "MacOS",
         "win": "MS Windows",
         "freebsd": "FreeBSD",
+        "openbsd": "OpenBSD",
     }.items():
         if sys.platform.startswith(k):
             return v
@@ -440,6 +442,7 @@ def platform_name(sys_platform=sys.platform, release="") -> str:
         "linux.*": "Linux",
         "darwin": "Mac OS X",
         "freebsd.*": "FreeBSD",
+        "openbsd.*": "OpenBSD",
         "os2": "OS/2",
     }
 
