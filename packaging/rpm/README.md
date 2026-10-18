@@ -16,6 +16,35 @@ The selected interpreter must be installed in the build environment, along with
 the matching development packages and any Python-version-specific build
 dependencies required by the spec.
 
+## PyGObject for alternate Python interpreters
+
+The build manifests select these PyGObject sources for alternate interpreters:
+
+| Target | Spec | PyGObject |
+| --- | --- | --- |
+| RHEL 8 and derivatives | `pygobject3.spec` | 3.44.2 |
+| RHEL 9 and derivatives, older / generic Fedora manifests | `pygobject3.spec` | 3.50.2 |
+| Fedora 44 / 45 | `python3-gobject.spec` | 3.58.1 |
+
+These specs use the distribution's GLib and GObject-Introspection libraries.
+PyGObject older than 3.44.2 leaks callback closures with GObject-Introspection
+1.72 or newer; see [#5044](https://github.com/Xpra-org/xpra/issues/5044).
+Old interpreter-specific RPMs can survive a Fedora upgrade and introduce this
+combination even when the default Python interpreter has newer bindings.
+
+Check the interpreter used to build or run Xpra, for example:
+
+```shell
+python3.12 -c 'import gi; print(gi.__version__, gi.__file__)'
+rpm -q python3.12-gobject python3.12-gobject-base
+```
+
+Upgrade or rebuild and install its PyGObject packages using the matching spec
+above and the same `PYTHON3` value. Rebuilding Xpra alone does not update these
+bindings. `xpra.spec` requires PyGObject >= 3.44.2 at build time and runtime when
+`PYTHON3` is explicitly set. The shared `python3-gobject-devel` headers remain
+unversioned so alternate interpreter builds can use the system headers on RHEL.
+
 ## Git snapshot sources
 
 Some upstreams have no releases and must be packaged from a git snapshot.

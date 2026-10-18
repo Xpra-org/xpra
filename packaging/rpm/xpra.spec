@@ -34,10 +34,13 @@ autoprov: no
 %global python3 python3
 %global package_prefix xpra
 %global py3rpmname python3
+%global pygobject_requires %{py3rpmname}-gobject
 
 %if "%{getenv:PYTHON3}" != ""
 %global python3 %{getenv:PYTHON3}
 %global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
+# Older interpreter-specific RPMs leak callback closures with GI >= 1.72 (#5044).
+%global pygobject_requires %{py3rpmname}-gobject >= 3.44.2
 %if 0%{?fedora}
 %global package_prefix %{py3rpmname}-xpra
 %endif
@@ -194,7 +197,7 @@ BuildRequires:		pandoc
 %endif
 BuildRequires:		which
 Requires:			%{py3rpmname}
-Requires:			%{py3rpmname}-gobject
+Requires:			%{pygobject_requires}
 Recommends:         xpra-filesystem >= 5
 Recommends:         lsb_release
 Recommends:			%{py3rpmname}-pillow
@@ -227,7 +230,7 @@ Recommends:			brotli
 BuildRequires:		pkgconfig(libqrencode)
 %endif
 Recommends:			qrencode
-BuildRequires:		%{py3rpmname}-gobject
+BuildRequires:		%{pygobject_requires}
 BuildRequires:		python3-gobject-devel
 BuildRequires:		pkgconfig(pygobject-3.0)
 BuildRequires:		pkgconfig(py3cairo)
