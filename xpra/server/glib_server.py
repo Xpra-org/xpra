@@ -45,9 +45,14 @@ class GLibServer(SignalEmitter, PacketDispatcher, GLibScheduler):
     def cleanup(self) -> None:
         """ subclasses will want to do something here """
 
-    def do_quit(self) -> None:
-        log("do_quit: calling main_loop.quit()")
+    def clean_quit(self) -> None:
         self.cleanup()
+        self.do_quit()
+
+    def do_quit(self) -> None:
+        # `cleanup()` must have been called already, see `clean_quit()`:
+        # calling it again here would be too late, ie: the Xvfb may already be gone
+        log("do_quit: calling main_loop.quit()")
         self.main_loop.quit()
         # from now on, we can't rely on the main loop:
         from xpra.util.system import register_SIGUSR_signals
@@ -57,7 +62,8 @@ class GLibServer(SignalEmitter, PacketDispatcher, GLibScheduler):
         log.info("GLibServer running")
 
     def signal_quit(self, _signum, _frame=None) -> None:
-        self.do_quit()
+        # don't clean up from the signal handler:
+        self.idle_add(self.clean_quit)
 
     def run(self) -> ExitValue:
         self.print_run_info()
