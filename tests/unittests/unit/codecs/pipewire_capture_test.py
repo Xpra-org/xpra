@@ -6,7 +6,12 @@ import unittest
 import sys
 from unittest.mock import patch
 
-from xpra.codecs.pipewire.capture import Capture, download_dmabuf, make_cpu_image
+try:
+    from xpra.codecs.pipewire.capture import Capture, download_dmabuf, make_cpu_image
+except ImportError:
+    if __name__ == "__main__":
+        raise SystemExit(0)
+    raise unittest.SkipTest("pipewire codec is not available")
 
 
 class Backend:

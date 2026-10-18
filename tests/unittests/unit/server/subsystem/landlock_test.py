@@ -12,6 +12,7 @@ from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.exit_codes import ExitCode
+from xpra.os_util import LINUX
 from xpra.scripts.config import InitException, InitExit, make_defaults_struct
 from xpra.server import features
 from xpra.server.core import ServerCore, get_instance_subsystem_classes
@@ -27,6 +28,7 @@ def make_subsystem(server, **attrs):
     return type("TestSubsystem", (StubSubsystem, ), namespace)(server)
 
 
+@unittest.skipUnless(LINUX, "Landlock is Linux only")
 class LandLockTest(unittest.TestCase):
 
     @staticmethod

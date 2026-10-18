@@ -378,6 +378,11 @@ class ProcessTestUtil(unittest.TestCase):
                 env[x] = os.environ.get(x)
         from xpra.scripts.config import xvfb_command
         cmd = xvfb_command(cls.test_xvfb_command, depth=depth, dpi=0, fps=0)
+        if not os.environ.get("XAUTHORITY"):
+            for i, arg in enumerate(cmd):
+                if arg == "-auth":
+                    del cmd[i:i+2]
+                    break
         cmd.append(display)
         tmpdir = tempfile.gettempdir()
         env["XPRA_LOG_DIR"] = tmpdir

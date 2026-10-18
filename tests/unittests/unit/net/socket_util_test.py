@@ -8,6 +8,7 @@ import socket
 import sys
 import tempfile
 import os
+import importlib.util
 import unittest
 
 from xpra.os_util import POSIX, WIN32
@@ -418,6 +419,10 @@ class TestSetupUdpSocket(unittest.TestCase):
             sl.cleanup()
 
 
+VSOCK = importlib.util.find_spec("xpra.net.vsock") is not None
+
+
+@unittest.skipUnless(VSOCK, "vsock is not available")
 class TestParseBindVsock(unittest.TestCase):
 
     def test_empty(self):
@@ -490,12 +495,14 @@ class TestParseBindOptions(unittest.TestCase):
         self.assertIn("tcp", result)
         self.assertIn(("127.0.0.1", 10000), result["tcp"])
 
+    @unittest.skipUnless(VSOCK, "vsock is not available")
     def test_vsock(self):
         opts = self._make_opts(bind_vsock=["3:5000"])
         result = parse_bind_options(opts)
         self.assertIn("vsock", result)
         self.assertIn((3, 5000), result["vsock"])
 
+    @unittest.skipUnless(VSOCK, "vsock is not available")
     def test_vsock_invalid_ignored(self):
         # invalid vsock format raises ValueError in parse_bind_vsock;
         # parse_bind_options should propagate it
@@ -578,7 +585,7 @@ class TestUnixDomainSocket(unittest.TestCase):
             assert not os.path.exists(sockpath)
 
 
-@unittest.skipUnless(POSIX, "abstract sockets only on POSIX")
+@unittest.skipUnless(POSIX and sys.platform.startswith("linux"), "abstract sockets are Linux only")
 class TestCreateAbstractSocket(unittest.TestCase):
 
     def test_valid_path(self):

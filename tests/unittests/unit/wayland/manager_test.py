@@ -8,7 +8,12 @@ import unittest
 from unittest.mock import patch
 
 from xpra.util import signal_emitter
-from xpra.wayland.server.subsystem.manager import WaylandManager
+try:
+    from xpra.wayland.server.subsystem.manager import WaylandManager
+except ImportError:
+    if __name__ == "__main__":
+        raise SystemExit(0)
+    raise unittest.SkipTest("wayland server is not available")
 
 
 class WaylandManagerSignalTest(unittest.TestCase):

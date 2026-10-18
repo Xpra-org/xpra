@@ -13,6 +13,7 @@ import unittest
 from unittest.mock import patch
 
 import xpra
+from xpra.os_util import LINUX
 from xpra.platform.posix import landlock
 
 
@@ -36,6 +37,7 @@ class FakeNative:
         self.sync_threads = sync_threads
 
 
+@unittest.skipUnless(LINUX, "Landlock is Linux only")
 class LandlockTest(unittest.TestCase):
 
     def test_access_for_abi(self):

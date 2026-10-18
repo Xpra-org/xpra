@@ -3,7 +3,12 @@
 import unittest
 from unittest.mock import patch
 
-from xpra.platform.posix.fd_portal_shadow import PortalShadow
+try:
+    from xpra.platform.posix.fd_portal_shadow import PortalShadow
+except ImportError:
+    if __name__ == "__main__":
+        raise SystemExit(0)
+    raise unittest.SkipTest("pipewire codec is not available")
 
 
 class FakeCapture:

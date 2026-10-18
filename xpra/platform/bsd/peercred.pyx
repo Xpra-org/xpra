@@ -8,7 +8,7 @@
 
 from libc.string cimport memset
 
-cdef extern from "unistd.h":
+cdef extern from "sys/socket.h":
     ctypedef unsigned int uid_t
     ctypedef unsigned int gid_t
     int getpeereid(int s, uid_t *euid, gid_t *egid)
