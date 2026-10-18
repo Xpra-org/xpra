@@ -8,8 +8,12 @@ Name:           python3-pytools
 # Last release supporting Python 3.6.
 Version:        2022.1.12
 %else
+%if 0%{?el9}
 # Last release supporting EL9's Python 3.9.
 Version:        2024.1.14
+%else
+Version:        2026.1.1
+%endif
 %endif
 Release:        1%{?dist}
 Summary:        A collection of tools for python
@@ -20,13 +24,27 @@ Source0:        https://files.pythonhosted.org/packages/source/p/pytools/pytools
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python3-pytools = %{version}-%{release}
 BuildArch:      noarch
-Requires:       python3
 Requires:       python3-platformdirs >= 2.2
+%if 0%{?el8}%{?el9}
+Requires:       python3
 Requires:       python3-typing-extensions >= 4
+%else
+Requires:       python3 >= 3.10
+Requires:       python3-typing-extensions >= 4.5
+Requires:       python3-siphash24 >= 1.6
+%endif
 %if 0%{?el8}
 Requires:       python3-dataclasses >= 0.7
 %endif
-BuildRequires:  python3-devel python3-setuptools
+%if 0%{?el8}%{?el9}
+BuildRequires:  python3-devel
+BuildRequires:  python3-setuptools
+%else
+BuildRequires:  python3-devel >= 3.10
+BuildRequires:  python3-hatchling
+BuildRequires:  python3-pip
+BuildRequires:  pyproject-rpm-macros
+%endif
 
 %description
 Pytools are a few interesting things that are missing from the Python Standard
@@ -51,13 +69,17 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 %if 0%{?el8}
 if [ "${sha256}" != "4d62875e9a2ab2a24e393a9a8b799492f1a721bffa840af3807bfd42871dd1f4" ]; then
 %else
+%if 0%{?el9}
 if [ "${sha256}" != "39e5bbaf81fa432e688b82dd0980212d18f97b23e51a8c7afe7592249fe40ab1" ]; then
+%else
+if [ "${sha256}" != "260e0d88c9a903c65cfe34fbe818764f44a3f96e722e1a3645ce4d596add22b1" ]; then
+%endif
 %endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n pytools-%{version}
-%if !0%{?el8}
+%if 0%{?el9}
 # EL9's setuptools cannot read the newer source's pyproject metadata.
 cat > setup.py << 'EOF'
 from setuptools import find_packages, setup
@@ -76,14 +98,22 @@ EOF
 
 
 %build
+%if 0%{?el8}%{?el9}
 %{__python3} setup.py build
+%else
+%pyproject_wheel
+%endif
 
 
 %install
 rm -rf $RPM_BUILD_ROOT
+%if 0%{?el8}%{?el9}
 %{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
 # RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
+%else
+%pyproject_install
+%endif
 
 
 %clean
@@ -97,6 +127,11 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Oct 18 2026 Antoine Martin <antoine@xpra.org> - 2026.1.1-1
+- use the current upstream release outside EL8 and EL9
+- build the newer source with Hatchling and declare its runtime dependencies
+- keep the existing EL8 and EL9 versions and legacy build paths
+
 * Sun Oct 18 2026 Antoine Martin <antoine@xpra.org> - 2024.1.14-1
 - use the last release supporting EL9's Python 3.9
 - retain 2022.1.12 on EL8 for Python 3.6 compatibility
