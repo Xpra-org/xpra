@@ -13,20 +13,23 @@ implement are simply not enabled for that connection.
 
 </div>
 
-| Client                                               | Maintained by                                | License |
-|------------------------------------------------------|----------------------------------------------|---------|
-| [xpra](./Client.md)                                  | [Xpra-org](https://github.com/Xpra-org/xpra) | GPLv2   |
-| [xpra-html5](https://github.com/Xpra-org/xpra-html5) | [Xpra-org](https://github.com/Xpra-org)      | MPL-2.0 |
-| [vispra](https://github.com/MajidNajafi/vispra)      | third party                                  | MIT     |
-| [rust-xpra](https://github.com/Xpra-org/rust-xpra)   | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
-| [go-xpra](https://github.com/Xpra-org/go-xpra)       | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
+| Client                                                 | Maintained by                                | License |
+|--------------------------------------------------------|----------------------------------------------|---------|
+| [xpra](./Client.md)                                    | [Xpra-org](https://github.com/Xpra-org/xpra) | GPLv2   |
+| [xpra-html5](https://github.com/Xpra-org/xpra-html5)   | [Xpra-org](https://github.com/Xpra-org)      | MPL-2.0 |
+| [vispra](https://github.com/MajidNajafi/vispra)        | third party                                  | MIT     |
+| [rust-xpra](https://github.com/Xpra-org/rust-xpra)     | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
+| [go-xpra](https://github.com/Xpra-org/go-xpra)         | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
+| [kotlin-xpra](https://github.com/Xpra-org/kotlin-xpra) | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
 
 The [xpra client](./Client.md) is the default client: it is the only one that implements the complete feature set, and
 the only one available as a native package for Linux, MS Windows and MacOS.\
 The two browser based clients, `xpra-html5` and `vispra`, are served over `ws` / `wss` connections - the xpra server's
 builtin web server will pick up `xpra-html5` automatically when it is installed.\
 The `rust` and `go` clients are smaller native implementations with a deliberately limited feature set, also used
-for validating the protocol.
+for validating the protocol.\
+`kotlin-xpra` is an Android client in Kotlin and Jetpack Compose: it shows one top-level window at a time, fullscreen,
+with touch input, a soft-keyboard bridge and a window switcher.
 
 <div class="docs-section-heading" markdown="1">
 
