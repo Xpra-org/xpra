@@ -18,10 +18,8 @@ from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import PacketElement
 from xpra.server import ServerExitMode, CLOBBER_UPGRADE
-from xpra.util.gobject import one_arg_signal, n_arg_signal, to_gsignals
+from xpra.util.gobject import n_arg_signal, to_gsignals
 from xpra.x11.common import get_wm_name
-from xpra.x11.bindings.core import constants, get_root_xid
-from xpra.x11.bindings.window import X11WindowBindings
 from xpra.server.base import ServerBase
 from xpra.x11.error import xsync, XError
 from xpra.log import Logger
@@ -41,21 +39,11 @@ eventlog = Logger("x11", "events")
 pointerlog = Logger("x11", "pointer")
 screenlog = Logger("x11", "screen")
 
-SubstructureNotifyMask = constants["SubstructureNotifyMask"]
-
 DUMMY_DPI = envbool("XPRA_DUMMY_DPI", True)
 
 
 GSIGNALS = to_gsignals(ServerBase.__signals__)
-GSIGNALS.update({
-    "x11-child-map-event": one_arg_signal,
-    "server-event": n_arg_signal(2),
-    # X11 dispatch signals consumed by the bell / cursor subsystems.
-    # Declared here (not on the subsystems) because X11 dispatch requires
-    # a GObject receiver - see `BellServer` / `XCursorServer` docstrings.
-    "x11-xkb-event": one_arg_signal,
-    "x11-cursor-event": one_arg_signal,
-})
+GSIGNALS["server-event"] = n_arg_signal(2)
 
 
 def log_composite_error(msg: str) -> NoReturn:
@@ -111,7 +99,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
             from xpra.x11.wm import Wm
             window_sub._wm = Wm(window_sub.wm_name)
             window_sub._wm.init_atoms()
-            self.receive_root_events()
+            window_sub.receive_root_events()
             self.init_wm()
 
     def get_child_env(self) -> dict[str, str]:
@@ -134,17 +122,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
         from xpra.x11.wm_check import wm_check
         if not wm_check(self.clobber & CLOBBER_UPGRADE):
             raise InitExit(ExitCode.WM_ERROR, "another window manager seems to be running on this display")
-
-    def receive_root_events(self):
-        # Do this before creating the Wm object, to avoid clobbering its
-        # selecting SubstructureRedirect.
-        with xsync:
-            xid = get_root_xid()
-            X11Window = X11WindowBindings()
-            event_mask = X11Window.getEventMask(xid) | SubstructureNotifyMask
-            X11Window.setEventMask(xid, event_mask)
-        from xpra.x11.dispatch import add_event_receiver
-        add_event_receiver(xid, self)
 
     def init_wm(self) -> None:
         from xpra.x11.selection.common import AlreadyOwned
@@ -205,15 +182,6 @@ class SeamlessServer(GObject.GObject, ServerBase):
 
     def __repr__(self):
         return "X11-Seamless-Server"
-
-    # GObject signal handler - delegates to the window subsystem.
-    # GObject looks up default handlers as `do_<signal-name>` on the
-    # emitter instance, which is this variant class. The subsystem owns
-    # the actual logic, so just forward.
-    def do_x11_child_map_event(self, event) -> None:
-        window_sub = self.subsystems.get("window")
-        if window_sub:
-            window_sub.do_x11_child_map_event(event)
 
     def server_event(self, event_type: str, *args: PacketElement) -> None:
         super().server_event(event_type, *args)

@@ -5,7 +5,9 @@
 
 from xpra.server.subsystem.bell import BellServer
 from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.dispatch import add_event_receiver
+from xpra.x11.dispatch import (
+    add_event_receiver, remove_event_receiver, add_catchall_receiver, remove_catchall_receiver,
+)
 from xpra.x11.common import X11Event
 from xpra.log import Logger
 
@@ -16,14 +18,14 @@ class X11BellServer(BellServer):
     """
     X11 servers that forward bell events.
 
-    The `x11-xkb-event` signal that drives bell forwarding is declared on
-    each X11 server class's `__gsignals__` (seamless, desktop, monitor,
-    X11 shadow). It is *not* declared on this subsystem because the X11
-    dispatch (`xpra.x11.dispatch._maybe_send_event`) calls `signal_list_names`
-    on each receiver and only accepts a GObject — this subsystem is a plain
-    Python object. Subsystems consume the signal via `self.server.connect`.
+    Bell events are received as `x11-xkb-event` signals from the X11 dispatch.
+    By default, we only receive those delivered to the root window:
+    bells rung on the windows we manage come through the window models' `bell` signal instead.
     """
     __slots__ = ()
+    __signals__ = ("x11-xkb-event", )
+    # receive the bell events from all windows, not just the root window:
+    CATCHALL = False
 
     def setup(self) -> None:
         if not self.bell:
@@ -39,14 +41,17 @@ class X11BellServer(BellServer):
             from xpra.x11.error import xlog
             with xlog:
                 X11Keyboard.selectBellNotification(True)
-                # The X11 dispatch (`x11.dispatch._maybe_send_event`) calls
-                # `GObject.signal_list_names(handler)` on each receiver and
-                # requires a GObject type. Register the server (which IS
-                # GObject-registered with `x11-xkb-event` in its `__gsignals__`)
-                # and connect our handler.
-                rxid = get_root_xid()
-                add_event_receiver(rxid, self.server)
-                self.server.connect("x11-xkb-event", self._on_x11_xkb_event)
+            self.connect("x11-xkb-event", self._on_x11_xkb_event)
+            if self.CATCHALL:
+                add_catchall_receiver("x11-xkb-event", self)
+            else:
+                add_event_receiver(get_root_xid(), self)
+
+    def cleanup(self) -> None:
+        if self.CATCHALL:
+            remove_catchall_receiver("x11-xkb-event", self)
+        else:
+            remove_event_receiver(get_root_xid(), self)
 
     def _on_x11_xkb_event(self, _emitter, event: X11Event) -> None:
         self.do_x11_xkb_event(event)
@@ -78,3 +83,12 @@ class X11BellServer(BellServer):
         log("_bell_signaled(%s,%r) wid=%#x", wm, event, wid)
         self.send_bell(wid, event.device, event.percent,
                        event.pitch, event.duration, event.bell_class, event.bell_id, event.name)
+
+
+class X11DesktopBellServer(X11BellServer):
+    """
+    Desktop and monitor servers don't have window models for the applications' windows,
+    so we have to catch the bell events from all windows.
+    """
+    __slots__ = ()
+    CATCHALL = True

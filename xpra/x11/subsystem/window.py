@@ -24,6 +24,7 @@ from xpra.x11.common import Unmanageable, X11Event, get_pid
 from xpra.x11.bindings.core import constants, get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.error import xsync, xswallow, xlog, XError
+from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.xroot_props import root_get, root_set
 from xpra.log import Logger
 
@@ -42,6 +43,7 @@ sharinglog = Logger("sharing")
 NotifyPointerRoot = constants["NotifyPointerRoot"]
 NotifyDetailNone = constants["NotifyDetailNone"]
 XNone = constants["XNone"]
+SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
@@ -140,6 +142,7 @@ class SeamlessWindowServer(WindowServer):
         "_exit_with_windows", "_focus_history", "_has_focus", "_has_grab", "_wm",
         "configure_damage_timers", "last_raised", "snc_timer", "wm_name", "window_movers",
     )
+    __signals__ = ("x11-child-map-event", )
 
     def __init__(self, server=None):
         WindowServer.__init__(self, server)
@@ -159,6 +162,10 @@ class SeamlessWindowServer(WindowServer):
         super().init(opts)
         self.wm_name = opts.wm_name
         self._exit_with_windows = opts.exit_with_windows
+
+    def cleanup(self) -> None:
+        remove_event_receiver(get_root_xid(), self)
+        super().cleanup()
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
@@ -276,6 +283,20 @@ class SeamlessWindowServer(WindowServer):
     def _new_window_signaled(self, _wm, window) -> None:
         self.last_raised = 0
         self._add_new_window(window)
+
+    def receive_root_events(self) -> None:
+        # Do this before creating the Wm object, to avoid clobbering its
+        # selecting SubstructureRedirect.
+        rxid = get_root_xid()
+        X11Window = X11WindowBindings()
+        with xsync:
+            event_mask = X11Window.getEventMask(rxid) | SubstructureNotifyMask
+            X11Window.setEventMask(rxid, event_mask)
+        self.connect("x11-child-map-event", self._on_x11_child_map_event)
+        add_event_receiver(rxid, self)
+
+    def _on_x11_child_map_event(self, _emitter, event: X11Event) -> None:
+        self.do_x11_child_map_event(event)
 
     def do_x11_child_map_event(self, event: X11Event) -> None:
         windowlog("do_x11_child_map_event(%s)", event)

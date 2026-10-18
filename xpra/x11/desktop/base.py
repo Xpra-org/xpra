@@ -10,9 +10,8 @@ from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.util.gobject import one_arg_signal, to_gsignals
 from xpra.server.base import ServerBase
-from xpra.x11.dispatch import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
+from xpra.x11.dispatch import add_event_receiver
 from xpra.x11.bindings.core import get_root_xid
-from xpra.x11.error import xlog
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -38,12 +37,8 @@ ANIMATION_GSETTINGS: dict[tuple[str, str], str] = {
 
 
 SIGNALS = to_gsignals(ServerBase.__signals__)
-SIGNALS.update({
-    "x11-xkb-event": one_arg_signal,
-    "x11-cursor-event": one_arg_signal,
-    "x11-motion-event": one_arg_signal,
-    "x11-configure-event": one_arg_signal,
-})
+# root window configure events, see `XpraMonitorServer.do_x11_configure_event`:
+SIGNALS["x11-configure-event"] = one_arg_signal
 
 
 class DesktopServerBase(GObject.GObject, ServerBase):
@@ -67,14 +62,13 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         from xpra.x11.desktop.pointer import XpraDesktopPointerManager
         return XpraDesktopPointerManager
 
+    def get_bell_subsystem_class(self) -> type:
+        from xpra.x11.subsystem.bell import X11DesktopBellServer
+        return X11DesktopBellServer
+
     def setup(self) -> None:
         super().setup()
         add_event_receiver(get_root_xid(), self)
-        add_catchall_receiver("x11-motion-event", self)
-        add_catchall_receiver("x11-xkb-event", self)
-        with xlog:
-            from xpra.x11.bindings.keyboard import X11KeyboardBindings
-            X11KeyboardBindings().selectBellNotification(True)
         if MODIFY_GSETTINGS:
             self.modify_gsettings()
         from xpra.x11.xroot_props import XRootPropWatcher
@@ -98,7 +92,6 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         gsettings.update_gsettings()
 
     def do_cleanup(self) -> None:
-        remove_catchall_receiver("x11-motion-event", self)
         super().do_cleanup()
         if rpw := self.root_prop_watcher:
             self.root_prop_watcher = None

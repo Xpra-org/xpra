@@ -10,7 +10,7 @@ from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.os_util import gi_import
 from xpra.server.common import get_sources_by_type
-from xpra.util.gobject import one_arg_signal, to_gsignals
+from xpra.util.gobject import to_gsignals
 from xpra.util.system import is_Wayland, get_loaded_kernel_modules
 from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.x11.shadow.filter import window_matches
@@ -23,13 +23,7 @@ GObject = gi_import("GObject")
 
 
 class ShadowX11Server(GObject.GObject, ShadowServerBase):
-    # X11 dispatch signals consumed by the bell / cursor subsystems.
-    # Declared here (not on the subsystems) because X11 dispatch requires
-    # a GObject receiver - see `BellServer` / `XCursorServer` docstrings.
-    __gsignals__ = to_gsignals(ShadowServerBase.SIGNALS) | {
-        "x11-xkb-event": one_arg_signal,
-        "x11-cursor-event": one_arg_signal,
-    }
+    __gsignals__ = to_gsignals(ShadowServerBase.SIGNALS)
 
     def __init__(self, attrs: dict[str, str]):
         GObject.GObject.__init__(self)

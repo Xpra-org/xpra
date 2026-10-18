@@ -20,9 +20,15 @@ catchall_receivers: dict[str, list] = {}
 debug_route_events: list[int] = []
 
 
+def is_root(xid: int) -> bool:
+    # the root window has many receivers: the window manager, the server subsystems, etc
+    from xpra.x11.bindings.core import get_root_xid
+    return xid == get_root_xid()
+
+
 def add_event_receiver(xid: int, receiver, max_receivers=3) -> None:
     receivers = event_receivers_map.setdefault(xid, set())
-    if 0 < max_receivers < len(receivers):
+    if 0 < max_receivers < len(receivers) and not is_root(xid):
         from xpra.x11.window_info import window_info
         log.warn("Warning: already too many event receivers")
         log.warn(f" for {window_info(xid)!r}: {len(receivers)}")
@@ -46,7 +52,7 @@ def add_catchall_receiver(signal: str, handler) -> None:
 
 def remove_catchall_receiver(signal: str, handler) -> None:
     receivers = catchall_receivers.get(signal)
-    if receivers:
+    if receivers and handler in receivers:
         receivers.remove(handler)
     log("remove_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
@@ -117,7 +123,11 @@ def _maybe_send_event(debug: bool, handlers: Sequence | set, signal: str, event,
     # Copy the 'handlers' list, because signal handlers might cause items
     # to be added or removed from it while we are iterating:
     for handler in tuple(handlers):
-        signals = GObject.signal_list_names(handler)
+        # receivers are either GObjects or `SignalEmitter`s (ie: server subsystems)
+        if isinstance(handler, GObject.GObject):
+            signals = GObject.signal_list_names(handler)
+        else:
+            signals = getattr(handler, "__signals__", ())
         if signal in signals:
             if debug:
                 log.info("  forwarding event to a %s %s handler's %s signal", type(handler).__name__, hinfo, signal)
