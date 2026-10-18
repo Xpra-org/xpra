@@ -140,6 +140,13 @@ def prepare_parse_thread_seccomp(conn) -> None:
     if not seccomp_parse.is_enabled():
         return
     sclog = Logger("seccomp")
+    # SocketConnection.get_socket_info() imports this lazily for TCP_INFO:
+    try:
+        from xpra.platform import netdev_query
+    except ImportError as e:
+        sclog("no netdev_query: %s", e)
+    else:
+        sclog("preloaded %s", netdev_query)
     # `/proc/net/tcp{,6}` for network sockets, cached by the connection:
     with sclog.trap_error("Error looking up the peer uid of %s", conn):
         sclog("peer uid=%i", conn.get_peer_uid())
