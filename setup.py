@@ -2087,6 +2087,9 @@ def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
             add_to_keywords(kw, 'extra_compile_args', cflag)
     if OSX:
         add_to_keywords(kw, 'extra_compile_args', "-Wno-nullability-completeness")
+    if OPENBSD:
+        add_to_keywords(kw, "include_dirs", "/usr/local/include")
+        add_to_keywords(kw, "library_dirs", "/usr/local/lib")
 
     def hascflag(s: str) -> bool:
         return s in kw.get("extra_compile_args", [])
@@ -3150,7 +3153,7 @@ else:
             if printing_ENABLED and POSIX:
                 # install "/usr/lib/cups/backend" with 0700 permissions:
                 lib_cups = "lib/cups"
-                if FREEBSD:
+                if FREEBSD or OPENBSD:
                     lib_cups = "libexec/cups"
                 self.copytodir("fs/lib/cups/backend/xpraforwarder", f"{lib_cups}/backend", chmod=0o700)
 
@@ -3298,7 +3301,7 @@ else:
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         if data_ENABLED:
             # not supported by all distros, but doesn't hurt to install them anyway:
-            if not FREEBSD:
+            if not (FREEBSD or OPENBSD or NETBSD):
                 for x in ("tmpfiles.d", "sysusers.d"):
                     add_data_files(f"lib/{x}", [f"fs/lib/{x}/xpra.conf"])
             if uinput_ENABLED:
