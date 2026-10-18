@@ -240,6 +240,7 @@ def platform_name(sys_platform=sys.platform, release="") -> str:
         "linux.*"  : "Linux",
         "darwin"   : "Mac OS X",
         "freebsd.*": "FreeBSD",
+        "openbsd.*": "OpenBSD",
         "os2"      : "OS/2",
         }
     def rel(v):
@@ -506,6 +507,7 @@ def do_get_generic_os_name() -> str:
             "darwin"    : "MacOS",
             "win"       : "Win32",
             "freebsd"   : "FreeBSD",
+            "openbsd"   : "OpenBSD",
             }.items():
         if sys.platform.startswith(k):
             return v

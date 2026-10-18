@@ -503,6 +503,7 @@ class SessionsGUI(Gtk.Window):
             "darwin"    : "osx",
             "linux"     : "linux",
             "freebsd"   : "freebsd",
+            "openbsd"   : "openbsd",
             }.items():
             if platform.startswith(p):
                 return i

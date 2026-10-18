@@ -2,6 +2,7 @@
 
 ## [5.1.7] 2026-10-08
 * Platforms, build and packaging:
+  * [recognize OpenBSD in operating system names and platform icons](https://github.com/Xpra-org/xpra/commit/73342171c4401b4666ddbc799fdf43f775663856)
   * [RPM packages could lack the cairo typelib required by Gtk and Rsvg](https://github.com/Xpra-org/xpra/commit/885b5bf346a76fbb34c16c291ef191bc74008717)
   * [MS Windows SBOM generation failed when Python was installed outside `Python312`](https://github.com/Xpra-org/xpra/commit/b02833ffac97a4a3e88ddb32db553b0b2ec425b9)
   * [MS Windows builds and server socket tests failed to parse on Python 3.6 / 3.7](https://github.com/Xpra-org/xpra/commit/2bd57d2750ea8d6adb6ea5a2b1a0f976f432d2e2)
