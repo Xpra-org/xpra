@@ -25,6 +25,7 @@ python3-fido2
 python3-uinput
 python3-pylsqpack
 python3-aioquic
+python3-pyyaml
 python3-cairo
 pygobject3
 xpra

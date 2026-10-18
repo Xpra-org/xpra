@@ -36,6 +36,7 @@ python3-dbus
 python3-pyxdg
 python3-pylsqpack
 python3-aioquic
+python3-pyyaml
 python3-pyopengl
 python3-cairo
 python3-gobject
@@ -59,6 +60,7 @@ python3-pyxdg
 # these are not compatible with freethreading:
 #python3-pylsqpack
 #python3-aioquic
+python3-pyyaml
 python3-pyopengl
 python3-cairo
 python3-gobject
