@@ -6,6 +6,8 @@ gstreamer1-plugin-timestamp
 
 # default python:
 python3-cython
+python3-siphash24
+python3-pytools
 python3-pycuda
 python3-pynvml
 python3-pyu2f

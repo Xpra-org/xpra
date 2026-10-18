@@ -4,6 +4,8 @@ gstreamer1-plugin-timestamp
 libyuv
 openh264
 python3-Cython
+python3-siphash24
+python3-pytools
 python3-pycuda
 python3-pynvml
 python3-pyu2f
