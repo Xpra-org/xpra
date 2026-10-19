@@ -239,13 +239,22 @@ class AuthenticationManager(StubSubsystem):
             self.auth_failed(proto, msg, authenticator)
             return True
 
+        def authenticate() -> bool:
+            try:
+                return authenticator.authenticate(c)
+            except Exception as e:
+                log(f"{authenticator!r}.authenticate(..)", exc_info=True)
+                log.error(f"Error: {authenticator!r} authentication module failed")
+                log.estr(e)
+                return False
+
         req = authenticator.requires_challenge()
         csent = authenticator.challenge_sent
         log(f"authenticator[{index}]={authenticator}, requires-challenge={req}, challenge-sent={csent}")
         if not req:
             # this authentication module does not need a challenge
             # (ie: "peercred", "exec" or "none")
-            if not authenticator.authenticate(c):
+            if not authenticate():
                 return fail("authentication failed")
             authenticator.passed = True
             log(f"authentication passed for {authenticator} (no challenge needed)")
@@ -286,7 +295,7 @@ class AuthenticationManager(StubSubsystem):
             log(f"{authenticator!r} sending challenge {authenticator.prompt!r}")
             self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
             return True
-        if not authenticator.authenticate(c):
+        if not authenticate():
             return fail(ConnectionMessage.AUTHENTICATION_FAILED)
         next_challenge = authenticator.get_next_challenge()
         if next_challenge:

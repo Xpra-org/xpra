@@ -4,6 +4,7 @@
 * 🔧 Platforms, build and packaging:
 * 🖧 Network:
 * 🛡️ Security:
+  * [authentication errors leave clients waiting until they time out](https://github.com/Xpra-org/xpra/commit/b74e8b7943376736812563144c04a5a62f813e85)
 * 🌈 Encodings:
 * ✨ Features:
   * [remove backwards compatibility](https://github.com/Xpra-org/xpra/issues/4496)
