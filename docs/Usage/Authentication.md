@@ -79,6 +79,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [fido2](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/fido2.py)                         | [FIDO Alliance](https://en.wikipedia.org/wiki/FIDO_Alliance)                            | [#1789](https://github.com/Xpra-org/xpra/issues/4516)                               |
 | [otp](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otp.py)                             | One Time Password                                                                       | [pyotp](https://github.com/pyauth/pyotp)                                            |
 | [otpscreen](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otpscreen.py)                 | Generates a one-time secret and shows it in a local GUI dialog for the user to type     | local secondary-channel confirmation (distinct from `otp`)                          |
+| [email](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/email.py)                         | Sends a short-lived verification code by SMTP                                          | fixed, prompted, SQL/command lookup, or username-derived destination                 |
 | [notify](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/notify.py)                       | Asks the current user(s) of the session to allow the connection, using a notification   | shadow servers: the desktop user, seamless servers: the connected clients, MS Windows: tray balloon |
 | [http-header](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/http_header.py)             | validate websocket http headers                                                         | [#4438](https://github.com/Xpra-org/xpra/issues/4438)                               |
 </details>
@@ -106,6 +107,135 @@ The connection is rejected if the request is denied or dismissed, or if the noti
 On MS Windows, the request is shown as a balloon notification on the server's system tray icon, and clicking it opens a confirmation dialog.
 The connection is rejected if there is no system tray icon to attach the notification to, if another request is already pending, or if the dialog is answered `No`.
 On all platforms, the connection is also rejected if nobody answers within `timeout` seconds (default `30`).
+</details>
+
+<details markdown="1">
+  <summary>email verification</summary>
+
+The `email` module sends a one-time code by SMTP and asks the client to enter it.
+Chain it **after** primary authentication to require both checks. For example, using an existing TLS certificate:
+
+```shell
+xpra seamless --start=xterm \
+  --bind-ssl='0.0.0.0:14500,auth=ratelimit,auth=pam,auth=email(mode=fixed,address=alice@example.com,smtp-host=smtp.example.com,from=xpra@example.com)' \
+  --ssl-cert=/path/to/server-cert.pem --ssl-key=/path/to/server-key.pem
+xpra attach ssl://server.example.com:14500/ --challenge-handlers=prompt,prompt
+```
+
+Use TLS, SSH, or another protected Xpra connection: an HMAC challenge does not encrypt the connection,
+and a short numeric code can be guessed offline from a captured exchange.
+
+Address selection is explicit; invalid configuration or a failed lookup rejects authentication without a fallback:
+
+| Options | Destination |
+|---------|-------------|
+| `mode=fixed,address=alice@example.com` | A preconfigured mailbox; `fixed` is the default mode. |
+| `mode=prompt` | Ask for a complete email address, then send the code. |
+| `mode=prompt,address=@example.com` | Ask only for the local part and append `@example.com`; `\@example.com` is also accepted. |
+| `mode=lookup,lookup=sql,uri=sqlite:////path/to/users.db` | Look up the login username in a database. |
+| `mode=lookup,lookup=exec,command=/usr/local/bin/xpra-email-lookup` | Run a helper to look up the login username. |
+| `mode=derived,address=@example.com` | Append the domain to the login username without asking for an address. |
+
+Prompt mode accepts the entered mailbox without matching it to the login account. It proves access to that mailbox;
+use fixed, lookup, or derived addresses when the destination must be administrator controlled.
+One ASCII mailbox is accepted. Address lists, display names, quoted local parts, whitespace, and control characters are rejected.
+Internationalized domains can be configured using their ASCII IDNA form; SMTPUTF8 local parts are not supported.
+
+For prompt mode after a password check, configure three client handlers:
+
+```shell
+xpra attach ssl://server.example.com:14500/ --challenge-handlers=prompt,prompt,prompt
+```
+
+These answer the password, address, and code challenges in order, using the existing password dialogs, which hide typed text.
+Current Python clients register four prompt handlers by default, but explicit configuration also works with older clients
+that support successive challenges. Saved URI, file, or environment passwords are tried according to the configured handler order;
+use explicit handlers to prevent an unused saved password from being submitted as an email address or code.
+Address collection requires the client's `xor` digest; code verification requires an HMAC digest.
+
+SMTP configuration:
+
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `smtp-host` | required | SMTP relay hostname. |
+| `from` | required | Sender mailbox, also used as the SMTP envelope sender. |
+| `smtp-security` | `starttls` | Required STARTTLS, implicit `tls`, or explicitly selected `plain` for a trusted relay. |
+| `smtp-port` | `587` / `465` / `25` | Default depends on `smtp-security`. |
+| `smtp-timeout` | `10` | Timeout in seconds for SMTP socket operations. |
+| `smtp-username` | empty | Optional SMTP login; requires `smtp-password-file`. |
+| `smtp-password-file` | empty | UTF-8 password file, resolved relative to the server's startup directory. One trailing line ending is removed. |
+| `digits` | `6` | Numeric code length, from 6 to 12 digits, including leading zeroes. |
+| `timeout` | `120` | Code lifetime in seconds, starting after the relay accepts the message. |
+
+By default, TLS verifies the relay certificate and hostname using the system trust store and never falls back to plaintext.
+For an authenticated relay, append `smtp-username=sender,smtp-password-file=/path/to/smtp-password` to the module options.
+Restrict access to the password file. SMTP acceptance does not guarantee inbox delivery.
+
+Configure SMTP TLS through the following **auth module options**, which apply to both `smtp-security=tls` and `starttls`:
+
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `smtp-ssl-ca-certs` | system trust | Additional trusted CA or self-signed certificate in a PEM file, or an OpenSSL hashed CA directory. `default` keeps system trust. |
+| `smtp-ssl-ca-data` | empty | Additional trusted certificate data: PEM text, or DER encoded as hex or base64. |
+| `smtp-ssl-cert` | empty | Client certificate chain in PEM format; it may also contain the private key. |
+| `smtp-ssl-key` | empty | Separate client private key file; requires `smtp-ssl-cert`. |
+| `smtp-ssl-key-password-file` | empty | UTF-8 password file for an encrypted client key; requires `smtp-ssl-cert`. One trailing line ending is removed. |
+| `smtp-ssl-server-verify-mode` | `required` | Certificate verification: `required`, `optional` (equivalent to `required` for a TLS client), or `none`. |
+| `smtp-ssl-check-hostname` | `yes` | Match the relay certificate against `smtp-host`. Defaults to `no` if verification is explicitly set to `none`. |
+| `smtp-ssl-protocol` | `TLS` | Protocol name accepted by Xpra's SSL parser, such as `TLS`, `TLS_CLIENT`, or `TLSv1_2`. |
+| `smtp-ssl-ciphers` | Python defaults | OpenSSL cipher selection string for TLS 1.2 and earlier; TLS 1.3 cipher suites are unaffected. |
+| `smtp-ssl-verify-flags` | Python defaults | Replace certificate verification flags, using names such as `X509_STRICT` or `X509_PARTIAL_CHAIN`. |
+| `smtp-ssl-options` | Python defaults | Add OpenSSL option flags, such as `NO_COMPRESSION` or `NO_RENEGOTIATION`, retaining the default options. |
+
+These settings affect only the SMTP connection. SSL options on the listening socket and global Xpra SSL options do not configure SMTP.
+Certificate, key, and password file paths are resolved relative to the server's startup directory.
+For lists of verification or option flags inside `email(...)`, use `+` as the separator, for example
+`smtp-ssl-verify-flags=X509_STRICT+X509_PARTIAL_CHAIN`; commas would separate auth module options.
+Unknown SMTP SSL options and SSL options combined with `smtp-security=plain` are rejected.
+
+To trust a self-signed relay certificate while retaining certificate and hostname verification, add its public certificate:
+
+```text
+email(address=alice@example.com,smtp-host=mail.example.com,from=xpra@example.com,smtp-security=tls,smtp-ssl-ca-certs=/path/to/smtp-cert.pem)
+```
+
+For a relay signed by a private CA, use the CA certificate instead. The relay certificate must match `smtp-host`.
+This loads trust for the SMTP connection without changing the system trust store or setting `SSL_CERT_FILE` for the whole process.
+`smtp-ssl-check-hostname=no` disables only hostname matching; certificate verification remains enabled.
+`smtp-ssl-server-verify-mode=none` disables certificate verification and hostname matching; combining it with explicit
+`smtp-ssl-check-hostname=yes` is rejected. Client certificates do not replace SMTP username/password login if the relay requires it.
+
+SQL lookup requires optional `SQLAlchemy` and the database's driver. `query` defaults to
+`SELECT email FROM users WHERE username=:username`; the username is a bound parameter, never interpolated SQL.
+The query must return exactly one row with one nonempty address. The module neither creates nor migrates tables.
+Configure connection/query timeouts through the database driver, and use an account with read-only access.
+For example, a SQLite database can contain `users(username TEXT PRIMARY KEY, email TEXT NOT NULL)`.
+
+Exec lookup splits `command` into arguments without using a shell, then appends the login username as one argument.
+The helper must exit successfully and write exactly one UTF-8 address, optionally followed by one line ending, to stdout.
+Output is limited to 4 KiB; stderr is discarded. `lookup-timeout=10` limits reading and waiting for the helper, which is killed
+and reaped on timeout. Use an absolute executable path and quote arguments within the command as needed. For example:
+
+```python
+#!/usr/bin/env python3
+import sys
+
+addresses = {"alice": "alice@example.com", "bob": "bob@example.net"}
+address = addresses.get(sys.argv[1])
+if not address:
+    raise SystemExit(1)
+print(address)
+```
+
+There is one code attempt per connection. Incorrect or expired codes disconnect the client; reconnecting requests a fresh code.
+The existing server challenge deadline (normally 120 seconds) and client dialog timeout can shorten the usable lifetime;
+increasing `timeout` alone does not extend those deadlines. Disconnecting invalidates pending challenges.
+This module does not supply proxy session routing; retain an authentication module that authorizes the target account/session.
+
+Send attempts are limited to one per mailbox per 60 seconds and five per peer IP per 300 seconds, including failed deliveries.
+Limits are shared across connections and sockets within one server process, include loopback IPs, and reset on restart.
+At most 10,000 mailbox/IP keys are retained; expired entries are pruned, and new keys are rejected when storage is full.
+These send limits complement the `ratelimit` module, which tracks authentication failures.
 </details>
 
 <details markdown="1">
